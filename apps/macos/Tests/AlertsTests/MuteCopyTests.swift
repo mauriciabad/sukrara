@@ -44,6 +44,7 @@ import Testing
                 }
             }
         case "side_falling": side.map { MuteCopy.sideFalling($0, l) }
+        case "side_rising": side.map { MuteCopy.sideRising($0, l) }
         case "side_less": side.map { MuteCopy.sideLess($0, intervalMin: c.intervalMin ?? -1, l) }
         case "all_timed": MuteCopy.allTimed(leftMin: c.leftMin ?? -1, l)
         case "all_forever": MuteCopy.allForever(l)
@@ -57,7 +58,8 @@ import Testing
     }
 
     static let lines: Set<String> = [
-        "side_muted", "side_after", "side_falling", "side_less", "all_timed", "all_forever", "notif_title",
+        "side_muted", "side_after", "side_falling", "side_rising", "side_less", "all_timed", "all_forever",
+        "notif_title",
         "notif_text", "night",
         "choice", "choice_forever",
     ]
@@ -90,6 +92,9 @@ import Testing
         #expect(
             MuteCopy.line(.fallingBack(inMinutes: 8), side: .high, now: now, .en)
                 == "High alerts muted while falling back into range")
+        #expect(
+            MuteCopy.line(.risingBack(inMinutes: 8), side: .low, now: now, .en)
+                == "Low alerts muted while rising back into range")
         #expect(
             MuteCopy.line(.sideMuted(until: in12), side: .noData, now: now, .en) == "No data alerts muted · 12 min left"
         )

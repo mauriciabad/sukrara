@@ -137,6 +137,10 @@ class AlertCopyTest {
                 MuteLine.SideFalling(side(c))
             }
 
+            "side_rising" -> {
+                MuteLine.SideRising(side(c))
+            }
+
             "side_less" -> {
                 MuteLine.SideLess(side(c), c.long("intervalMin").toInt())
             }

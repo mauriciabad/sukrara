@@ -161,6 +161,10 @@ object AlertScenarios {
                 s.copy(fallingHigh = quiet(s.fallingHigh))
             }
 
+            "rising.mute" -> {
+                s.copy(risingLow = quiet(s.risingLow))
+            }
+
             "mute.min" -> {
                 s.copy(actions = s.actions.copy(muteMin = v.toInt()))
             }

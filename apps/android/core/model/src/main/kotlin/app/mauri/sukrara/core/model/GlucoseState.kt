@@ -257,6 +257,9 @@ enum class AlertQuietReason {
 
     /** A high falling back into range ("Alert me anyway"). */
     FallingBack,
+
+    /** A low rising back into range ("Alert me anyway", #193). */
+    RisingBack,
 }
 
 /**

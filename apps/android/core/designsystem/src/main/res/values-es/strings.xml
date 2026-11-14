@@ -75,6 +75,7 @@
     <string name="mute_after_insulin_one">Alertas %1$s silenciadas tras la insulina · queda %2$s</string>
     <string name="mute_after_insulin_other">Alertas %1$s silenciadas tras la insulina · quedan %2$s</string>
     <string name="mute_falling">Alertas %1$s silenciadas mientras baja hacia el rango</string>
+    <string name="mute_rising">Alertas %1$s silenciadas mientras sube hacia el rango</string>
     <string name="mute_less">Avisos %1$s cada %2$s</string>
     <string name="mute_all_left_one">Alertas silenciadas · queda %1$s</string>
     <string name="mute_all_left_other">Alertas silenciadas · quedan %1$s</string>

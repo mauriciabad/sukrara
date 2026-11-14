@@ -3425,18 +3425,34 @@
         }
       }
     },
-    "Quiet while a high falls" : {
+    "Quiet highs falling back into range" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quiet while a high falls"
+            "value" : "Quiet highs falling back into range"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Silenciar mientras baja de alta"
+            "value" : "Silenciar glucosa alta que baja hacia el rango"
+          }
+        }
+      }
+    },
+    "Quiet lows rising back into range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quiet lows rising back into range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Silenciar glucosa baja que sube hacia el rango"
           }
         }
       }
@@ -7613,6 +7629,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "De vuelta en rango por"
+          }
+        }
+      }
+    },
+    "Back in range within" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back in range within"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De vuelta en rango en"
           }
         }
       }

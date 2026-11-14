@@ -100,6 +100,7 @@ interface AlertWords {
                 "mute_after_insulin_one" to R.string.mute_after_insulin_one,
                 "mute_after_insulin_other" to R.string.mute_after_insulin_other,
                 "mute_falling" to R.string.mute_falling,
+                "mute_rising" to R.string.mute_rising,
                 "mute_less" to R.string.mute_less,
                 "mute_all_left_one" to R.string.mute_all_left_one,
                 "mute_all_left_other" to R.string.mute_all_left_other,
@@ -159,6 +160,10 @@ object MuteText {
 
             is MuteLine.SideFalling -> {
                 w.get("mute_falling").format(sideName(l.side, w))
+            }
+
+            is MuteLine.SideRising -> {
+                w.get("mute_rising").format(sideName(l.side, w))
             }
 
             is MuteLine.SideLess -> {
@@ -222,12 +227,13 @@ object MuteText {
                 AlertQuietReason.AfterCarbs -> QuietReason.CARBS
                 AlertQuietReason.AfterInsulin -> QuietReason.INSULIN
                 AlertQuietReason.FallingBack -> QuietReason.FALLING
+                AlertQuietReason.RisingBack -> QuietReason.RISING
                 null -> null
             }
-        // null = no end: until turned off (a mute) or none at all (falling back, remind less)
+        // null = no end: until turned off (a mute) or none at all (falling / rising back, remind less)
         val until = q.until?.epochSecond ?: Rules.NEVER
         // a timed quiet that is over shows nothing until the hub republishes (never "0 min left")
-        if (reason != null && reason != QuietReason.FALLING && until <= now.epochSecond) return null
+        if (reason != null && reason != QuietReason.FALLING && reason != QuietReason.RISING && until <= now.epochSecond) return null
         return line(MuteCopy.of(QuietSide(kind, q.matching, reason, until, q.relaxMin, q.canRemindLess), now.epochSecond), w)
     }
 

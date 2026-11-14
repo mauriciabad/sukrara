@@ -182,6 +182,8 @@ public struct AlertSettings: Equatable, Sendable {
         uniqueKeysWithValues: AlertKind.allCases.map { ($0, .defaults($0)) })
     public var muteAfterInsulin = QuietRule(on: true, min: 60)
     public var muteFallingHigh = QuietRule(on: true, min: 20)
+    /// #193: lows quiet while the readings rise back into range within `min` (SPEC §2 `muteRisingLow`).
+    public var muteRisingLow = QuietRule(on: true, min: 20)
     public var muteAfterCarbs = QuietRule(on: true, min: 15)
     public var sounds = AlertSoundSettings()
     public var notificationActions = NotificationActionSettings()
@@ -189,9 +191,10 @@ public struct AlertSettings: Equatable, Sendable {
     public var night = NightSettings()
     public var escalation = EscalationSettings()
     public var source = AlertSource.wearer
-    /// A fact of the device running the rules, never stored: carbs may quiet very low only on the wearer's own phone
-    /// (#2, SPEC §2); the wearer's run for the followers, every follower and this Mac keep alerting on very low.
-    public var veryLowQuietByCarbs = true
+    /// A fact of the device running the rules, never stored: this is the wearer's own phone's run. Only there may carbs
+    /// (#2) and a rise back into range (#193) quiet very low (SPEC §2); the wearer's run for the followers, every
+    /// follower and this Mac keep alerting on very low.
+    public var wearersOwn = true
 
     public init() {}
 
@@ -211,7 +214,7 @@ public struct AlertSettings: Equatable, Sendable {
     /// The treatment whose quiet window covers `kind`, or nil: the rule is off, or `kind` is never quieted by a
     /// treatment (extremely high, no data).
     public func quietedBy(_ kind: AlertKind) -> TreatmentKind? {
-        guard kind != .extremelyHigh, kind != .veryLow || veryLowQuietByCarbs, let t = kind.treatment else {
+        guard kind != .extremelyHigh, kind != .veryLow || wearersOwn, let t = kind.treatment else {
             return nil
         }
         return quietRule(t).on ? t : nil
@@ -256,7 +259,9 @@ public struct AlertSettings: Equatable, Sendable {
 
 extension AlertSettings: Codable {
     private enum Key: String, CodingKey {
-        case v, on, alerts, muteAfterInsulin, muteFallingHigh, muteAfterCarbs, sounds, notificationActions, persistence
+        case v, on, alerts, muteAfterInsulin, muteFallingHigh, muteRisingLow, muteAfterCarbs, sounds,
+            notificationActions
+        case persistence
         case night, escalation, source
     }
 
@@ -347,6 +352,7 @@ extension AlertSettings: Codable {
         }
         muteAfterInsulin = quiet("muteAfterInsulin", muteAfterInsulin, SettingsSpec.muteInsulin)
         muteFallingHigh = quiet("muteFallingHigh", muteFallingHigh, SettingsSpec.muteFalling)
+        muteRisingLow = quiet("muteRisingLow", muteRisingLow, SettingsSpec.muteRising)
         muteAfterCarbs = quiet("muteAfterCarbs", muteAfterCarbs, SettingsSpec.muteCarbs)
         if let snd = root["sounds"] {
             var kinds: [String: String] = [:]
@@ -394,6 +400,7 @@ extension AlertSettings: Codable {
         for kind in AlertKind.allCases { try encodeRule(self[kind], kind, into: &alerts) }
         try c.encode(muteAfterInsulin, forKey: .muteAfterInsulin)
         try c.encode(muteFallingHigh, forKey: .muteFallingHigh)
+        try c.encode(muteRisingLow, forKey: .muteRisingLow)
         try c.encode(muteAfterCarbs, forKey: .muteAfterCarbs)
         try c.encode(sounds, forKey: .sounds)
         try c.encode(notificationActions, forKey: .notificationActions)

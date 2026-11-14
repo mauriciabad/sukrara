@@ -71,6 +71,8 @@ class SettingsPagesTest {
             "alerts.muteAfterInsulin.min",
             "alerts.muteFallingHigh.on",
             "alerts.muteFallingHigh.min",
+            "alerts.muteRisingLow.on",
+            "alerts.muteRisingLow.min",
             "alerts.muteAfterCarbs.on",
             "alerts.muteAfterCarbs.min",
             // Settings › Alerts › If a very low gets no answer (#39: the wearer's two rows, a follower's switch)

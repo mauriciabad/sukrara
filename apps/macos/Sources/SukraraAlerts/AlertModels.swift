@@ -106,6 +106,8 @@ public enum QuietReason: Codable, Equatable, Sendable {
     case treatment(TreatmentKind, at: Date, until: Date)
     /// Falling back below the high threshold within the falling rule's window; no end of its own.
     case fallingBack(inMinutes: Int)
+    /// Rising back into range within the rising rule's window (#193); no end of its own.
+    case risingBack(inMinutes: Int)
     /// This device's Mute of the side.
     case sideMuted(until: Date)
     /// This device's Mute all (`muteAllForever` = until turned off).

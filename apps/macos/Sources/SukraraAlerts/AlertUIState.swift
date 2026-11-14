@@ -70,6 +70,8 @@ extension AlertEngine {
                 why = .sideMuted(until: sideMute)
             } else if e.isOn, case .fallingBack = e.quiet {
                 why = e.quiet
+            } else if e.isOn, case .risingBack = e.quiet {
+                why = e.quiet
             }
             guard why != nil || relax > 0 else { continue }
             quiets.append(

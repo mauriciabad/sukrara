@@ -76,6 +76,7 @@ class AlertStringNamesTest {
             MuteLine.SideAfter(side, TreatmentKind.RAPID, 1),
             MuteLine.SideAfter(side, TreatmentKind.RAPID, 150),
             MuteLine.SideFalling(side),
+            MuteLine.SideRising(side),
             MuteLine.SideLess(side, 30),
             MuteLine.AllTimed(1),
             MuteLine.AllTimed(120),
@@ -92,7 +93,8 @@ class AlertStringNamesTest {
     /** Doesn't compile when a new [MuteLine] comes without a line in [lines] (then add it there, and here). */
     private fun covered(l: MuteLine) =
         when (l) {
-            is MuteLine.SideMuted, is MuteLine.SideAfter, is MuteLine.SideFalling, is MuteLine.SideLess -> Unit
+            is MuteLine.SideMuted, is MuteLine.SideAfter, is MuteLine.SideFalling, is MuteLine.SideRising -> Unit
+            is MuteLine.SideLess -> Unit
             is MuteLine.AllTimed, MuteLine.AllForever, is MuteLine.NotifUntil, is MuteLine.NightUntil -> Unit
             is MuteLine.Pill, MuteLine.PillForever, is MuteLine.Choice, MuteLine.ChoiceForever -> Unit
         }

@@ -124,6 +124,7 @@ func applySetting(_ s: inout AlertSettings, _ kv: String) throws {
     case "carbs.mute": s.muteAfterCarbs = try quiet(s.muteAfterCarbs)
     case "insulin.mute": s.muteAfterInsulin = try quiet(s.muteAfterInsulin)
     case "falling.mute": s.muteFallingHigh = try quiet(s.muteFallingHigh)
+    case "rising.mute": s.muteRisingLow = try quiet(s.muteRisingLow)
     case "mute.min": s.notificationActions.muteMin = try int()
     case "relax.min": s.notificationActions.relaxMin = try int()
     case "back.mgdl": s.notificationActions.backMgdl = try int()

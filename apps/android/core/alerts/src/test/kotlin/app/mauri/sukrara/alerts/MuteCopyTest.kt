@@ -35,6 +35,7 @@ class MuteCopyTest {
                 "side_muted",
                 "side_after",
                 "side_falling",
+                "side_rising",
                 "side_less",
                 "all_timed",
                 "all_forever",
@@ -66,6 +67,10 @@ class MuteCopyTest {
 
             "side_falling" -> {
                 MuteLine.SideFalling(side(c))
+            }
+
+            "side_rising" -> {
+                MuteLine.SideRising(side(c))
             }
 
             "side_less" -> {
@@ -133,6 +138,7 @@ class MuteCopyTest {
             MuteCopy.of(QuietSide(AlertKind.VERY_LOW, true, QuietReason.CARBS, now + 12 * 60 - 30, 0, false), now),
         )
         assertEquals(MuteLine.SideFalling(Side.HIGH), MuteCopy.of(QuietSide(AlertKind.HIGH, true, QuietReason.FALLING, 0, 0, true), now))
+        assertEquals(MuteLine.SideRising(Side.LOW), MuteCopy.of(QuietSide(AlertKind.VERY_LOW, true, QuietReason.RISING, 0, 0, false), now))
         assertEquals(MuteLine.SideLess(Side.LOW, 30), MuteCopy.of(QuietSide(AlertKind.LOW, false, null, 0, 30, false), now))
         assertEquals(MuteLine.AllForever, MuteCopy.all(Rules.NEVER, now))
         assertEquals(MuteLine.Pill(72), MuteCopy.pill(now + 72 * 60, now))
@@ -191,6 +197,10 @@ class MuteCopyTest {
 
                 is MuteLine.SideFalling -> {
                     "${side(l.side)} alerts muted while falling back into range"
+                }
+
+                is MuteLine.SideRising -> {
+                    "${side(l.side)} alerts muted while rising back into range"
                 }
 
                 is MuteLine.SideLess -> {

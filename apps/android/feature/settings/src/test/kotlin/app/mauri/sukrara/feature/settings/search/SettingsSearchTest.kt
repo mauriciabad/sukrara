@@ -131,9 +131,18 @@ class SettingsSearchTest {
     /** The group's name finds its rows and shows in the breadcrumb; keywords find rows they never show on. */
     @Test
     fun groupsAndKeywordsFindRows() {
-        val quiet = SettingsSearch.match("quiet treatments", index())
-        assertTrue(quiet.map { it.title }.containsAll(listOf("Quiet highs after insulin", "Quiet lows after carbs")))
-        assertEquals("Alerts › Quiet after treatments", quiet.first { it.title == "Quiet lows after carbs" }.where)
+        val quiet = SettingsSearch.match("quiet times", index())
+        assertTrue(
+            quiet.map { it.title }.containsAll(
+                listOf(
+                    "Quiet highs after insulin",
+                    "Quiet lows after carbs",
+                    "Quiet highs falling back into range",
+                    "Quiet lows rising back into range",
+                ),
+            ),
+        )
+        assertEquals("Alerts › Quiet times", quiet.first { it.title == "Quiet lows after carbs" }.where)
         assertEquals(context.getString(R.string.st_pens_title), SettingsSearch.match("novopen", index()).first().title)
         assertTrue(SettingsSearch.match("novopen", index(pens = false)).isEmpty())
         assertEquals(context.getString(R.string.st_lock_time), SettingsSearch.match("timer", index()).first().title)

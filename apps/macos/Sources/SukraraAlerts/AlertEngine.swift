@@ -84,8 +84,8 @@ public enum AlertEffect: Equatable, Sendable {
 ///
 /// Three groups (level, rate, no data), each with at most one `Episode`. Within an episode: the first match alerts at
 /// once, a more severe kind of the side at once, then every `repeatMin` from the last alert (0 = once). A treatment
-/// that answers it quiets it for its window and alerts at once when the window ends if it still matches; the falling
-/// rule only postpones. This device's *Mute* / *Remind less* act on one side, outlive the episode and end at their time
+/// that answers it quiets it for its window and alerts at once when the window ends if it still matches; the falling-high
+/// and rising-low quiets (`Trend`) only postpone. This device's *Mute* / *Remind less* act on one side, outlive the episode and end at their time
 /// or back by the margin; *Mute all* quiets everything. The ways out (`unmute`, `remindAsUsual`, `unmuteAll`) alert at
 /// once when something still matches.
 public struct AlertEngine: Sendable {
@@ -101,11 +101,13 @@ public struct AlertEngine: Sendable {
     var clock = ClockWatch()
     /// A reading came since the source started: no data counts from the readings alone (also an old first one).
     var sourceDelivered = false
+    /// The readings of the last few minutes, ascending: the falling / rising quiet read their trend from them (`Trend`).
+    public internal(set) var recent: [GlucoseSample] = []
 
     public init(context: AlertContext) {
         self.context = context
         inForce = context.settings
-        inForce.veryLowQuietByCarbs = context.wearersOwn
+        inForce.wearersOwn = context.wearersOwn
     }
 
     public var settings: AlertSettings { context.settings }
@@ -115,7 +117,7 @@ public struct AlertEngine: Sendable {
     /// The settings with the rules in force at `t`.
     public func settingsInForce(at t: Date) -> AlertSettings {
         var s = context.settings.at(t, in: context.timeZone)
-        s.veryLowQuietByCarbs = context.wearersOwn
+        s.wearersOwn = context.wearersOwn
         return s
     }
 
@@ -155,6 +157,7 @@ public struct AlertEngine: Sendable {
         snoozes.shiftBack(d)
         muteAllUntil = muteAllUntil?.shiftedBack(d)
         context.latest?.at.addTimeInterval(-d)
+        for i in recent.indices { recent[i].at.addTimeInterval(-d) }
         context.sourceStart = context.sourceStart?.shiftedBack(d)
     }
 
@@ -187,6 +190,8 @@ public struct AlertEngine: Sendable {
             // dated after now (the source's clock ahead, or this Mac's set back): counts as taken now, else it would
             // hide every reading until the clock caught up
             r.at = min(r.at, t)
+            // an older one (a late or backfilled reading) still fills the trend's window
+            recent = Trend.keep(recent, r)
             if context.latest.map({ r.at > $0.at }) ?? true { context.latest = r }
             sourceDelivered = true
         case .treatments(let list): context.treatments = list
@@ -333,10 +338,17 @@ public struct AlertEngine: Sendable {
             e.next = until
             return
         }
-        if e.liftedAt == nil, let minutes = fallingBackMinutes(want) {
+        if e.liftedAt == nil, let minutes = fallingBackMinutes(want, at: t) {
             hide(&e, at: t, out: &out)
             e.quiet = .fallingBack(inMinutes: minutes)
-            e.next = nil  // the falling rule has no end of its own: re-judged on every reading
+            // the trend quiets have no end of their own: re-judged on every reading and when it goes stale
+            e.next = nil
+            return
+        }
+        if e.liftedAt == nil, let minutes = risingBackMinutes(want, e, at: t) {
+            hide(&e, at: t, out: &out)
+            e.quiet = .risingBack(inMinutes: minutes)
+            e.next = nil
             return
         }
         let all = muteAllEnd(at: t)
@@ -410,17 +422,35 @@ public struct AlertEngine: Sendable {
         return min(2, times(tk).filter { $0 >= from && $0 <= t }.count)
     }
 
-    /// Minutes until back below the high threshold, if the current fall gets there within the falling rule's window.
-    private func fallingBackMinutes(_ k: AlertKind) -> Int? {
+    /// Minutes until back below the high threshold, if the readings' clear fall (`Trend`, never the sensor's lagging
+    /// rate) gets there within the falling rule's window: `newest + slope × min < high` (SPEC §2 `muteFallingHigh`).
+    private func fallingBackMinutes(_ k: AlertKind, at t: Date) -> Int? {
         let s = inForce
-        // a HI's real value is unknown: no prediction from it
-        guard let r = context.latest, let v = r.rate, !r.isHi, s.muteFallingHigh.on, k == .high || k == .veryHigh, v < 0
-        else {
-            return nil
-        }
+        guard s.muteFallingHigh.on, k == .high || k == .veryHigh, let v = Trend.clear(recent, at: t, up: false),
+            let r = recent.last
+        else { return nil }
         let high = s[.high].threshold
         guard r.mgdl + v * s.muteFallingHigh.min < high else { return nil }
         return max(1, Int(((r.mgdl - high) / -v).rounded(.up)))
+    }
+
+    /// Minutes until back in range, if the readings' clear rise gets there within the rising rule's window: `newest +
+    /// slope × min` matches no enabled low kind (SPEC §2 `muteRisingLow`, #193). Any low alert; a very low only on the
+    /// wearer's own phone and only once a very low has alerted in `e` (never its first alert nor the escalation to it;
+    /// this Mac is never the wearer's phone).
+    private func risingBackMinutes(_ k: AlertKind, _ e: Episode, at t: Date) -> Int? {
+        let s = inForce
+        let veryLowRepeat = k == .veryLow && s.wearersOwn && e.firedAt != nil && e.firedKind == .veryLow
+        guard s.muteRisingLow.on, k == .low || veryLowRepeat, let v = Trend.clear(recent, at: t, up: true),
+            let r = recent.last
+        else { return nil }
+        let predicted = r.mgdl + v * s.muteRisingLow.min
+        guard
+            !AlertKind.allCases.contains(where: { $0.isLowSide && s[$0].on && $0.reaches(predicted, s[$0].threshold) })
+        else { return nil }
+        // range starts at the low threshold (or above very low's with low off)
+        let floor = s[.low].on ? s[.low].threshold : s[.veryLow].threshold
+        return max(1, Int(((floor - r.mgdl) / v).rounded(.up)))
     }
 
     /// When the next timer check is useful (no-data deadline, freshness end, a repeat, a mute ending, the margin), or nil.
@@ -441,6 +471,14 @@ public struct AlertEngine: Sendable {
         for e in episodes.values where e.isOn {
             if let n = e.next, n < muteAllForever { c.append(n) }
         }
+        // a trend quiet ends once the newest reading is too old for a trend: a held alert comes then without readings
+        let byTrend = episodes.values.contains { e in
+            switch e.quiet {
+            case .fallingBack?, .risingBack?: e.isOn
+            default: false
+            }
+        }
+        if byTrend, let r = recent.last { c.append(r.at.addingTimeInterval(Trend.maxAge + 1)) }
         c += snoozes.wakeTimes(after: now, backMin: s.notificationActions.backMin)
         if let a = muteAllUntil, a > now, a < muteAllForever { c.append(a) }
         return c.filter { $0 > now }.min()

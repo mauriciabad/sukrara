@@ -48,6 +48,7 @@ object AlertLimits {
     val ALERT_REPEAT = NumberLimit(1.0, 240.0, 1.0, 5.0, listOf(0.0, 5.0, 10.0, 15.0, 30.0, 60.0, 120.0), setOf(0.0))
     val MUTE_INSULIN = NumberLimit(10.0, 360.0, 1.0, 60.0, listOf(30.0, 45.0, 60.0, 90.0, 120.0, 180.0))
     val MUTE_FALLING = NumberLimit(5.0, 120.0, 1.0, 20.0, listOf(10.0, 15.0, 20.0, 30.0, 45.0, 60.0))
+    val MUTE_RISING = NumberLimit(5.0, 120.0, 1.0, 20.0, listOf(10.0, 15.0, 20.0, 30.0, 45.0, 60.0))
     val MUTE_CARBS = NumberLimit(5.0, 120.0, 1.0, 15.0, listOf(10.0, 15.0, 20.0, 30.0, 45.0))
     val ACTION_MUTE = NumberLimit(1.0, 720.0, 1.0, 30.0, listOf(15.0, 30.0, 60.0, 120.0))
     val ACTION_RELAX = NumberLimit(5.0, 120.0, 1.0, 30.0, listOf(15.0, 20.0, 30.0, 45.0, 60.0, 90.0, 120.0))
@@ -74,6 +75,7 @@ object AlertLimits {
             "alertRepeat" to ALERT_REPEAT,
             "muteInsulin" to MUTE_INSULIN,
             "muteFalling" to MUTE_FALLING,
+            "muteRising" to MUTE_RISING,
             "muteCarbs" to MUTE_CARBS,
             "actionMute" to ACTION_MUTE,
             "actionRelax" to ACTION_RELAX,

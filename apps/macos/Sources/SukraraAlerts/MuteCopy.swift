@@ -61,6 +61,11 @@ public enum MuteCopy {
         "\(sideAlertsMuted(side, l)) " + (l == .en ? "while falling back into range" : "mientras baja hacia el rango")
     }
 
+    /// "Low alerts muted while rising back into range" (#193; no end of its own).
+    public static func sideRising(_ side: AlertSide, _ l: AppLanguage = .current) -> String {
+        "\(sideAlertsMuted(side, l)) " + (l == .en ? "while rising back into range" : "mientras sube hacia el rango")
+    }
+
     /// "Low reminders every 30 min".
     public static func sideLess(_ side: AlertSide, intervalMin: Int, _ l: AppLanguage = .current) -> String {
         l == .en
@@ -119,6 +124,7 @@ public enum MuteCopy {
         case .treatment(let kind, _, let until):
             sideAfter(side, treatment: kind, leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), l)
         case .fallingBack: sideFalling(side, l)
+        case .risingBack: sideRising(side, l)
         case .sideMuted(let until): sideMuted(side, leftMin: Durations.minutesLeft(until.timeIntervalSince(now)), l)
         case .allMuted(let until): allLine(until: until, now: now, l)
         }

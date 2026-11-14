@@ -99,7 +99,7 @@ const val ROW_ICON_TAG = "settings-row-icon"
 
 /**
  * The title of a [SettingsGroup], on the semantics around its rows (no TalkBack effect): the settings search index test
- * checks each row's group against the index, which shows it in a result's breadcrumb ("Alerts › Quiet after treatments").
+ * checks each row's group against the index, which shows it in a result's breadcrumb ("Alerts › Quiet times").
  */
 val SettingsGroupTitle = SemanticsPropertyKey<String>("SettingsGroupTitle")
 

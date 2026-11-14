@@ -35,7 +35,7 @@ data class Snooze(val until: Long = 0, val relaxMin: Int = 0, val backSince: Lon
 
 /** Why an episode is quiet right now (for the UI; null = alerting). */
 @Serializable
-enum class EpisodeQuiet { TREATMENT, FALLING, NOTIFICATION, ALL }
+enum class EpisodeQuiet { TREATMENT, FALLING, RISING, NOTIFICATION, ALL }
 
 /**
  * One episode (SPEC §1): a stretch of time on one [side]. Mutable, owned by one [AlertEngine]; [copy] for snapshots.
@@ -57,7 +57,7 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
     /** When the next alert is due (Long.MAX_VALUE = never), from the last evaluation. */
     var next: Long = start
 
-    /** *Unmute* / *Alert me anyway* at this time (0 = never): treatments up to then and the falling mute are lifted. */
+    /** *Unmute* / *Alert me anyway* at this time (0 = never): treatments up to then and the trend quiets are lifted. */
     var lifted: Long = 0
 
     /** Lifted since the last alert: the next match alerts at once. */
@@ -100,8 +100,8 @@ class Episode(val side: Side, var start: Long, var kind: AlertKind) {
 /**
  * Everything one [AlertEngine] must keep across a process restart: open episodes (so an ongoing alert isn't taken for
  * a new one and rings again: "two sounds at once" after an update), this device's mutes / Remind less, its
- * Mute all, the last reading and when the reading source started (no data counts from the newer of the two, also
- * from the alarm receiver with the service dead).
+ * Mute all, the last reading and the few minutes before it (the trend) and when the reading source started (no data
+ * counts from the newer of the two, also from the alarm receiver with the service dead).
  */
 @Serializable
 data class AlertMemory(
@@ -109,6 +109,8 @@ data class AlertMemory(
     val snoozes: Map<Side, Snooze> = emptyMap(),
     val muteAllUntil: Long = 0,
     val last: AlertReading? = null,
+    /** The last few minutes of readings: the falling / rising quiet's trend, also from the alarm with the service dead. */
+    val recent: List<AlertReading> = emptyList(),
     val sourceStart: Long = 0,
     val sourceDelivered: Boolean = false,
 )

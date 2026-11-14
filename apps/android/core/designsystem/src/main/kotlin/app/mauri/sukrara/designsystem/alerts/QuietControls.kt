@@ -59,7 +59,13 @@ object QuietExits {
         buildList {
             when (q.reason) {
                 AlertQuietReason.Muted -> add(QuietExit.Unmute)
-                AlertQuietReason.AfterCarbs, AlertQuietReason.AfterInsulin, AlertQuietReason.FallingBack -> add(QuietExit.AlertAnyway)
+
+                AlertQuietReason.AfterCarbs,
+                AlertQuietReason.AfterInsulin,
+                AlertQuietReason.FallingBack,
+                AlertQuietReason.RisingBack,
+                -> add(QuietExit.AlertAnyway)
+
                 null -> Unit
             }
             if (q.relaxMin > 0) add(QuietExit.RemindAsUsual)

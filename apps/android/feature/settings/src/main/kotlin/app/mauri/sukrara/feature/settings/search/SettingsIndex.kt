@@ -38,7 +38,7 @@ enum class BuildFeature { Root, UpdateCheck }
 /**
  * One row the search finds: its [title] and [summary] as the page shows them (string resources, no format arguments),
  * the page it is [on] and the [trail] of page titles down to it with its [group]'s title (the result's breadcrumb:
- * "Alerts › Quiet after treatments"), and what tapping the result opens: [target], at the row [highlight] (flashed, as
+ * "Alerts › Quiet times"), and what tapping the result opens: [target], at the row [highlight] (flashed, as
  * stock Settings' search does; the row itself, the group title it names, or null when the row opens a page of its own:
  * then the result opens that page, at its top). [keywords]: other words that find it, never shown (AOSP
  * `settings:keywords`). [pensOnly] rows exist only on a phone that reads insulin pens, [seen] says on whose phone the
@@ -362,7 +362,9 @@ object SettingsIndex {
                 R.string.st_quiet_insulin to null,
                 R.string.st_quiet_carbs to null,
                 R.string.st_quiet_falling to null,
+                R.string.st_quiet_rising to null,
                 R.string.st_quiet_length to null,
+                R.string.st_quiet_within to null,
             )
             rows(
                 alerts,

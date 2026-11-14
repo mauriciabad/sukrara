@@ -51,7 +51,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Each alert type has its own sound and vibration.
 - Sounds are discreet, with a different intensity for each alert type.
 - Pick your favorite sound pack or make your own.
-- Minimal alert fatigue: alerts go quiet when you've already acted.
+- Minimal alert fatigue: alerts go quiet when you've already acted, and wait while your glucose is clearly heading
+  back into range.
 - Optionally, alarms can ring loud, even in Do Not Disturb.
 - Configure how alarms repeat while your glucose stays out of range.
 - Unacknowledged very lows can alert the people who follow you.

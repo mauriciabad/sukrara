@@ -259,16 +259,21 @@ fun AlertsSettingsContent(
                             QuietKind.AfterInsulin -> R.string.st_quiet_insulin
                             QuietKind.AfterCarbs -> R.string.st_quiet_carbs
                             QuietKind.FallingHigh -> R.string.st_quiet_falling
+                            QuietKind.RisingLow -> R.string.st_quiet_rising
                         },
                     ),
                     rule.on,
                     { on -> actions.edit(AlertEdits.quiet(which) { it.copy(on = on) }) },
-                    summary = stringResource(R.string.st_quiet_for, numberLabel(spec, rule.min.toDouble())),
+                    summary =
+                        stringResource(
+                            if (which.byTrend) R.string.st_quiet_within_summary else R.string.st_quiet_for,
+                            numberLabel(spec, rule.min.toDouble()),
+                        ),
                     icon = quietIcon(which),
                     readOnly = ui.mirrored,
                 )
                 if (rule.on) {
-                    ValueRow(stringResource(R.string.st_quiet_length), numberLabel(spec, rule.min.toDouble()), {
+                    ValueRow(stringResource(quietLengthTitle(which)), numberLabel(spec, rule.min.toDouble()), {
                         dialog =
                             "quiet:${which.name}"
                     }, icon = DsR.drawable.ds_ic_timer, readOnly = ui.mirrored)
@@ -406,7 +411,7 @@ private fun AlertsDialogs(
         dialog.startsWith("quiet:") -> {
             val which = QuietKind.valueOf(dialog.removePrefix("quiet:"))
             val spec = SchemaPrefs.spec(AlertEdits.quietSpecId(which))
-            NumberDialog(stringResource(R.string.st_quiet_length), NumberInput(spec), AlertEdits.quietRule(s, which).min.toDouble(), {
+            NumberDialog(stringResource(quietLengthTitle(which)), NumberInput(spec), AlertEdits.quietRule(s, which).min.toDouble(), {
                 label(spec, it)
             }, close) { v ->
                 actions.edit(AlertEdits.quiet(which) { it.copy(min = spec.coerce(v).toInt()) })

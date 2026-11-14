@@ -118,7 +118,39 @@ ever quiets urgent low because of carbs). The user's own Mute / Mute all (below)
 |---|---|---|---|
 | `muteAfterInsulin` | on, 60 min | `high`, `very_high`, `rising_fast` | A `rapid` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
 | `muteAfterCarbs` | on, 15 min | `very_low` (the wearer's own phone only, #2), `low`, `falling_fast` | A `carbs` treatment with `now − min < t ≤ now` (not deleted) mutes them. |
-| `muteFallingHigh` | on, 20 min | `high`, `very_high` | `rate < 0` and `sgv + rate × min < high.mgdl` (it will be back below the high threshold within `min` minutes at the current rate). Re-evaluated on every reading. It only postpones: when it ends, an alert that came due meanwhile fires at once; it doesn't restart the count. |
+| `muteFallingHigh` | on, 20 min | `high`, `very_high` | The readings show a clear fall (*Trend from the readings*, below) and `sgv + slope × min < high.mgdl`: back below the high threshold within `min` minutes at that slope. Any alert of the side, the first too. Re-evaluated on every reading and when the newest reading gets too old for a trend (the timer wakes then). It only postpones: when it ends (the fall stalls, the readings stop, or it no longer gets back in time), an alert that came due meanwhile fires at once; it doesn't restart the count. |
+| `muteRisingLow` | on, 20 min | `low`; `very_low` (the wearer's own phone only, and never its first alert nor the escalation to it) | The low-side mirror (#193): a clear rise and `sgv + slope × min` back in range (it matches no enabled low kind: at least `low.mgdl`, or above `very_low.mgdl` when low is off) within `min` minutes. Low: any alert, the first too (a dip that is already rebounding). Very low: only once a very low has alerted in the episode, so the first very low and low → very low alert at once; it holds its repeats and the alert at the end of a mute or treatment window. Never depends on treatments. Re-evaluated and ended like the falling one: the moment the rise stalls (flat or falling), the readings stop or it no longer gets back in time, a low that came due meanwhile alerts at once; it doesn't restart the count. Off → every low repeats as without it. |
+
+**Trend from the readings** (#193; one function per platform, Android `Trend` / Mac `Trend`, both quiet rules): the
+sensor's own `rate` lags by many minutes. On the owner's evening (#193, scenario `user.txt`) the values climbed 1–3
+mg/dL a minute from 20:27 while the sensor's rate stayed negative until 20:35 and turned positive only at 20:38; a fall
+lags the same way, so a rate-based falling-high quiet started minutes late and, worse, held a high for minutes after it
+stopped falling. So the direction comes from the readings this device has, and a move is **clear** at `now` when:
+
+1. the window, the readings taken in the 5 min up to the newest one (`newest.t − 5 min < t ≤ newest.t`), has a newest
+   reading at most 2.5 min old at `now` (a held alert comes at most 2.5 min after the readings stop);
+2. it has at least 4 readings spanning at least 3 min, none more than 2.5 min after the one before (one missed reading
+   of a 1-minute sensor is fine, two are a gap), and no LO / HI;
+3. no reading is more than 1 mg/dL against the direction from the one before it (a Libre's reading noise; noisy
+   up-and-down readings are no trend);
+4. the newest reading and the one before it are each beyond every window reading taken more than 1.5 min before them
+   (still moving: a rise that stalls alerts by its second flat reading; a single jump is no trend);
+5. the least-squares slope over the window is at least 0.5 mg/dL/min that way (time in seconds from the newest
+   reading, sums taken oldest first, `Σ(dt·dv) × 60 / Σdt²`: both platforms get the same number).
+
+Why these numbers: 5 min is the issue's "last ~5 min", the last five readings of a 1-minute sensor; with ±1 mg/dL of
+noise the least-squares slope of five readings wanders ±0.3 mg/dL/min, so 0.5 is beyond noise; 20 min (both rules'
+default) is the falling rule's. On the owner's evening the 20:26 alert stays (since the 20:19–20:23 gap only 3
+readings: no trend; and flat), from 20:27:24 the slopes are 0.8, 1.1, 1.0, 0.9, 0.6 (59 + 0.6 × 20 = 71 at 20:31:25),
+0.9, 1.2, 1.8, 2.5 mg/dL/min, so the 20:31 repeat is held and at 20:36:26 (72) it is back in range: nothing more. A
+sensor that reads every 5 min never has 4 readings in 5 min: neither quiet ever holds there (alerts as without them).
+Readings arriving late (older than 2.5 min when they come), a clock set forward (the newest reading looks old) and the
+first minutes after a gap are no trend either: the alert comes as without the rule. A reading that arrives out of order
+(backfill) still fills the window. The readings are kept with the episodes (Android `AlertMemory.recent`, Mac
+`Snapshot.recent`), so a restart or the alarm with the service dead judges the same trend; a clock set back moves them
+with everything else. The function's cases, edges included, are [`trend.json`](trend.json) (written by
+`tools/alerts/trend_cases.py`, run by Android `TrendTest` and Mac `TrendTests`); the timelines are `trend.txt`, the
+falling ones in `other.txt` and the owner's evening in `user.txt`.
 
 **Notification actions** (round f30; the user, 2026-10-21: "two kinds of buttons … Mute 30 min doesn't conceptually
 belong there"). Android's guidance: "A notification can offer up to three action buttons … these action buttons must
@@ -207,6 +239,7 @@ on that device only:
 | Quiet after carbs / rapid insulin (shared data) | the tonal pill, the last-treatment ring; the line "Low alerts muted after carbs · 12 min left" (ticks, round f33); Active now | *Alert me anyway* (this device only, the treatment stays) · ends at `t + min` · deleting the treatment |
 | Muted and quiet after a treatment | the one that ends later: its line and its ways out (a 30 min Mute after carbs: "Low alerts muted · 29 min left"; a 5 min Mute: "… muted after carbs · 14 min left") | that one's ways out; both end the Mute and lift the treatment (*Unmute* below) |
 | Quiet: falling back into range | "High alerts muted while falling back into range"; Active now | *Alert me anyway* · ends when the prediction no longer holds |
+| Quiet: rising back into range (#193) | "Low alerts muted while rising back into range"; Active now | *Alert me anyway* · ends when the prediction no longer holds (the rise stalls, the readings stop): it alerts at once if a low came due |
 | Side relaxed | Android: a "Low relaxed: reminders every 30 min" chip under the card; the notification's *Remind as usual*; Mac panel row; Active now | *Remind as usual* · ends back by the margin |
 | Muted + relaxed | both of the above | each exit on its own; the margin ends both |
 | All alerts muted (for a time / until you turn it off) | home control (Android) / dropdown row (Mac): "Alerts muted · 1 h 12 min left" (ticks) / "Alerts muted until you turn it off"; the `muted` pill on every card surface; the Mac menu bar; Active now | *Unmute* · *Change time* (a new length) · ends at its time (never with Never) |
@@ -214,7 +247,7 @@ on that device only:
 | Back by the margin | history "Low back in range: mute and relax ended" | — (nothing stays) |
 
 - **Unmute / Alert me anyway** (`unmute`): the side's Mute ends and whatever quiets its episode now is lifted: the
-  treatments logged so far and the falling-high mute, for the rest of the episode (a treatment logged later mutes
+  treatments logged so far and the falling-high / rising-low quiet, for the rest of the episode (a treatment logged later mutes
   again). Still matching → it alerts **at once** and the repeats count from there; back in range → nothing, and it
   alerts at once if it matches again within the episode. Nothing quiet → nothing happens.
 - **Change** = a new *Mute* on a muted side: the end becomes now + the new length (shorter or longer).
@@ -256,6 +289,7 @@ at once: no after-treatment pill, and the mute line and ring of the entries logg
   },
   "muteAfterInsulin": {"on": true, "min": 60},
   "muteFallingHigh":  {"on": true, "min": 20},
+  "muteRisingLow":    {"on": true, "min": 20},
   "muteAfterCarbs":   {"on": true, "min": 15},
   "sounds": {"pack": "quest", "kinds": {}, "shuffle": true},
   "notificationActions": {"muteMin": 30, "relaxMin": 30, "backMgdl": 10, "backMin": 10},
@@ -303,7 +337,7 @@ at once: no after-treatment pill, and the mute line and ring of the entries logg
   events, §4); `"own"` = run these rules locally on the followed readings and treatments. **Not chosen on its own**
   (round f28): it is derived from the follower's *Settings from* (`follower.settingsFrom`, spikes/settings/settings.json):
   *Wearer* → `"wearer"`, *Default* / *Custom* → `"own"`. The settings file is per device; in *Wearer* mode the follower
-  also shows the wearer's own values of each kind's `on` / threshold / `repeatMin` (not `no_data`) and the three quiet
+  also shows the wearer's own values of each kind's `on` / threshold / `repeatMin` (not `no_data`) and the four quiet
   rules, from the wearer's settings event (PROTOCOL-v2 "Settings"); *Default* runs the defaults, *Custom* this file.
 - In `"wearer"` mode a follower still checks **`no_data` locally** (it's about *its* link to the wearer, which the
   wearer can't report), with its own `no_data` settings.
@@ -429,7 +463,7 @@ settings low.repeat=5 carbs.mute=5          # on top of the defaults (§3)
   actions are expected as `follower <headline>` / `follower clear <kind>` / `follower back <side>`, compared
   apart from the wearer's (the order between the two within a minute is free); the follower's own `no_data` isn't run.
 - Settings keys: `alerts=on|off`, `<kind>=on|off|<threshold>`, `<kind>.repeat=<min>`,
-  `carbs.mute|insulin.mute|falling.mute=off|<min>`, `mute.min=<min>`, `relax.min=<min>`, `back.mgdl=<mg/dL>`,
+  `carbs.mute|insulin.mute|falling.mute|rising.mute=off|<min>`, `mute.min=<min>`, `relax.min=<min>`, `back.mgdl=<mg/dL>`,
   `back.min=<min>`, `persist.low=<min>`, `persist.high=<min>`, `persist.margin=<mg/dL>`, `night=on|off`,
   `night.from=HH:MM`, `night.to=HH:MM`, `night.<kind>=on|off|<threshold>`, `night.<kind>.repeat=<min>`,
   `escalate=off|<min>` (the wearer's), `follower.escalate=on|off` (the follower's opt-in).

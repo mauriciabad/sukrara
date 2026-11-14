@@ -24,8 +24,8 @@ enum CardAlertsMapping {
         return CardAlerts(status: status, last: last, muteEnds: ends)
     }
 
-    /// The badge: what quiets the level alert (a treatment → Taken with its time left; falling back into range →
-    /// paused for the minutes it needs; Mute of the side / Mute all → paused), else Needed; Mute all in range → muted.
+    /// The badge: what quiets the level alert (a treatment → Taken with its time left; falling / rising back into range
+    /// → paused for the minutes it needs; Mute of the side / Mute all → paused), else Needed; Mute all in range → muted.
     static func status(_ ui: AlertUIState, marks: [GraphMark], now: Date) -> AlertStatus {
         let all = ui.muteAllUntil.map { min($0.timeIntervalSince1970, AlertStatus.never) }
         guard let level = ui.active[.level] else { return all.map { .muted(until: $0) } ?? .none }
@@ -39,7 +39,7 @@ enum CardAlertsMapping {
                 return .taken(side, treatment: m, until: until.timeIntervalSince1970)
             }
             return .paused(side, until: until.timeIntervalSince1970)
-        case .fallingBack(let minutes)?:
+        case .fallingBack(let minutes)?, .risingBack(let minutes)?:
             return .paused(side, until: now.timeIntervalSince1970 + TimeInterval(max(1, minutes) * 60))
         case .sideMuted(let until)?:
             return .paused(side, until: until.timeIntervalSince1970)

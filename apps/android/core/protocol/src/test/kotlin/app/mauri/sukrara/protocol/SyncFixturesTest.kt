@@ -411,7 +411,7 @@ class SyncFixturesTest {
                "high":{"on":true,"mgdl":180,"repeatMin":30},"very_high":{"on":true,"mgdl":250,"repeatMin":15},
                "extremely_high":{"on":false,"mgdl":300,"repeatMin":0},"falling_fast":{"on":true,"rate":2.5,"repeatMin":10},
                "rising_fast":{"on":false,"rate":2.0,"repeatMin":0}},
-               "muteAfterInsulin":{"on":true,"min":60},"muteFallingHigh":{"on":false,"min":20},"muteAfterCarbs":{"on":true,"min":15},
+               "muteAfterInsulin":{"on":true,"min":60},"muteFallingHigh":{"on":false,"min":20},"muteRisingLow":{"on":false,"min":25},"muteAfterCarbs":{"on":true,"min":15},
                "persistence":{"lowMin":10,"highMin":30,"marginMgdl":5},
                "night":{"on":true,"from":1380,"to":420,"alerts":{"very_low":{"on":true,"mgdl":60,"repeatMin":5},
                "low":{"on":true,"mgdl":80,"repeatMin":10},"high":{"on":false,"mgdl":250,"repeatMin":60},

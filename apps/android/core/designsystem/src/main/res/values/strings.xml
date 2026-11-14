@@ -76,6 +76,7 @@
     <string name="mute_after_insulin_one">%1$s alerts muted after insulin · %2$s left</string>
     <string name="mute_after_insulin_other">%1$s alerts muted after insulin · %2$s left</string>
     <string name="mute_falling">%1$s alerts muted while falling back into range</string>
+    <string name="mute_rising">%1$s alerts muted while rising back into range</string>
     <string name="mute_less">%1$s reminders every %2$s</string>
     <string name="mute_all_left_one">Alerts muted · %1$s left</string>
     <string name="mute_all_left_other">Alerts muted · %1$s left</string>

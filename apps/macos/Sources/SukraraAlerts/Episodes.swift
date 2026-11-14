@@ -23,7 +23,7 @@ public struct Episode: Codable, Equatable, Sendable {
     public var quiet: QuietReason?
     /// When the next alert is due (nil = never), from the last evaluation.
     public var next: Date?
-    /// *Unmute* / *Alert me anyway* at this time: treatments logged up to then and the falling rule don't quiet it.
+    /// *Unmute* / *Alert me anyway* at this time: treatments logged up to then and the trend quiets don't quiet it.
     public var liftedAt: Date?
     /// Lifted since the last alert: the next match alerts at once.
     public var liftPending = false
@@ -58,14 +58,14 @@ public struct Episode: Codable, Equatable, Sendable {
         case .treatment(let k, let at, let until): quiet = .treatment(k, at: at, until: until.shiftedBack(d))
         case .sideMuted(let until): quiet = .sideMuted(until: until.shiftedBack(d))
         case .allMuted(let until): quiet = .allMuted(until: until.shiftedBack(d))
-        case .fallingBack, nil: break
+        case .fallingBack, .risingBack, nil: break
         }
     }
 }
 
 extension AlertEngine {
     /// What survives a relaunch (SPEC: an update must not take an ongoing alert for a new one and ring again): the open
-    /// episodes, the sides' Mute / Remind less and Mute all. Not the settings: they are stored on their own (schema key
+    /// episodes, the sides' Mute / Remind less, Mute all and the last few minutes of readings (the trend). Not the settings: they are stored on their own (schema key
     /// `alerts`, SPEC §3 JSON) and may come from the wearer.
     public struct Snapshot: Codable, Equatable, Sendable {
         public static let formatVersion = 1
@@ -79,10 +79,12 @@ extension AlertEngine {
         public var sourceDelivered: Bool?
         /// The newest time the engine saw: a later launch before it means the clock was set back meanwhile.
         public var lastNow: Date?
+        /// The last few minutes of readings: the falling / rising quiet's trend after a relaunch (#193).
+        public var recent: [GlucoseSample]?
 
         public init(
             episodes: [Episode], snoozes: SideSnoozes, muteAllUntil: Date?, sourceStart: Date? = nil,
-            sourceDelivered: Bool? = nil, lastNow: Date? = nil
+            sourceDelivered: Bool? = nil, lastNow: Date? = nil, recent: [GlucoseSample]? = nil
         ) {
             self.episodes = episodes
             self.snoozes = snoozes
@@ -90,6 +92,7 @@ extension AlertEngine {
             self.sourceStart = sourceStart
             self.sourceDelivered = sourceDelivered
             self.lastNow = lastNow
+            self.recent = recent
         }
 
         public func encoded() -> Data {
@@ -111,7 +114,8 @@ extension AlertEngine {
     public var snapshot: Snapshot {
         Snapshot(
             episodes: AlertGroup.allCases.compactMap { episodes[$0] }, snoozes: snoozes, muteAllUntil: muteAllUntil,
-            sourceStart: context.sourceStart, sourceDelivered: sourceDelivered, lastNow: clock.lastNow)
+            sourceStart: context.sourceStart, sourceDelivered: sourceDelivered, lastNow: clock.lastNow,
+            recent: recent.isEmpty ? nil : recent)
     }
 
     /// An engine back in the `snapshot` state at `t` (no evaluation, so nothing rings). A clock set back meanwhile moves
@@ -128,6 +132,7 @@ extension AlertEngine {
         }
         e.snoozes = snapshot.snoozes
         e.muteAllUntil = snapshot.muteAllUntil
+        e.recent = (snapshot.recent ?? []).sorted { $0.at < $1.at }
         var kept: [AlertGroup: Episode] = [:]
         for ep in snapshot.episodes { kept[ep.kind.group] = ep }
         e.episodes = kept

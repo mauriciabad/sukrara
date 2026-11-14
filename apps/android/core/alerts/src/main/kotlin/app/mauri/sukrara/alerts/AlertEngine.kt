@@ -27,8 +27,9 @@ sealed interface RuleAction {
  * Three groups (level, rate, no data), each with at most one [Episode] on one side. Within an episode the first
  * match alerts at once, a more severe kind of the side at once, then every `repeatMin` from the last alert (0 = once).
  * A treatment that answers it quiets it for its window and restarts the count (at once when the window ends if it
- * still matches); the falling-high mute only postpones. This device's *Mute* / *Remind less* act on a side, outlive
- * the episode and end at their time or once back by the margin; *Mute all* quiets everything until its end.
+ * still matches); the falling-high and rising-low quiets ([Trend]) only postpone. This device's *Mute* / *Remind less*
+ * act on a side, outlive the episode and end at their time or once back by the margin; *Mute all* quiets everything
+ * until its end.
  */
 class AlertEngine(
     /** The local time zone the night window is read in (SPEC §1 "Night alerts"). */
@@ -39,7 +40,7 @@ class AlertEngine(
 ) {
     /** [settings] as this run applies them at [now]: the night set inside its window, carbs and very low (#2). */
     private fun inForce(settings: AlertSettings, now: Long): AlertSettings =
-        settings.at(now, zone()).let { if (it.veryLowQuietByCarbs == wearersOwn) it else it.copy(veryLowQuietByCarbs = wearersOwn) }
+        settings.at(now, zone()).let { if (it.wearersOwn == wearersOwn) it else it.copy(wearersOwn = wearersOwn) }
 
     private val episodes = EnumMap<AlertGroup, Episode>(AlertGroup::class.java)
     private val snoozes = EnumMap<Side, Snooze>(Side::class.java)
@@ -47,6 +48,10 @@ class AlertEngine(
     var muteAllUntil: Long = 0
         private set
     var last: AlertReading? = null
+        private set
+
+    /** The readings of the last few minutes, ascending: the falling / rising quiet read their trend from them ([Trend]). */
+    var recent: List<AlertReading> = emptyList()
         private set
 
     /**
@@ -70,7 +75,10 @@ class AlertEngine(
 
     /** A stored reading newer than [last] (after a restart): no data counts from it. No evaluation: old news never alerts. */
     fun seed(r: AlertReading?) {
-        if (r != null && last.let { it == null || r.t > it.t }) last = r
+        if (r != null && last.let { it == null || r.t > it.t }) {
+            last = r
+            recent = Trend.keep(recent, r)
+        }
     }
 
     fun snapshot(): AlertMemory =
@@ -79,6 +87,7 @@ class AlertEngine(
             snoozes = snoozes.toMap(),
             muteAllUntil = muteAllUntil,
             last = last,
+            recent = recent,
             sourceStart = sourceStart,
             sourceDelivered = sourceDelivered,
         )
@@ -95,6 +104,7 @@ class AlertEngine(
         muteAllUntil = m.muteAllUntil.takeIf { it > now } ?: 0
         sourceStart = m.sourceStart
         sourceDelivered = m.sourceDelivered
+        recent = m.recent.sortedBy { it.t }
         seed(m.last)
         for ((g, e) in m.episodes) if (e.kind.group == g && now - e.lastIn < hold(e, s)) episodes[g] = e.copy()
         return episodes.values.mapNotNull { it.shown }
@@ -181,7 +191,10 @@ class AlertEngine(
      * sensor or phone clock ahead) counts as taken now: otherwise it would hide every reading until the clock caught up.
      */
     fun reading(r: AlertReading, s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
-        seed(r.notAfter(now))
+        val at = r.notAfter(now)
+        // an older one (a late or backfilled reading) still fills the trend's window
+        recent = Trend.keep(recent, at)
+        seed(at)
         sourceDelivered = true
         return evaluate(s, d, now)
     }
@@ -205,6 +218,7 @@ class AlertEngine(
         snoozes.replaceAll { _, sn -> sn.copy(until = sn.until.shiftedBack(delta), backSince = sn.backSince.shiftedBack(delta)) }
         muteAllUntil = muteAllUntil.shiftedBack(delta)
         last = last?.let { it.copy(t = it.t - delta) }
+        recent = recent.map { it.copy(t = it.t - delta) }
         sourceStart = sourceStart.shiftedBack(delta)
     }
 
@@ -280,6 +294,10 @@ class AlertEngine(
         if (r != null) c += r.t + Rules.FRESH_S + 1 // level/rate alerts end when the reading goes stale
         sensor?.let { if (it.warming(r?.t, now)) c += it.warmupEndEpoch + SensorWindow.WARMUP_GRACE_S }
         for (e in episodes.values) if (e.on && e.next != Long.MAX_VALUE) c += e.next
+        // a trend quiet ends once the newest reading is too old for a trend: a held alert comes then without readings
+        if (episodes.values.any { it.on && it.quiet.let { q -> q == EpisodeQuiet.FALLING || q == EpisodeQuiet.RISING } }) {
+            recent.lastOrNull()?.let { c += it.t + Trend.MAX_AGE_S + 1 }
+        }
         for (sn in snoozes.values) {
             if (sn.until > now) c += sn.until
             if (sn.backSince > 0) c += sn.backSince + s.actions.backMin * 60L
@@ -340,7 +358,8 @@ class AlertEngine(
         val treatmentQuiet =
             when {
                 cover != null -> EpisodeQuiet.TREATMENT
-                ep.lifted == 0L && Rules.fallingBackIntoRange(want, last, s) -> EpisodeQuiet.FALLING
+                ep.lifted == 0L && Rules.fallingBackIntoRange(want, recent, s, now) -> EpisodeQuiet.FALLING
+                ep.lifted == 0L && risingHolds(ep, want, s, now) -> EpisodeQuiet.RISING
                 else -> null
             }
         if (treatmentQuiet != null) {
@@ -378,6 +397,14 @@ class AlertEngine(
         ep.next = due(ep, want, s, d, now)
         out += RuleAction.Fire(firing)
     }
+
+    /**
+     * The rise back into range holds [want] in [e] (SPEC §2 `muteRisingLow`, #193): any low alert; a very low only once a
+     * very low has alerted in the episode (never its first alert, nor the escalation from low to very low).
+     */
+    private fun risingHolds(e: Episode, want: AlertKind, s: AlertSettings, now: Long): Boolean =
+        (want != AlertKind.VERY_LOW || (e.firedAt != null && e.firedKind == AlertKind.VERY_LOW)) &&
+            Rules.risingBackIntoRange(want, recent, s, now)
 
     /** When [e] alerts next for [k] (see the class comment). */
     private fun due(e: Episode, k: AlertKind, s: AlertSettings, d: Doses, now: Long): Long {

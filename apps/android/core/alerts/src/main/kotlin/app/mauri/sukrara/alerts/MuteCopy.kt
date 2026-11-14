@@ -18,6 +18,9 @@ sealed interface MuteLine {
     /** "High alerts muted while falling back into range". */
     data class SideFalling(val side: Side) : MuteLine
 
+    /** "Low alerts muted while rising back into range" (#193). */
+    data class SideRising(val side: Side) : MuteLine
+
     /** "Low reminders every 30 min". */
     data class SideLess(val side: Side, val intervalMin: Int) : MuteLine
 
@@ -66,6 +69,7 @@ object MuteCopy {
             QuietReason.CARBS -> MuteLine.SideAfter(q.kind.side, TreatmentKind.CARBS, leftMin(q.until, now))
             QuietReason.INSULIN -> MuteLine.SideAfter(q.kind.side, TreatmentKind.RAPID, leftMin(q.until, now))
             QuietReason.FALLING -> MuteLine.SideFalling(q.kind.side)
+            QuietReason.RISING -> MuteLine.SideRising(q.kind.side)
             null -> MuteLine.SideLess(q.kind.side, q.relaxMin)
         }
 

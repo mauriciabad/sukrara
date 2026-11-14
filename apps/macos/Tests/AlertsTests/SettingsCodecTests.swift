@@ -15,7 +15,7 @@ import Testing
         "extremely_high":{"on":true,"mgdl":300,"repeatMin":5,"alarm":true},
         "falling_fast":{"on":false,"rate":2.0,"repeatMin":30},"rising_fast":{"on":false,"rate":2.0,"repeatMin":30},
         "no_data":{"on":true,"min":20,"repeatMin":60}},"muteAfterInsulin":{"on":true,"min":60},
-        "muteFallingHigh":{"on":true,"min":20},"muteAfterCarbs":{"on":true,"min":15},
+        "muteFallingHigh":{"on":true,"min":20},"muteRisingLow":{"on":true,"min":20},"muteAfterCarbs":{"on":true,"min":15},
         "sounds":{"pack":"quest","kinds":{},"shuffle":true},
         "notificationActions":{"muteMin":30,"relaxMin":30,"backMgdl":10,"backMin":10},"source":"wearer"}
         """
@@ -51,6 +51,7 @@ import Testing
         #expect(s[.noData] == AlertRule(on: true, threshold: 20, repeatMin: 60))
         #expect(s.muteAfterInsulin == QuietRule(on: true, min: 60))
         #expect(s.muteFallingHigh == QuietRule(on: true, min: 20))
+        #expect(s.muteRisingLow == QuietRule(on: true, min: 20))
         #expect(s.muteAfterCarbs == QuietRule(on: true, min: 15))
         #expect(s.sounds == AlertSoundSettings(pack: "quest", kinds: [:], shuffle: true))
         #expect(
@@ -156,7 +157,7 @@ import Testing
         let out = try #require(try JSONSerialization.jsonObject(with: AlertSettings().encoded()) as? [String: Any])
         #expect(
             Set(out.keys) == [
-                "v", "on", "alerts", "muteAfterInsulin", "muteFallingHigh", "muteAfterCarbs", "sounds",
+                "v", "on", "alerts", "muteAfterInsulin", "muteFallingHigh", "muteRisingLow", "muteAfterCarbs", "sounds",
                 "notificationActions", "persistence", "night", "escalation", "source",
             ])
         let alerts = try #require(out["alerts"] as? [String: [String: Any]])

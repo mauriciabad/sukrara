@@ -265,6 +265,12 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 ## Q8 Alerts on a device
 
 - [ ] New/changed rule: a scenario in `contracts/alerts/scenarios` covers it (the checks enforce this).
+- [ ] Quiet while heading back into range (#193): emulator `SYNTHETIC --ei cycle 135` (the trough now): *Very low
+      glucose* rings; about 10 min later, rising, its repeat doesn't come and Active now / the home sheet say *Low
+      alerts muted while rising back into range* with **Alert me anyway** (es *… mientras sube hacia el rango*);
+      `SYNTHETIC --ez frozen true`: within 2.5 min of the last reading the low that came due rings at once. Settings ›
+      Alerts: *Quiet highs falling back into range* and *Quiet lows rising back into range* side by side, each with *Back
+      in range within*; off → the repeats come every 5 min. Mac Settings › Alerts › Quiet times shows the same pair.
 - [ ] Emulator: `SYNTHETIC --ei cycle 135` (45 mg/dL now) and `--ei cycle 45` (215 mg/dL): real alerts through the
       rules; notification text, channel, sound, repeat.
 - [ ] Grouping (Android 16 / 17 emulators, chip on and off): `SYNTHETIC --ez on true --ei warmupMin 10` + `ALERTS --es

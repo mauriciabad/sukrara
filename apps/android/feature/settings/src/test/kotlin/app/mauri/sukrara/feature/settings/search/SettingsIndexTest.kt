@@ -451,7 +451,7 @@ class SettingsIndexTest {
             .mapValues { it.value.toSet() }
 
     /**
-     * #181: a result names where its row is ("Alerts › Quiet after treatments"): every entry's group is the group its
+     * #181: a result names where its row is ("Alerts › Quiet times"): every entry's group is the group its
      * row is in on the page (a group's title as a result: that group).
      */
     @Test

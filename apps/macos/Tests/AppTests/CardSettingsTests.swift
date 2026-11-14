@@ -113,6 +113,12 @@ import Testing
         #expect(CardAlertsMapping.status(high, marks: [], now: now) == .paused(.high, until: t + 720))
     }
 
+    @Test func risingBackIsAPausedPill() {
+        var low = AlertUIState.idle
+        low.active[.level] = .init(kind: .low, quiet: .risingBack(inMinutes: 6), firedAt: now, n: 1)
+        #expect(CardAlertsMapping.status(low, marks: [], now: now) == .paused(.low, until: t + 360))
+    }
+
     @Test func mirroringShowsTakenNeededAndPaused() {
         let carbs = treatment("c1", .carbs, 20, minutesAgo: 5)
         let marks = CardAlertsMapping.marks([carbs])

@@ -1,20 +1,104 @@
 # Falling-high mute, rate alerts, no data (format: SPEC.md §7)
 
-scenario Falling back into range quiets a high; it only postpones the repeat
- 0  glucose 200          => High glucose
- 2  glucose 195 rate -1  => clear high   # 195 − 20 = 175: under 180 within 20 min
- 3  glucose 200                          # flat again: the repeat stays due at 15
-15                       => High glucose
-16
+scenario Falling back into range quiets a high; it only postpones the repeat  # the trend from the readings (#193)
+ 0  glucose 200  => High glucose
+ 1  glucose 199
+ 2  glucose 198
+ 3  glucose 197  => clear high   # 200 199 198 197: a clear fall, 197 − 1 × 20 = 177: under 180 within 20 min
+ 4  glucose 196
+ 5  glucose 195
+ 6  glucose 194
+ 7  glucose 193
+ 8  glucose 192
+ 9  glucose 191
+10  glucose 190
+11  glucose 189
+12  glucose 188
+13  glucose 187
+14  glucose 186
+15  glucose 185                 # the repeat came due at 15: still falling, it waits
+16                    # the fall stops at 185 (16: still beyond 187 two minutes before)
+17               => High glucose   # stalled: 185 isn't below 185 two minutes before, the repeat due since 15 comes at once
+18
 
 scenario A fall that doesn't get back into range in 20 min doesn't quiet the high
- 0  glucose 240 rate -1  => High glucose
- 1
+ 0  glucose 240  => High glucose
+ 1  glucose 239
+ 2  glucose 238
+ 3  glucose 237
+ 4  glucose 236
+ 5  glucose 235
+ 6  glucose 234
+ 7  glucose 233
+ 8  glucose 232
+ 9  glucose 231
+10  glucose 230
+11  glucose 229
+12  glucose 228
+13  glucose 227
+14  glucose 226
+15  glucose 225  => High glucose   # 225 − 1 × 20 = 205: still high
+16
 
 scenario Falling-high mute off
 settings falling.mute=off
- 0  glucose 195 rate -1  => High glucose
- 1
+ 0  glucose 200  => High glucose
+ 1  glucose 199
+ 2  glucose 198
+ 3  glucose 197
+ 4  glucose 196
+ 5  glucose 195
+ 6  glucose 194
+ 7  glucose 193
+ 8  glucose 192
+ 9  glucose 191
+10  glucose 190
+11  glucose 189
+12  glucose 188
+13  glucose 187
+14  glucose 186
+15  glucose 185  => High glucose
+16
+
+scenario The sensor's rate lags behind a fall: the readings quiet the high while the rate still says rising  # #193
+ 0  glucose 200 rate 0.5  => High glucose
+ 1  glucose 199 rate 0.5
+ 2  glucose 198 rate 0.5
+ 3  glucose 197 rate 0.5  => clear high   # a clear fall in the readings; the rate still +0.5
+ 4  glucose 196 rate 0.5
+ 5  glucose 195 rate 0.5
+ 6  glucose 194 rate 0.5
+ 7  glucose 193 rate 0.5
+ 8  glucose 192 rate 0.5
+ 9  glucose 191 rate 0.5
+10  glucose 190 rate 0.5
+11  glucose 189 rate 0.5
+12  glucose 188 rate 0.5
+13  glucose 187 rate 0.5
+14  glucose 186 rate 0.5
+15  glucose 185 rate 0.5   # the repeat due at 15 waits (with the rate it came)
+16  glucose 184 rate 0.5
+17  glucose 183 rate 0.5
+18  glucose 182 rate 0.5
+19  glucose 181 rate 0.5
+20  glucose 179 rate -1                # back in range: nothing
+21
+
+scenario A fall that stops above range alerts at once, though the sensor's rate still says falling  # #193
+ 0  glucose 200 rate 0  => High glucose
+ 1  glucose 199 rate -1
+ 2  glucose 198 rate -1
+ 3  glucose 197 rate -1  => clear high
+ 4  glucose 196 rate -1
+ 5  glucose 195 rate -1
+ 6  glucose 194 rate -1
+ 7  glucose 193 rate -1
+ 8  glucose 192 rate -1
+ 9  glucose 191 rate -1
+10  glucose 190 rate -1
+12                     # 190 since 10, the rate still −1 (with the rate it stayed quiet until the rate caught up)
+15                     => High glucose   # the fall stopped at 190: the repeat comes on time
+16
 
 scenario Rate alerts are off by default
  0  glucose 120 rate -3

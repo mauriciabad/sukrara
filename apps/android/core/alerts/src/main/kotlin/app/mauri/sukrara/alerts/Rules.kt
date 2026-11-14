@@ -102,14 +102,39 @@ object Rules {
     }
 
     /**
-     * [kind] is a high that the current fall brings below the high threshold within the falling-high window
-     * (`rate < 0` and `mgdl + rate × min < high`, SPEC §2 `muteFallingHigh`).
+     * [kind] is a high that the readings' clear fall ([Trend], never the sensor's lagging rate) brings below the high
+     * threshold within the falling-high window: `newest + slope × min < high` (SPEC §2 `muteFallingHigh`). [recent]:
+     * this engine's readings, ascending.
      */
-    fun fallingBackIntoRange(kind: AlertKind, r: AlertReading?, s: AlertSettings): Boolean {
-        val rate = r?.rate ?: return false
-        // a HI's real value is unknown: no prediction from it
-        if (r.isHi || !s.fallingHigh.on || kind !in AlertKind.FALLING_MUTABLE || rate >= 0) return false
-        return r.mgdl + rate * s.fallingHigh.min < s.rule(AlertKind.HIGH).threshold
+    fun fallingBackIntoRange(
+        kind: AlertKind,
+        recent: List<AlertReading>,
+        s: AlertSettings,
+        now: Long,
+    ): Boolean {
+        if (!s.fallingHigh.on || kind !in AlertKind.FALLING_MUTABLE) return false
+        val slope = Trend.clear(recent, now, up = false) ?: return false
+        return recent.last().mgdl + slope * s.fallingHigh.min < s.rule(AlertKind.HIGH).threshold
+    }
+
+    /**
+     * [kind] is a low that the readings' clear rise brings back into range within the rising-low window (SPEC §2
+     * `muteRisingLow`, #193): `newest + slope × min` matches no enabled low kind (at least the low threshold, or above
+     * very low's when low is off). Low on every device that runs the rules; very low only on the wearer's own phone,
+     * and only its repeats ([AlertEngine] keeps its first alert and the escalation to it).
+     */
+    fun risingBackIntoRange(
+        kind: AlertKind,
+        recent: List<AlertReading>,
+        s: AlertSettings,
+        now: Long,
+    ): Boolean {
+        if (!s.risingLow.on || !(kind == AlertKind.LOW || (kind == AlertKind.VERY_LOW && s.wearersOwn))) return false
+        val slope = Trend.clear(recent, now, up = true) ?: return false
+        val predicted = recent.last().mgdl + slope * s.risingLow.min
+        return AlertKind.entries
+            .filter { it.side == Side.LOW && s.rule(it).on }
+            .none { it.reaches(predicted, s.rule(it).threshold) }
     }
 
     /**

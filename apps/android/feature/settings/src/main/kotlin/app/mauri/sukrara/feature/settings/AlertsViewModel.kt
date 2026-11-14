@@ -39,8 +39,16 @@ data class AlertsUi(
         alerts.quiet.firstOrNull { q -> AlertKind.entries.firstOrNull { it.wire == q.kind }?.side == kind.side }
 }
 
-/** The three quiet rules (SPEC §2) as the pages name them. */
-enum class QuietKind { AfterInsulin, AfterCarbs, FallingHigh }
+/**
+ * The quiet rules (SPEC §2) as the pages name them, in the page's order: the two after a treatment, then the pair that
+ * follow the readings back into range ([byTrend]: their minutes are "Back in range within").
+ */
+enum class QuietKind(val byTrend: Boolean) {
+    AfterInsulin(false),
+    AfterCarbs(false),
+    FallingHigh(true),
+    RisingLow(true),
+}
 
 /** Edits of the alert settings, pure (tested without Android). */
 object AlertEdits {
@@ -97,6 +105,7 @@ object AlertEdits {
             QuietKind.AfterInsulin -> s.copy(afterInsulin = transform(s.afterInsulin))
             QuietKind.AfterCarbs -> s.copy(afterCarbs = transform(s.afterCarbs))
             QuietKind.FallingHigh -> s.copy(fallingHigh = transform(s.fallingHigh))
+            QuietKind.RisingLow -> s.copy(risingLow = transform(s.risingLow))
         }
     }
 
@@ -108,6 +117,7 @@ object AlertEdits {
             QuietKind.AfterInsulin -> s.afterInsulin
             QuietKind.AfterCarbs -> s.afterCarbs
             QuietKind.FallingHigh -> s.fallingHigh
+            QuietKind.RisingLow -> s.risingLow
         }
 
     fun quietSpecId(which: QuietKind): String =
@@ -115,6 +125,7 @@ object AlertEdits {
             QuietKind.AfterInsulin -> "alerts.muteAfterInsulin.min"
             QuietKind.AfterCarbs -> "alerts.muteAfterCarbs.min"
             QuietKind.FallingHigh -> "alerts.muteFallingHigh.min"
+            QuietKind.RisingLow -> "alerts.muteRisingLow.min"
         }
 }
 

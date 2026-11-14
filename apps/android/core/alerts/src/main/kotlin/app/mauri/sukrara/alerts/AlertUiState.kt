@@ -4,7 +4,7 @@
 package app.mauri.sukrara.alerts
 
 /** Why a side is quiet (SPEC §2 "States and exits"). */
-enum class QuietReason { NOTIFICATION, CARBS, INSULIN, FALLING }
+enum class QuietReason { NOTIFICATION, CARBS, INSULIN, FALLING, RISING }
 
 /**
  * A side the user can act on now (quiet or relaxed), for the home sheet, Active now and the muted notification:
@@ -83,10 +83,13 @@ data class AlertUiState(
                             QuietReason.NOTIFICATION to muteEnd
                         }
 
-                        // quiet only because of Mute all is Mute all's state, not a falling mute to "Alert me anyway" out of
-                        e.on && e.quiet != null && (allMuted == 0L || Rules.fallingBackIntoRange(e.kind, engine.last, s)) -> {
-                            QuietReason.FALLING to
-                                0L
+                        // the trend quiets (no end of their own); quiet only because of Mute all is Mute all's state
+                        e.on && e.quiet == EpisodeQuiet.FALLING -> {
+                            QuietReason.FALLING to 0L
+                        }
+
+                        e.on && e.quiet == EpisodeQuiet.RISING -> {
+                            QuietReason.RISING to 0L
                         }
 
                         else -> {

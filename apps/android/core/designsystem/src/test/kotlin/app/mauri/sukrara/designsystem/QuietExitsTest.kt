@@ -32,7 +32,12 @@ class QuietExitsTest {
     }
 
     @Test fun aTreatmentOrFallingQuietHasAlertMeAnywayAndNoLengths() {
-        for (r in listOf(AlertQuietReason.AfterCarbs, AlertQuietReason.AfterInsulin, AlertQuietReason.FallingBack)) {
+        for (r in listOf(
+            AlertQuietReason.AfterCarbs,
+            AlertQuietReason.AfterInsulin,
+            AlertQuietReason.FallingBack,
+            AlertQuietReason.RisingBack,
+        )) {
             val q = side("high", r)
             assertEquals(listOf(QuietExit.AlertAnyway), QuietExits.of(q))
             assertTrue(QuietExits.changeTo(q).isEmpty())

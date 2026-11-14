@@ -14,7 +14,7 @@ import java.time.ZonedDateTime
  */
 data class KindRule(val on: Boolean, val threshold: Double, val repeatMin: Int, val alarm: Boolean = false)
 
-/** A treatment / falling-high quiet rule (SPEC §2): on, and its window in minutes. */
+/** A treatment quiet rule, or a falling-high / rising-low one (SPEC §2): on, and its window in minutes. */
 data class QuietRule(val on: Boolean, val min: Int)
 
 /** SPEC §3 `sounds`: the pack every kind uses, per-kind overrides, a random variant each time. */
@@ -116,6 +116,8 @@ data class AlertSettings(
     val rules: Map<AlertKind, KindRule> = DEFAULT_RULES,
     val afterInsulin: QuietRule = QuietRule(on = true, min = 60),
     val fallingHigh: QuietRule = QuietRule(on = true, min = 20),
+    /** #193: lows quiet while the readings rise back into range within [QuietRule.min] (SPEC §2 `muteRisingLow`). */
+    val risingLow: QuietRule = QuietRule(on = true, min = 20),
     val afterCarbs: QuietRule = QuietRule(on = true, min = 15),
     val sounds: SoundSettings = SoundSettings(),
     val actions: NotificationActions = NotificationActions(),
@@ -124,10 +126,11 @@ data class AlertSettings(
     val escalation: Escalation = Escalation(),
     val source: AlertSource = AlertSource.WEARER,
     /**
-     * A fact of the device running the rules, never stored: carbs may quiet very low only on the wearer's own phone
-     * (#2, SPEC §2); its run for the followers, every follower and the Mac keep alerting on very low.
+     * A fact of the device running the rules, never stored: this is the wearer's own phone's run. Only there may carbs
+     * (#2) and a rise back into range (#193) quiet very low (SPEC §2); its run for the followers, every follower and the
+     * Mac keep alerting on very low.
      */
-    val veryLowQuietByCarbs: Boolean = true,
+    val wearersOwn: Boolean = true,
 ) {
     fun rule(kind: AlertKind): KindRule = rules[kind] ?: DEFAULT_RULES.getValue(kind)
 
@@ -147,7 +150,7 @@ data class AlertSettings(
     fun mutedBy(kind: AlertKind): TreatmentKind? =
         when {
             kind == AlertKind.EXTREMELY_HIGH -> null
-            kind == AlertKind.VERY_LOW && !veryLowQuietByCarbs -> null
+            kind == AlertKind.VERY_LOW && !wearersOwn -> null
             kind.answeredBy == TreatmentKind.CARBS -> TreatmentKind.CARBS.takeIf { afterCarbs.on }
             kind.answeredBy == TreatmentKind.RAPID -> TreatmentKind.RAPID.takeIf { afterInsulin.on }
             else -> null

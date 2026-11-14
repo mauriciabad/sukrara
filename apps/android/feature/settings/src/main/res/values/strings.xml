@@ -24,10 +24,13 @@
     <string name="st_review_intro">These are the values that will alert you. Check each one; tap a row to change it. Nothing is saved until you tap Use these thresholds.</string>
     <string name="st_review_off">Off (%1$s)</string>
     <string name="st_review_confirm">Use these thresholds</string>
-    <string name="st_quiet_title">Quiet after treatments</string>
+    <string name="st_quiet_title">Quiet times</string>
     <string name="st_quiet_insulin">Quiet highs after insulin</string>
     <string name="st_quiet_carbs">Quiet lows after carbs</string>
-    <string name="st_quiet_falling">Quiet highs while falling back</string>
+    <string name="st_quiet_falling">Quiet highs falling back into range</string>
+    <string name="st_quiet_rising">Quiet lows rising back into range</string>
+    <string name="st_quiet_within">Back in range within</string>
+    <string name="st_quiet_within_summary">Back in range within %1$s</string>
     <string name="st_quiet_for">For %1$s</string>
     <string name="st_quiet_length">How long</string>
     <string name="st_wait_title">Near a threshold</string>

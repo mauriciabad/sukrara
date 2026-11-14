@@ -621,6 +621,7 @@ class AlertRuntime(
                                     QuietReason.CARBS -> AlertQuietReason.AfterCarbs
                                     QuietReason.INSULIN -> AlertQuietReason.AfterInsulin
                                     QuietReason.FALLING -> AlertQuietReason.FallingBack
+                                    QuietReason.RISING -> AlertQuietReason.RisingBack
                                     null -> null
                                 },
                             until = q.until.takeIf { it in 1 until Rules.NEVER }?.let(Instant::ofEpochSecond),

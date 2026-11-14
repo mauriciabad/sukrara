@@ -8,6 +8,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -102,13 +103,18 @@ fun kindIcon(kind: AlertKind): Int =
         AlertKind.NO_DATA -> DsR.drawable.ds_ic_no_data
     }
 
-/** The quiet rules' icons: insulin, carbs, a falling trend. */
+/** A quiet rule's minutes: "How long" after a treatment, "Back in range within" for the falling / rising pair. */
+@StringRes
+fun quietLengthTitle(which: QuietKind): Int = if (which.byTrend) R.string.st_quiet_within else R.string.st_quiet_length
+
+/** The quiet rules' icons: insulin, carbs, a falling trend, a rising one. */
 @DrawableRes
 fun quietIcon(which: QuietKind): Int =
     when (which) {
         QuietKind.AfterInsulin -> DsR.drawable.ds_ic_dia_insulin_rapid
         QuietKind.AfterCarbs -> DsR.drawable.ds_ic_dia_carbs
         QuietKind.FallingHigh -> DsR.drawable.ds_ic_trending_down
+        QuietKind.RisingLow -> DsR.drawable.ds_ic_trending_up
     }
 
 /** An alert kind's name ("Very low", "No data"). */

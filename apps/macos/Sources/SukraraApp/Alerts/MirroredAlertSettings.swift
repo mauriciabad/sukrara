@@ -35,6 +35,7 @@ extension AlertSettings {
         }
         quiet(&s.muteAfterInsulin, "muteAfterInsulin")
         quiet(&s.muteFallingHigh, "muteFallingHigh")
+        quiet(&s.muteRisingLow, "muteRisingLow")
         quiet(&s.muteAfterCarbs, "muteAfterCarbs")
         if let v = wearer.number("alerts.persistence.lowMin") { s.persistence.lowMin = Int(v) }
         if let v = wearer.number("alerts.persistence.highMin") { s.persistence.highMin = Int(v) }
@@ -71,6 +72,7 @@ extension AlertSettings {
         }
         s.muteAfterInsulin = d.muteAfterInsulin
         s.muteFallingHigh = d.muteFallingHigh
+        s.muteRisingLow = d.muteRisingLow
         s.muteAfterCarbs = d.muteAfterCarbs
         s.persistence = d.persistence
         s.night.on = d.night.on

@@ -38,6 +38,7 @@ object AlertSettingsCodec {
             put("alerts", rulesJson(s::rule))
             putQuiet("muteAfterInsulin", s.afterInsulin)
             putQuiet("muteFallingHigh", s.fallingHigh)
+            putQuiet("muteRisingLow", s.risingLow)
             putQuiet("muteAfterCarbs", s.afterCarbs)
             putJsonObject("sounds") {
                 put("pack", s.sounds.pack)
@@ -86,6 +87,7 @@ object AlertSettingsCodec {
             rules = rules,
             afterInsulin = j.quiet("muteAfterInsulin", d.afterInsulin, AlertLimits.MUTE_INSULIN),
             fallingHigh = j.quiet("muteFallingHigh", d.fallingHigh, AlertLimits.MUTE_FALLING),
+            risingLow = j.quiet("muteRisingLow", d.risingLow, AlertLimits.MUTE_RISING),
             afterCarbs = j.quiet("muteAfterCarbs", d.afterCarbs, AlertLimits.MUTE_CARBS),
             sounds =
                 SoundSettings(

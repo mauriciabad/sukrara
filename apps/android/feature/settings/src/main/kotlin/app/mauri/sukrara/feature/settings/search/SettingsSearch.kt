@@ -57,7 +57,7 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * A [SearchEntry] with its words in the current language: [where] is its breadcrumb (the pages down to the row, then
- * its group: "Alerts › Quiet after treatments"; "Settings" for the overview's rows), [highlight] the row the opened page
+ * its group: "Alerts › Quiet times"; "Settings" for the overview's rows), [highlight] the row the opened page
  * flashes (null: the result is a page, opened at its top), [depth] how deep the row is (shallower first), [path] the
  * pages a page result opens through, [section] whose icon the result shows.
  */
@@ -179,7 +179,7 @@ const val SEARCH_RESULTS_TAG = "settings-search-results"
  * Expressive's contained SearchBar) opens the full-screen search (ExpandedFullScreenContainedSearchBar) with its back
  * arrow. Empty, it lists the [recent] searches (tap = search it again; *Clear* forgets them). Typing lists every row
  * this phone and build show ([pens], [wearer], [build]) that matches, as SPA rows: the icon of its section, the title,
- * the summary and where it is ("Alerts › Quiet after treatments", in the accent colour). A result closes the search and
+ * the summary and where it is ("Alerts › Quiet times", in the accent colour). A result closes the search and
  * opens its page through the pages above it, as the menus do ([onOpen] gets that path, Back walks up it; another
  * feature's page: [onOpenOther]), scrolled to its row, which flashes ([SettingsHighlight]); a result that is a page
  * opens it at its top. Every search starts empty. Exits: the back arrow, Back, the ×, opening a result. [initialQuery]:

@@ -55,8 +55,14 @@ struct AlertsRangesPane: View {
             }
             Section(L10n.t("Quiet times")) {
                 quiet(L10n.t("Quiet after insulin"), \.muteAfterInsulin, "alerts.muteAfterInsulin.min")
-                quiet(L10n.t("Quiet while a high falls"), \.muteFallingHigh, "alerts.muteFallingHigh.min")
                 quiet(L10n.t("Quiet after carbs"), \.muteAfterCarbs, "alerts.muteAfterCarbs.min")
+                // the pair that follow the readings back into range (#193): their minutes are a prediction's
+                quiet(
+                    L10n.t("Quiet highs falling back into range"), \.muteFallingHigh, "alerts.muteFallingHigh.min",
+                    minutes: L10n.t("Back in range within"))
+                quiet(
+                    L10n.t("Quiet lows rising back into range"), \.muteRisingLow, "alerts.muteRisingLow.min",
+                    minutes: L10n.t("Back in range within"))
             }
             Section {
                 waitRow(L10n.t("Low alerts wait"), SettingsSpec.persistLow, \.lowMin)
@@ -267,10 +273,14 @@ struct AlertsRangesPane: View {
         }
     }
 
-    private func quiet(_ label: String, _ path: WritableKeyPath<AlertSettings, QuietRule>, _ id: String) -> some View {
+    private func quiet(
+        _ label: String, _ path: WritableKeyPath<AlertSettings, QuietRule>, _ id: String,
+        minutes: String = L10n.t("For")
+    ) -> some View {
         let name = SettingsSpec.settings.first { $0.id == id }?.number ?? ""
         let rule = model.shownAlerts[keyPath: path]
         let on = Binding(get: { rule.on }, set: { v in model.alerts.update { $0[keyPath: path].on = v } })
+        let minutesLabel = minutes
         let minutes = Binding(get: { rule.min }, set: { v in model.alerts.update { $0[keyPath: path].min = v } })
         return VStack(alignment: .leading) {
             if model.alertsMirrored {
@@ -281,7 +291,7 @@ struct AlertsRangesPane: View {
                 Toggle(label, isOn: on)
             }
             if let format = SettingsSpec.numbers[name], rule.on {
-                NumberSettingRow(label: L10n.t("For"), format: format, value: minutes, readOnly: model.alertsMirrored)
+                NumberSettingRow(label: minutesLabel, format: format, value: minutes, readOnly: model.alertsMirrored)
             }
         }
     }

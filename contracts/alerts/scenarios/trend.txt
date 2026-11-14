@@ -1,0 +1,271 @@
+# The rising-low quiet (#193, SPEC §2 `muteRisingLow`) and the trend from the readings both trend quiets read
+# (SPEC §2 "Trend from the readings"); the falling-high side is in other.txt. Format: SPEC.md §7. A reading a minute.
+
+scenario A low rising back into range: its repeat waits, and it is in range before it comes  # #193
+ 0  glucose 60                        => Low glucose
+ 1  glucose 61
+ 2  glucose 62
+ 3  glucose 63                        => clear low                      # 60 61 62 63: a clear rise, 63 + 1 × 20 = 83: back by 70 within 20 min
+ 4  glucose 64
+ 5  glucose 65                                                          # the repeat came due: it waits
+ 6  glucose 66
+ 7  glucose 67
+ 8  glucose 68
+ 9  glucose 69
+10  glucose 70                                                          # 70: in range
+15
+
+scenario The same rise with the rising-low quiet off: the low repeats as before  # #193
+settings rising.mute=off
+ 0  glucose 60                        => Low glucose
+ 1  glucose 61
+ 2  glucose 62
+ 3  glucose 63
+ 4  glucose 64
+ 5  glucose 65                        => Low glucose
+ 6  glucose 66
+ 7  glucose 67
+ 8  glucose 68
+ 9  glucose 69
+10  glucose 70                        => clear low                      # in range
+15
+
+scenario Flat at 54: nothing rises, the very low repeats as usual  # #193
+ 0  glucose 54                        => Very low glucose
+ 5                                    => Very low glucose
+10                                    => Very low glucose
+11
+
+scenario A rise that stalls while still low: the low that came due alerts at once  # #193
+ 0  glucose 58                        => Low glucose
+ 1  glucose 59
+ 2  glucose 60
+ 3  glucose 61                        => clear low
+ 4  glucose 62
+ 5  glucose 63                                                          # the repeat came due: still rising, it waits
+ 6  glucose 64
+ 7                                                                      # 64 again: still above 62 two minutes before
+ 8                                    => Low glucose                    # stalled: 64 isn't above 64 two minutes before; due since 5: at once
+13                                    => Low glucose                    # flat: every 5 min from the last alert
+14
+
+scenario A slow drift up (a third of a mg/dL a minute) isn't a clear rise: the low repeats  # #193
+ 0  glucose 60                        => Low glucose
+ 3  glucose 61
+ 5                                    => Low glucose
+ 6  glucose 62
+ 9  glucose 63
+10                                    => Low glucose
+12  glucose 64
+15  glucose 65                        => Low glucose
+16
+
+scenario A rise that won't be back in range within the setting's minutes doesn't hold the low, until it will  # #193
+settings rising.mute=5
+ 0  glucose 58                        => Low glucose
+ 1  glucose 59
+ 2  glucose 60
+ 3  glucose 61
+ 4  glucose 62
+ 5  glucose 63                        => Low glucose                    # 63 + 1 × 5 = 68: not back by 70 within 5 min
+ 6  glucose 64
+ 7  glucose 65                        => clear low                      # 65 + 1 × 5 = 70: back in time
+ 8  glucose 66
+ 9  glucose 67
+10  glucose 68                                                          # the repeat came due: it waits
+11  glucose 69
+12  glucose 70                                                          # 70: in range
+13
+
+scenario Noisy up-and-down readings are no trend, though they drift up: the low repeats  # #193
+ 0  glucose 60                        => Low glucose
+ 1  glucose 64
+ 2  glucose 61
+ 3  glucose 65
+ 4  glucose 62
+ 5  glucose 66                        => Low glucose
+ 6  glucose 63
+ 7  glucose 67
+ 8  glucose 64
+ 9  glucose 68
+10  glucose 65                        => Low glucose
+11
+
+scenario The readings stop while a low waits: it alerts 2.5 min after the last one; after the gap 4 readings again  # #193
+ 0  glucose 58                        => Low glucose
+ 1  glucose 60
+ 2  glucose 62
+ 3  glucose 64                        => clear low
+ 4  sensor off                                                          # the last reading was at 3:00
+ 5                                    => Low glucose                    # due since 5:00, held until 5:31: the trend's newest reading is too old
+ 6  sensor on, glucose 66                                               # 62 64 · 66: a gap in the window, no trend
+ 7  glucose 67
+ 8  glucose 68
+ 9  glucose 69                        => clear low                      # 66 67 68 69: a clear rise again
+10  glucose 70                                                          # in range
+12
+
+scenario A LO inside the window is no trend: the low comes as usual  # #193
+ 0  glucose 50                        => Very low glucose
+ 1  glucose 39                                                          # LO: the same very low
+ 2  glucose 52
+ 3  glucose 56                        => clear very_low                 # low now
+ 4  glucose 60
+ 5  glucose 64                        => Low glucose                    # due: 39 52 56 60 64 has a LO
+ 6  glucose 68                        => clear low                      # the LO left the window: 52 56 60 64 68 rise back into range
+ 7  glucose 72
+ 8
+
+scenario Readings that arrive 3 min late are no trend: the low comes as usual  # #193
+ 0  glucose 58 age 3                  => Low glucose
+ 1  glucose 60 age 3
+ 2  glucose 62 age 3
+ 3  glucose 64 age 3
+ 4  glucose 66 age 3
+ 5  glucose 68 age 3                  => Low glucose                    # the newest reading is 3 min old
+ 6
+
+scenario The clock set back an hour during a rise: the readings move with it, the low still waits  # #193
+ 0  glucose 60                        => Low glucose
+ 1  glucose 61
+ 2  glucose 62
+ 3  glucose 63                        => clear low
+ 4  clock back 60, glucose 64
+ 5  glucose 65                                                          # the repeat came due: still rising, it waits
+ 6  glucose 66
+ 7  glucose 67
+ 8  glucose 68
+ 9  glucose 69
+10  glucose 70
+12
+
+scenario A restart during a rise: the readings are kept, the low still waits  # #193
+ 0  glucose 60                        => Low glucose
+ 1  glucose 61
+ 2  glucose 62
+ 3  glucose 63                        => clear low
+ 4  restart, glucose 64
+ 5  glucose 65                                                          # the repeat came due: it waits
+ 6  glucose 66
+ 7  glucose 67
+ 8  glucose 68
+ 9  glucose 69
+10  glucose 70
+12
+
+scenario Alert me anyway during a rise: at once, then the low repeats for the rest of the episode  # #193
+ 0  glucose 60                        => Low glucose
+ 1  glucose 61
+ 2  glucose 62
+ 3  glucose 63                        => clear low
+ 4  unmute low, glucose 64            => Low glucose
+ 5  glucose 65
+ 6  glucose 66
+ 7  glucose 67
+ 8  glucose 68
+ 9  glucose 69                        => Low glucose                    # 69: still low, still rising: lifted, it repeats
+10  glucose 70                        => clear low                      # in range
+12
+
+scenario A Mute that ends during a rise: the low that comes due then waits  # #193
+ 0  glucose 60                        => Low glucose
+ 1  mute low 5, glucose 60            => clear low
+ 2  glucose 60
+ 3  glucose 60
+ 4  glucose 61
+ 5  glucose 62
+ 6  glucose 63                                                          # the Mute ends: 60 60 61 62 63 rise back into range, it waits
+ 7  glucose 64
+ 8  glucose 65
+ 9  glucose 66
+10  glucose 67
+11  glucose 68
+12  glucose 69
+13  glucose 70                                                          # in range
+14
+
+scenario The carbs' window ends during a rise: the low that comes due then waits  # #193
+ 0  glucose 58                        => Low glucose
+ 1  carbs 20                          => clear low
+13  glucose 59
+14  glucose 60
+15  glucose 61
+16  glucose 62                                                          # the window ends: 59 60 61 62 rise back into range, it waits
+17  glucose 63
+18  glucose 64
+19  glucose 65
+20  glucose 66
+21  glucose 67
+22  glucose 68
+23  glucose 69
+24  glucose 70                                                          # in range
+25
+
+scenario Mute all ending during a rise: the episode's first very low still alerts, the low after it waits  # #193
+ 0  mute all 5, glucose 44
+ 1  glucose 46
+ 2  glucose 48
+ 3  glucose 50
+ 4  glucose 52
+ 5  glucose 54                        => Very low glucose               # Mute all ends: the first alert of the episode is never held
+ 6  glucose 56                        => clear very_low                 # 56: low, rising back into range: quiet
+ 7  glucose 58
+ 8  glucose 60
+ 9  glucose 62
+10  glucose 64
+11  glucose 66
+12  glucose 68
+13  glucose 70                                                          # in range
+14
+
+scenario A dip that rebounds before the low's wait ends: no alert at all  # #193
+settings persist.low=8
+ 0  glucose 68
+ 1  glucose 66
+ 2  glucose 64
+ 3  glucose 64
+ 4  glucose 65
+ 5  glucose 66
+ 6  glucose 67
+ 7  glucose 68
+ 8  glucose 69                                                          # the wait ends: 65 66 67 68 69 rise back into range, the first low alert waits too
+ 9  glucose 70                                                          # in range
+10
+
+scenario The escalation from low to very low is never held, its repeats are (the wearer's phone)  # #193
+ 0    glucose 62                        => Low glucose
+ 1    glucose 63
+ 2    glucose 64
+ 3    glucose 65                        => clear low                    # rising back into range: quiet
+ 4:30 set very_low=66                   => Very low glucose             # 65 is very low now: low → very low at once
+ 5    glucose 66                        => clear very_low               # rising: its repeats wait (very low has alerted)
+ 6    glucose 67
+ 7    glucose 68
+ 8    glucose 69
+ 9    glucose 70                                                        # in range
+10
+
+scenario A very low rising back into range: the wearer's phone holds its repeats, the followers' run doesn't  # #193
+mirror
+ 0  glucose 50                        => Very low glucose; follower Very low glucose
+ 1  glucose 51
+ 2  glucose 52
+ 3  glucose 53                        => clear very_low                 # this phone: 53, rising back by 73 within 20 min
+ 4  glucose 54
+ 5  glucose 55                        => follower Very low glucose · no response# very low's repeat for the followers, escalated: nobody answered on the wearer's phone (#39)
+ 6  glucose 56                        => follower clear very_low        # 56: low, held on the followers' run too
+ 7  glucose 57
+ 8  glucose 58
+ 9  glucose 59
+10  glucose 60
+11  glucose 61
+12  glucose 62
+13  glucose 63
+14  glucose 64
+15  glucose 65
+16  glucose 66
+17  glucose 67
+18  glucose 68
+19  glucose 69
+20  glucose 70                                                          # in range
+21
