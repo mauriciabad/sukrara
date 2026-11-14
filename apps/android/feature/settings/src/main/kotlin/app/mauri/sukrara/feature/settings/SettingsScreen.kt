@@ -251,7 +251,7 @@ private fun SettingsPages(
                     clock,
                     AlertsActions(vm::edit, vm::muteAll, vm::unmuteAll, { k -> navigate(SettingsRoute.AlertKindPage(k)) }, {
                         navigate(SettingsRoute.ThresholdReview)
-                    }, deps.alertPlayback, vm::quietExit, vm::muteSide, { navigate(SettingsRoute.NightAlerts) }),
+                    }, deps.alertPlayback, vm::quietExit, vm::muteSide, { navigate(SettingsRoute.NightAlerts) }, vm::setWatch),
                     header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     onBack = onBack,
                 )
@@ -433,7 +433,17 @@ private fun SettingsPages(
                 vm.refresh()
             }
             prefs?.let {
-                StatusBarContent(it, allowed, vm::setChip, vm::setNumberIcon, context::openLiveUpdateSettings, onBack, vm::setLockScreen) {
+                StatusBarContent(
+                    it,
+                    allowed,
+                    vm::setChip,
+                    vm::setNumberIcon,
+                    context::openLiveUpdateSettings,
+                    onBack,
+                    vm::setLockScreen,
+                    rootValue = root?.on == true,
+                    onColorize = vm::setColorize,
+                ) {
                     root?.let { r -> RootStatusBarSection(r, access, busy, problem, choosing, { c -> choosing = c }, vm.actions) }
                 }
             }

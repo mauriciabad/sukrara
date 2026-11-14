@@ -23,8 +23,22 @@ import kotlinx.serialization.json.Json
  * page and a surface can't disagree on a default.
  */
 object SurfaceSettings {
-    /** The glucose notification is a promoted Live Update (the status-bar chip). */
+    /**
+     * Settings › Status bar › *Glucose notification*: true = the status-bar chip (a promoted Live Update, no graph),
+     * false = the card with the graph and the number icon. The card whenever the root value ([RootValue]) is on: the
+     * bar already shows the value there, so the chip would only cost the graph (docs/36 §8.8).
+     */
     val StatusChip = SchemaSettings.bool("statusbar.chip", default = true)
+
+    /** The card in the range colour (colourised); off = the system's notification colour, the value in its range colour. */
+    val Colorize = SchemaSettings.bool("statusbar.colorize", default = false)
+
+    /**
+     * Settings › Alerts › *Alerts on my watch*: every alert is also a notification of its own (Wear OS bridges those;
+     * never the ongoing glucose notification), and the glucose notification shows no alert. Off: the glucose
+     * notification IS the alert while one is up (docs/36).
+     */
+    val WatchAlerts = SchemaSettings.bool("alerts.watch", default = false)
 
     /** Without the chip, the notification's small icon is the number itself. */
     val NumberIcon = SchemaSettings.bool("statusbar.icon", default = true)

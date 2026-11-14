@@ -388,6 +388,7 @@ object SettingsIndex {
                 R.string.st_sounds_title,
                 R.string.st_sound_pack to null,
                 R.string.st_shuffle to null,
+                R.string.st_alerts_watch to R.string.st_alerts_watch_on,
                 R.string.st_notification_settings to R.string.st_notification_settings_summary,
             )
             // each alert's own page, so a hit opens that alert ("Remind every · Alerts › Low › Alert when")
@@ -569,7 +570,8 @@ object SettingsIndex {
             rows(
                 statusBar,
                 null,
-                R.string.st_statusbar_chip to R.string.st_statusbar_chip_summary,
+                R.string.st_statusbar_style to R.string.st_statusbar_style_summary,
+                R.string.st_statusbar_colorize to R.string.st_statusbar_colorize_on,
                 R.string.st_statusbar_number_icon to R.string.st_statusbar_number_icon_summary,
                 R.string.st_statusbar_lock_screen to R.string.st_statusbar_lock_screen_on,
             )

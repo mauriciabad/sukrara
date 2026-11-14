@@ -172,6 +172,8 @@ class MonitoringService : Service() {
         val prefs =
             NotificationPrefs(
                 chip = inputs.chip,
+                rootValue = inputs.rootValue,
+                colorize = inputs.colorize,
                 numberIcon = inputs.numberIcon,
                 cardKey =
                     listOf(

@@ -109,9 +109,13 @@ class LiveNotificationBuildTest {
         assertEquals(now.minusSeconds(8 * 60).toEpochMilli(), late.`when`)
     }
 
-    @Test fun `chip off with a value is the colorized card with the number icon, without its pictures as text`() {
+    @Test fun `chip off with a value is the card with the number icon, without its pictures as text`() {
         val n = build(state())
-        assertTrue(n.extras.getBoolean(Notification.EXTRA_COLORIZED))
+        assertFalse("the system's colour by default", n.extras.getBoolean(Notification.EXTRA_COLORIZED))
+        assertTrue(
+            "in the range colour when chosen",
+            build(state(), card.copy(colorize = true)).extras.getBoolean(Notification.EXTRA_COLORIZED),
+        )
         assertEquals(Icon.TYPE_BITMAP, n.smallIcon.type)
         // no card frame drawn yet (the service's first post): text, never an old picture
         assertNull(n.contentView)
@@ -131,7 +135,7 @@ class LiveNotificationBuildTest {
         assertEquals(listOf(ctx.getString(R.string.monitor_action_replace_sensor)), ended.actions.map { it.title.toString() })
         assertTrue(shadowOf(ended.actions.single().actionIntent).isActivity)
 
-        val waiting = build(state(mgdl = null))
-        assertEquals(listOf(ctx.getString(R.string.monitor_action_open_app)), waiting.actions.map { it.title.toString() })
+        // no Open Sukrara (the owner, 2026-11-14): the tap already opens
+        for (s in listOf(state(), state(mgdl = null))) assertTrue(build(s).actions.orEmpty().isEmpty())
     }
 }

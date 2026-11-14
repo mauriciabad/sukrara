@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -63,6 +65,8 @@ class AlertsActions(
     val muteSide: (String, Int) -> Unit = { _, _ -> },
     /** Settings › Alerts › Night alerts (#38). */
     val openNight: () -> Unit = {},
+    /** *Alerts on my watch* (docs/36). */
+    val setWatch: (Boolean) -> Unit = {},
 )
 
 /** The alert rows' groups: lows, highs, rates, signal. */
@@ -352,6 +356,23 @@ fun AlertsSettingsContent(
                 summary = stringResource(R.string.st_shuffle_summary),
                 icon = DsR.drawable.ds_ic_shuffle,
             )
+            // docs/36: Wear OS never gets the ongoing glucose notification that carries the alerts; a watch app on the
+            // phone is the moment to suggest it
+            val watchApp = remember { context.hasWatchApp() }
+            SwitchRow(
+                stringResource(R.string.st_alerts_watch),
+                ui.watch,
+                actions.setWatch,
+                summary =
+                    stringResource(
+                        when {
+                            ui.watch -> R.string.st_alerts_watch_on
+                            watchApp -> R.string.st_alerts_watch_suggested
+                            else -> R.string.st_alerts_watch_off
+                        },
+                    ),
+                icon = DsR.drawable.ds_ic_watch,
+            )
             NavigationRow(
                 stringResource(R.string.st_notification_settings),
                 { context.openNotificationSettings() },
@@ -549,3 +570,26 @@ enum class WaitKind(
                 },
         )
 }
+
+/**
+ * The phone has a watch's companion app (Wear OS, Pixel Watch, Galaxy Wearable): *Alerts on my watch* is suggested.
+ * Declared in the manifest's `<queries>`, so Android lets Sukrara see exactly these packages.
+ */
+internal fun Context.hasWatchApp(): Boolean =
+    WATCH_APPS.any { pkg ->
+        runCatching {
+            packageManager.getPackageInfo(
+                pkg,
+                android.content.pm.PackageManager.PackageInfoFlags
+                    .of(0),
+            )
+        }.isSuccess
+    }
+
+/** The watch companion apps that bridge phone notifications to a watch. */
+internal val WATCH_APPS =
+    listOf(
+        "com.google.android.wearable.app",
+        "com.google.android.apps.wear.companion",
+        "com.samsung.android.app.watchmanager",
+    )

@@ -27,6 +27,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -84,6 +85,15 @@ class LiveNotificationContentTest {
     }
 
     @Test
+    fun `the root value in the bar makes it the card whatever the choice`() {
+        val c = content(state(), NotificationPrefs(chip = true, promotionAllowed = true, rootValue = true, colorize = true))
+        assertEquals(LiveNotificationContent.Layout.CARD, c.layout)
+        assertNull(c.chip)
+        assertTrue(c.colorize)
+        assertFalse("the system's colour by default", content(state(), NotificationPrefs(chip = false)).colorize)
+    }
+
+    @Test
     fun `chip wanted but Live Updates refused falls back to the card`() {
         val c = content(state(), NotificationPrefs(chip = true, promotionAllowed = false, numberIcon = false))
         assertEquals(LiveNotificationContent.Layout.CARD, c.layout)
@@ -110,7 +120,7 @@ class LiveNotificationContentTest {
     @Test
     fun `a fresh value shows value and arrow in the title and the chip, no time`() {
         val c = content(state())
-        assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", "↗")), c.title)
+        assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "↗")), c.title)
         assertEquals(UiText(R.string.monitor_chip_value, listOf("138")), c.chip)
         assertEquals(Icon.TREND, c.icon)
         assertEquals(1.2, c.trendRate!!, 0.0)
@@ -122,7 +132,9 @@ class LiveNotificationContentTest {
     fun `an out-of-range value says its range in words in the title, never by colour alone`() {
         val low = content(state(mgdl = 62))
         assertEquals(R.string.monitor_notif_value_range, low.title.res)
-        assertEquals(UiText(GraphR.string.card_range_low), low.title.args[3])
+        assertEquals(UiText(GraphR.string.card_range_low), low.title.args[2])
+        assertEquals("the Live Update's title on Android 17", UiText(GraphR.string.card_range_low), low.rangeWords)
+        assertEquals(UiText(R.string.monitor_range_in_range), content(state()).rangeWords)
         val high = content(state(mgdl = 200), NotificationPrefs(bands = Bands(high = 210)))
         assertEquals("in the person's ranges", R.string.monitor_notif_value, high.title.res)
         assertEquals("struck: grey, no word", R.string.monitor_notif_value, content(state(mgdl = 62, ageS = 10 * 60)).title.res)
@@ -132,7 +144,8 @@ class LiveNotificationContentTest {
     @Test
     fun `in mmol per litre the title and the chip write the value in the unit`() {
         val c = content(state(), NotificationPrefs(chip = true, promotionAllowed = true, unit = GlucoseUnit.MMOL))
-        assertEquals(UiText(R.string.monitor_notif_value, listOf("7.7", "mmol/L", "↗")), c.title)
+        // no unit anywhere (the owner, 2026-11-14: obvious), the number in the unit
+        assertEquals(UiText(R.string.monitor_notif_value, listOf("7.7", "↗")), c.title)
         assertEquals(UiText(R.string.monitor_chip_value, listOf("7.7")), c.chip)
         val lo = content(state(mgdl = 39), NotificationPrefs(unit = GlucoseUnit.MMOL))
         assertEquals("LO", lo.title.args[0])
@@ -191,16 +204,17 @@ class LiveNotificationContentTest {
         assertEquals(Target.QuickTreatment(focusCarbs = false), content(state()).tap)
         assertEquals(Target.QuickTreatment(focusCarbs = true), content(state(firing = setOf("low"))).tap)
         assertEquals(Target.QuickTreatment(focusCarbs = true), content(state(firing = setOf("very_low"))).tap)
-        assertEquals(Target.OpenApp, content(state()).actions.single().target)
+        assertEquals(Target.QuickTreatment(focusCarbs = true), content(state(firing = setOf("falling_fast"))).tap)
+        assertTrue("no Open Sukrara: the tap already opens", content(state()).actions.isEmpty())
     }
 
     @Test
     fun `an ended sensor that keeps sending shows its value and says under it that it ended`() {
         val c = content(state(sensor = SensorState.Ended))
-        assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", "↗")), c.title)
+        assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "↗")), c.title)
         assertEquals(UiText(R.string.monitor_notif_sensor_ended_line), c.text)
-        assertEquals(listOf(Target.OpenApp, Target.SensorSetup), c.actions.map { it.target })
-        assertEquals(listOf(Target.OpenApp), content(state(sensor = SensorState.Ended, role = Role.Follower)).actions.map { it.target })
+        assertEquals(listOf(Target.SensorSetup), c.actions.map { it.target })
+        assertTrue(content(state(sensor = SensorState.Ended, role = Role.Follower)).actions.isEmpty())
     }
 
     @Test
@@ -248,7 +262,7 @@ class LiveNotificationContentTest {
             val rate = band?.let { it * 1.5 }
             val want = a.getValue("text").jsonPrimitive.content
             val content = content(state(rate = rate))
-            assertEquals("band $band", UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", want)), content.title)
+            assertEquals("band $band", UiText(R.string.monitor_notif_value, listOf("138", want)), content.title)
             assertEquals("band $band", rate, content.trendRate)
             assertEquals("band $band", band, content.trendBand)
         }

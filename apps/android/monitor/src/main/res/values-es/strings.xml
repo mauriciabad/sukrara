@@ -40,14 +40,13 @@
     <string name="alert_text_no_data_last">Última lectura %1$s · %2$s</string>
     <string name="alert_relaxed_subtext">Avisos cada %1$s</string>
 
-    <string name="alert_action_log_carbs">Registrar hidratos</string>
-    <string name="alert_action_mute">Silenciar…</string>
+    <string name="alert_action_treatment">Tratamiento</string>
+    <string name="alert_action_mute">Silenciar</string>
     <string name="alert_action_mute_for_label">Silenciar durante (p. ej. 45 min, 1 h 30)</string>
     <string name="alert_mute_choice_a11y">Alertas %1$s: silenciar durante %2$s</string>
     <string name="alert_action_remind_less">Avisar menos</string>
     <string name="alert_action_remind_usual">Avisar como siempre</string>
     <string name="alert_action_unmute">Reactivar</string>
-    <string name="alert_action_change">Cambiar duración</string>
 
     <string name="sensor_end_today">El sensor termina hoy a las %1$s</string>
     <string name="sensor_end_tomorrow">El sensor termina mañana a las %1$s</string>
@@ -95,8 +94,8 @@
     <string name="monitor_channel_alarm_rising_fast">Subiendo rápido (alarma)</string>
     <string name="monitor_channel_alarm_no_data">Sin datos (alarma)</string>
 
-    <string name="monitor_notif_value">%1$s %2$s %3$s</string>
-    <string name="monitor_notif_value_range">%1$s %2$s %3$s · %4$s</string>
+    <string name="monitor_notif_value">%1$s %2$s</string>
+    <string name="monitor_notif_value_range">%1$s %2$s · %3$s</string>
     <string name="monitor_notif_reading_at">Lectura de las %1$s</string>
     <string name="monitor_notif_no_readings_since">Sin lecturas desde las %1$s</string>
     <string name="monitor_notif_waiting">Esperando la glucosa…</string>
@@ -121,7 +120,9 @@
     <string name="monitor_notif_core_missing">Esta versión no puede leer un sensor Libre 3</string>
     <string name="monitor_chip_value">%1$s</string>
     <string name="monitor_chip_stale">%1$s</string>
-    <string name="monitor_metric_reading">Lectura</string>
+    <string name="monitor_metric_now">Ahora</string>
+    <string name="monitor_range_in_range">En rango</string>
+    <string name="monitor_alert_also">También: %1$s</string>
     <string name="monitor_action_open_app">Abrir Sukrara</string>
     <string name="monitor_action_set_up_sensor">Configurar sensor</string>
     <string name="monitor_action_replace_sensor">Cambiar sensor</string>

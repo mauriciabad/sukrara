@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -77,8 +78,13 @@ class AlertsModule(
     private val remoteEvents: Flow<AlertEvent> = emptyFlow(),
     /** The diagnostic log (`DiagLog`, behind *Copy report*): what failed and its exception class, never values. */
     diagLog: (String) -> Unit = {},
-    /** Whether this phone can add entries now (the quick treatment dialog opens): a low-side alert offers *Log carbs*. */
+    /** Whether this phone can add entries now (the quick treatment dialog opens): an alert offers *Treatment*. */
     canLogTreatments: () -> Boolean = { false },
+    /**
+     * The glucose notification (`LiveNotification`), which IS the alert while one is up (docs/36); null = every alert
+     * as a notification of its own (as with *Alerts on my watch*).
+     */
+    glucose: GlucoseAlertSink? = null,
 ) {
     /** Every line to logcat too ([alertsLog]). */
     private val log: (String) -> Unit = alertsLog(diagLog)
@@ -133,12 +139,30 @@ class AlertsModule(
     /** Settings' sound preview and *Send a test alert*. */
     val tryOut = AlertTryOut(ctx, notifier)
 
+    /** *Alerts on my watch* now (off until the store answered: the glucose notification carries the alert). */
+    private val watchNow =
+        alertSettings
+            .flow(SurfaceSettings.WatchAlerts)
+            .catch { emit(false) }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+
+    /**
+     * How alerts show (docs/36): through the glucose notification, or with *Alerts on my watch* each as a notification
+     * of its own; the plain stand-in and the problem notice are separate either way.
+     */
+    val presenter =
+        GlucoseAlertPresenter(
+            notifier,
+            glucose ?: NoGlucose,
+            watch = { glucose == null || watchNow.value },
+        )
+
     /** THE alert runtime of this process; also every surface's [AlertControls]. */
     val runtime =
         AlertRuntime(
             store,
             treatments,
-            notifier,
+            presenter,
             alarms.alertCheck(AndroidAlarms.ALERT_CHECK, clock),
             events,
             hub::setAlerts,
@@ -229,6 +253,13 @@ class AlertsModule(
         AlertChannels.ensure(ctx)
         runtime.observe(scope, hub.state, wearerSettings, remoteEvents)
         scope.launch {
+            // *Alerts on my watch* switched: what is up shows again, silently, on the other side
+            watchNow.drop(1).distinctUntilChanged().collect {
+                hub.state.value.alerts.firingKinds
+                    .forEach { kind -> runCatching { runtime.reshow(kind) } }
+            }
+        }
+        scope.launch {
             // the sensor, its first reading and the settings re-plan; the newest reading only matters as "since the start"
             combine(
                 hub.state
@@ -241,6 +272,16 @@ class AlertsModule(
                 .collect { sensorEnd.update(it.wearer, it.sensor, it.latestS, it.settings) }
         }
     }
+}
+
+/** No glucose notification to carry the alerts: the presenter shows each as a notification of its own. */
+private object NoGlucose : GlucoseAlertSink {
+    override fun alert(
+        alert: app.mauri.sukrara.monitor.notify.GlucoseAlert?,
+        how: GlucoseAlertSink.Post,
+    ) = Unit
+
+    override fun showing() = false
 }
 
 private data class SensorEndInputs(val wearer: Boolean, val sensor: SensorState, val latestS: Long?, val settings: SensorEndSettings)

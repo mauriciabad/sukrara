@@ -159,7 +159,7 @@ class TrendEverywhereTest {
                 LiveNotification::face,
                 NotificationPrefs(chip = true, promotionAllowed = true),
             )
-        out["glucose notification"] = notification.title.args[2].toString()
+        out["glucose notification"] = notification.title.args[1].toString()
         val firing = Firing(AlertKind.HIGH, "e", 1, AlertRuntime.readingOf(latest), 180.0, nowS)
         val words = AlertWords.of(context, AlertWords.Ids + AlertCopy.Ids)
         out["alert body"] = if (text in AlertCopy.body(firing, words, GlucoseUnit.MGDL, Locale.ENGLISH, nowS)) text else "missing"

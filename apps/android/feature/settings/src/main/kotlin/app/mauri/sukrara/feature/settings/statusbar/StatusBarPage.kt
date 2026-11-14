@@ -35,12 +35,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** Settings › Status bar: the glucose notification's Live Update chip and number icon; with root, the value itself. */
+/**
+ * Settings › Status bar: the glucose notification (the chip or the graph), its number icon and colour; with root, the
+ * value itself.
+ */
 data class StatusBarPrefs(
     val chip: Boolean,
     val numberIcon: Boolean,
     /** The glucose notification's value on the lock screen (#94). */
     val lockScreen: Boolean = true,
+    /** The graph's card in the range colour. */
+    val colorize: Boolean = false,
 )
 
 class StatusBarViewModel(
@@ -116,8 +121,13 @@ class StatusBarViewModel(
             settings.flow(SurfaceSettings.StatusChip),
             settings.flow(SurfaceSettings.NumberIcon),
             settings.flow(SurfaceSettings.LockScreen),
+            settings.flow(SurfaceSettings.Colorize),
             ::StatusBarPrefs,
         ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setColorize(on: Boolean) {
+        viewModelScope.launch { settings.set(SurfaceSettings.Colorize, on) }
+    }
 
     fun setLockScreen(on: Boolean) {
         viewModelScope.launch { settings.set(SurfaceSettings.LockScreen, on) }
@@ -173,10 +183,12 @@ fun Context.openLiveUpdateSettings() {
 }
 
 /**
- * The page: *Live Update chip* (the value next to the clock), *Allow Live Updates for Sukrara* while the chip is on and
- * Android refuses it (the way to fix it, not a dead switch), *Number icon* (only meaningful without the chip: its
- * summary says so), *Glucose on the lock screen* (#94: on by default; its summary says what the lock screen shows). The
- * footer explains what each one changes.
+ * The page: *Glucose notification*, the chip or the graph side by side with a picture of each (they exclude each
+ * other: a Live Update can't hold a graph; the graph whatever the choice while [rootValue] is in the bar), *Allow Live
+ * Updates for Sukrara* while the chip is chosen and Android refuses it (the way to fix it, not a dead choice),
+ * *Number icon* (only meaningful with the graph: its summary says so), *Card in the range colour* (the graph's card),
+ * *Glucose on the lock screen* (#94: on by default; its summary says what the lock screen shows). The footer explains
+ * what each one changes.
  */
 @Composable
 fun StatusBarContent(
@@ -187,18 +199,14 @@ fun StatusBarContent(
     onAllowLiveUpdates: () -> Unit,
     onBack: () -> Unit,
     onLockScreen: (Boolean) -> Unit = {},
+    rootValue: Boolean = false,
+    onColorize: (Boolean) -> Unit = {},
     rootSection: @Composable () -> Unit = {},
 ) {
     SettingsPage(stringResource(R.string.st_statusbar_title), onBack) {
+        NotificationStylePicker(prefs.chip, forcedCard = rootValue, onChoose = onChip)
         SettingsGroup {
-            SwitchRow(
-                stringResource(R.string.st_statusbar_chip),
-                prefs.chip,
-                onChip,
-                summary = stringResource(R.string.st_statusbar_chip_summary),
-                icon = DsR.drawable.ds_ic_timelapse,
-            )
-            if (prefs.chip && !liveUpdatesAllowed) {
+            if (prefs.chip && !rootValue && !liveUpdatesAllowed) {
                 NavigationRow(
                     stringResource(R.string.st_statusbar_allow_live_updates),
                     onAllowLiveUpdates,
@@ -206,7 +214,7 @@ fun StatusBarContent(
                     icon = DsR.drawable.ds_ic_tune,
                 )
             }
-            val chipShows = prefs.chip && liveUpdatesAllowed
+            val chipShows = prefs.chip && liveUpdatesAllowed && !rootValue
             SwitchRow(
                 stringResource(R.string.st_statusbar_number_icon),
                 prefs.numberIcon,
@@ -217,6 +225,14 @@ fun StatusBarContent(
                     ),
                 enabled = !chipShows,
                 icon = DsR.drawable.ds_ic_notifications,
+            )
+            SwitchRow(
+                stringResource(R.string.st_statusbar_colorize),
+                prefs.colorize,
+                onColorize,
+                summary = stringResource(if (prefs.colorize) R.string.st_statusbar_colorize_on else R.string.st_statusbar_colorize_off),
+                enabled = !chipShows,
+                icon = DsR.drawable.ds_ic_palette,
             )
             SwitchRow(
                 stringResource(R.string.st_statusbar_lock_screen),

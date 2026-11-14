@@ -105,6 +105,7 @@ class SettingsPagesTest {
             "alerts.actions.backMin",
             "alerts.sounds.pack",
             "alerts.sounds.shuffle",
+            "alerts.watch",
             "alerts.thresholdsConfirmedAt",
             // Settings › Sensor (the app joins it to the sensor module)
             "source.source",
@@ -112,6 +113,7 @@ class SettingsPagesTest {
             "source.jugglucoSecret",
             // Settings › Status bar and Settings › Sensor end
             "statusbar.chip",
+            "statusbar.colorize",
             "statusbar.icon",
             "statusbar.lockScreen",
             "statusbar.hook",

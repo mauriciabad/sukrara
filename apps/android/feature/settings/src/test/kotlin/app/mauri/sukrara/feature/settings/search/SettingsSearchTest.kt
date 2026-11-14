@@ -209,7 +209,7 @@ class SettingsSearchTest {
         val root = listOf(R.string.st_root_value, R.string.st_root_colour, R.string.st_root_placement, R.string.st_root_hide_icon)
         for (t in root) assertTrue(t !in noRoot && t in play && t in full)
         assertTrue(R.string.st_update_check_again !in play && R.string.st_update_check_again in full)
-        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_chip, R.string.st_about_version, R.string.st_about_versions)) {
+        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_style, R.string.st_about_version, R.string.st_about_versions)) {
             assertTrue(t in noRoot && t in play && t in full)
         }
     }

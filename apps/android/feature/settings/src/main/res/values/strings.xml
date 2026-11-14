@@ -67,6 +67,10 @@
     <string name="st_shuffle">Vary the sound</string>
     <string name="st_shuffle_summary">A different sound of the pack each time</string>
     <string name="st_notification_settings">Notification settings</string>
+    <string name="st_alerts_watch_suggested">A watch app is on this phone: turn this on to get alerts on your watch</string>
+    <string name="st_alerts_watch_off">Alerts ring through the glucose notification. Watches don\'t get it</string>
+    <string name="st_alerts_watch_on">Each alert is also a notification of its own, which your watch gets</string>
+    <string name="st_alerts_watch">Alerts on my watch</string>
     <string name="st_notification_settings_summary">Volume, Do Not Disturb and vibration for each alert, in Android\'s settings</string>
     <string name="st_alerts_footer">Mute all and each alert\'s Mute end by themselves at the time shown; Unmute ends them now.</string>
     <string name="st_pack_arcade">Arcade</string>
@@ -348,9 +352,17 @@
     <string name="st_sensor_footer">One LibreView account for Sukrara: its email and password stay encrypted on this phone, and signing out on its screen signs out everywhere.</string>
     <!-- Settings › Status bar -->
     <string name="st_statusbar_title">Status bar</string>
+    <string name="st_statusbar_colorize_off">The graph\'s card has the usual notification colour</string>
+    <string name="st_statusbar_colorize_on">The graph\'s card takes your range\'s colour</string>
+    <string name="st_statusbar_colorize">Card in the range colour</string>
+    <string name="st_statusbar_style_root">The status bar already shows your glucose (root), so the notification shows the graph</string>
+    <string name="st_statusbar_style_card_summary">The graph in the notification. A small number in the status bar</string>
+    <string name="st_statusbar_style_card">Graph</string>
+    <string name="st_statusbar_style_chip_summary">Your glucose next to the clock. The notification has no graph</string>
+    <string name="st_statusbar_style_chip">Chip</string>
+    <string name="st_statusbar_style_summary">The chip next to the clock, or the graph in the notification</string>
+    <string name="st_statusbar_style">Glucose notification</string>
     <string name="st_overview_statusbar">Live Update chip and notification icon</string>
-    <string name="st_statusbar_chip">Live Update chip</string>
-    <string name="st_statusbar_chip_summary">Your glucose next to the clock</string>
     <string name="st_statusbar_allow_live_updates">Allow Live Updates for Sukrara</string>
     <string name="st_statusbar_allow_live_updates_summary">Android has Live Updates off for Sukrara, so the chip can\'t show</string>
     <string name="st_statusbar_number_icon">Number as notification icon</string>
@@ -359,7 +371,7 @@
     <string name="st_statusbar_lock_screen">Glucose on the lock screen</string>
     <string name="st_statusbar_lock_screen_on">The value and its arrow, without unlocking</string>
     <string name="st_statusbar_lock_screen_off">The lock screen says only that Sukrara is monitoring</string>
-    <string name="st_statusbar_footer">With the chip, the glucose notification is a Live Update: the value and its arrow sit next to the clock. Without it, the notification is a card in your range\'s colour with the graph, and its icon can be the number. The chip needs Android 16 or later.</string>
+    <string name="st_statusbar_footer">A Live Update can\'t show a graph, so the glucose notification is either the chip next to the clock or the card with the graph. The chip needs Android 16 or later; while the status bar shows your glucose with root, it\'s always the graph. Alerts ring through this one notification.</string>
     <string name="st_root_group">With root</string>
     <string name="st_root_value">Value in the status bar</string>
     <string name="st_root_value_asking">Asking for root…</string>

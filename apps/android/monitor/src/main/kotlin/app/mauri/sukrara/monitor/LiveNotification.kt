@@ -9,6 +9,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.os.SystemClock
@@ -17,26 +18,32 @@ import android.text.style.StrikethroughSpan
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
+import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphConfig
-import app.mauri.sukrara.graph.SensorBadge
+import app.mauri.sukrara.graph.StatusBadge
 import app.mauri.sukrara.graph.ValueGlyphs
 import app.mauri.sukrara.graph.cardModelOf
 import app.mauri.sukrara.graph.face
 import app.mauri.sukrara.graph.notificationCardStyle
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.toPoint
+import app.mauri.sukrara.monitor.alerts.AlertActions
+import app.mauri.sukrara.monitor.alerts.AlertCopy
+import app.mauri.sukrara.monitor.alerts.GlucoseAlertSink
 import app.mauri.sukrara.monitor.notify.AppActivities
 import app.mauri.sukrara.monitor.notify.CardFrame
 import app.mauri.sukrara.monitor.notify.Channels
+import app.mauri.sukrara.monitor.notify.GlucoseAlert
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent.Icon
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent.Layout
@@ -58,21 +65,35 @@ import java.util.concurrent.TimeUnit
  * The glucose notification (surface `notification-text`: title, Live Update chip, MetricStyle value and small icon;
  * its custom card is surface `notification`, [NotificationCard]), which is also the monitoring service's foreground
  * notification, so the status bar costs one post per reading. Android decides what it can look like:
- * - **chip on** and Live Updates allowed → a promoted ongoing Live Update: the chip is the small icon (the trend
- *   arrow) + `setShortCriticalText` ("138"). Promotion forbids custom views and colorizing; on Android 17 the expanded
- *   card is a `MetricStyle` (the value styled by range, the late reading's time), below it BigText.
- * - **chip off** (or Live Updates refused) → a colorized foreground-service card in the range colour (grey once
- *   struck through) with the renderer's header row collapsed and header + chart expanded; the small icon is the
- *   number itself (*Number icon*) or the arrow. Without its pictures (the first post, the screen off with an
- *   out-of-date card, a drawing failure) it posts the same colorized notification as text, never an old picture.
+ * - **the chip** (Settings › Status bar › *Glucose notification*, the default without the root value) and Live Updates
+ *   allowed → a promoted ongoing Live Update: the chip is the small icon (the trend arrow) + `setShortCriticalText`
+ *   ("138"). Promotion forbids custom views and colorizing; on Android 17 the expanded card is a `MetricStyle` (the
+ *   value styled by range, labelled *Now* or with the late reading's time, then the card's slots), below it BigText.
+ * - **the card** (chosen, or automatically while the root value is in the bar, or Live Updates refused) → the
+ *   renderer's header row collapsed and header + chart expanded, on the system's notification colour, or in the range
+ *   colour (grey once struck through) with *Card in the range colour*; the small icon is the number itself (*Number
+ *   icon*) or the arrow. Without its pictures (the first post, the screen off with an out-of-date card, a drawing
+ *   failure) it posts the same notification as text, never an old picture.
+ *
+ * **It is the alert too** (docs/36, SPEC §1 "Showing an alert"; [GlucoseAlertSink]): while an alert is up it carries
+ * the alert's title, buttons and swipe. A ring re-posts it at once on the kind's own channel without only-alert-once
+ * (its sound, volume, vibration, Do Not Disturb), with the full-screen intent when an alarm-level kind comes from
+ * silent; for the [RING_WINDOW_MS] after it every post stays on that channel (only alert once: a switch to the silent
+ * channel would stop the sound), then it goes back to the silent channel still showing the alert. A mute, a clear or
+ * a swipe posts on the silent channel at once (the sound stops). Every post builds and notifies under one lock, so a
+ * post built before a ring can never land after it.
  */
 class LiveNotification(
     private val context: Context,
-) {
+    /** The hub's state now: what the notification shows when an alert rings before the service has posted (service dead). */
+    private val fallbackState: () -> GlucoseState? = { null },
+    /** Whether the monitoring service runs (it keeps the notification current; without it an alert's post goes with the alert). */
+    private val serviceRunning: () -> Boolean = { MonitoringService.isRunning },
+) : GlucoseAlertSink {
     private val nm = context.getSystemService(NotificationManager::class.java)
     private val poster = Executors.newSingleThreadScheduledExecutor { Thread(it, "Sukrara.notify").apply { isDaemon = true } }
     private val gate =
-        PostGate<LiveNotificationContent>(MIN_GAP_MS, SystemClock::elapsedRealtime) { delay, run ->
+        PostGate<Any>(MIN_GAP_MS, SystemClock::elapsedRealtime) { delay, run ->
             poster.schedule(
                 { runCatching(run).onFailure { Log.w(TAG, "post failed: ${it.javaClass.simpleName}") } },
                 delay,
@@ -90,6 +111,25 @@ class LiveNotification(
         prefs: NotificationPrefs = NotificationPrefs(),
     ) = LiveNotificationContent.from(state, now, ::face, prefs.copy(promotionAllowed = promotionAllowed()))
 
+    /** What the service last asked to post: the alert's posts show it again with the alert. */
+    private class Last(
+        val content: LiveNotificationContent,
+        val frame: CardFrame?,
+    )
+
+    @Volatile private var last: Last? = null
+
+    /** The alert the notification carries now (null: none), and until when (elapsed ms) a ring keeps its channel. */
+    @Volatile private var alert: GlucoseAlert? = null
+
+    @Volatile private var ringUntil = 0L
+
+    /** Every build + notify runs under it, in order: a post built before a ring never lands after it (it would stop the sound). */
+    private val postLock = Any()
+
+    /** The Android actions of the alert's buttons. */
+    private val alertActions = AlertActions(context)
+
     /**
      * Posts [content] unless it's what is showing; at most one post per second. [force] = re-post (dismissed, screen
      * on). [frame] = what the custom card draws (null: the card posts as text).
@@ -100,62 +140,246 @@ class LiveNotification(
         frame: CardFrame? = null,
         force: Boolean = false,
     ) {
-        gate.submit(content, force) {
+        last = Last(content, frame)
+        gate.submit(listOf(content, alert), force) {
             // drawn and posted off the caller's (main) thread; the gate keeps posts in order
             poster.execute {
-                runCatching { nm.notify(NotificationIds.GLUCOSE, build(content, now, frame)) }
+                runCatching { notifyNow(content, now, frame, Mode.UPDATE) }
                     .onFailure { Log.w(TAG, "notify failed: ${it.javaClass.simpleName}") }
             }
         }
     }
 
-    /** The notification for [content]; never throws for the card: a picture that fails falls back to text. */
+    /**
+     * [GlucoseAlertSink]: the alert to carry and how to post it. A ring is posted at once on the caller's thread and
+     * throws when Android refuses it (the runtime then shows the plain stand-in); [GlucoseAlertSink.Post.QUIET] posts at
+     * once on the silent channel; an update goes through the gate.
+     */
+    override fun alert(
+        alert: GlucoseAlert?,
+        how: GlucoseAlertSink.Post,
+    ) {
+        val now = Instant.now()
+        val shown = last
+        val content = shown?.content ?: fallbackContent(now)
+        val frame = shown?.frame
+        when (how) {
+            GlucoseAlertSink.Post.RING -> {
+                synchronized(postLock) {
+                    val fromSilent = SystemClock.elapsedRealtime() >= ringUntil
+                    this.alert = alert
+                    ringUntil = SystemClock.elapsedRealtime() + RING_WINDOW_MS
+                    nm.notify(NotificationIds.GLUCOSE, build(content, now, frame, if (fromSilent) Mode.RING_FROM_SILENT else Mode.RING))
+                }
+                // back to the silent channel when the ring window ends, still showing the alert
+                poster.schedule({ windowEnded() }, RING_WINDOW_MS, TimeUnit.MILLISECONDS)
+            }
+
+            GlucoseAlertSink.Post.QUIET -> {
+                synchronized(postLock) {
+                    this.alert = alert
+                    ringUntil = 0L
+                    if (alert == null && !serviceRunning()) {
+                        // posted by an alert while the service was dead: nothing keeps it current, so it goes with the alert
+                        runCatching { nm.cancel(NotificationIds.GLUCOSE) }
+                    } else {
+                        runCatching { nm.notify(NotificationIds.GLUCOSE, build(content, now, frame, Mode.UPDATE)) }
+                            .onFailure { Log.w(TAG, "quiet post failed: ${it.javaClass.simpleName}") }
+                    }
+                }
+            }
+
+            GlucoseAlertSink.Post.UPDATE -> {
+                this.alert = alert
+                if (alert == null && !serviceRunning() && shown == null) {
+                    runCatching { nm.cancel(NotificationIds.GLUCOSE) }
+                } else if (shown == null) {
+                    // no service post yet in this process: shown at once from the hub's state
+                    poster.execute { runCatching { notifyNow(content, now, frame, Mode.UPDATE) } }
+                } else {
+                    post(content, now, frame, force = true)
+                }
+            }
+        }
+    }
+
+    /** The ring window ended: posted again on the silent channel, still with the alert (a newer ring keeps its own). */
+    private fun windowEnded() {
+        if (SystemClock.elapsedRealtime() < ringUntil) return
+        val shown = last
+        runCatching { notifyNow(shown?.content ?: fallbackContent(Instant.now()), Instant.now(), shown?.frame, Mode.UPDATE) }
+            .onFailure { Log.w(TAG, "window end post failed: ${it.javaClass.simpleName}") }
+    }
+
+    override fun showing(): Boolean = runCatching { nm.activeNotifications.any { it.id == NotificationIds.GLUCOSE } }.getOrDefault(true)
+
+    private fun notifyNow(
+        content: LiveNotificationContent,
+        now: Instant,
+        frame: CardFrame?,
+        mode: Mode,
+    ) = synchronized(postLock) { nm.notify(NotificationIds.GLUCOSE, build(content, now, frame, mode)) }
+
+    /** The hub's state as text (no card yet): an alert that rings before the service posted (the service dead). */
+    private fun fallbackContent(now: Instant): LiveNotificationContent {
+        val state = runCatching(fallbackState).getOrNull()
+        return state?.let { content(it, now).copy(layout = Layout.TEXT, chip = null) }
+            ?: LiveNotificationContent(
+                UiText(R.string.monitor_notif_public_title),
+                null,
+                strike = false,
+                chip = null,
+                icon = Icon.APP,
+                readingAt = null,
+                tap = Target.OpenApp,
+                actions = emptyList(),
+            )
+    }
+
+    /** How a post goes out: [UPDATE] (the ring window's channel while it lasts, else silent), or a ring. */
+    enum class Mode { UPDATE, RING, RING_FROM_SILENT }
+
+    /**
+     * The notification for [content] with the alert it carries now; never throws for the card: a picture that fails
+     * falls back to text. [mode]: a ring posts on the alert's channel without only-alert-once.
+     */
     fun build(
         content: LiveNotificationContent,
         now: Instant,
         frame: CardFrame? = null,
+        mode: Mode = Mode.UPDATE,
     ): Notification {
-        val title = resolve(content.title, now)
-        val text = content.text?.let { resolve(it, now) }
+        val alert = alert
+        val ringing = alert != null && (mode != Mode.UPDATE || SystemClock.elapsedRealtime() < ringUntil)
+        val channel = if (ringing) alert.channel else Channels.GLUCOSE
+        val promoted = content.layout == Layout.LIVE_UPDATE && Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
+        val title = title(content, alert, now, frame)
+        val text = text(content, alert, now)
         val builder =
             Notification
-                .Builder(context, Channels.GLUCOSE)
+                .Builder(context, channel)
                 .setSmallIcon(smallIcon(content))
-                .setContentTitle(if (content.strike) struck(title) else title)
+                .setContentTitle(if (content.strike && alert == null) struck(title) else title)
                 .setContentText(text)
                 .setOngoing(true)
-                .setOnlyAlertOnce(true)
-                .setCategory(Notification.CATEGORY_STATUS)
+                // a ring alerts (sound, vibration, heads-up) every time; every other post never does
+                .setOnlyAlertOnce(mode == Mode.UPDATE)
+                .setCategory(if (ringing) alert.category else Notification.CATEGORY_STATUS)
                 .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                .setContentIntent(pending(content.tap))
-                // Android 14+ lets the person swipe a foreground notification away: put it back (the receiver re-posts)
-                .setDeleteIntent(dismissedIntent())
+                .setContentIntent(pending(tapOf(content, alert)))
+                // Android 14+ lets the person swipe a foreground notification away: with an alert that is its answer
+                // and hides it until the next ring; without, the receiver puts the notification back
+                .setDeleteIntent(alert?.let { swipedIntent(it) } ?: dismissedIntent())
                 .setShowWhen(content.readingAt != null)
                 .setStyle(Notification.BigTextStyle().bigText(text))
         content.readingAt?.let { builder.setWhen(it.toEpochMilli()) }
-        content.sharing?.let { builder.setSubText(sharingText(it)) }
-        // the lock screen (#94): the value, or with the setting off only "Sukrara · Monitoring" until the phone is unlocked
+        listOfNotNull(alert?.sub, content.sharing?.let(::sharingText))
+            .takeIf { it.isNotEmpty() }
+            ?.let { builder.setSubText(it.joinToString(" · ")) }
+        // the lock screen (#94): the value, or with the setting off only "Sukrara · Monitoring" (with an alert: its
+        // title, no value) until the phone is unlocked
         if (content.lockScreen) {
             builder.setVisibility(Notification.VISIBILITY_PUBLIC)
         } else {
-            builder.setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicVersion())
+            builder.setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicVersion(alert, channel))
         }
-        content.actions.forEach { builder.addAction(Notification.Action.Builder(null, resolve(it.label, now), pending(it.target)).build()) }
+        // an alarm-level ring from silent opens full screen (a ring while one still sounds doesn't: Android starts the
+        // full-screen intent only when a notification starts alerting)
+        if (alert != null && mode == Mode.RING_FROM_SILENT && alert.alarm && nm.canUseFullScreenIntent()) {
+            builder.setFullScreenIntent(openApp(), true)
+        }
+        // at most three buttons: the alert's first, then the sensor's
+        val words = alert?.let { runCatching { AlertWords.of(context, AlertWords.Ids + AlertCopy.Ids, strict = true) }.getOrNull() }
+        val buttons =
+            if (alert != null && words != null) {
+                alert.buttons.map { alertActions.action(alert.kind, it, words, promoted) }
+            } else {
+                emptyList()
+            }
+        val sensor = content.actions.map { Notification.Action.Builder(null, resolve(it.label, now), pending(it.target)).build() }
+        (buttons + sensor).take(MAX_ACTIONS).forEach(builder::addAction)
         when (content.layout) {
-            Layout.LIVE_UPDATE -> liveUpdate(builder, content, now, frame)
-            Layout.CARD -> card(builder, content, now, frame)
+            Layout.LIVE_UPDATE -> liveUpdate(builder, content, now, frame, alert)
+            Layout.CARD -> card(builder, content, now, frame, alert, ringing)
             Layout.TEXT -> Unit
         }
         return builder.build()
     }
 
-    /** What the lock screen shows of the notification with *Glucose on the lock screen* off: that Sukrara is monitoring. */
-    private fun publicVersion(): Notification =
+    /**
+     * The title: with an alert its title ("Low glucose · Eat carbs" in a Live Update, where no pill shows it; the
+     * value first on Android 16, whose Live Update has no big value: "62 ↘ · Low glucose · Eat carbs"); without, the
+     * value ("138 →", "64 ↘ · Low"), or on Android 17's Live Update the range in words (the value is the metric's).
+     */
+    private fun title(
+        content: LiveNotificationContent,
+        alert: GlucoseAlert?,
+        now: Instant,
+        frame: CardFrame?,
+    ): String {
+        val metric = content.layout == Layout.LIVE_UPDATE && Build.VERSION.SDK_INT >= METRIC_STYLE_SDK && content.look != null
+        if (alert == null) {
+            return if (metric) resolve(content.rangeWords ?: content.title, now) else resolve(content.title, now)
+        }
+        val words =
+            when (content.layout) {
+                // the pill's words ("Eat carbs"), which the card draws under its value
+                Layout.LIVE_UPDATE, Layout.TEXT -> listOfNotNull(alert.title, pillWords(alert, frame, now))
+
+                Layout.CARD -> listOf(alert.title)
+            }
+        val value = content.look?.let { resolve(content.title, now) }.takeIf { !metric && content.layout != Layout.CARD }
+        return listOfNotNull(value?.substringBefore(" · "), *words.toTypedArray()).joinToString(" · ")
+    }
+
+    /** The second line: another alert up ("Also: Falling fast"), then the content's own (the sensor, the late time). */
+    private fun text(
+        content: LiveNotificationContent,
+        alert: GlucoseAlert?,
+        now: Instant,
+    ): String? {
+        val own = content.text?.let { resolve(it, now) }
+        if (alert == null) return own
+        // without a value on screen (the service's first post, or dead) the alert's own value line says it
+        val value = alert.body.takeIf { content.look == null }
+        val also = alert.also?.let { context.getString(R.string.monitor_alert_also, it) }
+        return listOfNotNull(value, also, own).joinToString(" · ").ifEmpty { null }
+    }
+
+    /** "Eat carbs" / "Take insulin": the card's pill while an alert asks for it (none while muted or treated). */
+    private fun pillWords(
+        alert: GlucoseAlert,
+        frame: CardFrame?,
+        now: Instant,
+    ): String? {
+        if (alert.mutedUntil != null) return null
+        val status = frame?.state?.alerts?.status ?: return null
+        return StatusBadge.look(status, now.epochSecond, CardWords.of(context.resources))?.takeIf { !it.tonal }?.text
+    }
+
+    /** With an alert up, the tap opens Add treatment as an answer to it (#39): Carbs on the low side. */
+    private fun tapOf(
+        content: LiveNotificationContent,
+        alert: GlucoseAlert?,
+    ): Target =
+        when {
+            alert == null || content.tap !is Target.QuickTreatment -> content.tap
+            else -> Target.QuickTreatment(focusCarbs = alert.kind.side == Side.LOW, alertKind = alert.kind.wire)
+        }
+
+    /**
+     * What the lock screen shows with *Glucose on the lock screen* off: that Sukrara is monitoring, or the alert's
+     * title (never a value) on its channel.
+     */
+    private fun publicVersion(
+        alert: GlucoseAlert?,
+        channel: String,
+    ): Notification =
         Notification
-            .Builder(context, Channels.GLUCOSE)
+            .Builder(context, channel)
             .setSmallIcon(R.drawable.monitor_ic_app)
-            .setContentTitle(context.getString(R.string.monitor_notif_public_title))
-            .setContentText(context.getString(R.string.monitor_notif_public_text))
+            .setContentTitle(alert?.title ?: context.getString(R.string.monitor_notif_public_title))
+            .setContentText(if (alert == null) context.getString(R.string.monitor_notif_public_text) else null)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_STATUS)
             .build()
@@ -169,6 +393,7 @@ class LiveNotification(
         content: LiveNotificationContent,
         now: Instant,
         frame: CardFrame?,
+        alert: GlucoseAlert?,
     ) {
         val chip = content.chip ?: return
         if (Build.VERSION.SDK_INT_FULL < Build.VERSION_CODES_FULL.BAKLAVA_1) return
@@ -176,16 +401,18 @@ class LiveNotification(
         runCatching { b.setRequestPromotedOngoing(true).setShortCriticalText(resolve(chip, now)) }.onFailure { return }
         val look = content.look ?: return
         if (Build.VERSION.SDK_INT >= METRIC_STYLE_SDK) {
-            runCatching { b.setStyle(metricStyle(content, look, now, frame)) }
+            runCatching { b.setStyle(metricStyle(content, look, now, frame, alert)) }
                 .onFailure { Log.w(TAG, "metric style: ${it.javaClass.simpleName}") }
         }
     }
 
     /**
-     * MetricStyle: the value as the face writes it (LO / HI included; never a number of its own), styled by its range
-     * while fresh and plain once struck through; the reading's time as a second metric once it's late; the rest of the
-     * [MAX_METRICS] are the card's slots as the notification card shows them (`GlucoseCard.slotTexts`: time in range,
-     * average, the last treatment, over the same windows as home), only while the value is a reading.
+     * MetricStyle: the value and its arrow as the face writes them (LO / HI included; never a number of its own, no
+     * unit), styled by its range while fresh and plain once struck through, labelled *Now* while fresh and with the
+     * reading's time once late (never the range or the unit: the title says the range); while a side is muted its
+     * countdown; the rest of the [MAX_METRICS] are the card's slots as the notification card shows them
+     * (`GlucoseCard.slotTexts`: time in range, average, the last treatment, over the same windows as home), only while
+     * the value is a reading. MetricStyle draws no large icon, so no sparkline (docs/36: the chart is the card's).
      */
     @RequiresApi(METRIC_STYLE_SDK)
     private fun metricStyle(
@@ -193,21 +420,28 @@ class LiveNotification(
         look: GlucoseLook,
         now: Instant,
         frame: CardFrame?,
+        alert: GlucoseAlert?,
     ): Notification.MetricStyle {
         val bands = frame?.config?.bands ?: Bands()
-        val unit = (frame?.config?.unit ?: GlucoseUnit.MGDL).symbol
+        val label =
+            content.readingAt?.let { Freshness.timeText(it.epochSecond, now.epochSecond) }
+                ?: context.getString(R.string.monitor_metric_now)
+        val shown = listOfNotNull(look.text, look.arrowText).joinToString(" ")
         val value =
             if (look.strike || content.mgdl == null) {
-                Notification.Metric(Notification.Metric.FixedText(look.text!!), unit)
+                Notification.Metric(Notification.Metric.FixedText(shown), label)
             } else {
-                Notification.Metric(Notification.Metric.FixedText(look.text!!), unit, semantic(content.mgdl, bands))
+                Notification.Metric(Notification.Metric.FixedText(shown), label, semantic(content.mgdl, bands))
             }
         val style = Notification.MetricStyle().addMetric(value)
-        content.readingAt?.let {
+        alert?.mutedUntil?.let { until ->
             style.addMetric(
                 Notification.Metric(
-                    Notification.Metric.FixedText(Freshness.timeText(it.epochSecond, now.epochSecond)),
-                    context.getString(R.string.monitor_metric_reading),
+                    Notification.Metric.TimeDifference.forTimer(
+                        Instant.ofEpochSecond(until),
+                        Notification.Metric.TimeDifference.FORMAT_ADAPTIVE,
+                    ),
+                    alert.title,
                 ),
             )
         }
@@ -234,28 +468,36 @@ class LiveNotification(
         }
 
     /**
-     * The colorized card: the range colour (keeps the icon first and shown although the channel is LOW) and, when
-     * [frame] is drawn, the renderer's header row and chart as custom views.
+     * The card: on the system's notification colour, or with *Card in the range colour* colorized in the range colour
+     * (keeps the icon first and shown although the channel is LOW); when [frame] is drawn, the renderer's header row and
+     * chart as custom views, with the alert's title over them while one is up (and as the heads-up while it rings).
      */
     private fun card(
         b: Notification.Builder,
         content: LiveNotificationContent,
         now: Instant,
         frame: CardFrame?,
+        alert: GlucoseAlert?,
+        ringing: Boolean,
     ) {
         val look = content.look ?: return
         val mgdl = content.mgdl ?: return
         val config = frame?.config ?: GraphConfig()
-        val bg = NotificationCard.background(look, mgdl, config)
-        b.setColorized(true).setColor(bg)
-        val art = frame?.let { art(it, content, bg, now) } ?: return
-        // TalkBack: the card's one sentence, as on every other surface (never the title's arrow)
-        val description = art.description
+        val bg = if (content.colorize) NotificationCard.background(look, mgdl, config) else null
+        bg?.let { b.setColorized(true).setColor(it) }
+        val art = frame?.let { art(it, content, bg, now, alert?.rangeSaid == true) } ?: return
+        // TalkBack: the card's one sentence, as on every other surface (never the title's arrow); the alert's title first
+        val description = listOfNotNull(alert?.title, art.description).joinToString(". ")
+        val title = alert?.title
+        val ink = bg?.let(NotificationCard::ink)
         b
             .setShowWhen(false) // the late time is in the card
             .setStyle(Notification.DecoratedCustomViewStyle())
-            .setCustomContentView(views(R.layout.monitor_notif_card_collapsed, art.collapsed, null, description))
-            .setCustomBigContentView(views(R.layout.monitor_notif_card_expanded, art.header, art.graph, description))
+            .setCustomContentView(views(R.layout.monitor_notif_card_collapsed, art.collapsed, null, description, null, ink))
+            .setCustomBigContentView(views(R.layout.monitor_notif_card_expanded, art.header, art.graph, description, title, ink))
+        if (title != null && ringing) {
+            b.setCustomHeadsUpContentView(views(R.layout.monitor_notif_card_heads_up, art.header, null, description, title, ink))
+        }
     }
 
     private fun views(
@@ -263,10 +505,20 @@ class LiveNotification(
         header: Bitmap,
         graph: Bitmap?,
         description: String,
+        title: String?,
+        ink: Int?,
     ) = RemoteViews(context.packageName, layout).apply {
         setImageViewBitmap(R.id.monitor_notif_header, header)
         setContentDescription(R.id.monitor_notif_header, description)
         if (graph != null) setImageViewBitmap(R.id.monitor_notif_graph, graph)
+        if (layout != R.layout.monitor_notif_card_collapsed) {
+            setViewVisibility(R.id.monitor_notif_title, if (title != null) android.view.View.VISIBLE else android.view.View.GONE)
+            setTextViewText(R.id.monitor_notif_title, title.orEmpty())
+            // on the range colour the title takes the card's ink (the system tints only its own template's text)
+            ink?.let { setTextColor(R.id.monitor_notif_title, it) }
+            // the description says the title already
+            setInt(R.id.monitor_notif_title, "setImportantForAccessibility", android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO)
+        }
     }
 
     private var artCache: NotificationArt? = null
@@ -283,8 +535,9 @@ class LiveNotification(
     private fun art(
         frame: CardFrame,
         content: LiveNotificationContent,
-        bg: Int,
+        bg: Int?,
         now: Instant,
+        rangeSaid: Boolean,
     ): NotificationArt? {
         val quiet = frame.state.alerts.treatmentQuiet
         val key =
@@ -292,6 +545,7 @@ class LiveNotification(
                 content.cardKey,
                 content.look,
                 bg,
+                rangeSaid,
                 frame.config,
                 frame.dark,
                 frame.state.latest,
@@ -315,6 +569,7 @@ class LiveNotification(
                     frame.dark,
                     NotificationCard.columnDp(context),
                     redrawGraph,
+                    rangeSaid,
                 )
             NotificationArt(drawn.header, drawn.collapsed, if (redrawGraph) drawn.graph else cached?.graph, drawn.description)
         }.onSuccess {
@@ -394,10 +649,12 @@ class LiveNotification(
                     Intent(NavTargets.ACTION_QUICK_TREATMENT)
                         .setPackage(context.packageName)
                         .putExtra(NavTargets.EXTRA_FOCUS_CARBS, target.focusCarbs)
+                        .apply { target.alertKind?.let { putExtra(NavTargets.EXTRA_ALERT_KIND, it) } }
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 // until the quick treatment dialog is in this build, the tap opens the app
                 val intent = if (hasQuickTreatment) quick else launchIntent()
-                PendingIntent.getActivity(context, REQUEST_QUICK + if (target.focusCarbs) 1 else 0, intent, IMMUTABLE)
+                val code = REQUEST_QUICK + (if (target.focusCarbs) 1 else 0) + if (target.alertKind != null) 2 else 0
+                PendingIntent.getActivity(context, code, intent, IMMUTABLE)
             }
 
             Target.OpenApp -> {
@@ -420,6 +677,27 @@ class LiveNotification(
 
     private fun launchIntent(): Intent = AppActivities.launch(context)
 
+    /** The full-screen intent of an alarm-level ring: the app over the lock screen. */
+    private fun openApp(): PendingIntent =
+        PendingIntent.getActivity(context, REQUEST_FULL_SCREEN, launchIntent().addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), IMMUTABLE)
+
+    /**
+     * The swipe while [alert] is up: its answer (#39) and seen until the next ring (#195), named by its firing (a data
+     * URI keeps each firing's PendingIntent apart), then the glucose notification comes back without it, silently.
+     */
+    private fun swipedIntent(alert: GlucoseAlert): PendingIntent =
+        PendingIntent.getBroadcast(
+            context,
+            REQUEST_SWIPED,
+            Intent(context, AlertActionReceiver::class.java)
+                .setAction(AlertActionReceiver.TIDY)
+                .setData(Uri.fromParts("sukrara-glucose", alert.firingId ?: "muted-${alert.kind.wire}", null))
+                .putExtra(AlertActionReceiver.KIND, alert.kind.wire)
+                .putExtra(AlertActionReceiver.FIRING, alert.firingId)
+                .putExtra(AlertActionReceiver.GLUCOSE, true),
+            IMMUTABLE,
+        )
+
     private fun dismissedIntent(): PendingIntent =
         PendingIntent.getBroadcast(
             context,
@@ -436,6 +714,17 @@ class LiveNotification(
         private const val REQUEST_OPEN = 20
         private const val REQUEST_SENSOR = 30
         private const val REQUEST_DISMISSED = 40
+        private const val REQUEST_SWIPED = 41
+        private const val REQUEST_FULL_SCREEN = 50
+
+        /**
+         * After a ring every post stays on the alert's channel this long (only alert once), so the sound plays out; the
+         * same 10 s as the alert's value guard ([app.mauri.sukrara.monitor.alerts.AlertLiveValue.AFTER_RING_S]).
+         */
+        const val RING_WINDOW_MS = 10_000L
+
+        /** Android shows at most three actions. */
+        private const val MAX_ACTIONS = 3
 
         /** Android 17: `Notification.MetricStyle`. */
         private const val METRIC_STYLE_SDK = 37

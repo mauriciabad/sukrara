@@ -194,6 +194,7 @@ object SettingsSpec {
         SettingInfo("alerts.v", "format", null, false, null, "alerts:alerts", "defaults:alerts", "v", null, null, listOf()),
         SettingInfo("alerts.thresholdsConfirmedAt", "state", null, false, null, "alerts:thresholdsConfirmedAt", "", null, "android", "The wearer confirms the alert thresholds during the phone's first-run setup; the Mac follower takes the wearer's alerts", listOf()),
         SettingInfo("alerts.unlockedSound", "enum", null, false, null, "alerts:unlockedSound", "", null, "android", "An Android 15+ system setting that drops every notification sound while the phone is unlocked; the Mac has no such setting", listOf()),
+        SettingInfo("alerts.watch", "bool", null, false, null, "alerts:watchAlerts", "", null, "android", "Android rings alerts through its ongoing glucose notification, which Wear OS doesn't bridge; the Mac's alerts are already notifications of their own", listOf()),
         SettingInfo("alerts.throughFocus", "bool", null, false, null, "", "defaults:throughFocus", null, "mac", "On Android the choice is the alarm channels' own Do Not Disturb override, which Android keeps and Sukrara reads (Do Not Disturb access); macOS has no per-app override an app can set, so the Mac remembers whether to post Time Sensitive", listOf()),
         SettingInfo("general.unit", "enum", null, false, null, "settings:unit", "defaults:unit", null, null, null, listOf()),
         SettingInfo("setup.steps", "setup", null, false, null, "", "defaults:setupSteps", null, "mac", "The Mac's first-run walk (welcome, follow, alerts, notifications, open at login); Android's first run is its own role / permission flow with its own state", listOf()),
@@ -211,6 +212,7 @@ object SettingsSpec {
         SettingInfo("sharing.nostrInterval", "number", "nostrInterval", false, null, "sharing:relayInterval", "", null, "android", "The wearer's phone publishes; a Mac follower only reads", listOf()),
         SettingInfo("sharing.bleFollowers", "bool", null, false, null, "sharing:nearbySharing", "", null, "android", "The wearer's phone is the Bluetooth peripheral; the Mac connects to it when nearby", listOf()),
         SettingInfo("statusbar.chip", "bool", null, false, null, "statusbar:statusChip", "", null, "android", "Android status bar; the Mac shows the value in its menu bar always", listOf()),
+        SettingInfo("statusbar.colorize", "bool", null, false, null, "statusbar:colorize", "", null, "android", "The Android glucose notification's card; the Mac has no glucose notification (the menu bar shows the value)", listOf()),
         SettingInfo("statusbar.icon", "bool", null, false, null, "statusbar:statusIcon", "", null, "android", "Android status bar", listOf()),
         SettingInfo("statusbar.lockScreen", "bool", null, false, null, "statusbar:lockScreen", "", null, "android", "The Android glucose notification's lock-screen visibility; the Mac has no lock-screen notification of the value", listOf()),
         SettingInfo("statusbar.hook", "bool", null, false, null, "statusbar:statusHook", "", null, "android", "Android status bar (root / LSPosed)", listOf()),
@@ -295,6 +297,7 @@ object SettingsSpec {
         const val ALERTS = "alerts"
         const val THRESHOLDS_CONFIRMED_AT = "thresholdsConfirmedAt"
         const val UNLOCKED_SOUND = "unlockedSound"
+        const val WATCH_ALERTS = "watchAlerts"
         const val UNIT = "unit"
         const val JUGGLUCO = "juggluco"
         const val UPDATE_CHECKS = "updateChecks"
@@ -304,6 +307,7 @@ object SettingsSpec {
         const val RELAY_INTERVAL = "relayInterval"
         const val NEARBY_SHARING = "nearbySharing"
         const val STATUS_CHIP = "statusChip"
+        const val COLORIZE = "colorize"
         const val STATUS_ICON = "statusIcon"
         const val LOCK_SCREEN = "lockScreen"
         const val STATUS_HOOK = "statusHook"

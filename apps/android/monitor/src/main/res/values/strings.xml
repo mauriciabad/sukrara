@@ -48,17 +48,17 @@
     <string name="alert_text_no_data_last">Last reading %1$s · %2$s</string>
     <string name="alert_relaxed_subtext">Reminders every %1$s</string>
 
-    <!-- Alert notification actions (Mute / Remind work from the lock screen, nothing opens; Log carbs opens the quick
-         treatment dialog with Carbs focused, after the unlock). -->
-    <string name="alert_action_log_carbs">Log carbs</string>
-    <string name="alert_action_mute">Mute…</string>
+    <!-- Alert notification actions, never with "…" (the owner, 2026-11-14): Mute / Remind work from the lock screen,
+         nothing opens (in a Live Update, where Android drops the direct reply, Mute opens the lengths sheet); Treatment
+         opens the quick treatment dialog, Carbs focused on the low side, Rapid on the high side, after the unlock. -->
+    <string name="alert_action_treatment">Treatment</string>
+    <string name="alert_action_mute">Mute</string>
     <string name="alert_action_mute_for_label">Mute for (e.g. 45 min, 1 h 30)</string>
-    <!-- What TalkBack says for a length chip of Mute… / Change time: %1$s = the side ("Low"), %2$s = "30 min" -->
+    <!-- What TalkBack says for a length chip of Mute: %1$s = the side ("Low"), %2$s = "30 min" -->
     <string name="alert_mute_choice_a11y">%1$s alerts: mute for %2$s</string>
     <string name="alert_action_remind_less">Remind less</string>
     <string name="alert_action_remind_usual">Remind as usual</string>
     <string name="alert_action_unmute">Unmute</string>
-    <string name="alert_action_change">Change time</string>
 
     <!-- Sensor end. -->
     <string name="sensor_end_today">Sensor ends today at %1$s</string>
@@ -108,9 +108,9 @@
     <string name="monitor_channel_alarm_rising_fast">Rising fast (alarm)</string>
     <string name="monitor_channel_alarm_no_data">No data (alarm)</string>
 
-    <!-- the glucose notification: %1$s = the value as the card shows it (number, LO or HI), %2$s = its unit (mg/dL, mmol/L), %3$s = the trend arrow -->
-    <string name="monitor_notif_value">%1$s %2$s %3$s</string>
-    <string name="monitor_notif_value_range">%1$s %2$s %3$s · %4$s</string>
+    <!-- the glucose notification: %1$s = the value as the card shows it (number, LO or HI), %2$s = the trend arrow; no unit (the owner: obvious) -->
+    <string name="monitor_notif_value">%1$s %2$s</string>
+    <string name="monitor_notif_value_range">%1$s %2$s · %3$s</string>
     <!-- %1$s = the reading's time ("14:05", "Tue 14:05") -->
     <string name="monitor_notif_reading_at">Reading at %1$s</string>
     <string name="monitor_notif_no_readings_since">No readings since %1$s</string>
@@ -141,8 +141,12 @@
     <string name="monitor_chip_value">%1$s</string>
     <!-- Live Update chip once the value is 5 min old: the reading's time -->
     <string name="monitor_chip_stale">%1$s</string>
-    <!-- Android 17 Live Update card (MetricStyle): the value's unit and the late reading's label -->
-    <string name="monitor_metric_reading">Reading</string>
+    <!-- Android 17 Live Update card (MetricStyle): the value's label while fresh (once late: the reading's time) -->
+    <string name="monitor_metric_now">Now</string>
+    <!-- the Live Update's title on Android 17 while no alert is up and the value is in range (out of range: card_range_*) -->
+    <string name="monitor_range_in_range">In range</string>
+    <!-- the glucose notification while two alerts are up: the other one's title ("Also: Falling fast") -->
+    <string name="monitor_alert_also">Also: %1$s</string>
     <string name="monitor_action_open_app">Open Sukrara</string>
     <string name="monitor_action_set_up_sensor">Set up sensor</string>
     <string name="monitor_action_replace_sensor">Replace sensor</string>
