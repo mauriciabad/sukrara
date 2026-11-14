@@ -24,10 +24,12 @@ public enum CardSurface: String, CaseIterable, Sendable {
     case widgetCombined = "widget-combined"
     /// An alert notification's body (#195): the newest reading's value and arrow, its time once late.
     case alertNotification = "alert-notification"
+    /// Settings › General › Trend arrow's live preview (#204): the newest value and its arrow as the card shows them.
+    case trendPreview = "trend-preview"
     /// Snapshots and tests that draw the card outside any registered surface.
     case test = "test"
 
-    var glyph: Bool { self == .menubarTitle || self == .alertNotification }
+    var glyph: Bool { self == .menubarTitle || self == .alertNotification || self == .trendPreview }
 }
 
 /// What one `GlucoseCard.draw` call laid out (CardLayout in CardSurface.kt): every element, its box (in the call's own
@@ -89,7 +91,8 @@ extension CardSurface {
         rc.sensorTime = overrides.sensor ?? cfg.sensorTime
         var st: CardStyle
         switch self {
-        case .menubarCard, .menubarTitle, .alertNotification, .test: st = cfg.cardStyle(graph: cfg.graphStyle())
+        case .menubarCard, .menubarTitle, .alertNotification, .trendPreview, .test:
+            st = cfg.cardStyle(graph: cfg.graphStyle())
         case .widgetValue: st = rc.cardStyle(graph: nil)
         case .widgetGraph:
             st = CardStyle(graph: g, rings: [], value: false, sensorTime: rc.sensorTime, bands: cfg.bands)

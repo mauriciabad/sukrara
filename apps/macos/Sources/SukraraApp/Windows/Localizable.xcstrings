@@ -705,6 +705,22 @@
         }
       }
     },
+    "Balanced" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Balanced"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Equilibrada"
+          }
+        }
+      }
+    },
     "Camera" : {
       "localizations" : {
         "en" : {
@@ -1281,6 +1297,22 @@
         }
       }
     },
+    "Every arrow, spoken trend and the Falling fast / Rising fast alerts use this." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Every arrow, spoken trend and the Falling fast / Rising fast alerts use this."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas las flechas, la tendencia leída en voz alta y las alertas Bajada rápida / Subida rápida usan esto."
+          }
+        }
+      }
+    },
     "Extremely high" : {
       "localizations" : {
         "en" : {
@@ -1629,6 +1661,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Desde cualquier app: el valor, su tendencia y su antigüedad, con la voz de VoiceOver si VoiceOver está activado. Desactívalo si otra app usa estas teclas. Leer la glucosa en voz alta también está en el menú contextual del valor de la barra de menús."
+          }
+        }
+      }
+    },
+    "From the readings: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the readings: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De las lecturas: %@"
+          }
+        }
+      }
+    },
+    "From the readings: about 4 minutes behind, steady. Recommended." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the readings: about 4 minutes behind, steady. Recommended."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De las lecturas: unos 4 minutos de retraso, estable. Recomendada."
+          }
+        }
+      }
+    },
+    "From the readings: the calmest, about 6 minutes behind." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the readings: the calmest, about 6 minutes behind."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De las lecturas: la más tranquila, unos 6 minutos de retraso."
+          }
+        }
+      }
+    },
+    "From the readings: turns soonest, moves more." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the readings: turns soonest, moves more."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De las lecturas: gira antes, se mueve más."
+          }
+        }
+      }
+    },
+    "From the sensor" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the sensor"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del sensor"
+          }
+        }
+      }
+    },
+    "From the sensor: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From the sensor: %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Del sensor: %@"
           }
         }
       }
@@ -2193,6 +2321,38 @@
         }
       }
     },
+    "No trend yet: too few readings." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No trend yet: too few readings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún sin tendencia: pocas lecturas."
+          }
+        }
+      }
+    },
+    "No trend: the sensor sent no rate." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No trend: the sensor sent no rate."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin tendencia: el sensor no envió ninguna."
+          }
+        }
+      }
+    },
     "Not checked yet" : {
       "localizations" : {
         "en" : {
@@ -2285,6 +2445,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Política de privacidad"
+          }
+        }
+      }
+    },
+    "Quick" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rápida"
           }
         }
       }
@@ -2417,6 +2593,22 @@
         }
       }
     },
+    "Smooth" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smooth"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suave"
+          }
+        }
+      }
+    },
     "Software Update" : {
       "localizations" : {
         "en" : {
@@ -2545,6 +2737,38 @@
         }
       }
     },
+    "the sensor says %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the sensor says %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el sensor dice %@ %@"
+          }
+        }
+      }
+    },
+    "The sensor's own trend: calm, but often minutes late." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The sensor's own trend: calm, but often minutes late."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tendencia del propio sensor: tranquila, pero a menudo minutos tarde."
+          }
+        }
+      }
+    },
     "The version, the privacy policy, the website and Sukrara on other devices" : {
       "localizations" : {
         "en" : {
@@ -2605,6 +2829,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiempo mostrado, líneas, rangos, tratamientos y el sensor en el gráfico"
+          }
+        }
+      }
+    },
+    "Too few readings: the sensor's rate, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too few readings: the sensor's rate, %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pocas lecturas: la del sensor, %@"
+          }
+        }
+      }
+    },
+    "Trend arrow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trend arrow"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Flecha de tendencia"
+          }
+        }
+      }
+    },
+    "Trend from" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trend from"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendencia a partir de"
           }
         }
       }
@@ -2733,6 +3005,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara para Android"
+          }
+        }
+      }
+    },
+    "Wearer and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wearer and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quien lleva el sensor y Predeterminados deciden los rangos, la flecha de tendencia, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y cuándo avisar; Personalizados te deja ajustarlos en este Mac. Los sonidos, la alerta de sin datos, los botones de la notificación y el tiempo mostrado y el tiempo del sensor de cada lugar son siempre de este Mac."
           }
         }
       }
@@ -6269,22 +6557,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "distribución del tiempo en rango"
-          }
-        }
-      }
-    },
-    "Wearer and Default decide the ranges, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wearer and Default decide the ranges, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quien lleva el sensor y Predeterminados deciden los rangos, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y cuándo avisar; Personalizados te deja ajustarlos en este Mac. Los sonidos, la alerta de sin datos, los botones de la notificación y el tiempo mostrado y el tiempo del sensor de cada lugar son siempre de este Mac."
           }
         }
       }

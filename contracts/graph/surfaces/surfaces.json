@@ -449,6 +449,15 @@
         ]
       },
       {
+        "id": "trend-preview",
+        "kind": "glyph",
+        "entry": "TrendPreview.look",
+        "what": "Settings › General › Trend arrow's live preview (#204): the newest value and its arrow as the card shows them, the arrow turning with a spring, and where the trend came from",
+        "files": [
+          "apps/macos/Sources/SukraraApp/Windows/Settings/TrendArrowSection.swift"
+        ]
+      },
+      {
         "id": "widget-value",
         "kind": "card",
         "entry": "WidgetEntryView.card",

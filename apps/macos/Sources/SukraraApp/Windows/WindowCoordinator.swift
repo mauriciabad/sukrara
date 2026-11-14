@@ -27,6 +27,7 @@ final class WindowCoordinator {
         follow = FollowModel(status: .notFollowing, actions: adapter)
         settings = SettingsModel(
             store: store, follow: follow, version: Self.version, distribution: model.plan.distribution)
+        settings.newestReading = { [weak model] in model?.newestReading }
         setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
         report = ReportModel(store: store, app: model)

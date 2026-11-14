@@ -229,6 +229,17 @@
             let following = follow(
                 .following(wearer: "Marta", lastReading: Date().addingTimeInterval(-180), canWrite: true))
             let settings = SettingsModel(store: store, follow: following, version: "0.12.0")
+            // Trend arrow's preview: a rise of about 1.2 a minute while the sensor says 0.8 (#204), worked out by the
+            // app's one place (AppModel)
+            let trendApp = AppModel(
+                plan: LaunchPlan(mode: .normal, services: .none, data: .isolated(root: URL(fileURLWithPath: "/tmp"))))
+            let riseEnd = Date().addingTimeInterval(-40)
+            trendApp.apply(
+                readings: (0...15).map { i in
+                    Reading(
+                        t: riseEnd.addingTimeInterval(Double(i - 15) * 60), mgdl: 158 + (i * 6) / 5, sensorRate: 0.8)
+                })
+            settings.newestReading = { trendApp.newestReading }
             // Juggluco on this network: on, in each state (its own defaults: the switch is on there)
             let lanStore = DefaultsSettingsStore(defaults: UserDefaults(suiteName: suite + ".lan")!)
             lanStore.set(true, for: MacSettings.jugglucoLan)
@@ -259,7 +270,7 @@
                         SettingsView(
                             model: settings, loginItem: LoginItem(service: SnapLogin(status: .enabled)),
                             updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(settings, width: 560, height: 640))
+                        ).settingsWindow(settings, width: 560, height: 900))
                 ))
             out.append(
                 (
@@ -362,13 +373,14 @@
                 ))
             let general = SettingsModel(store: ownStore, follow: following, wearer: marta, version: "0.12.0")
             general.pane = .general
+            general.newestReading = { trendApp.newestReading }
             out.append(
                 (
                     "settings-general-custom",
                     AnyView(
                         SettingsView(
                             model: general, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(general, width: 600, height: 1240))
+                        ).settingsWindow(general, width: 600, height: 1560))
                 ))
             out.append(
                 (
@@ -426,7 +438,7 @@
                     readings: days == 0
                         ? []
                         : RealisticSynthetic.readings(until: now - 60, days: days).map {
-                            Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: $0.sgv, rate: $0.rate)
+                            Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: $0.sgv, sensorRate: $0.rate)
                         })
                 let report = ReportModel(store: store, app: app)
                 report.days = days == 3 ? 7 : 14

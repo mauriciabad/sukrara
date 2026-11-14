@@ -5,9 +5,9 @@ import SukraraCore
 import SukraraShare
 import SwiftUI
 
-/// General: Settings from (with what's in use and Copy the wearer's settings…), glucose (unit, read aloud), source
-/// (Juggluco), startup (open at login), Software Update (the version and which one, the updater in the GitHub
-/// version), About Sukrara and Quit. The medical-device reminder, the privacy policy and Sukrara on other devices are
+/// General: Settings from (with what's in use and Copy the wearer's settings…), glucose (unit, read aloud), the trend
+/// arrow (#204), source (Juggluco), startup (open at login), Software Update (the version and which one, the updater in
+/// the GitHub version), About Sukrara and Quit. The medical-device reminder, the privacy policy and Sukrara on other devices are
 /// in the About window (`AboutView`).
 struct GeneralPane: View {
     @Bindable var model: SettingsModel
@@ -29,7 +29,7 @@ struct GeneralPane: View {
             } footer: {
                 Text(
                     L10n.t(
-                        "Wearer and Default decide the ranges, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+                        "Wearer and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
                     )
                 )
                 .formFooter()
@@ -50,6 +50,7 @@ struct GeneralPane: View {
             } header: {
                 Text(L10n.t("Glucose"))
             }
+            TrendArrowSection(model: model)
             Section {
                 JugglucoRows(model: model.juggluco)
             } header: {

@@ -145,6 +145,15 @@ public final class SettingsModel {
         return GraphConfig.load(from: store, wearer: wearer)
     }
 
+    /// *Trend arrow* in use (the wearer's, the default or this Mac's, like the other mirrored settings); set in Custom.
+    public var trend: TrendSetting {
+        get { graph.trend }
+        set { updateGraph { $0.trend = newValue } }
+    }
+
+    /// The newest reading the app shows, with its trend (Glucose › Trend arrow's preview); nil = none.
+    @ObservationIgnored public var newestReading: () -> Reading? = { nil }
+
     public var unit: GlucoseUnit {
         get { _ = revision; return store.unit }
         set { store.set(newValue.rawValue, for: MacSettings.unit); revision += 1 }
@@ -239,6 +248,7 @@ public final class SettingsModel {
         store.set(GraphConfig.linesText(g.lines), for: MacSettings.lines)
         store.set(g.lastPlace.rawValue, for: MacSettings.lastPlace)
         store.set(g.lastElse.map(GraphConfig.slotText) ?? "", for: MacSettings.lastElse)
+        store.set(g.trend.rawValue, for: MacSettings.trend)
         revision += 1
     }
 
