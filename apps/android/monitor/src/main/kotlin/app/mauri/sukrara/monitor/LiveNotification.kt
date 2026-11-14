@@ -441,7 +441,8 @@ class LiveNotification(
                         Instant.ofEpochSecond(until),
                         Notification.Metric.TimeDifference.FORMAT_ADAPTIVE,
                     ),
-                    alert.title,
+                    // the title already says which side is muted
+                    context.getString(R.string.monitor_metric_mute_left),
                 ),
             )
         }
@@ -516,8 +517,6 @@ class LiveNotification(
             setTextViewText(R.id.monitor_notif_title, title.orEmpty())
             // on the range colour the title takes the card's ink (the system tints only its own template's text)
             ink?.let { setTextColor(R.id.monitor_notif_title, it) }
-            // the description says the title already
-            setInt(R.id.monitor_notif_title, "setImportantForAccessibility", android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO)
         }
     }
 

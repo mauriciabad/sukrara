@@ -6,6 +6,7 @@ package app.mauri.sukrara.monitor.alerts
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.alerts.AlertKind
@@ -18,9 +19,11 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.LiveNotification
 import app.mauri.sukrara.monitor.R
+import app.mauri.sukrara.monitor.notify.CardFrame
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent
 import app.mauri.sukrara.monitor.notify.NotificationIds
@@ -247,6 +250,19 @@ class OneNotificationTest {
         val g = posted()
         assertEquals(Channels.GLUCOSE, g.channelId)
         assertTrue("no alert context on the glucose notification", titles(g).isEmpty())
+    }
+
+    /** 0.x crash on the emulator: a RemoteViews call a TextView refuses kills the foreground service. */
+    @Test fun `the card with an alert inflates its views as System UI does`() {
+        val content = LiveNotificationContent.from(state(), now, LiveNotification::face, NotificationPrefs(chip = false))
+        val frame = CardFrame(state(), emptyList(), GraphConfig(), dark = true)
+        live.post(content, now, frame)
+        presenter().show(fire(AlertKind.LOW), settings, silent = false, who = null, relaxedMin = 0)
+        val n = live.build(content, now, frame, LiveNotification.Mode.RING)
+        val parent = FrameLayout(ctx)
+        for (views in listOfNotNull(n.contentView, n.bigContentView, n.headsUpContentView)) views.apply(ctx, parent)
+        assertNotNull("the card with the graph", n.bigContentView)
+        assertNotNull("the heads-up with the alert's title", n.headsUpContentView)
     }
 
     @Test fun `the plain stand-in stays a notification of its own`() {

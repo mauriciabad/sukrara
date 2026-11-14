@@ -128,6 +128,20 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
 - [ ] A sensor past its end that keeps sending (#3; emulator, synthetic sensor ended a few minutes ago): the value with
   *Sensor ended · Replace sensor* under it; once the readings stop, *Sensor ended* with *Replace sensor*.
 - [ ] Live Update chip / status bar value if the change touched them (phone).
+- [ ] One notification (docs/36; Android 16 and 17 emulators, `SYNTHETIC --ei cycle 170` then `--ei cycle 116`, chip and
+      graph, light and dark): exactly one Sukrara notification while a low rings (`dumpsys notification --noredact`: id 1
+      on `alert.low` without `ONLY_ALERT_ONCE`, `category=alarm`, `PROMOTED_ONGOING` with the chip; 10 s later on
+      `glucose.live` with the alert still on it); buttons *Treatment · Remind less · Mute*, none with "…"; in the Live
+      Update *Mute* opens the lengths sheet over the lock screen (15m 30m 1h 2h; TalkBack reads "Mute for 30 min"); on the
+      card the chips; muted: *Low alerts muted* with *Time left* / the pill, only *Treatment* and *Unmute*; swipe it
+      during a ring: it comes straight back on `glucose.live` without the alert and doesn't ring again; an alarm-level kind
+      (very low) locked: full screen on the first ring, not on a re-ring within 10 s. Graph: the value smaller than the
+      rings, two rings expanded and collapsed, no *Low* word beside a level alert's title, *Card in the range colour*
+      keeps every pill legible (white / black on red).
+- [ ] Settings › Status bar picker: Chip / Graph side by side with their pictures, one radio group with TalkBack; with
+      the root value on, Graph chosen and the chip disabled with its note. Settings › Alerts › *Alerts on my watch*: on →
+      a separate alert beside the glucose notification (ids 1000+), which carries no alert; its summary suggests it with
+      a watch app installed. Real watch (when one is paired): the separate alert buzzes the watch.
 
 ## Q5b Root status bar in a full row
 

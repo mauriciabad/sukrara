@@ -25,7 +25,7 @@ import kotlin.math.sin
 
 /**
  * Debug builds only (emulator screenshots and QA): a made-up wearer source, switched on with the DebugFakes command
- * `SYNTHETIC`. One reading a minute on a 3-hour sine between 45 and 215 mg/dL (very low to high), with a 3-hour
+ * `SYNTHETIC`. One reading a minute on a 3-hour sine between 45 and 215 mg/dL (very low to high), with a 3-day
  * backfill. Bluetooth off pauses it (Interrupted) like a real sensor; [frozen] stops new readings so the stale states
  * can be shot by moving the emulator's clock.
  */
@@ -91,7 +91,9 @@ class SyntheticSource(
 
     companion object {
         val ID = SourceId("synthetic")
-        private const val BACKFILL_MINUTES = 180L
+
+        // three days, so the 1-day and 7-day rings (they need a quarter of their window) show on every card
+        private const val BACKFILL_MINUTES = 3 * 1440L
         private const val PERIOD_MINUTES = 180.0
         private const val MIDDLE = 130.0
         private const val AMPLITUDE = 85.0
