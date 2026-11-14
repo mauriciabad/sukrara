@@ -2,8 +2,10 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/// Notification category and action identifiers for the alerts (used by the notifier). Every alert has two
-/// actions (SPEC §2): *Mute…* (text input; empty = `muteMin`) and *Remind less* / *Remind as usual*.
+/// Notification category and action identifiers for the alerts (used by the notifier). Every alert has *Mute…* (text
+/// input; empty = `muteMin`) and *Remind less* / *Remind as usual* (SPEC §2); the kinds carbs answer (very low, low,
+/// falling fast) and their muted note have *Log Carbs…* first on a Mac that can add entries: the same category with
+/// `logCarbsSuffix`.
 public enum AlertNotificationIDs {
     /// An alert that Remind less would slow down.
     public static let alertCategory = "app.mauri.sukrara.alert"
@@ -19,14 +21,27 @@ public enum AlertNotificationIDs {
     public static let remindAsUsualAction = "app.mauri.sukrara.alert.remindAsUsual"
     public static let unmuteAction = "app.mauri.sukrara.alert.unmute"
     public static let changeMuteAction = "app.mauri.sukrara.alert.changeMute"
+    /// *Log Carbs…*: opens Add Treatment with Carbs focused.
+    public static let logCarbsAction = "app.mauri.sukrara.alert.logCarbs"
+    /// A category whose first action is *Log Carbs…*.
+    public static let logCarbsSuffix = ".logCarbs"
 
     /// One delivered notification per group (a new alert of the group replaces the previous one).
     public static func notificationID(_ group: AlertGroup) -> String { "app.mauri.sukrara.alert.\(group.rawValue)" }
     public static func mutedNotificationID(_ side: AlertSide) -> String { "app.mauri.sukrara.muted.\(side.rawValue)" }
 
-    /// The category an alert of `kind` posts with.
-    public static func category(for kind: AlertKind, _ s: AlertSettings, relaxed: Bool) -> String {
-        if relaxed { return alertRelaxedCategory }
-        return s.canRelax(kind) ? alertCategory : alertMuteOnlyCategory
+    /// The category an alert of `kind` posts with; `canLog` = this Mac can add entries now.
+    public static func category(for kind: AlertKind, _ s: AlertSettings, relaxed: Bool, canLog: Bool = false) -> String
+    {
+        let base = relaxed ? alertRelaxedCategory : s.canRelax(kind) ? alertCategory : alertMuteOnlyCategory
+        return logs(kind, canLog) ? base + logCarbsSuffix : base
     }
+
+    /// The category of `side`'s muted note.
+    public static func mutedCategory(_ side: AlertSide, canLog: Bool) -> String {
+        logs(side.mainKind, canLog) ? mutedCategory + logCarbsSuffix : mutedCategory
+    }
+
+    /// *Log Carbs…* is offered: carbs answer `kind` and this Mac can add entries.
+    private static func logs(_ kind: AlertKind, _ canLog: Bool) -> Bool { canLog && kind.treatment == .carbs }
 }

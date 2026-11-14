@@ -21,12 +21,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 /**
  * The treatment dialog's view of the alert rules: the latest reading against the low threshold, and the
  * after-treatment quiet. [settings] = the stored alert settings, null until they're read (no quiet line is claimed).
+ * [answer] = the alert runtime's answer on this phone (an alert's *Log carbs* opened the dialog).
  */
 class AppAlertHints(
     private val settings: StateFlow<AlertSettings?>,
     private val glucose: StateFlow<GlucoseState>,
     private val clock: Clock,
+    private val answer: (String) -> Unit = {},
 ) : AlertHints {
+    override fun answered(kind: String) = answer(kind)
+
     /**
      * The latest fresh reading is under the low threshold (70 is in range), whether or not the low alert is on (eating is what a low
      * needs either way); before the settings are read, the default threshold.

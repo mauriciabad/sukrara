@@ -27,6 +27,12 @@ object NavTargets {
     const val EXTRA_FROM_APP = "app.mauri.sukrara.extra.FROM_APP"
 
     /**
+     * String extra of [ACTION_QUICK_TREATMENT]: opened from this alert's *Log carbs* (the kind's wire name), an answer
+     * to the alert on this phone like its other actions (#39).
+     */
+    const val EXTRA_ALERT_KIND = "app.mauri.sukrara.extra.ALERT_KIND"
+
+    /**
      * The new-sensor / sensor setup flow. Intents for it target [SENSOR_SETUP_ACTIVITY] explicitly (not exported:
      * only Sukrara's own PendingIntents reach it); the main activity ignores the action from any other app.
      */

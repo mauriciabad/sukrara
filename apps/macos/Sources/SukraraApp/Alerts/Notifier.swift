@@ -12,8 +12,9 @@ protocol AlertNotifying {
     /// `escalated` (#39): the wearer's very low nobody answered there: "· no response", Time Sensitive when entitled.
     func post(_ firing: AlertFiring, sound: Bool, category: String, escalated: Bool)
     func clear(_ group: AlertGroup)
-    /// The silent "Low alerts muted / Until 10:42" note with Unmute and Change Time…
-    func postMuted(_ side: AlertSide, until: Date)
+    /// The silent "Low alerts muted / Until 10:42" note with Unmute and Change Time… (`category`: with Log Carbs… first
+    /// or not, `AlertNotificationIDs.mutedCategory(_:canLog:)`).
+    func postMuted(_ side: AlertSide, until: Date, category: String)
     func removeMuted(_ side: AlertSide)
     /// Settings › Alerts › Send Test Alert: `kind`'s notification with its sound and alarm level, titled "Test", with
     /// no actions (it mutes nothing) and its own identifier (it never replaces a real alert).
@@ -27,6 +28,10 @@ protocol AlertNotifying {
 extension AlertNotifying {
     func post(_ firing: AlertFiring, sound: Bool, category: String) {
         post(firing, sound: sound, category: category, escalated: false)
+    }
+
+    func postMuted(_ side: AlertSide, until: Date) {
+        postMuted(side, until: until, category: AlertNotificationIDs.mutedCategory)
     }
 }
 
@@ -225,11 +230,11 @@ final class Notifier: AlertNotifying {
         center.removeDelivered(ids: [AlertNotificationIDs.notificationID(group)])
     }
 
-    func postMuted(_ side: AlertSide, until: Date) {
+    func postMuted(_ side: AlertSide, until: Date, category: String) {
         let content = UNMutableNotificationContent()
         content.title = text.mutedTitle(side)
         content.body = text.mutedBody(until: SukraraCore.Clock.time(until))
-        content.categoryIdentifier = AlertNotificationIDs.mutedCategory
+        content.categoryIdentifier = category
         content.userInfo = [Self.sideKey: side.rawValue]
         content.interruptionLevel = .passive
         content.sound = nil
@@ -258,8 +263,11 @@ final class Notifier: AlertNotifying {
 
     /// The categories (SPEC §2): every alert has *Mute…* (typed length, empty = the default) and *Remind Less* /
     /// *Remind as Usual*; one whose repeats Remind Less wouldn't slow has Mute… alone. The muted note: *Unmute* +
-    /// *Change Time…*.
+    /// *Change Time…*. Each also with *Log Carbs…* first (`logCarbsSuffix`; the low side on a Mac that can add entries),
+    /// which brings Sukrara forward with Add Treatment.
     static func categories(_ text: AlertText) -> Set<UNNotificationCategory> {
+        let log = UNNotificationAction(
+            identifier: AlertNotificationIDs.logCarbsAction, title: text.logCarbs, options: [.foreground])
         let mute = UNTextInputNotificationAction(
             identifier: AlertNotificationIDs.muteAction, title: text.mute, options: [],
             textInputButtonTitle: text.muteButton, textInputPlaceholder: text.mutePlaceholder)
@@ -270,15 +278,27 @@ final class Notifier: AlertNotifying {
         let change = UNTextInputNotificationAction(
             identifier: AlertNotificationIDs.changeMuteAction, title: text.changeTime, options: [],
             textInputButtonTitle: text.muteButton, textInputPlaceholder: text.mutePlaceholder)
-        func category(_ id: String, _ actions: [UNNotificationAction]) -> UNNotificationCategory {
-            UNNotificationCategory(identifier: id, actions: actions, intentIdentifiers: [])
-        }
-        return [
-            category(AlertNotificationIDs.alertCategory, [mute, less]),
-            category(AlertNotificationIDs.alertRelaxedCategory, [mute, usual]),
-            category(AlertNotificationIDs.alertMuteOnlyCategory, [mute]),
-            category(AlertNotificationIDs.mutedCategory, [unmute, change]),
+        let plain: [(String, [UNNotificationAction])] = [
+            (AlertNotificationIDs.alertCategory, [mute, less]),
+            (AlertNotificationIDs.alertRelaxedCategory, [mute, usual]),
+            (AlertNotificationIDs.alertMuteOnlyCategory, [mute]),
+            (AlertNotificationIDs.mutedCategory, [unmute, change]),
         ]
+        return Set(
+            plain.flatMap { id, actions in
+                [
+                    UNNotificationCategory(identifier: id, actions: actions, intentIdentifiers: []),
+                    UNNotificationCategory(
+                        identifier: id + AlertNotificationIDs.logCarbsSuffix, actions: [log] + actions,
+                        intentIdentifiers: []),
+                ]
+            })
+    }
+
+    /// The side whose *Log Carbs…* was chosen (it opens Add Treatment with Carbs focused), or nil for any other answer.
+    static func logCarbs(actionID: String, side rawSide: String?) -> AlertSide? {
+        guard actionID == AlertNotificationIDs.logCarbsAction, let rawSide else { return nil }
+        return AlertSide(rawValue: rawSide)
     }
 
     /// The user's answer to a notification as an alert action, or nil (a tap on the body, an unknown side). Mute… with

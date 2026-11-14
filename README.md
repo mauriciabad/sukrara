@@ -55,7 +55,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Optionally, alarms can ring loud, even in Do Not Disturb.
 - Configure how alarms repeat while your glucose stays out of range.
 - Unacknowledged very lows can alert the people who follow you.
-- Quick actions in notifications, like Mute for 1 h.
+- Quick actions in notifications, like Mute for 1 h, or Log carbs on a low.
 - [Planned]: Predictions, more and cooler sound packs...
 
 ### Log effortlessly
@@ -64,7 +64,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   - NovoPen Echo® Plus.
   - Tells priming apart from injections.
 - Quick actions in notifications.
-- Quick log pop-up by tapping the widget, the notification or the Quick Settings tile.
+- Quick log pop-up by tapping the widget, the notification, a low alert's Log carbs or the Quick Settings tile.
 - Add logs from the Sukrara companion apps.
 - [Planned]: Garmin watch app, MCP for AI assistants, voice assistants...
 

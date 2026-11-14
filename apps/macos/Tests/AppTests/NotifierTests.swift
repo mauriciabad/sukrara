@@ -46,16 +46,56 @@ final class FakeCenter: NotificationPosting {
 
     @Test func categoryIDsAreTheAppOnes() {
         let ids = Set(Notifier.categories(AlertText(language: .en)).map(\.identifier))
-        #expect(
-            ids == [
-                "app.mauri.sukrara.alert", "app.mauri.sukrara.alert.relaxed", "app.mauri.sukrara.alert.muteOnly",
-                "app.mauri.sukrara.muted",
-            ])
+        let plain = [
+            "app.mauri.sukrara.alert", "app.mauri.sukrara.alert.relaxed", "app.mauri.sukrara.alert.muteOnly",
+            "app.mauri.sukrara.muted",
+        ]
+        #expect(ids == Set(plain + plain.map { $0 + ".logCarbs" }))
         let muted = Notifier.categories(AlertText(language: .en)).first { $0.identifier == "app.mauri.sukrara.muted" }
         #expect(
             muted?.actions.map(\.identifier) == [
                 AlertNotificationIDs.unmuteAction, AlertNotificationIDs.changeMuteAction,
             ])
+    }
+
+    /// #194: the `.logCarbs` categories have *Log Carbs…* first, which brings Sukrara forward, then the same actions.
+    @Test func logCarbsComesFirstAndOpensSukrara() throws {
+        let categories = Notifier.categories(AlertText(language: .en))
+        let alert = try #require(categories.first { $0.identifier == "app.mauri.sukrara.alert.logCarbs" })
+        #expect(
+            alert.actions.map(\.identifier) == [
+                AlertNotificationIDs.logCarbsAction, AlertNotificationIDs.muteAction,
+                AlertNotificationIDs.remindLessAction,
+            ])
+        #expect(alert.actions[0].title == "Log Carbs…" && alert.actions[0].options.contains(.foreground))
+        let muted = try #require(categories.first { $0.identifier == "app.mauri.sukrara.muted.logCarbs" })
+        #expect(
+            muted.actions.map(\.identifier) == [
+                AlertNotificationIDs.logCarbsAction, AlertNotificationIDs.unmuteAction,
+                AlertNotificationIDs.changeMuteAction,
+            ])
+        let es = Notifier.categories(AlertText(language: .es)).first { $0.identifier == alert.identifier }
+        #expect(es?.actions.first?.title == "Registrar hidratos…")
+    }
+
+    /// Only the kinds carbs answer, only on a Mac that can add entries; the answer maps back to its side.
+    @Test func logCarbsOnlyOnTheLowSide() {
+        let s = AlertSettings()
+        let suffix = AlertNotificationIDs.logCarbsSuffix
+        for kind in AlertKind.allCases {
+            let logs = AlertNotificationIDs.category(for: kind, s, relaxed: false, canLog: true).hasSuffix(suffix)
+            #expect(logs == [.veryLow, .low, .fallingFast].contains(kind), "\(kind)")
+            #expect(!AlertNotificationIDs.category(for: kind, s, relaxed: false, canLog: false).hasSuffix(suffix))
+        }
+        #expect(
+            AlertNotificationIDs.category(for: .low, s, relaxed: true, canLog: true)
+                == "app.mauri.sukrara.alert.relaxed.logCarbs")
+        #expect(AlertNotificationIDs.mutedCategory(.fallingFast, canLog: true).hasSuffix(suffix))
+        #expect(AlertNotificationIDs.mutedCategory(.high, canLog: true) == AlertNotificationIDs.mutedCategory)
+        #expect(Notifier.logCarbs(actionID: AlertNotificationIDs.logCarbsAction, side: "low") == .low)
+        #expect(Notifier.logCarbs(actionID: AlertNotificationIDs.muteAction, side: "low") == nil)
+        #expect(
+            Notifier.action(actionID: AlertNotificationIDs.logCarbsAction, side: "low", typed: nil, settings: s) == nil)
     }
 
     @Test func alertTextIsSelfContainedInEnglishAndSpanish() {

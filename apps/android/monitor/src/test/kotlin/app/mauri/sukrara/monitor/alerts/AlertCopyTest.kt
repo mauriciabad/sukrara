@@ -97,6 +97,7 @@ class AlertCopyTest {
         /** copy.json's notification actions → this module's strings. */
         val ACTIONS =
             mapOf(
+                "log_carbs" to "alert_action_log_carbs",
                 "mute" to "alert_action_mute",
                 "remind_less" to "alert_action_remind_less",
                 "remind_as_usual" to "alert_action_remind_usual",

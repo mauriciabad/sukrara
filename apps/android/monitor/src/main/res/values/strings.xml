@@ -45,7 +45,9 @@
     <string name="alert_text_no_data_last">No reading for %1$s · last %2$s</string>
     <string name="alert_relaxed_subtext">Reminders every %1$s</string>
 
-    <!-- Alert notification actions (work from the lock screen; nothing opens). -->
+    <!-- Alert notification actions (Mute / Remind work from the lock screen, nothing opens; Log carbs opens the quick
+         treatment dialog with Carbs focused, after the unlock). -->
+    <string name="alert_action_log_carbs">Log carbs</string>
     <string name="alert_action_mute">Mute…</string>
     <string name="alert_action_mute_for_label">Mute for (e.g. 45 min, 1 h 30)</string>
     <!-- What TalkBack says for a length chip of Mute… / Change time: %1$s = the side ("Low"), %2$s = "30 min" -->

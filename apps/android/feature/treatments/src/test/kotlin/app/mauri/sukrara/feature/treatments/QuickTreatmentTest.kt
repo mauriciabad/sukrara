@@ -45,7 +45,14 @@ class TestTreatmentsApp :
             override fun lowNow() = low
 
             override val quiet = kotlinx.coroutines.flow.flowOf(QuietRules(afterInsulinMin = 60, afterCarbsMin = 15))
+
+            override fun answered(kind: String) {
+                answers += kind
+            }
         }
+
+    /** The alerts whose *Log carbs* opened the dialog (an answer to each). */
+    val answers = mutableListOf<String>()
 
     /** The pen entry *Already logged by your pen?* names (null = no pen entry near the typed dose). */
     var penNear: app.mauri.sukrara.core.model.PenNearEntry? = null
@@ -150,6 +157,40 @@ class QuickTreatmentTest {
                 ).setup()
                 .get()
         assertFalse(activity.isFinishing)
+    }
+
+    /** #194: an alert's *Log carbs* opens the dialog on Carbs and answers that alert on this phone, once (#39). */
+    @Test fun anAlertsLogCarbsAnswersTheAlertOnce() {
+        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.answers.clear()
+        // what the monitor's alert notification posts (the package only, the kind's wire name)
+        val fromAlert =
+            Intent(NavTargets.ACTION_QUICK_TREATMENT)
+                .setPackage(app.packageName)
+                .putExtra(NavTargets.EXTRA_FOCUS_CARBS, true)
+                .putExtra(NavTargets.EXTRA_ALERT_KIND, "very_low")
+        assertEquals(
+            QuickTreatmentActivity::class.java.name,
+            app.packageManager
+                .resolveActivity(fromAlert, 0)
+                ?.activityInfo
+                ?.name,
+        )
+        val controller =
+            Robolectric
+                .buildActivity(
+                    QuickTreatmentActivity::class.java,
+                    fromAlert.setClass(app, QuickTreatmentActivity::class.java),
+                ).setup()
+        assertFalse(controller.get().isFinishing)
+        assertTrue(QuickTreatmentIntents.focusCarbs(controller.get().intent))
+        assertEquals(listOf("very_low"), app.answers)
+        // a rotation doesn't answer again
+        controller.recreate()
+        assertEquals(listOf("very_low"), app.answers)
+        // any other way in answers nothing
+        Robolectric.buildActivity(QuickTreatmentActivity::class.java, QuickTreatmentIntents.open(app, QuickSource.Widget)).setup()
+        assertEquals(listOf("very_low"), app.answers)
     }
 
     @Test fun opensTheAppInsteadWhenThisPhoneCannotAdd() {

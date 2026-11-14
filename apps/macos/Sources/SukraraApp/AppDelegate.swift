@@ -111,6 +111,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu.updates = model.updates
         services.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         windows.openPanel = { [weak statusItem] in statusItem?.showPanel() }
+        // a low-side notification's Log Carbs…: only where Add Treatment can open, and it opens on Carbs
+        model.alerts?.canLog = { [weak model] in model.map { AddTreatmentAvailability($0) == .available } ?? false }
+        model.alerts?.openAddCarbs = { [weak self] in self?.fromPanel { $0.openAddTreatment(focus: .carbs) } }
         services.permissionChanged = { [weak self] in self?.refreshNotificationPermission() }
         observeSystemTime()
         observeClockStyle()

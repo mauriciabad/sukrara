@@ -611,6 +611,16 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
       durations everywhere read *1 h* / *2 h*;
       log carbs → *Alert me anyway* in Settings → Alerts › Active now. Mac (`sukrara-snap shell`: `panel-low-muted-*`, `panel-muted-all-*`): the rows under
       the card and the pill's menu.
+- [ ] Log carbs (#194): emulator wearer, `SYNTHETIC --ei cycle 125` (a very low): the alert's buttons read *Log carbs*,
+      *Mute…*, *Remind less* (`dumpsys notification`: `actions=3`) → *Log carbs* opens the quick dialog over the app
+      with Carbs focused and, once typed, *Lows quiet for 15 min* → *Save* → the alert goes, the card says *Low alerts
+      muted after carbs*; again with *Cancel*: nothing saved, the alert stays and repeats. `ALERTS --es kinds high`: no
+      *Log carbs*. Mute a low → the muted notification has *Log carbs*, *Unmute*, *Change time*. Lock the phone (a
+      PIN): *Log carbs* asks for the unlock, then the dialog; *Mute…* still works locked. A follower without *Can add
+      entries*: no *Log carbs*; with it: the entry reaches the wearer and the wearer's *clear* removes the follower's low
+      (its very low keeps repeating, #2). TalkBack reads *Log carbs*. Spanish: *Registrar hidratos*. Mac following
+      with *Can add entries*: a low's *Options* list *Log Carbs…* first → Add Treatment on Carbs, the low comes back
+      silently; without it (or Juggluco) no *Log Carbs…*.
 - [ ] First-run setup (emulator, fresh install, #175): on every step a rotation, home → back from recents and a process
       death (home, then `adb shell run-as app.mauri.sukrara kill -9 <pid>`, reopen) return to the same step, also on a
       step reached with Back. Back on *Let alerts reach you* (the step after the role) goes home with *Finish setup ·

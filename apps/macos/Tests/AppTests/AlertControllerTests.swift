@@ -27,7 +27,12 @@ final class RecordingNotifier: AlertNotifying {
         calls.append(.post(f.kind, id: f.id, sound: sound, category: category))
     }
     func clear(_ group: AlertGroup) { calls.append(.clear(group)) }
-    func postMuted(_ side: AlertSide, until: Date) { calls.append(.muted(side)) }
+    func postMuted(_ side: AlertSide, until: Date, category: String) {
+        calls.append(.muted(side))
+        mutedCategories.append(category)
+    }
+    /// Each muted note's category, in order.
+    var mutedCategories: [String] = []
     func removeMuted(_ side: AlertSide) { calls.append(.unmuted(side)) }
     /// The event log's alert-state lines, in order.
     var lines: [String] = []
@@ -205,6 +210,45 @@ final class RecordingWake: WakeScheduling {
         notifier.calls = []
         c.perform(.reshow(.low))
         #expect(notifier.calls == [.muted(.low)])
+    }
+
+    /// #194: *Log Carbs…* opens Add Treatment and the low comes back silently (macOS removed it); nothing else changes.
+    @Test func logCarbsOpensAddTreatmentAndShowsTheAlertAgainSilently() throws {
+        let c = controller()
+        c.canLog = { true }
+        var opened = 0
+        c.openAddCarbs = { opened += 1 }
+        c.reading(reading(60, rate: -0.5))
+        guard case .post(.low, let id, true, let category)? = notifier.posts.first else {
+            Issue.record("no low posted: \(notifier.calls)")
+            return
+        }
+        #expect(category == AlertNotificationIDs.alertCategory + AlertNotificationIDs.logCarbsSuffix)
+        let before = store.state
+        notifier.calls = []
+        let side = try #require(Notifier.logCarbs(actionID: AlertNotificationIDs.logCarbsAction, side: "low"))
+        c.perform(.logCarbs(side))
+        #expect(opened == 1)
+        #expect(notifier.calls == [.post(.low, id: id, sound: false, category: category)])
+        #expect(store.state == before && c.ui.isAlerting)
+        #expect(AlertController.logLine(.logCarbs(.low), settings: c.settings, now: clock.now) == nil)
+    }
+
+    /// The muted note keeps *Log Carbs…* first on a Mac that can add entries; without it, the plain categories.
+    @Test func logCarbsOnlyWhereThisMacCanAddEntries() {
+        let c = controller()
+        c.reading(reading(60, rate: -0.5))
+        guard case .post(.low, _, true, let category)? = notifier.posts.first else {
+            Issue.record("no low posted: \(notifier.calls)")
+            return
+        }
+        #expect(!category.hasSuffix(AlertNotificationIDs.logCarbsSuffix))
+        c.perform(.mute(.low, minutes: 30))
+        #expect(notifier.mutedCategories.last == AlertNotificationIDs.mutedCategory)
+        c.canLog = { true }
+        c.perform(.reshow(.low))
+        #expect(
+            notifier.mutedCategories.last == AlertNotificationIDs.mutedCategory + AlertNotificationIDs.logCarbsSuffix)
     }
 
     @Test func aMirroredAlertComesBackSilentlyAfterRemindLessAndAnUnreadableReply() throws {

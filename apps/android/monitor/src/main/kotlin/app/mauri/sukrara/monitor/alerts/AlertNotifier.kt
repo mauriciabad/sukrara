@@ -19,9 +19,11 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.alerts.Side
+import app.mauri.sukrara.alerts.TreatmentKind
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.graph.ClockText
@@ -51,6 +53,11 @@ class AlertNotifier(
     private val unlocked: UnlockedAlertSound? = null,
     /** The person's glucose unit now (`general.unit`): the alert's value and rate are written in it. */
     private val unit: () -> GlucoseUnit = { GlucoseUnit.MGDL },
+    /**
+     * Whether this phone can add entries now (the wearer's; a follower with *Can add entries*): only then does a
+     * low-side alert offer *Log carbs* (elsewhere the dialog would only open the app, which the tap already does).
+     */
+    private val canLog: () -> Boolean = { false },
 ) : AlertPresenter {
     private val nm get() = ctx.getSystemService(NotificationManager::class.java)
 
@@ -75,6 +82,7 @@ class AlertNotifier(
                     it > 0
                 }?.let { ctx.getString(R.string.alert_relaxed_subtext, Durations.text(it.toLong(), words.durations)) }
         listOfNotNull(who, relaxed).takeIf { it.isNotEmpty() }?.let { b.setSubText(it.joinToString(" · ")) }
+        b.addLogAction(kind)
         b.addMuteAction(kind, ctx.getString(R.string.alert_action_mute), settings.muteChoices(), words)
         when {
             relaxedMin > 0 -> b.addAction(action(kind, AlertActionReceiver.REMIND_AS_USUAL, R.string.alert_action_remind_usual))
@@ -160,7 +168,8 @@ class AlertNotifier(
                 .setChronometerCountDown(true)
                 .setOnlyAlertOnce(true)
                 .setTimeoutAfter(((until - now) * 1000).coerceAtLeast(1_000))
-                .addAction(action(kind, AlertActionReceiver.UNMUTE, R.string.alert_action_unmute))
+        b.addLogAction(kind)
+        b.addAction(action(kind, AlertActionReceiver.UNMUTE, R.string.alert_action_unmute))
         b.addMuteAction(kind, ctx.getString(R.string.alert_action_change), settings.muteChoices(), words)
         unlocked?.stop(group)
         post(group, b.build(), AlertChannels.id(ctx, kind, alarm))
@@ -261,6 +270,31 @@ class AlertNotifier(
             }.toTypedArray()
     }
 
+    /**
+     * *Log carbs*, first: on the kinds carbs answer (very low, low, falling fast; their muted note too) where this phone
+     * can add entries. It opens the quick treatment dialog with Carbs focused (Rapid is there for a meal that needs
+     * insulin), straight from the button: Android lets only an activity's own PendingIntent start it from a
+     * notification action, and asks for the unlock first. The alert stays until the carbs quiet it (`muteAfterCarbs`)
+     * or it ends; the dialog takes the alert's kind as an answer (#39).
+     */
+    private fun Notification.Builder.addLogAction(kind: AlertKind) {
+        if (kind.answeredBy != TreatmentKind.CARBS || !runCatching(canLog).getOrDefault(false)) return
+        val dialog =
+            Intent(NavTargets.ACTION_QUICK_TREATMENT)
+                .setPackage(ctx.packageName)
+                .putExtra(NavTargets.EXTRA_FOCUS_CARBS, true)
+                .putExtra(NavTargets.EXTRA_ALERT_KIND, kind.wire)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        val pi =
+            PendingIntent.getActivity(
+                ctx,
+                LOG_REQUEST + kind.ordinal,
+                dialog,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+        addAction(Notification.Action.Builder(null, ctx.getString(R.string.alert_action_log_carbs), pi).build())
+    }
+
     private fun action(kind: AlertKind, what: String, label: Int) =
         Notification.Action.Builder(null, ctx.getString(label), broadcast(kind, what, mutable = false)).build()
 
@@ -287,6 +321,9 @@ class AlertNotifier(
         fun idOf(group: AlertGroup): Int = NotificationIds.ALERTS_BASE + group.ordinal
 
         const val TEST_TIMEOUT_MS = 2 * 60_000L
+
+        /** *Log carbs*'s request codes, one per kind (activity PendingIntents: apart from the receiver's broadcasts). */
+        private const val LOG_REQUEST = 3000
 
         private fun requestCode(kind: AlertKind, what: String) = 2000 + kind.ordinal * 16 + AlertActionReceiver.ACTIONS.indexOf(what)
 

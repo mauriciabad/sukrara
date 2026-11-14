@@ -306,6 +306,8 @@ class AppGraph(
                     scope.launch { runCatching { shareOwner.ownerEngine.publishAlert(AlertCodec.decode(AlertEvent.encode(e))) } }
                 }
             },
+            // a low-side alert's *Log carbs* only where it opens the dialog (never before the unlock: the log is locked)
+            canLogTreatments = { userUnlocked() && runCatching { treatments.canAdd() }.getOrDefault(false) },
         )
     }
 
@@ -748,7 +750,10 @@ class AppGraph(
             home.glucose,
             data.settings,
             scope,
-            hints = AppAlertHints(alerts.store.settings.stateIn(scope, SharingStarted.Eagerly, null), home.glucose, clock),
+            hints =
+                AppAlertHints(alerts.store.settings.stateIn(scope, SharingStarted.Eagerly, null), home.glucose, clock) { kind ->
+                    scope.launch { alerts.runtime.acknowledge(kind) }
+                },
             // read when the dialog saves (the pens module is built on first use, after this one)
             penDuplicates = PenDuplicates { kind, at -> pens.duplicates.near(kind, at) },
             drafts =

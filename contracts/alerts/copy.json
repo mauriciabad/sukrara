@@ -72,6 +72,7 @@
     {"state": "body", "kind": "no_data", "mgdl": 98, "ageMin": 80, "unit": "mmol", "en": "No reading for 1 h 20 min · last 5.4 mmol/L", "es": "Sin lecturas desde hace 1 h 20 min · última 5,4 mmol/L"},
     {"state": "body", "kind": "no_data", "unit": "mgdl", "en": "No reading yet", "es": "Aún no hay lecturas"},
     {"state": "body", "kind": "low", "unit": "mgdl", "en": "No recent reading", "es": "Sin lectura reciente"},
+    {"state": "action", "action": "log_carbs", "en": "Log carbs", "es": "Registrar hidratos", "en_mac": "Log Carbs…", "es_mac": "Registrar hidratos…"},
     {"state": "action", "action": "mute", "en": "Mute…", "es": "Silenciar…"},
     {"state": "action", "action": "remind_less", "en": "Remind less", "es": "Avisar menos", "en_mac": "Remind Less"},
     {"state": "action", "action": "remind_as_usual", "en": "Remind as usual", "es": "Avisar como siempre", "en_mac": "Remind as Usual"},

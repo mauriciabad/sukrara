@@ -228,7 +228,7 @@
     private struct SilentNotifier: AlertNotifying {
         func post(_ firing: AlertFiring, sound: Bool, category: String, escalated: Bool) {}
         func clear(_ group: AlertGroup) {}
-        func postMuted(_ side: AlertSide, until: Date) {}
+        func postMuted(_ side: AlertSide, until: Date, category: String) {}
         func removeMuted(_ side: AlertSide) {}
         func postTest(_ kind: AlertKind) {}
         func log(_ line: String) {}

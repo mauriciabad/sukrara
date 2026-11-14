@@ -136,7 +136,12 @@ final class AppServices: ServiceStarting {
                     self?.openPanel?()
                     return
                 }
-                guard let alerts = self?.alerts,
+                guard let alerts = self?.alerts else { return }
+                if let low = Notifier.logCarbs(actionID: actionID, side: side) {
+                    alerts.perform(.logCarbs(low))
+                    return
+                }
+                guard
                     let action = Notifier.action(
                         actionID: actionID, side: side, typed: typed, settings: alerts.settings)
                 else { return }

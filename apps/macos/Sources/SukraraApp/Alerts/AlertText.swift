@@ -110,4 +110,5 @@ struct AlertText: Equatable {
     var remindAsUsual: String { language == .en ? "Remind as Usual" : "Avisar como siempre" }
     var unmute: String { language == .en ? "Unmute" : "Reactivar" }
     var changeTime: String { language == .en ? "Change Time…" : "Cambiar duración…" }
+    var logCarbs: String { language == .en ? "Log Carbs…" : "Registrar hidratos…" }
 }

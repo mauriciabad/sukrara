@@ -126,17 +126,20 @@ not duplicate the action performed when the user taps the notification"
 ([build-notification#Actions](https://developer.android.com/develop/ui/views/notifications/build-notification#Actions));
 lengths to pick from are a direct reply's choices
 ([RemoteInput.Builder#setChoices](https://developer.android.com/reference/android/app/RemoteInput.Builder#setChoices)).
-So every alert notification, every kind, has exactly **two** actions, the same on Android and Mac:
+So every alert notification, every kind, has the two quiet actions, the same on Android and Mac, and the kinds carbs
+answer have a third that does something about the low (#194; the user, 2026-11-14: "Low glucose notifications have too
+many options to mute, but none to log carbs (or carbs & insulin if user eats more than needed)"), first:
 
 | Button | Effect |
 |---|---|
+| *Log carbs* (Mac *Log Carbs…*; es *Registrar hidratos*) | First, on very low, low and falling fast (the kinds whose `answeredBy` is carbs) and on that side's muted notification, only where the device can add entries now (the wearer's phone; a follower or a Mac with *Can add entries*): elsewhere it could only open the app, which the tap already does. It opens the device's Add treatment with Carbs focused (Android the quick treatment dialog, Mac Add Treatment), where Rapid insulin is too, for a meal that needs it. It changes no rule: the saved carbs quiet the side through `muteAfterCarbs` like any entry (very low on the wearer's own phone only, §1), a follower's entry goes to the wearer, and nothing is saved until *Save*. Opening it is an answer on the wearer's phone (§4). The alert stays up meanwhile (Android leaves it; the Mac posts it again silently, below) until the carbs quiet it or it ends. Not on the highs (no *Log insulin*: a button on every high reads as "take insulin", and the alerts never advise more insulin, §1 "Headline"; pens log their doses themselves), no data, the plain fallback (built to never fail) or the test alert. |
 | *Mute…* | One action whose choices are the lengths: Android a direct reply with the choices `muteMin` first, then 15 min / 30 min / 1 h / 2 h (written by the one duration formatter) and free typing; Mac a text-input action (empty = `muteMin`). Typed text is read by the shared duration parser (`45`, `1 h 30`, `1:30`, `2h`; spikes/durations/durations.json), 1–720 min; anything else changes nothing. |
 | *Remind less* (Mac *Remind Less*; es *Avisar menos*) | The side's repeats come every `max(repeatMin, relaxMin)` minutes, counted from the last alert. Shown when it would slow anything (the kind repeats faster than `relaxMin`); once relaxed the same slot is *Remind as usual*. The interval is said in the secondary text (Android: the notification's subtext "Reminders every 30 min"), never in the button. |
 
 **Copy** (round f31, #42): the alert notification's words and every mute / remind-less state line are in
 [`copy.json`](copy.json), en + es: the title (headline and treatment context), the body (value and arrow in the
 person's unit, the fast kinds' rate, LO / HI, no data's time and last value, *No reading yet* for a source that never
-delivered one), the actions (the Mac's in HIG title case with an ellipsis where text input follows), the test alert's
+delivered one), the actions (the Mac's in HIG title case with an ellipsis where more input follows: a text field or a window), the test alert's
 title and what Mute all covers (*Very low and no data included, on this phone only* / *on this Mac only*). Each line is
 built by one function per platform (Android `AlertCopy` / `MuteText`, Mac `AlertText` / `MuteCopy`), and both check
 every case in both languages (Android `AlertCopyTest`, Mac `MuteCopyTests` and `AlertCopyTests`). Every muted state
@@ -173,10 +176,11 @@ show: the home control / dropdown row ("Alerts muted · 1 h 12 min left", counti
 every surface (`muted`, "Muted · 1h 20m" in range; the paused badge out of range), the Mac menu bar.
 
 After *Mute…* Android replaces the alert's notification with a silent "Low alerts muted" / "Until 10:42" with a count-down chronometer to the end (round f31), whose two buttons
-are the ways out, *Unmute* and *Change time* (the same Mute… input); it goes when the mute ends (or the alert comes back). Android
+are the ways out, *Unmute* and *Change time* (the same Mute… input), after *Log carbs* on the low side (muting is
+often "I'm eating now"; logging it is the next step); it goes when the mute ends (or the alert comes back). Android
 asks an app to update a notification after a direct reply. macOS removes a notification once any of its actions is
 used, so the Mac posts an alert that is still up again without sound after *Remind less* / *Remind as usual* (with the
-other button) and after a *Mute…* reply that isn't a length (nothing changes): an action never makes an active alert
+other button), after *Log Carbs…* and after a *Mute…* reply that isn't a length (nothing changes): an action never makes an active alert
 vanish. The history records "Low muted for 1 h (notification)", never "Low cleared": the episode goes on.
 
 **The actions act on the device they're tapped on only** (user, 2026-10-21: "Mac notifications should work on their
@@ -197,7 +201,8 @@ on that device only:
 
 | State | Shown | Ways out |
 |---|---|---|
-| Normal (alerting) | the notification; the "Eat carbs" / "Take insulin" pill | *Mute…*, *Remind less* (notification; the app's sheet / Active now / Mac panel) |
+| Normal (alerting) | the notification; the "Eat carbs" / "Take insulin" pill | *Mute…*, *Remind less* (notification; the app's sheet / Active now / Mac panel); on the low side *Log carbs* (where this device can add entries) |
+| Logging carbs from the alert | Android the quick treatment dialog with Carbs focused and its quiet line ("Lows quiet for 15 min"); Mac Add Treatment | *Save* (→ quiet after carbs, below; Android's snackbar *Undo*, the Mac's Treatments *Undo*) · *Cancel* / back / tap outside / Escape (nothing saved; the alert stays and repeats as before) · the dialog's own lock-screen rules |
 | Side muted (N left) | Android: the counting-down "Low alerts muted" notification; the tonal pill "Nm left"; the line "Low alerts muted · 12 min left" (ticks); sheet, Active now; Mac panel rows, pill menu, Settings › Alerts | *Unmute* · *Change…* / Change to 15 min / 30 min / 1 h / 2 h · ends at its time or back by the margin |
 | Quiet after carbs / rapid insulin (shared data) | the tonal pill, the last-treatment ring; the line "Low alerts muted after carbs · 12 min left" (ticks, round f33); Active now | *Alert me anyway* (this device only, the treatment stays) · ends at `t + min` · deleting the treatment |
 | Muted and quiet after a treatment | the one that ends later: its line and its ways out (a 30 min Mute after carbs: "Low alerts muted · 29 min left"; a 5 min Mute: "… muted after carbs · 14 min left") | that one's ways out; both end the Mute and lift the treatment (*Unmute* below) |
@@ -349,7 +354,8 @@ Pushover retries urgent alarms every 2 min; Medtronic CareLink Connect texts the
 within 0–30 min (0 by default); xDrip+'s experimental emergency SMS waits 60 min; Dexcom Follow only teased "missed
 alert" labels.
 - **An answer on the wearer's phone**: tapping or swiping the alert, opening the app, any of its notification actions
-  (*Mute…*, *Remind less*, *Unmute*), *Mute all*, or logging carbs, after the very low first fired. Not an answer: a
+  (*Mute…*, *Remind less*, *Unmute*, *Log carbs* when it opens the dialog), *Mute all*, or logging carbs, after the
+  very low first fired. Not an answer: a
   Mute or Mute all set before it (nobody heard this alert, so it escalates all the same). The wait counts from the
   first very-low firing of the stretch (what the followers got, §2), checked on the timer.
 - **Answered after the escalation**: the wearer sends `answered` with the escalated `id`; followers show that very low

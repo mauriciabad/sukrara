@@ -15,6 +15,7 @@ import app.mauri.sukrara.alerts.AlertReading
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
+import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.NotificationGroups
@@ -36,7 +37,8 @@ import org.robolectric.annotation.Config
  * [AlertNotificationAttributesTest]: every alert is a child of the one alerts group, whose summary never alerts and
  * lives exactly as long as a child does; the actions (Mute with typed and one-tap lengths as a direct reply, Remind less /
  * as usual, Unmute, Change time) reach the non-exported receiver with the right action and kind, and only the direct
- * reply's intent is mutable; a muted card is silent and counts down to its end.
+ * reply's intent is mutable; a low-side alert (and its muted card) offers *Log carbs* first where this phone can add
+ * entries, an activity PendingIntent to the quick treatment dialog; a muted card is silent and counts down to its end.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
@@ -184,6 +186,66 @@ class AlertNotificationShapeTest {
         val change = muted.action(label(R.string.alert_action_change))
         assertEquals(AlertActionReceiver.TYPED, change.remoteInputs.single().resultKey)
         assertEquals(Triple(AlertActionReceiver.MUTE, "low", true), target(change.actionIntent))
+    }
+
+    private fun Notification.titles() = actions.orEmpty().map { it.title.toString() }
+
+    @Test fun `a low-side alert offers Log carbs first where this phone can add entries, on Carbs in the dialog`() {
+        val notifier = AlertNotifier(ctx, canLog = { true })
+        val log = label(R.string.alert_action_log_carbs)
+        notifier.show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 0)
+        val low = posted(AlertGroup.LEVEL)
+        assertEquals(listOf(log, label(R.string.alert_action_mute), label(R.string.alert_action_remind_less)), low.titles())
+
+        // straight to the quick treatment dialog (an activity: no trampoline), immutable, Carbs focused, the alert named
+        val pi = shadowOf(low.action(log).actionIntent)
+        assertTrue("opens the dialog itself", pi.isActivity)
+        assertTrue(pi.flags and PendingIntent.FLAG_IMMUTABLE != 0)
+        val intent = pi.savedIntent
+        assertEquals(NavTargets.ACTION_QUICK_TREATMENT, intent.action)
+        assertEquals(ctx.packageName, intent.`package`)
+        assertTrue(intent.getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, false))
+        assertEquals("an answer to this alert (#39)", "low", intent.getStringExtra(NavTargets.EXTRA_ALERT_KIND))
+
+        // very low and falling fast too (carbs answer them), first as well
+        notifier.show(fire(AlertKind.VERY_LOW, 50), settings, silent = false, who = null, relaxedMin = 0)
+        assertEquals(log, posted(AlertGroup.LEVEL).titles().first())
+        notifier.show(fire(AlertKind.FALLING_FAST, 120), settings, silent = false, who = null, relaxedMin = 0)
+        val falling = posted(AlertGroup.RATE)
+        assertEquals(log, falling.titles().first())
+        assertEquals("falling_fast", shadowOf(falling.action(log).actionIntent).savedIntent.getStringExtra(NavTargets.EXTRA_ALERT_KIND))
+
+        // the highs and no data never: carbs don't answer them
+        notifier.show(fire(AlertKind.HIGH, 220), settings, silent = false, who = null, relaxedMin = 0)
+        assertFalse(log in posted(AlertGroup.LEVEL).titles())
+        notifier.show(fire(AlertKind.NO_DATA, 0), settings, silent = false, who = null, relaxedMin = 0)
+        assertFalse(log in posted(AlertGroup.NO_DATA).titles())
+
+        // the muted note keeps it first, before its ways out; a high's muted note has none
+        notifier.showMuted(AlertGroup.LEVEL, Side.LOW, AlertKind.LOW, now + 1800, settings, now)
+        assertEquals(
+            listOf(log, label(R.string.alert_action_unmute), label(R.string.alert_action_change)),
+            posted(AlertGroup.LEVEL).titles(),
+        )
+        notifier.showMuted(AlertGroup.LEVEL, Side.HIGH, AlertKind.HIGH, now + 1800, settings, now)
+        assertEquals(listOf(label(R.string.alert_action_unmute), label(R.string.alert_action_change)), posted(AlertGroup.LEVEL).titles())
+    }
+
+    @Test fun `no Log carbs where this phone can't add entries, nor on the plain alert`() {
+        val log = label(R.string.alert_action_log_carbs)
+        AlertNotifier(ctx, canLog = { false }).show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 0)
+        assertEquals(listOf(label(R.string.alert_action_mute), label(R.string.alert_action_remind_less)), posted(AlertGroup.LEVEL).titles())
+
+        // a failing check is a no: the alert still posts
+        AlertNotifier(
+            ctx,
+            canLog = { error("not ready") },
+        ).show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 0)
+        assertFalse(log in posted(AlertGroup.LEVEL).titles())
+
+        // the plain stand-in is built never to fail: Open Sukrara only
+        AlertNotifier(ctx, canLog = { true }).showPlain(fire(AlertKind.LOW, 62), settings, silent = false, who = null)
+        assertEquals(listOf(label(R.string.monitor_action_open_app)), posted(AlertGroup.LEVEL).titles())
     }
 
     @Test fun `a re-shown alert that doesn't ring defers to the summary and never goes full screen`() {

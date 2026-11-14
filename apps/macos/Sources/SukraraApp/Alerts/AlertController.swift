@@ -18,6 +18,9 @@ enum AlertAction: Equatable {
     /// A *Mute…* / *Change Time…* reply that isn't a length: nothing changes, the side's notification comes back
     /// silently (macOS removed it when the action was used).
     case reshow(AlertSide)
+    /// *Log Carbs…* (a low-side notification): Add Treatment opens with Carbs focused and the side's notification comes
+    /// back silently (macOS removed it); the carbs, once saved, quiet the lows like any entry (`muteAfterCarbs`).
+    case logCarbs(AlertSide)
 }
 
 /// Runs the alert rules on this Mac (`SukraraAlerts`) and shows what they decide through the `Notifier`.
@@ -41,6 +44,11 @@ final class AlertController {
     var failedSteps: Set<String> = []
     /// `ui` changed (an alert came up or ended, a mute started or ran out): the widgets redraw the card's badge.
     @ObservationIgnored var onUIChange: (() -> Void)?
+    /// Whether this Mac can add entries now (following with *Can add entries*): the low side's notifications then offer
+    /// *Log Carbs…* (elsewhere Add Treatment couldn't open; the click already opens the panel).
+    @ObservationIgnored var canLog: () -> Bool = { false }
+    /// *Log Carbs…* was chosen: Add Treatment with Carbs focused (`AppDelegate`).
+    @ObservationIgnored var openAddCarbs: (() -> Void)?
 
     @ObservationIgnored private var engine: AlertEngine
     @ObservationIgnored private var mirror = AlertMirror()
@@ -167,7 +175,7 @@ final class AlertController {
             let until = now.addingTimeInterval(TimeInterval(minutes * 60))
             if mirror.mute(side, until: until) { notifier.clear(side.mainKind.group) }
             handle(.mute(side, minutes: minutes))
-            notifier.postMuted(side, until: until)
+            notifier.postMuted(side, until: until, category: mutedCategory(side))
         case .remindLess(let side):
             mirror.remindLess(side, relaxMin: settings.notificationActions.relaxMin)
             handle(.remindLess(side))
@@ -190,6 +198,9 @@ final class AlertController {
             handle(.unmuteAll)
         case .reshow(let side):
             reshow(side)
+        case .logCarbs(let side):
+            reshow(side)
+            openAddCarbs?()
         }
     }
 
@@ -203,7 +214,7 @@ final class AlertController {
         case .remindAsUsual(let side): AlertLog.remindAsUsual(side)
         case .muteAll(let until): AlertLog.allMuted(until: until, now: now)
         case .unmuteAll: AlertLog.allUnmuted
-        case .reshow: nil
+        case .reshow, .logCarbs: nil
         }
     }
 
@@ -220,7 +231,7 @@ final class AlertController {
             engine.snoozes.muteEnd(side, at: clock.now), mirror.snoozes.muteEnd(side, at: clock.now),
         ]
         .compactMap({ $0 }).max() {
-            notifier.postMuted(side, until: until)
+            notifier.postMuted(side, until: until, category: mutedCategory(side))
         }
     }
 
@@ -335,7 +346,11 @@ final class AlertController {
 
     private func category(_ kind: AlertKind) -> String {
         let relaxed = engine.snoozes.relaxMin(kind.side) > 0 || mirror.snoozes.relaxMin(kind.side) > 0
-        return AlertNotificationIDs.category(for: kind, settings, relaxed: relaxed)
+        return AlertNotificationIDs.category(for: kind, settings, relaxed: relaxed, canLog: canLog())
+    }
+
+    private func mutedCategory(_ side: AlertSide) -> String {
+        AlertNotificationIDs.mutedCategory(side, canLog: canLog())
     }
 
     private func save() {

@@ -77,6 +77,8 @@ class AlertsModule(
     private val remoteEvents: Flow<AlertEvent> = emptyFlow(),
     /** The diagnostic log (`DiagLog`, behind *Copy report*): what failed and its exception class, never values. */
     diagLog: (String) -> Unit = {},
+    /** Whether this phone can add entries now (the quick treatment dialog opens): a low-side alert offers *Log carbs*. */
+    canLogTreatments: () -> Boolean = { false },
 ) {
     /** Every line to logcat too ([alertsLog]). */
     private val log: (String) -> Unit = alertsLog(diagLog)
@@ -125,6 +127,7 @@ class AlertsModule(
                 NotificationCooldown.appPlays(NotificationCooldown.vibrateOnlyWhenUnlocked(ctx), answer)
             },
             unit = { unitNow.value },
+            canLog = canLogTreatments,
         )
 
     /** Settings' sound preview and *Send a test alert*. */

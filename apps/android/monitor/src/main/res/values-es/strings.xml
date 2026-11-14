@@ -39,6 +39,7 @@
     <string name="alert_text_no_data_last">Sin lecturas desde hace %1$s · última %2$s</string>
     <string name="alert_relaxed_subtext">Avisos cada %1$s</string>
 
+    <string name="alert_action_log_carbs">Registrar hidratos</string>
     <string name="alert_action_mute">Silenciar…</string>
     <string name="alert_action_mute_for_label">Silenciar durante (p. ej. 45 min, 1 h 30)</string>
     <string name="alert_mute_choice_a11y">Alertas %1$s: silenciar durante %2$s</string>

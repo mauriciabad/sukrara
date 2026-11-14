@@ -80,6 +80,7 @@ import Testing
             case "remind_as_usual": return text.remindAsUsual
             case "unmute": return text.unmute
             case "change_time": return text.changeTime
+            case "log_carbs": return text.logCarbs
             case "mute_input": return text.mutePlaceholder
             case "mute_send": return text.muteButton
             default: return nil

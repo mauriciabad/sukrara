@@ -78,8 +78,8 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * The quick Add treatment dialog over whatever is on screen: a tap on the glucose notification, a home-screen widget
- * or the Quick Settings tile opens this instead of the app. Translucent, no task of its own in Recents; when this
+ * The quick Add treatment dialog over whatever is on screen: a tap on the glucose notification, a low-side alert's
+ * *Log carbs*, a home-screen widget or the Quick Settings tile opens this instead of the app. Translucent, no task of its own in Recents; when this
  * phone can't add entries (no role yet, a follower without "Can add entries") it opens the app instead.
  *
  * Over the lock screen an entry needs no unlock, but the dialog closes by itself, unsaved, after *Time to save*
@@ -149,6 +149,8 @@ class QuickTreatmentActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // an alert's *Log carbs*: an answer to that alert on this phone (once: not again after a rotation)
+        if (savedInstanceState == null) QuickTreatmentIntents.alertKind(intent)?.let(module.hints::answered)
         if (!module.canAdd()) {
             openApp()
             return

@@ -17,6 +17,12 @@ interface AlertHints {
 
     /** How long a treatment quiets this phone's alerts, as the settings change ([QuietRules.NONE] until known). */
     val quiet: Flow<QuietRules>
+
+    /**
+     * The dialog was opened from the alert [kind]'s *Log carbs* (its wire name): an answer to it on this phone, like
+     * the alert's other actions (#39: the followers don't get a very low escalated).
+     */
+    fun answered(kind: String) {}
 }
 
 /**

@@ -34,6 +34,9 @@ object QuickTreatmentIntents {
 
     internal fun focusCarbs(intent: Intent?): Boolean = intent?.getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, false) == true
 
+    /** The alert whose *Log carbs* opened the dialog (its kind's wire name), else null. */
+    internal fun alertKind(intent: Intent?): String? = intent?.getStringExtra(NavTargets.EXTRA_ALERT_KIND)
+
     /** Long-acting focused: *Add treatment* after a rapid pen's read (the other insulin). */
     internal fun focusLong(intent: Intent?): Boolean = intent?.getBooleanExtra(NavTargets.EXTRA_FOCUS_LONG, false) == true
 
