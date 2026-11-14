@@ -19,7 +19,6 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,7 +28,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.InputTransformation
 import androidx.compose.foundation.text.input.TextFieldLineLimits
@@ -41,7 +39,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -58,8 +55,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -88,7 +87,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogWindowProvider
 import app.mauri.sukrara.core.model.Durations
@@ -102,6 +100,9 @@ import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.designsystem.sheet.SheetActions
 import app.mauri.sukrara.designsystem.sheet.SheetButton
 import app.mauri.sukrara.designsystem.sheet.SukraraSheet
+import app.mauri.sukrara.designsystem.time.LengthChips
+import app.mauri.sukrara.designsystem.time.LengthWheel
+import app.mauri.sukrara.designsystem.time.nearestIndex
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.TreatmentKindLabel
@@ -281,6 +282,8 @@ fun TreatmentDialogContent(
     penLine: (@Composable () -> Unit)? = null,
     sheet: Boolean = false,
     onDelete: (() -> Unit)? = null,
+    /** In a sheet: [app.mauri.sukrara.designsystem.sheet.SheetScope.awaitEntrance] (the keyboard waits for it). */
+    awaitEntrance: suspend () -> Unit = {},
 ) {
     val haptics = rememberHaptics()
     val first = remember { FocusRequester() }
@@ -298,7 +301,10 @@ fun TreatmentDialogContent(
             onSave(list, form.whenAt(now()))
         }
     }
+    val entrance by rememberUpdatedState(awaitEntrance)
     LaunchedEffect(Unit) {
+        // in the sheet: once it starts rising, so the keyboard comes up with it
+        entrance()
         runCatching {
             when {
                 form.editing == TreatmentKind.Note -> noteFocus
@@ -533,8 +539,8 @@ private val AmountInput =
 
 /**
  * The note: one line of text that wraps up to three lines (a hardware Enter types a space), the note marker in its
- * label (always on the outline, like the amounts'), an example while it's empty, the byte count from 20 bytes before
- * the limit. Done saves.
+ * label (always on the outline, like the amounts'), empty while empty (#181: no example), the byte count from 20 bytes
+ * before the limit. Done saves.
  */
 @Composable
 private fun NoteField(
@@ -550,7 +556,6 @@ private fun NoteField(
         // on the outline like the amounts' labels: a label sinking back into the empty note resized the dialog too
         labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
         label = { TreatmentKindLabel("note", stringResource(R.string.treatment_note)) },
-        placeholder = { Text(stringResource(DsR.string.ds_note_placeholder), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingText =
             if (bytes > TreatmentForm.NOTE_BYTES - NOTE_COUNT_FROM) {
                 { Text(stringResource(R.string.treatment_note_count, bytes, TreatmentForm.NOTE_BYTES)) }
@@ -859,9 +864,10 @@ internal const val DIALOG_DIM = 0.32f
 
 /**
  * When it happened: a segmented button switches between the time picker (a time later than now means yesterday,
- * [TreatmentForm.pickTime]) and *Minutes ago*: a number field with one-tap 5 / 15 / 30 / 60 chips
- * ([TreatmentForm.agoMinutes], under a day; resolved when saving). *Now* resets it; Cancel and back keep what was set.
- * Over the lock screen Cancel carries the countdown ring (the countdown keeps running behind the picker).
+ * [TreatmentForm.pickTime]) and *Minutes ago*: THE length wheel (minutes and hours in one scroll,
+ * [TreatmentForm.AGO_WHEEL], under a day; resolved when saving) with the one-tap lengths as compact chips under it
+ * (a tap scrolls the wheel there). *Now* resets it; Cancel and back keep what was set. Over the lock screen Cancel
+ * carries the countdown ring (the countdown keeps running behind the picker).
  */
 @Composable
 private fun WhenDialog(
@@ -874,16 +880,11 @@ private fun WhenDialog(
     val initial = (form.at ?: now()).atZone(zone).toLocalTime()
     val state = rememberTimePickerState(initial.hour, initial.minute, ClockText.hour24)
     var relative by rememberSaveable { mutableStateOf(form.ago != null) }
-    var minutes by rememberSaveable { mutableStateOf(form.ago?.toString().orEmpty()) }
-    val parsed = TreatmentForm.agoMinutes(minutes)
-    val field = remember { FocusRequester() }
-    val words = CardWords.of(LocalContext.current.resources)
-
-    fun pickAgo(m: Int) {
-        form.ago = m.takeIf { it > 0 }
-        form.at = null
-        onDone()
+    var minutes by rememberSaveable {
+        mutableIntStateOf(TreatmentForm.AGO_WHEEL[nearestIndex(TreatmentForm.AGO_WHEEL, form.ago ?: TreatmentForm.AGO_START)])
     }
+    val words = CardWords.of(LocalContext.current.resources).durations
+    val haptics = rememberHaptics()
     AlertDialog(
         onDismissRequest = onDone,
         title = {
@@ -909,41 +910,36 @@ private fun WhenDialog(
                 if (!relative) {
                     TimePicker(state)
                 } else {
-                    OutlinedTextField(
+                    LengthWheel(
+                        values = TreatmentForm.AGO_WHEEL,
                         value = minutes,
-                        onValueChange = { minutes = TreatmentForm.filterMinutes(it) },
-                        modifier = Modifier.width(200.dp).focusRequester(field).testTag("when-minutes"),
-                        suffix = { Text(stringResource(R.string.treatment_unit_min)) },
-                        singleLine = true,
-                        isError = minutes.isNotEmpty() && parsed == null,
-                        textStyle = MaterialTheme.typography.headlineMedium,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { parsed?.let(::pickAgo) }),
+                        onValue = { minutes = it },
+                        label = stringResource(R.string.treatment_mode_ago),
+                        words = words,
                     )
-                    FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)) {
-                        for (q in AGO_CHIPS) {
-                            FilterChip(
-                                selected = parsed == q,
-                                onClick = { minutes = "$q" },
-                                label = { Text(Durations.text(q.toLong(), words.durations), maxLines = 1) },
-                            )
-                        }
-                    }
-                    LaunchedEffect(Unit) { runCatching { field.requestFocus() } }
+                    LengthChips(
+                        minutes = TreatmentForm.AGO_CHIPS,
+                        words = words,
+                        onPick = {
+                            haptics.tick()
+                            minutes = it
+                        },
+                        selected = minutes,
+                    )
                 }
             }
         },
         confirmButton = {
             Button(
-                enabled = !relative || parsed != null,
                 onClick = {
                     if (relative) {
-                        parsed?.let(::pickAgo)
+                        form.ago = minutes
+                        form.at = null
                     } else {
                         form.at = TreatmentForm.pickTime(now(), zone, LocalTime.of(state.hour, state.minute))
                         form.ago = null
-                        onDone()
                     }
+                    onDone()
                 },
             ) { Text(stringResource(R.string.treatment_ok)) }
         },
@@ -971,9 +967,6 @@ private fun editTitle(kind: TreatmentKind?): Int =
         TreatmentKind.Carbs -> R.string.treatment_edit_carbs
         TreatmentKind.Note -> R.string.treatment_edit_note
     }
-
-/** The *Minutes ago* one-tap lengths. */
-private val AGO_CHIPS = listOf(5, 15, 30, 60)
 
 private const val STACK_FONT_SCALE = 1.3f
 

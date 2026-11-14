@@ -926,4 +926,5 @@
     <string name="st_sensorend_night_footer">La misma noche que Alertas de noche: cambiarla aquí la cambia también allí.</string>
     <string name="st_sensorend_link_summary">Cuándo termina este sensor, recordatorios, cuentas atrás</string>
     <string name="st_trend_alert_footer">Las alertas rápidas usan la flecha de tendencia: la misma elección que Lecturas › Flecha de tendencia.</string>
+    <string name="st_finish_setup">Termina la configuración</string>
 </resources>

@@ -70,6 +70,8 @@ class OverviewActions(
     val openExport: () -> Unit = {},
     /** Import history (the wearer's phone). */
     val openImport: () -> Unit = {},
+    /** *Finish setup*: setup's optional steps still open. */
+    val openFinishSetup: () -> Unit = {},
 )
 
 /**
@@ -99,6 +101,8 @@ fun SettingsOverviewContent(
     moreSearch: List<SearchEntry> = emptyList(),
     /** The GitHub version's daily update check is off and not answered: its suggestion comes before the clinic's. */
     updatesBanner: Boolean = false,
+    /** Setup's optional steps still open, by title (the *Finish setup* row's summary); null = none, no row. */
+    setupExtras: String? = null,
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -203,6 +207,18 @@ fun SettingsOverviewContent(
             // SPA's banner colour on a settings page
             tipContainer = MaterialTheme.colorScheme.surface,
         )
+        // setup's optional steps left for later (#181): first, as stock Settings' "Finish setting up" suggestion; gone
+        // once each is answered
+        if (setupExtras != null) {
+            SettingsGroup {
+                NavigationRow(
+                    stringResource(R.string.st_finish_setup),
+                    actions.openFinishSetup,
+                    summary = setupExtras,
+                    leading = { CategoryIcon(DsR.drawable.ds_ic_check_circle, Category.Blue) },
+                )
+            }
+        }
         if (sharing.wearer) {
             SettingsGroup {
                 val name = sharing.name?.takeIf { it.isNotBlank() }

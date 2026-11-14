@@ -719,6 +719,21 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
       Settings › Sharing. Once a role exists nothing of setup opens by itself, except *Bring your history back* at
       launch when it is the only step left. Mac (`swift test --filter SetupFlowTests`): close the setup window
       half-way, *Finish Setup…* reopens the same step.
+- [ ] Setup in two parts (#181, emulator, `pm clear`): *Step N of 5* over the essentials only; after the thresholds
+      *The essentials are done* lists the optional steps (with *Later* on Permissions / Sensor: *Some essentials are
+      left for later* and what is still to do). *Later* → home (no banner for the optional steps) → Settings' first row
+      *Finish setup* with their titles (and no updates suggestion beside it) → *Optional step 1 of N*; *Later* on
+      *Your followers* keeps it on the row, *Not now* / *Start empty* don't. `PEN_TAGS --ez blocked false` (made-up NFC):
+      *Insulin pens* → *Read my pens* turns Settings › Insulin pens' reading On; *I don't use a smart pen* leaves *Ask*.
+      Dark mode and Spanish (*Paso opcional 1 de 3*, *Termina la configuración*); TalkBack reads each step's counter.
+
+- [ ] Add treatment (#181, emulator): the note is empty while empty (no example), no pen reminder under the fields;
+      *When?* › *Minutes ago* is the length wheel (flick: a tick per length, minutes then hours in one scroll, it
+      snaps), the chips *5m* *15m* *30m* *1h* scroll it there; TalkBack: *Minutes ago, 5 minutes*, swipe up / down
+      steps one length, the chips read *5 minutes*; Spanish *5 min* / *1 h*. Home's quiet sheet *Change to* and the
+      report's *1d* … *30d* use the same short lengths. The sheet with the keyboard: opening, both come up together;
+      drag the sheet down slowly: the keyboard follows under the finger and leaves with it, a short drag springs back
+      with the keyboard; again with Remove animations on. `screenrecord` the two and step the frames.
 
 ## Q21 Insulin pens
 

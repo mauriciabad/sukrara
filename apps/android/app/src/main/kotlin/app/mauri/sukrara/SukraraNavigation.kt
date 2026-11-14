@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -473,6 +474,7 @@ fun SukraraNavigation(
         }
     }
     val context = LocalContext.current
+    val navScope = rememberCoroutineScope()
     Box(modifier) {
         AppScreens(
             backStack = backStack,
@@ -654,6 +656,13 @@ fun SukraraNavigation(
                             openBackup = { backStack.push(BackupRoute) },
                             openExport = { backStack.push(ExportRoute) },
                             openImport = { backStack.push(ImportRoute) },
+                            // the optional setup steps left for later: the walk goes on into them, on top of Settings
+                            openFinishSetup = {
+                                navScope.launch {
+                                    graph.setup.continueExtras()
+                                    if (SetupRoute !in backStack) backStack.add(SetupRoute)
+                                }
+                            },
                             // the Readings, Graph and Rings pages show home's own panel, redrawn as each setting changes
                             preview = { PanelPreview(viewModel(factory = HomeViewModel.factory(graph.home))) },
                             // Import and export's Import history and Export data (`:integrations`' rows and state)

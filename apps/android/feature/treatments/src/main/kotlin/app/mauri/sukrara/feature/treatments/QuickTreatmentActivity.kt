@@ -270,7 +270,7 @@ class QuickTreatmentActivity : ComponentActivity() {
                     focusLong = focusLong,
                     penLine =
                         penLine?.let { line ->
-                            { PenFillLine(line, showHint = form.rapid.isBlank() && form.long.isBlank(), onUndo = ::undoPen) }
+                            { PenFillLine(line, onUndo = ::undoPen) }
                         },
                     // the card swallows taps so they don't reach the scrim
                     modifier = Modifier.pointerInput(Unit) { detectTapGestures { } },
@@ -305,10 +305,11 @@ class QuickTreatmentActivity : ComponentActivity() {
                 focusLong = focusLong,
                 penLine =
                     penLine?.let { line ->
-                        { PenFillLine(line, showHint = form.rapid.isBlank() && form.long.isBlank(), onUndo = ::undoPen) }
+                        { PenFillLine(line, onUndo = ::undoPen) }
                     },
                 sheet = true,
                 onDelete = if (editing != null) ::deleteEntry else null,
+                awaitEntrance = this::awaitEntrance,
             )
         }
         duplicate?.let { d ->

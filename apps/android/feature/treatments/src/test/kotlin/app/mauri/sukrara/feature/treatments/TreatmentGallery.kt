@@ -119,7 +119,7 @@ class TreatmentGallery {
         }
         compose.onNodeWithTag("treatment-when").performClick()
         compose.onNodeWithTag("when-ago").performClick()
-        compose.onNodeWithText("15 min").performClick()
+        compose.onNodeWithText("15m").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("treatment-time").captureRoboImage("build/outputs/roborazzi/treatment-when-ago-light.png")
         compose.onNodeWithText("OK").performClick()

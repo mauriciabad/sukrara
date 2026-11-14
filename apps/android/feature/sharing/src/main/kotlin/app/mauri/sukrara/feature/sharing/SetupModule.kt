@@ -81,6 +81,16 @@ class SetupUpdates(
 )
 
 /**
+ * Insulin pens as setup's optional *Insulin pens* step sees them (the pen module).
+ */
+class SetupPens(
+    /** Reading is answered (on or off, anywhere); false = still *Ask at the first pen tap*; null = no NFC here. */
+    val answered: Flow<Boolean?>,
+    /** *Read my pens*: reading on. */
+    val turnOn: suspend () -> Unit,
+)
+
+/**
  * What the setup flow and the sharing screens need from the app: `AppGraph` implements it by returning its
  * [SetupModule]. Navigation to other features (the sensor flow) goes through callbacks the app passes to the screens.
  */
@@ -116,7 +126,12 @@ class SetupModule(
     val follower: FollowerSharing = FollowerSharing.None,
     /** The updates step's port; null = this build has no updater (Google Play): no step. */
     val updates: SetupUpdates? = null,
+    /** The insulin pens step's port; null = a build without pens (no step). */
+    val pens: SetupPens? = null,
 ) {
+    /** Pens on this phone ([SetupFacts.pens]); null = it can't read them. */
+    val pensAnswered: Flow<Boolean?> by lazy { pens?.answered ?: flowOf(null) }
+
     /** The daily update check's answer ([SetupFacts.updates]); null = no updater in this build. */
     val updateChoice: Flow<UpdateChoice?> by lazy { updates?.choice ?: flowOf(null) }
 
@@ -168,13 +183,13 @@ class SetupModule(
             roles.role,
             hub.state,
             combine(sharing.state, follower.state, ::Pair),
-            combine(alertsConfirmedAt, readiness.readiness, updateChoice, ::Triple),
+            combine(alertsConfirmedAt, readiness.readiness, updateChoice, pensAnswered, ::Answers),
         ) {
             record,
             role,
             glucose,
             (share, follow),
-            (confirmed, checklist, updates),
+            (confirmed, checklist, updates, pens),
             ->
             SetupProgress(
                 record,
@@ -186,10 +201,19 @@ class SetupModule(
                     alertsConfirmed = confirmed != null,
                     alertsReady = checklist.setupReady,
                     updates = updates,
+                    pens = pens,
                 ),
             )
         }
     }
+
+    /** Settings' *Finish setup*: the optional steps still open ([SetupMachine.extrasLeft]); empty hides the row. */
+    val extrasLeft: Flow<List<SetupStep>> by lazy {
+        progress.map { SetupMachine.extrasLeft(it.record, it.facts) }.distinctUntilChanged()
+    }
+
+    /** Settings' *Finish setup*: the walk goes on into the open extras (the app then opens setup). */
+    suspend fun continueExtras() = setupStore.update(SetupMachine::continueExtras)
 
     /** The home "Finish setup" banner ([SetupMachine.card]); null before a role and once nothing is left. */
     val card: Flow<SetupCard?> by lazy { progress.map { SetupMachine.card(it.record, it.facts) }.distinctUntilChanged() }
@@ -198,6 +222,14 @@ class SetupModule(
         val THRESHOLDS_CONFIRMED_AT = SchemaSettings.text("alerts.thresholdsConfirmedAt", default = "")
     }
 }
+
+/** The answers kept elsewhere that setup's facts read (thresholds, checklist, updates, pens). */
+private data class Answers(
+    val confirmed: Instant?,
+    val checklist: app.mauri.sukrara.core.model.AlertReadiness,
+    val updates: UpdateChoice?,
+    val pens: Boolean?,
+)
 
 /** The setup record and the facts it is read against, at one moment ([SetupModule.progress]). */
 data class SetupProgress(

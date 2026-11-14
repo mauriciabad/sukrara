@@ -290,10 +290,12 @@ struct WhenPicker: View {
                     },
                     keep: TreatmentForm.filterMinutes, submit: { if let typed { finish(typed) } },
                     focus: $minutesFocus, focusValue: true)
-                // presets fill the field (actions, not a selection: the field shows what is chosen)
+                // presets fill the field (actions, not a selection: the field shows what is chosen); the compact lengths
+                // of every row of lengths side by side ("5m" … "1h", #181), VoiceOver reading the full words
                 HStack(spacing: 6) {
                     ForEach(TreatmentForm.agoPresets, id: \.self) { m in
-                        Button(Durations.text(m)) { minutes = "\(m)" }
+                        Button(Durations.compact(m, .current)) { minutes = "\(m)" }
+                            .accessibilityLabel(Durations.spoken(m))
                     }
                 }
                 .controlSize(.small)

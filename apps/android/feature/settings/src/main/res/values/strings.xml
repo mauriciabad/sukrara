@@ -912,4 +912,6 @@
     <string name="st_sensorend_night_footer">The same night as Night alerts: changing it here changes it there too.</string>
     <string name="st_sensorend_link_summary">When this sensor ends, reminders, countdowns</string>
     <string name="st_trend_alert_footer">The fast alerts use the trend arrow: the same choice as Readings › Trend arrow.</string>
+    <!-- Settings overview: setup's optional steps still open (#181); the summary lists them -->
+    <string name="st_finish_setup">Finish setup</string>
 </resources>

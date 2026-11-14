@@ -104,6 +104,12 @@ interface SettingsDeps {
     /** Undo on the "Tip closed" snackbar after [dismissUpdatesBanner]. */
     fun restoreUpdatesBanner() {}
 
+    /**
+     * *Finish setup* (#181): the optional setup steps still open, by title ("Your followers · Insulin pens"); null =
+     * none (no row).
+     */
+    val setupExtras: Flow<String?> get() = flowOf(null)
+
     /** How many tips (home's and this one) are closed: *Show closed tips* shows while any is. */
     val closedTips: Flow<Int> get() = flowOf(0)
 

@@ -161,6 +161,8 @@ fun SettingsScreen(
     openBackup: () -> Unit = {},
     openExport: () -> Unit = {},
     openImport: () -> Unit = {},
+    /** Settings' *Finish setup*: setup's optional steps still open. */
+    openFinishSetup: () -> Unit = {},
     onReviewFinish: (ThresholdReviewResult) -> Unit = { onBack() },
     /** The live card the Readings, Graph and Rings pages show on top (the app's own panel; nothing in tests). */
     preview: @Composable () -> Unit = {},
@@ -185,6 +187,7 @@ fun SettingsScreen(
             openBackup,
             openExport,
             openImport,
+            openFinishSetup,
             onReviewFinish,
             cardPreview,
             dataRows,
@@ -207,6 +210,7 @@ private fun SettingsPages(
     openBackup: () -> Unit,
     openExport: () -> Unit,
     openImport: () -> Unit,
+    openFinishSetup: () -> Unit,
     onReviewFinish: (ThresholdReviewResult) -> Unit,
     cardPreview: @Composable () -> Unit,
     dataRows: @Composable () -> Unit,
@@ -221,6 +225,7 @@ private fun SettingsPages(
             val clinic by deps.clinicBanner.collectAsStateWithLifecycle(false)
             val updatesBanner by deps.updatesBanner.collectAsStateWithLifecycle(false)
             val closedTips by deps.closedTips.collectAsStateWithLifecycle(0)
+            val extras by deps.setupExtras.collectAsStateWithLifecycle(null)
             val sharing by deps.overviewSharing.collectAsStateWithLifecycle(OverviewSharing())
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             val recent = recentSearches(deps)
@@ -254,6 +259,7 @@ private fun SettingsPages(
                     openBackup = openBackup,
                     openExport = openExport,
                     openImport = openImport,
+                    openFinishSetup = openFinishSetup,
                 ),
                 apps,
                 clinic,
@@ -263,6 +269,7 @@ private fun SettingsPages(
                 recent,
                 moreSearch = deps.moreSearch,
                 updatesBanner = updatesBanner,
+                setupExtras = extras,
                 onBack = onBack,
             )
         }

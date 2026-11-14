@@ -238,13 +238,12 @@ fun PenEntrySheet(
                 }
                 HorizontalDivider()
                 if (onNote != null) {
-                    // the Add treatment form's note: its label on the outline, the example while empty, up to 3 lines
+                    // the Add treatment form's note: its label on the outline, empty while empty, up to 3 lines
                     OutlinedTextField(
                         state = noteState,
                         modifier = Modifier.fillMaxWidth().testTag("pen-note"),
                         labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
                         label = { MarkedText(noteMark, stringResource(R.string.ds_pen_note)) },
-                        placeholder = { Text(stringResource(R.string.ds_note_placeholder), maxLines = 1) },
                         inputTransformation = PenNotes.input,
                         lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 3),
                     )

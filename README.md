@@ -61,6 +61,11 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Quick actions in notifications, like Mute for 1 h, or Log carbs on a low.
 - [Planned]: Predictions, more and cooler sound packs...
 
+### Ready in a few steps
+
+- Setup asks only what alerts and monitoring need (permissions, sensor, alert levels); followers, insulin pens, updates
+  and your old history come after, right away or later from Settings › Finish setup.
+
 ### Log effortlessly
 
 - Supports smart insulin pens:
@@ -68,6 +73,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   - Tells priming apart from injections.
 - Quick actions in notifications.
 - Quick log pop-up by tapping the widget, the notification, a low alert's Log carbs or the Quick Settings tile.
+- Set when it happened by scrolling back the minutes and hours in one wheel, or with one tap (5m, 15m, 30m, 1h).
 - Add logs from the Sukrara companion apps.
 - Your last 24 h of logs on the home screen, and a Treatments page with 31 days: each entry with its chart marker,
   the glucose and trend when you logged it, and a mark only when it isn't in LibreView yet. Tap an entry to

@@ -9,7 +9,6 @@
     <string name="ds_undo">Deshacer</string>
     <!-- a pen entry's note field in its sheet -->
     <string name="ds_pen_note">Nota</string>
-    <string name="ds_note_placeholder">Pizza, ejercicio, enfermo…</string>
     <string name="ds_dismiss">Descartar</string>
     <string name="ds_custom">Personalizado…</string>
     <string name="ds_custom_label">Valor</string>

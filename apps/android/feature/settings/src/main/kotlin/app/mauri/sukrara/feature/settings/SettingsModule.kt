@@ -56,6 +56,7 @@ class SettingsModule(
     dismissUpdatesBanner: () -> Unit = {},
     restoreUpdatesBanner: () -> Unit = {},
     closedTips: Flow<Int> = flowOf(0),
+    setupExtras: Flow<String?> = flowOf(null),
     restoreClosedTips: () -> Unit = {},
     advanced: () -> AdvancedPort = { AdvancedPort.None },
     overviewSharing: Flow<OverviewSharing> = flowOf(OverviewSharing()),
@@ -101,6 +102,8 @@ class SettingsModule(
             override fun restoreUpdatesBanner() = restoreUpdatesBanner()
 
             override val closedTips = closedTips
+
+            override val setupExtras = setupExtras
 
             override fun restoreClosedTips() = restoreClosedTips()
 

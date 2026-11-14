@@ -80,9 +80,10 @@ import androidx.compose.ui.semantics.Role as SemanticsRole
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * The first-run setup (brief 24, binding order): welcome → role → permissions → keep Sukrara up to date (the GitHub
- * version) → sensor → alert thresholds → sharing identity → bring your history back (wearer) → home. Each step says "Step N of M" to
- * TalkBack, has Back (except the first; there Back leaves, and home's "Finish setup" banner resumes the walk)
+ * The first-run setup (brief 24, binding order), in two parts (#181): the essentials (welcome → role → permissions →
+ * sensor → alert thresholds), then *The essentials are done* with what is left, then the optional steps (keep Sukrara
+ * up to date (the GitHub version) → your followers → insulin pens → bring your history back) now or later from
+ * Settings › *Finish setup*. Each step says "Step N of M" (or "Optional step N of M") to TalkBack, has Back (except the first; there Back leaves, and home's "Finish setup" banner resumes the walk)
  * and Skip / Later where skipping is safe; skipped steps go to the home "Finish setup" card.
  * [onOpenSensorSetup] opens the new-sensor flow; [thresholdRows] are Settings' threshold rows (the alert step
  * shows the same rows as Settings › Review alert thresholds); [onExportHistory] opens the CSV export on everything
@@ -179,6 +180,11 @@ data class SetupActions(
     val restore: (String, String?) -> Unit = { _, _ -> },
     val clearRestoreError: () -> Unit = {},
     val skip: (SetupStep) -> Unit = {},
+    /** *Set up the rest* on Ready. */
+    val setUpRest: () -> Unit = {},
+    /** *Read my pens* / *I don't use a smart pen* on the pens step. */
+    val readPens: () -> Unit = {},
+    val completePens: () -> Unit = {},
     /** *Bring it back* on the history step: Import history. */
     val openHistoryImport: () -> Unit = {},
 )
@@ -227,6 +233,9 @@ private fun SetupViewModel.actions(
             restore = ::restore,
             clearRestoreError = ::clearRestoreError,
             skip = ::skip,
+            setUpRest = ::setUpRest,
+            readPens = ::readPens,
+            completePens = ::completePens,
             openHistoryImport = { openHistoryImport(onOpenHistoryImport) },
         )
     }
@@ -251,12 +260,14 @@ fun SetupContent(
                 } else {
                     Spacer(Modifier.size(48.dp))
                 }
-                Text(
-                    stringResource(R.string.sh_setup_step_of, u.index, u.count),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-                )
+                if (u.count > 0) {
+                    Text(
+                        stringResource(if (step.extra) R.string.sh_setup_extra_of else R.string.sh_setup_step_of, u.index, u.count),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                    )
+                }
             }
             AnimatedContent(step, transitionSpec = { Motion.fadeThrough(reduced) }, label = "setup-step") { s ->
                 Column(
@@ -271,7 +282,9 @@ fun SetupContent(
                         SetupStep.Updates -> UpdatesStep(u, actions)
                         SetupStep.Sensor -> SensorStep(u, actions)
                         SetupStep.Alerts -> AlertConfirmStep(u, actions)
+                        SetupStep.Ready -> ReadyStep(u, actions)
                         SetupStep.Identity -> IdentityStep(u, actions)
+                        SetupStep.Pens -> PensStep(u, actions)
                         SetupStep.History -> HistoryStep(actions)
                     }
                     Spacer(Modifier.size(24.dp))
@@ -670,17 +683,7 @@ private fun ColumnScope.UpdatesStep(
 ) {
     val on = u.facts.updates == UpdateChoice.On
     val haptics = rememberHaptics()
-    Box(
-        Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painterResource(DsR.drawable.ds_ic_update),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            modifier = Modifier.size(28.dp),
-        )
-    }
+    StepCircle(DsR.drawable.ds_ic_update)
     StepHeader(stringResource(R.string.sh_setup_updates_title), stringResource(R.string.sh_setup_updates_body))
     UpdatesPoint(DsR.drawable.ds_ic_schedule, stringResource(R.string.sh_setup_updates_daily))
     UpdatesPoint(DsR.drawable.ds_ic_notifications, stringResource(R.string.sh_setup_updates_choice))
@@ -710,6 +713,91 @@ private fun ColumnScope.UpdatesStep(
             enabled = !u.busy,
             modifier = Modifier.weight(1f).heightIn(min = 48.dp),
         ) { Text(stringResource(if (on) R.string.sh_setup_updates_turn_off else R.string.sh_setup_updates_not_now)) }
+    }
+}
+
+/**
+ * Between the parts (#181): the essentials are behind (any left for later named, home's banner brings them back), the
+ * optional steps still open are listed with their icons,
+ * *Set up the rest* walks them now and *Later* goes home (Settings › *Finish setup* keeps them).
+ */
+@Composable
+private fun ColumnScope.ReadyStep(
+    u: SetupUi,
+    actions: SetupActions,
+) {
+    // never "done" over an essential left for later: it is named, with where it comes back
+    val context = LocalContext.current
+    val pending = SetupMachine.finishItems(u.record, u.facts)
+    StepCircle(if (pending.isEmpty()) DsR.drawable.ds_ic_check_circle else DsR.drawable.ds_ic_schedule)
+    StepHeader(
+        stringResource(if (pending.isEmpty()) R.string.sh_setup_ready_title else R.string.sh_setup_ready_title_pending),
+        stringResource(R.string.sh_setup_ready_body),
+    )
+    if (pending.isNotEmpty()) {
+        NoteCard(stringResource(R.string.sh_setup_ready_pending, pending.joinToString(" · ") { it.label(context) }))
+    }
+    for (extra in u.extras) UpdatesPoint(extra.icon, stringResource(extra.title))
+    StepButtons(
+        stringResource(R.string.sh_setup_ready_rest),
+        actions.setUpRest,
+        enabled = !u.busy,
+        secondary = listOf(stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Ready) }),
+    )
+}
+
+/**
+ * *Insulin pens* (optional; wearer with NFC): what a smart pen does here, *Read my pens* (reading on; reached again it
+ * says pens are read, with *Continue*), *I don't use a smart pen* (final: a pen tap still asks) or *Later*.
+ */
+@Composable
+private fun ColumnScope.PensStep(
+    u: SetupUi,
+    actions: SetupActions,
+) {
+    StepCircle(DsR.drawable.ds_ic_dia_pen)
+    StepHeader(stringResource(R.string.sh_setup_pens_title), stringResource(R.string.sh_setup_pens_body))
+    if (u.facts.pens == true) {
+        NoteCard(stringResource(R.string.sh_setup_pens_done))
+        StepButtons(stringResource(R.string.sh_setup_continue), actions.completePens, enabled = !u.busy)
+    } else {
+        StepButtons(
+            stringResource(R.string.sh_setup_pens_on),
+            actions.readPens,
+            enabled = !u.busy,
+            secondary =
+                listOf(
+                    stringResource(R.string.sh_setup_pens_none) to actions.completePens,
+                    stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Pens) },
+                ),
+        )
+    }
+}
+
+/** An optional step's icon in its row of Ready's list. */
+private val SetupStep.icon: Int
+    get() =
+        when (this) {
+            SetupStep.Updates -> DsR.drawable.ds_ic_update
+            SetupStep.Identity -> DsR.drawable.ds_ic_group
+            SetupStep.Pens -> DsR.drawable.ds_ic_dia_pen
+            SetupStep.History -> DsR.drawable.ds_ic_history
+            else -> DsR.drawable.ds_ic_check
+        }
+
+/** A step's icon in a tonal circle, above its title. */
+@Composable
+private fun StepCircle(icon: Int) {
+    Box(
+        Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painterResource(icon),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(28.dp),
+        )
     }
 }
 

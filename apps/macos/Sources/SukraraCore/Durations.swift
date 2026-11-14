@@ -31,6 +31,20 @@ public enum Durations {
         }
     }
 
+    /// A length in full words for VoiceOver ("15 minutes", "1 hour", "1 hour, 30 minutes"; Spanish "15 minutos", "1 hora"),
+    /// so a compact "15m" on screen is never read as metres (Android `spokenLength`, the platform's wide unit names).
+    public static func spoken(_ minutes: Int, _ language: AppLanguage = .current) -> String {
+        let f = DateComponentsFormatter()
+        f.unitsStyle = .full
+        f.allowedUnits = [.hour, .minute]
+        f.zeroFormattingBehavior = .dropAll
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.locale = Locale(identifier: language.rawValue)
+        f.calendar = calendar
+        let m = max(0, minutes)
+        return f.string(from: DateComponents(hour: m / 60, minute: m % 60)) ?? text(m)
+    }
+
     /// Whether `compact(minutes)` is a single unit of 1 ("1m", "1h", "1d"): Spanish says "queda 1 min" but "quedan 1 h
     /// 5 min" (Android `Durations.compactQuantity`).
     public static func compactIsOne(_ minutes: Int) -> Bool {

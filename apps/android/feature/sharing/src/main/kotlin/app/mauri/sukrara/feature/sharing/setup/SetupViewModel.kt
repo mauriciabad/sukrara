@@ -81,13 +81,15 @@ data class RoleChange(
 /** Everything one setup screen shows. [step] null = setup is over: go home. */
 data class SetupUi(
     val step: SetupStep?,
-    /** 1-based position and the number of steps ("Step 3 of 7"). */
+    /** 1-based position and the number of steps in [step]'s part ("Step 3 of 5", "Optional step 1 of 3"); 0 = Ready. */
     val index: Int,
     val count: Int,
     val facts: SetupFacts,
     val record: SetupRecord,
     val readiness: AlertReadiness,
     val alerts: AlertThresholds,
+    /** Ready: the optional steps that follow (listed by title). */
+    val extras: List<SetupStep> = emptyList(),
     val gate: RestoreGate,
     val share: OwnerShareState,
     val restore: RestoreUi,
@@ -150,15 +152,20 @@ class SetupViewModel(
             m.roles.role,
             m.hub.state,
             combine(m.sharing.state, m.follower.state, ::Pair),
-            combine(m.alertSettings.settings, m.alertsConfirmedAt, m.updateChoice, ::Triple),
+            combine(
+                m.alertSettings.settings,
+                m.alertsConfirmedAt,
+                m.updateChoice,
+                m.pensAnswered,
+            ) { a, c, u, p -> Answers(a, c != null, u, p) },
         ) {
             record,
             role,
             glucose,
             (share, follow),
-            (alerts, confirmedAt, updates),
+            answers,
             ->
-            Inputs(record, role, glucose, share, follow, alerts, confirmedAt != null, updates)
+            Inputs(record, role, glucose, share, follow, answers)
         }
 
     val ui: StateFlow<SetupUi?> =
@@ -179,8 +186,9 @@ class SetupViewModel(
                     following = i.follow.following,
                     ownSensorLive = RestoreGate.ownSensorLive(i.glucose, now),
                     hasIdentity = i.share is OwnerShareState.Sharing || i.share is OwnerShareState.AnotherAppSharingAsYou,
-                    alertsConfirmed = i.alertsConfirmed,
-                    updates = i.updates,
+                    alertsConfirmed = i.answers.confirmed,
+                    updates = i.answers.updates,
+                    pens = i.answers.pens,
                 )
             val steps = SetupMachine.steps(facts)
             val single = mode != Mode.Walk
@@ -190,14 +198,17 @@ class SetupViewModel(
                 } else {
                     backTo?.let(SetupStep::valueOf)?.takeIf { it in steps } ?: SetupMachine.next(i.record, facts)
                 }
+            // "Step 2 of 5" within its part (the essentials or the optional steps); Ready: none
+            val place = step?.let { SetupMachine.place(it, facts) }
             SetupUi(
                 step = step,
-                index = (steps.indexOf(step) + 1).coerceAtLeast(1),
-                count = steps.size,
+                index = place?.first ?: 0,
+                count = place?.second ?: 0,
                 facts = facts,
                 record = i.record,
                 readiness = readiness,
-                alerts = AlertThresholds(l.editing ?: i.alerts),
+                alerts = AlertThresholds(l.editing ?: i.answers.alerts),
+                extras = if (step == SetupStep.Ready) SetupMachine.extrasLeft(i.record, facts) else emptyList(),
                 gate = RestoreGate.evaluate(facts.ownSensorLive),
                 share = i.share,
                 restore = l.restore,
@@ -520,6 +531,19 @@ class SetupViewModel(
 
     fun skip(step: SetupStep) = record { SetupMachine.skip(it, step) }
 
+    /** *Set up the rest* on Ready: the walk goes on into the optional steps. */
+    fun setUpRest() = record(SetupMachine::continueExtras)
+
+    /** *Read my pens*: pen reading on, the pens step done. */
+    fun readPens() =
+        act {
+            m.pens?.turnOn?.invoke()
+            write(SetupMachine::completePens)
+        }
+
+    /** *I don't use a smart pen* (final: a pen tap still asks), or *Continue* once pens are read: the pens step is done. */
+    fun completePens() = record(SetupMachine::completePens)
+
     /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, then the walk goes on. */
     fun turnOnUpdates() =
         act {
@@ -603,9 +627,15 @@ class SetupViewModel(
         val glucose: app.mauri.sukrara.core.model.GlucoseState,
         val share: OwnerShareState,
         val follow: FollowState,
+        val answers: Answers,
+    )
+
+    /** The answers kept elsewhere: the thresholds, whether they were confirmed, updates and pens. */
+    private data class Answers(
         val alerts: AlertSettings,
-        val alertsConfirmed: Boolean,
+        val confirmed: Boolean,
         val updates: UpdateChoice?,
+        val pens: Boolean?,
     )
 
     private data class Locals(

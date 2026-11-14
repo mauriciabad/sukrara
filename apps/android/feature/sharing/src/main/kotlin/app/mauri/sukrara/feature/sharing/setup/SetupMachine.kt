@@ -7,9 +7,11 @@ import app.mauri.sukrara.core.model.Role
 import kotlinx.serialization.Serializable
 
 /**
- * The first-run setup steps, in their binding order: the sensor runs here before the alerts are
- * confirmed and before the identity can be restored (a restore moves the followers to this phone, so it waits until
- * this phone has the sensor).
+ * The first-run setup steps, in their binding order, in two parts (#181): the **essentials** (what must be set before
+ * monitoring and alerts can be trusted: the role, the follow, what alerts need, the sensor, the thresholds), then
+ * [Ready], then the **extras** (useful, never needed to start: updates, followers, insulin pens, history), which the
+ * person walks right away or later from Settings › *Finish setup*. The sensor runs before the identity can be
+ * restored (a restore moves the followers to this phone, so it waits until this phone has the sensor).
  */
 enum class SetupStep {
     Welcome,
@@ -18,30 +20,50 @@ enum class SetupStep {
     /** Follower only: join with the wearer's invite link (not skippable: following is the role). */
     Join,
     Permissions,
+    Sensor,
+    Alerts,
+
+    /**
+     * Between the parts: the essentials are behind; what is left is listed, *Set up the rest* walks it now, *Later*
+     * leaves it for Settings › *Finish setup* (skipped = later). Not shown when this phone has no extras.
+     */
+    Ready,
 
     /**
      * The GitHub version only (null [SetupFacts.updates] = a build without an updater, Google Play: never shown):
      * *Keep Sukrara up to date*, the opt-in for the daily update check (F-Droid's rule: updates that bypass a store are
      * opt-in, declining no harder than accepting). *Turn on* or *Not now*, both final here; Settings › About keeps the
-     * switch. Not a Finish-setup item: once passed, home's suggestion banner is its second chance.
+     * switch.
      */
     Updates,
-
-    Sensor,
-    Alerts,
     Identity,
 
     /**
+     * Wearer with NFC only (null [SetupFacts.pens]): *Insulin pens*, whether to read smart pens. *Read my pens* turns
+     * reading on, *I don't use one* is final (a pen tap still asks), *Later* keeps it on *Finish setup*.
+     */
+    Pens,
+
+    /**
      * Wearer only, last: *Bring your history back* (Import history: LibreView, Tidepool or a file). Offered once: done
-     * or skipped, it never comes back (not among the Finish-setup items); Settings › Share with apps › Import history
-     * stays. Offered on its own at launch when it is the only step left (`historyDue`: setup finished before it
-     * existed, or an update replaced the database).
+     * or skipped, it never comes back; Settings › Share with apps › Import history stays. Offered on its own at launch
+     * when it is the only step left (`historyDue`: setup finished before it existed, or an update replaced the
+     * database).
      */
     History,
     ;
 
     /** Welcome and Role can't be skipped: the app does nothing useful without a role. Every other step can. */
     val skippable: Boolean get() = this != Welcome && this != Role && this != Join
+
+    /** Before [Ready]: monitoring and alerts can't be trusted until these are answered. */
+    val essential: Boolean get() = ordinal < Ready.ordinal
+
+    /** After [Ready]: never needed to start. */
+    val extra: Boolean get() = ordinal > Ready.ordinal
+
+    /** An extra whose skip is a final answer (*Not now*, *Start empty*): it leaves *Finish setup* like an answer. */
+    internal val skipIsFinal: Boolean get() = this == Updates || this == History
 }
 
 /**
@@ -72,6 +94,11 @@ data class SetupFacts(
     val alertsReady: Boolean = false,
     /** The daily update check's answer; null = this build has no updater (Google Play): no updates step. */
     val updates: UpdateChoice? = null,
+    /**
+     * Insulin pens on this phone: null = it can't read pens (no NFC: no step); true = reading answered (on or off,
+     * here, in Settings › Insulin pens or at a pen tap); false = still *Ask at the first pen tap*.
+     */
+    val pens: Boolean? = null,
 )
 
 /** Where the GitHub version's daily update check stands (it is opt-in: off until the person turns it on). */
@@ -87,14 +114,14 @@ enum class UpdateChoice {
 }
 
 /**
- * One line of the home "Finish setup" card: a skipped step that still matters; tapping reopens [step]. In the order
+ * One line of the home "Finish setup" card: a skipped essential step that still matters; tapping reopens [step]
+ * (the extras are Settings' *Finish setup*, [SetupMachine.extrasLeft]: home stays about glucose). In the order
  * the card names them and Continue walks them: what alerts need first.
  */
 enum class FinishItem(val step: SetupStep) {
     AllowAlerts(SetupStep.Permissions),
     AlertsNotConfirmed(SetupStep.Alerts),
     ConnectSensor(SetupStep.Sensor),
-    RestoreFollowers(SetupStep.Identity),
 }
 
 /**
@@ -119,41 +146,90 @@ enum class RoleRefusal {
  * no I/O; [SetupViewModel] persists the records it returns.
  */
 object SetupMachine {
-    fun steps(facts: SetupFacts): List<SetupStep> =
-        when (facts.role) {
-            // a follower's history is the wearer's (it comes from their phone): nothing to import
-            Role.Follower -> {
-                listOf(SetupStep.Welcome, SetupStep.Role, SetupStep.Join, SetupStep.Permissions, SetupStep.Updates, SetupStep.Alerts)
-            }
+    fun steps(facts: SetupFacts): List<SetupStep> {
+        val all =
+            when (facts.role) {
+                // a follower's history is the wearer's (it comes from their phone): nothing to import; no pens
+                Role.Follower -> {
+                    listOf(
+                        SetupStep.Welcome,
+                        SetupStep.Role,
+                        SetupStep.Join,
+                        SetupStep.Permissions,
+                        SetupStep.Alerts,
+                        SetupStep.Ready,
+                        SetupStep.Updates,
+                    )
+                }
 
-            Role.Wearer, null -> {
-                SetupStep.entries - SetupStep.Join
-            }
-        }.filter { it != SetupStep.Updates || facts.updates != null }
+                Role.Wearer, null -> {
+                    SetupStep.entries - SetupStep.Join
+                }
+            }.filter { (it != SetupStep.Updates || facts.updates != null) && (it != SetupStep.Pens || facts.pens != null) }
+        // nothing optional on this phone: the essentials end setup
+        return if (all.none { it.extra }) all - SetupStep.Ready else all
+    }
+
+    /** [step]'s 1-based place in its part (the essentials or the extras) and the part's size; null = [SetupStep.Ready]. */
+    fun place(
+        step: SetupStep,
+        facts: SetupFacts,
+    ): Pair<Int, Int>? {
+        if (step == SetupStep.Ready) return null
+        val part = steps(facts).filter { it.essential == step.essential && it != SetupStep.Ready }
+        return (part.indexOf(step) + 1).coerceAtLeast(1) to part.size
+    }
 
     /** *Bring it back* opens Import history: the step is done (offered once). */
     fun completeHistory(record: SetupRecord): SetupRecord = record.done(SetupStep.History)
 
     /**
      * The history step to offer on its own at launch: a wearer's only step left (setup finished before it existed, or
-     * an update replaced the database). Never while the walk stopped at an earlier step: home's banner resumes the walk,
-     * which offers it last.
+     * an update replaced the database). Never while the walk stopped at an earlier step: home's banner (an essential)
+     * or Settings' *Finish setup* (an extra) resumes the walk, which offers it last.
      */
     fun historyDue(
         record: SetupRecord,
         facts: SetupFacts,
-    ): Boolean = facts.role == Role.Wearer && next(record, facts) == SetupStep.History
+    ): Boolean {
+        if (facts.role != Role.Wearer) return false
+        val next = next(record, facts)
+        return next == SetupStep.History || (next == null && extrasLeft(record, facts) == listOf(SetupStep.History))
+    }
 
     /** The step to show now, or null when setup is over (home). Resumes exactly where the person left. */
     fun next(
         record: SetupRecord,
         facts: SetupFacts,
-    ): SetupStep? = steps(facts).firstOrNull { !done(it, record, facts) && it !in record.skipped }
+    ): SetupStep? {
+        // *Later* on Ready: the walk ends with the essentials (the extras wait on Settings' Finish setup)
+        val walk = steps(facts).filter { SetupStep.Ready !in record.skipped || it.essential }
+        return walk.firstOrNull { !done(it, record, facts) && it !in record.skipped }
+    }
 
     /**
-     * Home's *Finish setup* banner, or null (no role yet: home says setup is incomplete; or nothing left). A walk left
-     * before its end comes first and resumes where it stopped; never the join step (a follower's home already leads
-     * there: no reading yet, or the follow ended).
+     * Settings' *Finish setup*: the extras still open once the essentials' walk is over (or paused at [SetupStep.Ready]):
+     * not answered, not done elsewhere and not declined for good (*Not now*, *Start empty*); none before a role.
+     */
+    fun extrasLeft(
+        record: SetupRecord,
+        facts: SetupFacts,
+    ): List<SetupStep> {
+        if (facts.role == null || next(record, facts)?.essential == true) return emptyList()
+        return steps(facts).filter { it.extra && !done(it, record, facts) && !(it.skipIsFinal && it in record.skipped) }
+    }
+
+    /** *Set up the rest* (Ready) or Settings' *Finish setup*: the walk goes on into the extras, those put off included. */
+    fun continueExtras(record: SetupRecord): SetupRecord =
+        record.copy(
+            completed = record.completed + SetupStep.Ready,
+            skipped = record.skipped.filterNot { it == SetupStep.Ready || (it.extra && !it.skipIsFinal) }.toSet(),
+        )
+
+    /**
+     * Home's *Finish setup* banner, or null (no role yet: home says setup is incomplete; or nothing left). Essentials
+     * only: a walk left before the essentials' end comes first and resumes where it stopped (never the join step: a
+     * follower's home already leads there); the extras are Settings' *Finish setup* ([extrasLeft]).
      */
     fun card(
         record: SetupRecord,
@@ -161,7 +237,7 @@ object SetupMachine {
     ): SetupCard? {
         if (facts.role == null) return null
         val next = next(record, facts)
-        if (next != null) return if (next == SetupStep.Join) null else SetupCard.Resume(next)
+        if (next != null && next.essential) return if (next == SetupStep.Join) null else SetupCard.Resume(next)
         return finishItems(record, facts).firstOrNull()?.let(SetupCard::Finish)
     }
 
@@ -210,16 +286,23 @@ object SetupMachine {
             facts.following && step in record.completed
         } else if (step == SetupStep.Updates) {
             step in record.completed || step in record.skipped || facts.updates != UpdateChoice.Open || passed(step, record, facts)
+        } else if (step == SetupStep.Ready) {
+            // an install that went past it before it existed
+            step in record.completed || passed(step, record, facts)
+        } else if (step == SetupStep.Pens) {
+            step in record.completed || facts.pens == true
         } else {
             step in record.completed ||
                 (facts.role != null && (step == SetupStep.Welcome || step == SetupStep.Role)) ||
-                (step == SetupStep.Alerts && facts.alertsConfirmed)
+                (step == SetupStep.Alerts && facts.alertsConfirmed) ||
+                // restored or started fresh elsewhere (Settings › Sharing's Set up)
+                (step == SetupStep.Identity && facts.hasIdentity)
         }
 
     /**
      * The walk already went past [step]: a later step was answered. Only for a step added to the walk after people
-     * finished it (*Keep Sukrara up to date*): an install from before it isn't sent back into setup for it (home's
-     * suggestion banner offers it instead).
+     * finished it (*Keep Sukrara up to date*, [SetupStep.Ready]): an install from before it isn't sent back into setup
+     * for it.
      */
     private fun passed(
         step: SetupStep,
@@ -231,6 +314,9 @@ object SetupMachine {
     }
 
     fun completeWelcome(record: SetupRecord): SetupRecord = record.done(SetupStep.Welcome)
+
+    /** *Read my pens* (reading turned on) or *I don't use one* (final; a pen tap still asks): the pens step is done. */
+    fun completePens(record: SetupRecord): SetupRecord = record.done(SetupStep.Pens)
 
     /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, the step done. */
     fun completeUpdates(record: SetupRecord): SetupRecord = record.done(SetupStep.Updates)
@@ -277,8 +363,8 @@ object SetupMachine {
     ): SetupRecord = if (step.skippable) record.copy(skipped = record.skipped + step) else record
 
     /**
-     * The home card's items: skipped steps that still matter. They drop out by themselves once the fact behind them
-     * changes (a reading arrived, the thresholds were confirmed, an identity exists).
+     * The home card's items: skipped essential steps that still matter. They drop out by themselves once the fact
+     * behind them changes (the checklist is complete, a reading arrived, the thresholds were confirmed).
      */
     fun finishItems(
         record: SetupRecord,
@@ -293,7 +379,6 @@ object SetupMachine {
                 step in record.skipped &&
                 when (item) {
                     FinishItem.ConnectSensor -> !facts.ownSensorLive
-                    FinishItem.RestoreFollowers -> !facts.hasIdentity
                     FinishItem.AlertsNotConfirmed -> !facts.alertsConfirmed
                     FinishItem.AllowAlerts -> !facts.alertsReady
                 }

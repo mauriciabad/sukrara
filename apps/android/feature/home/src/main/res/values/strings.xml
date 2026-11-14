@@ -218,7 +218,6 @@
     <string name="banner_taps_turn_off">Turn off</string>
     <!-- Glucose report card on home -->
     <string name="report_title">Glucose report</string>
-    <string name="report_days_short">%1$d d</string>
     <plurals name="report_days">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>

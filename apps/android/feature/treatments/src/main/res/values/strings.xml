@@ -64,15 +64,12 @@
     <string name="treatment_yesterday">Yesterday %1$s</string>
     <string name="treatment_mode_time">Time</string>
     <string name="treatment_mode_ago">Minutes ago</string>
-    <string name="treatment_unit_min">min</string>
     <string name="treatment_quiet_highs">Highs quiet for %1$s</string>
     <string name="treatment_quiet_lows">Lows quiet for %1$s</string>
     <string name="treatment_quiet_both">Highs quiet for %1$s · lows quiet for %2$s</string>
     <string name="treatment_pen_duplicate_title">Already logged by your pen?</string>
     <string name="treatment_pen_duplicate_text">Your pen logged %1$s at %2$s. Log this dose too?</string>
     <string name="treatment_pen_duplicate_log">Log anyway</string>
-    <!-- The pen read into the dialog (docs/29): under the fields while pens can be read and no insulin is typed -->
-    <string name="treatment_pen_hint">Injected? Hold your pen to the phone.</string>
     <string name="treatment_pen_reading">Reading your pen…</string>
     <!-- The insulin field was filled from a pen read, already in the log -->
     <string name="treatment_pen_logged">Logged from your pen</string>

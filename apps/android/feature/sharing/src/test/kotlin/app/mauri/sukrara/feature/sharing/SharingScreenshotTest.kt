@@ -243,6 +243,18 @@ class SharingScreenshotTest {
             },
             "setup-6-identity-conflict" to { SetupContent(ui(SetupStep.Identity, 6, live, share = conflict), a) },
             "setup-7-history" to { SetupContent(ui(SetupStep.History, 7, live), a) },
+            // #181: the essentials end on Ready, which lists what is left; the optional insulin pens step
+            "setup-5b-ready" to {
+                SetupContent(
+                    ui(
+                        SetupStep.Ready,
+                        0,
+                        live,
+                    ).copy(count = 0, extras = listOf(SetupStep.Updates, SetupStep.Identity, SetupStep.Pens, SetupStep.History)),
+                    a,
+                )
+            },
+            "setup-6b-pens" to { SetupContent(ui(SetupStep.Pens, 3, live.copy(pens = false)).copy(count = 4), a) },
             "conflict-screen" to { IdentityConflictScreen(conflict, {}, {}) },
             "share-new" to { ShareScreen(InviteUi.None, {}, {}, {}) },
             "share-ready" to {
