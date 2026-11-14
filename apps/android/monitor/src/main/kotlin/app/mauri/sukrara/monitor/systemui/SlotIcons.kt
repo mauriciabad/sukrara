@@ -99,10 +99,10 @@ object SlotIcons {
                         v == "lo" || v == "hi" -> "sb_$v"
                         else -> "sb_n$v"
                     }
-                val rate = look.rate
+                val band = look.band
                 val trend =
                     when {
-                        look.trend == TrendMark.ARROW && rate != null -> trendDrawable(rate)
+                        look.trend == TrendMark.ARROW && band != null -> trendDrawable(band)
                         look.strike -> "sb_t_none_s"
                         else -> "sb_t_none"
                     }
@@ -110,8 +110,11 @@ object SlotIcons {
             }
         }
 
-    /** The arrow for [rate] (mg/dL/min): one drawable per band ([TrendAngle.step]), as the card draws it. */
-    fun trendDrawable(rate: Double): String = TREND_DRAWABLES[TrendAngle.step(rate) + 3]
+    /**
+     * The arrow for the trend's text [band] (contracts/trend): one pre-drawn drawable per band (system icons can't
+     * rotate freely), so it matches the text arrow and the words; the card turns its own arrow with the rate.
+     */
+    fun trendDrawable(band: Int): String = TREND_DRAWABLES[band.coerceIn(-3, 3) + 3]
 
     /** The band's drawable, ⇊ … ⇈ (tools/android/gen-slot-drawables.swift). */
     val TREND_DRAWABLES = listOf("sb_t_down2", "sb_t_down", "sb_t_down45", "sb_t_flat", "sb_t_up45", "sb_t_up", "sb_t_up2")

@@ -181,7 +181,7 @@ class GlucoseHubTest {
             assertEquals(
                 listOf(39 to null, 401 to null, 39 to null, 401 to null),
                 hub.state.value.recent
-                    .map { it.mgdl to it.rateMgdlPerMin },
+                    .map { it.mgdl to it.sensorRate },
             )
         }
 

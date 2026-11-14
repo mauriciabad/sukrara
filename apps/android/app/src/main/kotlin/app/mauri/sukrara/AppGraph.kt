@@ -11,6 +11,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.AlertSettingsCodec
 import app.mauri.sukrara.core.data.DataModule
+import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.data.userUnlocked
@@ -116,6 +117,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -188,7 +190,16 @@ class AppGraph(
      * The readings as the current role sees them (`DataModule.readingsFor`): another person's never reach the hub,
      * the history, the report, the export or an upload, even right after a role change.
      */
-    val readings by lazy { data.readingsFor(role.data.map { it.role }) }
+    val readings by lazy { TrendReadings(data.readingsFor(role.data.map { it.role }), trendSetting) }
+
+    /**
+     * The *Trend arrow* in use (`glucose.trend`; a follower's per *Settings from*): every read of [readings] and the
+     * hub's readings comes with THE trend under it ([TrendReadings], contracts/trend).
+     */
+    private val trendSetting by lazy { TrendReadings.setting(followerSettings.settings) }
+
+    /** THE hub's readings with THE trend: what the hub, and the xDrip+ broadcast's live reading, read. */
+    private val hubTrendReadings by lazy { TrendReadings(hubReadings, trendSetting) }
 
     /**
      * THE hub's readings ([app.mauri.sukrara.core.data.readings.HubReadings]): [readings] once [unlocked], before that
@@ -228,7 +239,8 @@ class AppGraph(
             scope = scope,
             dispatchers = dispatchers,
             clock = clock,
-            readings = hubReadings,
+            // THE trend on every reading the hub reads (the card, every surface, the glucose notification, the alerts)
+            readings = hubTrendReadings,
             // a damaged record keeps the no-data alarm armed (from now) instead of silently disarming it
             record =
                 data.typedStore(
@@ -502,10 +514,14 @@ class AppGraph(
                     fun g(x: SensorGlucose) = LvGlucose(x.lifeCount, x.mgdl, x.epochSec, x.rate)
                     LvReadings(b.serial, b.current?.let(::g), b.history.map(::g))
                 },
+            // the Libre 3's live reading with THE trend the hub has for it (contracts/trend; never the sensor's own rate),
+            // keeping the serial and life count only the sensor bridge knows
             libreLive =
-                sensor.source.sensorGlucose.mapNotNull { b ->
-                    b.current?.let { LiveReading(it.mgdl, it.rate, Instant.ofEpochSecond(it.epochSec), b.serial, it.lifeCount) }
-                },
+                combine(sensor.source.sensorGlucose, hubTrendReadings.latest()) { b, latest ->
+                    b.current?.takeIf { latest != null && latest.t.epochSecond == it.epochSec }?.let {
+                        LiveReading(it.mgdl, latest?.rate, Instant.ofEpochSecond(it.epochSec), b.serial, it.lifeCount)
+                    }
+                }.filterNotNull().distinctUntilChanged(),
             libreViewLogin = data.libreViewLogin,
             role = role.data.map { it.role },
             jugglucoIsSource = data.settings.flow(SensorSource).map { SensorSourceKind.fromId(it) == SensorSourceKind.Juggluco },

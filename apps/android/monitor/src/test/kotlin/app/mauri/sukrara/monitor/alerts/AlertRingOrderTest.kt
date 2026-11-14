@@ -12,6 +12,7 @@ import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.trended
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -31,7 +32,7 @@ class AlertRingOrderTest {
     private suspend fun lowAndFallingFast(s: AlertSettings): List<String> {
         rig.store.setSettings(s)
         val runtime = rig.runtime()
-        runtime.onState(rig.wearerState(latest = Reading(rig.clock.now(), 62, -3.0, SourceId.Libre3)))
+        runtime.onState(rig.wearerState(latest = Reading(rig.clock.now(), 62, -3.0, SourceId.Libre3).trended()))
         return rig.presenter.log.toList()
     }
 

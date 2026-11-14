@@ -37,7 +37,7 @@ settings falling_fast=on
  0  glucose 170 moving -2.5
  8                         => Falling fast
 10  sensor off
-24  sensor on, glucose 140 moving -2.5         # 15 min since the last reading: the trend starts over
+24  sensor on, glucose 140 moving -2.5   => clear falling_fast   # 15 min since the last reading: the trend starts over; this first reading has none (no sensor rate either): the alert goes, the episode stays
 38                         => Falling fast     # its repeat (30 min after 8): held again since 32
 40
 

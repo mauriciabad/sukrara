@@ -44,7 +44,14 @@ object AlertLiveValue {
         r: AlertReading,
         now: Long,
     ): Look {
-        val face = GlucoseCard.face(GlucosePoint(r.t, r.mgdl, r.rate), now, null, CardSurface.ALERT_NOTIFICATION, GlucoseUnit.MGDL)
+        val face =
+            GlucoseCard.face(
+                GlucosePoint(r.t, r.mgdl, r.rate, r.arrowBand),
+                now,
+                null,
+                CardSurface.ALERT_NOTIFICATION,
+                GlucoseUnit.MGDL,
+            )
         return Look(
             r.mgdl,
             face.arrowText,

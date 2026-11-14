@@ -99,7 +99,7 @@ class NotificationCardShotsTest {
     ) {
         val model = cardModelOf(frame.state, frame.treatments, now, CardWords.of(context.resources), frame.slots(now))
         val latest = frame.state.latest!!
-        val look = Freshness.look(latest.mgdl, latest.t.epochSecond, latest.rateMgdlPerMin, now.epochSecond)
+        val look = Freshness.look(latest.mgdl, latest.t.epochSecond, latest.rate, now.epochSecond, latest.trend?.band)
         val bg = NotificationCard.background(look, latest.mgdl, frame.config)
         val art = NotificationCard.renderNotificationArt(context, model, frame.config, bg, frame.dark, 300f)
         val gap = 8

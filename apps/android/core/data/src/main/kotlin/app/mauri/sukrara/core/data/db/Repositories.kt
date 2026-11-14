@@ -137,7 +137,7 @@ class RoomPenLedgerRepository(private val dao: PenLedgerDao) : PenLedgerReposito
 
 internal fun ReadingEntity.toReading() = Reading(Instant.ofEpochMilli(t), mgdl, rate, SourceId(source))
 
-internal fun Reading.toEntity() = ReadingEntity(t.toEpochMilli(), source.id, mgdl, rateMgdlPerMin)
+internal fun Reading.toEntity() = ReadingEntity(t.toEpochMilli(), source.id, mgdl, sensorRate)
 
 internal fun TreatmentRecord.toEntity() =
     TreatmentEntity(

@@ -3,9 +3,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.alerts
 
+import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.TrendRate
+import app.mauri.sukrara.core.model.TrendSetting
 import app.mauri.sukrara.core.testing.Contracts
 import java.io.File
+import java.time.Instant
 import java.time.ZoneOffset
+import kotlin.math.floor
 
 /**
  * The wearer under test in a scenario: the bare [AlertMachine] ([MachineDevice], `:core:alerts`) or the Android alert
@@ -266,7 +272,10 @@ object AlertScenarios {
      * minute that differs, empty when it all matches.
      */
     fun run(sc: Scenario, device: (AlertSettings, Long) -> ScenarioDevice = ::MachineDevice): List<String> {
-        var s = sc.settings.fold(AlertSettings()) { acc, kv -> set(acc, kv) }
+        // the trend setting isn't an alert setting: it decides how the readings are annotated (SPEC §7)
+        fun trendOf(kv: String) = TrendSetting.entries.first { it.id == kv.substringAfter('=') }
+        var trend = sc.settings.lastOrNull { it.startsWith("trend=") }?.let(::trendOf) ?: TrendSetting.DEFAULT
+        var s = sc.settings.filterNot { it.startsWith("trend=") }.fold(AlertSettings()) { acc, kv -> set(acc, kv) }
         val got = HashMap<Int, MutableList<String>>()
         val t0 = sc.at?.let { DAY0 + it * 60L } ?: T0
         // the scenario's time (the monotonic clock); the wearer's own clock is `wall()`, moved by `clock back`
@@ -379,7 +388,12 @@ object AlertScenarios {
 
         var glucose = 0
         var rate: Double? = null
+        var moving = 0.0
+        var movingFrom = 0L
         var age = 0
+
+        // every reading delivered (scenario time), annotated like the app's one place does (contracts/trend)
+        val delivered = mutableListOf<Reading>()
         var sensorOn = true
         var every = 1
         var nextReading: Long? = null
@@ -405,6 +419,8 @@ object AlertScenarios {
                     "glucose" -> {
                         glucose = w[1].toInt()
                         rate = w.indexOf("rate").takeIf { it > 0 }?.let { w[it + 1].toDouble() }
+                        moving = w.indexOf("moving").takeIf { it > 0 }?.let { w[it + 1].toDouble() } ?: 0.0
+                        movingFrom = t
                         age = w.indexOf("age").takeIf { it > 0 }?.let { w[it + 1].toInt() } ?: 0
                         if (nextReading == null) nextReading = t
                     }
@@ -525,7 +541,8 @@ object AlertScenarios {
                     }
 
                     "set" -> {
-                        s = w.drop(1).fold(s) { acc, kv -> set(acc, kv) }
+                        w.drop(1).filter { it.startsWith("trend=") }.forEach { trend = trendOf(it) }
+                        s = w.drop(1).filterNot { it.startsWith("trend=") }.fold(s) { acc, kv -> set(acc, kv) }
                         follow(AlertInput.Settings(followerSettings()))
                         wearerDid(wearer(AlertInput.Settings(s)))
                     }
@@ -543,7 +560,10 @@ object AlertScenarios {
             val due = nextReading
             if (sensorOn && due != null && due <= t) {
                 // stamped by the wearer's clock; the follower gets it with the wearer's own time
-                val r = AlertReading(wall() - age * 60L, glucose, rate)
+                val mgdl = floor(glucose + moving * (t - movingFrom) / 60.0 + 0.5).toInt()
+                delivered += Reading(Instant.ofEpochSecond(t - age * 60L), mgdl, rate, SourceId.Libre3)
+                val tr = TrendRate.annotate(delivered, trend).last { it.t.epochSecond == t - age * 60L }.trend
+                val r = AlertReading(wall() - age * 60L, mgdl, tr?.rate, tr?.held)
                 wearerDid(wearer(AlertInput.Reading(r)))
                 follow(AlertInput.Reading(r.copy(t = t - age * 60L)))
                 nextReading = t + every * 60L

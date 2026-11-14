@@ -813,7 +813,8 @@ class AlertRuntime(
         /** A post this recent (s) is on screen whatever Android lists yet ([showing]). */
         const val GONE_GRACE_S = 5L
 
-        fun readingOf(r: Reading) = AlertReading(r.t.epochSecond, r.mgdl, r.rateMgdlPerMin?.toDouble())
+        /** [r] with THE trend it was read with (`TrendRate.annotate`): its rate, what the fast alerts judge, its band. */
+        fun readingOf(r: Reading) = AlertReading(r.t.epochSecond, r.mgdl, r.rate, r.trend?.held, r.trend?.band)
 
         fun dosesOf(treatments: List<Treatment>) =
             Doses(

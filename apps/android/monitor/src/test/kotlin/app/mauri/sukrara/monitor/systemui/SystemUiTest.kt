@@ -11,10 +11,12 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphPalette
+import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.stats.Bands
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -35,7 +37,7 @@ class SystemUiTest {
         rate: Double? = 1.2,
         sensor: SensorState = SensorState.Active(null),
     ): GlucoseState {
-        val reading = mgdl?.let { Reading(now.minusSeconds(ageS), it, rate, SourceId.Libre3) }
+        val reading = mgdl?.let { Reading(now.minusSeconds(ageS), it, rate, SourceId.Libre3).trended() }
         return GlucoseState.Initial.copy(role = Role.Wearer, latest = reading, recent = listOfNotNull(reading), sensor = sensor)
     }
 
@@ -112,14 +114,14 @@ class SystemUiTest {
         assertEquals("sb_shi", icons(state(501, ageS = 6 * 60)).number)
     }
 
-    @Test fun `the arrow is the band's, as the card draws it, and doubles from 3`() {
-        assertEquals("sb_t_up", SlotIcons.trendDrawable(2.99))
-        assertEquals("sb_t_down", SlotIcons.trendDrawable(-2.0))
-        assertEquals("sb_t_up45", SlotIcons.trendDrawable(1.0))
-        assertEquals("sb_t_down45", SlotIcons.trendDrawable(-1.99))
-        assertEquals("sb_t_flat", SlotIcons.trendDrawable(-0.99))
-        assertEquals("sb_t_up2", SlotIcons.trendDrawable(3.0))
-        assertEquals("sb_t_down2", SlotIcons.trendDrawable(-4.0))
+    @Test fun `the arrow is the band's (the text arrow beside it), doubled at 3`() {
+        assertEquals("sb_t_up", SlotIcons.trendDrawable(2))
+        assertEquals("sb_t_down", SlotIcons.trendDrawable(-2))
+        assertEquals("sb_t_up45", SlotIcons.trendDrawable(1))
+        assertEquals("sb_t_down45", SlotIcons.trendDrawable(-1))
+        assertEquals("sb_t_flat", SlotIcons.trendDrawable(0))
+        assertEquals("sb_t_up2", SlotIcons.trendDrawable(3))
+        assertEquals("sb_t_down2", SlotIcons.trendDrawable(-3))
     }
 
     @Test fun `every drawable a plan can name exists`() {
@@ -190,7 +192,7 @@ class SystemUiTest {
         ended: Boolean = false,
         readyAt: Long = 0,
         position: String = HookPosition.AFTER_CLOCK,
-    ) = HookState(true, position, true, true, Bands(), mgdl, nowS - ageS, rate, ended, readyAt)
+    ) = HookState(true, position, true, true, Bands(), mgdl, nowS - ageS, rate, rate?.let(TrendAngle::step), ended, readyAt)
 
     @Test fun `without the app's words TalkBack hears the short English line, range included`() {
         val white = 0xFFFFFFFF.toInt()
@@ -237,7 +239,7 @@ class SystemUiTest {
         GlucoseCard.faceObserver = { s, _ -> seen += s }
         val white = 0xFFFFFFFF.toInt()
         val fresh = HookText.of(HookText.face(hook(), nowS), true, null, white)
-        assertEquals(HookText.Render("138", false, 1f, white, HookText.Mark.ARROW, "Glucose 138", 1.2), fresh)
+        assertEquals(HookText.Render("138", false, 1f, white, HookText.Mark.ARROW, "Glucose 138", 1.2, 1), fresh)
         val struck = HookText.of(HookText.face(hook(ageS = 6 * 60), nowS), true, 0xFFFF0000.toInt(), white)
         assertEquals(true, struck.strike)
         assertEquals(0.5f, struck.alpha)
@@ -273,6 +275,7 @@ class SystemUiTest {
         val s = RootStatusBar.hookState(state(138, rate = -1.0), p, Bands(), GlucoseUnit.MGDL)
         assertEquals(138, s.mgdl)
         assertEquals(-1.0, s.rate!!, 0.0)
+        assertEquals(-1, s.band)
         assertTrue(s.systemIcons)
         assertFalse(s.color)
         val w =

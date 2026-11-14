@@ -38,6 +38,12 @@ object Motion {
 
     fun <T> fastSpatial(reduced: Boolean = false): FiniteAnimationSpec<T> = orSnap(reduced) { spring(0.6f, 800f) }
 
+    /**
+     * The trend arrow turning to a new reading's angle (#204, docs/34 §6): a ~300 ms spring without overshoot, so the
+     * arrow never swings past the trend it shows.
+     */
+    fun <T> arrowTurn(reduced: Boolean = false): FiniteAnimationSpec<T> = orSnap(reduced) { spring(1f, 400f) }
+
     fun <T> defaultEffects(reduced: Boolean = false): FiniteAnimationSpec<T> = orSnap(reduced) { spring(1f, 1600f) }
 
     fun <T> fastEffects(reduced: Boolean = false): FiniteAnimationSpec<T> = orSnap(reduced) { spring(1f, 3800f) }

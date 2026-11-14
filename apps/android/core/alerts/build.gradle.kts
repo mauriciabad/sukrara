@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// The pure alert engine: no Android, no clock, no :core:model (the runtime maps its Reading to AlertReading).
+// The pure alert engine: no Android, no clock (the runtime maps its Reading, with THE trend from :core:model, to AlertReading).
 // The scenario driver is a test fixture: `:monitor` runs the same timelines through the Android runtime.
 plugins {
     id("sukrara.jvm.library")
@@ -13,7 +13,7 @@ plugins {
 
 dependencies {
     // SensorTiming: the warm-up numbers the card uses too
-    implementation(project(":core:model"))
+    api(project(":core:model"))
     implementation(libs.kotlinx.serialization.json)
     testImplementation(project(":core:testing"))
     testFixturesImplementation(project(":core:testing"))

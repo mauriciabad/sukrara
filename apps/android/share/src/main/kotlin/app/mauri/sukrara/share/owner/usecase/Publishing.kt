@@ -44,7 +44,7 @@ class PublishReadings(private val ctx: OwnerContext) {
         val minT = Wire.hourOf(now) - (BACKFILL_HOURS - 1) * Wire.HOUR
         val out = mutableListOf<SignedEvent>()
         for (r in new.sortedBy { it.t }) {
-            val w = WireReading(r.t.epochSecond, r.mgdl, r.rateMgdlPerMin)
+            val w = WireReading(r.t.epochSecond, r.mgdl, r.sensorRate)
             if (w.t < minT || w.t > now + FUTURE_SLACK) continue
             if (readings.put(w.t, w) != w) dirty += Wire.hourOf(w.t)
             if (w.t > newestLive && now - w.t < LIVE_MAX_AGE) {

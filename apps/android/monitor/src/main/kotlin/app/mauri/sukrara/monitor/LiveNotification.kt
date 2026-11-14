@@ -333,7 +333,7 @@ class LiveNotification(
         when {
             content.icon == Icon.TREND -> {
                 android.graphics.drawable.Icon
-                    .createWithBitmap(ValueGlyphs.trendIcon(content.trendRate))
+                    .createWithBitmap(ValueGlyphs.trendIcon(content.trendRate, content.trendBand))
             }
 
             content.icon == Icon.NUMBER && content.look != null -> {

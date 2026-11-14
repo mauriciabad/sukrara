@@ -37,8 +37,8 @@ data class BcState(
 )
 
 /**
- * The Libre 3 driver's live reading: mg/dL, mg/dL/min, time (when the phone got it), its sensor's serial and life
- * count (minutes since the sensor started: the sensor's own clock).
+ * The Libre 3 driver's live reading: mg/dL, THE trend's rate (mg/dL/min, the hub's for this reading: contracts/trend),
+ * its time, its sensor's serial and life count (minutes since the sensor started: the sensor's own clock).
  */
 data class LiveReading(
     val mgdl: Int,

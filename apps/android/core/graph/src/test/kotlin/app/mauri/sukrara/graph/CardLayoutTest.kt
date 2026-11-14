@@ -490,13 +490,13 @@ class CardLayoutTest {
     private fun faceElements(f: GlucoseLook): List<Pair<String, String>> =
         when (f.state) {
             GlucoseLook.State.VALUE -> {
-                val rate = f.rate
+                val band = f.band
                 listOf(
                     "value.number" to (f.text.orEmpty() + if (f.strike) " struck" else ""),
                     "value.trend" to
                         when {
-                            f.trend != TrendMark.ARROW || rate == null -> "ring"
-                            TrendAngle.isDouble(rate) -> "arrow double"
+                            f.trend != TrendMark.ARROW || band == null -> "ring"
+                            TrendAngle.isDouble(band) -> "arrow double"
                             else -> "arrow single"
                         },
                 )

@@ -60,10 +60,11 @@ object ValueGlyphs {
     private fun trend(
         cv: Canvas,
         rate: Double?,
+        band: Int?,
         size: Int,
         p: Paint,
     ) {
-        if (rate == null) {
+        if (rate == null || band == null) {
             cv.drawCircle(
                 size / 2f,
                 size / 2f,
@@ -78,18 +79,22 @@ object ValueGlyphs {
         cv.save()
         cv.translate(size / 2f, size / 2f)
         cv.rotate(TrendAngle.deg(rate))
-        arrow(cv, size * 1.02f, p, TrendAngle.isDouble(rate))
+        arrow(cv, size * 1.02f, p, TrendAngle.isDouble(band))
         cv.restore()
     }
 
-    /** The trend alone in a [size] px square (rate only when the look's trend is the arrow); an alpha mask without [color]. */
+    /**
+     * The trend alone in a [size] px square: [rate] turns it, [band] doubles it (both only when the look's trend is the
+     * arrow); an alpha mask without [color].
+     */
     fun trendIcon(
         rate: Double?,
+        band: Int?,
         size: Int = 96,
         color: Int? = null,
     ): Bitmap =
         Bitmap.createBitmap(size, size, if (color == null) Bitmap.Config.ALPHA_8 else Bitmap.Config.ARGB_8888).also {
-            trend(Canvas(it), rate, size, Paint(Paint.ANTI_ALIAS_FLAG).apply { if (color != null) this.color = color })
+            trend(Canvas(it), rate, band, size, Paint(Paint.ANTI_ALIAS_FLAG).apply { if (color != null) this.color = color })
         }
 
     /** The number paint in the card's rounded face at [px]. */
@@ -140,9 +145,10 @@ object ValueGlyphs {
         cv.save()
         cv.translate(size / 2f, size - arrowBox / 2)
         val rate = look.rate
-        if (look.trend == TrendMark.ARROW && rate != null) {
+        val band = look.band
+        if (look.trend == TrendMark.ARROW && rate != null && band != null) {
             cv.rotate(TrendAngle.deg(rate))
-            arrow(cv, arrowBox * 1.15f, p, TrendAngle.isDouble(rate))
+            arrow(cv, arrowBox * 1.15f, p, TrendAngle.isDouble(band))
         } else {
             cv.drawCircle(
                 0f,

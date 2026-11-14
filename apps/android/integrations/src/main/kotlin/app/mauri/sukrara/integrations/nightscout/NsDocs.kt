@@ -65,8 +65,8 @@ object NsDocs {
 
     const val FAMILY_SEPARATOR = " · "
 
-    /** Nightscout's trend name for a per-minute rate: the card's arrow band (contracts/graph/trend `nightscout`). */
-    fun direction(ratePerMin: Double?): String = TrendAngle.nightscout(ratePerMin)
+    /** Nightscout's trend name for [r]: its trend's text band, as every arrow shows it (contracts/trend `nightscout`). */
+    fun direction(r: Reading): String = TrendAngle.nightscout(r.trend?.band)
 
     fun isoUtc(t: Instant): String = UTC.format(t)
 
@@ -107,30 +107,25 @@ object NsDocs {
         }
 
     /**
-     * [prev]: the reading before [r], for the rate when the sensor gives none. v1 derives `utcOffset` from
+     * [r] as a Nightscout entry: its direction and delta from THE trend (contracts/trend), none without one (a LO / HI,
+     * too few readings and no sensor rate: no made-up direction or 0 delta for loop apps). v1 derives `utcOffset` from
      * `dateString`'s offset, v3 takes `utcOffset` as given: local time on v1, UTC on v3, the same stored document.
      */
     fun entry(
         r: Reading,
-        prev: Reading?,
         device: String,
         zone: ZoneId,
         api: NsApi,
     ): JsonObject {
         val ms = r.t.toEpochMilli()
-        // no slope from or to a LO / HI (its 39 / 401 is a flag, not a value): no made-up direction for loop apps
-        val rate =
-            r.rateMgdlPerMin ?: prev?.takeUnless { r.isLo || r.isHi || it.isLo || it.isHi }?.let { p ->
-                val dtMin = (r.t.epochSecond - p.t.epochSecond) / 60.0
-                if (dtMin in 0.5..15.0) (r.mgdl - p.mgdl) / dtMin else null
-            }
+        val rate = r.rate
         return buildJsonObject {
             put("type", "sgv")
             put("sgv", r.mgdl)
             put("date", ms)
             put("dateString", if (api == NsApi.V1) isoLocal(r.t, zone) else isoUtc(r.t))
             put("utcOffset", utcOffsetMin(r.t, zone))
-            put("direction", direction(rate))
+            put("direction", direction(r))
             if (rate != null) put("delta", (rate * 5 * 1000).roundToLong() / 1000.0)
             put("noise", 1)
             put("device", device)

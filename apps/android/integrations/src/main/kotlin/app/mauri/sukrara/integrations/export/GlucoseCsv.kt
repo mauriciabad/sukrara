@@ -102,7 +102,7 @@ object GlucoseCsv {
             val f = base(r.t, "0")
             // the one conversion (contracts/settings/units.json), '.' whatever the language: a data file
             f[4] = unit.text(r.mgdl, Locale.ROOT)
-            f[20] = r.rateMgdlPerMin?.let(::tenths).orEmpty()
+            f[20] = r.sensorRate?.let(::tenths).orEmpty()
             lines += Line(r.t, 0, "", f)
         }
         for (rec in treatments) {

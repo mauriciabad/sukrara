@@ -34,6 +34,7 @@ object HookText {
         val mark: Mark,
         val desc: String,
         val rate: Double? = null,
+        val band: Int? = null,
     )
 
     /** The card's decision for [s] at [nowS]: the sensor's end or warm-up first, then the freshness steps. */
@@ -104,6 +105,7 @@ object HookText {
                     // the range in words for TalkBack, as the colour shows it (#26: never by colour alone)
                     "Glucose $text" + if (look.strike) " (old)" else range?.let { ", " + it.key.replace('_', ' ') }.orEmpty(),
                     look.rate,
+                    look.band,
                 )
             }
         }

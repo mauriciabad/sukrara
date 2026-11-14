@@ -338,7 +338,7 @@ class Libre3DriverTest {
         assertNull(
             s.events.readings
                 .last()
-                .rateMgdlPerMin,
+                .sensorRate,
         )
         assertEquals(
             120,
@@ -404,7 +404,7 @@ class Libre3DriverTest {
                 label,
                 s.events.readings
                     .single()
-                    .rateMgdlPerMin,
+                    .sensorRate,
             )
             assertEquals(label, listOf("cancel"), s.link.take()) // a LO is data: the glucose timer stops
             assertEquals(label, LinkStatus.Live, s.events.lastStatus())
@@ -431,7 +431,7 @@ class Libre3DriverTest {
                 label,
                 s.events.readings
                     .single()
-                    .rateMgdlPerMin,
+                    .sensorRate,
             )
             assertEquals(label, listOf("cancel"), s.link.take())
             val lifeCount = libre3Trace[label].let { (it[0].toInt() and 0xFF) or ((it[1].toInt() and 0xFF) shl 8) }

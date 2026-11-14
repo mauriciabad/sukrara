@@ -131,7 +131,7 @@ class JugglucoSourceTest {
                 server.stop(0)
             }
             assertEquals(listOf(120, 121), readings.take(2).map { it.mgdl })
-            assertEquals(0.5, readings[1].rateMgdlPerMin)
+            assertEquals(0.5, readings[1].sensorRate)
             assertEquals("3MH00ABCDE", sensor?.serial)
             assertEquals(listOf(JugglucoStatus.FetchingHistory, JugglucoStatus.Live), statuses.take(2))
         }

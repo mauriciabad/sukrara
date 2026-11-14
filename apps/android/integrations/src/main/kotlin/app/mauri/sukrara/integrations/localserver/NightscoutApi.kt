@@ -67,7 +67,7 @@ object NightscoutApi {
         val served = s.readings.filter { device(it.source) != null }
         return when (path) {
             "api/v1/entries", "api/v1/entries/sgv" -> ok(entries(q, served))
-            "api/v1/entries/current" -> ok(JsonArray(served.take(1).map { entry(it, served) }).toString())
+            "api/v1/entries/current" -> ok(JsonArray(served.take(1).map { entry(it) }).toString())
             "api/v1/treatments" -> ok(treatments(q, s))
             "api/v1/verifyauth" -> ok(VERIFIED)
             else -> if (path.startsWith("api/v2/properties")) ok(properties(served)) else ok("[]")
@@ -112,7 +112,7 @@ object NightscoutApi {
                     (gt == null || ms > gt) && (gte == null || ms >= gte) && (lt == null || ms < lt) && (lte == null || ms <= lte)
                 }.take(count)
                 .toList()
-        return JsonArray(rows.map { entry(it, all) }).toString()
+        return JsonArray(rows.map { entry(it) }).toString()
     }
 
     private fun count(
@@ -153,12 +153,9 @@ object NightscoutApi {
             else -> null
         }
 
-    fun entry(
-        r: Reading,
-        all: List<Reading>,
-    ): JsonObject {
-        val d = delta(r, all)
-        val dir = if (d == null) "NONE" else XdripEndpoint.direction(d)
+    fun entry(r: Reading): JsonObject {
+        val d = delta(r)
+        val dir = XdripEndpoint.direction(r)
         val ms = r.t.toEpochMilli()
         val iso = r.t.toString()
         return buildJsonObject {
@@ -169,7 +166,8 @@ object NightscoutApi {
             put("dateString", iso)
             put("sysTime", iso)
             put("sgv", r.mgdl)
-            put("delta", Math.round((d ?: 0.0) * 1000) / 1000.0)
+            // no trend: no delta (a 0 would read as flat), direction NONE
+            d?.let { put("delta", Math.round(it * 1000) / 1000.0) }
             put("direction", dir)
             put("trend", TRENDS.indexOf(dir).coerceAtLeast(0))
             put("noise", 1)
@@ -185,45 +183,13 @@ object NightscoutApi {
     fun entryId(r: Reading): String =
         String.format(Locale.US, "%08x", r.t.epochSecond) + sha1("${r.source.id}@${r.t.toEpochMilli()}").take(16)
 
-    /**
-     * mg/dL per 5 min: the sensor's rate, else the slope to a reading 2–15 min earlier; null for a LO / HI reading or
-     * next to one (no number to take a slope from).
-     */
-    private fun delta(
-        r: Reading,
-        all: List<Reading>,
-    ): Double? {
-        if (r.isLo || r.isHi) return null
-        r.rateMgdlPerMin?.let { return it * 5 }
-        val prev = previous(r, all) ?: return null
-        val dt = r.t.epochSecond - prev.t.epochSecond
-        if (dt > 15 * 60 || prev.isLo || prev.isHi) return null
-        return (r.mgdl - prev.mgdl) * 300.0 / dt
-    }
-
-    /**
-     * The newest reading at least 2 min before [r] in the newest-first [all], searched from [r]'s own place (binary
-     * search on time), so a 7-day answer stays linear.
-     */
-    private fun previous(
-        r: Reading,
-        all: List<Reading>,
-    ): Reading? {
-        val limit = r.t.epochSecond - 120
-        var lo = 0
-        var hi = all.size
-        // first index whose time is <= limit (times descend along the list)
-        while (lo < hi) {
-            val mid = (lo + hi) ushr 1
-            if (all[mid].t.epochSecond <= limit) hi = mid else lo = mid + 1
-        }
-        return all.getOrNull(lo)
-    }
+    /** mg/dL per 5 min: THE trend's rate (contracts/trend); null without one (a LO / HI has none). */
+    private fun delta(r: Reading): Double? = r.rate?.times(5)
 
     /** `bgnow` and `delta` only: no insulin / carbs on board, pump or loop data (this phone has none of it). */
     private fun properties(all: List<Reading>): String {
         val r = all.firstOrNull() ?: return "{}"
-        val d = delta(r, all)
+        val d = delta(r)
         return buildJsonObject {
             putJsonObject("bgnow") {
                 put("mean", r.mgdl)
@@ -242,8 +208,7 @@ object NightscoutApi {
                 }
             }
             putJsonObject("direction") {
-                val dir = if (d == null) "NONE" else XdripEndpoint.direction(d)
-                put("value", dir)
+                put("value", XdripEndpoint.direction(r))
                 put("mills", r.t.toEpochMilli())
             }
         }.toString()

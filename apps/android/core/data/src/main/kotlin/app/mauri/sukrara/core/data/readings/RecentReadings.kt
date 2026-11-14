@@ -194,7 +194,7 @@ class RecentReadings(
             SukraraJson
                 .encodeToString(
                     Saved.serializer(),
-                    Saved(VERSION, value.map { Row(it.t.toEpochMilli(), it.mgdl, it.rateMgdlPerMin, it.source.id) }),
+                    Saved(VERSION, value.map { Row(it.t.toEpochMilli(), it.mgdl, it.sensorRate, it.source.id) }),
                 ).encodeToByteArray()
 
         override fun decode(bytes: ByteArray): List<Reading> {
@@ -215,7 +215,7 @@ class RecentReadings(
         private const val LOCKED_HEADER = "sukrara-locked-readings v1"
         private const val MERGE_BATCH = 500
 
-        private fun row(r: Reading) = "${r.t.toEpochMilli()},${r.mgdl},${r.rateMgdlPerMin ?: ""},${r.source.id}"
+        private fun row(r: Reading) = "${r.t.toEpochMilli()},${r.mgdl},${r.sensorRate ?: ""},${r.source.id}"
 
         private fun parseRow(line: String): Reading? {
             val p = line.split(',')

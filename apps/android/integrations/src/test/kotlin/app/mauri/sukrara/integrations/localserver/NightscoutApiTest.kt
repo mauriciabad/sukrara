@@ -18,6 +18,7 @@ import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.core.testing.trended
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,7 +74,7 @@ class NightscoutApiTest {
         headers: Map<String, String> = mapOf("api-secret" to NightscoutApi.sha1(secret)),
         list: List<Reading> = readings,
     ) = NightscoutApi.route(HttpRequest("GET", path, query, headers), secret) {
-        NightscoutApi.Snapshot(list, treatments.filter { !it.deleted }, now, ZoneOffset.UTC)
+        NightscoutApi.Snapshot(list.trended().sortedByDescending { it.t }, treatments.filter { !it.deleted }, now, ZoneOffset.UTC)
     }
 
     private fun array(a: HttpAnswer): JsonArray = Json.parseToJsonElement(a.body).jsonArray

@@ -28,7 +28,7 @@ class NsDocsTest {
 
     private fun entryDevice(source: SourceId) =
         NsDocs
-            .entry(Reading(now, 120, null, source), null, NsDocs.entryDevice(device, source), ZoneOffset.UTC, NsApi.V1)["device"]!!
+            .entry(Reading(now, 120, null, source), NsDocs.entryDevice(device, source), ZoneOffset.UTC, NsApi.V1)["device"]!!
             .jsonPrimitive.content
 
     @Test fun aVerifiedSensorKeepsTheInstallName() {

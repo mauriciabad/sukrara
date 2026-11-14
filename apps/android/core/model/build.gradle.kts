@@ -5,8 +5,12 @@
 // Pure Kotlin types and ports every module shares (additive only).
 plugins {
     id("sukrara.jvm.library")
+    // TrendRateTest runs contracts/trend
+    id("sukrara.contracts")
 }
 
 dependencies {
     api(libs.kotlinx.coroutines.core)
+    testImplementation(project(":core:testing"))
+    testImplementation(libs.kotlinx.serialization.json)
 }

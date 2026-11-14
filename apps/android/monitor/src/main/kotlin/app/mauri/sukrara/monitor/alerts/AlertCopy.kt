@@ -121,7 +121,7 @@ object AlertCopy {
             return AlertBody(w.get("alert_text_no_data_last").format(at, value(r, null, w, unit, locale)))
         }
         if (r == null) return AlertBody(w.get("alert_text_no_reading"))
-        val look = GlucoseCard.face(GlucosePoint(r.t, r.mgdl, r.rate), now, null, CardSurface.ALERT_NOTIFICATION, unit, locale)
+        val look = GlucoseCard.face(GlucosePoint(r.t, r.mgdl, r.rate, r.arrowBand), now, null, CardSurface.ALERT_NOTIFICATION, unit, locale)
         val shown = value(r, look.text, w, unit, locale)
         val value = w.get("alert_text_value").format(shown, look.arrowText ?: TrendMark.RING)
         // a struck value's rate is as old as it is: the ring says so, no "falling 2.4" beside it

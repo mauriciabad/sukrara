@@ -6,15 +6,22 @@ package app.mauri.sukrara.core.model
 import java.time.Instant
 
 /**
- * One glucose value. [mgdl] is always mg/dL (the unit setting only changes how it is shown); [rateMgdlPerMin] is the
- * sensor's trend rate when it sends one. A value outside [GlucoseRange] is a flagged LO / HI reading, not a number.
+ * One glucose value. [mgdl] is always mg/dL (the unit setting only changes how it is shown). [sensorRate] is the
+ * sensor's own rate (mg/dL/min) when it sends one: stored, sent on the wire and written to LibreView / Tidepool / the
+ * CSV, and nothing else reads it but [TrendRate] (tools/check `trend`). [trend] is THE trend at this reading, written
+ * only by [TrendRate.annotate] at the one place readings are read; never stored or sent. A value outside
+ * [GlucoseRange] is a flagged LO / HI reading, not a number.
  */
 data class Reading(
     val t: Instant,
     val mgdl: Int,
-    val rateMgdlPerMin: Double?,
+    val sensorRate: Double?,
     val source: SourceId,
+    val trend: ReadingTrend? = null,
 ) {
+    /** THE trend's rate (mg/dL/min), null without a trend: what every arrow, word and output reads. */
+    val rate: Double? get() = trend?.rate
+
     /** Lower than the sensor can measure: shown as "LO", below every low alert threshold. */
     val isLo: Boolean get() = GlucoseRange.isLo(mgdl)
 
@@ -65,8 +72,8 @@ object GlucoseRange {
     fun normalise(r: Reading): Reading? =
         when {
             r.mgdl !in PLAUSIBLE -> null
-            isLo(r.mgdl) -> if (r.mgdl == LO && r.rateMgdlPerMin == null) r else Reading.lo(r.t, r.source)
-            isHi(r.mgdl) -> if (r.mgdl == HI && r.rateMgdlPerMin == null) r else Reading.hi(r.t, r.source)
+            isLo(r.mgdl) -> if (r.mgdl == LO && r.sensorRate == null) r else Reading.lo(r.t, r.source)
+            isHi(r.mgdl) -> if (r.mgdl == HI && r.sensorRate == null) r else Reading.hi(r.t, r.source)
             else -> r
         }
 }
@@ -127,18 +134,6 @@ value class SourceId(val id: String) {
                 Role.Follower -> Wearer + Imported
             }
     }
-}
-
-/** The trend arrow's direction, in the Nightscout direction names other apps understand. */
-enum class Trend {
-    DoubleDown,
-    SingleDown,
-    FortyFiveDown,
-    Flat,
-    FortyFiveUp,
-    SingleUp,
-    DoubleUp,
-    Unknown,
 }
 
 /** Whether this phone wears the sensor or follows someone who does. */

@@ -4,14 +4,28 @@
 package app.mauri.sukrara.alerts
 
 import app.mauri.sukrara.core.model.SensorTiming
+import app.mauri.sukrara.core.model.TrendPoint
+import app.mauri.sukrara.core.model.TrendRate
 import kotlinx.serialization.Serializable
 
 /**
- * A glucose reading as the rules see it: [t] epoch seconds, [mgdl], [rate] mg/dL/min (null = unknown: no rate alert).
- * Double on purpose: the falling-high prediction `mgdl + rate × min` must match the Mac and the scenarios exactly.
+ * A glucose reading as the rules see it: [t] epoch seconds, [mgdl], [rate] THE trend's rate in mg/dL/min (contracts/trend;
+ * null = no trend: a LO / HI), [held] what the fast alerts judge (the trend held for 5 min, SPEC §2 "Fast alerts read the
+ * trend"; null = not held yet: no rate alert), [band] the trend's text band (the arrow its text shows). All from
+ * `TrendRate.annotate`, never the sensor's own rate. Double on purpose: the numbers must match the Mac and the
+ * scenarios exactly.
  */
 @Serializable
-data class AlertReading(val t: Long, val mgdl: Int, val rate: Double? = null) {
+data class AlertReading(
+    override val t: Long,
+    override val mgdl: Int,
+    val rate: Double? = null,
+    val held: Double? = null,
+    val band: Int? = null,
+) : TrendPoint {
+    /** The text band its arrow shows: the trend's, or a bare rate's plain band (an alert event's reading has only `r`). */
+    val arrowBand: Int? get() = band ?: rate?.let(TrendRate::plainBand)
+
     /** This reading, dated no later than [now]. */
     fun notAfter(now: Long): AlertReading = if (t > now) copy(t = now) else this
 
@@ -88,9 +102,9 @@ object Rules {
         }
     }
 
-    /** The rate kind [r] matches at [now], or null (stale, no rate, rate alerts off). */
+    /** The rate kind [r]'s held trend matches at [now], or null (stale, not held, rate alerts off; SPEC §2). */
     fun rateOf(r: AlertReading?, s: AlertSettings, now: Long): AlertKind? {
-        val rate = r?.rate
+        val rate = r?.held
         if (!fresh(r, now) || rate == null) return null
         val falling = s.rule(AlertKind.FALLING_FAST)
         val rising = s.rule(AlertKind.RISING_FAST)
@@ -102,7 +116,7 @@ object Rules {
     }
 
     /**
-     * [kind] is a high that the readings' clear fall ([Trend], never the sensor's lagging rate) brings below the high
+     * [kind] is a high that the readings' clear fall ([TrendRate.clear], never the sensor's lagging rate) brings below the high
      * threshold within the falling-high window: `newest + slope × min < high` (SPEC §2 `muteFallingHigh`). [recent]:
      * this engine's readings, ascending.
      */
@@ -113,7 +127,7 @@ object Rules {
         now: Long,
     ): Boolean {
         if (!s.fallingHigh.on || kind !in AlertKind.FALLING_MUTABLE) return false
-        val slope = Trend.clear(recent, now, up = false) ?: return false
+        val slope = TrendRate.clear(recent, now, up = false) ?: return false
         return recent.last().mgdl + slope * s.fallingHigh.min < s.rule(AlertKind.HIGH).threshold
     }
 
@@ -130,7 +144,7 @@ object Rules {
         now: Long,
     ): Boolean {
         if (!s.risingLow.on || !(kind == AlertKind.LOW || (kind == AlertKind.VERY_LOW && s.wearersOwn))) return false
-        val slope = Trend.clear(recent, now, up = true) ?: return false
+        val slope = TrendRate.clear(recent, now, up = true) ?: return false
         val predicted = recent.last().mgdl + slope * s.risingLow.min
         return AlertKind.entries
             .filter { it.side == Side.LOW && s.rule(it).on }
@@ -141,9 +155,9 @@ object Rules {
      * [r] is back in range by the margin for [side] (SPEC §2 "Scope and end"): [r] moved `backMgdl` further out still
      * matches no enabled kind of the side, so lows at least the margin above the low threshold (70 + 10: back from 80)
      * and more than it above very low's when low is off (55 + 10: back from 66), highs below the high threshold minus
-     * it (180 − 10: back from 169); a rate side when [r]'s rate doesn't match it. No data is judged by the caller
-     * (readings coming). Null = [r] can't tell: a rate side and a reading without a rate (a LO / HI is sent without
-     * one) is no sign the fast change stopped (SPEC §1). [margin]: the notification actions' by default; a level
+     * it (180 − 10: back from 169); a rate side when [r]'s held trend doesn't match it. No data is judged by the caller
+     * (readings coming). Null = [r] can't tell: a rate side and a reading without a held trend (a LO / HI has none, the
+     * first 5 min after one or a gap aren't held yet) is no sign the fast change stopped (SPEC §1). [margin]: the notification actions' by default; a level
      * episode's own end uses `persistence.marginMgdl` ([outOfRange]).
      */
     fun backBy(side: Side, r: AlertReading, s: AlertSettings, margin: Int = s.actions.backMgdl): Boolean? =
@@ -164,11 +178,11 @@ object Rules {
             }
 
             Side.FALLING_FAST -> {
-                s.rule(AlertKind.FALLING_FAST).let { if (!it.on) true else r.rate?.let { v -> v > -it.threshold } }
+                s.rule(AlertKind.FALLING_FAST).let { if (!it.on) true else r.held?.let { v -> v > -it.threshold } }
             }
 
             Side.RISING_FAST -> {
-                s.rule(AlertKind.RISING_FAST).let { if (!it.on) true else r.rate?.let { v -> v < it.threshold } }
+                s.rule(AlertKind.RISING_FAST).let { if (!it.on) true else r.held?.let { v -> v < it.threshold } }
             }
 
             Side.NO_DATA -> {

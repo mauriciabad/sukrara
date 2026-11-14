@@ -448,11 +448,9 @@ object NightscoutSync {
         var st = state
         var sent = 0
         var dropped = 0
-        val prevOf = HashMap<Instant, Reading>()
-        readings.sortedBy { it.t }.zipWithNext { a, b -> prevOf[b.t] = a }
         val entries = if (cfg.api == NsApi.V3) plan.entries.takeLast(NightscoutQueue.V3_MAX_PER_CYCLE) else plan.entries
         for (chunk in entries.chunked(NightscoutQueue.BATCH)) {
-            val docs = chunk.map { NsDocs.entry(it, prevOf[it.t], NsDocs.entryDevice(cfg.device, it.source), zone, cfg.api) }
+            val docs = chunk.map { NsDocs.entry(it, NsDocs.entryDevice(cfg.device, it.source), zone, cfg.api) }
             when (val o = client.postEntries(docs)) {
                 is Outcome.Ok -> {
                     val bad = if (cfg.api == NsApi.V3) client.lastRejected else 0

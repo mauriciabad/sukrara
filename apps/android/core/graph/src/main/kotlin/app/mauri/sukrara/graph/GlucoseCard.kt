@@ -247,6 +247,7 @@ object GlucoseCard {
                 latest?.t,
                 latest?.rate,
                 nowS,
+                band = latest?.band,
                 ended = sensor?.ended == true,
                 warmup = sensor?.warmup,
                 unit = unit,

@@ -469,8 +469,9 @@ private fun panelMotion(
             roll.snapTo(1f)
         }
     }
-    val rate = glucose.latest?.rateMgdlPerMin
-    val angle = animateFloatAsState(rate?.let { TrendAngle.deg(it) } ?: 0f, Motion.defaultSpatial(reduced), label = "trend")
+    val rate = glucose.latest?.rate
+    // the drawn arrow turns with the trend's rate, continuously (contracts/trend), with a short spring between readings
+    val angle = animateFloatAsState(rate?.let { TrendAngle.deg(it) } ?: 0f, Motion.arrowTurn(reduced), label = "trend")
     val latest = glucose.latest
     val target = if (latest == null || look.strike) palette.inkSoft else palette.at(config.bands, latest.mgdl)
     val color = animateColorAsState(Color(target), Motion.defaultEffects(reduced), label = "range")

@@ -5,6 +5,7 @@ package app.mauri.sukrara.integrations.localserver
 
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
@@ -26,7 +27,10 @@ import java.time.ZoneOffset
 class LocalHttpServerTest {
     private val now = Instant.parse("2026-10-28T12:00:00Z")
     private val readings =
-        (0L until 60L).map { m -> Reading(now - Duration.ofMinutes(m), 100 + m.toInt(), if (m % 2 == 0L) 0.4 else null, SourceId.Libre3) }
+        (0L until 60L)
+            .map { m -> Reading(now - Duration.ofMinutes(m), 100 + m.toInt(), if (m % 2 == 0L) 0.4 else null, SourceId.Libre3) }
+            .trended()
+            .reversed()
     private val sensor = CurrentSensor("3MH00ABCDEF", now - Duration.ofDays(3) - Duration.ofHours(5), now + Duration.ofDays(12))
     private val asked = mutableListOf<String>()
     private val server =

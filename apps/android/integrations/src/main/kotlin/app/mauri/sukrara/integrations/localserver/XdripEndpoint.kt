@@ -69,19 +69,8 @@ object XdripEndpoint {
         return out
     }
 
-    /** mg/dL per 5 minutes: the sensor's rate when it has one, else the slope to the reading before. */
-    private fun delta(
-        r: Reading,
-        all: List<Reading>,
-    ): Double? {
-        r.rateMgdlPerMin?.let { return it * 5 }
-        val prev = all.firstOrNull { it.t.epochSecond <= r.t.epochSecond - 120 } ?: return null
-        // no slope from or to a LO / HI: its 39 / 401 is a flag, not a value
-        if (r.isLo || r.isHi || prev.isLo || prev.isHi) return null
-        val dt = r.t.epochSecond - prev.t.epochSecond
-        if (dt > 15 * 60) return null
-        return (r.mgdl - prev.mgdl) * 300.0 / dt
-    }
+    /** mg/dL per 5 minutes: THE trend's rate (contracts/trend), null without one (never a made-up 0). */
+    private fun delta(r: Reading): Double? = r.rate?.times(5)
 
     private fun flag(v: String?) = v?.let { it.isEmpty() || it[0] !in "fFnN0" } ?: false
 
@@ -101,7 +90,7 @@ object XdripEndpoint {
         val list = spaced(all, count, minGap)
         return list
             .mapIndexed { i, r ->
-                val d = delta(r, all)
+                val d = delta(r)
                 buildString {
                     append('{')
                     if (!brief) {
@@ -110,7 +99,9 @@ object XdripEndpoint {
                         append("\"dateString\":\"$ds\",\"sysTime\":\"$ds\",")
                     }
                     append("\"date\":${r.t.epochSecond}000,\"sgv\":${r.mgdl},")
-                    append("\"delta\":${String.format(Locale.US, "%.3f", d ?: 0.0)},\"direction\":\"${direction(d)}\",\"noise\":1")
+                    // no trend: no delta at all (a 0 would read as flat on a watch) and direction NONE
+                    d?.let { append("\"delta\":${String.format(Locale.US, "%.3f", it)},") }
+                    append("\"direction\":\"${direction(r)}\",\"noise\":1")
                     if (!brief) append(",\"filtered\":${r.mgdl}000,\"unfiltered\":${r.mgdl}000,\"rssi\":100,\"type\":\"sgv\"")
                     if (i == 0) {
                         append(",\"units_hint\":\"mgdl\"")
@@ -129,9 +120,11 @@ object XdripEndpoint {
         val bgs =
             r
                 ?.let {
-                    val d = delta(it, all)
-                    "{\"sgv\":\"${it.mgdl}\",\"trend\":${trend(d)},\"direction\":\"${direction(d)}\",\"datetime\":${it.t.epochSecond}000," +
-                        "\"bgdelta\":\"${String.format(Locale.US, "%.2f", d ?: 0.0)}\",\"iob\":\"0.00\"}"
+                    val d = delta(it)
+                    "{\"sgv\":\"${it.mgdl}\",\"trend\":${trend(
+                        it,
+                    )},\"direction\":\"${direction(it)}\",\"datetime\":${it.t.epochSecond}000," +
+                        d?.let { v -> "\"bgdelta\":\"${String.format(Locale.US, "%.2f", v)}\"," }.orEmpty() + "\"iob\":\"0.00\"}"
                 }.orEmpty()
         return "{\"status\":[{\"now\":${now.toEpochMilli()}}],\"bgs\":[$bgs],\"cals\":[]}"
     }
@@ -146,11 +139,11 @@ object XdripEndpoint {
         return "${STATUS_TIME.format(s.start.atZone(zone))} (${age / 86400}d ${age % 86400 / 3600}h)"
     }
 
-    /** Nightscout trend names from a 5-minute delta: the card's arrow band for its rate per minute (contracts/graph/trend). */
-    fun direction(delta5: Double?): String = TrendAngle.nightscout(delta5?.div(5))
+    /** The Nightscout direction of [r]'s trend: its text band, as every arrow shows it (contracts/trend). */
+    fun direction(r: Reading): String = TrendAngle.nightscout(r.trend?.band)
 
-    private fun trend(delta5: Double?): Int =
-        when (direction(delta5)) {
+    private fun trend(r: Reading): Int =
+        when (direction(r)) {
             "DoubleUp" -> 1
             "SingleUp" -> 2
             "FortyFiveUp" -> 3

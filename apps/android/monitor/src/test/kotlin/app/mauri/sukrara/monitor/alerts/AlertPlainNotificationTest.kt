@@ -18,6 +18,7 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.monitor.R
 import app.mauri.sukrara.monitor.notify.Channels
@@ -98,7 +99,7 @@ class AlertPlainNotificationTest {
     private fun Notification.text() = extras.getCharSequence(Notification.EXTRA_TEXT).toString()
 
     /** A high (not very high: below 250). */
-    private fun high(mgdl: Int, rate: Double) = rig.wearerState(latest = Reading(rig.clock.now(), mgdl, rate, SourceId.Libre3))
+    private fun high(mgdl: Int, rate: Double) = rig.wearerState(latest = Reading(rig.clock.now(), mgdl, rate, SourceId.Libre3).trended())
 
     @Test fun `the real alert can't be built without its strings, so it rings plain on its own channel`() =
         runTest {
@@ -106,7 +107,7 @@ class AlertPlainNotificationTest {
             val n = posted(AlertGroup.LEVEL)
             assertEquals("the high alert's own channel", Channels.alert("high"), n.channelId)
             assertEquals(app.getString(R.string.alert_headline_high), n.title())
-            assertEquals("220 mg/dL ${TrendAngle.text(2.4)}", n.text())
+            assertEquals("220 mg/dL ${TrendAngle.text(TrendAngle.step(2.4))}", n.text())
             assertEquals(listOf(app.getString(R.string.monitor_action_open_app)), n.actions.map { it.title.toString() })
             assertNotNull("a tap opens the app", n.contentIntent)
             assertEquals("it rings", Notification.GROUP_ALERT_ALL, n.groupAlertBehavior)
@@ -119,7 +120,7 @@ class AlertPlainNotificationTest {
     @Test fun `in mmol per litre the value is written in mmol per litre`() =
         runTest {
             runtime(AlertNotifier(shrunk, unit = { GlucoseUnit.MMOL })).onState(high(220, 0.0))
-            assertEquals("12.2 mmol/L ${TrendAngle.text(0.0)}", posted(AlertGroup.LEVEL).text())
+            assertEquals("12.2 mmol/L ${TrendAngle.text(TrendAngle.step(0.0))}", posted(AlertGroup.LEVEL).text())
         }
 
     @Test fun `an alarm-level kind rings plain on its alarm channel`() =

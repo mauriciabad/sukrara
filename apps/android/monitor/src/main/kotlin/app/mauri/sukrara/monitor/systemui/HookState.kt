@@ -10,6 +10,7 @@ import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LockAppearance
 import app.mauri.sukrara.core.model.LockBackground
 import app.mauri.sukrara.core.model.LockLook
+import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucosePoint
 
@@ -26,7 +27,9 @@ data class HookState(
     val bands: Bands = Bands(),
     val mgdl: Int = 0,
     val atS: Long = 0,
+    /** THE trend's rate (mg/dL/min) and text band (-3 … 3) of the newest reading (contracts/trend), null without one. */
     val rate: Double? = null,
+    val band: Int? = null,
     val sensorEnded: Boolean = false,
     val readyAtS: Long = 0,
     /** The slot daemon's icons are on screen now (a `slot:` placement with root and a running daemon). */
@@ -44,7 +47,7 @@ data class HookState(
     val lockLook: LockLook = LockLook(),
 ) {
     /** The newest reading for the card's decision, or null. */
-    fun latest(): GlucosePoint? = if (mgdl > 0) GlucosePoint(atS, mgdl, rate) else null
+    fun latest(): GlucosePoint? = if (mgdl > 0) GlucosePoint(atS, mgdl, rate, band ?: rate?.let(TrendAngle::step)) else null
 
     /** Shown as system icons (the slot daemon's), which the module orders and colours. */
     val systemIcons: Boolean get() = enabled && HookPosition.isSystemIcons(position)
@@ -65,6 +68,7 @@ data class HookState(
             putInt(MGDL, mgdl)
             putLong(AT, atS)
             rate?.let { putDouble(RATE, it) }
+            band?.let { putInt(BAND, it) }
             putBoolean(ENDED, sensorEnded)
             putLong(READY_AT, readyAtS)
             putBoolean(ICONS_SHOWN, iconsShown)
@@ -85,6 +89,7 @@ data class HookState(
         private const val MGDL = "mgdl"
         private const val AT = "at"
         private const val RATE = "rate"
+        private const val BAND = "band"
         private const val ENDED = "sensorEnded"
         private const val READY_AT = "readyAt"
         private const val ICONS_SHOWN = "iconsShown"
@@ -101,7 +106,7 @@ data class HookState(
 
         /**
          * Reads a state the module received. Every value is untrusted and clamped: an unknown placement is the
-         * default, a value outside 20–600 mg/dL or a rate outside ±20 is dropped, the ranges are made sane, the
+         * default, a value outside 20–600 mg/dL, a rate outside ±20 or a band outside ±3 is dropped, the ranges are made sane, the
          * sentences are at most [MAX_SPOKEN] of [MAX_SPOKEN_CHARS] characters on one line, an unknown lock-screen look
          * is the default one.
          */
@@ -120,6 +125,7 @@ data class HookState(
                 mgdl = mgdl,
                 atS = if (mgdl > 0) b.getLong(AT, 0).coerceAtLeast(0) else 0,
                 rate = if (b.containsKey(RATE)) b.getDouble(RATE).takeIf { it.isFinite() && it in -20.0..20.0 } else null,
+                band = if (b.containsKey(BAND)) b.getInt(BAND).takeIf { it in -3..3 } else null,
                 sensorEnded = b.getBoolean(ENDED, false),
                 readyAtS = b.getLong(READY_AT, 0).coerceAtLeast(0),
                 iconsShown = b.getBoolean(ICONS_SHOWN, false),

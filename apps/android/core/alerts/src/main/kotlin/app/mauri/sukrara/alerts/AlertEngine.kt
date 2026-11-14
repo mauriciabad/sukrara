@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.alerts
 
+import app.mauri.sukrara.core.model.TrendRate
 import java.security.SecureRandom
 import java.time.ZoneId
 import java.util.EnumMap
@@ -83,7 +84,7 @@ class AlertEngine(
     fun seed(r: AlertReading?) {
         if (r != null && last.let { it == null || r.t > it.t }) {
             last = r
-            recent = Trend.keep(recent, r)
+            recent = Recent.keep(recent, r)
         }
     }
 
@@ -199,7 +200,7 @@ class AlertEngine(
     fun reading(r: AlertReading, s: AlertSettings, d: Doses, now: Long): List<RuleAction> {
         val at = r.notAfter(now)
         // an older one (a late or backfilled reading) still fills the trend's window
-        recent = Trend.keep(recent, at)
+        recent = Recent.keep(recent, at)
         seed(at)
         sourceDelivered = true
         return evaluate(s, d, now)
@@ -263,7 +264,7 @@ class AlertEngine(
                 when (side) {
                     Side.LOW, Side.HIGH -> r != null && Rules.backBy(side, r, s) == true
                     Side.NO_DATA -> !noData
-                    else -> if (r?.rate == null) continue else rateKind?.side != side // no rate: can't tell
+                    else -> if (r?.held == null) continue else rateKind?.side != side // not held: can't tell
                 }
             if (!back) {
                 snoozes[side] = cur.copy(backSince = 0)
@@ -280,16 +281,13 @@ class AlertEngine(
         // back over the threshold but not yet by the margin: the level episode holds (SPEC §1 #37)
         val holding = level == null && !noData && episodes[AlertGroup.LEVEL]?.let { Rules.outOfRange(it.side, r, s, now) } == true
         step(AlertGroup.LEVEL, level, s, d, now, out, holding)
-        // a fresh reading without a rate (a LO / HI is sent without one) is no sign the fast change stopped: the rate
-        // episode stays (its repeat due, its hold not running down, a Mute holds), but its notification goes: at a LO
-        // the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
-        if (!fresh ||
-            noData ||
-            r?.rate != null
-        ) {
-            step(AlertGroup.RATE, rateKind, s, d, now, out)
-        } else {
-            episodes[AlertGroup.RATE]?.let { hide(it, now, out) }
+        // a fresh reading without a held trend is no sign the fast change stopped: the rate episode stays (its repeat
+        // due, its hold not running down, a Mute holds). One without any trend (a LO / HI) also takes its notification
+        // away: at a LO the very low is the message, a "falling 3 mg/dL/min" left up beside it misleads (#127, SPEC §1)
+        when {
+            !fresh || noData || r?.held != null -> step(AlertGroup.RATE, rateKind, s, d, now, out)
+            r?.rate == null -> episodes[AlertGroup.RATE]?.let { hide(it, now, out) }
+            else -> Unit // a trend not held for 5 min yet (after a gap or a LO / HI): nothing changes
         }
         step(AlertGroup.NO_DATA, if (noData) AlertKind.NO_DATA else null, s, d, now, out)
         return out
@@ -310,7 +308,7 @@ class AlertEngine(
         for (e in episodes.values) if (e.on && e.next != Long.MAX_VALUE) c += e.next
         // a trend quiet ends once the newest reading is too old for a trend: a held alert comes then without readings
         if (episodes.values.any { it.on && it.quiet.let { q -> q == EpisodeQuiet.FALLING || q == EpisodeQuiet.RISING } }) {
-            recent.lastOrNull()?.let { c += it.t + Trend.MAX_AGE_S + 1 }
+            recent.lastOrNull()?.let { c += it.t + TrendRate.CLEAR_MAX_AGE_S + 1 }
         }
         for (sn in snoozes.values) {
             if (sn.until > now) c += sn.until

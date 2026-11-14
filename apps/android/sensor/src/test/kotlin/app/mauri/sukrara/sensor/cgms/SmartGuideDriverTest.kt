@@ -125,7 +125,7 @@ class SmartGuideDriverTest {
         d.onNotification(CgmService.MEASUREMENT, live + stored)
         assertEquals(listOf(123), events.readings.map { it.mgdl })
         assertEquals(nowS, events.readings.single().epochSec)
-        assertEquals(12.0, events.readings.single().rateMgdlPerMin!!, 1e-6)
+        assertEquals(12.0, events.readings.single().sensorRate!!, 1e-6)
         assertEquals(listOf(nowS - 3_600), events.history.map { it.epochSec })
     }
 

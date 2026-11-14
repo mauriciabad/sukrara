@@ -68,7 +68,7 @@ object A11y {
                             else -> number(p.sgv)
                         },
                         w.string(R.string.a11y_value_old).takeIf { face.strike },
-                        w.trend(p.rate.takeIf { face.trend == TrendMark.ARROW }).takeUnless { face.strike },
+                        w.trend(p.band.takeIf { face.trend == TrendMark.ARROW }).takeUnless { face.strike },
                         range(p.sgv, bands, w).takeUnless { bound },
                         ago(now - p.t, w).takeIf { age },
                     ).joinToString(", ")

@@ -4,19 +4,24 @@
 package app.mauri.sukrara.graph.stats
 
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.TrendRate
 import app.mauri.sukrara.settings.SettingsSpec
 
 /**
- * One reading as the renderer and the statistics use it: epoch seconds, mg/dL, the trend rate (mg/dL/min) or null.
- * A flat primitive record so a chart scrolled over weeks of readings doesn't allocate `Instant`s every frame.
+ * One reading as the renderer and the statistics use it: epoch seconds, mg/dL, THE trend's rate (mg/dL/min, the drawn
+ * arrow's angle) and its text band (-3 … 3: the text arrow, the words, doubled at ±3), or null without a trend
+ * (contracts/trend). A flat primitive record so a chart scrolled over weeks of readings doesn't allocate `Instant`s
+ * every frame. A point made from a bare rate (tests, fixtures) gets the rate's plain band.
  */
 data class GlucosePoint(
     val t: Long,
     val sgv: Int,
     val rate: Double?,
+    val band: Int? = rate?.let(TrendRate::plainBand),
 )
 
-fun Reading.toPoint(): GlucosePoint = GlucosePoint(t.epochSecond, mgdl, rateMgdlPerMin?.toDouble())
+/** The reading with its trend ([Reading.trend], from `TrendRate.annotate`). */
+fun Reading.toPoint(): GlucosePoint = GlucosePoint(t.epochSecond, mgdl, trend?.rate, trend?.band)
 
 /**
  * The person's ranges, mg/dL (the owner, 2026-11-12: "the 70 is the threshold, but 70 itself is excluded from the

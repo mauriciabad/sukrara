@@ -6,6 +6,7 @@ package app.mauri.sukrara
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.AlertSettingsCodec
 import app.mauri.sukrara.alerts.AlertSource
+import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.data.settings.FollowerSettingsRepository
 import app.mauri.sukrara.core.data.settings.MirroredGraph
 import app.mauri.sukrara.core.data.settings.Setting
@@ -135,6 +136,7 @@ class FollowerSettingsBridge(
                     GraphSettings.LastElse,
                     GraphSettings.Marks,
                     SurfaceSettings.CountdownHours,
+                    TrendReadings.TrendArrow,
                 )
 
         fun sourceOf(from: SettingsFrom): AlertSource = if (from == SettingsFrom.Wearer) AlertSource.WEARER else AlertSource.OWN

@@ -118,7 +118,7 @@ enum class Freshness(
         ): Long? = t?.let { r -> nextChangeS(nowS - r)?.let { r + it } }
 
         /**
-         * THE look of the latest reading ([sgv] at [t], [rate] mg/dL/min) at [nowS], behind every card and glyph
+         * THE look of the latest reading ([sgv] at [t], its trend's [rate] mg/dL/min and text [band]) at [nowS], behind every card and glyph
          * surface (the Mac's `Freshness.look` is the same rule; both run contracts/graph/freshness). [warmup] = a new
          * sensor's warm-up time left ("42m"): its own state, before any value. [ended] = the sensor is past its end: while
          * its readings keep arriving (the value is neither struck nor gone) the value with the [GlucoseLook.ended] flag,
@@ -130,6 +130,7 @@ enum class Freshness(
             t: Long?,
             rate: Double?,
             nowS: Long,
+            band: Int? = rate?.let(TrendAngle::step),
             ended: Boolean = false,
             warmup: String? = null,
             unit: GlucoseUnit = GlucoseUnit.MGDL,
@@ -161,6 +162,7 @@ enum class Freshness(
                         fr.strike,
                         if (rate != null && !fr.strike) TrendMark.ARROW else TrendMark.NONE,
                         rate = rate,
+                        band = band,
                         ended = ended,
                     )
                 }
@@ -262,6 +264,8 @@ data class GlucoseLook(
     val warmup: String? = null,
     val rate: Double? = null,
     val ended: Boolean = false,
+    /** The trend's text band (contracts/trend): the text arrow, the words, doubled at ±3; null without a trend. */
+    val band: Int? = rate?.let(TrendAngle::step),
 ) {
     enum class State {
         /** A value to show (fresh, late or struck through). */
@@ -283,13 +287,13 @@ data class GlucoseLook(
     val shown: Boolean get() = state == State.VALUE
 
     /**
-     * The trend as text for places that can only write text (notification titles): the arrow of [rate]
+     * The trend as text for places that can only write text (notification titles): the arrow of [band]
      * ([TrendAngle.symbol]) when the card draws one, the ring when it draws the "no trend" ring, null without a value.
      */
     val arrowText: String?
         get() =
             when (trend) {
-                TrendMark.ARROW -> TrendAngle.text(rate)
+                TrendMark.ARROW -> TrendAngle.text(band)
                 TrendMark.NONE -> TrendMark.RING
                 null -> null
             }

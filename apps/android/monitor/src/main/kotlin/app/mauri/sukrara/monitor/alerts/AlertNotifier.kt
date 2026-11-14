@@ -418,7 +418,7 @@ class AlertNotifier(
                     r.isHi -> "> " + unit.text(GlucoseRange.CEILING, locale)
                     else -> unit.text(r.mgdl, locale)
                 }
-            return "$value ${unit.symbol} ${TrendAngle.text(r.rate)}"
+            return "$value ${unit.symbol} ${TrendAngle.text(r.arrowBand)}"
         }
     }
 }

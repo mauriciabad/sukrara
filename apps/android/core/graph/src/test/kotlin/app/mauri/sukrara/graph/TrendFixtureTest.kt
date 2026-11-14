@@ -9,8 +9,11 @@ import app.mauri.sukrara.graph.Fixtures.double
 import app.mauri.sukrara.graph.Fixtures.str
 import app.mauri.sukrara.graph.stats.GlucosePoint
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -20,63 +23,78 @@ import org.robolectric.annotation.Config
 import java.util.Locale
 
 /**
- * contracts/graph/trend: the one trend arrow (Mac: GraphTests TrendFixtureTests). The drawn arrow's snapped angle and
- * double, the text arrow, the face's [GlucoseLook.arrowText] that every text place writes, the spoken word and the
- * Nightscout direction, all from [TrendAngle]'s band.
+ * contracts/trend `bands.json`: THE trend arrow (Mac: GraphTests TrendFixtureTests). Per band the text arrow, the
+ * doubled arrow, the face's [GlucoseLook.arrowText] every text place writes, the spoken word and the Nightscout
+ * direction; per rate the drawn arrow's continuous angle.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36])
 class TrendFixtureTest {
-    private val cases = (Fixtures.read("trend/trend.json")["cases"] as JsonArray).map { it.jsonObject }
+    private val doc = Fixtures.read("../trend/bands.json")
+    private val arrows = (doc["arrows"] as JsonArray).map { it.jsonObject }
+    private val angles = (doc["angles"] as JsonArray).map { it.jsonObject }
 
-    @Test fun `the fixture has cases`() = assertTrue(cases.isNotEmpty())
+    private fun JsonObject.band(): Int? = this["band"].takeIf { it != JsonNull }?.jsonPrimitive?.int
 
-    @Test fun `text, angle and double follow the fixture`() {
-        val fails =
-            cases.mapNotNull { c ->
-                val rate = c["rate"].double()
-                val x = c["expect"] as JsonObject
-                val got = Triple(TrendAngle.text(rate), rate?.let { TrendAngle.deg(it).toDouble() }, rate?.let(TrendAngle::isDouble))
-                val want = Triple(x["text"].str(), x["deg"].double(), x["double"].bool())
-                val same =
-                    got.first == want.first && got.third == want.third &&
-                        (
-                            got.second == want.second ||
-                                (got.second != null && want.second != null && kotlin.math.abs(got.second!! - want.second!!) < 1e-3)
-                        )
-                if (same) null else "${c["name"].str()}: got $got, want $want"
-            }
-        assertTrue(fails.joinToString("\n"), fails.isEmpty())
-    }
+    @Test fun `the fixture has every band and the ring`() = assertEquals(listOf(3, 2, 1, 0, -1, -2, -3, null), arrows.map { it.band() })
 
-    /** The face of a fresh reading at each rate writes the fixture's arrow; a struck (stale) one the ring, like the card. */
-    @Test fun `the face's arrow text is the fixture's`() {
-        val now = 1_800_000_000L
-        cases.forEach { c ->
-            val rate = c["rate"].double()
-            val want = (c["expect"] as JsonObject)["text"].str()
-            val fresh = GlucoseCard.face(GlucosePoint(now - 30, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL)
-            assertEquals(c["name"].str(), want, fresh.arrowText)
-            val stale = GlucoseCard.face(GlucosePoint(now - 6 * 60, 100, rate), now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL)
-            assertEquals(c["name"].str(), TrendMark.RING, stale.arrowText)
+    @Test fun `text and double follow the band`() =
+        arrows.forEach { a ->
+            val band = a.band()
+            assertEquals("text $band", a["text"].str(), TrendAngle.text(band))
+            assertEquals("double $band", a["double"].bool(), band?.let(TrendAngle::isDouble))
         }
+
+    @Test fun `the drawn angle is continuous in the rate`() =
+        angles.forEach { a ->
+            val rate = a["rate"].double()!!
+            assertEquals("deg $rate", a["deg"].double()!!, TrendAngle.deg(rate).toDouble(), 1e-4)
+        }
+
+    /** The face of a fresh reading with each band writes the band's arrow; a struck (stale) one the ring, like the card. */
+    @Test fun `the face's arrow text is the band's`() {
+        val now = 1_800_000_000L
+        arrows.forEach { a ->
+            val band = a.band()
+            // a rate inside the band, and the band itself (with hysteresis it can differ from the rate's plain band)
+            val rate = band?.let { it * 0.9 }
+            val want = a["text"].str()
+            val fresh =
+                GlucoseCard.face(
+                    GlucosePoint(now - 30, 100, rate, band),
+                    now,
+                    null,
+                    CardSurface.NOTIFICATION_TEXT,
+                    GlucoseUnit.MGDL,
+                )
+            assertEquals("band $band", want, fresh.arrowText)
+            val stale =
+                GlucoseCard.face(
+                    GlucosePoint(now - 6 * 60, 100, rate, band),
+                    now,
+                    null,
+                    CardSurface.NOTIFICATION_TEXT,
+                    GlucoseUnit.MGDL,
+                )
+            assertEquals("band $band", TrendMark.RING, stale.arrowText)
+        }
+        // the band decides the text, not the rate: 1.1 held at → by the hysteresis writes →
+        val held = GlucoseCard.face(GlucosePoint(now - 30, 100, 1.1, 0), now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL)
+        assertEquals("→", held.arrowText)
         assertEquals(null, GlucoseCard.face(null, now, null, CardSurface.NOTIFICATION_TEXT, GlucoseUnit.MGDL).arrowText)
     }
 
-    /** One word per arrow: what TalkBack says for each rate, in English and Spanish, is the fixture's band word. */
-    @Test fun `the words follow the fixture`() {
+    /** One word per arrow: what TalkBack says for each band, in English and Spanish. */
+    @Test fun `the words follow the band`() {
         for ((key, locale) in mapOf("en" to Locale.ENGLISH, "es" to Locale.forLanguageTag("es"))) {
             val w = Scenes.words(locale)
-            cases.forEach { c ->
-                val want = ((c["expect"] as JsonObject)["words"] as JsonObject)[key].str()
-                assertEquals("${c["name"].str()} ($key)", want, w.trend(c["rate"].double()))
+            arrows.forEach { a ->
+                assertEquals("${a.band()} ($key)", (a["words"] as JsonObject)[key].str(), w.trend(a.band()))
             }
         }
     }
 
     /** The Nightscout upload and the local web endpoints send the band's direction name. */
-    @Test fun `the Nightscout direction follows the fixture`() =
-        cases.forEach { c ->
-            assertEquals(c["name"].str(), (c["expect"] as JsonObject)["nightscout"].str(), TrendAngle.nightscout(c["rate"].double()))
-        }
+    @Test fun `the Nightscout direction follows the band`() =
+        arrows.forEach { a -> assertEquals("${a.band()}", a["nightscout"].str(), TrendAngle.nightscout(a.band())) }
 }

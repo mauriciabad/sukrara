@@ -11,6 +11,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.testing.Contracts
+import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.stats.Bands
@@ -21,6 +22,7 @@ import app.mauri.sukrara.monitor.notify.LiveNotificationContent.Icon
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent.Target
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -45,7 +47,7 @@ class LiveNotificationContentTest {
         started: Boolean = true,
         firing: Set<String> = emptySet(),
     ): GlucoseState {
-        val reading = mgdl?.let { Reading(now.minusSeconds(ageS), it, rate, SourceId.Libre3) }
+        val reading = mgdl?.let { Reading(now.minusSeconds(ageS), it, rate, SourceId.Libre3).trended() }
         return GlucoseState.Initial.copy(
             role = role,
             latest = reading,
@@ -231,26 +233,24 @@ class LiveNotificationContentTest {
 
     /** Same rate, same arrow: the title writes the fixture's arrow (contracts/graph/trend), the chip's icon draws it. */
     @Test
-    fun `the title's arrow is the renderer's for every rate of the trend fixture`() {
-        val cases =
+    fun `the title's arrow is the band's of the trend fixture`() {
+        val arrows =
             Json
-                .parseToJsonElement(Contracts.file("graph/trend/trend.json").readText())
+                .parseToJsonElement(Contracts.file("trend/bands.json").readText())
                 .jsonObject
-                .getValue("cases")
+                .getValue("arrows")
                 .jsonArray
-        assertTrue(cases.isNotEmpty())
-        cases.map { it.jsonObject }.forEach { c ->
-            val rate = c.getValue("rate").jsonPrimitive.doubleOrNull
-            val want =
-                c
-                    .getValue("expect")
-                    .jsonObject
-                    .getValue("text")
-                    .jsonPrimitive.content
-            val name = c.getValue("name").jsonPrimitive.content
+                .map { it.jsonObject }
+        assertTrue(arrows.isNotEmpty())
+        // a single reading's trend never doubles (that needs 2 min of readings: TrendEverywhereTest), so bands -2 … 2
+        arrows.filter { (it.getValue("band").jsonPrimitive.intOrNull ?: 0) in -2..2 }.forEach { a ->
+            val band = a.getValue("band").jsonPrimitive.intOrNull
+            val rate = band?.let { it * 1.5 }
+            val want = a.getValue("text").jsonPrimitive.content
             val content = content(state(rate = rate))
-            assertEquals(name, UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", want)), content.title)
-            assertEquals(name, rate, content.trendRate)
+            assertEquals("band $band", UiText(R.string.monitor_notif_value, listOf("138", "mg/dL", want)), content.title)
+            assertEquals("band $band", rate, content.trendRate)
+            assertEquals("band $band", band, content.trendBand)
         }
     }
 

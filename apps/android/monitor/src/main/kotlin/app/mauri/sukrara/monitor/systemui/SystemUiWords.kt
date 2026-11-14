@@ -42,7 +42,7 @@ object SystemUiWords {
             if (look.strike) {
                 res.getString(GraphR.string.a11y_value_old)
             } else {
-                model.words.trend(look.rate.takeIf { look.trend == TrendMark.ARROW })
+                model.words.trend(look.band.takeIf { look.trend == TrendMark.ARROW })
             }
         return SlotIcons.Words(sentence, trend)
     }

@@ -124,7 +124,7 @@ object TidepoolData {
             put("units", MGDL)
             put("value", r.mgdl)
             put("sampleInterval", SLOT_S * 1000)
-            r.rateMgdlPerMin?.takeIf { it.isFinite() && it in -100.0..100.0 && !r.isLo && !r.isHi }?.let {
+            r.sensorRate?.takeIf { it.isFinite() && it in -100.0..100.0 && !r.isLo && !r.isHi }?.let {
                 put("trendRate", Math.round(it * 10) / 10.0)
                 put("trendRateUnits", "mg/dL/minute")
             }

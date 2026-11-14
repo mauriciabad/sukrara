@@ -9,6 +9,7 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.trended
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -148,7 +149,7 @@ class AlertShowFallbackTest {
             presenter.showFails += level
             presenter.plainFails += level
             presenter.problemFails += level
-            runtime().onState(rig.wearerState(latest = Reading(rig.clock.now(), 62, -3.0, SourceId.Libre3)))
+            runtime().onState(rig.wearerState(latest = Reading(rig.clock.now(), 62, -3.0, SourceId.Libre3).trended()))
             assertEquals("falling_fast", rig.presenter.slots[AlertGroup.RATE])
             assertNotNull("the exact alarm is armed", rig.alarm.at)
             assertNotNull(

@@ -15,6 +15,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.stats.Bands
 import org.junit.Assert.assertEquals
@@ -47,7 +48,7 @@ class SystemUiWordsTest {
         rate: Double? = -1.5,
         sensor: SensorState = SensorState.Active(null),
     ): GlucoseState {
-        val reading = Reading(now.minusSeconds(ageS), mgdl, rate, SourceId.Libre3)
+        val reading = Reading(now.minusSeconds(ageS), mgdl, rate, SourceId.Libre3).trended()
         return GlucoseState.Initial.copy(role = Role.Wearer, latest = reading, recent = listOf(reading), sensor = sensor)
     }
 

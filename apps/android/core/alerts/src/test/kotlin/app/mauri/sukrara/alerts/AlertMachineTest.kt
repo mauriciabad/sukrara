@@ -201,7 +201,7 @@ class AlertMachineTest {
                 .withRule(AlertKind.FALLING_FAST, base.rule(AlertKind.FALLING_FAST).copy(on = true))
         val m = machine(s = s)
         m.start(null, null, null, t0)
-        m.handle(AlertInput.Reading(AlertReading(t0, 65, -2.5)), t0)
+        m.handle(AlertInput.Reading(AlertReading(t0, 65, -2.5, held = -2.5)), t0)
         val due = m.handle(AlertInput.Tick, t0 + 600)
         val cleared = due.filterIsInstance<AlertEffect.Clear>().map { it.kind }
         assertEquals(listOf(AlertKind.LOW, AlertKind.FALLING_FAST), cleared)

@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.TrendRate
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucoseMetrics
 import app.mauri.sukrara.graph.stats.GlucosePoint
@@ -69,47 +70,41 @@ val TreatmentKind.id: String
         }
 
 /**
- * THE trend arrow for a rate (mg/dL/min), one picture and one word per arrow (contracts/graph/trend, #4): the rate
- * falls in one of Nightscout's direction bands (±1 / 2 / 3), and every place draws, writes and says that band. The
- * drawn arrow snaps to the band's angle (→ flat, ↗ 45°, ↑ and ⇈ straight up, ⇈ doubled), so a glance never sees a
- * tilted icon beside a flat text arrow; surfaces that animate it turn between the snapped angles.
+ * THE trend arrow (contracts/trend `bands.json`, #204): the drawn arrow turns with the trend's rate, continuously
+ * ([deg]: flat at 0, vertical from ±3 mg/dL/min), so 0.4 and 0.9 look different; its text band (`ReadingTrend.band`:
+ * Nightscout's ±1 / 2 / 3 with hysteresis, doubled only once held) decides the text arrow, the words, the Nightscout
+ * direction and whether the drawn arrow is doubled. The drawn arrow stays within 30° of the text arrow beside it.
+ * Places that can't rotate (system icons) draw the band ([bandDeg]). No place maps a rate to an arrow itself.
  */
 object TrendAngle {
-    /** mg/dL/min from which the arrow doubles (⇈ / ⇊). */
-    const val FULL_SCALE = 3.0
+    /** mg/dL/min from which the arrow is vertical and can double (⇈ / ⇊). */
+    const val FULL_SCALE = TrendRate.FULL_SCALE
 
-    /** The band: -3 (⇊) … 0 (→) … 3 (⇈), from Nightscout's ±1 / 2 / 3 (a boundary belongs to the steeper band). */
-    fun step(rate: Double): Int =
-        when {
-            rate >= FULL_SCALE -> 3
-            rate >= 2.0 -> 2
-            rate >= 1.0 -> 1
-            rate > -1.0 -> 0
-            rate > -2.0 -> -1
-            rate > -FULL_SCALE -> -2
-            else -> -3
-        }
+    /** The plain band of a rate with nothing before it (no hysteresis, no hold): -3 (⇊) … 0 (→) … 3 (⇈). */
+    fun step(rate: Double): Int = TrendRate.plainBand(rate)
 
-    /** The drawn arrow's rotation in degrees, y-down (negative = up): the band's 0, ±45 or ±90. */
-    fun deg(rate: Double): Float = DEGREES[step(rate) + 3]
+    /** The drawn arrow's rotation in degrees, y-down (negative = up): linear in the rate, ±90 from ±3. */
+    fun deg(rate: Double): Float = TrendRate.deg(rate).toFloat()
 
-    fun isDouble(rate: Double) = abs(step(rate)) == 3
+    /** The band's own angle (0, ±45, ±90), for places that can only draw pre-made arrows. */
+    fun bandDeg(band: Int): Float = DEGREES[band.coerceIn(-3, 3) + 3]
+
+    fun isDouble(band: Int) = abs(band) == 3
 
     /**
-     * THE text arrow for a rate (mg/dL/min), for places that can only write text (notification title, alert text),
-     * as the Mac menu bar writes them. A place that also draws the arrow (the Live Update chip's icon) draws the same
-     * band, so the two can never disagree.
+     * THE text arrow for a band, for places that can only write text (notification title, alert text), as the Mac menu
+     * bar writes them.
      */
-    fun symbol(rate: Double): String = SYMBOLS[step(rate) + 3]
+    fun symbol(band: Int): String = SYMBOLS[band.coerceIn(-3, 3) + 3]
 
-    /** [symbol] for a rate that may be missing: no rate = the "no trend" ring ([TrendMark.RING]), as the card draws it. */
-    fun text(rate: Double?): String = rate?.let(::symbol) ?: TrendMark.RING
+    /** [symbol] for a band that may be missing: no trend = the "no trend" ring ([TrendMark.RING]), as the card draws it. */
+    fun text(band: Int?): String = band?.let(::symbol) ?: TrendMark.RING
 
     /**
-     * The band's Nightscout direction ("FortyFiveUp"; "NONE" without a rate), for the Nightscout upload and the local
+     * The band's Nightscout direction ("FortyFiveUp"; "NONE" without a trend), for the Nightscout upload and the local
      * Nightscout / xDrip web endpoints. The xDrip+ broadcast keeps xDrip+'s own rule (BroadcastPayloads.trendName).
      */
-    fun nightscout(rate: Double?): String = rate?.let { NIGHTSCOUT[step(it) + 3] } ?: "NONE"
+    fun nightscout(band: Int?): String = band?.let { NIGHTSCOUT[it.coerceIn(-3, 3) + 3] } ?: "NONE"
 
     private val DEGREES = listOf(90f, 90f, 45f, 0f, -45f, -90f, -90f)
     private val SYMBOLS = listOf("⇊", "↓", "↘", "→", "↗", "↑", "⇈")

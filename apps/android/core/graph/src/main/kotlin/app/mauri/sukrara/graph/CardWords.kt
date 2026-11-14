@@ -83,10 +83,10 @@ class CardWords private constructor(
         return if (m < 1) durationNow else Durations.compact(m, durations)
     }
 
-    /** The trend in words for [rate] mg/dL/min (null = unknown): one word per arrow ([TrendAngle.step]). */
-    fun trend(rate: Double?): String =
+    /** The trend in words for its text [band] (null = unknown): one word per arrow (contracts/trend `bands.json`). */
+    fun trend(band: Int?): String =
         r.getString(
-            when (rate?.let(TrendAngle::step)) {
+            when (band) {
                 null -> R.string.trend_unknown
                 3 -> R.string.trend_rising_very_fast
                 2 -> R.string.trend_rising_fast

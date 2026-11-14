@@ -37,7 +37,7 @@ class AppAlertHints(
      */
     override fun lowNow(): Boolean {
         val latest = glucose.value.latest ?: return false
-        val reading = AlertReading(latest.t.epochSecond, latest.mgdl, latest.rateMgdlPerMin)
+        val reading = AlertReading(latest.t.epochSecond, latest.mgdl, latest.rate, latest.trend?.held, latest.trend?.band)
         if (!Rules.fresh(reading, clock.now().epochSecond)) return false
         val s = settings.value ?: AlertSettings()
         return AlertKind.LOW.reaches(latest.mgdl.toDouble(), s.rule(AlertKind.LOW).threshold)

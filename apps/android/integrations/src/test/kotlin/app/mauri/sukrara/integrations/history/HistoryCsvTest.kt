@@ -74,7 +74,7 @@ class HistoryCsvTest {
                 val sgv = r["sgv"]!!.jsonPrimitive.int
                 assertTrue("$name: $sgv vs ${read.mgdl}", abs(sgv - read.mgdl) <= (if (mmol) 1 else 0))
                 val rate = r["rate"]?.jsonPrimitive?.double
-                assertEquals(name, rate?.let(::tenths), read.rateMgdlPerMin)
+                assertEquals(name, rate?.let(::tenths), read.sensorRate)
                 assertEquals(ImportSource.File.readings, read.source)
             }
 

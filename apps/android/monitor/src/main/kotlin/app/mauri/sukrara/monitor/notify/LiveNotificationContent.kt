@@ -67,8 +67,9 @@ data class LiveNotificationContent(
     /** The Live Update chip's text ("138"; its icon is the arrow); null = icon only. */
     val chip: UiText?,
     val icon: Icon,
-    /** The rate (mg/dL/min) the [Icon.TREND] arrow points for. */
+    /** The trend's rate (mg/dL/min) the [Icon.TREND] arrow turns by and its band (doubled at ±3; contracts/trend). */
     val trendRate: Double? = null,
+    val trendBand: Int? = null,
     /** The reading's time, shown once it's late. */
     val readingAt: Instant?,
     val tap: Target,
@@ -243,6 +244,7 @@ data class LiveNotificationContent(
                 chip = chip,
                 icon = icon,
                 trendRate = look.rate.takeIf { look.trend == TrendMark.ARROW },
+                trendBand = look.band.takeIf { look.trend == TrendMark.ARROW },
                 readingAt = if (look.fresh.showTime) reading.t else null,
                 tap = quickTreatment(state),
                 actions = if (look.ended && state.role == Role.Wearer) listOf(OPEN_APP, REPLACE_SENSOR) else listOf(OPEN_APP),

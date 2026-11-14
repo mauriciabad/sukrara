@@ -133,7 +133,7 @@ class G7DriverTest {
         d.onEgv(G7Messages.Egv(2005, 10, 5, mgdl = 35, state = 6, trend = -2.0))
         assertTrue(events.readings.last().isLo)
         assertEquals(GlucoseRange.LO, events.readings.last().mgdl)
-        assertEquals(null, events.readings.last().rateMgdlPerMin) // no rate from a value nobody knows
+        assertEquals(null, events.readings.last().sensorRate) // no rate from a value nobody knows
         d.onEgv(G7Messages.Egv(2305, 11, 5, mgdl = 420, state = 6, trend = null))
         assertTrue(events.readings.last().isHi)
         assertEquals(GlucoseRange.HI, events.readings.last().mgdl)

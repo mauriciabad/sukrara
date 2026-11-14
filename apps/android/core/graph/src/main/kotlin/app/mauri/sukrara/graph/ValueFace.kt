@@ -289,7 +289,8 @@ internal class ValueFace(
         val arrowSize = num.textSize * ValueGlyphs.MARK_BOX
         val markBox = RectF(x, cy - arrowSize / 2, x + arrowSize, cy + arrowSize / 2)
         val rate = r.rate
-        if (face.trend == TrendMark.ARROW && rate != null) {
+        val band = r.band
+        if (face.trend == TrendMark.ARROW && rate != null && band != null) {
             cv.save()
             cv.translate(x + arrowSize / 2, cy)
             cv.rotate(motion?.arrowDeg ?: TrendAngle.deg(rate))
@@ -299,10 +300,10 @@ internal class ValueFace(
                 Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     this.color = color
                 },
-                TrendAngle.isDouble(rate),
+                TrendAngle.isDouble(band),
             )
             cv.restore()
-            rec.add("value.trend", markBox, if (TrendAngle.isDouble(rate)) "arrow double" else "arrow single")
+            rec.add("value.trend", markBox, if (TrendAngle.isDouble(band)) "arrow double" else "arrow single")
         } else {
             // no trend (no rate, or struck through): the hollow ring in the arrow's place
             cv.drawCircle(

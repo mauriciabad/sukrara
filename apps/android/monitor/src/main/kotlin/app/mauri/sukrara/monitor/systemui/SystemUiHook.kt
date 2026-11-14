@@ -901,6 +901,7 @@ class SystemUiHook : XposedModule() {
                         HookText.Mark.ARROW, HookText.Mark.RING -> {
                             arrow.also {
                                 it.rate = if (v.mark == HookText.Mark.ARROW) v.rate else null
+                                it.band = if (v.mark == HookText.Mark.ARROW) v.band else null
                                 it.color = v.color
                             }
                         }
@@ -928,6 +929,7 @@ class SystemUiHook : XposedModule() {
     /** The card's arrow ([ValueGlyphs.arrow]) or "no trend" ring, as a Drawable. */
     private class ArrowDrawable : Drawable() {
         var rate: Double? = null
+        var band: Int? = null
         var color = 0
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
@@ -935,9 +937,10 @@ class SystemUiHook : XposedModule() {
             val b = bounds
             paint.color = color
             val rate = rate
+            val band = band
             cv.save()
             cv.translate(b.exactCenterX(), b.exactCenterY())
-            if (rate == null) {
+            if (rate == null || band == null) {
                 val p =
                     Paint(paint).apply {
                         style = Paint.Style.STROKE
@@ -946,7 +949,7 @@ class SystemUiHook : XposedModule() {
                 cv.drawCircle(0f, 0f, TrendMark.ringRadius(b.width().toFloat()), p)
             } else {
                 cv.rotate(TrendAngle.deg(rate))
-                ValueGlyphs.arrow(cv, b.width().toFloat(), paint, TrendAngle.isDouble(rate))
+                ValueGlyphs.arrow(cv, b.width().toFloat(), paint, TrendAngle.isDouble(band))
             }
             cv.restore()
         }

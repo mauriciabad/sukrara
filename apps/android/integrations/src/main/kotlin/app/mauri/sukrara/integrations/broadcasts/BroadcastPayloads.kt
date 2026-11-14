@@ -50,9 +50,9 @@ object BroadcastPayloads {
     val ACTIONS = listOf(XDRIP, LIBRE, LIBRE_ACTIVATE, GLUCODATA)
 
     /**
-     * xDrip+ trend names with xDrip+'s / Juggluco's thresholds in mg/dL/min ("" = unknown): the one place that doesn't
-     * use the card's bands (contracts/graph/trend), because the apps reading this broadcast expect xDrip+'s rule
-     * (doubled from 3.5). The Nightscout upload and the local web endpoints use the bands
+     * xDrip+ trend names with xDrip+'s / Juggluco's thresholds in mg/dL/min ("" = unknown) for THE trend's rate: the
+     * one place that doesn't use the card's bands (contracts/trend), because the apps reading this broadcast expect
+     * xDrip+'s rule (doubled from 3.5, no hysteresis). The Nightscout upload and the local web endpoints use the bands
      * ([app.mauri.sukrara.graph.TrendAngle.nightscout]).
      */
     fun trendName(rate: Double?): String =

@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.stats.Bands
@@ -43,7 +44,7 @@ class ReadAloudTest {
         ageS: Long = 120,
         rate: Double? = -1.5,
     ): GlucoseState {
-        val reading = Reading(now.minusSeconds(ageS), mgdl, rate, SourceId.Libre3)
+        val reading = Reading(now.minusSeconds(ageS), mgdl, rate, SourceId.Libre3).trended()
         return GlucoseState.Initial.copy(role = Role.Wearer, latest = reading, recent = listOf(reading))
     }
 
