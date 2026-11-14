@@ -47,6 +47,7 @@ import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
 import app.mauri.sukrara.graph.ClockText
+import app.mauri.sukrara.graph.TreatmentKindMark
 import java.time.LocalDate
 import java.time.ZoneId
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -194,6 +195,7 @@ fun TreatmentHistoryContent(
             onDismiss = callbacks.pen.close,
             onDelete = if (p.deletable) callbacks.pen.delete else null,
             onNote = if (p.editable) callbacks.pen.note else null,
+            noteMark = { TreatmentKindMark("note") },
         )
     }
 }

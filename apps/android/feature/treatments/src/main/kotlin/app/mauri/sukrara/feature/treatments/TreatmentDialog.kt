@@ -104,6 +104,7 @@ import app.mauri.sukrara.designsystem.sheet.SheetButton
 import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
+import app.mauri.sukrara.graph.TreatmentKindLabel
 import app.mauri.sukrara.graph.TreatmentKindMark
 import java.time.Instant
 import java.time.LocalTime
@@ -509,7 +510,7 @@ private fun AmountField(
         inputTransformation = AmountInput,
         textStyle = MaterialTheme.typography.titleLarge,
         labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
-        label = { KindLabel(kind, stringResource(label)) },
+        label = { TreatmentKindLabel(kind, stringResource(label)) },
         suffix = { Text(stringResource(if (grams) R.string.treatment_unit_g else R.string.treatment_unit_u)) },
         isError = invalid,
         lineLimits = TextFieldLineLimits.SingleLine,
@@ -548,8 +549,8 @@ private fun NoteField(
         inputTransformation = NoteInput,
         // on the outline like the amounts' labels: a label sinking back into the empty note resized the dialog too
         labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
-        label = { KindLabel("note", stringResource(R.string.treatment_note)) },
-        placeholder = { Text(stringResource(R.string.treatment_note_placeholder), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        label = { TreatmentKindLabel("note", stringResource(R.string.treatment_note)) },
+        placeholder = { Text(stringResource(DsR.string.ds_note_placeholder), maxLines = 1, overflow = TextOverflow.Ellipsis) },
         supportingText =
             if (bytes > TreatmentForm.NOTE_BYTES - NOTE_COUNT_FROM) {
                 { Text(stringResource(R.string.treatment_note_count, bytes, TreatmentForm.NOTE_BYTES)) }
@@ -569,19 +570,6 @@ private val NoteInput =
         val kept = TreatmentForm.clip(typed.replace('\n', ' '), TreatmentForm.NOTE_BYTES)
         if (kept != typed) replace(0, length, kept)
     }
-
-/** A field's label: the kind's marker, then its name on one line. */
-@Composable
-private fun KindLabel(
-    kind: String,
-    text: String,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        TreatmentKindMark(kind, size = MARK_SIZE)
-        Spacer(Modifier.width(6.dp))
-        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-    }
-}
 
 /**
  * When the entries happen, at the end of the title line (the PoC's place and look: an M3 assist chip): *Now*,
@@ -991,9 +979,6 @@ private const val STACK_FONT_SCALE = 1.3f
 
 /** The gap between the dialog's parts (the PoC's). */
 private val GAP = 16.dp
-
-/** A field label's kind marker (the PoC's 10 dp). */
-private val MARK_SIZE = 10.dp
 
 /** The note's byte count shows from this many bytes before the limit. */
 private const val NOTE_COUNT_FROM = 20

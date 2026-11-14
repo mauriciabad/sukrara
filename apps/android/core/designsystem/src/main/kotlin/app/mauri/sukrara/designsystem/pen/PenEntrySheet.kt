@@ -11,10 +11,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.TextFieldLineLimits
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,6 +32,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextFieldLabelPosition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -164,9 +171,11 @@ fun PenEntrySheet(
     modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
     onNote: ((String) -> Unit)? = null,
+    noteMark: @Composable () -> Unit = {},
 ) {
     val roles = remember(entry) { mutableStateListOf(*entry.doses.map { it.primed }.toTypedArray()) }
-    var note by remember(entry) { mutableStateOf(entry.note) }
+    val noteState = remember(entry) { TextFieldState(entry.note) }
+    val note = noteState.text.toString()
     val rolesChanged = roles.toList() != entry.doses.map { it.primed }
     val noteChanged = onNote != null && note.trim() != entry.note
     val changed = rolesChanged || noteChanged
@@ -229,15 +238,18 @@ fun PenEntrySheet(
                 }
                 HorizontalDivider()
                 if (onNote != null) {
+                    // the Add treatment form's note: its label on the outline, the example while empty, up to 3 lines
                     OutlinedTextField(
-                        value = note,
-                        onValueChange = { note = PenNotes.clip(it) },
-                        label = { Text(stringResource(R.string.ds_pen_note)) },
-                        maxLines = 3,
+                        state = noteState,
                         modifier = Modifier.fillMaxWidth().testTag("pen-note"),
+                        labelPosition = TextFieldLabelPosition.Attached(alwaysMinimize = true),
+                        label = { MarkedText(noteMark, stringResource(R.string.ds_pen_note)) },
+                        placeholder = { Text(stringResource(R.string.ds_note_placeholder), maxLines = 1) },
+                        inputTransformation = PenNotes.input,
+                        lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 3),
                     )
                 } else if (entry.note.isNotEmpty()) {
-                    Text(entry.note, style = MaterialTheme.typography.bodyMedium)
+                    MarkedText(noteMark, entry.note, MaterialTheme.typography.bodyMedium)
                 }
                 entry.replaced?.let { (ra, rt) ->
                     Text(
@@ -252,7 +264,7 @@ fun PenEntrySheet(
                             SheetButton(stringResource(R.string.ds_cancel), R.drawable.ds_ic_close, {
                                 roles.clear()
                                 roles.addAll(entry.doses.map { it.primed })
-                                note = entry.note
+                                noteState.setTextAndPlaceCursorAtEnd(entry.note)
                             })
                             val removes = inj.isEmpty()
                             SheetButton(
@@ -340,9 +352,31 @@ private fun FlyingDose(flight: DoseFlight) {
 
 private const val FLY_MS = 320
 
+/** [mark] (the note's chart marker, given by the caller) and [text] on one line, as every place names a note. */
+@Composable
+private fun MarkedText(
+    mark: @Composable () -> Unit,
+    text: String,
+    style: androidx.compose.ui.text.TextStyle = androidx.compose.ui.text.TextStyle.Default,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        mark()
+        Spacer(Modifier.width(6.dp))
+        Text(text, style = style)
+    }
+}
+
 /** A pen entry's note as every entry's: at most [Treatment] note bytes (100 UTF-8 bytes), cut on a character. */
 internal object PenNotes {
     const val BYTES = 100
+
+    /** Keeps what [clip] keeps of an edit. */
+    val input =
+        InputTransformation {
+            val typed = toString()
+            val kept = clip(typed)
+            if (kept != typed) replace(0, length, kept)
+        }
 
     fun clip(text: String): String {
         var t = text.replace('\n', ' ')

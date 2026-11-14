@@ -20,7 +20,6 @@
     <string name="treatment_unit_u">u</string>
     <string name="treatment_unit_g">g</string>
     <string name="treatment_note">Note</string>
-    <string name="treatment_note_placeholder">Pizza, exercise, sick…</string>
     <!-- The note's length near its limit: bytes typed / the most it takes -->
     <string name="treatment_note_count">%1$d / %2$d</string>
     <string name="treatment_limits">Insulin up to %1$du, carbs up to %2$dg, more than 0</string>

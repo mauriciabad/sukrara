@@ -6,9 +6,13 @@ package app.mauri.sukrara.graph
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -78,3 +83,20 @@ fun TreatmentKindBadge(
 
 /** The marker's share of the badge (a 14 dp marker in 36 dp, the dialog's 10 dp label marker scaled up). */
 private const val MARK_IN_BADGE = 0.39f
+
+/**
+ * A field's label for kind [kind]: its marker, then [text] on one line (the Add treatment form's fields, a pen entry's
+ * note: every place a treatment field is named looks the same).
+ */
+@Composable
+fun TreatmentKindLabel(
+    kind: String,
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        TreatmentKindMark(kind)
+        Spacer(Modifier.width(6.dp))
+        Text(text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}

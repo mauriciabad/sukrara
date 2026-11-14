@@ -9,6 +9,7 @@
     <string name="ds_undo">Undo</string>
     <!-- a pen entry's note field in its sheet -->
     <string name="ds_pen_note">Note</string>
+    <string name="ds_note_placeholder">Pizza, exercise, sick…</string>
     <string name="ds_dismiss">Dismiss</string>
     <string name="ds_custom">Custom…</string>
     <string name="ds_custom_label">Value</string>

@@ -116,6 +116,7 @@ import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.StatusBadge
+import app.mauri.sukrara.graph.TreatmentKindMark
 import app.mauri.sukrara.graph.TreatmentMarks
 import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.launch
@@ -306,6 +307,7 @@ fun HomeContent(
             onDismiss = callbacks.pen.close,
             onDelete = if (p.deletable) callbacks.pen.delete else null,
             onNote = if (p.editable) callbacks.pen.note else null,
+            noteMark = { TreatmentKindMark("note") },
         )
     }
     if (muteDialog) {
