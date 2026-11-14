@@ -681,8 +681,8 @@ struct QuietMenu: View {
         }
         .accessibilityLabel(
             sideMuted
-                ? L10n.t("\(MuteCopy.sideName(side)) alerts: Change time")
-                : L10n.t("\(MuteCopy.sideName(side)) alerts: Mute"))
+                ? L10n.t("\(MuteCopy.sideName(side)): Change time")
+                : L10n.t("\(MuteCopy.sideName(side)): Mute"))
     }
 }
 

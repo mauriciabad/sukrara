@@ -63,21 +63,21 @@
     <string name="ds_req_bluetooth_why">The sensor sends readings over Bluetooth.</string>
 
     <!-- Mute / remind-less lines (contracts/alerts/copy.json; MuteText, AlertCopyTest). Side names fill %1$s. -->
-    <string name="side_low">Low</string>
-    <string name="side_high">High</string>
+    <string name="side_low">Lows</string>
+    <string name="side_high">Highs</string>
     <string name="side_falling_fast">Falling fast</string>
     <string name="side_rising_fast">Rising fast</string>
     <string name="side_no_data">No data</string>
-    <string name="mute_side">%1$s alerts muted</string>
-    <string name="mute_side_left_one">%1$s alerts muted · %2$s left</string>
-    <string name="mute_side_left_other">%1$s alerts muted · %2$s left</string>
-    <string name="mute_after_carbs_one">%1$s alerts muted after carbs · %2$s left</string>
-    <string name="mute_after_carbs_other">%1$s alerts muted after carbs · %2$s left</string>
-    <string name="mute_after_insulin_one">%1$s alerts muted after insulin · %2$s left</string>
-    <string name="mute_after_insulin_other">%1$s alerts muted after insulin · %2$s left</string>
-    <string name="mute_falling">%1$s alerts muted while falling back into range</string>
-    <string name="mute_rising">%1$s alerts muted while rising back into range</string>
-    <string name="mute_less">%1$s reminders every %2$s</string>
+    <string name="mute_side">%1$s muted</string>
+    <string name="mute_side_left_one">%1$s muted · %2$s left</string>
+    <string name="mute_side_left_other">%1$s muted · %2$s left</string>
+    <string name="mute_after_carbs_one">%1$s muted after carbs · %2$s left</string>
+    <string name="mute_after_carbs_other">%1$s muted after carbs · %2$s left</string>
+    <string name="mute_after_insulin_one">%1$s muted after insulin · %2$s left</string>
+    <string name="mute_after_insulin_other">%1$s muted after insulin · %2$s left</string>
+    <string name="mute_falling">%1$s muted while falling back into range</string>
+    <string name="mute_rising">%1$s muted while rising back into range</string>
+    <string name="mute_less">%1$s: remind every %2$s</string>
     <string name="mute_all_left_one">Alerts muted · %1$s left</string>
     <string name="mute_all_left_other">Alerts muted · %1$s left</string>
     <string name="mute_all_forever">Alerts muted until you turn it off</string>
@@ -96,7 +96,7 @@
     <string name="ds_mute_all_unmute">Unmute</string>
     <string name="ds_mute_all_change">Change time</string>
     <!-- TalkBack action on the card: %1$s side name ("Low"), %2$s the way out ("Unmute") -->
-    <string name="ds_quiet_a11y_action">%1$s alerts: %2$s</string>
+    <string name="ds_quiet_a11y_action">%1$s: %2$s</string>
     <string name="ds_a11y_unmute_all">Unmute alerts</string>
     <string name="ds_a11y_change_mute">Change how long alerts are muted</string>
     <string name="ds_a11y_mute_all">Mute alerts</string>

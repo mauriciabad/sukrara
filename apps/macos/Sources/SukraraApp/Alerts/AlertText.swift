@@ -96,26 +96,26 @@ struct AlertText: Equatable {
         guard language == .es else { return f.headline }
         let base: String
         switch f.kind {
-        case .veryLow: base = "Glucosa muy baja"
-        case .low: base = "Glucosa baja"
-        case .high: base = "Glucosa alta"
-        case .veryHigh: base = "Glucosa muy alta"
-        case .extremelyHigh: base = "Glucosa extremadamente alta"
+        case .veryLow: base = "Muy baja"
+        case .low: base = "Baja"
+        case .high: base = "Alta"
+        case .veryHigh: base = "Muy alta"
+        case .extremelyHigh: base = "Extremadamente alta"
         case .fallingFast: base = "Bajada rápida"
         case .risingFast: base = "Subida rápida"
-        case .noData: base = "Sin datos de glucosa"
+        case .noData: base = "Sin datos"
         }
         guard f.treated > 0, f.kind.group == .level else { return base }
         if f.kind.isLowSide { return base + (f.treated == 1 ? " · come más" : " · vuelve a comer") }
-        return base + (f.treated == 1 ? " · sigue alta tras la insulina" : " · sigue alta tras más insulina")
+        return base + (f.treated == 1 ? " · sigue tras la insulina" : " · sigue tras más insulina")
     }
 
-    /// The muted note: "Low alerts muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
+    /// The muted note: "Lows muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
     func mutedTitle(_ side: AlertSide) -> String { MuteCopy.notificationTitle(side, language) }
 
     func mutedBody(until: String) -> String { MuteCopy.notificationText(until: until, language) }
 
-    /// Settings › Alerts › Send Test Alert: "Test · Low glucose".
+    /// Settings › Alerts › Send Test Alert: "Test · Low".
     func testTitle(_ f: AlertFiring) -> String { "\(language == .en ? "Test" : "Prueba") · \(title(f))" }
 
     // Action titles: HIG title case in English, a short name for the result, never an ellipsis (the owner's review,

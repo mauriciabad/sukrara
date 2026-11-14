@@ -126,9 +126,9 @@ final class FakeCenter: NotificationPosting {
         notifier(.en).post(firing(.low), sound: true, category: AlertNotificationIDs.alertCategory)
         notifier(.es).post(firing(.low), sound: true, category: AlertNotificationIDs.alertCategory)
         let en = center.added[0].content, es = center.added[1].content
-        #expect(en.title == "Low glucose")
+        #expect(en.title == "Low")
         #expect(en.body == "62 mg/dL ↘")
-        #expect(es.title == "Glucosa baja")
+        #expect(es.title == "Baja")
         #expect(es.body == "62 mg/dL ↘")
         #expect(center.added[0].identifier == AlertNotificationIDs.notificationID(.level))
         #expect(en.userInfo[Notifier.sideKey] as? String == "low")
@@ -152,7 +152,7 @@ final class FakeCenter: NotificationPosting {
         #expect(es.body(old, now: clock.now) == "Última lectura \(at) · 120 mg/dL")
         let lo = firing(.veryLow, mgdl: 39, rate: nil)
         #expect(en.body(lo, now: clock.now).hasPrefix("LO · below 40 mg/dL"))
-        #expect(es.headline(firing(.low, treated: 2)) == "Glucosa baja · vuelve a comer")
+        #expect(es.headline(firing(.low, treated: 2)) == "Baja · vuelve a comer")
     }
 
     /// contracts/settings/units.json: in mmol/L the value, the LO bound and the rate are in the unit, the language's
@@ -270,7 +270,7 @@ final class FakeCenter: NotificationPosting {
         try #require(center.added.count == 2)
         let plain = center.added[1]
         #expect(plain.identifier == AlertNotificationIDs.notificationID(.level))
-        #expect(plain.content.title == "Low glucose")
+        #expect(plain.content.title == "Low")
         #expect(plain.content.body == "62 mg/dL ↘")
         #expect(plain.content.categoryIdentifier.isEmpty && plain.content.userInfo.isEmpty)
         #expect(plain.content.sound == .default)
@@ -332,7 +332,7 @@ final class FakeCenter: NotificationPosting {
         notifier().postMuted(.low, until: clock.now.addingTimeInterval(1800))
         let r = center.added[0]
         #expect(r.identifier == AlertNotificationIDs.mutedNotificationID(.low))
-        #expect(r.content.title == "Low alerts muted" && r.content.sound == nil)
+        #expect(r.content.title == "Lows muted" && r.content.sound == nil)
         #expect(r.content.categoryIdentifier == AlertNotificationIDs.mutedCategory)
     }
 

@@ -197,6 +197,15 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     var follower = AlertMirror()
     var published: [String: AlertFiring] = [:]
 
+    /// The scenarios' own words for a firing ("Low glucose · eat more", "No glucose data"), as Android's driver writes
+    /// them: the timelines name alerts in words of their own, apart from the notification's copy (copy.json).
+    func label(_ f: AlertFiring) -> String {
+        let base =
+            f.kind.group == .level ? "\(f.kind.title) glucose" : (f.kind == .noData ? "No glucose data" : f.kind.title)
+        guard f.treated > 0, f.kind.group == .level else { return base }
+        if f.kind.isLowSide { return base + (f.treated == 1 ? " · eat more" : " · eat more again") }
+        return base + (f.treated == 1 ? " · still high after insulin" : " · still high after more insulin")
+    }
     func record(_ what: String) { got[Int(real.timeIntervalSince1970) / 60 - t0 / 60, default: []].append(what) }
     func live() -> [AlertTreatment] {
         treatments.filter { !$0.deleted }.map { AlertTreatment(kind: $0.kind, at: $0.at) }
@@ -206,7 +215,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     var silent: Set<String> = []
     func shown(_ f: AlertFiring, _ prefix: String) {
         silent.insert(prefix + f.id)
-        if sc.shows { record(prefix + "show " + f.headline) }
+        if sc.shows { record(prefix + "show " + label(f)) }
     }
     func cleared(_ f: AlertFiring, _ prefix: String) {
         if sc.shows || !silent.contains(prefix + f.id) { record(prefix + "clear \(f.kind.rawValue)") }
@@ -214,7 +223,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     func wearerEffects(_ effects: [AlertEffect]) {
         for e in effects {
             switch e {
-            case .fire(let f): record(f.headline)
+            case .fire(let f): record(label(f))
             case .show(let f): shown(f, "")
             case .clear(let f): cleared(f, "")
             case .back(let side): record("back \(side.rawValue)")
@@ -232,7 +241,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 published[f.id] = f
                 let escalated = esc != nil && s.escalation.follow
                 if follower.fire(f.kind, id: f.id, at: f.at, escalated: escalated) {
-                    record("follower \(f.headline)" + (escalated ? " · no response" : ""))
+                    record("follower \(label(f))" + (escalated ? " · no response" : ""))
                 }
             case .show(let f):
                 published[f.id] = f
@@ -273,7 +282,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         guard sc.mirror else { return }
         for side in follower.reading(r, s, at: real) { record("follower back \(side.rawValue)") }
     }
-    func followerShow(_ id: String?) { if let id, let f = published[id] { record("follower \(f.headline)") } }
+    func followerShow(_ id: String?) { if let id, let f = published[id] { record("follower \(label(f))") } }
     /// The follower's Mute all ran out (its timer, or the input that came first).
     func followerExpire() {
         guard sc.mirror else { return }

@@ -54,28 +54,28 @@ class MuteStripTextTest {
 
     @Test fun lowQuietAfterCarbs() {
         showStrip(side(AlertQuietReason.AfterCarbs, 12))
-        compose.onNodeWithText("Low alerts muted after carbs · 12 min left").assertExists()
+        compose.onNodeWithText("Lows muted after carbs · 12 min left").assertExists()
     }
 
     @Test fun lowMutedWithoutAnEnd() {
         showStrip(side(AlertQuietReason.Muted, null))
-        compose.onNodeWithText("Low alerts muted").assertExists()
+        compose.onNodeWithText("Lows muted").assertExists()
     }
 
     @Test fun anEndedMuteShowsNothing() {
         showStrip(side(AlertQuietReason.AfterCarbs, 0))
-        compose.onNodeWithText("Low alerts muted after carbs", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("Lows muted after carbs", substring = true).assertDoesNotExist()
     }
 
     @Test fun remindLess() {
         showStrip(side(null, null))
-        compose.onNodeWithText("Low reminders every 30 min").assertExists()
+        compose.onNodeWithText("Lows: remind every 30 min").assertExists()
     }
 
     @Test
     @Config(qualifiers = "es")
     fun spanish() {
         showStrip(side(AlertQuietReason.Muted, 1))
-        compose.onNodeWithText("Alertas de glucosa baja silenciadas · queda 1 min").assertExists()
+        compose.onNodeWithText("Bajas silenciadas · queda 1 min").assertExists()
     }
 }

@@ -14,20 +14,20 @@
     <string name="alert_kind_rising_fast">Subida rápida</string>
     <string name="alert_kind_no_data">Sin datos</string>
 
-    <string name="alert_headline_very_low">Glucosa muy baja</string>
-    <string name="alert_headline_low">Glucosa baja</string>
-    <string name="alert_headline_high">Glucosa alta</string>
-    <string name="alert_headline_very_high">Glucosa muy alta</string>
-    <string name="alert_headline_extremely_high">Glucosa extremadamente alta</string>
+    <string name="alert_headline_very_low">Muy baja</string>
+    <string name="alert_headline_low">Baja</string>
+    <string name="alert_headline_high">Alta</string>
+    <string name="alert_headline_very_high">Muy alta</string>
+    <string name="alert_headline_extremely_high">Extremadamente alta</string>
     <string name="alert_headline_falling_fast">Bajada rápida</string>
     <string name="alert_headline_rising_fast">Subida rápida</string>
-    <string name="alert_headline_no_data">Sin datos de glucosa</string>
+    <string name="alert_headline_no_data">Sin datos</string>
     <string name="alert_headline_with_context">%1$s · %2$s</string>
     <string name="alert_context_eat_more">come más</string>
     <string name="alert_context_no_response">sin respuesta</string>
     <string name="alert_context_eat_more_again">vuelve a comer</string>
-    <string name="alert_context_after_insulin">sigue alta tras la insulina</string>
-    <string name="alert_context_after_more_insulin">sigue alta tras más insulina</string>
+    <string name="alert_context_after_insulin">sigue tras la insulina</string>
+    <string name="alert_context_after_more_insulin">sigue tras más insulina</string>
     <string name="alert_text_value">%1$s %2$s</string>
     <string name="alert_text_value_at">%1$s · %2$s</string>
     <string name="alert_text_glucose">%1$s %2$s</string>
@@ -43,7 +43,7 @@
     <string name="alert_action_treatment">Tratamiento</string>
     <string name="alert_action_mute">Silenciar</string>
     <string name="alert_action_mute_for_label">Silenciar durante (p. ej. 45 min, 1 h 30)</string>
-    <string name="alert_mute_choice_a11y">Alertas %1$s: silenciar durante %2$s</string>
+    <string name="alert_mute_choice_a11y">%1$s: silenciar durante %2$s</string>
     <string name="alert_action_remind_less">Avisar menos</string>
     <string name="alert_action_remind_usual">Avisar como siempre</string>
     <string name="alert_action_unmute">Reactivar</string>
@@ -134,7 +134,7 @@
     <!-- before the first unlock after a restart (lockedboot): on the lock screen, no health data -->
     <string name="monitor_locked_boot_title">Desbloquea para reanudar la monitorización</string>
     <string name="monitor_locked_boot_text">El teléfono se ha reiniciado. Sukrara no puede leer el sensor ni avisarte hasta que lo desbloquees.</string>
-    <string name="monitor_locked_boot_alarm_title">Sin datos de glucosa · desbloquea el teléfono</string>
+    <string name="monitor_locked_boot_alarm_title">Sin datos · desbloquea el teléfono</string>
     <string name="monitor_locked_boot_alarm_text">Sin lecturas desde %1$s. Sukrara no puede leer el sensor ni avisarte hasta que desbloquees el teléfono.</string>
     <string name="monitor_locked_boot_monitoring_title">Monitorizando antes de desbloquear</string>
     <string name="monitor_locked_boot_monitoring_text">El teléfono se ha reiniciado. Sukrara lee el sensor y te avisa como siempre. Los seguidores, las subidas y la app esperan a que lo desbloquees.</string>

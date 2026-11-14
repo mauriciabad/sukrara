@@ -25,7 +25,7 @@ import org.robolectric.annotation.Config
 
 /**
  * The alert's *Mute* chips (#103): shortest first, in the card's compact words ("15m", "1h"; the owner, 2026-11-14),
- * and each one says to TalkBack what it does in full words (a TtsSpan: "Low alerts: mute for 30 min"), since a bare
+ * and each one says to TalkBack what it does in full words (a TtsSpan: "Lows: mute for 30 min"), since a bare
  * "30m" has no action in it. The chip's text is what comes back as the reply, so the receiver parses "30m".
  */
 @RunWith(RobolectricTestRunner::class)
@@ -71,7 +71,7 @@ class AlertMuteChoicesTest {
             },
         )
         assertEquals(
-            listOf("Low alerts: mute for 15 min", "Low alerts: mute for 30 min", "Low alerts: mute for 1 h", "Low alerts: mute for 2 h"),
+            listOf("Lows: mute for 15 min", "Lows: mute for 30 min", "Lows: mute for 1 h", "Lows: mute for 2 h"),
             chips.map(::spoken),
         )
     }
@@ -79,7 +79,7 @@ class AlertMuteChoicesTest {
     @Test fun `a first length of the person's own sits in order, once`() {
         val chips = AlertNotifier(ctx).muteChoices(AlertKind.HIGH, listOf(45, 15, 30, 60, 120, 45))
         assertEquals(listOf("15m", "30m", "45m", "1h", "2h"), chips.map { it.toString() })
-        assertEquals("High alerts: mute for 45 min", spoken(chips[2]))
+        assertEquals("Highs: mute for 45 min", spoken(chips[2]))
     }
 
     @Test fun `the muted notification has no chips, the person unmutes and mutes again`() {
@@ -92,6 +92,6 @@ class AlertMuteChoicesTest {
     @Test
     fun `in Spanish the side reads as glucosa baja`() {
         val chips = AlertNotifier(ctx).muteChoices(AlertKind.VERY_LOW, listOf(30, 15))
-        assertEquals("Alertas de glucosa baja: silenciar durante 15 min", spoken(chips[0]))
+        assertEquals("Bajas: silenciar durante 15 min", spoken(chips[0]))
     }
 }

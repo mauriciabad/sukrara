@@ -9,20 +9,21 @@ import SukraraCore
 /// Lines are sentence case; Mac menu items are title-style. The card's pill ("Muted · 1h 12m") is the renderer's
 /// (`CardWords`).
 public enum MuteCopy {
-    /// The side's name ("low" covers very low, "high" very high and extremely high): "Low" / "de glucosa baja", as it
-    /// goes before "alerts" ("Low alerts", "Alertas de glucosa baja").
+    /// The side's name ("low" covers very low, "high" very high and extremely high), short and plural (the owner,
+    /// 2026-11-14: "'Low alerts muted' can simply be 'Lows muted'"): "Lows" / "Bajas"; Spanish plural nouns, so
+    /// "silenciadas" agrees ("Alertas sin datos").
     public static func sideName(_ side: AlertSide, _ l: AppLanguage = .current) -> String {
         switch (side, l) {
-        case (.low, .en): "Low"
-        case (.high, .en): "High"
+        case (.low, .en): "Lows"
+        case (.high, .en): "Highs"
         case (.fallingFast, .en): "Falling fast"
         case (.risingFast, .en): "Rising fast"
         case (.noData, .en): "No data"
-        case (.low, .es): "de glucosa baja"
-        case (.high, .es): "de glucosa alta"
-        case (.fallingFast, .es): "de bajada rápida"
-        case (.risingFast, .es): "de subida rápida"
-        case (.noData, .es): "sin datos"
+        case (.low, .es): "Bajas"
+        case (.high, .es): "Altas"
+        case (.fallingFast, .es): "Bajadas rápidas"
+        case (.risingFast, .es): "Subidas rápidas"
+        case (.noData, .es): "Alertas sin datos"
         }
     }
 
@@ -34,17 +35,17 @@ public enum MuteCopy {
         return ((m >= 60 && m % 60 == 0 ? m / 60 : m) == 1 ? "queda " : "quedan ") + d
     }
 
-    /// "Low alerts muted" / "Alertas de glucosa baja silenciadas".
+    /// "Lows muted" / "Bajas silenciadas".
     private static func sideAlertsMuted(_ side: AlertSide, _ l: AppLanguage) -> String {
-        l == .en ? "\(sideName(side, l)) alerts muted" : "Alertas \(sideName(side, l)) silenciadas"
+        l == .en ? "\(sideName(side, l)) muted" : "\(sideName(side, l)) silenciadas"
     }
 
-    /// "Low alerts muted · 12 min left".
+    /// "Lows muted · 12 min left".
     public static func sideMuted(_ side: AlertSide, leftMin: Int, _ l: AppLanguage = .current) -> String {
         "\(sideAlertsMuted(side, l)) · \(left(leftMin, l))"
     }
 
-    /// "Low alerts muted after carbs · 12 min left", "High alerts muted after insulin · 1 h left".
+    /// "Lows muted after carbs · 12 min left", "Highs muted after insulin · 1 h left".
     public static func sideAfter(
         _ side: AlertSide, treatment: TreatmentKind, leftMin: Int, _ l: AppLanguage = .current
     ) -> String {
@@ -56,21 +57,21 @@ public enum MuteCopy {
         return "\(sideAlertsMuted(side, l)) \(after) · \(left(leftMin, l))"
     }
 
-    /// "High alerts muted while falling back into range" (no end of its own).
+    /// "Highs muted while falling back into range" (no end of its own).
     public static func sideFalling(_ side: AlertSide, _ l: AppLanguage = .current) -> String {
         "\(sideAlertsMuted(side, l)) " + (l == .en ? "while falling back into range" : "mientras baja hacia el rango")
     }
 
-    /// "Low alerts muted while rising back into range" (#193; no end of its own).
+    /// "Lows muted while rising back into range" (#193; no end of its own).
     public static func sideRising(_ side: AlertSide, _ l: AppLanguage = .current) -> String {
         "\(sideAlertsMuted(side, l)) " + (l == .en ? "while rising back into range" : "mientras sube hacia el rango")
     }
 
-    /// "Low reminders every 30 min".
+    /// "Lows: remind every 30 min".
     public static func sideLess(_ side: AlertSide, intervalMin: Int, _ l: AppLanguage = .current) -> String {
         l == .en
-            ? "\(sideName(side, l)) reminders every \(Durations.text(intervalMin))"
-            : "Avisos \(sideName(side, l)) cada \(Durations.text(intervalMin))"
+            ? "\(sideName(side, l)): remind every \(Durations.text(intervalMin))"
+            : "\(sideName(side, l)): avisar cada \(Durations.text(intervalMin))"
     }
 
     /// Mute all for a time: "Alerts muted · 1 h 12 min left".

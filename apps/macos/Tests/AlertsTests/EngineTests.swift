@@ -53,13 +53,13 @@ import Testing
 
     @Test func everyKindHasAHeadline() {
         let expected = [
-            "Very low glucose", "Low glucose", "High glucose", "Very high glucose", "Extremely high glucose",
+            "Very low", "Low", "High", "Very high", "Extremely high",
             "Falling fast",
-            "Rising fast", "No glucose data",
+            "Rising fast", "No data",
         ]
         #expect(AlertKind.allCases.map { $0.headline() } == expected)
-        #expect(AlertKind.high.headline(treated: 1) == "High glucose · still high after insulin")
-        #expect(AlertKind.low.headline(treated: 2) == "Low glucose · eat more again")
+        #expect(AlertKind.high.headline(treated: 1) == "High · still after insulin")
+        #expect(AlertKind.low.headline(treated: 2) == "Low · eat more again")
         #expect(AlertKind.risingFast.headline(treated: 2) == "Rising fast")
     }
 

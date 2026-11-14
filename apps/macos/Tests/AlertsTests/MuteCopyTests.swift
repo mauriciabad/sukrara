@@ -88,15 +88,15 @@ import Testing
         let in12 = now.addingTimeInterval(12 * 60)
         #expect(
             MuteCopy.line(.treatment(.carbs, at: now, until: in12), side: .low, now: now, .en)
-                == "Low alerts muted after carbs · 12 min left")
+                == "Lows muted after carbs · 12 min left")
         #expect(
             MuteCopy.line(.fallingBack(inMinutes: 8), side: .high, now: now, .en)
-                == "High alerts muted while falling back into range")
+                == "Highs muted while falling back into range")
         #expect(
             MuteCopy.line(.risingBack(inMinutes: 8), side: .low, now: now, .en)
-                == "Low alerts muted while rising back into range")
+                == "Lows muted while rising back into range")
         #expect(
-            MuteCopy.line(.sideMuted(until: in12), side: .noData, now: now, .en) == "No data alerts muted · 12 min left"
+            MuteCopy.line(.sideMuted(until: in12), side: .noData, now: now, .en) == "No data muted · 12 min left"
         )
         #expect(
             MuteCopy.line(.sideMuted(until: in12), side: .noData, now: now, .es)
