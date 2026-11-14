@@ -53,6 +53,8 @@ import app.mauri.sukrara.feature.home.TreatmentHistoryScreen
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInRoute
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorRoute
 import app.mauri.sukrara.feature.settings.AlertThresholdRows
+import app.mauri.sukrara.feature.settings.DataLinks
+import app.mauri.sukrara.feature.settings.DataPage
 import app.mauri.sukrara.feature.settings.SettingsDeps
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.SettingsRoute
@@ -77,6 +79,7 @@ import app.mauri.sukrara.feature.sharing.share.ShareScreen
 import app.mauri.sukrara.feature.sharing.share.SharingScreen
 import app.mauri.sukrara.feature.sharing.share.SharingViewModel
 import app.mauri.sukrara.integrations.AppsPage
+import app.mauri.sukrara.integrations.DataFileRows
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsPage
 import app.mauri.sukrara.integrations.export.ExportPage
 import app.mauri.sukrara.integrations.export.ExportPeriod
@@ -141,7 +144,7 @@ data class SetupStepRoute(
 @Serializable
 data object DataProblemsRoute : NavKey
 
-/** Settings › Share with apps (LibreView, Nightscout upload, the xDrip+ server, Export data). */
+/** Settings › Share with apps (LibreView, Tidepool, Nightscout upload, the xDrip+ server, apps on this phone). */
 @Serializable
 data object AppsRoute : NavKey
 
@@ -149,11 +152,11 @@ data object AppsRoute : NavKey
 @Serializable
 data object NightscoutUploadRoute : NavKey
 
-/** Settings › Share with apps › Export data. */
+/** Settings › Import and export › Export data. */
 @Serializable
 data object ExportRoute : NavKey
 
-/** Settings › Share with apps › Import history (also setup's *Bring your history back*). */
+/** Settings › Import and export › Import history (also setup's *Bring your history back*). */
 @Serializable
 data object ImportRoute : NavKey
 
@@ -201,9 +204,12 @@ data class SettingsKey(
             "kind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::AlertKindPage) ?: SettingsRoute.Alerts
             "night" -> SettingsRoute.NightAlerts
             "nightkind" -> kind?.let(AlertKind::fromWire)?.let(SettingsRoute::NightKindPage) ?: SettingsRoute.NightAlerts
-            "ranges" -> SettingsRoute.Ranges
+            "finetuning" -> SettingsRoute.AlertsFineTuning
+            "readings" -> SettingsRoute.Readings
             "trend" -> SettingsRoute.TrendArrow
             "graph" -> SettingsRoute.Graph
+            "rings" -> SettingsRoute.Rings
+            "files" -> SettingsRoute.ImportExport
             "marks" -> SettingsRoute.GraphMarks
             "lock" -> SettingsRoute.LockScreen
             "pens" -> SettingsRoute.Pens
@@ -226,9 +232,12 @@ data class SettingsKey(
                 is SettingsRoute.AlertKindPage -> SettingsKey("kind", route.kind.wire)
                 SettingsRoute.NightAlerts -> SettingsKey("night")
                 is SettingsRoute.NightKindPage -> SettingsKey("nightkind", route.kind.wire)
-                SettingsRoute.Ranges -> SettingsKey("ranges")
+                SettingsRoute.AlertsFineTuning -> SettingsKey("finetuning")
+                SettingsRoute.Readings -> SettingsKey("readings")
                 SettingsRoute.TrendArrow -> SettingsKey("trend")
                 SettingsRoute.Graph -> SettingsKey("graph")
+                SettingsRoute.Rings -> SettingsKey("rings")
+                SettingsRoute.ImportExport -> SettingsKey("files")
                 SettingsRoute.GraphMarks -> SettingsKey("marks")
                 SettingsRoute.LockScreen -> SettingsKey("lock")
                 SettingsRoute.Pens -> SettingsKey("pens")
@@ -402,6 +411,7 @@ fun SukraraNavigation(
                             SettingsPage(stringResource(SharingR.string.sh_following_title), close, scroll = false) {
                                 FollowingPage(
                                     viewModel = viewModel(factory = FollowingViewModel.factory(graph.setup.follower)),
+                                    links = { DataLinks(DataPage.Sharing, wearer = false) { openData(it, backStack) } },
                                     onJoinAgain = { backStack.push(SetupStepRoute(SetupStep.Join)) },
                                     // the role is cleared: setup again, on top of home
                                     onLeft = {
@@ -422,6 +432,7 @@ fun SukraraNavigation(
                                 onProfile = { backStack.push(ProfileRoute) },
                                 onBackup = { backStack.push(BackupRoute) },
                                 onClose = close,
+                                links = { DataLinks(DataPage.Sharing, wearer = true) { openData(it, backStack) } },
                             )
                         }
                     }
@@ -447,6 +458,8 @@ fun SukraraNavigation(
                                 onSetUpSharing = { backStack.push(SetupStepRoute(SetupStep.Identity)) },
                                 onReplace = { backStack.push(ReplaceIdentityRoute) },
                             )
+                            // Backup is the wearer's page only
+                            DataLinks(DataPage.Backup, wearer = true) { openData(it, backStack) }
                         }
                     }
                     entry<ReplaceIdentityRoute> {
@@ -543,24 +556,33 @@ fun SukraraNavigation(
                             openProfile = { backStack.push(ProfileRoute) },
                             openBackup = { backStack.push(BackupRoute) },
                             openExport = { backStack.push(ExportRoute) },
-                            // the Ranges and Graph pages show home's own panel, redrawn as each setting changes
+                            openImport = { backStack.push(ImportRoute) },
+                            // the Readings, Graph and Rings pages show home's own panel, redrawn as each setting changes
                             preview = { PanelPreview(viewModel(factory = HomeViewModel.factory(graph.home))) },
+                            // Import and export's Import history and Export data (`:integrations`' rows and state)
+                            dataRows = {
+                                DataFileRows(
+                                    viewModel(factory = graph.integrations.appsViewModels),
+                                    openImport = { backStack.push(ImportRoute) },
+                                    openExport = { backStack.push(ExportRoute) },
+                                )
+                            },
                         )
                     }
                     entry<AppsRoute> {
+                        val role by graph.role.data.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_apps_title), { backStack.pop(AppsRoute) }) {
                             AppsPage(
                                 viewModel = viewModel(factory = graph.integrations.appsViewModels),
                                 now = graph.clock::now,
                                 openNightscout = { backStack.push(NightscoutUploadRoute) },
-                                openExport = { backStack.push(ExportRoute) },
                                 openLibreView = { backStack.push(LibreViewRoute) },
                                 openNightscoutApi = { backStack.push(NightscoutApiRoute) },
                                 openTidepool = { backStack.push(TidepoolRoute) },
                                 openBroadcasts = { backStack.push(BroadcastsRoute) },
                                 openHealthConnect = { backStack.push(HealthConnectRoute) },
-                                openImport = { backStack.push(ImportRoute) },
                             )
+                            role?.let { r -> DataLinks(DataPage.Apps, r.role == Role.Wearer) { openData(it, backStack) } }
                         }
                     }
                     entry<ImportRoute> {
@@ -633,6 +655,7 @@ fun SukraraNavigation(
                             onPairNewSensor = { backStack.add(NewSensorKey) },
                             onSignIn = { backStack.add(LibreViewSignInKey) },
                             onBack = { backStack.remove(SensorSettingsKey) },
+                            onSensorEnd = { backStack.push(SettingsKey.of(SettingsRoute.SensorEnd)) },
                         )
                     }
                     entry<DataProblemsRoute> {
@@ -687,6 +710,21 @@ fun screenMotion(route: NavKey): ScreenMotion =
         SetupRoute, is SetupStepRoute -> ScreenMotion.FadeThrough
         else -> ScreenMotion.Page
     }
+
+/** A data page's *See also* link (docs/35 §7): Sharing, Share with apps, Backup, Import and export. */
+private fun openData(
+    page: DataPage,
+    backStack: NavBackStack<NavKey>,
+) {
+    backStack.push(
+        when (page) {
+            DataPage.Sharing -> SharingRoute
+            DataPage.Apps -> AppsRoute
+            DataPage.Backup -> BackupRoute
+            DataPage.Files -> SettingsKey.of(SettingsRoute.ImportExport)
+        },
+    )
+}
 
 /** Adds [key] on top unless it's already there (a double tap opens one page, not two). */
 private fun NavBackStack<NavKey>.push(key: NavKey) {

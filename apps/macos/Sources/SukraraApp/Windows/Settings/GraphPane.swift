@@ -5,9 +5,10 @@ import SukraraCore
 import SukraraGraph
 import SwiftUI
 
-/// Graph: the time shown (default + each place's own), the distribution and crown beside the chart, the vertical
-/// lines, treatments on the graph, lines across it, the ranges, the sensor countdown and time left per place. Outside
-/// Custom the mirrored ones show as a read-only summary with the way to change them.
+/// Graph: the chart only. Atop, the target range in use with the way to Readings (where the ranges are); the time shown
+/// (default + each place's own), the distribution and crown beside the chart, the vertical lines, treatments on the
+/// graph, lines across it, the sensor countdown and time left per place (the Mac has no sensor page). Outside Custom
+/// the mirrored ones show as a read-only summary with the way to change them.
 struct GraphPane: View {
     @Bindable var model: SettingsModel
 
@@ -16,6 +17,16 @@ struct GraphPane: View {
     var body: some View {
         Form {
             SettingsFromSection(model: model, rows: summary)
+            Section {
+                // the ranges live in Readings (they colour more than the graph); here, the one in use and the way there
+                LabeledContent(L10n.t("Ranges")) {
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(ReadingsPane.targetText(g.bands, unit: model.unit)).foregroundStyle(.secondary)
+                        Button(L10n.t("Edit in Readings…")) { model.pane = .readings }
+                            .help(L10n.t("The six ranges are in the Readings pane"))
+                    }
+                }
+            }
             Section {
                 if model.editable {
                     NumberSettingRow(
@@ -43,25 +54,6 @@ struct GraphPane: View {
                 }
                 marksSection
                 linesSection
-                Section {
-                    ForEach(Array(MacSettings.bands.enumerated()), id: \.element.id) { i, band in
-                        // the number, then exactly which values it makes count ("Low: 56–69 mg/dL")
-                        NumberSettingRow(
-                            label: Self.bandName(band.id), format: band.format, value: number(band),
-                            span: { v in
-                                RangeSpans.text(
-                                    RangeSpans.ofBand(RangeSpans.replacing(g.bands, i, v), i), unit: model.unit)
-                            })
-                    }
-                    HStack {
-                        Spacer()
-                        Button(L10n.t("Reset Ranges")) { model.resetRanges() }.disabled(!model.rangesChanged)
-                    }
-                } header: {
-                    Text(L10n.t("Ranges (\(model.unit.symbol))"))
-                } footer: {
-                    note(L10n.t("Used by the graph, the rings, the report and the menu bar colour, and kept in order."))
-                }
             }
             Section {
                 if model.editable {
@@ -178,18 +170,12 @@ struct GraphPane: View {
     }
 
     private var summary: [(String, String)] {
-        let b = g.bands
         let beside = [
             g.side ? L10n.t("time in range distribution") : nil,
             g.columnCrown ? L10n.t("crown when all in range") : nil,
         ].compactMap { $0 }
         return [
             (L10n.t("Time shown"), NumberSettingRow.word(SettingsSpec.graphHours, Double(g.hours))),
-            (
-                L10n.t("Ranges"),
-                [b.veryLow, b.low, b.tight, b.high, b.veryHigh, b.extremelyHigh].map { model.unit.format($0) }
-                    .joined(separator: " · ") + " " + model.unit.symbol
-            ),
             (
                 L10n.t("Lines across the graph"),
                 g.lines.isEmpty
@@ -244,17 +230,6 @@ struct GraphPane: View {
         case "line": L10n.t("Mute line")
         case "amount": L10n.t("Amount")
         default: L10n.t("Time")
-        }
-    }
-
-    static func bandName(_ id: String) -> String {
-        switch id {
-        case "graph.band.veryLow": L10n.t("Very low up to")
-        case "graph.band.low": L10n.t("Low below")
-        case "graph.band.tight": L10n.t("Very good up to")
-        case "graph.band.high": L10n.t("High from")
-        case "graph.band.veryHigh": L10n.t("Very high from")
-        default: L10n.t("Extremely high from")
         }
     }
 }

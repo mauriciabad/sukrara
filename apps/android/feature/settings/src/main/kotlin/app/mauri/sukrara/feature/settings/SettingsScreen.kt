@@ -21,11 +21,13 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
+import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.data.settings.UpdateSettings
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.designsystem.rows.SettingsChrome
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.advanced.AdvancedScreen
+import app.mauri.sukrara.feature.settings.advanced.ImportExportScreen
 import app.mauri.sukrara.feature.settings.advanced.LogScreen
 import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromContent
@@ -36,6 +38,7 @@ import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
 import app.mauri.sukrara.feature.settings.graph.GraphViewModel
+import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenViewModel
 import app.mauri.sukrara.feature.settings.pens.DosesReadPage
@@ -77,12 +80,23 @@ sealed interface SettingsRoute {
     /** Settings › Alerts › Night alerts › one alert's night rule. */
     data class NightKindPage(val kind: AlertKind) : SettingsRoute
 
-    data object Ranges : SettingsRoute
+    /** Settings › Alerts › Fine-tuning: the rarely touched rows (docs/35: no global advanced mode). */
+    data object AlertsFineTuning : SettingsRoute
 
-    /** Settings › Ranges › Trend arrow (#204; docs/35 moves it under Glucose). */
+    /** Settings › Readings: the unit, the ranges, the trend arrow (docs/35; once "Ranges"). */
+    data object Readings : SettingsRoute
+
+    /** Settings › Readings › Trend arrow (#204). */
     data object TrendArrow : SettingsRoute
 
+    /** Settings › Graph: the chart only. */
     data object Graph : SettingsRoute
+
+    /** Settings › Rings: rings and numbers beside the value, the last treatment, the ring order (docs/35). */
+    data object Rings : SettingsRoute
+
+    /** Settings › Import and export: Export data, Import history, the settings file (docs/35 §7). */
+    data object ImportExport : SettingsRoute
 
     /** Settings › Graph › Treatments on the graph. */
     data object GraphMarks : SettingsRoute
@@ -138,9 +152,12 @@ fun SettingsScreen(
     openProfile: () -> Unit = {},
     openBackup: () -> Unit = {},
     openExport: () -> Unit = {},
+    openImport: () -> Unit = {},
     onReviewFinish: (ThresholdReviewResult) -> Unit = { onBack() },
-    /** The live card the Ranges and Graph pages show on top (the app's own panel; nothing in tests). */
+    /** The live card the Readings, Graph and Rings pages show on top (the app's own panel; nothing in tests). */
     preview: @Composable () -> Unit = {},
+    /** Import and export's data rows (Import history, Export data: `:integrations`' rows, drawn by the app). */
+    dataRows: @Composable () -> Unit = {},
 ) {
     // the pages are drawn in SPA's SettingsTheme; the glucose card keeps the app's theme (the one renderer, its colours)
     val cardPreview: @Composable () -> Unit = { SukraraTheme { preview() } }
@@ -159,8 +176,10 @@ fun SettingsScreen(
             openProfile,
             openBackup,
             openExport,
+            openImport,
             onReviewFinish,
             cardPreview,
+            dataRows,
         )
     }
 }
@@ -179,8 +198,10 @@ private fun SettingsPages(
     openProfile: () -> Unit,
     openBackup: () -> Unit,
     openExport: () -> Unit,
+    openImport: () -> Unit,
     onReviewFinish: (ThresholdReviewResult) -> Unit,
     cardPreview: @Composable () -> Unit,
+    dataRows: @Composable () -> Unit,
 ) {
     val clock = deps.clock
     when (route) {
@@ -224,6 +245,7 @@ private fun SettingsPages(
                     openProfile = openProfile,
                     openBackup = openBackup,
                     openExport = openExport,
+                    openImport = openImport,
                 ),
                 apps,
                 clinic,
@@ -249,9 +271,20 @@ private fun SettingsPages(
                     it,
                     confirmedAt,
                     clock,
-                    AlertsActions(vm::edit, vm::muteAll, vm::unmuteAll, { k -> navigate(SettingsRoute.AlertKindPage(k)) }, {
-                        navigate(SettingsRoute.ThresholdReview)
-                    }, deps.alertPlayback, vm::quietExit, vm::muteSide, { navigate(SettingsRoute.NightAlerts) }),
+                    AlertsActions(
+                        vm::edit,
+                        vm::muteAll,
+                        vm::unmuteAll,
+                        { k -> navigate(SettingsRoute.AlertKindPage(k)) },
+                        { navigate(SettingsRoute.ThresholdReview) },
+                        deps.alertPlayback,
+                        vm::quietExit,
+                        vm::muteSide,
+                        { navigate(SettingsRoute.NightAlerts) },
+                        openFineTuning = { navigate(SettingsRoute.AlertsFineTuning) },
+                        openReliability = { navigate(SettingsRoute.Reliability) },
+                        openReadings = { navigate(SettingsRoute.Readings) },
+                    ),
                     header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     onBack = onBack,
                 )
@@ -269,6 +302,21 @@ private fun SettingsPages(
                     clock,
                     AlertKindActions(vm::edit, vm::unmute, vm::remindAsUsual, deps.alertPlayback),
                     header = { if (it.mirrors(route.kind)) SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
+                    trend = { if (route.kind in RateKinds) RateTrendRow(deps, from.readOnly) },
+                    onBack = onBack,
+                )
+            }
+        }
+
+        SettingsRoute.AlertsFineTuning -> {
+            val vm = alertsViewModel(deps)
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            ui?.let {
+                FineTuningContent(
+                    it,
+                    vm::edit,
+                    header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
                     onBack = onBack,
                 )
             }
@@ -284,6 +332,8 @@ private fun SettingsPages(
                     vm::edit,
                     { k -> navigate(SettingsRoute.NightKindPage(k)) },
                     header = { SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
+                    // THE night keeps the wearer's sensor reminders quiet too (Sensor end edits the same hours)
+                    openSensorEnd = if (it.follower) null else ({ navigate(SettingsRoute.SensorEnd) }),
                     onBack = onBack,
                 )
             }
@@ -295,12 +345,12 @@ private fun SettingsPages(
             ui?.let { NightKindContent(route.kind, it, vm::edit, onBack) }
         }
 
-        SettingsRoute.Ranges -> {
+        SettingsRoute.Readings -> {
             val vm = viewModel { GraphPrefsViewModel(deps.settings) }
             val prefs by vm.prefs.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             prefs?.let {
-                RangesContent(
+                ReadingsContent(
                     it,
                     vm::set,
                     onBack,
@@ -308,6 +358,7 @@ private fun SettingsPages(
                     readOnly = from.readOnly,
                     onUnit = vm::setUnit,
                     onTrend = { navigate(SettingsRoute.TrendArrow) },
+                    onAlerts = { navigate(SettingsRoute.Alerts) },
                 ) {
                     SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }, preview = cardPreview)
                 }
@@ -325,7 +376,7 @@ private fun SettingsPages(
             }
         }
 
-        SettingsRoute.Graph, SettingsRoute.GraphMarks -> {
+        SettingsRoute.Graph, SettingsRoute.GraphMarks, SettingsRoute.Rings -> {
             val vm = viewModel { GraphViewModel(deps.settings) }
             val config by vm.config.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
@@ -347,12 +398,13 @@ private fun SettingsPages(
                     sensorTime = vm::sensorTime,
                     reset = vm::reset,
                     openMarks = { navigate(SettingsRoute.GraphMarks) },
+                    openReadings = { navigate(SettingsRoute.Readings) },
                 )
             config?.let {
-                if (route == SettingsRoute.Graph) {
-                    GraphContent(it, actions, onBack, from.readOnly, withNote)
-                } else {
-                    GraphMarksContent(it, actions, onBack, from.readOnly, withNote)
+                when (route) {
+                    SettingsRoute.Graph -> GraphContent(it, actions, onBack, from.readOnly, withNote)
+                    SettingsRoute.Rings -> RingsContent(it, actions, onBack, from.readOnly, withNote)
+                    else -> GraphMarksContent(it, actions, onBack, from.readOnly, withNote)
                 }
             }
         }
@@ -413,6 +465,7 @@ private fun SettingsPages(
                 deps.readiness::letThroughDnd,
                 alerts = alerts,
                 playback = deps.alertPlayback,
+                openAlerts = { navigate(SettingsRoute.Alerts) },
                 onBack = onBack,
             )
         }
@@ -440,7 +493,7 @@ private fun SettingsPages(
         }
 
         SettingsRoute.SensorEnd -> {
-            val vm = viewModel { SensorEndViewModel(deps.settings, deps.sensor) }
+            val vm = viewModel { SensorEndViewModel(deps.settings, deps.sensor, deps.alertSettings) }
             val prefs by vm.prefs.collectAsStateWithLifecycle()
             val calendar by deps.sensorCalendar.state.collectAsStateWithLifecycle(null)
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
@@ -448,7 +501,14 @@ private fun SettingsPages(
                 SensorEndContent(
                     it,
                     clock.now(),
-                    SensorEndActions(vm::change, vm::setCountdownHours),
+                    SensorEndActions(
+                        vm::change,
+                        vm::setCountdownHours,
+                        vm::setNight,
+                        vm::setSensorTime,
+                        openSensor = openSensor,
+                        openNight = { navigate(SettingsRoute.NightAlerts) },
+                    ),
                     onBack,
                     calendar = calendar?.let { c -> c to deps.sensorCalendar },
                     countdownReadOnly = from.readOnly,
@@ -493,13 +553,27 @@ private fun SettingsPages(
         }
 
         SettingsRoute.Advanced -> {
-            AdvancedScreen(
+            AdvancedScreen(deps.advanced, { navigate(SettingsRoute.Log) }, onBack)
+        }
+
+        SettingsRoute.ImportExport -> {
+            val sharing by deps.overviewSharing.collectAsStateWithLifecycle(OverviewSharing())
+            ImportExportScreen(
                 deps.advanced,
                 { LocalDate.now(clock.zone) },
-                { navigate(SettingsRoute.Log) },
                 { navigate(SettingsRoute.ThresholdReview) },
                 onBack,
-            )
+                dataRows,
+            ) {
+                DataLinks(DataPage.Files, sharing.wearer) { page ->
+                    when (page) {
+                        DataPage.Sharing -> openSharing()
+                        DataPage.Apps -> openApps()
+                        DataPage.Backup -> openBackup()
+                        DataPage.Files -> Unit
+                    }
+                }
+            }
         }
 
         SettingsRoute.Log -> {
@@ -523,6 +597,23 @@ private fun SettingsPages(
             }
         }
     }
+}
+
+/** The alerts that use the trend arrow (falling fast, rising fast). */
+private val RateKinds = setOf(AlertKind.FALLING_FAST, AlertKind.RISING_FAST)
+
+/**
+ * The fast alerts' *Trend arrow* row (docs/35 §7): the same setting as Readings › Trend arrow (`glucose.trend`, one
+ * store), read-only while a follower mirrors the wearer's.
+ */
+@Composable
+private fun RateTrendRow(
+    deps: SettingsDeps,
+    readOnly: Boolean,
+) {
+    val scope = rememberCoroutineScope()
+    val choice by remember(deps.settings) { TrendReadings.setting(deps.settings) }.collectAsStateWithLifecycle(null)
+    choice?.let { c -> TrendChoiceRow(c, { s -> scope.launch { deps.settings.set(TrendReadings.TrendArrow, s.id) } }, readOnly) }
 }
 
 /**

@@ -254,9 +254,10 @@
                 m.juggluco.available = { true }
                 m.juggluco.state = { state }
                 m.juggluco.pausedFor = { paused }
+                m.pane = .following
                 out.append(
                     (
-                        "settings-general-juggluco-\(name)",
+                        "settings-following-juggluco-\(name)",
                         AnyView(
                             SettingsView(
                                 model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
@@ -308,7 +309,7 @@
                     AnyView(
                         SettingsView(
                             model: alerts, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(alerts, width: 560, height: 900))
+                        ).settingsWindow(alerts, width: 560, height: 2300))
                 ))
             let mirrored = SettingsModel(
                 store: store, follow: following,
@@ -342,8 +343,10 @@
                 json: #"{"graph":{"tight":130,"defaultHours":6,"lines":"","lastPlace":"END"}}"#, wearer: "Marta")
             let fromWearer = SettingsModel(store: scratch(), follow: following, wearer: marta, version: "0.12.0")
             for (name, pane, model, height) in [
-                ("settings-graph", SettingsModel.Pane.graph, own, 1500.0),
-                ("settings-graph-wearer", .graph, fromWearer, 900),
+                ("settings-readings", SettingsModel.Pane.readings, own, 1060.0),
+                ("settings-readings-wearer", .readings, fromWearer, 1000),
+                ("settings-graph", .graph, own, 1260),
+                ("settings-graph-wearer", .graph, fromWearer, 760),
                 ("settings-rings", .rings, own, 1300),
                 ("settings-rings-wearer", .rings, fromWearer, 700),
                 ("settings-following", .following, own, 560),
@@ -351,6 +354,7 @@
                 model.pane = pane
                 let m = SettingsModel(store: model.store, follow: model.follow, wearer: model.wearer, version: "0.12.0")
                 m.pane = pane
+                m.newestReading = { trendApp.newestReading }
                 out.append(
                     (
                         name,
@@ -369,7 +373,14 @@
                     AnyView(
                         SettingsView(
                             model: nobody, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(nobody, width: 600, height: 560))
+                        ).settingsWindow(nobody, width: 600, height: 800))
+                ))
+            // Alerts › Fine-tuning… and Falling fast's Details… (its trend arrow is Readings' setting)
+            out.append(("alerts-fine-tuning", AnyView(FineTuning(model: own) {})))
+            out.append(
+                (
+                    "alerts-details-falling-fast",
+                    AnyView(AlertDetails(model: own, kind: .fallingFast, controller: nil, readOnly: false) {})
                 ))
             let general = SettingsModel(store: ownStore, follow: following, wearer: marta, version: "0.12.0")
             general.pane = .general
@@ -380,7 +391,7 @@
                     AnyView(
                         SettingsView(
                             model: general, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                        ).settingsWindow(general, width: 600, height: 1560))
+                        ).settingsWindow(general, width: 600, height: 880))
                 ))
             out.append(
                 (

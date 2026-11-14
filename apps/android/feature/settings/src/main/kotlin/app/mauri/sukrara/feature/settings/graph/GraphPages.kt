@@ -48,9 +48,12 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
+import app.mauri.sukrara.feature.settings.SeeAlso
+import app.mauri.sukrara.feature.settings.SeeAlsoLink
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.glucoseLabeler
 import app.mauri.sukrara.feature.settings.numberLabeler
+import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPalette
 import app.mauri.sukrara.graph.GraphPlace
@@ -80,6 +83,8 @@ class GraphActions(
     val sensorTime: (GraphPlace, Boolean) -> Unit = { _, _ -> },
     val reset: (GraphSection) -> Unit = {},
     val openMarks: () -> Unit = {},
+    /** Settings › Readings (the ranges: Graph's *Ranges* row, Rings' *See also*). */
+    val openReadings: () -> Unit = {},
 )
 
 /** The page's open dialog (one at a time), saved across rotation. */
@@ -201,11 +206,12 @@ fun bandName(
 }
 
 /**
- * Settings › Graph: the live card on top, then lines across the graph, time shown (default and per place), what sits
- * beside the number (slots, last treatment, ring centre, rewards), the ring order, beside the graph, treatments on the
- * graph, the sensor's time per place and Reset all. Every section has its own Reset while it differs from the defaults.
- * [readOnly] = a follower not in Custom (*Settings from*): the mirrored sections show the values in use and can't be
- * changed (no Reset, no Reset all); the time and sensor time per place stay this phone's own and editable.
+ * Settings › Graph (the chart only, docs/35): the live card on top, a *Ranges* row that opens them in Readings (they
+ * colour the graph; docs/35 §7), then lines across the graph, time shown (default and per place), beside the graph,
+ * treatments on the graph, the sensor's time left per place (its home is Sensor end: the same switches) and Reset all.
+ * Every section has its own Reset while it differs from the defaults. [readOnly] = a follower not in Custom (*Settings
+ * from*): the mirrored sections show the values in use and can't be changed (no Reset, no Reset all); the time and
+ * sensor time per place stay this phone's own and editable.
  */
 @Composable
 fun GraphContent(
@@ -225,6 +231,14 @@ fun GraphContent(
     val glucose = glucoseLabeler()
     SettingsPage(stringResource(R.string.st_graph_title), onBack) {
         PreviewCard(preview)
+        SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_ranges_title),
+                actions.openReadings,
+                summary = rangesSummary(c),
+                icon = DsR.drawable.ds_ic_dia_range,
+            )
+        }
 
         val linesTitle = stringResource(R.string.st_graph_lines)
         SettingsGroup(title = linesTitle, titleAction = { resetIcon(GraphSection.Lines, linesTitle) }) {
@@ -267,6 +281,106 @@ fun GraphContent(
             }
         }
 
+        val besideGraphTitle = stringResource(R.string.st_graph_beside_graph)
+        SettingsGroup(
+            title = besideGraphTitle,
+            titleAction = { resetIcon(GraphSection.BesideGraph, besideGraphTitle) },
+        ) {
+            SwitchRow(
+                stringResource(R.string.st_graph_side),
+                c.side,
+                { actions.bool(GraphSettings.Side, it) },
+                summary = stringResource(R.string.st_graph_side_summary),
+                icon = DsR.drawable.ds_ic_align_horizontal_left,
+                readOnly = readOnly,
+            )
+            SwitchRow(
+                stringResource(R.string.st_graph_crown),
+                c.columnCrown,
+                { actions.bool(GraphSettings.ColumnCrown, it) },
+                enabled = c.side,
+                icon = DsR.drawable.ds_ic_crown,
+                readOnly = readOnly,
+            )
+        }
+
+        SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_marks_title),
+                actions.openMarks,
+                summary = marksSummary(c.marks),
+                icon = DsR.drawable.ds_ic_edit_note,
+            )
+        }
+
+        SensorTimeGroup(c, actions)
+
+        if (GraphSection.All.changed(c) && !readOnly) {
+            SettingsGroup {
+                DangerRow(
+                    stringResource(R.string.st_graph_reset_all),
+                    stringResource(R.string.st_graph_reset_all_title),
+                    stringResource(R.string.st_graph_reset_all_text),
+                    stringResource(R.string.st_reset),
+                    { actions.reset(GraphSection.All) },
+                    icon = DsR.drawable.ds_ic_restart_alt,
+                )
+            }
+        }
+        FooterText(stringResource(R.string.st_graph_footer))
+    }
+    GraphDialogs(dialog, c, actions, label, period) { dialog = null }
+}
+
+/**
+ * The sensor's time left per place (`graph.sensorTime.place`, each phone's own): its home is Settings › Sensor end,
+ * and Graph shows the same switches (docs/35 §7: one setting, two places, never a copy).
+ */
+@Composable
+fun SensorTimeGroup(
+    c: GraphConfig,
+    actions: GraphActions,
+) {
+    val sensorTitle = stringResource(R.string.st_graph_sensor)
+    SettingsGroup(title = sensorTitle, titleAction = { ResetIcon(GraphSection.SensorTime, c, sensorTitle, actions.reset) }) {
+        for (p in GraphPlace.entries) SwitchRow(placeName(p), c.sensorTime(p), { actions.sensorTime(p, it) }, icon = placeIcon(p))
+    }
+}
+
+/** "In range 70–179 mg/dL · in Readings": the target range the graph colours with, and where it is set. */
+@Composable
+private fun rangesSummary(c: GraphConfig): String {
+    val unit = LocalGlucoseUnit.current
+    val locale = LocalConfiguration.current.locales[0]
+    return stringResource(
+        R.string.st_graph_ranges_summary,
+        unit.text(c.bands.low, locale),
+        unit.text(c.bands.high - 1, locale),
+        unit.symbol,
+    )
+}
+
+/**
+ * Settings › Rings (its own page, docs/35; the Mac's Rings pane): the live card on top, what sits beside the number
+ * (rings and slots, the last treatment and what shows otherwise, what a ring counts, rewards), the ring order, Reset
+ * all, and *See also* Readings (a ring counts with the ranges). [readOnly] as on Graph: every row here is mirrored.
+ */
+@Composable
+fun RingsContent(
+    c: GraphConfig,
+    actions: GraphActions,
+    onBack: () -> Unit,
+    readOnly: Boolean = false,
+    preview: @Composable () -> Unit = {},
+) {
+    var dialog by rememberSaveable { mutableStateOf<GraphDialog?>(null) }
+    val resetIcon: @Composable (GraphSection, String) -> Unit = { section, title ->
+        if (!readOnly) ResetIcon(section, c, title, actions.reset)
+    }
+    val label = numberLabeler()
+    val period = periodLabeler()
+    SettingsPage(stringResource(R.string.st_rings_title), onBack) {
+        PreviewCard(preview)
         val besideTitle = stringResource(R.string.st_graph_beside)
         SettingsGroup(title = besideTitle, titleAction = { resetIcon(GraphSection.Beside, besideTitle) }) {
             ValueRow(stringResource(R.string.st_graph_rings), label(SettingsSpec.RING_COUNT, c.ringCount.toDouble()), {
@@ -339,56 +453,29 @@ fun GraphContent(
         }
         if (!readOnly) FooterText(stringResource(R.string.st_ring_order_footer))
 
-        val besideGraphTitle = stringResource(R.string.st_graph_beside_graph)
-        SettingsGroup(
-            title = besideGraphTitle,
-            titleAction = { resetIcon(GraphSection.BesideGraph, besideGraphTitle) },
-        ) {
-            SwitchRow(
-                stringResource(R.string.st_graph_side),
-                c.side,
-                { actions.bool(GraphSettings.Side, it) },
-                summary = stringResource(R.string.st_graph_side_summary),
-                icon = DsR.drawable.ds_ic_align_horizontal_left,
-                readOnly = readOnly,
-            )
-            SwitchRow(
-                stringResource(R.string.st_graph_crown),
-                c.columnCrown,
-                { actions.bool(GraphSettings.ColumnCrown, it) },
-                enabled = c.side,
-                icon = DsR.drawable.ds_ic_crown,
-                readOnly = readOnly,
-            )
-        }
-
-        SettingsGroup {
-            NavigationRow(
-                stringResource(R.string.st_marks_title),
-                actions.openMarks,
-                summary = marksSummary(c.marks),
-                icon = DsR.drawable.ds_ic_edit_note,
-            )
-        }
-
-        val sensorTitle = stringResource(R.string.st_graph_sensor)
-        SettingsGroup(title = sensorTitle, titleAction = { ResetIcon(GraphSection.SensorTime, c, sensorTitle, actions.reset) }) {
-            for (p in GraphPlace.entries) SwitchRow(placeName(p), c.sensorTime(p), { actions.sensorTime(p, it) }, icon = placeIcon(p))
-        }
-
-        if (GraphSection.All.changed(c) && !readOnly) {
+        if (GraphSection.Rings.changed(c) && !readOnly) {
             SettingsGroup {
                 DangerRow(
-                    stringResource(R.string.st_graph_reset_all),
-                    stringResource(R.string.st_graph_reset_all_title),
-                    stringResource(R.string.st_graph_reset_all_text),
+                    stringResource(R.string.st_rings_reset_all),
+                    stringResource(R.string.st_rings_reset_all_title),
+                    stringResource(R.string.st_rings_reset_all_text),
                     stringResource(R.string.st_reset),
-                    { actions.reset(GraphSection.All) },
+                    { actions.reset(GraphSection.Rings) },
                     icon = DsR.drawable.ds_ic_restart_alt,
                 )
             }
         }
-        FooterText(stringResource(R.string.st_graph_footer))
+        FooterText(stringResource(R.string.st_rings_footer))
+        SeeAlso(
+            listOf(
+                SeeAlsoLink(
+                    stringResource(R.string.st_readings_title),
+                    stringResource(R.string.st_overview_readings),
+                    Section.Readings,
+                    actions.openReadings,
+                ),
+            ),
+        )
     }
     GraphDialogs(dialog, c, actions, label, period) { dialog = null }
 }

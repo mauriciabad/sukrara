@@ -5,10 +5,10 @@ import SukraraCore
 import SukraraShare
 import SwiftUI
 
-/// General: Settings from (with what's in use and Copy the wearer's settings…), glucose (unit, read aloud), the trend
-/// arrow (#204), source (Juggluco), startup (open at login), Software Update (the version and which one, the updater in
-/// the GitHub version), About Sukrara and Quit. The medical-device reminder, the privacy policy and Sukrara on other devices are
-/// in the About window (`AboutView`).
+/// General: Settings from (with what's in use and Copy the wearer's settings…), the read-aloud shortcut, startup (open
+/// at login), Software Update (the version and which one, the updater in the GitHub version), About Sukrara and Quit.
+/// The unit and the trend arrow are in Readings, Juggluco in Following. The medical-device reminder, the privacy policy
+/// and Sukrara on other devices are in the About window (`AboutView`).
 struct GeneralPane: View {
     @Bindable var model: SettingsModel
     /// Open at login (nil when this run may not touch login items: dev, fixture and snapshot runs).
@@ -35,11 +35,6 @@ struct GeneralPane: View {
                 .formFooter()
             }
             Section {
-                Picker(L10n.t("Unit"), selection: $model.unit) {
-                    Text("mg/dL").tag(GlucoseUnit.mgdl)
-                    Text("mmol/L").tag(GlucoseUnit.mmol)
-                }
-                .pickerStyle(.segmented)
                 Toggle(isOn: $model.readAloudShortcut) {
                     Text(L10n.t("Read glucose aloud with \(GlobalShortcut.symbols)"))
                     Text(
@@ -48,25 +43,7 @@ struct GeneralPane: View {
                         ))
                 }
             } header: {
-                Text(L10n.t("Glucose"))
-            }
-            TrendArrowSection(model: model)
-            Section {
-                JugglucoRows(model: model.juggluco)
-            } header: {
-                Text(L10n.t("Source"))
-            } footer: {
-                Text(
-                    L10n.t(
-                        "While this Mac follows nobody, it can read glucose from Juggluco's web server on the same network (in Juggluco: Settings › Web server, with Local only off). Plain http on your home network only: readings travel unencrypted between the phone and this Mac."
-                    )
-                )
-                .formFooter()
-            }
-            .onAppear(perform: model.juggluco.load)
-            .onDisappear {
-                model.juggluco.saveAddress()
-                model.juggluco.saveSecret()
+                Text(L10n.t("Read aloud"))
             }
             Section(L10n.t("Startup")) {
                 OpenAtLoginRows(loginItem: loginItem)
@@ -197,7 +174,8 @@ struct SettingsFromPicker: View {
     }
 }
 
-/// Following: the link with the wearer, its state in words and its exits.
+/// Following: the link with the wearer, its state in words and its exits, and Juggluco on this network (both answer
+/// "where does this Mac get glucose").
 struct FollowingPane: View {
     @Bindable var model: SettingsModel
     var openFollow: () -> Void
@@ -215,6 +193,23 @@ struct FollowingPane: View {
                             .help(L10n.t("Reconnect over the internet and to the phone over Bluetooth now"))
                     }
                 }
+            }
+            Section {
+                JugglucoRows(model: model.juggluco)
+            } header: {
+                Text(verbatim: "Juggluco")
+            } footer: {
+                Text(
+                    L10n.t(
+                        "While this Mac follows nobody, it can read glucose from Juggluco's web server on the same network (in Juggluco: Settings › Web server, with Local only off). Plain http on your home network only: readings travel unencrypted between the phone and this Mac."
+                    )
+                )
+                .formFooter()
+            }
+            .onAppear(perform: model.juggluco.load)
+            .onDisappear {
+                model.juggluco.saveAddress()
+                model.juggluco.saveSecret()
             }
         }
         .formStyle(.grouped)
@@ -364,10 +359,11 @@ struct SettingsView: View {
                 GeneralPane(
                     model: model, loginItem: loginItem, updates: updates, openFollow: openFollow,
                     openAbout: openAbout)
+            case .following: FollowingPane(model: model, openFollow: openFollow, reconnect: reconnect)
+            case .alerts: AlertsRangesPane(model: model, controller: alerts)
+            case .readings: ReadingsPane(model: model)
             case .graph: GraphPane(model: model)
             case .rings: RingsPane(model: model)
-            case .alerts: AlertsRangesPane(model: model, controller: alerts)
-            case .following: FollowingPane(model: model, openFollow: openFollow, reconnect: reconnect)
             }
         }
         .id(model.pane)  // each pane starts at its top

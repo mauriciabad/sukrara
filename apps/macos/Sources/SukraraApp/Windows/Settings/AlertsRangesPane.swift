@@ -7,9 +7,10 @@ import SukraraCore
 import SwiftUI
 
 /// Alerts: alerts on/off; each kind as a row with its summary and Details… (threshold, repeat, its sound with ▶, Like
-/// an alarm, Send Test Alert); the quiet times; the waits and margin near a threshold (#37); what the notification's
-/// buttons offer; the sound pack with ▶ and
-/// Different sound each time; Notification Settings…; and what is quiet right now with its ways out. The mirrored
+/// an alarm, Send Test Alert; the fast ones also the trend arrow, the same setting as Readings'); the way to the ranges
+/// (Readings), kept apart from these levels; the quiet times; the sound pack with ▶ and Different sound each time;
+/// Notification Settings…; Fine-tuning… (the waits near a threshold, #37, and what the notification's buttons offer);
+/// and what is quiet right now with its ways out. The mirrored
 /// rules (each kind's on / threshold / repeat but no data's, the quiet times) are read-only outside Custom; what
 /// isn't mirrored (alerts on/off, no data, sounds, Like an alarm, the notification's buttons) is this Mac's.
 struct AlertsRangesPane: View {
@@ -18,6 +19,7 @@ struct AlertsRangesPane: View {
     var controller: AlertController? = nil
     @State private var editing: AlertKind?
     @State private var editingNight: AlertKind?
+    @State private var fineTuning = false
 
     var body: some View {
         Form {
@@ -32,10 +34,19 @@ struct AlertsRangesPane: View {
                 }
             }
             SettingsFromSection(model: model)
-            Section(L10n.t("Alerts")) {
+            Section {
                 Toggle(L10n.t("Glucose alerts"), isOn: alertBinding(\.on))
                 ForEach(AlertKind.allCases, id: \.self) { kind in
                     kindRow(kind)
+                }
+            } header: {
+                Text(L10n.t("Alerts"))
+            } footer: {
+                // thresholds stay apart from the ranges (as LibreLink keeps them); the way to the ranges
+                HStack(alignment: .firstTextBaseline) {
+                    Text(L10n.t("The ranges colour the graph; these levels alert.")).formFooter()
+                    Button(L10n.t("Ranges…")) { model.pane = .readings }
+                        .help(L10n.t("The ranges are in the Readings pane"))
                 }
             }
             if let controller { ActiveNowSection(alerts: controller) }
@@ -64,58 +75,6 @@ struct AlertsRangesPane: View {
                     L10n.t("Quiet lows rising back into range"), \.muteRisingLow, "alerts.muteRisingLow.min",
                     minutes: L10n.t("Back in range within"))
             }
-            Section {
-                waitRow(L10n.t("Low alerts wait"), SettingsSpec.persistLow, \.lowMin)
-                waitRow(L10n.t("High alerts wait"), SettingsSpec.persistHigh, \.highMin)
-                waitRow(L10n.t("Ignore bounces within"), SettingsSpec.persistMargin, \.marginMgdl)
-            } header: {
-                Text(L10n.t("Near a threshold"))
-            } footer: {
-                Text(
-                    L10n.t(
-                        "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count."
-                    )
-                )
-                .formFooter()
-            }
-            Section {
-                NumberSettingRow(
-                    label: L10n.t("Mute first offers"), format: SettingsSpec.actionMute,
-                    value: Binding(
-                        get: { Double(model.alerts.settings.notificationActions.muteMin) },
-                        set: { v in model.alerts.update { $0.notificationActions.muteMin = Int(v) } }))
-                Picker(
-                    L10n.t("Remind less: every"),
-                    selection: Binding(
-                        get: { model.alerts.settings.notificationActions.relaxMin },
-                        set: { v in model.alerts.update { $0.notificationActions.relaxMin = v } })
-                ) {
-                    let choices = model.alerts.settings.relaxChoices
-                    let current = model.alerts.settings.notificationActions.relaxMin
-                    ForEach(choices.contains(current) ? choices : [current] + choices, id: \.self) {
-                        Text(Durations.text($0)).tag($0)
-                    }
-                }
-                NumberSettingRow(
-                    label: L10n.t("Back in range by"), format: SettingsSpec.backMgdl,
-                    value: Binding(
-                        get: { Double(model.alerts.settings.notificationActions.backMgdl) },
-                        set: { v in model.alerts.update { $0.notificationActions.backMgdl = Int(v) } }))
-                NumberSettingRow(
-                    label: L10n.t("For at least"), format: SettingsSpec.backMin,
-                    value: Binding(
-                        get: { Double(model.alerts.settings.notificationActions.backMin) },
-                        set: { v in model.alerts.update { $0.notificationActions.backMin = Int(v) } }))
-            } header: {
-                Text(L10n.t("From the notification"))
-            } footer: {
-                Text(
-                    L10n.t(
-                        "Mute and Remind less end once the value is back inside the threshold by this margin for this long."
-                    )
-                )
-                .formFooter()
-            }
             Section(L10n.t("Sounds")) {
                 HStack {
                     Picker(L10n.t("Sound pack"), selection: alertBinding(\.sounds.pack)) {
@@ -132,8 +91,24 @@ struct AlertsRangesPane: View {
                 }
                 if let status = model.focusStatus { FocusChoice(status: status) { model.throughFocus = $0 } }
             }
+            Section {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.t("Fine-tuning"))
+                        Text(FineTuning.summary(model.shownAlerts))
+                            .font(.callout).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(L10n.t("Fine-tuning…")) { fineTuning = true }
+                        .accessibilityLabel(
+                            L10n.t("Fine-tuning: the waits near a threshold and the notification's buttons"))
+                }
+            }
         }
         .formStyle(.grouped)
+        .sheet(isPresented: $fineTuning) {
+            FineTuning(model: model) { fineTuning = false }
+        }
         .sheet(item: $editingNight) { kind in
             NightDetails(model: model, kind: kind, readOnly: model.alertsMirrored && kind != .noData) {
                 editingNight = nil
@@ -296,18 +271,6 @@ struct AlertsRangesPane: View {
         }
     }
 
-    /// One row of *Near a threshold* (SPEC §1 #37): read-only while the wearer's rules apply.
-    private func waitRow(
-        _ label: String, _ format: NumberSpec, _ path: WritableKeyPath<PersistenceSettings, Int>
-    ) -> some View {
-        NumberSettingRow(
-            label: label, format: format,
-            value: Binding(
-                get: { Double(model.shownAlerts.persistence[keyPath: path]) },
-                set: { v in model.alerts.update { $0.persistence[keyPath: path] = Int(v) } }),
-            readOnly: model.alertsMirrored)
-    }
-
     private func alertBinding<V>(_ path: WritableKeyPath<AlertSettings, V>) -> Binding<V> {
         Binding(
             get: { model.alerts.settings[keyPath: path] }, set: { v in model.alerts.update { $0[keyPath: path] = v } })
@@ -335,9 +298,9 @@ struct AlertsRangesPane: View {
     }
 }
 
-/// The sheet behind Details…: when it alerts (threshold, repeat; read-only while the wearer's rules apply), its sound
-/// with ▶, Like an alarm, and Send Test Alert.
-private struct AlertDetails: View {
+/// The sheet behind Details…: when it alerts (threshold, repeat; read-only while the wearer's rules apply), for Falling
+/// fast and Rising fast the trend arrow they read, its sound with ▶, Like an alarm, and Send Test Alert.
+struct AlertDetails: View {
     @Bindable var model: SettingsModel
     let kind: AlertKind
     let controller: AlertController?
@@ -391,6 +354,7 @@ private struct AlertDetails: View {
                         .formFooter()
                     }
                 }
+                if kind.group == .rate { TrendSourceSection(model: model) }
                 Section {
                     HStack {
                         Picker(
@@ -442,7 +406,36 @@ private struct AlertDetails: View {
             }
             .padding([.horizontal, .bottom], 20)
         }
-        .frame(width: 480, height: 520)
+        .frame(width: 480, height: kind.group == .rate ? 620 : 520)
+    }
+}
+
+/// Falling fast / Rising fast › Trend arrow: the same setting as Readings › Trend arrow (`SettingsModel.trend`, one
+/// store, never a copy), read-only with where it comes from outside Custom.
+private struct TrendSourceSection: View {
+    @Bindable var model: SettingsModel
+
+    var body: some View {
+        Section {
+            if model.editable {
+                Picker(L10n.t("Trend from"), selection: $model.trend) {
+                    ForEach(TrendSetting.allCases, id: \.self) { Text(TrendArrowSection.name($0)).tag($0) }
+                }
+            } else {
+                LabeledContent(L10n.t("Trend from")) {
+                    ReadOnlyValue(value: TrendArrowSection.name(model.trend), source: model.mirrorSource)
+                }
+            }
+        } header: {
+            Text(L10n.t("Trend arrow"))
+        } footer: {
+            Text(
+                L10n.t(
+                    "The same choice as Readings › Trend arrow: every arrow and spoken trend follow it too. \(TrendArrowSection.line(model.trend))"
+                )
+            )
+            .formFooter()
+        }
     }
 }
 
@@ -513,6 +506,104 @@ private struct NightDetails: View {
         }
         .frame(width: 480, height: 380)
     }
+}
+
+/// Alerts › Fine-tuning… (docs/35): the rows rarely touched, out of the main pane: the waits and margin near a
+/// threshold (SPEC §1 #37, mirrored: read-only outside Custom) and what the notification's buttons offer (this Mac's).
+/// Closes with Done or Esc.
+struct FineTuning: View {
+    @Bindable var model: SettingsModel
+    let done: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Form {
+                Section {
+                    waitRow(L10n.t("Low alerts wait"), SettingsSpec.persistLow, \.lowMin)
+                    waitRow(L10n.t("High alerts wait"), SettingsSpec.persistHigh, \.highMin)
+                    waitRow(L10n.t("Ignore bounces within"), SettingsSpec.persistMargin, \.marginMgdl)
+                } header: {
+                    Text(L10n.t("Near a threshold"))
+                } footer: {
+                    Text(
+                        L10n.t(
+                            "A low or a high alerts only once glucose has been out of range this long in a row. Very low and extremely high never wait. A bounce back into range smaller than the margin is the same episode: no new first alert, and its treatments still count."
+                        )
+                    )
+                    .formFooter()
+                }
+                Section {
+                    NumberSettingRow(
+                        label: L10n.t("Mute first offers"), format: SettingsSpec.actionMute,
+                        value: Binding(
+                            get: { Double(model.alerts.settings.notificationActions.muteMin) },
+                            set: { v in model.alerts.update { $0.notificationActions.muteMin = Int(v) } }))
+                    Picker(
+                        L10n.t("Remind less: every"),
+                        selection: Binding(
+                            get: { model.alerts.settings.notificationActions.relaxMin },
+                            set: { v in model.alerts.update { $0.notificationActions.relaxMin = v } })
+                    ) {
+                        let choices = model.alerts.settings.relaxChoices
+                        let current = model.alerts.settings.notificationActions.relaxMin
+                        ForEach(choices.contains(current) ? choices : [current] + choices, id: \.self) {
+                            Text(Durations.text($0)).tag($0)
+                        }
+                    }
+                    NumberSettingRow(
+                        label: L10n.t("Back in range by"), format: SettingsSpec.backMgdl,
+                        value: Binding(
+                            get: { Double(model.alerts.settings.notificationActions.backMgdl) },
+                            set: { v in model.alerts.update { $0.notificationActions.backMgdl = Int(v) } }))
+                    NumberSettingRow(
+                        label: L10n.t("For at least"), format: SettingsSpec.backMin,
+                        value: Binding(
+                            get: { Double(model.alerts.settings.notificationActions.backMin) },
+                            set: { v in model.alerts.update { $0.notificationActions.backMin = Int(v) } }))
+                } header: {
+                    Text(L10n.t("From the notification"))
+                } footer: {
+                    Text(
+                        L10n.t(
+                            "Mute and Remind less end once the value is back inside the threshold by this margin for this long."
+                        )
+                    )
+                    .formFooter()
+                }
+            }
+            .formStyle(.grouped)
+            HStack {
+                // Esc closes it, as Done does
+                Button(L10n.t("Cancel"), action: done).keyboardShortcut(.cancelAction)
+                    .opacity(0).frame(width: 0, height: 0).accessibilityHidden(true)
+                Spacer()
+                Button(L10n.t("Done"), action: done).keyboardShortcut(.defaultAction)
+            }
+            .padding([.horizontal, .bottom], 20)
+        }
+        .frame(width: 480, height: 600)
+    }
+
+    /// "Waits near a threshold: lows Off, highs 15 min · Mute 30 min": what the sheet holds, on its row in the pane.
+    static func summary(_ s: AlertSettings) -> String {
+        let low = NumberSettingRow.word(SettingsSpec.persistLow, Double(s.persistence.lowMin))
+        let high = NumberSettingRow.word(SettingsSpec.persistHigh, Double(s.persistence.highMin))
+        let mute = NumberSettingRow.word(SettingsSpec.actionMute, Double(s.notificationActions.muteMin))
+        return L10n.t("Waits near a threshold: lows \(low), highs \(high) · Mute \(mute)")
+    }
+
+    /// One row of *Near a threshold* (SPEC §1 #37): read-only while the wearer's rules apply.
+    private func waitRow(
+        _ label: String, _ format: NumberSpec, _ path: WritableKeyPath<PersistenceSettings, Int>
+    ) -> some View {
+        NumberSettingRow(
+            label: label, format: format,
+            value: Binding(
+                get: { Double(model.shownAlerts.persistence[keyPath: path]) },
+                set: { v in model.alerts.update { $0.persistence[keyPath: path] = Int(v) } }),
+            readOnly: model.alertsMirrored)
+    }
+
 }
 
 /// ▶: plays `pack`'s sound for `kind` once (the bundled file; the system sound for "system"; nothing for "none").

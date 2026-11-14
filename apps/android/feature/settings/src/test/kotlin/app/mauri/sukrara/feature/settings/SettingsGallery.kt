@@ -48,8 +48,10 @@ import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
 import app.mauri.sukrara.feature.settings.advanced.AdvancedContent
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
 import app.mauri.sukrara.feature.settings.advanced.AdvancedStats
+import app.mauri.sukrara.feature.settings.advanced.ImportExportContent
 import app.mauri.sukrara.feature.settings.advanced.LogContent
 import app.mauri.sukrara.feature.settings.advanced.RelayRow
+import app.mauri.sukrara.feature.settings.advanced.SettingsFileActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromContent
 import app.mauri.sukrara.feature.settings.follower.SettingsFromNote
@@ -58,6 +60,7 @@ import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
 import app.mauri.sukrara.feature.settings.graph.Reorder
+import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
@@ -253,14 +256,38 @@ class SettingsGallery {
             "alert-kind-very-low" to
                 { AlertKindContent(AlertKind.VERY_LOW, AlertsUi(AlertSettings(), AlertUiState()), clock, AlertKindActions()) {} },
             "threshold-review" to { AlertThresholdReviewContent(AlertSettings(), { _, _ -> }, {}, {}) },
-            "ranges" to { RangesContent(GraphPrefs(), { _, _ -> }, {}) },
-            "ranges-changed" to { RangesContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}) },
-            "ranges-follower" to {
-                RangesContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}, readOnly = true) {
+            "readings" to { ReadingsContent(GraphPrefs(), { _, _ -> }, {}) },
+            "readings-changed" to { ReadingsContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}) },
+            "readings-follower" to {
+                ReadingsContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {}, readOnly = true) {
                     SettingsFromNote(fromWearer, {})
                 }
             },
             "graph" to { GraphContent(GraphConfig(), GraphActions(), {}) },
+            "rings" to { RingsContent(GraphConfig(), GraphActions(), {}) },
+            "rings-custom" to {
+                RingsContent(
+                    GraphConfig(ringCount = 3, lastElse = null, ringOrder = Reorder.moved(RingSpec.DEFAULT_RING_ORDER, 5, 0)),
+                    GraphActions(),
+                    {},
+                )
+            },
+            "rings-follower" to {
+                RingsContent(GraphConfig(), GraphActions(), {}, readOnly = true) { SettingsFromNote(fromWearer, {}) }
+            },
+            "finetuning" to { FineTuningContent(AlertsUi(AlertSettings(), AlertUiState()), {}) {} },
+            "finetuning-changed" to {
+                FineTuningContent(
+                    AlertsUi(AlertSettings().let { it.copy(actions = it.actions.copy(muteMin = 60)) }, AlertUiState()),
+                    {},
+                ) {}
+            },
+            "files" to {
+                ImportExportContent(SettingsFileActions(), onBack = {}) { DataLinks(DataPage.Files, wearer = true) {} }
+            },
+            "files-follower" to {
+                ImportExportContent(SettingsFileActions(), onBack = {}) { DataLinks(DataPage.Files, wearer = false) {} }
+            },
             "graph-follower" to {
                 GraphContent(GraphConfig(lines = listOf(80, 160)), GraphActions(), {}, readOnly = true) { SettingsFromNote(fromWearer, {}) }
             },
@@ -648,6 +675,12 @@ class SettingsGallery {
                     "advanced",
                     "statusbar-root-unasked",
                     "statusbar-root-not-allowed",
+                    "overview",
+                    "readings",
+                    "rings",
+                    "finetuning",
+                    "files",
+                    "sensorend",
                 ),
         )
 }

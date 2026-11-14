@@ -7,7 +7,7 @@ import SukraraCore
 import SukraraShare
 import SwiftUI
 
-/// Settings › General › Source: Juggluco on this network (schema `source.jugglucoLan`, `source.jugglucoAddress`, the
+/// Settings › Following: Juggluco on this network (schema `source.jugglucoLan`, `source.jugglucoAddress`, the
 /// secret in the Keychain `source.jugglucoSecret`), where it stands and its exits.
 @Observable
 public final class JugglucoModel {

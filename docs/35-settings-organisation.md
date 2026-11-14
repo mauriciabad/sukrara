@@ -298,32 +298,36 @@ the protocol for no gain to the person.
 
 ## In Sukrara
 
-*Pending the owner's approval.* Nothing is brought in yet; this report is the build plan. Once approved, one round on
-both apps:
+Built in one round on both apps (#205), after the owner's review (§7, which wins over §4). Implementation reference:
+AOSP Settings and SettingsLib SPA (vendored as `settingslib-spa`): the homepage's groups of coloured icons
+(`top_level_settings.xml`) for the overview, a page's parents opened before it as a search result opens (Settings'
+`SubSettingLauncher` path; `SettingsIndex.path`), the search index as one declarative list with keywords
+(`BaseSearchIndexProvider`, `settings:keywords`) and SettingsIntelligence's ranks, the searched row flashed (SPA
+`HighlightBox`, Settings' `EXTRA_FRAGMENT_ARG_KEY` highlight), links between pages as rows that open the other screen
+(SPA `SettingsEntryBuilder.createLinkFrom`), and one preference key shown on two screens for the second places.
 
-| To build | Why |
+| Built | Why |
 |---|---|
-| Schema: the new `section` values (table in §4); `settings.pane` gains `glucose` | one grouping, written down once, the same on both apps |
-| Android: Ranges → Glucose (route, key, strings en + es, icon); a Rings page split off Graph with its own preview; Sensor end under Sensor; Alerts › Fine-tuning; the overview's new order | §4 |
-| Mac: a Glucose pane (unit, ranges, sensor); the pane order General · Following · Alerts · Glucose · Graph · Rings; a *Fine-tuning…* sheet; Juggluco to Following if approved | §4 |
-| Search: trails, `Section.Glucose` / `Section.Rings`, keywords (old names too) | §4 |
-| Glucose › Trend arrow, once #204's method is chosen (schema, wire key, both apps) | #204 |
-| FEATURES.md, README, QA.md, screenshots, goldens, snapshots | §6 |
+| Schema: the `section` values follow the sections (`readings`, `rings`, `sensor`, `source`); `settings.pane` = general, following, alerts, readings, graph, rings | one grouping, written once, the same on both apps |
+| Android overview: [Alerts · Alert reliability] [Settings from · Readings · Graph · Rings] [Status bar · Lock screen] [Sensor · Sensor end · Insulin pens] [Sharing · Share with apps · Backup · Import and export] [tips · Advanced · About]; icons a drop (Readings), a donut (Rings), a chequered flag (Sensor end) | §4 and §7 |
+| Readings (the old Ranges page, route `readings`): unit, Trend arrow, ranges, *See also* Alerts; Rings split off Graph with its own live preview and Reset all | §4, §7 |
+| Alerts › Fine-tuning (waits near a threshold, the notification buttons, *Reset fine-tuning*); Mac: a *Fine-tuning…* sheet | no global advanced mode |
+| Import and export (Export data, Import history, the settings file) out of Share with apps and Advanced; Sharing, Share with apps, Backup and Import and export each link the other three | §7 data pages |
+| Second places: the trend in Falling / Rising fast (Mac: in their Details…), THE night in Sensor end, the sensor's time left in Sensor end and Graph, a Ranges row atop Graph | §7 |
+| Links (*See also*): Alerts ↔ Alert reliability, Alerts ↔ Readings, Rings → Readings, Sensor ↔ Sensor end, Night alerts ↔ Sensor end | §7 |
+| THE night: the sensor reminders take the night alerts' window (`alerts.night.from` / `to`); `sensor.reminders` no longer stores a night (no migration) | §7: two nights could disagree |
+| Mac: panes General · Following · Alerts · Readings · Graph · Rings; Readings pane (unit, ranges, trend); Juggluco into Following | §7 |
+| Search: the moved rows, new pages, links, old names as keywords (*Ranges*, *Graph*, *Export*, *Advanced*); `SchemaSearchTest` (every schema setting with an Android row is found on its section's page, every second place too), `SecondPlacesTest` | §6 muscle memory |
 
 | Left out | Why |
 |---|---|
-| A global advanced / simple mode | AAPS #5464 and xDrip+'s *Less common settings*: hidden settings that search still lists, and people lost |
-| Renaming setting ids, stores or wire keys | the grouping is display only; renaming churns stores and the protocol for nothing the person sees |
-| A search field in the Mac Settings window | six panes; the HIG doesn't ask for one |
-| Merging alert thresholds into the ranges | they mean different things (LibreLink says so too); the Ranges footer links to Alerts instead |
-
-Open for the owner:
-
-1. The Mac's Juggluco source: move it to Following, or keep it in General?
-2. The Mac pane order: Following second?
-3. Sensor end as a subpage of Sensor rather than its own overview row.
-4. The name *Fine-tuning / Ajuste fino*.
-5. The trend settings' ids and wire key.
+| Sensor end as a subpage of Sensor only | §7: it keeps its own row and Sensor links to it |
+| Moving the Mac's sensor countdown / time left to Readings | the Mac has no sensor page and §7 makes Graph its second place; Readings stays "how each reading is shown, judged and where it heads" |
+| The six ranges editable on Graph itself | a *Ranges* row atop Graph (the target in use) opens Readings: six band rows twice on two pages would double the longest page for a value people set once; the row is where they look, the editor is one tap away |
+| The card's arrow as a link to Trend arrow (§7 table) | the arrow is drawn by the one renderer on every surface; a tap target on it would change home's card for a settings shortcut. The trend is reachable from Readings and both fast alerts |
+| Trend smoothing as its own subpage (§4 *Glucose › Trend arrow › Smoothing*) | #204 shipped one choice of four (Quick · Balanced · Smooth · From the sensor), nothing left to hide |
+| A Mac search field | six panes; the HIG doesn't ask for one |
+| Renaming ids, stores or wire keys (but the night) | §7: a later reorganisation stays cheap |
 
 ## 7. The owner's review (2026-11-14) and what it changes
 
@@ -338,7 +342,7 @@ ids, stores and wire keys unchanged so a later one stays cheap.
 | Sensor end | **its own row stays, and Sensor links to it** (both places, one page) | Keeping it as a subpage only would save an overview row but hide it from people who look for "when does my sensor end" at the top level; a row plus a link from Sensor serves both. Icon: **a chequered flag** (the finish), not an hourglass. |
 | Night | **one night setting**, editable from Alerts › Night alerts and from Sensor end | Two separate "nights" (alert night rules, quiet sensor reminders) can disagree; one time range, two entry points. |
 | Data pages | Sharing, Share with apps, Backup and a new page for Export data + Import history + Settings file (out of Advanced); each page's foot links the other three | The four looked alike; the split is live-to-people, live-to-apps, automatic copy, one-off files. The settings file isn't an advanced feature. |
-| The new page's name | **open** — "Files / Archivos" didn't convince the owner | Candidates: *Import and export / Importar y exportar*, *Your data / Tus datos*. |
+| The new page's name | **Import and export / Importar y exportar** (decided 2026-11-14) | "Files / Archivos" didn't convince the owner. |
 | Mac | Juggluco into **Following**; Following the **second pane** | Both answer "where this Mac gets glucose", the first thing set up on a Mac. |
 | Expert alert rows | **Fine-tuning / Ajuste fino** subpage | No global advanced mode (AAPS #5464, xDrip+ #1006 show where that goes wrong). |
 | Second places | a setting can be **editable from several pages** where people expect it (same setting, same store, never a copy), plus **links between pages** | Table below. |

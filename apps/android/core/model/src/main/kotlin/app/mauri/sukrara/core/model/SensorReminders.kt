@@ -26,7 +26,8 @@ data class SensorReminder(
 /**
  * Settings › Sensor end (schema `sensor.reminders`): the [reminders]; [unlock] = a morning (or evening) reminder comes
  * at the first unlock if that is earlier; [evening] = one more reminder the evening before a night-time end, the night
- * being [nightStart]–[nightEnd] (minutes of the day, may wrap midnight: Android doesn't share its Bedtime schedule);
+ * being [nightStart]–[nightEnd] (minutes of the day, may wrap midnight; equal = no night): THE one night, the night
+ * alerts' window (`alerts.night.from` / `to`, docs/35 §7), never stored here: [withNight] puts it in;
  * [countdown] = the end countdown in the last `sensor.countdownHours`; [warmup] = the warm-up countdown;
  * [endedRepeatHours] = *Sensor ended* comes again every so many hours until a new sensor, out of the night (0 = once;
  * schema number `endedRepeatHours` in `sensor.reminders`).
@@ -44,7 +45,15 @@ data class SensorEndConfig(
     init {
         require(endedRepeatHours >= 0)
         require(nightStart in 0 until SensorReminder.MINUTES_PER_DAY && nightEnd in 0 until SensorReminder.MINUTES_PER_DAY)
-        require(nightStart != nightEnd) { "the night needs two different times" }
+    }
+
+    /** These settings with THE night (the night alerts' window, minutes after midnight; an invalid time: the default). */
+    fun withNight(
+        from: Int,
+        to: Int,
+    ): SensorEndConfig {
+        fun valid(m: Int) = m in 0 until SensorReminder.MINUTES_PER_DAY
+        return if (valid(from) && valid(to)) copy(nightStart = from, nightEnd = to) else this
     }
 
     /** Earliest first (most days before, then time), duplicates removed, at most [MAX_REMINDERS]. */
@@ -59,7 +68,9 @@ data class SensorEndConfig(
 
     companion object {
         const val MAX_REMINDERS = 6
-        const val DEFAULT_NIGHT_START = 23 * 60
+
+        /** THE night's defaults (`alerts.night.from` / `to`: 22:00–07:00). */
+        const val DEFAULT_NIGHT_START = 22 * 60
         const val DEFAULT_NIGHT_END = 7 * 60
 
         /** The schema's default for `endedRepeatHours` (`SettingsSpec.ENDED_REPEAT_HOURS`, pinned by a test). */

@@ -9,14 +9,22 @@ Sukrara's releases. 0.x versions are previews.
   only when an entry isn't in LibreView yet (and for a moment after it gets there). The trash button is gone: swipe a
   row or long-press it to delete, with *Undo* as before. *See all* opens a new Treatments page with the last 31 days
   by day.
+- **Settings reorganised** (both apps, #205): **Readings** (unit, ranges, trend arrow; once *Ranges*), **Graph** (the
+  chart only), **Rings** (its own page on Android), Alerts › **Fine-tuning** (the waits near a threshold and the
+  notification buttons), and **Import and export** (Export data, Import history and the settings file, out of Share
+  with apps and Advanced). Sensor end has a chequered flag and the Sensor page links to it. One night for both the night
+  alerts and the sensor reminders (the sensor reminders now keep quiet in your Night alerts hours: set it again there
+  or in Sensor end if yours differed). Pages link to the ones people look for next (*See also*), and the trend arrow,
+  the night and the sensor's time left can be changed in both places. Mac panes: General · Following · Alerts ·
+  Readings · Graph · Rings; Juggluco moved to Following. Search still finds the old names (*Ranges*, *Graph*, *Export*).
 - **The trend arrow comes from your readings** (both apps, #204; the owner: the arrow said → through a rise of 1
   mg/dL a minute, and "falling" minutes into a rebound). Every arrow, spoken trend and output used the sensor's own
   rate, which lags about 7 minutes and reads only a third of how fast glucose moves. Now one trend, worked out from the
   last minutes of readings, is the same on the card, widgets, notifications, alerts, the status bar, the Mac menu bar,
   read aloud and the Nightscout / xDrip+ outputs: about 4 minutes after the move instead of 7 (or never). The arrow
   turns smoothly with how fast glucose moves (0.4 and 0.9 look different), its words keep the ±1 / 2 / 3 bands and
-  don't flip at an edge, and ⇈ / ⇊ need 2 minutes of a really fast move. **Settings › Ranges › Trend arrow** (Android)
-  / **Settings › General › Trend arrow** (Mac): *Quick*, *Balanced* (default), *Smooth* or *From the sensor* (as
+  don't flip at an edge, and ⇈ / ⇊ need 2 minutes of a really fast move. **Settings › Readings › Trend arrow** (both
+  apps): *Quick*, *Balanced* (default), *Smooth* or *From the sensor* (as
   before), with a live preview of what each says now; followers take the wearer's choice. You'll see ↑ / ↓ more often:
   that is how fast your readings really move.
 - **Falling fast / rising fast alerts follow the same trend** (off by default): from the readings they ring once the

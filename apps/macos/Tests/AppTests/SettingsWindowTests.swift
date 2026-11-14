@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import AppKit
+import SukraraCore
 import Testing
 
 @testable import SukraraApp
@@ -24,6 +25,34 @@ import Testing
             #expect(!pane.help.isEmpty)
             #expect(pane.height >= 360 && pane.height <= 760)
         }
+    }
+
+    /// docs/35 §7: General first (HIG), Following second (where this Mac gets glucose), then Alerts, Readings, Graph,
+    /// Rings; the schema's `settings.pane` values are this order (SettingsSchemaTests).
+    @Test func thePanesComeInTheirOrder() {
+        #expect(SettingsModel.Pane.allCases == [.general, .following, .alerts, .readings, .graph, .rings])
+        #expect(SettingsModel.Pane.readings.symbol == "drop")
+    }
+
+    @Test func anUnknownStoredPaneOpensGeneral() {
+        let store = scratchStore()
+        store.set("ranges", for: MacSettings.settingsPane)  // a pane that no longer exists
+        let m = SettingsModel(
+            store: store, follow: FollowModel(status: .notFollowing, actions: nil, macName: "Mac"), version: "0")
+        #expect(m.pane == .general)
+        m.pane = .readings
+        let again = SettingsModel(
+            store: store, follow: FollowModel(status: .notFollowing, actions: nil, macName: "Mac"), version: "0")
+        #expect(again.pane == .readings)  // the window reopens on the last pane
+    }
+
+    /// The links between panes (docs/35 §7) land where the setting is; the trend in Alerts is Readings' own setting.
+    @Test func theTrendInAlertsIsReadingsSetting() {
+        let m = model()
+        m.settingsFrom = .custom
+        m.trend = .smooth
+        #expect(m.graph.trend == .smooth)
+        #expect(m.store.value(MacSettings.trend) == TrendSetting.smooth.rawValue)
     }
 
     @Test func theWindowHasAPreferenceToolbarAndThePanesName() {

@@ -35,6 +35,8 @@ fun SharingScreen(
     onBackup: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    /** The followers page's foot: *See also* the other data pages (the app draws them). */
+    links: @Composable () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val writerRefused by viewModel.writerRefused.collectAsStateWithLifecycle()
@@ -81,6 +83,7 @@ fun SharingScreen(
                     ),
                     writerRefused = writerRefused,
                     nearby = nearby,
+                    links = links,
                 )
             }
         }

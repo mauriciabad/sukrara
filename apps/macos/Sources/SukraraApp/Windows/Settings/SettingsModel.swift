@@ -11,12 +11,13 @@ import SukraraGraph
 /// mirrored values. Every change applies at once; the app picks it up through the defaults change.
 @Observable
 public final class SettingsModel {
-    public enum Pane: String, CaseIterable, Sendable { case general, graph, rings, alerts, following }
+    /// The panes in toolbar order (schema `settings.pane`'s values); an unknown stored one opens General.
+    public enum Pane: String, CaseIterable, Sendable { case general, following, alerts, readings, graph, rings }
 
     @ObservationIgnored let store: any SettingsStoring
     public let alerts: AlertSettingsStore
     public let follow: FollowModel
-    /// Juggluco on this network (Settings › General › Source).
+    /// Juggluco on this network (Settings › Following).
     public let juggluco: JugglucoModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
@@ -118,7 +119,7 @@ public final class SettingsModel {
     /// Who the mirrored settings come from now, in one sentence (General › Settings › In use).
     public var inUse: String {
         switch settingsFrom {
-        case .custom: return L10n.t("This Mac's own settings, in the Graph, Rings and Alerts panes.")
+        case .custom: return L10n.t("This Mac's own settings, in the Alerts, Readings, Graph and Rings panes.")
         case .default: return L10n.t("Sukrara's defaults.")
         case .wearer:
             let who = wearer?.wearer ?? L10n.t("the wearer")
@@ -154,7 +155,7 @@ public final class SettingsModel {
         set { updateGraph { $0.trend = newValue } }
     }
 
-    /// The newest reading the app shows, with its trend (Glucose › Trend arrow's preview); nil = none.
+    /// The newest reading the app shows, with its trend (Readings › Trend arrow's preview); nil = none.
     @ObservationIgnored public var newestReading: () -> Reading? = { nil }
 
     public var unit: GlucoseUnit {

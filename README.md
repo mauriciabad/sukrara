@@ -91,7 +91,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 - Glucose report: time in ranges, average glucose, GMI (estimated HbA1c) and glucose variability (CV).
 - Your doctor or clinic still gets your data through LibreView or Tidepool.
-- Import/export your history and settings.
+- Import/export your history and settings (Settings › Import and export).
 - Gamification: cool visual effects from 90% time in range. (More TBD)
 - The home screen widget shows a lot of useful data, cleanly:
   - Glucose value and trend.
@@ -106,7 +106,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 ### More
 
 - Battery optimized.
-- Many settings, but organized and explained. Trust the defaults.
+- Many settings, but organized and explained: Alerts, Readings (unit, ranges, trend arrow), Graph, Rings, Sensor
+  end, your data; rare ones in Alerts › Fine-tuning; search finds every one, old names included. Trust the defaults.
 - A nice sensor expiry flow with a Live Update and subtle reminders.
 - Real-time readings from almost any CGM.
 - Multilingual, but English is the main language.

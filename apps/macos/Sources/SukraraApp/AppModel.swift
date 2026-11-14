@@ -320,7 +320,7 @@ public final class AppModel {
         feedWidget()
     }
 
-    /// The newest reading with its trend (Settings › General › Trend arrow's preview).
+    /// The newest reading with its trend (Settings › Readings › Trend arrow's preview).
     var newestReading: Reading? { readings.last }
 
     func apply(sensor info: SensorInfo?) {

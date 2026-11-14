@@ -578,7 +578,7 @@ afterwards). Never a hosted site, never the user's phone.
 
 ## Q26 Trend arrow
 
-- Android (emulator, debug synthetic source): Settings › Ranges › *Trend arrow*: the preview shows the newest value
+- Android (emulator, debug synthetic source): Settings › Readings › *Trend arrow*: the preview shows the newest value
   and an arrow that matches the home card's; pick each choice: the preview's arrow turns with a short spring (none with
   Remove animations on), each row's own arrow says what it would show, the Ranges row's summary follows. With the
   synthetic source rising and falling, the home card's arrow turns smoothly between readings (not in 45° steps), the
@@ -598,17 +598,35 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       the recent searches; *night* lists *Night alerts* once (Alerts), opening it shows Alerts › Night alerts and Back
       walks up through Alerts to Settings; *battery*, *vary*, *garmin* open Alert reliability, Alerts, Share with apps
       scrolled to the row, which flashes; each result has its section's icon and where it is in the accent colour.
-- [ ] Every number row (Graph: the six ranges, time shown and per place, rings, periods, lines, vertical lines; Alerts:
-      thresholds, remind, quiet times, Mute…, Relax, the margin, Mute all custom; Sensor countdown; Nostr / LibreView intervals) opens the
+- [ ] Settings sections (#205, docs/35 §7), light and dark, English and Spanish, wearer and follower: the overview
+      reads [Alerts · Alert reliability] [Settings from · Readings (drop) · Graph · Rings] [Status bar · Lock screen]
+      [Sensor · Sensor end (chequered flag) · Insulin pens] [Sharing · Share with apps · Backup · Import and export]
+      [Advanced · About]; each page's title is its row's. Search *ranges*, *mmol*, *graph*, *gmi*, *export*, *settings
+      file*, *margin*: each finds the page the row moved to and flashes the row. Alerts › *Fine-tuning* holds the waits
+      and the notification buttons (*Reset fine-tuning* asks first). Falling fast's *Trend arrow* row and Readings ›
+      Trend arrow show the same choice and change each other. Change *Bedtime* in Sensor end: Night alerts › *Starts*
+      shows it (and back). Sensor end's *Sensor time left* switches and Graph's change each other. Every *See also*
+      row opens its page and Back returns: Alerts ↔ Alert reliability, Alerts ↔ Readings, Rings → Readings, Graph's
+      *Ranges* → Readings, Sensor ↔ Sensor end, Night alerts → Sensor end (wearer), and Sharing / Share with apps /
+      Backup / Import and export link the other three (no Backup on a follower). TalkBack reads every link row.
+- [ ] Mac panes (#205): the toolbar shows General, Following, Alerts, Readings (drop), Graph, Rings in that order, each
+      tooltip names what it holds and the window resizes per pane (no animation with Reduce Motion). Readings: change a
+      range → Graph's *Ranges* row and the menu bar colour follow; *Alert Levels…* opens Alerts; in Wearer / Default the
+      ranges and the trend are read-only with their source, the unit stays editable. Graph *Edit in Readings…*, Rings
+      *Ranges…*, Alerts *Ranges…* land on Readings; the panel's Juggluco no-data button lands on Following with the
+      Juggluco rows under the follow link. Falling fast *Details…* › *Trend from* and Readings › Trend arrow change each
+      other; *Fine-tuning…* opens the sheet, Done and Esc close it, VoiceOver reads every row.
+- [ ] Every number row (Readings: the six ranges; Graph: time shown and per place, lines, vertical lines; Rings: rings,
+      periods; Alerts: thresholds, remind, quiet times, Mute all custom; Fine-tuning: Mute…, Relax, the margin; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
       above the range and (rates) `1.55` are refused with that text in red; a valid typed value saves with OK and with
       the keyboard's Done (the dialog closes, the row shows it); a custom value shows as *Custom* + value.
 - [ ] The six ranges and every level alert's threshold (day and night, the threshold review / setup step; Mac
-      Settings › Graph › Ranges, an alert's Details…, its night rule, setup's Alerts step), mg/dL and mmol/L, English and
+      Settings › Readings › Ranges, an alert's Details…, its night rule, setup's Alerts step), mg/dL and mmol/L, English and
       Spanish: under the number a line says the values it covers (*Low: 56–69 mg/dL*, *In range: 70–179 mg/dL* under
       low and high, *Very low: up to 55*, *Extremely high: from 300*); typing a custom value (Android dialog, Mac field
       or stepper) changes it as you type; turning very high off makes high's line reach extremely high (*180–299*).
-- [ ] Glucose unit mmol/L (Android Settings › Ranges › *Glucose unit*; Mac Settings › General › *Unit*), in English and
+- [ ] Glucose unit mmol/L (Android Settings › Readings › *Glucose unit*; Mac Settings › Readings › *Unit*), in English and
       Spanish: the card, the chart's range labels, the average slot, the glucose notification's title and Live Update,
       an alert (*Send a test alert* and a real low), widgets, the System UI text, the Quick Settings tile, the report,
       TalkBack / VoiceOver and the Mac menu bar all write mmol/L with one decimal (`3,9` in Spanish); every glucose
@@ -793,7 +811,7 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
 Synthetic data only: a throwaway Tidepool account and files written from the emulator, never the owner's.
 
 - [ ] Fresh install (emulator, wearer): setup's last step *Bring your history back*; *Start empty* goes home and the
-      step never comes back; reinstall, *Bring it back* opens Settings › Share with apps › Import history and Back
+      step never comes back; reinstall, *Bring it back* opens Settings › Import and export › Import history and Back
       lands on home.
 - [ ] An update that bumps the database version over an install with history (debug build): the history is empty, no
       crash, and the next launch opens *Bring your history back* on its own; Back counts as *Start empty*.

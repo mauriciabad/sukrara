@@ -24,6 +24,7 @@ import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.integrations.AppsActions
 import app.mauri.sukrara.integrations.AppsContent
 import app.mauri.sukrara.integrations.AppsUi
+import app.mauri.sukrara.integrations.DataFileRowsContent
 import app.mauri.sukrara.integrations.ServerReader
 import app.mauri.sukrara.integrations.localserver.XdripState
 import app.mauri.sukrara.integrations.upload.UploadStatus
@@ -36,7 +37,8 @@ import org.robolectric.annotation.Config
 import java.time.Instant
 
 /**
- * #181: the settings search finds Share with apps' rows ([AppsSearch], the PoC's search did): the page, as a wearer and
+ * #181: the settings search finds Share with apps' rows and Import and export's data files ([AppsSearch], the PoC's
+ * search did): the pages, as a wearer and
  * a follower see it, shows every entry with its group, has no row the search can't find (but the apps that read the
  * xDrip+ server, listed by their own names), and flashes each entry's row when a result opens it.
  */
@@ -66,7 +68,13 @@ class AppsSearchTest {
         var draw by mutableIntStateOf(0)
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
-                key(draw) { SettingsScaffoldPage("Share with apps", {}) { AppsContent(ui(wearer), now, AppsActions()) } }
+                key(draw) {
+                    SettingsScaffoldPage("Share with apps", {}) {
+                        AppsContent(ui(wearer), now, AppsActions())
+                        // Import and export's data files: `:integrations`' rows on a settings page, listed here too
+                        DataFileRowsContent(ui(wearer), {}, {})
+                    }
+                }
             }
         }
         val problems = mutableListOf<String>()

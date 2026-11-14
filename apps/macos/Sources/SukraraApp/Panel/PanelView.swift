@@ -99,7 +99,7 @@ struct PanelView: View {
         case nil: nil
         case .follow: links.openFollow
         case .following: { links.openSettingsPane(.following) }
-        case .juggluco: { links.openSettingsPane(.general) }
+        case .juggluco: { links.openSettingsPane(.following) }
         }
     }
 

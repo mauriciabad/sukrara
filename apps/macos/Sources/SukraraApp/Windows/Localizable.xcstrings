@@ -369,6 +369,22 @@
         }
       }
     },
+    "Alert Levels…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alert Levels…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niveles de alerta…"
+          }
+        }
+      }
+    },
     "Alert banners or sounds are off: alerts may go unnoticed." : {
       "localizations" : {
         "en" : {
@@ -1249,6 +1265,22 @@
         }
       }
     },
+    "Edit in Readings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit in Readings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Editar en Lecturas…"
+          }
+        }
+      }
+    },
     "Ends" : {
       "localizations" : {
         "en" : {
@@ -1357,6 +1389,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bajada rápida"
+          }
+        }
+      }
+    },
+    "Fine-tuning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine-tuning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuste fino"
+          }
+        }
+      }
+    },
+    "Fine-tuning: the waits near a threshold and the notification's buttons" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine-tuning: the waits near a threshold and the notification's buttons"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuste fino: las esperas cerca de un umbral y los botones de la notificación"
+          }
+        }
+      }
+    },
+    "Fine-tuning…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fine-tuning…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuste fino…"
           }
         }
       }
@@ -1532,7 +1612,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seguimiento"
+            "value" : "Siguiendo"
           }
         }
       }
@@ -1789,22 +1869,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Versión de GitHub"
-          }
-        }
-      }
-    },
-    "Glucose" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glucose"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glucosa"
           }
         }
       }
@@ -2241,6 +2305,294 @@
         }
       }
     },
+    "Ranges…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ranges…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rangos…"
+          }
+        }
+      }
+    },
+    "Read aloud" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read aloud"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer en voz alta"
+          }
+        }
+      }
+    },
+    "Readings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Readings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lecturas"
+          }
+        }
+      }
+    },
+    "Set when each alert sounds, in the Alerts pane" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set when each alert sounds, in the Alerts pane"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige cuándo suena cada alerta, en el panel Alertas"
+          }
+        }
+      }
+    },
+    "Settings from, reading aloud, open at login and updates" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings from, reading aloud, open at login and updates"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de, leer en voz alta, abrir al iniciar sesión y actualizaciones"
+          }
+        }
+      }
+    },
+    "The person this Mac follows, and Juggluco on this network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The person this Mac follows, and Juggluco on this network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La persona a la que sigue este Mac, y Juggluco en esta red"
+          }
+        }
+      }
+    },
+    "The ranges a ring counts are in the Readings pane" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ranges a ring counts are in the Readings pane"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los rangos que cuenta un anillo están en el panel Lecturas"
+          }
+        }
+      }
+    },
+    "The ranges are in the Readings pane" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ranges are in the Readings pane"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los rangos están en el panel Lecturas"
+          }
+        }
+      }
+    },
+    "The ranges colour the graph; these levels alert." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ranges colour the graph; these levels alert."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los rangos colorean la gráfica; estos niveles avisan."
+          }
+        }
+      }
+    },
+    "The same choice as Readings › Trend arrow: every arrow and spoken trend follow it too. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The same choice as Readings › Trend arrow: every arrow and spoken trend follow it too. %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La misma elección que Lecturas › Flecha de tendencia: todas las flechas y la tendencia leída en voz alta también la siguen. %@"
+          }
+        }
+      }
+    },
+    "The six ranges are in the Readings pane" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The six ranges are in the Readings pane"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los seis rangos están en el panel Lecturas"
+          }
+        }
+      }
+    },
+    "The unit, the ranges and the trend arrow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The unit, the ranges and the trend arrow"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La unidad, los rangos y la flecha de tendencia"
+          }
+        }
+      }
+    },
+    "This Mac's own settings, in the Alerts, Readings, Graph and Rings panes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's own settings, in the Alerts, Readings, Graph and Rings panes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ajustes propios de este Mac, en los paneles Alertas, Lecturas, Gráfica y Anillos."
+          }
+        }
+      }
+    },
+    "This Mac's own: every value, range and alert level on this Mac shows in it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's own: every value, range and alert level on this Mac shows in it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Propia de este Mac: todos los valores, rangos y niveles de alerta de este Mac se muestran en ella."
+          }
+        }
+      }
+    },
+    "Time shown, lines, treatments and the sensor on the graph" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time shown, lines, treatments and the sensor on the graph"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo mostrado, líneas, tratamientos y el sensor en la gráfica"
+          }
+        }
+      }
+    },
+    "Used by the graph, the rings, the report and the menu bar colour, and kept in order. Alert levels are set apart, in Alerts." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used by the graph, the rings, the report and the menu bar colour, and kept in order. Alert levels are set apart, in Alerts."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los usan la gráfica, los anillos, el informe y el color de la barra de menús, y se mantienen en orden. Los niveles de alerta van aparte, en Alertas."
+          }
+        }
+      }
+    },
+    "Waits near a threshold: lows %@, highs %@ · Mute %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waits near a threshold: lows %@, highs %@ · Mute %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperas cerca de un umbral: bajas %@, altas %@ · Silenciar %@"
+          }
+        }
+      }
+    },
+    "When to alert, night alerts, quiet times, sounds and fine-tuning" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When to alert, night alerts, quiet times, sounds and fine-tuning"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuándo avisar, alertas de noche, silencios, sonidos y ajuste fino"
+          }
+        }
+      }
+    },
     "macOS refused its notification, so Sukrara posted it again plain. The next alert tries again." : {
       "localizations" : {
         "en" : {
@@ -2561,22 +2913,6 @@
         }
       }
     },
-    "Settings from, unit, glucose source, startup and updates" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Settings from, unit, glucose source, startup and updates"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ajustes de, unidad, fuente de glucosa, inicio y actualizaciones"
-          }
-        }
-      }
-    },
     "Shows what's new and installs it" : {
       "localizations" : {
         "en" : {
@@ -2721,22 +3057,6 @@
         }
       }
     },
-    "The person this Mac follows" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The person this Mac follows"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La persona a la que sigue este Mac"
-          }
-        }
-      }
-    },
     "the sensor says %@ %@" : {
       "localizations" : {
         "en" : {
@@ -2813,22 +3133,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Este Mac ya sigue a alguien. Primero deja de seguir en Ajustes › Seguimiento y luego vuelve a abrir el enlace."
-          }
-        }
-      }
-    },
-    "Time shown, lines, ranges, treatments and the sensor on the graph" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Time shown, lines, ranges, treatments and the sensor on the graph"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiempo mostrado, líneas, rangos, tratamientos y el sensor en el gráfico"
           }
         }
       }
@@ -5292,7 +5596,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Junto al gráfico"
+            "value" : "Junto a la gráfica"
           }
         }
       }
@@ -5404,7 +5708,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corona junto al gráfico cuando todo está en rango"
+            "value" : "Corona junto a la gráfica cuando toda está en rango"
           }
         }
       }
@@ -5516,7 +5820,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gráfico"
+            "value" : "Gráfica"
           }
         }
       }
@@ -5580,7 +5884,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Líneas en el gráfico"
+            "value" : "Líneas en la gráfica"
           }
         }
       }
@@ -5884,7 +6188,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Restablecer todos los ajustes del gráfico…"
+            "value" : "Restablecer todos los ajustes de la gráfica…"
           }
         }
       }
@@ -5980,7 +6284,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los rangos, el gráfico, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor, las reglas de alerta y las de silencio de este Mac vuelven a los predeterminados de Sukrara. Los sonidos, la alerta sin datos, Silenciar todas las alertas y los botones de la notificación se mantienen."
+            "value" : "Los rangos, la gráfica, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor, las reglas de alerta y las de silencio de este Mac vuelven a los predeterminados de Sukrara. Los sonidos, la alerta sin datos, Silenciar todas las alertas y los botones de la notificación se mantienen."
           }
         }
       }
@@ -6012,7 +6316,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Restablecer todos los ajustes del gráfico?"
+            "value" : "¿Restablecer todos los ajustes de la gráfica?"
           }
         }
       }
@@ -6209,22 +6513,6 @@
         }
       }
     },
-    "This Mac's own settings, in the Graph, Rings and Alerts panes." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This Mac's own settings, in the Graph, Rings and Alerts panes."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los ajustes propios de este Mac, en los paneles Gráfico, Anillos y Alertas."
-          }
-        }
-      }
-    },
     "Time" : {
       "localizations" : {
         "en" : {
@@ -6348,23 +6636,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tratamientos en el gráfico"
-          }
-        }
-      }
-    },
-    "Used by the graph, the rings, the report and the menu bar colour, and kept in order." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Used by the graph, the rings, the report and the menu bar colour, and kept in order."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los usan el gráfico, los anillos, el informe y el color de la barra de menús, y se mantienen en orden."
+            "value" : "Tratamientos en la gráfica"
           }
         }
       }
@@ -6445,22 +6717,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quien lleva el sensor"
-          }
-        }
-      }
-    },
-    "When to alert, quiet rules, sounds and notifications" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "When to alert, quiet rules, sounds and notifications"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cuándo avisar, reglas de silencio, sonidos y notificaciones"
           }
         }
       }
@@ -9325,22 +9581,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Secreto de la API"
-          }
-        }
-      }
-    },
-    "Source" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Source"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Origen"
           }
         }
       }

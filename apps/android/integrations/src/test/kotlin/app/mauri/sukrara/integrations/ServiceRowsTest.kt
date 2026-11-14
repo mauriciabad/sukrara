@@ -113,8 +113,28 @@ class ServiceRowsTest {
         assertRowIcon("Garmin Connect", packageIconTag("com.garmin.android.apps.connectmobile"))
         assertRowIcon("Health Connect", serviceIconTag(Service.HealthConnect))
         assertRowIcon("Nightscout API on this phone", serviceIconTag(Service.Nightscout))
-        for (t in listOf("Send glucose to apps", "Import history", "Export data")) assertRowSymbol(t)
+        assertRowSymbol("Send glucose to apps")
         capture("apps")
+    }
+
+    /** Settings › Import and export's data files (docs/35 §7: out of Share with apps): Import history (wearer), Export data. */
+    @Test
+    fun dataFileRowsShowTheirSymbols() {
+        show {
+            DataFileRowsContent(
+                AppsUi(
+                    wearer = true,
+                    xdripOn = false,
+                    xdrip = XdripState.Off,
+                    readers = emptyList(),
+                    nightscout = UploadStatus.Off,
+                ),
+                {
+                },
+                {},
+            )
+        }
+        for (t in listOf("Import history", "Export data")) assertRowSymbol(t)
     }
 
     @Test

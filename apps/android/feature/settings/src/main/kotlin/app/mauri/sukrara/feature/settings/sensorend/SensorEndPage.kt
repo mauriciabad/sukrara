@@ -53,10 +53,16 @@ import app.mauri.sukrara.designsystem.rows.SectionButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.feature.settings.AlertSettingsStore
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SchemaPrefs
+import app.mauri.sukrara.feature.settings.SeeAlso
+import app.mauri.sukrara.feature.settings.SeeAlsoLink
 import app.mauri.sukrara.feature.settings.SettingsPage
+import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.graph.ClockText
+import app.mauri.sukrara.graph.GraphPlace
+import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.settings.SettingsSpec
 import com.android.settingslib.spa.framework.theme.SettingsDimension
 import com.android.settingslib.spa.widget.dialog.SettingsDialog
@@ -67,26 +73,61 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** Everything Settings › Sensor end shows. [sensor] = the wearer's sensor as the hub knows it. */
+/**
+ * Everything Settings › Sensor end shows. [sensor] = the wearer's sensor as the hub knows it; [config]'s night is THE
+ * night (the night alerts' window, docs/35 §7); [sensorTime] = whether each place shows the sensor's time left
+ * (`graph.sensorTime.place`, the same switches as Graph's).
+ */
 data class SensorEndPrefs(
     val config: SensorEndConfig,
     val countdownHours: Int,
     val sensor: SensorState,
+    val sensorTime: Map<GraphPlace, Boolean> = GraphPlace.entries.associateWith { true },
 )
 
 class SensorEndViewModel(
     private val settings: SettingsRepository,
     sensor: Flow<SensorState>,
+    private val alerts: AlertSettingsStore,
 ) : ViewModel() {
+    private val sensorTime: Flow<Map<GraphPlace, Boolean>> =
+        combine(GraphPlace.entries.map { p -> settings.flow(GraphSettings.SensorTime.getValue(p)) }) { on ->
+            GraphPlace.entries.zip(on.toList()).toMap()
+        }
+
     val prefs: StateFlow<SensorEndPrefs?> =
-        combine(SurfaceSettings.sensorEnd(settings), settings.flow(SurfaceSettings.CountdownHours), sensor) { c, h, s ->
-            SensorEndPrefs(c, h.toInt(), s)
+        combine(
+            SurfaceSettings.sensorEnd(settings),
+            alerts.settings.map { it.night.fromMin to it.night.toMin },
+            settings.flow(SurfaceSettings.CountdownHours),
+            sensor,
+            sensorTime,
+        ) { c, night, h, s, time ->
+            SensorEndPrefs(c.withNight(night.first, night.second), h.toInt(), s, time)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** THE night's start or end (the night alerts' `night.from` / `to`): one time range, edited here and in Night alerts. */
+    fun setNight(
+        from: Int? = null,
+        to: Int? = null,
+    ) {
+        viewModelScope.launch {
+            alerts.update { s -> s.copy(night = s.night.copy(fromMin = from ?: s.night.fromMin, toMin = to ?: s.night.toMin)) }
+        }
+    }
+
+    fun setSensorTime(
+        place: GraphPlace,
+        on: Boolean,
+    ) {
+        viewModelScope.launch { settings.set(GraphSettings.SensorTime.getValue(place), on) }
+    }
 
     /** Applies [transform] to the stored settings (never to a stale copy). */
     fun change(transform: (SensorEndConfig) -> SensorEndConfig) {
@@ -105,7 +146,28 @@ class SensorEndViewModel(
 class SensorEndActions(
     val change: ((SensorEndConfig) -> SensorEndConfig) -> Unit = {},
     val setCountdownHours: (Double) -> Unit = {},
+    /** THE night's start ([from]) or end ([to]): the night alerts' window. */
+    val setNight: (from: Int?, to: Int?) -> Unit = { _, _ -> },
+    val setSensorTime: (GraphPlace, Boolean) -> Unit = { _, _ -> },
+    /** *See also*: Settings › Sensor and Alerts › Night alerts. */
+    val openSensor: () -> Unit = {},
+    val openNight: () -> Unit = {},
 )
+
+/** The places the sensor's time left shows in, as Graph names them. */
+private fun placeTitle(p: GraphPlace): Int =
+    when (p) {
+        GraphPlace.APP -> R.string.st_place_app
+        GraphPlace.NOTIFICATION -> R.string.st_place_notification
+        GraphPlace.WIDGETS -> R.string.st_place_widgets
+    }
+
+private fun placeIconOf(p: GraphPlace): Int =
+    when (p) {
+        GraphPlace.APP -> DsR.drawable.ds_ic_smartphone
+        GraphPlace.NOTIFICATION -> DsR.drawable.ds_ic_notifications
+        GraphPlace.WIDGETS -> DsR.drawable.ds_ic_widgets
+    }
 
 /** "On the end day" / "1 day before". */
 @Composable
@@ -116,9 +178,10 @@ fun reminderDays(d: Int): String =
  * Settings › Sensor end (the wearer): this sensor's end, the reminders (rows; a row opens its dialog with Remove,
  * *Add reminder* below the list up to six), first-unlock delivery, the night (evening reminder, bedtime, wake-up:
  * Android doesn't share its Bedtime schedule), the live countdowns (end countdown and its hours, warm-up) and the
- * sensor's end in the calendar ([calendar]: null = not offered).
- * [countdownReadOnly] = a follower not in Custom: the countdown's hours are mirrored (*Settings from*), shown in use
- * under [countdownNote] (why, and the way to change it).
+ * sensor's end in the calendar ([calendar]: null = not offered), the sensor's time left per place (its home; Graph
+ * has the same switches) and *See also* Sensor and Night alerts. The night is THE night (docs/35 §7): the same time
+ * range as Night alerts, edited from either page. [countdownReadOnly] = a follower not in Custom: the countdown's hours
+ * and the night are mirrored (*Settings from*), shown in use under [countdownNote] (why, and the way to change it).
  */
 @Composable
 fun SensorEndContent(
@@ -170,6 +233,8 @@ fun SensorEndContent(
                 icon = DsR.drawable.ds_ic_lock_open,
             )
         }
+        // the night and the countdown's hours are mirrored: why they can't be changed, and the way to change that
+        if (countdownReadOnly) countdownNote()
         SettingsGroup(title = stringResource(R.string.st_sensorend_night)) {
             val evening = (c.nightStart - EVENING_BEFORE_MIN + SensorReminder.MINUTES_PER_DAY) % SensorReminder.MINUTES_PER_DAY
             SwitchRow(
@@ -185,6 +250,7 @@ fun SensorEndContent(
                 { pickingNight = true },
                 enabled = c.evening || c.endedRepeatHours > 0,
                 icon = DsR.drawable.ds_ic_bedtime,
+                readOnly = countdownReadOnly,
             )
             ValueRow(
                 stringResource(R.string.st_sensorend_wakeup),
@@ -192,9 +258,10 @@ fun SensorEndContent(
                 { pickingNight = false },
                 enabled = c.evening || c.endedRepeatHours > 0,
                 icon = DsR.drawable.ds_ic_sunny,
+                readOnly = countdownReadOnly,
             )
         }
-        if (countdownReadOnly) countdownNote()
+        FooterText(stringResource(R.string.st_sensorend_night_footer))
         SettingsGroup(title = stringResource(R.string.st_sensorend_countdowns)) {
             SwitchRow(
                 stringResource(R.string.st_sensorend_countdown),
@@ -228,8 +295,30 @@ fun SensorEndContent(
                 icon = DsR.drawable.ds_ic_dia_sensor,
             )
         }
+        // the sensor's time left on the card, per place: its home is here, Graph shows the same switches
+        SettingsGroup(title = stringResource(R.string.st_graph_sensor)) {
+            for (p in GraphPlace.entries) {
+                SwitchRow(
+                    stringResource(placeTitle(p)),
+                    prefs.sensorTime.getValue(p),
+                    { on -> actions.setSensorTime(p, on) },
+                    icon = placeIconOf(p),
+                )
+            }
+        }
         calendar?.let { (state, port) -> SensorCalendarGroup(state, port) }
         FooterText(stringResource(R.string.st_sensorend_footer))
+        SeeAlso(
+            listOf(
+                SeeAlsoLink(
+                    stringResource(R.string.st_sensor),
+                    stringResource(R.string.st_sensor_summary),
+                    Section.Sensor,
+                    actions.openSensor,
+                ),
+                SeeAlsoLink(stringResource(R.string.st_night_title), null, Section.Alerts, actions.openNight),
+            ),
+        )
     }
     editing?.let { i ->
         ReminderDialog(
@@ -269,13 +358,10 @@ fun SensorEndContent(
             if (bed) c.nightStart else c.nightEnd,
             onClose = { pickingNight = null },
         ) { m ->
-            // the night needs two different times: the other end's time is ignored
-            actions.change { cfg ->
-                when {
-                    bed && m != cfg.nightEnd -> cfg.copy(nightStart = m)
-                    !bed && m != cfg.nightStart -> cfg.copy(nightEnd = m)
-                    else -> cfg
-                }
+            // THE night (the night alerts' window): equal times would be no night, so the other end's time is ignored
+            when {
+                bed && m != c.nightEnd -> actions.setNight(m, null)
+                !bed && m != c.nightStart -> actions.setNight(null, m)
             }
         }
     }

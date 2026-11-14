@@ -7,6 +7,8 @@ plugins {
     id("sukrara.android.library")
     id("sukrara.android.compose")
     id("sukrara.screenshots.gallery")
+    // SchemaSearchTest reads THE settings schema (contracts/settings)
+    id("sukrara.contracts")
 }
 
 dependencies {

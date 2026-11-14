@@ -23,6 +23,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.feature.settings.sensorend.TimeDialog
 import app.mauri.sukrara.graph.ClockText
 import kotlin.math.roundToInt
@@ -66,6 +67,8 @@ fun NightAlertsContent(
     openKind: (AlertKind) -> Unit,
     /** Above the page's groups (a follower's *Settings from* note). */
     header: @Composable () -> Unit = {},
+    /** Settings › Sensor end, whose reminders keep quiet in the same night (the wearer's phone; null: no link). */
+    openSensorEnd: (() -> Unit)? = null,
     onBack: () -> Unit,
 ) {
     val n = ui.settings.night
@@ -125,6 +128,11 @@ fun NightAlertsContent(
             }
         }
         FooterText(stringResource(R.string.st_night_footer))
+        // THE night (docs/35 §7): the sensor reminders keep quiet in it too, and Sensor end edits the same hours
+        openSensorEnd?.let { open ->
+            FooterText(stringResource(R.string.st_night_shared))
+            SeeAlso(listOf(SeeAlsoLink(stringResource(R.string.st_sensorend_title), null, Section.SensorEnd, open)))
+        }
     }
     when (dialog) {
         "from" -> TimeDialog(stringResource(R.string.st_night_from), n.fromMin, { dialog = null }) { edit(NightEdits.from(it)) }

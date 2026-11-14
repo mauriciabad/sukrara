@@ -100,6 +100,8 @@ fun FollowersPage(
     nearby: NearbyUi = NearbyUi(),
     /** The clock for *Pair nearby*'s countdown (epoch s; screenshot tests fix it). */
     now: () -> Long = { System.currentTimeMillis() / 1000 },
+    /** The page's foot: *See also* the other data pages (the app draws them). */
+    links: @Composable () -> Unit = {},
 ) {
     var open by rememberSaveable { mutableStateOf<String?>(null) }
     var showRemoved by rememberSaveable { mutableStateOf(false) }
@@ -215,6 +217,7 @@ fun FollowersPage(
             }
         }
         FooterText(stringResource(R.string.sh_followers_footer))
+        links()
     }
     if (choosingInterval) {
         val words = CardWords.of(LocalContext.current.resources).durations

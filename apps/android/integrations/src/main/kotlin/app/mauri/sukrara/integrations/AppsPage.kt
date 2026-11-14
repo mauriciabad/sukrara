@@ -73,13 +73,11 @@ data class AppsUi(
 class AppsActions(
     val setXdrip: (Boolean) -> Unit = {},
     val openNightscout: () -> Unit = {},
-    val openExport: () -> Unit = {},
     val openLibreView: () -> Unit = {},
     val openNightscoutApi: () -> Unit = {},
     val openTidepool: () -> Unit = {},
     val openBroadcasts: () -> Unit = {},
     val openHealthConnect: () -> Unit = {},
-    val openImport: () -> Unit = {},
 )
 
 /** An installed app that reads the xDrip+ server: its package (for its icon) and its name. */
@@ -161,13 +159,11 @@ fun AppsPage(
     viewModel: AppsViewModel,
     now: () -> Instant,
     openNightscout: () -> Unit,
-    openExport: () -> Unit,
     openLibreView: () -> Unit,
     openNightscoutApi: () -> Unit,
     openTidepool: () -> Unit,
     openBroadcasts: () -> Unit,
     openHealthConnect: () -> Unit,
-    openImport: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -178,13 +174,11 @@ fun AppsPage(
             AppsActions(
                 viewModel::setXdrip,
                 openNightscout,
-                openExport,
                 openLibreView,
                 openNightscoutApi,
                 openTidepool,
                 openBroadcasts,
                 openHealthConnect,
-                openImport,
             ),
             modifier,
         )
@@ -192,9 +186,10 @@ fun AppsPage(
 }
 
 /**
- * Settings › Share with apps: LibreView and the Nightscout upload (wearer), the xDrip+ server for Garmin watches with who reads it and
- * when it was last asked (and each installed app that reads it, with that server's switch), and Export data. Every row
- * that stands for another app or service shows that app's icon ([ServiceIcon] / [PackageIcon]), as the PoC did.
+ * Settings › Share with apps: LibreView and the Nightscout upload (wearer), the xDrip+ server for Garmin watches with who
+ * reads it and when it was last asked (and each installed app that reads it, with that server's switch), and the apps
+ * on this phone. Every row that stands for another app or service shows that app's icon ([ServiceIcon] /
+ * [PackageIcon]), as the PoC did. Export data and Import history are on Settings › Import and export ([DataFileRows]).
  */
 @Composable
 fun AppsContent(
@@ -271,23 +266,45 @@ fun AppsContent(
             leading = { ServiceIcon(Service.Nightscout) },
         )
     }
+    FooterText(stringResource(R.string.in_apps_footer))
+}
+
+/**
+ * Settings › Import and export's data files (docs/35 §7: one-off files, out of Share with apps): Import history on the
+ * wearer's phone (with its state) and Export data.
+ */
+@Composable
+fun DataFileRows(
+    viewModel: AppsViewModel,
+    openImport: () -> Unit,
+    openExport: () -> Unit,
+) {
+    val ui by viewModel.ui.collectAsStateWithLifecycle()
+    ui?.let { DataFileRowsContent(it, openImport, openExport) }
+}
+
+@Composable
+fun DataFileRowsContent(
+    ui: AppsUi,
+    openImport: () -> Unit,
+    openExport: () -> Unit,
+) {
     SettingsGroup(title = stringResource(R.string.in_apps_files_group)) {
         if (ui.wearer) {
             NavigationRow(
                 stringResource(R.string.in_import_title),
-                actions.openImport,
+                openImport,
                 summary = importStatusText(ui.history),
                 icon = DsR.drawable.ds_ic_download,
             )
         }
         NavigationRow(
             stringResource(R.string.in_export_title),
-            actions.openExport,
+            openExport,
             summary = stringResource(R.string.in_apps_export_summary),
             icon = DsR.drawable.ds_ic_file_export,
         )
     }
-    FooterText(stringResource(R.string.in_apps_footer))
 }
 
 @Composable

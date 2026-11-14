@@ -68,7 +68,10 @@ class GraphViewModel(
     }
 }
 
-/** The groups of the Graph pages, each with its own Reset; [All] = everything the Graph page shows (not the ranges). */
+/**
+ * The groups of the Graph and Rings pages, each with its own Reset; [All] = everything the Graph page shows (not the
+ * ranges, not the rings), [Rings] = everything the Rings page shows.
+ */
 enum class GraphSection(
     val settings: List<Setting<*>>,
 ) {
@@ -90,7 +93,10 @@ enum class GraphSection(
     Marks(listOf(GraphSettings.Marks)),
     SensorTime(GraphSettings.SensorTime.values.toList()),
     All(
-        listOf(Lines, Time, Beside, RingOrder, BesideGraph, Marks, SensorTime).flatMap { it.settings },
+        listOf(Lines, Time, BesideGraph, Marks, SensorTime).flatMap { it.settings },
+    ),
+    Rings(
+        listOf(Beside, RingOrder).flatMap { it.settings },
     ),
     ;
 
@@ -132,7 +138,11 @@ enum class GraphSection(
             }
 
             All -> {
-                c.copy(bands = d.bands) != d
+                listOf(Lines, Time, BesideGraph, Marks, SensorTime).any { it.changed(c) }
+            }
+
+            Rings -> {
+                Beside.changed(c) || RingOrder.changed(c)
             }
         }
     }

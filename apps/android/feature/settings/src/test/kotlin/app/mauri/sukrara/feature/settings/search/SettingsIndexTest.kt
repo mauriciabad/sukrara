@@ -52,32 +52,39 @@ import app.mauri.sukrara.feature.settings.AlertsActions
 import app.mauri.sukrara.feature.settings.AlertsSettingsContent
 import app.mauri.sukrara.feature.settings.AlertsUi
 import app.mauri.sukrara.feature.settings.BackupState
+import app.mauri.sukrara.feature.settings.DataLinks
+import app.mauri.sukrara.feature.settings.DataPage
 import app.mauri.sukrara.feature.settings.Distribution
+import app.mauri.sukrara.feature.settings.FineTuningContent
 import app.mauri.sukrara.feature.settings.GraphPrefs
 import app.mauri.sukrara.feature.settings.NightAlertsContent
 import app.mauri.sukrara.feature.settings.NightKindContent
 import app.mauri.sukrara.feature.settings.OverviewActions
 import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.R
-import app.mauri.sukrara.feature.settings.RangesContent
+import app.mauri.sukrara.feature.settings.ReadingsContent
 import app.mauri.sukrara.feature.settings.ReliabilityContent
 import app.mauri.sukrara.feature.settings.SettingsOverviewContent
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import app.mauri.sukrara.feature.settings.TrendArrowContent
 import app.mauri.sukrara.feature.settings.TrendArrowUi
+import app.mauri.sukrara.feature.settings.TrendChoiceRow
 import app.mauri.sukrara.feature.settings.TrendPreview
 import app.mauri.sukrara.feature.settings.advanced.AdvancedActions
 import app.mauri.sukrara.feature.settings.advanced.AdvancedContent
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
 import app.mauri.sukrara.feature.settings.advanced.AdvancedStats
+import app.mauri.sukrara.feature.settings.advanced.ImportExportContent
 import app.mauri.sukrara.feature.settings.advanced.LogContent
 import app.mauri.sukrara.feature.settings.advanced.RelayRow
+import app.mauri.sukrara.feature.settings.advanced.SettingsFileActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromActions
 import app.mauri.sukrara.feature.settings.follower.SettingsFromContent
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
+import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.pens.PensContent
@@ -89,6 +96,8 @@ import app.mauri.sukrara.feature.settings.sensor.SensorSettingsContent
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsState
 import app.mauri.sukrara.feature.settings.sensor.SensorSummary
 import app.mauri.sukrara.feature.settings.sensor.SourceChoice
+import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarPort
+import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarState
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndPrefs
@@ -218,12 +227,25 @@ class SettingsIndexTest {
             *AlertKind.entries
                 .map { kind ->
                     Scene("alert $kind", SearchTarget.Page(SettingsRoute.AlertKindPage(kind))) {
-                        AlertKindContent(kind, AlertsUi(AlertSettings(), AlertUiState()), clock, AlertKindActions(playback = channels)) {}
+                        AlertKindContent(
+                            kind,
+                            AlertsUi(AlertSettings(), AlertUiState()),
+                            clock,
+                            AlertKindActions(playback = channels),
+                            // the fast alerts show the trend arrow's choice (the app passes it for those two)
+                            trend = {
+                                if (kind == AlertKind.FALLING_FAST ||
+                                    kind == AlertKind.RISING_FAST
+                                ) {
+                                    TrendChoiceRow(TrendSetting.Balanced, {})
+                                }
+                            },
+                        ) {}
                     }
                 }.toTypedArray(),
             // Alerts › Night alerts while they apply (its state on top), and each alert's night rule
             Scene("night alerts", SearchTarget.Page(SettingsRoute.NightAlerts)) {
-                NightAlertsContent(nightUi, {}, {}) {}
+                NightAlertsContent(nightUi, {}, {}, openSensorEnd = {}) {}
             },
             *AlertKind.entries
                 .map { kind ->
@@ -236,10 +258,20 @@ class SettingsIndexTest {
             Scene("reliability, missing", SearchTarget.Page(SettingsRoute.Reliability)) {
                 ReliabilityContent(AlertReadiness(setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)), {}) {}
             },
-            Scene("ranges", SearchTarget.Page(SettingsRoute.Ranges)) { RangesContent(GraphPrefs(), { _, _ -> }, {}) },
+            Scene("fine-tuning", SearchTarget.Page(SettingsRoute.AlertsFineTuning)) {
+                FineTuningContent(AlertsUi(AlertSettings(), AlertUiState()), {}) {}
+            },
+            // changed: its Reset shows
+            Scene("fine-tuning, changed", SearchTarget.Page(SettingsRoute.AlertsFineTuning)) {
+                FineTuningContent(
+                    AlertsUi(AlertSettings().let { it.copy(actions = it.actions.copy(muteMin = 60)) }, AlertUiState()),
+                    {},
+                ) {}
+            },
+            Scene("ranges", SearchTarget.Page(SettingsRoute.Readings)) { ReadingsContent(GraphPrefs(), { _, _ -> }, {}) },
             // changed: Reset shows
-            Scene("ranges, changed", SearchTarget.Page(SettingsRoute.Ranges)) {
-                RangesContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {})
+            Scene("ranges, changed", SearchTarget.Page(SettingsRoute.Readings)) {
+                ReadingsContent(GraphPrefs(listOf(54.0, 70.0, 120.0, 180.0, 250.0, 300.0)), { _, _ -> }, {})
             },
             Scene("trend arrow", SearchTarget.Page(SettingsRoute.TrendArrow)) {
                 TrendArrowContent(
@@ -249,10 +281,20 @@ class SettingsIndexTest {
                 )
             },
             Scene("graph", SearchTarget.Page(SettingsRoute.Graph)) { GraphContent(GraphConfig(), GraphActions(), {}) },
-            Scene(
-                "graph, three rings",
-                SearchTarget.Page(SettingsRoute.Graph),
-            ) { GraphContent(GraphConfig(ringCount = 3), GraphActions(), {}) },
+            Scene("rings", SearchTarget.Page(SettingsRoute.Rings)) { RingsContent(GraphConfig(), GraphActions(), {}) },
+            // three rings, and changed: its Reset all shows
+            Scene("rings, three rings", SearchTarget.Page(SettingsRoute.Rings)) {
+                RingsContent(GraphConfig(ringCount = 3), GraphActions(), {})
+            },
+            Scene("import and export", SearchTarget.Page(SettingsRoute.ImportExport)) {
+                ImportExportContent(SettingsFileActions(), onBack = {}) {
+                    DataLinks(DataPage.Files, wearer = true) {}
+                }
+            },
+            // changed: Reset all shows
+            Scene("graph, changed", SearchTarget.Page(SettingsRoute.Graph)) {
+                GraphContent(GraphConfig(lines = listOf(80, 160)), GraphActions(), {})
+            },
             Scene("graph marks", SearchTarget.Page(SettingsRoute.GraphMarks)) { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             Scene("graph marks, changed", SearchTarget.Page(SettingsRoute.GraphMarks)) {
                 GraphMarksContent(GraphConfig(marks = MarkShow.DEFAULT.withoutLabels()), GraphActions(), {})
@@ -283,6 +325,15 @@ class SettingsIndexTest {
                     now,
                     SensorEndActions(),
                     onBack = {},
+                )
+            },
+            Scene("sensor end, calendar", SearchTarget.Page(SettingsRoute.SensorEnd)) {
+                SensorEndContent(
+                    SensorEndPrefs(SensorEndConfig(), 8, SensorState.Active(now.plusSeconds(86_400 + 3600))),
+                    now,
+                    SensorEndActions(),
+                    onBack = {},
+                    calendar = SensorCalendarState(on = true, own = true, googleCalendar = true) to SensorCalendarPort.None,
                 )
             },
             Scene(
@@ -355,7 +406,7 @@ class SettingsIndexTest {
             }
 
             // "Main slot: period": a slot's own rows, found by the slot's row
-            scene.startsWith("graph") -> {
+            scene.startsWith("rings") -> {
                 listOf(R.string.st_slot_period, R.string.st_slot_faded, R.string.st_slot_what).any { pattern(it).matches(row) }
             }
 
@@ -364,7 +415,7 @@ class SettingsIndexTest {
                 row == string(R.string.st_pens_none)
             }
 
-            scene == "sensor end" -> {
+            scene.startsWith("sensor end") -> {
                 row in setOf("1 day before", "On the end day")
             }
 
