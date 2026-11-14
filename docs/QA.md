@@ -284,11 +284,11 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       the shade *High glucose* never inside a bundle with *Sensor ready*; a real alert (`SYNTHETIC --ei cycle 135`) is
       removed with its group's summary once the curve is back in range (`--ei cycle 0`).
 - [ ] What stays on screen (#195, emulator, `SYNTHETIC --ei cycle 135`, a slow low): the alert's value follows the
-      card without sound once it moved 5 mg/dL (`dumpsys notification --noredact`: the level alert's `android.text`
-      changes, no new `mSoundNotificationKey`); a 1–4 mg/dL change leaves it as it is; stop the readings (`SYNTHETIC
+      card without sound with every change of the value (`dumpsys notification --noredact`: the level alert's
+      `android.text` matches the glucose notification's value, no new `mSoundNotificationKey`); stop the readings (`SYNTHETIC
       --ez on false`): at 90 s its time follows, at 5 min the value is struck through. Swipe it: it stays away until
       its 5-min repeat rings. Back in range then low again within 5 min: shown at once, silent. A watch paired (or
-      a notification-forwarding app) gets the alert and buzzes on the ring, not on each update; the glucose
+      a notification-forwarding app) gets the alert (note whether it buzzes on the silent updates too); the glucose
       notification stays its own (never merged). Mac following the emulator: the same value updates, no second
       banner, a dismissed alert stays away until its repeat.
 - [ ] Mac: no fake-reading hook yet; follow the emulator wearer (or `swift test --filter AlertsTests`: the scenarios) and compare the

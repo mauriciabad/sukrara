@@ -12,8 +12,8 @@ import UserNotifications
 
 @testable import SukraraApp
 
-/// #195 (SPEC §1 "Showing an alert") on the Mac: an alert up shows the newest reading without sound once it moved
-/// 5 mg/dL (never a wiggle, never within 10 s of the ring) or turned late / stale, waking for those steps; one the
+/// #195 (SPEC §1 "Showing an alert") on the Mac: an alert up shows the newest reading without sound with every change
+/// (never within 10 s of the ring) or when it turned late / stale, waking for those steps; one the
 /// person dismissed or clicked stays away until its next ring; a reading back out of range shows the episode's alert
 /// again silently, a milder kind replaces a worse one silently; a follower shows the wearer's `show` silently unless
 /// its own Mute quiets the side. Android: `AlertLiveValueTest`, `AlertLiveNotificationTest`.
@@ -37,21 +37,20 @@ import UserNotifications
 
     // MARK: the rule
 
-    @Test func theThresholdIs5MgdlAndTheGuardAfterARing10s() {
-        #expect(AlertLiveValue.minMoveMgdl == 5)
+    @Test func anyChangeOfTheValueCountsAndTheGuardAfterARingIs10s() {
+        #expect(AlertLiveValue.minMoveMgdl == 1)
         #expect(AlertLiveValue.afterRing == 10)
     }
 
-    @Test func aMoveUnder5ChangesNothingAMoveOf5Does() {
-        #expect(!AlertLiveValue.changed(look(70), look(74)))
-        #expect(!AlertLiveValue.changed(look(70), look(66)))
-        #expect(AlertLiveValue.changed(look(70), look(75)))
-        #expect(AlertLiveValue.changed(look(70), look(65)))
+    @Test func anyChangeOfTheValueChangesItTheSameValueDoesnt() {
+        #expect(AlertLiveValue.changed(look(70), look(71)))
+        #expect(AlertLiveValue.changed(look(70), look(69)))
+        #expect(!AlertLiveValue.changed(look(70), look(70)))
     }
 
     @Test func aNewArrowOrFreshnessStepChangesIt() {
         #expect(AlertLiveValue.changed(look(70, rate: -1.5), look(70, rate: -2.5)))
-        #expect(!AlertLiveValue.changed(look(70, rate: -1.2), look(71, rate: -1.8)))
+        #expect(!AlertLiveValue.changed(look(70, rate: -1.2), look(70, rate: -1.8)))
         #expect(AlertLiveValue.changed(look(70, age: 30), look(70, age: 120)))
         #expect(AlertLiveValue.changed(look(70, age: 120), look(70, age: 400)))
         #expect(look(70, age: 400).stale)
@@ -61,7 +60,7 @@ import UserNotifications
         let now = clock.now
         #expect(!AlertLiveValue.due(look(70), look(80), rangAt: now.addingTimeInterval(-9), now: now))
         #expect(AlertLiveValue.due(look(70), look(80), rangAt: now.addingTimeInterval(-10), now: now))
-        #expect(!AlertLiveValue.due(look(70), look(72), rangAt: nil, now: now))
+        #expect(!AlertLiveValue.due(look(70), look(70), rangAt: nil, now: now), "nothing changed")
     }
 
     /// #195 review: the sensor's LO / HI is said in words ("LO · below 40"): a number after it is news, however close.
@@ -89,16 +88,19 @@ import UserNotifications
 
     // MARK: the controller
 
-    @Test func theValueFollowsTheReadingsSilentlyOnceItMoved5() {
+    @Test func theValueFollowsEveryReadingSilentlyAsTheMenuBar() {
         let c = controller()
         c.reading(reading(65))
         #expect(notifier.values == [65])
         clock.advance(by: 60)
-        c.reading(reading(62))
-        #expect(notifier.values == [65], "a 3 mg/dL wiggle: left as it is")
+        c.reading(reading(64))
+        #expect(notifier.values == [65, 64], "a 1 mg/dL change shows too")
+        clock.advance(by: 60)
+        c.reading(reading(64))
+        #expect(notifier.values == [65, 64], "the same value: nothing posted")
         clock.advance(by: 60)
         c.reading(reading(60))
-        #expect(notifier.values == [65, 60])
+        #expect(notifier.values == [65, 64, 60])
         #expect(notifier.posts.last == .post(.low, id: idOfFirst(), sound: false, category: lastCategory()))
     }
 
@@ -188,7 +190,7 @@ import UserNotifications
         c.reading(reading(61))
         clock.advance(by: 60)
         c.reading(reading(61))
-        #expect(notifier.values == [58, 61])
+        #expect(notifier.values == [58, 59, 60, 61], "each change while rising, then the silent show")
         #expect(soundOfLastPost() == false)
     }
 

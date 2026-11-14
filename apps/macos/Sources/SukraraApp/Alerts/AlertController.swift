@@ -394,7 +394,7 @@ final class AlertController {
     }
 
     /// #195: every alert up shows the newest reading, posted again without sound when what it says changed enough
-    /// (`AlertLiveValue`: the value moved 5 mg/dL, the arrow or the freshness step changed; never right after it
+    /// (`AlertLiveValue`: the value, the arrow, LO / HI or the freshness step changed; never right after it
     /// rang). One the person dismissed stays away; no data keeps its last value (a new reading ends it).
     private func refreshValues() {
         guard let r = latest else { return }

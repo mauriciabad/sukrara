@@ -102,21 +102,22 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
   they stay on?"; scenarios `notifications.txt`). An alert's notification is the episode's, kept true while it is up;
   the sounds and their timing are the rules above, unchanged:
   - **Its value is now's.** While up, a level or rate alert shows the newest reading, posted again **without sound**
-    once what it says changed enough: the value moved **5 mg/dL** or more (about 0.3 mmol/L; one constant per
-    platform, `AlertLiveValue`), the arrow changed, or the card's freshness step did: the reading's time follows once
-    late (`69 mg/dL ↘ · 14:05`), from 5 min it is struck through with the ring for its trend (Android; a Mac
-    notification can't strike text, it shows the ring and the time) and the fast kinds drop their rate. Never every
-    1 mg/dL wiggle (a watch whose bridge buzzes on every update would buzz every minute), never in the **10 s** after
-    it rang (Android stops a sound or vibration still playing when its notification is updated without alerting; an
-    update that comes due then is posted when the 10 s end); the device wakes for the freshness steps. The value's look is the card's (`GlucoseCard.face`, registered glyph surface
-    `alert-notification`); the header's age is the reading's (Android `when`). No data's body says when the last
-    reading came and its value (`Last reading 14:05 · 120 mg/dL`): a time never goes out of date.
+    whenever what it says changes, so it always matches the glucose notification and the card (the owner's choice): the
+    value (any change; one constant per platform, `AlertLiveValue`), the arrow, LO / HI, or the card's freshness step:
+    the reading's time follows once late (`69 mg/dL ↘ · 14:05`), from 5 min it is struck through with the ring for its
+    trend (Android; a Mac notification can't strike text, it shows the ring and the time) and the fast kinds drop their
+    rate. Never in the **10 s** after it rang (Android stops a sound or vibration still playing when its notification is
+    updated without alerting; an update that comes due then is posted when the 10 s end); the device wakes for the
+    freshness steps. The value's look is the card's (`GlucoseCard.face`, registered glyph surface `alert-notification`);
+    the header's age is the reading's (Android `when`). No data's body says when the last reading came and its value
+    (`Last reading 14:05 · 120 mg/dL`): a time never goes out of date.
   - **Between its alerts the episode's alert stays on screen.** A reading back in range (by the margin) removes it as
     before; if the side is out of range again before the episode ends, it is shown again **at once, without sound**
-    (`show`), and rings at its repeat as before. The same when a trend quiet (falling or rising back into range,
-    #193) ends while the side still matches and no ring is due (with the repeat set to once, it would never be up again). A milder kind of the same side replaces a worse one the same way
-    (very low → low, extremely high → very high: shown silently at once; before, nothing was up until the repeat).
-    Nothing is shown before an episode's first alert (a first alert that waits, §1, stays a wait).
+    (`show`), and rings at its repeat as before. The same when a trend quiet (falling or rising back into range, #193)
+    ends while the side still matches and no ring is due (with the repeat set to once, it would never be up again). A
+    milder kind of the same side replaces a worse one the same way (very low → low, extremely high → very high: shown
+    silently at once; before, nothing was up until the repeat). Nothing is shown before an episode's first alert (a
+    first alert that waits, §1, stays a wait).
   - **Seen = away until the next ring.** A swipe or a tap (Android) / a dismissal or a click (Mac) takes it away; an
     update or a silent show never brings it back; the next ring does (its repeat, a worse kind, a new episode). A swipe
     stays an answer to a very low (§4). Opening the app doesn't remove it.

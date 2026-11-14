@@ -282,6 +282,8 @@ class AlertRuntime(
             who = state.wearerName
             val monitoringNow = state.monitoringStartedAt != null
             val window = windowOf(state.sensor)
+            // what an alert up shows is the newest reading, also for what this input posts before the reading's turn
+            state.latest?.let(::readingOf)?.let { n -> if (latest.let { it == null || n.t >= it.t }) latest = n }
             // before no data turns on: it counts from the source's start, never from an older source's last reading
             val started = state.monitoringStartedAt?.epochSecond
             if (started != sourceStart) {
@@ -299,9 +301,7 @@ class AlertRuntime(
             val newest = state.latest
             if (newest != null && newest.t.epochSecond != fedReadingAt) {
                 fedReadingAt = newest.t.epochSecond
-                val r = readingOf(newest)
-                if (latest.let { it == null || r.t >= it.t }) latest = r
-                run(AlertInput.Reading(r), now)
+                run(AlertInput.Reading(readingOf(newest)), now)
             }
         }
     }
@@ -633,7 +633,7 @@ class AlertRuntime(
 
     /**
      * #195: every alert up shows the newest reading, posted again without sound when what it says changed enough
-     * ([AlertLiveValue]: the value moved 5 mg/dL, the arrow or the freshness step changed; never right after it rang).
+     * ([AlertLiveValue]: the value, the arrow, LO / HI or the freshness step changed; never right after it rang).
      * One the person swiped or tapped away stays away (it is noted here when it is found gone). No data's alert keeps
      * its last value: a new reading ends it.
      */

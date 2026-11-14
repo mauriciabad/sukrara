@@ -13,16 +13,16 @@ import kotlin.math.abs
 
 /**
  * When an alert's notification shows the newest reading again, without sound (#195, SPEC §1 "Showing an alert"): a
- * value left up for minutes is wrong (glucose always moves), but every wiggle posted again would reach a watch that
- * buzzes on each update (third-party bridges ignore Android's only-alert-once). So it is updated only when what it
- * says changes enough: the value moved [MIN_MOVE_MGDL] or more, the arrow changed, or the card's freshness step did
+ * value left up for minutes is wrong (glucose always moves), and one that differs from the glucose notification beside
+ * it reads as wrong (the owner's choice: it always matches). So it is updated whenever what it says changes: the value
+ * moved [MIN_MOVE_MGDL] (any change), the arrow changed, it became or left LO / HI, or the card's freshness step changed
  * (the reading's time shown once late, struck through from 5 min: [GlucoseCard.face], surface `alert-notification`).
  * Never in the [AFTER_RING_S] after the alert rang: Android stops a sound or vibration still playing when its
  * notification is updated without alerting. The Mac has the same rule (`AlertLiveValue.swift`).
  */
 object AlertLiveValue {
-    /** The smallest move of the value (mg/dL, about 0.3 mmol/L) that updates the notification. */
-    const val MIN_MOVE_MGDL = 5
+    /** The smallest move of the value (mg/dL) that updates the notification: any change, so it matches the card. */
+    const val MIN_MOVE_MGDL = 1
 
     /** No update this soon (s) after the alert rang. */
     const val AFTER_RING_S = 10L

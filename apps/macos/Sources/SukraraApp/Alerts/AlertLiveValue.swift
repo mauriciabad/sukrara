@@ -7,13 +7,14 @@ import SukraraCore
 import SukraraGraph
 
 /// When an alert's notification shows the newest reading again, without sound (#195, SPEC §1 "Showing an alert"): a
-/// value left up for minutes is wrong (glucose always moves), but every wiggle posted again is a needless update. So it
-/// is updated only when what it says changes enough: the value moved `minMoveMgdl` or more, the arrow changed, or the
-/// card's freshness step did (the reading's time once late, the ring once stale: `AlertText.look`). Never in the
+/// value left up for minutes is wrong (glucose always moves), and one that differs from the menu bar reads as wrong (the
+/// owner's choice: it always matches). So it is updated whenever what it says changes: the value moved `minMoveMgdl`
+/// (any change), the arrow changed, it became or left LO / HI, or the card's freshness step changed (the reading's time
+/// once late, the ring once stale: `AlertText.look`). Never in the
 /// `afterRing` after the alert rang. The same rule as Android's `AlertLiveValue.kt`.
 enum AlertLiveValue {
-    /// The smallest move of the value (mg/dL, about 0.3 mmol/L) that updates the notification.
-    static let minMoveMgdl = 5
+    /// The smallest move of the value (mg/dL) that updates the notification: any change, so it matches the menu bar.
+    static let minMoveMgdl = 1
     /// No update this soon after the alert rang (Android stops a sound still playing on a silent update; the Mac keeps
     /// the same rule).
     static let afterRing: TimeInterval = 10

@@ -33,7 +33,7 @@ import java.util.Locale
 
 /**
  * #195 (SPEC §1 "Showing an alert"), read back from the shade: the real runtime and the real notifier. An alert up
- * shows the newest reading without sound once it moved 5 mg/dL (never a wiggle, never within 10 s of the ring), its
+ * shows the newest reading without sound with every change (never within 10 s of the ring), its
  * time once late and the value struck through once stale, with the header's age the reading's; one swiped or tapped
  * away stays away until its next ring; a reading back out of range shows the episode's alert again silently, a milder
  * kind replaces a worse one silently; no data takes the level alert away and says when the last reading came; a
@@ -100,13 +100,13 @@ class AlertLiveNotificationTest {
 
     private fun settings(s: AlertSettings = AlertSettings()) = runBlocking { rig.store.setSettings(s) }
 
-    @Test fun `the value follows the readings silently once it moved 5 mg dL, never a wiggle`() {
+    @Test fun `the value follows every reading silently, as the glucose notification`() {
         settings()
         reading(65, 0)
         assertEquals("65 mg/dL ○", level()!!.text().toString())
         assertTrue(!level()!!.silent())
-        reading(62, 60)
-        assertEquals("a 3 mg/dL wiggle: left as it is", "65 mg/dL ○", level()!!.text().toString())
+        reading(64, 60)
+        assertEquals("a 1 mg/dL change shows too", "64 mg/dL ○", level()!!.text().toString())
         reading(60, 120)
         assertEquals("60 mg/dL ○", level()!!.text().toString())
         assertTrue("updated without sound", level()!!.silent())
