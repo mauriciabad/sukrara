@@ -338,44 +338,36 @@
                 $0.ringCount = 3
                 $0.ringOrder = [.veryLow, .low, .tight, .target, .high, .veryHigh]
             }
-            own.setPlaceHours(24, .widget)
-            own.setSensorPlace(false, .menubar)
-            // a setting's Exceptions sheet (docs/38): one place with its own value, the other on Default
-            out.append(
-                (
-                    "settings-graph-exceptions",
-                    AnyView(
-                        ExceptionsSheet(
-                            title: L10n.t("Time shown"),
-                            places: {
-                                ForEach(GraphPlace.allCases, id: \.self) { place in
-                                    NumberSettingRow(
-                                        label: GraphPane.placeName(place), format: place.hours.format,
-                                        value: .constant(own.placeHours(place)), defaultValue: "12 h")
-                                }
-                            }
-                        ) {}
-                    )
-                ))
-            out.append(
-                (
-                    "settings-graph-exceptions-sensor",
-                    AnyView(
-                        ExceptionsSheet(
-                            title: L10n.t("Sensor time left"),
-                            places: {
-                                ForEach(GraphPlace.allCases, id: \.self) { place in
-                                    OverridePicker(
-                                        label: GraphPane.placeName(place), defaultOn: true,
-                                        own: .constant(own.sensorPlace(place)))
-                                }
-                            }
-                        ) {}
-                    )
-                ))
+            // the widgets differ (docs/38): their own time shown, the sensor time left off on them
+            own.setPlaceHours(6, .widget)
+            own.setSensorPlace(false, .widget)
             let marta = WearerSettings(
                 json: #"{"graph":{"tight":130,"defaultHours":6,"lines":"","lastPlace":"END"}}"#, wearer: "Marta")
             let fromWearer = SettingsModel(store: scratch(), follow: following, wearer: marta, version: "0.12.0")
+            // a setting's page in the Graph pane: the widgets following the menu bar (quiet), with their own, following
+            // Marta (the menu bar's value read-only)
+            let samesStore = scratch()
+            SettingsModel(store: samesStore, follow: following, version: "0.12.0").settingsFrom = .custom
+            let pages: [(String, any SettingsStoring, WearerSettings?, SettingsModel.GraphPage)] = [
+                ("settings-graph-time-shown", samesStore, nil, .hours),
+                ("settings-graph-time-shown-own", ownStore, nil, .hours),
+                ("settings-graph-time-shown-wearer", fromWearer.store, marta, .hours),
+                ("settings-graph-sensor-time", ownStore, nil, .sensorTime),
+                ("settings-graph-sensor-time-same", samesStore, nil, .sensorTime),
+            ]
+            for (name, store, wearer, page) in pages {
+                let m = SettingsModel(store: store, follow: following, wearer: wearer, version: "0.12.0")
+                m.pane = .graph
+                m.graphPage = page
+                out.append(
+                    (
+                        name,
+                        AnyView(
+                            SettingsView(
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                            ).settingsWindow(m, width: 600, height: 360))
+                    ))
+            }
             for (name, pane, model, height) in [
                 ("settings-readings", SettingsModel.Pane.readings, own, 1060.0),
                 ("settings-readings-wearer", .readings, fromWearer, 1000),

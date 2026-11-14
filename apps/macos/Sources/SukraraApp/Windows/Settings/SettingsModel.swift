@@ -28,8 +28,15 @@ public final class SettingsModel {
     var focusStatus: FocusStatus? { timeSensitive.map { FocusStatus(through: throughFocus, timeSensitive: $0) } }
     /// The pane shown; the window reopens on it.
     public var pane: Pane {
-        didSet { store.set(pane.rawValue, for: MacSettings.settingsPane) }
+        didSet {
+            store.set(pane.rawValue, for: MacSettings.settingsPane)
+            graphPage = nil  // a pane opens at its top level
+        }
     }
+    /// A setting's page the Graph pane shows in its place (its row's chevron; back: ⌘[ / Esc); nil = the pane.
+    public var graphPage: GraphPage?
+    /// The Graph pane's settings with a page of their own: the menu bar's value and the widgets' (docs/38).
+    public enum GraphPage: Sendable { case hours, sensorTime }
     /// "Copy the wearer's settings…", "Reset to Defaults…" and "Reset all graph settings…" are asked first.
     public var confirmingCopy = false
     public var confirmingReset = false
@@ -186,15 +193,15 @@ public final class SettingsModel {
         if store.setNumber(v, for: n) { revision += 1 }
     }
 
-    /// A place's own time shown (0 = Default): always this Mac's (docs/38).
+    /// A place's own time shown (0 = Same as the menu bar): always this Mac's (docs/38).
     public func placeHours(_ p: GraphPlace) -> Double { _ = revision; return store.number(p.hours) }
     public func setPlaceHours(_ v: Double, _ p: GraphPlace) { if store.setNumber(v, for: p.hours) { revision += 1 } }
-    /// The sensor's time left: the default every place follows, always this Mac's.
+    /// The sensor's time left on the menu bar's card, which every place follows; always this Mac's.
     public var sensorTime: Bool {
         get { _ = revision; return store.value(MacSettings.sensorTime) }
         set { store.set(newValue, for: MacSettings.sensorTime); revision += 1 }
     }
-    /// A place's own sensor time left (nil = Default).
+    /// A place's own sensor time left (nil = Same as the menu bar).
     public func sensorPlace(_ p: GraphPlace) -> Bool? {
         _ = revision; return PlaceOverride(stored: store.value(p.sensorTime)).own
     }
@@ -227,7 +234,7 @@ public final class SettingsModel {
     public var graphChanged: Bool {
         graph != GraphConfig() || !sensorTime
             || GraphPlace.allCases.contains {
-                placeHours($0) != MacSettings.menubarHours.format.default || sensorPlace($0) != nil
+                placeHours($0) != $0.hours.format.default || sensorPlace($0) != nil
             }
     }
 
@@ -237,7 +244,7 @@ public final class SettingsModel {
         writeGraph(GraphConfig())
         for p in GraphPlace.allCases {
             store.set(p.hours.format.default, for: p.hours.spec)
-            store.set(PlaceOverride.default.rawValue, for: p.sensorTime)
+            store.set(PlaceOverride.same.rawValue, for: p.sensorTime)
         }
         store.set(true, for: MacSettings.sensorTime)
         revision += 1

@@ -58,10 +58,10 @@ class GraphViewModel(
         hours: Double,
     ) = set(GraphSettings.PlaceHours.getValue(place), hours)
 
-    /** The sensor's time left: the default every place follows. */
+    /** The sensor's time left: the app's, every place follows it unless it has its own. */
     fun sensorTime(on: Boolean) = set(GraphSettings.SensorTime, on)
 
-    /** A place's own sensor time left; null = Default. */
+    /** A place's own sensor time left; null = Same as the app. */
     fun sensorPlace(
         place: GraphPlace,
         own: Boolean?,
@@ -118,7 +118,7 @@ enum class GraphSection(
             }
 
             Time -> {
-                c.defaultHours != d.defaultHours || c.placeHours.isNotEmpty()
+                c.appHours != d.appHours || c.placeHours.isNotEmpty()
             }
 
             Beside -> {
@@ -139,7 +139,7 @@ enum class GraphSection(
             }
 
             SensorTime -> {
-                c.sensorTimeDefault != d.sensorTimeDefault || c.sensorPlace.isNotEmpty()
+                c.appSensorTime != d.appSensorTime || c.sensorPlace.isNotEmpty()
             }
 
             All -> {

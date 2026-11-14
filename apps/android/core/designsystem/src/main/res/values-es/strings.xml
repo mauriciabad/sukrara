@@ -173,12 +173,7 @@
         <item quantity="many">%1$s + %2$d cambios</item>
         <item quantity="other">%1$s + %2$d cambios</item>
     </plurals>
-    <!-- un ajuste con un valor predeterminado y excepciones por lugar (docs/38) -->
-    <string name="ds_default_value">Predeterminado (%1$s)</string>
+    <!-- el valor de un interruptor en palabras (el tiempo restante del sensor de un lugar, docs/38) -->
     <string name="ds_on">Activado</string>
     <string name="ds_off">Desactivado</string>
-    <string name="ds_exceptions">Excepciones</string>
-    <string name="ds_exceptions_none">Ninguna</string>
-    <string name="ds_exception">%1$s: %2$s</string>
-    <string name="ds_list_separator">", "</string>
 </resources>

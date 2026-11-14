@@ -4,14 +4,13 @@
 import SukraraCore
 import SukraraGraph
 
-/// A place that shows the card with settings of its own (schema `graph.hours.place`, `graph.sensorTime.place`).
+/// A place that can show the card with settings of its own, differing from the menu bar's (schema `graph.hours.place`,
+/// `graph.sensorTime.place` "places"): the widgets. The menu bar uses the shared value.
 public enum GraphPlace: String, CaseIterable, Sendable {
-    case menubar, widget
+    case widget
 
-    var hours: MacSettings.Number { self == .menubar ? MacSettings.menubarHours : MacSettings.widgetHours }
-    var sensorTime: SettingSpec<String> {
-        self == .menubar ? MacSettings.menubarSensorTime : MacSettings.widgetSensorTime
-    }
+    var hours: MacSettings.Number { MacSettings.widgetHours }
+    var sensorTime: SettingSpec<String> { MacSettings.widgetSensorTime }
 }
 
 /// Where the mirrored card settings come from now (Settings from): this Mac's own values (Custom), Sukrara's defaults
@@ -46,8 +45,9 @@ struct GraphSource {
 }
 
 extension GraphConfig {
-    /// The card's settings for `place` (nil = the defaults every place starts from). The mirrored ones follow Settings
-    /// from (`GraphSource`); each place's own time shown and sensor time left are always this Mac's. Every value goes
+    /// The card's settings for `place` (nil = the menu bar's, which every place follows unless it has its own). The
+    /// mirrored ones follow Settings from (`GraphSource`); a place's own time shown and sensor time left are always
+    /// this Mac's. Every value goes
     /// through its schema format, so whatever is stored or received loads as a value the settings accept.
     public static func load(from store: some SettingsStoring, wearer: WearerSettings?, place: GraphPlace? = nil)
         -> GraphConfig

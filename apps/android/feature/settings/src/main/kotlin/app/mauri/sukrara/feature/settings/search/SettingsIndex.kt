@@ -175,7 +175,7 @@ object SettingsIndex {
             SettingsRoute.Rings -> R.string.st_rings_title
             SettingsRoute.ImportExport -> R.string.st_files_title
             SettingsRoute.GraphMarks -> R.string.st_marks_title
-            is SettingsRoute.PlaceExceptions -> DsR.string.ds_exceptions
+            is SettingsRoute.PlacePage -> placeTitle(route.setting)
             SettingsRoute.LockScreen -> R.string.st_lock_title
             SettingsRoute.Pens -> R.string.st_pens_title
             SettingsRoute.Reliability -> R.string.st_reliability_title
@@ -208,8 +208,8 @@ object SettingsIndex {
                 SettingsRoute.Graph
             }
 
-            // a setting's Exceptions are under its home: Time shown's in Graph, the sensor time's in Sensor end
-            is SettingsRoute.PlaceExceptions -> {
+            // a setting's page with its places is under its home: Time shown in Graph, the sensor time in Sensor end
+            is SettingsRoute.PlacePage -> {
                 when (route.setting) {
                     PlaceSetting.Hours -> SettingsRoute.Graph
                     PlaceSetting.SensorTime -> SettingsRoute.SensorEnd
@@ -296,17 +296,21 @@ object SettingsIndex {
         )
     }
 
-    /** The place rows of a setting's Exceptions page (docs/38), in the group named after the setting. */
-    private fun MutableList<SearchEntry>.places(
-        setting: PlaceSetting,
-        @StringRes group: Int,
-    ) = rows(
-        SettingsRoute.PlaceExceptions(setting),
-        group,
-        R.string.st_place_app to null,
-        R.string.st_place_notification to null,
-        R.string.st_place_widgets to null,
-    )
+    /** The title of a setting's page with its places (docs/38): the setting's name. */
+    private fun placeTitle(setting: PlaceSetting): Int =
+        when (setting) {
+            PlaceSetting.Hours -> R.string.st_graph_hours
+            PlaceSetting.SensorTime -> R.string.st_graph_sensor
+        }
+
+    /** The place rows of a setting's page (docs/38), in its *Notification and widgets* group. */
+    private fun MutableList<SearchEntry>.places(setting: PlaceSetting) =
+        rows(
+            SettingsRoute.PlacePage(setting),
+            R.string.st_places_group,
+            R.string.st_place_notification to null,
+            R.string.st_place_widgets to null,
+        )
 
     private val overviewTrail = listOf(R.string.st_settings_title)
 
@@ -633,10 +637,9 @@ object SettingsIndex {
                 R.string.st_graph_line_add to null,
                 R.string.st_graph_grid to null,
             )
-            rows(graph, R.string.st_graph_hours, R.string.st_graph_hours to null, R.string.st_graph_hours_default to null)
-            // the places that differ from the default are on the Exceptions page (docs/38)
-            pageRow(SettingsRoute.PlaceExceptions(PlaceSetting.Hours), R.string.st_graph_hours, keywords = R.string.st_exceptions_keywords)
-            places(PlaceSetting.Hours, R.string.st_graph_hours)
+            // Time shown: the app's value and the places that differ; its page has them all (docs/38)
+            pageRow(SettingsRoute.PlacePage(PlaceSetting.Hours), null, keywords = R.string.st_places_keywords)
+            places(PlaceSetting.Hours)
             rows(
                 graph,
                 R.string.st_graph_beside_graph,
@@ -644,17 +647,15 @@ object SettingsIndex {
                 R.string.st_graph_crown to null,
             )
             pageRow(SettingsRoute.GraphMarks, null)
-            // the sensor time's rows, the same as Sensor end's: the default and its Exceptions
-            rows(graph, R.string.st_graph_sensor, R.string.st_graph_hours_default to null)
+            // the sensor time's row, the same as Sensor end's: it opens the same page
             add(
                 SearchEntry(
-                    DsR.string.ds_exceptions,
+                    R.string.st_graph_sensor,
                     SearchTarget.Page(graph),
                     trail(graph),
-                    SearchTarget.Page(SettingsRoute.PlaceExceptions(PlaceSetting.SensorTime)),
-                    group = R.string.st_graph_sensor,
+                    SearchTarget.Page(SettingsRoute.PlacePage(PlaceSetting.SensorTime)),
                     highlight = null,
-                    keywords = R.string.st_exceptions_keywords,
+                    keywords = R.string.st_places_keywords,
                 ),
             )
             rows(graph, null, R.string.st_graph_reset_all to null)
@@ -772,14 +773,10 @@ object SettingsIndex {
                 R.string.st_sensorend_countdown_hours to null,
                 R.string.st_sensorend_warmup to R.string.st_sensorend_warmup_summary,
             )
-            // the sensor's time left on the card: its home is here, Graph has the same rows (docs/35 §7, docs/38)
-            rows(sensorEnd, R.string.st_graph_sensor, R.string.st_graph_hours_default to null)
-            pageRow(
-                SettingsRoute.PlaceExceptions(PlaceSetting.SensorTime),
-                R.string.st_graph_sensor,
-                keywords = R.string.st_exceptions_keywords,
-            )
-            places(PlaceSetting.SensorTime, R.string.st_graph_sensor)
+            // the sensor's time left on the card: its home is here, Graph has the same row (docs/35 §7, docs/38)
+            pageRow(SettingsRoute.PlacePage(PlaceSetting.SensorTime), null, keywords = R.string.st_places_keywords)
+            rows(SettingsRoute.PlacePage(PlaceSetting.SensorTime), null, R.string.st_sensor_time_show to null)
+            places(PlaceSetting.SensorTime)
             rows(sensorEnd, R.string.st_sensorend_after, R.string.st_sensorend_again to null)
             // the sensor's end in the calendar (the wearer's phone)
             rows(

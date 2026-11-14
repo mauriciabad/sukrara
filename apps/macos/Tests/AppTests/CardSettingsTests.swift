@@ -214,35 +214,47 @@ import Testing
         #expect(c.lines == [100] && c.lastPlace == .nearValue)
     }
 
-    @Test func placesKeepTheirOwnHoursAndSensorTime() {
+    @Test func theWidgetKeepsItsOwnHoursAndSensorTime() {
         let s = custom()
         s.setNumber(24, for: MacSettings.widgetHours)
         s.set("off", for: MacSettings.widgetSensorTime)
-        let menubar = GraphConfig.load(from: s, wearer: nil, place: .menubar)
+        let menubar = GraphConfig.load(from: s, wearer: nil)
         let widget = GraphConfig.load(from: s, wearer: nil, place: .widget)
         #expect(menubar.hours == 12 && menubar.sensorTime)
         #expect(widget.hours == 24 && !widget.sensorTime)
     }
 
-    /// #209 (docs/38): the sensor's time left has a default every place follows; a place's Default / On / Off is its own.
-    @Test func eachPlaceFollowsTheSensorTimeDefaultUnlessItHasItsOwn() {
+    /// #209 (docs/38): the menu bar uses the shared value; the widgets follow it (Same) unless they have their own.
+    @Test func theWidgetFollowsTheMenuBarUnlessItHasItsOwn() {
         let s = custom()
+        s.setNumber(6, for: MacSettings.graphHours)
         s.set(false, for: MacSettings.sensorTime)
-        s.set("on", for: MacSettings.menubarSensorTime)
-        #expect(GraphConfig.load(from: s, wearer: nil, place: .menubar).sensorTime)
-        #expect(!GraphConfig.load(from: s, wearer: nil, place: .widget).sensorTime)
-        s.set(true, for: MacSettings.sensorTime)
-        s.set("default", for: MacSettings.menubarSensorTime)
-        s.set("maybe", for: MacSettings.widgetSensorTime)  // unknown = Default
-        #expect(GraphConfig.load(from: s, wearer: nil, place: .menubar).sensorTime)
-        #expect(GraphConfig.load(from: s, wearer: nil, place: .widget).sensorTime)
+        var menubar = GraphConfig.load(from: s, wearer: nil)
+        var widget = GraphConfig.load(from: s, wearer: nil, place: .widget)
+        #expect(menubar.hours == 6 && !menubar.sensorTime)
+        #expect(widget.hours == 6 && !widget.sensorTime)  // Same as the menu bar
+        s.setNumber(3, for: MacSettings.widgetHours)
+        s.set("on", for: MacSettings.widgetSensorTime)
+        menubar = GraphConfig.load(from: s, wearer: nil)
+        widget = GraphConfig.load(from: s, wearer: nil, place: .widget)
+        #expect(menubar.hours == 6 && !menubar.sensorTime)  // the widgets' own never changes the menu bar
+        #expect(widget.hours == 3 && widget.sensorTime)
+        s.setNumber(0, for: MacSettings.widgetHours)
+        s.set("maybe", for: MacSettings.widgetSensorTime)  // unknown = Same
+        widget = GraphConfig.load(from: s, wearer: nil, place: .widget)
+        #expect(widget.hours == 6 && !widget.sensorTime)
     }
 
-    /// The Exceptions row names only the places that differ, or None.
-    @Test func exceptionsSummaryNamesOnlyThePlacesThatDiffer() {
-        #expect(PlaceExceptions.summary([("Menu bar panel", nil), ("Widgets", nil)]) == "None")
-        #expect(PlaceExceptions.summary([("Menu bar panel", nil), ("Widgets", "6 h")]) == "Widgets: 6 h")
-        #expect(PlaceExceptions.defaultChoice("12 h") == "Default (12 h)")
+    /// The line under a setting's row on the Graph pane names the widgets' value only where it differs.
+    @Test func placeSummarySaysOnlyWhatDiffers() {
+        let hours = { (h: Int) in "\(h) h" }
+        #expect(PlaceSummary.line(menuBar: 12, widgets: nil, word: hours) == nil)  // nothing differs
+        #expect(PlaceSummary.line(menuBar: 12, widgets: 6, word: hours) == "6 h on widgets")
+        #expect(PlaceSummary.line(menuBar: 12, widgets: 12, word: hours) == nil)  // its own, the same value
+        #expect(PlaceSummary.line(menuBar: true, widgets: nil, word: ReadOnlyValue.onOff) == nil)  // a switch
+        #expect(PlaceSummary.line(menuBar: true, widgets: false, word: ReadOnlyValue.onOff) == "Off on widgets")
+        #expect(PlaceSummary.line(menuBar: false, widgets: false, word: ReadOnlyValue.onOff) == nil)
+        #expect(PlaceSummary.sameAsMenuBar("12 h") == "Same as the menu bar (12 h)")
     }
 
     @Test func settingsFromDecidesTheMirroredValues() throws {

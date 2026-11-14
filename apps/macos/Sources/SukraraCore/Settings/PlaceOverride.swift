@@ -2,26 +2,26 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/// One place's own value of a switch that has a default for every place (schema option `placeOverride`, docs/38):
-/// `.default` follows the default, `.on` / `.off` are the place's own.
+/// A place's own value of a switch the menu bar sets for every place (schema option `placeOverride`, docs/38):
+/// `.same` follows the menu bar's, `.on` / `.off` are the place's own.
 public enum PlaceOverride: String, CaseIterable, Sendable {
-    case `default`, on, off
+    case same, on, off
 
-    /// The place's own value; nil = the default's.
+    /// The place's own value; nil = the menu bar's.
     public var own: Bool? {
         switch self {
-        case .default: nil
+        case .same: nil
         case .on: true
         case .off: false
         }
     }
 
     public init(own: Bool?) {
-        self = own.map { $0 ? .on : .off } ?? .default
+        self = own.map { $0 ? .on : .off } ?? .same
     }
 
-    /// A stored name; unknown = `.default`.
+    /// A stored name; unknown = `.same`.
     public init(stored: String) {
-        self = PlaceOverride(rawValue: stored) ?? .default
+        self = PlaceOverride(rawValue: stored) ?? .same
     }
 }

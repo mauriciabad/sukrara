@@ -5,16 +5,42 @@ import SukraraCore
 import SukraraGraph
 import SwiftUI
 
-/// Graph: the chart only. Atop, the target range in use with the way to Readings (where the ranges are); the time shown
-/// (default + each place's own), the distribution and crown beside the chart, the vertical lines, treatments on the
-/// graph, lines across it, the sensor countdown and time left per place (the Mac has no sensor page). Outside Custom
+/// Graph: the chart only. Atop, the target range in use with the way to Readings (where the ranges are); the time shown,
+/// the distribution and crown beside the chart, the vertical lines, treatments on the graph, lines across it, the
+/// sensor countdown and time left (the Mac has no sensor page). The time shown and the sensor time left are the menu
+/// bar's, which the widgets follow unless they have their own: a row each, opening its page (docs/38). Outside Custom
 /// the mirrored ones show as a read-only summary with the way to change them.
 struct GraphPane: View {
     @Bindable var model: SettingsModel
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var g: GraphConfig { model.graph }
 
     var body: some View {
+        ZStack {
+            // the pane stays underneath while a page shows, so going back finds it where it was
+            pane
+                .opacity(model.graphPage == nil ? 1 : 0)
+                .disabled(model.graphPage != nil)
+                .accessibilityHidden(model.graphPage != nil)
+            switch model.graphPage {
+            case .hours: hoursPage.transition(pageTransition)
+            case .sensorTime: sensorPage.transition(pageTransition)
+            case nil: EmptyView()
+            }
+        }
+        .confirmationDialog(L10n.t("Reset all graph settings?"), isPresented: $model.confirmingResetAll) {
+            Button(L10n.t("Reset"), role: .destructive) { model.resetGraph() }
+            Button(L10n.t("Cancel"), role: .cancel) {}
+        } message: {
+            Text(
+                L10n.t(
+                    "The time shown, the rings, the lines, the ranges, the last treatment and the sensor settings go back to their defaults."
+                ))
+        }
+    }
+
+    private var pane: some View {
         Form {
             SettingsFromSection(model: model, rows: summary)
             Section {
@@ -28,59 +54,49 @@ struct GraphPane: View {
                 }
             }
             Section {
-                // the default is mirrored (read-only outside Custom); the exceptions are always this Mac's
-                NumberSettingRow(
-                    label: L10n.t("Default"), format: MacSettings.graphHours.format,
-                    value: number(MacSettings.graphHours), readOnly: !model.editable)
-                // each place is this Mac's own (docs/38): the row names only the ones that differ
-                ExceptionsRow(title: L10n.t("Time shown"), summary: hoursSummary) {
-                    ForEach(GraphPlace.allCases, id: \.self) { place in
-                        NumberSettingRow(
-                            label: Self.placeName(place), format: place.hours.format,
-                            value: Binding(
-                                get: { model.placeHours(place) }, set: { model.setPlaceHours($0, place) }),
-                            defaultValue: hoursWord)
+                // the menu bar's value is mirrored (read-only outside Custom); the widgets' is always this Mac's
+                PlaceSettingRow(
+                    title: L10n.t("Time shown"), value: hoursWord(g.hours),
+                    spokenValue: NumberSettingRow.spoken(SettingsSpec.graphHours, Double(g.hours)),
+                    summary: PlaceSummary.line(menuBar: g.hours, widgets: widgetHours, word: hoursWord),
+                    spokenSummary: PlaceSummary.line(menuBar: g.hours, widgets: widgetHours) {
+                        NumberSettingRow.spoken(SettingsSpec.graphHours, Double($0))
                     }
-                }
-            } header: {
-                Text(L10n.t("Time shown"))
-            }
-            if model.editable {
-                Section(L10n.t("Graph")) {
+                ) { open(.hours) }
+                if model.editable {
                     Toggle(L10n.t("Time in range distribution"), isOn: graphBool(\.side))
                     Toggle(L10n.t("Crown beside the graph when all of it is in range"), isOn: graphBool(\.columnCrown))
                     NumberSettingRow(
                         label: L10n.t("Vertical lines"), format: MacSettings.gridHours.format,
                         value: number(MacSettings.gridHours))
                 }
+            } header: {
+                Text(L10n.t("Graph"))
+            }
+            if model.editable {
                 marksSection
                 linesSection
             }
-            if model.editable {
-                Section {
+            Section {
+                if model.editable {
                     NumberSettingRow(
                         label: L10n.t("Sensor countdown (last hours)"), format: MacSettings.countdownHours.format,
                         value: number(MacSettings.countdownHours))
-                } header: {
-                    Text(L10n.t("Sensor"))
-                } footer: {
+                }
+                PlaceSettingRow(
+                    title: L10n.t("Sensor time left"), value: ReadOnlyValue.onOff(model.sensorTime),
+                    spokenValue: ReadOnlyValue.onOff(model.sensorTime), summary: sensorSummary,
+                    spokenSummary: sensorSummary
+                ) { open(.sensorTime) }
+            } header: {
+                Text(L10n.t("Sensor"))
+            } footer: {
+                if model.editable {
                     note(
                         L10n.t(
                             "A ring over the main ring counts down the sensor's last hours. The warm-up and Sensor ended show either way."
                         ))
                 }
-            }
-            Section {
-                Toggle(L10n.t("Default"), isOn: $model.sensorTime)
-                ExceptionsRow(title: L10n.t("Sensor time left"), summary: sensorSummary) {
-                    ForEach(GraphPlace.allCases, id: \.self) { place in
-                        OverridePicker(
-                            label: Self.placeName(place), defaultOn: model.sensorTime,
-                            own: Binding(get: { model.sensorPlace(place) }, set: { model.setSensorPlace($0, place) }))
-                    }
-                }
-            } header: {
-                Text(L10n.t("Sensor time left"))
             }
             if model.editable {
                 Section {
@@ -95,15 +111,44 @@ struct GraphPane: View {
             }
         }
         .formStyle(.grouped)
-        .confirmationDialog(L10n.t("Reset all graph settings?"), isPresented: $model.confirmingResetAll) {
-            Button(L10n.t("Reset"), role: .destructive) { model.resetGraph() }
-            Button(L10n.t("Cancel"), role: .cancel) {}
-        } message: {
-            Text(
-                L10n.t(
-                    "The time shown, the rings, the lines, the ranges, the last treatment and the sensor settings go back to their defaults."
-                ))
+    }
+
+    /// Time shown: the menu bar's (mirrored: read-only outside Custom, in words with where it comes from) and the
+    /// widgets' (this Mac's own, always editable).
+    private var hoursPage: some View {
+        SettingPage(title: L10n.t("Time shown"), footer: Self.followFooter, back: back) {
+            NumberSettingRow(
+                label: L10n.t("Menu bar"), format: MacSettings.graphHours.format,
+                value: number(MacSettings.graphHours), readOnly: !model.editable, source: model.mirrorSource)
+            NumberSettingRow(
+                label: L10n.t("Widgets"), format: GraphPlace.widget.hours.format,
+                value: Binding(get: { model.placeHours(.widget) }, set: { model.setPlaceHours($0, .widget) }),
+                follows: Double(g.hours))
         }
+    }
+
+    /// Sensor time left: the menu bar's switch (this Mac's own) and the widgets'.
+    private var sensorPage: some View {
+        SettingPage(title: L10n.t("Sensor time left"), footer: Self.followFooter, back: back) {
+            Toggle(L10n.t("Menu bar"), isOn: $model.sensorTime)
+            SwitchPlacePopUp(
+                label: L10n.t("Widgets"), menuBar: model.sensorTime,
+                own: Binding(get: { model.sensorPlace(.widget) }, set: { model.setSensorPlace($0, .widget) }))
+        }
+    }
+
+    private static var followFooter: String { L10n.t("Widgets follow the menu bar unless you choose their own.") }
+
+    private var pageTransition: AnyTransition {
+        reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity)
+    }
+
+    private func open(_ page: SettingsModel.GraphPage) {
+        withAnimation(reduceMotion ? nil : .snappy) { model.graphPage = page }
+    }
+
+    private func back() {
+        withAnimation(reduceMotion ? nil : .snappy) { model.graphPage = nil }
     }
 
     /// Treatments on the graph: a row per kind, a checkbox per part it has (HIG: checkboxes for independent options).
@@ -204,20 +249,17 @@ struct GraphPane: View {
         ]
     }
 
-    /// The default time shown in words ("12 h").
-    private var hoursWord: String { NumberSettingRow.word(SettingsSpec.graphHours, Double(g.hours)) }
+    /// The time shown in words ("12 h").
+    private func hoursWord(_ h: Int) -> String { NumberSettingRow.word(SettingsSpec.graphHours, Double(h)) }
 
-    private var hoursSummary: String {
-        PlaceExceptions.summary(
-            GraphPlace.allCases.map { p in
-                let own = model.placeHours(p)
-                return (Self.placeName(p), own > 0 ? NumberSettingRow.word(SettingsSpec.placeHours, own) : nil)
-            })
+    /// The widgets' own time shown (nil = Same as the menu bar).
+    private var widgetHours: Int? {
+        let own = model.placeHours(.widget)
+        return own > 0 ? Int(own) : nil
     }
 
-    private var sensorSummary: String {
-        PlaceExceptions.summary(
-            GraphPlace.allCases.map { p in (Self.placeName(p), model.sensorPlace(p).map(ReadOnlyValue.onOff)) })
+    private var sensorSummary: String? {
+        PlaceSummary.line(menuBar: model.sensorTime, widgets: model.sensorPlace(.widget), word: ReadOnlyValue.onOff)
     }
 
     private func number(_ n: MacSettings.Number) -> Binding<Double> {
@@ -229,13 +271,6 @@ struct GraphPane: View {
     }
 
     private func note(_ s: String) -> some View { Text(s).formFooter() }
-
-    static func placeName(_ p: GraphPlace) -> String {
-        switch p {
-        case .menubar: L10n.t("Menu bar panel")
-        case .widget: L10n.t("Widgets")
-        }
-    }
 
     static func kindName(_ k: String) -> String {
         switch k {

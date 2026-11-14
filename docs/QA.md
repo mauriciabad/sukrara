@@ -635,16 +635,20 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       times: each rule is a row with its summary, *Details…* and its switch; the sheet has the switch, the length (greyed
       while off) and what it does; Done and Esc close it; VoiceOver reads *… details* on the button. TalkBack reads the
       row and its switch as two nodes.
-- [ ] A setting with a default and exceptions (#209, docs/38), light and dark, English and Spanish, wearer and
-      follower, TalkBack / VoiceOver: Graph › *Time shown* and Sensor end / Graph › *Sensor time left* show *Default*
-      and *Exceptions* (*None*). *Exceptions* opens a page with App, Notification, Widgets on *Default (12 h)* /
-      *Default (On)*; a place's dialog has *Default* first; set Notification 3 h and Widgets *Off*: the rows say
-      *Notification: 3 h* and *Widgets: Off*, the notification's chart shows 3 h and the widgets lose the sensor badge;
-      back to *Default* empties the summary. Change the default: places on Default follow, the others keep theirs. A
-      follower in Wearer sees the default read-only and still edits the exceptions. Search *notification*, *per place*:
-      the Exceptions page opens with the row flashed. A home widget's *Reconfigure* rows say *Default (…)* with the
-      Widgets place's value. Mac Graph: the same two rows per setting; *Edit…* opens the sheet (pop-ups with *Default
-      (…)* first, a separator, the values); Done and Esc close it.
+- [ ] A setting the app sets, that a place can change (#209, docs/38), light and dark, English and Spanish, font size
+      1× and 2×, wearer and follower, TalkBack / VoiceOver. Android: Graph › *Time shown* says *12 h*; its page has the
+      live card, the *App* radios and *Notification and widgets* (both *Same as the app*). Notification → 3 h (the
+      dialog starts with *Same as the app (12 h)*): the row says *12 h · 3 h in the notification* on one line and the
+      notification's chart shows 3 h. Widgets → 6 h: three lines, *12 h in the app* / *3 h in the notification* / *6 h
+      on widgets*, never a break inside one. Widgets → 3 h too: *3 h in the notification and on widgets*. At font size
+      2× one differing place takes the per-line form. Change the app's value: places on *Same as the app* follow.
+      Sensor end / Graph › *Sensor time left*: the switch turns the app's off; its page's Widgets → *Off*: the row says
+      *Off on widgets* and the widgets lose the badge. A follower in Wearer sees the app's value read-only and still
+      edits the places. Search *notification*: the page opens with the row flashed. A home widget's *Widget settings*
+      rows say *Same as in Settings*. Mac Graph: each setting is one row (value + chevron; *6 h on widgets* under the
+      title only when widgets differ); it opens its page inside the pane, the back button, ⌘[ and Esc return; the
+      Widgets pop-up is grey and borderless while it follows, a normal pop-up with its own value; its menu starts with
+      *Same as the menu bar (12 h)*. VoiceOver reads *Widgets, 12 hours, same as the menu bar*.
 - [ ] Mac panes (#205): the toolbar shows General, Following, Alerts, Readings (drop), Graph, Rings in that order, each
       tooltip names what it holds and the window resizes per pane (no animation with Reduce Motion). Readings: change a
       range → Graph's *Ranges* row and the menu bar colour follow; *Alert Levels…* opens Alerts; in Wearer / Default the
@@ -652,7 +656,7 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       *Ranges…*, Alerts *Ranges…* land on Readings; the panel's Juggluco no-data button lands on Following with the
       Juggluco rows under the follow link. Falling fast *Details…* › *Trend from* and Readings › Trend arrow change each
       other; *Fine-tuning…* opens the sheet, Done and Esc close it, VoiceOver reads every row.
-- [ ] Every number row (Readings: the six ranges; Graph: time shown and its exceptions, lines, vertical lines; Rings: rings,
+- [ ] Every number row (Readings: the six ranges; Graph: time shown and the widgets' own, lines, vertical lines; Rings: rings,
       periods; Alerts: thresholds, remind, quiet times, Mute all custom; Fine-tuning: Mute…, Relax, the margin; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
       above the range and (rates) `1.55` are refused with that text in red; a valid typed value saves with OK and with
@@ -673,7 +677,7 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       the page; the drop settles with a spring and a haptic tick per slot. TalkBack offers Move up / down / to top / to
       bottom. Mac: drag a row: the image is the row, a gap opens and the others slide; Escape returns it unchanged;
       Control-click → Move Up / Move Down. No position numbers on either.
-- [ ] Follower: overview *Settings from* = Wearer; Graph's mirrored rows are read-only and its Exceptions stay editable; Alerts rows say
+- [ ] Follower: overview *Settings from* = Wearer; Graph's mirrored rows are read-only and the places on its Time shown / Sensor time left pages stay editable; Alerts rows say
       "Set by the wearer's app" and quiet times are hidden. Change a range on the wearer's emulator: the follower's
       graph follows within a minute. *Custom* → the rows appear; *Copy the wearer's settings* asks first, then copies.
 - [ ] Mac: the same choices per number (pop-up + *Custom…* field and stepper), Settings from in General, drag to

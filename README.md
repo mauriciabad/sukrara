@@ -114,8 +114,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Battery optimized.
 - Many settings, but organized and explained: Alerts, Readings (unit, ranges, trend arrow), Graph, Rings, Sensor
   end, your data; rare ones in Alerts › Fine-tuning; search finds every one, old names included. Trust the defaults.
-  A setting that can differ in the app, the notification or the widgets (time shown, the sensor's time left) has one
-  default and an *Exceptions* row that names only the places that differ.
+  A setting that can differ in the notification or the widgets (time shown, the sensor's time left) is one row that
+  says the app's value and only the places that differ; its page sets each place or keeps it the same as the app.
 - A nice sensor expiry flow with a Live Update and subtle reminders.
 - Real-time readings from almost any CGM.
 - Multilingual, but English is the main language.

@@ -37,7 +37,7 @@ import Testing
     /// Every Mac setting in UserDefaults. A schema row without one here, or one here the schema doesn't have, fails.
     static let typed: [Typed] =
         MacSettings.bands.map { n($0) } + [
-            n(MacSettings.graphHours), n(MacSettings.menubarHours), n(MacSettings.widgetHours),
+            n(MacSettings.graphHours), n(MacSettings.widgetHours),
             n(MacSettings.ringCount), n(MacSettings.gridHours), n(MacSettings.countdownHours),
             t("graph.slots", MacSettings.slots), t("graph.ringRange", MacSettings.ringRange),
             t("graph.ringOrder", MacSettings.ringOrder), t("graph.ringMarks", MacSettings.ringMarks),
@@ -45,7 +45,6 @@ import Testing
             t("graph.columnCrown", MacSettings.columnCrown), t("graph.lines", MacSettings.lines),
             t("graph.lastPlace", MacSettings.lastPlace), t("graph.lastElse", MacSettings.lastElse),
             t("graph.sensorTime", MacSettings.sensorTime),
-            t("graph.sensorTime.place", MacSettings.menubarSensorTime),
             t("graph.sensorTime.place", MacSettings.widgetSensorTime),
             t("follower.settingsFrom", MacSettings.settingsFrom), t("general.unit", MacSettings.unit),
             t("glucose.trend", MacSettings.trend),
@@ -205,6 +204,11 @@ import Testing
         #expect(Self.rows["graph.lastPlace"]?["values"] as? [String] == LastPlace.allCases.map(\.rawValue))
         #expect(Self.rows["general.unit"]?["values"] as? [String] == GlucoseUnit.allCases.map(\.rawValue))
         #expect(Self.rows["graph.sensorTime.place"]?["values"] as? [String] == PlaceOverride.allCases.map(\.rawValue))
+        // the places that can differ from the menu bar (docs/38): the widgets alone
+        for id in ["graph.hours.place", "graph.sensorTime.place"] {
+            let places = Self.rows[id]?["places"] as? [String: [String]]
+            #expect(places?["mac"] == GraphPlace.allCases.map(\.rawValue), "\(id)")
+        }
         #expect(Self.rows["alerts.sounds.pack"]?["values"] as? [String] == Self.option("soundPack"))
         let order = Self.rows["graph.ringOrder"]?["values"] as? [String] ?? []
         #expect(Set(order) == Set(Band.allCases.map(\.name)))

@@ -106,7 +106,7 @@ class SecondPlacesTest {
     }
 
     @Test
-    fun `the sensor's time left - Sensor end's default and exceptions are Graph's setting`() {
+    fun `the sensor's time left - Sensor end's row is Graph's setting`() {
         val settings = InMemorySettingsRepository()
         val vm = SensorEndViewModel(settings, MutableStateFlow(SensorState.None), FakeAlertSettingsStore())
         vm.setSensorTime(false)
@@ -114,10 +114,10 @@ class SecondPlacesTest {
         runBlocking { settings.set(GraphSettings.SensorTimePlace.getValue(GraphPlace.WIDGETS), "on") }
         val prefs = runBlocking { vm.prefs.filterNotNull().first { !it.sensorTime && it.sensorPlace.isNotEmpty() } }
         assertEquals(mapOf(GraphPlace.WIDGETS to true), prefs.sensorPlace)
-        // Sensor end's Exceptions row opens the same page as Graph's
+        // Sensor end's row says the place that differs and opens the same page as Graph's
         var opened = 0
         show { SensorEndContent(prefs, now, SensorEndActions(openSensorPlaces = { opened++ }), onBack = {}) }
-        compose.onNodeWithText("Widgets: On").performScrollTo().performClick()
+        compose.onNodeWithText("On on\u00A0widgets").performScrollTo().performClick()
         assertEquals(1, opened)
         assertTrue(runBlocking { GraphSettings.config(settings).first() }.sensorTime(GraphPlace.WIDGETS))
     }

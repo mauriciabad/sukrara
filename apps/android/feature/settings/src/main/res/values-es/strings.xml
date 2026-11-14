@@ -132,11 +132,10 @@
     <string name="st_special_off">Desactivado</string>
     <string name="st_special_none">Ninguno</string>
     <string name="st_special_until_turned_off">Hasta que lo desactives</string>
-    <string name="st_special_default">Predeterminado</string>
     <string name="st_ranges_title">Rangos</string>
     <string name="st_trend_title">Flecha de tendencia</string>
     <string name="st_trend_summary">De dónde sacan la tendencia todas las flechas, la tendencia leída en voz alta y las alertas rápidas</string>
-    <string name="st_exceptions_keywords">por lugar, app, notificación, widgets, propio, distinto</string>
+    <string name="st_places_keywords">por lugar, notificación, widgets, propio, distinto, igual que la app</string>
     <string name="st_trend_keywords">flecha, tendencia, dirección, velocidad, retraso, suavizado, sensor</string>
     <string name="st_trend_from">Tendencia a partir de</string>
     <string name="st_trend_quick">Rápida</string>
@@ -476,6 +475,27 @@
     <string name="st_place_app">App</string>
     <string name="st_place_notification">Notificación</string>
     <string name="st_place_widgets">Widgets</string>
+    <!-- un ajuste que fija la app y que la notificación y los widgets pueden cambiar (docs/38) -->
+    <string name="st_same_as_app">Igual que la app</string>
+    <string name="st_same_as_app_value">Igual que la app (%1$s)</string>
+    <string name="st_where_app">en la app</string>
+    <string name="st_where_notification">en la notificación</string>
+    <string name="st_where_widgets">en los widgets</string>
+    <!-- un valor y dónde se aplica: "3 h en la notificación" -->
+    <string name="st_value_where">%1$s %2$s</string>
+    <string name="st_places_group">Notificación y widgets</string>
+    <string name="st_places_footer">Un widget también puede tener el suyo: mantenlo pulsado y elige Ajustes del widget.</string>
+    <string name="st_hours_notification">Tiempo mostrado en la notificación</string>
+    <string name="st_hours_widgets">Tiempo mostrado en los widgets</string>
+    <string name="st_sensor_time_show">Mostrar el tiempo restante del sensor</string>
+    <string name="st_sensor_time_notification">Tiempo restante del sensor en la notificación</string>
+    <string name="st_sensor_time_widgets">Tiempo restante del sensor en los widgets</string>
+    <!-- TalkBack: un tiempo mostrado dicho completo -->
+    <plurals name="st_hours_spoken">
+        <item quantity="one">%1$d hora</item>
+        <item quantity="many">%1$d horas</item>
+        <item quantity="other">%1$d horas</item>
+    </plurals>
     <string name="st_last_off">Desactivado</string>
     <string name="st_last_near">Junto al valor</string>
     <string name="st_last_end">Tras los demás huecos</string>
@@ -491,7 +511,6 @@
     <string name="st_graph_line_full">%1$d líneas: quita una para añadir otra</string>
     <string name="st_graph_line_exists">Esa línea ya está</string>
     <string name="st_graph_line_remove">Quitar la línea de %1$s</string>
-    <string name="st_graph_hours_default">Predeterminado</string>
     <string name="st_graph_beside">Junto al valor</string>
     <string name="st_slot_main">Hueco principal</string>
     <string name="st_slot_second">Segundo hueco</string>

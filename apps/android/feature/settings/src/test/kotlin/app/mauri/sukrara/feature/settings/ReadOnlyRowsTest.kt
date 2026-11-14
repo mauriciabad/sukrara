@@ -77,8 +77,8 @@ class ReadOnlyRowsTest {
             SukraraTheme(dark = false, dynamic = false) { GraphContent(GraphConfig(), GraphActions(), {}, readOnly = true) }
         }
         compose.onNodeWithText("Vertical lines every").assertIsNotEnabled()
-        // the places' exceptions are this phone's own (docs/38): their row stays enabled
-        compose.onAllNodesWithText("Exceptions")[0].assertIsEnabled()
+        // Time shown opens its page, whose places are this phone's own (docs/38): the row stays enabled
+        compose.onNodeWithText("Time shown").assertIsEnabled()
     }
 
     @Test fun rangesReadOnly() {

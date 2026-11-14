@@ -21,9 +21,8 @@ public enum MacSettings {
     public static let countdownHours = number(
         "sensor.countdownHours", SettingsSpec.Keys.countdownHours, SettingsSpec.countdownHours)
     public static let ringCount = number("graph.ringCount", SettingsSpec.Keys.ringCount, SettingsSpec.ringCount)
-    /// Each place's own time shown (`placeHours`, 0 = same as `graphHours`): always this Mac's, never mirrored.
-    public static let menubarHours = number(
-        "graph.hours.place", SettingsSpec.Keys.menubarHours, SettingsSpec.placeHours)
+    /// The widgets' own time shown (`placeHours`, 0 = same as the menu bar's `graphHours`): always this Mac's, never
+    /// mirrored.
     public static let widgetHours = number("graph.hours.place", SettingsSpec.Keys.widgetHours, SettingsSpec.placeHours)
     // The structured graph settings, stored in their wire spellings (PROTOCOL-v2 "Settings"); the defaults are the
     // renderer's (`GraphConfig()`, checked by GraphSettingsTests).
@@ -42,13 +41,12 @@ public enum MacSettings {
     public static let ringMarks = SettingSpec(key: SettingsSpec.Keys.ringMarks, defaultValue: true)
     public static let side = SettingSpec(key: SettingsSpec.Keys.side, defaultValue: true)
     public static let columnCrown = SettingSpec(key: SettingsSpec.Keys.columnCrown, defaultValue: true)
-    /// The sensor's time left: the default every place follows unless it has its own (this Mac's, never mirrored).
+    /// The sensor's time left on the menu bar's card; the widgets follow it unless they have their own (this Mac's,
+    /// never mirrored).
     public static let sensorTime = SettingSpec(key: SettingsSpec.Keys.sensorTime, defaultValue: true)
-    /// Each place's own sensor time left (`PlaceOverride`: default / on / off): always this Mac's.
-    public static let menubarSensorTime = SettingSpec(
-        key: SettingsSpec.Keys.placeSensorTimeMenubar, defaultValue: PlaceOverride.default.rawValue)
+    /// The widgets' own sensor time left (`PlaceOverride`: same / on / off): always this Mac's.
     public static let widgetSensorTime = SettingSpec(
-        key: SettingsSpec.Keys.placeSensorTimeWidget, defaultValue: PlaceOverride.default.rawValue)
+        key: SettingsSpec.Keys.placeSensorTimeWidget, defaultValue: PlaceOverride.same.rawValue)
     /// The Settings window's last pane (a view state).
     public static let settingsPane = SettingSpec(key: SettingsSpec.Keys.settingsPane, defaultValue: "general")
     /// The Glucose Report window's period in days (1, 7, 14, 30), remembered between openings.

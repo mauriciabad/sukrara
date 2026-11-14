@@ -37,7 +37,6 @@ import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GlucoseGraph
 import app.mauri.sukrara.graph.GraphConfig
-import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.id
 import app.mauri.sukrara.graph.stats.GlucoseStats
 import kotlinx.serialization.json.Json
@@ -212,7 +211,7 @@ class PanelScrollTest {
         val scroll = sceneFile.getValue("scroll").jsonObject
         val all = (scroll.getValue("scenes").jsonArray + sceneFile.getValue("scenes").jsonArray).map { scene(it.jsonObject) }
         val config = GraphConfig()
-        val windowS = config.hours(GraphPlace.APP) * 3600L
+        val windowS = config.appHours * 3600L
         val b = config.bands
         val maxLabelS = json("graph/layout/rules.json").getValue("treatmentLabels").jsonObject.num("maxHours")!! * 3600
         val problems = ArrayList<String>()
@@ -239,7 +238,7 @@ class PanelScrollTest {
                     sc.treatments.filter { it.at.epochSecond in from..end },
                     end,
                     ChartScroll(),
-                    config.copy(placeHours = config.placeHours + (GraphPlace.APP to (w / 3600).toInt())),
+                    config.copy(appHours = (w / 3600).toInt()),
                 )
             val markers = scrolled.first("chart.markers") != null
             for (n in listOf("chart.pct", "chart.y", "chart.values", "chart.markers", "chart.lines") +

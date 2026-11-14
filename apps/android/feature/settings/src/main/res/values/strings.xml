@@ -132,11 +132,10 @@
     <string name="st_special_off">Off</string>
     <string name="st_special_none">None</string>
     <string name="st_special_until_turned_off">Until you turn it off</string>
-    <string name="st_special_default">Default</string>
     <string name="st_ranges_title">Ranges</string>
     <string name="st_trend_title">Trend arrow</string>
     <string name="st_trend_summary">Where every arrow, spoken trend and the fast alerts take the trend from</string>
-    <string name="st_exceptions_keywords">per place, app, notification, widgets, own, override, different</string>
+    <string name="st_places_keywords">per place, notification, widgets, own, different, same as the app</string>
     <string name="st_trend_keywords">arrow, trend, direction, rate, delay, lag, smoothing, sensor</string>
     <string name="st_trend_from">Trend from</string>
     <string name="st_trend_quick">Quick</string>
@@ -474,6 +473,26 @@
     <string name="st_place_app">App</string>
     <string name="st_place_notification">Notification</string>
     <string name="st_place_widgets">Widgets</string>
+    <!-- a setting the app sets that the notification and the widgets can change (docs/38) -->
+    <string name="st_same_as_app">Same as the app</string>
+    <string name="st_same_as_app_value">Same as the app (%1$s)</string>
+    <string name="st_where_app">in the app</string>
+    <string name="st_where_notification">in the notification</string>
+    <string name="st_where_widgets">on widgets</string>
+    <!-- a value and where it applies: "3 h in the notification" -->
+    <string name="st_value_where">%1$s %2$s</string>
+    <string name="st_places_group">Notification and widgets</string>
+    <string name="st_places_footer">A widget can also have its own: touch and hold it, then Widget settings.</string>
+    <string name="st_hours_notification">Time shown in the notification</string>
+    <string name="st_hours_widgets">Time shown on widgets</string>
+    <string name="st_sensor_time_show">Show the sensor time left</string>
+    <string name="st_sensor_time_notification">Sensor time left in the notification</string>
+    <string name="st_sensor_time_widgets">Sensor time left on widgets</string>
+    <!-- TalkBack: a time shown said in full -->
+    <plurals name="st_hours_spoken">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
     <string name="st_last_off">Off</string>
     <string name="st_last_near">Next to the value</string>
     <string name="st_last_end">After the other slots</string>
@@ -489,7 +508,6 @@
     <string name="st_graph_line_full">%1$d lines: remove one to add another</string>
     <string name="st_graph_line_exists">That line is already there</string>
     <string name="st_graph_line_remove">Remove the line at %1$s</string>
-    <string name="st_graph_hours_default">Default</string>
     <string name="st_graph_beside">Beside the value</string>
     <string name="st_slot_main">Main slot</string>
     <string name="st_slot_second">Second slot</string>

@@ -34,8 +34,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -43,14 +41,12 @@ import androidx.lifecycle.lifecycleScope
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
-import app.mauri.sukrara.designsystem.rows.OnOffOverrideDialog
-import app.mauri.sukrara.designsystem.rows.OverrideDialog
-import app.mauri.sukrara.designsystem.rows.PlaceRow
-import app.mauri.sukrara.designsystem.rows.PlaceValue
+import app.mauri.sukrara.designsystem.rows.OnOffPlaceDialog
+import app.mauri.sukrara.designsystem.rows.PlaceDialog
 import app.mauri.sukrara.designsystem.rows.SettingsChrome
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
-import app.mauri.sukrara.designsystem.rows.defaultChoice
+import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.designsystem.rows.onOffText
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.graph.GraphConfig
@@ -58,12 +54,13 @@ import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.stats.TirRange
 import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.launch
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * One placed widget's own settings: shown when it's placed (optional: back keeps the Widgets place's settings) and
- * from the launcher's Reconfigure. Every row is *Default (…)* (the Widgets place's value, said in brackets) or this
- * widget's own: THE place-override pattern (docs/38). Save stores and redraws, Cancel (or back) leaves the widget as
- * it was.
+ * from the launcher's Reconfigure. Every row is this widget's own value or *Same as in Settings* (the Widgets place's
+ * value; each dialog's first choice says it in brackets): THE place pattern (docs/38). Save stores and redraws, Cancel
+ * (or back) leaves the widget as it was.
  */
 class WidgetConfigActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -156,7 +153,7 @@ class WidgetConfigActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun WidgetSettingsScreen(
+internal fun WidgetSettingsScreen(
     kind: WidgetKind,
     initial: WidgetOverrides,
     inherited: GraphConfig,
@@ -169,12 +166,16 @@ private fun WidgetSettingsScreen(
     val render by rememberUpdatedState(preview)
     val words by rememberUpdatedState(describe)
     var open by rememberSaveable { mutableStateOf<String?>(null) }
-    // what Default means for this widget: the Widgets place's values
-    val hoursDefault = hoursLabel(inherited.hours(GraphPlace.WIDGETS))
-    val sideDefault = inherited.side
-    val ringsDefault = inherited.ringCount.toString()
-    val rangeDefault = rangeLabel(inherited.ringRange)
-    val sensorDefault = inherited.sensorTime(GraphPlace.WIDGETS)
+    // what this widget follows: the Widgets place's values in Settings
+    val hoursSettings = hoursLabel(inherited.hours(GraphPlace.WIDGETS))
+    val sideSettings = inherited.side
+    val ringsSettings = inherited.ringCount.toString()
+    val rangeSettings = rangeLabel(inherited.ringRange)
+    val sensorSettings = inherited.sensorTime(GraphPlace.WIDGETS)
+    val same = stringResource(R.string.widget_config_same)
+
+    @Composable
+    fun follow(value: String) = stringResource(R.string.widget_config_same_value, value)
     val hasGraph = kind != WidgetKind.VALUE
     val hasSlots = kind != WidgetKind.GRAPH
     // a settings page like the app's (SPA's SettingsScaffold): back = Cancel
@@ -193,29 +194,17 @@ private fun WidgetSettingsScreen(
                         ).aspectRatio(WidgetConfigActivity.PREVIEW_W_DP / WidgetConfigActivity.PREVIEW_H_DP),
             )
         }
+        // each row: this widget's own value, or Same as in Settings (the preview above shows what that means)
         SettingsGroup {
             if (hasGraph) {
-                PlaceRow(PlaceValue(stringResource(R.string.widget_config_hours), o.hours?.let { hoursLabel(it) }), hoursDefault, {
-                    open =
-                        "hours"
-                })
-                PlaceRow(PlaceValue(stringResource(R.string.widget_config_side), o.side?.let { onOffText(it) }), onOffText(sideDefault), {
-                    open =
-                        "side"
-                })
+                ValueRow(stringResource(R.string.widget_config_hours), o.hours?.let { hoursLabel(it) } ?: same, { open = "hours" })
+                ValueRow(stringResource(R.string.widget_config_side), o.side?.let { onOffText(it) } ?: same, { open = "side" })
             }
             if (hasSlots) {
-                PlaceRow(PlaceValue(stringResource(R.string.widget_config_rings), o.rings?.toString()), ringsDefault, { open = "rings" })
-                PlaceRow(PlaceValue(stringResource(R.string.widget_config_ring_range), o.ringRange?.let { rangeLabel(it) }), rangeDefault, {
-                    open =
-                        "range"
-                })
+                ValueRow(stringResource(R.string.widget_config_rings), o.rings?.toString() ?: same, { open = "rings" })
+                ValueRow(stringResource(R.string.widget_config_ring_range), o.ringRange?.let { rangeLabel(it) } ?: same, { open = "range" })
             }
-            PlaceRow(
-                PlaceValue(stringResource(R.string.widget_config_sensor), o.sensorTime?.let { onOffText(it) }),
-                onOffText(sensorDefault),
-                { open = "sensor" },
-            )
+            ValueRow(stringResource(R.string.widget_config_sensor), o.sensorTime?.let { onOffText(it) } ?: same, { open = "sensor" })
         }
         Row(
             Modifier.fillMaxWidth().padding(16.dp),
@@ -227,15 +216,15 @@ private fun WidgetSettingsScreen(
         }
     }
     when (open) {
-        // the one number input (schema placeHours: Default first, 3 / 6 / 12 / 24 h or Custom… 1–48 h; 0 = Default)
+        // the one number input (schema placeHours: what it follows first, 3 / 6 / 12 / 24 h or Custom… 1–48 h; 0 = follow)
         "hours" -> {
-            val res = LocalResources.current
-            val default = defaultChoice(hoursDefault)
+            val first = follow(hoursSettings)
+            val unit = stringResource(DsR.string.ds_unit_h)
             NumberDialog(
                 stringResource(R.string.widget_config_hours),
                 NumberInput(SettingsSpec.PLACE_HOURS),
                 (o.hours ?: 0).toDouble(),
-                { v -> if (v == 0.0) default else v.toInt().let { h -> res.getQuantityString(R.plurals.widget_config_hours_n, h, h) } },
+                { v -> if (v == 0.0) first else "${v.toInt()} $unit" },
                 { open = null },
             ) {
                 o = o.copy(hours = it.toInt().takeIf { h -> h > 0 })
@@ -243,11 +232,11 @@ private fun WidgetSettingsScreen(
             }
         }
 
-        // a closed list (schema ringCount: 0–3, no custom value) is plain choices, as on Settings › Graph
+        // a closed list (schema ringCount: 0–3, no custom value) is plain choices, as on Settings › Rings
         "rings" -> {
-            OverrideDialog(
+            PlaceDialog(
                 stringResource(R.string.widget_config_rings),
-                ringsDefault,
+                follow(ringsSettings),
                 (0..3).map { Choice(it.toString(), it) },
                 o.rings,
                 { open = null },
@@ -258,9 +247,9 @@ private fun WidgetSettingsScreen(
         }
 
         "range" -> {
-            OverrideDialog(
+            PlaceDialog(
                 stringResource(R.string.widget_config_ring_range),
-                rangeDefault,
+                follow(rangeSettings),
                 TirRange.entries.map { Choice(rangeLabel(it), it) },
                 o.ringRange,
                 { open = null },
@@ -271,14 +260,16 @@ private fun WidgetSettingsScreen(
         }
 
         "side" -> {
-            OnOffOverrideDialog(stringResource(R.string.widget_config_side), sideDefault, o.side, { open = null }) {
+            OnOffPlaceDialog(stringResource(R.string.widget_config_side), follow(onOffText(sideSettings)), o.side, { open = null }) {
                 o = o.copy(side = it)
                 open = null
             }
         }
 
         "sensor" -> {
-            OnOffOverrideDialog(stringResource(R.string.widget_config_sensor), sensorDefault, o.sensorTime, { open = null }) {
+            OnOffPlaceDialog(stringResource(R.string.widget_config_sensor), follow(onOffText(sensorSettings)), o.sensorTime, {
+                open = null
+            }) {
                 o = o.copy(sensorTime = it)
                 open = null
             }
@@ -286,8 +277,9 @@ private fun WidgetSettingsScreen(
     }
 }
 
+/** "6 h", as Settings › Graph says a time shown. */
 @Composable
-private fun hoursLabel(h: Int) = pluralStringResource(R.plurals.widget_config_hours_n, h, h)
+private fun hoursLabel(h: Int) = "$h ${stringResource(DsR.string.ds_unit_h)}"
 
 @Composable
 private fun rangeLabel(r: TirRange) =

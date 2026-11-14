@@ -49,6 +49,23 @@
         }
       }
     },
+    "%@ on widgets" : {
+      "comment" : "Under a Graph setting: the widgets' own value where it differs from the menu bar's (\"6 h on widgets\", \"Off on widgets\")",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ on widgets"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ en los widgets"
+          }
+        }
+      }
+    },
     "%@ stopped sharing with you. Paste a new link to follow again." : {
       "localizations" : {
         "en" : {
@@ -109,6 +126,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "El móvil de %@ está cerca"
+          }
+        }
+      }
+    },
+    "%@, same as the menu bar" : {
+      "comment" : "VoiceOver: the widgets' pop-up while it follows the menu bar (\"12 hours, same as the menu bar\")",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, same as the menu bar"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, igual que la barra de menús"
           }
         }
       }
@@ -1057,22 +1091,6 @@
         }
       }
     },
-    "Default (%@)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Default (%@)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Predeterminado (%@)"
-          }
-        }
-      }
-    },
     "Defaults…" : {
       "localizations" : {
         "en" : {
@@ -1249,22 +1267,6 @@
         }
       }
     },
-    "Edit exceptions: %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit exceptions: %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar excepciones: %@"
-          }
-        }
-      }
-    },
     "Edit Treatment" : {
       "localizations" : {
         "en" : {
@@ -1357,22 +1359,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Todas las flechas, la tendencia leída en voz alta y las alertas Bajada rápida / Subida rápida usan esto."
-          }
-        }
-      }
-    },
-    "Exceptions" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Exceptions"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Excepciones"
           }
         }
       }
@@ -2321,6 +2307,23 @@
         }
       }
     },
+    "Menu bar" : {
+      "comment" : "A Graph setting's page: the menu bar's value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Menu bar"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Barra de menús"
+          }
+        }
+      }
+    },
     "Ranges…" : {
       "localizations" : {
         "en" : {
@@ -2365,6 +2368,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lecturas"
+          }
+        }
+      }
+    },
+    "Same as the menu bar (%@)" : {
+      "comment" : "The widgets' pop-up, first item: follow the menu bar's value (12 h, On)",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Same as the menu bar (%@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Igual que la barra de menús (%@)"
           }
         }
       }
@@ -4241,22 +4261,6 @@
         }
       }
     },
-    "Same as default" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Same as default"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Igual que por defecto"
-          }
-        }
-      }
-    },
     "Same Code" : {
       "localizations" : {
         "en" : {
@@ -5889,22 +5893,6 @@
         }
       }
     },
-    "Menu bar panel" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Menu bar panel"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Panel de la barra de menús"
-          }
-        }
-      }
-    },
     "Move Down" : {
       "localizations" : {
         "en" : {
@@ -6669,6 +6657,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Widgets"
+          }
+        }
+      }
+    },
+    "Widgets follow the menu bar unless you choose their own." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets follow the menu bar unless you choose their own."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los widgets siguen la barra de menús salvo que elijas otro valor."
           }
         }
       }

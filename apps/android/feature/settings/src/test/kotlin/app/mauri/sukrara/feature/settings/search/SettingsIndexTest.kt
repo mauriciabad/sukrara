@@ -86,9 +86,10 @@ import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
-import app.mauri.sukrara.feature.settings.graph.PlaceExceptionsContent
 import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.graph.RingsContent
+import app.mauri.sukrara.feature.settings.graph.SensorTimeContent
+import app.mauri.sukrara.feature.settings.graph.TimeShownContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.pens.PensContent
@@ -121,6 +122,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Instant
 import java.time.ZoneOffset
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * THE search index against the pages (#65): every settings page of this module is rendered (wearer and follower,
@@ -307,12 +309,13 @@ class SettingsIndexTest {
             Scene("graph, changed", SearchTarget.Page(SettingsRoute.Graph)) {
                 GraphContent(GraphConfig(lines = listOf(80, 160)), GraphActions(), {})
             },
-            *PlaceSetting.entries
-                .map { setting ->
-                    Scene("exceptions $setting", SearchTarget.Page(SettingsRoute.PlaceExceptions(setting))) {
-                        PlaceExceptionsContent(setting, GraphConfig(placeHours = mapOf(GraphPlace.APP to 6)), GraphActions(), {})
-                    }
-                }.toTypedArray(),
+            // a setting's page with its places (docs/38): the app's value and each place, one with its own value
+            Scene("time shown", SearchTarget.Page(SettingsRoute.PlacePage(PlaceSetting.Hours))) {
+                TimeShownContent(GraphConfig(appHours = 18, placeHours = mapOf(GraphPlace.WIDGETS to 6)), GraphActions(), {})
+            },
+            Scene("sensor time left", SearchTarget.Page(SettingsRoute.PlacePage(PlaceSetting.SensorTime))) {
+                SensorTimeContent(GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)), GraphActions(), {})
+            },
             Scene("graph marks", SearchTarget.Page(SettingsRoute.GraphMarks)) { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             Scene("graph marks, changed", SearchTarget.Page(SettingsRoute.GraphMarks)) {
                 GraphMarksContent(GraphConfig(marks = MarkShow.DEFAULT.withoutLabels()), GraphActions(), {})
@@ -406,6 +409,11 @@ class SettingsIndexTest {
             // the wearer's profile row is titled with their name; the closed tips row is an action of the overview itself
             scene == "overview, wearer" -> {
                 row == "Alex" || row == string(R.string.st_show_closed_tips)
+            }
+
+            // the app's time shown as one-tap values (3 h … 24 h, Custom…): values, found by the page's own row
+            scene == "time shown" -> {
+                row == string(DsR.string.ds_custom) || Regex("\\d+ h").matches(row)
             }
 
             // relays are listed by their host

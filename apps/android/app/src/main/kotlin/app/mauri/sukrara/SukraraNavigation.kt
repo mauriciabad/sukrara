@@ -263,8 +263,8 @@ data class SettingsKey(
                 SettingsRoute.GraphMarks
             }
 
-            "exceptions" -> {
-                kind?.let { k -> PlaceSetting.entries.firstOrNull { it.name == k } }?.let(SettingsRoute::PlaceExceptions)
+            "places" -> {
+                kind?.let { k -> PlaceSetting.entries.firstOrNull { it.name == k } }?.let(SettingsRoute::PlacePage)
                     ?: SettingsRoute.Graph
             }
 
@@ -329,7 +329,7 @@ data class SettingsKey(
                 SettingsRoute.Rings -> SettingsKey("rings")
                 SettingsRoute.ImportExport -> SettingsKey("files")
                 SettingsRoute.GraphMarks -> SettingsKey("marks")
-                is SettingsRoute.PlaceExceptions -> SettingsKey("exceptions", route.setting.name)
+                is SettingsRoute.PlacePage -> SettingsKey("places", route.setting.name)
                 SettingsRoute.LockScreen -> SettingsKey("lock")
                 SettingsRoute.Pens -> SettingsKey("pens")
                 is SettingsRoute.Pen -> SettingsKey("pen", serial = route.serial)

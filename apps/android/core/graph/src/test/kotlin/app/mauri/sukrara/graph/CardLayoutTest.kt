@@ -162,7 +162,7 @@ class CardLayoutTest {
     private fun settings(): List<Triple<String, GraphConfig, Boolean>> =
         sceneFile["settings"]!!.jsonArray.map { it.jsonObject }.map { o ->
             var x = GraphConfig()
-            if (o["sensorTime"].bool() == false) x = x.copy(sensorTimeDefault = false)
+            if (o["sensorTime"].bool() == false) x = x.copy(appSensorTime = false)
             o["side"].bool()?.let { x = x.copy(side = it) }
             o["ringCount"].long()?.let { x = x.copy(ringCount = it.toInt()) }
             o["lastPlace"].str()?.let { x = x.copy(lastPlace = LastPlace.valueOf(it)) }

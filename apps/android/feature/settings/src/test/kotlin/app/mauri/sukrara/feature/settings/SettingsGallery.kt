@@ -59,10 +59,10 @@ import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
-import app.mauri.sukrara.feature.settings.graph.PlaceExceptionsContent
-import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.graph.Reorder
 import app.mauri.sukrara.feature.settings.graph.RingsContent
+import app.mauri.sukrara.feature.settings.graph.SensorTimeContent
+import app.mauri.sukrara.feature.settings.graph.TimeShownContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
@@ -87,6 +87,7 @@ import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.RingSpec
 import com.github.takahirom.roborazzi.captureRoboImage
+import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -316,23 +317,18 @@ class SettingsGallery {
                     {},
                 )
             },
-            // a setting's Exceptions (docs/38): one place with its own value, the others on Default
-            "exceptions-hours" to {
-                PlaceExceptionsContent(
-                    PlaceSetting.Hours,
-                    GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)),
-                    GraphActions(),
-                    {},
-                )
+            // a setting the app sets that places can change (docs/38): one place differs, then both, and the sensor's
+            "graph-one-place" to { GraphContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {}) },
+            "graph-places" to { GraphContent(placesConfig, GraphActions(), {}) },
+            "time-shown" to {
+                TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {})
             },
-            "exceptions-sensor" to {
-                PlaceExceptionsContent(
-                    PlaceSetting.SensorTime,
-                    GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)),
-                    GraphActions(),
-                    {},
-                )
+            "time-shown-follower" to {
+                TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {}, readOnly = true) {
+                    SettingsFromNote(fromWearer, {})
+                }
             },
+            "sensor-time" to { SensorTimeContent(GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)), GraphActions(), {}) },
             "graph-marks" to { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
             "lock" to { LockScreenContent(20.0, {}, {}) },
             // the lock-screen widget: shown (the module runs), waiting for a System UI restart, off
@@ -711,10 +707,70 @@ class SettingsGallery {
                     "files",
                     "sensorend",
                     "graph-custom",
-                    "exceptions-hours",
-                    "exceptions-sensor",
+                    "graph-places",
+                    "time-shown",
+                    "sensor-time",
                 ),
         )
+
+    /** The notification and the widgets with their own time shown, and the widgets without the sensor time (docs/38). */
+    private val placesConfig =
+        GraphConfig(
+            placeHours = mapOf(GraphPlace.NOTIFICATION to 3, GraphPlace.WIDGETS to 6),
+            sensorPlace = mapOf(GraphPlace.WIDGETS to false),
+        )
+
+    /** A place's dialog over its page (the whole screen: dialogs are windows of their own). */
+    private fun placeDialog(
+        name: String,
+        dark: Boolean,
+        row: String,
+        page: @Composable () -> Unit,
+    ) {
+        compose.setContent { SukraraTheme(dark = dark, dynamic = false) { page() } }
+        compose.onNodeWithText(row).performScrollTo().performClick()
+        compose.waitForIdle()
+        captureScreenRoboImage("build/outputs/roborazzi/settings-$name-${if (dark) "dark" else "light"}-font1x.png")
+    }
+
+    /** Graph scrolled to the sensor time's row: the Time shown and Sensor time left rows together (docs/38). */
+    @Test fun graphPlaceRows() {
+        var theme by mutableStateOf(false)
+        compose.setContent { SukraraTheme(dark = theme, dynamic = false) { GraphContent(placesConfig, GraphActions(), {}) } }
+        for (dark in listOf(false, true)) {
+            theme = dark
+            compose.onNodeWithText("Sensor time left").performScrollTo()
+            compose.waitForIdle()
+            compose.onRoot().captureRoboImage(
+                "build/outputs/roborazzi/settings-graph-place-rows-${if (dark) "dark" else "light"}-font1x.png",
+            )
+        }
+    }
+
+    /** Time shown in Spanish on the gallery's phone size (the whole page: the app's values and the places). */
+    @Test
+    @Config(qualifiers = "es-w411dp-h891dp-xxhdpi")
+    fun spanishTimeShown() {
+        compose.setContent {
+            SukraraTheme(dark = true, dynamic = false) {
+                TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {})
+            }
+        }
+        compose.waitForIdle()
+        compose.onRoot().captureRoboImage("build/outputs/roborazzi/settings-es-time-shown-phone-dark-font1x.png")
+    }
+
+    @Test fun placeDialogs() {
+        placeDialog("time-shown-dialog", dark = false, row = "Notification") {
+            TimeShownContent(GraphConfig(placeHours = mapOf(GraphPlace.NOTIFICATION to 3)), GraphActions(), {})
+        }
+    }
+
+    @Test fun sensorPlaceDialog() {
+        placeDialog("sensor-time-dialog", dark = true, row = "Widgets") {
+            SensorTimeContent(GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)), GraphActions(), {})
+        }
+    }
 }
 
 private val rootOn = RootSettings(on = true, position = HookPosition.DEFAULT, color = true, hideIcon = true)
