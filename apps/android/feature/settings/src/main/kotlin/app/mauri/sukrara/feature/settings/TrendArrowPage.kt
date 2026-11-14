@@ -113,22 +113,22 @@ class TrendArrowViewModel(
 object TrendArrowPreview {
     /**
      * What each choice shows for [readings] (oldest first) at [now]: the newest reading's face under that choice (THE
-     * trend worked out as the app's one place does, here for every choice), in [unit].
+     * trend worked out as the app's one place does, here for every choice), in [unit]. Over all of [readings] (the
+     * hub's window): the text band's hysteresis remembers the band for as long as the readings follow, so a shorter read
+     * could start a slow drift's band afresh and preview another arrow than the card shows.
      */
     fun of(
         readings: List<Reading>,
         now: Instant,
         unit: GlucoseUnit,
-    ): Map<TrendSetting, TrendPreview> {
-        val window = readings.filter { !it.t.isBefore(now - TrendReadings.LOOKBACK) }
-        return TrendSetting.entries.associateWith { s ->
-            val newest = TrendRate.annotate(window, s).lastOrNull()
+    ): Map<TrendSetting, TrendPreview> =
+        TrendSetting.entries.associateWith { s ->
+            val newest = TrendRate.annotate(readings, s).lastOrNull()
             TrendPreview(
                 newest?.let { GlucoseCard.face(it.toPoint(), now.epochSecond, null, CardSurface.TREND_PREVIEW, unit) },
                 newest?.trend?.from,
             )
         }
-    }
 }
 
 /**

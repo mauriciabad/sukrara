@@ -79,7 +79,10 @@ class TrendReadings(
 
         /**
          * How much earlier each read starts: the Smooth window (5 × 5 min), the fast alerts' 5-min hold and a reading
-         * before it, so the first reading asked for has the same trend as it has further into a longer read.
+         * before it, so the first reading asked for has the same rate and `held` as it has further into a longer read. Its
+         * text band may still differ while a slow drift has kept the rate within the hysteresis of a band edge since
+         * before the read (the band is remembered as long as the readings follow): a place that shows a band reads as
+         * far back as the hub (its 24 h window, the uploads' hours), never only this.
          */
         val LOOKBACK: Duration = Duration.ofMinutes(40)
     }
