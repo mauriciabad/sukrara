@@ -1720,12 +1720,19 @@ disable the module in LSPosed (gone after the next System UI restart), or the ki
   medium), **Glucose graph** (`….graph`: the chart with time in range beside it; small to extra large), **Glucose +
   graph** (`….combined`: the whole card; small to extra large). Names in English or Spanish by the system language.
 - Each draws the card of its registered surface (`widget-value`, `widget-graph`, `widget-combined`) through the one
-  renderer (`GlucoseCard.image`), with the app's graph settings, unit and the alert decision from the snapshot. Light
-  and dark follow the system; the tinted modes (accented / vibrant, desktop not focused) draw the renderer's tinted
-  card as a mask (`GlucoseCard.tintedMask`: white, each pixel's brightness × opacity, the same in light and dark) that
-  the widget fills with the system's primary ink (template image), so it reads on the light material the desktop gets
-  over a bright wallpaper as well as on the dark one, whatever the system appearance (#189); the system's margins and
-  container background.
+  renderer (`GlucoseCard.widgetImage`), with the app's graph settings, unit and the alert decision from the snapshot.
+  Light and dark follow the system. The card sits on its own opaque background (`GlucoseCard.widgetBackground`: the
+  card's colour, also the widget's container background), the picture reaching over the system's margins to the
+  widget's edges. So the dimmed desktop (an app in front, *Dim widgets on desktop* *Automatically*) keeps it legible:
+  macOS doesn't ask the widget for a tinted mode there, it draws the full-colour widget greyscale by luminance with
+  every opacity lifted (`DimmedDesktop`, measured on macOS 27, #189); a see-through background came out as a light
+  card under the dark theme's light inks (value washed out, the dark grid strongest); on its own dark card the value,
+  arrow and ring numbers stay light on dark and the grid and band stay faint, as in Apple's widgets
+  ([before](img/widgets/dimmed-before-dark.png), [after](img/widgets/dimmed-after-dark.png),
+  [light](img/widgets/dimmed-after-light.png)). The image is marked desaturated for accented rendering (never one
+  solid silhouette). When the system does ask for accented / vibrant rendering, the widget shows the renderer's tinted
+  card as a mask (`GlucoseCard.tintedMask`: white, each pixel's brightness × opacity) filled with the system's primary
+  ink (template image).
 - Data: only `glucose.json` in the App Group `QWUV9H4A3G.app.mauri.sukrara` (the group from the appex's Info.plist
   `SukraraAppGroup`), written by the app (`WidgetFeed`). No network, no other file, no log file. An unreadable file or
   another format version shows *Open Sukrara* (no number). The gallery shows the real snapshot, or *Open Sukrara*:

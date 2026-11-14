@@ -8,11 +8,9 @@ import Testing
 
 @testable import SukraraGraph
 
-/// A widget in a tinted rendering mode (desktop not focused: accented / vibrant, #189). The system draws it on a
-/// material that is light or dark by the wallpaper, not by the system's appearance, and fills the card's mask with
-/// its primary ink for that material. So the card must be one mask, the same in light and dark, with no colour of its
-/// own; and drawn as the system draws it, on either material, the value must read strongly while the decoration stays
-/// faint. Before #189 a dark-theme widget drew its light inks into the bitmap: on the light material they vanished.
+/// A widget the system asks for a tinted rendering mode (accented / vibrant): the card is one mask, the same in light
+/// and dark, with no colour of its own, and filled with the system's ink on a light or a dark material the value reads
+/// strongly while the decoration stays faint. (The dimmed desktop draws the full-colour widget: `DimmedWidgetTests`.)
 @Suite struct TintedWidgetTests {
     private static let now: TimeInterval = 1_800_000_000
     private static let sizes: [(CardSurface, [CGSize])] = [

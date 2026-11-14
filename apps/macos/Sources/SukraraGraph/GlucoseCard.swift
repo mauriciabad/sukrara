@@ -566,7 +566,8 @@ public enum GlucoseCard {
 
     /// The card as a bitmap (widgets, PNG evidence): `scale` px per point, y-down.
     /// `overflow`: room around the card in the picture (it is `overflow` larger on every side) for what overflows the
-    /// card, such as a ring's laurel or crown; the card itself keeps `size`.
+    /// card, such as a ring's laurel or crown; the card itself keeps `size`. `background` fills the whole picture,
+    /// the overflow too.
     static func image(
         size: CGSize, scale: CGFloat = 2, readings: [GraphReading], marks: [GraphMark], now: TimeInterval,
         _ st: CardStyle, _ pal: GraphPalette, background: CGColor? = nil, surface: CardSurface,
@@ -583,8 +584,11 @@ public enum GlucoseCard {
         else { return nil }
         ctx.translateBy(x: 0, y: CGFloat(ph))
         ctx.scaleBy(x: scale, y: -scale)
+        if let background {
+            ctx.setFillColor(background)
+            ctx.fill(CGRect(x: 0, y: 0, width: size.width + 2 * overflow, height: size.height + 2 * overflow))
+        }
         ctx.translateBy(x: overflow, y: overflow)
-        if let background { ctx.setFillColor(background); ctx.fill(CGRect(origin: .zero, size: size)) }
         draw(
             ctx, size: size, readings: readings, marks: marks, now: now, st, pal, surface: surface, part: .all,
             metricsOf: metricsOf,
@@ -701,13 +705,42 @@ extension GlucoseCard {
         return tinted ? img.flatMap(tintedMask) : img
     }
 
-    /// A tinted widget's card (#189): white, its opacity how strongly each pixel shows (the pixel's brightness, its
-    /// largest channel, × its opacity), no colour of its own. The system draws the tinted modes on a material that is
-    /// dark or light by the wallpaper behind it, not by the system's appearance: a bitmap with its own light (or dark)
-    /// ink vanishes on one of them, as the dark theme's light ink did on the light desktop material. The widget fills
-    /// this mask with its primary style (template image), which the system picks for that material, like its own text.
-    /// The brightness rather than the luminance keeps a range colour (a red value, a green arc) as strong as the grey
-    /// ink it stands for, while the grid and band keep the tinted palette's faintness.
+    /// A desktop widget's picture of `surface` at `size`, `overflow` pt larger on every side (it reaches over the
+    /// widget's margins to its edges). In full colour the card is drawn on its own opaque background
+    /// (`widgetBackground`) over the whole picture; `tinted` (the system asked for accented / vibrant) gives the
+    /// `tintedMask` instead.
+    ///
+    /// Opaque because of how the dimmed desktop draws a widget (an app in front, #189): it doesn't ask for a tinted
+    /// mode, it draws the full-colour widget greyscale, each pixel by its luminance, with its opacity lifted, and the
+    /// container background the same way. A dark card on a see-through background turned into light inks on a light
+    /// grey card: the value washed out, the dark grid and the faint band came out strongest. On its own dark card the
+    /// light inks stay light on dark, and the grid and band, already blended into the card, stay as faint as they look.
+    public static func widgetImage(
+        surface: CardSurface, size: CGSize, config: GraphConfig, overrides: PlaceOverrides = PlaceOverrides(),
+        data: CardData, unit: GlucoseUnit, dark: Bool, tinted: Bool, scale: CGFloat, overflow: CGFloat,
+        words: CardWords = .current
+    ) -> CGImage? {
+        if tinted {
+            return image(
+                surface: surface, size: size, config: config, overrides: overrides, data: data, unit: unit,
+                dark: dark, tinted: true, scale: scale, overflow: overflow, words: words)
+        }
+        var style = surface.style(config, overrides, sensor: data.sensor, words: words)
+        style.unit = unit
+        return image(
+            size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
+            palette(surface, dark: dark, contrast: false), background: widgetBackground(dark: dark), surface: surface,
+            metricsOf: data.metrics, alerts: data.alerts, overflow: overflow)
+    }
+
+    /// A desktop widget's container background: the card's own colour, opaque (`widgetImage`).
+    public static func widgetBackground(dark: Bool) -> CGColor { GraphPalette.of(dark: dark).bg }
+
+    /// A tinted widget's card: white, its opacity how strongly each pixel shows (the pixel's brightness, its largest
+    /// channel, × its opacity), no colour of its own, for the widget to fill with the system's primary ink (template
+    /// image) when the system asks for accented / vibrant rendering. The brightness rather than the luminance keeps a
+    /// range colour (a red value, a green arc) as strong as the grey ink it stands for, while the grid and band keep the
+    /// tinted palette's faintness. (The dimmed desktop doesn't ask for these modes: `widgetImage`.)
     static func tintedMask(_ img: CGImage) -> CGImage? {
         let w = img.width, h = img.height
         guard

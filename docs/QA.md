@@ -260,10 +260,13 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 
 ## Q7 Mac widgets
 
-- [ ] `sukrara-snap card <dir>` before/after: `widget-*` for every family and state, light, dark and tinted.
-- [ ] Tinted (#189): dark appearance, a bright wallpaper, then a dark one; click another window so the desktop widgets
-  dim: on both, the value, arrow and ring numbers read as strongly as the system's own widget text, the grid and band
-  stay faint (System Settings › Desktop & Dock › *Dim widgets on desktop* *Automatic*). Same in light appearance.
+- [ ] `sukrara-snap card <dir>` before/after: `widget-*` for every family and state, light, dark and `-dimmed` (the
+  dimmed desktop's greyscale, `DimmedDesktop`).
+- [ ] Dimmed (#189): dark appearance, a bright wallpaper, then a dark one; click another window so the desktop widgets
+  dim (System Settings › Desktop & Dock › *Dim widgets on desktop* *Automatically*): on both, the widget is a dark
+  card like Apple's Calendar next to it, the value, arrow and ring numbers light and clearly the strongest, the grid
+  and band faint. Same in light appearance (a light card, dark inks). `screencapture -l <window id>` of the widget's
+  window (NotificationCenter) shows it without the wallpaper; compare with `-dimmed` from `sukrara-snap`.
 - [ ] Real widgets only via `tools/install.sh mac` (restarts the widget extension); they update within a minute.
 
 ## Q8 Alerts on a device

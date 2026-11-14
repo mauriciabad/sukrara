@@ -7,6 +7,7 @@
     import ImageIO
     import SukraraCore
     import SukraraGraph
+    import SukraraTesting
     import UniformTypeIdentifiers
 
     /// `sukrara-snap card <dir>`: every card surface at its registered sizes (contracts/graph/surfaces/surfaces.json),
@@ -36,12 +37,12 @@
                         // mmol/L for the states with a value worth comparing; mg/dL for all
                         let units: [GlucoseUnit] = ["live", "low", "stale"].contains(state) ? [.mgdl, .mmol] : [.mgdl]
                         for unit in units {
-                            for (dark, tinted) in looks(surface, state: state, unit: unit) {
+                            for (dark, dimmed) in looks(surface, state: state, unit: unit) {
                                 let name =
                                     "\(surface.rawValue)-\(Int(size.width))x\(Int(size.height))-\(state)-\(unit.rawValue)-"
-                                    + "\(dark ? "dark" : "light")\(tinted ? "-tinted" : "").png"
+                                    + "\(dark ? "dark" : "light")\(dimmed ? "-dimmed" : "").png"
                                 try write(
-                                    surface, size: size, data: data, unit: unit, dark: dark, tinted: tinted,
+                                    surface, size: size, data: data, unit: unit, dark: dark, dimmed: dimmed,
                                     to: dir.appending(path: name))
                                 count += 1
                             }
@@ -52,15 +53,14 @@
             return count
         }
 
-        /// Light and dark; a widget also in the tinted rendering modes (accented / vibrant: the renderer's tinted mask
-        /// in the primary ink of a light and a dark material) for the states that matter most at a glance: live,
-        /// struck through and hidden.
+        /// Light and dark; a widget also as the dimmed desktop draws it (an app in front: `DimmedDesktop`, measured on
+        /// the real desktop, #189) for the states that matter most at a glance: live, struck through and hidden.
         private static func looks(_ surface: CardSurface, state: String, unit: GlucoseUnit)
-            -> [(dark: Bool, tinted: Bool)]
+            -> [(dark: Bool, dimmed: Bool)]
         {
             let widget = [CardSurface.widgetValue, .widgetGraph, .widgetCombined].contains(surface)
-            let tinted = widget && unit == .mgdl && ["live", "stale", "noreadings"].contains(state)
-            return [(false, false), (true, false)] + (tinted ? [(false, true), (true, true)] : [])
+            let dimmed = widget && unit == .mgdl && ["live", "stale", "noreadings"].contains(state)
+            return [(false, false), (true, false)] + (dimmed ? [(false, true), (true, true)] : [])
         }
 
         private static func states(now: TimeInterval) -> [(String, CardData)] {
@@ -110,16 +110,32 @@
         }
 
         private static func write(
-            _ surface: CardSurface, size: CGSize, data: CardData, unit: GlucoseUnit, dark: Bool, tinted: Bool,
+            _ surface: CardSurface, size: CGSize, data: CardData, unit: GlucoseUnit, dark: Bool, dimmed: Bool,
             to url: URL
         ) throws {
-            // the widget's own background around the card, as the system draws it
+            let widget = [CardSurface.widgetValue, .widgetGraph, .widgetCombined].contains(surface)
+            // a widget: its picture as the widget hands it over (the card on its own background, over the margins)
             guard
-                let card = GlucoseCard.image(
-                    surface: surface, size: size, config: GraphConfig(), data: data, unit: unit, dark: dark,
-                    tinted: tinted, overflow: 12),
+                let card =
+                    widget
+                    ? GlucoseCard.widgetImage(
+                        surface: surface, size: size, config: GraphConfig(), data: data, unit: unit, dark: dark,
+                        tinted: false, scale: 2, overflow: 12)
+                    : GlucoseCard.image(
+                        surface: surface, size: size, config: GraphConfig(), data: data, unit: unit, dark: dark,
+                        overflow: 12),
                 let dest = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)
             else { throw SnapError.render(url.lastPathComponent) }
+            if dimmed {
+                // what the dimmed desktop shows of it (the window; the desktop then tints it with the wallpaper)
+                guard
+                    let out = DimmedDesktop.image(
+                        DimmedDesktop.render(card, on: .solid(GlucoseCard.widgetBackground(dark: dark))))
+                else { throw SnapError.render(url.lastPathComponent) }
+                CGImageDestinationAddImage(dest, out, nil)
+                guard CGImageDestinationFinalize(dest) else { throw SnapError.render(url.lastPathComponent) }
+                return
+            }
             let w = card.width, h = card.height
             guard
                 let ctx = CGContext(
@@ -128,22 +144,10 @@
                     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
             else { throw SnapError.render(url.lastPathComponent) }
             let all = CGRect(x: 0, y: 0, width: w, height: h)
-            if tinted {
-                // the tinted modes as the system draws them: the mask filled with the primary ink of a dark or light
-                // material (the material follows the wallpaper; the card is the same mask on both)
-                ctx.setFillColor(dark ? CGColor(gray: 0.2, alpha: 1) : CGColor(gray: 0.82, alpha: 1))
-                ctx.fill(all)
-                ctx.beginTransparencyLayer(auxiliaryInfo: nil)
-                ctx.draw(card, in: all)
-                ctx.setBlendMode(.sourceIn)
-                ctx.setFillColor(dark ? CGColor(gray: 1, alpha: 1) : CGColor(gray: 0, alpha: 1))
-                ctx.fill(all)
-                ctx.endTransparencyLayer()
-            } else {
-                ctx.setFillColor(dark ? CGColor(gray: 0.11, alpha: 1) : CGColor(gray: 0.97, alpha: 1))
-                ctx.fill(all)
-                ctx.draw(card, in: all)
-            }
+            // the menu bar card's own surroundings (a widget's picture brings its background)
+            ctx.setFillColor(dark ? CGColor(gray: 0.11, alpha: 1) : CGColor(gray: 0.97, alpha: 1))
+            ctx.fill(all)
+            ctx.draw(card, in: all)
             guard let out = ctx.makeImage() else { throw SnapError.render(url.lastPathComponent) }
             CGImageDestinationAddImage(dest, out, nil)
             guard CGImageDestinationFinalize(dest) else { throw SnapError.render(url.lastPathComponent) }

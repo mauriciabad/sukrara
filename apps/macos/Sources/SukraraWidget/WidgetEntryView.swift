@@ -20,7 +20,8 @@ enum WidgetKind {
 }
 
 /// One widget's picture: the card of its kind's surface at the family's content size, drawn by the one renderer as a
-/// single bitmap (the widget chooses only its size, its surface and the rendering mode). VoiceOver reads the card's
+/// single bitmap on the card's own opaque background (the widget chooses only its size, its surface and the rendering
+/// mode; `GlucoseCard.widgetImage`). VoiceOver reads the card's
 /// sentence and chart summary (`GlucoseCard.accessibilityLabel`). A tap opens quick Add treatment; without data, the app.
 struct WidgetEntryView: View {
     let kind: WidgetKind
@@ -28,8 +29,9 @@ struct WidgetEntryView: View {
     @Environment(\.widgetRenderingMode) private var renderingMode
     @Environment(\.colorScheme) private var scheme
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.widgetContentMargins) private var margins
 
-    /// Room around the card for what overflows it (a ring's laurel or crown): drawn into the widget's margin.
+    /// Room around the card for what overflows it (a ring's laurel or crown), at least: drawn into the widget's margin.
     private static let overflow: CGFloat = 12
 
     var body: some View {
@@ -55,22 +57,25 @@ struct WidgetEntryView: View {
         }
         // the card is one image: redacted (placeholder, gallery) it would come out blank
         .unredacted()
-        .containerBackground(.fill.tertiary, for: .widget)
+        // the card's own colour, opaque: the dimmed desktop draws a see-through one as a light card (#189)
+        .containerBackground(for: .widget) { Color(cgColor: GlucoseCard.widgetBackground(dark: scheme == .dark)) }
     }
 
     private func card(_ snapshot: WidgetSnapshot, _ data: CardData) -> some View {
         GeometryReader { geo in
-            let o = Self.overflow
+            // over the margins to the widget's edges, so the card's background is the whole widget
+            let o = max(Self.overflow, margins.top, margins.leading, margins.bottom, margins.trailing)
             let tinted = renderingMode != .fullColor
-            if let image = GlucoseCard.image(
+            if let image = GlucoseCard.widgetImage(
                 surface: kind.surface, size: geo.size, config: snapshot.config, data: data, unit: snapshot.unit,
                 dark: scheme == .dark, tinted: tinted, scale: displayScale, overflow: o)
             {
-                // tinted: the renderer's mask in the system's primary ink for the material it draws on, light or
-                // dark by the wallpaper (#189), like the system's own text
+                // tinted: the renderer's mask in the system's primary ink; full colour: the dimmed desktop draws it
+                // greyscale by luminance (#189), never as one solid silhouette
                 Image(decorative: image, scale: displayScale)
                     .renderingMode(tinted ? .template : .original)
                     .resizable()
+                    .widgetAccentedRenderingMode(tinted ? nil : .desaturated)
                     .foregroundStyle(.primary)
                     .frame(width: geo.size.width + 2 * o, height: geo.size.height + 2 * o)
                     .frame(width: geo.size.width, height: geo.size.height)

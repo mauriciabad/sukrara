@@ -363,6 +363,8 @@
       "GlucoseCard": [
         "draw",
         "image",
+        "widgetImage",
+        "widgetBackground",
         "face",
         "accessibilityLabel",
         "noValueText",
