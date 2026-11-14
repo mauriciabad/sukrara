@@ -103,6 +103,16 @@ interface HomeDeps {
      */
     suspend fun deleteTreatment(id: String): Treatment?
 
+    /**
+     * Sets entry [id]'s note to [note] (the pen sheet's note, #207: a pen entry carries a note like any entry) through
+     * the treatment log: a newer version, synced and sent to LibreView / Tidepool like any edit; the pen keys stay.
+     * Returns the version it replaced, or null when it isn't stored or this phone may not change it.
+     */
+    suspend fun editNote(
+        id: String,
+        note: String,
+    ): Treatment? = null
+
     /** Brings [previous] (what [deleteTreatment] returned) back as the newest version, through the treatment log. */
     suspend fun undoTreatment(previous: Treatment)
 
@@ -181,8 +191,10 @@ data class PenSheet(
 data class PenNotice(
     val kind: Kind,
     val undo: PenEntryInfo? = null,
+    /** A note change's *Undo*: the version before it. */
+    val noteUndo: Treatment? = null,
 ) {
-    enum class Kind { Changed, Removed, ChangedSince, UndoFailed }
+    enum class Kind { Changed, Removed, ChangedSince, UndoFailed, NoteChanged }
 }
 
 /** The wearer's own row on home: picture, name (blank = not set yet) and how many follow. */
@@ -454,6 +466,21 @@ class HomeViewModel(
     /** The snackbar's *Undo* after a correction: the entry back as it was, while nothing changed it since. */
     fun undoPen(was: PenEntryInfo) {
         viewModelScope.launch { if (!deps.restorePen(was)) _penNotice.value = PenNotice(PenNotice.Kind.UndoFailed) }
+    }
+
+    /** The sheet's *Save* with a changed note: the entry's note through the log (*Entry changed*, with *Undo*). */
+    fun notePen(note: String) {
+        val sheet = _penSheet.value?.takeIf { it.editable } ?: return
+        viewModelScope.launch {
+            val was = deps.editNote(sheet.treatment.id, note)
+            _penNotice.value =
+                if (was == null) PenNotice(PenNotice.Kind.ChangedSince) else PenNotice(PenNotice.Kind.NoteChanged, noteUndo = was)
+        }
+    }
+
+    /** The snackbar's *Undo* after a note change: the version before it comes back. */
+    fun undoNote(was: Treatment) {
+        viewModelScope.launch { deps.undoTreatment(was) }
     }
 
     /** *Delete* on the sheet: home's own delete (its snackbar offers *Undo*). */

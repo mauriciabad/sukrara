@@ -101,4 +101,45 @@ class EditDialogTest {
         compose.onNodeWithText("Log anyway").performClick()
         assertEquals(listOf("cancel", "log"), calls)
     }
+
+    /** #207: opened from a list the form is the app's sheet, with *Delete* (and its icon) at the action row's start. */
+    @Test fun inTheSheetAnEditHasDelete() {
+        val t = Treatment("a", TreatmentKind.Carbs, 30.0, now, "", now, origin = TreatmentOrigin.Phone)
+        var deleted = 0
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                TreatmentDialogContent(
+                    form = TreatmentFormState.editing(t),
+                    focusCarbs = false,
+                    zone = ZoneOffset.UTC,
+                    now = { now },
+                    onSave = { _, _ -> },
+                    onCancel = {},
+                    sheet = true,
+                    onDelete = { deleted++ },
+                )
+            }
+        }
+        compose.onNodeWithTag("treatment-delete").performClick()
+        assertEquals(1, deleted)
+    }
+
+    /** The floating dialog (outside the app) never has *Delete*. */
+    @Test fun theDialogHasNoDelete() {
+        val t = Treatment("a", TreatmentKind.Carbs, 30.0, now, "", now, origin = TreatmentOrigin.Phone)
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                TreatmentDialogContent(
+                    form = TreatmentFormState.editing(t),
+                    focusCarbs = false,
+                    zone = ZoneOffset.UTC,
+                    now = { now },
+                    onSave = { _, _ -> },
+                    onCancel = {},
+                    onDelete = {},
+                )
+            }
+        }
+        compose.onNodeWithTag("treatment-delete").assertDoesNotExist()
+    }
 }

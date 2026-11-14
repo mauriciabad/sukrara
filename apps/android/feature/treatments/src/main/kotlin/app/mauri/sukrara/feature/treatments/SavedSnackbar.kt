@@ -38,6 +38,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 data class Confirmation(
     val text: String,
     val undo: Saved?,
+    /** A delete's: it stays 10 s instead of 4 s. */
+    val long: Boolean = false,
 )
 
 /**

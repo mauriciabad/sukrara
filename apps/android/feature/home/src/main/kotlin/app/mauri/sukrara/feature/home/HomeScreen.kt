@@ -107,6 +107,7 @@ import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
 import app.mauri.sukrara.designsystem.pen.PenQuestionCard
 import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
+import app.mauri.sukrara.designsystem.rows.showUndo
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -163,6 +164,8 @@ fun HomeScreen(
                         undo = viewModel::undoPen,
                         shown = viewModel::penNoticeShown,
                         answer = viewModel::answerPen,
+                        note = viewModel::notePen,
+                        undoNote = viewModel::undoNote,
                     ),
             ),
         modifier = modifier,
@@ -199,6 +202,9 @@ data class PenCallbacks(
     val undo: (PenEntryInfo) -> Unit = {},
     val shown: (PenNotice) -> Unit = {},
     val answer: (PenQuestionInfo, PenAnswer) -> Unit = { _, _ -> },
+    /** The sheet's *Save* with a changed note, and that snackbar's *Undo*. */
+    val note: (String) -> Unit = {},
+    val undoNote: (Treatment) -> Unit = {},
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -231,8 +237,7 @@ fun HomeContent(
                 haptics.confirm()
                 // every close can be undone here; Settings › Show closed tips brings them back later
                 scope.launch {
-                    val result = snackbar.showSnackbar(closedText, undoText, withDismissAction = true, duration = SnackbarDuration.Short)
-                    if (result == SnackbarResult.ActionPerformed) {
+                    if (snackbar.showUndo(closedText, undoText)) {
                         haptics.confirm()
                         callbacks.onRestore(kind)
                     }
@@ -300,6 +305,7 @@ fun HomeContent(
             onSave = if (p.editable) callbacks.pen.save else null,
             onDismiss = callbacks.pen.close,
             onDelete = if (p.deletable) callbacks.pen.delete else null,
+            onNote = if (p.editable) callbacks.pen.note else null,
         )
     }
     if (muteDialog) {
@@ -319,12 +325,18 @@ internal fun TreatmentSnackbars(
     snackbar: SnackbarHostState,
 ) {
     val haptics = rememberHaptics()
-    val deletedText = stringResource(if (state.undoInClinic) R.string.home_treatment_deleted_clinic else R.string.home_treatment_deleted)
+    // names what went ("Deleted: 4.5u rapid insulin"): a swipe can take the wrong row, the words say which
+    val deletedText =
+        state.undo?.let {
+            stringResource(
+                if (state.undoInClinic) R.string.home_treatment_deleted_clinic else R.string.home_treatment_deleted,
+                treatmentLabel(it),
+            )
+        }
     val undoText = stringResource(R.string.home_undo)
     LaunchedEffect(state.undo) {
-        if (state.undo == null) return@LaunchedEffect
-        val result = snackbar.showSnackbar(deletedText, undoText, withDismissAction = true, duration = SnackbarDuration.Short)
-        if (result == SnackbarResult.ActionPerformed) {
+        val text = deletedText ?: return@LaunchedEffect
+        if (snackbar.showUndo(text, undoText)) {
             haptics.confirm()
             callbacks.onUndo()
         } else {
@@ -337,20 +349,23 @@ internal fun TreatmentSnackbars(
             PenNotice.Kind.Removed to stringResource(R.string.home_pen_removed),
             PenNotice.Kind.ChangedSince to stringResource(R.string.home_pen_changed_since),
             PenNotice.Kind.UndoFailed to stringResource(R.string.home_pen_undo_failed),
+            PenNotice.Kind.NoteChanged to stringResource(R.string.home_pen_changed),
         )
     LaunchedEffect(penNotice) {
         val notice = penNotice ?: return@LaunchedEffect
-        val result =
-            snackbar.showSnackbar(
-                penTexts.getValue(notice.kind),
-                actionLabel = if (notice.undo != null) undoText else null,
-                withDismissAction = true,
-                duration = if (notice.undo != null) SnackbarDuration.Long else SnackbarDuration.Short,
-            )
+        val text = penTexts.getValue(notice.kind)
+        val undone =
+            if (notice.undo != null || notice.noteUndo != null) {
+                snackbar.showUndo(text, undoText)
+            } else {
+                snackbar.showSnackbar(text, withDismissAction = true, duration = SnackbarDuration.Short)
+                false
+            }
         callbacks.pen.shown(notice)
-        if (result == SnackbarResult.ActionPerformed) {
+        if (undone) {
             haptics.confirm()
             notice.undo?.let(callbacks.pen.undo)
+            notice.noteUndo?.let(callbacks.pen.undoNote)
         }
     }
 }

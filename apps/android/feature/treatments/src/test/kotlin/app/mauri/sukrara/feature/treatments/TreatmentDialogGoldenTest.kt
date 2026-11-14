@@ -15,6 +15,10 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
@@ -139,4 +143,37 @@ class TreatmentDialogGoldenTest {
     @Test fun penQuestionLight() = penQuestion("treatment-pen-question-light", dark = false)
 
     @Test fun penQuestionDark() = penQuestion("treatment-pen-question-dark", dark = true)
+
+    /** #207: an entry opened from a list: the form as the app's bottom sheet, *Delete* at the start, icons on its buttons. */
+    private fun sheet(
+        name: String,
+        dark: Boolean,
+    ) {
+        val t = Treatment("a", TreatmentKind.Carbs, 45.0, now.minusSeconds(1200), "Pasta", now, origin = TreatmentOrigin.Phone)
+        compose.setContent {
+            SukraraTheme(dark = dark, dynamic = false) {
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                    SukraraSheet(onDismiss = {}) {
+                        TreatmentDialogContent(
+                            form = TreatmentFormState.editing(t),
+                            focusCarbs = false,
+                            zone = ZoneOffset.UTC,
+                            now = { now },
+                            onSave = { _, _ -> },
+                            onCancel = {},
+                            quiet = QuietRules(afterInsulinMin = 60, afterCarbsMin = 30),
+                            sheet = true,
+                            onDelete = {},
+                        )
+                    }
+                }
+            }
+        }
+        compose.waitForIdle()
+        captureScreenRoboImage("src/test/snapshots/$name.png")
+    }
+
+    @Test fun sheetLight() = sheet("treatment-sheet-edit-light", dark = false)
+
+    @Test fun sheetDark() = sheet("treatment-sheet-edit-dark", dark = true)
 }

@@ -83,6 +83,8 @@ fun TreatmentHistoryScreen(
                         delete = viewModel::deletePen,
                         undo = viewModel::undoPen,
                         shown = viewModel::penNoticeShown,
+                        note = viewModel::notePen,
+                        undoNote = viewModel::undoNote,
                     ),
             ),
         onBack = onBack,
@@ -191,6 +193,7 @@ fun TreatmentHistoryContent(
             onSave = if (p.editable) callbacks.pen.save else null,
             onDismiss = callbacks.pen.close,
             onDelete = if (p.deletable) callbacks.pen.delete else null,
+            onNote = if (p.editable) callbacks.pen.note else null,
         )
     }
 }

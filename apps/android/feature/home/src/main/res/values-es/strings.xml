@@ -124,16 +124,14 @@
     <string name="home_pen_removed">Quitado de tu registro</string>
     <string name="home_pen_changed_since">Esta entrada cambió mientras tanto. No se guardó nada.</string>
     <string name="home_pen_undo_failed">No se pudo deshacer: la entrada cambió</string>
-    <!-- TalkBack: la acción Borrar de una fila de tratamiento (deslizar, menú) -->
-    <string name="home_treatment_action_delete">Borrar</string>
     <!-- TalkBack: lo que hace tocar una fila de tratamiento -->
     <string name="home_treatment_edit">editar</string>
     <string name="home_treatment_sending">Enviando…</string>
     <string name="home_treatment_not_sent">No enviado</string>
     <string name="home_treatment_retry">Reintentar</string>
     <string name="home_treatment_retry_label">Reintentar el envío de %1$s</string>
-    <string name="home_treatment_deleted">Tratamiento borrado</string>
-    <string name="home_treatment_deleted_clinic">Tratamiento borrado. También se quitará de LibreView.</string>
+    <string name="home_treatment_deleted">Borrado: %1$s</string>
+    <string name="home_treatment_deleted_clinic">Borrado: %1$s. También se quita de LibreView.</string>
     <string name="home_treatment_in_clinic">En LibreView</string>
     <string name="home_treatment_not_in_clinic">Aún no está en LibreView</string>
     <string name="home_treatment_clinic_updating">LibreView tiene una versión anterior: actualizando</string>
@@ -142,10 +140,6 @@
     <!-- #207: "ver más" de la lista y la página del historial -->
     <string name="home_treatments_see_all">Ver todo</string>
     <string name="home_treatments_none_today">Nada anotado en las últimas 24 horas</string>
-    <string name="home_treatment_menu_edit">Editar</string>
-    <string name="home_treatment_menu_doses">Ver dosis</string>
-    <!-- TalkBack: lo que hace mantener pulsada una fila de tratamiento (abre su menú) -->
-    <string name="home_treatment_menu_label">ver opciones</string>
     <!-- TalkBack: %1$s = "142 miligramos por decilitro, subiendo": la glucosa cuando se anotó -->
     <string name="home_treatment_glucose_then">glucosa entonces %1$s</string>
     <string name="history_title">Tratamientos</string>

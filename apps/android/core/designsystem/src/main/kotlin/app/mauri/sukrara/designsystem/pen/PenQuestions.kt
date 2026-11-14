@@ -50,6 +50,7 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 
 /*
  * The pen's open questions where the person looks anyway (home, under the glucose card) and the *Same injection?*
@@ -219,14 +220,12 @@ fun PenSameSheet(
     time: (Long) -> String,
     onAnswer: (PenAnswer) -> Unit,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     // "" = None of these; null = nothing picked yet
     var pick by rememberSaveable(q.id) { mutableStateOf<String?>(null) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
+    SukraraSheet(onDismiss, modifier) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(
                 stringResource(R.string.ds_pen_q_same),
                 style = MaterialTheme.typography.headlineSmall,

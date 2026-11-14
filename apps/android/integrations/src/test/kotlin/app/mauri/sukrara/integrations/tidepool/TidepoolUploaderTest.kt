@@ -391,6 +391,22 @@ class TidepoolUploaderTest {
             assertEquals(before, requests.size)
         }
 
+    /** #207: a note added later to an insulin entry (a pen's too: the pen keys never reach the uploader) goes up with it. */
+    @Test
+    fun `a note added to an insulin entry goes up in its datum`() =
+        runBlocking {
+            signedInAndOn()
+            treatments.upsertIfNewer(entry("p1", TreatmentKind.RapidInsulin, 8.5, 10))
+            uploader.cycle()
+            assertFalse("notes" in data().last().toString())
+            clock.advance(Duration.ofMinutes(1))
+            treatments.replace(entry("p1", TreatmentKind.RapidInsulin, 8.5, 10, note = "Pizza", modified = clock.now()))
+            uploader.cycle()
+            val sent = data().last().toString()
+            assertTrue("8.5" in sent)
+            assertTrue("Pizza" in sent)
+        }
+
     @Test
     fun `edits go up again and deletes remove the datum`() =
         runBlocking {

@@ -13,6 +13,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +74,7 @@ import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
+import app.mauri.sukrara.designsystem.rows.SwipeToDelete
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.Freshness
@@ -121,11 +123,10 @@ fun HomeUiState.rows(treatments: List<Treatment> = this.treatments): List<Treatm
  * when a pen logged it, the time (and on home the time since), the note; at the end the glucose and trend when it was
  * logged, after the LibreView mark, shown only while the entry isn't there yet or for a moment right after it got there.
  *
- * A tap edits the entry (a pen's opens its doses), a long press opens *Edit* / *Delete*, a swipe either way deletes it
- * (a haptic at the point where letting go deletes; the snackbar's *Undo* brings it back). TalkBack: one element, its
- * tap action, *show options* and a *Delete* action. A row this phone may not change only reads.
+ * A tap opens the entry's sheet (the edit form; a pen's doses), where *Delete* is too; a swipe either way deletes it
+ * ([SwipeToDelete]: the snackbar's *Undo* brings it back). TalkBack: one element, its tap action and a *Delete*
+ * action. A row this phone may not change only reads (a pen's still opens its read-only sheet).
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun TreatmentRow(
     row: TreatmentRowModel,
@@ -140,102 +141,18 @@ internal fun TreatmentRow(
     justUploaded: Boolean = rememberJustUploaded(row.mark),
 ) {
     val t = row.treatment
-    val haptics = rememberHaptics()
     val changeable = !row.readOnly
     val label = treatmentLabel(t)
-    // letting go past 40 % of the row's width deletes; the strip and the haptic say so while the finger is down
-    val swipe = rememberSwipeToDismissBoxState(positionalThreshold = { it * DELETE_AT })
-    var width by remember { mutableIntStateOf(0) }
-    val armed by remember {
-        derivedStateOf { width > 0 && abs(swipe.offsetOrZero()) >= width * DELETE_AT }
-    }
-    // one haptic where letting go deletes, one when the finger goes back before it
-    LaunchedEffect(swipe) {
-        snapshotFlow { armed }.drop(1).collect { haptics.threshold(it) }
-    }
-    val scope = rememberCoroutineScope()
-    var menu by remember { mutableStateOf(false) }
-    val deleteLabel = stringResource(R.string.home_treatment_action_delete)
     val openLabel = stringResource(if (row.fromPen) R.string.home_pen_open else R.string.home_treatment_edit)
-    val menuLabel = stringResource(R.string.home_treatment_menu_label)
-    val openWord = stringResource(if (row.fromPen) R.string.home_treatment_menu_doses else R.string.home_treatment_menu_edit)
-    val delete = {
-        haptics.confirm()
-        onDelete()
-    }
-    Column(modifier.onSizeChanged { width = it.width }) {
-        SwipeToDismissBox(
-            state = swipe,
-            backgroundContent = { DeleteBackground(swipe.dismissDirection, armed) },
-            enableDismissFromStartToEnd = changeable,
-            enableDismissFromEndToStart = changeable,
-            gesturesEnabled = changeable,
-            onDismiss = {
-                onDelete()
-                // a delete the log refused leaves the row: it slides back
-                scope.launch {
-                    delay(RESET_AFTER_MS)
-                    swipe.reset()
-                }
-            },
-        ) {
-            Surface(color = MaterialTheme.colorScheme.background) {
-                val open =
-                    when {
-                        // a pen's row opens its doses on every role (read only where it may not change them)
-                        row.fromPen || changeable -> {
-                            Modifier
-                                .combinedClickable(
-                                    onClickLabel = openLabel,
-                                    onLongClickLabel = menuLabel.takeIf { changeable },
-                                    onLongClick =
-                                        if (changeable) {
-                                            {
-                                                haptics.longPress()
-                                                menu = true
-                                            }
-                                        } else {
-                                            null
-                                        },
-                                    onClick = onOpen,
-                                ).semantics {
-                                    if (changeable) {
-                                        customActions =
-                                            listOf(
-                                                CustomAccessibilityAction(deleteLabel) {
-                                                    delete()
-                                                    true
-                                                },
-                                            )
-                                    }
-                                }
-                        }
-
-                        else -> {
-                            Modifier.semantics(mergeDescendants = true) {}
-                        }
-                    }
-                Box {
-                    RowContent(row, label, now, unit, showAgo, justUploaded, onOpenUpload, open)
-                    DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        DropdownMenuItem(
-                            text = { Text(openWord) },
-                            onClick = {
-                                menu = false
-                                onOpen()
-                            },
-                        )
-                        DropdownMenuItem(
-                            text = { Text(deleteLabel) },
-                            leadingIcon = { DeleteIcon() },
-                            onClick = {
-                                menu = false
-                                delete()
-                            },
-                        )
-                    }
-                }
-            }
+    val open =
+        if (row.fromPen || changeable) {
+            Modifier.clickable(onClickLabel = openLabel, onClick = onOpen)
+        } else {
+            Modifier.semantics(mergeDescendants = true) {}
+        }
+    Column(modifier) {
+        SwipeToDelete(onDelete = onDelete, enabled = changeable) { action ->
+            RowContent(row, label, now, unit, showAgo, justUploaded, onOpenUpload, open.then(action))
         }
         DeliveryLine(row.delivery, label, onRetry)
     }
@@ -388,38 +305,6 @@ internal fun rememberJustUploaded(mark: UploadMark?): Boolean {
 }
 
 /**
- * Behind a row being swiped: the delete icon on the side the row leaves, on the surface tone, turning to the error
- * container and growing a little once letting go would delete (snaps with reduced motion).
- */
-@Composable
-private fun DeleteBackground(
-    direction: SwipeToDismissBoxValue,
-    armed: Boolean,
-) {
-    val r = LocalReducedMotion.current
-    val color by animateColorAsState(
-        if (armed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-        Motion.defaultEffects(r),
-    )
-    val ink by animateColorAsState(
-        if (armed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurfaceVariant,
-        Motion.defaultEffects(r),
-    )
-    val scale by animateFloatAsState(if (armed) 1.15f else 0.9f, Motion.fastSpatial(r))
-    Box(
-        Modifier.fillMaxSize().background(color).padding(horizontal = 24.dp),
-        contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd,
-    ) {
-        Icon(painterResource(R.drawable.home_ic_delete), contentDescription = null, tint = ink, modifier = Modifier.scale(scale))
-    }
-}
-
-@Composable
-private fun DeleteIcon(modifier: Modifier = Modifier) {
-    Icon(painterResource(R.drawable.home_ic_delete), contentDescription = null, modifier = modifier)
-}
-
-/**
  * A writer's entry on its way (#75): *Sending…* while a relay or the wearer's phone hasn't taken it, *Not sent* in the
  * error colour with *Retry* once 2 minutes passed without (it is still sent again on every connect). Slides in and out;
  * the line is a polite live region, *Retry* names the entry for TalkBack.
@@ -476,14 +361,5 @@ internal fun treatmentLabel(t: Treatment): String {
     }
 }
 
-/** How far the row is swiped now (0 before it was laid out). */
-private fun SwipeToDismissBoxState.offsetOrZero(): Float = runCatching { requireOffset() }.getOrDefault(0f).takeUnless { it.isNaN() } ?: 0f
-
-/** The share of the row's width past which letting go deletes. */
-private const val DELETE_AT = 0.4f
-
 /** The trend arrow's bitmap size in px (drawn at 16 dp). */
 private const val ARROW_PX = 64
-
-/** A swiped row whose delete didn't take it away slides back after this long. */
-private const val RESET_AFTER_MS = 1_500L

@@ -20,7 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -57,6 +58,9 @@ import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.designsystem.sheet.SheetActions
+import app.mauri.sukrara.designsystem.sheet.SheetButton
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import java.util.Locale
 
 /** `8.5u`: dot, lowercase u, no space (the pen's own way of writing doses). */
@@ -142,8 +146,9 @@ fun PenDoseRow(
  * A pen entry's sheet (Settings › Insulin pens › Doses read, home's pen rows): the amount and time, *From the pen ·
  * 1.5u primed*, each dose with *Priming* / *Injected*, the note and the entry it replaced. Once a dose changed:
  * *Cancel* / *Save* ([onSave] with each dose's role; *Remove from log* when every dose is priming). [onSave] null = read
- * only (a follower): the roles in words and *Done*. [onDelete] (the entry's own delete with its *Undo*) shows *Delete*
- * while nothing is being changed.
+ * only (a follower): the roles in words and *Done*. [onNote] makes the note a field (#207: a pen entry carries a note
+ * like any entry); a changed note is saved with *Save* too. [onDelete] (the entry's own delete with its *Undo*) shows
+ * *Delete* while nothing is being changed. Built on [SukraraSheet]; every button has its icon.
  *
  * Feel: a flipped dose's amount flies from its row to the total it joins (the injected amount, or *primed*) and both
  * totals count to their new values in 0.5u steps; with reduced motion the numbers simply change. TalkBack hears the
@@ -156,10 +161,15 @@ fun PenEntrySheet(
     time: (Long) -> String,
     onSave: ((List<Boolean>) -> Unit)?,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
     onDelete: (() -> Unit)? = null,
+    onNote: ((String) -> Unit)? = null,
 ) {
     val roles = remember(entry) { mutableStateListOf(*entry.doses.map { it.primed }.toTypedArray()) }
-    val changed = roles.toList() != entry.doses.map { it.primed }
+    var note by remember(entry) { mutableStateOf(entry.note) }
+    val rolesChanged = roles.toList() != entry.doses.map { it.primed }
+    val noteChanged = onNote != null && note.trim() != entry.note
+    val changed = rolesChanged || noteChanged
     val inj = entry.doses.filterIndexed { i, _ -> !roles[i] }
     val a = round1(inj.sumOf { it.units })
     val pr = round1(entry.doses.filterIndexed { i, _ -> roles[i] }.sumOf { it.units })
@@ -173,12 +183,9 @@ fun PenEntrySheet(
     val title = if (inj.isEmpty()) stringResource(R.string.ds_pen_nothing_injected) else "${penUnits(a)} $kind"
     val from = stringResource(R.string.ds_pen_from_pen)
     val primedText = pr.takeIf { it > 0 }?.let { stringResource(R.string.ds_pen_primed, penUnits(it)) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    SukraraSheet(onDismiss, modifier) {
         Box(Modifier.onGloballyPositioned { flight.origin = it.positionInRoot() }) {
-            Column(
-                Modifier.fillMaxWidth().padding(horizontal = 24.dp).padding(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         if (inj.isEmpty() && shownA < 0.01) title else "${penUnits(shownA)} $kind",
@@ -221,7 +228,17 @@ fun PenEntrySheet(
                     )
                 }
                 HorizontalDivider()
-                if (entry.note.isNotEmpty()) Text(entry.note, style = MaterialTheme.typography.bodyMedium)
+                if (onNote != null) {
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = PenNotes.clip(it) },
+                        label = { Text(stringResource(R.string.ds_pen_note)) },
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth().testTag("pen-note"),
+                    )
+                } else if (entry.note.isNotEmpty()) {
+                    Text(entry.note, style = MaterialTheme.typography.bodyMedium)
+                }
                 entry.replaced?.let { (ra, rt) ->
                     Text(
                         stringResource(R.string.ds_pen_replaced, penUnits(ra), time(rt)),
@@ -229,28 +246,40 @@ fun PenEntrySheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
-                    if (changed && onSave != null) {
-                        TextButton(onClick = {
-                            roles.clear()
-                            roles.addAll(entry.doses.map { it.primed })
-                        }) { Text(stringResource(R.string.ds_cancel)) }
-                        Button(onClick = {
-                            onSave(roles.toList())
-                            onDismiss()
-                        }) { Text(stringResource(if (inj.isEmpty()) R.string.ds_pen_remove else R.string.ds_pen_save)) }
-                    } else {
-                        if (onDelete != null) {
-                            TextButton(
-                                onClick = {
-                                    onDelete()
+                if (changed) {
+                    SheetActions(
+                        end = {
+                            SheetButton(stringResource(R.string.ds_cancel), R.drawable.ds_ic_close, {
+                                roles.clear()
+                                roles.addAll(entry.doses.map { it.primed })
+                                note = entry.note
+                            })
+                            val removes = inj.isEmpty()
+                            SheetButton(
+                                stringResource(if (removes) R.string.ds_pen_remove else R.string.ds_pen_save),
+                                if (removes) R.drawable.ds_ic_delete else R.drawable.ds_ic_check,
+                                {
+                                    if (rolesChanged) onSave?.invoke(roles.toList())
+                                    if (noteChanged && !removes) onNote?.invoke(note.trim())
                                     onDismiss()
                                 },
-                                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                            ) { Text(stringResource(R.string.ds_pen_delete)) }
-                        }
-                        Button(onClick = onDismiss) { Text(stringResource(R.string.ds_pen_done)) }
-                    }
+                                primary = true,
+                            )
+                        },
+                    )
+                } else {
+                    SheetActions(
+                        start =
+                            onDelete?.let { delete ->
+                                {
+                                    SheetButton(stringResource(R.string.ds_pen_delete), R.drawable.ds_ic_delete, {
+                                        delete()
+                                        onDismiss()
+                                    }, destructive = true)
+                                }
+                            },
+                        end = { SheetButton(stringResource(R.string.ds_pen_done), R.drawable.ds_ic_check, onDismiss, primary = true) },
+                    )
                 }
             }
             FlyingDose(flight)
@@ -310,3 +339,14 @@ private fun FlyingDose(flight: DoseFlight) {
 }
 
 private const val FLY_MS = 320
+
+/** A pen entry's note as every entry's: at most [Treatment] note bytes (100 UTF-8 bytes), cut on a character. */
+internal object PenNotes {
+    const val BYTES = 100
+
+    fun clip(text: String): String {
+        var t = text.replace('\n', ' ')
+        while (t.toByteArray(Charsets.UTF_8).size > BYTES) t = t.dropLast(1)
+        return t
+    }
+}

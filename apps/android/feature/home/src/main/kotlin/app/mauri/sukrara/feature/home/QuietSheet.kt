@@ -35,6 +35,7 @@ import app.mauri.sukrara.designsystem.alerts.QuietExits
 import app.mauri.sukrara.designsystem.alerts.QuietRow
 import app.mauri.sukrara.designsystem.alerts.rememberAlertWords
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import java.time.Instant
 
 /**
@@ -127,12 +128,9 @@ internal fun QuietSheet(
             rows.isEmpty() && target.fallback == QuietExit.Unmute -> R.string.home_quiet_muted
             else -> null
         }
-    ModalBottomSheet(onDismissRequest = onDismiss, modifier = Modifier.testTag("quiet-sheet")) {
-        Column(
-            Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.semantics { heading() })
+    SukraraSheet(onDismiss, modifier = Modifier.testTag("quiet-sheet")) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
             text?.let {
                 Text(stringResource(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }

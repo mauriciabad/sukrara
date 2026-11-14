@@ -70,8 +70,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Quick log pop-up by tapping the widget, the notification, a low alert's Log carbs or the Quick Settings tile.
 - Add logs from the Sukrara companion apps.
 - Your last 24 h of logs on the home screen, and a Treatments page with 31 days: each entry with its chart marker,
-  the glucose and trend when you logged it, and a mark only when it isn't in LibreView yet. Swipe or long-press to
-  delete, with Undo.
+  the glucose and trend when you logged it, and a mark only when it isn't in LibreView yet. Tap an entry to
+  edit it or add a note (pen doses too) in a sheet; swipe it away to delete, with Undo.
 - [Planned]: Garmin watch app, MCP for AI assistants, voice assistants...
 
 ### Glucose always at a glance

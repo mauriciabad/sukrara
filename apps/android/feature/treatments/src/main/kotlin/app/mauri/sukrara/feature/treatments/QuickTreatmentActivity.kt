@@ -42,6 +42,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -71,6 +72,7 @@ import app.mauri.sukrara.core.model.PenNearEntry
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -230,6 +232,11 @@ class QuickTreatmentActivity : ComponentActivity() {
             delay(if (reduced) 0L else LEAVE_MS.toLong())
             pending?.let(::confirm)
         }
+        // opened from the app (home's Add treatment, a list's row): the app's bottom sheet (#207 round 2)
+        if (cd == null && (editId != null || QuickTreatmentIntents.fromApp(intent))) {
+            SheetForm(focusCarbs, focusLong, quiet)
+            return
+        }
         // M3 dialog scrim; a tap on it dismisses, like outside a dialog
         Box(
             Modifier
@@ -276,13 +283,54 @@ class QuickTreatmentActivity : ComponentActivity() {
     }
 
     /**
+     * The form as the app's bottom sheet: swipe down, back or a tap above it cancel; after *Save* / *Delete* it slides
+     * away and the snackbar follows.
+     */
+    @Composable
+    private fun SheetForm(
+        focusCarbs: Boolean,
+        focusLong: Boolean,
+        quiet: QuietRules,
+    ) {
+        SukraraSheet(onDismiss = { if (!leaving) finish() }, leaving = leaving) {
+            TreatmentDialogContent(
+                form = form,
+                focusCarbs = focusCarbs,
+                zone = module.clock.zone,
+                now = module.clock::now,
+                onSave = ::save,
+                onCancel = ::finish,
+                quiet = quiet,
+                draft = draftAt?.let { DraftLine(it, ::discardDraft) },
+                focusLong = focusLong,
+                penLine =
+                    penLine?.let { line ->
+                        { PenFillLine(line, showHint = form.rapid.isBlank() && form.long.isBlank(), onUndo = ::undoPen) }
+                    },
+                sheet = true,
+                onDelete = if (editing != null) ::deleteEntry else null,
+            )
+        }
+        duplicate?.let { d ->
+            PenDuplicateDialog(d.pen, onCancel = { cancelDuplicate() }, onLog = { store(d.entries, d.at) })
+        }
+    }
+
+    /**
      * The snackbar after Save. It goes by itself after [SNACK_MS] (raised to Android's *Time to take action*, longer
      * with TalkBack), [UNDONE_MS] after an Undo; back closes it at once.
      */
     @Composable
     private fun ConfirmationLayer(c: Confirmation) {
         LaunchedEffect(c) {
-            val ms = if (c.undo == null) UNDONE_MS else SNACK_MS
+            val ms =
+                if (c.undo == null) {
+                    UNDONE_MS
+                } else if (c.long) {
+                    LONG_SNACK_MS
+                } else {
+                    SNACK_MS
+                }
             val a11y = getSystemService(AccessibilityManager::class.java)
             val flags = AccessibilityManager.FLAG_CONTENT_TEXT or AccessibilityManager.FLAG_CONTENT_CONTROLS
             // raised for TalkBack and *Time to take action*, never shorter than its own time
@@ -412,6 +460,20 @@ class QuickTreatmentActivity : ComponentActivity() {
             return
         }
         leave(Confirmation(getString(R.string.treatment_changed_snack, EntryWords.one(resources, entry)), saved))
+    }
+
+    /** *Delete* in the edit sheet: the entry goes, the snackbar names it with *Undo*. */
+    private fun deleteEntry() {
+        val t = editing ?: return
+        if (saved) return
+        saved = true
+        val deleted = module.delete(t)
+        if (deleted == null) {
+            finish()
+            return
+        }
+        val words = EntryWords.one(resources, NewEntry(t.kind, t.amount, t.note))
+        leave(Confirmation(getString(R.string.treatment_deleted_snack, words), deleted, long = true))
     }
 
     /** The dialog leaves (the countdown ends with it, the pen reader and the keyboard go), then [c] shows. */
@@ -689,6 +751,9 @@ class QuickTreatmentActivity : ComponentActivity() {
 
         /** How long the snackbar offers Undo (a short snackbar's 4 s), and how long *Undone* stays. */
         const val SNACK_MS = 4_000
+
+        /** A delete's *Undo* stays longer (M3's long snackbar, 10 s): taking a delete back is what it is for. */
+        const val LONG_SNACK_MS = 10_000
         const val UNDONE_MS = 1_500
         const val READER_FLAGS =
             NfcAdapter.FLAG_READER_NFC_A or NfcAdapter.FLAG_READER_SKIP_NDEF_CHECK or NfcAdapter.FLAG_READER_NO_PLATFORM_SOUNDS

@@ -205,6 +205,18 @@ class HomeModule(
 
     override suspend fun deleteTreatment(id: String): Treatment? = treatmentLog().delete(id)
 
+    override suspend fun editNote(
+        id: String,
+        note: String,
+    ): Treatment? {
+        val stored =
+            data.treatments
+                .get(id)
+                ?.treatment
+                ?.takeUnless { it.deleted } ?: return null
+        return treatmentLog().edit(stored.copy(note = note))
+    }
+
     override suspend fun undoTreatment(previous: Treatment) {
         treatmentLog().undo(previous)
     }

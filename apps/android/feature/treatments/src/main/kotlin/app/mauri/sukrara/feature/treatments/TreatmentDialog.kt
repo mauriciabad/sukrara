@@ -99,12 +99,16 @@ import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
+import app.mauri.sukrara.designsystem.sheet.SheetActions
+import app.mauri.sukrara.designsystem.sheet.SheetButton
+import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.TreatmentKindMark
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * What the form holds while the person types: the three amounts and the note as typed (after the input filters)
@@ -253,6 +257,11 @@ data class DraftLine(
  * what a countdown kept, with *Discard*; [penLine] is the pen's line under the fields (reading a pen into the dialog).
  * Editing one entry ([TreatmentFormState.editing]): that kind's field only, its note and its time, under *Edit carbs*
  * / … .
+ *
+ * [sheet] = opened from the app (home's *Add treatment*, a row of a treatment list): the same form as the content of the
+ * app's bottom sheet ([SukraraSheet] gives the surface and padding), its buttons with icons, and [onDelete] (an edit)
+ * as *Delete* at the row's start (#207 round 2: everything opened from a list is a sheet). Outside the app it stays
+ * the floating dialog.
  */
 @Composable
 fun TreatmentDialogContent(
@@ -269,6 +278,8 @@ fun TreatmentDialogContent(
     draft: DraftLine? = null,
     focusLong: Boolean = false,
     penLine: (@Composable () -> Unit)? = null,
+    sheet: Boolean = false,
+    onDelete: (() -> Unit)? = null,
 ) {
     val haptics = rememberHaptics()
     val first = remember { FocusRequester() }
@@ -297,14 +308,10 @@ fun TreatmentDialogContent(
         }
     }
 
-    Surface(
-        modifier = modifier.widthIn(min = 280.dp, max = 560.dp).fillMaxWidth().testTag("treatment-dialog"),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-    ) {
+    DialogSurface(sheet, modifier) {
         // optional lines (draft, quiet, limits) carry their own top gap inside their reveal, so they slide in and out
         // without a gap that jumps
-        Column(Modifier.verticalScroll(rememberScrollState()).padding(24.dp)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(if (sheet) 0.dp else 24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     stringResource(editTitle(form.editing)),
@@ -366,22 +373,34 @@ fun TreatmentDialogContent(
                 )
             }
             Spacer(Modifier.height(GAP))
-            Box {
-                DialogActionRow(
+            if (sheet) {
+                SheetActions(
                     start =
-                        if (onOpenApp == null && lock == null) {
-                            null
-                        } else {
-                            { StartAction(lock, onOpenApp) }
+                        onDelete?.let { delete ->
+                            {
+                                SheetButton(
+                                    stringResource(R.string.treatment_delete),
+                                    DsR.drawable.ds_ic_delete,
+                                    delete,
+                                    Modifier.testTag("treatment-delete"),
+                                    destructive = true,
+                                )
+                            }
                         },
-                ) {
-                    CountdownCancel(lock, onCancel)
-                    Spacer(Modifier.width(8.dp))
-                    Button(onClick = save, enabled = form.canSave, modifier = Modifier.testTag("treatment-save")) {
-                        Text(stringResource(R.string.treatment_save))
-                    }
-                }
-                if (lock != null) LockAnnouncement(lock.announce)
+                    end = {
+                        SheetButton(stringResource(R.string.treatment_cancel), DsR.drawable.ds_ic_close, onCancel)
+                        SheetButton(
+                            stringResource(R.string.treatment_save),
+                            DsR.drawable.ds_ic_check,
+                            save,
+                            Modifier.testTag("treatment-save"),
+                            primary = true,
+                            enabled = form.canSave,
+                        )
+                    },
+                )
+            } else {
+                DialogActions(form, lock, onOpenApp, onCancel, save)
             }
         }
     }
@@ -393,6 +412,53 @@ fun TreatmentDialogContent(
             lock = lock,
             onDone = { picking = false },
         )
+    }
+}
+
+/** The floating dialog's card, or nothing of its own in a [sheet] (the sheet is the surface). */
+@Composable
+private fun DialogSurface(
+    sheet: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    if (sheet) {
+        Box(modifier.fillMaxWidth().testTag("treatment-dialog")) { content() }
+    } else {
+        Surface(
+            modifier = modifier.widthIn(min = 280.dp, max = 560.dp).fillMaxWidth().testTag("treatment-dialog"),
+            shape = MaterialTheme.shapes.extraLarge,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            content = content,
+        )
+    }
+}
+
+/** The floating dialog's action row: *Open Sukrara* / *Unlock* at the start, *Cancel* (the countdown) and *Save*. */
+@Composable
+private fun DialogActions(
+    form: TreatmentFormState,
+    lock: LockInfo?,
+    onOpenApp: (() -> Unit)?,
+    onCancel: () -> Unit,
+    save: () -> Unit,
+) {
+    Box {
+        DialogActionRow(
+            start =
+                if (onOpenApp == null && lock == null) {
+                    null
+                } else {
+                    { StartAction(lock, onOpenApp) }
+                },
+        ) {
+            CountdownCancel(lock, onCancel)
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = save, enabled = form.canSave, modifier = Modifier.testTag("treatment-save")) {
+                Text(stringResource(R.string.treatment_save))
+            }
+        }
+        if (lock != null) LockAnnouncement(lock.announce)
     }
 }
 

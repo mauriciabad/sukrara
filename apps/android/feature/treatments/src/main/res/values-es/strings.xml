@@ -39,6 +39,9 @@
     <string name="treatment_saved_snack">Guardado: %1$s</string>
     <string name="treatment_sent_snack">Se enviará a quien lleva el sensor: %1$s</string>
     <string name="treatment_changed_snack">Cambiado: %1$s</string>
+    <!-- #207: Borrar en la hoja de edición, y su snackbar; %1$s = "4,5u de insulina rápida" -->
+    <string name="treatment_delete">Borrar</string>
+    <string name="treatment_deleted_snack">Borrado: %1$s</string>
     <string name="treatment_undo">Deshacer</string>
     <string name="treatment_undone">Deshecho</string>
     <string name="treatment_entry_rapid">%1$s de insulina rápida</string>

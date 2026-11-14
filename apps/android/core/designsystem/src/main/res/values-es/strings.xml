@@ -5,6 +5,10 @@
 <resources>
     <string name="ds_ok">Aceptar</string>
     <string name="ds_cancel">Cancelar</string>
+    <string name="ds_delete">Borrar</string>
+    <string name="ds_undo">Deshacer</string>
+    <!-- a pen entry's note field in its sheet -->
+    <string name="ds_pen_note">Nota</string>
     <string name="ds_dismiss">Descartar</string>
     <string name="ds_custom">Personalizado…</string>
     <string name="ds_custom_label">Valor</string>

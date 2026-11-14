@@ -41,6 +41,9 @@
     <string name="treatment_saved_snack">Saved: %1$s</string>
     <string name="treatment_sent_snack">Will be sent to the wearer: %1$s</string>
     <string name="treatment_changed_snack">Changed: %1$s</string>
+    <!-- #207: Delete in the edit sheet, and its snackbar; %1$s = "4.5u rapid insulin" -->
+    <string name="treatment_delete">Delete</string>
+    <string name="treatment_deleted_snack">Deleted: %1$s</string>
     <string name="treatment_undo">Undo</string>
     <string name="treatment_undone">Undone</string>
     <string name="treatment_entry_rapid">%1$s rapid insulin</string>
