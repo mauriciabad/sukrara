@@ -267,6 +267,22 @@ extension CardWords {
 enum A11y {
     private static let maxSlots = 4
 
+    /// A value with its unit, once: "112 milligrams per decilitre"; LO / HI as "below 40 …" / "above 400 …".
+    static func number(_ sgv: Int, unit: GlucoseUnit, words w: CardWords) -> String {
+        let u = w.unit(unit)
+        return switch sgv {
+        case ..<GlucoseRange.floor: w.below("\(unit.format(GlucoseRange.floor, locale: w.locale)) \(u)")
+        case GlucoseRange.hi...: w.above("\(unit.format(GlucoseRange.ceiling, locale: w.locale)) \(u)")
+        default: "\(unit.format(sgv, locale: w.locale)) \(u)"
+        }
+    }
+
+    /// A past reading as VoiceOver says it: the value with its unit and its trend's word, "142 milligrams per
+    /// decilitre, rising" (no age, range or alert: the place says when it is from). `band` = the reading's trend band.
+    static func reading(_ sgv: Int, band: Int?, unit: GlucoseUnit, words w: CardWords) -> String {
+        number(sgv, unit: unit, words: w) + ", " + w.trend(band)
+    }
+
     /// "112 milligrams per decilitre, falling, in range, 2 min ago" (or why there's no value), then the alert or mute
     /// the status pill says when a value is shown and the place draws the badge.
     static func value(_ data: CardData, unit: GlucoseUnit, surface: CardSurface, style: CardStyle, words w: CardWords)
@@ -281,16 +297,10 @@ enum A11y {
             glucose = w.noReadingSince(data.latest.map { Freshness.timeText($0.t, now: data.now) } ?? "")
         case .value:
             guard let r = data.latest else { return w.noReadings }
-            let u = w.unit(unit)
             let bound = r.sgv < GlucoseRange.floor || r.sgv >= GlucoseRange.hi
-            let number =
-                switch r.sgv {
-                case ..<GlucoseRange.floor: w.below("\(unit.format(GlucoseRange.floor, locale: w.locale)) \(u)")
-                case GlucoseRange.hi...: w.above("\(unit.format(GlucoseRange.ceiling, locale: w.locale)) \(u)")
-                default: "\(unit.format(r.sgv, locale: w.locale)) \(u)"
-                }
             let parts = [
-                number, look.strike ? w.old : nil, look.strike ? nil : w.trend(look.trend == .arrow ? look.band : nil),
+                number(r.sgv, unit: unit, words: w), look.strike ? w.old : nil,
+                look.strike ? nil : w.trend(look.trend == .arrow ? look.band : nil),
                 bound ? nil : w.range(r.sgv, style.bands.sane()), w.age(data.now - r.t),
             ]
             glucose = parts.compactMap { $0 }.joined(separator: ", ")

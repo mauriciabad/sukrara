@@ -421,6 +421,17 @@
             ]
             let tm = TreatmentsModel(rows: rows, canWrite: true, actions: nil)
             tm.wearer = "Marta"
+            // the note just reached the phone: its check shows for a few seconds
+            tm.set("4", .sent)
+            tm.set("4", .accepted)
+            // the glucose then from a synthetic day, each reading with its trend (the app's one place: AppModel)
+            let glucose = AppModel(
+                plan: LaunchPlan(mode: .normal, services: .none, data: .isolated(root: URL(fileURLWithPath: "/tmp"))))
+            glucose.apply(
+                readings: RealisticSynthetic.readings(until: TimeInterval(t0) - 60, days: 1).map {
+                    Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: $0.sgv, sensorRate: $0.rate)
+                })
+            tm.readings = { glucose.allReadings }
             out.append(("treatments", AnyView(TreatmentsView(model: tm, add: {}).frame(width: 460, height: 380))))
             // Edit Treatment on an amount and on a note (nothing changed yet: Save off)
             out.append(

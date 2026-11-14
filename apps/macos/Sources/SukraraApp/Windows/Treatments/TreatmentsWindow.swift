@@ -5,17 +5,8 @@ import AppKit
 import SukraraCore
 import SwiftUI
 
-/// The kinds in form order, with the symbol the form and the Treatments window show.
+/// The kinds' names and units (their badge is the chart's marker: `KindBadge`).
 enum TreatmentKindLook {
-    static func symbol(_ k: Treatment.Kind) -> String {
-        switch k {
-        case .rapid: "syringe"
-        case .long: "syringe.fill"
-        case .carbs: "fork.knife"
-        case .note: "text.bubble"
-        }
-    }
-
     static func name(_ k: Treatment.Kind) -> String {
         switch k {
         case .rapid: L10n.t("Rapid")
@@ -201,10 +192,7 @@ public struct AddTreatmentView: View {
     }
 
     private func kindLabel(_ k: Treatment.Kind) -> some View {
-        Label(TreatmentKindLook.name(k), systemImage: TreatmentKindLook.symbol(k))
-            .font(.callout)
-            .foregroundStyle(.secondary)
-            .accessibilityHidden(true)
+        KindLabel(kind: k)
     }
 
     private func amount(_ k: Treatment.Kind, _ text: Binding<String>) -> some View {
@@ -338,9 +326,10 @@ struct AnyPrimitiveButtonStyle: PrimitiveButtonStyle {
     func makeBody(configuration: Configuration) -> some View { make(configuration) }
 }
 
-/// The Treatments window: the last 7 days grouped by day, newest first, each entry with its kind's symbol, time,
-/// time since, delivery state (Retry), who logged it (tooltip), and for the entries this Mac wrote Edit… and Delete
-/// (buttons and the context menu) with a 10 s undo toast / ⌘Z. Arriving entries slide in.
+/// The Treatments window: the last 7 days grouped by day, newest first, each entry with its kind's marker, time,
+/// time since, the glucose then, its delivery only while it says something (Sending, Not sent with Retry, "On the
+/// phone" for a few seconds), who logged it (tooltip), and for the entries this Mac wrote Edit… and Delete (on hover,
+/// the context menu, VoiceOver's actions, a swipe) with a 10 s undo toast / ⌘Z. Arriving entries slide in.
 public struct TreatmentsView: View {
     @Bindable var model: TreatmentsModel
     var add: () -> Void
@@ -427,90 +416,24 @@ public struct TreatmentsView: View {
         .frame(minWidth: 460, minHeight: 380)
     }
 
-    /// One entry. VoiceOver reads the entry's lines as one element (who logged it as the hint); the doses, the
-    /// delivery's Retry, Edit and Delete stay elements of their own, so each can be reached and used.
+    /// One entry (`TreatmentRow`). VoiceOver reads the entry's lines as one element (who logged it as the hint, Edit
+    /// and Delete as its actions); the doses, the delivery's Retry and the glucose then stay elements of their own.
     private func rowView(_ row: TreatmentsModel.Row, now: Date) -> some View {
-        let t = row.treatment
-        let at = Date(timeIntervalSince1970: TimeInterval(t.t))
-        let loggedBy = Self.loggedBy(t, mine: model.isMine(row), wearer: model.wearer)
-        return HStack(spacing: 10) {
-            Image(systemName: TreatmentKindLook.symbol(t.k))
-                .frame(width: 20)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            VStack(alignment: .leading, spacing: 2) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Self.title(t)).contentTransition(.numericText())
-                    if let pen = Self.penLine(t) { Text(pen).font(.callout).foregroundStyle(.secondary) }
-                    if t.k != .note, !t.n.isEmpty { Text(t.n).font(.callout).foregroundStyle(.secondary) }
-                    Text(Clock.time(at) + " · " + Self.since(at, now: now))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityHint(loggedBy)
-                // the separator under the row starts at the text, not at a delivery label further right
-                .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
-                if let doses = t.pd, doses.count > 1 {
-                    DisclosureGroup(L10n.t("Doses")) {
-                        ForEach(Array(doses.enumerated()), id: \.offset) { _, d in
-                            HStack {
-                                Text(Self.doseText(d)).foregroundStyle(d.p ? .secondary : .primary)
-                                Spacer()
-                                Text(Clock.time(Date(timeIntervalSince1970: TimeInterval(d.t))))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .font(.callout)
-                            .accessibilityElement(children: .ignore)
-                            .accessibilityLabel(Self.doseSpoken(d))
-                        }
-                    }
-                    .font(.callout)
-                }
-            }
-            Spacer()
-            delivery(row)
-            if model.canChange(row) {
-                Button {
-                    editing = row
-                } label: {
-                    Image(systemName: "pencil")
-                }
-                .buttonStyle(.borderless)
-                .help(L10n.t("Edit…"))
-                .accessibilityLabel(L10n.t("Edit \(Self.title(t))"))
-                Button {
-                    Task { await model.delete(row) }
-                } label: {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.borderless)
-                .help(L10n.t("Delete"))
-                .accessibilityLabel(L10n.t("Delete \(Self.title(t))"))
-            }
-        }
-        .frame(minHeight: 30)
-        .help(loggedBy)
-        .accessibilityElement(children: .contain)
-        .contextMenu {
-            if model.canChange(row) {
-                Button(L10n.t("Edit…")) { editing = row }
-                Button(L10n.t("Delete"), role: .destructive) { Task { await model.delete(row) } }
-            }
-        }
-    }
-
-    @ViewBuilder private func delivery(_ row: TreatmentsModel.Row) -> some View {
-        switch row.delivery {
-        case .sending: Label(L10n.t("Sending"), systemImage: "arrow.up.circle").foregroundStyle(.secondary)
-        case .sent: Label(L10n.t("Sent"), systemImage: "checkmark.circle").foregroundStyle(.secondary)
-        case .accepted: Label(L10n.t("On the phone"), systemImage: "checkmark.circle.fill").foregroundStyle(.green)
-        case .failed:
-            HStack {
-                Label(L10n.t("Not sent"), systemImage: "exclamationmark.circle").foregroundStyle(.red)
-                Button(L10n.t("Retry")) { Task { await model.retry(row) } }
-            }
-        case nil: EmptyView()
+        TreatmentRow(
+            row: row, now: now, loggedBy: Self.loggedBy(row.treatment, mine: model.isMine(row), wearer: model.wearer),
+            canChange: model.canChange(row), shown: model.shown(row), glucose: model.glucoseThen(row),
+            unit: model.unit(),
+            edit: { editing = row },
+            delete: { Task { await model.delete(row) } },
+            retry: { Task { await model.retry(row) } }
+        )
+        .animation(reduceMotion ? nil : .spring(duration: 0.35), value: model.shown(row))
+        // the "On the phone" check fades out after its few seconds
+        .task(id: model.justAccepted[row.id]) {
+            guard let until = model.justAccepted[row.id] else { return }
+            try? await Task.sleep(for: .seconds(max(0, until.timeIntervalSinceNow)))
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.4)) { model.acceptedShown(row.id) }
         }
     }
 

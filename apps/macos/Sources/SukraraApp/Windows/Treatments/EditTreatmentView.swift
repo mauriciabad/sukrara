@@ -98,10 +98,7 @@ struct EditTreatmentView: View {
                 }
             }
             VStack(alignment: .leading, spacing: 4) {
-                Label(TreatmentKindLook.name(treatment.k), systemImage: TreatmentKindLook.symbol(treatment.k))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                KindLabel(kind: treatment.k)
                 if treatment.k == .note {
                     TextField(
                         L10n.t("Note"),

@@ -31,6 +31,9 @@ final class WindowCoordinator {
         settings.newestReading = { [weak model] in model?.newestReading }
         setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
+        // the rows' glucose then: the readings the card shows (each with its own trend) and the card's unit
+        treatments.readings = { [weak model] in model?.allReadings ?? [] }
+        treatments.unit = { [weak model] in model?.unit ?? .mgdl }
         report = ReportModel(store: store, app: model)
         setup.requestNotifications = requestNotifications
         setup.loginItem = model.loginItem

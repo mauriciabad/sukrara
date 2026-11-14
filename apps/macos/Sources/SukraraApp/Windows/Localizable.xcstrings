@@ -8865,6 +8865,22 @@
         }
       }
     },
+    "Glucose then %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glucose then %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Glucosa en ese momento: %@"
+          }
+        }
+      }
+    },
     "From the pen" : {
       "localizations" : {
         "en" : {

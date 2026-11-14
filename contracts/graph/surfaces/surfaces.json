@@ -372,7 +372,9 @@
         "noReadingsSymbol",
         "pillRect",
         "chartRects",
-        "chartSpan"
+        "chartSpan",
+        "treatmentBadge",
+        "spokenReading"
       ],
       "SensorBadge": [
         "look",
@@ -401,7 +403,8 @@
       "Freshness": [
         "timeText",
         "nextChange",
-        "nextChangeAt"
+        "nextChangeAt",
+        "valueText"
       ]
     },
     "value_text_ok": [
