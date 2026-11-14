@@ -358,8 +358,9 @@ public struct FollowerSession: Sendable {
     private mutating func receiveAlert(plain: String, now: Int) throws(PayloadError) -> Outcome {
         let alert = try AlertPayload.decode(plain)
         guard now - alert.at <= Wire.alertMaxAge else { return Outcome(.ignored("alert-stale")) }
-        // an escalated copy of a firing (#39: the same id sent again with `esc`) and an answer are news, not duplicates
-        let what = alert.fires ? "fire" : alert.answered ? "answered" : "clear"
+        // an escalated copy of a firing (#39: the same id sent again with `esc`), an answer and the clear of a silent show
+        // (#195: its `id` repeated) are news, not duplicates
+        let what = alert.fires ? "fire" : alert.answered ? "answered" : alert.shows ? "show" : "clear"
         let key = "\(alert.id)|\(what)|\(alert.count)|\(alert.esc.map(String.init) ?? "")"
         guard !state.alertKeys.contains(key) else { return Outcome(.ignored("alert-duplicate")) }
         state.alertKeys.append(key)
