@@ -13,7 +13,10 @@ methods.py        the candidates, each causal and streaming (one call per readin
 evaluate.py       the tables in docs/34, on a readings file: error and delay against a hindsight slope, delays at
                   turning points, band changes per hour (with hysteresis), angle jitter; --every 5 (a 5-min
                   sensor), --noise, --gaps, --hysteresis, --sweep, --episode
-vectors.py        the proposed shared test vectors (synthetic readings → expected rate, bands with hysteresis, angles)
+vectors.py        the proposed shared test vectors (synthetic readings → expected rate, bands with hysteresis, angles);
+                  the build grew them into tools/trend/cases.py → contracts/trend
+holds.py          the build's two holds from data (#204): when the arrow doubles, when the fast alerts ring on the
+                  trend (docs/34 "In Sukrara")
 test_methods.py   the estimators on hand-made readings
 ```
 
@@ -30,6 +33,8 @@ python3 -I investigations/204-trend/evaluate.py "$F" --truth 10        # a smoot
 python3 -I investigations/204-trend/evaluate.py "$F" --episode "2026-11-13 20:08" "2026-11-13 20:45" \
                                                          --episode "2026-11-14 14:30" "2026-11-14 15:10"
 python3 -I investigations/204-trend/vectors.py > /tmp/trend-vectors.json
+python3 -I investigations/204-trend/holds.py "$F"                      # the doubled arrow's and the fast alerts' holds
+python3 -I investigations/204-trend/holds.py "$F" 3                    # the fast alerts at 3 mg/dL/min
 ```
 
 `--only "RECOMMENDED,Abbott"` keeps the candidates whose names contain those words. The "truth" is a centred

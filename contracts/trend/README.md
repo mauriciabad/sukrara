@@ -34,9 +34,9 @@ HI has no trend. 5-min sources use the same numbers.
   below 0.8). The band before is remembered while the next reading follows within 12.5 min with a trend.
 - **Doubled** (band ±3, ⇈ / ⇊, "rising very fast"): entered only when the rate was at least 3 that way at **every
   reading of the last 2 min** (back to the first reading at or before 2 min earlier: 3 readings of a 1-min sensor, 2
-  of a 5-min one), left with the 0.2. On the owner's readings (Balanced) this halves the doubled arrows (11.5 → 6.7 a
-  day), removes the ones without a fast move behind them (0.4 → 0 a day) and misses no more of the real ones (1 of
-  20) for 2 min more delay; held 3 min would miss 6 of 20, a plain 3.5 keeps the false ones.
+  of a 5-min one), left with the 0.2. On the owner's readings (Balanced) this takes a third of the doubled arrows away (11.4 →
+  7.5 a day, half of those with no fast move behind them) and misses no more of the real ones (1 of 20) for 2 min
+  more delay; a third minute buys little (6.7 a day for another minute at p90). `investigations/204-trend/holds.py`.
 - **Drawn angle**: continuous, `deg = −clamp(rate / 3, −1, 1) × 90°` (y-down: negative = up), doubled with the band,
   animated with a ~300 ms spring between readings (none with reduced motion). Places that can't rotate draw the band.
 - **Fast alerts** (`held`): the rate past the threshold at every reading of the last 5 min, the one nearest zero

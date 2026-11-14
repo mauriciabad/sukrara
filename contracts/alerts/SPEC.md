@@ -205,11 +205,11 @@ the one before, each with a trend); `held` is the rate nearest zero among them (
 when they don't reach back 5 min). From the sensor, the sensor's rate counts at once, as before: it is already
 smoothed and lags about 7 min, holding it would add 5 more. Why: on the owner's 4.6 days of 1-min Libre 3 readings the
 readings' trend (Balanced) passes 2 mg/dL/min about 17 times a day (episodes 30 min apart; ~25 counting every swing),
-mostly short swings around a 5–10 mg/dL Libre step. Held 5 min, at the default 2.0 the alerts come about 9.5 times a
+mostly short swings around a 5–10 mg/dL Libre step. Held 5 min, at the default 2.0 the alerts come about 9.4 times a
 day: about as often as the readings truly move that fast for 5 min (8.4 a day by a hindsight slope), 0.4 a day without
 such a move, a median 9 min after the move began (p90 10) and missing 1 of 39 such moves; Abbott's own rate (today's
 alerts): 1.9 a day, 11 min (p90 19), missing 32 of 39. Held 2 or 3 min: 16 / 14 a day; 10 min: misses almost all; a
-5-min average or a 15-min delta: no better. At 3.0: 3.2 a day. `held` is worked out with the trend for every reading
+5-min average or a 15-min delta: no better. At 3.0: 3.2 a day (`investigations/204-trend/holds.py`). `held` is worked out with the trend for every reading
 (`TrendRate`, contracts/trend/rate.json), so a restart, a follower with the same readings or a backfill judge the same.
 A change of the setting counts from the next reading. The alert's text (its arrow and "falling 3 mg/dL/min") is the
 trend now, as on the card. The #193 quiets keep their own rule (above).

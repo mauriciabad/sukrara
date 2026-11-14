@@ -4,6 +4,7 @@
     {"paths": ["apps/android/core/graph/*", "apps/macos/Sources/SukraraGraph/*", "contracts/graph/*"],
      "qa": ["Q2 Graph and value card", "Q3 Android widgets", "Q5 Glucose notification", "Q6 Mac menubar panel", "Q7 Mac widgets"]},
     {"paths": ["apps/macos/Sources/SukraraApp/*"], "qa": ["Q6 Mac menubar panel"]},
+    {"paths": ["contracts/trend/*", "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/TrendRate.kt", "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/readings/TrendReadings.kt", "apps/android/feature/settings/*TrendArrowPage.kt", "apps/macos/Sources/SukraraCore/Model/TrendRate.swift", "apps/macos/Sources/SukraraApp/Windows/Settings/TrendArrowSection.swift"], "qa": ["Q26 Trend arrow"]},
     {"paths": ["apps/macos/Sources/SukraraWidget/*"], "qa": ["Q7 Mac widgets"]},
     {"paths": ["apps/android/feature/home/*", "apps/android/app/src/main/*"], "qa": ["Q1 App home and screens"]},
     {"paths": ["apps/android/widgets/*"], "qa": ["Q3 Android widgets"]},

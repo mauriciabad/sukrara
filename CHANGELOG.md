@@ -4,6 +4,21 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
+- **The trend arrow comes from your readings** (both apps, #204; the owner: the arrow said → through a rise of 1
+  mg/dL a minute, and "falling" minutes into a rebound). Every arrow, spoken trend and output used the sensor's own
+  rate, which lags about 7 minutes and reads only a third of how fast glucose moves. Now one trend, worked out from the
+  last minutes of readings, is the same on the card, widgets, notifications, alerts, the status bar, the Mac menu bar,
+  read aloud and the Nightscout / xDrip+ outputs: about 4 minutes after the move instead of 7 (or never). The arrow
+  turns smoothly with how fast glucose moves (0.4 and 0.9 look different), its words keep the ±1 / 2 / 3 bands and
+  don't flip at an edge, and ⇈ / ⇊ need 2 minutes of a really fast move. **Settings › Ranges › Trend arrow** (Android)
+  / **Settings › General › Trend arrow** (Mac): *Quick*, *Balanced* (default), *Smooth* or *From the sensor* (as
+  before), with a live preview of what each says now; followers take the wearer's choice. You'll see ↑ / ↓ more often:
+  that is how fast your readings really move.
+- **Falling fast / rising fast alerts follow the same trend** (off by default): from the readings they ring once the
+  fast move has lasted 5 minutes (on the owner's readings, at 2 mg/dL/min about 9 times a day, as often as glucose
+  really moved that fast, about 9 minutes after it began; with the sensor's rate they rang twice a day and missed most
+  fast moves). *From the sensor* keeps them as they were.
+
 - **Releases are normal GitHub releases now**, marked *Latest*, also 0.12.0 … 0.14.5 (they were prereleases, so
   GitHub's *Latest* was still the old proof of concept). [Obtainium](https://obtainium.imranr.dev/) no longer needs
   *Include prereleases*, and links to the latest release get Sukrara. The apps' own update checks (Android's, the

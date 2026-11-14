@@ -568,6 +568,19 @@ afterwards). Never a hosted site, never the user's phone.
 - [ ] Wrong token saved → "The site refused the token or secret: change it", nothing more is sent until it is changed.
 - [ ] `adb logcat` while uploading: no token, secret or JWT in clear. Spanish: every row, dialog and status translated.
 
+## Q26 Trend arrow
+
+- Android (emulator, debug synthetic source): Settings › Ranges › *Trend arrow*: the preview shows the newest value
+  and an arrow that matches the home card's; pick each choice: the preview's arrow turns with a short spring (none with
+  Remove animations on), each row's own arrow says what it would show, the Ranges row's summary follows. With the
+  synthetic source rising and falling, the home card's arrow turns smoothly between readings (not in 45° steps), the
+  glucose notification's title arrow, the alert text and the status bar agree with it.
+- *From the sensor*: every arrow goes back to the sensor's own rate at once; *Balanced* again: back.
+- A follower mirroring the wearer: the page is read-only with the *Settings from* note; the wearer's change reaches it.
+- TalkBack / VoiceOver: the preview reads as one sentence (value, trend word, where it came from); the choices as radio
+  buttons with their lines.
+- Mac: Settings › General › *Trend arrow*: the same choices and preview; the menu bar arrow follows the choice.
+
 ## Q18 Settings: numbers, Settings from, ring order
 
 Emulator (`medium_phone` wearer, `small_phone` follower; debug = synthetic glucose) and a Mac test build with

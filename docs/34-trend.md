@@ -262,28 +262,30 @@ bit between platforms).
   same parameters; the wire keeps the sensor's rate; LibreView / Tidepool / CSV keep the sensor's rate (owner's
   decision).
 
-## Open questions for the owner
+## The owner's answers (2026-11-14)
 
-1. Presets: Quick / Balanced / Smooth / From the sensor as one setting, or only Balanced + From the sensor?
-2. The doubled arrow ~12 times a day on your readings (§7): acceptable as honest, or double only from a higher rate
-   (e.g. 3.5, xDrip+'s threshold) or with the rate held for a few readings?
-3. The rate alerts (off for you today): hold them on the sensor's rate until their own rule and scenarios exist, or
-   design that rule now?
-4. Hysteresis 0.2 for the text bands (the drawn arrow stays continuous): fine?
+1. Presets: all four, one setting (*Quick* / *Balanced* / *Smooth* / *From the sensor*).
+2. The doubled arrow: pick the clearly better rule from the data (below: held 2 min).
+3. The rate alerts: move them onto the trend now, with their own rule from the data, all the way (below: held 5 min).
+4. Hysteresis 0.2 for the text bands: yes; the drawn arrow stays continuous.
 
 ## In Sukrara
 
-This investigation changes no app code, no setting, no alert rule and no contract. The build (#204, after #195) is the
-plan below.
+Built in #204 (both apps, one round). The numbers below are `investigations/204-trend/holds.py` run over the owner's
+1-min readings (4.7 days by then; aggregates only); "truth" is the ±10-min hindsight slope of §4.
 
-| Brought in by the build | Why |
+| Brought in | Why |
 |---|---|
-| One trend per platform (Android `:core` / Mac `SukraraCore`): the weighted least-squares slope of §5, τ from the setting, with the fallback readings → sensor rate → none; every arrow, word, output and (once their rule exists) the rate alerts read it; a repo check forbids reading the raw rate elsewhere | the owner's "one source of truth"; §4: 4 min to ±1 instead of 7 (17) and no missed turns |
-| The setting *Trend*: Quick / Balanced (default) / Smooth / From the sensor, in `contracts/settings/settings.json`, mirrored to followers; its place decided with the settings organisation work | §5 presets; the owner's decision on the sensor choice and mirroring |
-| Text bands with hysteresis 0.2 (text arrows, spoken words, Nightscout direction) | §4: −20 % band changes for +0.7 min |
-| The drawn arrow continuous: linear, vertical at ±3, doubled from 3 with hysteresis, a short spring between readings; `contracts/graph/trend/trend.json` gets the continuous `deg` and the hysteresis cases (its snapped degrees and the `TrendAngle` "snaps" doc go) | §6; the owner's "not snapped" decision |
-| `contracts/trend/` test vectors written by a `tools/` script grown from `vectors.py`, run by both apps' tests | the same number on both platforms, pinned like the alert scenarios |
-| docs/FEATURES.md *Trend* section with its states and exits (each preset, from the sensor, no trend, fallback) | complete flows |
+| **THE trend**: `TrendRate` (Android `:core:model`, Mac `SukraraCore`) = §5's weighted least squares, τ from the setting, fallback readings → the sensor's rate → none; each reading's trend at its own time from the readings at or before it, worked out at **one place** per platform (Android `TrendReadings`, the readings repository every reader goes through; Mac `AppModel`); `Reading.sensorRate` is the stored / wire / device-record rate, `Reading.trend` the one every arrow, word, output and alert reads | the owner's "one source of truth"; §4: ±1 in 4 min instead of 7 (17), no missed turns |
+| The setting *Trend arrow* (`glucose.trend`: quick / balanced (default) / smooth / sensor, mirrored as `graph.trend`), on Android Settings › Ranges › Trend arrow (docs/35 moves it to Glucose), on the Mac Settings › General; a live preview (glyph surface `trend-preview`) | §5 presets; the owner's choice of four |
+| Text bands ±1 / 2 / 3 with hysteresis 0.2, the band remembered while readings follow within 12.5 min with a trend | §4: −20 % band changes for +0.7 min |
+| **The doubled arrow held 2 min**: band ±3 is entered only when the rate was ≥ 3 at every reading back to the first at or before 2 min earlier (3 readings of a 1-min sensor, 2 of a 5-min one), left with the 0.2. Balanced, measured: plain ≥ 3 with hysteresis 11.4 doubled arrows a day (0.4 a day with no truth ≥ 2.5 near it, 59 doubled min a day), held 1 min 9.7 (0.4), **held 2 min 7.5 (0.2, 35 min a day)**, held 3 min 6.7 (0.2); each misses 1 of the 20 truth moves ≥ 3 held 3 min; median delay to them 4 → 6 min (p90 5 → 7; 3 min: 6, p90 8). Quick: 22.5 → 15.7 a day; Smooth: 2.4 → 2.1 | the knee: 2 min (3 readings of a 1-min sensor) takes a third of the doubled arrows and half the false ones away for 2 min; a third minute buys 0.8 a day for another minute at p90. A plain 3.5 (no hold) keeps the short false ones |
+| The drawn arrow continuous (`deg = −clamp(rate / 3, −1, 1) × 90`), doubled with the band, a ~300 ms spring without overshoot on the Android home card and the settings previews (none with reduced motion); system icons draw the band | §6 |
+| **The fast alerts held 5 min** (SPEC §2 *Fast alerts read the trend*): `held` = over the readings back to the first at or before 5 min earlier, all with a trend, the rate nearest zero (0 on mixed signs, none when they don't reach back 5 min); From the sensor: the sensor's rate at once, as before. At 2.0 (default) on Balanced: no hold 17.2 alert episodes a day (30-min episodes; ~25 counting every swing), held 2 min 15.7, 3 min 13.5, **5 min 9.4** (0.4 a day without a move ≥ 1.5 nearby, median 9 min after the truth's crossing, p90 10, missing 1 of 39 truth moves ≥ 2 held 5 min), 10 min 2.6 (missing 28); a 5-min mean of rates 13.6, a 10-min mean 8.0 (missing 4), a 15-min delta + now 9.7 (missing 3) (first pass, not in holds.py). Truth: 8.4 such moves a day. Abbott's rate (before): 1.9 a day, 11 min (p90 19), missing 32 of 39; held 5 min it would be 1.3 a day, 16 min (p90 24). At 3.0: held 5 min 3.2 a day (truth 2.1), missing 1 of 10. Quick: 10.9 a day; Smooth: 6.4 (missing 16) | as often as glucose really moves that fast for 5 min, almost never without such a move, and far sooner and more complete than the sensor's rate; the simplest rule at that point. Holding the sensor's rate too would add 5 min to a rate that already lags 7 |
+| Rate-alert scenarios: `rate.txt` (a real fall with a lagging sensor, flat readings with the sensor at −3, the same from the sensor, a 5-min sensor, a gap, switching the setting mid-fall, a mirrored follower, the owner's evening rising fast from the readings at 20:45 and never from the sensor); the scenarios about LO / carbs / mute / no-data interplay with the fast alerts pinned to `trend=sensor` (their expectations unchanged: they test the interplay, not the trend); the format gains `glucose … moving <per min>` and `trend=` | the owner's approval to change the rate scenarios; CLAUDE.md alert-scenario rule |
+| The xDrip+ broadcast takes the hub's trend for the sensor's live reading (keeping xDrip+'s 3.5 doubling); the local Nightscout / xDrip+ endpoints and the Nightscout upload send the trend's direction and delta, none without a trend (their three two-point slopes and the "0 for unknown" are gone) | one source of truth; a 0 delta reads as flat on a watch |
+| `contracts/trend/` (`rate.json` per reading, `bands.json`, `clear.json` = the #193 quiets' cases, moved) written by `tools/trend/cases.py` (grown from `vectors.py` and `tools/alerts/trend_cases.py`), run by both apps; `TrendEverywhereTest` (Android) / `TrendEverywhereTests` (Mac): the owner's rise through the one place, the same arrow on every surface; the repo check `trend` | pinned like the alert scenarios; the regexes catch reads and writes outside the module, the cross-surface tests the rest |
+| docs/FEATURES.md *Trend arrow* with its states and exits; QA Q26 | complete flows |
 
 | Left out | Why |
 |---|---|
@@ -291,9 +293,10 @@ plan below.
 | Savitzky–Golay end-point and other local-quadratic slopes | the noisiest at every delay; overshoot |
 | Two-point deltas (xDrip+, Nightscout) and AAPS' deltas | 2× the band changes, or a 5-min grid; oref0 unbucketed returns 0 on 1-min data |
 | Theil–Sen | no gain: the Libre 3's jumps are steps, not outliers |
-| A per-person tuned filter (Facchinetti) | needs per-sensor noise estimation; the gain over a fixed τ is unproven here and the presets cover the preference |
+| A per-person tuned filter (Facchinetti) | needs per-sensor noise estimation; the presets cover the preference |
 | Smoothing or a dead zone for the drawn angle | extra delay for a 4° median change per reading |
-| Changing the #193 quiets | §7: their rule is faster where it matters and errs to alerting |
-| Switching the rate alerts now | §7: ~10× more alerts on the same threshold; needs its own rule, scenarios and the owner's OK |
-| Using this trend for LibreView / Tidepool / CSV or on the wire | the owner's decision: those keep the sensor's rate |
-| Real readings, per-reading outputs or plots in the repo | health data stays on the owner's machine; the prototype reads a path and prints aggregates |
+| An option for the doubled arrow or the alerts' hold | the data shows one clearly better point each; nothing says people want different behaviours |
+| Changing the #193 quiets | §7: their rule is faster where it matters and errs to alerting; moved beside the trend unchanged (`TrendRate.clear`) |
+| Using this trend for LibreView / Tidepool / CSV or on the wire | the owner's decision: those keep the sensor's rate (device records); followers work it out from their readings |
+| A spring on the Mac's menu bar, dropdown and widgets | they are drawn as images; the arrow jumps there (the settings preview springs) |
+| Real readings, per-reading outputs or plots in the repo, beyond the two episodes the owner allowed in the cases (#193 evening, the 2026-11-14 rise) | health data stays on the owner's machine |

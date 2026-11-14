@@ -56,6 +56,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - An alert on screen shows the current value, updated silently, and stays up while you're still out of range.
 - Optionally, alarms can ring loud, even in Do Not Disturb.
 - Configure how alarms repeat while your glucose stays out of range.
+- Falling fast / rising fast alerts on the readings' trend, once the fast move has lasted 5 minutes.
 - Unacknowledged very lows can alert the people who follow you.
 - Quick actions in notifications, like Mute for 1 h, or Log carbs on a low.
 - [Planned]: Predictions, more and cooler sound packs...
@@ -79,6 +80,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Persistent notification with the widget.
 - Any other device, like a Mac or a Garmin watch.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
+- A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
+  smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
 - [Planned]: Android Auto, Home Assistant, Garmin, Pebble...
 
 ### Data analysis and reports

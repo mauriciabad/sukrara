@@ -23,7 +23,8 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
   alerts at once instead of waiting for *No glucose data*; never a falling / rising trend through a LO / HI, and a LO / HI is
   never "back in range by the margin" (a Mute / Remind less of that side holds). Alert texts say
   *LO · below 40 mg/dL* / *HI · above 400 mg/dL* (es *por debajo de 40* / *por encima de 400*), never 39 / 401, and
-  the Nightscout upload and the xDrip+ endpoint compute no slope from or to one (scenarios `levels.txt`).
+  the Nightscout upload and the local endpoints send no direction or delta for one: it has no trend (scenarios
+  `levels.txt`).
 - Kinds and defaults (the user's settings): very low ≤ 55 every 5 min (alarm volume), low < 70 every 5 min, high ≥ 180
   every 15 min, very high ≥ 250 every 10 min, extremely high ≥ 300 every 5 min (alarm volume), falling/rising fast
   2 mg/dL/min every 30 min (off), no data after 20 min every 60 min; other kinds at notification volume.
@@ -37,10 +38,14 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
 - "Very low" (id `very_low`) replaced "urgent low" everywhere (settings JSON, channels, sounds, events); no migration.
 - Level alerts: one at a time, the most severe wins; a worse kind of the same side alerts at once; getting better
   (very low → low) doesn't alert.
-- Rate alerts (falling/rising fast) run next to level alerts; a reading without a rate (a LO / HI has none) keeps an
-  open falling / rising fast episode (repeat due, a Mute not back by it): a LO isn't a sign the fall stopped; but its
-  notification goes at once, so a LO shows the very low alone, never a stale "falling 3 mg/dL/min" beside it (#127,
-  like Dexcom G7: one or the other); the first rated reading still falling alerts at once if its repeat came due; no data runs on a timer and clears on the next reading. The Android timer is an elapsed-time alarm, so a clock change (`TIME_SET`) re-checks at once and plans it again (round 22: with the clock moved forward the old high stayed up and no "no data" came; a real gap alerts on time, scenario *A high with no more readings…*).
+- Rate alerts (falling/rising fast) run next to level alerts and judge THE trend (*Trend arrow* below) **held for 5
+  min**: from the readings the rate must be past the threshold at every reading of the last 5 min; From the sensor its
+  rate counts at once, as before (#204; SPEC §2 *Fast alerts read the trend*: on the owner's readings, at 2.0 about 9.4
+  a day, as often as glucose really moves that fast for 5 min, a median 9 min after the move began; the sensor's rate
+  gave 1.9 a day and missed 32 of 39 such moves). A reading without a held trend keeps an open falling / rising fast
+  episode (repeat due, a Mute not back by it); one without any trend (a LO / HI) also takes its notification away at
+  once, so a LO shows the very low alone, never a stale "falling 3 mg/dL/min" beside it (#127, like Dexcom G7: one or
+  the other); the first held reading still falling alerts at once if its repeat came due; no data runs on a timer and clears on the next reading. The Android timer is an elapsed-time alarm, so a clock change (`TIME_SET`) re-checks at once and plans it again (round 22: with the clock moved forward the old high stayed up and no "no data" came; a real gap alerts on time, scenario *A high with no more readings…*).
 - **No first reading** (#40, SPEC §1 "The source's start"; scenarios `other.txt`): no data counts from the last reading
   or from when the reading source started, whichever is newer. The source starts when Android's wearer source runs (a
   paired sensor connecting, Juggluco chosen), a follow is allowed by the wearer (Android and Mac), or the Mac reaches
@@ -168,8 +173,8 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
   the escalation from low (the followers' run, every follower and the Mac keep alerting on very low, like the carbs
   rule, #2). It never depends on treatments. Off: alerts as without it. A sensor reading every 5 min never has a trend
   in 5 min, so nothing waits there. The readings it judges are kept with the alert state, so a restart or the alarm with
-  the app's process gone judges the same. The rule, its numbers and why: SPEC §2; the cases: `contracts/alerts/trend.json`
-  (Android `TrendTest`, Mac `TrendTests`), scenarios `trend.txt`, `other.txt` and the owner's evening in `user.txt`.
+  the app's process gone judges the same. The rule, its numbers and why: SPEC §2; the cases: `contracts/trend/clear.json`
+  (Android `TrendRateTest`, Mac `TrendRateTests`; the rule lives in `TrendRate` beside THE trend, unchanged), scenarios `trend.txt`, `other.txt` and the owner's evening in `user.txt`.
   *States and exits*: *Quiet: falling / rising back into range* (below): the line *High alerts muted while falling back
   into range* / *Low alerts muted while rising back into range* (es *… mientras baja / sube hacia el rango*) in Active
   now and the home sheet (Android) / the panel and Settings › Alerts › Active now (Mac; the card's pill paused for the
@@ -704,7 +709,7 @@ the app (Settings › Sharing shows the same state). Invite link on a wearer pho
 - The card's big numbers are rounded on both platforms: the Mac uses SF Pro Rounded (value bold, ring / slot numbers heavy without a "%" (the PoC's look, the owner in #181), their window labels semibold); Android uses Google Sans Flex with its roundness axis at full (ROND 100, opsz 18, weights 600 / 700 / 800, SIL OFL 1.1, bundled in `:core:graph` `src/main/assets/fonts/` with `OFL.txt`) for the same texts, with proportional figures for the value (like the Mac): app panel (rolling digits), widgets, lock screen and the notification's value (drawn as a picture, since RemoteViews text can't use an app font). The face is loaded at app start (`App.onCreate` → `RoundedFont.init`), so the app panel never falls back to the system sans. A slot's number is lighter than the value (600 / semibold against the value's 700 / bold) and a time-in-range ring writes its `%` after the number (45 % of its size; `59%`), so a ring's 59 beside 112 never reads as a second glucose value (#70; `TirRing.SLOT_WEIGHT` / `slotWeight`).
 - Status badge under the value (app panel, value/combined widgets, lock screen value; Mac dropdown and value/combined widgets) from `AlertStatus` (Mac: `CardAlertsMapping.status`, from the Mac alert engine's state): None → nothing; Needed → filled pill in the colour of what to log with its marker: `Eat carbs` (low side), `Take insulin` (high side, extremely high included); Taken → the same pill tonal (colour at ~24 % dark / 18 % light, text in the colour) with the "notifications paused" bell and the time left of the mute (`9m left`). A mute that has already ended shows no pill (never `0m left`) until the next status arrives. The card's screen-reader sentence says the pill's words only where the pill is drawn (a value shows and the place has the badge on). Android: the alert runtime maps its status to the renderer's `CardStatus` (None / Needed / Taken / Paused / Muted); the renderer has no alert logic of its own.
 - An old value (from 5 min, struck through) is always grey: no surface colour (a widget's ink, the app panel's colour animation) can paint it in a range colour.
-- **Trend arrow: one picture and one word per arrow** (#4; `TrendAngle` on both platforms, fixtures `contracts/graph/trend`): the rate (mg/dL/min) falls in one of Nightscout's direction bands, a boundary belonging to the steeper band: → steady under ±1, ↗ / ↘ rising / falling from 1, ↑ / ↓ rising / falling fast from 2, ⇈ / ⇊ rising / falling very fast from 3 (es *subiendo / bajando*, *… rápido*, *… muy rápido*). Every place shows that band: the drawn arrow snaps to 0°, 45° or straight up / down (doubled from 3) on every card, widget, notification icon, Live Update chip, root status-bar icon (one drawable per band, `sb_t_flat` … `sb_t_up2`), Mac menu bar and dropdown; the text arrow of alert and notification titles; the spoken word (TalkBack, VoiceOver); the Nightscout upload's and the local Nightscout / xDrip web endpoints' `direction`. So a glance never sees → in the title beside a tilted icon, and 1-minute noise doesn't wobble the arrow. The home card and the app panel turn the arrow between the snapped angles with the value's motion (none with reduced motion). The one exception is the xDrip+ broadcast to apps on the phone, which keeps xDrip+'s own rule (doubled from 3.5) because the apps reading it expect it.
+- **Trend arrow** (#4, #204; `TrendAngle` on both platforms, cases `contracts/trend/bands.json`): one word per band, Nightscout's direction bands with hysteresis 0.2: → steady under ±1, ↗ / ↘ rising / falling from 1, ↑ / ↓ rising / falling fast from 2, ⇈ / ⇊ rising / falling very fast from 3 once held 2 min (es *subiendo / bajando*, *… rápido*, *… muy rápido*). The drawn arrow turns continuously with the trend's rate (within 30° of the text arrow beside it), on every card, widget, notification icon, Live Update chip, Mac menu bar and dropdown; the root status-bar icon draws the band (one drawable per band, `sb_t_flat` … `sb_t_up2`). The text arrow of alert and notification titles, the spoken word (TalkBack, VoiceOver) and the Nightscout upload's and the local Nightscout / xDrip web endpoints' `direction` are the band's. The home card turns the arrow with a ~300 ms spring between readings (none with reduced motion). The one exception is the xDrip+ broadcast to apps on the phone, which keeps xDrip+'s own rule (doubled from 3.5) on the trend's rate because the apps reading it expect it. Where the trend comes from and the setting: *Trend arrow* below.
 - **Range in words, never by colour alone** (#26, WCAG 1.4.1: low red and very high orange look alike to protan / deutan eyes; the Libre 3 app writes *Low Glucose* / *High Glucose* under its reading, the Dexcom G7 app says it by colour alone between 40 and 400): an out-of-range value says its range under it on every card (app panel, widgets, notification card, lock screen; Mac dropdown and widgets): *Very low*, *Low*, *High*, *Very high*, *Extremely high* (es *Muy baja*, *Baja*, *Alta*, *Muy alta*, *Extremadamente alta*; the Mac card in English like its other words), the word in the card's ink on a pill tinted with the value's colour (4.5:1 on every tint, `PillContrastTest` / `ContrastTests`; outlined in the value's ink on the notification's range colour), easing with the value's colour on the app panel. In the pill's row after the pill (the pill drops to its short words or its icon to keep room for it), else beside the arrow, else left out for room (the screen reader still says it). Not shown when the value is struck (grey), LO / HI (the text says it) or *Eat carbs* / *Take insulin* already says the side; a mute pill (*45m left*, *Muted*) says what was done, so the word shows beside it. Text places: the glucose notification's title `62 mg/dL ↘ · Low` (es `· Baja`), the root status bar's TalkBack text (`Glucose 62, low`), the Mac status item's tooltip (*Sukrara · Low · reading at 9:05*) and every screen-reader sentence (*…, low, …*). Fixtures `contracts/graph/range`; on every surface `layout/rules.json` `status` (`value.range`, scene `covered`).
 - **Ranges at their limits** (#181, the owner: "the ranges are ≥ for high ranges and ≤ for low ranges"; 2026-11-12: "the 70 is the threshold, but 70 itself is excluded from the interval -> (70, 55) is low [55,-Infinity) is very low"; Android and Mac, `Bands.of`, fixtures `contracts/graph/range/bands.json`): the low limit is the first value in range (low is strictly below it), every other limit the first value of the range beyond it (very low at or below it, high, very high and extremely high at or above theirs). The default limits are very low 55 and low 70 (0.14.3 had 69 for a day): very low ≤ 55, low 56–69, in range 70–179 (very good 70–140, up to and including its own limit), high 180–249, very high ≥ 250, extremely high's colour from 300. One decision for every place that colours or names a value: the value and the chart line on every card, the range word, the screen-reader sentence, the root status bar and System UI text, the glucose notification's colour and Live Update style, the widget tap (*Carbs* focused at the low limit), the Mac menu bar, **time in range** (rings, % column, slots, crown, report) and the report's and ring order's spans (*Low 56–69*, *High 180–249*, *Very high ≥ 250*). Settings › Ranges names the limits that way: *Very low up to*, *Low below*, *Very good up to*, *High from*, *Very high from*, *Extremely high from* (es *hasta* / *por debajo de* / *desde*); the chart's line and label at the low limit read 70. **Time in range** is 70–179: it matches LibreView's and the consensus report's (70–180 inclusive) at 70 again, but not at 180, which Sukrara counts as high, so it can read a little lower when readings sit on 180. The alerts follow the same limits (SPEC §1): their thresholds default to the same numbers (very low 55, low 70, high 180, very high 250, extremely high 300) and compare the same way (low below, very low at or below, highs at or above), so at 69 the card says *Low* and the low alert rings, at 70 neither, and at 55 both say very low. An alert's threshold reads *Below 70 mg/dL* for low and *At or below 55 mg/dL* for very low (es *Por debajo de* / *Hasta*; Mac summaries *Below 70* / *Up to 55*). The alert thresholds are their own settings, not the ranges: a person who moves one moves the other by hand.
 - **The values a limit makes count** (2026-11-12, Android and Mac, en + es): under every range limit (Settings › Ranges on Android, Settings › Graph › Ranges on the Mac) and every level alert's threshold (an alert's page and its night page, the threshold review and setup's alert step on Android; an alert's Details…, its night rule and setup's Alerts step on the Mac) a line says exactly which values that number makes count, in the person's unit as the app writes values: *Very low: up to 55 mg/dL*, *Low: 56–69 mg/dL* and *In range: 70–179 mg/dL* (under the low and high limits), *Very good: 70–140*, *High: 180–249*, *Very high: 250–299*, *Extremely high: from 300* (es *Bajo: 56–69 mg/dL*, *Muy bajo: hasta 55*, *desde 300*; mmol/L *Low: 3.1–3.8 mmol/L*). For alerts the kinds turned on bound each other (very high off: *High: 180–299*). It follows the number as it changes: Android's number dialog says it under the typed value (and under each preset), the Mac's row under the field as it is typed or stepped. No inclusive / exclusive switch: the number decides (`RangeSpans`, Android `RangeSpansTest`, Mac `RangeSpansTests`).
@@ -754,6 +759,59 @@ the app (Settings › Sharing shows the same state). Invite link on a wearer pho
 
 **States and exits**: *Speaking* (a few seconds): ends by itself; asking again stops it at once (Android: the shortcut again; Mac: the menu item, ⌃⇧⌘G or the VoiceOver action again; with VoiceOver, Control stops VoiceOver's speech as always); volume keys lower it. *No voice for the language* (Android): the toast says so and where to add one; nothing else changes. *Shortcut keys off* (Mac): Settings › General switch back on; the right-click menu item and the VoiceOver action keep working meanwhile. *Keys taken by another app* (Mac): the switch shows on but the system gives the keys to that app; turn it off, Read Glucose Aloud stays in the menu. The Android shortcut is the launcher's: unpin it or ignore it; nothing in Sukrara changes. All of it reachable with TalkBack / VoiceOver (the icon's actions, the menu, the status item's action).
 
+## Trend arrow
+
+Where glucose is heading, worked out from the readings (#204; the math and its numbers: [docs/34](34-trend.md); the
+cases: [contracts/trend](../contracts/trend/README.md)). Before, every arrow was the sensor's own rate, which lags
+about 7 min and reads a third of how fast glucose moves: on 2026-11-14 it said → through a rise of 1 mg/dL a minute.
+
+- **One trend, one place** (Android and Mac): `TrendRate` (Android `:core:model`, Mac `SukraraCore`) works out each
+  reading's trend at its own time from the readings at or before it: a least-squares slope weighted toward the newest
+  readings (`exp(−age / τ)`, the last 5τ, at least 2 readings over 3 min, a LO / HI or a gap over 12.5 min starts over),
+  else the reading's own rate from the sensor, else no trend (the ring). It runs at one place per platform (Android
+  `TrendReadings`, the readings repository every reader goes through; Mac `AppModel`), so a late or backfilled reading
+  corrects itself and the ones after it, and a change of the setting turns every arrow at once. The sensor's own rate
+  (`sensorRate`) is still stored, sent on the wire (followers work the trend out from the readings they have, with the
+  wearer's setting) and written to LibreView, Tidepool and the CSV (device records). A repo check (`trend`) fails on
+  any other place that reads it, writes a trend or writes an arrow itself.
+- **The setting *Trend arrow*** (`glucose.trend`, mirrored from the wearer): *Quick* (τ 2 min: turns soonest, moves
+  more), *Balanced* (τ 3 min, the default: about 4 min behind, steady), *Smooth* (τ 5 min: the calmest, about 6 min
+  behind), *From the sensor* (the sensor's own trend, as before). Android: Settings › Ranges › *Trend arrow* (a row
+  under the glucose unit; docs/35 moves it to Glucose); Mac: Settings › General › *Trend arrow*. The page shows a live
+  preview on top: the newest value and its arrow under the choice in use, turning with a short spring when the choice
+  changes (none with Reduce Motion), and in words where the trend came from ("From the readings: +1.2 mg/dL/min · the
+  sensor says → +0.8 mg/dL/min", "Too few readings: the sensor's rate, …", "No trend yet: too few readings."); Android
+  also puts beside each choice the arrow it would show now. Footer: every arrow, spoken trend and the Falling fast /
+  Rising fast alerts use it. Search (Android) finds it by arrow, trend, direction, rate, delay, smoothing.
+- **The arrow**: drawn turning continuously with the rate (flat at 0, straight up / down from ±3 mg/dL/min, so 0.4 and
+  0.9 look different), with a ~300 ms spring between readings on the Android home card and the settings preview (none
+  with reduced motion; the Mac's menu bar, dropdown and widgets are pictures and jump). The text arrow, the spoken word
+  and the Nightscout direction follow its band, Nightscout's ±1 / 2 / 3 with **hysteresis 0.2** (→ to ↗ at 1.2, back
+  below 0.8), so a value that hovers at an edge doesn't flip words. The drawn arrow stays within 30° of the text arrow
+  beside it. **Doubled** (⇈ / ⇊, "rising / falling very fast") only once the rate was at least 3 at every reading of
+  the last 2 min (3 readings of a 1-min sensor), left with the 0.2: on the owner's readings that takes a third of the doubled
+  arrows away (11.4 → 7.5 a day, half of those with no fast move behind them), for 2 min more delay. Places that can't
+  turn an arrow draw the band (root status bar icons).
+- **Every place shows the same arrow**: the card on every surface (app panel, widgets, notification card, lock screen,
+  sensor ready; Mac dropdown and widgets), the glucose notification's title, chip and icon, an alert's text, the root
+  status bar's icons and System UI text, the quick tile, Read glucose aloud and every screen-reader sentence, the Mac
+  menu bar, the Nightscout upload's and the local Nightscout / xDrip+ endpoints' `direction` and `delta` (none without
+  a trend: never a made-up 0 that reads as flat on a watch), and the xDrip+ broadcast's slope (with xDrip+'s own names,
+  doubled from 3.5, for the apps that read it). Android `TrendEverywhereTest` and Mac `TrendEverywhereTests` run the
+  owner's rise through the one place and check every one of them: ↗ from the readings, → from the sensor.
+- **The fast alerts** judge the trend held for 5 min (SPEC §2 *Fast alerts read the trend*; scenarios `rate.txt`).
+
+**States and exits**: *Balanced* (default), *Quick*, *Smooth* or *From the sensor*: chosen on the Trend arrow page on
+both apps (Android Settings › Ranges › Trend arrow; Mac Settings › General › Trend arrow), changed there at any time;
+every arrow follows at once, the fast alerts from the next reading. *Too few readings* (a new sensor, after a gap or a
+LO / HI): the arrow is the sensor's own rate until there are 3 min of readings; the preview says so ("Too few readings:
+the sensor's rate"); it ends by itself. *No trend* (no rate from the readings or the sensor, a LO / HI, a struck
+value): the hollow ring wherever an arrow goes, and the preview says why; it ends with the next readings. *A follower
+mirroring the wearer* (Settings from: Wearer): the wearer's choice, read-only on the page with the note that opens
+*Settings from* (leave with *Custom*); a wearer's change reaches it with the settings publish (3 s). TalkBack /
+VoiceOver read the preview as one sentence (the value, the trend in words, where it came from) and the choices as radio
+buttons.
+
 ## Glucose unit (mg/dL or mmol/L)
 
 - One setting per device (`general.unit`, not mirrored: a follower reads in their own unit): Android Settings → Ranges → *Glucose unit*, Mac Settings → General → *Unit*. Values are stored, sent, alerted on, synced and uploaded in mg/dL; mmol/L is only how numbers are shown and typed, so switching never changes a threshold or a range.
@@ -789,7 +847,7 @@ the app (Settings › Sharing shows the same state). Invite link on a wearer pho
   40–332 dp), Mac `FreshnessFixtureTests.graphOnly` + `anEndedSensorIsNeverAGap` + `aWarmingUpSensorIsNeverAGap` +
   `agePillStaysInsideTheChart`.
 - "No readings" icon: Material Symbols `sensors_off` (`:monitor` `res/drawable/monitor_ic_no_readings.xml`); Mac SF Symbol `antenna.radiowaves.left.and.right.slash` (a template image in the menubar). Status bar: the icon alone in the trend slot (number slot removed) / in the hook's text; notification small icon; the card and the app panel draw it before *No reading since*. Menubar: the symbol alone, tooltip `Sukrara · no reading since 00:32`.
-- "No trend" (no rate from the sensor, or the value is struck through): a hollow ring in the arrow's place, the arrow's size (radius 0.24, stroke 0.11 of its box; text `○`), everywhere an arrow goes (card, app panel, widgets, notification, chip icon, status bar `sb_t_none` / grey `sb_t_none_s`, SystemUI text, tile, alert notification body, Mac menubar and dropdown). Not a dot (read as a speck) nor `?` (doubts the number); a circle has no direction, so it can't be read as steady (→).
+- "No trend" (no trend from the readings nor the sensor, or the value is struck through): a hollow ring in the arrow's place, the arrow's size (radius 0.24, stroke 0.11 of its box; text `○`), everywhere an arrow goes (card, app panel, widgets, notification, chip icon, status bar `sb_t_none` / grey `sb_t_none_s`, SystemUI text, tile, alert notification body, Mac menubar and dropdown). Not a dot (read as a speck) nor `?` (doubts the number); a circle has no direction, so it can't be read as steady (→).
 - Root status bar slot icons: SystemUI spaces the number and the trend icons like its own status icons (5.7 dp on the user's Pixel, root path), so the drawables add no padding between them (0.11.34–0.11.37 added 1.5 dp: 7.2 dp, "too separated"); `SlotDrawablesTest` keeps the visible gap at 5.0–6.5 dp (SystemUI's share 5.74 dp, measured) for root alone; with the LSPosed module the pair sits at the card's own gap, about 3 dp (*Root status bar (system icons)* below). They are two slots (`glucose`, `glucose_trend`); how a full status bar keeps them together: *Root status bar (system icons)* below.
 - Struck through where a line can't be drawn: the root status bar uses per-value struck drawables at half strength (`sb_s40`…`sb_s400`, `sb_slo`, `sb_shi`; SystemUI tints them, so they read grey; tools/android/gen-slot-drawables.swift derives them); the chip and the tile strike each character (U+0336); the notification card turns grey instead of its range colour; screen readers say "123 (old)" (es "123 (antiguo)").
 - Redraws without a reading: Android arms one non-waking exact alarm (`FreshnessTicker`, `RTC`) at the latest reading's next step, re-planned on every reading and at each step, which redraws the notification, the status bar and the widgets (the screen-on render catches up while the screen is off; the SystemUI text also re-checks every 30 s); the Mac menubar re-arms a timer at each step and the Mac widgets get a timeline entry per step.
@@ -2105,7 +2163,7 @@ digit by digit).
   `/api/v1/entries[/sgv].json`, `/api/v1/entries` (`count` (floats cut at the dot), `interval` with 10 % slack,
   `brief_mode`, `sensor` → `sensor_status` "dd-mm-yy HH:MM (Xd Yh)"), `/pebble`, `/status.json`; readings from the
   phone's store, newest first, ≥ 270 s apart by default, `_id` `<serial>#<minute>`, `device` `Sukrara`, 5-minute
-  `delta` from the sensor's rate (else the slope), `direction` from ±1 / 2 / 3 mg/dL/min. "Last asked" lives in memory
+  `delta` and `direction` from THE trend (*Trend arrow*; none and `NONE` without one, never a 0 that reads flat). "Last asked" lives in memory
   only: no request log.
 - *Files* group: *Export data* ([Data export](#data-export)).
 - *Your clinic* group: *LibreView* (wearer, [LibreView upload](#libreview-upload)) and *Tidepool* (both roles,
@@ -2128,7 +2186,8 @@ digit by digit).
   families), `Sukrara (following)` for a followed person's readings; a reading from any other source, or another role's
   (a wearer never serves readings left from following someone, and the other way round), is never served. The stores
   are read only while the API is on; a secure-store failure shows *The API secret can't be read* instead of a crash.
-  LO / HI go out as 39 / 401 with direction `NONE`, and no slope is taken across them. The page: the switch with
+  LO / HI go out as 39 / 401 with direction `NONE`; `direction`, `trend` and `delta` are THE trend's (*Trend arrow*),
+  none without one. The page: the switch with
   "On · http://127.0.0.1:17581 · last asked 2 min ago", *Show API secret* (screenshots blocked while it shows; the
   secret is an action row: a tap copies it, marked sensitive for the clipboard preview, with a confirming haptic and
   "Copied · it leaves the clipboard in a minute": `SecretClipboard` clears it 60 s later unless something else was
@@ -2413,8 +2472,8 @@ main switch off; signing out is the account screen's. *Trying again* → retries
   recommended; v3 only with an access token, a secret keeps v1) and *Remove this site* (confirmation; forgets the site,
   the credential and what was sent; the site keeps its data).
 - What goes up: only readings this phone took from its own sensor (Libre 3 or Juggluco; never a followed person's or
-  test data): `sgv`, integer `date`, `dateString` (local on v1, UTC on v3), `utcOffset`, `direction` or `NONE`, 5-minute
-  `delta`, `noise` 1, `app` `Sukrara`, `device` this install's own name `Sukrara-<6 hex>` (chosen when the site is set,
+  test data): `sgv`, integer `date`, `dateString` (local on v1, UTC on v3), `utcOffset`, `direction` (THE trend's band) or `NONE`,
+  5-minute `delta` (THE trend's rate × 5, none without a trend), `noise` 1, `app` `Sukrara`, `device` this install's own name `Sukrara-<6 hex>` (chosen when the site is set,
   so another app or another install is never mistaken for this one), with the family after it for an untested sensor
   (`Sukrara-<6 hex> · Dexcom G7 (untested)`, also G6, Accu-Chek SmartGuide, Aidex X; `NsDocs.entryDevice`, `NsDocsTest`)
   so downstream apps can tell those readings apart; the conflict pause counts both names as this uploader;
