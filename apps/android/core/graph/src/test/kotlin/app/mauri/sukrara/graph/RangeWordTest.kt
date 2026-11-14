@@ -30,8 +30,8 @@ class RangeWordTest {
         model: CardModel,
         w: Float = 250f,
         h: Float = 80f,
+        st: CardStyle = widgetCardStyle(CardSurface.WIDGET_VALUE, GraphConfig()),
     ): CardLayout {
-        val st = widgetCardStyle(CardSurface.WIDGET_VALUE, GraphConfig())
         val bmp = Bitmap.createBitmap(w.toInt(), h.toInt(), Bitmap.Config.ARGB_8888)
         return GlucoseCard.draw(Canvas(bmp), w, h, model, st, GraphPalette.of(false), 1f, CardSurface.TEST, CardPart.ALL)
     }
@@ -65,5 +65,15 @@ class RangeWordTest {
     @Test fun `a short value widget puts the word beside the arrow`() {
         val lay = draw(Scenes.model(Scenes.day(64, swing = 6), Scenes.words()), 160f, 40f)
         assertEquals("low [beside]", lay.first("value.range")?.info)
+    }
+
+    @Test fun `a title that names the range drops the word and keeps the pill`() {
+        val said = notificationCardStyle(GraphConfig(), rangeSaid = true)
+        val muted = Scenes.model(Scenes.day(64, swing = 6), Scenes.words(), status = CardStatus.Paused(true, Scenes.NOW + 600))
+        val lay = draw(muted, 250f, 64f, said)
+        assertNull(lay.first("value.range"))
+        assertEquals("carbs [row]", lay.first("value.status")?.info)
+        // the same card without the title says it
+        assertEquals("low [row]", draw(muted, 250f, 64f, notificationCardStyle(GraphConfig())).first("value.range")?.info)
     }
 }

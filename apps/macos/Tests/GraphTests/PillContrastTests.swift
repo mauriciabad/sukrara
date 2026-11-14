@@ -40,4 +40,42 @@ struct PillContrastTests {
             #expect(tonal >= 4.5, "\(k) tonal pill dark=\(dark): \(tonal)")
         }
     }
+
+    /// Every pill on every ground it can sit on (`PillContrast`; Android PillContrastTest): the palette's surface (nil),
+    /// each range colour of a colourised card, its stale grey, white and black. A filled pill's fill reaches 3:1 there,
+    /// its words 4.5:1 on what the fill shows; a tonal pill's and the range word's words 4.5:1 on their tint.
+    @Test(arguments: [false, true])
+    func everyPillStaysLegibleOnItsGround(dark: Bool) {
+        let light = GraphPalette.lightPalette
+        let pal = GraphPalette.of(dark: dark)
+        let grounds: [CGColor?] =
+            [nil, GraphPalette.hex(0x8E9099), GraphPalette.hex(0xFFFFFF), GraphPalette.hex(0x000000)]
+            + [light.veryLow, light.low, light.tight, light.target, light.high, light.veryHigh, light.extremelyHigh]
+        let looks = ["carbs", "rapid", "muted", "sensor", "now"].flatMap { k in
+            [false, true].map { StatusBadge.Look(kind: k, text: "x", short: "x", tonal: $0) }
+        }
+        for ground in grounds {
+            let g = ground ?? pal.bg
+            for look in looks {
+                let (fill, fg) = StatusBadge.colors(look, dark: dark, knockout: false, ground: ground)
+                let shown = PillContrast.over(fill, g)
+                let swapped = fill === PillContrast.black || fill === PillContrast.white
+                if !look.tonal || swapped {
+                    #expect(PillContrast.ratio(shown, g) >= 3, "\(look.kind) tonal=\(look.tonal) fill dark=\(dark)")
+                }
+                #expect(PillContrast.ratio(fg, shown) >= 4.5, "\(look.kind) tonal=\(look.tonal) words dark=\(dark)")
+            }
+            for tint in [pal.veryLow, pal.low, pal.high, pal.veryHigh, pal.extremelyHigh] {
+                let (fill, fg) = RangeTag.colors(tint: tint, pal, ground: ground)
+                #expect(PillContrast.ratio(fg, PillContrast.over(fill, g)) >= 4.5, "range word dark=\(dark)")
+            }
+        }
+    }
+
+    @Test func aMutedPillOnTheRedCardTurnsToInk() {
+        let look = StatusBadge.Look(kind: "muted", text: "Muted", short: "Muted", tonal: true)
+        let (fill, fg) = StatusBadge.colors(look, dark: false, knockout: false, ground: GraphPalette.lightPalette.low)
+        #expect(fill === PillContrast.black || fill === PillContrast.white)
+        #expect(PillContrast.ratio(fg, fill) >= 4.5)
+    }
 }

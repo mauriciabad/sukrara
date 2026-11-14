@@ -401,6 +401,12 @@ enum DefaultAlertRules {
             "labels": b(st?.graph?.axisLabels), "side": b(st?.graph?.side),
             "hours": st?.graph.map { "\(Int($0.window / 3600))" } ?? "-",
             "sensorTime": b(st?.sensorTime), "badge": b(st?.badge),
+            // what the pills sit on (a surface that paints the card itself) and whether its title says the range;
+            // Android writes the ground as Integer.toHexString(argb)
+            "ground": st?.ground.map { c in
+                "ff" + PillContrast.rgba(c).prefix(3).map { String(format: "%02x", Int(($0 * 255).rounded())) }.joined()
+            } ?? "-",
+            "rangeSaid": b(st?.rangeSaid),
             "rings": st.map(ringsSignature) ?? "-",
             "chart": chart.map { wh($0.1.width, $0.1.height, $0.0.d) } ?? "-",
             "pctWide": chart.map { $0.1.width / $0.0.d >= GlucoseGraph.pctMinWidth ? "1" : "0" } ?? "-",

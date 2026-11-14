@@ -30,6 +30,9 @@ internal class ValueFace(
     private val w = model.words
     private val nowS = model.nowS
 
+    /** What the pills sit on ([CardStyle.ground]; null = the palette's surface). */
+    private val ground = rec.style.ground
+
     companion object {
         /** The largest a warming-up sensor's words are drawn (dp): the size of "Sensor ended", never a value's. */
         const val WARMUP_TEXT_DP = 20f
@@ -90,12 +93,12 @@ internal class ValueFace(
         rec.add("value.ended", RectF(box.left, textBox.top, box.left + textW, textBox.bottom))
         if (row) {
             val top = textBox.bottom + badgeH * 0.25f
-            val pw = StatusBadge.draw(cv, box.left, top, badgeH, box.width(), pill, pal.dark)
+            val pw = StatusBadge.draw(cv, box.left, top, badgeH, box.width(), pill, pal.dark, ground)
             rec.add("value.pill", RectF(box.left, top, box.left + pw, top + badgeH), "[row]")
         } else {
             val x = box.left + textW + badgeH * 0.3f
             if (x + badgeH <= box.right) {
-                StatusBadge.draw(cv, x, box.centerY() - badgeH / 2, badgeH, badgeH, pill, pal.dark)
+                StatusBadge.draw(cv, x, box.centerY() - badgeH / 2, badgeH, badgeH, pill, pal.dark, ground)
                 rec.add("value.pill", RectF(x, box.centerY() - badgeH / 2, x + badgeH, box.centerY() + badgeH / 2), "[icon]")
             } else {
                 rec.add("value.pill", info = "(no room)")
@@ -238,8 +241,9 @@ internal class ValueFace(
             exact = true,
         )
         val badgeH = (box.height() * 0.24f).coerceIn(14 * d, 24 * d)
-        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
-        val range = RangeState.shown(face, r.sgv, bands, look)
+        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it;
+        // not where the place around the card already says it ([CardStyle.rangeSaid]: the notification's title)
+        val range = if (rec.style.rangeSaid) null else RangeState.shown(face, r.sgv, bands, look)
         val rangeText = range?.let(w::range)
         val badgeRow =
             (look != null || range != null) &&
@@ -326,13 +330,13 @@ internal class ValueFace(
                 // the pill keeps room for the range word: its short words or its icon rather than no word
                 val keep = rangeText?.let { RangeTag.width(it, badgeH) + badgeH * 0.35f } ?: 0f
                 val maxW = if (box.width() - keep >= badgeH) box.width() - keep else box.width()
-                val bw = StatusBadge.draw(cv, box.left, top, badgeH, maxW, look, pal.dark)
+                val bw = StatusBadge.draw(cv, box.left, top, badgeH, maxW, look, pal.dark, ground)
                 rec.add("value.status", RectF(box.left, top, box.left + bw, top + badgeH), "${look.kind} [row]")
                 rx += bw + badgeH * 0.35f
             }
             if (range != null && rangeText != null) {
                 if (rx + RangeTag.width(rangeText, badgeH) <= box.right) {
-                    val b = RangeTag.draw(cv, rx, top, badgeH, rangeText, color, pal, ink)
+                    val b = RangeTag.draw(cv, rx, top, badgeH, rangeText, color, pal, ink, ground)
                     rec.add("value.range", b, "${range.key} [row]")
                     rx = b.right + badgeH * 0.35f
                 } else {
@@ -356,7 +360,7 @@ internal class ValueFace(
         val ih = min(numBox.height() * 0.5f, 24 * d)
         var ix = x + arrowSize * 1.15f
         if (iconBadge && look != null) {
-            StatusBadge.draw(cv, ix, cy - ih / 2, ih, ih, look, pal.dark)
+            StatusBadge.draw(cv, ix, cy - ih / 2, ih, ih, look, pal.dark, ground)
             rec.add("value.status", RectF(ix, cy - ih / 2, ix + ih, cy + ih / 2), "${look.kind} [icon]")
             ix += ih * 1.3f
         } else if (look != null) {
@@ -365,7 +369,7 @@ internal class ValueFace(
         if (range != null && rangeText != null) {
             val th = min(ih, 20 * d)
             if (ix + RangeTag.width(rangeText, th) <= box.right) {
-                rec.add("value.range", RangeTag.draw(cv, ix, cy - th / 2, th, rangeText, color, pal, ink), "${range.key} [beside]")
+                rec.add("value.range", RangeTag.draw(cv, ix, cy - th / 2, th, rangeText, color, pal, ink, ground), "${range.key} [beside]")
             } else {
                 rec.add("value.range", info = "${range.key} (no room)")
             }

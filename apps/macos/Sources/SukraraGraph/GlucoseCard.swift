@@ -336,8 +336,10 @@ public enum GlucoseCard {
         let time = fr.showTime ? Freshness.timeText(r.t, now: now) : ""
         let smallH = fr.showTime ? CTFontGetSize(small) * 1.25 : 0
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
-        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it
-        let range = RangeState.shown(face, sgv: r.sgv, bands: bands, pill: look)
+        // the range in words under an out-of-range value, never by colour alone (#26): in the pill's row, after it;
+        // not where the place around the card already says it (`CardStyle.rangeSaid`)
+        let ground = rec.style.ground
+        let range = rec.style.rangeSaid ? nil : RangeState.shown(face, sgv: r.sgv, bands: bands, pill: look)
         let badgeRow = (look != nil || range != nil) && box.height - badgeH * 1.25 - smallH >= 26 * d
         // the late time shares the badge's row (after the badge) when there is one
         let timeH = badgeRow ? badgeH * 1.25 : smallH
@@ -386,13 +388,15 @@ public enum GlucoseCard {
                 let keep = range.map { RangeTag.width(w.rangeWord($0), h: badgeH) + badgeH * 0.35 } ?? 0
                 let maxW = box.width - keep >= badgeH ? box.width - keep : box.width
                 let bw = StatusBadge.draw(
-                    ctx, x: box.minX, y: top, h: badgeH, maxW: maxW, look, dark: pal.dark, knockout: pal.knockout)
+                    ctx, x: box.minX, y: top, h: badgeH, maxW: maxW, look, dark: pal.dark, knockout: pal.knockout,
+                    ground: ground)
                 rec.add("value.status", CGRect(x: box.minX, y: top, width: bw, height: badgeH), "\(look.kind) [row]")
                 tx += bw + badgeH * 0.35
             }
             if let range {
                 if tx + RangeTag.width(w.rangeWord(range), h: badgeH) <= box.maxX {
-                    let b = RangeTag.draw(ctx, x: tx, y: top, h: badgeH, w.rangeWord(range), tint: color, pal)
+                    let b = RangeTag.draw(
+                        ctx, x: tx, y: top, h: badgeH, w.rangeWord(range), tint: color, pal, ground: ground)
                     rec.add("value.range", b, "\(range.rawValue) [row]")
                     tx = b.maxX + badgeH * 0.35
                 } else {
@@ -416,7 +420,7 @@ public enum GlucoseCard {
                 StatusBadge.draw(
                     ctx, x: x + arrowSize * 1.15, y: numBox.midY - iconH / 2, h: iconH, maxW: iconH, look,
                     dark: pal.dark,
-                    knockout: pal.knockout)
+                    knockout: pal.knockout, ground: ground)
                 rec.add(
                     "value.status",
                     CGRect(x: x + arrowSize * 1.15, y: numBox.midY - iconH / 2, width: iconH, height: iconH),
@@ -430,7 +434,8 @@ public enum GlucoseCard {
                 let th = min(iconH, 20 * d)
                 if ix + RangeTag.width(w.rangeWord(range), h: th) <= box.maxX {
                     let b = RangeTag.draw(
-                        ctx, x: ix, y: numBox.midY - th / 2, h: th, w.rangeWord(range), tint: color, pal)
+                        ctx, x: ix, y: numBox.midY - th / 2, h: th, w.rangeWord(range), tint: color, pal,
+                        ground: ground)
                     rec.add("value.range", b, "\(range.rawValue) [beside]")
                 } else {
                     rec.add("value.range", nil, "\(range.rawValue) (no room)")
@@ -473,7 +478,7 @@ public enum GlucoseCard {
             let pw = StatusBadge.draw(
                 ctx, x: box.minX, y: textBox.maxY + badgeH * 0.25, h: badgeH, maxW: box.width,
                 StatusBadge.replaceSensor(w),
-                dark: pal.dark, knockout: pal.knockout)
+                dark: pal.dark, knockout: pal.knockout, ground: rec.style.ground)
             rec.add(
                 "value.pill", CGRect(x: box.minX, y: textBox.maxY + badgeH * 0.25, width: pw, height: badgeH), "[row]")
         } else {
@@ -481,7 +486,7 @@ public enum GlucoseCard {
             if x + badgeH <= box.maxX {
                 _ = StatusBadge.draw(
                     ctx, x: x, y: box.midY - badgeH / 2, h: badgeH, maxW: badgeH, StatusBadge.replaceSensor(w),
-                    dark: pal.dark, knockout: pal.knockout)
+                    dark: pal.dark, knockout: pal.knockout, ground: rec.style.ground)
                 rec.add("value.pill", CGRect(x: x, y: box.midY - badgeH / 2, width: badgeH, height: badgeH), "[icon]")
             } else {
                 rec.add("value.pill", nil, "(no room)")

@@ -201,10 +201,11 @@
         "kind": "card",
         "entry": "renderNotificationArt",
         "parts": [
-          "header",
+          "value",
+          "slots",
           "graph"
         ],
-        "size": "the notification's content column (shade width minus its sides and the icon column)",
+        "size": "the notification's content column (shade width minus its sides and the icon column); expanded: the value 48 dp tall, up to two slots 64 dp tall beside it (min(width / 2, 134 dp)), the chart 96 dp; collapsed: the value 40 dp, the slots 48 dp",
         "sizes": [
           [
             291,

@@ -68,12 +68,16 @@ fun widgetCardStyle(
 /**
  * The card style of the glucose notification's custom card (surface `notification`, drawn in two parts: the header
  * row and the chart) from the Notification place's settings: the ONE mapping, used by `:monitor` and CardLayoutTest.
- * On the card's range colour the value is in [valueInk] and the slots sit on discs of [slotDisc].
+ * On the card's range colour the value is in [valueInk] and the slots sit on discs of [slotDisc]; [ground] = that
+ * colour (the pills keep their contrast on it, [PillContrast]); [rangeSaid] = the notification's title names the level
+ * alert, so the card draws no range word (the status pill stays).
  */
 fun notificationCardStyle(
     config: GraphConfig,
     valueInk: Int? = null,
     slotDisc: Int? = null,
+    ground: Int? = null,
+    rangeSaid: Boolean = false,
 ): CardStyle =
     CardStyle(
         graph = config.graphStyle(config.hours(GraphPlace.NOTIFICATION)),
@@ -83,6 +87,8 @@ fun notificationCardStyle(
         sensorTime = config.sensorTime(GraphPlace.NOTIFICATION),
         slotDisc = slotDisc,
         valueInk = valueInk,
+        ground = ground,
+        rangeSaid = rangeSaid,
         bands = config.bands,
         unit = config.unit,
     )

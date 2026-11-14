@@ -164,6 +164,16 @@ data class CardStyle(
     /** The value in this colour instead of its range colour (a surface whose own colour already says the range). */
     val valueInk: Int? = null,
     /**
+     * The colour the card is drawn on when its surface paints it itself (the colourised glucose notification: its range
+     * colour, or the stale grey); null = the palette's own surface. Every pill keeps its contrast there ([PillContrast]).
+     */
+    val ground: Int? = null,
+    /**
+     * The place around the card already says the value's range in words (the notification's title names the level
+     * alert: "Low glucose"): no range word under the value (#26 is met by the title), the status pill stays.
+     */
+    val rangeSaid: Boolean = false,
+    /**
      * The ranges the value's colour and the slots count in: the user's ([GraphConfig.bands]), also on a card without a
      * chart. No default, like [sensorTime]: a value-only card once fell back to the built-in ranges (#83).
      */

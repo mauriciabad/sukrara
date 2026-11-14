@@ -120,6 +120,26 @@ default 60), `bands` (the person's, missing = the defaults) and `pill` (`{kind, 
 absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extremely_high` or `null` = no word) and
 `text` (the English word drawn). Where it goes on each surface is `layout/rules.json` `status` (`value.range`).
 
+## Pills per surface
+
+What the value's place says in pills (the status pill `value.status` / `value.pill`, the range word `value.range`),
+decided by the renderer from two style inputs the place around the card sets, never from the surface's name
+(`layout/rules.json` `status`, facts `ground` and `rangeSaid`):
+
+| Place | Status pill | Range word |
+|---|---|---|
+| Widgets, lock-screen widget, app panel, *Sensor ready* | yes | yes (#26), unless the pill says the side |
+| Android glucose notification, title naming a level alert (`rangeSaid`: "Low glucose · Eat carbs", "Low alerts muted") | yes | no: the title says it in words |
+| Android glucose notification, no alert in the title | yes | yes |
+
+**Contrast on any ground** (`PillContrast`, both platforms; Android `PillContrastTest`, Mac `PillContrastTests`): a
+pill sits on `CardStyle.ground` (a surface that paints the card itself: Android's colourised notification, its range
+colour or the stale grey) or else on the palette's surface. A filled pill's fill reaches 3:1 against it (WCAG 1.4.11)
+and its words 4.5:1 on the fill (WCAG 1.4.3); a tonal pill and the range word are faint tints whose words carry them,
+so only their words count (4.5:1 on the tint over the ground). A pill that fails is drawn in the ground's ink (black
+or white, whichever stands out more) with the other ink for its words: "Muted · 45m" on the red notification. Outlined
+range words on a colourised card keep the ink the surface chose for its own colour.
+
 ## Ranges at their limits (`range/bands.json`)
 
 Which range a value is in (#181; the owner, 2026-11-12: "the 70 is the threshold, but 70 itself is excluded from the

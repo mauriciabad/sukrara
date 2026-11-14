@@ -114,9 +114,11 @@ private let now = GraphFixtures.now
     }
 
     private func draw(
-        _ rs: [GraphReading], _ status: AlertStatus = .none, size: CGSize = CGSize(width: 332, height: 138)
+        _ rs: [GraphReading], _ status: AlertStatus = .none, size: CGSize = CGSize(width: 332, height: 138),
+        rangeSaid: Bool = false
     ) -> CardLayout {
-        let st = CardSurface.widgetValue.style(GraphConfig(), sensor: nil)
+        var st = CardSurface.widgetValue.style(GraphConfig(), sensor: nil)
+        st.rangeSaid = rangeSaid
         return GlucoseCard.draw(
             cardContext(size), size: size, readings: rs, marks: [], now: now, st, GraphPalette.of(dark: false),
             surface: .test, part: .all, alerts: CardAlerts(status: status))
@@ -140,5 +142,13 @@ private let now = GraphFixtures.now
 
     @Test func veryHighIsSaidApartFromLow() {
         #expect(draw(readings(262)).first("value.range")?.info == "very_high [row]")
+    }
+
+    /// A title around the card that names the level alert (Android's notification) says the range: no word, the pill
+    /// stays (Android RangeWordTest).
+    @Test func aTitleThatNamesTheRangeDropsTheWordAndKeepsThePill() {
+        let lay = draw(readings(64), .paused(.low, until: now + 600), rangeSaid: true)
+        #expect(lay.first("value.range") == nil)
+        #expect(lay.first("value.status")?.info == "carbs [row]")
     }
 }

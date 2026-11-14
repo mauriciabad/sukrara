@@ -47,19 +47,25 @@ enum RangeTag {
 
     static func width(_ text: String, h: CGFloat) -> CGFloat { Ink.width(text, font(h)) + h * 0.9 }
 
-    /// The tint behind the word and the word's ink.
-    static func colors(tint: CGColor, _ pal: GraphPalette) -> (bg: CGColor, fg: CGColor) {
+    /// The tint behind the word and the word's ink; on `ground` (`CardStyle.ground`; nil = the palette's surface) the
+    /// ground's ink when the word fails there (`PillContrast`).
+    static func colors(tint: CGColor, _ pal: GraphPalette, ground: CGColor? = nil) -> (bg: CGColor, fg: CGColor) {
         if pal.knockout { return (CGColor(gray: 1, alpha: 0.22), CGColor(gray: 1, alpha: 1)) }
-        return (tint.copy(alpha: (pal.dark ? 72 : 44) / 255.0) ?? tint, pal.ink)
+        let surface = pal.bg.alpha > 0 ? pal.bg : GraphPalette.of(dark: pal.dark).bg
+        let r = PillContrast.of(
+            fill: tint.copy(alpha: (pal.dark ? 72 : 44) / 255.0) ?? tint, fg: pal.ink, ground: ground ?? surface,
+            boundary: false)
+        return (r.fill, r.fg)
     }
 
     /// Draws the tag `h` tall with its top-left at (`x`, `y`); returns its box.
     @discardableResult
     static func draw(
-        _ ctx: CGContext, x: CGFloat, y: CGFloat, h: CGFloat, _ text: String, tint: CGColor, _ pal: GraphPalette
+        _ ctx: CGContext, x: CGFloat, y: CGFloat, h: CGFloat, _ text: String, tint: CGColor, _ pal: GraphPalette,
+        ground: CGColor? = nil
     ) -> CGRect {
         let box = CGRect(x: x, y: y, width: width(text, h: h), height: h)
-        let (bg, fg) = colors(tint: tint, pal)
+        let (bg, fg) = colors(tint: tint, pal, ground: ground)
         ctx.setFillColor(bg)
         ctx.addPath(CGPath(roundedRect: box, cornerWidth: h / 2, cornerHeight: h / 2, transform: nil))
         ctx.fillPath()

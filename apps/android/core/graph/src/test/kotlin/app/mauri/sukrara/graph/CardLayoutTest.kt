@@ -37,6 +37,7 @@ import java.time.Instant
 import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.abs
+import kotlin.math.min
 
 /**
  * The layout rules of contracts/graph/layout (rules.json over scenes.json; expect.json = the answers the Mac checks
@@ -244,10 +245,22 @@ class CardLayoutTest {
             Shape("app-panel", GraphPlace.APP, listOf(CardPart.HEADER to 120f, CardPart.GRAPH to 180f), sizes("app-panel")) {
                 it.appPanelStyle()
             },
-            // the notification's real style (WidgetStyle.kt notificationCardStyle, what :monitor draws with)
-            Shape("notification", GraphPlace.NOTIFICATION, listOf(CardPart.HEADER to 64f, CardPart.GRAPH to 96f), sizes("notification")) {
-                notificationCardStyle(it)
-            },
+            // the notification's real style (WidgetStyle.kt notificationCardStyle, what :monitor draws with) and boxes
+            // (NotificationCard, expanded): the value 48 dp tall, up to two slots 64 dp tall beside it, the chart below
+            Shape(
+                "notification",
+                GraphPlace.NOTIFICATION,
+                listOf(CardPart.VALUE to 0f, CardPart.SLOTS to 0f, CardPart.GRAPH to 0f),
+                sizes("notification"),
+                boxes = { w, _ ->
+                    val slotsW = min(w * 0.5f, 2 * 64f + 6f)
+                    listOf(
+                        CardPart.VALUE to RectF(0f, 0f, (w - slotsW - 6f) * d, 48 * d),
+                        CardPart.SLOTS to RectF(0f, 0f, slotsW * d, 64 * d),
+                        CardPart.GRAPH to RectF(0f, 0f, w * d, 96 * d),
+                    )
+                },
+            ) { notificationCardStyle(it) },
             // the Sensor ready page's real style (WidgetStyle.kt sensorReadyCardStyle, what :feature:sensor draws with)
             Shape("sensor-ready", GraphPlace.APP, listOf(CardPart.VALUE to 0f), sizes("sensor-ready")) {
                 sensorReadyCardStyle(it)
@@ -422,7 +435,8 @@ class CardLayoutTest {
         if (r.glyph) {
             // a glyph surface has no card style: only its scene, settings, unit and whether it shows a face
             return mapOf("scene" to r.scene, "settings" to r.settings, "unit" to r.unit.key, "face" to "${r.faces.isNotEmpty()}") +
-                listOf("labels", "side", "hours", "sensorTime", "badge", "rings", "chart", "pctWide", "part", "box").associateWith { "-" } +
+                listOf("labels", "side", "hours", "sensorTime", "badge", "ground", "rangeSaid", "rings", "chart", "pctWide", "part", "box")
+                    .associateWith { "-" } +
                 mapOf("value" to "glyph", "graph" to "false", "lane2" to "false", "sensorShown" to "false")
         }
         val st = r.layouts.first().style
@@ -441,6 +455,9 @@ class CardLayoutTest {
             "hours" to "${st.graph?.windowS?.div(3600) ?: "-"}",
             "sensorTime" to "${st.sensorTime}",
             "badge" to "${st.badge}",
+            // what the pills sit on (a colourised notification's range colour) and whether the title says the range
+            "ground" to (st.ground?.let { Integer.toHexString(it) } ?: "-"),
+            "rangeSaid" to "${st.rangeSaid}",
             "rings" to ringsSignature(st),
             "chart" to (chart?.let { wh(it.width(), it.height()) } ?: "-"),
             "pctWide" to (chart?.let { if (it.width() / d >= GlucoseGraph.PCT_MIN_WIDTH_DP) "1" else "0" } ?: "-"),

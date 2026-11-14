@@ -55,4 +55,50 @@ class PillContrastTest {
     @Test fun `light pills reach 4_5 to 1`() = check(dark = false)
 
     @Test fun `dark pills reach 4_5 to 1`() = check(dark = true)
+
+    /**
+     * Every pill on every ground it can sit on ([PillContrast]): the palette's surface (null), each range colour of the
+     * colourised notification, its stale grey, white and black. A filled pill's fill reaches 3:1 there, its words 4.5:1
+     * on what the fill shows; a tonal pill's and the range word's words 4.5:1 on their tint over the ground.
+     */
+    @Test fun `every pill stays legible on its ground`() {
+        val light = GraphPalette.LIGHT
+        val grounds =
+            listOf<Int?>(null, 0xFF8E9099.toInt(), 0xFFFFFFFF.toInt(), 0xFF000000.toInt()) +
+                listOf(light.veryLow, light.low, light.tight, light.target, light.high, light.veryHigh, light.extremelyHigh)
+        val looks =
+            listOf("carbs", "rapid", StatusBadge.MUTED, "sensor", "now").flatMap { k ->
+                listOf(StatusBadge.Look(k, "x", "x", tonal = false), StatusBadge.Look(k, "x", "x", tonal = true))
+            }
+        for (dark in listOf(false, true)) {
+            val pal = GraphPalette.of(dark)
+            for (ground in grounds) {
+                val g = ground ?: pal.bg
+                for (look in looks) {
+                    val c = StatusBadge.colors(look, dark, ground)
+                    val shown = ColorUtils.compositeColors(c.fill, g)
+                    val what = "${look.kind} tonal=${look.tonal} dark=$dark on ${Integer.toHexString(g)}"
+                    if (!look.tonal || c.swapped) assertTrue("$what fill", PillContrast.ratio(shown, g) >= 3.0)
+                    assertTrue("$what words", PillContrast.ratio(c.fg, shown) >= 4.5)
+                }
+                for (tint in listOf(pal.veryLow, pal.low, pal.high, pal.veryHigh, pal.extremelyHigh)) {
+                    // on the colourised notification the word is outlined in the value's ink (NotificationCard.ink: the ground's)
+                    for (onSurface in listOf<Int?>(null) + listOfNotNull(ground?.let(PillContrast::ink))) {
+                        val c = RangeTag.colors(tint, pal, onSurface, ground)
+                        val shown = ColorUtils.compositeColors(c.fill, g)
+                        assertTrue(
+                            "range word on ${Integer.toHexString(g)} dark=$dark ink=$onSurface",
+                            PillContrast.ratio(c.fg, shown) >= 4.5,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    @Test fun `a muted pill on the red notification turns to ink`() {
+        val c = StatusBadge.colors(StatusBadge.Look(StatusBadge.MUTED, "Muted", "Muted", tonal = true), false, GraphPalette.LIGHT.low)
+        assertTrue(c.swapped)
+        assertTrue(PillContrast.ratio(c.fg, c.fill) >= 4.5)
+    }
 }
