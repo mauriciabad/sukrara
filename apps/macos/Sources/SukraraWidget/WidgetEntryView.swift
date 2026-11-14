@@ -31,9 +31,6 @@ struct WidgetEntryView: View {
     @Environment(\.displayScale) private var displayScale
     @Environment(\.widgetContentMargins) private var margins
 
-    /// Room around the card for what overflows it (a ring's laurel or crown), at least: drawn into the widget's margin.
-    private static let overflow: CGFloat = 12
-
     var body: some View {
         Group {
             if let snapshot = entry.snapshot, let data = entry.data, let reason = snapshot.reason,
@@ -63,8 +60,9 @@ struct WidgetEntryView: View {
 
     private func card(_ snapshot: WidgetSnapshot, _ data: CardData) -> some View {
         GeometryReader { geo in
-            // over the margins to the widget's edges, so the card's background is the whole widget
-            let o = max(Self.overflow, margins.top, margins.leading, margins.bottom, margins.trailing)
+            // over the margins to the widget's edges, so the card's background is the whole widget, and at least the room
+            // the card draws past its edges
+            let o = max(GlucoseCard.overflowRoom, margins.top, margins.leading, margins.bottom, margins.trailing)
             let tinted = renderingMode != .fullColor
             if let image = GlucoseCard.widgetImage(
                 surface: kind.surface, size: geo.size, config: snapshot.config, data: data, unit: snapshot.unit,

@@ -210,7 +210,11 @@ struct PanelCard: View {
             surface: .menubarCard, size: PanelView.cardSize, config: model.graph, data: data, unit: model.unit,
             dark: scheme == .dark, scale: displayScale, view: view, contrast: increased)
         if let image = rects.image {
+            // the picture is `overflow` larger on every side (a ring's flowers, the value's digits reach past the card):
+            // laid out at the card's size, drawn over the panel's margin, nothing cut (#181)
             Image(decorative: image, scale: displayScale)
+                .padding(-rects.overflow)
+                .frame(width: PanelView.cardSize.width, height: PanelView.cardSize.height)
                 .accessibilityElement()
                 .accessibilityLabel(
                     GlucoseCard.accessibilityLabel(data, unit: model.unit, surface: .menubarCard, config: model.graph)

@@ -786,15 +786,23 @@ extension GlucoseCard {
         return surface == .menubarCard ? p.onModule(contrast: contrast) : p
     }
 
-    /// What a pressable, scrollable card (the panel) needs from one drawing: the card as a bitmap (as `image`), and
-    /// where it drew its plot, the "Now" pill (while `view` scrolls or zooms it) and its status pill (Eat carbs, Take
-    /// insulin, a mute), in points from the top left; nil when not drawn. The panel turns gestures over the plot into a
+    /// The room every surface leaves around the card, on every side, for what the card draws past its edges: a ring's
+    /// laurel, flowers and crown, the value's digits overhanging the card's left edge (#181: the panel cut them). The
+    /// renderer keeps all its ink within it (`OverflowTests`).
+    public static let overflowRoom: CGFloat = 12
+
+    /// What a pressable, scrollable card (the panel) needs from one drawing: the card as a bitmap (as `image`, with
+    /// `overflowRoom` around the card on every side: place it that much past the card's frame), and where it drew its
+    /// plot, the "Now" pill (while `view` scrolls or zooms it) and its status pill (Eat carbs, Take insulin, a mute),
+    /// in points from the card's top left; nil when not drawn. The panel turns gestures over the plot into a
     /// `ChartView` and puts its buttons on the pills. One drawing per frame: a scroll redraws only this.
     public struct Picture {
         public let image: CGImage?
         public let plot: CGRect?
         public let now: CGRect?
         public let pill: CGRect?
+        /// The room around the card in `image`, on every side (`overflowRoom`).
+        public var overflow: CGFloat { GlucoseCard.overflowRoom }
     }
 
     public static func picture(
@@ -806,7 +814,7 @@ extension GlucoseCard {
         let r = render(
             size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
             Self.palette(surface, dark: dark, contrast: contrast), surface: surface, metricsOf: data.metrics,
-            alerts: data.alerts, view: view)
+            alerts: data.alerts, overflow: overflowRoom, view: view)
         return Picture(
             image: r?.image, plot: r?.layout.first("chart.plot")?.box, now: r?.layout.first("chart.now")?.box,
             pill: r?.layout.first("value.pill")?.box)

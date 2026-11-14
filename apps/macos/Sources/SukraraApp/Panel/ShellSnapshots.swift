@@ -39,6 +39,11 @@
                 day.filter { $0.t < now.addingTimeInterval(-age - 240) }
                     + [Reading(t: now.addingTimeInterval(-age), mgdl: mgdl, sensorRate: rate)]
             }
+            func steady(_ mgdl: Int) -> [Reading] {
+                stride(from: 86_400.0, to: 120, by: -300).enumerated().map { i, ago in
+                    Reading(t: now.addingTimeInterval(-ago), mgdl: i % 100 < 3 ? 200 : 118, sensorRate: 0)
+                } + [Reading(t: now.addingTimeInterval(-60), mgdl: mgdl, sensorRate: 2.5)]
+            }
             let suite = "app.mauri.sukrara.snap.\(UUID().uuidString)"
             let store = DefaultsSettingsStore(defaults: UserDefaults(suiteName: suite)!)
             let done = SetupFlow(states: [
@@ -132,6 +137,8 @@
                 ("panel-low", scene(readings: ending(62, rate: -1.6))),
                 ("panel-high", scene(readings: ending(246, rate: 1.2))),
                 ("panel-stale", scene(readings: ending(131, rate: 0, age: 12 * 60))),
+                // a steady day, 97 % in range: both rings wear flowers, reaching past the card (#181)
+                ("panel-flowers", scene(readings: steady(188))),
                 (
                     "panel-muted-all",
                     scene(readings: ending(118, rate: 0.2)) {

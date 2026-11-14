@@ -188,6 +188,9 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       closes the panel); right-click menu; Treatments… (7 days, delete with ⌫ / context menu, ⌘W; a pen entry from the phone: total as title, *From the pen · 1.5u primed*, the triangle opens the doses with *primed* on air shots, tooltip *Read from the pen on …'s phone* (no serial); Add Treatment with rapid within 45 min of a pen entry → *Already logged by the pen?*, Cancel keeps the insulin typed and saves carbs / note, Log Anyway saves; VoiceOver reads the row as one sentence and each dose as *12:37, 1 unit, primed*; a correction on the phone shows here within seconds; chart mark = the total; synthetic: `sukrara-snap windows <dir>` → `treatments-*.png`, `treatment-add-*.png`); Glucose Report (report only, period, Export CSV…); Settings (each pane; ⌘, ⌘W, paste in
       the invite field); light and dark, over a bright and a dark window/wallpaper, Increase Contrast and Reduce
       Transparency (System Settings → Accessibility → Display).
+- [ ] Card overflow (#181): `sukrara-snap shell` → `panel-flowers-*.png`: the flowers and laurel at the card's right
+      and top edges and the value's first digit at its left edge are whole, drawn over the panel's margin (compare
+      docs/img/mac-ux/panel-overflow-*.png); the same on the real panel with a ring at 95 % or more.
 - [ ] Synthetic renders (the only snapshot path; offline, scratch data, debug builds): `cd apps/macos && swift build &&
       .build/debug/sukrara-snap shell|windows|card <dir>` (`shell-es` / `windows-es` for Spanish): the menu bar title
       + panel in each state, every window state (light, dark, large text) and every card surface. Never into the repo.
