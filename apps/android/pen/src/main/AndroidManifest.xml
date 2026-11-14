@@ -42,7 +42,7 @@
             android:launchMode="singleTask"
             android:noHistory="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Sukrara.PenRead" />
+            android:theme="@style/Theme.Sukrara.Window.Overlay" />
         <!-- the pen notifications' buttons (only Sukrara's own PendingIntents) -->
         <receiver
             android:name=".PenActionReceiver"

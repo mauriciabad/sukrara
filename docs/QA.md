@@ -630,6 +630,9 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
 - [ ] Type 8u rapid within 45 min of a pen entry → *Already logged by your pen?*; carbs in the same save are saved.
       Rotate with the question open: it is asked again. Over the lock screen the countdown ring stands still while it is
       open; *Cancel* → the form, the ring runs again.
+- [ ] Light and dark (`adb shell cmd uimode night yes|no`, #181): the read card over home and over another app
+      (Android's Settings), *Already logged by your pen?* and Add treatment follow the phone's theme; the navigation
+      bar handle under the card stays legible; switching the theme while the card is up redraws it in the new theme.
 - [ ] On Android 17 a pen tap from another app opens the card (no `does not have DISPATCH_NFC_MESSAGE permission` in
       logcat `NfcDispatcher`); a Libre tap with Sukrara closed opens the New sensor screen (0.11.47).
 - [ ] Taps blocked (the debug `PEN_TAGS --ez blocked true` command on the emulator, with *Open Sukrara when you scan

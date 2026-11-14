@@ -804,7 +804,7 @@ private fun CountdownRing(
 
 /**
  * The M3 scrim behind a dialog opened over the treatment dialog (*When?*, *Already logged by your pen?*). The quick
- * dialog's window draws its own scrim and turns the window dim off (`Theme.Sukrara.QuickTreatment`), and a Compose
+ * dialog's window draws its own scrim and turns the window dim off (`Theme.Sukrara.Window.Overlay`), and a Compose
  * dialog's window takes that theme, so without this it opened undimmed, flat on the card behind it (an M3 dialog has
  * tonal elevation, no shadow). Called from inside the dialog's content: it dims what is behind that dialog's window.
  */

@@ -29,7 +29,7 @@
             android:noHistory="true"
             android:showWhenLocked="true"
             android:taskAffinity=""
-            android:theme="@style/Theme.Sukrara.QuickTreatment"
+            android:theme="@style/Theme.Sukrara.Window.Overlay"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="app.mauri.sukrara.action.QUICK_TREATMENT" />

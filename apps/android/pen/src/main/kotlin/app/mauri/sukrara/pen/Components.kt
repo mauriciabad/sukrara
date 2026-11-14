@@ -16,6 +16,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +67,8 @@ class PenReadActivity : ComponentActivity() {
     private val showing = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // the window theme (Theme.Sukrara.Window.Overlay) is DayNight; the navigation bar's icons follow the dark theme too
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         window.setGravity(Gravity.BOTTOM)

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <!--
+      Every Sukrara window's theme: what Android draws before and around Compose (window background, system bar icons,
+      the text toolbar, platform dialogs) follows the phone's dark theme like the Compose theme (SukraraTheme) does.
+      DayNight, never a dark-only or light-only parent: WindowThemesTest checks every activity in light and dark.
+    -->
+    <style name="Theme.Sukrara.Window" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <!-- dark system bar icons on a light theme, light ones on a dark theme (enableEdgeToEdge does the same) -->
+        <item name="android:windowLightStatusBar">?android:attr/isLightTheme</item>
+        <item name="android:windowLightNavigationBar">?android:attr/isLightTheme</item>
+    </style>
+
+    <!-- a window over the current app (the pen read card, Add treatment): translucent, no scrim of its own -->
+    <style name="Theme.Sukrara.Window.Overlay" parent="Theme.Sukrara.Window">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>
