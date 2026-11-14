@@ -229,7 +229,7 @@ private fun TrendPreviewCard(ui: TrendArrowUi) {
     val said =
         listOfNotNull(look?.text, look?.band?.takeIf { look.trend == TrendMark.ARROW }?.let(words::trend)) + lines
     Surface(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -286,9 +286,9 @@ private fun ArrowMark(
     )
 }
 
-/** A rate as the preview writes it: signed, in the person's unit ("+1.1 mg/dL/min", "−0.02 mmol/L/min"). */
+/** A rate as the preview writes it: signed, in the person's unit ("+1.1 mg/dL/min", "−0.02 mmol/L/min"), the unit never broken at a slash. */
 private fun signed(
     rate: Double,
     unit: GlucoseUnit,
     locale: Locale,
-): String = (if (rate < 0) "−" else "+") + unit.rateText(abs(rate), locale) + " " + unit.rateSymbol
+): String = (if (rate < 0) "−" else "+") + unit.rateText(abs(rate), locale) + " " + unit.rateSymbol.replace("/", "/\u2060")
