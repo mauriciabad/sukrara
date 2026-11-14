@@ -44,7 +44,7 @@ class FakePresenter : AlertPresenter {
     /** Every post of an alert: its kind, the value it showed, without sound or not, and when (#195). */
     val posts = mutableListOf<Post>()
 
-    data class Post(val kind: AlertKind, val mgdl: Int?, val silent: Boolean, val now: Long)
+    data class Post(val kind: AlertKind, val mgdl: Int?, val silent: Boolean, val now: Long, val id: String = "")
 
     /** Groups the person swiped or tapped away (gone from the shade, [isShowing] false). */
     val gone = mutableSetOf<AlertGroup>()
@@ -60,7 +60,7 @@ class FakePresenter : AlertPresenter {
         slots[firing.kind.group] = firing.kind.wire
         gone.remove(firing.kind.group)
         log += (if (silent) "resume " else "show ") + firing.kind.wire
-        posts += Post(firing.kind, firing.reading?.mgdl, silent, now)
+        posts += Post(firing.kind, firing.reading?.mgdl, silent, now, firing.id)
         this.who += who
     }
 

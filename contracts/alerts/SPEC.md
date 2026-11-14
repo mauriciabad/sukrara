@@ -120,7 +120,10 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
     first alert that waits, §1, stays a wait).
   - **Seen = away until the next ring.** A swipe or a tap (Android) / a dismissal or a click (Mac) takes it away; an
     update or a silent show never brings it back; the next ring does (its repeat, a worse kind, a new episode). A swipe
-    stays an answer to a very low (§4). Opening the app doesn't remove it.
+    stays an answer to a very low (§4). Opening the app doesn't remove it. The dismissal is saved with the alert state
+    (a restart's silent re-show doesn't bring it back) and names its own firing: the late dismissal of a notification a
+    new ring already replaced changes nothing (Android: one delete intent per firing; a notification Android doesn't
+    list in the 5 s after our own post isn't taken for swiped).
   - **No data clears the level and rate alerts.** Once no data holds (its rule's minutes without a reading), the last
     reading is no longer now: the level and rate alerts go (no data's own alert carries the last value and its time),
     also when that is before the 15 min after which they'd go anyway.

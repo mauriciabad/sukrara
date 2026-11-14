@@ -9,6 +9,7 @@ import android.app.PendingIntent
 import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StrikethroughSpan
@@ -82,7 +83,7 @@ class AlertNotifier(
         // the header's age ("now", "3m", kept current by the system) is the reading's: the value's age, not the ring's
         val reading = firing.reading?.takeIf { kind != AlertKind.NO_DATA }
         val b =
-            base(kind, alarm, silent)
+            base(kind, alarm, silent, firing.id)
                 .setContentTitle(AlertCopy.headline(kind, firing.treated, words, firing.escalated))
                 .setContentText(text)
                 .setWhen((reading?.t ?: firing.at) * 1000)
@@ -121,7 +122,7 @@ class AlertNotifier(
         val channel = AlertChannels.id(ctx, kind, alarm)
         val open = openApp()
         val b =
-            base(kind, alarm, silent)
+            base(kind, alarm, silent, firing.id)
                 .setContentTitle(ctx.getString(headlineRes(kind)))
                 .setWhen(firing.at * 1000)
                 .setShowWhen(true)
@@ -235,7 +236,12 @@ class AlertNotifier(
         NotificationGroups.post(ctx, id, n, NotificationGroups.Group.ALERTS, channelId)
     }
 
-    private fun base(kind: AlertKind, alarm: Boolean, silent: Boolean): Notification.Builder =
+    private fun base(
+        kind: AlertKind,
+        alarm: Boolean,
+        silent: Boolean,
+        firingId: String? = null,
+    ): Notification.Builder =
         Notification
             .Builder(ctx, AlertChannels.id(ctx, kind, alarm))
             .setSmallIcon(ctx.applicationInfo.icon)
@@ -243,7 +249,7 @@ class AlertNotifier(
             .setCategory(AlertCategory.of(alarm, AlertCategory.Dnd.of(nm)))
             .setVisibility(Notification.VISIBILITY_PUBLIC)
             .setContentIntent(openApp())
-            .setDeleteIntent(broadcast(kind, AlertActionReceiver.TIDY, mutable = false))
+            .setDeleteIntent(tidy(kind, firingId))
             .setGroup(NotificationGroups.Group.ALERTS.key)
             // silent = what NotificationCompat.setSilent does: a child that defers alerting to the summary, which never
             // alerts (GROUP_ALERT_CHILDREN); a ringing alert keeps GROUP_ALERT_ALL and rings as a child
@@ -323,6 +329,25 @@ class AlertNotifier(
             requestCode(kind, what),
             Intent(ctx, AlertActionReceiver::class.java).setAction(what).putExtra(AlertActionReceiver.KIND, kind.wire),
             PendingIntent.FLAG_UPDATE_CURRENT or if (mutable) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_IMMUTABLE,
+        )
+
+    /**
+     * The swipe's broadcast, one per firing (#195): its own id rides along (a data URI keeps each firing's PendingIntent
+     * apart), so the swipe of a notification a new ring already replaced can't hide the new one.
+     */
+    private fun tidy(
+        kind: AlertKind,
+        firingId: String?,
+    ): PendingIntent =
+        PendingIntent.getBroadcast(
+            ctx,
+            requestCode(kind, AlertActionReceiver.TIDY),
+            Intent(ctx, AlertActionReceiver::class.java)
+                .setAction(AlertActionReceiver.TIDY)
+                .setData(Uri.fromParts("sukrara-alert", firingId ?: "none", null))
+                .putExtra(AlertActionReceiver.KIND, kind.wire)
+                .putExtra(AlertActionReceiver.FIRING, firingId),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
     /** The app (found before the first unlock too: from the lock screen Android asks for the unlock first). */

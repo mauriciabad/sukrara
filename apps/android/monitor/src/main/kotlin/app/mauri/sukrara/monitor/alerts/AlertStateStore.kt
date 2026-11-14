@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.monitor.alerts
 
+import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.AlertSettingsCodec
 import app.mauri.sukrara.alerts.AlertState
@@ -34,6 +35,8 @@ data class AlertRecord(
     val notes: List<SavedNote> = emptyList(),
     /** When Mute all ends as [notes] last saw it (0 = off): its end by itself is noted once, also after a restart. */
     val muteAllUntil: Long = 0,
+    /** #195: the groups whose alert the person swiped or tapped away: they stay away until a ring, also after a restart. */
+    val dismissed: Set<AlertGroup> = emptySet(),
 )
 
 /** [SensorWindow] as saved. */

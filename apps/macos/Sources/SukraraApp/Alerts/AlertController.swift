@@ -91,6 +91,7 @@ final class AlertController {
         }
         fence = saved?.fence
         latest = engine.context.latest
+        dismissed = saved?.dismissed ?? []
         run(effects)
     }
 
@@ -430,6 +431,7 @@ final class AlertController {
         guard let f = onScreen(g), f.kind.side == side, firing.map({ $0 == f.id }) ?? true else { return }
         dismissed.insert(g)
         scheduleWake()
+        save()
     }
 
     /// Posts the wearer's firing `id` with sound (Unmute / Remind as Usual on a mirrored alert): true = posted.
@@ -466,7 +468,10 @@ final class AlertController {
     }
 
     private func save() {
-        store.save(AlertState(engine: engine.snapshot, mirror: mirror, mirrored: mirrored, fence: fence))
+        store.save(
+            AlertState(
+                engine: engine.snapshot, mirror: mirror, mirrored: mirrored, fence: fence,
+                dismissed: dismissed.isEmpty ? nil : dismissed))
     }
 }
 

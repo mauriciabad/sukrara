@@ -137,6 +137,9 @@ class AlertRuntime(
     private val rangAt = HashMap<AlertGroup, Long>()
     private val dismissed = HashSet<AlertGroup>()
 
+    /** When each group's alert was last posted (a notification Android hasn't listed yet isn't gone). */
+    private val postedAt = HashMap<AlertGroup, Long>()
+
     /** An update held back by the guard after a ring: when it may be posted (the runtime wakes then). */
     private var deferredAt: Long? = null
 
@@ -362,6 +365,8 @@ class AlertRuntime(
         who = record.who
         notes = record.notes
         muteAllSeen = record.muteAllUntil
+        dismissed.clear()
+        dismissed += record.dismissed
         sensor = record.sensor?.window
         val saved = record.machine ?: return emptyList()
         latest = saved.local.last
@@ -530,6 +535,7 @@ class AlertRuntime(
         val who = whoFor(m)
         val shown = withLatest(f)
         if (attempt(Step.Show, group) { presenter.show(shown, settings, silent, who, relax, now) }) {
+            postedAt[group] = now
             shown.reading?.let { shownLook[group] = AlertLiveValue.look(it, now) } ?: shownLook.remove(group)
             unposted.remove(group)
             forget(Step.Plain, group)
@@ -625,6 +631,7 @@ class AlertRuntime(
             attempt(Step.Notify, group) {
                 val shown = withLatest(f)
                 presenter.show(shown, m.settingsAt(now), silent = true, who = whoFor(m), relaxedMin = relax, now = now)
+                postedAt[group] = now
                 shownRelax[group] = relax
                 shown.reading?.let { shownLook[group] = AlertLiveValue.look(it, now) }
             }
@@ -664,6 +671,7 @@ class AlertRuntime(
                     relaxedMin = relaxedMin(m, group, now),
                     now = now,
                 )
+                postedAt[group] = now
                 shownLook[group] = next
             }
         }
@@ -676,8 +684,14 @@ class AlertRuntime(
         return f.copy(reading = r)
     }
 
-    /** Whether [group]'s alert is still on screen; a presenter that can't tell counts as yes. */
-    private fun showing(group: AlertGroup): Boolean = runCatching { presenter.isShowing(group) }.getOrDefault(true)
+    /**
+     * Whether [group]'s alert is still on screen; a presenter that can't tell counts as yes, and so does a post of the
+     * last [GONE_GRACE_S] (Android lists a notification only once it has handled the post: missing then isn't a swipe).
+     */
+    private fun showing(group: AlertGroup): Boolean {
+        if (postedAt[group].let { it != null && now() - it in 0 until GONE_GRACE_S }) return true
+        return runCatching { presenter.isShowing(group) }.getOrDefault(true)
+    }
 
     /** When a value on screen turns late or stale next (the card's next freshness step), or null. */
     private fun valueStepAt(now: Long): Long? {
@@ -701,12 +715,20 @@ class AlertRuntime(
         shownLook.clear()
         rangAt.clear()
         dismissed.clear()
+        postedAt.clear()
     }
 
     /** The person swiped [kind]'s alert away (#195): it stays away until the next ring. */
-    suspend fun dismissed(kind: String) {
+    suspend fun dismissed(
+        kind: String,
+        firingId: String?,
+    ) {
         mutex.withLock {
-            AlertKind.fromWire(kind)?.group?.let { if (it in firing) dismissed += it }
+            val group = AlertKind.fromWire(kind)?.group ?: return
+            // the swipe of an older notification (a new ring replaced it meanwhile) changes nothing
+            if (firingId == null || firing[group]?.id != firingId) return
+            dismissed += group
+            attempt(Step.Save) { save() }
         }
     }
 
@@ -730,6 +752,7 @@ class AlertRuntime(
                 sensor = sensor?.let(::SavedSensor),
                 notes = notes,
                 muteAllUntil = muteAllSeen,
+                dismissed = dismissed.toSet(),
             )
         }
         // the machine's settings already have no data off before monitoring started
@@ -787,6 +810,9 @@ class AlertRuntime(
     }
 
     companion object {
+        /** A post this recent (s) is on screen whatever Android lists yet ([showing]). */
+        const val GONE_GRACE_S = 5L
+
         fun readingOf(r: Reading) = AlertReading(r.t.epochSecond, r.mgdl, r.rateMgdlPerMin?.toDouble())
 
         fun dosesOf(treatments: List<Treatment>) =

@@ -17,6 +17,7 @@ import app.mauri.sukrara.alerts.AlertReading
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.graph.Freshness
+import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -27,6 +28,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Instant
 import java.util.Locale
@@ -153,13 +155,31 @@ class AlertLiveNotificationTest {
     @Test fun `a swipe noted by its delete intent keeps the silent show away too`() {
         settings()
         reading(65, 0)
+        // the swipe's broadcast: its own firing rides along in the delete intent
+        val swipe = shadowOf(level()!!.deleteIntent).savedIntent
+        assertEquals(AlertActionReceiver.TIDY, swipe.action)
+        val firing = swipe.getStringExtra(AlertActionReceiver.FIRING)
+        assertNotNull(firing)
         nm.cancel(AlertNotifier.idOf(AlertGroup.LEVEL))
-        runBlocking { runtime.dismissed(AlertKind.LOW.wire) }
+        runBlocking { runtime.dismissed(AlertKind.LOW.wire, firing) }
         reading(75, 60) // in range: the alert ends on screen
         reading(66, 120) // low again in the episode: shown silently, but not after a swipe
         assertNull(level())
         reading(66, 300)
         assertNotNull("the repeat rings it back", level())
+    }
+
+    /** Each firing has its own delete intent, so the swipe of an older one can't name the newer one. */
+    @Test fun `every firing's swipe carries its own id`() {
+        settings()
+        reading(65, 0)
+        val first = level()!!.deleteIntent
+        reading(64, 300) // the 5-min repeat: a new firing
+        val second = level()!!.deleteIntent
+        val a = shadowOf(first).savedIntent.getStringExtra(AlertActionReceiver.FIRING)
+        val b = shadowOf(second).savedIntent.getStringExtra(AlertActionReceiver.FIRING)
+        assertTrue(a != null && b != null && a != b)
+        assertEquals("the old one still names its own firing", a, shadowOf(first).savedIntent.getStringExtra(AlertActionReceiver.FIRING))
     }
 
     @Test fun `low again after a moment in range is shown at once without sound`() {

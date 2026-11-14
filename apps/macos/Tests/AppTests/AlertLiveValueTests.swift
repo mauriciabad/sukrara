@@ -144,6 +144,31 @@ import UserNotifications
         #expect(soundOfLastPost() == true)
     }
 
+    /// A dismissed alert isn't brought back by the relaunch's silent re-show: the dismissal is saved with the state.
+    @Test func aDismissalSurvivesARelaunch() {
+        let c = controller()
+        c.reading(reading(65))
+        c.dismissed(.low, firing: idOfFirst())
+        notifier.calls = []
+        notifier.values = []
+        clock.advance(by: 30)
+        _ = controller()  // the Mac relaunches: what was up is resumed silently, not what was dismissed
+        #expect(notifier.posts.isEmpty)
+    }
+
+    /// The dismissal of a notification a new ring already replaced (it reaches the app late) keeps the new one up.
+    @Test func aLateDismissalOfAnOlderRingChangesNothing() {
+        let c = controller()
+        c.reading(reading(65))
+        let first = idOfFirst()
+        clock.advance(by: 300)  // the 5-min repeat: a new firing
+        c.reading(reading(64))
+        c.dismissed(.low, firing: first)
+        clock.advance(by: 60)
+        c.reading(reading(62))
+        #expect(notifier.values.last == 62)
+    }
+
     @Test func aDismissalOfAnotherNotificationChangesNothing() {
         let c = controller()
         c.reading(reading(65))

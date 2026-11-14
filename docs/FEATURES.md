@@ -227,11 +227,13 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
   *States and exits*: *alert up, value current* (the notification; Mute…, Remind less, Log carbs; out: back in range,
   a treatment, a Mute, Mute all, a worse or milder kind replacing it, swipe / tap / dismiss); *alert up, reading late or
   stale* (its time, then struck / the ring; out: the next reading, or gone at 15 min, no data after its minutes);
-  *seen (swiped, tapped, dismissed, clicked)* (no notification; the card's pill, home, Active now and the Mac panel show
+  *seen (swiped, tapped, dismissed, clicked)* (saved with the alert state, so a restart doesn't bring it back; a late
+  swipe of an older ring is ignored: each firing has its own delete intent; no notification; the card's pill, home, Active now and the Mac panel show
   the state and have Mute / Remind less; out: its next ring, a worse kind, the episode's end); *back in range within
   the episode* (nothing up; out: out of range again → shown silently, or the episode ends); *no data* (*Last reading
   14:05 · 120 mg/dL*; out: the next reading). TalkBack / VoiceOver read the title and the value as shown. Tests:
   Android `AlertLiveValueTest`, `AlertLiveNotificationTest` (the real runtime and notifier, read back from the shade),
+  `AlertDismissalTest`,
   `AlertMachineTest`, `AlertCopyTest`; Mac `AlertLiveValueTests`, `NotifierTests`, `AlertCopyTests`; both
   `notifications.txt`.
 - Android timer: exact alarm (`USE_EXACT_ALARM`) at the engine's next check, so a mute end alerts on time between

@@ -71,7 +71,7 @@ class AlertActionReceiver : BroadcastReceiver() {
                     // a swipe is an answer on this phone (#39) and keeps the alert away until its next ring (#195),
                     // then the group's tidy-up
                     runtime.acknowledge(kind)
-                    runtime.dismissed(kind)
+                    runtime.dismissed(kind, intent.getStringExtra(FIRING))
                     NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
                 }
             }
@@ -86,6 +86,9 @@ class AlertActionReceiver : BroadcastReceiver() {
         const val TIDY = "app.mauri.sukrara.alert.TIDY"
         val ACTIONS = listOf(MUTE, REMIND_LESS, REMIND_AS_USUAL, UNMUTE, TIDY)
         const val KIND = "kind"
+
+        /** The swiped notification's firing (its delete intent's own): a swipe of an older one changes nothing. */
+        const val FIRING = "firing"
         const val TYPED = "minutes"
     }
 }
