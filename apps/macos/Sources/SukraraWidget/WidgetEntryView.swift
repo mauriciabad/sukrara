@@ -61,17 +61,22 @@ struct WidgetEntryView: View {
     private func card(_ snapshot: WidgetSnapshot, _ data: CardData) -> some View {
         GeometryReader { geo in
             let o = Self.overflow
+            let tinted = renderingMode != .fullColor
             if let image = GlucoseCard.image(
                 surface: kind.surface, size: geo.size, config: snapshot.config, data: data, unit: snapshot.unit,
-                dark: scheme == .dark, tinted: renderingMode != .fullColor, scale: displayScale, overflow: o)
+                dark: scheme == .dark, tinted: tinted, scale: displayScale, overflow: o)
             {
+                // tinted: the renderer's mask in the system's primary ink for the material it draws on, light or
+                // dark by the wallpaper (#189), like the system's own text
                 Image(decorative: image, scale: displayScale)
+                    .renderingMode(tinted ? .template : .original)
                     .resizable()
+                    .foregroundStyle(.primary)
                     .frame(width: geo.size.width + 2 * o, height: geo.size.height + 2 * o)
                     .frame(width: geo.size.width, height: geo.size.height)
             }
         }
-        // the renderer's tinted palette already maps the card to luminance: no accent split on top
+        // one ink in the tinted modes: no accent split on top
         .widgetAccentable(false)
     }
 

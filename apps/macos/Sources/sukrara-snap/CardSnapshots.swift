@@ -52,8 +52,9 @@
             return count
         }
 
-        /// Light and dark; a widget also in the tinted rendering modes (accented / vibrant: the renderer's tinted
-        /// palette) for the states that matter most at a glance: live, struck through and hidden.
+        /// Light and dark; a widget also in the tinted rendering modes (accented / vibrant: the renderer's tinted mask
+        /// in the primary ink of a light and a dark material) for the states that matter most at a glance: live,
+        /// struck through and hidden.
         private static func looks(_ surface: CardSurface, state: String, unit: GlucoseUnit)
             -> [(dark: Bool, tinted: Bool)]
         {
@@ -126,9 +127,23 @@
                     space: CGColorSpace(name: CGColorSpace.sRGB)!,
                     bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
             else { throw SnapError.render(url.lastPathComponent) }
-            ctx.setFillColor(dark ? CGColor(gray: 0.11, alpha: 1) : CGColor(gray: 0.97, alpha: 1))
-            ctx.fill(CGRect(x: 0, y: 0, width: w, height: h))
-            ctx.draw(card, in: CGRect(x: 0, y: 0, width: w, height: h))
+            let all = CGRect(x: 0, y: 0, width: w, height: h)
+            if tinted {
+                // the tinted modes as the system draws them: the mask filled with the primary ink of a dark or light
+                // material (the material follows the wallpaper; the card is the same mask on both)
+                ctx.setFillColor(dark ? CGColor(gray: 0.2, alpha: 1) : CGColor(gray: 0.82, alpha: 1))
+                ctx.fill(all)
+                ctx.beginTransparencyLayer(auxiliaryInfo: nil)
+                ctx.draw(card, in: all)
+                ctx.setBlendMode(.sourceIn)
+                ctx.setFillColor(dark ? CGColor(gray: 1, alpha: 1) : CGColor(gray: 0, alpha: 1))
+                ctx.fill(all)
+                ctx.endTransparencyLayer()
+            } else {
+                ctx.setFillColor(dark ? CGColor(gray: 0.11, alpha: 1) : CGColor(gray: 0.97, alpha: 1))
+                ctx.fill(all)
+                ctx.draw(card, in: all)
+            }
             guard let out = ctx.makeImage() else { throw SnapError.render(url.lastPathComponent) }
             CGImageDestinationAddImage(dest, out, nil)
             guard CGImageDestinationFinalize(dest) else { throw SnapError.render(url.lastPathComponent) }

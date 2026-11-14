@@ -13,15 +13,15 @@ struct GraphPalette {
     var dark: Bool
     var bg, ink, inkSoft, grid, veryLow, low, tight, target, high, veryHigh, extremelyHigh: CGColor
     /// How strong the chart's decoration is (grid, dashed 54/250 lines, the in-range band): 1 normally. A tinted
-    /// (accented / vibrant) macOS widget turns the bitmap's luminance into opacity, so a faint grey line comes out
-    /// nearly solid there; `tinted()` lowers it.
+    /// (accented / vibrant) macOS widget shows the card as one ink whose strength is each pixel's brightness × opacity
+    /// (`GlucoseCard.tintedMask`), so a faint grey line would come out as strong as the value; `tinted()` lowers it.
     var decor: CGFloat = 1
-    /// Tinted rendering: the system keeps a pixel's opacity (accented) or its luminance × opacity (vibrant) and drops
-    /// its hue, so dark text on a filled pill comes out as solid as the pill. With `knockout` the text and icons on
-    /// filled shapes are cut out of them instead (transparent), and the "background-coloured" gaps are cut too.
+    /// Tinted rendering: one ink, no hue, so dark text on a filled pill would come out as solid as the pill. With
+    /// `knockout` the text and icons on filled shapes are cut out of them instead (transparent), and the
+    /// "background-coloured" gaps are cut too.
     var knockout = false
 
-    /// For the tinted widget rendering modes.
+    /// For the tinted widget rendering modes, on the dark palette (light inks on clear: `GlucoseCard.tintedMask`).
     func tinted() -> GraphPalette { var p = self; p.decor = 0.25; p.knockout = true; return p }
 
     func of(_ b: Band) -> CGColor {

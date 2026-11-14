@@ -678,21 +678,52 @@ extension GlucoseCard {
     public static let noValueText = "—"
 
     /// `surface`'s card at `size` (points) as a bitmap, `scale` px per point, with the app's graph settings `config`
-    /// and the placement's `overrides`. `tinted` = a tinted widget rendering mode (accented / vibrant). `overflow`: room
-    /// around the card for what overflows it (a ring's laurel or crown). `words` = the language it draws in (the
-    /// person's).
+    /// and the placement's `overrides`. `tinted` = a tinted widget rendering mode (accented / vibrant): the card comes
+    /// back as a `tintedMask`, the same in light and dark, for the surface to fill with its foreground style.
+    /// `overflow`: room around the card for what overflows it (a ring's laurel or crown). `words` = the language it
+    /// draws in (the person's).
     public static func image(
         surface: CardSurface, size: CGSize, config: GraphConfig, overrides: PlaceOverrides = PlaceOverrides(),
         data: CardData, unit: GlucoseUnit, dark: Bool, tinted: Bool = false, scale: CGFloat = 2, overflow: CGFloat = 0,
         view: ChartView? = nil, contrast: Bool = false, words: CardWords = .current
     ) -> CGImage? {
-        let palette = Self.palette(surface, dark: dark, contrast: contrast)
+        // tinted: drawn light-on-clear (the dark palette's inks, the tinted decoration), then made a mask
+        let palette =
+            tinted
+            ? Self.palette(surface, dark: true, contrast: contrast).tinted()
+            : Self.palette(surface, dark: dark, contrast: contrast)
         var style = surface.style(config, overrides, sensor: data.sensor, words: words)
         style.unit = unit
-        return image(
-            size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
-            tinted ? palette.tinted() : palette,
+        let img = image(
+            size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style, palette,
             surface: surface, metricsOf: data.metrics, alerts: data.alerts, overflow: overflow, view: view)
+        return tinted ? img.flatMap(tintedMask) : img
+    }
+
+    /// A tinted widget's card (#189): white, its opacity how strongly each pixel shows (the pixel's brightness, its
+    /// largest channel, × its opacity), no colour of its own. The system draws the tinted modes on a material that is
+    /// dark or light by the wallpaper behind it, not by the system's appearance: a bitmap with its own light (or dark)
+    /// ink vanishes on one of them, as the dark theme's light ink did on the light desktop material. The widget fills
+    /// this mask with its primary style (template image), which the system picks for that material, like its own text.
+    /// The brightness rather than the luminance keeps a range colour (a red value, a green arc) as strong as the grey
+    /// ink it stands for, while the grid and band keep the tinted palette's faintness.
+    static func tintedMask(_ img: CGImage) -> CGImage? {
+        let w = img.width, h = img.height
+        guard
+            let ctx = CGContext(
+                data: nil, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue),
+            let base = ctx.data
+        else { return nil }
+        ctx.draw(img, in: CGRect(x: 0, y: 0, width: w, height: h))
+        let px = base.bindMemory(to: UInt8.self, capacity: w * h * 4)
+        for i in stride(from: 0, to: w * h * 4, by: 4) {
+            // premultiplied: the largest channel is already brightness × opacity
+            let v = max(px[i], px[i + 1], px[i + 2])
+            px[i] = v; px[i + 1] = v; px[i + 2] = v; px[i + 3] = v
+        }
+        return ctx.makeImage()
     }
 
     /// The panel's card sits on a recessed module: its grid (and with Increase Contrast its secondary ink) is stronger.
