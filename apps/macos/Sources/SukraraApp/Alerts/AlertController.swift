@@ -15,12 +15,13 @@ enum AlertAction: Equatable {
     case remindAsUsual(AlertSide)
     case muteAll(until: Date)
     case unmuteAll
-    /// A *Mute…* / *Change Time…* reply that isn't a length: nothing changes, the side's notification comes back
+    /// A *Mute* reply that isn't a length: nothing changes, the side's notification comes back
     /// silently (macOS removed it when the action was used).
     case reshow(AlertSide)
-    /// *Log Carbs…* (a low-side notification): Add Treatment opens with Carbs focused and the side's notification comes
-    /// back silently (macOS removed it); the carbs, once saved, quiet the lows like any entry (`muteAfterCarbs`).
-    case logCarbs(AlertSide)
+    /// *Treatment* (any side but no data): Add Treatment opens focused on carbs for the low side, rapid insulin for the
+    /// high side, and the side's notification comes back silently (macOS removed it); the entry, once saved, quiets the
+    /// side like any entry (`muteAfterCarbs` / `muteAfterRapid`).
+    case treatment(AlertSide)
 }
 
 /// Runs the alert rules on this Mac (`SukraraAlerts`) and shows what they decide through the `Notifier`.
@@ -44,11 +45,11 @@ final class AlertController {
     var failedSteps: Set<String> = []
     /// `ui` changed (an alert came up or ended, a mute started or ran out): the widgets redraw the card's badge.
     @ObservationIgnored var onUIChange: (() -> Void)?
-    /// Whether this Mac can add entries now (following with *Can add entries*): the low side's notifications then offer
-    /// *Log Carbs…* (elsewhere Add Treatment couldn't open; the click already opens the panel).
+    /// Whether this Mac can add entries now (following with *Can add entries*): the notifications then offer *Treatment*
+    /// (elsewhere Add Treatment couldn't open; the click already opens the panel).
     @ObservationIgnored var canLog: () -> Bool = { false }
-    /// *Log Carbs…* was chosen: Add Treatment with Carbs focused (`AppDelegate`).
-    @ObservationIgnored var openAddCarbs: (() -> Void)?
+    /// *Treatment* was chosen: Add Treatment focused on what answers the side (`AppDelegate`).
+    @ObservationIgnored var openAddTreatment: ((SukraraAlerts.TreatmentKind) -> Void)?
 
     @ObservationIgnored private var engine: AlertEngine
     @ObservationIgnored private var mirror = AlertMirror()
@@ -224,9 +225,9 @@ final class AlertController {
             handle(.unmuteAll)
         case .reshow(let side):
             reshow(side)
-        case .logCarbs(let side):
+        case .treatment(let side):
             reshow(side)
-            openAddCarbs?()
+            openAddTreatment?(side.mainKind.treatment ?? .carbs)
         }
     }
 
@@ -240,7 +241,7 @@ final class AlertController {
         case .remindAsUsual(let side): AlertLog.remindAsUsual(side)
         case .muteAll(let until): AlertLog.allMuted(until: until, now: now)
         case .unmuteAll: AlertLog.allUnmuted
-        case .reshow, .logCarbs: nil
+        case .reshow, .treatment: nil
         }
     }
 

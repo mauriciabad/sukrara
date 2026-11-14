@@ -145,8 +145,8 @@ final class AppServices: ServiceStarting {
                     return
                 }
                 guard let alerts = self?.alerts else { return }
-                if let low = Notifier.logCarbs(actionID: actionID, side: side) {
-                    alerts.perform(.logCarbs(low))
+                if let treated = Notifier.treatment(actionID: actionID, side: side) {
+                    alerts.perform(.treatment(treated))
                     return
                 }
                 guard

@@ -118,13 +118,13 @@ struct AlertText: Equatable {
     /// Settings › Alerts › Send Test Alert: "Test · Low glucose".
     func testTitle(_ f: AlertFiring) -> String { "\(language == .en ? "Test" : "Prueba") · \(title(f))" }
 
-    // Action titles (HIG title case in English; the ellipsis = more input follows).
-    var mute: String { language == .en ? "Mute…" : "Silenciar…" }
+    // Action titles: HIG title case in English, a short name for the result, never an ellipsis (the owner's review,
+    // 2026-11-14: Treatment opens a window without one, so the ellipsis no longer meant anything).
+    var mute: String { language == .en ? "Mute" : "Silenciar" }
     var muteButton: String { language == .en ? "Mute" : "Silenciar" }
-    var mutePlaceholder: String { language == .en ? "30 min, 1 h, 2 h…" : "30 min, 1 h, 2 h…" }
+    var mutePlaceholder: String { "30 min, 1 h, 2 h" }
     var remindLess: String { language == .en ? "Remind Less" : "Avisar menos" }
     var remindAsUsual: String { language == .en ? "Remind as Usual" : "Avisar como siempre" }
     var unmute: String { language == .en ? "Unmute" : "Reactivar" }
-    var changeTime: String { language == .en ? "Change Time…" : "Cambiar duración…" }
-    var logCarbs: String { language == .en ? "Log Carbs…" : "Registrar hidratos…" }
+    var treatment: String { language == .en ? "Treatment" : "Tratamiento" }
 }

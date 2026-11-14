@@ -111,9 +111,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu.updates = model.updates
         services.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         windows.openPanel = { [weak statusItem] in statusItem?.showPanel() }
-        // a low-side notification's Log Carbs…: only where Add Treatment can open, and it opens on Carbs
+        // a notification's Treatment: only where Add Treatment can open; carbs focused on the low side, rapid on the high
         model.alerts?.canLog = { [weak model] in model.map { AddTreatmentAvailability($0) == .available } ?? false }
-        model.alerts?.openAddCarbs = { [weak self] in self?.fromPanel { $0.openAddTreatment(focus: .carbs) } }
+        model.alerts?.openAddTreatment = { [weak self] answer in
+            self?.fromPanel { $0.openAddTreatment(focus: answer == .carbs ? .carbs : .rapid) }
+        }
         services.permissionChanged = { [weak self] in self?.refreshNotificationPermission() }
         observeSystemTime()
         observeClockStyle()

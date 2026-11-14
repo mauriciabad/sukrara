@@ -12,8 +12,8 @@ protocol AlertNotifying {
     /// `escalated` (#39): the wearer's very low nobody answered there: "· no response", Time Sensitive when entitled.
     func post(_ firing: AlertFiring, sound: Bool, category: String, escalated: Bool)
     func clear(_ group: AlertGroup)
-    /// The silent "Low alerts muted / Until 10:42" note with Unmute and Change Time… (`category`: with Log Carbs… first
-    /// or not, `AlertNotificationIDs.mutedCategory(_:canLog:)`).
+    /// The silent "Low alerts muted / Until 10:42" note with Unmute (`category`: with Treatment first or not,
+    /// `AlertNotificationIDs.mutedCategory(_:canLog:)`).
     func postMuted(_ side: AlertSide, until: Date, category: String)
     func removeMuted(_ side: AlertSide)
     /// Settings › Alerts › Send Test Alert: `kind`'s notification with its sound and alarm level, titled "Test", with
@@ -263,13 +263,14 @@ final class Notifier: AlertNotifying {
         }
     }
 
-    /// The categories (SPEC §2): every alert has *Mute…* (typed length, empty = the default) and *Remind Less* /
-    /// *Remind as Usual*; one whose repeats Remind Less wouldn't slow has Mute… alone. The muted note: *Unmute* +
-    /// *Change Time…*. Each also with *Log Carbs…* first (`logCarbsSuffix`; the low side on a Mac that can add entries),
-    /// which brings Sukrara forward with Add Treatment.
+    /// The categories (SPEC §2), actions in this order: *Remind Less* / *Remind as Usual*, then *Mute* (typed length,
+    /// empty = the default); one whose repeats Remind Less wouldn't slow has Mute alone. The muted note: *Unmute* only
+    /// (the person unmutes and mutes again for another length). Each also with *Treatment* first (`treatmentSuffix`: a
+    /// kind a treatment answers, on a Mac that can add entries), which brings Sukrara forward with Add Treatment. No title
+    /// has an ellipsis (the owner's review, 2026-11-14).
     static func categories(_ text: AlertText) -> Set<UNNotificationCategory> {
-        let log = UNNotificationAction(
-            identifier: AlertNotificationIDs.logCarbsAction, title: text.logCarbs, options: [.foreground])
+        let treatment = UNNotificationAction(
+            identifier: AlertNotificationIDs.treatmentAction, title: text.treatment, options: [.foreground])
         let mute = UNTextInputNotificationAction(
             identifier: AlertNotificationIDs.muteAction, title: text.mute, options: [],
             textInputButtonTitle: text.muteButton, textInputPlaceholder: text.mutePlaceholder)
@@ -277,14 +278,11 @@ final class Notifier: AlertNotifying {
         let usual = UNNotificationAction(
             identifier: AlertNotificationIDs.remindAsUsualAction, title: text.remindAsUsual)
         let unmute = UNNotificationAction(identifier: AlertNotificationIDs.unmuteAction, title: text.unmute)
-        let change = UNTextInputNotificationAction(
-            identifier: AlertNotificationIDs.changeMuteAction, title: text.changeTime, options: [],
-            textInputButtonTitle: text.muteButton, textInputPlaceholder: text.mutePlaceholder)
         let plain: [(String, [UNNotificationAction])] = [
-            (AlertNotificationIDs.alertCategory, [mute, less]),
-            (AlertNotificationIDs.alertRelaxedCategory, [mute, usual]),
+            (AlertNotificationIDs.alertCategory, [less, mute]),
+            (AlertNotificationIDs.alertRelaxedCategory, [usual, mute]),
             (AlertNotificationIDs.alertMuteOnlyCategory, [mute]),
-            (AlertNotificationIDs.mutedCategory, [unmute, change]),
+            (AlertNotificationIDs.mutedCategory, [unmute]),
         ]
         return Set(
             plain.flatMap { id, actions in
@@ -295,7 +293,7 @@ final class Notifier: AlertNotifying {
                     UNNotificationCategory(
                         identifier: id, actions: actions, intentIdentifiers: [], options: options),
                     UNNotificationCategory(
-                        identifier: id + AlertNotificationIDs.logCarbsSuffix, actions: [log] + actions,
+                        identifier: id + AlertNotificationIDs.treatmentSuffix, actions: [treatment] + actions,
                         intentIdentifiers: [], options: options),
                 ]
             })
@@ -309,13 +307,14 @@ final class Notifier: AlertNotifying {
         return silentAlert ? [.list] : [.banner, .sound, .list]
     }
 
-    /// The side whose *Log Carbs…* was chosen (it opens Add Treatment with Carbs focused), or nil for any other answer.
-    static func logCarbs(actionID: String, side rawSide: String?) -> AlertSide? {
-        guard actionID == AlertNotificationIDs.logCarbsAction, let rawSide else { return nil }
+    /// The side whose *Treatment* was chosen (it opens Add Treatment focused on carbs for the low side, rapid insulin
+    /// for the high side), or nil for any other answer.
+    static func treatment(actionID: String, side rawSide: String?) -> AlertSide? {
+        guard actionID == AlertNotificationIDs.treatmentAction, let rawSide else { return nil }
         return AlertSide(rawValue: rawSide)
     }
 
-    /// The user's answer to a notification as an alert action, or nil (a tap on the body, an unknown side). Mute… with
+    /// The user's answer to a notification as an alert action, or nil (a tap on the body, an unknown side). Mute with
     /// nothing typed mutes for the default length; a typed length is clamped to the longest allowed; typed text that
     /// isn't a length changes nothing and shows the notification again (`reshow`).
     static func action(actionID: String, side rawSide: String?, typed: String?, settings: AlertSettings)
@@ -323,7 +322,7 @@ final class Notifier: AlertNotifying {
     {
         guard let rawSide, let side = AlertSide(rawValue: rawSide) else { return nil }
         switch actionID {
-        case AlertNotificationIDs.muteAction, AlertNotificationIDs.changeMuteAction:
+        case AlertNotificationIDs.muteAction:
             let input = typed?.trimmingCharacters(in: .whitespaces) ?? ""
             let minutes = input.isEmpty ? settings.notificationActions.muteMin : Durations.parse(input)
             guard let minutes, minutes > 0 else { return .reshow(side) }

@@ -215,43 +215,54 @@ final class RecordingWake: WakeScheduling {
         #expect(notifier.calls == [.muted(.low)])
     }
 
-    /// #194: *Log Carbs…* opens Add Treatment and the low comes back silently (macOS removed it); nothing else changes.
-    @Test func logCarbsOpensAddTreatmentAndShowsTheAlertAgainSilently() throws {
+    /// #194: *Treatment* on a low opens Add Treatment on carbs and the low comes back silently (macOS removed it);
+    /// nothing else changes.
+    @Test func treatmentOpensAddTreatmentAndShowsTheAlertAgainSilently() throws {
         let c = controller()
         c.canLog = { true }
-        var opened = 0
-        c.openAddCarbs = { opened += 1 }
+        var opened: [SukraraAlerts.TreatmentKind] = []
+        c.openAddTreatment = { opened.append($0) }
         c.reading(reading(60, rate: -0.5))
         guard case .post(.low, let id, true, let category)? = notifier.posts.first else {
             Issue.record("no low posted: \(notifier.calls)")
             return
         }
-        #expect(category == AlertNotificationIDs.alertCategory + AlertNotificationIDs.logCarbsSuffix)
+        #expect(category == AlertNotificationIDs.alertCategory + AlertNotificationIDs.treatmentSuffix)
         let before = store.state
         notifier.calls = []
-        let side = try #require(Notifier.logCarbs(actionID: AlertNotificationIDs.logCarbsAction, side: "low"))
-        c.perform(.logCarbs(side))
-        #expect(opened == 1)
+        let side = try #require(Notifier.treatment(actionID: AlertNotificationIDs.treatmentAction, side: "low"))
+        c.perform(.treatment(side))
+        #expect(opened == [.carbs])
         #expect(notifier.calls == [.post(.low, id: id, sound: false, category: category)])
         #expect(store.state == before && c.ui.isAlerting)
-        #expect(AlertController.logLine(.logCarbs(.low), settings: c.settings, now: clock.now) == nil)
+        #expect(AlertController.logLine(.treatment(.low), settings: c.settings, now: clock.now) == nil)
     }
 
-    /// The muted note keeps *Log Carbs…* first on a Mac that can add entries; without it, the plain categories.
-    @Test func logCarbsOnlyWhereThisMacCanAddEntries() {
+    /// *Treatment* on a high opens Add Treatment on rapid insulin (the owner's review, 2026-11-14).
+    @Test func treatmentOnAHighOpensRapidInsulin() {
+        let c = controller()
+        var opened: [SukraraAlerts.TreatmentKind] = []
+        c.openAddTreatment = { opened.append($0) }
+        c.perform(.treatment(.high))
+        c.perform(.treatment(.risingFast))
+        #expect(opened == [.rapidInsulin, .rapidInsulin])
+    }
+
+    /// The muted note keeps *Treatment* first on a Mac that can add entries; without it, the plain categories.
+    @Test func treatmentOnlyWhereThisMacCanAddEntries() {
         let c = controller()
         c.reading(reading(60, rate: -0.5))
         guard case .post(.low, _, true, let category)? = notifier.posts.first else {
             Issue.record("no low posted: \(notifier.calls)")
             return
         }
-        #expect(!category.hasSuffix(AlertNotificationIDs.logCarbsSuffix))
+        #expect(!category.hasSuffix(AlertNotificationIDs.treatmentSuffix))
         c.perform(.mute(.low, minutes: 30))
         #expect(notifier.mutedCategories.last == AlertNotificationIDs.mutedCategory)
         c.canLog = { true }
         c.perform(.reshow(.low))
         #expect(
-            notifier.mutedCategories.last == AlertNotificationIDs.mutedCategory + AlertNotificationIDs.logCarbsSuffix)
+            notifier.mutedCategories.last == AlertNotificationIDs.mutedCategory + AlertNotificationIDs.treatmentSuffix)
     }
 
     @Test func aMirroredAlertComesBackSilentlyAfterRemindLessAndAnUnreadableReply() throws {

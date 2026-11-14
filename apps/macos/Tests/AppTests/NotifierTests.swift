@@ -51,52 +51,75 @@ final class FakeCenter: NotificationPosting {
             "app.mauri.sukrara.alert", "app.mauri.sukrara.alert.relaxed", "app.mauri.sukrara.alert.muteOnly",
             "app.mauri.sukrara.muted",
         ]
-        #expect(ids == Set(plain + plain.map { $0 + ".logCarbs" }))
-        let muted = Notifier.categories(AlertText(language: .en)).first { $0.identifier == "app.mauri.sukrara.muted" }
+        #expect(ids == Set(plain + plain.map { $0 + ".treatment" }))
+        let categories = Notifier.categories(AlertText(language: .en))
+        func actions(_ id: String) -> [String]? { categories.first { $0.identifier == id }?.actions.map(\.identifier) }
+        // the order everywhere: Remind less / as usual, then Mute; the muted note only Unmute (no Change time)
         #expect(
-            muted?.actions.map(\.identifier) == [
-                AlertNotificationIDs.unmuteAction, AlertNotificationIDs.changeMuteAction,
+            actions("app.mauri.sukrara.alert") == [
+                AlertNotificationIDs.remindLessAction, AlertNotificationIDs.muteAction,
             ])
+        #expect(
+            actions("app.mauri.sukrara.alert.relaxed") == [
+                AlertNotificationIDs.remindAsUsualAction, AlertNotificationIDs.muteAction,
+            ])
+        #expect(actions("app.mauri.sukrara.muted") == [AlertNotificationIDs.unmuteAction])
     }
 
-    /// #194: the `.logCarbs` categories have *Log Carbs…* first, which brings Sukrara forward, then the same actions.
-    @Test func logCarbsComesFirstAndOpensSukrara() throws {
+    /// The owner's review, 2026-11-14: no notification action has an ellipsis, in English or Spanish.
+    @Test func noActionTitleHasAnEllipsis() {
+        for lang in [AlertText.Language.en, .es] {
+            for category in Notifier.categories(AlertText(language: lang)) {
+                for action in category.actions {
+                    #expect(!action.title.contains("…") && !action.title.contains("..."), "\(action.title)")
+                }
+            }
+        }
+    }
+
+    /// The `.treatment` categories have *Treatment* first, which brings Sukrara forward, then the same actions.
+    @Test func treatmentComesFirstAndOpensSukrara() throws {
         let categories = Notifier.categories(AlertText(language: .en))
-        let alert = try #require(categories.first { $0.identifier == "app.mauri.sukrara.alert.logCarbs" })
+        let alert = try #require(categories.first { $0.identifier == "app.mauri.sukrara.alert.treatment" })
         #expect(
             alert.actions.map(\.identifier) == [
-                AlertNotificationIDs.logCarbsAction, AlertNotificationIDs.muteAction,
-                AlertNotificationIDs.remindLessAction,
+                AlertNotificationIDs.treatmentAction, AlertNotificationIDs.remindLessAction,
+                AlertNotificationIDs.muteAction,
             ])
-        #expect(alert.actions[0].title == "Log Carbs…" && alert.actions[0].options.contains(.foreground))
-        let muted = try #require(categories.first { $0.identifier == "app.mauri.sukrara.muted.logCarbs" })
+        #expect(alert.actions[0].title == "Treatment" && alert.actions[0].options.contains(.foreground))
+        #expect(alert.actions[2].title == "Mute")
+        let muted = try #require(categories.first { $0.identifier == "app.mauri.sukrara.muted.treatment" })
         #expect(
             muted.actions.map(\.identifier) == [
-                AlertNotificationIDs.logCarbsAction, AlertNotificationIDs.unmuteAction,
-                AlertNotificationIDs.changeMuteAction,
+                AlertNotificationIDs.treatmentAction, AlertNotificationIDs.unmuteAction,
             ])
         let es = Notifier.categories(AlertText(language: .es)).first { $0.identifier == alert.identifier }
-        #expect(es?.actions.first?.title == "Registrar hidratos…")
+        #expect(es?.actions.first?.title == "Tratamiento")
+        #expect(es?.actions.last?.title == "Silenciar")
     }
 
-    /// Only the kinds carbs answer, only on a Mac that can add entries; the answer maps back to its side.
-    @Test func logCarbsOnlyOnTheLowSide() {
+    /// Every kind a treatment answers (both sides, not no data), only on a Mac that can add entries; the answer maps
+    /// back to its side.
+    @Test func treatmentOnBothSidesButNoData() {
         let s = AlertSettings()
-        let suffix = AlertNotificationIDs.logCarbsSuffix
+        let suffix = AlertNotificationIDs.treatmentSuffix
         for kind in AlertKind.allCases {
             let logs = AlertNotificationIDs.category(for: kind, s, relaxed: false, canLog: true).hasSuffix(suffix)
-            #expect(logs == [.veryLow, .low, .fallingFast].contains(kind), "\(kind)")
+            #expect(logs == (kind != .noData), "\(kind)")
             #expect(!AlertNotificationIDs.category(for: kind, s, relaxed: false, canLog: false).hasSuffix(suffix))
         }
         #expect(
             AlertNotificationIDs.category(for: .low, s, relaxed: true, canLog: true)
-                == "app.mauri.sukrara.alert.relaxed.logCarbs")
+                == "app.mauri.sukrara.alert.relaxed.treatment")
         #expect(AlertNotificationIDs.mutedCategory(.fallingFast, canLog: true).hasSuffix(suffix))
-        #expect(AlertNotificationIDs.mutedCategory(.high, canLog: true) == AlertNotificationIDs.mutedCategory)
-        #expect(Notifier.logCarbs(actionID: AlertNotificationIDs.logCarbsAction, side: "low") == .low)
-        #expect(Notifier.logCarbs(actionID: AlertNotificationIDs.muteAction, side: "low") == nil)
+        #expect(AlertNotificationIDs.mutedCategory(.high, canLog: true).hasSuffix(suffix))
+        #expect(AlertNotificationIDs.mutedCategory(.noData, canLog: true) == AlertNotificationIDs.mutedCategory)
+        #expect(Notifier.treatment(actionID: AlertNotificationIDs.treatmentAction, side: "low") == .low)
+        #expect(Notifier.treatment(actionID: AlertNotificationIDs.treatmentAction, side: "high") == .high)
+        #expect(Notifier.treatment(actionID: AlertNotificationIDs.muteAction, side: "low") == nil)
         #expect(
-            Notifier.action(actionID: AlertNotificationIDs.logCarbsAction, side: "low", typed: nil, settings: s) == nil)
+            Notifier.action(actionID: AlertNotificationIDs.treatmentAction, side: "low", typed: nil, settings: s) == nil
+        )
     }
 
     @Test func alertTextIsSelfContainedInEnglishAndSpanish() {
@@ -211,11 +234,11 @@ final class FakeCenter: NotificationPosting {
             Notifier.action(actionID: IDs.muteAction, side: "high", typed: "1 h", settings: s)
                 == .mute(.high, minutes: 60))
         #expect(
-            Notifier.action(actionID: IDs.changeMuteAction, side: "low", typed: "45", settings: s)
+            Notifier.action(actionID: IDs.muteAction, side: "low", typed: "45", settings: s)
                 == .mute(.low, minutes: 45))
         #expect(Notifier.action(actionID: IDs.muteAction, side: "low", typed: "soon", settings: s) == .reshow(.low))
         #expect(
-            Notifier.action(actionID: IDs.changeMuteAction, side: "high", typed: "0", settings: s) == .reshow(.high))
+            Notifier.action(actionID: IDs.muteAction, side: "high", typed: "0", settings: s) == .reshow(.high))
         let longest = Int(AlertLimits.longestMuteMin)
         #expect(
             Notifier.action(actionID: IDs.muteAction, side: "low", typed: "\(longest + 600)", settings: s)
