@@ -605,6 +605,27 @@ Found and fixed on the emulator: the card's title TextView took a RemoteViews ca
 System UI refuses, which crashed the foreground service (`BadForegroundServiceNotificationException`); it's in the
 layout now, and `OneNotificationTest` inflates every view of the card with an alert as System UI does.
 
+### 9.3 Alert-safety review (2026-11-14)
+
+An independent read of the code and the emulators (Android 17 API 37.0, Android 16 QPR2 API 36.1; `dumpsys
+notification`, `logcat -b events notification_alert`), with what it changed:
+
+| Found | What the person got | Now |
+|---|---|---|
+| The full-screen intent rode on an update of the glucose notification. System UI starts one only in `onEntryAdded` (AOSP `HeadsUpCoordinator`); on Android 16 QPR2 a very low *like an alarm* with the screen off rang but never opened full screen (Android 17 did) | A very low at night: sound only, no screen | An alarm-level ring that may open full screen is the alert's own notification for the 10 s (added: full screen on both), the glucose notification shows it silently and carries it on (`GlucoseAlertPresenter`, `OneNotificationTest`) |
+| Two rings on one reading: the runtime posts the one that must be heard first, the presenter put the newest in front | *Falling fast* as the title over *Also: Very low glucose*, the notification moved off the alarm channel (Android had muted the second ring: `MUTE_REASON_RATE_LIMIT`) | The first stays in front on its channel, the second is a line |
+| The glucose notification's channel turned off: Android drops every post on it | A ring stayed as it rang: never updated, muted or cleared | The alerts are notifications of their own then (as *Alerts on my watch*), what is up moves there silently |
+| The card without its pictures (screen off: nothing is drawn) titled only *Low glucose* | No value on the lock screen until the redraw | `62 ↓ · Low glucose · Eat carbs`, as the text notification |
+
+Checked and sound: the ring's channel and flags (no only-alert-once on a ring; the 10 s posts `MUTE_REASON_SILENT_UPDATE`
+and the sound plays on; `glucose.live` is IMPORTANCE_DEFAULT without sound, so the window's end and a Mute stop it,
+and the notification stays on the lock screen where silent ones are hidden); the heads-up of an update (System UI's
+`shouldHunAgain`: not only-alert-once); Android's update rate limit (5 a second, an average: the gate allows one a
+second plus a ring); the post lock (a post built before a ring never lands after it); the swipe of an older firing;
+the muted note; watch mode; the plain stand-in; `:core:alerts` and the scenarios untouched; the debug `ALERTS` and the
+3-day backfill only in `src/debug`. The *Time left* label of the muted metric is the code's; the
+`v2-a-muted-android37` picture predates it (it shows *Low alerts muted*).
+
 Not covered: a real watch (watch mode's buzz), the Pixel's own System UI, Do Not Disturb and the full-screen intent
 locked on a phone (QA.md Q5 lists them for the owner's debug build), and the emulators had no audio (the ring is read
 from `dumpsys notification`: the channel and the flags).

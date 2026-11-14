@@ -140,12 +140,18 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
     the channel's (one notification has one channel at a time, but the channel can change with every post). For the
     **10 s** after a ring (the value guard above) every post stays on that channel, only alerting once (a switch to the
     silent channel stops a sound still playing); then it is posted again on the silent channel, still showing the alert.
-    A Mute, a clear or a swipe posts on the silent channel at once (the sound stops). The full-screen intent of an
-    alarm-level kind goes with a ring that comes from silent (Android starts it only then). **The swipe** answers the
-    alert (§4) and hides it until its next ring: the glucose notification comes back at once on the silent channel
-    without it (a re-post on the alert's channel would ring again). Two groups at once: the ring that is due is shown
-    and takes the channel, the other is a line ("Also: Falling fast") and rings through the same notification on its
-    turn. With the monitoring service dead the alert's ring posts the same id itself (the service adopts it on its
+    A Mute, a clear or a swipe posts on the silent channel at once (the sound stops). **Full screen**: Android starts a
+    full-screen intent only for a notification it adds (Android 16 QPR2 never for an update, measured), and the glucose
+    notification is always there, so an alarm-level ring that may open full screen is the alert's own notification
+    (its channel, sound, buttons, full-screen intent) for the 10 s, while the glucose notification shows the alert
+    silently and carries it on once that one goes; a Mute, a clear or a swipe of either takes it at once. **The swipe**
+    answers the alert (§4) and hides it until its next ring: the glucose notification comes back at once on the silent
+    channel without it (a re-post on the alert's channel would ring again). Two groups at once: the ring that is due is
+    shown and takes the channel, the other is a line ("Also: Falling fast") and rings through the same notification on
+    its turn; two rings of one reading (the ring order above puts the one that must be heard first) keep the first in
+    front on its channel, the second a line (Android would mute it anyway: one sound per app per second). The person
+    turned the glucose notification's channel off: Android drops every post on it, so the alerts are notifications of
+    their own then, as with *Alerts on my watch* (below), what is up moved there at once, silently. With the monitoring service dead the alert's ring posts the same id itself (the service adopts it on its
     start). **Alerts on my watch** (Android setting `alerts.watch`, off by default, suggested when a watch's companion
     app is installed): Wear OS never bridges an ongoing notification, so then every alert is also a notification of its
     own (as before #36: one slot per group, these rules), and the glucose notification shows no alert. The plain alert

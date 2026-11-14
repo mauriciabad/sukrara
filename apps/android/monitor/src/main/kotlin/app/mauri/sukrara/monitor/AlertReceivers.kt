@@ -75,11 +75,9 @@ class AlertActionReceiver : BroadcastReceiver() {
                     val firing = intent.getStringExtra(FIRING)
                     runtime.acknowledge(kind)
                     runtime.dismissed(kind, firing)
-                    if (intent.getBooleanExtra(GLUCOSE, false)) {
-                        AlertKind.fromWire(kind)?.let { module.presenter.swiped(it, firing) }
-                    } else {
-                        NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
-                    }
+                    if (!intent.getBooleanExtra(GLUCOSE, false)) NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
+                    // seen: the glucose notification drops it too (a full-screen ring's own notification swiped)
+                    AlertKind.fromWire(kind)?.let { module.presenter.swiped(it, firing) }
                 }
             }
         }

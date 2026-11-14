@@ -214,14 +214,21 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
     by side (low + falling fast are two messages).
   - **One notification on Android** (docs/36; the owner, 2026-11-14: "they basically show the same content
     duplicated"). The glucose notification IS the alert while one is up: each ring re-posts it on the kind's channel
-    (sound, vibration, alarm volume, Do Not Disturb, full screen when an alarm comes from silent), the 10 s after it stay
-    on that channel, then it is silent with the alert still on it; a Mute, a clear or a swipe goes silent at once; the
-    swipe is the answer and hides the alert until the next ring (the notification comes back at once without it). Two
-    groups: the ring that is due in front, the other a line (*Also: Falling fast*). **Alerts on my watch** (Settings ›
+    (sound, vibration, alarm volume, Do Not Disturb), the 10 s after it stay on that channel, then it is silent with the
+    alert still on it; a Mute, a clear or a swipe goes silent at once; the swipe is the answer and hides the alert until
+    the next ring (the notification comes back at once without it). An alarm-level ring that may open full screen is
+    the alert's own notification for those 10 s (Android starts a full-screen intent only for a notification it adds:
+    Android 16 never for an update of the glucose notification, which is always there), the glucose notification shows
+    the alert silently and carries it on once that one goes (a Mute or a swipe takes it at once). Two groups: the ring
+    that is due in front, the other a line (*Also: Falling fast*); two rings on one reading keep the one that must be
+    heard in front, on its channel (the other would be muted by Android anyway). **Alerts on my watch** (Settings ›
     Alerts, off by default; its summary suggests it when the Wear OS, Pixel Watch or Galaxy Wearable app is on the
     phone): Wear OS never bridges an ongoing notification, so each alert is then also a notification of its own (these
-    rules, one slot per group) and the glucose notification carries none. The plain alert and *Monitoring problems*
-    stay separate (the safety net). Pictures: docs/36 §9. The Mac has only the alert (the menu bar shows the value).
+    rules, one slot per group) and the glucose notification carries none. The same when the person turned the glucose
+    notification's channel off (Android drops every post on it): what is up moves there at once, silently. The plain
+    alert and *Monitoring problems* stay separate (the safety net). Without the card's pictures (the screen off, a
+    drawing failure) the title says the value with the alert (`62 ↓ · Low glucose · Eat carbs`). Pictures: docs/36 §9.
+    The Mac has only the alert (the menu bar shows the value).
   - Mac: a post without sound is `.passive` (it replaces the list's entry, never a second banner; `willPresent` lists it
     only while Sukrara is in front); the alert categories carry `.customDismissAction`, so a dismissal or click is known.
     A test build couldn't be given notification rights on the development Mac (macOS refused a throwaway app with

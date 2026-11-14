@@ -154,7 +154,8 @@ class AlertsModule(
         GlucoseAlertPresenter(
             notifier,
             glucose ?: NoGlucose,
-            watch = { glucose == null || watchNow.value },
+            // the glucose notification's channel turned off: it can't carry them either
+            watch = { glucose == null || watchNow.value || !glucose.canCarry() },
         )
 
     /** THE alert runtime of this process; also every surface's [AlertControls]. */

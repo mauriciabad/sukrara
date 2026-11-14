@@ -135,7 +135,10 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
       Update *Mute* opens the lengths sheet over the lock screen (15m 30m 1h 2h; TalkBack reads "Mute for 30 min"); on the
       card the chips; muted: *Low alerts muted* with *Time left* / the pill, only *Treatment* and *Unmute*; swipe it
       during a ring: it comes straight back on `glucose.live` without the alert and doesn't ring again; an alarm-level kind
-      (very low) locked: full screen on the first ring, not on a re-ring within 10 s. Graph: the value smaller than the
+      (very low) locked, screen off, on Android 16 and 17: full screen on the first ring (its own notification on
+      `alert_alarm.very_low`, ids 1000+, gone 10 s later with the glucose notification carrying the alert); a very low and
+      falling fast on one reading: *Very low glucose* in front on its channel, *Also: Falling fast*; the glucose channel
+      turned off in Android's settings during an alert: the alert shows as a notification of its own. Graph: the value smaller than the
       rings, two rings expanded and collapsed, no *Low* word beside a level alert's title, *Card in the range colour*
       keeps every pill legible (white / black on red).
 - [ ] Settings › Status bar picker: Chip / Graph side by side with their pictures, one radio group with TalkBack; with

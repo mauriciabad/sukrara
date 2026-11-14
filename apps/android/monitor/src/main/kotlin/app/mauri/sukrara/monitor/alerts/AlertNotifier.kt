@@ -304,6 +304,9 @@ class AlertNotifier(
         clearSlot(group)
     }
 
+    /** Whether Android lets an alarm-level alert open full screen now (the person can turn it off per app). */
+    fun canFullScreen(): Boolean = runCatching { nm.canUseFullScreenIntent() }.getOrDefault(false)
+
     /** [group]'s separate notification goes (a stand-in once the alert itself shows); a sound playing goes on. */
     fun clearSlot(group: AlertGroup) {
         NotificationGroups.cancel(ctx, idOf(group), NotificationGroups.Group.ALERTS)
