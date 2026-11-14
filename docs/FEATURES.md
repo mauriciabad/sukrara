@@ -200,7 +200,8 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
     phone and the Mac wake for those steps. The header's age (Android) is the reading's. The look is the card's
     (registered glyph surface `alert-notification`, `GlucoseCard.face`).
   - **Between its alerts the alert stays up.** Back in range (by the margin) it goes; out of range again within the
-    episode it is back at once without sound, and rings at its repeat. A milder kind replaces a worse one silently
+    episode it is back at once without sound, and rings at its repeat; the same when a trend quiet (falling / rising
+    back into range, #193) ends while still out of range and no ring is due (repeat *once* included). A milder kind replaces a worse one silently
     (very low → low, extremely high → very high); a worse one rings at once. Nothing before an episode's first alert.
   - **No data clears the level and rate alerts** once its minutes pass (its own body has the last value and its time).
   - **One slot per group** (level, rate, no data): a newer alert of the group replaces the older; the groups stay side

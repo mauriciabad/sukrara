@@ -161,6 +161,24 @@ import UserNotifications
         #expect(notifier.values == [65])
     }
 
+    /// #193 + #195: a rising low's quiet takes the alert away; stalled while still low (repeat once: nothing would ring
+    /// again), it is back at once without sound.
+    @Test func aRisingLowThatStallsIsShownAgainSilentlyAlsoWithRepeatOnce() {
+        var s = AlertSettings()
+        s.rules[.low]?.repeatMin = 0
+        let c = controller(s)
+        for v in [58, 59, 60, 61] {
+            c.reading(reading(v))
+            clock.advance(by: 60)
+        }
+        #expect(notifier.calls.last == .clear(.level), "rising back into range: quiet")
+        c.reading(reading(61))
+        clock.advance(by: 60)
+        c.reading(reading(61))
+        #expect(notifier.values == [58, 61])
+        #expect(soundOfLastPost() == false)
+    }
+
     @Test func veryLowGettingBetterIsReplacedByTheLowSilently() {
         let c = controller()
         c.reading(reading(56))

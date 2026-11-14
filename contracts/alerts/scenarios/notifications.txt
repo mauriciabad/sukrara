@@ -69,3 +69,35 @@ mirror
  3  glucose 66   => show Low glucose
  5               => Low glucose
  6
+
+scenario A rising low that stalls before its repeat is due: back on screen at once, silently; it rings at the repeat  # #193
+shows
+settings low.repeat=10
+ 0  glucose 58   => Low glucose
+ 1  glucose 59
+ 2  glucose 60
+ 3  glucose 61   => clear low                            # rising back into range: quiet (#193)
+ 5               => show Low glucose                     # stalled at 61, still low: on screen again, no sound
+10               => Low glucose                          # its repeat
+11
+
+scenario A rising low that stalls with its repeat set to once: back on screen silently and it stays  # #193
+shows
+settings low.repeat=0
+ 0  glucose 58   => Low glucose
+ 1  glucose 59
+ 2  glucose 60
+ 3  glucose 61   => clear low                            # rising back into range: quiet (#193)
+ 5               => show Low glucose                     # stalled, still low: without it nothing would be up again
+15
+
+scenario A high falling back into range that stalls before its repeat: back on screen at once, silently  # #193
+shows
+ 0  glucose 200  => High glucose
+ 1  glucose 196
+ 2  glucose 192
+ 3  glucose 188  => clear high                           # falling back into range: quiet
+ 4  glucose 186
+ 6               => show High glucose                    # stalled at 186, still high: on screen again, no sound
+15               => High glucose
+16

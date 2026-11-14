@@ -113,7 +113,8 @@ extremely high) alerts at once. The card shows "LO" / "HI" (scenarios `levels.tx
     reading came and its value (`Last reading 14:05 · 120 mg/dL`): a time never goes out of date.
   - **Between its alerts the episode's alert stays on screen.** A reading back in range (by the margin) removes it as
     before; if the side is out of range again before the episode ends, it is shown again **at once, without sound**
-    (`show`), and rings at its repeat as before. A milder kind of the same side replaces a worse one the same way
+    (`show`), and rings at its repeat as before. The same when a trend quiet (falling or rising back into range,
+    #193) ends while the side still matches and no ring is due (with the repeat set to once, it would never be up again). A milder kind of the same side replaces a worse one the same way
     (very low → low, extremely high → very high: shown silently at once; before, nothing was up until the repeat).
     Nothing is shown before an episode's first alert (a first alert that waits, §1, stays a wait).
   - **Seen = away until the next ring.** A swipe or a tap (Android) / a dismissal or a click (Mac) takes it away; an

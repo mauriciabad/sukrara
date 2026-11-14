@@ -183,6 +183,19 @@ class AlertLiveNotificationTest {
         assertTrue(level()!!.silent())
     }
 
+    /** #193 + #195: a rising low's quiet takes the alert away; stalled while still low, it is back at once, silently. */
+    @Test fun `a rising low that stalls is shown again without sound, also with its repeat set to once`() {
+        val s = AlertSettings()
+        settings(s.withRule(AlertKind.LOW, s.rule(AlertKind.LOW).copy(repeatMin = 0)))
+        listOf(58, 59, 60, 61).forEachIndexed { i, v -> reading(v, i * 60L) }
+        assertNull("rising back into range: quiet", level())
+        reading(61, 240)
+        reading(61, 300)
+        assertNotNull("stalled, still low: on screen again", level())
+        assertTrue(level()!!.silent())
+        assertEquals("61 mg/dL ○", level()!!.text().toString())
+    }
+
     @Test fun `no data takes the low away and says when the last reading came`() {
         val s = AlertSettings()
         settings(s.withRule(AlertKind.NO_DATA, s.rule(AlertKind.NO_DATA).copy(threshold = 10.0)))
