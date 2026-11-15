@@ -247,7 +247,7 @@ class SetupFlowTest {
         runBlocking { module.continueExtras() }
         tap(OPEN, scroll = false)
         shows("Optional step 1 of 3")
-        shows("Glucose notification")
+        shows("Status bar & notification")
     }
 
     @Test
@@ -286,7 +286,7 @@ class SetupFlowTest {
         walkTheEssentials()
         shows("Insulin pens")
         tap("Set up the rest")
-        shows("Glucose notification")
+        shows("Status bar & notification")
         tap("Continue")
         shows(
             "With a smart insulin pen such as NovoPen 6 or NovoPen Echo Plus, hold it to the back of the phone after you inject: Sukrara logs the dose.",
@@ -335,7 +335,7 @@ class SetupFlowTest {
         port.answer = RootAccess.Granted
         tap("Check again")
         // root: the walk goes on, the status bar text already picked
-        shows("Glucose notification")
+        shows("Status bar & notification")
         compose.onNodeWithText("Status bar text").assertIsSelected()
         assertEquals(NotificationStyle.Text, runBlocking { module.notificationStyle.first() })
         // the person can still choose another one
@@ -354,7 +354,7 @@ class SetupFlowTest {
         walkTheEssentials()
         tap("Set up the rest")
         tap("It isn't rooted")
-        shows("Glucose notification")
+        shows("Status bar & notification")
         compose.onNodeWithText("Chip").assertIsSelected()
         assertEquals(true, SetupStep.Root in recorded().completed)
     }
@@ -366,7 +366,7 @@ class SetupFlowTest {
         host(open = true)
         walkTheEssentials()
         tap("Set up the rest")
-        shows("Glucose notification")
+        shows("Status bar & notification")
         assertEquals(1, port.asked)
         compose.onNodeWithText("Status bar text").assertIsSelected()
     }
