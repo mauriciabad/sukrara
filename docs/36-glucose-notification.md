@@ -765,8 +765,37 @@ choice with root picked.
 
 | Picture | What |
 |---|---|
-| ![](img/notification/v4-a-treatments-android37.png) | Live Update on 17: no treatment (*In range 1d*); rapid 4 u (*4u* · *1m*); carbs 30 g (*30g* · *1m*); both (*4u · 30g* · *24m*, the value high); carbs in the dark theme |
+| (Live Update after treatments) | Replaced by `v5-a-treatments-android37` (§12: the kind before the amount) |
 | ![](img/notification/v4-settings-glucose-notification.png) | Settings › Glucose notification: chip (light), notification icon (light), status bar text with root (dark) |
 | ![](img/notification/v4-setup-root-notification.png) | Setup: *Root*; after *Yes* on a phone without usable root; *Glucose notification* without root; with root granted, *Status bar text* picked |
 | ![](img/notification/v4-separate-alerts-icon-android37.png) | Settings › Alerts › *Separate alert notifications* with its new icon |
+
+## 12. Round 5: which insulin
+
+*2026-11-15, the owner on `v4-a-treatments`: "when the title is just insulin ("4u") it is unclear what type of insulin
+it is. I understand that when multiple insulins or carbs may be too long … it would ellipsis and be counter productive,
+but we should try our best."*
+
+Measured first (Android 17 emulator, 1080 px at 420 dpi, system font): with three metrics each label gets a third of
+the card, about 14 characters. *Rapid 4u · 30g* fits; *Rapid 12.5u · 120g* is cut to *Rapid 12.5u ·…* and the Spanish
+*Rápida 12.5u · 120g* to *Rápida 12.5u…*: the carbs are lost again.
+
+| Option | Clear | Fits | Against |
+|---|---|---|---|
+| The kind before the amount, *Rapid 4u*, *Carbs 30g*, the pair *Rapid 4u · 30g* | Yes: the app's own words (Add treatment's *Rapid*, *Carbs*); grams are only ever carbs, so they need no word | Small pairs | A large pair is cut |
+| Emoji (💉 4u, 🍞 30g) | Partly | Yes | Not the app's icons (a metric is text only, no picture: §10), drawn differently on every phone, TalkBack reads "syringe" |
+| Initials (*R 4u*) | No | Yes | A code to learn |
+| Amount as the value, kind and age as the label (*4u* · *Rapid · 12m ago*) | Yes | Mostly | A label that changes every minute; reverses #206 and the ring |
+| Cut the kind when long (*12.5u · 120g*) | No | Yes | The owner's point again |
+| Cut the carbs when long (*Rapid 12.5u*) | Half | Yes | Round 4's lost carbs again |
+| **A pair that doesn't fit: a metric each** (*Rapid 12.5u* · *30m*, *Carbs 120g* · *30m*) | Yes | Yes | The 1-day ring gives way while both run (≤ 3 h; it moves little in that time and stays on home and the card) |
+
+Chosen: the kind before the amount everywhere (`slot_last_rapid` *Rapid* / *Rápida*, the badge's *Carbs* / *Hidratos*),
+the pair in one label while it fits (≤ 14 characters, `Slots.LABEL_MAX`) and a metric each when it doesn't
+(`GlucoseCard.slotTexts`, the one place that turns the card's slots into text; `SlotTextTest` written first). Only
+Android's Live Update writes these labels: the Mac has no text-only slot place.
+
+| Picture | What |
+|---|---|
+| ![](img/notification/v5-a-treatments-android37.png) | Live Update on 17: *Rapid 4u*; *Carbs 30g*; *Rapid 4u · 30g*; a large pair as a metric each, English and Spanish; carbs in the dark theme |
 

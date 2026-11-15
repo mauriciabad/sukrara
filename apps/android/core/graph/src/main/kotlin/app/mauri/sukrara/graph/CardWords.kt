@@ -30,6 +30,7 @@ class CardWords private constructor(
     val slotAverage: String = r.getString(R.string.slot_average_short)
     val slotGmi: String = r.getString(R.string.slot_gmi_short)
     val slotCv: String = r.getString(R.string.slot_cv_short)
+    val lastRapid: String = r.getString(R.string.slot_last_rapid)
     val tirInRange: String = r.getString(R.string.slot_tir_in_range)
     val tirVeryGood: String = r.getString(R.string.slot_tir_very_good)
     val noReadingsYet: String = r.getString(R.string.card_no_readings_yet)

@@ -32,6 +32,8 @@
     <string name="slot_average_short">avg</string>
     <string name="slot_gmi_short">GMI</string>
     <string name="slot_cv_short">CV</string>
+    <!-- The Live Update's last-treatment label: the kind of insulin before its amount ("Rapid 4u"); Android only -->
+    <string name="slot_last_rapid">Rapid</string>
     <string name="slot_tir_in_range">in range</string>
     <string name="slot_tir_very_good">very good</string>
     <string name="card_no_readings_yet">No readings yet</string>

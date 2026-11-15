@@ -1626,7 +1626,7 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   alert's title already says the trend) and the reading's time once late (never *Now*, the unit, the range or the title's
   words: the owner, 2026-11-14); labels in sentence case; while a side is muted its countdown (*Time left*, a timer metric); then the card's slots as
   words up to three metrics (`GlucoseCard.slotTexts`, the notification card's choice and order: *74%* · *in range 1d*,
-  after a treatment the time since it labelled with the amount, *12m* · *4u*, *30g*, and with the carbs riding along running insulin *4u · 30g* (round 4 of docs/36: they were lost)), only while the value is a reading.
+  after a treatment the time since it labelled with the kind and the amount, *12m* · *Rapid 4u* / *Carbs 30g* (es *Rápida*, *Hidratos*), and with the carbs riding along running insulin *Rapid 4u · 30g* (grams are only ever carbs); a pair whose label would be cut (over 14 characters: *Rapid 12.5u · 120g*, most Spanish pairs) gets a metric each, *Rapid 12.5u* and *Carbs 120g*, the 1-day ring giving way while they run (docs/36 §11, §12)), only while the value is a reading.
 - Settings › **Glucose notification** (docs/36 §11; was *Status bar*, which hid the notification's main choice): one
   choice, the same component as setup's (`GlucoseNotificationChoice`, `:core:designsystem`): a picture of the chosen
   one (the status bar and the notification it gives, what shows the glucose highlighted; fades through on a change, cut

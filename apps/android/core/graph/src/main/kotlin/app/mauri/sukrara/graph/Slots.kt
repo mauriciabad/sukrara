@@ -114,8 +114,8 @@ object Slots {
 
     /**
      * A slot as words for a text-only place (value, label): "86%" · "In range 1d"; the last treatment as the ring draws
-     * it (#206), the time since it as the value and the amount as its label: "12m" · "4.5u", with the carbs riding along
-     * running insulin "12m" · "4.5u · 45g" (round 4 of #36: they were lost). The label stands alone (the
+     * it (#206), the time since it as the value and the kind with its amount as the label: "12m" · "Rapid 4.5u", with the
+     * carbs riding along running insulin "12m" · "Rapid 4.5u · 45g" (rounds 4 and 5 of #36). The label stands alone (the
      * Live Update's metric labels), so it is in sentence case like every other label there (the owner, round 3 of #36),
      * in the words' language.
      */
@@ -143,11 +143,45 @@ object Slots {
                 }
             }
 
-            // the carbs riding along running insulin too (the ring draws the pair): "4u · 30g"
             is SlotItem.Last -> {
-                w.shortDuration(now - item.info.tr.t) to
-                    listOfNotNull(item.info, item.info.carbs).joinToString(" · ") { TreatmentMarks.label(it.tr, 8) ?: it.tr.k }
+                w.shortDuration(now - item.info.tr.t) to lastLabel(item.info, w)
             }
+        }
+
+    /**
+     * The last treatment's label (round 5 of #36, the owner: "4u" alone doesn't say which insulin): the kind before its
+     * amount, *Rapid 4u*, *Carbs 30g*; the carbs riding along running insulin after it with their grams only, *Rapid 4u
+     * · 30g* (grams are only ever carbs, and a longer label is cut by System UI). A note: its text.
+     */
+    private fun lastLabel(
+        info: LastTreatment.Info,
+        w: CardWords,
+    ): String {
+        val tr = info.tr
+        val amount = TreatmentMarks.amount(tr) ?: return TreatmentMarks.label(tr, 8) ?: tr.k
+        val head =
+            when (tr.k) {
+                "rapid" -> "${w.lastRapid} $amount"
+                "carbs" -> "${w.carbsShort} $amount"
+                else -> amount
+            }
+        return listOfNotNull(head, info.carbs?.let { TreatmentMarks.amount(it.tr) }).joinToString(" · ")
+    }
+
+    /**
+     * The longest label a Live Update metric shows whole (a third of the card in the system font: *Rapid 4u · 30g*
+     * fits, *Rapid 12.5u · 120g* is cut after the dot; Android 17 emulator, 1080 px at 420 dpi).
+     */
+    const val LABEL_MAX = 14
+
+    /** The insulin and its carbs as a metric each: "12m" · "Rapid 12.5u", "10m" · "Carbs 120g". */
+    internal fun splitLast(
+        item: SlotItem.Last,
+        now: Long,
+        w: CardWords,
+    ): List<Pair<String, String>> =
+        listOfNotNull(item.info, item.info.carbs).map { info ->
+            w.shortDuration(now - info.tr.t) to lastLabel(LastTreatment.Info(info.tr, info.until), w)
         }
 
     internal fun hasLaurel(item: SlotItem) = mark(item) != TirMark.NONE

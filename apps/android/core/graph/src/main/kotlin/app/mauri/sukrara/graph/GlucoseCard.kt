@@ -293,13 +293,25 @@ object GlucoseCard {
     /**
      * The slots a card [st] shows for [model], as words for a text-only place (`Slots.text`: value, short label), in
      * priority order (main ring, a recent treatment, second ring, …), at most [max]: the same choice the drawn card
-     * makes, for a place that can only write text (Android 17's MetricStyle).
+     * makes, for a place that can only write text (Android 17's MetricStyle). The one exception (round 5 of #36): the
+     * insulin and carbs pair the ring draws together, when its label would be cut ([Slots.LABEL_MAX]), gets one metric
+     * each, a ring giving way when there's no room for both.
      */
     fun slotTexts(
         model: CardModel,
         st: CardStyle,
         max: Int,
-    ): List<Pair<String, String>> = slotItems(model, st, max).mapNotNull { Slots.text(it, model.nowS, model.words) }
+    ): List<Pair<String, String>> {
+        val items = slotItems(model, st, max)
+        val texts = items.map { Slots.text(it, model.nowS, model.words) }
+        val i = items.indexOfFirst { it is SlotItem.Last && it.info.carbs != null }
+        val pair = items.getOrNull(i) as? SlotItem.Last
+        val label = texts.getOrNull(i)?.second
+        if (pair == null || label == null || label.length <= Slots.LABEL_MAX || max < 2) return texts.filterNotNull()
+        val each = Slots.splitLast(pair, model.nowS, model.words)
+        val rest = texts.filterIndexed { j, _ -> j != i }.filterNotNull()
+        return (each + rest).take(max)
+    }
 
     /** The slots a card [st] shows for [model], main first, at most [max] (what [slotTexts] and [A11y] say). */
     internal fun slotItems(
