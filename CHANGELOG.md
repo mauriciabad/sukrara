@@ -4,13 +4,18 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
+- **Metrics, once Rings** (both apps, docs/39): what sits beside the value has its own switch each: the main,
+  second and third metric (time in range, GMI, average glucose or variability, each with its period and its goal),
+  the last treatment (it keeps its place while off) and the metric shown when there's no recent treatment. Each opens
+  its page with the live card on top; the time-in-range rings' number, rewards and colour order have a page of their
+  own. A GMI covers at least 7 days. A widget's own *Metrics* shows at most 1–3 things, or just the value.
 - **A cleaner treatment list** (Android, #207): each entry starts with its chart marker in its colour, a pen icon
   replaces *· from the pen*, and the glucose with its trend arrow when you logged it sits at the end. The cloud shows
   only when an entry isn't in LibreView yet (and for a moment after it gets there). The trash button is gone: swipe a
   row or long-press it to delete, with *Undo* as before. *See all* opens a new Treatments page with the last 31 days
   by day.
 - **Settings reorganised** (both apps, #205): **Readings** (unit, ranges, trend arrow; once *Ranges*), **Graph** (the
-  chart only), **Rings** (its own page on Android), Alerts › **Fine-tuning** (the waits near a threshold and the
+  chart only), **Metrics** (its own page on Android), Alerts › **Fine-tuning** (the waits near a threshold and the
   notification buttons), and **Import and export** (Export data, Import history and the settings file, out of Share
   with apps and Advanced). Sensor end has a chequered flag and the Sensor page links to it. One night for both the night
   alerts and the sensor reminders (the sensor reminders now keep quiet in your Night alerts hours: set it again there
