@@ -10,6 +10,7 @@
   python3 -I lv2.py signin --gateway libre3|librelink [--take-over]
   python3 -I lv2.py register SERIAL                          PUT nisperson activeSensor (Libre 3 identity)
   python3 -I lv2.py post FILE --serial S --start EPOCH --from E --to E --really
+  python3 -I lv2.py nickname DEVICE_ID NICKNAME --really     the website's updateNickname with the LibreLinkUp login
 
 Nothing reaches LibreView without `signin` and, for data, `--really`. Credentials: $LV_EMAIL and the login keychain
 item `dev.spike.libreview` (investigation 04's), read only when signing in; the password is never printed or stored.
@@ -22,6 +23,7 @@ import os
 import re
 import subprocess
 import sys
+import urllib.error
 import urllib.request
 import uuid
 from zoneinfo import ZoneInfo
@@ -228,6 +230,18 @@ def http(method, url, body=None, headers=None):
         return r.status, json.loads(r.read().decode() or "null")
 
 
+def http_or_error(method, url, body=None, headers=None):
+    """[http], but an HTTP error answers with its code and (JSON) body instead of raising."""
+    try:
+        return http(method, url, body, headers)
+    except urllib.error.HTTPError as e:
+        text = e.read().decode(errors="replace")
+        try:
+            return e.code, json.loads(text)
+        except ValueError:
+            return e.code, {"text": text[:300]}
+
+
 def config(gateway):
     if gateway == "libre3":
         _, a = http("GET", ASSETS)
@@ -315,6 +329,51 @@ def cmd_post(path, serial, start, frm, to, really, now=None, tz=None):
     return (o or {}).get("status")
 
 
+LLU = os.environ.get("LV2_LLU") or "https://api.libreview.io"
+
+
+def cmd_nickname(device_id, nickname, really):
+    """The website's `POST user/updateNickname {nickname, deviceId}` with the LibreLinkUp login's Bearer token (the login
+    Sukrara already has), not the website's own login. Prints statuses only, never a token."""
+    print("nickname", repr(nickname), "for device", device_id, "" if really else "(dry run: nothing sent)")
+    if not really:
+        return None
+    email, pw = credentials()
+    base = LLU
+    llu = {"Content-Type": "application/json", "Accept": "application/json", "product": "llu.android", "version": "4.16.0"}
+    for _ in range(3):
+        code, o = http("POST", base + "/llu/auth/login", json.dumps({"email": email, "password": pw}), llu)
+        d = (o or {}).get("data") or {}
+        if (o or {}).get("status") == 0 and d.get("redirect") and re.fullmatch(r"[a-z]{2,3}", d.get("region", "")):
+            base = LLU.replace("://api.", "://api-%s." % d["region"]) if "://api." in LLU else base
+            continue
+        break
+    token = ((d.get("authTicket") or {}).get("token")) if (o or {}).get("status") == 0 else None
+    print("llu login HTTP", code, "status", (o or {}).get("status"), "token" if token else "no token")
+    if not token:
+        return None
+    auth = {"Content-Type": "application/json", "Authorization": "Bearer " + token, "Product": "lv"}
+    # LibreView names a device by its own id; the upload's DeviceId is its "sn" (the website's devices list, from
+    # glucoseHistory): look it up first
+    code, o = http_or_error("GET", base + "/glucoseHistory?numPeriods=1&period=14", None, auth)
+    listed = ((o or {}).get("data") or {}).get("devices") or []
+    print("glucoseHistory HTTP", code, "status", (o or {}).get("status"), "devices", len(listed),
+          "" if listed else json.dumps(o)[:300])
+    match = [dv for dv in listed if str(dv.get("sn", "")).lower() == device_id.lower() or dv.get("id") == device_id]
+    if len(match) != 1:
+        print("no single device with that serial or id: nothing sent")
+        return None
+    code, o = http_or_error("POST", base + "/user/updateNickname",
+                            json.dumps({"nickname": nickname, "deviceId": match[0]["id"]}), auth)
+    if code != 200:
+        print("updateNickname HTTP", code, "answer", json.dumps(o)[:300])
+        return None
+    devices = ((o or {}).get("data") or {}).get("devices") or []
+    print("updateNickname HTTP", code, "status", (o or {}).get("status"),
+          "devices", [{k: v for k, v in dv.items() if k in ("id", "nickname", "sn")} for dv in devices if dv.get("nickname")])
+    return (o or {}).get("status")
+
+
 def main(argv):
     a = argv[1:]
 
@@ -332,6 +391,8 @@ def main(argv):
         cmd_register(a[1])
     elif a[0] == "post":
         cmd_post(a[1], opt("--serial", str), opt("--start"), opt("--from"), opt("--to"), "--really" in a)
+    elif a[0] == "nickname":
+        cmd_nickname(a[1], a[2], "--really" in a)
     else:
         raise SystemExit(__doc__)
 

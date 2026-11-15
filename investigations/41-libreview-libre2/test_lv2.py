@@ -41,6 +41,10 @@ class Fake(BaseHTTPRequestHandler):
             return self.answer({"Configuration": base + "/config3"})
         if self.path in ("/config3", "/configll"):
             return self.answer({"newYuUrl": base + "/api" + self.path[-1], "newYuApiKey": "KEY"})
+        if self.path.startswith("/glucoseHistory"):
+            # the website's devices: LibreView's own id, the upload's DeviceId as "sn"
+            return self.answer({"status": 0, "data": {"devices": [{"id": "lv-1", "sn": "DEV-1", "nickname": ""},
+                                                                  {"id": "lv-2", "sn": "DEV-2", "nickname": ""}]}})
         self.send_error(404)
 
     def body(self):
@@ -58,6 +62,15 @@ class Fake(BaseHTTPRequestHandler):
             return self.answer({"status": 0, "result": {"UserToken": "T-" + g, "AccountId": "A", "DateOfBirth": "19900101",
                                                         "FirstName": "F", "LastName": "L", "GuardianFirstName": "",
                                                         "GuardianLastName": ""}})
+        if self.path == "/llu/auth/login":
+            return self.answer({"status": 0, "data": {"authTicket": {"token": "LLU-TOKEN"}, "user": {"id": "u"}}})
+        if self.path == "/user/updateNickname":
+            if self.headers["Authorization"] != "Bearer LLU-TOKEN" or not o["deviceId"].startswith("lv-"):
+                self.send_response(400)
+                self.end_headers()
+                self.wfile.write(b'{"status":400,"error":{"message":"bad device"}}')
+                return None
+            return self.answer({"status": 0, "data": {"devices": [{"id": o["deviceId"], "nickname": o["nickname"]}]}})
         if self.path.endswith("/measurements"):
             n = len(o["DeviceData"]["measurementLog"]["scheduledContinuousGlucoseEntries"])
             return self.answer({"status": 0, "result": {"UploadId": "U", "MeasurementCounts": {"ScheduledGlucoseCount": n}}})
@@ -76,7 +89,7 @@ class Lv2Test(unittest.TestCase):
         threading.Thread(target=cls.srv.serve_forever, daemon=True).start()
         base = "http://127.0.0.1:%d" % cls.srv.server_port
         cls.tmp = tempfile.TemporaryDirectory()
-        os.environ.update(LV2_STATE=cls.tmp.name, LV2_ASSETS=base + "/assets", LV2_LIBRELINK_CONFIG=base + "/configll",
+        os.environ.update(LV2_STATE=cls.tmp.name, LV2_ASSETS=base + "/assets", LV2_LIBRELINK_CONFIG=base + "/configll", LV2_LLU=base,
                           LV_EMAIL="a@example.org", LV2_PASSWORD_FOR_TESTS="secret-pw")
         global lv2
         import lv2
@@ -145,6 +158,21 @@ class Lv2Test(unittest.TestCase):
         for name in os.listdir(self.tmp.name):
             with open(os.path.join(self.tmp.name, name)) as f:
                 self.assertNotIn("secret-pw", f.read())
+
+    def test_the_nickname_goes_with_the_librelinkup_token(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            n = len(Fake.calls)
+            self.assertEqual(None, lv2.cmd_nickname("DEV-2", "Sukrara", really=False))
+            self.assertEqual(n, len(Fake.calls), "a dry run sends nothing")
+            # by the upload's DeviceId: LibreView's own id is looked up first
+            self.assertEqual(0, lv2.cmd_nickname("dev-2", "Sukrara", really=True))
+            self.assertEqual({"nickname": "Sukrara", "deviceId": "lv-2"}, Fake.calls[-1][2])
+            n = len(Fake.calls)
+            self.assertEqual(None, lv2.cmd_nickname("DEV-9", "Sukrara", really=True))
+            self.assertEqual(n + 1, len(Fake.calls), "no update for an unknown device")
+        self.assertNotIn("LLU-TOKEN", out.getvalue())
+        self.assertNotIn("secret-pw", out.getvalue())
 
     def test_refuses_plain_http_to_another_host(self):
         with self.assertRaises(SystemExit):
