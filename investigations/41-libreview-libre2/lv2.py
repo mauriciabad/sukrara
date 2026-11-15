@@ -18,6 +18,7 @@ State (spike DeviceIds, config, token) lives in $LV2_STATE (default ~/.config/su
 $LV2_ASSETS / $LV2_LIBRELINK_CONFIG point the client at a fake server (tests).
 """
 import datetime as dt
+import hashlib
 import json
 import os
 import re
@@ -352,7 +353,10 @@ def cmd_nickname(device_id, nickname, really):
     print("llu login HTTP", code, "status", (o or {}).get("status"), "token" if token else "no token")
     if not token:
         return None
-    auth = {"Content-Type": "application/json", "Authorization": "Bearer " + token, "Product": "lv"}
+    # the website's headers (its httpHeaders.js): Account-Id = SHA-256 of the user id (as LibreLinkUp ≥ 4.16 wants)
+    user_id = str(((d.get("user") or {}).get("id")) or "")
+    auth = {"Content-Type": "application/json", "Authorization": "Bearer " + token, "Product": "lv",
+            "NEWYU-LV-Web-Version": "3.27.0.42", "Account-Id": hashlib.sha256(user_id.encode()).hexdigest()}
     # LibreView names a device by its own id; the upload's DeviceId is its "sn" (the website's devices list, from
     # glucoseHistory): look it up first
     code, o = http_or_error("GET", base + "/glucoseHistory?numPeriods=1&period=14", None, auth)

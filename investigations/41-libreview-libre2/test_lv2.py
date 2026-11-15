@@ -42,6 +42,8 @@ class Fake(BaseHTTPRequestHandler):
         if self.path in ("/config3", "/configll"):
             return self.answer({"newYuUrl": base + "/api" + self.path[-1], "newYuApiKey": "KEY"})
         if self.path.startswith("/glucoseHistory"):
+            if self.headers["Account-Id"] != "0bfe935e70c321c7ca3afc75ce0d0ca2f98b5422e008bb31c00c6d7f1f1c0ad6":
+                return self.answer({"message": "RequiredHeaderMissing"})
             # the website's devices: LibreView's own id, the upload's DeviceId as "sn"
             return self.answer({"status": 0, "data": {"devices": [{"id": "lv-1", "sn": "DEV-1", "nickname": ""},
                                                                   {"id": "lv-2", "sn": "DEV-2", "nickname": ""}]}})
