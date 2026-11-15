@@ -35,6 +35,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** Settings search: matching (accents, case, word starts, stock Settings' ranking), the index and opening a result. */
 @RunWith(RobolectricTestRunner::class)
@@ -247,10 +248,10 @@ class SettingsSearchTest {
         val noRoot = titles(emptySet())
         val play = titles(setOf(BuildFeature.Root))
         val full = titles(BuildFeature.entries.toSet())
-        val root = listOf(R.string.st_root_value, R.string.st_root_colour, R.string.st_root_placement, R.string.st_root_hide_icon)
+        val root = listOf(DsR.string.ds_notif_style_root, R.string.st_root_colour, R.string.st_root_placement)
         for (t in root) assertTrue(t !in noRoot && t in play && t in full)
         assertTrue(R.string.st_update_check_again !in play && R.string.st_update_check_again in full)
-        for (t in listOf(R.string.st_privacy, R.string.st_statusbar_style, R.string.st_about_version, R.string.st_about_versions)) {
+        for (t in listOf(R.string.st_privacy, DsR.string.ds_notif_style_chip, R.string.st_about_version, R.string.st_about_versions)) {
             assertTrue(t in noRoot && t in play && t in full)
         }
     }

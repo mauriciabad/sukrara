@@ -295,7 +295,7 @@ fun AlertsSettingsContent(
                             else -> R.string.st_alerts_separate_off
                         },
                     ),
-                icon = DsR.drawable.ds_ic_watch,
+                icon = DsR.drawable.ds_ic_notification_add,
             )
             NavigationRow(
                 stringResource(R.string.st_notification_settings),

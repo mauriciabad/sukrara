@@ -7,9 +7,11 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Alerts
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.History
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Identity
+import app.mauri.sukrara.feature.sharing.setup.SetupStep.Notification
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Pens
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Permissions
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Ready
+import app.mauri.sukrara.feature.sharing.setup.SetupStep.Root
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Sensor
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Updates
 import app.mauri.sukrara.feature.sharing.setup.SetupStep.Welcome
@@ -31,12 +33,15 @@ class SetupMachineTest {
 
     @Test
     fun `the exact step order - essentials, Ready, then the optional steps`() {
-        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Identity, History), m.steps(facts))
-        // every part of the GitHub version on a phone with NFC
-        val all = facts.copy(updates = UpdateChoice.Open, pens = false)
-        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Updates, Identity, Pens, History), m.steps(all))
+        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Notification, Identity, History), m.steps(facts))
+        // every part of the GitHub version (root features) on a phone with NFC
+        val all = facts.copy(updates = UpdateChoice.Open, pens = false, root = false)
+        assertEquals(
+            listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Updates, Root, Notification, Identity, Pens, History),
+            m.steps(all),
+        )
         assertTrue(listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Sensor, Alerts).all { it.essential })
-        assertTrue(listOf(Updates, Identity, Pens, History).all { it.extra && !it.essential })
+        assertTrue(listOf(Updates, Root, Notification, Identity, Pens, History).all { it.extra && !it.essential })
     }
 
     @Test
@@ -45,8 +50,8 @@ class SetupMachineTest {
         assertEquals(3 to 5, m.place(Permissions, all))
         assertEquals(5 to 5, m.place(Alerts, all))
         assertNull(m.place(Ready, all))
-        assertEquals(1 to 4, m.place(Updates, all))
-        assertEquals(4 to 4, m.place(History, all))
+        assertEquals(1 to 5, m.place(Updates, all))
+        assertEquals(5 to 5, m.place(History, all))
     }
 
     @Test
@@ -75,11 +80,11 @@ class SetupMachineTest {
     fun `a follower joins before anything else and can't skip it`() {
         assertEquals(Result.Done(Role.Follower), m.chooseRole(Role.Follower, confirmed = true, none))
         val follower = none.copy(role = Role.Follower)
-        // nothing optional for a follower on Google Play: no Ready either
-        assertEquals(listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Alerts), m.steps(follower))
+        // a follower's glucose notification is theirs too
+        assertEquals(listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Alerts, Ready, Notification), m.steps(follower))
         assertEquals(
-            listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Alerts, Ready, Updates),
-            m.steps(follower.copy(updates = UpdateChoice.Open, pens = false)),
+            listOf(Welcome, SetupStep.Role, SetupStep.Join, Permissions, Alerts, Ready, Updates, Root, Notification),
+            m.steps(follower.copy(updates = UpdateChoice.Open, pens = false, root = false)),
         )
         assertTrue(SetupStep.Join !in m.steps(facts))
         val start = m.completeWelcome(SetupRecord())
@@ -129,11 +134,11 @@ class SetupMachineTest {
     fun `after the essentials Ready - Set up the rest walks the optional steps`() {
         var r = essentials()
         assertEquals(Ready, m.next(r, facts))
-        assertEquals(listOf(Identity, History), m.extrasLeft(r, facts))
+        assertEquals(listOf(Notification, Identity, History), m.extrasLeft(r, facts))
         r = m.continueExtras(r)
-        assertEquals(Identity, m.next(r, facts))
+        assertEquals(Notification, m.next(r, facts))
         // Back from the first optional step shows Ready again
-        assertEquals(Ready, m.previous(Identity, facts))
+        assertEquals(Ready, m.previous(Notification, facts))
     }
 
     @Test
@@ -141,7 +146,7 @@ class SetupMachineTest {
         val all = facts.copy(updates = UpdateChoice.Open, pens = false)
         val later = m.skip(essentials(), Ready)
         assertNull(m.next(later, all))
-        assertEquals(listOf(Updates, Identity, Pens, History), m.extrasLeft(later, all))
+        assertEquals(listOf(Updates, Notification, Identity, Pens, History), m.extrasLeft(later, all))
         // home never names an optional step (home stays about glucose): only the skipped essentials
         assertEquals(SetupCard.Finish(FinishItem.AlertsNotConfirmed), m.card(later, all))
         // Finish setup in Settings: the walk goes on into them
@@ -155,6 +160,7 @@ class SetupMachineTest {
         val all = facts.copy(updates = UpdateChoice.Open, pens = false)
         var r = m.continueExtras(essentials())
         r = m.skip(r, Updates) // Not now: final
+        r = m.completeNotification(r)
         r = m.skip(r, Identity) // Later
         r = m.skip(r, Pens) // Later
         r = m.skip(r, History) // Start empty: final
@@ -171,7 +177,7 @@ class SetupMachineTest {
         assertTrue(Pens !in m.steps(facts))
         assertTrue(Pens !in m.steps(facts.copy(role = Role.Follower, pens = false)))
         val nfc = facts.copy(pens = false)
-        val r = m.completeIdentity(m.continueExtras(essentials()), nfc.copy(hasIdentity = true))
+        val r = m.completeIdentity(m.completeNotification(m.continueExtras(essentials())), nfc.copy(hasIdentity = true))
         val shared = nfc.copy(hasIdentity = true)
         assertEquals(Pens, m.next(r, shared))
         assertEquals(History, m.next(m.completePens(r), shared))
@@ -180,16 +186,17 @@ class SetupMachineTest {
     }
 
     @Test
-    fun `nothing optional on this phone - the essentials end setup`() {
+    fun `a follower on Google Play - the essentials, then only the glucose notification`() {
         val follower = none.copy(role = Role.Follower, following = true)
         val r = m.confirmAlerts(m.completePermissions(m.completeJoin(wearer(), follower)))
-        assertNull(m.next(r, follower))
-        assertTrue(m.extrasLeft(r, follower).isEmpty())
+        assertEquals(Ready, m.next(r, follower))
+        assertEquals(listOf(Notification), m.extrasLeft(r, follower))
+        assertNull(m.next(m.completeNotification(m.continueExtras(r)), follower))
     }
 
     @Test
     fun `identity completes only once an identity exists`() {
-        val r = m.continueExtras(essentials())
+        val r = m.completeNotification(m.continueExtras(essentials()))
         assertEquals(Identity, m.next(m.completeIdentity(r, facts), facts))
         val shared = facts.copy(hasIdentity = true)
         assertEquals(History, m.next(m.completeIdentity(r, shared), shared))
@@ -270,7 +277,8 @@ class SetupMachineTest {
     @Test
     fun `bring your history back is offered once, to a wearer, and again after the database was replaced`() {
         val shared = facts.copy(ownSensorLive = true, hasIdentity = true, alertsConfirmed = true)
-        val done = m.completeIdentity(m.continueExtras(m.completeSensor(m.completePermissions(wearer()), shared)), shared)
+        val walked = m.completeNotification(m.continueExtras(m.completeSensor(m.completePermissions(wearer()), shared)))
+        val done = m.completeIdentity(walked, shared)
         assertEquals(History, m.next(done, shared))
         assertTrue(m.historyDue(done, shared))
         // either answer is final, and it never becomes a Finish-setup item
@@ -295,7 +303,8 @@ class SetupMachineTest {
         assertTrue(!m.historyDue(essentials(), facts))
         assertTrue(!m.historyDue(m.skip(essentials(), Ready), facts))
         // everything else answered: offered on its own at launch
-        assertTrue(m.historyDue(m.skip(essentials(), Ready), facts.copy(hasIdentity = true)))
+        assertTrue(!m.historyDue(m.skip(essentials(), Ready), facts.copy(hasIdentity = true)))
+        assertTrue(m.historyDue(m.completeNotification(m.skip(essentials(), Ready)), facts.copy(hasIdentity = true)))
     }
 
     @Test
@@ -316,7 +325,10 @@ class SetupMachineTest {
 
     @Test
     fun `the GitHub version asks about updates first among the optional steps, both roles - never Google Play`() {
-        assertEquals(listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Updates, Identity, History), m.steps(github))
+        assertEquals(
+            listOf(Welcome, SetupStep.Role, Permissions, Sensor, Alerts, Ready, Updates, Notification, Identity, History),
+            m.steps(github),
+        )
         // no updater (the Google Play build): no step, whatever was recorded
         assertTrue(Updates !in m.steps(facts) && Updates !in m.steps(facts.copy(role = Role.Follower)))
     }
@@ -325,13 +337,13 @@ class SetupMachineTest {
     fun `Turn on or Not now answer the updates step and the walk goes on`() {
         val r = m.continueExtras(essentials())
         assertEquals(Updates, m.next(r, github))
-        assertEquals(Identity, m.next(m.completeUpdates(r), github))
-        assertEquals(Identity, m.next(m.skip(r, Updates), github))
+        assertEquals(Notification, m.next(m.completeUpdates(r), github))
+        assertEquals(Notification, m.next(m.skip(r, Updates), github))
         // answered elsewhere first (home's banner, Settings › About): on, or off on purpose
-        assertEquals(Identity, m.next(r, github.copy(updates = UpdateChoice.On)))
-        assertEquals(Identity, m.next(r, github.copy(updates = UpdateChoice.Off)))
+        assertEquals(Notification, m.next(r, github.copy(updates = UpdateChoice.On)))
+        assertEquals(Notification, m.next(r, github.copy(updates = UpdateChoice.Off)))
         // Back from the next step shows it again (its answer kept)
-        assertEquals(Updates, m.previous(Identity, github))
+        assertEquals(Updates, m.previous(Notification, github))
         assertTrue(m.answers(Updates, m::completeUpdates))
     }
 
@@ -346,5 +358,43 @@ class SetupMachineTest {
         val follower = github.copy(role = Role.Follower, following = true)
         val followed = m.skip(m.completePermissions(m.completeJoin(wearer(), follower)), Alerts)
         assertEquals(Ready, m.next(followed, follower))
+    }
+
+    private val rooted = facts.copy(root = false)
+
+    @Test
+    fun `the root step - builds with root features only, before the glucose notification`() {
+        assertTrue(Root !in m.steps(facts) && Root !in m.steps(facts.copy(role = Role.Follower)))
+        assertEquals(Notification, m.steps(rooted)[m.steps(rooted).indexOf(Root) + 1])
+        val r = m.continueExtras(essentials())
+        assertEquals(Root, m.next(r, rooted))
+        // No: final, the walk goes on
+        assertEquals(Notification, m.next(m.completeRoot(r), rooted))
+        assertTrue(m.extrasLeft(m.completeRoot(r), rooted).none { it == Root })
+        // Later: on Finish setup
+        val later = m.skip(r, Root)
+        assertEquals(Notification, m.next(later, rooted))
+        assertTrue(Root in m.extrasLeft(m.skip(later, Ready), rooted))
+        // Sukrara has root (here or in Settings): done by itself
+        assertEquals(Notification, m.next(r, rooted.copy(root = true)))
+        assertTrue(m.answers(Root, m::completeRoot))
+        assertEquals(Root, m.previous(Notification, rooted))
+    }
+
+    @Test
+    fun `the glucose notification step - Continue answers it, Later on Ready keeps it on Finish setup`() {
+        val r = m.continueExtras(essentials())
+        assertEquals(Notification, m.next(r, facts))
+        assertEquals(Identity, m.next(m.completeNotification(r), facts))
+        assertTrue(Notification in m.extrasLeft(m.skip(essentials(), Ready), facts))
+        assertTrue(m.answers(Notification, m::completeNotification))
+    }
+
+    @Test
+    fun `an install that finished setup before the root and notification steps existed is not sent back`() {
+        val shared = rooted.copy(hasIdentity = true)
+        val before = m.completeHistory(m.completeIdentity(m.continueExtras(essentials()), shared))
+        assertNull(m.next(before, shared))
+        assertTrue(m.extrasLeft(before, shared).isEmpty())
     }
 }

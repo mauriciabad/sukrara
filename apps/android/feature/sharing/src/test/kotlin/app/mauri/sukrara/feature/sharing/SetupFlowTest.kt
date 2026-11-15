@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -21,7 +22,12 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.test.core.app.ApplicationProvider
+import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.RootAccess
+import app.mauri.sukrara.core.model.SystemAccessPort
+import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
@@ -35,6 +41,7 @@ import app.mauri.sukrara.share.owner.OwnerShareState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -70,14 +77,40 @@ class SetupFlowTest {
             FakeHub(),
             sharing,
             FakeAlerts(),
-            InMemorySettingsRepository(),
+            settings,
             resetAlerts = {},
             startMonitoring = {},
             readiness = FakeReadiness(),
             clock = clock,
             updates = updates,
             pens = pens,
+            systemAccess = access,
         )
+    }
+
+    private val settings = InMemorySettingsRepository()
+
+    /** Root on this phone (null [access] = a build without root features, as Google Play). */
+    private var access: FakeAccess? = null
+
+    /** A port whose `su` answers [answer]; counts the requests. */
+    private class FakeAccess(
+        var answer: RootAccess,
+        seen: Boolean = false,
+    ) : SystemAccessPort {
+        override val state = MutableStateFlow(SystemAccessState(rootSeen = seen, module = ModuleState.Active))
+        var asked = 0
+
+        override suspend fun checkRoot() {
+            asked++
+            state.update { it.copy(root = answer) }
+        }
+
+        override fun refresh() = Unit
+
+        override suspend fun restartSystemUi(): String? = null
+
+        override suspend fun requestScope(): String? = null
     }
 
     /** Pen reading on a phone with NFC (null [pens] = no NFC: no pens step). */
@@ -122,7 +155,10 @@ class SetupFlowTest {
         scroll: Boolean = true,
     ) = compose.onNodeWithText(text).apply { if (scroll) performScrollTo() }.performClick()
 
-    private fun shows(text: String) = compose.onNodeWithText(text).assertExists()
+    private fun shows(
+        text: String,
+        substring: Boolean = false,
+    ) = compose.onNodeWithText(text, substring = substring).assertExists()
 
     @Test
     fun `Back on the step after the role goes home, and Finish setup resumes the walk exactly there`() {
@@ -203,12 +239,15 @@ class SetupFlowTest {
         tap("Later")
         shows(HOME)
         assertEquals(true, SetupStep.Ready in recorded().skipped)
-        assertEquals(listOf(SetupStep.Identity, SetupStep.History), runBlocking { module.extrasLeft.first() })
+        assertEquals(
+            listOf(SetupStep.Notification, SetupStep.Identity, SetupStep.History),
+            runBlocking { module.extrasLeft.first() },
+        )
         // Settings' Finish setup: the walk goes on into them
         runBlocking { module.continueExtras() }
         tap(OPEN, scroll = false)
-        shows("Optional step 1 of 2")
-        shows("Your followers")
+        shows("Optional step 1 of 3")
+        shows("Glucose notification")
     }
 
     @Test
@@ -223,16 +262,16 @@ class SetupFlowTest {
         walkTheEssentials()
         shows("Keep Sukrara up to date")
         tap("Set up the rest")
-        shows("Optional step 1 of 3")
+        shows("Optional step 1 of 4")
         shows("Off until you turn it on. You can change it any time in Settings › About.")
         tap("Not now")
-        shows("Optional step 2 of 3")
+        shows("Optional step 2 of 4")
         assertEquals(UpdateChoice.Off, updateChoice.value)
         // Back shows it again, as answered; Turn on goes on too
         back()
         shows("Keep Sukrara up to date")
         tap("Turn on")
-        shows("Optional step 2 of 3")
+        shows("Optional step 2 of 4")
         assertEquals(UpdateChoice.On, updateChoice.value)
         back()
         shows("Keep it on")
@@ -247,6 +286,8 @@ class SetupFlowTest {
         walkTheEssentials()
         shows("Insulin pens")
         tap("Set up the rest")
+        shows("Glucose notification")
+        tap("Continue")
         shows(
             "With a smart insulin pen such as NovoPen 6 or NovoPen Echo Plus, hold it to the back of the phone after you inject: Sukrara logs the dose.",
         )
@@ -276,6 +317,58 @@ class SetupFlowTest {
                     "sensor's app or a meter, and ask your doctor, before you decide on a treatment.",
             ).performScrollTo()
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun `root - Yes asks, the way to allow it shows, then granted root picks the status bar text`() {
+        val port = FakeAccess(RootAccess.Missing).also { access = it }
+        sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
+        host(open = true)
+        walkTheEssentials()
+        tap("Set up the rest")
+        shows("Is this phone rooted?", substring = true)
+        assertEquals("nothing asked before Yes", 0, port.asked)
+        tap("Yes, it's rooted")
+        assertEquals(1, port.asked)
+        // no root Sukrara can use yet: what to do, and Check again
+        shows("Root needed")
+        port.answer = RootAccess.Granted
+        tap("Check again")
+        // root: the walk goes on, the status bar text already picked
+        shows("Glucose notification")
+        compose.onNodeWithText("Status bar text").assertIsSelected()
+        assertEquals(NotificationStyle.Root, runBlocking { module.notificationStyle.first() })
+        // the person can still choose another one
+        tap("Chip")
+        compose.onNodeWithText("Chip").assertIsSelected()
+        tap("Continue")
+        shows("Bring your history back")
+        assertEquals(NotificationStyle.Chip, runBlocking { module.notificationStyle.first() })
+    }
+
+    @Test
+    fun `root - It isn't rooted is final, and the notification step keeps the chip`() {
+        access = FakeAccess(RootAccess.Missing)
+        sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
+        host(open = true)
+        walkTheEssentials()
+        tap("Set up the rest")
+        tap("It isn't rooted")
+        shows("Glucose notification")
+        compose.onNodeWithText("Chip").assertIsSelected()
+        assertEquals(true, SetupStep.Root in recorded().completed)
+    }
+
+    @Test
+    fun `root - signs of root skip the question and ask at once`() {
+        val port = FakeAccess(RootAccess.Granted, seen = true).also { access = it }
+        sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
+        host(open = true)
+        walkTheEssentials()
+        tap("Set up the rest")
+        shows("Glucose notification")
+        assertEquals(1, port.asked)
+        compose.onNodeWithText("Status bar text").assertIsSelected()
     }
 
     private companion object {

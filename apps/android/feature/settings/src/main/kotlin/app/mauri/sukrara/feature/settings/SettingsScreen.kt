@@ -55,7 +55,7 @@ import app.mauri.sukrara.feature.settings.search.RecentSearches
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndViewModel
-import app.mauri.sukrara.feature.settings.statusbar.RootStatusBarSection
+import app.mauri.sukrara.feature.settings.statusbar.NotificationPageActions
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarViewModel
 import app.mauri.sukrara.feature.settings.statusbar.liveUpdatesAllowed
@@ -523,11 +523,9 @@ private fun SettingsPages(
         SettingsRoute.StatusBar -> {
             val vm = viewModel { StatusBarViewModel(deps.settings, deps.systemAccess) }
             val prefs by vm.prefs.collectAsStateWithLifecycle()
-            val root by vm.root.collectAsStateWithLifecycle()
             val access by vm.access.collectAsStateWithLifecycle()
             val busy by vm.busy.collectAsStateWithLifecycle()
             val problem by vm.problem.collectAsStateWithLifecycle()
-            var choosing by rememberSaveable { mutableStateOf(false) }
             val context = LocalContext.current
             // the person may come back from Android's Live Updates switch, KernelSU or LSPosed: read them again on resume
             var allowed by remember { mutableStateOf(context.liveUpdatesAllowed()) }
@@ -538,17 +536,25 @@ private fun SettingsPages(
             prefs?.let {
                 StatusBarContent(
                     it,
+                    vm.rootOffered,
                     allowed,
-                    vm::setChip,
-                    vm::setNumberIcon,
-                    context::openLiveUpdateSettings,
+                    access,
+                    busy,
+                    problem,
+                    NotificationPageActions(
+                        setStyle = vm::setStyle,
+                        setNumberIcon = vm::setNumberIcon,
+                        setColorize = vm::setColorize,
+                        setLockScreen = vm::setLockScreen,
+                        setPosition = vm::setPosition,
+                        setRootColor = vm::setRootColor,
+                        allowLiveUpdates = context::openLiveUpdateSettings,
+                        checkRoot = vm::checkRoot,
+                        requestScope = vm::requestScope,
+                        restart = vm::restart,
+                    ),
                     onBack,
-                    vm::setLockScreen,
-                    rootValue = root?.on == true,
-                    onColorize = vm::setColorize,
-                ) {
-                    root?.let { r -> RootStatusBarSection(r, access, busy, problem, choosing, { c -> choosing = c }, vm.actions) }
-                }
+                )
             }
         }
 

@@ -660,9 +660,113 @@ renderer picture as on 17.
 | ![](img/notification/v3-b-between-android37.png) | B between rings |
 | ![](img/notification/v3-b-muted-android37.png) | B muted: *Lows muted · 29m left*, no range word |
 | ![](img/notification/v3-b-background-android37.png) | *Coloured background* off and on, dark and light |
-| ![](img/notification/v3-settings-status-bar.png) | Settings › Status bar: the chip, the graph (the notification icon highlighted), light |
+| (Settings › Status bar) | Replaced by `v4-settings-glucose-notification` (§11) |
 | ![](img/notification/v3-separate-alerts-android37.png) | *Separate alert notifications* on: the alert of its own above the glucose card, which carries none |
 | ![](img/notification/v3-arrows-android37.png) | Arrow sets in the system font (1 = THE text arrows, 2 = Dingbats / Misc Symbols, 3–5 = Supplemental Arrows-C: not in the font) and the Live Update's value |
 
 Seen on the way: a ring that comes while the monitoring service starts (here a debug `SYNTHETIC` restart) is posted
 first as the text notification (the foreground start never draws the card), then the service's own post follows.
+
+## 11. Round 4 feedback
+
+*2026-11-15, the owner on the v3 pictures. Each point: the alternatives weighed, the choice and why. Emulator Android 17
+(API 37.0), the synthetic sensor, synthetic data only; the settings and setup pages also from the Robolectric galleries
+(`SettingsGallery`, `SharingScreenshotTest`).*
+
+### 11.1 "The icon for Separate alert notifications is wrong; it should not be a watch"
+
+| Option | For | Against |
+|---|---|---|
+| Watch (was) | The main reason to turn it on | Names one use, not the feature (the owner) |
+| `notifications_active` (ringing bell) | Alerts | Already the alerts' own icon in Settings: two rows, one icon |
+| `stacks` / `library_add` (layers) | "Separate" | Says nothing about notifications |
+| **`notification_add` (bell with a plus)** | A notification of its own added beside the glucose one: what the switch does | — |
+
+Chosen: Material Symbols [`notification_add`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:notification_add)
+(`ds_ic_notification_add`; `ds_ic_watch` deleted). Picture `v4-separate-alerts-icon-android37`.
+
+### 11.2 "No screenshot of the Live Update with different dynamic values, especially after treatments"
+
+Taken on Android 17 with real entries from *Add treatment* (rapid 4 u, carbs 30 g, both). The metrics after the value
+are the card's own slots in the card's priority (main ring, a recent treatment, the second ring: `GlucoseCard.slotTexts`),
+so a treatment takes the second ring's place, as on the card.
+
+Found on the way and fixed: **with both, the carbs were lost**. The card draws running insulin and the carbs that ride
+along it as one pair, but the text slot only wrote the insulin (`4u`). Now `4u · 30g` (`Slots.text`, `SlotTextTest`
+written first and failing). Kept as decided in #206: the time since it is the value (it is what changes) and the amount
+its label. Considered: the amount as the value and *Rapid · 12m ago* as the label (a label that changes every minute
+and needs a word per kind); a stopwatch metric (`Metric.TimeDifference`) counting up from the entry (live without a post,
+but MetricStyle shows it as `12:04`, a clock, for a time that matters in minutes).
+
+The Live Update follows a new entry on the next reading (≤ 1 min with Libre 3), as the card does.
+
+### 11.3 The settings cards: hierarchy, light-theme contrast, equal heights, simpler texts
+
+Researched how Android does "choose how the system shows something": AOSP Settings' **System navigation**
+(`SystemNavigationGestureSettings`: an [`IllustrationPreference`](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/packages/SettingsLib/IllustrationPreference/)
+of the *selected* option over [`SelectorWithWidgetPreference`](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/packages/SettingsLib/SelectorWithWidgetPreference/)
+radio rows; [a copy of the source](https://github.com/xDroidOSS-Pixel/packages_apps_settings/blob/thirteen/src/com/android/settings/gestures/SystemNavigationGestureSettings.java)),
+Material 3 [radio buttons](https://m3.material.io/components/radio-button/guidelines) ("listed vertically, one always
+selected") and [lists](https://m3.material.io/components/lists/guidelines) (the whole row is the target). Other diabetes
+apps don't help here: Juggluco has one on/off *Glucose notification* ([settings help](https://www.juggluco.nl/Jugglucohelp/settinghelp.html)),
+GlucoDataHandler adds extra notifications only to get more status bar icons, and its users find an app icon where the
+value should be "useless" ([GDH #241](https://github.com/pachi81/GlucoDataHandler/issues/241)); xDrip+ users can't find
+how to hide its status bar icon ([xDrip #3485](https://github.com/NightscoutFoundation/xDrip/discussions/3485)): the
+choice must be findable and say what it changes.
+
+| Option | Hierarchy | Equal heights | Light theme | Cost |
+|---|---|---|---|---|
+| Cards side by side (v3) | Picture, title, two-line summary per card, all equal weight | No: text wraps differently | The notification's grey vanished in the selected card's tint | — |
+| Cards stacked, full width | Better | Still text-driven | Same tint problem | — |
+| **One picture of the selected choice + radio rows** (System navigation) | Picture first (what you get), then one list of names | Yes: one-line title, one-line summary | The picture sits on the page, not in a tinted card: the notification on its own surface with an outline in both themes | Pictures compared by switching, not side by side |
+| Dropdown | Compact | — | — | Hides the choices; no picture |
+
+Chosen: the System navigation pattern, as one shared component (`GlucoseNotificationChoice`, `:core:designsystem`) for
+the settings page and setup. The texts are names: the title is what the **status bar** shows (*Chip*, *Notification
+icon*, *Status bar text*), the summary what the **notification** is (*Basic notification*, *Notification with the
+graph*, *… · Needs root*); the group title *Glucose in the status bar* says what the names are of, so neither repeats
+it. The picture draws the status bar (the glucose highlighted where it shows) and the notification (short and basic, or
+with the graph and a ring); it fades through on a change (cut with reduced motion), TalkBack reads it as one sentence.
+Under the choice only the chosen one's own rows; then *Notification* (*Coloured background*, *Glucose on the lock
+screen*). Picture `v4-settings-glucose-notification` (chip and notification icon light, status bar text dark).
+
+### 11.4 Where the choice lives, the root option, setup's steps
+
+**The page.** Considered: keep it inside *Status bar* (the owner: someone looking for the notification won't look
+there); split it over *Status bar* and a *Notification* page (the two halves of one choice on two pages); **one page
+named for the thing people look for, *Glucose notification*** (the overview row and search: *Where your glucose shows
+in the status bar*). Chosen: the last; *Status bar* is gone, its rows (root placement and colour, number icon, lock
+screen) are under the choice they belong to. The *Lock screen* page (the root lock-screen widget) stays its own.
+
+**The third option, *Status bar text* (root only).** The root value in the status bar, Sukrara's notification icon
+hidden, the notification with the graph. One stored choice over the existing keys (`NotificationStyleSettings`:
+`statusbar.hook` on + `statusbar.hideNotifIcon` on; otherwise `statusbar.chip`), so the hook, the module and the
+settings schema didn't change. Choosing it is the request for root (#178: never asked before), with root's or the
+module's missing step as the shared card below it (`AccessStepBanner`, moved to `:core:designsystem/root` so setup
+can show it). A build without root features shows two options.
+
+**Setup.** Two optional steps after *Keep Sukrara up to date*: **Root** (root builds only), then **Glucose notification**.
+Root: *Is this phone rooted?* with *Yes, it's rooted* / *It isn't rooted* / *Later*. "Automatic if possible": when the
+phone already shows signs of root (LSPosed answers, a `su` file, the module), the question is skipped and the check
+runs by itself; otherwise only the person's *Yes* asks, because asking `su` unprompted pops Magisk's dialog (where it still has one)
+on a phone whose owner didn't expect it, and KernelSU hides `su` from every app not allowed in its manager ("su is
+invisible to all applications by default", [KernelSU #1838](https://github.com/tiann/KernelSU/issues/1838)), so a
+silent probe can't tell "not rooted" from "not allowed yet". Magisk is going the same way: its interactive prompt is
+being removed for granting apps ahead of time in its Superuser list ([Magisk #10139](https://github.com/topjohnwu/Magisk/pull/10139)),
+which is why the card's first instruction is to allow Sukrara there and come back. After *Yes*: the shared card (*Allow root for Sukrara*, *Root
+needed*, … with *Check again*); root granted completes the step by itself. Glucose notification: the same component,
+*Status bar text* already picked when Sukrara has root (once; the person can choose another), *Continue* only (the chip
+is already an answer). Considered: one step with the root question inside the choice (the question would sit between
+three options and hide the picture); the root check inside *Permissions* (an essential step for an optional feature).
+Picture `v4-setup-root-notification`: the question, *Yes* on a phone without usable root, the choice without root, the
+choice with root picked.
+
+### 11.5 Pictures (v4)
+
+| Picture | What |
+|---|---|
+| ![](img/notification/v4-a-treatments-android37.png) | Live Update on 17: no treatment (*In range 1d*); rapid 4 u (*4u* · *1m*); carbs 30 g (*30g* · *1m*); both (*4u · 30g* · *24m*, the value high); carbs in the dark theme |
+| ![](img/notification/v4-settings-glucose-notification.png) | Settings › Glucose notification: chip (light), notification icon (light), status bar text with root (dark) |
+| ![](img/notification/v4-setup-root-notification.png) | Setup: *Root*; after *Yes* on a phone without usable root; *Glucose notification* without root; with root granted, *Status bar text* picked |
+| ![](img/notification/v4-separate-alerts-icon-android37.png) | Settings › Alerts › *Separate alert notifications* with its new icon |
+

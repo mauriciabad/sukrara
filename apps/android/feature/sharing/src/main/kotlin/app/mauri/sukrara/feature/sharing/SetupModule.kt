@@ -4,11 +4,15 @@
 package app.mauri.sukrara.feature.sharing
 
 import android.content.Context
+import app.mauri.sukrara.core.data.settings.NotificationStyleSettings
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseHub
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SystemAccessPort
+import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.StoredSpan
@@ -128,7 +132,20 @@ class SetupModule(
     val updates: SetupUpdates? = null,
     /** The insulin pens step's port; null = a build without pens (no step). */
     val pens: SetupPens? = null,
+    /** Root and the LSPosed module (the root step, the status bar text); null = a build without root features. */
+    val systemAccess: SystemAccessPort? = null,
 ) {
+    /** Root as setup's facts see it ([SetupFacts.root]): null = a build without root features. */
+    val rootGranted: Flow<Boolean?> by lazy { systemAccess?.state?.map { it.granted }?.distinctUntilChanged() ?: flowOf(null) }
+
+    /** Root and the module now (the root step's card). */
+    val access: Flow<SystemAccessState> by lazy { systemAccess?.state ?: flowOf(SystemAccessState()) }
+
+    /** THE glucose notification choice, as Settings › Glucose notification stores it. */
+    val notificationStyle: Flow<NotificationStyle> by lazy { NotificationStyleSettings.flow(settings, systemAccess != null) }
+
+    suspend fun setNotificationStyle(style: NotificationStyle) = NotificationStyleSettings.set(settings, style)
+
     /** Pens on this phone ([SetupFacts.pens]); null = it can't read them. */
     val pensAnswered: Flow<Boolean?> by lazy { pens?.answered ?: flowOf(null) }
 
@@ -183,13 +200,13 @@ class SetupModule(
             roles.role,
             hub.state,
             combine(sharing.state, follower.state, ::Pair),
-            combine(alertsConfirmedAt, readiness.readiness, updateChoice, pensAnswered, ::Answers),
+            combine(alertsConfirmedAt, readiness.readiness, updateChoice, pensAnswered, rootGranted, ::Answers),
         ) {
             record,
             role,
             glucose,
             (share, follow),
-            (confirmed, checklist, updates, pens),
+            (confirmed, checklist, updates, pens, root),
             ->
             SetupProgress(
                 record,
@@ -202,6 +219,7 @@ class SetupModule(
                     alertsReady = checklist.setupReady,
                     updates = updates,
                     pens = pens,
+                    root = root,
                 ),
             )
         }
@@ -223,12 +241,13 @@ class SetupModule(
     }
 }
 
-/** The answers kept elsewhere that setup's facts read (thresholds, checklist, updates, pens). */
+/** The answers kept elsewhere that setup's facts read (thresholds, checklist, updates, pens, root). */
 private data class Answers(
     val confirmed: Instant?,
     val checklist: app.mauri.sukrara.core.model.AlertReadiness,
     val updates: UpdateChoice?,
     val pens: Boolean?,
+    val root: Boolean?,
 )
 
 /** The setup record and the facts it is read against, at one moment ([SetupModule.progress]). */

@@ -24,6 +24,10 @@ import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
+import app.mauri.sukrara.designsystem.root.AccessProblem
+import app.mauri.sukrara.designsystem.root.AccessRunner
+import app.mauri.sukrara.designsystem.root.AccessStepBanner
+import app.mauri.sukrara.designsystem.root.lockAccessStep
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
@@ -31,10 +35,6 @@ import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.numberLabeler
-import app.mauri.sukrara.feature.settings.statusbar.AccessProblem
-import app.mauri.sukrara.feature.settings.statusbar.AccessRunner
-import app.mauri.sukrara.feature.settings.statusbar.AccessStepBanner
-import app.mauri.sukrara.feature.settings.statusbar.lockAccessStep
 import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted

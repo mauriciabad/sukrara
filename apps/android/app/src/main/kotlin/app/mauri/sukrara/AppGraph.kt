@@ -593,6 +593,8 @@ class AppGraph(
             updates = updateSuggestion?.setup(),
             // the optional insulin pens step (a phone with NFC)
             pens = SetupPens(pens.setupAnswer, pens::turnOnReading),
+            // the root step and the status bar text (builds with root features)
+            systemAccess = monitor.root?.access,
         )
     }
 

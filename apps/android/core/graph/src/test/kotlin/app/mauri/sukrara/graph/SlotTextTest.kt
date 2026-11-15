@@ -33,6 +33,22 @@ class SlotTextTest {
         es.forEach { (_, label) -> assertTrue(label, label.first().isUpperCase()) }
     }
 
+    /** The Live Update after a treatment (round 4 of #36): rapid, carbs, both; the carbs riding along insulin aren't lost. */
+    @Test fun `a recent treatment - its time and amount, with the carbs that ride along insulin`() {
+        fun last(vararg tr: app.mauri.sukrara.core.model.Treatment) =
+            GlucoseCard
+                .slotTexts(
+                    Scenes.model(Scenes.day(125, swing = 30), Scenes.words(Locale.ENGLISH), treatments = tr.toList()),
+                    notificationCardStyle(GraphConfig()),
+                    2,
+                ).last()
+        val rapid = Scenes.treatment("i", app.mauri.sukrara.core.model.TreatmentKind.RapidInsulin, 4.0, 12 * 60)
+        val carbs = Scenes.treatment("c", app.mauri.sukrara.core.model.TreatmentKind.Carbs, 30.0, 10 * 60)
+        assertEquals("12m" to "4u", last(rapid))
+        assertEquals("10m" to "30g", last(carbs))
+        assertEquals("12m" to "4u · 30g", last(rapid, carbs))
+    }
+
     @Test fun `the words follow the card's slots as set`() {
         val avg = GraphConfig(slots = listOf(RingSpec(86_400L, kind = SlotKind.AVERAGE), RingSpec(86_400L), RingSpec(86_400L)))
         val first = texts(avg).first().second

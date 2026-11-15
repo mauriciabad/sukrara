@@ -176,4 +176,35 @@
     <!-- el valor de un interruptor en palabras (el tiempo restante del sensor de un lugar, docs/38) -->
     <string name="ds_on">Activado</string>
     <string name="ds_off">Desactivado</string>
+    <string name="ds_access_asking_title">Pidiendo root</string>
+    <string name="ds_access_asking_text">Si tu gestor de root lo pregunta, permite Sukrara.</string>
+    <string name="ds_access_root_title">Hace falta root</string>
+    <string name="ds_access_root_text">Sukrara no encuentra root que pueda usar. Si este teléfono tiene root con KernelSU o APatch, permite Sukrara en su lista de Superusuario (nunca preguntan) y vuelve a comprobarlo. Magisk pregunta al volver a comprobarlo.</string>
+    <string name="ds_access_not_allowed_title">Permite root a Sukrara</string>
+    <string name="ds_access_not_allowed_text">Este teléfono tiene root, pero Sukrara no tiene permiso para usarlo. Abre tu gestor de root (KernelSU, APatch o Magisk), permite Sukrara en su lista de Superusuario y vuelve: Sukrara lo comprueba de nuevo.</string>
+    <string name="ds_access_refused_title">Root denegado</string>
+    <string name="ds_access_refused_text">Tu gestor de root ha denegado root a Sukrara. Permite Sukrara en su lista de Superusuario y vuelve a comprobarlo.</string>
+    <string name="ds_access_no_answer_title">Sin respuesta del root</string>
+    <string name="ds_access_no_answer_text">Tu gestor de root no ha respondido a tiempo. Vuelve a comprobarlo y permite Sukrara cuando pregunte.</string>
+    <string name="ds_access_root_action">Comprobar de nuevo</string>
+    <string name="ds_access_module_title">Módulo LSPosed desactivado</string>
+    <string name="ds_access_module_text">Instala LSPosed, activa el módulo de Sukrara y marca System UI en su ámbito; luego reinicia System UI.</string>
+    <string name="ds_access_scope_title">System UI fuera del ámbito</string>
+    <string name="ds_access_scope_text">El módulo de Sukrara está activado en %1$s pero no para System UI.</string>
+    <string name="ds_access_scope_action">Añadir System UI</string>
+    <string name="ds_access_restart_title">Reiniciar System UI</string>
+    <string name="ds_access_restart_text">System UI funciona sin el módulo de Sukrara. Al reiniciarlo se carga el módulo (la barra de estado se redibuja un momento).</string>
+    <string name="ds_access_restart_text_updated">Sukrara se ha actualizado: System UI sigue con el módulo anterior. Reinícialo para cargar el nuevo (la barra de estado se redibuja un momento).</string>
+    <string name="ds_access_restarting">Un momento…</string>
+    <string name="ds_access_failed">No se ha podido: %1$s</string>
+    <string name="ds_notif_style_heading">Glucosa en la barra de estado</string>
+    <string name="ds_notif_style_chip">Chip</string>
+    <string name="ds_notif_style_chip_summary">Notificación básica</string>
+    <string name="ds_notif_style_icon">Icono de notificación</string>
+    <string name="ds_notif_style_icon_summary">Notificación con la gráfica</string>
+    <string name="ds_notif_style_root">Texto en la barra de estado</string>
+    <string name="ds_notif_style_root_summary">Notificación con la gráfica · Necesita root</string>
+    <string name="ds_notif_style_chip_preview">Vista previa: tu glucosa en un chip junto al reloj, y una notificación básica</string>
+    <string name="ds_notif_style_icon_preview">Vista previa: tu glucosa como icono de notificación, y la notificación con la gráfica</string>
+    <string name="ds_notif_style_root_preview">Vista previa: tu glucosa como texto en la barra de estado, y la notificación con la gráfica</string>
 </resources>
