@@ -231,8 +231,9 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
     per group) and the glucose notification carries none. The same whenever Android doesn't show the glucose
     notification (its channel, its group or all of Sukrara's notifications turned off: *Nothing* on that page; Android
     drops every post on it): what is up moves there at once, silently. The plain
-    alert and *Monitoring problems* stay separate (the safety net). Without the card's pictures (the screen off, a
-    drawing failure) the title says the value with the alert (`62 ↓ · Low glucose · Eat carbs`). Pictures: docs/36 §9.
+    alert and *Monitoring problems* stay separate (the safety net). A ring is drawn as the card even with the screen
+    off (it wakes the screen: never text first and the card 10 s later, the owner 2026-11-15). Without the card's
+    pictures (the screen off between rings, a drawing failure) the title says the value with the alert (`62 ↓ · Low glucose · Eat carbs`). Pictures: docs/36 §9.
     The Mac has only the alert (the menu bar shows the value).
   - Mac: a post without sound is `.passive` (it replaces the list's entry, never a second banner; `willPresent` lists it
     only while Sukrara is in front); the alert categories carry `.customDismissAction`, so a dismissal or click is known.
@@ -1732,7 +1733,7 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   struck, status pill). Small icon = *What the icon shows*: the number with the arrow under it (`ValueGlyphs.icon`,
   struck at half strength), the number alone (`trend = false`), the arrow, or Sukrara's drop (`ds_ic_status_sukrara`). Pictures are drawn at most at 2× density, cached (header per minute, chart
   per 5 min / reading), never drawn while the screen is off (an out-of-date card posts as text and screen on redraws
-  it); a drawing failure posts the same notification as text, and the foreground start never draws.
+  it) except for an alert's ring, which wakes the screen and is the card from its first frame; a drawing failure posts the same notification as text, and the foreground start never draws.
 - **Android 17 Live Update card**: MetricStyle, titled with the range in words (*In range*, *Low*, …) or the alert;
   the face's value and arrow without a unit (`101 ↑`, styled danger / caution / safe by the person's low and high bands;
   plain once struck through; THE text arrow in bold: a metric is text only, and the system font has no heavier arrow set

@@ -7,6 +7,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.os.PowerManager
 import android.widget.FrameLayout
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.alerts.AlertGroup
@@ -390,6 +391,18 @@ class OneNotificationTest {
         val n = live.build(content, now, frame, LiveNotification.Mode.RING)
         val parent = FrameLayout(ctx)
         for (views in listOfNotNull(n.contentView, n.bigContentView, n.headsUpContentView)) views.apply(ctx, parent)
+        assertNotNull("the card with the graph", n.bigContentView)
+        assertNotNull("the heads-up with the alert's title", n.headsUpContentView)
+    }
+
+    /** The owner, 2026-11-15: a high rang as plain text and turned into the card 10 s later (the screen was off). */
+    @Test fun `a ring with the screen off is the card from the start`() {
+        shadowOf(ctx.getSystemService(PowerManager::class.java)).turnScreenOn(false)
+        val content = LiveNotificationContent.from(state(), now, LiveNotification::face, NotificationPrefs(chip = false))
+        val frame = CardFrame(state(), emptyList(), GraphConfig(), dark = true)
+        assertNull("an update with the screen off draws nothing", live.build(content, now, frame).bigContentView)
+        presenter().show(fire(AlertKind.LOW), settings, silent = false, who = null, relaxedMin = 0)
+        val n = live.build(content, now, frame, LiveNotification.Mode.RING)
         assertNotNull("the card with the graph", n.bigContentView)
         assertNotNull("the heads-up with the alert's title", n.headsUpContentView)
     }

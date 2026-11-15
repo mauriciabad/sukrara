@@ -75,8 +75,8 @@ import java.util.concurrent.TimeUnit
  * - **the card** (chosen, or automatically while the root value is in the bar, or Live Updates refused) → the
  *   renderer's header row collapsed and header + chart expanded, on the system's notification colour, or in the range
  *   colour (grey once struck through) with *Coloured background*; the small icon is the number itself (*Number
- *   icon*) or the arrow. Without its pictures (the first post, the screen off with an out-of-date card, a drawing
- *   failure) it posts the same notification as text, never an old picture.
+ *   icon*) or the arrow. Without its pictures (the first post, the screen off with an out-of-date card, except for a
+ *   ring, which wakes the screen; a drawing failure) it posts the same notification as text, never an old picture.
  *
  * **It is the alert too** (docs/36, SPEC §1 "Showing an alert"; [GlucoseAlertSink]): while an alert is up it carries
  * the alert's title, buttons and swipe. A ring re-posts it at once on the kind's own channel without only-alert-once
@@ -269,7 +269,8 @@ class LiveNotification(
         val promoted = content.layout == Layout.LIVE_UPDATE && Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1
         // the card's pictures first: without them (screen off, a drawing failure) it is a text notification and says so
         val bg = if (content.layout == Layout.CARD) cardColor(content, frame) else null
-        val art = if (content.layout == Layout.CARD) frame?.let { cardArt(it, content, bg, now, alert) } else null
+        // a ring draws even with the screen off: it turns the screen on, and its heads-up must be the card from the start
+        val art = if (content.layout == Layout.CARD) frame?.let { cardArt(it, content, bg, now, alert, mode == Mode.RING) } else null
         val title = title(content, alert, now, frame, drawn = art != null)
         val text = text(content, alert, now)
         val builder =
@@ -579,16 +580,20 @@ class LiveNotification(
         return if (content.colorize) NotificationCard.background(look, mgdl, frame?.config ?: GraphConfig()) else null
     }
 
-    /** The card's pictures for this post, or null (none yet, the screen off, a failure: text then). */
+    /**
+     * The card's pictures for this post, or null (none yet, the screen off, a failure: text then). [screenOff]: drawn
+     * with the screen off too (a ring).
+     */
     private fun cardArt(
         frame: CardFrame,
         content: LiveNotificationContent,
         bg: Int?,
         now: Instant,
         alert: GlucoseAlert?,
+        screenOff: Boolean = false,
     ): NotificationArt? {
         if (content.look == null || content.mgdl == null) return null
-        return art(frame, content, bg, now, alert?.rangeSaid == true)
+        return art(frame, content, bg, now, alert?.rangeSaid == true, screenOff)
     }
 
     private fun views(
@@ -627,6 +632,7 @@ class LiveNotification(
         bg: Int?,
         now: Instant,
         rangeSaid: Boolean,
+        screenOff: Boolean,
     ): NotificationArt? {
         val quiet = frame.state.alerts.treatmentQuiet
         val key =
@@ -647,7 +653,7 @@ class LiveNotification(
         val gKey = listOf(frame.config, frame.dark, frame.state.latest, frame.treatments, quiet, now.epochSecond / GRAPH_EVERY_S)
         val cached = artCache
         if (cached != null && key == artKey && gKey == graphKey) return cached
-        if (!context.getSystemService(PowerManager::class.java).isInteractive) return null
+        if (!screenOff && !context.getSystemService(PowerManager::class.java).isInteractive) return null
         return runCatching {
             val model = cardModelOf(frame.state, frame.treatments, now, CardWords.of(context.resources), frame.slots(now))
             val redrawGraph = cached?.graph == null || gKey != graphKey
