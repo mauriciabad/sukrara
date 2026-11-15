@@ -548,6 +548,56 @@ class SourceManagerTest {
             }
         }
 
+    /**
+     * Juggluco's readings go to the LibreView upload with their sensor and life count (docs/41): the newest reading's
+     * sensor only (Juggluco answers newest first; a history reaching into the sensor before never replaces it), oldest
+     * first, a late collector still gets them; the live value as current.
+     */
+    @Test
+    fun jugglucoReadingsReachTheUploadWithTheirSensorAndLifeCount(): Unit =
+        runBlocking {
+            val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+
+            fun respond(path: String, body: String) =
+                server.createContext(path) { ex ->
+                    val out = body.encodeToByteArray()
+                    ex.sendResponseHeaders(200, out.size.toLong())
+                    ex.responseBody.use { it.write(out) }
+                }
+            respond(
+                "/api/v1/entries.json",
+                """[{"_id":"3MH01GFXNU8#61","date":1760776860000,"sgv":121},{"_id":"3MH01GFXNU8#60","date":1760776800000,"sgv":120},
+                    {"_id":"0MH00OLDOLD#20000","date":1760770000000,"sgv":99}]""",
+            )
+            respond("/sgv.json", "[]")
+            respond("/x/live", "event: glucose\ndata: {\"timestamp\":1760776920,\"sensorId\":1,\"recordId\":62,\"glucoseMgDl\":122}\n\n")
+            server.start()
+            val manager =
+                SourceManager(
+                    MutableStateFlow(SensorSourceKind.Juggluco),
+                    PairingStore(InMemorySecureStore()),
+                    NoSecurity,
+                    FakeConnector(),
+                    FakeScanner(),
+                    juggluco = { JugglucoSource(OkHttpClient(), "http://127.0.0.1:${server.address.port}") { ZoneOffset.UTC } },
+                    clock = FakeClock(),
+                    dispatcher = Dispatchers.Default.limitedParallelism(1),
+                    io = Dispatchers.IO,
+                )
+            try {
+                manager.start()
+                // no serial for the live value without a sensor status: only the history's batch
+                val b = withTimeout(10_000) { manager.sensorGlucose.first() }
+                assertEquals("3MH01GFXNU8", b.serial)
+                assertTrue(b.everyMinute)
+                assertEquals(listOf(60, 61), b.history.map { it.lifeCount })
+                assertEquals(null, b.current)
+            } finally {
+                manager.stop()
+                server.stop(0)
+            }
+        }
+
     @Test
     fun everyProblemHasItsAction() {
         assertEquals(SensorAction.TakeOver, SensorStatus.OwnedByAnotherApp.action)

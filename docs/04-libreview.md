@@ -231,7 +231,7 @@ LibreView answers `status 0` before it ingests, so the app can only compare what
 
 | Discarded | Why |
 |---|---|
-| Uploading the Libre 2 from Juggluco's readings in this round | another identity (LibreLink's `FSLibreLink.Android`, its own device and record numbers) that has to be proved against a real account first, as this report did for the Libre 3: a separate investigation |
+| Uploading the Libre 2 from Juggluco's readings in this round | another identity (LibreLink's `FSLibreLink.Android`, its own device and record numbers) that has to be proved against a real account first, as this report did for the Libre 3: a separate investigation. *Done in [41](41-libreview-other-sensors.md): a Libre 1 / 2 through Juggluco now goes up under Sukrara's one Libre 3 identity, so there's no second uploader* |
 | Telling the person to turn on Juggluco's *Send to Libreview* | unverified whether its Libre 2 uploads and Sukrara's treatments (Libre 3 identity) can share one account without the take-over fight above |
 | A notification for the stall | the clinic gap is not urgent the way an alert is; home's banner and the page are where the person looks, without a notification (CLAUDE.md "Complete flows") |
-| Backfilling 2–11 Nov | those readings were the earlier app's and Juggluco's (a Libre 2): Sukrara has no Libre 3 record for them |
+| Backfilling 2–11 Nov | those readings were the earlier app's and Juggluco's (a Libre 2): Sukrara has no Libre 3 record for them. *41 added* Send earlier glucose *for the current sensor (3 Nov 14:39 on); 2 Nov 18:59 → 3 Nov 14:39 had no sensor* |

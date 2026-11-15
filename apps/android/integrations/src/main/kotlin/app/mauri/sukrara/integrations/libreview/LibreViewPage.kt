@@ -28,7 +28,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.model.Durations
-import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.errors.UserErrors
@@ -88,6 +87,7 @@ class LibreViewViewModel(
             },
             resetTakeOver = { _takeOver.value = LvTakeOverUi.Idle },
             setInterval = { min -> viewModelScope.launch { uploader.setInterval(min) } },
+            sendEarlier = { viewModelScope.launch { runCatching { uploader.sendEarlier() } } },
         )
 
     fun nowInstant() = now()
@@ -103,6 +103,8 @@ class LibreViewActions(
     val takeOver: () -> Unit = {},
     val resetTakeOver: () -> Unit = {},
     val setInterval: (Double) -> Unit = {},
+    /** *Send earlier glucose*: the current sensor's glucose from before the switch-on goes up too. */
+    val sendEarlier: () -> Unit = {},
 )
 
 @Composable
@@ -144,7 +146,7 @@ fun libreViewStatusText(
         }
 
         is UploadStatus.Behind -> {
-            val why = status.source?.let { stringResource(R.string.in_lv_why_other_source, sourceName(it)) } ?: behindWhy(status)
+            val why = if (status.source != null) stringResource(R.string.in_lv_glucose_other_source) else behindWhy(status)
             stringResource(R.string.in_lv_status_behind, since(status.since, now), why)
         }
 
@@ -172,6 +174,7 @@ fun LibreViewContent(
     val s = state.settings
     val on = s.on && wearer && state.signedIn
     var choosingInterval by rememberSaveable { mutableStateOf(false) }
+    var sendingEarlier by rememberSaveable { mutableStateOf(false) }
     SettingsIntro(stringResource(R.string.in_lv_intro))
     SettingsGroup {
         ValueRow(
@@ -244,6 +247,16 @@ fun LibreViewContent(
         SwitchRow(stringResource(R.string.in_lv_glucose), s.glucose, { v ->
             actions.change { it.copy(glucose = v) }
         }, enabled = on, summary = off ?: glucoseSummary(state))
+        // the phone holds the current sensor's glucose from before the switch-on: offered, never sent by itself
+        val earlier = state.earlierFrom?.takeIf { on && s.glucose && state.otherSource == null }
+        if (earlier != null) {
+            ValueRow(
+                stringResource(R.string.in_lv_earlier),
+                stringResource(R.string.in_lv_earlier_summary, dateTime(earlier)),
+                { sendingEarlier = true },
+                icon = DsR.drawable.ds_ic_history,
+            )
+        }
         SwitchRow(stringResource(R.string.in_ns_entries), s.treatments, { v ->
             actions.change { it.copy(treatments = v) }
         }, enabled = on, summary = off ?: stringResource(R.string.in_lv_entries_summary))
@@ -258,6 +271,10 @@ fun LibreViewContent(
     FooterText(stringResource(R.string.in_lv_footer))
     if (taking) {
         TakeOverDialog(takeOver, actions) { setTaking(false) }
+    }
+    val earlierFrom = state.earlierFrom
+    if (sendingEarlier && earlierFrom != null) {
+        SendEarlierDialog(earlierFrom, actions.sendEarlier) { sendingEarlier = false }
     }
     if (choosingInterval) {
         val words = CardWords.of(LocalContext.current.resources).durations
@@ -276,24 +293,47 @@ fun LibreViewContent(
 @Composable
 private fun intervalText(min: Double): String = Durations.text(min.toLong(), CardWords.of(LocalContext.current.resources).durations)
 
-/** Where glucose that can't go up comes from, in words: "Juggluco", or "another kind of sensor". */
-@Composable
-fun sourceName(source: SourceId): String =
-    if (source == SourceId.Juggluco) stringResource(R.string.in_lv_source_juggluco) else stringResource(R.string.in_lv_source_other)
-
 @Composable
 private fun glucoseSummary(state: LvPageState): String {
     // switched on, but what the phone reads can't go up: said at once, not only once it has stalled
-    state.otherSource?.takeIf { state.settings.glucose }?.let { return stringResource(R.string.in_lv_glucose_other_source, sourceName(it)) }
+    if (state.otherSource != null && state.settings.glucose) return stringResource(R.string.in_lv_glucose_other_source)
     val from = state.glucoseFrom ?: return stringResource(R.string.in_lv_glucose_summary)
-    val ctx = LocalContext.current
-    val at =
-        DateUtils.formatDateTime(
-            ctx,
-            from.toEpochMilli(),
-            DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_MONTH,
-        )
-    return stringResource(R.string.in_lv_glucose_from, at)
+    return stringResource(R.string.in_lv_glucose_from, dateTime(from))
+}
+
+/** "3 Nov, 14:40": a moment with its date. */
+@Composable
+private fun dateTime(at: Instant): String =
+    DateUtils.formatDateTime(
+        LocalContext.current,
+        at.toEpochMilli(),
+        DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_ABBREV_MONTH,
+    )
+
+/**
+ * *Send earlier glucose*: what goes up (the current sensor's glucose from [from]) and why it is asked (another app may
+ * have sent it: LibreView would count it twice); *Send* or *Cancel*.
+ */
+@Composable
+private fun SendEarlierDialog(
+    from: Instant,
+    send: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val haptics = rememberHaptics()
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.in_lv_earlier_title)) },
+        text = { Text(stringResource(R.string.in_lv_earlier_text, dateTime(from)), style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            TextButton(onClick = {
+                haptics.confirm()
+                send()
+                onClose()
+            }) { Text(stringResource(R.string.in_lv_earlier_send)) }
+        },
+        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.in_cancel)) } },
+    )
 }
 
 /**

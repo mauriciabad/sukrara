@@ -73,7 +73,7 @@ data class LvState(
 )
 
 /**
- * The Libre 3 history LibreView hasn't got yet (typed store `libreview-unsent`), so a restart or a process death
+ * The history LibreView hasn't got yet (typed store `libreview-unsent`), so a restart or a process death
  * doesn't lose it: at most [LibreViewQueue.HISTORY_MIN] of one sensor, only what would go up ([LibreViewQueue.unsent]).
  */
 @Serializable
@@ -99,11 +99,31 @@ object LibreViewQueue {
     const val MAX_ENTRIES = 100
     const val MAX_HISTORY = 288
 
-    /** History of 3 days per sensor is kept (memory) and remembered as sent (state). */
-    const val HISTORY_MIN = 3 * 24 * 60
+    /**
+     * A sensor's whole life (15 days) of history is kept (memory) and remembered as sent (state): what goes up later
+     * (*Send earlier glucose*, a long stall) is still there, and nothing goes up twice.
+     */
+    const val HISTORY_MIN = 15 * 24 * 60
 
     /** A current reading older than this isn't sent as current (it arrives as history). */
     const val CURRENT_MAX_AGE_S = 5 * 60L
+
+    /** The history LibreView keeps for a Libre 3, and what a sensor read every minute is reduced to (minutes). */
+    const val SLOT_MIN = 5
+
+    /**
+     * Readings of a sensor read every minute ([LvGlucose.lifeCount] = the sensor's minute) as LibreView's 5-minute
+     * history: one value per 5 minutes of the sensor's life, the first reading in it, under the slot's first minute.
+     * Life count 0 is the sensor-start record's number. The same readings in any order give the same values.
+     */
+    fun slots(readings: Collection<LvGlucose>): List<LvGlucose> =
+        readings
+            .asSequence()
+            .map { it.copy(lifeCount = it.lifeCount / SLOT_MIN * SLOT_MIN) }
+            .filter { it.lifeCount > 0 }
+            .groupBy { it.lifeCount }
+            .map { (_, vs) -> vs.minWith(compareBy({ it.epochSec }, { it.mgdl })) }
+            .sortedBy { it.lifeCount }
 
     /**
      * The entries that LibreView lacks, oldest first, at most [MAX_ENTRIES]: new ones changed since the upload was

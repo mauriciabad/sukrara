@@ -42,7 +42,7 @@ data class LvEntry(
     }
 }
 
-/** One Libre 3 reading: [lifeCount] = minutes since the sensor started, the sensor's own record id. */
+/** One Libre reading: [lifeCount] = minutes since the sensor started, the sensor's own record id. */
 @Serializable
 data class LvGlucose(
     val lifeCount: Int,
@@ -60,7 +60,26 @@ data class LvSensor(
     val history: List<LvGlucose> = emptyList(),
     /** Include the one-off `sensorstart` record. */
     val sendStart: Boolean = false,
-)
+) {
+    /** The `sensorstart` record's family: a Libre 1 / 2 as LibreLink names it, else a Libre 3. */
+    val productType: Int get() = if (LibreSerial.libre12(serial)) 3 else 4
+
+    /** The `sensorstart` record's wear, minutes: a Libre 2's 14 days as LibreLink sends it, a Libre 3's 15. */
+    val wearMin: Int get() = if (LibreSerial.libre12(serial)) 20160 else 21600
+}
+
+/** What a FreeStyle Libre serial says. */
+object LibreSerial {
+    /**
+     * A Libre 1 / 2 / 2 Plus serial as Juggluco and LibreLink name it: 11 characters, the family digit 0 or 3, then M
+     * (the NFC uid's fixed top bytes). The other families Juggluco reads (Sibionics, Dexcom, …) never look like this.
+     */
+    fun libre12(serial: String): Boolean =
+        serial.length == 11 && serial[0] in "03" && serial[1] == 'M' && serial.all { it in '0'..'9' || it in 'A'..'Z' }
+
+    /** The sensor as the account's registration names it: a Libre 1 / 2's whole serial, a Libre 3's last 9 characters. */
+    fun active(serial: String): String = if (libre12(serial)) serial else serial.takeLast(9)
+}
 
 /**
  * The `/api/measurements` body, byte for byte as contracts/treatments/SPEC.md §3 defines it (checked against
@@ -242,19 +261,17 @@ object LibreViewPayload {
     ) = "{\"extendedProperties\":{\"canMerge\":true,\"isFirstAfterTimeChange\":false,\"factoryTimestamp\":\"${utcMs(g.epochSec)}\"}," +
         "\"recordNumber\":${h or g.lifeCount.toLong()},\"timestamp\":\"${localMs(g.epochSec, zone)}\",\"valueInMgPerDl\":${g.mgdl}.0}"
 
+    /**
+     * The one-off `sensorstart` record, both times at the sensor's start: Sukrara may send it days later (it came
+     * mid-sensor, or a backfill), and LibreView files the record under `timestamp` (docs/41: the upload time showed).
+     */
     private fun sensorStart(
         h: Long,
         s: LvSensor,
-        now: Long,
         zone: ZoneId,
-    ) =
-        "{\"type\":\"com.abbottdiabetescare.informatics.sensorstart\",\"extendedProperties\":{\"factoryTimestamp\":\"${utcMs(
-            s.startEpoch,
-        )}\"," +
-            "\"puckGen\":0,\"wearDuration\":21600,\"warmupTime\":60,\"productType\":4},\"recordNumber\":$h,\"timestamp\":\"${localMs(
-                now,
-                zone,
-            )}\"}"
+    ) = "{\"type\":\"com.abbottdiabetescare.informatics.sensorstart\",\"extendedProperties\":{\"factoryTimestamp\":" +
+        "\"${utcMs(s.startEpoch)}\",\"puckGen\":0,\"wearDuration\":${s.wearMin},\"warmupTime\":60," +
+        "\"productType\":${s.productType}},\"recordNumber\":$h,\"timestamp\":\"${localMs(s.startEpoch, zone)}\"}"
 
     fun payload(
         entries: List<LvEntry>,
@@ -268,7 +285,7 @@ object LibreViewPayload {
 
         fun of(vararg kinds: String) = trs.filter { it.k in kinds }.flatMap { entries(it, zone) }
         val h = sensor?.let { histor(it.serial) } ?: 0L
-        val generic = listOfNotNull(sensor?.takeIf { it.sendStart }?.let { sensorStart(h, it, now, zone) }) + of("note")
+        val generic = listOfNotNull(sensor?.takeIf { it.sendStart }?.let { sensorStart(h, it, zone) }) + of("note")
         val currents = listOfNotNull(sensor?.current?.let { current(h, it, zone) })
         val hist = sensor?.history.orEmpty().map { history(h, it, zone) }
         return "{\"DeviceData\":{\"deviceSettings\":{\"factoryConfig\":{\"UOM\":\"mg/dL\"},\"firmwareVersion\":\"3.3.0\"," +

@@ -34,8 +34,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 ### Interconnectivity
 
-- Send to LibreView, Tidepool, Nightscout and Health Connect. LibreView gets glucose from a Libre 3 Sukrara reads itself;
-  home warns when LibreView stops getting your glucose.
+- Send to LibreView, Tidepool, Nightscout and Health Connect. LibreView gets glucose from a Libre 3 Sukrara reads itself
+  or a Libre 1 / 2 read through Juggluco, earlier glucose of the current sensor when you ask; home warns when LibreView
+  stops getting your glucose.
 - Can act as an xDrip+ or Nightscout API, and broadcast glucose to apps like AAPS.
 - Sukrara companion apps:
   - Family and friends see your glucose live on their devices.

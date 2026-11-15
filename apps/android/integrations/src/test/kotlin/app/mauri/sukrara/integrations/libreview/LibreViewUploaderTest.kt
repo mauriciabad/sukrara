@@ -635,6 +635,96 @@ class LibreViewUploaderTest {
             assertEquals(Instant.ofEpochSecond(from), uploader.glucoseBehind.first())
         }
 
+    /** Juggluco's minute readings of [serial] (its `SERIAL#lifeCount`), life counts [from] until [to], one a minute. */
+    private fun minutes(
+        serial: String,
+        from: Int,
+        to: Int,
+        t0: Long,
+        skip: Set<Int> = emptySet(),
+    ) = LvReadings(
+        serial,
+        null,
+        (from until to).filter { it !in skip }.map { LvGlucose(it, 100 + it % 7, t0 + (it - from) * 60L + 7) },
+        everyMinute = true,
+    )
+
+    @Test
+    fun `the owner's case - a Libre 2 read through Juggluco goes up as 5-minute values, as this one device`() =
+        runBlocking {
+            signedInAndOn()
+            val serial = "3MH01GFXNU8"
+            sensor.value = CurrentSensor(serial, now - Duration.ofDays(2), now + Duration.ofDays(12))
+            latest.value = Reading(clock.now(), 120, null, SourceId.Juggluco)
+            assertEquals("a Libre 2 through Juggluco can go up", null, uploader.page.first().otherSource)
+            clock.advance(Duration.ofMinutes(30))
+            val t0 = clock.now().epochSecond - 20 * 60
+            // the slot 2880 misses its first minute: its value is the next one's
+            assertTrue(uploader.buffer(minutes(serial, 2879, 2899, t0, skip = setOf(2880))))
+            // a later batch with a later reading of a slot never replaces its first one
+            uploader.buffer(LvReadings(serial, LvGlucose(2898, 140, t0 + 19 * 60 + 7), listOf(LvGlucose(2895, 99, t0 + 30 * 60)), true))
+            uploader.cycle()
+            // registered as LibreLink names a Libre 2 (the whole serial), never a take-over
+            val put = requests.single { it.path == "/api/nisperson" }.body.readUtf8()
+            assertTrue(put, "{\\\"activeSensor\\\":\\\"3MH01GFXNU8\\\"}" in put)
+            assertTrue(logins().all { "\"SetDevice\":false" in it })
+            uploader.cycle()
+            val body = uploads().single()
+            val h = LibreViewPayload.histor(serial)
+            for (lc in listOf(2880L, 2885L, 2890L, 2895L)) assertTrue("$lc", "\"recordNumber\":${h or lc}," in body)
+            assertFalse("no minute values", "\"recordNumber\":${h or 2881L}," in body)
+            assertTrue("the slot's first reading", "\"recordNumber\":${h or 2895L},\"timestamp\"" in body)
+            assertFalse("the later reading of 2895 stays out", "\"valueInMgPerDl\":99.0" in body)
+            assertTrue("a Libre 2's sensor start", "\"productType\":3}" in body && "\"wearDuration\":20160" in body)
+            assertTrue("the live value", "\"currentGlucoseEntries\":[{" in body)
+            assertTrue(uploader.page.first().status is UploadStatus.Ok)
+        }
+
+    @Test
+    fun `another family read through Juggluco never goes up`() =
+        runBlocking {
+            signedInAndOn()
+            val serial = "LT2401AB1CD"
+            sensor.value = CurrentSensor(serial, now - Duration.ofDays(2), now + Duration.ofDays(12))
+            latest.value = Reading(clock.now(), 120, null, SourceId.Juggluco)
+            assertEquals(SourceId.Juggluco, uploader.page.first().otherSource)
+            clock.advance(Duration.ofMinutes(30))
+            assertFalse(uploader.buffer(minutes(serial, 2880, 2900, clock.now().epochSecond - 20 * 60)))
+            uploader.cycle()
+            uploader.cycle()
+            assertEquals(0, registrations())
+            assertEquals(0, uploads().size)
+        }
+
+    @Test
+    fun `send earlier glucose sends what the phone holds of the sensor from before the switch-on, once asked`() =
+        runBlocking {
+            signedInAndOn()
+            val serial = "3MH01GFXNU8"
+            val from = store.data.first().glucoseFrom
+            sensor.value = CurrentSensor(serial, now - Duration.ofDays(9), now + Duration.ofDays(5))
+            // the sensor's whole life from Juggluco: 9 days before the switch-on, then 30 minutes after it
+            val life = 9 * 24 * 60
+            val t0 = from - life * 60L
+            uploader.buffer(minutes(serial, 60, life + 30, t0 + 60 * 60, emptySet()))
+            clock.advance(Duration.ofMinutes(31))
+            assertEquals(Instant.ofEpochSecond(t0 + 60 * 60 + 7), uploader.page.first().earlierFrom)
+            uploader.cycle()
+            uploader.cycle()
+            assertEquals("only from the switch-on by itself", 1, uploads().size)
+            assertFalse("\"recordNumber\":${LibreViewPayload.histor(serial) or 60L}," in uploads().single())
+
+            uploader.sendEarlier()
+            assertEquals(null, uploader.page.first().earlierFrom)
+            repeat(15) { uploader.cycle() }
+            val all = uploads().joinToString()
+            val h = LibreViewPayload.histor(serial)
+            assertTrue("\"recordNumber\":${h or 60L}," in all)
+            assertTrue("\"recordNumber\":${h or (life - 5).toLong()}," in all)
+            // life counts 60 … life + 29: the slots 60, 65 … life + 25
+            assertEquals("each 5-minute value once", (life + 25 - 60) / 5 + 1, Regex("\"canMerge\"").findAll(all).count())
+        }
+
     @Test
     fun `glucose read through Juggluco can't go up - the page says so at once and home once it stalls`() =
         runBlocking {

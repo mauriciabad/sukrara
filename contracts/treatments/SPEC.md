@@ -171,8 +171,13 @@ retraction, else empty.
   else FallingQuickly; unknown → `Undetermined`.
 - `scheduledContinuousGlucoseEntries` (5-minute history, ascending):
   `{"extendedProperties":{"canMerge":true,"isFirstAfterTimeChange":false,"factoryTimestamp":"UTC_MS"},"recordNumber":N,"timestamp":"LOCAL_MS","valueInMgPerDl":123.0}`
-- once per sensor, first in `genericEntries`:
-  `{"type":"com.abbottdiabetescare.informatics.sensorstart","extendedProperties":{"factoryTimestamp":"UTC_MS of sensor start","puckGen":0,"wearDuration":21600,"warmupTime":60,"productType":4},"recordNumber":histor,"timestamp":"LOCAL_MS now"}`
+  A sensor read every minute (a Libre 1 / 2 / 2 Plus through Juggluco, serial `[03]M` + 9, docs/41): its readings by
+  the sensor's own minute (Juggluco's `SERIAL#lifeCount`) become one value per 5 minutes of life, the first reading in
+  `[5k, 5k + 5)` under life count `5k` (`k > 0`); vectors in `libreview-glucose-fixture.json`.
+- once per sensor, first in `genericEntries`, both times at the sensor's start (it may go up days later):
+  `{"type":"com.abbottdiabetescare.informatics.sensorstart","extendedProperties":{"factoryTimestamp":"UTC_MS of sensor start","puckGen":0,"wearDuration":W,"warmupTime":60,"productType":P},"recordNumber":histor,"timestamp":"LOCAL_MS of sensor start"}`
+  (`P` = 4, `W` = 21600 for a Libre 3; `P` = 3, `W` = 20160 for a Libre 1 / 2, as LibreLink sends them). The
+  registration's `activeSensor` is a Libre 3's last 9 characters, a Libre 1 / 2's whole serial.
 
 ## 4. Spike hygiene
 

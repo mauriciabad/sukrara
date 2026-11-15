@@ -29,6 +29,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -55,11 +56,15 @@ data class LvSettings(
     val treatments: Boolean = true,
 )
 
-/** A batch of Libre 3 readings from the sensor link, tagged with the sensor they came from. */
+/**
+ * A batch of readings by life count, tagged with the sensor they came from: a Libre 3's from the sensor link (5-minute
+ * history), or a sensor another app reads ([everyMinute]: Juggluco's minute readings; only a Libre 1 / 2 goes up).
+ */
 data class LvReadings(
     val serial: String,
     val current: LvGlucose?,
     val history: List<LvGlucose>,
+    val everyMinute: Boolean = false,
 )
 
 /** What the LibreView page shows. */
@@ -76,8 +81,13 @@ data class LvPageState(
     val intervalMin: Double = LibreViewUploader.INTERVAL.default,
     /** LibreView no longer accepts the account's saved password: sign in again on the account screen. */
     val signInAgain: Boolean = false,
-    /** The glucose comes from a source that can't go up (Juggluco, another family): only a Libre 3 read here can. */
+    /**
+     * The glucose comes from a source that can't go up (another family, or Juggluco reading anything but a Libre 1 / 2):
+     * only a Libre 3 read here or a Libre 1 / 2 read through Juggluco can.
+     */
     val otherSource: SourceId? = null,
+    /** The phone holds the current sensor's glucose from this moment, before [glucoseFrom]: *Send earlier glucose*. */
+    val earlierFrom: Instant? = null,
 )
 
 /**
@@ -110,8 +120,9 @@ sealed interface LvTakeOver {
 }
 
 /**
- * Settings › Share with apps › LibreView: the wearer's entries and Libre 3 glucose to their LibreView account, the way
- * the FreeStyle Libre 3 app sends them, so their clinic sees them. Off by default; wearer only.
+ * Settings › Share with apps › LibreView: the wearer's entries and Libre glucose (a Libre 3 this phone reads, a Libre 1 /
+ * 2 read through Juggluco) to their LibreView account, the way the FreeStyle Libre 3 app sends them: one device, one
+ * identity for every family, so no two uploaders fight over the account (docs/41). Off by default; wearer only.
  *
  * The account is the app's one LibreView account ([login], issue #177): signed in once on the account screen, never
  * asked again here. With it the upload signs in by itself (the LibreView app login) and keeps only that login's token
@@ -146,10 +157,13 @@ class LibreViewUploader(
     private val loop = UploadLoop({ intervalMs }, io, { e -> log("libreview cycle: ${e.javaClass.simpleName}") }) { cycle() }
     private val mutex = Mutex()
 
-    /** Libre 3 readings of the current sensor, kept in memory (3 days). */
+    /** Readings of the current sensor, kept in memory (its whole life: [LibreViewQueue.HISTORY_MIN]). */
     private var bufferSerial: String? = null
     private var current: LvGlucose? = null
     private val history = TreeMap<Int, LvGlucose>()
+
+    /** The buffer's sensor and its oldest reading held (epoch s): what *Send earlier glucose* can reach back to. */
+    private val held = MutableStateFlow<Pair<String, Long>?>(null)
 
     val settingsFlow: Flow<LvSettings> = settings.flow(SETTING).map(::decode)
 
@@ -167,15 +181,28 @@ class LibreViewUploader(
             if (s.on && s.glucose) LibreViewQueue.behind(r?.t?.epochSecond, st.glucoseUpToS, st.glucoseFrom, every) else null
         }.distinctUntilChanged()
 
-    /** Where the newest reading came from when it can't go up (only a Libre 3 this phone reads itself can), else null. */
-    private val otherSource: Flow<SourceId?> = newest.map { r -> r?.source?.takeIf { it != SourceId.Libre3 } }.distinctUntilChanged()
+    /**
+     * Where the newest reading came from when it can't go up, else null: a Libre 3 this phone reads itself and a Libre 1
+     * / 2 read through Juggluco can (by the current sensor's serial).
+     */
+    private val otherSource: Flow<SourceId?> =
+        combine(newest, sensor) { r, s ->
+            r?.source?.takeIf { src ->
+                src != SourceId.Libre3 && !(src == SourceId.Juggluco && s != null && LibreSerial.libre12(s.serial))
+            }
+        }.distinctUntilChanged()
+
+    /** The oldest reading held of the current sensor (epoch s), null when none. */
+    private val heldFrom: Flow<Long?> =
+        combine(held, sensor) { h, s -> h?.takeIf { s != null && it.first == s.serial }?.second }.distinctUntilChanged()
 
     val page: Flow<LvPageState> =
         combine(
             combine(settingsFlow, login.account, store.data, role, intervalFlow) { s, a, st, r, every -> Page(s, a, st, r, every) },
             behindS,
             otherSource,
-        ) { (s, a, st, r, every), behind, other ->
+            heldFrom,
+        ) { (s, a, st, r, every), behind, other, oldest ->
             val from = st.glucoseFrom.takeIf { it > 0 }?.let(Instant::ofEpochSecond)
             LvPageState(
                 s,
@@ -186,6 +213,7 @@ class LibreViewUploader(
                 every,
                 a is LibreViewAccountState.SignInAgain,
                 other,
+                oldest?.takeIf { s.on && s.glucose && it < st.glucoseFrom }?.let(Instant::ofEpochSecond),
             )
         }
 
@@ -241,6 +269,7 @@ class LibreViewUploader(
                 if (bufferSerial == null || bufferSerial == kept.serial) {
                     bufferSerial = kept.serial
                     kept.history.forEach { history.putIfAbsent(it.lifeCount, it) }
+                    noteHeld()
                 }
             }
         }
@@ -294,8 +323,12 @@ class LibreViewUploader(
      * Keeps the newest batch's readings for the next cycle; another sensor's batch replaces them. True when the history
      * changed (what is kept in [unsent] may have to change too).
      */
-    internal fun buffer(r: LvReadings): Boolean =
-        synchronized(history) {
+    internal fun buffer(r: LvReadings): Boolean {
+        // a sensor another app reads goes up only as a Libre 1 / 2 (its serial and life count make a Libre's records;
+        // any other family would show in LibreView as Abbott data), reduced to LibreView's 5-minute history
+        if (r.everyMinute && !LibreSerial.libre12(r.serial)) return false
+        val values = if (r.everyMinute) LibreViewQueue.slots(r.history) else r.history
+        return synchronized(history) {
             var changed = false
             if (r.serial != bufferSerial) {
                 bufferSerial = r.serial
@@ -304,10 +337,36 @@ class LibreViewUploader(
                 history.clear()
             }
             r.current?.let { c -> if ((current?.lifeCount ?: -1) < c.lifeCount) current = c }
-            r.history.forEach { if (history.put(it.lifeCount, it) != it) changed = true }
+            values.forEach { v ->
+                // a slot keeps its first reading, whichever batch brings it
+                val keep = history[v.lifeCount]?.takeIf { r.everyMinute && it.epochSec <= v.epochSec } ?: v
+                if (history.put(v.lifeCount, keep) != keep) changed = true
+            }
             if (history.isNotEmpty()) history.headMap(history.lastKey() - LibreViewQueue.HISTORY_MIN).clear()
+            noteHeld()
             changed
         }
+    }
+
+    /** The buffer's oldest reading, for *Send earlier glucose* (call holding the buffer's lock). */
+    private fun noteHeld() {
+        val serial = bufferSerial
+        held.value = if (serial == null || history.isEmpty()) null else serial to history.values.minOf { it.epochSec }
+    }
+
+    /**
+     * *Send earlier glucose*: the current sensor's glucose the phone holds from before the moment glucose was switched
+     * on goes up too (the person chose it: another app may have sent it already).
+     */
+    suspend fun sendEarlier() {
+        val oldest = heldFrom.first() ?: return
+        mutex.withLock {
+            store.update { if (it.glucoseFrom > oldest) it.copy(glucoseFrom = oldest) else it }
+        }
+        log("libreview: earlier glucose goes up")
+        keepUnsent()
+        loop.kick()
+    }
 
     /** Writes what of the history LibreView still lacks to [unsent] (only when that changed). */
     internal suspend fun keepUnsent() {

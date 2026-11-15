@@ -27,6 +27,7 @@ import app.mauri.sukrara.sensor.brand.BrandDriver
 import app.mauri.sukrara.sensor.cgms.SmartGuideDriver
 import app.mauri.sukrara.sensor.dexcom.G6Driver
 import app.mauri.sukrara.sensor.dexcom.G7Driver
+import app.mauri.sukrara.sensor.juggluco.JugglucoEntry
 import app.mauri.sukrara.sensor.juggluco.JugglucoSink
 import app.mauri.sukrara.sensor.juggluco.JugglucoSource
 import app.mauri.sukrara.sensor.juggluco.JugglucoStatus
@@ -97,7 +98,9 @@ class SourceManager internal constructor(
     private val _detail = MutableStateFlow<SensorStatus>(SensorStatus.NotRunning)
     private val _sensor = MutableStateFlow<SensorState>(SensorState.None)
     private val _status = MutableStateFlow<SourceStatus>(SourceStatus.NotStarted)
-    private val _sensorGlucose = MutableSharedFlow<SensorGlucoseBatch>(extraBufferCapacity = 64)
+
+    // the newest batch waits for a late collector (Juggluco's first history comes once, while the app is still starting)
+    private val _sensorGlucose = MutableSharedFlow<SensorGlucoseBatch>(replay = 1, extraBufferCapacity = 64)
     private val infoState = MutableStateFlow<SensorInfo?>(null)
     private var info: SensorInfo?
         get() = infoState.value
@@ -127,7 +130,10 @@ class SourceManager internal constructor(
     /** The current sensor's serial, start and end (Libre 3 pairing or Juggluco's sensor), null when none is known. */
     val sensorInfo: StateFlow<SensorInfo?> = infoState.asStateFlow()
 
-    /** Libre 3 readings by life count, tagged with their sensor's serial, for the LibreView upload. */
+    /**
+     * Readings by life count, tagged with their sensor's serial, for the LibreView upload: a Libre 3's, and what Juggluco
+     * names by sensor ([SensorGlucoseBatch.everyMinute], any family it reads).
+     */
     val sensorGlucose: Flow<SensorGlucoseBatch> = _sensorGlucose.asSharedFlow()
 
     /** Starts following the setting; idempotent. */
@@ -434,6 +440,18 @@ class SourceManager internal constructor(
             object : JugglucoSink {
                 override fun onReadings(readings: List<Reading>, live: Boolean) {
                     scope.launch { deliver(readings, live) }
+                }
+
+                // what Juggluco names by sensor and life count, of the newest reading's sensor only (a history reaching
+                // into the sensor before must not replace the current one); the LibreView upload decides which family goes
+                override fun onSensorReadings(entries: List<JugglucoEntry>, live: Boolean) {
+                    val serial = entries.maxByOrNull { it.reading.t }?.serial ?: return
+                    val g =
+                        entries
+                            .filter { it.serial == serial }
+                            .sortedBy { it.reading.t }
+                            .map { SensorGlucose(it.lifeCount, it.reading.mgdl, it.reading.t.epochSecond, it.reading.sensorRate) }
+                    _sensorGlucose.tryEmit(SensorGlucoseBatch(serial, g.lastOrNull()?.takeIf { live }, g, everyMinute = true))
                 }
 
                 override fun onStatus(status: JugglucoStatus) {

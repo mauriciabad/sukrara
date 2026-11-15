@@ -187,7 +187,7 @@ class LibreViewClient internal constructor(
         val body =
             buildJsonObject {
                 put("DateOfBirth", s.dateOfBirth)
-                put("DomainData", "{\"activeSensor\":\"${serial.takeLast(9)}\"}")
+                put("DomainData", "{\"activeSensor\":\"${LibreSerial.active(serial)}\"}")
                 put("FirstName", s.firstName)
                 put("GuardianFirstName", s.guardianFirstName.orEmpty())
                 put("GuardianLastName", s.guardianLastName.orEmpty())

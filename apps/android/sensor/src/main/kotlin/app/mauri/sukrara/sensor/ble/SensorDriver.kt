@@ -122,8 +122,16 @@ internal interface SensorEvents {
 /** One glucose value by the sensor's life count (minutes since its start), as LibreView takes them. */
 data class SensorGlucose(val lifeCount: Int, val mgdl: Int, val epochSec: Long, val rate: Double? = null)
 
-/** One driver report of [SensorGlucose], with the serial of the sensor it came from. */
-data class SensorGlucoseBatch(val serial: String, val current: SensorGlucose?, val history: List<SensorGlucose>)
+/**
+ * One report of [SensorGlucose], with the serial of the sensor it came from: a Libre 3's (5-minute [history]), or a
+ * sensor another app reads ([everyMinute]: its history is every minute, as Juggluco names it).
+ */
+data class SensorGlucoseBatch(
+    val serial: String,
+    val current: SensorGlucose?,
+    val history: List<SensorGlucose>,
+    val everyMinute: Boolean = false,
+)
 
 /** Where the link and the sensor are; the UI words for these live in the sensor screens. */
 sealed interface LinkStatus {

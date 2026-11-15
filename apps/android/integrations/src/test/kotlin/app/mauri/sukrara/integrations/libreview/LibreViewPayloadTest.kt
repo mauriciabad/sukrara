@@ -55,6 +55,46 @@ class LibreViewPayloadTest {
         assertEquals(fx["expectedPayload"]!!.jsonPrimitive.content, body)
     }
 
+    /** `contracts/treatments/libreview-glucose-fixture.json` (investigation 41's lv2.py): a Libre 2 read every minute. */
+    @Test
+    fun `a Libre 2's minute readings become the contract's 5-minute values and bytes`() {
+        val g = Json.parseToJsonElement(Contracts.file("treatments/libreview-glucose-fixture.json").readText()).jsonObject
+        val serial = g["serial"]!!.jsonPrimitive.content
+        assertEquals(true, LibreSerial.libre12(serial))
+        for (s in g["notLibre12"]!!.jsonArray) assertEquals(s.toString(), false, LibreSerial.libre12(s.jsonPrimitive.content))
+        val readings =
+            g["readingsTMgdlLife"]!!.jsonArray.map {
+                val (t, mgdl, life) = it.jsonArray.map { v -> v.jsonPrimitive.long }
+                LvGlucose(life.toInt(), mgdl.toInt(), t)
+            }
+        val slots = LibreViewQueue.slots(readings)
+        val expected =
+            g["expectedSlots"]!!.jsonArray.map {
+                val (lc, mgdl, t) = it.jsonArray.map { v -> v.jsonPrimitive.long }
+                LvGlucose(lc.toInt(), mgdl.toInt(), t)
+            }
+        assertEquals(expected, slots)
+        assertEquals(slots, LibreViewQueue.slots(readings.reversed()))
+        val (clc, cmgdl, ct) = g["expectedCurrent"]!!.jsonArray.map { it.jsonPrimitive.long }
+        val current = readings.maxBy { it.epochSec }
+        assertEquals(LvGlucose(clc.toInt(), cmgdl.toInt(), ct), current)
+        val sensor = LvSensor(serial, g["start"]!!.jsonPrimitive.long, current, slots, sendStart = true)
+        assertEquals(g["productType"]!!.jsonPrimitive.long.toInt(), sensor.productType)
+        assertEquals(g["wearMin"]!!.jsonPrimitive.long.toInt(), sensor.wearMin)
+        val body =
+            LibreViewPayload.payload(
+                emptyList(),
+                g["deviceId"]!!.jsonPrimitive.content,
+                g["token"]!!.jsonPrimitive.content,
+                g["now"]!!.jsonPrimitive.long,
+                ZoneId.of(g["zone"]!!.jsonPrimitive.content),
+                sensor,
+            )
+        assertEquals(g["expectedPayload"]!!.jsonPrimitive.content, body)
+        assertEquals("3MH000ABCD7", LibreSerial.active(serial))
+        assertEquals("H000ABCDE", LibreSerial.active("0D0H000ABCDE"))
+    }
+
     @Test
     fun `glucose record numbers come from the serial and the life count`() {
         val h = LibreViewPayload.histor("3MH000ABCD")

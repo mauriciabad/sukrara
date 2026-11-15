@@ -66,10 +66,40 @@ class JugglucoSourceTest {
 
     @Test
     fun liveEvent() {
-        val (r, id) = JugglucoSource.parseLive("""{"timestamp":1760776860,"glucoseMgDl":121,"rateMgDlPerMinute":null,"sensorId":7}""")!!
-        assertEquals(Reading(Instant.ofEpochSecond(1760776860), 121, null, SourceId.Juggluco), r)
-        assertEquals(7, id)
+        val live =
+            JugglucoSource.parseLive(
+                """{"timestamp":1760776860,"sensorId":7,"recordId":17243,"glucoseMgDl":121,"rateMgDlPerMinute":null}""",
+            )!!
+        assertEquals(Reading(Instant.ofEpochSecond(1760776860), 121, null, SourceId.Juggluco), live.reading)
+        assertEquals(7, live.sensorId)
+        assertEquals(17243, live.lifeCount)
+        assertEquals(-1, JugglucoSource.parseLive("""{"timestamp":1,"glucoseMgDl":121}""")!!.lifeCount)
         assertNull(JugglucoSource.parseLive("not json"))
+    }
+
+    /** Juggluco's `_id` is `SERIAL#lifeCount`: the sensor and its own minute, what LibreView's records are made of. */
+    @Test
+    fun historyNamesTheSensorAndItsLifeCount() {
+        val body = """[{"_id":"3MH01GFXNU8#17243","date":1760776800000,"sgv":146,"delta":-1.9,"direction":"Flat"},
+            {"_id":"3MH01GFXNU8#x","date":1760776740000,"sgv":147},{"date":1760776680000,"sgv":148}]"""
+        val (readings, named) = JugglucoSource.parseHistory(body)
+        assertEquals(3, readings.size)
+        assertEquals(listOf(JugglucoEntry(readings[0], "3MH01GFXNU8", 17243)), named)
+    }
+
+    /** The first history reaches back to the current sensor's start (Sukrara may come mid-sensor); later ones 3 h. */
+    @Test
+    fun theFirstHistoryIsTheSensorsWholeLife() {
+        val now = 1_794_745_716L
+        val start = now - 12 * 86_400L
+        assertEquals(
+            "/api/v1/entries.json?count=${12 * 1440 + 60}&interval=0&find[date][\$gte]=${start * 1000}",
+            JugglucoSource.historyPath(true, start, now),
+        )
+        assertEquals("/api/v1/entries.json?count=180&interval=0", JugglucoSource.historyPath(false, start, now))
+        assertEquals("/api/v1/entries.json?count=1600&interval=0", JugglucoSource.historyPath(true, null, now))
+        // a start too long ago (or ahead) isn't a sensor's life
+        assertEquals("/api/v1/entries.json?count=1600&interval=0", JugglucoSource.historyPath(true, now - 20 * 86_400L, now))
     }
 
     /** A fake Juggluco on loopback: history, then the SSE stream feeds readings in order. */
@@ -134,6 +164,54 @@ class JugglucoSourceTest {
             assertEquals(0.5, readings[1].sensorRate)
             assertEquals("3MH00ABCDE", sensor?.serial)
             assertEquals(listOf(JugglucoStatus.FetchingHistory, JugglucoStatus.Live), statuses.take(2))
+        }
+
+    /**
+     * The first history asks Juggluco for the sensor's life with the query as Juggluco reads it: brackets and the dollar
+     * sign as they are (its parser takes the `find` date filter literally; only a few %-escapes are decoded).
+     */
+    @Test
+    fun theSensorsLifeIsAskedForInJugglucosOwnQuery() =
+        runBlocking {
+            val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
+            val asked = CompletableDeferred<String>()
+            val now = 1_794_745_716L
+            val status = ZonedDateTime.ofInstant(Instant.ofEpochSecond(now - 2 * 86_400L), zone)
+            val st =
+                "%02d-%02d-%02d %02d:%02d (2d 0h)".format(
+                    status.dayOfMonth,
+                    status.monthValue,
+                    status.year % 100,
+                    status.hour,
+                    status.minute,
+                )
+            server.createContext("/") { ex ->
+                if (ex.requestURI.path == "/api/v1/entries.json") asked.complete(ex.requestURI.rawQuery)
+                val body = if (ex.requestURI.path == "/sgv.json") """[{"_id":"3MH01GFXNU8#1","sgv":1,"sensor_status":"$st"}]""" else "[]"
+                val out = body.encodeToByteArray()
+                ex.sendResponseHeaders(200, out.size.toLong())
+                ex.responseBody.use { it.write(out) }
+            }
+            server.start()
+            val sink =
+                object : JugglucoSink {
+                    override fun onReadings(readings: List<Reading>, live: Boolean) = Unit
+
+                    override fun onStatus(status: JugglucoStatus) = Unit
+
+                    override fun onSensor(info: SensorInfo) = Unit
+                }
+            val source = JugglucoSource(OkHttpClient(), "http://127.0.0.1:${server.address.port}", now = { now }) { zone }
+            val job = launch(Dispatchers.IO) { source.run(sink) }
+            try {
+                val query = withTimeout(10_000) { asked.await() }
+                val start = (now - 2 * 86_400L) / 60 * 60
+                assertEquals("count=${(now - start) / 60 + 60}&interval=0&find[date][\$gte]=${start * 1000}", query)
+            } finally {
+                job.cancel()
+                source.cancelCall()
+                server.stop(0)
+            }
         }
 
     /** With an API secret every request carries `api-secret: sha1hex(secret)`; Juggluco's 401 is a visible refusal. */

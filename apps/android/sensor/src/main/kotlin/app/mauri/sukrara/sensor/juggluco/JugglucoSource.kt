@@ -49,10 +49,27 @@ sealed interface JugglucoStatus {
 /** Juggluco answered 401 / 403: the API secret is missing or wrong. */
 internal class JugglucoRefusedException : Exception("refused: API secret")
 
+/** One Juggluco reading with the sensor it came from: its [serial] and the sensor's own minute counter ([lifeCount]). */
+data class JugglucoEntry(
+    val reading: Reading,
+    val serial: String,
+    val lifeCount: Int,
+)
+
+/** Juggluco's live value: the reading, Juggluco's sensor index ([sensorId], -1 = none) and the sensor's minute counter. */
+data class JugglucoLive(
+    val reading: Reading,
+    val sensorId: Int,
+    val lifeCount: Int,
+)
+
 /** Where the Juggluco source sends what it learns. */
 internal interface JugglucoSink {
     /** [live] = Juggluco's current value from the stream; false = history. */
     fun onReadings(readings: List<Reading>, live: Boolean)
+
+    /** The same readings with their sensor and life count, where Juggluco names them (the LibreView upload's records). */
+    fun onSensorReadings(entries: List<JugglucoEntry>, live: Boolean) = Unit
 
     fun onStatus(status: JugglucoStatus)
 
@@ -60,16 +77,18 @@ internal interface JugglucoSink {
 }
 
 /**
- * Glucose from Juggluco's web server on this phone ("Local only" mode, loopback cleartext):
- * GET /api/v1/entries.json for history, then hold GET /x/live (SSE) open — push, no polling. Reconnects with backoff
- * 5 s → 60 s. [run] loops until its coroutine is cancelled; cancelling also cancels the open call. With an API secret
- * ([secret], read again at every connection) every request carries `api-secret: sha1hex(secret)`; a refusal is
- * [JugglucoStatus.Refused].
+ * Glucose from Juggluco's web server on this phone ("Local only" mode, loopback cleartext): GET /api/v1/entries.json
+ * for history (at the first connection the current sensor's whole life, so the phone holds all of it even when Sukrara
+ * came mid-sensor; after a reconnect the last 3 h), then hold GET /x/live (SSE) open — push, no polling. Reconnects
+ * with backoff 5 s → 60 s. [run] loops until its coroutine is cancelled; cancelling also cancels the open call. With an
+ * API secret ([secret], read again at every connection) every request carries `api-secret: sha1hex(secret)`; a refusal
+ * is [JugglucoStatus.Refused].
  */
 internal class JugglucoSource(
     http: OkHttpClient,
     private val baseUrl: String = LOCAL_URL,
     private val secret: suspend () -> String? = { null },
+    private val now: () -> Long = { System.currentTimeMillis() / 1000 },
     private val zone: () -> ZoneId,
 ) {
     companion object {
@@ -77,6 +96,13 @@ internal class JugglucoSource(
         const val LOCAL_URL = "http://127.0.0.1:17580"
         const val FIRST_BACKOFF_MS = 5_000L
         const val MAX_BACKOFF_MS = 60_000L
+
+        /** History asked for at the first connection without a known sensor, and after a reconnect (minutes). */
+        const val FIRST_COUNT = 1600
+        const val AGAIN_COUNT = 180
+
+        /** The longest sensor life read back (a 15-day sensor and a day of margin), minutes. */
+        const val MAX_LIFE_MIN = 16 * 24 * 60
         private const val HTTP_UNAUTHORIZED = 401
         private const val HTTP_FORBIDDEN = 403
         private val json = Json { ignoreUnknownKeys = true }
@@ -85,26 +111,56 @@ internal class JugglucoSource(
          * Nightscout entries → readings. Refuses entries whose device is "Sukrara": if anything of ours ever holds
          * Juggluco's port, re-publishing our own values as fresh would be fake data.
          */
-        fun parseEntries(body: String): List<Reading> {
+        fun parseEntries(body: String): List<Reading> = parseHistory(body).first
+
+        /**
+         * [parseEntries], and the readings whose `_id` names their sensor (Juggluco writes `SERIAL#lifeCount`) as
+         * [JugglucoEntry]s.
+         */
+        fun parseHistory(body: String): Pair<List<Reading>, List<JugglucoEntry>> {
             val arr = json.parseToJsonElement(body) as JsonArray
             val entries = arr.map { it.jsonObject }
             check(entries.none { it.str("device") == "Sukrara" }) { "port 17580 is served by Sukrara, not Juggluco" }
-            return entries.mapNotNull { e ->
-                val t = e["date"]?.jsonPrimitive?.longOrNull ?: return@mapNotNull null
-                val mgdl = e["sgv"]?.jsonPrimitive?.intOrNull ?: return@mapNotNull null
+            val readings = ArrayList<Reading>(entries.size)
+            val named = ArrayList<JugglucoEntry>(entries.size)
+            for (e in entries) {
+                val t = e["date"]?.jsonPrimitive?.longOrNull ?: continue
+                val mgdl = e["sgv"]?.jsonPrimitive?.intOrNull ?: continue
                 val delta = e["delta"]?.takeIf { it !is JsonNull }?.jsonPrimitive?.doubleOrNull
                 val rate = if (e.str("direction").isNullOrEmpty() || delta == null) null else delta / 5.0
-                reading(t / 1000, mgdl, rate)
+                val r = reading(t / 1000, mgdl, rate)
+                readings += r
+                val id = e.str("_id").orEmpty()
+                val serial = id.substringBefore('#', "")
+                val life = id.substringAfter('#', "").toIntOrNull()
+                if (serial.isNotEmpty() && life != null && life >= 0) named += JugglucoEntry(r, serial, life)
             }
+            return readings to named
         }
 
-        /** One SSE `glucose` event's data → a reading and Juggluco's sensor id (-1 = none). */
-        fun parseLive(data: String): Pair<Reading, Int>? {
+        /** One SSE `glucose` event's data → the reading, Juggluco's sensor index (-1 = none) and the life count (-1). */
+        fun parseLive(data: String): JugglucoLive? {
             val j = runCatching { json.parseToJsonElement(data).jsonObject }.getOrNull() ?: return null
             val t = j["timestamp"]?.jsonPrimitive?.longOrNull ?: return null
             val mgdl = j["glucoseMgDl"]?.jsonPrimitive?.intOrNull ?: return null
             val rate = j["rateMgDlPerMinute"]?.takeIf { it !is JsonNull }?.jsonPrimitive?.doubleOrNull
-            return reading(t, mgdl, rate) to (j["sensorId"]?.jsonPrimitive?.intOrNull ?: -1)
+            return JugglucoLive(
+                reading(t, mgdl, rate),
+                j["sensorId"]?.jsonPrimitive?.intOrNull ?: -1,
+                j["recordId"]?.jsonPrimitive?.intOrNull ?: -1,
+            )
+        }
+
+        /**
+         * The history request: at the [first] connection with the current sensor's start known ([startEpoch]), its whole
+         * life, every minute; else the last [FIRST_COUNT] / [AGAIN_COUNT] minutes.
+         */
+        fun historyPath(first: Boolean, startEpoch: Long?, nowEpoch: Long): String {
+            val start =
+                startEpoch?.takeIf { first && it in (nowEpoch - MAX_LIFE_MIN * 60L)..nowEpoch }
+                    ?: return "/api/v1/entries.json?count=${if (first) FIRST_COUNT else AGAIN_COUNT}&interval=0"
+            val count = (nowEpoch - start) / 60 + 60
+            return "/api/v1/entries.json?count=$count&interval=0&find[date][\$gte]=${start * 1000}"
         }
 
         /**
@@ -143,6 +199,9 @@ internal class JugglucoSource(
     /** The `api-secret` header value of this connection, null without a secret. */
     @Volatile private var hashed: String? = null
 
+    /** The current sensor's serial (Juggluco's live events name only its index). */
+    @Volatile private var serial: String? = null
+
     /** Cancels the open requests, the live stream included (the coroutine running [run] must be cancelled too). */
     fun cancelCall() {
         call?.cancel()
@@ -156,9 +215,14 @@ internal class JugglucoSource(
             try {
                 hashed = secret()?.let(JugglucoSecret::header)
                 sink.onStatus(JugglucoStatus.FetchingHistory)
-                sink.onReadings(get("/api/v1/entries.json?count=${if (first) 1600 else 180}&interval=0", ::parseEntries), live = false)
+                // the sensor first: the first history reaches back to its start
+                val info = sensor()
+                val (readings, named) = get(historyPath(first, info?.startEpoch, now()), ::parseHistory)
+                sink.onReadings(readings, live = false)
+                if (named.isNotEmpty()) sink.onSensorReadings(named, live = false)
                 first = false
-                sensor()?.let(sink::onSensor)
+                info?.let(sink::onSensor)
+                serial = info?.serial
                 live(sink) { backoff = FIRST_BACKOFF_MS }
                 sink.onStatus(JugglucoStatus.Unreachable("live stream ended"))
             } catch (e: JugglucoRefusedException) {
@@ -189,7 +253,15 @@ internal class JugglucoSource(
         }
     }
 
-    private fun sensor(): SensorInfo? = runCatching { get("/sgv.json?count=1&sensor=Y") { parseSensorStatus(it, zone()) } }.getOrNull()
+    /** The current sensor; a refusal (the API secret) is the source's, anything else just leaves it unknown. */
+    private fun sensor(): SensorInfo? =
+        try {
+            get("/sgv.json?count=1&sensor=Y") { parseSensorStatus(it, zone()) }
+        } catch (e: JugglucoRefusedException) {
+            throw e
+        } catch (e: Exception) {
+            null
+        }
 
     private fun live(sink: JugglucoSink, onData: () -> Unit) {
         val req = request("/x/live").header("Accept", "text/event-stream").build()
@@ -212,12 +284,21 @@ internal class JugglucoSource(
                     }
 
                     line.startsWith("data:") && event == "glucose" -> {
-                        val (reading, id) = parseLive(line.substring(5).trim()) ?: continue
+                        val live = parseLive(line.substring(5).trim()) ?: continue
                         onData()
-                        sink.onReadings(listOf(reading), live = true)
+                        sink.onReadings(listOf(live.reading), live = true)
                         // a new sensor in Juggluco: read its start again
-                        if (sensorId != -1 && id != sensorId) sensor()?.let(sink::onSensor)
-                        sensorId = id
+                        if (sensorId != -1 && live.sensorId != sensorId) {
+                            sensor()?.let {
+                                sink.onSensor(it)
+                                serial = it.serial
+                            }
+                        }
+                        sensorId = live.sensorId
+                        val s = serial
+                        if (s != null && live.lifeCount >= 0) {
+                            sink.onSensorReadings(listOf(JugglucoEntry(live.reading, s, live.lifeCount)), live = true)
+                        }
                     }
                 }
             }

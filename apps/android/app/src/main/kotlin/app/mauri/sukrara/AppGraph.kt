@@ -121,6 +121,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -531,12 +532,12 @@ class AppGraph(
             libreReadings =
                 sensor.source.sensorGlucose.map { b ->
                     fun g(x: SensorGlucose) = LvGlucose(x.lifeCount, x.mgdl, x.epochSec, x.rate)
-                    LvReadings(b.serial, b.current?.let(::g), b.history.map(::g))
+                    LvReadings(b.serial, b.current?.let(::g), b.history.map(::g), b.everyMinute)
                 },
             // the Libre 3's live reading with THE trend the hub has for it (contracts/trend; never the sensor's own rate),
-            // keeping the serial and life count only the sensor bridge knows
+            // keeping the serial and life count only the sensor bridge knows (never Juggluco's: it broadcasts them itself)
             libreLive =
-                combine(sensor.source.sensorGlucose, hubTrendReadings.latest()) { b, latest ->
+                combine(sensor.source.sensorGlucose.filter { !it.everyMinute }, hubTrendReadings.latest()) { b, latest ->
                     b.current?.takeIf { latest != null && latest.t.epochSecond == it.epochSec }?.let {
                         LiveReading(it.mgdl, latest?.rate, Instant.ofEpochSecond(it.epochSec), b.serial, it.lifeCount)
                     }

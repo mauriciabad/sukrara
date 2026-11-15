@@ -239,7 +239,26 @@ class IntegrationsGallery {
                     {},
                 )
             },
-            // glucose read through Juggluco: said at once in the switch, and in the status once it has stalled
+            // the sensor's glucose from before the switch-on is on the phone: offered, never sent by itself
+            "libreview-earlier" to {
+                LibreViewContent(
+                    LvPageState(
+                        LvSettings(on = true),
+                        true,
+                        "person@example.com",
+                        UploadStatus.Ok(now - Duration.ofMinutes(4), 288),
+                        lvFrom,
+                        earlierFrom = lvFrom - Duration.ofDays(8),
+                    ),
+                    true,
+                    LvTakeOverUi.Idle,
+                    now,
+                    LibreViewActions(),
+                    false,
+                    {},
+                )
+            },
+            // a family that can't go up (read through Juggluco): said at once in the switch, in the status once it stalls
             "libreview-other-source" to {
                 LibreViewContent(
                     LvPageState(

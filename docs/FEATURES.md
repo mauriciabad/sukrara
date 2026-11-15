@@ -1188,8 +1188,8 @@ banner place (`BannerKind.ClinicUploadBehind`, below the safety, taps and blocke
 While the LibreView upload is on with *Glucose* and the phone's newest reading from its own sensor is more than 2 h
 (or two *Upload every*) newer than the newest glucose LibreView accepted (or than the moment glucose was switched on),
 whatever the reason (`LibreViewQueue.behind`, `LibreViewUploader.glucoseBehind`): a card with the crossed-out cloud
-of the treatment list's "upload stopped" mark says *LibreView isn't getting your glucose* · "Your clinic sees nothing
-since 11:00." (the time within 12 h, else date and time) with *Fix* (opens Settings › Share with apps › LibreView,
+of the treatment list's "upload stopped" mark says *LibreView isn't getting your glucose* · "Nothing since 11:00."
+(the time within 12 h, else date and time; no clinic assumed: not everyone has one) with *Fix* (opens Settings › Share with apps › LibreView,
 which says why) and a close button. Not shown when the only problem is that the phone has no internet (it goes up by
 itself once back; the page still says it). Mac: none (the Mac doesn't upload).
 
@@ -2686,13 +2686,18 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
   phone, which sees "Only the phone that wears the sensor uploads"), *Status* ("Last upload 4 min ago · 3 items", "On ·
   nothing sent yet", "<reason> Trying again soon.", "No glucose sent since 11:00. <reason, or: Trying again by
   itself.>" once the phone has readings more than 2 h newer than LibreView's newest glucose (the
-  [LibreView-stalled banner](#libreview-stalled-banner)'s rule; with Juggluco as the source just "No glucose sent since
-  …", the *Glucose* switch says why), "Another device uploads to this LibreView account. Tap to take
+  [LibreView-stalled banner](#libreview-stalled-banner)'s rule; with a sensor whose glucose can't go up just "No glucose
+  sent since …", the *Glucose* switch says why), "Another device uploads to this LibreView account. Tap to take
   over." — tapping it opens *Take over*; "Sign in to LibreView first" / the sign-in-again sentence — tapping it opens the
   account screen).
-- *What to send*: *Glucose* ("From a Libre 3 connected to this phone, since <date time>") and *Insulin, carbs and
-  notes* (treatments added or changed from now on; edits and deletes correct what LibreView has); both on, disabled while
-  the upload is off. *Upload every* (`apps.libreviewInterval`, `NumberDialog`: 5 / 15 / 60 min or a custom 1–240 min,
+- *What to send*: *Glucose* ("Since <date time>"; "Not sent: this sensor's glucose can't go up." for a family that
+  can't) and *Insulin, carbs and notes* (treatments added or changed from now on; edits and deletes correct what
+  LibreView has); both on, disabled while the upload is off. **Send earlier glucose** (docs/41; shown only while
+  *Glucose* is on and the phone holds the current sensor's glucose from before the moment it was switched on, e.g.
+  Sukrara came mid-sensor): "From 3 Nov, 14:40" (the oldest value held) → *Send earlier glucose?* "This sensor's glucose
+  from 3 Nov, 14:40 goes up too. If another app already sent it, LibreView counts it twice." *Send* (moves the glucose
+  start back to it: the backlog goes up 288 values per upload, one after the other, and the row leaves) or *Cancel*.
+  Never by itself: only the person knows whether another app sent that time (`LibreViewUploader.sendEarlier`). *Upload every* (`apps.libreviewInterval`, `NumberDialog`: 5 / 15 / 60 min or a custom 1–240 min,
   default 5; disabled while the upload is off): the upload's cycle, and new glucose wakes it only once that long has
   passed since the last upload; treatment and setting changes still go at once. Each part goes up only from the moment it (or the upload) was switched on: the person's earlier
   LibreView data (from LibreLink or another app) is never doubled. Signing out (the account screen) forgets the token;
@@ -2701,18 +2706,28 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
   one record per version (`recordNumber` from the treatment id and version); an edit sends a retraction of the version
   LibreView has plus the new one, a delete only the retraction, one deleted before it went up nothing. What LibreView
   got is remembered for a year (typed store `libreview-upload`), so later edits still retract it; treatments made on
-  another device wait 2 min. Glucose: only readings Sukrara takes from a Libre 3 itself (the sensor link tags each
-  batch with its serial; Juggluco's readings never go up), record number = the serial's base | life count; the newest
-  reading as current (< 5 min old), the 5-minute history, `sensorstart` once per sensor after `PUT /api/nisperson`
+  another device wait 2 min. Glucose ([docs/41](41-libreview-other-sensors.md)), always as this one device and the
+  Libre 3 app identity (no second uploader, so no fight over the account's uploading device): a Libre 3 Sukrara reads
+  itself (the sensor link tags each batch with its serial) and a **Libre 1 / 2 / 2 Plus read through Juggluco**
+  (Juggluco names each reading `SERIAL#lifeCount`; a serial of 11 characters starting `0M` / `3M`,
+  `LibreSerial.libre12`; its minute readings become one value per 5 minutes of the sensor's life, the first reading in
+  each, `LibreViewQueue.slots`, `contracts/treatments/libreview-glucose-fixture.json`). Other families (Dexcom,
+  SmartGuide, AiDEX, Sibionics or a Libre 3 through Juggluco) never go up: they would show in LibreView as Abbott
+  data. Record number = the serial's base | life count; the newest
+  reading as current (< 5 min old), the 5-minute history, `sensorstart` once per sensor, filed at the sensor's start
+  even when sent days later (a Libre 1 / 2 as LibreLink sends it: `productType` 3, 14 days; registered with its whole
+  serial) after `PUT /api/nisperson`
   registered it (never in the cycle that just signed in: LibreView refuses the first registration after a sign-in;
   skipped if sign-in didn't return the profile, so it can't blank it). A registration LibreView doesn't accept
   (`status` ≠ 0, `status 20` "invalid …", no profile, network) holds that sensor's glucose and is tried again with
-  backoff (30 s doubling to 15 min ±20 %), every third failure after a new sign-in; treatments go up meanwhile. Glucose
-  read through Juggluco or from another sensor family can't go up: the *Glucose* switch says so at once ("Not sent:
-  your glucose comes from Juggluco. Only a Libre 3 connected to Sukrara can go up."). History LibreView hasn't got yet
-  is also kept in the typed store `libreview-unsent` (one sensor, at most 3 days, only what would go up; rewritten
-  when it changes and after each upload), so a restart or a process death never loses it: the next cycle sends it.
-- When: after each new Libre 3 reading, treatment change or setting change, and every 5 minutes. At most 100 treatments and
+  backoff (30 s doubling to 15 min ±20 %), every third failure after a new sign-in; treatments go up meanwhile. A
+  family that can't go up: the *Glucose* switch says so at once. The current sensor's whole life (15 days) is held in
+  memory and remembered as sent; history LibreView hasn't got yet is also kept in the typed store `libreview-unsent`
+  (one sensor, only what would go up; rewritten when it changes and after each upload), so a restart or a process
+  death never loses it: the next cycle sends it. With Juggluco as the source, its first history after the app starts
+  is the current sensor's whole life (`JugglucoSource.historyPath`), so the phone holds it all even when Sukrara came
+  mid-sensor.
+- When: after each new reading that can go up, treatment change or setting change, and every 5 minutes. At most 100 treatments and
   288 readings per upload; a bigger catch-up continues at once. Network or server trouble retries after 30 s doubling
   to 15 min (±20 %); a token LibreView no longer accepts (401 / 403 / `wrongDeviceInToken`) is dropped and the next
   cycle signs in again with the saved account (the contract's re-auth): an expired token goes on by itself, another
@@ -2737,8 +2752,10 @@ open) or *Cancel*. *LibreView refused the saved password* → *Account* / the st
 email filled in (sign in again, or *Sign out*). *Off* (default) → main switch. *On · nothing sent yet / last upload* →
 main switch off; signing out is the account screen's. *Trying again* → retries by itself; switch off to stop. *Refused*
 → change or switch off. *No glucose sent since …* (also home's banner) → retries by itself; *Glucose* or the main switch
-off; with Juggluco or another family as the source, glucose can't go up from Sukrara (switch it off, or read a Libre 3
-here). *Follower phone* → switch shown off and disabled with the reason. Back leaves the page.
+off; with a family that can't go up as the source (switch it off, or read a Libre 3 here or a Libre 1 / 2 through
+Juggluco). *Earlier glucose held* → *Send earlier glucose* → *Send* (the row leaves once the start moved back; what
+went up stays in LibreView, as with any upload) or *Cancel* / back (nothing changes, the row stays). *Follower phone* →
+switch shown off and disabled with the reason. Back leaves the page.
 
 ## Nightscout upload (docs/25)
 

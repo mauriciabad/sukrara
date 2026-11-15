@@ -148,6 +148,7 @@
     "apps/android/share/src/main/kotlin/app/mauri/sukrara/share/owner/usecase/Publishing.kt": "the wire: live r / chunk rate100 are the sensor's own rate (PROTOCOL-v2)",
     "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/tidepool/TidepoolData.kt": "a device record: Tidepool's trendRate is the sensor's own (the owner's decision, #204)",
     "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/export/GlucoseCsv.kt": "a device record: the CSV's rate column is the sensor's own (contracts/export, the owner's decision)",
+    "apps/android/sensor/src/main/kotlin/app/mauri/sukrara/sensor/source/SourceManager.kt": "a device record: Juggluco's readings to the LibreView upload keep Juggluco's own rate, as a Libre 3's batch keeps the sensor's (docs/41)",
     "apps/macos/Sources/SukraraCore/Model/Reading.swift": "the model: the stored field (Codable key rate) and LO / HI normalising",
     "apps/macos/Sources/SukraraCore/Stores/ReadingsFileStore.swift": "storage: readings.csv keeps the sensor's own rate",
     "apps/macos/Sources/SukraraCore/Export/GlucoseCsv.swift": "a device record: the CSV's rate column is the sensor's own (contracts/export)",
