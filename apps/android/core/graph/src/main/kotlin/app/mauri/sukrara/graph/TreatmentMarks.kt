@@ -11,6 +11,7 @@ import android.graphics.Path
 import android.graphics.Typeface
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.PathParser
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.settings.SettingsSpec
@@ -152,26 +153,30 @@ object TreatmentMarks {
         dark: Boolean,
     ) = ColorUtils.setAlphaComponent(c, if (dark) 0x3D else 0x2E)
 
-    /** "4.5u", "12u", "30g"; null for notes. */
-    fun amount(tr: Treatment): String? =
+    /** "4.5u" (Spanish "4,5u": [locale]'s decimal separator, [AmountText]), "12u", "30g"; null for notes. */
+    fun amount(
+        tr: Treatment,
+        locale: Locale,
+    ): String? =
         when (tr.k) {
-            "rapid", "long" -> number(tr.amount) + "u"
+            "rapid", "long" -> AmountText.units(tr.amount, locale)
             "carbs" -> "${tr.amount.roundToInt()}g"
             else -> null
         }
 
+    /** Whether [amount] writes one for [tr] (not a note). */
+    fun hasAmount(tr: Treatment) = tr.k == "rapid" || tr.k == "long" || tr.k == "carbs"
+
     /** [amount], or a note's text cut to [noteChars] (0 = no text for notes). */
     fun label(
         tr: Treatment,
+        locale: Locale,
         noteChars: Int = 0,
     ): String? =
-        amount(tr) ?: tr.note
+        amount(tr, locale) ?: tr.note
             .trim()
             .takeIf { noteChars > 0 && it.isNotEmpty() }
             ?.let { if (it.length > noteChars) it.take(noteChars - 1).trimEnd() + "…" else it }
-
-    /** An amount as the card writes it: "4", "4.5". */
-    internal fun number(a: Double) = if (a % 1.0 == 0.0) "${a.toLong()}" else String.format(Locale.ROOT, "%.1f", a)
 
     /** A short duration ("now", "12m", "1h 5m", "3h", "2d"); [up] rounds partial minutes up (time left). */
     fun duration(
@@ -281,19 +286,19 @@ object TreatmentMarks {
     private const val SEP = " · "
 
     /**
-     * One label: [members] in label order, [shownAmounts] those whose amount shows, [time] the time since [timeOf];
-     * [lane] 0 (axis row) or 1 (under it), [left] + [w] = its modelled box ([TextModel], px).
+     * One label: [members] in label order, [shownAmounts] those whose amount shows and [amounts] their texts, [time]
+     * the time since [timeOf]; [lane] 0 (axis row) or 1 (under it), [left] + [w] = its modelled box ([TextModel], px).
      */
     class Label(
         val members: List<Treatment>,
         val shownAmounts: List<Treatment>,
+        val amounts: List<String>,
         val timeOf: Treatment?,
         val time: String?,
         val lane: Int,
         val left: Float,
         val w: Float,
     ) {
-        val amounts: List<String> get() = shownAmounts.mapNotNull { amount(it) }
         val text: String get() = text(amounts, time)
     }
 
@@ -338,7 +343,7 @@ object TreatmentMarks {
     ): Layout {
         val items =
             list
-                .filter { !it.deleted && amount(it) != null && show.label(it.k) }
+                .filter { !it.deleted && hasAmount(it) && show.label(it.k) }
                 .sortedWith(compareBy<Treatment>({ it.t }, { ORDER.getValue(it.k) }, { it.amount }, { it.id }))
         val groups = ArrayList<MutableList<Treatment>>()
         for (tr in items) {
@@ -359,7 +364,7 @@ object TreatmentMarks {
         for (g in groups.sortedByDescending { it.last().t }) {
             val members = g.sortedWith(compareBy<Treatment>({ ORDER.getValue(it.k) }, { it.t }, { it.amount }, { it.id }))
             val shownAmounts = members.filter { show.has(it.k, MarkShow.AMOUNT) }
-            val amounts = shownAmounts.mapNotNull { amount(it) }
+            val amounts = shownAmounts.mapNotNull { amount(it, w.locale) }
             val timeOf = g.lastOrNull { show.has(it.k, MarkShow.TIME) }
             val time = if (timeOf != null) nowS?.let { duration(it - timeOf.t, w) } else null
             val cx = (x(g.first().t) + x(g.last().t)) / 2
@@ -372,7 +377,7 @@ object TreatmentMarks {
                     val lw = TextModel.width(text(amounts, t), size)
                     place(cx, lw, taken[lane], minX, maxX, gap, INSET_DP * d)?.let { left ->
                         taken[lane] += left - gap / 2 to left + lw + gap / 2
-                        Label(members, shownAmounts, timeOf, t, lane, left, lw)
+                        Label(members, shownAmounts, amounts, timeOf, t, lane, left, lw)
                     }
                 }
             if (label != null) labels += label else dropped += members
@@ -502,7 +507,7 @@ object TreatmentMarks {
                 val pieces = ArrayList<Piece>()
                 l.shownAmounts.forEachIndexed { i, tr ->
                     if (i > 0) pieces += Piece(SEP, medium, ColorUtils.setAlphaComponent(sep, 0xC0))
-                    pieces += Piece(amount(tr).orEmpty(), bold, color(pal, tr.k))
+                    pieces += Piece(l.amounts[i], bold, color(pal, tr.k))
                 }
                 val timeOf = l.timeOf
                 if (l.time != null && timeOf != null) {

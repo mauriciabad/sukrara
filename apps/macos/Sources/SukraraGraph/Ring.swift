@@ -440,7 +440,7 @@ enum TirRing {
         }
         // the PoC's ring centre (#181): the share's number alone, heavy, no "%" (the owner asked for none)
         let sub = Ink.font(r * 0.34, .semibold, rounded: true)
-        let v = tir.empty ? "–" : text(tir, spec)
+        let v = tir.empty ? "–" : text(tir, spec, locale: w.locale)
         let base = c.y + r * 0.78 * 0.28
         // "69.7", "<0.1": the decimals fit inside the ring (TirRing.draw on Android)
         var size = v.count > 3 ? r * 0.78 * 0.7 : r * 0.78
@@ -462,8 +462,8 @@ extension TirRing {
         tir.empty || !spec.marks ? .none : TirMark.of(tir, spec.range)
     }
     /// The number in the middle: in range against its > 70 % goal, very good on its own (TirRing.text).
-    static func text(_ tir: TimeInRange, _ spec: RingSpec) -> String {
-        ShareText.of(tir.of(spec.range), spec.range == .inRange ? .inRange : nil)
+    static func text(_ tir: TimeInRange, _ spec: RingSpec, locale: Locale) -> String {
+        ShareText.of(tir.of(spec.range), spec.range == .inRange ? .inRange : nil, locale: locale)
     }
 }
 
@@ -494,7 +494,7 @@ enum MetricGauge {
     /// The number and its unit: the average in the card's `unit` ("141", "7.8"; the value says the unit).
     static func text(_ k: SlotKind, _ m: GlucoseMetrics, unit: GlucoseUnit, locale: Locale) -> (String, String) {
         switch k {
-        case .gmi: (String(format: "%.1f", m.gmi), "%")
+        case .gmi: (String(format: "%.1f", locale: locale, m.gmi), "%")
         case .average: (unit.format(Int(m.mean.rounded()), locale: locale), "")
         default: ("\(Int(m.cv.rounded()))", "%")
         }
@@ -532,7 +532,7 @@ enum MetricGauge {
         ctx.restoreGState()
         let num = Ink.font(radius * 0.62, TirRing.numberWeight, rounded: true)
         let unit = Ink.font(radius * 0.3, .semibold, rounded: true)
-        let (v, u) = m.empty ? ("–", "") : text(spec.kind, m, unit: glucose, locale: CardWords.current.locale)
+        let (v, u) = m.empty ? ("–", "") : text(spec.kind, m, unit: glucose, locale: words.locale)
         let w = Ink.width(v, num) + Ink.width(u, unit)
         let base = c.y + radius * 0.62 * 0.3
         Ink.draw(ctx, v, x: c.x - w / 2, y: base, num, pal.ink.a(emphasis))

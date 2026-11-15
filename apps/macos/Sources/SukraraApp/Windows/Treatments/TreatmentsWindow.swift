@@ -468,10 +468,8 @@ public struct TreatmentsView: View {
             ? L10n.t("\(at), \(amount(d.a)) units, primed") : L10n.t("\(at), \(amount(d.a)) units")
     }
 
-    /// "4.5", "12".
-    static func amount(_ a: Double) -> String {
-        a.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(a)) : String(format: "%.1f", a)
-    }
+    /// "4.5" (Spanish "4,5"), "12": `AmountText` in the windows' language.
+    static func amount(_ a: Double) -> String { AmountText.of(a, locale: AppLanguage.current.locale) }
 
     /// "Logged on Ana's phone", "Logged on this Mac", "Logged by a follower", "Read from the pen on Ana's phone";
     /// `mine` = this Mac wrote it, `wearer` = the followed person's name (nil: "the wearer's phone").

@@ -138,7 +138,7 @@ object Slots {
                 if (item.m.empty) {
                     null
                 } else if (item.spec.kind == SlotKind.TIR) {
-                    "${TirRing.text(item.m.tir, item.spec)}%" to
+                    "${TirRing.text(item.m.tir, item.spec, w.locale)}%" to
                         "${if (item.spec.range == TirRange.TIGHT) w.tirVeryGood else w.tirInRange} ${w.period(item.spec.windowS)}"
                 } else {
                     MetricGauge.text(item.spec.kind, item.m, item.unit, w.locale).let { (v, u) -> "$v$u" } to
@@ -161,21 +161,27 @@ object Slots {
         w: CardWords,
     ): String {
         val tr = info.tr
-        val amount = TreatmentMarks.amount(tr) ?: return TreatmentMarks.label(tr, 8) ?: tr.k
+        val amount = TreatmentMarks.amount(tr, w.locale) ?: return TreatmentMarks.label(tr, w.locale, 8) ?: tr.k
         val head =
             when (tr.k) {
                 "rapid" -> "${w.lastRapid} $amount"
                 "carbs" -> "${w.carbsShort} $amount"
                 else -> amount
             }
-        return listOfNotNull(head, info.carbs?.let { TreatmentMarks.amount(it.tr) }).joinToString(" · ")
+        return listOfNotNull(head, info.carbs?.let { TreatmentMarks.amount(it.tr, w.locale) }).joinToString(" · ")
     }
 
     /**
-     * The longest label a Live Update metric shows whole (a third of the card in the system font: *Rapid 4u · 30g*
-     * fits, *Rapid 12.5u · 120g* is cut after the dot; Android 17 emulator, 1080 px at 420 dpi).
+     * The widest label a Live Update metric shows whole, in [TextModel] em: a third of the card in the system font
+     * (Android 17 emulator, 1080 px at 420 dpi, default font size). Measured: *Rapid 4u · 30g* (7.94) and *Hidratos
+     * 120g* (7.88) fit; *Subiendo rápido* (9.05) is cut to *Subiendo ráp…*, *Rapid 12.5u · 120g* to *Rapid 12.5u ·…*
+     * (8.17 with the ellipsis), *Rápida 12.5u · 120g* to *Rápida 12.5u…*. Widths, not characters: *Bajando rápido* has
+     * 14 characters like *Rapid 4u · 30g* and is wider (8.37).
      */
-    const val LABEL_MAX = 14
+    const val LABEL_EM = 8f
+
+    /** Whether [label] shows whole as a Live Update metric's label ([LABEL_EM]). */
+    fun fits(label: String) = TextModel.width(label, 1f) <= LABEL_EM
 
     /** The insulin and its carbs as a metric each: "12m" · "Rapid 12.5u", "10m" · "Carbs 120g". */
     internal fun splitLast(
@@ -403,7 +409,7 @@ internal object LastSlot {
         val base = cy + radius * 0.17f
         cv.drawText(time, cx, base, main)
         // the amount under it, smaller, in the kind's colour (the circle is narrower there)
-        val amount = TreatmentMarks.amount(info.tr).orEmpty()
+        val amount = TreatmentMarks.amount(info.tr, w.locale).orEmpty()
         val sub =
             Paint(main).apply {
                 typeface = bold(700)
@@ -461,8 +467,8 @@ internal object LastSlot {
         main.textSize = fit(main, time, radius * 0.42f, inside * 2 * 0.84f)
         val base = cy + radius * 0.04f
         cv.drawText(time, cx, base, main)
-        val a = TreatmentMarks.amount(ins.tr).orEmpty()
-        val b = TreatmentMarks.amount(carbs.tr).orEmpty()
+        val a = TreatmentMarks.amount(ins.tr, w.locale).orEmpty()
+        val b = TreatmentMarks.amount(carbs.tr, w.locale).orEmpty()
         val both = "$a $b"
         val sub =
             Paint(main).apply {

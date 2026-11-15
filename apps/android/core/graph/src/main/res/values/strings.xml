@@ -56,6 +56,16 @@
     <string name="trend_falling">falling</string>
     <string name="trend_falling_fast">falling fast</string>
     <string name="trend_falling_very_fast">falling very fast</string>
+    <!-- the trend as a label where a third of the card is all the room (the Android 17 Live Update, Slots.fits:
+         "Rising very fast" is cut there); sentence case, the rate alert's own headline where it has one -->
+    <string name="trend_label_unknown">No trend</string>
+    <string name="trend_label_steady">Steady</string>
+    <string name="trend_label_rising">Rising</string>
+    <string name="trend_label_rising_fast">Rising fast</string>
+    <string name="trend_label_rising_very_fast">Very fast rise</string>
+    <string name="trend_label_falling">Falling</string>
+    <string name="trend_label_falling_fast">Falling fast</string>
+    <string name="trend_label_falling_very_fast">Very fast fall</string>
     <string name="a11y_unit_mgdl">milligrams per decilitre</string>
     <string name="a11y_unit_mmol">millimoles per litre</string>
     <string name="a11y_value">%1$s %2$s</string>

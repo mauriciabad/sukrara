@@ -60,12 +60,14 @@ import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.PenFill
 import app.mauri.sukrara.core.model.PenNearEntry
@@ -574,17 +576,18 @@ class QuickTreatmentActivity : ComponentActivity() {
     @Composable
     private fun PenFillEffects() {
         val reduced = LocalReducedMotion.current
+        val locale = LocalConfiguration.current.locales[0]
         LaunchedEffect(pendingFill) {
             val f = pendingFill ?: return@LaunchedEffect
             val set: (String) -> Unit = if (f.kind == "long") ({ form.long = it }) else ({ form.rapid = it })
             if (!reduced) {
                 val steps = (f.units * 2).toInt().coerceIn(1, MAX_COUNT_STEPS)
                 for (k in 1 until steps) {
-                    set(PenFills.number(Math.round(f.units * k / steps * 2) / 2.0))
+                    set(PenFills.number(Math.round(f.units * k / steps * 2) / 2.0, locale))
                     delay(COUNT_MS / steps)
                 }
             }
-            val text = PenFills.number(f.units)
+            val text = PenFills.number(f.units, locale)
             set(text)
             form.at = Instant.ofEpochSecond(f.t).takeIf { Duration.between(it, module.clock.now()) >= Duration.ofMinutes(1) }
             form.ago = null
@@ -775,7 +778,7 @@ internal fun PenDuplicateDialog(
     onCancel: () -> Unit,
     onLog: () -> Unit,
 ) {
-    val amount = (if (pen.units % 1.0 == 0.0) "${pen.units.toLong()}" else String.format(java.util.Locale.ROOT, "%.1f", pen.units)) + "u"
+    val amount = AmountText.units(pen.units, LocalConfiguration.current.locales[0])
     AlertDialog(
         onDismissRequest = onCancel,
         title = {

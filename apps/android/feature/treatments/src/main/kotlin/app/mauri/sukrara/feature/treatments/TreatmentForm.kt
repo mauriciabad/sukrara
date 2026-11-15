@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.treatments
 
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.TreatmentKind
 import java.time.Duration
 import java.time.Instant
@@ -124,9 +125,14 @@ object TreatmentForm {
         }
     }
 
-    /** An amount as the edit field starts with it: `4.5`, `12`, `30` (no unit, the field has it). */
-    fun amountText(amount: Double): String =
-        if (amount % 1.0 == 0.0) "${amount.toLong()}" else String.format(java.util.Locale.ROOT, "%.1f", amount)
+    /**
+     * An amount as the edit field starts with it: `4.5` (Spanish `4,5`, which [parse] reads too), `12`, `30` (no unit,
+     * the field has it).
+     */
+    fun amountText(
+        amount: Double,
+        locale: java.util.Locale,
+    ): String = AmountText.of(amount, locale)
 
     /** [text] cut to at most [maxBytes] UTF-8 bytes without splitting a character. */
     fun clip(

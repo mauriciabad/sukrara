@@ -799,3 +799,41 @@ Android's Live Update writes these labels: the Mac has no text-only slot place.
 |---|---|
 | ![](img/notification/v5-a-treatments-android37.png) | Live Update on 17: *Rapid 4u*; *Carbs 30g*; *Rapid 4u · 30g*; a large pair as a metric each, English and Spanish; carbs in the dark theme |
 
+
+## 13. Round 6: Spanish words that fit, Spanish decimals
+
+*2026-11-15: in the Spanish Live Update with three metrics the value's label read *Subiendo ráp…*, and the amounts
+*12.5u* instead of *12,5u*.*
+
+**Cut labels.** System UI cuts a metric's label to a third of the card. A character count (§12's 14) was the wrong
+measure: *Bajando rápido* has 14 characters like *Rapid 4u · 30g* and is wider. The fit is now a width in the card's
+text model (`TextModel`, the label layout's): 8 em, from what the Android 17 emulator showed (*Rapid 4u · 30g* 7.94 and
+*Hidratos 120g* 7.88 whole; *Subiendo ráp…*, *Rapid 12.5u ·…* at 8.17 with the ellipsis; `Slots.fits`). Every label a
+metric can show is checked against it in English and Spanish (`MetricLabelFitTest`: every arrow, every metric and
+period, large amounts, a note; `MetricLabelTest`: the countdown's label), so a word that doesn't fit fails a test.
+
+| Option for the value's label | Against |
+|---|---|
+| The sentence words (*subiendo muy rápido*) cut by System UI | The cut: the words stop meaning anything |
+| The rate whenever the words don't fit (*3,1/min*) | Read as a number beside the value; no words for TalkBack; nothing when there's no rate |
+| Two metrics when the label is long | Drops the ring or the treatment the person set |
+| **Label words written to fit, per language** (`CardWords.trendLabel`) | A second word list (the sentence words stay what TalkBack says in a sentence) |
+
+Chosen: label words. English keeps its words where they fit (*Falling*, *Falling fast*) and says *Very fast fall* /
+*Very fast rise* for the doubled arrow (*Falling very fast*: 9.2 em), *No trend* (*Trend unknown*: 8.5). Spanish takes
+the rate alerts' own nouns, *Bajada rápida* / *Subida rápida* (the alert's headline, so under a rate alert the label
+says the rate instead, which the Spanish words never matched before), *Bajada brusca* / *Subida brusca* for the
+doubled arrow, *Bajando*, *Subiendo*, *Estable*, *Sin tendencia*; the countdown *Restante* (*Tiempo restante*: 9.2).
+
+**Decimals.** The treatment amount had its own formatter with a fixed point in eight places on Android and three on
+the Mac (`TreatmentMarks.number`, the pens' pages and sheets, Add treatment's fields, the treatments window), beside
+the glucose values that already followed the language. One `AmountText` per platform (`:core:model`, `SukraraCore`)
+now writes every amount the person reads, in the card's or the screen's language: the card's labels and rings, the Live
+Update, home's list, Add treatment's fields and confirmations, the pen pages, the Mac's treatments window. Also in the
+language now: the GMI in its ring, the Mac's ring and report shares, GMI and CV (they were "." on the Mac), the Live
+Update's rate. Kept with a point: the wire formats (Nightscout, LibreView, exports) and the layout reports.
+`contracts/graph/labels` pins *4,5u* in its Spanish cases on both apps.
+
+| Picture | What |
+|---|---|
+| ![](img/notification/v6-es-labels-android37.png) | Live Update on 17 in Spanish with three metrics (a high muted, the synthetic sensor rising fast): *Subida rápida* · *Restante* · *En rango 1 d*, all whole |

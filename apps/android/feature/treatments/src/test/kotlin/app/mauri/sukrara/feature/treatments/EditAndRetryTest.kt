@@ -101,7 +101,7 @@ class EditAndRetryTest {
         }
 
     @Test fun theEditFormHoldsTheEntry() {
-        val form = TreatmentFormState.editing(stored.copy(kind = TreatmentKind.Carbs, amount = 30.0, note = "toast"))
+        val form = TreatmentFormState.editing(stored.copy(kind = TreatmentKind.Carbs, amount = 30.0, note = "toast"), java.util.Locale.US)
         assertEquals("30", form.carbs)
         assertEquals("", form.rapid)
         assertEquals("toast", form.note)

@@ -44,7 +44,7 @@ class EditDialogTest {
                 now.minusSeconds(1500),
                 origin = TreatmentOrigin.Phone,
             )
-        val form = TreatmentFormState.editing(t)
+        val form = TreatmentFormState.editing(t, java.util.Locale.US)
         val saved = mutableListOf<Pair<List<NewEntry>, Instant?>>()
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
@@ -73,7 +73,7 @@ class EditDialogTest {
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
-                    form = TreatmentFormState.editing(t),
+                    form = TreatmentFormState.editing(t, java.util.Locale.US),
                     focusCarbs = false,
                     zone = ZoneOffset.UTC,
                     now = { now },
@@ -109,7 +109,7 @@ class EditDialogTest {
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
-                    form = TreatmentFormState.editing(t),
+                    form = TreatmentFormState.editing(t, java.util.Locale.US),
                     focusCarbs = false,
                     zone = ZoneOffset.UTC,
                     now = { now },
@@ -130,7 +130,7 @@ class EditDialogTest {
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
-                    form = TreatmentFormState.editing(t),
+                    form = TreatmentFormState.editing(t, java.util.Locale.US),
                     focusCarbs = false,
                     zone = ZoneOffset.UTC,
                     now = { now },

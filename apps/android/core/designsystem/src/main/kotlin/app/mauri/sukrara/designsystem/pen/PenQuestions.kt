@@ -33,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -42,6 +43,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.designsystem.R
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenCandidate
 import app.mauri.sukrara.core.model.PenQuestionInfo
@@ -74,7 +76,8 @@ fun penSpoken(text: String): String {
 /** "1u", "1u and 1.5u", "1u, 0.5u and 1.5u". */
 @Composable
 private fun amounts(list: List<Double>): String {
-    val all = list.map(::penUnits)
+    val locale = LocalConfiguration.current.locales[0]
+    val all = list.map { AmountText.units(it, locale) }
     return when (all.size) {
         0 -> ""
         1 -> all[0]

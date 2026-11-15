@@ -32,18 +32,19 @@ enum TreatmentMarks {
     /// Text on a filled chip of a kind's colour: near-black on the light dark-theme colours, white on the deep light ones.
     static func onColor(dark: Bool) -> CGColor { GraphPalette.hex(dark ? 0x1C1C1E : 0xFFFFFF) }
 
-    /// "4.5u", "12u", "30g" (lowercase, no space: the user, 2026-10-18); nil for notes.
-    static func amount(k: String, a: Double) -> String? {
+    /// "4.5u" (Spanish "4,5u": `locale`'s decimal separator, `AmountText`), "12u", "30g" (lowercase, no space: the
+    /// user, 2026-10-18); nil for notes.
+    static func amount(k: String, a: Double, locale: Locale) -> String? {
         switch k {
-        case "rapid", "long": number(a) + "u"
+        case "rapid", "long": AmountText.units(a, locale: locale)
         case "carbs": "\(Int(a.rounded()))g"
         default: nil
         }
     }
-    static func amount(_ m: GraphMark) -> String? { amount(k: m.k, a: m.a) }
+    static func amount(_ m: GraphMark, locale: Locale) -> String? { amount(k: m.k, a: m.a, locale: locale) }
 
-    /// An amount as the card writes it: "4", "4.5".
-    static func number(_ a: Double) -> String { a == a.rounded() ? String(Int(a)) : String(format: "%.1f", a) }
+    /// Whether `amount` writes one for `m` (not a note).
+    static func hasAmount(_ m: GraphMark) -> Bool { m.k == "rapid" || m.k == "long" || m.k == "carbs" }
 
     /// A short duration in the card's language (`CardWords.duration`): "now" under a minute, "12m", "1h 5m", "3h"
     /// (whole hours drop the minutes; from 6 h only hours), "2d" from two days; Spanish "ahora", "12 min", "1 h 5 min".
@@ -100,12 +101,13 @@ enum TreatmentMarks {
     static let sep = " · "
 
     /// One label: `members` in label order (kind, then time), the entries with a label part shown (`MarkShow.label`)
-    /// `shownAmounts` = those whose amount shows; `time` = since `timeOf`, the newest member whose time shows (nil = none
-    /// wants it, or left out for room); `lane` 0 (the axis row) or 1 (under it), `left` + `w` = its modelled box (TextModel).
+    /// `shownAmounts` = those whose amount shows and `amounts` their texts; `time` = since `timeOf`, the newest member
+    /// whose time shows (nil = none wants it, or left out for room); `lane` 0 (the axis row) or 1 (under it), `left` +
+    /// `w` = its modelled box (TextModel).
     struct Label {
-        var members: [GraphMark]; var shownAmounts: [GraphMark]; var timeOf: GraphMark?; var time: String?
+        var members: [GraphMark]; var shownAmounts: [GraphMark]; var amounts: [String]; var timeOf: GraphMark?
+        var time: String?
         var lane: Int; var left: CGFloat; var w: CGFloat
-        var amounts: [String] { shownAmounts.compactMap { TreatmentMarks.amount($0) } }
         var text: String { TreatmentMarks.text(amounts, time) }
     }
 
@@ -134,7 +136,7 @@ enum TreatmentMarks {
         _ marks: [GraphMark], x: (TimeInterval) -> CGFloat, now: TimeInterval?, minX: CGFloat, maxX: CGFloat,
         lanes: Int, d: CGFloat, show: MarkShow = .defaults, words: CardWords, textScale: CGFloat = 1
     ) -> Layout {
-        let items = marks.filter { amount($0) != nil && order[$0.k] != nil && show.label($0.k) }
+        let items = marks.filter { hasAmount($0) && order[$0.k] != nil && show.label($0.k) }
             .sorted { ($0.t, order[$0.k]!, $0.a, $0.id) < ($1.t, order[$1.k]!, $1.a, $1.id) }
         var groups: [[GraphMark]] = []
         for m in items {
@@ -150,7 +152,7 @@ enum TreatmentMarks {
         for g in groups.sorted(by: { $0.last!.t > $1.last!.t }) {
             let members = g.sorted { (order[$0.k]!, $0.t, $0.a, $0.id) < (order[$1.k]!, $1.t, $1.a, $1.id) }
             let shownAmounts = members.filter { show.has($0.k, MarkShow.amount) }
-            let amounts = shownAmounts.compactMap { amount($0) }
+            let amounts = shownAmounts.compactMap { amount($0, locale: words.locale) }
             // the time once, since the newest member that wants it
             let timeOf = g.last { show.has($0.k, MarkShow.time) }
             let time = timeOf.flatMap { m in now.map { words.duration($0 - m.t) } }
@@ -166,8 +168,8 @@ enum TreatmentMarks {
                 if let left = place(cx, w, taken[lane], minX: minX, maxX: maxX, gap: gap, inset: inset * d) {
                     taken[lane].append((left - gap / 2, left + w + gap / 2))
                     placed = Label(
-                        members: members, shownAmounts: shownAmounts, timeOf: timeOf, time: t, lane: lane, left: left,
-                        w: w)
+                        members: members, shownAmounts: shownAmounts, amounts: amounts, timeOf: timeOf, time: t,
+                        lane: lane, left: left, w: w)
                     break
                 }
             }
@@ -248,9 +250,9 @@ enum TreatmentMarks {
         // pieces (text, font, colour) and the start of the real text, centred in its modelled box
         let drawn: [(Label, [(String, CTFont, CGColor)], CGFloat)] = layout.labels.map { l in
             var pieces: [(String, CTFont, CGColor)] = []
-            for (i, m) in l.shownAmounts.filter({ amount($0) != nil }).enumerated() {
+            for (i, (m, text)) in zip(l.shownAmounts.filter(hasAmount), l.amounts).enumerated() {
                 if i > 0 { pieces.append((sep, medium, sepColor.copy(alpha: 0xC0 / 255.0)!)) }
-                pieces.append((amount(m)!, bold, color(m.k, dark: dark)))
+                pieces.append((text, bold, color(m.k, dark: dark)))
             }
             if let t = l.time, let of = l.timeOf {
                 pieces.append(

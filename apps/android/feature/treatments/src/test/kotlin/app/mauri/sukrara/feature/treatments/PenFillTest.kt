@@ -97,8 +97,9 @@ class PenFillTest {
         val b = Bundle().also { PenFills.save(PenLine.Filled(fill, "8.5"), it) }
         assertEquals(PenLine.Filled(fill, "8.5", undo = false), PenFills.restore(b))
         assertEquals(null, PenFills.restore(Bundle()))
-        assertEquals("8", PenFills.number(8.0))
-        assertEquals("0.5", PenFills.number(0.5))
+        assertEquals("8", PenFills.number(8.0, java.util.Locale.US))
+        assertEquals("0.5", PenFills.number(0.5, java.util.Locale.US))
+        assertEquals("0,5", PenFills.number(0.5, java.util.Locale.forLanguageTag("es")))
     }
 
     @Test fun addTreatmentAfterAReadStartsAtItsTimeWithLongFocused() {

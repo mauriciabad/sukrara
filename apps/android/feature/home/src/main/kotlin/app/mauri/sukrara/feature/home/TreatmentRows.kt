@@ -52,6 +52,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -352,7 +353,7 @@ private fun DeliveryLine(
  */
 @Composable
 internal fun treatmentLabel(t: Treatment): String {
-    val amount = TreatmentMarks.amount(t).orEmpty()
+    val amount = TreatmentMarks.amount(t, LocalConfiguration.current.locales[0]).orEmpty()
     return when (t.kind) {
         TreatmentKind.RapidInsulin -> stringResource(R.string.home_treatment_rapid, amount)
         TreatmentKind.LongInsulin -> stringResource(R.string.home_treatment_long, amount)

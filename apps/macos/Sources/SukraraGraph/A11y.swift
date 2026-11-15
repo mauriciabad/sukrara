@@ -390,7 +390,8 @@ enum A11y {
             guard !m.empty else { return nil }
             let text =
                 spec.kind == .tir
-                ? TirRing.text(m.tir, spec) : MetricGauge.text(spec.kind, m, unit: unit, locale: w.locale).0
+                ? TirRing.text(m.tir, spec, locale: w.locale)
+                : MetricGauge.text(spec.kind, m, unit: unit, locale: w.locale).0
             return metric(spec.kind, spec.range, window: spec.window, text: text, words: w)
         case let .last(info):
             return last(info, now: now, words: w)
@@ -428,7 +429,7 @@ enum A11y {
     /// One treatment, its age first as the slot draws it (#206), then its kind and amount ("just now, carbs 45 grams",
     /// "10 min ago, note"); `last` makes it a sentence.
     static func treatment(_ k: String, amount: Double, age: TimeInterval, words w: CardWords) -> String {
-        let number = w.decimal(TreatmentMarks.number(amount))
+        let number = AmountText.of(amount, locale: w.locale)
         let ago = w.age(age)
         switch k {
         case "rapid": return w.lastRapid(w.units(number, amount == 1), ago)

@@ -402,7 +402,7 @@ class GraphFixtureTest {
                 assertNull("$n: last", last)
             }
             e["amounts"]?.jsonObject?.forEach { (id, want) ->
-                assertEquals("$n: amount $id", want.str(), TreatmentMarks.amount(trs.first { it.id == id }))
+                assertEquals("$n: amount $id", want.str(), TreatmentMarks.amount(trs.first { it.id == id }, Locale.US))
             }
         }
     }

@@ -84,6 +84,11 @@ class SlotTextTest {
                 small,
             )
         assertEquals(listOf("Rápida 4u", "Hidratos 30g"), es.map { it.second })
+        // the language's decimal separator, as everywhere the card writes a number
+        assertEquals(
+            listOf("12 min" to "Rápida 12,5u", "10 min" to "Hidratos 120g"),
+            texts(Locale.forLanguageTag("es"), rapid, carbs),
+        )
         // room for one: the pair in one label, whatever it costs
         val one =
             GlucoseCard.slotTexts(

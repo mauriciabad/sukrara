@@ -155,7 +155,7 @@ class TreatmentDialogGoldenTest {
                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     SukraraSheet(onDismiss = {}) {
                         TreatmentDialogContent(
-                            form = TreatmentFormState.editing(t),
+                            form = TreatmentFormState.editing(t, java.util.Locale.US),
                             focusCarbs = false,
                             zone = ZoneOffset.UTC,
                             now = { now },

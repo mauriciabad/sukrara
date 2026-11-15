@@ -4,6 +4,7 @@
 package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.graph.R
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseRange
@@ -229,7 +230,7 @@ object A11y {
                         if (item.spec.kind ==
                             SlotKind.TIR
                         ) {
-                            TirRing.text(item.m.tir, item.spec)
+                            TirRing.text(item.m.tir, item.spec, w.locale)
                         } else {
                             MetricGauge.text(item.spec.kind, item.m, item.unit, w.locale).first
                         }
@@ -310,7 +311,7 @@ object A11y {
         ageS: Long,
         w: CardWords,
     ): String {
-        val number = w.decimal(TreatmentMarks.number(amount))
+        val number = AmountText.of(amount, w.locale)
         val quantity = if (amount == 1.0) 1 else 2
         val age = ago(ageS, w)
         return when (k) {

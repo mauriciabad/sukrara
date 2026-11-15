@@ -4,6 +4,7 @@
 package app.mauri.sukrara.monitor
 
 import android.content.Context
+import android.content.res.Configuration
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
@@ -17,6 +18,7 @@ import app.mauri.sukrara.monitor.notify.LiveNotificationContent
 import app.mauri.sukrara.monitor.notify.NotificationPrefs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -69,6 +71,37 @@ class MetricLabelTest {
         val l = label(content(-2.4), alertTitle = "Falling fast")
         assertEquals("2.4/min", l)
         assertFalse(l.contains("Falling", ignoreCase = true))
+    }
+
+    /**
+     * Spanish (round 6 of #36): *Subiendo rápido* was cut to *Subiendo ráp…* beside two more metrics. The label words
+     * fit a third of the card; the rate alert's Spanish headline (*Bajada rápida*) is the label's own word, so under
+     * it the rate shows instead; the muted side's countdown fits too.
+     */
+    @Test fun `Spanish - words that fit, the headline's word, the countdown's label`() {
+        val es = Configuration(ctx.resources.configuration).apply { setLocale(java.util.Locale.forLanguageTag("es")) }
+        val esCtx = ctx.createConfigurationContext(es)
+        val liveEs = LiveNotification(esCtx)
+        val c = content(-2.4)
+        val fresh = liveEs.metricLabel(c, c.look!!, null, GlucoseUnit.MGDL)
+        assertEquals("Bajada rápida", fresh)
+        assertTrue(
+            fresh,
+            app.mauri.sukrara.graph.Slots
+                .fits(fresh),
+        )
+        val alert = AlertNotifierStub.alert(esCtx, "Bajada rápida")
+        assertEquals("2,4/min", liveEs.metricLabel(c, c.look!!, alert, GlucoseUnit.MGDL))
+        val left = esCtx.getString(R.string.monitor_metric_mute_left)
+        assertTrue(
+            left,
+            app.mauri.sukrara.graph.Slots
+                .fits(left),
+        )
+        assertTrue(
+            app.mauri.sukrara.graph.Slots
+                .fits(ctx.getString(R.string.monitor_metric_mute_left)),
+        )
     }
 
     @Test fun `late, the time of the reading`() {

@@ -63,7 +63,7 @@ enum GlucoseGraph {
             st.treatments
             ? marks.filter { m in
                 m.t >= from && m.t <= end && show.any(m.k)
-                    && (show.has(m.k, MarkShow.point) || show.label(m.k) && TreatmentMarks.amount(m) != nil || mutes(m))
+                    && (show.has(m.k, MarkShow.point) || show.label(m.k) && TreatmentMarks.hasAmount(m) || mutes(m))
             } : []
         let lane = shownMarks.contains { show.has($0.k, MarkShow.point) || mutes($0) }
         // The y range of the window (`yRange`); a scrolling surface animates it towards that and passes the current one.
@@ -420,7 +420,7 @@ enum GlucoseGraph {
                     m.id + ":"
                         + MarkShow.parts(m.k).filter { p in
                             show.has(m.k, p) && (p != MarkShow.line || muteUntil?(m) != nil)
-                                && (p != MarkShow.amount && p != MarkShow.time || TreatmentMarks.amount(m) != nil)
+                                && (p != MarkShow.amount && p != MarkShow.time || TreatmentMarks.hasAmount(m))
                         }.joined(separator: "+")
                 }.joined(separator: " "))
             for l in layout?.labels ?? [] {

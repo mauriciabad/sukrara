@@ -421,7 +421,10 @@ func fixtureSetHasCases(_ set: String) {
         for (id, want) in c.expect["amounts"] as? [String: Any] ?? [:] {
             let mark = marks.first { $0.id == id }
             #expect(mark != nil, "amount \(id) exists")
-            if let mark { #expect(TreatmentMarks.amount(mark) == want as? String, "amount \(id)") }
+            if let mark {
+                #expect(
+                    TreatmentMarks.amount(mark, locale: Locale(identifier: "en")) == want as? String, "amount \(id)")
+            }
         }
     }
 }

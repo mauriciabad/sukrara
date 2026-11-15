@@ -70,6 +70,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -194,9 +195,12 @@ class TreatmentFormState(
                 },
             )
 
-        /** The form for editing [t]: its amount in its kind's field, its note and its time. */
-        fun editing(t: Treatment): TreatmentFormState {
-            val amount = TreatmentForm.amountText(t.amount)
+        /** The form for editing [t]: its amount in its kind's field (in [locale]'s decimals), its note and its time. */
+        fun editing(
+            t: Treatment,
+            locale: java.util.Locale,
+        ): TreatmentFormState {
+            val amount = TreatmentForm.amountText(t.amount, locale)
             return TreatmentFormState(
                 rapid = if (t.kind == TreatmentKind.RapidInsulin) amount else "",
                 long = if (t.kind == TreatmentKind.LongInsulin) amount else "",
@@ -221,8 +225,10 @@ fun rememberTreatmentFormState(at: Instant? = null): TreatmentFormState =
 
 /** The edit form for [t], kept across a configuration change. */
 @Composable
-fun rememberEditFormState(t: Treatment): TreatmentFormState =
-    rememberSaveable(t.id, saver = TreatmentFormState.Saver) { TreatmentFormState.editing(t) }
+fun rememberEditFormState(t: Treatment): TreatmentFormState {
+    val locale = LocalConfiguration.current.locales[0]
+    return rememberSaveable(t.id, saver = TreatmentFormState.Saver) { TreatmentFormState.editing(t, locale) }
+}
 
 /**
  * The quick dialog's countdown over the lock screen: [seconds] left (the ring's digits), [spokenSeconds] (TalkBack's

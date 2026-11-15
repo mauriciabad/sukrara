@@ -27,6 +27,7 @@ object EntryWords {
         val amount =
             TreatmentMarks.amount(
                 Treatment("", e.kind, e.amount, Instant.EPOCH, modifiedAt = Instant.EPOCH, origin = TreatmentOrigin.Phone),
+                res.configuration.locales[0],
             )
         val kind =
             when (e.kind) {

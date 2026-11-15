@@ -25,6 +25,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.PenFill
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
@@ -135,8 +136,11 @@ fun PenFillLine(
 
 /** The pen's fill in the form, without the UI (tests): which field it is, what Save leaves out, the saved state. */
 object PenFills {
-    /** `8.5`, `8`: how the field writes a pen dose (a dot, whatever the language; the field reads both). */
-    fun number(units: Double): String = penUnits(units).dropLast(1)
+    /** `8.5` (Spanish `8,5`), `8`: how the field writes a pen dose, as an edited entry's amount (the field reads both). */
+    fun number(
+        units: Double,
+        locale: java.util.Locale,
+    ): String = AmountText.of(units, locale)
 
     /** What the filled field says now. */
     fun fieldText(

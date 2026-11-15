@@ -46,6 +46,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -61,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.designsystem.R
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.PenDoseInfo
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
@@ -71,7 +73,8 @@ import app.mauri.sukrara.designsystem.sheet.SukraraSheet
 import java.util.Locale
 
 /** `8.5u`: dot, lowercase u, no space (the pen's own way of writing doses). */
-fun penUnits(a: Double): String = (if (a % 1.0 == 0.0) "${a.toLong()}" else String.format(Locale.ROOT, "%.1f", a)) + "u"
+@Composable
+fun penUnits(a: Double): String = AmountText.units(a, LocalConfiguration.current.locales[0])
 
 private fun round1(x: Double) = Math.round(x * 10) / 10.0
 
@@ -223,6 +226,7 @@ fun PenEntrySheet(
                 )
                 HorizontalDivider()
                 entry.doses.forEachIndexed { i, d ->
+                    val units = penUnits(d.units)
                     PenDoseRow(
                         d,
                         roles[i],
@@ -230,7 +234,7 @@ fun PenEntrySheet(
                         onSave?.let {
                             { p: Boolean ->
                                 roles[i] = p
-                                if (!reduced) flight.launch(penUnits(d.units), i, toPriming = p, amountX)
+                                if (!reduced) flight.launch(units, i, toPriming = p, amountX)
                             }
                         },
                         Modifier.onGloballyPositioned { flight.rows[i] = it.positionInRoot() },

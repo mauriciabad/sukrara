@@ -261,7 +261,7 @@ enum Slots {
                 + (m.empty
                     ? "-"
                     : spec.kind == .tir
-                        ? TirRing.text(m.tir, spec)
+                        ? TirRing.text(m.tir, spec, locale: Locale(identifier: "en_US_POSIX"))
                         : MetricGauge.text(spec.kind, m, unit: unit, locale: Locale(identifier: "en_US_POSIX")).0)
             let mk = mark(item)
             if mk != .none { out += " \(mk.rawValue)" }
@@ -404,7 +404,7 @@ enum LastSlot {
         let base = c.y + radius * 0.17
         Ink.draw(ctx, time, x: c.x, y: base, font, pal.ink, align: 0.5)
         // the amount under it, smaller, in the kind's colour (the circle is narrower there)
-        let amount = TreatmentMarks.amount(info.tr) ?? ""
+        let amount = TreatmentMarks.amount(info.tr, locale: w.locale) ?? ""
         let sub = fit(amount, min(radius * 0.3, size * amountOfTime), .bold, room: (radius - sw) * 2 * 0.7)
         let subFont = Ink.font(sub, .bold)
         let subBase = base + radius * 0.3 * 1.25
@@ -448,7 +448,8 @@ enum LastSlot {
         let font = Ink.font(size, .heavy)
         let base = c.y + radius * 0.04
         Ink.draw(ctx, time, x: c.x, y: base, font, pal.ink, align: 0.5)
-        let a = TreatmentMarks.amount(ins.tr) ?? "", b = TreatmentMarks.amount(carbs.tr) ?? ""
+        let a = TreatmentMarks.amount(ins.tr, locale: w.locale) ?? "",
+            b = TreatmentMarks.amount(carbs.tr, locale: w.locale) ?? ""
         let both = "\(a) \(b)"
         let sub = fit(both, min(radius * 0.26, size * amountOfTime), .bold, room: inside * 2 * 0.72)
         let subFont = Ink.font(sub, .bold)

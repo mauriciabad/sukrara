@@ -4,6 +4,7 @@
 package app.mauri.sukrara.pen
 
 import android.content.Context
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.PenEngine
@@ -77,7 +78,7 @@ data class PenCard(
 class PenCardText(
     private val ctx: Context,
 ) {
-    fun u(a: Double) = number(a) + "u"
+    fun u(a: Double) = AmountText.units(a, ctx.resources.configuration.locales[0])
 
     fun time(t: Long): String = ClockText.time(t)
 
@@ -324,13 +325,8 @@ class PenCardText(
 
     /** What TalkBack says for a card line: amounts as words ("8.5 units"), not "8.5u". */
     fun spoken(text: String): String =
-        Regex("(\\d+(?:\\.\\d)?)u\\b").replace(text) { m ->
-            val v = m.groupValues[1].toDouble()
-            val shown = if (Locale.getDefault().language == "es") m.groupValues[1].replace('.', ',') else m.groupValues[1]
-            ctx.resources.getQuantityString(R.plurals.pen_units_spoken, if (v == 1.0) 1 else 2, shown)
+        Regex("(\\d+(?:[.,]\\d)?)u\\b").replace(text) { m ->
+            val v = m.groupValues[1].replace(',', '.').toDouble()
+            ctx.resources.getQuantityString(R.plurals.pen_units_spoken, if (v == 1.0) 1 else 2, m.groupValues[1])
         }
-
-    companion object {
-        fun number(a: Double) = if (a % 1.0 == 0.0) "${a.toLong()}" else String.format(Locale.ROOT, "%.1f", a)
-    }
 }

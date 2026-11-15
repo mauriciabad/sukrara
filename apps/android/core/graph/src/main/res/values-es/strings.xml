@@ -56,6 +56,14 @@
     <string name="trend_falling">bajando</string>
     <string name="trend_falling_fast">bajando rápido</string>
     <string name="trend_falling_very_fast">bajando muy rápido</string>
+    <string name="trend_label_unknown">Sin tendencia</string>
+    <string name="trend_label_steady">Estable</string>
+    <string name="trend_label_rising">Subiendo</string>
+    <string name="trend_label_rising_fast">Subida rápida</string>
+    <string name="trend_label_rising_very_fast">Subida brusca</string>
+    <string name="trend_label_falling">Bajando</string>
+    <string name="trend_label_falling_fast">Bajada rápida</string>
+    <string name="trend_label_falling_very_fast">Bajada brusca</string>
     <string name="a11y_unit_mgdl">miligramos por decilitro</string>
     <string name="a11y_unit_mmol">milimoles por litro</string>
     <string name="a11y_value">%1$s %2$s</string>

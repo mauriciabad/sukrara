@@ -239,7 +239,7 @@ object TirRing {
                 typeface = RoundedFont.typeface(600)
                 color = ColorUtils.setAlphaComponent(if (spec.range == TirRange.TIGHT) pal.tight else pal.inkSoft, alpha)
             }
-        val v = if (tir.empty) "–" else text(tir, spec)
+        val v = if (tir.empty) "–" else text(tir, spec, w.locale)
         val base = cy + num.textSize * 0.28f
         if (v.length > 3) num.textSize *= 0.7f // "69.7", "<0.1": the decimals fit inside the ring
         num.textSize = min(num.textSize, num.textSize * (r - sw) * 1.5f / num.measureText(v).coerceAtLeast(1f)) // "100" too
@@ -261,7 +261,7 @@ object TirRing {
     fun text(
         tir: TimeInRange,
         spec: RingSpec,
-        locale: Locale = Locale.getDefault(),
+        locale: Locale,
     ): String = ShareText.of(tir.of(spec.range), if (spec.range == TirRange.IN_RANGE) Goal.IN_RANGE else null, locale)
 
     private fun gapAfter(
@@ -314,7 +314,7 @@ internal object MetricGauge {
         locale: Locale,
     ): Pair<String, String> =
         when (k) {
-            SlotKind.GMI -> "%.1f".format(m.gmi) to "%"
+            SlotKind.GMI -> "%.1f".format(locale, m.gmi) to "%"
             SlotKind.AVERAGE -> unit.text(Math.round(m.mean).toInt(), locale) to ""
             else -> "${Math.round(m.cv)}" to "%"
         }

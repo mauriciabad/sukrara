@@ -492,8 +492,9 @@ class LiveNotification(
 
     /**
      * The value metric's label (the owner, 2026-11-14: "Now" said nothing): the reading's time once it is late; while
-     * fresh, the trend in words ("Falling", "Steady"), or, when the alert's title already says the trend (*Falling
-     * fast*), the rate ("2.4/min"): never what the title says. Sentence case, as every label.
+     * fresh, the trend as a label ("Falling", "Steady", [CardWords.trendLabel]: words that fit a third of the card in
+     * every language), or, when the alert's title already says the trend (*Falling fast*, *Bajada rápida*), the rate
+     * ("2.4/min"): never what the title says. Sentence case, as every label.
      */
     internal fun metricLabel(
         content: LiveNotificationContent,
@@ -502,16 +503,17 @@ class LiveNotification(
         unit: GlucoseUnit,
     ): String {
         content.readingAt?.let { return Freshness.timeText(it.epochSecond, Instant.now().epochSecond) }
-        val trend = CardWords.of(context.resources).trend(look.band.takeIf { look.trend == TrendMark.ARROW })
+        val words = CardWords.of(context.resources)
+        val trend = words.trendLabel(look.band.takeIf { look.trend == TrendMark.ARROW })
         val rate = look.rate?.takeIf { look.trend == TrendMark.ARROW }
         val repeats = alert != null && alert.title.contains(trend, ignoreCase = true)
         val label =
             if (repeats && rate != null) {
-                context.getString(R.string.monitor_metric_rate, unit.rateText(kotlin.math.abs(rate), java.util.Locale.getDefault()))
+                context.getString(R.string.monitor_metric_rate, unit.rateText(kotlin.math.abs(rate), words.locale))
             } else {
                 trend
             }
-        return label.replaceFirstChar { it.titlecase(java.util.Locale.getDefault()) }
+        return label.replaceFirstChar { it.titlecase(words.locale) }
     }
 
     /** The value's style by the person's ranges (a limit in the range beyond it, [Bands.of]): danger low, caution high. */

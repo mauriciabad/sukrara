@@ -42,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -57,6 +58,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.data.settings.SchemaSettings
+import app.mauri.sukrara.core.model.AmountText
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenCheck
 import app.mauri.sukrara.core.model.PenDoseInfo
@@ -102,7 +104,8 @@ import java.util.Locale
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** `8.5u`: dot, lowercase u, no space (the pen's own way of writing doses). */
-internal fun units(a: Double) = (if (a % 1.0 == 0.0) "${a.toLong()}" else String.format(Locale.ROOT, "%.1f", a)) + "u"
+@Composable
+internal fun units(a: Double) = AmountText.units(a, LocalConfiguration.current.locales[0])
 
 /** A held read older than this asks for a new tap: the pen's display counts hours from now, not from the read. */
 private const val CHECK_FRESH_S = 600L

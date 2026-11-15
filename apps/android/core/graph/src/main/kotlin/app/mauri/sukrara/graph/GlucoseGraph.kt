@@ -144,7 +144,7 @@ object GlucoseGraph {
                 input.treatments.filter {
                     !it.deleted && it.t in from..end && show.any(it.k) &&
                         (
-                            show.has(it.k, MarkShow.POINT) || (show.label(it.k) && TreatmentMarks.amount(it) != null) ||
+                            show.has(it.k, MarkShow.POINT) || (show.label(it.k) && TreatmentMarks.hasAmount(it)) ||
                                 (show.has(it.k, MarkShow.LINE) && muteUntil?.invoke(it) != null)
                         )
                 }
@@ -381,7 +381,7 @@ object GlucoseGraph {
                                 .parts(tr.k)
                                 .filter { p ->
                                     show.has(tr.k, p) && (p != MarkShow.LINE || muteUntil?.invoke(tr) != null) &&
-                                        ((p != MarkShow.AMOUNT && p != MarkShow.TIME) || TreatmentMarks.amount(tr) != null)
+                                        ((p != MarkShow.AMOUNT && p != MarkShow.TIME) || TreatmentMarks.hasAmount(tr))
                                 }.joinToString("+")
                     },
                 exact = true,

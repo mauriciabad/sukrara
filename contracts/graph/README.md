@@ -19,13 +19,13 @@ A case: `name`; optional `settings` (alert settings JSON, ../alerts/SPEC.md §3,
 | `until` | for `taken`: end of the mute, seconds from now |
 | `badge` | `null` or `{kind, text, short, tonal}` (StatusBadge.look, English words); `until` is `"never"` for Mute all without an end. A paused badge without an end reads "Muted"; the `muted` badge (kind `muted`: neutral colour, the "notifications off" bell) reads "Muted · 1h 20m" or "Muted" (until you turn it off), short "Muted" (../alerts/copy.json `pill`) |
 | `last` | `null` or `{id, until, with?}` (LastTreatment.of; `until` null = its kind mutes nothing; `with` = the carbs drawn with running insulin, `{id, until}`, absent = none) |
-| `amounts` | `{id: "4.5u" \| null}` (TreatmentMarks.amount) |
+| `amounts` | `{id: "4.5u" \| null}` (TreatmentMarks.amount, in English: an amount is written with the language's decimal separator, Spanish "4,5u", as the `es` label cases check) |
 
 ## Treatment label layout (`labels/*.json`)
 
 The layout dump: which treatment labels are drawn, where and with what text (rules: docs/16-graph.md, "Treatment
 labels"). Run by `GraphFixtureTest.labels` (Android) and `-graphselftest` (Mac), which also checks that SF Pro's real
-width of each label fits the width model. A case: `name`; optional `locale` (`es`: the labels' times in Spanish, "1 h 35 min", "ahora": the widths the Spanish card lays out, #77); `chart` `{w, h}` (the chart's area, dp); `hours` (window);
+width of each label fits the width model. A case: `name`; optional `locale` (`es`: the labels' times in Spanish, "1 h 35 min", "ahora", and their amounts with a decimal comma, "4,5u": the widths the Spanish card lays out, #77); `chart` `{w, h}` (the chart's area, dp); `hours` (window);
 `pct` (time in range has data, so the % column shows where the chart is ≥ 240 dp wide); `treatments` as above
 (`k`: rapid | long | carbs | note; times relative to "now"). Optional `marks` (Treatments on the graph): absent = the defaults (carbs: point
 only), `"all"` = every part of every kind, or `{kind: [point, line, amount, time]}` (missing kinds = their default). Optional

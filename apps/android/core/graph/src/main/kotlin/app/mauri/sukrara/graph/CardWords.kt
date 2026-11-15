@@ -82,6 +82,25 @@ class CardWords private constructor(
         return if (m < 1) durationNow else Durations.compact(m, durations)
     }
 
+    /**
+     * The trend as a label where a third of the card is all the room (the Live Update's value, [Slots.fits]): sentence
+     * case, every language's words written to fit (*Very fast fall*, *Bajada brusca*; *Bajada rápida* is the Spanish
+     * rate alert's own headline); null [band] = unknown. [trend] is the sentence word TalkBack says.
+     */
+    fun trendLabel(band: Int?): String =
+        r.getString(
+            when (band) {
+                null -> R.string.trend_label_unknown
+                3 -> R.string.trend_label_rising_very_fast
+                2 -> R.string.trend_label_rising_fast
+                1 -> R.string.trend_label_rising
+                0 -> R.string.trend_label_steady
+                -1 -> R.string.trend_label_falling
+                -2 -> R.string.trend_label_falling_fast
+                else -> R.string.trend_label_falling_very_fast
+            },
+        )
+
     /** The trend in words for its text [band] (null = unknown): one word per arrow (contracts/trend `bands.json`). */
     fun trend(band: Int?): String =
         r.getString(

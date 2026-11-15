@@ -64,6 +64,8 @@ public struct GlucoseReport: Equatable, Sendable {
         let b = config.bands.sane()
         let m = GlucoseMetrics.of(readings, from: now - TimeInterval(days) * 86400, to: now, bands: b)
         let t = m.tir
+        // every number in the card's language, like the values: "5,2", "6,8 %" in Spanish
+        let locale = CardWords.current.locale
         func u(_ mg: Int) -> String { unit.cardText(mg) }
         /// A band's whole values, a limit in the range beyond it ("180–249", "≥ 250"; Android ReportCard the same).
         func span(_ band: Band) -> String {
@@ -76,7 +78,7 @@ public struct GlucoseReport: Equatable, Sendable {
         }
         func row(_ kind: Row.Kind, _ range: String, _ share: Double, _ goal: Goal?, strong: Bool = false) -> Row {
             Row(
-                kind: kind, range: range, share: ShareText.of(share, goal), goal: goal?.text,
+                kind: kind, range: range, share: ShareText.of(share, goal, locale: locale), goal: goal?.text,
                 met: goal.flatMap { $0.metShare(share) }, strong: strong)
         }
         let rows = [
@@ -92,16 +94,16 @@ public struct GlucoseReport: Equatable, Sendable {
         let order: [Band] = [.veryHigh, .high, .target, .tight, .low, .veryLow]
         let mean = Int(m.mean.rounded())
         return GlucoseReport(
-            days: days, empty: m.empty, coverage: ShareText.coverage(t.coverage),
+            days: days, empty: m.empty, coverage: ShareText.coverage(t.coverage, locale: locale),
             lowCoverage: !m.empty && t.coverage < Goal.minCoverage, rows: rows,
             bar: order.map { BarPiece(band: $0, share: t.share($0)) }.filter { $0.share > 0 },
             average: Metric(
                 value: "\(u(mean)) \(unit.symbol)",
                 goal: unit == .mgdl ? Goal.average.text : "< \(u(154)) \(unit.symbol)", met: Goal.average.met(m)),
             gmi: Metric(
-                value: String(format: "%.1f %%  ·  %d mmol/mol", m.gmi, Int(m.gmiMmolMol.rounded())),
+                value: String(format: "%.1f %%  ·  %d mmol/mol", locale: locale, m.gmi, Int(m.gmiMmolMol.rounded())),
                 goal: Goal.gmi.text + " · < 53", met: Goal.gmi.met(m)),
-            cv: Metric(value: String(format: "%.1f %%", m.cv), goal: Goal.cv.text, met: Goal.cv.met(m)))
+            cv: Metric(value: String(format: "%.1f %%", locale: locale, m.cv), goal: Goal.cv.text, met: Goal.cv.met(m)))
     }
 
     /// A band's colour on the card's palette (the bar).

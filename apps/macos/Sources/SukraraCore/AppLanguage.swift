@@ -8,6 +8,9 @@ import Foundation
 public enum AppLanguage: String, Sendable {
     case en, es
 
+    /// The language's locale: its decimal separator ("4,5u" in Spanish), its sentence case.
+    public var locale: Locale { Locale(identifier: rawValue) }
+
     public static var current: AppLanguage {
         #if DEBUG
             if let forced { return forced }
