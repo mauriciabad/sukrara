@@ -2,7 +2,8 @@
 
 *2026-11-16 · research report, kept up to date with the lessons of each design round · web research (about 350
 sources: watch platforms' guidelines, Garmin's docs and manuals, horology, perception and safety-critical display
-research, diabetes care, CGM watch apps and their issue trackers) and Sukrara's own rules · **no design**: each face's
+research, diabetes care, CGM watch apps and their issue trackers; about 220 store reviews and forum threads by
+people who wear one) and Sukrara's own rules · **no design**: each face's
 design lives in its own place*
 
 ## Goal
@@ -29,7 +30,7 @@ platforms. On purpose it holds **no design and no preferred style**, so every fa
 - **Your face's design** (sketches, mockups, choices) goes in its own place. What a design round teaches that helps
   *any* face (a reason, a usability fix, an idea that failed and why) goes in [§12](#12-lessons-from-design-rounds).
 - The full research notes, with every source: [evidence/42-watch-faces](evidence/42-watch-faces/) (platforms,
-  Garmin, horology and encodings, human factors, diabetes).
+  Garmin, horology and encodings, human factors, diabetes, user voices).
 
 ## 1. The person and their day
 
@@ -164,6 +165,56 @@ platforms. On purpose it holds **no design and no preferred style**, so every fa
   watch to alert when worn, the phone when not ([GDH #230](https://github.com/pachi81/GlucoDataHandler/issues/230)).
 - **The ecosystem is split on whether the wrist alerts at all** (Garmin's Dexcom app and Sugar Sense: never; Juggluco,
   AAPS, xDrip+, GDH: yes). A face is the *display*; the alert itself is Sukrara's (phone, and the watch when it can).
+
+### 1.7 What users say
+
+From about 220 Garmin store reviews of 15 CGM faces and apps, Play reviews from watch users, Diabetes UK forum threads,
+Hacker News and a study of young adults given smartwatches ([all quotes and links](evidence/42-watch-faces/user-voices.md);
+Reddit stayed blocked). *Many* = 5 or more independent voices, *several* = 2–4.
+
+- **The point is not taking the phone out** (many): "keeps me from pulling out my phone constantly"; "I don't have to
+  stop running to check my blood sugar". So the face has to answer the whole question in the glance: value,
+  direction, freshness.
+- **It must be there the moment the wrist comes up, and in always-on** (several): "Every time I raise my hand, I'll
+  see this data"; a complaint that the dimmed face shows only the time in the dark; "please implement the 'screen
+  always on'… Very important for me".
+- **Stale data is the normal case, not an edge case** (many; most 1–2★ reviews): "the number simply grey", "---
+  (no data) even after 30 minutes", "stop updating for hours", upstream servers and logins breaking. How it's shown
+  decides whether the face stays useful: "when there is no BT connection the watch face is usless… a big BT symbol
+  accross the watch" (a stale mark must never cover the time); people value seeing *when* the last reading came and
+  *why* ("No phone connection").
+- **Wanted next to the value**: delta (several; a face that showed it per minute got "Incorrect BG delta": use the
+  unit people expect or say it), minutes since the reading (several; hidden or cryptic versions confuse), insulin on
+  board "more than my steps" (several; Sukrara computes no IOB today), watch battery (many; one face shows it only
+  when low), a 3 h average. Heart rate, steps and seconds are wanted by about as many as want them gone ("in night I
+  don't need them").
+- **The hierarchy is personal** (several each way): "the BG is more important than the time itself" vs "clock a bit
+  bigger"; "option to swap time and BG positions". Same for the graph: "Finally can have Dexcom graph on my watch face"
+  vs "option of not displaying the graph, and instead a larger display of current reading"; a graph that "always
+  starts blank" annoys; a graph line that looks like a stale strike-out confuses.
+- **Small grey secondary text fails** (several): "hard to read since it's grey… for older eyes"; "not legible in very
+  dark grey and small font"; one app is called *No Glasses Required CGM*.
+- **Expected details**: mmol/L everywhere, including the range settings (8+ reviews across 4 faces); Dexcom's double
+  arrows; settings with "a sample of what you're changing".
+- **Non-numeric works for some**: "Very easy to read at a glance, without needing to necessarily look at the BG
+  number" (a dial face). **Emotion counts**: "The little emoticon at the bottom warms my heart every time I see it".
+- **Discretion is the gesture as much as the graphics**: "discreet monitoring of my levels during meetings"; "one
+  shuffle of my sleeve and one tap" against a phone's unlock; but "I still don't want people to get the wrong idea"
+  (a long look at the watch reads as boredom). **In the dark the screen itself is the problem**: "I would not use a
+  smart watch in the cinema either, the screen is also bright".
+- **Parents** are a large share of the voices (many): they read their child's glucose on their own watch, and want the
+  child's watch to work without a phone at school. A child's watch failed: "vibrations… very short, and the kid did
+  not fell it".
+- **The wrist is the quiet first step of an alert** (several): "notify my iWatch (as the vibration will wake me) but
+  not… my iPhone" (a partner asleep); buzz at 70 before sound at 55. Too much is intrusive ("a bit intrusive with
+  alarms on my wrist. Instead I have G7 as a complication"), and a watch that suddenly made "VERY LOUD noises" surprised.
+- **A good face prevents alarms**: "so easy to just look at the watch and have a toffee or bolus before blood glucose
+  gets low / high enough for the alarms to go off".
+- **Contexts named**: trail running, cycling with gloves, physical work "in the bush", a bus driver ("I need to ensure
+  my glucose does not go low while driving"), a dance class, the cinema; and a wish after drinking for "a little thing
+  on my watch… 'eat something before you go to sleep'". Nothing found on swimming or diving.
+- **Not found**: first-hand stories of strangers asking about the number or colours drawing looks (that lived mostly
+  on Reddit).
 
 ## 2. What a face can show
 
@@ -746,8 +797,11 @@ Before showing a design to the owner, check it against:
 - [ ] The discretion level is deliberate: what a stranger at 1 m sees in each state; nothing medical-looking unless
   chosen ([§8](#8-discretion-readable-by-the-wearer-only)).
 - [ ] What draws the eye pre-attentively is only what should: nothing moves, flashes or turns saturated while in range.
-- [ ] Always-on is designed (not dimmed), within budget, layout kept, and still answers the 2-second question.
-- [ ] Night: brightness, red rendering, nothing that lights a bedroom.
+- [ ] Always-on is designed (not dimmed), within budget, layout kept, and still answers the 2-second question:
+  glucose is in it, not only the time.
+- [ ] Stale and no-data marks never cover the time, and say since when (and why, when known).
+- [ ] Night: brightness, red rendering, nothing that lights a bedroom or a cinema.
+- [ ] Secondary data stays legible for older eyes (no small dark-grey text).
 - [ ] Sizes in mm at wrist distance meet [§5](#5-seeing-at-a-glance-perception); no thin weights; distinguishable
   digits.
 - [ ] Each reaction ([§9](#9-a-face-that-reacts)) is gated on data, explains itself and has a visible end.
@@ -789,6 +843,7 @@ lesson: date, the face (by name only), what was learned, why, and the evidence (
   (WCAG) that a full-face flash at wrist distance exceeds.
 - **Garmin**: the always-on rule version on this firmware, the exact awake window on the Descent, whether Red Shift
   re-tints Connect IQ faces, whether a face's notification vibrates.
-- **Gaps in this research**: Reddit was blocked to every tool used (web fetch and Chrome), so people's voices come from
-  GitHub issues, Garmin forums, store pages and qualitative studies; Hodinkee couldn't be fetched; a few numbers come
+- **Gaps in this research**: Reddit was blocked to every tool used (web fetch, and Claude in Chrome refuses the site
+  itself, even in a tab the owner opened), so people's voices come from Garmin store reviews, Play reviews, Diabetes UK
+  and other forums, GitHub issues and qualitative studies; the App Store's reviews weren't readable; Hodinkee couldn't be fetched; a few numbers come
   from secondary summaries (marked in the evidence files).
