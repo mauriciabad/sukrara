@@ -62,5 +62,9 @@
   "site.share.partnerNote": "follows me",
   "site.share.display": "Home display",
   "site.share.displayNote": "DIY, follows me",
-  "site.share.bluetooth": "Bluetooth"
+  "site.share.bluetooth": "Bluetooth",
+  "site.badge.homebrew": "Install with",
+  "site.brew.get": "Get Homebrew",
+  "site.brew.paste": "Paste this into Terminal and press Return:",
+  "site.brew.copied": "Copied. Paste it into Terminal and press Return:"
 }

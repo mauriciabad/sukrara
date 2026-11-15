@@ -16,7 +16,7 @@ import googlePlayEs from '../assets/badges/google-play-es.png';
 import appStoreEn from '../assets/badges/mac-app-store-black-en.svg?url';
 import appStoreEs from '../assets/badges/mac-app-store-black-es.svg?url';
 import { latestRelease, megabytes } from '../lib/release';
-import { APPLICATION_ID, GITHUB, HOMEBREW, OBTAINIUM, REPO, SIGNING, STORES } from '../site';
+import { APPLICATION_ID, GITHUB, HOMEBREW, HOMEBREW_HOME, OBTAINIUM, REPO, SIGNING, STORES } from '../site';
 import AppIcon from './AppIcon.astro';
 import Logo from './Logo.astro';
 
@@ -38,6 +38,8 @@ const meta =
 		: t('site.download.newest');
 const name = file?.name ?? (app === 'android' ? 'Sukrara.apk' : 'Sukrara.dmg');
 const logo = app === 'android' ? 'android' : 'apple';
+/** Homebrew's command panel, opened by its badge (one per Mac download on a page). */
+const brewId = `sk-brew-${crypto.randomUUID().slice(0, 8)}`;
 ---
 
 <div class="sk-download not-content">
@@ -70,7 +72,7 @@ const logo = app === 'android' ? 'android' : 'apple';
 						<Picture
 							src={lang === 'es' ? googlePlayEs : googlePlayEn}
 							alt={t('site.store.play')}
-							height={44}
+							height={40}
 							densities={[1, 2]}
 							formats={['jxl', 'avif']}
 							fallbackFormat="png"
@@ -80,7 +82,7 @@ const logo = app === 'android' ? 'android' : 'apple';
 			) : (
 				<li>
 					<a class="sk-badge is-official" href={STORES.appStore(lang)}>
-						<img src={lang === 'es' ? appStoreEs : appStoreEn} alt={t('site.store.appStore')} height="44" width="172" />
+						<img src={lang === 'es' ? appStoreEs : appStoreEn} alt={t('site.store.appStore')} height="40" width="156" />
 					</a>
 				</li>
 			)
@@ -89,7 +91,7 @@ const logo = app === 'android' ? 'android' : 'apple';
 			app === 'android' && (
 				<li>
 					<a class="sk-badge" href={OBTAINIUM.add}>
-						<AppIcon name="obtainium" size={26} />
+						<AppIcon name="obtainium" size={24} />
 						<span>
 							<small>{t('site.badge.obtainium')}</small>
 							<strong>Obtainium</strong>
@@ -101,9 +103,26 @@ const logo = app === 'android' ? 'android' : 'apple';
 				</li>
 			)
 		}
+		{
+			/* Homebrew has no link that installs: its badge copies the command and shows it, to paste into Terminal. */
+			app === 'mac' && (
+				<li>
+					<button type="button" class="sk-badge sk-brew" data-command={HOMEBREW} aria-controls={brewId} aria-expanded="true">
+						<Logo name="homebrew" size="1.45rem" />
+						<span>
+							<small>{t('site.badge.homebrew')}</small>
+							<strong>Homebrew</strong>
+						</span>
+					</button>
+					<a class="sk-badge__note" href={HOMEBREW_HOME}>
+						{t('site.brew.get')}
+					</a>
+				</li>
+			)
+		}
 		<li>
 			<a class="sk-badge" href={release.page}>
-				<Logo name="github" size="1.6rem" />
+				<Logo name="github" size="1.45rem" />
 				<span>
 					<small>{t('site.badge.github')}</small>
 					<strong>GitHub</strong>
@@ -111,9 +130,17 @@ const logo = app === 'android' ? 'android' : 'apple';
 			</a>
 		</li>
 	</ul>
-	{app === 'mac' && <Code code={HOMEBREW} lang="sh" frame="terminal" title="Homebrew" />}
+	{
+		/* Shown as it is without JavaScript; with it, hidden until the Homebrew badge is clicked. */
+		app === 'mac' && (
+			<div class="sk-brew-panel" id={brewId} data-paste={t('site.brew.paste')} data-copied={t('site.brew.copied')}>
+				<p class="sk-brew-panel__status" aria-live="polite">{t('site.brew.paste')}</p>
+				<Code code={HOMEBREW} lang="sh" frame="terminal" title="Terminal" />
+			</div>
+		)
+	}
 
-<details class="sk-verify">
+	<details class="sk-verify">
 		<summary><Icon name="approve-check-circle" size="1.1rem" />{t('site.verify.title')}</summary>
 		{
 			app === 'android' ? (
@@ -162,6 +189,26 @@ const logo = app === 'android' ? 'android' : 'apple';
 		</p>
 	</details>
 </div>
+
+<script>
+	// The Homebrew badge: copy the command, then show it with what to do; a second click copies it again.
+	for (const button of document.querySelectorAll<HTMLButtonElement>('.sk-brew')) {
+		const panel = document.getElementById(button.getAttribute('aria-controls')!)!;
+		const status = panel.querySelector('.sk-brew-panel__status')!;
+		panel.hidden = true;
+		button.setAttribute('aria-expanded', 'false');
+		button.addEventListener('click', async () => {
+			// Shown at once; "Copied" only once the clipboard has it (it can refuse, or never answer).
+			status.textContent = panel.dataset.paste!;
+			panel.hidden = false;
+			button.setAttribute('aria-expanded', 'true');
+			try {
+				await navigator.clipboard.writeText(button.dataset.command!);
+				status.textContent = panel.dataset.copied!;
+			} catch {}
+		});
+	}
+</script>
 
 <style>
 	.sk-download {
@@ -249,7 +296,7 @@ const logo = app === 'android' ? 'android' : 'apple';
 		display: flex;
 		flex-wrap: wrap;
 		align-items: flex-start;
-		gap: 0.75rem;
+		gap: 0.5rem;
 	}
 	.sk-badges li {
 		margin: 0;
@@ -262,8 +309,8 @@ const logo = app === 'android' ? 'android' : 'apple';
 		display: inline-flex;
 		align-items: center;
 		gap: 0.55rem;
-		height: 44px;
-		padding: 0 1rem 0 0.7rem;
+		height: 40px;
+		padding: 0 0.8rem 0 0.6rem;
 		border-radius: 8px;
 		background: #000;
 		box-shadow: inset 0 0 0 1px #a6a6a6;
@@ -288,9 +335,32 @@ const logo = app === 'android' ? 'android' : 'apple';
 		text-transform: uppercase;
 	}
 	.sk-badge strong {
-		font-size: 1.15rem;
+		font-size: 1.05rem;
 		font-weight: 600;
 		letter-spacing: -0.01em;
+	}
+	button.sk-badge {
+		border: 0;
+		font: inherit;
+		line-height: 1.05;
+		text-align: start;
+		cursor: pointer;
+	}
+	.sk-brew-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.sk-brew-panel[hidden] {
+		display: none;
+	}
+	.sk-brew-panel__status {
+		margin: 0;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sk-brew-panel :global(.expressive-code) {
+		margin: 0;
 	}
 	.sk-badge.is-official {
 		padding: 0;
@@ -299,7 +369,7 @@ const logo = app === 'android' ? 'android' : 'apple';
 	}
 	.sk-badge.is-official :global(img) {
 		display: block;
-		height: 44px;
+		height: 40px;
 		width: auto;
 	}
 	.sk-badge__note {

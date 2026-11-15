@@ -32,6 +32,7 @@ export const OBTAINIUM = {
 
 /** The Homebrew cask (mauriciabad/homebrew-tap, updated by .github/workflows/homebrew-tap.yml). */
 export const HOMEBREW = 'brew install --cask mauriciabad/tap/sukrara';
+export const HOMEBREW_HOME = 'https://brew.sh/';
 
 /**
  * What a download can be checked against. Android: the SHA-256 of the certificate every Sukrara APK is signed with (the
