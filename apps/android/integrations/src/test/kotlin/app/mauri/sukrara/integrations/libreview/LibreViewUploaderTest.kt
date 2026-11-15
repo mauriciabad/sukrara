@@ -680,6 +680,31 @@ class LibreViewUploaderTest {
             assertTrue(uploader.page.first().status is UploadStatus.Ok)
         }
 
+    /**
+     * The owner's case after the spike took the account: the saved token stops working at the first glucose upload, the
+     * next sign-in learns another device uploads, and the status asks to take over, whatever has stalled meanwhile.
+     */
+    @Test
+    fun `another device holding the account wins over the stalled glucose, found by the next glucose upload`() =
+        runBlocking {
+            signedInAndOn()
+            val from = store.data.first().glucoseFrom
+            val serial = "3MH01GFXNU8"
+            sensor.value = CurrentSensor(serial, now - Duration.ofDays(2), now + Duration.ofDays(12))
+            otherDevice = true
+            refuseTokenOnce = true
+            clock.advance(Duration.ofHours(3))
+            latest.value = Reading(clock.now(), 120, null, SourceId.Juggluco)
+            assertTrue("stalled first", uploader.page.first().status is UploadStatus.Behind)
+            uploader.buffer(minutes(serial, 2880, 2900, clock.now().epochSecond - 20 * 60))
+            uploader.cycle()
+            uploader.cycle()
+            assertTrue(store.data.first().otherDevice)
+            assertEquals(UploadStatus.AuthFailed, uploader.page.first().status)
+            assertEquals("home still warns: Fix opens the page", Instant.ofEpochSecond(from), uploader.glucoseBehind.first())
+            assertTrue(uploader.entryMarks.first()!!.stopped)
+        }
+
     @Test
     fun `another family read through Juggluco never goes up`() =
         runBlocking {
