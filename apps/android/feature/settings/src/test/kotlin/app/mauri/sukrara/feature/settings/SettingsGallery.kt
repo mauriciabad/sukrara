@@ -60,10 +60,14 @@ import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
+import app.mauri.sukrara.feature.settings.graph.LastTreatmentContent
+import app.mauri.sukrara.feature.settings.graph.MetricContent
+import app.mauri.sukrara.feature.settings.graph.MetricSlot
+import app.mauri.sukrara.feature.settings.graph.MetricsContent
 import app.mauri.sukrara.feature.settings.graph.Reorder
-import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.graph.SensorTimeContent
 import app.mauri.sukrara.feature.settings.graph.TimeShownContent
+import app.mauri.sukrara.feature.settings.graph.TirRingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
@@ -86,6 +90,7 @@ import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.RingSpec
+import app.mauri.sukrara.graph.stats.TirRange
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Assert.assertEquals
@@ -277,17 +282,20 @@ class SettingsGallery {
                 }
             },
             "graph" to { GraphContent(GraphConfig(), GraphActions(), {}) },
-            "rings" to { RingsContent(GraphConfig(), GraphActions(), {}) },
-            "rings-custom" to {
-                RingsContent(
-                    GraphConfig(ringCount = 3, lastElse = null, ringOrder = Reorder.moved(RingSpec.DEFAULT_RING_ORDER, 5, 0)),
-                    GraphActions(),
-                    {},
-                )
+            "metrics" to { MetricsContent(GraphConfig(), GraphActions(), {}) },
+            // the third metric on, no metric without a recent treatment, the last treatment off, very good, no rewards
+            "metrics-custom" to { MetricsContent(customMetrics, GraphActions(), {}) },
+            "metrics-follower" to {
+                MetricsContent(GraphConfig(), GraphActions(), {}, readOnly = true) { SettingsFromNote(fromWearer, {}) }
             },
-            "rings-follower" to {
-                RingsContent(GraphConfig(), GraphActions(), {}, readOnly = true) { SettingsFromNote(fromWearer, {}) }
-            },
+            "metric-main" to { MetricContent(MetricSlot.Main, GraphConfig(), GraphActions(), {}) },
+            "metric-third" to { MetricContent(MetricSlot.Third, GraphConfig(), GraphActions(), {}) },
+            "metric-third-on" to { MetricContent(MetricSlot.Third, customMetrics, GraphActions(), {}) },
+            "metric-no-recent-last-off" to { MetricContent(MetricSlot.NoRecent, customMetrics, GraphActions(), {}) },
+            "last-treatment" to { LastTreatmentContent(GraphConfig(), GraphActions(), {}) },
+            "last-treatment-off" to { LastTreatmentContent(customMetrics, GraphActions(), {}) },
+            "tir-rings" to { TirRingsContent(GraphConfig(), GraphActions(), {}) },
+            "tir-rings-custom" to { TirRingsContent(customMetrics, GraphActions(), {}) },
             "finetuning" to { FineTuningContent(AlertsUi(AlertSettings(), AlertUiState()), {}) {} },
             "finetuning-changed" to {
                 FineTuningContent(
@@ -309,9 +317,6 @@ class SettingsGallery {
                     GraphConfig(
                         lines = listOf(80, 100, 160),
                         placeHours = mapOf(GraphPlace.NOTIFICATION to 3),
-                        ringCount = 3,
-                        lastElse = null,
-                        ringOrder = Reorder.moved(RingSpec.DEFAULT_RING_ORDER, 5, 0),
                         sensorPlace = mapOf(GraphPlace.WIDGETS to false),
                     ),
                     GraphActions(),
@@ -694,7 +699,10 @@ class SettingsGallery {
                     "statusbar-root-not-allowed",
                     "overview",
                     "readings",
-                    "rings",
+                    "metrics",
+                    "metric-main",
+                    "last-treatment",
+                    "tir-rings",
                     "finetuning",
                     "files",
                     "sensorend",
@@ -703,6 +711,20 @@ class SettingsGallery {
                     "time-shown",
                     "sensor-time",
                 ),
+        )
+
+    /**
+     * Metrics changed: the third metric on, nothing without a recent treatment, the last treatment off, the ring's number
+     * very good without rewards, very high first in the colour order.
+     */
+    private val customMetrics =
+        GraphConfig(
+            slots = GraphConfig.DEFAULT_SLOTS.map { it.copy(on = true) },
+            lastOn = false,
+            lastElse = GraphConfig.DEFAULT_LAST_ELSE.copy(on = false),
+            ringRange = TirRange.TIGHT,
+            ringMarks = false,
+            ringOrder = Reorder.moved(RingSpec.DEFAULT_RING_ORDER, 5, 0),
         )
 
     /** The notification and the widgets with their own time shown, and the widgets without the sensor time (docs/38). */

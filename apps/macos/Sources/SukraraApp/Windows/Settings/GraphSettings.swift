@@ -66,7 +66,6 @@ extension GraphConfig {
             if own > 0 { c.hours = Int(own) }
             if let on = PlaceOverride(stored: store.value(place.sensorTime)).own { c.sensorTime = on }
         }
-        c.ringCount = n(MacSettings.ringCount)
         c.slots = parseSlots(src.string("graph.slots", MacSettings.slots)) ?? c.slots
         c.ringRange = TirRange(rawValue: src.string("graph.ringRange", MacSettings.ringRange)) ?? .inRange
         c.ringOrder = parseRingOrder(src.string("graph.ringOrder", MacSettings.ringOrder)) ?? c.ringOrder
@@ -77,8 +76,10 @@ extension GraphConfig {
         let lines = src.string("graph.lines", MacSettings.lines)
         c.lines = lines.trimmingCharacters(in: .whitespaces).isEmpty ? [] : parseLines(lines)
         c.gridHours = n(MacSettings.gridHours)
-        c.lastPlace = LastPlace(rawValue: src.string("graph.lastPlace", MacSettings.lastPlace)) ?? .nearValue
-        c.lastElse = parseSlot(src.string("graph.lastElse", MacSettings.lastElse))
+        c.lastOn = src.bool("graph.last", MacSettings.lastTreatment)
+        let place = LastPlace(rawValue: src.string("graph.lastPlace", MacSettings.lastPlace))
+        c.lastWhere = place == .end ? .end : .nearValue
+        c.lastElse = parseSlot(src.string("graph.lastElse", MacSettings.lastElse)) ?? c.lastElse
         c.countdownHours = n(MacSettings.countdownHours)
         c.trend = TrendSetting(stored: src.string("glucose.trend", MacSettings.trend))
         return c

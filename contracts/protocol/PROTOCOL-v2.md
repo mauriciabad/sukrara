@@ -249,11 +249,11 @@ per-place windows and sensor time, the alerts main switch) is per device and nev
 - `u` = when the wearer last changed one of the mirrored settings (unix s; strictly increasing). `created_at` strictly
   increases per publish (replaceable events, see Relay rules).
 - `graph`: Android's `GraphConfig` JSON keys and value forms — `veryLow`, `low`, `tight`, `high`, `veryHigh`,
-  `extremelyHigh` (mg/dL ints), `defaultHours` (h), `ringCount` (0–3), `slots` (`"KIND:windowS:faded,…"`, 3 slots,
-  e.g. `"TIR:86400:1,TIR:604800:1,GMI:1209600:1"`), `ringRange` (`IN_RANGE` / `TIGHT`), `ringOrder` (the six bands
+  `extremelyHigh` (mg/dL ints), `defaultHours` (h), `slots` (the main, second and third metric,
+  `"KIND:windowS:dimmed:on,…"`, e.g. `"TIR:86400:1:1,TIR:604800:1:1,GMI:1209600:1:0"`; a missing field reads as 1), `ringRange` (`IN_RANGE` / `TIGHT`), `ringOrder` (the six bands
   comma-separated, `TIGHT,TARGET,HIGH,VERY_HIGH,VERY_LOW,LOW`), `ringMarks`, `side`, `columnCrown` (bools), `lines`
-  (`"100,120"`), `gridHours` (h, 0 = off), `lastPlace` (`OFF` / `NEAR_VALUE` / `END`), `lastElse` (one slot, `""` =
-  nothing), plus `countdownHours` (the sensor countdown, h) and `trend` (the *Trend arrow* setting, #204: `quick` /
+  (`"100,120"`), `gridHours` (h, 0 = off), `last` (bool: the last treatment beside the value), `lastPlace` (`NEAR_VALUE` / `END`),
+  `lastElse` (one metric, its last field on / off), plus `countdownHours` (the sensor countdown, h) and `trend` (the *Trend arrow* setting, #204: `quick` /
   `balanced` / `smooth` / `sensor`, [contracts/trend](../trend/README.md)). Each device works the trend out from the
   readings it has with this setting (the wire's `r` / `rate100` stay the sensor's own rate).
 - `alerts`: the [alerts SPEC §3](../alerts/SPEC.md) shape with only `alerts.<kind>.{on, mgdl|rate, repeatMin}` for the 7

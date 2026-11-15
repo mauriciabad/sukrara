@@ -69,7 +69,10 @@ class SettingsMirrorTest {
     /** The settings layer's full values: graph keys incl. a per-device one, the whole SPEC §3 alert settings. */
     private fun wearer(low: Int = 70) =
         WearerSettings(
-            graph = obj("""{"low":$low,"high":180,"defaultHours":6,"placeHours":3,"slots":"TIR:86400:1,TIR:604800:1,GMI:1209600:1"}"""),
+            graph =
+                obj(
+                    """{"low":$low,"high":180,"defaultHours":6,"placeHours":3,"slots":"TIR:86400:1:1,TIR:604800:1:1,GMI:1209600:1:0"}""",
+                ),
             alerts =
                 obj(
                     """{"v":1,"on":true,"alerts":{"low":{"on":true,"mgdl":$low,"repeatMin":15,"alarm":true},
@@ -84,7 +87,7 @@ class SettingsMirrorTest {
 
     @Test fun onlyTheSchemasMirroredRowsGoOut() {
         val out = SettingsMirror.select(wearer())
-        assertEquals(obj("""{"low":70,"high":180,"defaultHours":6,"slots":"TIR:86400:1,TIR:604800:1,GMI:1209600:1"}"""), out.graph)
+        assertEquals(obj("""{"low":70,"high":180,"defaultHours":6,"slots":"TIR:86400:1:1,TIR:604800:1:1,GMI:1209600:1:0"}"""), out.graph)
         assertEquals(
             obj(
                 """{"alerts":{"low":{"on":true,"mgdl":70,"repeatMin":15},"falling_fast":{"on":false,"rate":2.0,"repeatMin":0}},
@@ -116,7 +119,7 @@ class SettingsMirrorTest {
         assertEquals(FollowResult.Ignored("settings-older"), follower.feed(again.publish.single(), now))
         assertTrue(follower.feed(changed.publish.single(), now) is FollowResult.Accepted)
         assertEquals(
-            obj("""{"low":75,"high":180,"defaultHours":6,"slots":"TIR:86400:1,TIR:604800:1,GMI:1209600:1"}"""),
+            obj("""{"low":75,"high":180,"defaultHours":6,"slots":"TIR:86400:1:1,TIR:604800:1:1,GMI:1209600:1:0"}"""),
             follower.settings!!.graph,
         )
     }

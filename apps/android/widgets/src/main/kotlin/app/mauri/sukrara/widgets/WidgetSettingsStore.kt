@@ -19,7 +19,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class WidgetOverrides(
     @SerialName("widgetHours") val hours: Int? = null,
-    @SerialName("widgetRings") val rings: Int? = null,
+    @SerialName("widgetSlots") val slots: Int? = null,
     @SerialName("widgetRingRange") val ringRange: TirRange? = null,
     @SerialName("widgetSide") val side: Boolean? = null,
     @SerialName("widgetSensor") val sensorTime: Boolean? = null,
@@ -28,12 +28,15 @@ data class WidgetOverrides(
     fun toPlace() =
         PlaceOverrides(
             hours?.let { SettingsSpec.PLACE_HOURS.coerce(it.toDouble()).toInt() }?.takeIf { it > 0 },
-            rings?.let { SettingsSpec.RING_COUNT.coerce(it.toDouble()).toInt() },
+            slots?.coerceIn(0, MAX_SLOTS),
             ringRange,
             side,
             sensorTime,
         )
 }
+
+/** The most a widget's own *Metrics* offers (*Up to 3*); its card shows fewer when they don't fit. */
+const val MAX_SLOTS = 3
 
 /**
  * Every placed widget's overrides by appWidgetId (the typed state file "widgets"), the ids under which System UI's

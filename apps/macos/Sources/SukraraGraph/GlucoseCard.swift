@@ -174,7 +174,7 @@ public enum GlucoseCard {
     static func slotItems(_ data: CardData, _ st: CardStyle, max: Int) -> [SlotItem] {
         let last = st.last != .off ? data.alerts.last : nil
         let (rings, fallback) = slotInputs(st, last, st.bands.sane(), data.metrics)
-        let items = Slots.arrange(rings, place: st.last, last: last, fallback: fallback, max: max)
+        let items = Slots.arrange(rings, place: st.last, last: last, fallback: fallback, max: min(max, st.maxSlots))
         let main = Slots.mainIndex(items)
         guard main > 0 else { return items }
         return [items[main]] + items.enumerated().filter { $0.offset != main }.map(\.element)
@@ -194,7 +194,7 @@ public enum GlucoseCard {
         guard size >= 30 * d else { return 0 }
         let gap = size * 0.14
         // as many as fit, up to four (the PoC's rule, #181: small slots beside the value aren't capped at two)
-        let fit = min(Int((box.width * (dedicated ? 1 : 0.55) + gap) / (size + gap)), 4)
+        let fit = min(Int((box.width * (dedicated ? 1 : 0.55) + gap) / (size + gap)), st.maxSlots)
         guard fit >= 1 else { return 0 }
         let (rings, fallback) = slotInputs(st, last, bands, metricsOf)
         let x = box.maxX
@@ -745,13 +745,13 @@ public struct SlotNumbers: Sendable, Equatable, Codable {
     /// them as they are instead of counting again; the panel's chart redraws on every scroll step).
     var counted: Int
 
-    /// The numbers for every window a card with any of `configs` can show (its slots, also those beyond the ring
-    /// count a place may show, and the last-treatment slot's ring), over `history` up to `now`.
+    /// The numbers for every window a card with any of `configs` can show (its metrics, also those turned off, and the
+    /// last-treatment slot's metric), over `history` up to `now`.
     public static func of(_ history: [GraphReading], now: TimeInterval, configs: [GraphConfig]) -> SlotNumbers {
         var entries: [Entry] = []
         for config in configs {
             let bands = config.bands.sane()
-            let windows = config.slots.map(\.window) + (config.lastElse.map { [$0.window] } ?? [])
+            let windows = config.slots.map(\.window) + [config.lastElse.window]
             for window in windows where !entries.contains(where: { $0.window == window && $0.bands == bands }) {
                 entries.append(
                     Entry(

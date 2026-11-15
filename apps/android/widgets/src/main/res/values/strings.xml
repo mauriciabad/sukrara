@@ -21,10 +21,13 @@
     <string name="widget_config_same_value">Same as in Settings (%1$s)</string>
     <string name="widget_config_hours">Time shown</string>
     <string name="widget_config_side">Distribution beside the graph</string>
-    <string name="widget_config_rings">Rings</string>
-    <string name="widget_config_ring_range">Rings count</string>
+    <!-- how many things beside the value at most (metrics and the last treatment, in the card's order) -->
+    <string name="widget_config_metrics">Metrics</string>
+    <string name="widget_config_metrics_none">None</string>
+    <string name="widget_config_metrics_up_to">Up to %1$d</string>
+    <string name="widget_config_ring_number">Number in time-in-range rings</string>
     <string name="widget_config_range_in">In range</string>
-    <string name="widget_config_range_tight">Tight range</string>
+    <string name="widget_config_range_tight">Very good</string>
     <string name="widget_config_sensor">Sensor time left</string>
     <string name="widget_config_reset">Reset</string>
     <string name="widget_config_save">Save</string>

@@ -62,10 +62,11 @@ class WidgetSettingsTest {
         compose.onNodeWithText("Sensor time left").performScrollTo().performClick()
         choice("Same as in Settings (On)").assertExists()
         choice("Off").performClick()
-        compose.onNodeWithText("Rings").performScrollTo().performClick()
-        choice("Same as in Settings (2)").assertExists()
-        choice("3").performClick()
+        // the metrics: at most this many beside the value; Settings shows the main and second metric and the last treatment
+        compose.onNodeWithText("Metrics").performScrollTo().performClick()
+        choice("Same as in Settings (Up to 3)").assertExists()
+        choice("Up to 2").performClick()
         compose.onNodeWithText("Save").performScrollTo().performClick()
-        assertEquals(WidgetOverrides(rings = 3, sensorTime = false), saved)
+        assertEquals(WidgetOverrides(slots = 2, sensorTime = false), saved)
     }
 }

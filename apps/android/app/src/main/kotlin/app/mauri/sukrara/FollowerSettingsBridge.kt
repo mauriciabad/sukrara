@@ -124,11 +124,11 @@ class FollowerSettingsBridge(
                 listOf(
                     GraphSettings.Hours,
                     GraphSettings.GridHours,
-                    GraphSettings.RingCount,
                     GraphSettings.Side,
                     GraphSettings.ColumnCrown,
                     GraphSettings.RingMarks,
                     GraphSettings.RingRange,
+                    GraphSettings.Last,
                     GraphSettings.LastPlace,
                     GraphSettings.Slots,
                     GraphSettings.RingOrder,

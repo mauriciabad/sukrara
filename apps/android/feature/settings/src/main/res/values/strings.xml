@@ -171,12 +171,9 @@
     <string name="st_graph_title">Graph</string>
     <string name="st_graph_hours">Time shown</string>
     <string name="st_graph_grid">Vertical lines every</string>
-    <string name="st_graph_rings">Rings beside the value</string>
     <string name="st_graph_side">Time in range beside the graph</string>
     <string name="st_graph_side_summary">The column with each range\'s share</string>
     <string name="st_graph_crown" formatted="false">Crown at 100 %</string>
-    <string name="st_graph_marks">Ring rewards</string>
-    <string name="st_graph_marks_summary" formatted="false">Laurel from 90 %, flowers from 95 %, crown at 100 %</string>
     <string name="st_graph_footer">These apply to the app, the notification and the widgets unless a place has its own.</string>
     <string name="st_reliability_title">Alert reliability</string>
     <string name="st_reliability_ready">Everything alerts need is on</string>
@@ -444,10 +441,6 @@
     <string name="st_sensorend_footer">A reminder that would come after the sensor ends is skipped. The countdown start also sets when the graph shows the sensor\'s countdown ring. While the glucose chip is on, the end countdown stays in the notifications so the status bar keeps your glucose. Swipe a countdown away to hide it for this sensor. Your night is the same as Night alerts\' (Android doesn\'t share its Bedtime schedule with apps). After the end, “Sensor ended” comes back every so often until you start a new sensor, never in your night.</string>
     <string name="st_reset_section">Reset %1$s</string>
     <string name="st_reset">Reset</string>
-    <string name="st_slot_tir">Time in range</string>
-    <string name="st_slot_gmi">GMI (estimated A1c)</string>
-    <string name="st_slot_average">Average</string>
-    <string name="st_slot_cv">Variability (CV)</string>
     <string name="st_place_app">App</string>
     <string name="st_place_notification">Notification</string>
     <string name="st_place_widgets">Widgets</string>
@@ -471,9 +464,6 @@
         <item quantity="one">%1$d hour</item>
         <item quantity="other">%1$d hours</item>
     </plurals>
-    <string name="st_last_off">Off</string>
-    <string name="st_last_near">Next to the value</string>
-    <string name="st_last_end">After the other slots</string>
     <string name="st_ring_very_low">Very low · up to %1$d</string>
     <string name="st_ring_low">Low · %1$d–%2$d</string>
     <string name="st_ring_tight">Very good · %1$d–%2$d</string>
@@ -486,29 +476,12 @@
     <string name="st_graph_line_full">%1$d lines: remove one to add another</string>
     <string name="st_graph_line_exists">That line is already there</string>
     <string name="st_graph_line_remove">Remove the line at %1$s</string>
-    <string name="st_graph_beside">Beside the value</string>
-    <string name="st_slot_main">Main slot</string>
-    <string name="st_slot_second">Second slot</string>
-    <string name="st_slot_third">Third slot</string>
-    <string name="st_slot_period">%1$s: period</string>
-    <string name="st_slot_faded">%1$s: fainter</string>
-    <string name="st_slot_what">%1$s: what it shows</string>
-    <string name="st_last">Last treatment</string>
-    <string name="st_last_else">Without a recent treatment</string>
-    <string name="st_nothing">Nothing</string>
-    <string name="st_last_else_period">Without a recent treatment: period</string>
-    <string name="st_last_else_faded">Without a recent treatment: fainter</string>
-    <string name="st_ring_counts">A ring\'s centre counts</string>
-    <string name="st_ring_counts_in_range">In range (%1$s–%2$s %3$s)</string>
-    <string name="st_ring_counts_tight">Very good (%1$s–%2$s %3$s)</string>
-    <string name="st_ring_order">Ring order</string>
-    <string name="st_ring_order_footer">The ring\'s colours clockwise from 12 o\'clock. Drag a row by its handle or long-press it; TalkBack offers Move up and Move down.</string>
     <string name="st_graph_beside_graph">Beside the graph</string>
     <string name="st_marks_title">Treatments on the graph</string>
     <string name="st_graph_sensor">Sensor time left</string>
     <string name="st_graph_reset_all">Reset graph settings</string>
     <string name="st_graph_reset_all_title">Reset the graph settings?</string>
-    <string name="st_graph_reset_all_text">Lines, time shown, beside the graph, treatments on the graph and sensor time go back to their defaults. Your ranges and rings stay.</string>
+    <string name="st_graph_reset_all_text">Lines, time shown, beside the graph, treatments on the graph and sensor time go back to their defaults. Your ranges and metrics stay.</string>
     <string name="st_move_up">Move up</string>
     <string name="st_move_down">Move down</string>
     <string name="st_move_top">Move to top</string>
@@ -887,13 +860,6 @@
     <string name="st_readings_title">Readings</string>
     <string name="st_overview_readings">Unit, ranges, trend arrow</string>
     <string name="st_readings_keywords">Ranges, glucose, target range, time in range, TIR, colours, mmol/L, mg/dL</string>
-    <string name="st_rings_title">Rings</string>
-    <string name="st_overview_rings">Rings and numbers beside the value, last treatment</string>
-    <string name="st_rings_keywords">Graph, GMI, average, CV, variability, time in range, rewards</string>
-    <string name="st_rings_reset_all">Reset ring settings</string>
-    <string name="st_rings_reset_all_title">Reset the ring settings?</string>
-    <string name="st_rings_reset_all_text">The rings and numbers beside the value, the last treatment, what a ring counts, rewards and the ring order go back to their defaults. Your ranges stay.</string>
-    <string name="st_rings_footer">These apply to the app, the notification and the widgets. A ring counts with your ranges (Readings).</string>
     <string name="st_graph_ranges_summary">In range %1$s–%2$s %3$s · in Readings</string>
     <string name="st_graph_keywords">Chart, lines, hours</string>
     <string name="st_see_also">See also</string>
@@ -914,4 +880,58 @@
     <string name="st_trend_alert_footer">The fast alerts use the trend arrow: the same choice as Readings › Trend arrow.</string>
     <!-- Settings overview: setup's optional steps still open (#181); the summary lists them -->
     <string name="st_finish_setup">Finish setup</string>
+    <!-- Settings › Metrics (docs/39): what sits beside the value. Once "Rings" -->
+    <string name="st_metrics_title">Metrics</string>
+    <string name="st_overview_metrics">Time in range, GMI and last treatment beside the value</string>
+    <string name="st_metrics_keywords">Rings, stats, statistics, GMI, A1c, average, CV, variability, time in range, rewards, laurel, crown, last treatment, slots</string>
+    <string name="st_metric_main">Main metric</string>
+    <string name="st_metric_second">Second metric</string>
+    <string name="st_metric_third">Third metric</string>
+    <string name="st_metric_show_main">Show the main metric</string>
+    <string name="st_metric_show_second">Show the second metric</string>
+    <string name="st_metric_show_third">Show the third metric</string>
+    <string name="st_metric_shows">Shows</string>
+    <string name="st_metric_period">Period</string>
+    <string name="st_metric_dimmed">Dimmed</string>
+    <string name="st_metric_dimmed_summary">Lighter than the main metric</string>
+    <string name="st_metric_main_footer">The main metric sits at the right end, at full strength. In the sensor\'s last hours its countdown ring goes around it.</string>
+    <string name="st_metric_other_footer">Shows to the left of the main metric, when there\'s room. A small widget or the notification shows fewer.</string>
+    <!-- what a metric shows, and one line on it (a goal from the international consensus, as the gauge's tick) -->
+    <string name="st_metric_kind_tir">Time in range</string>
+    <string name="st_metric_kind_tir_summary">A ring of the time in each range</string>
+    <string name="st_metric_kind_gmi">GMI</string>
+    <string name="st_metric_kind_gmi_summary" formatted="false">Estimated A1c · goal under 7 %</string>
+    <string name="st_metric_kind_average">Average glucose</string>
+    <string name="st_metric_kind_average_summary">Goal under %1$s</string>
+    <string name="st_metric_kind_cv">Variability</string>
+    <string name="st_metric_kind_cv_summary" formatted="false">CV: how much glucose swings · goal 36 % or less</string>
+    <!-- a metric's row: what it shows and its period, "Time in range · 1 day" -->
+    <string name="st_metric_summary">%1$s · %2$s</string>
+    <string name="st_last">Last treatment</string>
+    <string name="st_last_show">Show the last treatment</string>
+    <string name="st_last_where">Where</string>
+    <string name="st_last_near">Next to the value</string>
+    <string name="st_last_end">At the right end</string>
+    <string name="st_last_footer">The time since your last rapid insulin or carbs, the amount, and a ring for the time its alerts stay quiet. Rapid insulin shows for 4 h, carbs for up to 3 h; long-acting insulin and notes don\'t show.</string>
+    <string name="st_last_else">No recent treatment</string>
+    <string name="st_last_else_show">Show a metric instead</string>
+    <string name="st_last_else_needs">Needs the last treatment on</string>
+    <string name="st_last_else_footer">Shows in the last treatment\'s place while there\'s no recent treatment.</string>
+    <string name="st_tir_title">Time-in-range rings</string>
+    <!-- the rings page's row: what the number counts, and whether the rewards are on: "In range (70–179 mg/dL) · rewards" -->
+    <string name="st_tir_summary">%1$s (%2$s)</string>
+    <string name="st_tir_summary_rewards">%1$s (%2$s) · rewards</string>
+    <string name="st_tir_number">Number in the ring</string>
+    <string name="st_tir_in_range">In range</string>
+    <string name="st_tir_tight">Very good</string>
+    <!-- a range of values with the unit, "70–179 mg/dL" -->
+    <string name="st_tir_span">%1$s–%2$s %3$s</string>
+    <string name="st_tir_rewards">Rewards</string>
+    <string name="st_tir_rewards_summary" formatted="false">Laurel from 90 %, flowers from 95 %, crown at 100 %</string>
+    <string name="st_tir_order">Colour order</string>
+    <string name="st_tir_order_footer">The ring\'s colours clockwise from 12 o\'clock. Drag a row by its handle or long-press it; TalkBack offers Move up and Move down.</string>
+    <string name="st_metrics_reset_all">Reset metrics</string>
+    <string name="st_metrics_reset_all_title">Reset the metrics?</string>
+    <string name="st_metrics_reset_all_text">The metrics, the last treatment and the time-in-range rings go back to their defaults. Your ranges stay.</string>
+    <string name="st_metrics_footer">A metric shows once there\'s data for a quarter of its period. The app, the notification and the widgets show them; a widget can show fewer in its own settings.</string>
 </resources>

@@ -170,12 +170,9 @@
     <string name="st_graph_title">Gráfica</string>
     <string name="st_graph_hours">Tiempo mostrado</string>
     <string name="st_graph_grid">Líneas verticales cada</string>
-    <string name="st_graph_rings">Anillos junto al valor</string>
     <string name="st_graph_side">Tiempo en rango junto a la gráfica</string>
     <string name="st_graph_side_summary">La columna con la parte de cada rango</string>
     <string name="st_graph_crown" formatted="false">Corona al 100 %</string>
-    <string name="st_graph_marks">Premios de los anillos</string>
-    <string name="st_graph_marks_summary" formatted="false">Laurel desde el 90 %, flores desde el 95 %, corona al 100 %</string>
     <string name="st_graph_footer">Se aplican a la app, la notificación y los widgets salvo que un lugar tenga los suyos.</string>
     <string name="st_reliability_title">Fiabilidad de las alertas</string>
     <string name="st_reliability_ready">Todo lo que necesitan las alertas está activado</string>
@@ -444,10 +441,6 @@
     <string name="st_sensorend_footer">Un recordatorio que llegaría después del final del sensor se omite. El inicio de la cuenta atrás también decide cuándo la gráfica muestra el anillo de cuenta atrás del sensor. Con el chip de glucosa activado, la cuenta atrás del final se queda en las notificaciones para que la barra de estado siga mostrando tu glucosa. Desliza una cuenta atrás para ocultarla con este sensor. Tu noche es la misma que la de Alertas de noche (Android no comparte su horario de descanso con las apps). Después del final, «Sensor terminado» vuelve cada cierto tiempo hasta que inicies un sensor nuevo, nunca en tu noche.</string>
     <string name="st_reset_section">Restablecer %1$s</string>
     <string name="st_reset">Restablecer</string>
-    <string name="st_slot_tir">Tiempo en rango</string>
-    <string name="st_slot_gmi">GMI (A1c estimada)</string>
-    <string name="st_slot_average">Media</string>
-    <string name="st_slot_cv">Variabilidad (CV)</string>
     <string name="st_place_app">App</string>
     <string name="st_place_notification">Notificación</string>
     <string name="st_place_widgets">Widgets</string>
@@ -472,9 +465,6 @@
         <item quantity="many">%1$d horas</item>
         <item quantity="other">%1$d horas</item>
     </plurals>
-    <string name="st_last_off">Desactivado</string>
-    <string name="st_last_near">Junto al valor</string>
-    <string name="st_last_end">Tras los demás huecos</string>
     <string name="st_ring_very_low">Muy bajo · hasta %1$d</string>
     <string name="st_ring_low">Bajo · %1$d–%2$d</string>
     <string name="st_ring_tight">Muy bien · %1$d–%2$d</string>
@@ -487,29 +477,12 @@
     <string name="st_graph_line_full">%1$d líneas: quita una para añadir otra</string>
     <string name="st_graph_line_exists">Esa línea ya está</string>
     <string name="st_graph_line_remove">Quitar la línea de %1$s</string>
-    <string name="st_graph_beside">Junto al valor</string>
-    <string name="st_slot_main">Hueco principal</string>
-    <string name="st_slot_second">Segundo hueco</string>
-    <string name="st_slot_third">Tercer hueco</string>
-    <string name="st_slot_period">%1$s: periodo</string>
-    <string name="st_slot_faded">%1$s: más tenue</string>
-    <string name="st_slot_what">%1$s: qué muestra</string>
-    <string name="st_last">Último tratamiento</string>
-    <string name="st_last_else">Sin tratamiento reciente</string>
-    <string name="st_nothing">Nada</string>
-    <string name="st_last_else_period">Sin tratamiento reciente: periodo</string>
-    <string name="st_last_else_faded">Sin tratamiento reciente: más tenue</string>
-    <string name="st_ring_counts">El centro del anillo cuenta</string>
-    <string name="st_ring_counts_in_range">En rango (%1$s–%2$s %3$s)</string>
-    <string name="st_ring_counts_tight">Muy bien (%1$s–%2$s %3$s)</string>
-    <string name="st_ring_order">Orden del anillo</string>
-    <string name="st_ring_order_footer">Los colores del anillo en el sentido del reloj desde las 12. Arrastra una fila por su asa o mantenla pulsada; TalkBack ofrece Subir y Bajar.</string>
     <string name="st_graph_beside_graph">Junto a la gráfica</string>
     <string name="st_marks_title">Tratamientos en la gráfica</string>
     <string name="st_graph_sensor">Tiempo restante del sensor</string>
     <string name="st_graph_reset_all">Restablecer la gráfica</string>
     <string name="st_graph_reset_all_title">¿Restablecer la gráfica?</string>
-    <string name="st_graph_reset_all_text">Las líneas, el tiempo mostrado, junto a la gráfica, los tratamientos en la gráfica y el tiempo del sensor vuelven a sus valores por defecto. Tus rangos y anillos se mantienen.</string>
+    <string name="st_graph_reset_all_text">Las líneas, el tiempo mostrado, junto a la gráfica, los tratamientos en la gráfica y el tiempo del sensor vuelven a sus valores por defecto. Tus rangos y métricas se mantienen.</string>
     <string name="st_move_up">Subir</string>
     <string name="st_move_down">Bajar</string>
     <string name="st_move_top">Mover al principio</string>
@@ -900,13 +873,6 @@
     <string name="st_readings_title">Lecturas</string>
     <string name="st_overview_readings">Unidad, rangos, flecha de tendencia</string>
     <string name="st_readings_keywords">Rangos, glucosa, rango objetivo, tiempo en rango, TIR, colores, mmol/L, mg/dL</string>
-    <string name="st_rings_title">Anillos</string>
-    <string name="st_overview_rings">Anillos y números junto al valor, último tratamiento</string>
-    <string name="st_rings_keywords">Gráfica, GMI, media, CV, variabilidad, tiempo en rango, premios</string>
-    <string name="st_rings_reset_all">Restablecer los anillos</string>
-    <string name="st_rings_reset_all_title">¿Restablecer los anillos?</string>
-    <string name="st_rings_reset_all_text">Los anillos y números junto al valor, el último tratamiento, lo que cuenta un anillo, los premios y el orden del anillo vuelven a sus valores por defecto. Tus rangos se mantienen.</string>
-    <string name="st_rings_footer">Se aplican a la app, la notificación y los widgets. Un anillo cuenta con tus rangos (Lecturas).</string>
     <string name="st_graph_ranges_summary">En rango %1$s–%2$s %3$s · en Lecturas</string>
     <string name="st_graph_keywords">Gráfico, líneas, horas</string>
     <string name="st_see_also">Ver también</string>
@@ -926,4 +892,58 @@
     <string name="st_sensorend_link_summary">Cuándo termina este sensor, recordatorios, cuentas atrás</string>
     <string name="st_trend_alert_footer">Las alertas rápidas usan la flecha de tendencia: la misma elección que Lecturas › Flecha de tendencia.</string>
     <string name="st_finish_setup">Termina la configuración</string>
+    <!-- Ajustes › Métricas (docs/39): lo que va junto al valor. Antes "Anillos" -->
+    <string name="st_metrics_title">Métricas</string>
+    <string name="st_overview_metrics">Tiempo en rango, GMI y último tratamiento junto al valor</string>
+    <string name="st_metrics_keywords">Anillos, estadísticas, GMI, A1c, media, CV, variabilidad, tiempo en rango, premios, laurel, corona, último tratamiento, huecos</string>
+    <string name="st_metric_main">Métrica principal</string>
+    <string name="st_metric_second">Segunda métrica</string>
+    <string name="st_metric_third">Tercera métrica</string>
+    <string name="st_metric_show_main">Mostrar la métrica principal</string>
+    <string name="st_metric_show_second">Mostrar la segunda métrica</string>
+    <string name="st_metric_show_third">Mostrar la tercera métrica</string>
+    <string name="st_metric_shows">Muestra</string>
+    <string name="st_metric_period">Periodo</string>
+    <string name="st_metric_dimmed">Atenuada</string>
+    <string name="st_metric_dimmed_summary">Más clara que la métrica principal</string>
+    <string name="st_metric_main_footer">La métrica principal va en el extremo derecho, con toda su intensidad. En las últimas horas del sensor, su anillo de cuenta atrás la rodea.</string>
+    <string name="st_metric_other_footer">Va a la izquierda de la métrica principal, si cabe. Un widget pequeño o la notificación muestran menos.</string>
+    <!-- lo que muestra una métrica, y una línea sobre ella (un objetivo del consenso internacional, como la marca del indicador) -->
+    <string name="st_metric_kind_tir">Tiempo en rango</string>
+    <string name="st_metric_kind_tir_summary">Un anillo con el tiempo en cada rango</string>
+    <string name="st_metric_kind_gmi">GMI</string>
+    <string name="st_metric_kind_gmi_summary" formatted="false">A1c estimada · objetivo por debajo del 7 %</string>
+    <string name="st_metric_kind_average">Glucosa media</string>
+    <string name="st_metric_kind_average_summary">Objetivo por debajo de %1$s</string>
+    <string name="st_metric_kind_cv">Variabilidad</string>
+    <string name="st_metric_kind_cv_summary" formatted="false">CV: cuánto oscila la glucosa · objetivo 36 % o menos</string>
+    <!-- la fila de una métrica: lo que muestra y su periodo, "Tiempo en rango · 1 día" -->
+    <string name="st_metric_summary">%1$s · %2$s</string>
+    <string name="st_last">Último tratamiento</string>
+    <string name="st_last_show">Mostrar el último tratamiento</string>
+    <string name="st_last_where">Dónde</string>
+    <string name="st_last_near">Junto al valor</string>
+    <string name="st_last_end">Al final, a la derecha</string>
+    <string name="st_last_footer">El tiempo desde tu última insulina rápida o hidratos, la cantidad y un anillo con el tiempo que sus alertas siguen en silencio. La insulina rápida se muestra durante 4 h y los hidratos hasta 3 h; la insulina lenta y las notas no se muestran.</string>
+    <string name="st_last_else">Sin tratamiento reciente</string>
+    <string name="st_last_else_show">Mostrar una métrica en su lugar</string>
+    <string name="st_last_else_needs">Necesita el último tratamiento activado</string>
+    <string name="st_last_else_footer">Se muestra en el lugar del último tratamiento mientras no hay uno reciente.</string>
+    <string name="st_tir_title">Anillos de tiempo en rango</string>
+    <!-- la fila de la página de los anillos: lo que cuenta el número y si los premios están activados: "En rango (70–179 mg/dL) · premios" -->
+    <string name="st_tir_summary">%1$s (%2$s)</string>
+    <string name="st_tir_summary_rewards">%1$s (%2$s) · premios</string>
+    <string name="st_tir_number">Número del anillo</string>
+    <string name="st_tir_in_range">En rango</string>
+    <string name="st_tir_tight">Muy bien</string>
+    <!-- un intervalo de valores con la unidad, "70–179 mg/dL" -->
+    <string name="st_tir_span">%1$s–%2$s %3$s</string>
+    <string name="st_tir_rewards">Premios</string>
+    <string name="st_tir_rewards_summary" formatted="false">Laurel desde el 90 %, flores desde el 95 %, corona al 100 %</string>
+    <string name="st_tir_order">Orden de colores</string>
+    <string name="st_tir_order_footer">Los colores del anillo en el sentido del reloj desde las 12. Arrastra una fila por su asa o mantenla pulsada; TalkBack ofrece Subir y Bajar.</string>
+    <string name="st_metrics_reset_all">Restablecer las métricas</string>
+    <string name="st_metrics_reset_all_title">¿Restablecer las métricas?</string>
+    <string name="st_metrics_reset_all_text">Las métricas, el último tratamiento y los anillos de tiempo en rango vuelven a sus valores por defecto. Tus rangos se mantienen.</string>
+    <string name="st_metrics_footer">Una métrica se muestra cuando hay datos de una cuarta parte de su periodo. La app, la notificación y los widgets las muestran; un widget puede mostrar menos en sus propios ajustes.</string>
 </resources>

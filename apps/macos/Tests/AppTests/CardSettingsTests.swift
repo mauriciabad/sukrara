@@ -181,25 +181,29 @@ import Testing
         let s = custom()
         s.setNumber(160, for: MacSettings.bandTight)
         s.setNumber(6, for: MacSettings.graphHours)
-        s.setNumber(3, for: MacSettings.ringCount)
         s.setNumber(3, for: MacSettings.gridHours)
         s.setNumber(4, for: MacSettings.countdownHours)
-        s.set("CV:259200:0,TIR:604800:1,AVERAGE:2592000:1", for: MacSettings.slots)
+        s.set("CV:259200:0:1,GMI:86400:1:0,AVERAGE:2592000:1", for: MacSettings.slots)
         s.set("TIGHT", for: MacSettings.ringRange)
         s.set("VERY_LOW,LOW,TIGHT,TARGET,HIGH,VERY_HIGH", for: MacSettings.ringOrder)
         s.set(false, for: MacSettings.ringMarks)
         s.set(false, for: MacSettings.side)
         s.set(false, for: MacSettings.columnCrown)
         s.set("80,250", for: MacSettings.lines)
+        s.set(false, for: MacSettings.lastTreatment)
         s.set("END", for: MacSettings.lastPlace)
-        s.set("", for: MacSettings.lastElse)
+        s.set("AVERAGE:259200:0:0", for: MacSettings.lastElse)
         s.set("rapid:point,long:point,carbs:point+amount,note:point", for: MacSettings.marks)
         let c = GraphConfig.load(from: s, wearer: nil)
-        #expect(c.bands.tight == 160 && c.hours == 6 && c.ringCount == 3 && c.gridHours == 3 && c.countdownHours == 4)
-        #expect(c.slots.map(\.kind) == [.cv, .tir, .average] && c.slots[0].window == 259200 && !c.slots[0].faded)
+        #expect(c.bands.tight == 160 && c.hours == 6 && c.gridHours == 3 && c.countdownHours == 4)
+        #expect(c.slots.map(\.kind) == [.cv, .gmi, .average] && c.slots[0].window == 259200 && !c.slots[0].faded)
+        // a GMI covers a week at least; a metric without its on field is on
+        #expect(c.slots[1].window == 7 * 86400 && c.slots.map(\.on) == [true, false, true])
+        #expect(c.rings.map(\.kind) == [.cv, .average])
         #expect(c.ringRange == .tight && c.ringOrder.first == .veryLow)
         #expect(!c.ringMarks && !c.side && !c.columnCrown && c.lines == [80, 250])
-        #expect(c.lastPlace == .end && c.lastElse == nil)
+        #expect(c.lastPlace == .off && c.lastWhere == .end && c.lastElseRing == nil)
+        #expect(c.lastElse == RingSpec(window: 259200, kind: .average, faded: false, on: false))
         #expect(c.marks.shows("carbs", "amount") && !c.marks.shows("rapid", "line"))
     }
 
@@ -264,7 +268,7 @@ import Testing
         s.setNumber(6, for: MacSettings.widgetHours)
         let wearer = try #require(
             WearerSettings(
-                json: #"{"graph":{"tight":120,"lastPlace":"OFF","slots":"GMI:604800:1,TIR:86400:1,CV:86400:0"}}"#,
+                json: #"{"graph":{"tight":120,"last":false,"slots":"GMI:604800:1:1,TIR:86400:1:1,CV:86400:0:0"}}"#,
                 wearer: "Ana"))
         s.set(SettingsFrom.wearer.rawValue, for: MacSettings.settingsFrom)
         var c = GraphConfig.load(from: s, wearer: wearer, place: .widget)

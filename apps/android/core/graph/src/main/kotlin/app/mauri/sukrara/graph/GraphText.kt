@@ -12,21 +12,32 @@ import app.mauri.sukrara.settings.SettingsSpec
  * anything and returns a value the settings accept, or null = use the default.
  */
 object GraphText {
-    /** "TIR:86400:1,TIR:604800:1,GMI:1209600:1" (kind:window s:faded). */
+    /** "TIR:86400:1:1,TIR:604800:1:1,GMI:1209600:1:0" (kind:window s:dimmed:on). */
     fun slotsText(slots: List<RingSpec>): String = slots.joinToString(",", transform = ::slotText)
 
-    fun slotText(r: RingSpec): String = "${r.kind.name}:${r.windowS}:${if (r.faded) 1 else 0}"
+    fun slotText(r: RingSpec): String = "${r.kind.name}:${r.windowS}:${if (r.faded) 1 else 0}:${if (r.on) 1 else 0}"
 
-    /** Exactly three valid slots, else null. */
+    /** Exactly three valid metrics, else null. */
     fun parseSlots(text: String): List<RingSpec>? = text.split(",").mapNotNull(::parseSlot).takeIf { it.size == 3 }
 
-    /** One slot ("TIR:2592000:1"); null when malformed or "" (= nothing, for `lastElse`). The period snaps to `ringWindow`. */
+    /** The periods a metric of [kind] can have: GMI from 7 days (an estimated A1c needs weeks), the others `metricWindow`. */
+    fun windowSpec(kind: SlotKind) = if (kind == SlotKind.GMI) SettingsSpec.GMI_WINDOW else SettingsSpec.METRIC_WINDOW
+
+    /**
+     * One metric ("TIR:2592000:1:1"); null when malformed. The period snaps to its kind's format ([windowSpec]); a
+     * missing dimmed or on field reads as 1.
+     */
     fun parseSlot(text: String): RingSpec? {
         val p = text.trim().split(":")
         if (p.size < 2) return null
         val kind = SlotKind.entries.firstOrNull { it.name == p[0] } ?: return null
         val window = p[1].toDoubleOrNull() ?: return null
-        return RingSpec(SettingsSpec.RING_WINDOW.coerce(window).toLong(), kind = kind, faded = p.size < 3 || p[2] != "0")
+        return RingSpec(
+            windowSpec(kind).coerce(window).toLong(),
+            kind = kind,
+            faded = p.getOrNull(2) != "0",
+            on = p.getOrNull(3) != "0",
+        )
     }
 
     /** "TIGHT,TARGET,LOW,VERY_LOW,HIGH,VERY_HIGH": each of the six bands once, else null. */

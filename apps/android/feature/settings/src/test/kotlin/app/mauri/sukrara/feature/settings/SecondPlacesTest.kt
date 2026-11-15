@@ -25,7 +25,7 @@ import app.mauri.sukrara.feature.settings.advanced.ImportExportContent
 import app.mauri.sukrara.feature.settings.advanced.SettingsFileActions
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
-import app.mauri.sukrara.feature.settings.graph.RingsContent
+import app.mauri.sukrara.feature.settings.graph.TirRingsContent
 import app.mauri.sukrara.feature.settings.search.SettingsIndex
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
@@ -182,7 +182,7 @@ class SecondPlacesTest {
     }
 
     @Test
-    fun `Readings links Alerts, Graph's Ranges row and Rings' link open Readings`() {
+    fun `Readings links Alerts, Graph's Ranges row and Time-in-range rings' link open Readings`() {
         var alerts = 0
         var readings = 0
         show { ReadingsContent(GraphPrefs(), { _, _ -> }, {}, onAlerts = { alerts++ }) }
@@ -190,7 +190,7 @@ class SecondPlacesTest {
         assertEquals(1, alerts)
         show { GraphContent(GraphConfig(), GraphActions(openReadings = { readings++ }), {}) }
         compose.onNodeWithText("Ranges").performClick()
-        show { RingsContent(GraphConfig(), GraphActions(openReadings = { readings++ }), {}) }
+        show { TirRingsContent(GraphConfig(), GraphActions(openReadings = { readings++ }), {}) }
         compose.onNodeWithText("Readings").performScrollTo().performClick()
         assertEquals(2, readings)
     }
@@ -237,7 +237,7 @@ class SecondPlacesTest {
         show {
             SettingsOverviewContent(true, AlertUiState(), AlertReadiness.Ready, clock, OverviewActions(pens = true)) {}
         }
-        for (title in listOf("Readings", "Graph", "Rings", "Sensor end", "Import and export")) {
+        for (title in listOf("Readings", "Graph", "Metrics", "Sensor end", "Import and export")) {
             compose.onNodeWithText(title).performScrollTo()
         }
         compose.onNodeWithText("Export data").assertDoesNotExist()
@@ -249,6 +249,7 @@ class SecondPlacesTest {
         assertEquals(listOf(SettingsRoute.Alerts, SettingsRoute.AlertsFineTuning), SettingsIndex.path(SettingsRoute.AlertsFineTuning))
         // Sensor end keeps its own overview row (docs/35 §7): no parent page
         assertEquals(listOf(SettingsRoute.SensorEnd), SettingsIndex.path(SettingsRoute.SensorEnd))
-        assertEquals(listOf(SettingsRoute.Rings), SettingsIndex.path(SettingsRoute.Rings))
+        assertEquals(listOf(SettingsRoute.Metrics), SettingsIndex.path(SettingsRoute.Metrics))
+        assertEquals(listOf(SettingsRoute.Metrics, SettingsRoute.TirRings), SettingsIndex.path(SettingsRoute.TirRings))
     }
 }

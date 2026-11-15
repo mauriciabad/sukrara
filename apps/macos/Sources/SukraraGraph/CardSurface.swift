@@ -59,15 +59,16 @@ enum SensorSpot: String { case graph, none }
 /// One placement's own choices over the app's graph settings (a widget's "Edit Widget" options); nil = follow the app.
 public struct PlaceOverrides: Equatable, Sendable {
     public var hours: Int?
-    public var rings: Int?
+    /// At most this many things beside the value (metrics and the last treatment, in the card's order; 0 = none).
+    public var slots: Int?
     public var ringRange: TirRange?
     public var side: Bool?
     public var sensor: Bool?
     public init(
-        hours: Int? = nil, rings: Int? = nil, ringRange: TirRange? = nil, side: Bool? = nil, sensor: Bool? = nil
+        hours: Int? = nil, slots: Int? = nil, ringRange: TirRange? = nil, side: Bool? = nil, sensor: Bool? = nil
     ) {
         self.hours = hours
-        self.rings = rings
+        self.slots = slots
         self.ringRange = ringRange
         self.side = side
         self.sensor = sensor
@@ -86,7 +87,6 @@ extension CardSurface {
         var g = cfg.graphStyle(hours: overrides.hours)
         g.side = overrides.side ?? cfg.side
         var rc = cfg
-        rc.ringCount = overrides.rings ?? cfg.ringCount
         rc.ringRange = overrides.ringRange ?? cfg.ringRange
         rc.sensorTime = overrides.sensor ?? cfg.sensorTime
         var st: CardStyle
@@ -98,6 +98,7 @@ extension CardSurface {
             st = CardStyle(graph: g, rings: [], value: false, sensorTime: rc.sensorTime, bands: cfg.bands)
         case .widgetCombined: st = rc.cardStyle(graph: g)
         }
+        if let n = overrides.slots { st.maxSlots = Swift.max(0, Swift.min(Slots.maxCount, n)) }
         st.sensor = sensor
         return st.speaking(words)
     }

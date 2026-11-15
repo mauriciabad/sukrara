@@ -27,21 +27,17 @@ object GraphSettings {
 
     val Hours = SchemaSettings.number("graph.hours")
     val GridHours = SchemaSettings.number("graph.gridHours")
-    val RingCount = SchemaSettings.number("graph.ringCount")
     val Side = SchemaSettings.bool("graph.side", default = GraphConfig().side)
     val ColumnCrown = SchemaSettings.bool("graph.columnCrown", default = GraphConfig().columnCrown)
     val RingMarks = SchemaSettings.bool("graph.ringMarks", default = GraphConfig().ringMarks)
     val RingRange = SchemaSettings.text("graph.ringRange", GraphConfig().ringRange.name, TirRange.entries.map { it.name }.toSet())
-    val LastPlace =
-        SchemaSettings.text(
-            "graph.lastPlace",
-            GraphConfig().lastPlace.name,
-            app.mauri.sukrara.graph.LastPlace.entries
-                .map { it.name }
-                .toSet(),
-        )
 
-    /** The three slots beside the value (what, period, fainter), [GraphText.slotsText]. */
+    /** The last treatment beside the value, and where it sits (schema option `lastPlace`: next to the value or the end). */
+    val Last = SchemaSettings.bool("graph.last", default = GraphConfig().lastOn)
+    val LastPlace =
+        SchemaSettings.text("graph.lastPlace", GraphConfig().lastWhere.name, SettingsSpec.OPTIONS.getValue("lastPlace").toSet())
+
+    /** The main, second and third metric (on, what, period, dimmed), [GraphText.slotsText]. */
     val Slots = SchemaSettings.text("graph.slots", GraphText.slotsText(GraphConfig.DEFAULT_SLOTS))
 
     /** The ring's segments clockwise from 12 o'clock, [GraphText.ringOrderText]. */
@@ -50,7 +46,7 @@ object GraphSettings {
     /** The extra lines across the chart (mg/dL), [GraphText.linesText]. */
     val Lines = SchemaSettings.text("graph.lines", GraphText.linesText(GraphConfig.DEFAULT_LINES))
 
-    /** The last-treatment slot's fallback, one slot or "" = nothing. */
+    /** The last-treatment slot's metric while there's no recent treatment (on or off), [GraphText.slotText]. */
     val LastElse = SchemaSettings.text("graph.lastElse", GraphText.slotText(GraphConfig.DEFAULT_LAST_ELSE))
 
     /** Treatments on the graph, [MarkShow.text]. */
@@ -84,8 +80,8 @@ object GraphSettings {
     fun config(settings: SettingsRepository): Flow<GraphConfig> {
         val bands = combine(Bands.map(settings::flow)) { v -> bandsOf(v.map(Double::toInt)) }
         val numbers =
-            combine(settings.flow(Hours), settings.flow(GridHours), settings.flow(RingCount)) { h, g, r ->
-                Triple(h.toInt(), g.toInt(), r.toInt())
+            combine(settings.flow(Hours), settings.flow(GridHours), settings.flow(Last)) { h, g, last ->
+                Triple(h.toInt(), g.toInt(), last)
             }
         val switches =
             combine(settings.flow(Side), settings.flow(ColumnCrown), settings.flow(RingMarks)) { side, crown, marks ->
@@ -111,7 +107,7 @@ object GraphSettings {
         val places = combine(hours, sensor, settings.flow(GlucoseUnitSetting)) { h, s, u -> Triple(h, s, GlucoseUnit.of(u)) }
         return combine(bands, numbers, switches, combine(enums, texts) { e, t -> e to t }, places) {
             b,
-            (appHours, grid, rings),
+            (appHours, grid, last),
             (side, crown, marks),
             (e, t),
             (placeHours, sensor, unit),
@@ -121,7 +117,6 @@ object GraphSettings {
                 appHours = appHours,
                 placeHours = placeHours,
                 gridHours = grid,
-                ringCount = rings,
                 slots = GraphText.parseSlots(t[0]) ?: GraphConfig.DEFAULT_SLOTS,
                 ringOrder = GraphText.parseRingOrder(t[1]) ?: RingSpec.DEFAULT_RING_ORDER,
                 side = side,
@@ -129,10 +124,11 @@ object GraphSettings {
                 ringMarks = marks,
                 lines = GraphText.parseLines(t[2]),
                 ringRange = TirRange.valueOf(e.first),
-                lastPlace =
+                lastOn = last,
+                lastWhere =
                     app.mauri.sukrara.graph.LastPlace
                         .valueOf(e.second),
-                lastElse = GraphText.parseSlot(t[3]),
+                lastElse = GraphText.parseSlot(t[3]) ?: GraphConfig.DEFAULT_LAST_ELSE,
                 appSensorTime = sensor.first,
                 sensorPlace = sensor.second,
                 marks = MarkShow.parse(t[4]),

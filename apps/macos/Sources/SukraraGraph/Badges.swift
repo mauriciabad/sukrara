@@ -179,6 +179,8 @@ enum SlotItem: Equatable {
 }
 
 enum Slots {
+    /// The most slots a card shows: the three metrics and the last treatment.
+    static let maxCount = 4
     private static let ringEmphasis: [CGFloat] = [1, 0.55, 0.35]
     /// The fallback ring (no recent treatment) when it is faded: like a second slot.
     private static let fallbackEmphasis: CGFloat = 0.55

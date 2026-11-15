@@ -12,7 +12,8 @@ import app.mauri.sukrara.graph.stats.TirRange
  */
 data class PlaceOverrides(
     val hours: Int? = null,
-    val rings: Int? = null,
+    /** At most this many things beside the value (metrics and the last treatment, in the card's order; 0 = none). */
+    val slots: Int? = null,
     val ringRange: TirRange? = null,
     val side: Boolean? = null,
     val sensorTime: Boolean? = null,
@@ -28,8 +29,9 @@ fun widgetCardStyle(
     own: PlaceOverrides = PlaceOverrides(),
 ): CardStyle {
     val graph = config.graphStyle(own.hours ?: config.hours(GraphPlace.WIDGETS)).copy(side = own.side ?: config.side)
-    val rings = config.rings(own.rings ?: config.ringCount, own.ringRange ?: config.ringRange)
+    val rings = config.rings(own.ringRange ?: config.ringRange)
     val sensorTime = own.sensorTime ?: config.sensorTime(GraphPlace.WIDGETS)
+    val maxSlots = own.slots?.coerceIn(0, Slots.MAX) ?: Slots.MAX
     return when (surface) {
         CardSurface.WIDGET_VALUE -> {
             CardStyle(
@@ -37,6 +39,7 @@ fun widgetCardStyle(
                 rings = rings,
                 last = config.lastPlace,
                 lastElse = config.lastElseRing(),
+                maxSlots = maxSlots,
                 sensorTime = sensorTime,
                 bands = config.bands,
                 unit = config.unit,
@@ -53,6 +56,7 @@ fun widgetCardStyle(
                 rings = rings,
                 last = config.lastPlace,
                 lastElse = config.lastElseRing(),
+                maxSlots = maxSlots,
                 sensorTime = sensorTime,
                 bands = config.bands,
                 unit = config.unit,

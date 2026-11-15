@@ -25,6 +25,7 @@ import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.graph.MetricSlot
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -170,15 +171,18 @@ class SettingsSearchTest {
     @Test
     fun oldPageNamesFindTheNewPages() {
         val readings = SearchTarget.Page(SettingsRoute.Readings)
-        val rings = SearchTarget.Page(SettingsRoute.Rings)
+        val metrics = SearchTarget.Page(SettingsRoute.Metrics)
         val files = SearchTarget.Page(SettingsRoute.ImportExport)
         assertTrue(SettingsSearch.match("ranges", index()).any { it.target == readings })
-        assertTrue(SettingsSearch.match("graph", index()).any { it.target == rings })
+        assertTrue(SettingsSearch.match("rings", index()).any { it.target == metrics })
         assertTrue(SettingsSearch.match("export", index()).any { it.target == files })
         assertTrue(SettingsSearch.match("mmol", index()).any { it.target == readings })
-        // a moved row keeps its words: the rings' rows are found on Rings, the settings file on Import and export
-        assertTrue(SettingsSearch.match("gmi", index()).any { it.target == rings })
-        assertEquals("Rings › Beside the value", SettingsSearch.match("centre counts", index()).first().where)
+        // a moved row keeps its words: the metrics' rows are found in Metrics, the settings file on Import and export
+        assertTrue(SettingsSearch.match("gmi", index()).any { it.section == Section.Metrics })
+        assertEquals(
+            "Metrics › Time-in-range rings › Number in the ring",
+            SettingsSearch.match("very good", index()).first { it.section == Section.Metrics }.where,
+        )
         assertEquals("Import and export › Settings file", SettingsSearch.match("reset all settings", index()).first().where)
         assertTrue(SettingsSearch.match("fine", index()).any { it.target == SearchTarget.Page(SettingsRoute.AlertsFineTuning) })
     }
@@ -195,7 +199,10 @@ class SettingsSearchTest {
                 SettingsRoute.TrendArrow,
                 SettingsRoute.Graph,
                 SettingsRoute.GraphMarks,
-                SettingsRoute.Rings,
+                SettingsRoute.Metrics,
+                SettingsRoute.MetricPage(MetricSlot.Main),
+                SettingsRoute.LastTreatment,
+                SettingsRoute.TirRings,
                 SettingsRoute.ImportExport,
                 SettingsRoute.LockScreen,
                 SettingsRoute.Pens,

@@ -326,7 +326,7 @@
                             model: mirrored, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
                         ).settingsWindow(mirrored, width: 560, height: 900))
                 ))
-            // the Graph and Rings panes: this Mac's own (Custom, a few values changed) and the wearer's (read-only)
+            // the Graph and Metrics panes: this Mac's own (Custom, a few values changed) and the wearer's (read-only)
             func scratch() -> DefaultsSettingsStore {
                 DefaultsSettingsStore(defaults: UserDefaults(suiteName: "app.mauri.sukrara.snap.\(UUID().uuidString)")!)
             }
@@ -335,7 +335,7 @@
             own.settingsFrom = .custom
             own.updateGraph {
                 $0.lines = [100, 250]
-                $0.ringCount = 3
+                $0.slots[2].on = true
                 $0.ringOrder = [.veryLow, .low, .tight, .target, .high, .veryHigh]
             }
             // the widgets differ (docs/38): their own time shown, the sensor time left off on them
@@ -373,8 +373,8 @@
                 ("settings-readings-wearer", .readings, fromWearer, 1000),
                 ("settings-graph", .graph, own, 1280),
                 ("settings-graph-wearer", .graph, fromWearer, 860),
-                ("settings-rings", .rings, own, 1300),
-                ("settings-rings-wearer", .rings, fromWearer, 700),
+                ("settings-metrics", .metrics, own, 1340),
+                ("settings-metrics-wearer", .metrics, fromWearer, 760),
                 ("settings-following", .following, own, 560),
             ] {
                 model.pane = pane
@@ -403,6 +403,10 @@
                 ))
             // Alerts › Fine-tuning… and Falling fast's Details… (its trend arrow is Readings' setting)
             out.append(("alerts-fine-tuning", AnyView(FineTuning(model: own) {})))
+            // a metric's Details… (the third, on; the one without a recent treatment) and the last treatment's
+            out.append(("metrics-details-third", AnyView(MetricDetails(model: own, slot: .third) {})))
+            out.append(("metrics-details-no-recent", AnyView(MetricDetails(model: own, slot: .noRecent) {})))
+            out.append(("metrics-details-last", AnyView(LastTreatmentDetails(model: own) {})))
             // a quiet rule's Details…: its switch, its length and what it does
             out.append(("alerts-quiet-details", AnyView(QuietDetails(model: own, which: .afterCarbs) {})))
             out.append(

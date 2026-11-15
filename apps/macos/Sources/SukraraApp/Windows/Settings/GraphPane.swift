@@ -35,7 +35,7 @@ struct GraphPane: View {
         } message: {
             Text(
                 L10n.t(
-                    "The time shown, the rings, the lines, the ranges, the last treatment and the sensor settings go back to their defaults."
+                    "The time shown, the metrics, the lines, the ranges, the last treatment and the sensor settings go back to their defaults."
                 ))
         }
     }

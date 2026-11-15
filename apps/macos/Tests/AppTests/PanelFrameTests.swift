@@ -102,7 +102,7 @@ actor MonthFollower: FollowerService {
         let (model, _) = try await month()
         let data = model.panelData
         let bands = model.graph.bands.sane()
-        for spec in model.graph.slots + (model.graph.lastElse.map { [$0] } ?? []) {
+        for spec in model.graph.slots + [model.graph.lastElse] {
             let fresh = GlucoseMetrics.of(data.readings, from: data.now - spec.window, to: data.now, bands: bands)
             #expect(data.slots?.metrics(spec.window, bands) == fresh, "\(spec.window)")
             #expect(data.metrics(spec, bands) == fresh, "\(spec.window)")

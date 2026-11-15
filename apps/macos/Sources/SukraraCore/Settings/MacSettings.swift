@@ -20,21 +20,22 @@ public enum MacSettings {
     public static let gridHours = number("graph.gridHours", SettingsSpec.Keys.gridHours, SettingsSpec.gridHours)
     public static let countdownHours = number(
         "sensor.countdownHours", SettingsSpec.Keys.countdownHours, SettingsSpec.countdownHours)
-    public static let ringCount = number("graph.ringCount", SettingsSpec.Keys.ringCount, SettingsSpec.ringCount)
     /// The widgets' own time shown (`placeHours`, 0 = same as the menu bar's `graphHours`): always this Mac's, never
     /// mirrored.
     public static let widgetHours = number("graph.hours.place", SettingsSpec.Keys.widgetHours, SettingsSpec.placeHours)
     // The structured graph settings, stored in their wire spellings (PROTOCOL-v2 "Settings"); the defaults are the
     // renderer's (`GraphConfig()`, checked by GraphSettingsTests).
     public static let slots = SettingSpec(
-        key: SettingsSpec.Keys.slots, defaultValue: "TIR:86400:1,TIR:604800:1,GMI:1209600:1")
+        key: SettingsSpec.Keys.slots, defaultValue: "TIR:86400:1:1,TIR:604800:1:1,GMI:1209600:1:0")
     public static let ringRange = SettingSpec(key: SettingsSpec.Keys.ringRange, defaultValue: "IN_RANGE")
     public static let ringOrder = SettingSpec(
         key: SettingsSpec.Keys.ringOrder, defaultValue: "TIGHT,TARGET,LOW,VERY_LOW,HIGH,VERY_HIGH")
     public static let lines = SettingSpec(key: SettingsSpec.Keys.lines, defaultValue: "100")
+    /// The last treatment beside the value, and where it sits while on (NEAR_VALUE / END).
+    public static let lastTreatment = SettingSpec(key: SettingsSpec.Keys.lastTreatment, defaultValue: true)
     public static let lastPlace = SettingSpec(key: SettingsSpec.Keys.lastPlace, defaultValue: "NEAR_VALUE")
-    /// One slot, "" = nothing.
-    public static let lastElse = SettingSpec(key: SettingsSpec.Keys.lastElse, defaultValue: "TIR:2592000:1")
+    /// The metric the last treatment's place shows while there's no recent treatment, on or off.
+    public static let lastElse = SettingSpec(key: SettingsSpec.Keys.lastElse, defaultValue: "TIR:2592000:1:1")
     public static let marks = SettingSpec(
         key: SettingsSpec.Keys.marks,
         defaultValue: "rapid:point+line+amount+time,long:point+amount+time,carbs:point,note:point")

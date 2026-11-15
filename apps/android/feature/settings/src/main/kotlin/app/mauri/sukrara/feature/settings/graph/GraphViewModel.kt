@@ -43,9 +43,11 @@ class GraphViewModel(
 
     fun slots(slots: List<RingSpec>) = set(GraphSettings.Slots, GraphText.slotsText(slots))
 
-    fun lastElse(slot: RingSpec?) = set(GraphSettings.LastElse, slot?.let(GraphText::slotText).orEmpty())
+    fun lastElse(slot: RingSpec) = set(GraphSettings.LastElse, GraphText.slotText(slot))
 
-    fun lastPlace(place: LastPlace) = set(GraphSettings.LastPlace, place.name)
+    fun lastOn(on: Boolean) = set(GraphSettings.Last, on)
+
+    fun lastWhere(place: LastPlace) = set(GraphSettings.LastPlace, place.name)
 
     fun ringRange(range: TirRange) = set(GraphSettings.RingRange, range.name)
 
@@ -74,8 +76,8 @@ class GraphViewModel(
 }
 
 /**
- * The groups of the Graph and Rings pages, each with its own Reset; [All] = everything the Graph page shows (not the
- * ranges, not the rings), [Rings] = everything the Rings page shows.
+ * The groups of the Graph and Metrics pages, each with its own Reset; [All] = everything the Graph page shows (not the
+ * ranges, not the metrics), [Metrics] = everything the Metrics page and its pages show.
  */
 enum class GraphSection(
     val settings: List<Setting<*>>,
@@ -83,16 +85,12 @@ enum class GraphSection(
     Ranges(GraphSettings.Bands),
     Lines(listOf(GraphSettings.Lines, GraphSettings.GridHours)),
     Time(listOf(GraphSettings.Hours) + GraphSettings.PlaceHours.values),
-    Beside(
-        listOf(
-            GraphSettings.RingCount,
-            GraphSettings.Slots,
-            GraphSettings.LastPlace,
-            GraphSettings.LastElse,
-            GraphSettings.RingRange,
-            GraphSettings.RingMarks,
-        ),
-    ),
+
+    /** The main, second and third metric, the last treatment and what shows while there's none. */
+    Beside(listOf(GraphSettings.Slots, GraphSettings.Last, GraphSettings.LastPlace, GraphSettings.LastElse)),
+
+    /** How a time-in-range ring looks: its number, its rewards. */
+    TirRings(listOf(GraphSettings.RingRange, GraphSettings.RingMarks)),
     RingOrder(listOf(GraphSettings.RingOrder)),
     BesideGraph(listOf(GraphSettings.Side, GraphSettings.ColumnCrown)),
     Marks(listOf(GraphSettings.Marks)),
@@ -100,8 +98,8 @@ enum class GraphSection(
     All(
         listOf(Lines, Time, BesideGraph, Marks, SensorTime).flatMap { it.settings },
     ),
-    Rings(
-        listOf(Beside, RingOrder).flatMap { it.settings },
+    Metrics(
+        listOf(Beside, TirRings, RingOrder).flatMap { it.settings },
     ),
     ;
 
@@ -122,8 +120,11 @@ enum class GraphSection(
             }
 
             Beside -> {
-                c.ringCount != d.ringCount || c.slots != d.slots || c.lastPlace != d.lastPlace || c.lastElse != d.lastElse ||
-                    c.ringRange != d.ringRange || c.ringMarks != d.ringMarks
+                c.slots != d.slots || c.lastOn != d.lastOn || c.lastWhere != d.lastWhere || c.lastElse != d.lastElse
+            }
+
+            TirRings -> {
+                c.ringRange != d.ringRange || c.ringMarks != d.ringMarks
             }
 
             RingOrder -> {
@@ -146,8 +147,8 @@ enum class GraphSection(
                 listOf(Lines, Time, BesideGraph, Marks, SensorTime).any { it.changed(c) }
             }
 
-            Rings -> {
-                Beside.changed(c) || RingOrder.changed(c)
+            Metrics -> {
+                Beside.changed(c) || TirRings.changed(c) || RingOrder.changed(c)
             }
         }
     }

@@ -144,8 +144,14 @@ enum DefaultAlertRules {
         var c = GraphConfig()
         if let v = o["sensorTime"] as? Bool { c.sensorTime = v }
         if let v = o["side"] as? Bool { c.side = v }
-        if let v = o["ringCount"] as? NSNumber { c.ringCount = v.intValue }
-        if let v = o["lastPlace"] as? String, let p = LastPlace(rawValue: v) { c.lastPlace = p }
+        if let v = o["slots"] as? String, let s = GraphConfig.parseSlots(v) { c.slots = s }
+        // the PoC's ring count (widgets/poc.json): the first that many metrics on
+        if let v = o["ringCount"] as? NSNumber {
+            c.slots = c.slots.enumerated().map { i, s in
+                var x = s; x.on = i < v.intValue; return x
+            }
+        }
+        if let v = o["lastPlace"] as? String, let p = LastPlace(rawValue: v) { c.lastWhere = p }
         if let v = o["lines"] as? [NSNumber] { c.lines = v.map(\.intValue) }
         if let v = o["gridHours"] as? NSNumber { c.gridHours = v.intValue }
         if let v = o["high"] as? NSNumber { c.bands.high = v.intValue }

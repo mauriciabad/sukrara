@@ -79,7 +79,7 @@ class OverviewActions(
 /**
  * The settings overview: *Share your data with your clinic* until set up, Mute all's state with Unmute, then one row per
  * page in the order of docs/35 (as AOSP Settings' homepage, `top_level_settings.xml`: groups of coloured icons, each
- * row titled as the page it opens): [Alerts · Alert reliability] [Settings from · Readings · Graph · Rings] [Status
+ * row titled as the page it opens): [Alerts · Alert reliability] [Settings from · Readings · Graph · Metrics] [Status
  * bar · Lock screen] [Sensor · Sensor end · Insulin pens] [Sharing · Share with apps · Backup · Import and export]
  * [Show closed tips · Advanced · About].
  */
@@ -274,10 +274,10 @@ fun SettingsOverviewContent(
                 leading = { SectionIcon(Section.Graph) },
             )
             NavigationRow(
-                stringResource(R.string.st_rings_title),
-                { actions.open(SettingsRoute.Rings) },
-                summary = stringResource(R.string.st_overview_rings),
-                leading = { SectionIcon(Section.Rings) },
+                stringResource(R.string.st_metrics_title),
+                { actions.open(SettingsRoute.Metrics) },
+                summary = stringResource(R.string.st_overview_metrics),
+                leading = { SectionIcon(Section.Metrics) },
             )
         }
         SettingsGroup {

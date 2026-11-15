@@ -41,7 +41,7 @@ import kotlin.math.sin
 /**
  * Roborazzi goldens of the three widgets through [renderWidget] (synthetic readings only) at 2×2 and 4×2 on one phone:
  * light + dark × default + largest font (a taller cell) while fresh; stale (6 min) and hidden (25 min) in light; the
- * situations the owner checks against the PoC (#181, [situations]: high, low, no readings, no rings, Spanish, each in
+ * situations the owner checks against the PoC (#181, [situations]: high, low, no readings, no metrics, Spanish, each in
  * light and dark on the phone's dynamic colours); the lock-screen widget through [renderLockWidget] in its looks and
  * freshness steps. What a widget shows is pinned against the PoC by contracts/graph/widgets/poc.json; these show it.
  * The Goldens workflow (CI, Linux) records src/test/snapshots.
@@ -126,7 +126,7 @@ class WidgetShotsTest {
 
     /**
      * The situations the owner compares with the PoC (#181), on the combined 4×2 and the value 2×1, light and dark: a
-     * high rising, a low falling, no readings at all, the rings turned off for this placement.
+     * high rising, a low falling, no readings at all, the metrics turned off for this placement.
      */
     @Test
     fun situations() {
@@ -148,7 +148,7 @@ class WidgetShotsTest {
                 shoot(kind, cell, w, h, high, "high-$look")
                 shoot(kind, cell, w, h, low, "low-$look")
                 shoot(kind, cell, w, h, none, "none-$look")
-                shoot(kind, cell, w, h, frame(Duration.ofMinutes(1), dark), "rings-off-$look", WidgetOverrides(rings = 0))
+                shoot(kind, cell, w, h, frame(Duration.ofMinutes(1), dark), "metrics-off-$look", WidgetOverrides(slots = 0))
             }
         }
     }

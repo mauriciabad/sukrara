@@ -22,8 +22,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * THE schema against the search (#205, docs/35): every setting of `contracts/settings/settings.json` that has a row on
- * Android is found by the search on a page of its schema `section` (Readings' settings in Readings, the rings' in
- * Rings …), and its second places (docs/35 §7: the same setting editable on another page) are found there too. A
+ * Android is found by the search on a page of its schema `section` (Readings' settings in Readings, the metrics' in
+ * Metrics …), and its second places (docs/35 §7: the same setting editable on another page) are found there too. A
  * setting without a row of its own, or one another feature's page draws, is listed with why.
  */
 class SchemaSearchTest {
@@ -50,13 +50,13 @@ class SchemaSearchTest {
             put("graph.lines", R.string.st_graph_line_add to page(SettingsRoute.Graph))
             put("graph.gridHours", R.string.st_graph_grid to page(SettingsRoute.Graph))
             put("graph.marks", R.string.st_marks_point to page(SettingsRoute.GraphMarks))
-            put("graph.ringCount", R.string.st_graph_rings to page(SettingsRoute.Rings))
-            put("graph.slots", R.string.st_slot_main to page(SettingsRoute.Rings))
-            put("graph.ringRange", R.string.st_ring_counts to page(SettingsRoute.Rings))
-            put("graph.ringOrder", R.string.st_ring_order to page(SettingsRoute.Rings))
-            put("graph.ringMarks", R.string.st_graph_marks to page(SettingsRoute.Rings))
-            put("graph.lastPlace", R.string.st_last to page(SettingsRoute.Rings))
-            put("graph.lastElse", R.string.st_last_else to page(SettingsRoute.Rings))
+            put("graph.slots", R.string.st_metric_main to page(SettingsRoute.Metrics))
+            put("graph.ringRange", R.string.st_tir_in_range to page(SettingsRoute.TirRings))
+            put("graph.ringOrder", R.string.st_tir_order to page(SettingsRoute.TirRings))
+            put("graph.ringMarks", R.string.st_tir_rewards to page(SettingsRoute.TirRings))
+            put("graph.last", R.string.st_last to page(SettingsRoute.Metrics))
+            put("graph.lastPlace", R.string.st_last_near to page(SettingsRoute.LastTreatment))
+            put("graph.lastElse", R.string.st_last_else to page(SettingsRoute.Metrics))
             put("graph.sensorTime", R.string.st_graph_sensor to page(SettingsRoute.SensorEnd))
             put("graph.sensorTime.place", R.string.st_place_notification to page(SettingsRoute.PlacePage(PlaceSetting.SensorTime)))
             put("sensor.countdownHours", R.string.st_sensorend_countdown_hours to page(SettingsRoute.SensorEnd))
@@ -160,7 +160,7 @@ class SchemaSearchTest {
         mapOf(
             "readings" to setOf(Section.Readings),
             "graph" to setOf(Section.Graph),
-            "rings" to setOf(Section.Rings),
+            "metrics" to setOf(Section.Metrics),
             "sensor" to setOf(Section.SensorEnd),
             "source" to setOf(Section.Sensor),
             "alerts" to setOf(Section.Alerts, Section.Reliability),
@@ -225,7 +225,7 @@ class SchemaSearchTest {
         fun keywordsOf(route: SettingsRoute) =
             SettingsIndex.entries.first { it.target == page(route) && it.on == page(SettingsRoute.Overview) }.keywords
         assertTrue(keywordsOf(SettingsRoute.Readings) == R.string.st_readings_keywords)
-        assertTrue(keywordsOf(SettingsRoute.Rings) == R.string.st_rings_keywords)
+        assertTrue(keywordsOf(SettingsRoute.Metrics) == R.string.st_metrics_keywords)
         assertTrue(keywordsOf(SettingsRoute.ImportExport) == R.string.st_files_keywords)
     }
 }

@@ -10,23 +10,33 @@ import SukraraCore
 // anything and returns a value the settings accept (or nil = use the default).
 
 extension GraphConfig {
-    /// "TIR:86400:1,TIR:604800:1,GMI:1209600:1" (kind:window s:faded).
+    /// "TIR:86400:1:1,TIR:604800:1:1,GMI:1209600:1:0" (kind:window s:dimmed:on).
     public static func slotsText(_ s: [RingSpec]) -> String { s.map(slotText).joined(separator: ",") }
 
-    public static func slotText(_ r: RingSpec) -> String { "\(r.kind.rawValue):\(Int(r.window)):\(r.faded ? 1 : 0)" }
+    public static func slotText(_ r: RingSpec) -> String {
+        "\(r.kind.rawValue):\(Int(r.window)):\(r.faded ? 1 : 0):\(r.on ? 1 : 0)"
+    }
 
-    /// Exactly three valid slots, else nil.
+    /// Exactly three valid metrics, else nil.
     public static func parseSlots(_ text: String) -> [RingSpec]? {
         let s = text.split(separator: ",").compactMap { parseSlot(String($0)) }
         return s.count == 3 ? s : nil
     }
 
-    /// One slot, "TIR:2592000:1"; nil when malformed or "" (= nothing, for `lastElse`). The period is coerced to the
-    /// schema's `ringWindow`.
+    /// The periods a metric of `kind` can have: GMI from 7 days (an estimated A1c needs weeks), the others
+    /// `metricWindow` (GraphText.kt `windowSpec`).
+    public static func windowSpec(_ kind: SlotKind) -> NumberSpec {
+        kind == .gmi ? SettingsSpec.gmiWindow : SettingsSpec.metricWindow
+    }
+
+    /// One metric, "TIR:2592000:1:1"; nil when malformed. The period is coerced to its kind's format (`windowSpec`);
+    /// a missing dimmed or on field reads as 1.
     public static func parseSlot(_ e: String) -> RingSpec? {
         let p = e.trimmingCharacters(in: .whitespaces).split(separator: ":").map(String.init)
         guard p.count > 1, let kind = SlotKind(rawValue: p[0]), let w = TimeInterval(p[1]) else { return nil }
-        return RingSpec(window: SettingsSpec.ringWindow.coerce(w), kind: kind, faded: p.count < 3 || p[2] != "0")
+        return RingSpec(
+            window: windowSpec(kind).coerce(w), kind: kind, faded: p.count < 3 || p[2] != "0",
+            on: p.count < 4 || p[3] != "0")
     }
 
     /// "100,120" → sorted distinct values the line format accepts (`SettingsSpec.line`), at most its `maxItems`.

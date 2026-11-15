@@ -12,7 +12,7 @@ import SukraraGraph
 @Observable
 public final class SettingsModel {
     /// The panes in toolbar order (schema `settings.pane`'s values); an unknown stored one opens General.
-    public enum Pane: String, CaseIterable, Sendable { case general, following, alerts, readings, graph, rings }
+    public enum Pane: String, CaseIterable, Sendable { case general, following, alerts, readings, graph, metrics }
 
     @ObservationIgnored let store: any SettingsStoring
     public let alerts: AlertSettingsStore
@@ -114,7 +114,7 @@ public final class SettingsModel {
     }
 
     /// "Reset to Defaults" (after the confirmation, Custom only): this Mac's own mirrored settings (ranges, graph,
-    /// rings, lines, last treatment, sensor countdown, alert rules and quiet rules) become Sukrara's defaults. Sounds,
+    /// metrics, lines, last treatment, sensor countdown, alert rules and quiet rules) become Sukrara's defaults. Sounds,
     /// the no-data alert, Mute all, the notification actions and each place's own time stay.
     public func resetToDefaults() {
         guard editable else { return }
@@ -126,7 +126,7 @@ public final class SettingsModel {
     /// Who the mirrored settings come from now, in one sentence (General › Settings › In use).
     public var inUse: String {
         switch settingsFrom {
-        case .custom: return L10n.t("This Mac's own settings, in the Alerts, Readings, Graph and Rings panes.")
+        case .custom: return L10n.t("This Mac's own settings, in the Alerts, Readings, Graph and Metrics panes.")
         case .default: return L10n.t("Sukrara's defaults.")
         case .wearer:
             let who = wearer?.wearer ?? L10n.t("the wearer")
@@ -230,6 +230,27 @@ public final class SettingsModel {
     public func resetMarks() { updateGraph { $0.marks = .defaults } }
     public var ringOrderChanged: Bool { graph.ringOrder != DEFAULT_RING_ORDER }
     public func resetRingOrder() { updateGraph { $0.ringOrder = DEFAULT_RING_ORDER } }
+    /// Any setting of the Metrics pane differs from the defaults.
+    public var metricsChanged: Bool {
+        let d = GraphConfig()
+        return graph.slots != d.slots || graph.lastOn != d.lastOn || graph.lastWhere != d.lastWhere
+            || graph.lastElse != d.lastElse || graph.ringRange != d.ringRange || graph.ringMarks != d.ringMarks
+            || graph.ringOrder != d.ringOrder
+    }
+    /// "Reset Metrics…" (after the confirmation): the metrics, the last treatment and the rings' look back to their
+    /// defaults; the ranges stay.
+    public func resetMetrics() {
+        let d = GraphConfig()
+        updateGraph {
+            $0.slots = d.slots
+            $0.lastOn = d.lastOn
+            $0.lastWhere = d.lastWhere
+            $0.lastElse = d.lastElse
+            $0.ringRange = d.ringRange
+            $0.ringMarks = d.ringMarks
+            $0.ringOrder = d.ringOrder
+        }
+    }
     /// Any card setting differs from the defaults (the place's own ones included).
     public var graphChanged: Bool {
         graph != GraphConfig() || !sensorTime
@@ -257,7 +278,7 @@ public final class SettingsModel {
             (MacSettings.bandVeryLow, b.veryLow), (MacSettings.bandLow, b.low), (MacSettings.bandTight, b.tight),
             (MacSettings.bandHigh, b.high), (MacSettings.bandVeryHigh, b.veryHigh),
             (MacSettings.bandExtremelyHigh, b.extremelyHigh), (MacSettings.graphHours, g.hours),
-            (MacSettings.ringCount, g.ringCount), (MacSettings.gridHours, g.gridHours),
+            (MacSettings.gridHours, g.gridHours),
             (MacSettings.countdownHours, g.countdownHours),
         ]
         for (n, v) in numbers { store.setNumber(Double(v), for: n) }
@@ -269,8 +290,9 @@ public final class SettingsModel {
         store.set(g.columnCrown, for: MacSettings.columnCrown)
         store.set(g.marks.settingsText, for: MacSettings.marks)
         store.set(GraphConfig.linesText(g.lines), for: MacSettings.lines)
-        store.set(g.lastPlace.rawValue, for: MacSettings.lastPlace)
-        store.set(g.lastElse.map(GraphConfig.slotText) ?? "", for: MacSettings.lastElse)
+        store.set(g.lastOn, for: MacSettings.lastTreatment)
+        store.set(g.lastWhere.rawValue, for: MacSettings.lastPlace)
+        store.set(GraphConfig.slotText(g.lastElse), for: MacSettings.lastElse)
         store.set(g.trend.rawValue, for: MacSettings.trend)
         revision += 1
     }

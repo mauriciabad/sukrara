@@ -38,12 +38,13 @@ import Testing
     static let typed: [Typed] =
         MacSettings.bands.map { n($0) } + [
             n(MacSettings.graphHours), n(MacSettings.widgetHours),
-            n(MacSettings.ringCount), n(MacSettings.gridHours), n(MacSettings.countdownHours),
+            n(MacSettings.gridHours), n(MacSettings.countdownHours),
             t("graph.slots", MacSettings.slots), t("graph.ringRange", MacSettings.ringRange),
             t("graph.ringOrder", MacSettings.ringOrder), t("graph.ringMarks", MacSettings.ringMarks),
             t("graph.side", MacSettings.side), t("graph.marks", MacSettings.marks),
             t("graph.columnCrown", MacSettings.columnCrown), t("graph.lines", MacSettings.lines),
-            t("graph.lastPlace", MacSettings.lastPlace), t("graph.lastElse", MacSettings.lastElse),
+            t("graph.last", MacSettings.lastTreatment), t("graph.lastPlace", MacSettings.lastPlace),
+            t("graph.lastElse", MacSettings.lastElse),
             t("graph.sensorTime", MacSettings.sensorTime),
             t("graph.sensorTime.place", MacSettings.widgetSensorTime),
             t("follower.settingsFrom", MacSettings.settingsFrom), t("general.unit", MacSettings.unit),
@@ -131,12 +132,13 @@ import Testing
 
     /// The structured graph defaults are made of the schema's options and formats.
     @Test func structuredGraphDefaultsAreMadeOfTheSchema() throws {
-        let window = try #require(SettingsSpec.numbers["ringWindow"])
+        let window = try #require(SettingsSpec.numbers["metricWindow"])
+        let gmi = try #require(SettingsSpec.numbers["gmiWindow"])
         for text in [MacSettings.slots.defaultValue, MacSettings.lastElse.defaultValue] {
             for slot in text.split(separator: ",") {
                 let parts = slot.split(separator: ":").map(String.init)
-                #expect(parts.count == 3 && Self.option("slotKind").contains(parts[0]), "\(slot)")
-                #expect(Double(parts[1]).map(window.valid) == true, "\(slot)")
+                #expect(parts.count == 4 && Self.option("slotKind").contains(parts[0]), "\(slot)")
+                #expect(Double(parts[1]).map((parts[0] == "GMI" ? gmi : window).valid) == true, "\(slot)")
             }
         }
         let marks = Self.option("markKind").map { "\($0):" + Self.option("markDefault.\($0)").joined(separator: "+") }
@@ -181,7 +183,7 @@ import Testing
             "reportPeriod": GlucoseReport.periods.map(String.init),
             "slotKind": SlotKind.allCases.map(\.rawValue),
             "tirRange": TirRange.allCases.map(\.rawValue),
-            "lastPlace": LastPlace.allCases.map(\.rawValue),
+            "lastPlace": LastPlace.allCases.filter { $0 != .off }.map(\.rawValue),  // off is the switch (graph.last)
             "soundPack": AlertSoundSettings.packs + ["system", "none"],
             "settingsFrom": SettingsFrom.allCases.map(\.rawValue),
             "unit": GlucoseUnit.allCases.map(\.rawValue),
@@ -201,7 +203,9 @@ import Testing
         // the enum rows' own value lists
         #expect(Self.rows["settings.pane"]?["values"] as? [String] == SettingsModel.Pane.allCases.map(\.rawValue))
         #expect(Self.rows["graph.ringRange"]?["values"] as? [String] == TirRange.allCases.map(\.rawValue))
-        #expect(Self.rows["graph.lastPlace"]?["values"] as? [String] == LastPlace.allCases.map(\.rawValue))
+        #expect(
+            Self.rows["graph.lastPlace"]?["values"] as? [String]
+                == LastPlace.allCases.filter { $0 != .off }.map(\.rawValue))
         #expect(Self.rows["general.unit"]?["values"] as? [String] == GlucoseUnit.allCases.map(\.rawValue))
         #expect(Self.rows["graph.sensorTime.place"]?["values"] as? [String] == PlaceOverride.allCases.map(\.rawValue))
         // the places that can differ from the menu bar (docs/38): the widgets alone

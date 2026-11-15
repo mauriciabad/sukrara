@@ -28,9 +28,9 @@ import Testing
     }
 
     /// docs/35 §7: General first (HIG), Following second (where this Mac gets glucose), then Alerts, Readings, Graph,
-    /// Rings; the schema's `settings.pane` values are this order (SettingsSchemaTests).
+    /// Metrics; the schema's `settings.pane` values are this order (SettingsSchemaTests).
     @Test func thePanesComeInTheirOrder() {
-        #expect(SettingsModel.Pane.allCases == [.general, .following, .alerts, .readings, .graph, .rings])
+        #expect(SettingsModel.Pane.allCases == [.general, .following, .alerts, .readings, .graph, .metrics])
         #expect(SettingsModel.Pane.readings.symbol == "drop")
     }
 
@@ -57,15 +57,15 @@ import Testing
 
     @Test func theWindowHasAPreferenceToolbarAndThePanesName() {
         let m = model()
-        m.pane = .rings
+        m.pane = .metrics
         let w = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 300), styleMask: [], backing: .buffered, defer: true)
         let chrome = SettingsWindowChrome(window: w, model: m)
         #expect(w.toolbarStyle == .preference)
         #expect(w.toolbar?.allowsUserCustomization == false)
         #expect(w.toolbar?.items.map(\.itemIdentifier.rawValue) == SettingsModel.Pane.allCases.map(\.rawValue))
-        #expect(w.toolbar?.selectedItemIdentifier?.rawValue == "rings")
-        #expect(w.title == SettingsModel.Pane.rings.title)
+        #expect(w.toolbar?.selectedItemIdentifier?.rawValue == "metrics")
+        #expect(w.title == SettingsModel.Pane.metrics.title)
         #expect(w.styleMask.contains(.closable))
         #expect(!w.styleMask.contains(.miniaturizable) && !w.styleMask.contains(.resizable))
         #expect(w.contentRect(forFrameRect: w.frame).width == SettingsWindowChrome.width)

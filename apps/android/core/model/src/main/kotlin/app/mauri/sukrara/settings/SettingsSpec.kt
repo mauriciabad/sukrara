@@ -74,8 +74,8 @@ object SettingsSpec {
     val BAND_EXTREMELY_HIGH = NumberSpec("bandExtremelyHigh", "mg/dL", 200.0, 450.0, 1.0, 1.0, 1.0, 0, listOf(300.0, 350.0, 400.0), 300.0, mapOf(), true, 0, NumberSpec("bandExtremelyHigh", "mmol/L", 11.1, 24.9, 0.1, 0.1, 1.0, 1, listOf(16.7, 19.4, 22.2), 16.6, mapOf(), true, 0))
     val GRAPH_HOURS = NumberSpec("graphHours", "h", 1.0, 48.0, 1.0, 1.0, 1.0, 0, listOf(3.0, 6.0, 12.0, 24.0), 12.0, mapOf(), true, 0)
     val PLACE_HOURS = NumberSpec("placeHours", "h", 1.0, 48.0, 1.0, 1.0, 1.0, 0, listOf(3.0, 6.0, 12.0, 24.0), 0.0, mapOf(0.0 to "same_as_app"), true, 0)
-    val RING_COUNT = NumberSpec("ringCount", "", 0.0, 3.0, 1.0, 1.0, 1.0, 0, listOf(0.0, 1.0, 2.0, 3.0), 2.0, mapOf(0.0 to "none"), false, 0)
-    val RING_WINDOW = NumberSpec("ringWindow", "d", 86400.0, 7776000.0, 86400.0, 86400.0, 86400.0, 0, listOf(43200.0, 86400.0, 259200.0, 604800.0, 1209600.0, 2592000.0), 86400.0, mapOf(), true, 0)
+    val METRIC_WINDOW = NumberSpec("metricWindow", "d", 86400.0, 7776000.0, 86400.0, 86400.0, 86400.0, 0, listOf(43200.0, 86400.0, 259200.0, 604800.0, 1209600.0, 2592000.0), 86400.0, mapOf(), true, 0)
+    val GMI_WINDOW = NumberSpec("gmiWindow", "d", 604800.0, 7776000.0, 86400.0, 86400.0, 86400.0, 0, listOf(604800.0, 1209600.0, 2592000.0), 1209600.0, mapOf(), true, 0)
     val LINE = NumberSpec("line", "mg/dL", 40.0, 400.0, 1.0, 5.0, 1.0, 0, listOf(), 100.0, mapOf(), true, 6, NumberSpec("line", "mmol/L", 2.2, 22.2, 0.1, 0.5, 1.0, 1, listOf(), 5.5, mapOf(), true, 0))
     val GRID_HOURS = NumberSpec("gridHours", "h", 0.0, 12.0, 1.0, 1.0, 1.0, 0, listOf(0.0, 1.0, 2.0, 3.0, 4.0, 6.0, 12.0), 1.0, mapOf(0.0 to "off"), false, 0)
     val COUNTDOWN_HOURS = NumberSpec("countdownHours", "h", 1.0, 24.0, 1.0, 1.0, 1.0, 0, listOf(2.0, 4.0, 8.0, 12.0, 24.0), 8.0, mapOf(), true, 0)
@@ -113,10 +113,10 @@ object SettingsSpec {
     val LIBRE_VIEW_INTERVAL = NumberSpec("libreViewInterval", "min", 1.0, 240.0, 1.0, 5.0, 1.0, 0, listOf(5.0, 15.0, 60.0), 5.0, mapOf(), true, 0)
     val NOSTR_INTERVAL = NumberSpec("nostrInterval", "min", 1.0, 240.0, 1.0, 5.0, 1.0, 0, listOf(0.0, 5.0, 15.0, 30.0, 60.0), 0.0, mapOf(0.0 to "every_reading"), true, 0)
 
-    val NUMBERS: Map<String, NumberSpec> = mapOf("bandVeryLow" to BAND_VERY_LOW, "bandLow" to BAND_LOW, "bandTight" to BAND_TIGHT, "bandHigh" to BAND_HIGH, "bandVeryHigh" to BAND_VERY_HIGH, "bandExtremelyHigh" to BAND_EXTREMELY_HIGH, "graphHours" to GRAPH_HOURS, "placeHours" to PLACE_HOURS, "ringCount" to RING_COUNT, "ringWindow" to RING_WINDOW, "line" to LINE, "gridHours" to GRID_HOURS, "countdownHours" to COUNTDOWN_HOURS, "endedRepeatHours" to ENDED_REPEAT_HOURS, "thresholdVeryLow" to THRESHOLD_VERY_LOW, "thresholdLow" to THRESHOLD_LOW, "thresholdHigh" to THRESHOLD_HIGH, "thresholdVeryHigh" to THRESHOLD_VERY_HIGH, "thresholdExtremelyHigh" to THRESHOLD_EXTREMELY_HIGH, "thresholdRate" to THRESHOLD_RATE, "penPrimeBelow" to PEN_PRIME_BELOW, "penCluster" to PEN_CLUSTER, "penPrimeBefore" to PEN_PRIME_BEFORE, "penPending" to PEN_PENDING, "penMatch" to PEN_MATCH, "penMatchUnits" to PEN_MATCH_UNITS, "penMatchShare" to PEN_MATCH_SHARE, "penOffer" to PEN_OFFER, "lockTreatmentTime" to LOCK_TREATMENT_TIME, "thresholdNoData" to THRESHOLD_NO_DATA, "alertRepeat" to ALERT_REPEAT, "muteInsulin" to MUTE_INSULIN, "muteFalling" to MUTE_FALLING, "muteRising" to MUTE_RISING, "muteCarbs" to MUTE_CARBS, "actionMute" to ACTION_MUTE, "actionRelax" to ACTION_RELAX, "backMgdl" to BACK_MGDL, "backMin" to BACK_MIN, "persistLow" to PERSIST_LOW, "persistHigh" to PERSIST_HIGH, "persistMargin" to PERSIST_MARGIN, "escalateMin" to ESCALATE_MIN, "muteAll" to MUTE_ALL, "libreViewInterval" to LIBRE_VIEW_INTERVAL, "nostrInterval" to NOSTR_INTERVAL)
+    val NUMBERS: Map<String, NumberSpec> = mapOf("bandVeryLow" to BAND_VERY_LOW, "bandLow" to BAND_LOW, "bandTight" to BAND_TIGHT, "bandHigh" to BAND_HIGH, "bandVeryHigh" to BAND_VERY_HIGH, "bandExtremelyHigh" to BAND_EXTREMELY_HIGH, "graphHours" to GRAPH_HOURS, "placeHours" to PLACE_HOURS, "metricWindow" to METRIC_WINDOW, "gmiWindow" to GMI_WINDOW, "line" to LINE, "gridHours" to GRID_HOURS, "countdownHours" to COUNTDOWN_HOURS, "endedRepeatHours" to ENDED_REPEAT_HOURS, "thresholdVeryLow" to THRESHOLD_VERY_LOW, "thresholdLow" to THRESHOLD_LOW, "thresholdHigh" to THRESHOLD_HIGH, "thresholdVeryHigh" to THRESHOLD_VERY_HIGH, "thresholdExtremelyHigh" to THRESHOLD_EXTREMELY_HIGH, "thresholdRate" to THRESHOLD_RATE, "penPrimeBelow" to PEN_PRIME_BELOW, "penCluster" to PEN_CLUSTER, "penPrimeBefore" to PEN_PRIME_BEFORE, "penPending" to PEN_PENDING, "penMatch" to PEN_MATCH, "penMatchUnits" to PEN_MATCH_UNITS, "penMatchShare" to PEN_MATCH_SHARE, "penOffer" to PEN_OFFER, "lockTreatmentTime" to LOCK_TREATMENT_TIME, "thresholdNoData" to THRESHOLD_NO_DATA, "alertRepeat" to ALERT_REPEAT, "muteInsulin" to MUTE_INSULIN, "muteFalling" to MUTE_FALLING, "muteRising" to MUTE_RISING, "muteCarbs" to MUTE_CARBS, "actionMute" to ACTION_MUTE, "actionRelax" to ACTION_RELAX, "backMgdl" to BACK_MGDL, "backMin" to BACK_MIN, "persistLow" to PERSIST_LOW, "persistHigh" to PERSIST_HIGH, "persistMargin" to PERSIST_MARGIN, "escalateMin" to ESCALATE_MIN, "muteAll" to MUTE_ALL, "libreViewInterval" to LIBRE_VIEW_INTERVAL, "nostrInterval" to NOSTR_INTERVAL)
 
     /** Option lists both platforms offer, in order (schema "options"). */
-    val OPTIONS: Map<String, List<String>> = mapOf("alertKind" to listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast", "no_data"), "exportPeriod" to listOf("sensor", "7", "14", "30", "all"), "reportPeriod" to listOf("1", "7", "14", "30"), "slotKind" to listOf("TIR", "GMI", "AVERAGE", "CV"), "tirRange" to listOf("IN_RANGE", "TIGHT"), "lastPlace" to listOf("OFF", "NEAR_VALUE", "END"), "soundPack" to listOf("arcade", "kart", "quest", "soft", "system", "none"), "settingsFrom" to listOf("wearer", "default", "custom"), "unit" to listOf("mgdl", "mmol"), "placeOverride" to listOf("same", "on", "off"), "trend" to listOf("quick", "balanced", "smooth", "sensor"), "markKind" to listOf("rapid", "long", "carbs", "note"), "markPart" to listOf("point", "line", "amount", "time"), "markParts.rapid" to listOf("point", "line", "amount", "time"), "markParts.long" to listOf("point", "amount", "time"), "markParts.carbs" to listOf("point", "line", "amount", "time"), "markParts.note" to listOf("point"), "markDefault.rapid" to listOf("point", "line", "amount", "time"), "markDefault.long" to listOf("point", "amount", "time"), "markDefault.carbs" to listOf("point"), "markDefault.note" to listOf("point"))
+    val OPTIONS: Map<String, List<String>> = mapOf("alertKind" to listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast", "no_data"), "exportPeriod" to listOf("sensor", "7", "14", "30", "all"), "reportPeriod" to listOf("1", "7", "14", "30"), "slotKind" to listOf("TIR", "GMI", "AVERAGE", "CV"), "tirRange" to listOf("IN_RANGE", "TIGHT"), "lastPlace" to listOf("NEAR_VALUE", "END"), "soundPack" to listOf("arcade", "kart", "quest", "soft", "system", "none"), "settingsFrom" to listOf("wearer", "default", "custom"), "unit" to listOf("mgdl", "mmol"), "placeOverride" to listOf("same", "on", "off"), "trend" to listOf("quick", "balanced", "smooth", "sensor"), "markKind" to listOf("rapid", "long", "carbs", "note"), "markPart" to listOf("point", "line", "amount", "time"), "markParts.rapid" to listOf("point", "line", "amount", "time"), "markParts.long" to listOf("point", "amount", "time"), "markParts.carbs" to listOf("point", "line", "amount", "time"), "markParts.note" to listOf("point"), "markDefault.rapid" to listOf("point", "line", "amount", "time"), "markDefault.long" to listOf("point", "amount", "time"), "markDefault.carbs" to listOf("point"), "markDefault.note" to listOf("point"))
 
     val SETTINGS: List<SettingInfo> = listOf(
         SettingInfo("glucose.trend", "enum", null, true, "graph.trend", "graph:trend", "defaults:trend", null, null, null, listOf()),
@@ -128,8 +128,7 @@ object SettingsSpec {
         SettingInfo("graph.band.extremelyHigh", "number", "bandExtremelyHigh", true, "graph.extremelyHigh", "graph:bandExtremelyHigh", "defaults:bandExtremelyHigh", null, null, null, listOf()),
         SettingInfo("graph.hours", "number", "graphHours", true, "graph.defaultHours", "graph:graphHours", "defaults:graphHours", null, null, null, listOf()),
         SettingInfo("graph.hours.place", "number", "placeHours", false, null, "graph:placeHoursNotification,placeHoursWidgets", "defaults:widgetHours", null, null, null, listOf()),
-        SettingInfo("graph.ringCount", "number", "ringCount", true, "graph.ringCount", "graph:ringCount", "defaults:ringCount", null, null, null, listOf()),
-        SettingInfo("graph.slots", "slots", "ringWindow", true, "graph.slots", "graph:slots", "defaults:slots", null, null, null, listOf()),
+        SettingInfo("graph.slots", "slots", "metricWindow", true, "graph.slots", "graph:slots", "defaults:slots", null, null, null, listOf()),
         SettingInfo("graph.ringRange", "enum", null, true, "graph.ringRange", "graph:ringRange", "defaults:ringRange", null, null, null, listOf()),
         SettingInfo("graph.ringOrder", "order", null, true, "graph.ringOrder", "graph:ringOrder", "defaults:ringOrder", null, null, null, listOf()),
         SettingInfo("graph.ringMarks", "bool", null, true, "graph.ringMarks", "graph:ringMarks", "defaults:ringMarks", null, null, null, listOf()),
@@ -138,8 +137,9 @@ object SettingsSpec {
         SettingInfo("graph.columnCrown", "bool", null, true, "graph.columnCrown", "graph:columnCrown", "defaults:columnCrown", null, null, null, listOf()),
         SettingInfo("graph.lines", "list", "line", true, "graph.lines", "graph:lines", "defaults:lines", null, null, null, listOf()),
         SettingInfo("graph.gridHours", "number", "gridHours", true, "graph.gridHours", "graph:gridHours", "defaults:gridHours", null, null, null, listOf()),
+        SettingInfo("graph.last", "bool", null, true, "graph.last", "graph:lastTreatment", "defaults:lastTreatment", null, null, null, listOf()),
         SettingInfo("graph.lastPlace", "enum", null, true, "graph.lastPlace", "graph:lastPlace", "defaults:lastPlace", null, null, null, listOf()),
-        SettingInfo("graph.lastElse", "slot", "ringWindow", true, "graph.lastElse", "graph:lastElse", "defaults:lastElse", null, null, null, listOf()),
+        SettingInfo("graph.lastElse", "slot", "metricWindow", true, "graph.lastElse", "graph:lastElse", "defaults:lastElse", null, null, null, listOf()),
         SettingInfo("graph.sensorTime", "bool", null, false, null, "graph:sensorTime", "defaults:sensorTime", null, null, null, listOf()),
         SettingInfo("graph.sensorTime.place", "enum", null, false, null, "graph:placeSensorTimeNotification,placeSensorTimeWidgets", "defaults:placeSensorTimeWidget", null, null, null, listOf()),
         SettingInfo("sensor.countdownHours", "number", "countdownHours", true, "graph.countdownHours", "sensor:countdownHours", "defaults:countdownHours", null, null, null, listOf()),
@@ -234,7 +234,7 @@ object SettingsSpec {
         SettingInfo("apps.nightscoutUpload", "group", null, false, null, "integrations:nightscoutUpload", "", null, "android", "Only the wearer's phone uploads", listOf()),
         SettingInfo("apps.broadcasts", "group", null, false, null, "integrations:broadcastApps", "", null, "android", "Android inter-app broadcasts and Health Connect", listOf()),
         SettingInfo("sensor.reminders", "group", null, false, null, "sensor:sensorReminders", "", null, "android", "The wearer's phone owns the sensor and reminds its wearer; a Mac follower shows the sensor's time left and countdown ring only", listOf()),
-        SettingInfo("widget.overrides", "group", null, false, null, "widgets:widgetHours,widgetRings,widgetRingRange,widgetSide,widgetSensor", "", null, "android", "Android widgets are configured per placement (Reconfigure); Mac widgets follow the Widgets place's settings", listOf()),
+        SettingInfo("widget.overrides", "group", null, false, null, "widgets:widgetHours,widgetSlots,widgetRingRange,widgetSide,widgetSensor", "", null, "android", "Android widgets are configured per placement (Reconfigure); Mac widgets follow the Widgets place's settings", listOf()),
         SettingInfo("pens.reading", "enum", null, false, null, "pens:penReading", "", null, "android", "Only the wearer's phone reads insulin pens over NFC; the Mac shows the entries it gets (pen keys pr, pen, pd)", listOf()),
         SettingInfo("pens.primeBelow", "number", "penPrimeBelow", false, null, "pens:penPrimeBelow", "", null, "android", "Only the wearer's phone reads insulin pens over NFC; the Mac shows the entries it gets (pen keys pr, pen, pd)", listOf()),
         SettingInfo("pens.cluster", "number", "penCluster", false, null, "pens:penCluster", "", null, "android", "Only the wearer's phone reads insulin pens over NFC; the Mac shows the entries it gets (pen keys pr, pen, pd)", listOf()),
@@ -277,7 +277,6 @@ object SettingsSpec {
         const val GRAPH_HOURS = "graphHours"
         const val PLACE_HOURS_NOTIFICATION = "placeHoursNotification"
         const val PLACE_HOURS_WIDGETS = "placeHoursWidgets"
-        const val RING_COUNT = "ringCount"
         const val SLOTS = "slots"
         const val RING_RANGE = "ringRange"
         const val RING_ORDER = "ringOrder"
@@ -287,6 +286,7 @@ object SettingsSpec {
         const val COLUMN_CROWN = "columnCrown"
         const val LINES = "lines"
         const val GRID_HOURS = "gridHours"
+        const val LAST_TREATMENT = "lastTreatment"
         const val LAST_PLACE = "lastPlace"
         const val LAST_ELSE = "lastElse"
         const val SENSOR_TIME = "sensorTime"
@@ -329,7 +329,7 @@ object SettingsSpec {
         const val BROADCAST_APPS = "broadcastApps"
         const val SENSOR_REMINDERS = "sensorReminders"
         const val WIDGET_HOURS = "widgetHours"
-        const val WIDGET_RINGS = "widgetRings"
+        const val WIDGET_SLOTS = "widgetSlots"
         const val WIDGET_RING_RANGE = "widgetRingRange"
         const val WIDGET_SIDE = "widgetSide"
         const val WIDGET_SENSOR = "widgetSensor"

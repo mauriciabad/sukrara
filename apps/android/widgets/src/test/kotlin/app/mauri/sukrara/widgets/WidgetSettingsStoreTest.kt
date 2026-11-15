@@ -22,9 +22,9 @@ class WidgetSettingsStoreTest {
     @Test
     fun `each placement keeps its own settings and a removed one is forgotten`() =
         runTest {
-            store.set(1, WidgetOverrides(hours = 3, rings = 0))
+            store.set(1, WidgetOverrides(hours = 3, slots = 0))
             store.set(2, WidgetOverrides(side = false, ringRange = TirRange.TIGHT))
-            assertEquals(WidgetOverrides(hours = 3, rings = 0), store.get(1))
+            assertEquals(WidgetOverrides(hours = 3, slots = 0), store.get(1))
             assertEquals(WidgetOverrides(side = false, ringRange = TirRange.TIGHT), store.get(2))
             store.forget(intArrayOf(1))
             assertEquals("a reused id starts clean", WidgetOverrides(), store.get(1))
@@ -36,13 +36,13 @@ class WidgetSettingsStoreTest {
             )
         }
 
-    /** The one number input's formats (placeHours, ringCount): a stored value outside them reads as the nearest valid one. */
+    /** A stored value outside its format (placeHours, 0–4 things beside the value) reads as the nearest valid one. */
     @Test
     fun `a stored value outside its format applies as the nearest valid one`() {
-        assertEquals(PlaceOverrides(hours = 7, rings = 1), WidgetOverrides(hours = 7, rings = 1).toPlace())
+        assertEquals(PlaceOverrides(hours = 7, slots = 1), WidgetOverrides(hours = 7, slots = 1).toPlace())
         assertEquals(48, WidgetOverrides(hours = 90).toPlace().hours)
         assertEquals("0 = same as the app", null, WidgetOverrides(hours = 0).toPlace().hours)
-        assertEquals(2, WidgetOverrides(rings = 9).toPlace().rings)
+        assertEquals(3, WidgetOverrides(slots = 9).toPlace().slots)
         assertEquals(PlaceOverrides(), WidgetOverrides().toPlace())
     }
 

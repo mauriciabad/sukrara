@@ -123,13 +123,16 @@ data class ChartView(
 /** What a slot beside the value shows: a time-in-range ring or one of the report's numbers. */
 enum class SlotKind { TIR, GMI, AVERAGE, CV }
 
-/** Where the last-treatment slot sits among the slots: [NEAR_VALUE] = leftmost, next to the number; [END] = rightmost. */
+/**
+ * Where the last-treatment slot sits among the slots: [NEAR_VALUE] = leftmost, next to the number; [END] = rightmost;
+ * [OFF] = a card without it (the settings keep its switch and its place apart: [GraphConfig.lastOn]).
+ */
 enum class LastPlace { OFF, NEAR_VALUE, END }
 
 /**
- * One slot beside the value: its [kind], window and, for a ring, which range its centre number counts. [faded] = the
- * second and third slots are drawn fainter than the main one; [order] = the ring's segments clockwise from 12 o'clock;
- * [marks] = it wears its [TirMark].
+ * One metric beside the value (Settings › Metrics): its [kind], window and, for a ring, which range its centre number
+ * counts. [faded] = dimmed wherever it isn't the main one; [order] = the ring's segments clockwise from 12 o'clock;
+ * [marks] = it wears its [TirMark]; [on] = the person shows it (a setting: a card is only given the ones that are on).
  */
 data class RingSpec(
     val windowS: Long,
@@ -138,6 +141,7 @@ data class RingSpec(
     val faded: Boolean = true,
     val order: List<Band> = DEFAULT_RING_ORDER,
     val marks: Boolean = true,
+    val on: Boolean = true,
 ) {
     companion object {
         /** In range from the top (very good first), the lows, then the highs, very high last. */
@@ -156,6 +160,8 @@ data class CardStyle(
     val value: Boolean = true,
     val last: LastPlace = LastPlace.OFF,
     val lastElse: RingSpec? = null,
+    /** At most this many slots, in the card's priority order (one widget's own *Beside the value*); room decides the rest. */
+    val maxSlots: Int = Slots.MAX,
     val badge: Boolean = true,
     /** The sensor's time left on this card; warm-up and ended show regardless. */
     val sensorTime: Boolean,

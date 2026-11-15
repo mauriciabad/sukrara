@@ -81,7 +81,7 @@ import Testing
         let m = model()
         m.useOwn()
         m.setNumber(150, MacSettings.bandTight)
-        m.setNumber(3, MacSettings.ringCount)
+        m.updateGraph { $0.slots[2].on = true }
         m.setPlaceHours(6, .widget)
         m.alerts.update {
             $0[.low].threshold = 80
@@ -117,8 +117,8 @@ import Testing
         let store = scratchStore()
         let follow = FollowModel(status: .notFollowing, actions: nil, macName: "Mac")
         let m = SettingsModel(store: store, follow: follow, version: "0")
-        m.pane = .rings
-        #expect(SettingsModel(store: store, follow: follow, version: "0").pane == .rings)
+        m.pane = .metrics
+        #expect(SettingsModel(store: store, follow: follow, version: "0").pane == .metrics)
     }
 }
 

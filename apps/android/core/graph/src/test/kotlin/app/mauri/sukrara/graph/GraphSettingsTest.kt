@@ -44,7 +44,8 @@ class GraphSettingsTest {
         runTest {
             settings.set(GraphSettings.Hours, 6.0)
             settings.set(GraphSettings.GridHours, 2.0)
-            settings.set(GraphSettings.RingCount, 1.0)
+            settings.set(GraphSettings.Slots, "TIR:86400:1:1,TIR:604800:1:0,GMI:1209600:1:0")
+            settings.set(GraphSettings.Last, false)
             settings.set(GraphSettings.Side, false)
             settings.set(GraphSettings.ColumnCrown, false)
             settings.set(GraphSettings.RingMarks, false)
@@ -55,29 +56,34 @@ class GraphSettingsTest {
             assertEquals(6, c.hours(GraphPlace.WIDGETS))
             assertEquals(2, c.gridHours)
             assertEquals(1, c.rings().size)
+            assertEquals(LastPlace.OFF, c.lastPlace)
             assertFalse(c.side || c.columnCrown || c.ringMarks)
             assertEquals(TirRange.TIGHT, c.ringRange)
-            assertEquals(LastPlace.END, c.lastPlace)
+            assertEquals("the place is kept while it's off", LastPlace.END, c.lastWhere)
         }
 
     @Test fun theStructuredKeysLandInTheConfig() =
         runTest {
-            settings.set(GraphSettings.Slots, "GMI:1209600:0,AVERAGE:604800:1,CV:2592000:0")
+            settings.set(GraphSettings.Slots, "GMI:86400:0:1,AVERAGE:604800:1:0,CV:2592000:0")
             settings.set(GraphSettings.RingOrder, "VERY_HIGH,HIGH,TARGET,TIGHT,LOW,VERY_LOW")
             settings.set(GraphSettings.Lines, "120,80")
-            settings.set(GraphSettings.LastElse, "")
+            settings.set(GraphSettings.LastElse, "AVERAGE:259200:0:0")
             settings.set(GraphSettings.Marks, "rapid:point,long:point,carbs:point+amount,note:")
             settings.set(GraphSettings.PlaceHours.getValue(GraphPlace.NOTIFICATION), 3.0)
             settings.set(GraphSettings.SensorTimePlace.getValue(GraphPlace.WIDGETS), "off")
             val c = GraphSettings.config(settings).first()
             assertEquals(listOf(SlotKind.GMI, SlotKind.AVERAGE, SlotKind.CV), c.slots.map { it.kind })
             assertFalse(c.slots[0].faded)
+            assertEquals("a GMI covers a week at least", 7 * 86_400L, c.slots[0].windowS)
+            assertEquals(listOf(true, false, true), c.slots.map { it.on })
+            assertEquals(listOf(SlotKind.GMI, SlotKind.CV), c.rings().map { it.kind })
             assertEquals(
                 "VERY_HIGH,HIGH,TARGET,TIGHT,LOW,VERY_LOW",
                 GraphText.ringOrderText(c.ringOrder),
             )
             assertEquals(listOf(80, 120), c.lines)
-            assertEquals(null, c.lastElse)
+            assertEquals(RingSpec(259_200L, kind = SlotKind.AVERAGE, faded = false, on = false), c.lastElse)
+            assertEquals(null, c.lastElseRing())
             assertTrue(c.marks.has("carbs", MarkShow.AMOUNT))
             assertFalse(c.marks.has("rapid", MarkShow.LINE))
             assertEquals(3, c.hours(GraphPlace.NOTIFICATION))

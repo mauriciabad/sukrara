@@ -10,7 +10,7 @@ import SukraraCore
 /// reading. It lives with the renderer (not SukraraCore) because it carries the card's types.
 public struct WidgetSnapshot: Sendable, Codable, Equatable {
     /// The format this build writes and reads (2: with the no-data reason).
-    public static let version = 2
+    public static let version = 3
 
     public var v: Int
     /// When the app wrote it (epoch s): the widget's "updated" time, never the reading's.

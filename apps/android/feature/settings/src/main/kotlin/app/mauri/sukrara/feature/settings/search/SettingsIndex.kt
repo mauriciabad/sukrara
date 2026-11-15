@@ -15,6 +15,7 @@ import app.mauri.sukrara.designsystem.rows.whyRes
 import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.graph.MetricSlot
 import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.quietFooter
 import app.mauri.sukrara.feature.settings.quietLengthTitle
@@ -100,7 +101,7 @@ enum class Section(
     SettingsFrom(DsR.drawable.ds_ic_tune, Category.Blue),
     Readings(DsR.drawable.ds_ic_water_drop, Category.Purple),
     Graph(DsR.drawable.ds_ic_monitoring, Category.Purple),
-    Rings(DsR.drawable.ds_ic_donut_large, Category.Purple),
+    Metrics(DsR.drawable.ds_ic_speed, Category.Purple),
     StatusBar(DsR.drawable.ds_ic_smartphone, Category.Indigo),
     LockScreen(DsR.drawable.ds_ic_screen_lock_portrait, Category.Teal),
     Sensor(DsR.drawable.ds_ic_dia_sensor, Category.Green),
@@ -136,7 +137,7 @@ enum class Section(
                         SettingsRoute.SettingsFrom -> SettingsFrom
                         SettingsRoute.Readings -> Readings
                         SettingsRoute.Graph -> Graph
-                        SettingsRoute.Rings -> Rings
+                        SettingsRoute.Metrics -> Metrics
                         SettingsRoute.StatusBar -> StatusBar
                         SettingsRoute.LockScreen -> LockScreen
                         SettingsRoute.SensorEnd -> SensorEnd
@@ -172,7 +173,10 @@ object SettingsIndex {
             SettingsRoute.Readings -> R.string.st_readings_title
             SettingsRoute.TrendArrow -> R.string.st_trend_title
             SettingsRoute.Graph -> R.string.st_graph_title
-            SettingsRoute.Rings -> R.string.st_rings_title
+            SettingsRoute.Metrics -> R.string.st_metrics_title
+            is SettingsRoute.MetricPage -> route.slot.title
+            SettingsRoute.LastTreatment -> R.string.st_last
+            SettingsRoute.TirRings -> R.string.st_tir_title
             SettingsRoute.ImportExport -> R.string.st_files_title
             SettingsRoute.GraphMarks -> R.string.st_marks_title
             is SettingsRoute.PlacePage -> placeTitle(route.setting)
@@ -207,6 +211,10 @@ object SettingsIndex {
 
             SettingsRoute.GraphMarks -> {
                 SettingsRoute.Graph
+            }
+
+            is SettingsRoute.MetricPage, SettingsRoute.LastTreatment, SettingsRoute.TirRings -> {
+                SettingsRoute.Metrics
             }
 
             // a setting's page with its places is under its home: Time shown in Graph, the sensor time in Sensor end
@@ -374,7 +382,7 @@ object SettingsIndex {
     val entries: List<SearchEntry> =
         buildList {
             // the overview's rows: the pages themselves, in the overview's order (docs/35); a moved page's old name is
-            // among its keywords, so muscle memory still finds it ("Ranges" → Readings, "Graph" → Rings)
+            // among its keywords, so muscle memory still finds it ("Ranges" → Readings, "Rings" → Metrics)
             add(overview(R.string.st_alerts_title, R.string.st_overview_alerts_on, SearchTarget.Page(SettingsRoute.Alerts)))
             add(overview(R.string.st_reliability_title, R.string.st_reliability_ready, SearchTarget.Page(SettingsRoute.Reliability)))
             add(overview(R.string.st_from_title, null, SearchTarget.Page(SettingsRoute.SettingsFrom), seen = Seen.Follower))
@@ -396,10 +404,10 @@ object SettingsIndex {
             )
             add(
                 overview(
-                    R.string.st_rings_title,
-                    R.string.st_overview_rings,
-                    SearchTarget.Page(SettingsRoute.Rings),
-                    keywords = R.string.st_rings_keywords,
+                    R.string.st_metrics_title,
+                    R.string.st_overview_metrics,
+                    SearchTarget.Page(SettingsRoute.Metrics),
+                    keywords = R.string.st_metrics_keywords,
                 ),
             )
             add(overview(R.string.st_statusbar_title, R.string.st_overview_statusbar, SearchTarget.Page(SettingsRoute.StatusBar)))
@@ -674,23 +682,32 @@ object SettingsIndex {
             )
             rows(SettingsRoute.GraphMarks, null, R.string.st_marks_reset to null)
 
-            val rings = SettingsRoute.Rings
-            rows(
-                rings,
-                R.string.st_graph_beside,
-                R.string.st_graph_rings to null,
-                R.string.st_slot_main to null,
-                R.string.st_slot_second to null,
-                R.string.st_slot_third to null,
-                R.string.st_last to null,
-                R.string.st_last_else to null,
-                R.string.st_last_else_period to null,
-                R.string.st_last_else_faded to null,
-                R.string.st_ring_counts to null,
-                R.string.st_graph_marks to R.string.st_graph_marks_summary,
-            )
-            rows(rings, R.string.st_ring_order, R.string.st_ring_order to R.string.st_ring_order_footer)
-            rows(rings, null, R.string.st_rings_reset_all to null)
+            // Metrics (docs/39): a row per thing beside the value, each opening its page; the rings' look on a page of its own
+            val metrics = SettingsRoute.Metrics
+            for (slot in MetricSlot.entries) pageRow(SettingsRoute.MetricPage(slot), null)
+            pageRow(SettingsRoute.LastTreatment, null)
+            pageRow(SettingsRoute.TirRings, null)
+            rows(metrics, null, R.string.st_metrics_reset_all to null)
+            for (slot in MetricSlot.entries) {
+                val page = SettingsRoute.MetricPage(slot)
+                rows(page, null, slot.show to null)
+                rows(
+                    page,
+                    R.string.st_metric_shows,
+                    R.string.st_metric_kind_tir to R.string.st_metric_kind_tir_summary,
+                    R.string.st_metric_kind_gmi to R.string.st_metric_kind_gmi_summary,
+                    R.string.st_metric_kind_average to null,
+                    R.string.st_metric_kind_cv to R.string.st_metric_kind_cv_summary,
+                )
+                rows(page, null, R.string.st_metric_period to null)
+                if (slot.dims) rows(page, null, R.string.st_metric_dimmed to R.string.st_metric_dimmed_summary)
+            }
+            rows(SettingsRoute.LastTreatment, null, R.string.st_last_show to null)
+            rows(SettingsRoute.LastTreatment, R.string.st_last_where, R.string.st_last_near to null, R.string.st_last_end to null)
+            val rings = SettingsRoute.TirRings
+            rows(rings, R.string.st_tir_number, R.string.st_tir_in_range to null, R.string.st_tir_tight to null)
+            rows(rings, null, R.string.st_tir_rewards to R.string.st_tir_rewards_summary)
+            rows(rings, R.string.st_tir_order, R.string.st_tir_order to R.string.st_tir_order_footer)
             link(rings, R.string.st_readings_title, SearchTarget.Page(readings), R.string.st_overview_readings)
 
             val lock = SettingsRoute.LockScreen

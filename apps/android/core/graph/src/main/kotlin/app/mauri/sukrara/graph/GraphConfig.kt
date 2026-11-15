@@ -65,8 +65,7 @@ data class GraphConfig(
     val appHours: Int = SettingsSpec.GRAPH_HOURS.default.toInt(),
     /** The places in [GraphPlace.OWN] with their own time shown (`graph.hours.place`); absent = [appHours]. */
     val placeHours: Map<GraphPlace, Int> = emptyMap(),
-    /** How many slots show (0–3) of [slots], main first. */
-    val ringCount: Int = SettingsSpec.RING_COUNT.default.toInt(),
+    /** The main, second and third metric (`graph.slots`), each on or off ([RingSpec.on]); the first one on is the main. */
     val slots: List<RingSpec> = DEFAULT_SLOTS,
     val ringRange: TirRange = TirRange.IN_RANGE,
     val ringOrder: List<Band> = RingSpec.DEFAULT_RING_ORDER,
@@ -77,9 +76,11 @@ data class GraphConfig(
     val ringMarks: Boolean = true,
     val lines: List<Int> = DEFAULT_LINES,
     val gridHours: Int = SettingsSpec.GRID_HOURS.default.toInt(),
-    val lastPlace: LastPlace = LastPlace.NEAR_VALUE,
-    /** What the last-treatment slot shows while there's no recent treatment (null = nothing). */
-    val lastElse: RingSpec? = DEFAULT_LAST_ELSE,
+    /** The last treatment beside the value (`graph.last`), and where it sits while on (`graph.lastPlace`: never OFF). */
+    val lastOn: Boolean = true,
+    val lastWhere: LastPlace = LastPlace.NEAR_VALUE,
+    /** What the last-treatment slot shows while there's no recent treatment, shown while [RingSpec.on]. */
+    val lastElse: RingSpec = DEFAULT_LAST_ELSE,
     /** Whether the app's card shows the sensor's time left (`graph.sensorTime`): every place without its own follows it. */
     val appSensorTime: Boolean = true,
     /** The places in [GraphPlace.OWN] with their own (`graph.sensorTime.place` On / Off); absent = [appSensorTime]. */
@@ -96,13 +97,15 @@ data class GraphConfig(
     /** The place's window; 0 in the schema means "same as the app". */
     fun hours(p: GraphPlace) = placeHours[p]?.takeIf { it > 0 } ?: appHours
 
-    /** [lastElse] with the ring settings applied. */
-    fun lastElseRing() = lastElse?.copy(range = ringRange, order = ringOrder, marks = ringMarks)
+    /** Where a card puts the last treatment: [lastWhere] while it's on, else [LastPlace.OFF]. */
+    val lastPlace: LastPlace get() = if (lastOn) lastWhere else LastPlace.OFF
 
-    fun rings(
-        count: Int = ringCount,
-        range: TirRange = ringRange,
-    ) = slots.take(count.coerceIn(0, 3)).map { it.copy(range = range, order = ringOrder, marks = ringMarks) }
+    /** [lastElse] with the ring settings applied; null while it's off. */
+    fun lastElseRing() = lastElse.takeIf { it.on }?.copy(range = ringRange, order = ringOrder, marks = ringMarks)
+
+    /** The metrics that are on, main first, with the ring settings applied ([range]: a widget's own). */
+    fun rings(range: TirRange = ringRange) =
+        slots.take(3).filter { it.on }.map { it.copy(range = range, order = ringOrder, marks = ringMarks) }
 
     fun graphStyle(hours: Int) =
         GraphStyle(
@@ -132,9 +135,9 @@ data class GraphConfig(
         /** The chart's extra lines: 100 mg/dL unless the user changes them. */
         val DEFAULT_LINES = listOf(SettingsSpec.LINE.default.toInt())
 
-        /** Today and the last week as time in range; the third slot (off by default) the 14-day GMI. */
+        /** Today and the last week as time in range; the third metric (off by default) the 14-day GMI. */
         val DEFAULT_SLOTS =
-            listOf(RingSpec(86_400L), RingSpec(7 * 86_400L), RingSpec(14 * 86_400L, kind = SlotKind.GMI))
+            listOf(RingSpec(86_400L), RingSpec(7 * 86_400L), RingSpec(14 * 86_400L, kind = SlotKind.GMI, on = false))
 
         /** The last-treatment slot's fallback: time in range over 30 days, faded like a second slot. */
         val DEFAULT_LAST_ELSE = RingSpec(30 * 86_400L)

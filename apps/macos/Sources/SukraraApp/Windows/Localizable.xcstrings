@@ -2549,22 +2549,6 @@
         }
       }
     },
-    "This Mac's own settings, in the Alerts, Readings, Graph and Rings panes." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "This Mac's own settings, in the Alerts, Readings, Graph and Rings panes."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los ajustes propios de este Mac, en los paneles Alertas, Lecturas, Gráfica y Anillos."
-          }
-        }
-      }
-    },
     "This Mac's own: every value, range and alert level on this Mac shows in it." : {
       "localizations" : {
         "en" : {
@@ -2865,22 +2849,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rápida"
-          }
-        }
-      }
-    },
-    "Rings and numbers beside the value, ring order and the last treatment" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rings and numbers beside the value, ring order and the last treatment"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anillos y números junto al valor, orden de los anillos y último tratamiento"
           }
         }
       }
@@ -5477,22 +5445,6 @@
         }
       }
     },
-    "A ring's centre counts" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A ring's centre counts"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El centro de un anillo cuenta"
-          }
-        }
-      }
-    },
     "Add" : {
       "localizations" : {
         "en" : {
@@ -5585,22 +5537,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Junto a la gráfica"
-          }
-        }
-      }
-    },
-    "Beside the value" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beside the value"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Junto al valor"
           }
         }
       }
@@ -5749,22 +5685,6 @@
         }
       }
     },
-    "Fainter" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fainter"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Más tenue"
-          }
-        }
-      }
-    },
     "GMI" : {
       "localizations" : {
         "en" : {
@@ -5877,22 +5797,6 @@
         }
       }
     },
-    "Main" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Main"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Principal"
-          }
-        }
-      }
-    },
     "Move Down" : {
       "localizations" : {
         "en" : {
@@ -5937,22 +5841,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Línea de silencio"
-          }
-        }
-      }
-    },
-    "Next to the number" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next to the number"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Junto al número"
           }
         }
       }
@@ -6049,22 +5937,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Punto"
-          }
-        }
-      }
-    },
-    "Position" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Position"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Posición"
           }
         }
       }
@@ -6277,54 +6149,6 @@
         }
       }
     },
-    "Rewards on the rings" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rewards on the rings"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premios en los anillos"
-          }
-        }
-      }
-    },
-    "Rewards on the rings (laurel, flowers, crown)" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rewards on the rings (laurel, flowers, crown)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Premios en los anillos (laurel, flores, corona)"
-          }
-        }
-      }
-    },
-    "Ring order" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ring order"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Orden del anillo"
-          }
-        }
-      }
-    },
     "Rings" : {
       "localizations" : {
         "en" : {
@@ -6337,38 +6161,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Anillos"
-          }
-        }
-      }
-    },
-    "Rings and numbers" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rings and numbers"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Anillos y números"
-          }
-        }
-      }
-    },
-    "Second" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Second"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Segundo"
           }
         }
       }
@@ -6449,22 +6241,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Los ajustes predeterminados de Sukrara."
-          }
-        }
-      }
-    },
-    "Third" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Third"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tercero"
           }
         }
       }
@@ -6677,22 +6453,6 @@
         }
       }
     },
-    "Without a recent treatment" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Without a recent treatment"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sin un tratamiento reciente"
-          }
-        }
-      }
-    },
     "crown when all in range" : {
       "localizations" : {
         "en" : {
@@ -6705,22 +6465,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "corona cuando todo está en rango"
-          }
-        }
-      }
-    },
-    "else %@ %@" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "else %@ %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "si no, %@ %@"
           }
         }
       }
@@ -6773,22 +6517,6 @@
         }
       }
     },
-    "The time shown, the rings, the lines, the ranges, the last treatment and the sensor settings go back to their defaults." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The time shown, the rings, the lines, the ranges, the last treatment and the sensor settings go back to their defaults."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El tiempo mostrado, los anillos, las líneas, los rangos, el último tratamiento y los ajustes del sensor vuelven a sus valores predeterminados."
-          }
-        }
-      }
-    },
     "A ring over the main ring counts down the sensor's last hours. The warm-up and Sensor ended show either way." : {
       "localizations" : {
         "en" : {
@@ -6801,22 +6529,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Un anillo sobre el anillo principal cuenta atrás las últimas horas del sensor. El calentamiento y Sensor terminado se muestran igualmente."
-          }
-        }
-      }
-    },
-    "Clockwise from 12 o'clock. Drag a range to move it, or Control-click it for Move Up and Move Down." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clockwise from 12 o'clock. Drag a range to move it, or Control-click it for Move Up and Move Down."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En el sentido de las agujas del reloj desde las 12. Arrastra un rango para moverlo, o haz clic con Control para Subir y Bajar."
           }
         }
       }
@@ -10097,6 +9809,662 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ahora no"
+          }
+        }
+      }
+    },
+    "A metric shows once there's data for a quarter of its period. The menu bar and the widgets show them; a small widget shows fewer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A metric shows once there's data for a quarter of its period. The menu bar and the widgets show them; a small widget shows fewer."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una métrica se muestra cuando hay datos de una cuarta parte de su periodo. La barra de menús y los widgets las muestran; un widget pequeño muestra menos."
+          }
+        }
+      }
+    },
+    "A ring of the time in each range" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A ring of the time in each range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un anillo con el tiempo en cada rango"
+          }
+        }
+      }
+    },
+    "CV: how much glucose swings · goal %@ or less" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CV: how much glucose swings · goal %@ or less"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CV: cuánto oscila la glucosa · objetivo %@ o menos"
+          }
+        }
+      }
+    },
+    "Colour order" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colour order"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orden de colores"
+          }
+        }
+      }
+    },
+    "Dimmed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dimmed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atenuada"
+          }
+        }
+      }
+    },
+    "Estimated A1c · goal under %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated A1c · goal under %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A1c estimada · objetivo por debajo del %@"
+          }
+        }
+      }
+    },
+    "Goal under %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal under %@ %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Objetivo por debajo de %@ %@"
+          }
+        }
+      }
+    },
+    "In range (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In range (%@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En rango (%@)"
+          }
+        }
+      }
+    },
+    "Last treatment details" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last treatment details"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalles del último tratamiento"
+          }
+        }
+      }
+    },
+    "Laurel from %@, flowers from %@, crown at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laurel from %@, flowers from %@, crown at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laurel desde el %@, flores desde el %@, corona al %@"
+          }
+        }
+      }
+    },
+    "Lighter than the main metric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lighter than the main metric"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Más clara que la métrica principal"
+          }
+        }
+      }
+    },
+    "Main metric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Main metric"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Métrica principal"
+          }
+        }
+      }
+    },
+    "Metrics" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Metrics"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Métricas"
+          }
+        }
+      }
+    },
+    "Needs the last treatment on" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs the last treatment on"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Necesita el último tratamiento activado"
+          }
+        }
+      }
+    },
+    "Next to the value" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next to the value"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Junto al valor"
+          }
+        }
+      }
+    },
+    "No recent treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No recent treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin tratamiento reciente"
+          }
+        }
+      }
+    },
+    "Number in the ring" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Number in the ring"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Número del anillo"
+          }
+        }
+      }
+    },
+    "Reset Metrics…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset Metrics…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restablecer las métricas…"
+          }
+        }
+      }
+    },
+    "Reset the metrics?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reset the metrics?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Restablecer las métricas?"
+          }
+        }
+      }
+    },
+    "Rewards" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rewards"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premios"
+          }
+        }
+      }
+    },
+    "Second metric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Second metric"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segunda métrica"
+          }
+        }
+      }
+    },
+    "Show a metric instead" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show a metric instead"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar una métrica en su lugar"
+          }
+        }
+      }
+    },
+    "Show the last treatment" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the last treatment"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar el último tratamiento"
+          }
+        }
+      }
+    },
+    "Show the main metric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the main metric"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar la métrica principal"
+          }
+        }
+      }
+    },
+    "Show the second metric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the second metric"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar la segunda métrica"
+          }
+        }
+      }
+    },
+    "Show the third metric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show the third metric"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mostrar la tercera métrica"
+          }
+        }
+      }
+    },
+    "Shows" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muestra"
+          }
+        }
+      }
+    },
+    "Shows in the last treatment's place while there's no recent treatment." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows in the last treatment's place while there's no recent treatment."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se muestra en el lugar del último tratamiento mientras no hay uno reciente."
+          }
+        }
+      }
+    },
+    "Shows to the left of the main metric, when there's room. A small widget shows fewer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shows to the left of the main metric, when there's room. A small widget shows fewer."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Va a la izquierda de la métrica principal, si cabe. Un widget pequeño muestra menos."
+          }
+        }
+      }
+    },
+    "The main metric sits at the right end, at full strength. In the sensor's last hours its countdown ring goes around it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The main metric sits at the right end, at full strength. In the sensor's last hours its countdown ring goes around it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La métrica principal va en el extremo derecho, con toda su intensidad. En las últimas horas del sensor, su anillo de cuenta atrás la rodea."
+          }
+        }
+      }
+    },
+    "The metrics, the last treatment and the time-in-range rings go back to their defaults. Your ranges stay." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The metrics, the last treatment and the time-in-range rings go back to their defaults. Your ranges stay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las métricas, el último tratamiento y los anillos de tiempo en rango vuelven a sus valores por defecto. Tus rangos se mantienen."
+          }
+        }
+      }
+    },
+    "The ring's colours clockwise from 12 o'clock. Drag a range to move it, or Control-click it for Move Up and Move Down." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ring's colours clockwise from 12 o'clock. Drag a range to move it, or Control-click it for Move Up and Move Down."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los colores del anillo en el sentido del reloj desde las 12. Arrastra un rango para moverlo, o haz clic con Control para Subir y Bajar."
+          }
+        }
+      }
+    },
+    "The time shown, the metrics, the lines, the ranges, the last treatment and the sensor settings go back to their defaults." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The time shown, the metrics, the lines, the ranges, the last treatment and the sensor settings go back to their defaults."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El tiempo mostrado, las métricas, las líneas, los rangos, el último tratamiento y los ajustes del sensor vuelven a sus valores por defecto."
+          }
+        }
+      }
+    },
+    "The time since your last rapid insulin or carbs, the amount, and a ring for the time its alerts stay quiet. Rapid insulin shows for 4 h, carbs for up to 3 h; long-acting insulin and notes don't show." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The time since your last rapid insulin or carbs, the amount, and a ring for the time its alerts stay quiet. Rapid insulin shows for 4 h, carbs for up to 3 h; long-acting insulin and notes don't show."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El tiempo desde tu última insulina rápida o hidratos, la cantidad y un anillo con el tiempo que sus alertas siguen en silencio. La insulina rápida se muestra durante 4 h y los hidratos hasta 3 h; la insulina lenta y las notas no se muestran."
+          }
+        }
+      }
+    },
+    "Third metric" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Third metric"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tercera métrica"
+          }
+        }
+      }
+    },
+    "This Mac's own settings, in the Alerts, Readings, Graph and Metrics panes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's own settings, in the Alerts, Readings, Graph and Metrics panes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los ajustes propios de este Mac, en los paneles Alertas, Lecturas, Gráfica y Métricas."
+          }
+        }
+      }
+    },
+    "Time in range, GMI, average, variability and the last treatment beside the value" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time in range, GMI, average, variability and the last treatment beside the value"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiempo en rango, GMI, media, variabilidad y último tratamiento junto al valor"
+          }
+        }
+      }
+    },
+    "Time-in-range rings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Time-in-range rings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anillos de tiempo en rango"
+          }
+        }
+      }
+    },
+    "Variability" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variability"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Variabilidad"
+          }
+        }
+      }
+    },
+    "Very good (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Very good (%@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muy bien (%@)"
+          }
+        }
+      }
+    },
+    "Where" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dónde"
           }
         }
       }

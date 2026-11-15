@@ -265,8 +265,6 @@ extension CardWords {
 /// the card shows it; the chart summary. No symbols read as punctuation (arrows, "·", "<"). Built from the decisions
 /// the card draws with (`GlucoseCard.face`, `StatusBadge.look`, `SensorBadge.look`, `GlucoseCard.slotItems`).
 enum A11y {
-    private static let maxSlots = 4
-
     /// A value with its unit, once: "112 milligrams per decilitre"; LO / HI as "below 40 …" / "above 400 …".
     static func number(_ sgv: Int, unit: GlucoseUnit, words w: CardWords) -> String {
         let u = w.unit(unit)
@@ -333,7 +331,7 @@ enum A11y {
             ? value(data, unit: unit, surface: surface, style: style, words: w)
             : age(data, surface: surface, words: w)
         guard !surface.glyph else { return first ?? "" }
-        let slots = style.value ? GlucoseCard.slotItems(data, style, max: maxSlots) : []
+        let slots = style.value ? GlucoseCard.slotItems(data, style, max: Slots.maxCount) : []
         let spoken = slots.compactMap { slot($0, now: data.now, unit: unit, words: w) }
         let now = data.now
         let fr = Freshness.of(age: data.latest.map { now - $0.t })

@@ -165,8 +165,8 @@ class CardLayoutTest {
             var x = GraphConfig()
             if (o["sensorTime"].bool() == false) x = x.copy(appSensorTime = false)
             o["side"].bool()?.let { x = x.copy(side = it) }
-            o["ringCount"].long()?.let { x = x.copy(ringCount = it.toInt()) }
-            o["lastPlace"].str()?.let { x = x.copy(lastPlace = LastPlace.valueOf(it)) }
+            o["slots"].str()?.let { x = x.copy(slots = GraphText.parseSlots(it)!!) }
+            o["lastPlace"].str()?.let { x = x.copy(lastWhere = LastPlace.valueOf(it)) }
             o["lines"]?.jsonArray?.let { l -> x = x.copy(lines = l.map { it.long()!!.toInt() }) }
             o["gridHours"].long()?.let { x = x.copy(gridHours = it.toInt()) }
             o["high"].long()?.let { x = x.copy(bands = x.bands.copy(high = it.toInt())) }
@@ -890,8 +890,9 @@ class CardLayoutTest {
             file["settings"]!!.jsonObject.mapValues { (_, v) ->
                 val o = v.jsonObject
                 var x = GraphConfig()
-                o["ringCount"].long()?.let { x = x.copy(ringCount = it.toInt()) }
-                o["lastPlace"].str()?.let { x = x.copy(lastPlace = LastPlace.valueOf(it)) }
+                // the PoC's ring count: the first that many metrics on
+                o["ringCount"].long()?.let { n -> x = x.copy(slots = x.slots.mapIndexed { i, s -> s.copy(on = i < n) }) }
+                o["lastPlace"].str()?.let { x = x.copy(lastWhere = LastPlace.valueOf(it)) }
                 x
             }
         val scenes = scenes().associateBy { it.id }

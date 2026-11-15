@@ -118,8 +118,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 ### More
 
 - Battery optimized.
-- Many settings, but organized and explained: Alerts, Readings (unit, ranges, trend arrow), Graph, Rings, Sensor
-  end, your data; rare ones in Alerts › Fine-tuning; search finds every one, old names included. Trust the defaults.
+- Many settings, but organized and explained: Alerts, Readings (unit, ranges, trend arrow), Graph, Metrics (what
+  sits beside the value: time in range, GMI, average, variability, the last treatment, each on or off), Sensor end, your data; rare ones in Alerts › Fine-tuning; search finds every one, old names included. Trust the defaults.
   A setting that can differ in the notification or the widgets (time shown, the sensor's time left) is one row that
   says the app's value and only the places that differ; its page sets each place or keeps it the same as the app.
 - A nice sensor expiry flow with a Live Update and subtle reminders.

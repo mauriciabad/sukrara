@@ -181,25 +181,28 @@ public enum SlotKind: String, Codable, CaseIterable, Sendable {
     case tir = "TIR", gmi = "GMI", average = "AVERAGE", cv = "CV"
 }
 
-/// One slot beside the value: its kind, window and, for a ring, which range its centre counts. `faded` = drawn
-/// fainter by position (second, third); off = full strength wherever it sits.
+/// One metric beside the value (Settings › Metrics): its kind, window and, for a ring, which range its centre counts.
+/// `faded` = dimmed by position wherever it isn't the main one; off = full strength wherever it sits. `on` = the person
+/// shows it (a setting: a card is only given the ones that are on).
 public struct RingSpec: Codable, Equatable, Sendable {
     public var window: TimeInterval
     public var range: TirRange = .inRange
     public var kind: SlotKind = .tir
     public var faded = true
+    public var on = true
     /// A ring's segment order (the app-wide `ringOrder`).
     public var order: [Band] = DEFAULT_RING_ORDER
     /// Whether the ring wears its `TirMark` (`GraphConfig.ringMarks`).
     public var marks = true
     public init(
         window: TimeInterval, range: TirRange = .inRange, kind: SlotKind = .tir, faded: Bool = true,
-        order: [Band] = DEFAULT_RING_ORDER, marks: Bool = true
+        order: [Band] = DEFAULT_RING_ORDER, marks: Bool = true, on: Bool = true
     ) {
         self.window = window
         self.range = range
         self.kind = kind
         self.faded = faded
+        self.on = on
         self.order = order
         self.marks = marks
     }
@@ -306,6 +309,8 @@ struct CardStyle {
     var value = true
     var last: LastPlace = .off
     var lastElse: RingSpec? = nil
+    /// At most this many slots, in the card's priority order (room decides the rest).
+    var maxSlots = Slots.maxCount
     var badge = true
     /// The sensor life badge beside the arrow and the countdown ring over the main ring (nil = nothing known).
     var sensor: SensorInfo? = nil
@@ -344,7 +349,7 @@ struct CardStyle {
 public struct GraphConfig: Codable, Equatable, Sendable {
     public var bands = Bands()
     public var hours = 12
-    public var ringCount = 2
+    /// The main, second and third metric, each on or off (`RingSpec.on`); the first one on is the main.
     public var slots: [RingSpec] = GraphConfig.defaultSlots
     public var ringRange: TirRange = .inRange
     public var ringOrder: [Band] = DEFAULT_RING_ORDER
@@ -355,10 +360,11 @@ public struct GraphConfig: Codable, Equatable, Sendable {
     public var lines = GraphConfig.defaultLines
     /// Hours between the vertical lines at least (`SettingsSpec.gridHours`; small charts space them further apart), 0 = none.
     public var gridHours = 1
-    /// The last-treatment slot beside the value (on by default, next to the number).
-    public var lastPlace: LastPlace = .nearValue
-    /// What that slot shows while there's no recent treatment (nil = nothing): a 30-day time-in-range ring by default.
-    public var lastElse: RingSpec? = GraphConfig.defaultLastElse
+    /// The last treatment beside the value (on by default) and where it sits while on (next to the number; never `.off`).
+    public var lastOn = true
+    public var lastWhere: LastPlace = .nearValue
+    /// What that slot shows while there's no recent treatment, while `on`: a 30-day time-in-range ring by default.
+    public var lastElse: RingSpec = GraphConfig.defaultLastElse
     /// The sensor countdown ring's window, hours (`SettingsSpec.countdownHours`; Android: the Sensor settings).
     public var countdownHours = SensorLife.defaultCountdownHours
     /// The sensor's time left on this place's cards (`sensorTime`; the widgets' own: `widgetSensorTime`).
@@ -370,11 +376,12 @@ public struct GraphConfig: Codable, Equatable, Sendable {
     public var trend = TrendSetting.balanced
 
     static let defaultLastElse = RingSpec(window: 30 * 86400)
-    /// `lastElse` with the ring settings applied.
+    /// Where a card puts the last treatment: `lastWhere` while it's on, else `.off`.
+    public var lastPlace: LastPlace { lastOn ? lastWhere : .off }
+    /// `lastElse` with the ring settings applied; nil while it's off.
     public var lastElseRing: RingSpec? {
-        lastElse.map {
-            var r = $0; r.range = ringRange; r.order = ringOrder; r.marks = ringMarks; return r
-        }
+        guard lastElse.on else { return nil }
+        var r = lastElse; r.range = ringRange; r.order = ringOrder; r.marks = ringMarks; return r
     }
     /// The card style of a surface with a value: the rings, the last-treatment slot and its fallback.
     func cardStyle(graph g: GraphStyle?, rings: [RingSpec]? = nil) -> CardStyle {
@@ -386,13 +393,14 @@ public struct GraphConfig: Codable, Equatable, Sendable {
 
     static let defaultLines = [100]
 
-    /// Today and the last week as time in range; the third slot (off by default) the 14-day GMI, as on the report.
+    /// Today and the last week as time in range; the third metric (off by default) the 14-day GMI, as on the report.
     static let defaultSlots = [
-        RingSpec(window: 86400), RingSpec(window: 7 * 86400), RingSpec(window: 14 * 86400, kind: .gmi),
+        RingSpec(window: 86400), RingSpec(window: 7 * 86400), RingSpec(window: 14 * 86400, kind: .gmi, on: false),
     ]
 
+    /// The metrics that are on, main first, with the ring settings applied.
     public var rings: [RingSpec] {
-        slots.prefix(max(0, min(3, ringCount))).map {
+        slots.prefix(3).filter(\.on).map {
             var r = $0; r.range = ringRange; r.order = ringOrder; r.marks = ringMarks; return r
         }
     }

@@ -86,9 +86,12 @@ class GraphActions(
     val number: (app.mauri.sukrara.core.data.settings.Setting<Double>, Double) -> Unit = { _, _ -> },
     val bool: (app.mauri.sukrara.core.data.settings.Setting<Boolean>, Boolean) -> Unit = { _, _ -> },
     val lines: (List<Int>) -> Unit = {},
+    /** The main, second and third metric (each on or off, its kind, period and dimmed). */
     val slots: (List<RingSpec>) -> Unit = {},
-    val lastPlace: (LastPlace) -> Unit = {},
-    val lastElse: (RingSpec?) -> Unit = {},
+    val lastOn: (Boolean) -> Unit = {},
+    val lastWhere: (LastPlace) -> Unit = {},
+    /** The metric shown in the last treatment's place while there's no recent treatment. */
+    val lastElse: (RingSpec) -> Unit = {},
     val ringRange: (TirRange) -> Unit = {},
     val ringOrder: (List<Band>) -> Unit = {},
     val marks: (MarkShow) -> Unit = {},
@@ -101,8 +104,12 @@ class GraphActions(
     val openPlaces: (PlaceSetting) -> Unit = {},
     val reset: (GraphSection) -> Unit = {},
     val openMarks: () -> Unit = {},
-    /** Settings › Readings (the ranges: Graph's *Ranges* row, Rings' *See also*). */
+    /** Settings › Readings (the ranges: Graph's *Ranges* row, Time-in-range rings' *See also*). */
     val openReadings: () -> Unit = {},
+    /** Metrics' pages: a metric's, the last treatment's, the time-in-range rings'. */
+    val openMetric: (MetricSlot) -> Unit = {},
+    val openLast: () -> Unit = {},
+    val openRings: () -> Unit = {},
 )
 
 /** The page's open dialog (one at a time), saved across rotation. */
@@ -116,20 +123,6 @@ private sealed interface GraphDialog : java.io.Serializable {
     data class PlaceHours(val place: GraphPlace) : GraphDialog
 
     data class SensorPlace(val place: GraphPlace) : GraphDialog
-
-    data object RingCount : GraphDialog
-
-    data class SlotKindOf(val i: Int) : GraphDialog
-
-    data class SlotPeriod(val i: Int) : GraphDialog
-
-    data object Last : GraphDialog
-
-    data object LastElseKind : GraphDialog
-
-    data object LastElsePeriod : GraphDialog
-
-    data object Range : GraphDialog
 }
 
 /** A section's Reset icon beside its title, shown only while the section differs from the defaults. */
@@ -156,7 +149,7 @@ fun PreviewCard(
     Box(modifier.fillMaxWidth().padding(vertical = 8.dp)) { preview() }
 }
 
-/** A ring window or slot period in words: "12 h", "1 day", "7 days". */
+/** A metric's period in words: "12 h", "1 day", "7 days". */
 @Composable
 fun periodLabeler(): (Double) -> String {
     val h = stringResource(DsR.string.ds_unit_h)
@@ -167,17 +160,6 @@ fun periodLabeler(): (Double) -> String {
         if (sec % 86_400L == 0L) res.getQuantityString(DsR.plurals.ds_days, days, days) else "${sec / 3_600L} $h"
     }
 }
-
-@Composable
-fun slotKindName(kind: SlotKind): String =
-    stringResource(
-        when (kind) {
-            SlotKind.TIR -> R.string.st_slot_tir
-            SlotKind.GMI -> R.string.st_slot_gmi
-            SlotKind.AVERAGE -> R.string.st_slot_average
-            SlotKind.CV -> R.string.st_slot_cv
-        },
-    )
 
 @Composable
 fun placeName(p: GraphPlace): String =
@@ -252,16 +234,6 @@ private fun sensorSummary(
     return placeSummary(app, places, switchRow = true, text = { if (it) on else off }, words = placeWords())
 }
 
-@Composable
-private fun lastPlaceName(p: LastPlace): String =
-    stringResource(
-        when (p) {
-            LastPlace.OFF -> R.string.st_last_off
-            LastPlace.NEAR_VALUE -> R.string.st_last_near
-            LastPlace.END -> R.string.st_last_end
-        },
-    )
-
 /** A range's name with its span, a limit in the range beyond it ("High · 180–249"), as the ring-order list says it. */
 @Composable
 fun bandName(
@@ -301,7 +273,6 @@ fun GraphContent(
         if (!readOnly) ResetIcon(section, c, title, actions.reset)
     }
     val label = numberLabeler()
-    val period = periodLabeler()
     val glucose = glucoseLabeler()
     SettingsPage(stringResource(R.string.st_graph_title), onBack) {
         PreviewCard(preview)
@@ -393,7 +364,7 @@ fun GraphContent(
         }
         FooterText(stringResource(R.string.st_graph_footer))
     }
-    GraphDialogs(dialog, c, actions, label, period) { dialog = null }
+    GraphDialogs(dialog, c, actions, label) { dialog = null }
 }
 
 /**
@@ -491,7 +462,7 @@ fun TimeShownContent(
             )
         }
     }
-    GraphDialogs(dialog, c, actions, label, periodLabeler()) { dialog = null }
+    GraphDialogs(dialog, c, actions, label) { dialog = null }
 }
 
 /**
@@ -517,7 +488,7 @@ fun SensorTimeContent(
             )
         }
     }
-    GraphDialogs(dialog, c, actions, numberLabeler(), periodLabeler()) { dialog = null }
+    GraphDialogs(dialog, c, actions, numberLabeler()) { dialog = null }
 }
 
 /** "In range 70–179 mg/dL · in Readings": the target range the graph colours with, and where it is set. */
@@ -533,162 +504,12 @@ private fun rangesSummary(c: GraphConfig): String {
     )
 }
 
-/**
- * Settings › Rings (its own page, docs/35; the Mac's Rings pane): the live card on top, what sits beside the number
- * (rings and slots, the last treatment and what shows otherwise, what a ring counts, rewards), the ring order, Reset
- * all, and *See also* Readings (a ring counts with the ranges). [readOnly] as on Graph: every row here is mirrored.
- */
-@Composable
-fun RingsContent(
-    c: GraphConfig,
-    actions: GraphActions,
-    onBack: () -> Unit,
-    readOnly: Boolean = false,
-    preview: @Composable () -> Unit = {},
-) {
-    var dialog by rememberSaveable { mutableStateOf<GraphDialog?>(null) }
-    val resetIcon: @Composable (GraphSection, String) -> Unit = { section, title ->
-        if (!readOnly) ResetIcon(section, c, title, actions.reset)
-    }
-    val label = numberLabeler()
-    val period = periodLabeler()
-    SettingsPage(stringResource(R.string.st_rings_title), onBack) {
-        PreviewCard(preview)
-        val besideTitle = stringResource(R.string.st_graph_beside)
-        SettingsGroup(title = besideTitle, titleAction = { resetIcon(GraphSection.Beside, besideTitle) }) {
-            ValueRow(stringResource(R.string.st_graph_rings), label(SettingsSpec.RING_COUNT, c.ringCount.toDouble()), {
-                dialog = GraphDialog.RingCount
-            }, icon = DsR.drawable.ds_ic_donut_large, readOnly = readOnly)
-            for (i in 0 until c.ringCount.coerceIn(0, c.slots.size)) {
-                val slot = c.slots[i]
-                val name = slotName(i)
-                ValueRow(name, slotKindName(slot.kind) + " · " + period(slot.windowS.toDouble()), {
-                    dialog = GraphDialog.SlotKindOf(i)
-                }, icon = DsR.drawable.ds_ic_donut_small, readOnly = readOnly)
-                ValueRow(stringResource(R.string.st_slot_period, name), period(slot.windowS.toDouble()), {
-                    dialog = GraphDialog.SlotPeriod(i)
-                }, icon = DsR.drawable.ds_ic_schedule, readOnly = readOnly)
-                if (i > 0) {
-                    SwitchRow(stringResource(R.string.st_slot_faded, name), slot.faded, { on ->
-                        actions.slots(c.slots.toMutableList().also { it[i] = slot.copy(faded = on) })
-                    }, icon = DsR.drawable.ds_ic_opacity, readOnly = readOnly)
-                }
-            }
-            ValueRow(
-                stringResource(R.string.st_last),
-                lastPlaceName(c.lastPlace),
-                { dialog = GraphDialog.Last },
-                icon = DsR.drawable.ds_ic_last_page,
-                readOnly = readOnly,
-            )
-            if (c.lastPlace != LastPlace.OFF) {
-                val other = c.lastElse
-                ValueRow(
-                    stringResource(R.string.st_last_else),
-                    other?.let { slotKindName(it.kind) + " · " + period(it.windowS.toDouble()) } ?: stringResource(R.string.st_nothing),
-                    { dialog = GraphDialog.LastElseKind },
-                    icon = DsR.drawable.ds_ic_donut_small,
-                    readOnly = readOnly,
-                )
-                if (other != null) {
-                    ValueRow(stringResource(R.string.st_last_else_period), period(other.windowS.toDouble()), {
-                        dialog = GraphDialog.LastElsePeriod
-                    }, icon = DsR.drawable.ds_ic_schedule, readOnly = readOnly)
-                    SwitchRow(
-                        stringResource(R.string.st_last_else_faded),
-                        other.faded,
-                        { on -> actions.lastElse(other.copy(faded = on)) },
-                        icon = DsR.drawable.ds_ic_opacity,
-                        readOnly = readOnly,
-                    )
-                }
-            }
-            ValueRow(
-                stringResource(R.string.st_ring_counts),
-                rangeName(c.ringRange, c),
-                { dialog = GraphDialog.Range },
-                icon = DsR.drawable.ds_ic_dia_range,
-                readOnly = readOnly,
-            )
-            SwitchRow(
-                stringResource(R.string.st_graph_marks),
-                c.ringMarks,
-                { actions.bool(GraphSettings.RingMarks, it) },
-                summary = stringResource(R.string.st_graph_marks_summary),
-                icon = DsR.drawable.ds_ic_edit_note,
-                readOnly = readOnly,
-            )
-        }
-
-        val orderTitle = stringResource(R.string.st_ring_order)
-        SettingsGroup(title = orderTitle, titleAction = { resetIcon(GraphSection.RingOrder, orderTitle) }) {
-            CardRow { RingOrderList(c, actions.ringOrder, !readOnly) }
-        }
-        if (!readOnly) FooterText(stringResource(R.string.st_ring_order_footer))
-
-        if (GraphSection.Rings.changed(c) && !readOnly) {
-            SettingsGroup {
-                DangerRow(
-                    stringResource(R.string.st_rings_reset_all),
-                    stringResource(R.string.st_rings_reset_all_title),
-                    stringResource(R.string.st_rings_reset_all_text),
-                    stringResource(R.string.st_reset),
-                    { actions.reset(GraphSection.Rings) },
-                    icon = DsR.drawable.ds_ic_restart_alt,
-                )
-            }
-        }
-        FooterText(stringResource(R.string.st_rings_footer))
-        SeeAlso(
-            listOf(
-                SeeAlsoLink(
-                    stringResource(R.string.st_readings_title),
-                    stringResource(R.string.st_overview_readings),
-                    Section.Readings,
-                    actions.openReadings,
-                ),
-            ),
-        )
-    }
-    GraphDialogs(dialog, c, actions, label, period) { dialog = null }
-}
-
-@Composable
-private fun slotName(i: Int) =
-    stringResource(listOf(R.string.st_slot_main, R.string.st_slot_second, R.string.st_slot_third).getOrElse(i) { R.string.st_slot_third })
-
-@Composable
-private fun rangeName(
-    r: TirRange,
-    c: GraphConfig,
-): String {
-    val unit = LocalGlucoseUnit.current
-    val locale = LocalConfiguration.current.locales[0]
-
-    fun number(mgdl: Int) = unit.text(mgdl, locale)
-    return when (r) {
-        TirRange.IN_RANGE -> {
-            stringResource(
-                R.string.st_ring_counts_in_range,
-                number(c.bands.low),
-                number(c.bands.high - 1),
-                unit.symbol,
-            )
-        }
-
-        TirRange.TIGHT -> {
-            stringResource(R.string.st_ring_counts_tight, number(c.bands.low), number(c.bands.tight), unit.symbol)
-        }
-    }
-}
-
 @Composable
 private fun GraphDialogs(
     dialog: GraphDialog?,
     c: GraphConfig,
     actions: GraphActions,
     label: (NumberSpec, Double) -> String,
-    period: (Double) -> String,
     close: () -> Unit,
 ) {
     fun number(spec: NumberSpec) = { v: Double -> label(spec, v) }
@@ -754,91 +575,7 @@ private fun GraphDialogs(
                 close,
             ) { actions.sensorPlace(dialog.place, it) }
         }
-
-        GraphDialog.RingCount -> {
-            NumberDialog(
-                stringResource(R.string.st_graph_rings),
-                NumberInput(SettingsSpec.RING_COUNT),
-                c.ringCount.toDouble(),
-                number(
-                    SettingsSpec.RING_COUNT,
-                ),
-                close,
-            ) { actions.number(GraphSettings.RingCount, it) }
-        }
-
-        is GraphDialog.SlotKindOf -> {
-            val i = dialog.i
-            val slot = c.slots.getOrNull(i) ?: return CloseLater(close)
-            ChoiceDialog(
-                stringResource(R.string.st_slot_what, slotName(i)),
-                SlotKind.entries.map { Choice(slotKindName(it), it) },
-                slot.kind,
-                close,
-            ) { k -> actions.slots(c.slots.toMutableList().also { it[i] = slot.copy(kind = k) }) }
-        }
-
-        is GraphDialog.SlotPeriod -> {
-            val i = dialog.i
-            val slot = c.slots.getOrNull(i) ?: return CloseLater(close)
-            NumberDialog(
-                stringResource(R.string.st_slot_period, slotName(i)),
-                NumberInput(SettingsSpec.RING_WINDOW),
-                slot.windowS.toDouble(),
-                period,
-                close,
-            ) { w -> actions.slots(c.slots.toMutableList().also { it[i] = slot.copy(windowS = w.toLong()) }) }
-        }
-
-        GraphDialog.Last -> {
-            ChoiceDialog(stringResource(R.string.st_last), LastPlace.entries.map { Choice(lastPlaceName(it), it) }, c.lastPlace, close) {
-                actions.lastPlace(it)
-            }
-        }
-
-        GraphDialog.LastElseKind -> {
-            val none: SlotKind? = null
-            ChoiceDialog(
-                stringResource(R.string.st_last_else),
-                listOf(
-                    Choice(stringResource(R.string.st_nothing), none),
-                ) + SlotKind.entries.map { Choice<SlotKind?>(slotKindName(it), it) },
-                c.lastElse?.kind,
-                close,
-            ) { k -> actions.lastElse(k?.let { (c.lastElse ?: GraphConfig.DEFAULT_LAST_ELSE).copy(kind = it) }) }
-        }
-
-        GraphDialog.LastElsePeriod -> {
-            val other = c.lastElse ?: return CloseLater(close)
-            NumberDialog(
-                stringResource(R.string.st_last_else_period),
-                NumberInput(SettingsSpec.RING_WINDOW),
-                other.windowS.toDouble(),
-                period,
-                close,
-            ) {
-                actions.lastElse(other.copy(windowS = it.toLong()))
-            }
-        }
-
-        GraphDialog.Range -> {
-            ChoiceDialog(
-                stringResource(R.string.st_ring_counts),
-                TirRange.entries.map { Choice(rangeName(it, c), it) },
-                c.ringRange,
-                close,
-            ) {
-                actions.ringRange(it)
-            }
-        }
     }
-}
-
-/** Closes a dialog whose subject went away (changed elsewhere), after this frame: never a state write in composition. */
-@Composable
-private fun CloseLater(close: () -> Unit) {
-    val latest by rememberUpdatedState(close)
-    LaunchedEffect(Unit) { latest() }
 }
 
 /** The extra lines as input chips; a tap removes one (its × says so to TalkBack). */
@@ -871,29 +608,6 @@ private fun LineChips(
                     },
             )
         }
-    }
-}
-
-/** The ring's segments clockwise from 12 o'clock, each with its colour and range. */
-@Composable
-private fun RingOrderList(
-    c: GraphConfig,
-    onOrder: (List<Band>) -> Unit,
-    editable: Boolean,
-) {
-    val palette = GraphPalette.of(isSystemInDarkTheme())
-    val row: @Composable (Band) -> Unit = { band ->
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            val color = Color(palette.of(band))
-            Canvas(Modifier.padding(end = 12.dp).size(14.dp)) { drawCircle(color) }
-            Text(bandName(band, c), style = MaterialTheme.typography.bodyLarge)
-        }
-    }
-    if (editable) {
-        ReorderList(c.ringOrder, onOrder, rowContent = row)
-    } else {
-        // the order in use, nothing to drag
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) { c.ringOrder.forEach { row(it) } }
     }
 }
 

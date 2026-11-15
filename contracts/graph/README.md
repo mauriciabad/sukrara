@@ -219,7 +219,7 @@ The owner (#181): "the widget was already looking good in the PoC … ensure all
 many variations and scenarios … ensured deterministically, not with a rule for LLMs". `widgets/poc.json` is the PoC's
 own answer for 728 widget cards: the three widget kinds at every Android and Mac widget size of
 `surfaces/surfaces.json` (as card sizes, margins off), every scene of `layout/scenes.json`, with the default settings,
-no rings (`ringCount` 0) and three rings with the last treatment at the end. For each: the value (and struck), whether a
+no rings (the PoC's `ringCount` 0: every metric off) and three rings with the last treatment at the end. For each: the value (and struck), whether a
 time shows in the value's place (the PoC: never while fresh, no "now"), the trend mark, the slots, what each
 time-in-range ring writes in its centre (`rings`, the layout element `slot.text`: the number alone, no "%"), the chart's
 window, the % column and the boxes of the number, the slots' row and the plot. The last-treatment ring's centre isn't part of it: the PoC

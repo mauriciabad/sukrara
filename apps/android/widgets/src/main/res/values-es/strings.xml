@@ -21,10 +21,12 @@
     <string name="widget_config_same_value">Igual que en Ajustes (%1$s)</string>
     <string name="widget_config_hours">Tiempo mostrado</string>
     <string name="widget_config_side">Distribución junto a la gráfica</string>
-    <string name="widget_config_rings">Anillos</string>
-    <string name="widget_config_ring_range">Los anillos cuentan</string>
+    <string name="widget_config_metrics">Métricas</string>
+    <string name="widget_config_metrics_none">Ninguna</string>
+    <string name="widget_config_metrics_up_to">Hasta %1$d</string>
+    <string name="widget_config_ring_number">Número de los anillos de tiempo en rango</string>
     <string name="widget_config_range_in">En rango</string>
-    <string name="widget_config_range_tight">Rango estrecho</string>
+    <string name="widget_config_range_tight">Muy bien</string>
     <string name="widget_config_sensor">Tiempo restante del sensor</string>
     <string name="widget_config_reset">Restablecer</string>
     <string name="widget_config_save">Guardar</string>

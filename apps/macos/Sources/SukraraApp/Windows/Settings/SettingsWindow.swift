@@ -106,7 +106,7 @@ extension SettingsModel.Pane {
         case .alerts: L10n.t("Alerts")
         case .readings: L10n.t("Readings")
         case .graph: L10n.t("Graph")
-        case .rings: L10n.t("Rings")
+        case .metrics: L10n.t("Metrics")
         }
     }
 
@@ -118,7 +118,7 @@ extension SettingsModel.Pane {
         case .alerts: "bell.badge"
         case .readings: "drop"
         case .graph: "chart.xyaxis.line"
-        case .rings: "circle.circle"
+        case .metrics: "gauge.with.dots.needle.33percent"
         }
     }
 
@@ -130,7 +130,7 @@ extension SettingsModel.Pane {
         case .alerts: L10n.t("When to alert, night alerts, quiet times, sounds and fine-tuning")
         case .readings: L10n.t("The unit, the ranges and the trend arrow")
         case .graph: L10n.t("Time shown, lines, treatments and the sensor on the graph")
-        case .rings: L10n.t("Rings and numbers beside the value, ring order and the last treatment")
+        case .metrics: L10n.t("Time in range, GMI, average, variability and the last treatment beside the value")
         }
     }
 
@@ -142,7 +142,7 @@ extension SettingsModel.Pane {
         case .alerts: 720
         case .readings: 720
         case .graph: 680
-        case .rings: 680
+        case .metrics: 720
         }
     }
 }

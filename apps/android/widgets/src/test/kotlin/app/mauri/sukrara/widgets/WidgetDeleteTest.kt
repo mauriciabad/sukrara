@@ -36,7 +36,7 @@ class WidgetDeleteTest {
         Application(),
         WidgetsHost {
         val scope = CoroutineScope(SupervisorJob())
-        val store = InMemoryStateStore(WidgetPlacements(mapOf(7 to WidgetOverrides(hours = 3), 8 to WidgetOverrides(rings = 1))))
+        val store = InMemoryStateStore(WidgetPlacements(mapOf(7 to WidgetOverrides(hours = 3), 8 to WidgetOverrides(slots = 1))))
         override val widgets by lazy {
             WidgetsModule(
                 this,
@@ -69,7 +69,7 @@ class WidgetDeleteTest {
             GraphWidget().onDelete(app, AppWidgetId(7))
             assertEquals(true, app.readyAwaited)
             assertEquals(
-                mapOf(8 to WidgetOverrides(rings = 1)),
+                mapOf(8 to WidgetOverrides(slots = 1)),
                 app.store.data
                     .first()
                     .byId,

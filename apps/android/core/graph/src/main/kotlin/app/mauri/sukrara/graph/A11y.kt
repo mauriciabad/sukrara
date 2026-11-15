@@ -122,7 +122,7 @@ object A11y {
         val bands = style.bands.sane()
         val sensor = SensorBadge.look(model.sensor, now, model.latest?.t, w)
         val first = if (style.value) value(model, bands, surface, style.unit, style.badge) else age(model, surface)
-        val slots = if (style.value) GlucoseCard.slotItems(model, style, MAX_SLOTS) else emptyList()
+        val slots = if (style.value) GlucoseCard.slotItems(model, style, Slots.MAX) else emptyList()
         val spoken = slots.mapNotNull { slot(it, now, w) }
         val life =
             sensor?.takeIf { s ->
@@ -388,7 +388,4 @@ object A11y {
         w: CardWords,
         parts: List<String>,
     ) = parts.joinToString(". ") { sentence(w, it) }
-
-    /** The most slots a card draws. */
-    private const val MAX_SLOTS = 4
 }

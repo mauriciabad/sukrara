@@ -366,7 +366,7 @@ struct SettingsView: View {
             case .alerts: AlertsRangesPane(model: model, controller: alerts)
             case .readings: ReadingsPane(model: model)
             case .graph: GraphPane(model: model)
-            case .rings: RingsPane(model: model)
+            case .metrics: MetricsPane(model: model)
             }
         }
         .id(model.pane)  // each pane starts at its top

@@ -62,6 +62,7 @@ import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.SettingsRoute
 import app.mauri.sukrara.feature.settings.SettingsScreen
 import app.mauri.sukrara.feature.settings.TestAlert
+import app.mauri.sukrara.feature.settings.graph.MetricSlot
 import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsScreen
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
@@ -251,8 +252,21 @@ data class SettingsKey(
                 SettingsRoute.Graph
             }
 
-            "rings" -> {
-                SettingsRoute.Rings
+            "metrics" -> {
+                SettingsRoute.Metrics
+            }
+
+            "metric" -> {
+                kind?.let { k -> MetricSlot.entries.firstOrNull { it.name == k } }?.let(SettingsRoute::MetricPage)
+                    ?: SettingsRoute.Metrics
+            }
+
+            "last" -> {
+                SettingsRoute.LastTreatment
+            }
+
+            "tirrings" -> {
+                SettingsRoute.TirRings
             }
 
             "files" -> {
@@ -330,7 +344,10 @@ data class SettingsKey(
                 SettingsRoute.Readings -> SettingsKey("readings")
                 SettingsRoute.TrendArrow -> SettingsKey("trend")
                 SettingsRoute.Graph -> SettingsKey("graph")
-                SettingsRoute.Rings -> SettingsKey("rings")
+                SettingsRoute.Metrics -> SettingsKey("metrics")
+                is SettingsRoute.MetricPage -> SettingsKey("metric", route.slot.name)
+                SettingsRoute.LastTreatment -> SettingsKey("last")
+                SettingsRoute.TirRings -> SettingsKey("tirrings")
                 SettingsRoute.ImportExport -> SettingsKey("files")
                 SettingsRoute.GraphMarks -> SettingsKey("marks")
                 is SettingsRoute.PlacePage -> SettingsKey("places", route.setting.name)
@@ -668,7 +685,7 @@ fun SukraraNavigation(
                                     if (SetupRoute !in backStack) backStack.add(SetupRoute)
                                 }
                             },
-                            // the Readings, Graph and Rings pages show home's own panel, redrawn as each setting changes
+                            // the Readings, Graph and Metrics pages show home's own panel, redrawn as each setting changes
                             preview = { PanelPreview(viewModel(factory = HomeViewModel.factory(graph.home))) },
                             // Import and export's Import history and Export data (`:integrations`' rows and state)
                             dataRows = {

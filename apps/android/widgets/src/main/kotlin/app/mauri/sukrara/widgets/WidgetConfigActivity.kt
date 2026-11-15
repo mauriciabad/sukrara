@@ -169,7 +169,7 @@ internal fun WidgetSettingsScreen(
     // what this widget follows: the Widgets place's values in Settings
     val hoursSettings = hoursLabel(inherited.hours(GraphPlace.WIDGETS))
     val sideSettings = inherited.side
-    val ringsSettings = inherited.ringCount.toString()
+    val metricsSettings = metricsLabel(inherited.slots.count { it.on } + if (inherited.lastOn) 1 else 0)
     val rangeSettings = rangeLabel(inherited.ringRange)
     val sensorSettings = inherited.sensorTime(GraphPlace.WIDGETS)
     val same = stringResource(R.string.widget_config_same)
@@ -201,8 +201,12 @@ internal fun WidgetSettingsScreen(
                 ValueRow(stringResource(R.string.widget_config_side), o.side?.let { onOffText(it) } ?: same, { open = "side" })
             }
             if (hasSlots) {
-                ValueRow(stringResource(R.string.widget_config_rings), o.rings?.toString() ?: same, { open = "rings" })
-                ValueRow(stringResource(R.string.widget_config_ring_range), o.ringRange?.let { rangeLabel(it) } ?: same, { open = "range" })
+                ValueRow(stringResource(R.string.widget_config_metrics), o.slots?.let { metricsLabel(it) } ?: same, { open = "slots" })
+                ValueRow(
+                    stringResource(R.string.widget_config_ring_number),
+                    o.ringRange?.let { rangeLabel(it) } ?: same,
+                    { open = "range" },
+                )
             }
             ValueRow(stringResource(R.string.widget_config_sensor), o.sensorTime?.let { onOffText(it) } ?: same, { open = "sensor" })
         }
@@ -232,23 +236,23 @@ internal fun WidgetSettingsScreen(
             }
         }
 
-        // a closed list (schema ringCount: 0–3, no custom value) is plain choices, as on Settings › Rings
-        "rings" -> {
+        // at most this many things beside the value, in the card's order (room may show fewer): a closed list
+        "slots" -> {
             PlaceDialog(
-                stringResource(R.string.widget_config_rings),
-                follow(ringsSettings),
-                (0..3).map { Choice(it.toString(), it) },
-                o.rings,
+                stringResource(R.string.widget_config_metrics),
+                follow(metricsSettings),
+                (0..MAX_SLOTS).map { Choice(metricsLabel(it), it) },
+                o.slots,
                 { open = null },
             ) {
-                o = o.copy(rings = it)
+                o = o.copy(slots = it)
                 open = null
             }
         }
 
         "range" -> {
             PlaceDialog(
-                stringResource(R.string.widget_config_ring_range),
+                stringResource(R.string.widget_config_ring_number),
                 follow(rangeSettings),
                 TirRange.entries.map { Choice(rangeLabel(it), it) },
                 o.ringRange,
@@ -277,6 +281,11 @@ internal fun WidgetSettingsScreen(
     }
 }
 
+/** "None", "Up to 2": how many things beside the value at most. */
+@Composable
+private fun metricsLabel(n: Int) =
+    if (n == 0) stringResource(R.string.widget_config_metrics_none) else stringResource(R.string.widget_config_metrics_up_to, n)
+
 /** "6 h", as Settings › Graph says a time shown. */
 @Composable
 private fun hoursLabel(h: Int) = "$h ${stringResource(DsR.string.ds_unit_h)}"
@@ -291,7 +300,7 @@ private fun rangeLabel(r: TirRange) =
 /** Keeps the edited overrides across rotation (a list of the five fields). */
 private val OverridesSaver =
     androidx.compose.runtime.saveable.Saver<WidgetOverrides, List<Any?>>(
-        save = { listOf(it.hours, it.rings, it.ringRange?.name, it.side, it.sensorTime) },
+        save = { listOf(it.hours, it.slots, it.ringRange?.name, it.side, it.sensorTime) },
         restore = { l ->
             WidgetOverrides(l[0] as Int?, l[1] as Int?, (l[2] as String?)?.let(TirRange::valueOf), l[3] as Boolean?, l[4] as Boolean?)
         },

@@ -229,7 +229,7 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       socket); by hand `SUKRARA_DEV=1 SUKRARA_FIXTURE=1 SUKRARA_DEV_HOME=<scratch dir> .build/debug/Sukrara`. A dev
       build refuses to start without `SUKRARA_DEV=1` and takes no arguments (`LaunchPlan`, `LaunchModeTests`).
 - [ ] Settings (round f28): `sukrara-snap windows <dir>` renders the panes with synthetic data
-      (`settings-*.png`: General with Custom and the login states, Alerts own and mirrored, Graph and Rings own and
+      (`settings-*.png`: General with Custom and the login states, Alerts own and mirrored, Graph and Metrics own and
       from the wearer, Following); check the toolbar (five
       panes, title = pane), Settings from in General (Wearer / Default / Custom, *In use* line; Custom: *Copy the
       Wearer's Settings…* disabled until an event arrived, *Reset to Defaults…* asks first), Default / Wearer show the
@@ -626,7 +626,7 @@ afterwards). Never a hosted site, never the user's phone.
   buttons with their lines.
 - Mac: Settings › General › *Trend arrow*: the same choices and preview; the menu bar arrow follows the choice.
 
-## Q18 Settings: numbers, Settings from, ring order
+## Q18 Settings: numbers, Settings from, metrics
 
 Emulator (`medium_phone` wearer, `small_phone` follower; debug = synthetic glucose) and a Mac test build with
 throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh` covers the rest.
@@ -636,14 +636,14 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       walks up through Alerts to Settings; *battery*, *vary*, *garmin* open Alert reliability, Alerts, Share with apps
       scrolled to the row, which flashes; each result has its section's icon and where it is in the accent colour.
 - [ ] Settings sections (#205, docs/35 §7), light and dark, English and Spanish, wearer and follower: the overview
-      reads [Alerts · Alert reliability] [Settings from · Readings (drop) · Graph · Rings] [Glucose notification · Lock screen]
+      reads [Alerts · Alert reliability] [Settings from · Readings (drop) · Graph · Metrics] [Glucose notification · Lock screen]
       [Sensor · Sensor end (chequered flag) · Insulin pens] [Sharing · Share with apps · Backup · Import and export]
-      [Advanced · About]; each page's title is its row's. Search *ranges*, *mmol*, *graph*, *gmi*, *export*, *settings
+      [Advanced · About]; each page's title is its row's. Search *ranges*, *mmol*, *rings*, *gmi*, *export*, *settings
       file*, *margin*: each finds the page the row moved to and flashes the row. Alerts › *Fine-tuning* holds the waits
       and the notification buttons (*Reset fine-tuning* asks first). Falling fast's *Trend arrow* row and Readings ›
       Trend arrow show the same choice and change each other. Change *Bedtime* in Sensor end: Night alerts › *Starts*
       shows it (and back). Sensor end's *Sensor time left* rows and Graph's change each other. Every *See also*
-      row opens its page and Back returns: Alerts ↔ Alert reliability, Alerts ↔ Readings, Rings → Readings, Graph's
+      row opens its page and Back returns: Alerts ↔ Alert reliability, Alerts ↔ Readings, Metrics › Time-in-range rings → Readings, Graph's
       *Ranges* → Readings, Sensor ↔ Sensor end, Night alerts → Sensor end (wearer), and Sharing / Share with apps /
       Backup / Import and export link the other three (no Backup on a follower). TalkBack reads every link row.
 - [ ] A switch with its own options (owner 2026-11-14), light and dark, English and Spanish, wearer and follower: no
@@ -658,6 +658,17 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       times: each rule is a row with its summary, *Details…* and its switch; the sheet has the switch, the length (greyed
       while off) and what it does; Done and Esc close it; VoiceOver reads *… details* on the button. TalkBack reads the
       row and its switch as two nodes.
+- [ ] Metrics (docs/39; once Rings), light and dark, English and Spanish, font size 1× and 2×, wearer and follower,
+      TalkBack / VoiceOver. Android: Settings › *Metrics* lists *Main metric*, *Second metric*, *Third metric*, then
+      *Last treatment* and *No recent treatment*, each a switch beside a row that opens its page, then *Time-in-range
+      rings*. Turn the second metric off: the live card drops it at once, the row says *Off*, its page greys *Shows*,
+      *Period* and *Dimmed* under the switch. Choose GMI on a 1-day metric: its period becomes 14 days and *Period*
+      offers 7 / 14 / 30 days. Turn the last treatment off: *No recent treatment* greys with *Needs the last treatment
+      on*; on again: back where it was (*At the right end* kept). *Time-in-range rings*: *Very good* changes every ring's
+      number, *Rewards* off drops the laurel, the colour order drags and resets. *Reset metrics* asks first. A follower
+      in Wearer: every switch shows the wearer's value and can't be flipped. A widget's own *Metrics: None* shows the
+      value alone (no last treatment), *Up to 1* the main metric. Mac: the Metrics pane does the same with switches
+      and *Details…* sheets (Done and Esc close them); outside Custom it is a read-only summary.
 - [ ] A setting the app sets, that a place can change (#209, docs/38), light and dark, English and Spanish, font size
       1× and 2×, wearer and follower, TalkBack / VoiceOver. Android: Graph › *Time shown* says *12 h*; its page has the
       live card, the *App* radios and *Notification and widgets* (both *Same as the app*). Notification → 3 h (the
@@ -672,15 +683,15 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       title only when widgets differ); it opens its page inside the pane, the back button, ⌘[ and Esc return; the
       Widgets pop-up is grey and borderless while it follows, a normal pop-up with its own value; its menu starts with
       *Same as the menu bar (12 h)*. VoiceOver reads *Widgets, 12 hours, same as the menu bar*.
-- [ ] Mac panes (#205): the toolbar shows General, Following, Alerts, Readings (drop), Graph, Rings in that order, each
+- [ ] Mac panes (#205): the toolbar shows General, Following, Alerts, Readings (drop), Graph, Metrics (gauge) in that order, each
       tooltip names what it holds and the window resizes per pane (no animation with Reduce Motion). Readings: change a
       range → Graph's *Ranges* row and the menu bar colour follow; *Alert Levels…* opens Alerts; in Wearer / Default the
-      ranges and the trend are read-only with their source, the unit stays editable. Graph *Edit in Readings…*, Rings
+      ranges and the trend are read-only with their source, the unit stays editable. Graph *Edit in Readings…*, Metrics
       *Ranges…*, Alerts *Ranges…* land on Readings; the panel's Juggluco no-data button lands on Following with the
       Juggluco rows under the follow link. Falling fast *Details…* › *Trend from* and Readings › Trend arrow change each
       other; *Fine-tuning…* opens the sheet, Done and Esc close it, VoiceOver reads every row.
-- [ ] Every number row (Readings: the six ranges; Graph: time shown and the widgets' own, lines, vertical lines; Rings: rings,
-      periods; Alerts: thresholds, remind, quiet times, Mute all custom; Fine-tuning: Mute…, Relax, the margin; Sensor countdown; Nostr / LibreView intervals) opens the
+- [ ] Every number row (Readings: the six ranges; Graph: time shown and the widgets' own, lines, vertical lines; Metrics: each metric's
+      period (a GMI from 7 days); Alerts: thresholds, remind, quiet times, Mute all custom; Fine-tuning: Mute…, Relax, the margin; Sensor countdown; Nostr / LibreView intervals) opens the
       number dialog: specials + presets, *Custom* with the unit as suffix and "From … to …" under it; `0`, a value
       above the range and (rates) `1.55` are refused with that text in red; a valid typed value saves with OK and with
       the keyboard's Done (the dialog closes, the row shows it); a custom value shows as *Custom* + value.

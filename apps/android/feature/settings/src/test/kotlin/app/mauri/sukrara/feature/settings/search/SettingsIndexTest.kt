@@ -87,10 +87,14 @@ import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
+import app.mauri.sukrara.feature.settings.graph.LastTreatmentContent
+import app.mauri.sukrara.feature.settings.graph.MetricContent
+import app.mauri.sukrara.feature.settings.graph.MetricSlot
+import app.mauri.sukrara.feature.settings.graph.MetricsContent
 import app.mauri.sukrara.feature.settings.graph.PlaceSetting
-import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.graph.SensorTimeContent
 import app.mauri.sukrara.feature.settings.graph.TimeShownContent
+import app.mauri.sukrara.feature.settings.graph.TirRingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.pens.PenDetectionContent
@@ -296,10 +300,28 @@ class SettingsIndexTest {
                 )
             },
             Scene("graph", SearchTarget.Page(SettingsRoute.Graph)) { GraphContent(GraphConfig(), GraphActions(), {}) },
-            Scene("rings", SearchTarget.Page(SettingsRoute.Rings)) { RingsContent(GraphConfig(), GraphActions(), {}) },
-            // three rings, and changed: its Reset all shows
-            Scene("rings, three rings", SearchTarget.Page(SettingsRoute.Rings)) {
-                RingsContent(GraphConfig(ringCount = 3), GraphActions(), {})
+            Scene("metrics", SearchTarget.Page(SettingsRoute.Metrics)) { MetricsContent(GraphConfig(), GraphActions(), {}) },
+            // the third metric on, and changed: its Reset all shows
+            Scene("metrics, changed", SearchTarget.Page(SettingsRoute.Metrics)) {
+                MetricsContent(GraphConfig(slots = GraphConfig.DEFAULT_SLOTS.map { it.copy(on = true) }), GraphActions(), {})
+            },
+            Scene("main metric", SearchTarget.Page(SettingsRoute.MetricPage(MetricSlot.Main))) {
+                MetricContent(MetricSlot.Main, GraphConfig(), GraphActions(), {})
+            },
+            Scene("second metric", SearchTarget.Page(SettingsRoute.MetricPage(MetricSlot.Second))) {
+                MetricContent(MetricSlot.Second, GraphConfig(), GraphActions(), {})
+            },
+            Scene("third metric", SearchTarget.Page(SettingsRoute.MetricPage(MetricSlot.Third))) {
+                MetricContent(MetricSlot.Third, GraphConfig(), GraphActions(), {})
+            },
+            Scene("no recent treatment", SearchTarget.Page(SettingsRoute.MetricPage(MetricSlot.NoRecent))) {
+                MetricContent(MetricSlot.NoRecent, GraphConfig(), GraphActions(), {})
+            },
+            Scene("last treatment", SearchTarget.Page(SettingsRoute.LastTreatment)) {
+                LastTreatmentContent(GraphConfig(), GraphActions(), {})
+            },
+            Scene("time-in-range rings", SearchTarget.Page(SettingsRoute.TirRings)) {
+                TirRingsContent(GraphConfig(), GraphActions(), {})
             },
             Scene("import and export", SearchTarget.Page(SettingsRoute.ImportExport)) {
                 ImportExportContent(SettingsFileActions(), onBack = {}) {
@@ -454,11 +476,6 @@ class SettingsIndexTest {
             // "Use the low alert": the alert's main switch says its kind in the sentence (the page's title is indexed)
             scene.startsWith("alert ") -> {
                 pattern(R.string.st_kind_use).matches(row)
-            }
-
-            // "Main slot: period": a slot's own rows, found by the slot's row
-            scene.startsWith("rings") -> {
-                listOf(R.string.st_slot_period, R.string.st_slot_faded, R.string.st_slot_what).any { pattern(it).matches(row) }
             }
 
             // an empty list, the person's own reminders, the update check's answer: states, not rows to find

@@ -7,6 +7,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.designsystem.motion.ScreenMotion
 import app.mauri.sukrara.feature.settings.QuietKind
 import app.mauri.sukrara.feature.settings.SettingsRoute
+import app.mauri.sukrara.feature.settings.graph.MetricSlot
 import app.mauri.sukrara.feature.settings.graph.PlaceSetting
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import org.junit.Assert.assertEquals
@@ -67,7 +68,11 @@ class ScreenMotionTest {
                 SettingsRoute.GraphMarks,
                 SettingsRoute.PlacePage(PlaceSetting.Hours),
                 SettingsRoute.PlacePage(PlaceSetting.SensorTime),
-                SettingsRoute.Rings,
+                SettingsRoute.Metrics,
+                SettingsRoute.MetricPage(MetricSlot.Main),
+                SettingsRoute.MetricPage(MetricSlot.NoRecent),
+                SettingsRoute.LastTreatment,
+                SettingsRoute.TirRings,
                 SettingsRoute.ImportExport,
                 SettingsRoute.LockScreen,
                 SettingsRoute.Pens,

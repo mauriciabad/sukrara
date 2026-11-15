@@ -38,10 +38,14 @@ import app.mauri.sukrara.feature.settings.graph.GraphActions
 import app.mauri.sukrara.feature.settings.graph.GraphContent
 import app.mauri.sukrara.feature.settings.graph.GraphMarksContent
 import app.mauri.sukrara.feature.settings.graph.GraphViewModel
+import app.mauri.sukrara.feature.settings.graph.LastTreatmentContent
+import app.mauri.sukrara.feature.settings.graph.MetricContent
+import app.mauri.sukrara.feature.settings.graph.MetricSlot
+import app.mauri.sukrara.feature.settings.graph.MetricsContent
 import app.mauri.sukrara.feature.settings.graph.PlaceSetting
-import app.mauri.sukrara.feature.settings.graph.RingsContent
 import app.mauri.sukrara.feature.settings.graph.SensorTimeContent
 import app.mauri.sukrara.feature.settings.graph.TimeShownContent
+import app.mauri.sukrara.feature.settings.graph.TirRingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenViewModel
 import app.mauri.sukrara.feature.settings.pens.DosesReadPage
@@ -99,8 +103,17 @@ sealed interface SettingsRoute {
     /** Settings › Graph: the chart only. */
     data object Graph : SettingsRoute
 
-    /** Settings › Rings: rings and numbers beside the value, the last treatment, the ring order (docs/35). */
-    data object Rings : SettingsRoute
+    /** Settings › Metrics: what sits beside the value (docs/39; once "Rings"). */
+    data object Metrics : SettingsRoute
+
+    /** Settings › Metrics › a metric's page (the main, second, third, or the one shown without a recent treatment). */
+    data class MetricPage(val slot: MetricSlot) : SettingsRoute
+
+    /** Settings › Metrics › Last treatment. */
+    data object LastTreatment : SettingsRoute
+
+    /** Settings › Metrics › Time-in-range rings: their number, rewards and colour order. */
+    data object TirRings : SettingsRoute
 
     /** Settings › Import and export: Export data, Import history, the settings file (docs/35 §7). */
     data object ImportExport : SettingsRoute
@@ -169,7 +182,7 @@ fun SettingsScreen(
     /** Settings' *Finish setup*: setup's optional steps still open. */
     openFinishSetup: () -> Unit = {},
     onReviewFinish: (ThresholdReviewResult) -> Unit = { onBack() },
-    /** The live card the Readings, Graph and Rings pages show on top (the app's own panel; nothing in tests). */
+    /** The live card the Readings, Graph and Metrics pages show on top (the app's own panel; nothing in tests). */
     preview: @Composable () -> Unit = {},
     /** Import and export's data rows (Import history, Export data: `:integrations`' rows, drawn by the app). */
     dataRows: @Composable () -> Unit = {},
@@ -418,7 +431,14 @@ private fun SettingsPages(
             }
         }
 
-        SettingsRoute.Graph, SettingsRoute.GraphMarks, SettingsRoute.Rings, is SettingsRoute.PlacePage -> {
+        SettingsRoute.Graph,
+        SettingsRoute.GraphMarks,
+        SettingsRoute.Metrics,
+        is SettingsRoute.MetricPage,
+        SettingsRoute.LastTreatment,
+        SettingsRoute.TirRings,
+        is SettingsRoute.PlacePage,
+        -> {
             val vm = viewModel { GraphViewModel(deps.settings) }
             val config by vm.config.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
@@ -431,7 +451,8 @@ private fun SettingsPages(
                     bool = vm::set,
                     lines = vm::lines,
                     slots = vm::slots,
-                    lastPlace = vm::lastPlace,
+                    lastOn = vm::lastOn,
+                    lastWhere = vm::lastWhere,
                     lastElse = vm::lastElse,
                     ringRange = vm::ringRange,
                     ringOrder = vm::ringOrder,
@@ -443,6 +464,9 @@ private fun SettingsPages(
                     reset = vm::reset,
                     openMarks = { navigate(SettingsRoute.GraphMarks) },
                     openReadings = { navigate(SettingsRoute.Readings) },
+                    openMetric = { navigate(SettingsRoute.MetricPage(it)) },
+                    openLast = { navigate(SettingsRoute.LastTreatment) },
+                    openRings = { navigate(SettingsRoute.TirRings) },
                 )
             config?.let {
                 when (route) {
@@ -450,8 +474,20 @@ private fun SettingsPages(
                         GraphContent(it, actions, onBack, from.readOnly, withNote)
                     }
 
-                    SettingsRoute.Rings -> {
-                        RingsContent(it, actions, onBack, from.readOnly, withNote)
+                    SettingsRoute.Metrics -> {
+                        MetricsContent(it, actions, onBack, readOnly = from.readOnly, preview = withNote)
+                    }
+
+                    is SettingsRoute.MetricPage -> {
+                        MetricContent(route.slot, it, actions, onBack, readOnly = from.readOnly, preview = withNote)
+                    }
+
+                    SettingsRoute.LastTreatment -> {
+                        LastTreatmentContent(it, actions, onBack, readOnly = from.readOnly, preview = withNote)
+                    }
+
+                    SettingsRoute.TirRings -> {
+                        TirRingsContent(it, actions, onBack, readOnly = from.readOnly, preview = withNote)
                     }
 
                     is SettingsRoute.PlacePage -> {

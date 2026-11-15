@@ -34,6 +34,9 @@ sealed interface SlotItem {
 
 /** The slots beside the value: which show (priority when room is short), where, and how they are drawn. */
 object Slots {
+    /** The most slots a card shows: the three metrics and the last treatment. */
+    const val MAX = 4
+
     private val RING_EMPHASIS = floatArrayOf(1f, 0.55f, 0.35f)
     private const val FALLBACK_EMPHASIS = 0.55f
 

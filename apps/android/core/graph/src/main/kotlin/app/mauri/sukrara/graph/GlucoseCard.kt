@@ -322,7 +322,7 @@ object GlucoseCard {
         val bands = st.bands.sane()
         val last = if (st.last != LastPlace.OFF) LastTreatment.of(model.treatments, model.muteRule, model.status, model.nowS) else null
         val (rings, fallback) = slotInputs(st, last, model, bands)
-        val items = Slots.arrange(rings, st.last, last, fallback, max, st.unit)
+        val items = Slots.arrange(rings, st.last, last, fallback, max.coerceAtMost(st.maxSlots), st.unit)
         val main = Slots.mainIndex(items)
         return if (main > 0) listOf(items[main]) + items.filterIndexed { i, _ -> i != main } else items
     }
@@ -350,7 +350,7 @@ object GlucoseCard {
         if (size < 30 * d) return 0f
         val gap = if (st.slotDisc != null) 6 * d else size * 0.14f
         // as many as fit, up to four (the PoC's rule, #181: small slots beside the value aren't capped at two)
-        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(4)
+        val fit = ((box.width() * (if (dedicated) 1f else 0.55f) + gap) / (size + gap)).toInt().coerceAtMost(st.maxSlots)
         if (fit < 1) return 0f
         val (rings, fallback) = slotInputs(st, last, model, bands)
         var items = Slots.arrange(rings, st.last, last, fallback, fit, st.unit)
