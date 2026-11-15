@@ -17,7 +17,6 @@ import appStoreEn from '../assets/badges/mac-app-store-black-en.svg?url';
 import appStoreEs from '../assets/badges/mac-app-store-black-es.svg?url';
 import { latestRelease, megabytes } from '../lib/release';
 import { APPLICATION_ID, GITHUB, HOMEBREW, HOMEBREW_HOME, OBTAINIUM, REPO, SIGNING, STORES } from '../site';
-import AppIcon from './AppIcon.astro';
 import Logo from './Logo.astro';
 
 interface Props {
@@ -91,7 +90,7 @@ const brewId = `sk-brew-${crypto.randomUUID().slice(0, 8)}`;
 			app === 'android' && (
 				<li>
 					<a class="sk-badge" href={OBTAINIUM.add}>
-						<AppIcon name="obtainium" size={24} />
+						<Logo name="obtainium" size="1.45rem" />
 						<span>
 							<small>{t('site.badge.obtainium')}</small>
 							<strong>Obtainium</strong>

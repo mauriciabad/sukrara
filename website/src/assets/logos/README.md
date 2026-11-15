@@ -11,8 +11,7 @@ it; the site's footer says so.
 | `health-connect.png` | The app's `ds_ic_app_health_connect_logo.png` (Google's official logo, from the Health Connect UI guidelines) on white, as the guidelines ask, at the inset the app's icon uses |
 | `juggluco.png` | Juggluco's two launcher layers as the app keeps them (`ds_ic_app_juggluco_*`, GPL-3.0), composed and cropped like a launcher |
 | `aaps.svg` | AAPS's logo, unchanged: `_docs/logo/logo-vector-2023.svg` in [nightscout/AndroidAPS](https://github.com/nightscout/AndroidAPS) (AGPL-3.0) |
-| `obtainium.svg` | Obtainium's icon, unchanged, from [ImranR98/Obtainium](https://github.com/ImranR98/Obtainium) (GPL-3.0) |
 
 xDrip+'s icon is read where the Android app keeps it (`ds_ic_app_xdrip.png`, xDrip's own launcher icon, GPL-3.0). The
-one-colour marks (Android, Apple, GitHub, Google Play, Garmin, Bluetooth, Homebrew, Nostr) are paths in
+one-colour marks (Android, Apple, GitHub, Google Play, Garmin, Bluetooth, Homebrew, Obtainium, Nostr) are paths in
 `src/lib/logos.ts`, from Simple Icons (CC0-1.0) and Starlight (MIT).
