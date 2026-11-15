@@ -136,6 +136,10 @@ class OneNotificationTest {
 
     private fun ringing(n: Notification) = n.flags and Notification.FLAG_ONLY_ALERT_ONCE == 0
 
+    /** System UI's first section of the shade (`LiveNotificationBuildTest.firstInShade`): colorized or promoted. */
+    private fun firstInShade(n: Notification) =
+        n.extras.getBoolean(Notification.EXTRA_COLORIZED) || n.extras.getBoolean(Notification.EXTRA_REQUEST_PROMOTED_ONGOING)
+
     @Test fun `a ring is the glucose notification on the kind's channel, alerting, with the alert's title and buttons`() {
         serviceShows()
         presenter().show(fire(AlertKind.LOW), settings, silent = false, who = null, relaxedMin = 0)
@@ -229,6 +233,21 @@ class OneNotificationTest {
         assertTrue("seen: the glucose notification drops it too", titles(posted()).isEmpty())
         later.toList().forEach { it() }
         assertNull(separate())
+    }
+
+    /** The owner, 2026-11-15: the glucose notification sank to the bottom of the shade; with an alert up too it can't. */
+    @Test fun `with an alert up it stays first in the shade, ringing, in its ring window, silent and drawn`() {
+        serviceShows()
+        val p = presenter()
+        p.show(fire(AlertKind.LOW), settings, silent = false, who = null, relaxedMin = 0)
+        assertTrue("the ring", firstInShade(posted()))
+        val content = LiveNotificationContent.from(state(61), now, LiveNotification::face, NotificationPrefs(chip = false))
+        assertTrue("in the ring window", firstInShade(live.build(content, now)))
+        p.show(fire(AlertKind.LOW), settings, silent = true, who = null, relaxedMin = 0)
+        assertTrue("silent", firstInShade(live.build(content, now)))
+        val frame = CardFrame(state(), emptyList(), GraphConfig(), dark = false)
+        assertTrue("the card ringing", firstInShade(live.build(content, now, frame, LiveNotification.Mode.RING)))
+        assertTrue("the card in the range colour", firstInShade(live.build(content.copy(colorize = true), now, frame)))
     }
 
     @Test fun `a silent show is the alert on the silent channel`() {

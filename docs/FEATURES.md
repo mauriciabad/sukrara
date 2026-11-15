@@ -1727,7 +1727,13 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   header + the chart (the Notification place's window) expanded; while an alert is up its title above them and as the
   heads-up. On the system's notification colour by default (the value in its range colour); *Coloured background*
   (`statusbar.colorize`, off by default) colorizes it in the range colour (grey once struck through), the renderer's pill
-  rule keeping every pill legible on it (`CardStyle.ground`, `PillContrast`). A level alert's title names the range, so
+  rule keeping every pill legible on it (`CardStyle.ground`, `PillContrast`). **First in the shade** in every state
+  (with a value or without, an alert up or not): System UI's first section holds only a promoted Live Update, a
+  colorized foreground service or a call (AOSP `ColorizedFgsCoordinator`), anything else sorts by time under newer
+  notifications (the owner, 2026-11-15: it had sunk to the bottom since *Coloured background* became optional). So
+  whatever isn't a promoted Live Update is colorized: in the range colour, or in the shade's own colour
+  (`materialColorSurfaceContainerHigh` of the theme, `NotificationCard.surface`), which System UI doesn't tint, so it
+  looks uncoloured (`LiveNotificationBuildTest`, `OneNotificationTest`). A level alert's title names the range, so
   the card draws no separate range word then (`CardStyle.rangeSaid`, contracts/graph *Pills per surface*). The slots count the stored days and the live window (`CardFrame.slots`, the 31-day history), so
   the 7–30-day rings match home and the widgets. Roborazzi goldens `NotificationCardShotsTest` (light / dark × fresh,
   struck, status pill). Small icon = *What the icon shows*: the number with the arrow under it (`ValueGlyphs.icon`,

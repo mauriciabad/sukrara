@@ -8,6 +8,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
@@ -77,6 +78,9 @@ import java.util.concurrent.TimeUnit
  *   colour (grey once struck through) with *Coloured background*; the small icon is the number itself (*Number
  *   icon*) or the arrow. Without its pictures (the first post, the screen off with an out-of-date card, except for a
  *   ring, which wakes the screen; a drawing failure) it posts the same notification as text, never an old picture.
+ *
+ * **First in the shade** in every state: a promoted Live Update, or colorized (the range colour, else the shade's own
+ * colour, which looks uncoloured), the two ways into System UI's first section ([build]).
  *
  * **It is the alert too** (docs/36, SPEC §1 "Showing an alert"; [GlucoseAlertSink]): while an alert is up it carries
  * the alert's title, buttons and swipe. A ring re-posts it at once on the kind's own channel without only-alert-once
@@ -317,12 +321,39 @@ class LiveNotification(
             }
         val sensor = content.actions.map { Notification.Action.Builder(null, resolve(it.label, now), pending(it.target)).build() }
         (buttons + sensor).take(MAX_ACTIONS).forEach(builder::addAction)
-        when (content.layout) {
-            Layout.LIVE_UPDATE -> liveUpdate(builder, content, now, frame, alert)
-            Layout.CARD -> card(builder, content, bg, art, alert, ringing, alert?.let { alertLine(it, frame, now) })
-            Layout.TEXT -> Unit
-        }
+        val promotedNow =
+            when (content.layout) {
+                Layout.LIVE_UPDATE -> {
+                    liveUpdate(builder, content, now, frame, alert)
+                }
+
+                Layout.CARD -> {
+                    card(builder, content, bg, art, alert, ringing, alert?.let { alertLine(it, frame, now) })
+                    false
+                }
+
+                Layout.TEXT -> {
+                    false
+                }
+            }
+        // first in the shade, in every state: System UI's first section holds only a promoted Live Update, a colorized
+        // foreground service or a call (ColorizedFgsCoordinator); every other notification sorts by time and sinks under
+        // newer ones. Without the range colour it is colorized in the shade's own colour, which System UI then doesn't tint
+        if (!promotedNow && bg == null) builder.setColorized(true).setColor(shadeColor(frame))
         return builder.build()
+    }
+
+    /**
+     * The shade's notification colour (`materialColorSurfaceContainerHigh`, the theme's: [frame]'s, or the configuration
+     * now before the first card): a notification colorized in it looks uncoloured.
+     */
+    private fun shadeColor(frame: CardFrame?): Int {
+        val dark =
+            frame?.dark ?: (
+                (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                    Configuration.UI_MODE_NIGHT_YES
+            )
+        return NotificationCard.surface(context, dark)
     }
 
     /**
@@ -429,7 +460,7 @@ class LiveNotification(
 
     /**
      * The chip; on Android 17 the expanded card is a MetricStyle (the value by range, the late reading's time, then the
-     * card's slots as words).
+     * card's slots as words). Returns whether promotion was asked for (false: a plain notification).
      */
     private fun liveUpdate(
         b: Notification.Builder,
@@ -437,16 +468,17 @@ class LiveNotification(
         now: Instant,
         frame: CardFrame?,
         alert: GlucoseAlert?,
-    ) {
-        val chip = content.chip ?: return
-        if (Build.VERSION.SDK_INT_FULL < Build.VERSION_CODES_FULL.BAKLAVA_1) return
+    ): Boolean {
+        val chip = content.chip ?: return false
+        if (Build.VERSION.SDK_INT_FULL < Build.VERSION_CODES_FULL.BAKLAVA_1) return false
         // promoted ongoing is missing on some 36 images (NoSuchMethodError): then it stays a plain notification
-        runCatching { b.setRequestPromotedOngoing(true).setShortCriticalText(resolve(chip, now)) }.onFailure { return }
-        val look = content.look ?: return
+        runCatching { b.setRequestPromotedOngoing(true).setShortCriticalText(resolve(chip, now)) }.onFailure { return false }
+        val look = content.look ?: return true
         if (Build.VERSION.SDK_INT >= METRIC_STYLE_SDK) {
             runCatching { b.setStyle(metricStyle(content, look, now, frame, alert)) }
                 .onFailure { Log.w(TAG, "metric style: ${it.javaClass.simpleName}") }
         }
+        return true
     }
 
     /**
@@ -540,8 +572,8 @@ class LiveNotification(
         }
 
     /**
-     * The card: on the system's notification colour, or with *Coloured background* colorized in the range colour
-     * (keeps the icon first and shown although the channel is LOW); when [frame] is drawn, the renderer's header row and
+     * The card: on the system's notification colour, or with *Coloured background* colorized in the range colour; when
+     * [frame] is drawn, the renderer's header row and
      * chart as custom views, with the alert's title over them while one is up (and as the heads-up while it rings).
      */
     private fun card(
