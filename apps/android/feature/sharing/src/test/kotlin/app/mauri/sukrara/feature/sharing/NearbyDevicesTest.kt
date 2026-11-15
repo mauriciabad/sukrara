@@ -3,9 +3,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sharing
 
+import app.mauri.sukrara.designsystem.sharing.PathMark
 import app.mauri.sukrara.share.ble.NearbyServerCore
 import app.mauri.sukrara.share.owner.FollowerRecord
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -31,6 +33,15 @@ class NearbyDevicesTest {
             rows.map { it.follower.key to it.device },
         )
         assertEquals(listOf(true, true, true, false, false), rows.map { it.connected })
+    }
+
+    @Test fun aFollowersMarkIsConnectedPairedOrNone() {
+        val ui = NearbyUi(links = listOf(NearbyServerCore.Named("a", "phone", 1)))
+        val paired = setOf("a", "b")
+        assertEquals(PathMark.Nearby, ui.mark("a", paired))
+        assertEquals(PathMark.Paired, ui.mark("b", paired))
+        assertNull("never connected nearby", ui.mark("c", paired))
+        assertNull("Bluetooth sharing off: nobody is nearby", ui.copy(on = false).mark("a", paired))
     }
 
     @Test fun aRemovedFollowerOrAnUnnamedLinkIsNeverListed() {

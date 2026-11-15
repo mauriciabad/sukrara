@@ -210,6 +210,11 @@
         <item quantity="one">%1$d follower</item>
         <item quantity="other">%1$d followers</item>
     </plurals>
+    <!-- Wearer's row: how many of their devices are connected over Bluetooth now (TalkBack reads it after the count) -->
+    <plurals name="home_followers_nearby">
+        <item quantity="one">%1$d nearby over Bluetooth</item>
+        <item quantity="other">%1$d nearby over Bluetooth</item>
+    </plurals>
     <string name="banner_taps_pen_title">Pen taps are blocked</string>
     <string name="banner_taps_pen_text">Android doesn\'t let Sukrara open when you tap your pen, so your pen doses aren\'t read or logged.</string>
     <string name="banner_taps_sensor_title">Sensor taps are blocked</string>

@@ -69,6 +69,8 @@ public final class AppModel {
     private(set) var link: LinkState = .notFollowing
     /// The Bluetooth path to the wearer's phone while following (nil = it doesn't run).
     private(set) var nearby: NearbyState?
+    /// How the wearer's readings come now: nearby over Bluetooth, the internet, or neither (nil = not following).
+    private(set) var linkPath: LinkPath?
     /// Blocked features put off with Not Now (this launch only; the settings pane keeps the fix).
     var notNowBlocked: Set<BlockedFeature> = []
     /// The wearer's readings feed the card and the alert rules: following, or following with the Keychain retrying.
@@ -173,6 +175,7 @@ public final class AppModel {
         link = snapshot.link
         keychainUnreadable = snapshot.keychainUnreadable
         nearby = snapshot.nearby
+        linkPath = LinkPath.of(snapshot)
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
         followMonitoring = link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty)
         followReadings = followMonitoring ? snapshot.readings : []

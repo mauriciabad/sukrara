@@ -33,6 +33,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.sharing.LinePart
+import app.mauri.sukrara.designsystem.sharing.MarkedLine
+import app.mauri.sukrara.designsystem.sharing.PathMark
 import app.mauri.sukrara.designsystem.sheet.SheetActions
 import app.mauri.sukrara.designsystem.sheet.SheetButton
 import app.mauri.sukrara.designsystem.sheet.SukraraSheet
@@ -52,8 +55,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 @Composable
 fun FollowerSheet(
     follower: FollowerRecord,
-    /** A nearby device: true = *Connected*, false = paired but *Disconnected*, null = not one (no line). */
-    nearby: Boolean?,
+    /** Paired nearby: [PathMark.Nearby] = *Connected*, [PathMark.Paired] = *Disconnected*, null = not (no line). */
+    nearby: PathMark?,
     writer: Boolean,
     refused: Boolean,
     onWriter: (Boolean) -> Unit,
@@ -97,10 +100,15 @@ fun FollowerSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 nearby?.let {
-                    Text(
-                        stringResource(if (it) R.string.sh_nearby_device_connected else R.string.sh_nearby_device_disconnected),
+                    val state =
+                        stringResource(
+                            if (it == PathMark.Nearby) R.string.sh_nearby_device_connected else R.string.sh_nearby_device_disconnected,
+                        )
+                    MarkedLine(
+                        listOf(LinePart.Mark(it), LinePart.Words(" $state")),
+                        stringResource(it.words),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
                     )
                 }
             }

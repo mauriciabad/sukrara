@@ -28,6 +28,7 @@ import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorAction
@@ -149,6 +150,14 @@ class HomeGallery {
                 ui(Samples.wearer(), banner = BannerKind.NotBackedUp)
                     .copy(profile = HomeProfile("Núria", Avatar.v1(0, "drop", 45, 3), followers = 2)),
             "profile-no-name" to ui(Samples.wearer()).copy(profile = HomeProfile("", null, followers = 0)),
+            // one of the two followers' devices connected over Bluetooth now
+            "profile-nearby" to
+                ui(Samples.wearer(), withTreatments = true)
+                    .copy(profile = HomeProfile("Núria", Avatar.v1(0, "drop", 45, 3), followers = 2, nearby = 1)),
+            // how the wearer's readings come to this follower's phone now
+            "follower-nearby" to ui(follower).copy(followPath = LinkPath.Nearby),
+            "follower-internet" to ui(follower).copy(followPath = LinkPath.Internet),
+            "follower-offline" to ui(follower).copy(followPath = LinkPath.Offline),
             "clinic-banner" to ui(Samples.wearer(), banner = BannerKind.ShareWithClinic),
             "updates-banner" to ui(Samples.wearer(), banner = BannerKind.TurnOnUpdates),
             "widget-banner" to ui(Samples.wearer(), banner = BannerKind.AddWidget),
@@ -198,6 +207,11 @@ class HomeGallery {
     @Test
     @Config(qualifiers = "es")
     fun spanishInRange() = gallery(dark = true, fontScale = 1f, only = listOf("in-range", "no-sensor-yet"), prefix = "es-")
+
+    @Test
+    @Config(qualifiers = "es")
+    fun spanishSharing() =
+        gallery(dark = false, fontScale = 1f, only = listOf("profile-nearby", "follower-nearby", "follower-offline"), prefix = "es-")
 
     /** A small phone at the largest font: a safety banner must be on screen without scrolling (ux-batch1 F2). */
     @Test

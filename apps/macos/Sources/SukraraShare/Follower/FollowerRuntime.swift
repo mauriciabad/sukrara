@@ -74,6 +74,8 @@ public actor FollowerRuntime: FollowerService {
     private var nearby: (any NearbyTransport)?
     private var nearbyTask: Task<Void, Never>?
     private var nearbyState: NearbyState?
+    /// The relays connected now (from the pool's connection events); nil until the first one, after each connect.
+    private var connectedRelays: Set<String>?
     private var nearbyOffer: NearbyOffer?
     private var searchingNearby = false
     private var joinTask: Task<Result<Invite, FollowerJoinError>, Never>?
@@ -515,6 +517,7 @@ public actor FollowerRuntime: FollowerService {
         await relays?.stop()
         relays = nil
         subscribed = [:]
+        connectedRelays = nil
         await stopNearby()
     }
 
@@ -566,7 +569,13 @@ public actor FollowerRuntime: FollowerService {
             if subscription == "chunks", historyTask == nil { scheduleHistoryCheck() }  // again after a reconnect
         case .ok(let eventId, let accepted, _):
             if accepted { await markSent(eventId: eventId) }
-        case .closed, .connection: break
+        case .connection(let state, let relay):
+            var up = connectedRelays ?? []
+            if state == .connected { up.insert(relay) } else { up.remove(relay) }
+            guard up != connectedRelays else { return }
+            connectedRelays = up
+            await publishSnapshot()
+        case .closed: break
         }
     }
 
@@ -772,7 +781,7 @@ public actor FollowerRuntime: FollowerService {
             link: link, readings: (try? await stores.readings.load(since: since)) ?? [],
             sensor: await stores.sensor.load(), treatments: log.log.live.reversed(), unsentTreatments: log.unsentCount,
             deliveries: log.entries.compactMapValues(\.delivery), wearerSettings: await stores.settings.load(),
-            storeIssues: issues, nearby: nearbyState,
+            storeIssues: issues, nearby: nearbyState, relaysConnected: connectedRelays?.count,
             nearbyOffer: canJoin ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable,
             me: session?.state.me ?? me, wearer: session?.state.wearer)
         guard snapshot != current else { return }

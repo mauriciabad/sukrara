@@ -16,6 +16,7 @@ import app.mauri.sukrara.share.OwnerFixtures
 import app.mauri.sukrara.share.OwnerFixtures.NOW
 import app.mauri.sukrara.share.OwnerFixtures.crypto
 import app.mauri.sukrara.share.ble.FakeNearbyServer
+import app.mauri.sukrara.share.ble.NearbyServerCore
 import app.mauri.sukrara.share.owner.usecase.ControlEvents
 import app.mauri.sukrara.share.owner.usecase.CreateIdentity
 import app.mauri.sukrara.share.owner.usecase.PublishReadings
@@ -151,5 +152,47 @@ class RelayPolicyTest {
             runCurrent()
             assertTrue((store.load() as OwnerIdentityStore.Load.Loaded).state.nearbyPaired.isEmpty())
             e.stop()
+        }
+
+    @Test fun aFollowerWhoseDeviceConnectedOverBluetoothIsPairedNearbyUntilRemoved() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, null))
+            runCurrent()
+            assertTrue(e.openNearbyPairing())
+            runCurrent()
+            // a follower allowed over the relays' invite flow (here: Pair nearby's request, then forgotten as paired)
+            val host = nearby.host!!
+            val token = host.pairing()!!.token
+            val dad = crypto.generate()
+            val state = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            host.onEvent(OwnerFixtures.request(dad, state, token, "Dad", nonce = "cd".repeat(32)), "aa:cc")
+            runCurrent()
+            assertEquals(ApproveResult.Allowed, e.approve(dad.public.hex))
+            runCurrent()
+            val paired = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            store.save(paired.copy(nearbyPaired = emptySet()))
+            e.stop()
+            runCurrent()
+
+            // started again: nobody paired nearby until Dad's device connects with its identity proof
+            val again = engine()
+            again.start(backgroundScope)
+            runCurrent()
+            assertTrue((again.state.value as OwnerShareState.Sharing).nearbyPaired.isEmpty())
+            val stranger = crypto.generate().public.hex
+            nearby.links.value = listOf(NearbyServerCore.Named(dad.public.hex, "mac", 1), NearbyServerCore.Named(stranger, "phone", 2))
+            runCurrent()
+            assertEquals("only an active follower", setOf(dad.public.hex), (again.state.value as OwnerShareState.Sharing).nearbyPaired)
+            assertEquals(setOf(dad.public.hex), (store.load() as OwnerIdentityStore.Load.Loaded).state.nearbyPaired)
+
+            // out of range: still paired nearby; Remove forgets it
+            nearby.links.value = emptyList()
+            runCurrent()
+            assertEquals(setOf(dad.public.hex), (again.state.value as OwnerShareState.Sharing).nearbyPaired)
+            again.remove(dad.public.hex)
+            runCurrent()
+            assertTrue((store.load() as OwnerIdentityStore.Load.Loaded).state.nearbyPaired.isEmpty())
+            again.stop()
         }
 }

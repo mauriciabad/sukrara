@@ -234,6 +234,11 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       Custom numbers: field + stepper + unit, ↑ ↓ step (rapid 0.5u, long 1u, carbs 5g, minutes 5); Cancel and Save at
       the regular height, Escape / Return; the alert sheets' Done closes with Escape; a click outside the When? popover
       keeps a changed time, unchanged keeps *Now*. Synthetic: `sukrara-snap windows` → `treatment-*.png`.
+- [ ] How the readings come (2026-11-15), following on a test build: the end of the *Mute All Alerts* row (and of Mute
+      all's *Unmute* / *Change Time*) says *Internet* with the globe; with the wearer's phone in Bluetooth range
+      *Nearby* with the Bluetooth mark within a minute; Wi-Fi off and the phone out of range: *Offline* in red; back:
+      *Internet*. The tooltip and VoiceOver say it in words; a click opens Settings › Following. Synthetic:
+      `sukrara-snap shell` → `panel-nearby-*.png`, `panel-offline-*.png`, `panel-muted-all-nearby-*.png`.
 - [ ] Card overflow (#181): `sukrara-snap shell` → `panel-flowers-*.png`: the flowers and laurel at the card's right
       and top edges and the value's first digit at its left edge are whole, drawn over the panel's margin (compare
       docs/img/mac-ux/panel-overflow-*.png); the same on the real panel with a ring at 95 % or more.
@@ -918,7 +923,15 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    says it in red, and the follower's row carries the *Can add treatments* mark; its sheet has the switch on. *Allow* →
    the banner leaves. On the follower, setup's permission step lists *Nearby devices*; revoked while following, home
    shows *Bluetooth is blocked* with its close.
-8. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
+8. Who is nearby (2026-11-15; needs real Bluetooth: two physical test phones or a phone and a test Mac, never the
+   owner's): the wearer's header reads *1 follower* until the follower's device connects nearby, then *1 follower ·
+   ᛒ 1* (TalkBack: *1 follower, 1 nearby over Bluetooth*); Settings › Sharing marks that follower with the
+   Bluetooth-connected mark, and *Over Bluetooth nearby* › *Nearby devices* lists it *Connected*. Out of range
+   (Bluetooth off on the follower): the header loses the mark, the follower's mark turns plain and dimmed, *Nearby
+   devices* still lists it *Disconnected* (also after a restart of both apps) until *Remove*. The follower's header
+   shows the Bluetooth mark, then the globe, and with airplane mode the crossed globe in red. At the largest font and
+   in Spanish the header line stays whole on one line (the people icon replaces the words where they don't fit).
+9. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
    fresh*, confirmed. *Telling your followers…* fills (*1 of 1 told*) and ends on *Started fresh*; the relay logs the
    kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
    home), no No data alarm afterwards. Again with the relay stopped: *Telling your followers…* waits 15 s with

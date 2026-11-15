@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sharing
 
+import app.mauri.sukrara.designsystem.sharing.PathMark
 import app.mauri.sukrara.share.ble.NearbyServerCore
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.owner.FollowerRecord
@@ -24,8 +25,24 @@ data class NearbyUi(
 )
 
 /**
+ * A follower's Bluetooth mark (the followers list, their sheet): connected now ([PathMark.Nearby]), paired but out of
+ * range ([PathMark.Paired]), or none (never connected nearby, or Bluetooth sharing is off).
+ */
+fun NearbyUi.mark(
+    follower: String,
+    paired: Set<String>,
+): PathMark? =
+    when {
+        !on -> null
+        links.any { it.follower == follower } -> PathMark.Nearby
+        follower in paired -> PathMark.Paired
+        else -> null
+    }
+
+/**
  * Settings › Sharing › Nearby devices, like Android's Connected devices: the follower devices connected now
- * (*Connected*, oldest link first), then the followers paired with *Pair nearby* that aren't (*Disconnected*, by name).
+ * (*Connected*, oldest link first), then the followers paired nearby that aren't (*Disconnected*, by name): paired with
+ * *Pair nearby*, or connected over Bluetooth before.
  * Only active followers: a link whose proof named nobody, or a removed follower, is never listed.
  */
 object NearbyDevices {

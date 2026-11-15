@@ -228,4 +228,9 @@
     <string name="ds_notif_style_off_summary">Sin notificación</string>
     <string name="ds_notif_style_off_preview">Vista previa: sin glucosa en la barra de estado y sin notificación</string>
     <string name="ds_tag_root">Root</string>
+    <!-- How readings travel (PathMark): TalkBack's words for the marks on the headers and the followers list -->
+    <string name="ds_path_nearby">Cerca por Bluetooth</string>
+    <string name="ds_path_paired">Emparejado por Bluetooth, no está cerca</string>
+    <string name="ds_path_internet">Por internet</string>
+    <string name="ds_path_offline">Sin conexión</string>
 </resources>

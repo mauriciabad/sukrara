@@ -137,6 +137,51 @@ struct FollowerRuntimeTests {
         await h.runtime.stop()
     }
 
+    /// The owner, 2026-11-15: the Mac says whether readings come over Bluetooth nearby or the internet. The snapshot
+    /// counts the relays connected (nil until the pool says), and `LinkPath` names the path: Bluetooth first, then the
+    /// internet, else offline.
+    @Test func theSnapshotSaysHowTheReadingsCome() async throws {
+        let hub = FakeRelayHub(stored: [v.event("invite")])
+        let h = RuntimeHarness(now: v.now, hub: hub)
+        await h.runtime.start()
+        let snapshots = await h.runtime.snapshots()
+        try await h.runtime.lookUpAndFollow(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
+        let (_, follower) = try followerKey(h)
+        await hub.inject(try keyDelivery(to: follower))
+        #expect(await eventually { await h.runtime.isFollowing })
+        await hub.connection(.connected)
+        var seen: [Int?] = []
+        for await snapshot in snapshots {
+            guard snapshot.link.isFollowing else { continue }
+            if seen.last != snapshot.relaysConnected { seen.append(snapshot.relaysConnected) }
+            if snapshot.relaysConnected == 1 {
+                #expect(LinkPath.of(snapshot) == .internet)
+                await hub.connection(.disconnected)
+            }
+            if snapshot.relaysConnected == 0, seen.contains(1) {
+                #expect(LinkPath.of(snapshot) == .offline)
+                break
+            }
+        }
+        await h.runtime.stop()
+    }
+
+    @Test func bluetoothNamesThePathWhileItIsConnected() {
+        var s = FollowerSnapshot.empty
+        s.relaysConnected = 2
+        #expect(LinkPath.of(s) == nil, "not following: no path")
+        s.link = .following(wearer: "Marta", canWrite: false)
+        #expect(LinkPath.of(s) == .internet)
+        s.nearby = .connected(phone: "Marta's phone")
+        #expect(LinkPath.of(s) == .nearby)
+        s.relaysConnected = 0
+        #expect(LinkPath.of(s) == .nearby, "over Bluetooth even with no relay")
+        s.nearby = .searching
+        #expect(LinkPath.of(s) == .offline)
+        s.relaysConnected = nil
+        #expect(LinkPath.of(s) == nil, "the relays haven't said yet")
+    }
+
     /// A notice from the wearer's identity (`declined`, `invite-used`) gift-wrapped to `follower`.
     func notice(_ type: String, to follower: String) throws -> SignedEvent {
         try crypto.giftWrap(

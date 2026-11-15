@@ -39,7 +39,10 @@ sealed interface OwnerShareState {
         val passwordManagerSavedAt: Long = 0,
         /** When this phone restored the identity (from a code or the password manager, so it exists elsewhere). */
         val restoredAt: Long = 0,
-        /** Followers paired with *Pair nearby* (this phone only): listed in Nearby devices also while out of range. */
+        /**
+         * Followers paired nearby (*Pair nearby*, or their device connected over Bluetooth; this phone only): Nearby
+         * devices and the followers list show them also while out of range.
+         */
         val nearbyPaired: Set<String> = emptySet(),
         /** The single-use invites not yet pruned: who claimed each and whether it was answered (the share screen moves on). */
         val invites: List<InviteRecord> = emptyList(),

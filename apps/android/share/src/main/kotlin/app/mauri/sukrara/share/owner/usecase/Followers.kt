@@ -249,6 +249,22 @@ class RemoveFollower(private val ctx: OwnerContext) {
     }
 }
 
+/**
+ * The followers whose device the Bluetooth server named by its identity proof (B§5) are paired nearby from then on:
+ * Nearby devices and the followers list show them also out of range, as Android's saved devices. This phone only (never
+ * in the owner backup), only active followers; Remove clears it. Null when nobody new.
+ */
+object RememberNearby {
+    operator fun invoke(
+        s: OwnerState,
+        named: Collection<String>,
+    ): OwnerState? {
+        val active = s.activeFollowers().mapTo(HashSet()) { it.key }
+        val new = named.filter { it in active && it !in s.nearbyPaired }
+        return if (new.isEmpty()) null else s.copy(nearbyPaired = s.nearbyPaired + new)
+    }
+}
+
 /** "Can add entries" (writer scope): the roster tells followers at once, the backup keeps it. Only active followers. */
 class SetWriter(private val ctx: OwnerContext) {
     operator fun invoke(s: OwnerState, follower: String, allowed: Boolean, now: Long): Step? {

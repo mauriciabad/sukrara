@@ -90,3 +90,25 @@ if it is made. The fix is to make it at the right moment.
 
 The *Can add treatments* switch has no icon anywhere (the owner's earlier "no icon" on it; FEATURES "Settings"); the
 mark is on the follower's picture.
+
+## Round 2: who is nearby, how readings come (2026-11-15)
+
+The owner: the Mac should say whether it is connected "through nearby Bluetooth or internet … on the mute select
+row, aligned to the right"; home's "1 followe" could say who is nearby, "maybe just icons"; the followers list should
+say who is paired nearby, and *Over Bluetooth nearby* should also list the paired devices that aren't connected.
+
+| Point | Choice | Why |
+|---|---|---|
+| A path, not a log | One mark for how readings come **now** (`LinkPath`, both apps): Bluetooth while connected to the wearer's phone, else the internet while a relay is connected, else offline. Not which path carried the last reading. | Both paths run side by side and deduplicate; a per-reading origin would flicker. Apple Watch marks the link it has now with a different shape per path (iPhone, Wi-Fi, disconnected; [status icons](https://support.apple.com/guide/watch/status-icons-apdce21b02a0/watchos), [108038](https://support.apple.com/en-nz/108038)). No CGM sharing app shows the path at all (Dexcom Share labels only inactive followers, [G7 manual](https://www.manualslib.com/manual/2987150/Dexcom-G7.html?page=82); Juggluco users asked for the mirror's state, [#412](https://github.com/j-kaltes/Juggluco/issues/412), [fork PR #47](https://github.com/L3-N0X/Juggluco/pull/47)). |
+| Mac | At the end of the mute row: Bluetooth mark + *Nearby*, globe + *Internet*, crossed network + *Offline* in red; tooltip and VoiceOver in words; a click opens Settings › Following. | The owner's place. Beside the pop-up, not inside it: a pop-up holds choices ([HIG](https://developer.apple.com/design/human-interface-guidelines/pop-up-buttons)). SF Symbols has no Bluetooth symbol, so the Mac draws Material's, the Android glyph. Shape + word, never colour alone ([HIG accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)). |
+| Home header (wearer) | *2 followers · ᛒ 1*: the count stays in words, the nearby part is the mark and a number. TalkBack: *2 followers, 1 nearby over Bluetooth*. | The owner's "just icons". The people count keeps its words (a bare icon + number is ambiguous, [WCAG 1.4.1](https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Perceivable/Use_of_color)); Material's top bar has a one-line subtitle slot ([TopAppBar](https://kotlinlang.org/api/compose-multiplatform/material3/androidx.compose.material3/-top-app-bar.html)). |
+| Home header (follower) | The same mark before *Last heard …* (Bluetooth / globe / crossed globe). | Parity with the Mac panel; first, so a long line never cuts it. |
+| Followers list | A trailing mark on a follower paired nearby: Bluetooth-connected (primary) when connected, plain Bluetooth dimmed when out of range, nothing otherwise; the sheet repeats it with *Connected* / *Disconnected*. | #207: the exception as an icon, not a word on every row. Material lists put a status in a trailing icon ([lists](https://m3.material.io/components/lists/guidelines)). |
+| Paired nearby | A follower whose device connected over Bluetooth with its identity proof is paired nearby from then on (`RememberNearby`), like a *Pair nearby* follower; Nearby devices lists it *Disconnected* out of range, until *Remove*. | The page listed only *Pair nearby* followers out of range, so a Mac invited by link vanished when it left. Android's saved devices and iOS's *My Devices* list paired devices that aren't connected ([Android](https://support.google.com/android/answer/9417604?hl=en), [iOS](https://support.apple.com/en-bh/HT204091)). |
+| "1 followe" | The followers line is one line that never wraps: where the words don't fit, the people icon replaces them; where nothing fits, it is drawn smaller (`FirstThatFits`, `HeaderFitTest` at 1×–2×, en/es, 320 and 411 dp). | The line wrapped freely in the top bar's title slot: narrower than *1 follower* it broke inside the word (*1 followe* / *r*), reproduced with the phone's own Google Sans in a 220 dp slot. On the phone full-screen at default sizes it measures whole (143 px). |
+
+Discarded: a mark per reading (flickers, says nothing the person acts on); the follower avatars in the header (too
+small to tell apart at 16 dp, and the list already names them); *Last seen 3 h ago* on paired devices (one more
+stored time for a fact nobody acts on); a *Forget* for a nearby device alone (it would pair again at the next contact:
+any active follower can connect nearby; *Remove* is the exit); *Offline* before the relays have said anything (it
+would flash at every launch).

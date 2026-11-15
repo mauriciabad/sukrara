@@ -4,6 +4,13 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
+- **Who is nearby, and how readings come** (both apps): your home header adds the Bluetooth mark with how many of
+  your followers' devices are connected nearby (*2 followers · ᛒ 1*); the followers list marks who is paired nearby,
+  connected or not; *Over Bluetooth nearby* now lists every follower device that has connected over Bluetooth, also
+  out of range (it showed only connected ones and those paired with *Pair nearby*). A follower's phone and the Mac
+  panel say whether the readings come nearby over Bluetooth, over the internet or can't arrive (*Nearby*, *Internet*,
+  *Offline* at the end of the Mac's mute row). The header line is whole at every font size and in Spanish (it said
+  "1 followe" where the line was too narrow).
 - **Metrics, once Rings** (both apps, docs/39): what sits beside the value has its own switch each: the main,
   second and third metric (time in range, GMI, average glucose or variability, each with its period and its goal),
   the last treatment (it keeps its place while off) and the metric shown when there's no recent treatment. Each opens

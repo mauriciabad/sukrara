@@ -19,6 +19,7 @@ import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.Role
@@ -94,6 +95,7 @@ import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
 import app.mauri.sukrara.share.FollowerModule
 import app.mauri.sukrara.share.ShareOwnerModule
+import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.follower.FollowState
 import app.mauri.sukrara.share.follower.FollowerNotifications
 import app.mauri.sukrara.share.follower.WearerSettingsCache
@@ -187,6 +189,24 @@ class AppGraph(
 
     /** [after]'s values once [unlocked], nothing until then. */
     private fun <T> onceUnlocked(after: () -> Flow<T>): Flow<T> = unlocked.flatMapLatest { if (it) after() else emptyFlow() }
+
+    /**
+     * A follower's phone: how the wearer's readings come now (home's header mark), from the Bluetooth link and the relays;
+     * null on a wearer's phone and before the unlock (the follower engine is credential-encrypted).
+     */
+    private fun followPath(): Flow<LinkPath?> =
+        combine(role.data.map { it.role }, unlocked) { r, u -> r == Role.Follower && u }
+            .distinctUntilChanged()
+            .flatMapLatest { on ->
+                if (!on) {
+                    flowOf(null)
+                } else {
+                    combine(follower.engine.nearbyStatus, follower.engine.state) { n, s ->
+                        val relays = (s as? FollowState.Following)?.relays?.takeIf { it.isNotEmpty() }
+                        LinkPath.of(n is NearbyStatus.Connected, relays?.values?.count { it.connected })
+                    }
+                }
+            }
 
     /** Another glucose source was chosen or the sensor forgotten: the monitoring service picks its source again. */
     private val sourceChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -729,6 +749,8 @@ class AppGraph(
             widgetPinnable = { widgets.presence.canPin() },
             treatmentLog = { treatments.log },
             sharing = { shareOwner.ownerEngine.state },
+            nearbyFollowers = { shareOwner.ownerEngine.nearbyLinks.map { links -> links.mapTo(HashSet()) { it.follower } } },
+            followPath = ::followPath,
             tapsBlocked = { BlockedTaps(pen = pens.tapsBlockedWhileOn(), sensor = sensor.tapLaunch.onButBlocked()) },
             featureChecks = featureChecks,
             penEntryOf = { pens.port.entry(it) },

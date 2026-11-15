@@ -40,7 +40,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Can act as an xDrip+ or Nightscout API, and broadcast glucose to apps like AAPS.
 - Sukrara companion apps:
   - Family and friends see your glucose live on their devices.
-  - Via Bluetooth when nearby, or Nostr (internet) when far away.
+  - Via Bluetooth when nearby, or Nostr (internet) when far away. Both sides see which: your header marks the
+    followers nearby, the followers list who is paired nearby, and their phone or Mac shows Nearby, Internet or Offline.
   - Platforms: macOS and Android.
   - End-to-end encrypted, no server to host.
   - Choose who can add treatments to your log when you invite them; change it any time from their sheet.

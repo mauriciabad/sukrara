@@ -338,7 +338,8 @@ fun SplitSwitchRow(
  * (the overview's [CategoryIcon], a picture): decorative, the title says what the row is. [warning]: something outside
  * the app blocks what the row is about (icon and summary in the error colour; the row opens the fix). [onClickLabel]:
  * what a tap does, for TalkBack, when the title doesn't say it ("Fix"). [summary] may be styled text (one paragraph per
- * line); [summaryDescription] = what TalkBack says for it instead (values in full).
+ * line); [summaryDescription] = what TalkBack says for it instead (values in full). [trailing]: a status at the row's
+ * end, decorative (Material's trailing icon for a status; [summaryDescription] says it): a follower's Bluetooth mark.
  */
 @Composable
 fun NavigationRow(
@@ -352,12 +353,14 @@ fun NavigationRow(
     warning: Boolean = false,
     onClickLabel: String? = null,
     summaryDescription: String? = null,
+    trailing: (@Composable () -> Unit)? = null,
 ) {
     val shown = if (warning) warningText(summary) else summary
     RowBox(title, modifier) {
         Preference(
             model(title, shown, iconOf(icon, leading, warning), enabled, onClick, summaryDescription),
             onClickLabel = onClickLabel,
+            widget = trailing ?: {},
         )
     }
 }

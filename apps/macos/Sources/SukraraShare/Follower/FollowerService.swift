@@ -21,6 +21,8 @@ public struct FollowerSnapshot: Sendable, Equatable {
     public var storeIssues: [StoreIssue]
     /// nil when the Bluetooth path isn't running.
     public var nearby: NearbyState?
+    /// The relays connected now; nil until the pool has said (not following, or just started).
+    public var relaysConnected: Int?
     /// A phone nearby offering to pair (while not following).
     public var nearbyOffer: NearbyOffer?
     /// The Keychain wouldn't read the follower key (`link` is `.broken` with the reason) and the runtime keeps trying.
@@ -36,6 +38,21 @@ public struct FollowerSnapshot: Sendable, Equatable {
         link: .notFollowing, readings: [], sensor: nil, treatments: [], unsentTreatments: 0, deliveries: [:],
         wearerSettings: nil,
         storeIssues: [], nearby: nil, nearbyOffer: nil)
+}
+
+/// How the wearer's readings reach this Mac now (the panel's mark at the end of the mute row; Android's `LinkPath`
+/// makes the same choice): Bluetooth names the path while it's connected (a reading over it doesn't wait for the
+/// internet), else the internet while a relay is connected, else nothing can arrive.
+public enum LinkPath: Sendable, Equatable {
+    case nearby, internet, offline
+
+    /// nil while not following, or before the relays have said anything and Bluetooth isn't connected.
+    public static func of(_ snapshot: FollowerSnapshot) -> LinkPath? {
+        guard snapshot.link.isFollowing else { return nil }
+        if case .connected = snapshot.nearby { return .nearby }
+        guard let relays = snapshot.relaysConnected else { return nil }
+        return relays > 0 ? .internet : .offline
+    }
 }
 
 /// "Pair nearby" open on a wearer's phone in Bluetooth range: its invite and `commit`, the wearer's commitment to its

@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenQuestionInfo
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
@@ -77,6 +79,10 @@ class HomeModule(
     private val treatmentLog: () -> TreatmentLog,
     /** The wearer's sharing state (profile row, "Not backed up"); a function: sharing is built on first use. */
     private val sharing: () -> Flow<OwnerShareState> = { emptyFlow() },
+    /** The followers whose device is connected to this phone over Bluetooth now (the header's nearby count). */
+    private val nearbyFollowers: () -> Flow<Set<String>> = { flowOf(emptySet()) },
+    /** A follower's phone: how the wearer's readings come now (the header's mark). */
+    private val followPath: () -> Flow<LinkPath?> = { emptyFlow() },
     /** The NFC taps that are on but blocked by Android (home's banner); read on every resume. */
     private val tapsBlocked: suspend () -> BlockedTaps = { BlockedTaps() },
     /** The features Android blocks (home's banner after the taps one, docs/40). */
@@ -152,18 +158,14 @@ class HomeModule(
         scope.launch { clinicBehind().collect { at -> env.update { it.copy(clinicBehind = at) } } }
         scope.launch { updateChecksOff().collect { off -> env.update { it.copy(updateChecksOff = off) } } }
         scope.launch { featureChecks.blocked.collect { b -> env.update { it.copy(blocked = b) } } }
+        scope.launch { followPath().collect { p -> env.update { it.copy(followPath = p) } } }
     }
 
     override val profile: Flow<HomeProfile?> by lazy {
-        sharing().map { s ->
+        combine(sharing(), nearbyFollowers()) { s, near ->
             (s as? OwnerShareState.Sharing)?.let {
-                HomeProfile(
-                    it.profile?.name.orEmpty(),
-                    it.profile?.avatar,
-                    it.followers.count { f ->
-                        f.active
-                    },
-                )
+                val active = it.followers.filter { f -> f.active }
+                HomeProfile(it.profile?.name.orEmpty(), it.profile?.avatar, active.size, active.count { f -> f.key in near })
             }
         }
     }

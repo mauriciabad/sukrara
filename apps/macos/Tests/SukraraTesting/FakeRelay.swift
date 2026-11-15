@@ -56,6 +56,11 @@ public actor FakeRelay: RelayLink {
         continuation.yield(.event(event, subscription: "push", relay: host))
     }
 
+    /// The pool's word that this relay's socket opened or dropped.
+    public func connection(_ state: RelayConnection) {
+        continuation.yield(.connection(state, relay: host))
+    }
+
     /// An event arriving from elsewhere (the wearer's phone publishing).
     public func inject(_ event: SignedEvent) {
         published.append(event)
@@ -96,6 +101,11 @@ public final class FakeRelayHub: Sendable {
             return state.relays
         }
         for relay in relays where await !relay.isStopped { await relay.inject(event) }
+    }
+
+    /// Every open connection's socket opened or dropped.
+    public func connection(_ state: RelayConnection) async {
+        for relay in relays where await !relay.isStopped { await relay.connection(state) }
     }
 
     /// Delivers `event` on every open connection whatever the subscriptions (fixture replay in step order).

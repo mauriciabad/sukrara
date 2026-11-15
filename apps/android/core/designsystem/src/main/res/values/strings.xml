@@ -232,4 +232,9 @@
     <string name="ds_notif_style_off_summary">No notification</string>
     <string name="ds_notif_style_off_preview">Preview: no glucose in the status bar, and no notification</string>
     <string name="ds_tag_root">Root</string>
+    <!-- How readings travel (PathMark): TalkBack's words for the marks on the headers and the followers list -->
+    <string name="ds_path_nearby">Nearby over Bluetooth</string>
+    <string name="ds_path_paired">Paired over Bluetooth, not nearby</string>
+    <string name="ds_path_internet">Over the internet</string>
+    <string name="ds_path_offline">No connection</string>
 </resources>

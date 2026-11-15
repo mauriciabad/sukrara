@@ -118,6 +118,8 @@ fun Preference(
     rowModifier: Modifier = Modifier,
     // Sukrara: what a tap does, for TalkBack ("Double tap to copy"), as a View preference's click action label
     onClickLabel: String? = null,
+    // Sukrara: a status at the row's end (a follower's Bluetooth mark), BasePreference's widget
+    widget: @Composable () -> Unit = {},
 ) {
     val onClickWithLog = wrapOnClickWithLog(model.onClick)
     val enabled = model.enabled()
@@ -133,5 +135,6 @@ fun Preference(
         modifier = modifier,
         icon = model.icon,
         enabled = model.enabled,
+        widget = widget,
     )
 }

@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
@@ -202,8 +203,11 @@ data class PenNotice(
     enum class Kind { Changed, Removed, ChangedSince, UndoFailed, NoteChanged }
 }
 
-/** The wearer's own row on home: picture, name (blank = not set yet) and how many follow. */
-data class HomeProfile(val name: String, val avatar: Avatar?, val followers: Int)
+/**
+ * The wearer's own row on home: picture, name (blank = not set yet), how many follow and how many of them have a device
+ * connected over Bluetooth now ([nearby]).
+ */
+data class HomeProfile(val name: String, val avatar: Avatar?, val followers: Int, val nearby: Int = 0)
 
 /** Everything the home screen draws, from one source. */
 data class HomeUiState(
@@ -239,6 +243,8 @@ data class HomeUiState(
     val delivery: Map<String, TreatmentDelivery> = emptyMap(),
     /** The wearer's profile while sharing (the top bar shows it, with Share). */
     val profile: HomeProfile? = null,
+    /** A follower's phone: how the wearer's readings come now (the header's mark); null = not known or not following. */
+    val followPath: LinkPath? = null,
     /** The clinic upload's cloud mark per listed entry id (empty while its entries upload is off). */
     val marks: Map<String, UploadMark> = emptyMap(),
     /** The just-deleted entry was in the clinic upload: the snackbar says it is removed there too. */
@@ -343,6 +349,7 @@ class HomeViewModel(
                 marks = marks?.let { m -> listed.mapNotNull { t -> m.mark(t, now)?.let { t.id to it } }.toMap() }.orEmpty(),
                 undoInClinic = pendingUndo != null && inClinic,
                 untestedSensor = untested?.takeIf { glucose.role == Role.Wearer },
+                followPath = env.followPath?.takeIf { glucose.role == Role.Follower },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial())
 

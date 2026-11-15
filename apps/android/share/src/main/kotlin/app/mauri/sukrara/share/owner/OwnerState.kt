@@ -134,8 +134,9 @@ data class OwnerState(
     val settingsU: Long = 0,
     val settingsPublishedAt: Long = 0,
     /**
-     * Followers approved from a *Pair nearby* request: Nearby devices lists them also while out of range. This phone
-     * only (never in the owner backup); Remove / Forget clears it.
+     * Followers paired nearby: approved from a *Pair nearby* request, or whose device connected over Bluetooth with its
+     * identity proof ([app.mauri.sukrara.share.owner.usecase.RememberNearby]). Nearby devices and the followers list
+     * show them also while out of range. This phone only (never in the owner backup); Remove / Forget clears it.
      */
     val nearbyPaired: Set<String> = emptySet(),
     /** Set only while Backup › Replace this identity tells the followers (see [ReplaceRecord]). */

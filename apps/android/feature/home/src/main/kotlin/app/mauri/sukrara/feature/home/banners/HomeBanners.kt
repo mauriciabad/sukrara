@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.home.banners
 
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.BlockedFeature
+import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.ModuleState
 import kotlinx.serialization.Serializable
 import java.time.Duration
@@ -86,6 +87,8 @@ data class HomeEnvironment(
     val build: Long = 0,
     /** Since when the clinic upload lacks the wearer's glucose while it has stalled (LibreView); null = it hasn't. */
     val clinicBehind: Instant? = null,
+    /** A follower's phone: how the wearer's readings come now (Bluetooth nearby, the internet, neither). */
+    val followPath: LinkPath? = null,
 ) {
     /** What a closed stalled-upload banner is remembered under: that stall (its start). */
     val behindKey: String? get() = clinicBehind?.let { "${BannerKind.ClinicUploadBehind.name}:${it.epochSecond}" }

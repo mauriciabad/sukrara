@@ -66,7 +66,11 @@ struct PanelView: View {
                 if let failed = model.alerts?.failedSteps, !failed.isEmpty { alertNotShownWarning(failed) }
                 if let alerts = model.alerts {
                     NightRow(alerts: alerts, open: links.map { l in { l.openSettingsPane(.alerts) } })
-                    AlertBlocks(alerts: alerts, now: context.date, custom: $customMute)
+                    AlertBlocks(
+                        alerts: alerts, now: context.date, custom: $customMute,
+                        path: model.linkPath.map {
+                            PathBadge(path: $0, open: links.map { l in { l.openSettingsPane(.following) } })
+                        })
                 }
                 if let updates = model.updates { UpdateRow(updates: updates) }
                 if let links {
@@ -625,6 +629,8 @@ private struct AlertBlocks: View {
     let alerts: AlertController
     let now: Date
     @Binding var custom: Bool
+    /// How the readings come, at the end of the mute row (the owner, 2026-11-15); nil = not following.
+    var path: PathBadge?
 
     var body: some View {
         let ui = alerts.ui
@@ -644,6 +650,10 @@ private struct AlertBlocks: View {
                     }
                     .fixedSize()
                     .accessibilityLabel(L10n.t("Alerts: Change time"))
+                    if let path {
+                        Spacer(minLength: 8)
+                        path
+                    }
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
@@ -666,12 +676,62 @@ private struct AlertBlocks: View {
             }
         }
         if ui.muteAllUntil == nil {
-            Menu(L10n.t("Mute All Alerts")) {
-                MuteAllLengths(alerts: alerts, now: now, custom: $custom, offerCustom: true)
+            HStack {
+                Menu(L10n.t("Mute All Alerts")) {
+                    MuteAllLengths(alerts: alerts, now: now, custom: $custom, offerCustom: true)
+                }
+                .fixedSize()
+                if let path {
+                    Spacer(minLength: 8)
+                    path
+                }
             }
-            .fixedSize()
         }
         if custom { CustomMuteAll(alerts: alerts, done: { custom = false }) }
+    }
+}
+
+/// How the wearer's readings come now, at the end of the mute row (the owner, 2026-11-15: "know if the connection is
+/// through nearby Bluetooth or internet"): the Bluetooth mark with *Nearby*, the globe with *Internet*, or *Offline*
+/// in red, as Apple Watch marks its iPhone or Wi-Fi link (a shape per path, never colour alone). A click opens Settings
+/// › Following, where the Bluetooth line and its fixes are; VoiceOver reads it in words.
+struct PathBadge: View {
+    let path: LinkPath
+    var open: (() -> Void)?
+
+    var body: some View {
+        let label = HStack(spacing: 4) {
+            switch path {
+            case .nearby: BluetoothGlyph().fill(Color.accentColor).frame(width: 12, height: 12)
+            case .internet: Image(systemName: "globe")
+            case .offline: Image(systemName: "network.slash")
+            }
+            Text(word)
+        }
+        .font(.caption)
+        .foregroundStyle(path == .offline ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+        Button(action: { open?() }, label: { label })
+            .buttonStyle(.plain)
+            .disabled(open == nil)
+            .fixedSize()
+            .help(help)
+            .accessibilityLabel(help)
+    }
+
+    private var word: String {
+        switch path {
+        case .nearby: L10n.t("Nearby")
+        case .internet: L10n.t("Internet")
+        case .offline: L10n.t("Offline")
+        }
+    }
+
+    private var help: String {
+        switch path {
+        case .nearby: L10n.t("Readings come over Bluetooth from their phone nearby")
+        case .internet: L10n.t("Readings come over the internet")
+        case .offline: L10n.t("No connection: new readings can't arrive")
+        }
     }
 }
 

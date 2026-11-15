@@ -47,8 +47,11 @@ import app.mauri.sukrara.designsystem.rows.NumberButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.designsystem.sharing.PathIcon
+import app.mauri.sukrara.designsystem.sharing.PathMark
 import app.mauri.sukrara.feature.sharing.NearbyUi
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.feature.sharing.mark
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.settings.SettingsSpec
@@ -137,7 +140,9 @@ fun FollowersPage(
             for (f in active) {
                 // the exception only, as a mark on the picture (the treatment list's way); TalkBack reads it as words
                 val since = stringResource(R.string.sh_followers_since, date(f.since))
-                PersonRow(f.avatarJson, f.name, since, writer = f.key in state.writers) { open = f.key }
+                PersonRow(f.avatarJson, f.name, since, writer = f.key in state.writers, mark = nearby.mark(f.key, state.nearbyPaired)) {
+                    open = f.key
+                }
             }
         }
         SettingsGroup(title = stringResource(R.string.sh_nearby_group)) {
@@ -196,13 +201,7 @@ fun FollowersPage(
     active.firstOrNull { it.key == open }?.let { f ->
         FollowerSheet(
             f,
-            nearby =
-                when {
-                    !nearby.on -> null
-                    nearby.links.any { it.follower == f.key } -> true
-                    f.key in state.nearbyPaired -> false
-                    else -> null
-                },
+            nearby = nearby.mark(f.key, state.nearbyPaired),
             writer = f.key in state.writers,
             refused = writerRefused == f.key,
             onWriter = { actions.setWriter(f.key, it) },
@@ -243,7 +242,8 @@ private fun YouRow(
 
 /**
  * A person (a follower, a request) as SPA's Preference with their picture; [writer]: the picture carries the *Can add
- * treatments* mark ([FollowerPicture]). [onClick] null: a fact, not tappable.
+ * treatments* mark ([FollowerPicture]); [mark]: their Bluetooth mark at the row's end (paired nearby: connected or
+ * not). TalkBack reads both as words after the summary. [onClick] null: a fact, not tappable.
  */
 @Composable
 internal fun PersonRow(
@@ -251,18 +251,21 @@ internal fun PersonRow(
     name: String,
     summary: String,
     writer: Boolean = false,
+    mark: PathMark? = null,
     onClick: (() -> Unit)?,
 ) {
     val shown = Profile.shownName(name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
     val picture: @Composable () -> Unit = { FollowerPicture(avatarJson, shown, writer) }
     if (onClick != null) {
-        val canAdd = stringResource(R.string.sh_followers_can_add)
+        val extra =
+            listOfNotNull(stringResource(R.string.sh_followers_can_add).takeIf { writer }, mark?.let { stringResource(it.words) })
         NavigationRow(
             shown,
             onClick,
             summary = summary,
             leading = picture,
-            summaryDescription = if (writer) "$summary, $canAdd" else null,
+            summaryDescription = if (extra.isEmpty()) null else (listOf(summary) + extra).joinToString(", "),
+            trailing = mark?.let { m -> { PathIcon(m, Modifier.padding(start = 16.dp)) } },
         )
     } else {
         InfoRow(shown, summary = summary, leading = picture)

@@ -64,6 +64,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
@@ -112,6 +113,10 @@ import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.rows.showUndo
 import app.mauri.sukrara.designsystem.rows.textRes
 import app.mauri.sukrara.designsystem.rows.titleRes
+import app.mauri.sukrara.designsystem.sharing.FirstThatFits
+import app.mauri.sukrara.designsystem.sharing.LinePart
+import app.mauri.sukrara.designsystem.sharing.MarkedLine
+import app.mauri.sukrara.designsystem.sharing.PathMark
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -433,8 +438,9 @@ private fun HomeColumn(
 }
 
 /**
- * The wearer as followers see them: picture, name (or "Add your name") and how many follow. Tapping it opens How you
- * appear; it never pushes the card down (it is the top bar's title).
+ * The wearer as followers see them: picture, name (or "Add your name"), how many follow and how many of their devices
+ * are connected over Bluetooth now ([FollowersLine]). Tapping it opens How you appear; it never pushes the card down
+ * (it is the top bar's title).
  */
 @Composable
 private fun ProfileHeader(
@@ -459,14 +465,41 @@ private fun ProfileHeader(
                 overflow = TextOverflow.Ellipsis,
                 color = if (name == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                pluralStringResource(R.plurals.home_followers, profile.followers, profile.followers),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            FollowersLine(profile.followers, profile.nearby)
         }
     }
 }
+
+/**
+ * *2 followers · ᛒ 1*: how many follow, then the Bluetooth mark with how many of their devices are connected nearby
+ * (none: no mark). Always whole on one line: where the words don't fit (a large font, Spanish, a narrow window) the
+ * people icon takes their place (*👥 2 · ᛒ 1*). TalkBack reads it in words.
+ */
+@Composable
+private fun FollowersLine(
+    followers: Int,
+    nearby: Int,
+) {
+    val words = pluralStringResource(R.plurals.home_followers, followers, followers)
+    val near =
+        if (nearby > 0) {
+            listOf(LinePart.Words(" · "), LinePart.Mark(PathMark.Nearby), LinePart.Words(" $nearby"))
+        } else {
+            emptyList()
+        }
+    val description =
+        if (nearby > 0) "$words, " + pluralStringResource(R.plurals.home_followers_nearby, nearby, nearby) else words
+    FirstThatFits(
+        listOf(
+            { MarkedLine(listOf(LinePart.Words(words)) + near, null) },
+            { MarkedLine(listOf(LinePart.Glyph(DsR.drawable.ds_ic_group), LinePart.Words(" $followers")) + near, null) },
+        ),
+        Modifier.testTag(FOLLOWERS_LINE_TAG).clearAndSetSemantics { contentDescription = description },
+    )
+}
+
+/** The wearer header's followers line (tests check it is whole at every font size). */
+internal const val FOLLOWERS_LINE_TAG = "home-followers-line"
 
 /**
  * Who is followed and how the link is, from the same decision as the card's reason: fresh = when last heard ("just
@@ -512,13 +545,19 @@ private fun FollowerHeader(state: HomeUiState) {
                         false
                 }
             }
-        Text(
-            line,
-            style = MaterialTheme.typography.bodySmall,
-            color = if (trouble) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
+        val color = if (trouble) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+        // how the readings come now (the Mac panel's Nearby / Internet / Offline), first so a long line never cuts it
+        val path = state.followPath?.takeIf { state.reason != NoDataReason.LinkRevoked }?.let(PathMark::of)
+        if (path == null) {
+            Text(line, style = MaterialTheme.typography.bodySmall, color = color, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        } else {
+            MarkedLine(
+                listOf(LinePart.Mark(path), LinePart.Words(" $line")),
+                "${stringResource(path.words)}, $line",
+                color = color,
+                maxLines = 2,
+            )
+        }
     }
 }
 

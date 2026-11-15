@@ -24,6 +24,7 @@ import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.designsystem.sharing.PathMark
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.sharing.backup.BackupScreen
 import app.mauri.sukrara.feature.sharing.backup.BackupUi
@@ -320,6 +321,18 @@ class SharingScreenshotTest {
             "share-denied" to { ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Denied("Dad")) },
             "share-expired" to { ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Expired) },
             "followers" to { FollowersPage(sharing, FollowersActions()) },
+            // who is paired nearby: Anna's phone connected now, the MacBook paired and out of range
+            "followers-nearby" to {
+                FollowersPage(
+                    sharing.copy(nearbyPaired = setOf("k1", "k2")),
+                    FollowersActions(),
+                    nearby =
+                        NearbyUi(
+                            status = NearbyStatus.Connected(1),
+                            links = listOf(NearbyServerCore.Named("k1", "phone", 1_761_600_000_000)),
+                        ),
+                )
+            },
             "nearby-pair" to {
                 NearbyPage(
                     sharing,
@@ -415,6 +428,28 @@ class SharingScreenshotTest {
             },
             "follower-sheet" to {
                 FollowerSheet(followers[0], nearby = null, writer = true, refused = false, onWriter = {}, onRemove = {}, onClose = {})
+            },
+            "follower-sheet-nearby" to {
+                FollowerSheet(
+                    followers[0],
+                    nearby = PathMark.Nearby,
+                    writer = true,
+                    refused = false,
+                    onWriter = {},
+                    onRemove = {},
+                    onClose = {},
+                )
+            },
+            "follower-sheet-paired" to {
+                FollowerSheet(
+                    followers[1],
+                    nearby = PathMark.Paired,
+                    writer = false,
+                    refused = false,
+                    onWriter = {},
+                    onRemove = {},
+                    onClose = {},
+                )
             },
             "approve" to
                 { ApproveDialog(request, working = false, onAllow = { _, _ -> }, onDeny = {}, onLater = {}, time = ::utcTime) },

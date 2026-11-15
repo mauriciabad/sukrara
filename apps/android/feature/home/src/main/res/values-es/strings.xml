@@ -201,6 +201,11 @@
         <item quantity="one">%1$d seguidor</item>
         <item quantity="other">%1$d seguidores</item>
     </plurals>
+    <plurals name="home_followers_nearby">
+        <item quantity="one">%1$d cerca por Bluetooth</item>
+        <item quantity="many">%1$d cerca por Bluetooth</item>
+        <item quantity="other">%1$d cerca por Bluetooth</item>
+    </plurals>
     <string name="banner_taps_pen_title">Los toques de pluma están bloqueados</string>
     <string name="banner_taps_pen_text">Android no deja que Sukrara se abra al tocar tu pluma, así que tus dosis no se leen ni se registran.</string>
     <string name="banner_taps_sensor_title">Los toques de sensor están bloqueados</string>

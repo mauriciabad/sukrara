@@ -23,6 +23,7 @@ import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.NearbyUi
 import app.mauri.sukrara.feature.sharing.PairNearbyRow
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.feature.sharing.mark
 import app.mauri.sukrara.feature.sharing.nearbySummary
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.ble.AndroidNearbyServer
@@ -104,12 +105,7 @@ fun NearbyPage(
     state.followers.firstOrNull { it.active && it.key == open }?.let { f ->
         FollowerSheet(
             f,
-            nearby =
-                when {
-                    nearby.links.any { it.follower == f.key } -> true
-                    f.key in state.nearbyPaired -> false
-                    else -> null
-                },
+            nearby = nearby.mark(f.key, state.nearbyPaired),
             writer = f.key in state.writers,
             refused = writerRefused == f.key,
             onWriter = { actions.setWriter(f.key, it) },

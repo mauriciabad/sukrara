@@ -33,6 +33,7 @@ import app.mauri.sukrara.share.owner.usecase.OpenNearbyPairing
 import app.mauri.sukrara.share.owner.usecase.OwnerContext
 import app.mauri.sukrara.share.owner.usecase.PublishReadings
 import app.mauri.sukrara.share.owner.usecase.PublishSettingsMirror
+import app.mauri.sukrara.share.owner.usecase.RememberNearby
 import app.mauri.sukrara.share.owner.usecase.RemoveFollower
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import app.mauri.sukrara.share.owner.usecase.SetProfile
@@ -298,6 +299,12 @@ class OwnerEngine(
                     }
                 },
                 scope.launch(serial) { relayPolicy.distinctUntilChanged().collect { locked { onPolicy(it) } } },
+                // a follower device named over Bluetooth stays listed out of range too (Nearby devices, the followers list)
+                scope.launch(serial) {
+                    nearby.links.collect { links ->
+                        locked { owner?.let { s -> RememberNearby(s, links.map { it.follower })?.let { commit(it) } } }
+                    }
+                },
                 scope.launch(serial) {
                     settings.settings().debounce(SETTINGS_DEBOUNCE_MS).collect { w ->
                         locked { owner?.let { apply(settingsMirror.onChange(it, w, now())) } }

@@ -2324,6 +2324,54 @@
         }
       }
     },
+    "Nearby" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nearby"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca"
+          }
+        }
+      }
+    },
+    "No connection: new readings can't arrive" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No connection: new readings can't arrive"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión: no pueden llegar lecturas nuevas"
+          }
+        }
+      }
+    },
+    "Offline" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Offline"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin conexión"
+          }
+        }
+      }
+    },
     "Ranges…" : {
       "localizations" : {
         "en" : {
@@ -2368,6 +2416,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lecturas"
+          }
+        }
+      }
+    },
+    "Readings come over Bluetooth from their phone nearby" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Readings come over Bluetooth from their phone nearby"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las lecturas llegan por Bluetooth desde su móvil, cerca"
+          }
+        }
+      }
+    },
+    "Readings come over the internet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Readings come over the internet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las lecturas llegan por internet"
           }
         }
       }
