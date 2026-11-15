@@ -8,6 +8,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.FeatureChecksSource
@@ -15,6 +16,7 @@ import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.PlatformHealth
 import app.mauri.sukrara.integrations.localserver.LanState
+import app.mauri.sukrara.integrations.localserver.LanWatcher
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.ble.NearbyStatus
@@ -117,14 +119,23 @@ class AppFeatureChecks(
 
     override fun permissions(feature: BlockedFeature): List<String> =
         when (feature) {
-            BlockedFeature.BluetoothSharing -> AndroidNearbyServer.PERMISSIONS
+            BlockedFeature.BluetoothSharing -> {
+                AndroidNearbyServer.PERMISSIONS
+            }
 
-            BlockedFeature.BluetoothFollowing -> AndroidNearbyCentral.PERMISSIONS
+            BlockedFeature.BluetoothFollowing -> {
+                AndroidNearbyCentral.PERMISSIONS
+            }
 
             // Health Connect's own sheet (Android 14+ routes the request there), as its page asks
-            BlockedFeature.HealthConnect -> listOf(PlatformHealth.PERMISSION)
+            BlockedFeature.HealthConnect -> {
+                listOf(PlatformHealth.PERMISSION)
+            }
 
-            BlockedFeature.HomeNetwork -> listOf(Manifest.permission.ACCESS_LOCAL_NETWORK)
+            // Android 17's local network access; older Android has none to ask (and never blocks it)
+            BlockedFeature.HomeNetwork -> {
+                if (Build.VERSION.SDK_INT >= LanWatcher.LOCAL_NETWORK_SDK) listOf(Manifest.permission.ACCESS_LOCAL_NETWORK) else emptyList()
+            }
         }
 
     override fun open(feature: BlockedFeature) {
