@@ -1,0 +1,120 @@
+---
+title: Features
+description: The main things Sukrara does. Your CGM glucose everywhere you look, discreet alerts, live sharing without a cloud, quick logging, reports, and the apps you already use. Android and Mac, free and open source.
+tableOfContents: false
+---
+
+import Feature from '../../components/features/Feature.astro';
+import Features from '../../components/features/Features.astro';
+import Works from '../../components/landing/Works.astro';
+import { GITHUB } from '../../site';
+
+{/* Sukrara's main features, a few each, from the README's "What it does": not every behaviour (that's docs/FEATURES.md). */}
+
+The main things Sukrara does. Open one to learn more.
+
+<Features>
+
+<Feature id="everywhere" icon="widgets" title="Your glucose everywhere you look" summary="Status bar, home screen, lock screen and notification. On the Mac, the menu bar.">
+
+- A Live Update chip in the status bar, or with root, next to the clock.
+- Home screen widgets with the chart and your time in range.
+- With root, a card on the lock screen: tap it to log without unlocking.
+- The same card on every screen, with a trend arrow from your readings, minutes sooner than the sensor's.
+
+[See it on Android](/android/)
+
+</Feature>
+
+<Feature id="alerts" icon="notifications_active" title="Discreet alerts, less alarm fatigue" summary="Each alert its own sound. Quiet once you've acted.">
+
+- Sound packs with a different intensity for each alert.
+- Quiet after insulin or carbs, and while glucose heads back into range.
+- Treatment, Remind less and Mute right on the alert.
+- Through Do Not Disturb, if you let them.
+
+[Listen to the sounds](/sounds/)
+
+</Feature>
+
+<Feature id="sharing" icon="group" title="Shared live, without a cloud" summary="Family and friends follow your glucose on their phone or Mac.">
+
+- Invite them with a link or a QR code.
+- End-to-end encrypted over Nostr, or Bluetooth when they're nearby. No account, no server to host.
+- They get alerts of their own, and are told about a very low nobody answers.
+
+[How the sharing works](/open-glucose-stream/)
+
+</Feature>
+
+<Feature id="logging" icon="edit_note" title="Log in seconds" summary="Insulin, carbs and notes from a widget, the notification or an alert.">
+
+- Set when it happened with one wheel, or 15 minutes ago with a tap.
+- A NovoPen Echo® Plus logs its own doses.
+- Followers you allow can log for you.
+
+</Feature>
+
+<Feature id="reports" icon="bar_chart" title="Reports your clinic knows" summary="Time in ranges, average, GMI and variability.">
+
+- On the phone and the Mac, over 1 to 30 days.
+- Your clinic keeps getting your data through LibreView or Tidepool.
+- Import your history from LibreView or Tidepool, export it as a CSV.
+
+</Feature>
+
+<Feature id="sensors" icon="dia_sensor" title="Reads your sensor" summary="FreeStyle Libre 3 directly, other sensors through Juggluco.">
+
+- Start a Libre 3 or 3 Plus with a tap of the phone.
+- Libre 2, Sibionics GS1 and CareSens Air through Juggluco.
+- Dexcom G6, G7 and ONE+, Accu-Chek SmartGuide and LinX directly, not yet tested on a real one.
+- Reminders before your sensor ends.
+
+</Feature>
+
+<Feature id="apps" icon="hub" title="Works with what you already use" summary="LibreView, Tidepool, Nightscout, xDrip+, AAPS and more.">
+
+<Works
+  label="Apps and services"
+  items={[
+    { app: 'libreview', note: 'Sends to it' },
+    { app: 'tidepool', note: 'Sends to it' },
+    { app: 'nightscout', note: 'Sends to it, or acts as its API' },
+    { app: 'healthConnect', note: 'Writes to it' },
+    { app: 'xdrip', note: 'Acts as its API' },
+    { app: 'aaps', note: 'Broadcasts glucose to it' },
+    { app: 'juggluco', note: 'Reads glucose from it' },
+    { logo: 'garmin', name: 'Garmin', note: 'Watch faces, via the xDrip+ API' },
+  ]}
+/>
+
+</Feature>
+
+<Feature id="mac" logo="apple" title="On your Mac too" summary="Your glucose or someone else's in the menu bar, with the same alarms.">
+
+- Widgets on the desktop and in Notification Center.
+- Log treatments and see the glucose report.
+- Next to your phone, it gets your glucose over Bluetooth.
+
+[Sukrara for Mac](/mac/)
+
+</Feature>
+
+<Feature id="reliable" icon="check_circle" title="Keeps working" summary="It restarts itself, and tells you when something is in the way.">
+
+- Keeps monitoring after a restart, even before you unlock.
+- Says when Android or macOS blocks something, with the fix.
+- A test alert checks that alerts get through.
+
+</Feature>
+
+<Feature id="private" icon="privacy" title="Private, free and open source" summary="No account, no ads, no tracking. Your data stays on your phone.">
+
+- Nothing leaves your phone until you turn something on.
+- Free, with its source code public under the GPL-3.0.
+
+[Privacy policy](/privacy/) · <a href={GITHUB}>Source code</a>
+
+</Feature>
+
+</Features>

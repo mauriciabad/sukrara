@@ -1062,7 +1062,7 @@ Every app change (CLAUDE.md *Design from the person's life first*, *Make it juic
 sukrara.mauri.app (`website/`, [`website/README.md`](../website/README.md)). Automated already: `npm run check`
 (links, anchors, the apps' URLs, App Links, the feed). Locally: `cd website && npm run build && npx astro preview`.
 
-- [ ] Home, Android, Mac, privacy, join (`/join/#` + 32 letters, and without), sounds, developers, one report and a
+- [ ] Home, features, Android, Mac, privacy, join (`/join/#` + 32 letters, and without), sounds, developers, one report and a
       wrong URL (the 404), each in light and dark, at desktop width and at ~400 px: nothing scrolls sideways, every
       app picture matches the theme, the hero's card and Mac panel don't hide each other.
 - [ ] Spanish: the same pages under `/es/`; the language menu switches both ways; with the browser in Spanish an
@@ -1074,6 +1074,8 @@ sukrara.mauri.app (`website/`, [`website/README.md`](../website/README.md)). Aut
       pasted into Terminal, it installs Sukrara.
 - [ ] Pictures arrive as JPEG XL in Chrome 155+, Firefox 158+ and Safari (DevTools › Network › Type `jxl`), as AVIF
       in a browser without it, never WebP; no card, crown or widget is cut at its edge.
+- [ ] Features: each row opens and closes with a click, Enter or Space and its arrow turns; `/features/#alerts` opens
+      with Alerts open; every row still matches the README's "What it does".
 - [ ] The sharing drawing: side by side on a wide window, top to bottom at ~400 px, every word inside its box; a dot
       leaves the phone on each route at once and the Bluetooth one arrives first.
 - [ ] Sounds: a number plays with its progress ring, a second click stops it, *Play a random high…* plays one per

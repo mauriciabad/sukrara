@@ -16,6 +16,7 @@ hero:
       variant: secondary
 ---
 
+import { LinkButton } from '@astrojs/starlight/components';
 import Chips from '../../components/landing/Chips.astro';
 import Get from '../../components/landing/Get.astro';
 import Note from '../../components/landing/Note.astro';
@@ -96,6 +97,7 @@ import Screenshot from '../../components/Screenshot.astro';
     label="More"
     items={['No ads, analytics, tracking or account', 'Free and open source', 'Battery optimized', 'Settings organized and explained', 'Sensor expiry reminders', 'English and Spanish']}
   />
+  <LinkButton href="/features/" variant="secondary" icon="right-arrow">Every feature</LinkButton>
 </Section>
 
 <Note author="Maurici Abad" title="Why Sukrara">

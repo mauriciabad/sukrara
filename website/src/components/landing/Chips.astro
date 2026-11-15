@@ -3,10 +3,12 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 // A row of names as pills: the sensors Sukrara reads (with the app's sensor icon), the small things it also does.
+import DsIcon from '../DsIcon.astro';
+
 interface Props {
 	items: string[];
 	label: string;
-	/** Each pill wears the app's sensor icon (core/designsystem ds_ic_dia_sensor: the disc and its signal). */
+	/** Each pill wears the app's sensor icon (ds_ic_dia_sensor: the disc and its signal). */
 	sensor?: boolean;
 }
 const { items, label, sensor = false } = Astro.props;
@@ -16,19 +18,7 @@ const { items, label, sensor = false } = Astro.props;
 	{
 		items.map((item) => (
 			<li>
-				{sensor && (
-					<svg viewBox="0 0 960 960" width="1.1em" height="1.1em" aria-hidden="true">
-						<circle cx="373" cy="587" r="230" fill="none" stroke="currentColor" stroke-width="80" />
-						<circle cx="373" cy="587" r="80" fill="currentColor" />
-						<path
-							d="M466.2 239.3A360 360 0 0 1 720.7 493.8M512.6 138.2A470 470 0 0 1 821.8 447.4"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="70"
-							stroke-linecap="round"
-						/>
-					</svg>
-				)}
+				{sensor && <DsIcon name="dia_sensor" size="1.1em" />}
 				{item}
 			</li>
 		))
@@ -56,7 +46,7 @@ const { items, label, sensor = false } = Astro.props;
 		font-size: var(--sl-text-sm);
 		font-weight: 600;
 	}
-	.sk-chips svg {
+	.sk-chips :global(svg) {
 		color: var(--sl-color-accent-high);
 		flex: none;
 	}

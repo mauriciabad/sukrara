@@ -347,17 +347,22 @@ def check_parity_globs(ch, rep):
 def check_features(ch, messages, strict, rep):
     """Judged on the change alone (a long integration branch touching FEATURES.md once must not cover everything)."""
     f = load("parity.json")["features"]
+    every = set(ch.files)
+    readme = any(match(p, f["readme"]) for p in every)
+    if readme and not any(match(p, f["site"]) for p in every):
+        rep.add("NOTE", "features", "README.md changed but not the website's Features page (website/src/content/docs/features.mdx\n"
+                "and es/): if what Sukrara does changed, the page says so too.")
     code = sorted(p for p in ch.files if match(p, f["code"]))
     if not code:
         return
-    every = set(ch.files)
     if not any(match(p, f["docs"]) for p in every) and not trailers(messages, "Features-skip"):
         rep.add("FAIL" if strict else "WARN", "features",
                 "App code changed (%s%s) but docs/FEATURES.md did not.\n"
                 "Every behaviour change updates the catalog in the same change; for refactors/tests/fixes that keep\n"
                 "the behaviour add a trailer:  Features-skip: <reason>" % (", ".join(code[:3]), " …" if len(code) > 3 else ""))
-    if not any(match(p, f["readme"]) for p in every):
-        rep.add("NOTE", "features", "README.md not changed: if what Sukrara does changed, the README says so too.")
+    if not readme:
+        rep.add("NOTE", "features", "README.md not changed: if what Sukrara does changed, the README and the website's Features page\n"
+                "say so too.")
 
 
 SECRET_PATHS = re.compile(r"(^|/)(secrets|build|\.build|\.gradle|\.kotlin|\.cxx)/|\.(jks|keystore|p12|pem|key|apk|aab|ipa|dmg)$"

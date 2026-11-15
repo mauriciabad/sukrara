@@ -53,6 +53,7 @@ export default defineConfig({
 						link: '/android/',
 						icon: 'heart',
 						items: [
+							'features',
 							{ label: 'Apps', translations: { es: 'Apps' }, items: ['android', 'mac'] },
 							{
 								label: 'More',

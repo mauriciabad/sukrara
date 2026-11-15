@@ -21,8 +21,10 @@ sections your change touches.
 - **Document what goes in and what stays out.** When results from an investigation or the PoC are brought into
   Sukrara, record both **what was added** and **what was discarded, with the reason**, in the investigation's report
   ("In Sukrara" section). *(not checked: needs judgement)*
-- **The README always stays up to date** with what every Sukrara app does. Update it in the same change as the
-  feature. *(check `features`: a NOTE when app code changes without README.md)*
+- **The README always stays up to date** with what every Sukrara app does, and so does the website's
+  [Features page](website/src/content/docs/features.mdx) (the main features, a few lines each, English and Spanish).
+  Update them in the same change as the feature. *(check `features`: a NOTE when app code changes without README.md, or the
+  README without the Features page)*
 - **The website** ([`website/`](website/README.md), sukrara.mauri.app) says what each app does for the person, in
   English and Spanish (the developers' pages and reports, published from `docs/`: English). A change that makes a page
   wrong updates it in the same change. It loads nothing from another host (the privacy policy says so), shows only

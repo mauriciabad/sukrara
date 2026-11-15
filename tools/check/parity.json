@@ -178,9 +178,10 @@
     }
   ],
   "features": {
-    "_about": "App behaviour code; a change needs docs/FEATURES.md in the same range, or 'Features-skip: <reason>'.",
+    "_about": "App behaviour code; a change needs docs/FEATURES.md in the same range, or 'Features-skip: <reason>'. The website's Features page (site) has the README's main features: a NOTE when the README changes without it.",
     "code": ["apps/android/*/src/main/*", "apps/macos/Sources/*"],
     "docs": ["docs/FEATURES.md"],
-    "readme": ["README.md"]
+    "readme": ["README.md"],
+    "site": ["website/src/content/docs/features.mdx", "website/src/content/docs/es/features.mdx"]
   }
 }

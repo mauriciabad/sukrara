@@ -1,0 +1,120 @@
+---
+title: Funciones
+description: Lo principal que hace Sukrara. La glucosa de tu sensor donde mires, alertas discretas, compartida en directo sin nube, registro rápido, informes y las apps que ya usas. Android y Mac, gratis y de código abierto.
+tableOfContents: false
+---
+
+import Feature from '../../../components/features/Feature.astro';
+import Features from '../../../components/features/Features.astro';
+import Works from '../../../components/landing/Works.astro';
+import { GITHUB } from '../../../site';
+
+{/* The English page in Spanish: the same features, in the same order. */}
+
+Lo principal que hace Sukrara. Abre una para saber más.
+
+<Features>
+
+<Feature id="everywhere" icon="widgets" title="Tu glucosa donde mires" summary="Barra de estado, pantalla de inicio, pantalla de bloqueo y notificación. En el Mac, la barra de menús.">
+
+- Un chip de actualización en directo en la barra de estado o, con root, junto al reloj.
+- Widgets de inicio con la gráfica y tu tiempo en rango.
+- Con root, una tarjeta en la pantalla de bloqueo: tócala para registrar sin desbloquear.
+- La misma tarjeta en cada pantalla, con una flecha de tendencia calculada con tus lecturas, minutos antes que la del sensor.
+
+[Verla en Android](/es/android/)
+
+</Feature>
+
+<Feature id="alerts" icon="notifications_active" title="Alertas discretas, sin fatiga" summary="Cada alerta con su sonido. Se callan cuando ya has actuado.">
+
+- Paquetes de sonidos con una intensidad distinta para cada alerta.
+- Se callan tras la insulina o los hidratos, y mientras la glucosa vuelve al rango.
+- Tratamiento, Avisar menos y Silenciar en la propia alerta.
+- Suenan en No molestar, si las dejas.
+
+[Escucha los sonidos](/es/sounds/)
+
+</Feature>
+
+<Feature id="sharing" icon="group" title="Compartida en directo, sin nube" summary="Familia y amigos siguen tu glucosa en su móvil o su Mac.">
+
+- Invítalos con un enlace o un código QR.
+- Cifrada de extremo a extremo por Nostr, o por Bluetooth cuando están cerca. Sin cuenta ni servidor que mantener.
+- Reciben sus propias alertas, y se enteran de una muy baja que nadie responde.
+
+[Cómo funciona compartir](/es/open-glucose-stream/)
+
+</Feature>
+
+<Feature id="logging" icon="edit_note" title="Registra en segundos" summary="Insulina, hidratos y notas desde un widget, la notificación o una alerta.">
+
+- Indica cuándo fue con una sola rueda, o «hace 15 minutos» con un toque.
+- Una NovoPen Echo® Plus apunta sus propias dosis.
+- Quien te sigue puede registrar por ti, si le dejas.
+
+</Feature>
+
+<Feature id="reports" icon="bar_chart" title="Informes que tu consulta conoce" summary="Tiempo en rangos, glucosa media, GMI y variabilidad.">
+
+- En el móvil y en el Mac, de 1 a 30 días.
+- Tu consulta sigue recibiendo tus datos por LibreView o Tidepool.
+- Importa tu historial de LibreView o Tidepool, y expórtalo en CSV.
+
+</Feature>
+
+<Feature id="sensors" icon="dia_sensor" title="Lee tu sensor" summary="FreeStyle Libre 3 directamente, otros sensores a través de Juggluco.">
+
+- Inicia un Libre 3 o 3 Plus acercando el móvil.
+- Libre 2, Sibionics GS1 y CareSens Air a través de Juggluco.
+- Dexcom G6, G7 y ONE+, Accu-Chek SmartGuide y LinX directamente, aún sin probar con uno real.
+- Recordatorios antes de que termine tu sensor.
+
+</Feature>
+
+<Feature id="apps" icon="hub" title="Funciona con lo que ya usas" summary="LibreView, Tidepool, Nightscout, xDrip+, AAPS y más.">
+
+<Works
+  label="Apps y servicios"
+  items={[
+    { app: 'libreview', note: 'Le envía tus datos' },
+    { app: 'tidepool', note: 'Le envía tus datos' },
+    { app: 'nightscout', note: 'Le envía tus datos, o actúa como su API' },
+    { app: 'healthConnect', note: 'Escribe en él' },
+    { app: 'xdrip', note: 'Actúa como su API' },
+    { app: 'aaps', note: 'Le emite la glucosa' },
+    { app: 'juggluco', note: 'Lee la glucosa de ella' },
+    { logo: 'garmin', name: 'Garmin', note: 'Esferas, por la API de xDrip+' },
+  ]}
+/>
+
+</Feature>
+
+<Feature id="mac" logo="apple" title="También en tu Mac" summary="Tu glucosa o la de otra persona en la barra de menús, con las mismas alarmas.">
+
+- Widgets en el escritorio y en el Centro de notificaciones.
+- Registra tratamientos y consulta el informe de glucosa.
+- Junto a tu móvil, recibe tu glucosa por Bluetooth.
+
+[Sukrara para Mac](/es/mac/)
+
+</Feature>
+
+<Feature id="reliable" icon="check_circle" title="Sigue funcionando" summary="Se reinicia sola, y te avisa cuando algo se lo impide.">
+
+- Sigue vigilando tras reiniciar, incluso antes de desbloquear.
+- Te dice cuándo Android o macOS bloquean algo, y cómo arreglarlo.
+- Una alerta de prueba comprueba que las alertas llegan.
+
+</Feature>
+
+<Feature id="private" icon="privacy" title="Privada, gratis y de código abierto" summary="Sin cuenta, sin anuncios, sin rastreo. Tus datos se quedan en tu móvil.">
+
+- Nada sale de tu móvil hasta que actives algo.
+- Gratis, con su código fuente público bajo la GPL-3.0.
+
+[Política de privacidad](/es/privacy/) · <a href={GITHUB}>Código fuente</a>
+
+</Feature>
+
+</Features>
