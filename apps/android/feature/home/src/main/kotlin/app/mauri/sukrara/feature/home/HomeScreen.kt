@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -56,9 +59,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -242,6 +247,7 @@ fun HomeContent(
     // Mute alerts' lengths: from the home control, its Change time, the quiet sheet and the card's TalkBack action
     var muteDialog by rememberSaveable { mutableStateOf(false) }
     val scroll = rememberScrollState()
+    val atTop by remember { derivedStateOf { scroll.value == 0 } }
     val scope = rememberCoroutineScope()
     val closedText = stringResource(R.string.home_tip_closed)
     val updatesOnText = stringResource(R.string.banner_updates_on)
@@ -272,7 +278,12 @@ fun HomeContent(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
+            // the page scrolls under the bar (HomeColumn): see-through at the top, so the card's number can overflow
+            // its top edge (the owner, 2026-11-15: "it should simply overflow"); the bar's own colour once anything
+            // has scrolled under it
+            val barColors = TopAppBarDefaults.topAppBarColors()
             TopAppBar(
+                colors = if (atTop) barColors.copy(containerColor = Color.Transparent) else barColors,
                 title = {
                     when {
                         follower -> FollowerHeader(state)
@@ -295,7 +306,6 @@ fun HomeContent(
         floatingActionButton = {
             if (state.glucose.role != null) {
                 // icon-only while a safety banner shows or the page is scrolled, so it never covers what matters
-                val atTop by remember { derivedStateOf { scroll.value == 0 } }
                 val expanded = safetyBanner == null && atTop
                 val label = stringResource(R.string.home_add_treatment)
                 ExtendedFloatingActionButton(
@@ -308,8 +318,19 @@ fun HomeContent(
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
-        BoxWithConstraints(Modifier.padding(padding).fillMaxSize()) {
-            HomeColumn(state, callbacks, scroll, safetyBanner, infoBanner, viewport = maxHeight, penQuestions, penRead) {
+        // every side but the top: the column starts under the top bar and pads its content instead, so nothing at the
+        // top of the page (the card's number) is clipped at the bar's edge
+        val direction = LocalLayoutDirection.current
+        val top = padding.calculateTopPadding()
+        BoxWithConstraints(
+            Modifier
+                .padding(
+                    start = padding.calculateStartPadding(direction),
+                    end = padding.calculateEndPadding(direction),
+                    bottom = padding.calculateBottomPadding(),
+                ).fillMaxSize(),
+        ) {
+            HomeColumn(state, callbacks, scroll, top, safetyBanner, infoBanner, viewport = maxHeight - top, penQuestions, penRead) {
                 muteDialog = true
             }
         }
@@ -387,12 +408,17 @@ internal fun TreatmentSnackbars(
     }
 }
 
-/** Home's scrolling column; [viewport] = its visible height (a safety banner under the card must fit in it). */
+/**
+ * Home's scrolling column, from under the top bar: its content starts [top] lower (the bar's height), so whatever
+ * overflows the card's top edge (the number's tops) is still inside the column and shows through the bar. [viewport] =
+ * its visible height under the bar (a safety banner under the card must fit in it).
+ */
 @Composable
 private fun HomeColumn(
     state: HomeUiState,
     callbacks: HomeCallbacks,
     scroll: ScrollState,
+    top: Dp,
     safetyBanner: Banner?,
     infoBanner: Banner?,
     viewport: Dp,
@@ -404,7 +430,8 @@ private fun HomeColumn(
     Column(
         Modifier
             .fillMaxSize()
-            .verticalScroll(scroll),
+            .verticalScroll(scroll)
+            .padding(top = top),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         // glucose first: the card (or, before any reading, why there is none) is always at the top

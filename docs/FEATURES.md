@@ -1042,7 +1042,9 @@ start, derived from its end like every surface: `EarlyReadings`, `EarlyReadingsT
 says *New sensor: readings can be less accurate until 21:40. If one doesn't match how you feel, check with a meter.*
 (es *Sensor nuevo: …*); it slides away by itself at the 12 h mark. The chart shows the App place's *Time shown*
 (Settings › Graph; the 12 h default: the whole night on waking, as the Libre 3 app's home graph; #95: one default
-everywhere, and the person's setting is respected on the main screen too; someone who always wants 6 h sets App = 6 h).
+everywhere, and the person's setting is respected on the main screen too; someone who always wants 6 h sets App = 6 h). The page scrolls under the top bar, which is see-through while the page is at its top and takes its own
+colour once anything has scrolled under it, so the card's number may overflow the card's top edge and is never cut
+there (the owner, 2026-11-15: "the glucose value is croped on top … it should simply overflow").
 A **double tap** on the chart switches to 3 h around the tapped moment for the close look before a bolus, and from
 3 h back to the place's window (the Mac's two-finger double tap, the same rule: `ChartScroll.closeLook`,
 `ChartEase.smartZoom`), easing there like the way back to now (at once with reduced motion) with a light haptic tick;
