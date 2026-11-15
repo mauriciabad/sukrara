@@ -7,6 +7,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -82,6 +83,10 @@ class SafetyBannerFitTest {
         val screen = compose.onRoot().getBoundsInRoot()
         val action = compose.onNode(hasText(label) and hasClickAction()).getBoundsInRoot()
         assertTrue("$label ends at ${action.bottom}, the screen at ${screen.bottom}", action.bottom <= screen.bottom)
+        // never under the floating button (bottom-end): the banner's buttons sit at its end
+        val fab = compose.onNode(hasContentDescription("Add treatment") and hasClickAction(), useUnmergedTree = false).getBoundsInRoot()
+        val apart = action.bottom <= fab.top || action.right <= fab.left
+        assertTrue("$label ($action) is under the floating button ($fab)", apart)
     }
 
     @Test fun `Resume monitoring fits at the largest font`() {

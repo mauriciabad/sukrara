@@ -38,6 +38,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.ConfirmWhenAllowed
 import app.mauri.sukrara.feature.sharing.FollowerSharing
@@ -46,7 +48,6 @@ import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.PairingCodeCard
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.nearbySummary
-import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
@@ -145,18 +146,18 @@ fun FollowingContent(
                 }
 
                 FollowState.NotFollowing -> {
-                    if (mismatch) NoteCard(stringResource(R.string.sh_join_err_mismatch), error = true)
+                    if (mismatch) NoticeCard(stringResource(R.string.sh_join_err_mismatch), tone = NoticeTone.Error)
                     OutlinedButton(onClick = onJoinAgain, modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.sh_join_title))
                     }
                 }
 
                 is FollowState.Unreadable -> {
-                    NoteCard(stringResource(R.string.sh_following_unreadable), error = true)
+                    NoticeCard(stringResource(R.string.sh_following_unreadable), tone = NoticeTone.Error)
                 }
 
                 FollowState.Damaged -> {
-                    NoteCard(stringResource(R.string.sh_following_damaged), error = true)
+                    NoticeCard(stringResource(R.string.sh_following_damaged), tone = NoticeTone.Error)
                 }
 
                 is FollowState.Following -> {
@@ -193,7 +194,7 @@ fun FollowingContent(
                                     FollowStatus.Expired -> R.string.sh_join_expired
                                     else -> R.string.sh_join_revoked
                                 }
-                            NoteCard(stringResource(why, name), error = true)
+                            NoticeCard(stringResource(why, name), tone = NoticeTone.Error)
                             OutlinedButton(onClick = onJoinAgain, modifier = Modifier.fillMaxWidth()) {
                                 Text(stringResource(R.string.sh_following_join_again))
                             }
@@ -246,7 +247,7 @@ fun FollowingContent(
                     NearbyFixRow(nearby, AndroidNearbyCentral.PERMISSIONS, onRefreshNearby)
                 }
             }
-            if (failed) NoteCard(stringResource(R.string.sh_following_stop_failed), error = true)
+            if (failed) NoticeCard(stringResource(R.string.sh_following_stop_failed), tone = NoticeTone.Error)
             if (state !is FollowState.Loading && state != FollowState.NotFollowing) {
                 OutlinedButton(
                     onClick = { confirming = true },

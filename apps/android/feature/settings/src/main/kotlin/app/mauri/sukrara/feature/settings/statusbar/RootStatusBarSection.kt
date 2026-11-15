@@ -4,11 +4,13 @@
 package app.mauri.sukrara.feature.settings.statusbar
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.designsystem.banner.NoticeDefaults
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.root.AccessProblem
@@ -42,7 +44,16 @@ fun RootAccessCard(
     problem: AccessProblem?,
     actions: NotificationPageActions,
     modifier: Modifier = Modifier,
-) = AccessStepBanner(accessStep(access, true), access, busy, problem, actions.checkRoot, actions.requestScope, actions.restart, modifier)
+) = AccessStepBanner(
+    accessStep(access, true),
+    access,
+    busy,
+    problem,
+    actions.checkRoot,
+    actions.requestScope,
+    actions.restart,
+    modifier.padding(NoticeDefaults.PageMargins),
+)
 
 /** The placement choices; without the module the clock placements are off and the slot ones say what shows meanwhile. */
 @Composable

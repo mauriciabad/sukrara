@@ -30,9 +30,7 @@ struct FollowStep: View {
                 form
             }
             if let failure = follow.failure {
-                Label(failure.message, systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                    .accessibilityAddTraits(.isStaticText)
+                Notice(failure.message, tone: .error)
             }
         }
         .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35), value: follow.invite)

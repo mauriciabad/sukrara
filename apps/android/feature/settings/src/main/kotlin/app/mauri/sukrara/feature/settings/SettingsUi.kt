@@ -35,7 +35,10 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.model.DurationWords
 import app.mauri.sukrara.core.model.Durations
-import app.mauri.sukrara.designsystem.banner.SettingsBannerCard
+import app.mauri.sukrara.designsystem.banner.NoticeAction
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeDefaults
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.dialog.LocalGlucoseUnit
 import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.graph.CardWords
@@ -61,10 +64,10 @@ fun SettingsPage(
 ) = SettingsScaffoldPage(title, onBack, modifier, scroll, snackbar, content)
 
 /**
- * A persistent state with its exits (Mute all, a side muted, Remind less, the sensor stopped): SPA's SettingsBanner (as
- * every banner on a settings page) with the state's [icon] and what is on, until when, then the buttons that end or
+ * A persistent state with its exits (Mute all, a side muted, Remind less, the sensor stopped): the shared [NoticeCard]
+ * (as every banner) with the state's [icon] and what is on, until when, then the buttons that end or
  * change it, the first one ([actions]) at the end. [warning]: something stops readings or alerts (icon and actions in
- * the error colour). [headline]: a short state (Mute all's, a quiet side's) as the banner's title, else the body.
+ * the error colour: [NoticeTone.Warning]). [headline]: a short state (Mute all's, a quiet side's) as the banner's title, else the body.
  * Announced politely by TalkBack when it appears.
  */
 @Composable
@@ -76,16 +79,14 @@ fun StateStrip(
     warning: Boolean = false,
     headline: Boolean = false,
 ) {
-    val main = actions.firstOrNull()
-    SettingsBannerCard(
-        icon,
+    NoticeCard(
+        text.takeUnless { headline },
+        modifier.padding(NoticeDefaults.PageMargins),
         title = text.takeIf { headline },
-        text = text.takeUnless { headline },
-        modifier = modifier,
-        action = main?.first,
-        onAction = main?.second ?: {},
-        secondary = actions.getOrNull(1),
-        tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        tone = if (warning) NoticeTone.Warning else NoticeTone.Info,
+        icon = icon,
+        action = actions.firstOrNull()?.let { (label, onClick) -> NoticeAction(label, onClick) },
+        secondary = listOfNotNull(actions.getOrNull(1)?.let { (label, onClick) -> NoticeAction(label, onClick) }),
     )
 }
 

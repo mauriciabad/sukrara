@@ -47,6 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.WriterSwitch
@@ -129,18 +131,14 @@ fun ApproveDialog(
                 InviteCard(request, name, time)
                 if (typeCode || request.nearby) {
                     Spacer(Modifier.height(12.dp))
-                    Surface(shape = MaterialTheme.shapes.large, color = cs.errorContainer, modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            if (request.nearby) {
-                                stringResource(R.string.sh_approve_nearby)
-                            } else {
-                                pluralStringResource(R.plurals.sh_approve_others, request.others, request.others)
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = cs.onErrorContainer,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
+                    NoticeCard(
+                        if (request.nearby) {
+                            stringResource(R.string.sh_approve_nearby)
+                        } else {
+                            pluralStringResource(R.plurals.sh_approve_others, request.others, request.others)
+                        },
+                        tone = NoticeTone.Error,
+                    )
                 }
                 if (request.nearby) {
                     Spacer(Modifier.height(12.dp))

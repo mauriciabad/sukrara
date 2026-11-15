@@ -4,11 +4,13 @@
 package app.mauri.sukrara.feature.settings.lock
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,6 +22,7 @@ import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.designsystem.banner.NoticeDefaults
 import app.mauri.sukrara.designsystem.dialog.Choice
 import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
@@ -165,6 +168,24 @@ fun lockWidgetSummary(ui: LockWidgetUi): Int =
 
 private enum class LockDialog { Background, Appearance, Time }
 
+/** The module's missing step with its fix, as a notice on the page. */
+@Composable
+private fun LockAccessBanner(
+    widget: LockWidgetUi,
+    actions: LockWidgetActions,
+) {
+    AccessStepBanner(
+        lockAccessStep(widget.access, widget.on),
+        widget.access,
+        widget.busy,
+        widget.problem,
+        actions.checkRoot,
+        actions.requestScope,
+        actions.restart,
+        Modifier.padding(NoticeDefaults.PageMargins),
+    )
+}
+
 /**
  * Settings › Lock screen: the lock-screen widget (in a build with root features: *Lock screen widget*, *Background*,
  * *Appearance*, the module's missing step as a card above them) and *Add treatment over the lock screen* (*Time to save*:
@@ -183,15 +204,7 @@ fun LockScreenContent(
     val spec = SettingsSpec.LOCK_TREATMENT_TIME
     SettingsPage(stringResource(R.string.st_lock_title), onBack) {
         if (widget != null) {
-            AccessStepBanner(
-                lockAccessStep(widget.access, widget.on),
-                widget.access,
-                widget.busy,
-                widget.problem,
-                actions.checkRoot,
-                actions.requestScope,
-                actions.restart,
-            )
+            LockAccessBanner(widget, actions)
             val off = stringResource(R.string.st_lock_unavailable)
             SettingsGroup(title = stringResource(R.string.st_root_group)) {
                 SwitchRow(

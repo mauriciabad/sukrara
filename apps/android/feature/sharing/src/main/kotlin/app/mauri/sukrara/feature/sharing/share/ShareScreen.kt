@@ -55,6 +55,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
@@ -63,7 +65,6 @@ import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.feature.sharing.Invite
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.WriterSwitch
-import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.feature.sharing.setup.startSafely
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.FollowerRecord
@@ -124,9 +125,9 @@ fun ShareScreen(
                     title = stringResource(R.string.sh_share_writer),
                     summary = stringResource(R.string.sh_share_writer_summary),
                 ) { writer = it }
-                if (invite is InviteUi.Failed) NoteCard(stringResource(R.string.sh_share_failed), error = true)
+                if (invite is InviteUi.Failed) NoticeCard(stringResource(R.string.sh_share_failed), tone = NoticeTone.Error)
                 if (internetOff) {
-                    NoteCard(stringResource(R.string.sh_share_internet_off))
+                    NoticeCard(stringResource(R.string.sh_share_internet_off))
                     OutlinedButton(onClick = onTurnOnInternet, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                         Text(stringResource(R.string.sh_share_internet_turn_on))
                     }
@@ -307,7 +308,7 @@ private fun ColumnScope.ReadyInvite(
     )
     Text(stringResource(R.string.sh_share_scan), style = MaterialTheme.typography.bodyMedium)
     val expiry = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(invite.expiresAt * 1000))
-    NoteCard(
+    NoticeCard(
         if (invite.label.isEmpty()) {
             stringResource(R.string.sh_share_note_unnamed, expiry)
         } else {

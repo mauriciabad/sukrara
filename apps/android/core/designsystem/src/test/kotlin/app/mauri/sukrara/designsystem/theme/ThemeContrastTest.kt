@@ -32,7 +32,12 @@ class ThemeContrastTest {
                 s.error to s.surfaceBright,
                 s.onPrimary to s.primary,
                 s.onSecondaryContainer to s.secondaryContainer,
-                // safety banners (BannerSeverity.Safety): words on the container, the filled action button
+                // notices (NoticeCard): a tip's and a warning's words and buttons on home's container and a settings page's
+                s.onSurfaceVariant to s.surfaceContainerHigh,
+                s.primary to s.surfaceContainerHigh,
+                s.error to s.surfaceContainerHigh,
+                s.error to s.surface,
+                // an error notice (NoticeTone.Error): words on the container, the filled action button
                 s.onErrorContainer to s.errorContainer,
                 s.onError to s.error,
             )

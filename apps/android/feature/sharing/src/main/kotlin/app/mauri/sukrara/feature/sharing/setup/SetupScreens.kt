@@ -69,6 +69,7 @@ import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.UnlockedSound
+import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
@@ -502,24 +503,6 @@ internal fun NumberedItem(
     }
 }
 
-/** A calm explanatory box (not an error). */
-@Composable
-internal fun NoteCard(
-    text: String,
-    error: Boolean = false,
-) {
-    Card(
-        colors =
-            CardDefaults.cardColors(
-                containerColor = if (error) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = if (error) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface,
-            ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
-    }
-}
-
 @Composable
 private fun ColumnScope.PermissionsStep(
     u: SetupUi,
@@ -720,10 +703,10 @@ private fun ColumnScope.SensorStep(
 ) {
     StepHeader(stringResource(R.string.sh_setup_sensor_title), stringResource(R.string.sh_setup_sensor_body))
     if (u.facts.ownSensorLive) {
-        NoteCard(stringResource(R.string.sh_setup_sensor_live))
+        NoticeCard(stringResource(R.string.sh_setup_sensor_live), icon = DsR.drawable.ds_ic_check_circle)
         StepButtons(stringResource(R.string.sh_setup_continue), actions.completeSensor)
     } else {
-        NoteCard(stringResource(R.string.sh_setup_sensor_not_monitoring))
+        NoticeCard(stringResource(R.string.sh_setup_sensor_not_monitoring))
         StepButtons(
             stringResource(R.string.sh_setup_sensor_open),
             actions.openSensorSetup,
@@ -739,7 +722,7 @@ private fun ColumnScope.SensorStep(
 @Composable
 private fun ColumnScope.HistoryStep(actions: SetupActions) {
     StepHeader(stringResource(R.string.sh_setup_history_title), stringResource(R.string.sh_setup_history_body))
-    NoteCard(stringResource(R.string.sh_setup_history_note))
+    NoticeCard(stringResource(R.string.sh_setup_history_note))
     StepButtons(
         stringResource(R.string.sh_setup_history_open),
         actions.openHistoryImport,
@@ -811,7 +794,7 @@ private fun ColumnScope.ReadyStep(
         stringResource(R.string.sh_setup_ready_body),
     )
     if (pending.isNotEmpty()) {
-        NoteCard(stringResource(R.string.sh_setup_ready_pending, pending.joinToString(" · ") { it.label(context) }))
+        NoticeCard(stringResource(R.string.sh_setup_ready_pending, pending.joinToString(" · ") { it.label(context) }))
     }
     for (extra in u.extras) UpdatesPoint(extra.icon, stringResource(extra.title))
     StepButtons(
@@ -834,7 +817,7 @@ private fun ColumnScope.PensStep(
     StepCircle(DsR.drawable.ds_ic_dia_pen)
     StepHeader(stringResource(R.string.sh_setup_pens_title), stringResource(R.string.sh_setup_pens_body))
     if (u.facts.pens == true) {
-        NoteCard(stringResource(R.string.sh_setup_pens_done))
+        NoticeCard(stringResource(R.string.sh_setup_pens_done), icon = DsR.drawable.ds_ic_check_circle)
         StepButtons(stringResource(R.string.sh_setup_continue), actions.completePens, enabled = !u.busy)
     } else {
         StepButtons(
@@ -872,7 +855,7 @@ private fun ColumnScope.RootStep(
     StepHeader(stringResource(R.string.sh_setup_root_title), stringResource(R.string.sh_setup_root_body))
     when {
         access.granted -> {
-            NoteCard(stringResource(R.string.sh_setup_root_granted))
+            NoticeCard(stringResource(R.string.sh_setup_root_granted), icon = DsR.drawable.ds_ic_check_circle)
             StepButtons(stringResource(R.string.sh_setup_continue), actions.completeRoot, enabled = !u.busy)
         }
 

@@ -88,13 +88,7 @@ struct FollowEnded: View {
 
     var body: some View {
         if let text = Self.text(status, wearer: wearer) {
-            // the colour only on the symbol: the words keep full contrast
-            Label {
-                Text(text)
-            } icon: {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-            }
-            .fixedSize(horizontal: false, vertical: true)
+            Notice(text)
         }
     }
 

@@ -6,6 +6,8 @@ package app.mauri.sukrara.feature.sharing.setup
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.feature.sharing.R
 
 /**
@@ -21,7 +23,7 @@ internal fun ColumnScope.AlertConfirmStep(
 ) {
     StepHeader(stringResource(R.string.sh_setup_alerts_title), stringResource(R.string.sh_setup_alerts_body))
     actions.thresholdRows(u.alerts.settings, actions.editThreshold)
-    if (!u.alerts.ordered) NoteCard(stringResource(R.string.sh_setup_alerts_order), error = true)
+    if (!u.alerts.ordered) NoticeCard(stringResource(R.string.sh_setup_alerts_order), tone = NoticeTone.Error)
     StepButtons(
         stringResource(R.string.sh_setup_alerts_confirm),
         actions.confirmAlerts,

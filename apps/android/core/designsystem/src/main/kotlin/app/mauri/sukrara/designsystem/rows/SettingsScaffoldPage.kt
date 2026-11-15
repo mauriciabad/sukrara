@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import app.mauri.sukrara.designsystem.banner.LocalNoticeContainer
 import com.android.settingslib.spa.framework.compose.LocalNavController
 import com.android.settingslib.spa.framework.compose.NavControllerWrapper
 import com.android.settingslib.spa.framework.theme.SettingsTheme
@@ -36,7 +38,11 @@ import com.android.settingslib.spa.widget.scaffold.SettingsScaffold
  * (`SukraraTheme` around it): the one renderer draws it as everywhere else.
  */
 @Composable
-fun SettingsChrome(content: @Composable () -> Unit) = SettingsTheme(content)
+fun SettingsChrome(content: @Composable () -> Unit) =
+    SettingsTheme {
+        // a notice on a settings page (surfaceContainer) is SPA's banner colour, as home's is one step off its page
+        CompositionLocalProvider(LocalNoticeContainer provides MaterialTheme.colorScheme.surface, content = content)
+    }
 
 /**
  * One settings page, SPA's SettingsScaffold in [SettingsChrome]: the large [title] (it matches the row that opened

@@ -227,13 +227,7 @@ struct OpenAtLoginRows: View {
                 L10n.t("Open at login"),
                 isOn: Binding(get: { loginItem.status.isOn }, set: { loginItem.set($0) }))
             if let note = Self.note(loginItem.status, error: loginItem.lastError) {
-                // the colour only on the symbol: the words keep full contrast
-                Label {
-                    Text(note)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                }
-                .fixedSize(horizontal: false, vertical: true)
+                Notice(note)
             }
             if loginItem.offersLoginItems {
                 Button(L10n.t("Open Login Items…"), action: loginItem.openSettings)
@@ -289,15 +283,10 @@ struct FollowingRows: View {
             Text(canWrite ? L10n.t("Can add treatments") : L10n.t("Can't add treatments (the wearer decides)"))
                 .foregroundStyle(.secondary)
             if let problem = follow.problem {
-                // the colour only on the symbol: the words keep full contrast
-                Label {
-                    Text(problem)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                }
-                .fixedSize(horizontal: false, vertical: true)
-                if follow.bluetoothBlocked {
-                    Button(L10n.t("Open Bluetooth Settings")) { BlockedFeature.openBluetoothSettings() }
+                Notice(problem) {
+                    if follow.bluetoothBlocked {
+                        Button(L10n.t("Open Bluetooth Settings")) { BlockedFeature.openBluetoothSettings() }
+                    }
                 }
             }
             if let me = follow.me {
@@ -318,7 +307,7 @@ struct FollowingRows: View {
                         ))
                 }
         case .declined, .inviteUsed, .inviteExpired, .revoked, .broken:
-            row(Self.endText(follow.status), "exclamationmark.triangle")
+            Notice(Self.endText(follow.status))
             Button(L10n.t("Follow again…"), action: openFollow)
             ScanQRButton(follow: follow, openFollow: openFollow)
         }

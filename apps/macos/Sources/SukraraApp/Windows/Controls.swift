@@ -164,3 +164,68 @@ extension DialogButtons {
             leading: leading)
     }
 }
+
+/// THE notice of the Mac (the owner, 2026-11-15: warnings that are alike must be one shared component; Android's
+/// `NoticeCard`): every warning or error in a form, a window or the panel is a `Notice`, so they read the same
+/// everywhere. The tone's symbol in its colour, the words at full contrast beside it (Human Interface Guidelines,
+/// Color: never colour alone, text in the label colour), an optional explanation in the secondary colour under the
+/// title, then its buttons. `ControlsTests` keeps every other file off the warning symbols.
+struct Notice<Actions: View>: View {
+    enum Tone {
+        /// Something to fix; nothing has failed yet (a blocked feature, notifications off).
+        case warning
+        /// Something failed (settings that couldn't be read, a follow that didn't work).
+        case error
+
+        var symbol: String {
+            switch self {
+            case .warning: "exclamationmark.triangle.fill"
+            case .error: "exclamationmark.octagon.fill"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .warning: .orange
+            case .error: .red
+            }
+        }
+    }
+
+    let title: String
+    var text: String? = nil
+    var tone: Tone = .warning
+    @ViewBuilder var actions: () -> Actions
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                    if let text {
+                        Text(text).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            } icon: {
+                Image(systemName: tone.symbol).foregroundStyle(tone.color)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            actions()
+        }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+extension Notice where Actions == EmptyView {
+    init(_ title: String, text: String? = nil, tone: Tone = .warning) {
+        self.init(title: title, text: text, tone: tone) { EmptyView() }
+    }
+}
+
+extension Notice {
+    init(
+        _ title: String, text: String? = nil, tone: Tone = .warning, @ViewBuilder actions: @escaping () -> Actions
+    ) {
+        self.init(title: title, text: text, tone: tone, actions: actions)
+    }
+}

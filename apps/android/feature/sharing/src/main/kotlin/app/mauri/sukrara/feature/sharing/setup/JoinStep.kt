@@ -33,6 +33,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.ConfirmWhenAllowed
 import app.mauri.sukrara.feature.sharing.MatchCodeLine
@@ -73,7 +75,7 @@ internal fun ColumnScope.JoinStep(
                 )
             }
             PairingCodeCard(pairing, name, onSame = { actions.confirmNearby(true) }, onDifferent = { actions.confirmNearby(false) })
-            if (pairing.confirmed) NoteCard(stringResource(R.string.sh_join_waiting_note, name))
+            if (pairing.confirmed) NoticeCard(stringResource(R.string.sh_join_waiting_note, name))
             // never blocks: the Following page shows the same card until the codes are compared
             StepButtons(stringResource(R.string.sh_setup_continue), onPrimary = actions.completeJoin)
             return
@@ -104,7 +106,7 @@ internal fun ColumnScope.JoinStep(
                 }
             }
         }
-        if (follow.status != FollowStatus.Active) NoteCard(stringResource(R.string.sh_join_waiting_note, name))
+        if (follow.status != FollowStatus.Active) NoticeCard(stringResource(R.string.sh_join_waiting_note, name))
         StepButtons(stringResource(R.string.sh_setup_continue), onPrimary = actions.completeJoin)
         return
     }
@@ -117,7 +119,7 @@ internal fun ColumnScope.JoinStep(
                 FollowStatus.Expired -> R.string.sh_join_expired
                 else -> R.string.sh_join_revoked
             }
-        NoteCard(stringResource(ended, name), error = true)
+        NoticeCard(stringResource(ended, name), tone = NoticeTone.Error)
     }
     var name by rememberSaveable { mutableStateOf("") }
     // kept while the confirmation shows: Cancel returns to a pasted link (an opened one leaves with the invite)
@@ -150,7 +152,7 @@ internal fun ColumnScope.JoinStep(
         },
     )
     NameField(name, { name = it }, enabled = !busy)
-    (u.join as? JoinUi.Failed)?.let { NoteCard(stringResource(joinError(it.result)), error = true) }
+    (u.join as? JoinUi.Failed)?.let { NoticeCard(stringResource(joinError(it.result)), tone = NoticeTone.Error) }
     if (busy) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -216,7 +218,7 @@ private fun ColumnScope.InviteConfirm(
             }
         }
     }
-    NoteCard(stringResource(R.string.sh_join_confirm_note))
+    NoticeCard(stringResource(R.string.sh_join_confirm_note))
     NameField(name, onName)
     StepButtons(
         stringResource(R.string.sh_join_follow),

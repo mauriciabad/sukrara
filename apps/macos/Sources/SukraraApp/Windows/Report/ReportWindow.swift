@@ -105,13 +105,11 @@ struct ReportView: View {
                     .frame(maxWidth: .infinity, minHeight: 120)
             } else {
                 if report.lowCoverage {
-                    Label(
+                    Notice(
                         L10n.t(
-                            "Only \(report.coverage + " %") of the period has sensor data; a report needs \("70 %")."),
-                        systemImage: "exclamationmark.triangle"
+                            "Only \(report.coverage + " %") of the period has sensor data; a report needs \("70 %").")
                     )
                     .font(.caption)
-                    .foregroundStyle(.orange)
                 }
                 ranges(report)
                 Divider()

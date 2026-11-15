@@ -6,8 +6,9 @@ import Testing
 
 @testable import SukraraApp
 
-/// One pattern per kind of input across the Mac app (#181): every text field is a `TextInput` (no placeholder),
-/// every number a `NumberField` (field, stepper, unit), every dialog's closing row `DialogButtons` (regular size).
+/// One pattern per kind of input and notice across the Mac app (#181): every text field is a `TextInput` (no
+/// placeholder), every number a `NumberField` (field, stepper, unit), every dialog's closing row `DialogButtons`
+/// (regular size), every warning a `Notice`.
 @Suite struct ControlsTests {
     /// The app's sources, but the shared controls themselves.
     private static func sources() throws -> [(String, String)] {
@@ -47,6 +48,12 @@ import Testing
     @Test func dialogButtonsAreRegularSized() throws {
         #expect(try Self.uses(/\.controlSize\(\.large\)/) == [])
         #expect(try Self.uses(/keyboardShortcut\(\.cancelAction\)/) == [])
+    }
+
+    /// The owner, 2026-11-15: "it doesn't look like warnings that are similar are using a shared component". A warning
+    /// or an error is a `Notice` (its symbol in its colour, the words at full contrast), never a hand-made label.
+    @Test func warningsAreNotices() throws {
+        #expect(try Self.uses(/(?:systemImage|systemName):\s*"exclamationmark\.(?:triangle|octagon)/) == [])
     }
 
     @Test func aStepStaysOnTheGridAndInRange() {

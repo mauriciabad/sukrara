@@ -26,11 +26,9 @@ struct AlertsRangesPane: View {
         Form {
             if model.alerts.readError {
                 Section {
-                    Label(
+                    Notice(
                         L10n.t("Alert settings couldn't be read. Sukrara keeps using the last ones it read."),
-                        systemImage: "exclamationmark.triangle.fill"
-                    )
-                    .foregroundStyle(.red)
+                        tone: .error)
                     Button(L10n.t("Reset alert settings")) { model.alerts.resetToDefaults() }
                 }
             }

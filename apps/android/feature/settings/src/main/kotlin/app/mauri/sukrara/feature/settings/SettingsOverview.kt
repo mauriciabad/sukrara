@@ -208,8 +208,6 @@ fun SettingsOverviewContent(
                 clinicBanner -> clinic
                 else -> null
             },
-            // SPA's banner colour on a settings page
-            tipContainer = MaterialTheme.colorScheme.surface,
         )
         // setup's optional steps left for later (#181): first, as stock Settings' "Finish setting up" suggestion; gone
         // once each is answered

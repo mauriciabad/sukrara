@@ -153,16 +153,10 @@ public struct SetupView: View {
             .formStyle(.columns)
             .environment(\.glucoseUnit, model.settings.unit)  // the levels in the person's unit (mmol/L or mg/dL)
             if !model.thresholdsInOrder {
-                // the colour only on the symbol: the words keep full contrast
-                Label {
-                    Text(
-                        L10n.t(
-                            "Keep the order: very low below low, low below high, high below very high, very high below extremely high."
-                        ))
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
-                }
-                .fixedSize(horizontal: false, vertical: true)
+                Notice(
+                    L10n.t(
+                        "Keep the order: very low below low, low below high, high below very high, very high below extremely high."
+                    ))
             }
             if model.levelsMirrored {
                 Text(mirroredNote).font(.callout).foregroundStyle(.secondary)
@@ -278,14 +272,9 @@ struct OpenAtLoginState: View {
     var body: some View {
         if let loginItem {
             if let note = OpenAtLoginRows.note(loginItem.status, error: loginItem.lastError) {
-                // the colour only on the symbol: the words keep full contrast
-                Label {
-                    Text(note)
-                } icon: {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                Notice(note) {
+                    Button(L10n.t("Open Login Items…"), action: loginItem.openSettings)
                 }
-                .fixedSize(horizontal: false, vertical: true)
-                Button(L10n.t("Open Login Items…"), action: loginItem.openSettings)
             } else if loginItem.status == .on {
                 Label {
                     Text(L10n.t("Sukrara opens at login."))

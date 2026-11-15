@@ -16,8 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.feature.sharing.R
-import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.feature.sharing.setup.StepButtons
 import app.mauri.sukrara.feature.sharing.setup.StepHeader
 import app.mauri.sukrara.share.owner.OwnerShareState
@@ -55,7 +55,7 @@ internal fun ColumnScope.ConflictContent(
     onRetry: () -> Unit,
 ) {
     Text(stringResource(R.string.sh_conflict_body))
-    NoteCard(
+    NoticeCard(
         stringResource(
             if (state.followersReceiving) R.string.sh_conflict_followers_receiving else R.string.sh_conflict_followers_not_receiving,
         ),

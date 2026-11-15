@@ -95,8 +95,8 @@ import app.mauri.sukrara.designsystem.alerts.rememberAlertWords
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
-import app.mauri.sukrara.designsystem.banner.BannerSeverity
 import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
@@ -262,8 +262,8 @@ fun HomeContent(
             },
         )
     // a safety banner sits right under the card (seen without scrolling); a tip goes below the glucose block
-    val safetyBanner = shownBanner?.takeIf { it.severity == BannerSeverity.Safety }
-    val infoBanner = shownBanner?.takeIf { it.severity == BannerSeverity.Info }
+    val safetyBanner = shownBanner?.takeIf { it.tone == NoticeTone.Error }
+    val infoBanner = shownBanner?.takeIf { it.tone != NoticeTone.Error }
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -527,7 +527,7 @@ private fun FollowerHeader(state: HomeUiState) {
  * a safety banner, then the compact reason with its action. Only before there is anything to draw (not set up, no
  * sensor yet, no core) a full-width reason takes the card's place; that swap cross-fades (reduced motion: snaps).
  * While a safety banner shows, the card gives up height (down to [MIN_CARD_HEIGHT], easing) so the banner's action is
- * on screen without scrolling in [viewport], at any font size.
+ * on screen without scrolling in [viewport], above the floating button, at any font size.
  */
 @Composable
 private fun GlucoseSection(
@@ -547,8 +547,15 @@ private fun GlucoseSection(
         if (safetyBanner == null) {
             CARD_HEIGHT
         } else {
-            (viewport - with(density) { under.toDp() } - SECTION_GAP).coerceIn(MIN_CARD_HEIGHT, CARD_HEIGHT)
+            // the banner ends above the floating button (bottom-end), so its actions at the end are never under it
+            val room = if (state.glucose.role != null) FAB_SPACE else SECTION_GAP
+            (viewport - with(density) { under.toDp() } - room).coerceIn(MIN_CARD_HEIGHT, CARD_HEIGHT)
         }
+    // a small screen at a large font: even the smallest card leaves the banner's end over the floating button, so its
+    // buttons stop short of it (and wrap rather than slide under it)
+    val bannerEnd = fit + with(density) { under.toDp() }
+    val overFab = safetyBanner != null && state.glucose.role != null && bannerEnd > viewport - FAB_SPACE + 1.dp
+    val actionsEnd = if (overFab) FAB_CLEARANCE else 0.dp
     val cardHeight by animateDpAsState(fit, Motion.defaultSpatial(reduced), label = "card height")
     Swap(state.reason?.takeIf { it.fullPage }) { fullPage ->
         if (fullPage != null) {
@@ -591,7 +598,7 @@ private fun GlucoseSection(
                 )
                 Column(Modifier.onSizeChanged { under = it.height }) {
                     QuietChips(QuietTarget.chips(state.glucose.alerts, pill), state.now) { sheet = it }
-                    BannerSlot(safetyBanner)
+                    BannerSlot(safetyBanner, actionsEndInset = actionsEnd)
                 }
                 sheet?.let { shown ->
                     QuietSheet(
@@ -871,12 +878,18 @@ private fun banner(
         }
 
     fun open(action: HomeAction): () -> Unit = { callbacks.onAction(action) }
-    val severity = if (kind.safety) BannerSeverity.Safety else BannerSeverity.Info
+    // safety: alerts or readings may not work; a warning: the person has to act (Android blocks something, LibreView
+    // lacks glucose); the rest are tips
+    val severity =
+        when (kind) {
+            BannerKind.TapsBlocked, BannerKind.FeatureBlocked, BannerKind.ClinicUploadBehind -> NoticeTone.Warning
+            else -> if (kind.safety) NoticeTone.Error else NoticeTone.Info
+        }
     return when (kind) {
         BannerKind.MonitoringStopped -> {
             Banner(
                 kind.name,
-                R.drawable.home_ic_warning,
+                DsR.drawable.ds_ic_warning,
                 stringResource(R.string.reason_stopped_title),
                 stringResource(R.string.reason_stopped_body),
                 stringResource(R.string.reason_stopped_action),
@@ -893,7 +906,7 @@ private fun banner(
             val copyReport = rememberCopyAlertReport(state.readiness ?: AlertReadiness(setOf(problem)))
             Banner(
                 kind.name,
-                R.drawable.home_ic_warning,
+                DsR.drawable.ds_ic_warning,
                 stringResource(R.string.banner_alerts_title),
                 requirementText(problem),
                 stringResource(if (delivery) DsR.string.ds_copy_report else R.string.banner_alerts_action),
@@ -934,7 +947,7 @@ private fun banner(
                 }
             Banner(
                 kind.name,
-                R.drawable.home_ic_warning,
+                DsR.drawable.ds_ic_warning,
                 stringResource(title),
                 stringResource(text),
                 stringResource(R.string.banner_taps_allow),
@@ -954,7 +967,7 @@ private fun banner(
             val haptics = rememberHaptics()
             Banner(
                 "${kind.name}:${feature.name}",
-                R.drawable.home_ic_warning,
+                DsR.drawable.ds_ic_warning,
                 stringResource(feature.titleRes()),
                 stringResource(feature.textRes()),
                 stringResource(DsR.string.ds_blocked_allow),
@@ -1399,6 +1412,15 @@ private const val MINUTES_PER_DAY = 1440L
 
 /** Room kept under a safety banner at the viewport's bottom edge. */
 private val SECTION_GAP = 8.dp
+
+/** Room kept under a safety banner where the floating button is: its 56 dp and its 16 dp margin. */
+private val FAB_SPACE = 72.dp
+
+/**
+ * How far a safety banner's buttons stop from its end while the banner reaches the floating button: the button (56 dp)
+ * and its margin (16 dp) and 8 dp between, less the card's margin and padding (16 + 16 dp).
+ */
+private val FAB_CLEARANCE = 48.dp
 
 /** "1:24 AM" within the last 12 hours, else the date and time ("Oct 26, 11:40 PM"): when a silence began. */
 @Composable

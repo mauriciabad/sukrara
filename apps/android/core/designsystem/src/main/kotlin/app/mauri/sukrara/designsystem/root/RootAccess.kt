@@ -16,7 +16,9 @@ import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SystemAccessState
-import app.mauri.sukrara.designsystem.banner.SettingsBannerCard
+import app.mauri.sukrara.designsystem.banner.NoticeAction
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.errors.UserErrors
 import kotlinx.coroutines.CoroutineScope
@@ -162,17 +164,26 @@ fun AccessStepBanner(
             }
         }
     val asking = shown.first == R.string.ds_access_asking_title
-    SettingsBannerCard(
-        if (asking) R.drawable.ds_ic_hourglass_top else R.drawable.ds_ic_warning,
-        stringResource(shown.first),
+    // a restart only loads what is already set up (home's tip says the same): the accent; a missing step: a warning
+    val routine = asking || step == AccessStep.Restart || step == AccessStep.Update
+    NoticeCard(
         shown.second,
         // the card grows and shrinks with its text (asking → the answer) instead of jumping
         modifier.animateContentSize(),
-        action = shown.third?.let { (label, _) -> stringResource(if (busy) R.string.ds_access_restarting else label) },
-        onAction = { shown.third?.second?.invoke() },
-        actionEnabled = !busy,
+        title = stringResource(shown.first),
+        tone = if (routine) NoticeTone.Info else NoticeTone.Warning,
+        icon =
+            when {
+                asking -> R.drawable.ds_ic_hourglass_top
+                routine -> R.drawable.ds_ic_info
+                else -> R.drawable.ds_ic_warning
+            },
+        action =
+            shown.third?.let { (label, onClick) ->
+                NoticeAction(stringResource(if (busy) R.string.ds_access_restarting else label), onClick, enabled = !busy)
+            },
         // waiting on the root manager (its prompt, up to 30 s): something visibly running
-        below = { if (asking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 16.dp)) },
+        below = { if (asking) LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 12.dp)) },
         note =
             problem?.let {
                 when (it) {

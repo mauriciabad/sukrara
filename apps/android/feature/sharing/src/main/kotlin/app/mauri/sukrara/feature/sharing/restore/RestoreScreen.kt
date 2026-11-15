@@ -36,6 +36,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.findActivity
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.feature.sharing.R
@@ -45,7 +47,6 @@ import app.mauri.sukrara.feature.sharing.profile.ProfileEditor
 import app.mauri.sukrara.feature.sharing.profile.ProfileSaver
 import app.mauri.sukrara.feature.sharing.profile.randomAvatar
 import app.mauri.sukrara.feature.sharing.setup.ConfirmDialog
-import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.feature.sharing.setup.NumberedItem
 import app.mauri.sukrara.feature.sharing.setup.RestoreBlock
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
@@ -59,6 +60,7 @@ import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.usecase.RestoreIdentity
 import kotlinx.coroutines.launch
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * The sharing identity step: restore from a recovery code (gated, P2) or start fresh (confirmed, P10).
@@ -72,7 +74,7 @@ internal fun ColumnScope.IdentityStep(
     StepHeader(stringResource(R.string.sh_identity_title), stringResource(R.string.sh_identity_body))
     when (val share = u.share) {
         is OwnerShareState.Sharing -> {
-            NoteCard(stringResource(R.string.sh_identity_sharing, share.followers.count { it.active }))
+            NoticeCard(stringResource(R.string.sh_identity_sharing, share.followers.count { it.active }))
             StepButtons(stringResource(R.string.sh_setup_continue), actions.completeIdentity)
         }
 
@@ -82,7 +84,12 @@ internal fun ColumnScope.IdentityStep(
         }
 
         else -> {
-            if (share is OwnerShareState.IdentityUnreadable) NoteCard(stringResource(R.string.sh_identity_unreadable), error = true)
+            if (share is OwnerShareState.IdentityUnreadable) {
+                NoticeCard(
+                    stringResource(R.string.sh_identity_unreadable),
+                    tone = NoticeTone.Error,
+                )
+            }
             RestoreForm(u.gate, u.restore, u.busy, actions.restore, actions.clearRestoreError)
             if (share is OwnerShareState.NoIdentity) {
                 HorizontalDivider()
@@ -111,7 +118,7 @@ internal fun ColumnScope.RestoreForm(
     var code by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     Text(stringResource(R.string.sh_restore_title), style = MaterialTheme.typography.titleMedium)
-    NoteCard(stringResource(R.string.sh_restore_warning))
+    NoticeCard(stringResource(R.string.sh_restore_warning))
     // the gate as a numbered checklist that ticks itself: 1 sensor live here, 2 the code
     val sensorLive = RestoreBlock.NoLiveReading !in gate.blocks
     NumberedItem(1, stringResource(R.string.sh_restore_step_sensor), done = sensorLive) {
@@ -230,7 +237,7 @@ internal fun ColumnScope.RestoreForm(
                 code = ""
                 password = ""
             }
-            NoteCard(stringResource(R.string.sh_restore_done, r.followers))
+            NoticeCard(stringResource(R.string.sh_restore_done, r.followers), icon = DsR.drawable.ds_ic_check_circle)
         }
 
         RestoreUi.Idle -> {

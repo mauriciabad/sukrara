@@ -48,6 +48,7 @@ import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenCandidate
 import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.PenTypedBy
+import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
@@ -112,7 +113,7 @@ fun penQuestionLine(
 /**
  * Home's card while a pen question waits (under the glucose card: glucose stays first). The oldest question with its
  * answers and how many more wait; the next one fades through once it's answered. Not red: nothing is wrong, the dose
- * is only waiting to be named. *Choose* (several typed entries) opens [PenSameSheet].
+ * is only waiting to be named: the shared [NoticeCard] with the pen's icon. *Choose* (several typed entries) opens [PenSameSheet].
  */
 @Composable
 fun PenQuestionCard(
@@ -132,37 +133,24 @@ fun PenQuestionCard(
         onAnswer(q, a)
     }
     Reveal(questions.isNotEmpty(), modifier) {
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = MaterialTheme.shapes.large,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            AnimatedContent(shown, contentKey = { it?.id }, transitionSpec = { Motion.fadeThrough(reduced) }, label = "pen question") { q ->
-                if (q == null) return@AnimatedContent
-                val more = (questions.size - 1).coerceAtLeast(0)
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        AnimatedContent(shown, contentKey = { it?.id }, transitionSpec = { Motion.fadeThrough(reduced) }, label = "pen question") { q ->
+            if (q == null) return@AnimatedContent
+            val more = (questions.size - 1).coerceAtLeast(0)
+            val line = penQuestionLine(q, time)
+            NoticeCard(
+                line,
+                title = stringResource(if (q.same) R.string.ds_pen_q_same else R.string.ds_pen_q_doses),
+                icon = R.drawable.ds_ic_dia_pen,
+                spokenText = penSpoken(line),
+            ) {
+                if (more > 0) {
                     Text(
-                        stringResource(if (q.same) R.string.ds_pen_q_same else R.string.ds_pen_q_doses),
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.semantics { heading() },
-                    )
-                    val line = penQuestionLine(q, time)
-                    val spoken = penSpoken(line)
-                    Text(
-                        line,
-                        style = MaterialTheme.typography.bodyMedium,
+                        pluralStringResource(R.plurals.ds_pen_q_more, more, more),
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.semantics { contentDescription = spoken },
                     )
-                    if (more > 0) {
-                        Text(
-                            pluralStringResource(R.plurals.ds_pen_q_more, more, more),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    PenQuestionAnswers(q, answer, { choosing = q }, Modifier.padding(top = 4.dp))
                 }
+                PenQuestionAnswers(q, answer, { choosing = q }, Modifier.padding(top = 4.dp))
             }
         }
     }

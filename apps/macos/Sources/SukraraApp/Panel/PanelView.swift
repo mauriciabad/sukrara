@@ -105,28 +105,18 @@ struct PanelView: View {
     /// An alert macOS refused (posted again plain, or not at all): said here with *Copy Report* (the steps and macOS's
     /// errors, no value) until an alert of that group is posted.
     private func alertNotShownWarning(_ failed: Set<String>) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(L10n.t("An alert couldn't be shown"), systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-            Text(
-                L10n.t("macOS refused its notification, so Sukrara posted it again plain. The next alert tries again.")
-            )
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
+        Notice(
+            L10n.t("An alert couldn't be shown"),
+            text: L10n.t(
+                "macOS refused its notification, so Sukrara posted it again plain. The next alert tries again.")
+        ) {
             Button(L10n.t("Copy Report")) { AlertReport.copy(failed) }
         }
     }
 
     /// A feature macOS blocks (docs/40): what it costs, the way to allow it, and Turn Off or Not Now beside it.
     private func blockedWarning(_ feature: BlockedFeature) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(feature.title, systemImage: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-            Text(feature.text)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        Notice(feature.title, text: feature.text) {
             HStack {
                 Button(feature.allow) {
                     switch feature {
@@ -141,18 +131,14 @@ struct PanelView: View {
                 }
             }
         }
-        .accessibilityElement(children: .contain)
     }
 
     private var notificationsWarning: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(
-                model.notificationPermission == .denied
-                    ? L10n.t("Notifications are off: alerts can't reach you.")
-                    : L10n.t("Alert banners or sounds are off: alerts may go unnoticed."),
-                systemImage: "exclamationmark.triangle.fill"
-            )
-            .foregroundStyle(.orange)
+        Notice(
+            model.notificationPermission == .denied
+                ? L10n.t("Notifications are off: alerts can't reach you.")
+                : L10n.t("Alert banners or sounds are off: alerts may go unnoticed.")
+        ) {
             Button(L10n.t("Open Notification Settings")) { AlertsRangesPane.openNotificationSettings() }
         }
     }

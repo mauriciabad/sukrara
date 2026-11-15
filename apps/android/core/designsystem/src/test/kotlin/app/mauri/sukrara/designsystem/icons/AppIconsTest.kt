@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
-import app.mauri.sukrara.designsystem.banner.BannerSeverity
 import app.mauri.sukrara.designsystem.banner.BannerSlot
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import com.android.settingslib.spa.framework.theme.SettingsDimension
 import org.junit.Assert.assertEquals
@@ -100,18 +100,18 @@ class AppIconsTest {
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 Column {
-                    // a tip (both places today) and a safety card: each draws its choices' icons
-                    for (severity in BannerSeverity.entries) {
+                    // a notice of every tone draws its choices' icons
+                    for (tone in NoticeTone.entries) {
                         BannerSlot(
                             Banner(
-                                "clinic-$severity",
+                                "clinic-$tone",
                                 DsR.drawable.ds_ic_cloud_upload,
                                 "Share your data with your clinic",
                                 "text",
                                 null,
                                 {},
                                 {},
-                                severity,
+                                tone,
                                 choices =
                                     listOf(
                                         BannerChoice("LibreView", Service.LibreView) {},
@@ -125,8 +125,8 @@ class AppIconsTest {
         }
         for (s in listOf(Service.LibreView, Service.Tidepool)) {
             val icons = compose.onAllNodesWithTag(serviceIconTag(s), useUnmergedTree = true)
-            icons.assertCountEquals(BannerSeverity.entries.size)
-            for (i in BannerSeverity.entries.indices) icons[i].assertWidthIsEqualTo(SettingsDimension.appIconItemSize)
+            icons.assertCountEquals(NoticeTone.entries.size)
+            for (i in NoticeTone.entries.indices) icons[i].assertWidthIsEqualTo(SettingsDimension.appIconItemSize)
         }
     }
 

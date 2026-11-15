@@ -46,6 +46,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseHub
+import app.mauri.sukrara.designsystem.banner.NoticeAction
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
@@ -56,7 +59,6 @@ import app.mauri.sukrara.feature.sharing.OwnerSharing
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.restore.RestoreForm
-import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.feature.sharing.setup.StepButtons
@@ -76,6 +78,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.security.SecureRandom
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** Where Backup › Replace this identity is: the choice (what followers lose, two ways), or the recovery code form. */
 enum class ReplaceStep { Choose, Restore }
@@ -332,7 +335,7 @@ private fun ColumnScope.Choose(
     Padded {
         when {
             u.fresh == FreshUi.Busy -> Working(stringResource(R.string.sh_replace_fresh_busy))
-            u.fresh == FreshUi.Failed -> NoteCard(stringResource(R.string.sh_replace_fresh_failed), error = true)
+            u.fresh == FreshUi.Failed -> NoticeCard(stringResource(R.string.sh_replace_fresh_failed), tone = NoticeTone.Error)
             u.cancelled -> Cancelled()
             else -> Unit
         }
@@ -353,27 +356,18 @@ private fun ColumnScope.Consequences(
     actions: ReplaceActions,
 ) {
     Text(stringResource(R.string.sh_replace_intro), style = MaterialTheme.typography.bodyLarge)
-    Card(
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer,
-                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-            ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.sh_replace_lose_title), style = MaterialTheme.typography.titleMedium)
-            Text(lossText(names), style = MaterialTheme.typography.bodyMedium)
-            if (names.isNotEmpty()) Text(stringResource(R.string.sh_replace_lose_invite), style = MaterialTheme.typography.bodyMedium)
-            Text(stringResource(R.string.sh_replace_lose_pending), style = MaterialTheme.typography.bodyMedium)
-            if (sharing?.backedUp == false) {
-                Text(stringResource(R.string.sh_replace_not_backed_up), style = MaterialTheme.typography.bodyMedium)
-                OutlinedButton(onClick = actions.backUp, modifier = Modifier.heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.sh_replace_back_up_first))
-                }
-            }
-        }
-    }
+    val notBackedUp = sharing?.backedUp == false
+    NoticeCard(
+        listOfNotNull(
+            lossText(names),
+            stringResource(R.string.sh_replace_lose_invite).takeIf { names.isNotEmpty() },
+            stringResource(R.string.sh_replace_lose_pending),
+            stringResource(R.string.sh_replace_not_backed_up).takeIf { notBackedUp },
+        ).joinToString("\n\n"),
+        title = stringResource(R.string.sh_replace_lose_title),
+        tone = NoticeTone.Error,
+        action = if (notBackedUp) NoticeAction(stringResource(R.string.sh_replace_back_up_first), actions.backUp) else null,
+    )
 }
 
 /** The recovery code form, its action confirmed first; Back returns to the choice. */
@@ -405,12 +399,13 @@ private fun ColumnScope.Done(
     LaunchedEffect(Unit) { haptics.confirm() }
     val restored = u.restore as? RestoreUi.Restored
     Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-        NoteCard(
+        NoticeCard(
             if (restored != null) {
                 stringResource(R.string.sh_replace_done_restore, restored.followers)
             } else {
                 stringResource(R.string.sh_replace_done_fresh)
             },
+            icon = DsR.drawable.ds_ic_check_circle,
         )
     }
     StepButtons(
@@ -461,7 +456,7 @@ private fun ColumnScope.Telling(
 /** The replace was cancelled while the followers were told: nothing changed. */
 @Composable
 private fun Cancelled() {
-    Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) { NoteCard(stringResource(R.string.sh_replace_cancelled)) }
+    Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) { NoticeCard(stringResource(R.string.sh_replace_cancelled)) }
 }
 
 @Composable

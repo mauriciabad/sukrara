@@ -51,6 +51,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
+import app.mauri.sukrara.designsystem.banner.NoticeAction
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
@@ -203,8 +206,9 @@ fun BackupScreen(
 }
 
 /**
- * How the save ended, with its way on as buttons right here. Red only while the identity exists nowhere else; a
- * failed *Save again* says the earlier copy stays. TalkBack hears it when it appears (polite live region).
+ * How the save ended, with its way on as buttons right here: the shared [NoticeCard]. An error only while the identity
+ * exists nowhere else; a failed *Save again* is a warning that says the earlier copy stays; a saved or copied backup
+ * shows the check. TalkBack hears it when it appears (polite live region).
  */
 @Composable
 private fun SaveCard(
@@ -215,78 +219,51 @@ private fun SaveCard(
     onRecoveryCode: () -> Unit,
 ) {
     val problem = ui == BackupUi.NoPasswordManager || ui == BackupUi.Failed
-    val red = problem && !state.backedUp
-    Card(
-        colors =
-            CardDefaults.cardColors(
-                containerColor = if (red) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = if (red) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onSurface,
-            ),
-        modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
-    ) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            when (ui) {
-                BackupUi.NoPasswordManager -> {
-                    CardTitle(stringResource(R.string.sh_backup_none_title))
-                    Text(stringResource(R.string.sh_backup_none_text), style = MaterialTheme.typography.bodyMedium)
-                    CardButtons(
-                        primary = stringResource(R.string.sh_backup_open_settings) to onOpenSettings,
-                        secondary = listOf(stringResource(R.string.sh_backup_use_code) to onRecoveryCode),
-                    )
-                }
-
-                BackupUi.Failed -> {
-                    CardTitle(stringResource(R.string.sh_backup_failed_title))
-                    Text(
-                        if (state.passwordManagerSavedAt > 0) {
-                            stringResource(R.string.sh_backup_failed_again_text, date(state.passwordManagerSavedAt))
-                        } else {
-                            stringResource(R.string.sh_backup_failed_text)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                    CardButtons(
-                        primary = stringResource(R.string.sh_backup_try_again) to onTryAgain,
-                        secondary =
-                            listOf(
-                                stringResource(R.string.sh_backup_open_settings) to onOpenSettings,
-                                stringResource(R.string.sh_backup_use_code) to onRecoveryCode,
-                            ),
-                    )
-                }
-
-                else -> {
-                    Text(
-                        stringResource(
-                            when (ui) {
-                                BackupUi.Cancelled -> R.string.sh_backup_cancelled
-                                BackupUi.CodeCopied -> R.string.sh_backup_code_copied
-                                else -> R.string.sh_backup_saved
-                            },
-                        ),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
+    val tone =
+        when {
+            !problem -> NoticeTone.Info
+            state.backedUp -> NoticeTone.Warning
+            else -> NoticeTone.Error
         }
-    }
-}
+    val settings = NoticeAction(stringResource(R.string.sh_backup_open_settings), onOpenSettings)
+    val code = NoticeAction(stringResource(R.string.sh_backup_use_code), onRecoveryCode)
+    when (ui) {
+        BackupUi.NoPasswordManager -> {
+            NoticeCard(
+                stringResource(R.string.sh_backup_none_text),
+                title = stringResource(R.string.sh_backup_none_title),
+                tone = tone,
+                action = settings,
+                secondary = listOf(code),
+            )
+        }
 
-@Composable
-private fun CardTitle(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
-}
+        BackupUi.Failed -> {
+            NoticeCard(
+                if (state.passwordManagerSavedAt > 0) {
+                    stringResource(R.string.sh_backup_failed_again_text, date(state.passwordManagerSavedAt))
+                } else {
+                    stringResource(R.string.sh_backup_failed_text)
+                },
+                title = stringResource(R.string.sh_backup_failed_title),
+                tone = tone,
+                action = NoticeAction(stringResource(R.string.sh_backup_try_again), onTryAgain),
+                secondary = listOf(code, settings),
+            )
+        }
 
-/** Full width so the largest font wraps; at least 48 dp tall. */
-@Composable
-private fun CardButtons(
-    primary: Pair<String, () -> Unit>,
-    secondary: List<Pair<String, () -> Unit>>,
-) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Button(onClick = primary.second, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(primary.first) }
-        for ((label, action) in secondary) {
-            OutlinedButton(onClick = action, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text(label) }
+        else -> {
+            val done = ui == BackupUi.Saved || ui == BackupUi.CodeCopied
+            NoticeCard(
+                stringResource(
+                    when (ui) {
+                        BackupUi.Cancelled -> R.string.sh_backup_cancelled
+                        BackupUi.CodeCopied -> R.string.sh_backup_code_copied
+                        else -> R.string.sh_backup_saved
+                    },
+                ),
+                icon = if (done) DsR.drawable.ds_ic_check_circle else DsR.drawable.ds_ic_info,
+            )
         }
     }
 }

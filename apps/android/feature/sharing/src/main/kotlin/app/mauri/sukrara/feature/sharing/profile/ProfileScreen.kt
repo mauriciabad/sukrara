@@ -23,9 +23,10 @@ import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.R
-import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
 
@@ -56,7 +57,7 @@ fun ProfileScreen(
         Text(stringResource(R.string.sh_profile_followers_note))
         if (save == ProfileSave.Failed) {
             Column(Modifier.semantics { liveRegion = LiveRegionMode.Assertive }) {
-                NoteCard(stringResource(R.string.sh_profile_save_failed), error = true)
+                NoticeCard(stringResource(R.string.sh_profile_save_failed), tone = NoticeTone.Error)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
