@@ -1,0 +1,76 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Starlight's banner, plus a hint on an English page that has a Spanish translation, shown only to a browser that
+// prefers Spanish (the apps open the English pages): it keeps the #section, and its × hides it for good on this browser.
+import { getCollection } from 'astro:content';
+import Default from '@astrojs/starlight/components/Banner.astro';
+
+const { id, locale, isFallback } = Astro.locals.starlightRoute;
+const spanish = new Set((await getCollection('docs', ({ id }) => id === 'es' || id.startsWith('es/'))).map((e) => e.id));
+const target = id ? `es/${id}` : 'es';
+const href = !locale && !isFallback && spanish.has(target) ? `/${target}/` : undefined;
+---
+
+<Default />
+{
+	href && (
+		<div class="sk-lang" data-href={href} lang="es" hidden data-pagefind-ignore>
+			<span>Esta página también está en español.</span>
+			<a href={href}>Leer en español</a>
+			<button type="button" aria-label="Cerrar">×</button>
+		</div>
+	)
+}
+
+<script>
+	const KEY = 'sukrara.langHint';
+	for (const hint of document.querySelectorAll<HTMLElement>('.sk-lang')) {
+		let dismissed = false;
+		try {
+			dismissed = localStorage.getItem(KEY) === 'dismissed';
+		} catch {}
+		const prefersSpanish = navigator.languages.find((l) => /^(es|en)\b/i.test(l))?.toLowerCase().startsWith('es');
+		if (dismissed || !prefersSpanish) continue;
+		const link = hint.querySelector('a')!;
+		link.href = hint.dataset.href + location.hash;
+		hint.querySelector('button')!.addEventListener('click', () => {
+			hint.hidden = true;
+			try {
+				localStorage.setItem(KEY, 'dismissed');
+			} catch {}
+		});
+		hint.hidden = false;
+	}
+</script>
+
+<style>
+	.sk-lang {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 1rem;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem var(--sl-nav-pad-x);
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-white);
+		font-size: var(--sl-text-sm);
+	}
+	.sk-lang[hidden] {
+		display: none;
+	}
+	.sk-lang a {
+		color: var(--sl-color-white);
+		font-weight: 700;
+	}
+	.sk-lang button {
+		background: none;
+		border: 0;
+		color: inherit;
+		font-size: 1.25rem;
+		line-height: 1;
+		cursor: pointer;
+		padding: 0.25rem 0.5rem;
+	}
+</style>

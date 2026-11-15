@@ -1,0 +1,50 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The header's links to the apps and the developers' section, before Starlight's GitHub icon (also in the mobile menu).
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+
+const { locale } = Astro.locals.starlightRoute;
+const t = Astro.locals.t;
+const prefix = locale ? `/${locale}` : '';
+const links = [
+	{ key: 'site.nav.android', href: `${prefix}/android/` },
+	{ key: 'site.nav.mac', href: `${prefix}/mac/` },
+	{ key: 'site.nav.developers', href: '/developers/' },
+] as const;
+const path = Astro.url.pathname;
+---
+
+<nav aria-label={t('site.nav.label')} class="sk-nav sl-flex">
+	{
+		links.map(({ key, href }) => (
+			<a href={href} aria-current={path.startsWith(href) ? 'page' : undefined}>
+				{t(key)}
+			</a>
+		))
+	}
+</nav>
+<Default />
+
+<style>
+	.sk-nav {
+		gap: 1.25rem;
+		align-items: center;
+		margin-inline-end: 0.5rem;
+	}
+	.sk-nav a {
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+		font-weight: 600;
+		font-size: var(--sl-text-sm);
+	}
+	.sk-nav a:hover,
+	.sk-nav a[aria-current='page'] {
+		color: var(--sl-color-white);
+	}
+	.sk-nav a[aria-current='page'] {
+		text-decoration: underline 2px var(--sl-color-accent);
+		text-underline-offset: 0.4em;
+	}
+</style>

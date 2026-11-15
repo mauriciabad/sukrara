@@ -1,0 +1,140 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * How to get one app: the newest release's file straight from GitHub (looked up at build time, lib/release.ts), then
+ * the other ways in (Obtainium / Homebrew) and the stores, each with its state (lib/site.ts STORES).
+ *   <Download app="android" />
+ */
+import { Code, Icon } from '@astrojs/starlight/components';
+import { latestRelease, megabytes } from '../lib/release';
+import { HOMEBREW, OBTAINIUM, RELEASES, STORES } from '../site';
+
+interface Props {
+	app: 'android' | 'mac';
+}
+
+const { app } = Astro.props;
+const t = Astro.locals.t;
+const lang = Astro.locals.starlightRoute.lang;
+const release = await latestRelease();
+const file = app === 'android' ? release.apk : release.dmg;
+const store = app === 'android' ? { name: 'Google Play', ...STORES.play } : { name: 'Mac App Store', ...STORES.appStore };
+const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(release.date);
+const meta =
+	release.version && file && date
+		? t('site.download.meta', { version: release.version, size: megabytes(file.size), date })
+		: t('site.download.newest');
+---
+
+<div class="sk-download not-content">
+	<a class="sk-download__button" href={file?.url ?? release.page}>
+		<Icon name={app === 'android' ? 'mobile-android' : 'laptop'} size="1.5rem" />
+		<span>
+			<strong>{t(app === 'android' ? 'site.download.android' : 'site.download.mac')}</strong>
+			<small>{meta}</small>
+		</span>
+		<Icon name="download" size="1.25rem" class="sk-download__arrow" />
+	</a>
+	<p class="sk-download__links">
+		<a href={release.page}>{t('site.download.notes')}</a>
+		<span aria-hidden="true">·</span>
+		<a href={RELEASES}>{t('site.download.all')}</a>
+	</p>
+	{
+		app === 'android' ? (
+			<p class="sk-download__alt">
+				<a class="sk-download__chip" href={OBTAINIUM.add}>
+					{t('site.obtainium.add')}
+				</a>
+				<a href={OBTAINIUM.home}>{t('site.obtainium.get')}</a>
+			</p>
+		) : (
+			<Code code={HOMEBREW} lang="sh" frame="terminal" title="Homebrew" />
+		)
+	}
+	<p class="sk-download__store">
+		{
+			store.status === 'live' ? (
+				<a href={store.url}>{t('site.store.get', { store: store.name })}</a>
+			) : (
+				t(store.status === 'review' ? 'site.store.review' : 'site.store.planned', { store: store.name })
+			)
+		}
+	</p>
+</div>
+
+<style>
+	.sk-download {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		max-width: 30rem;
+	}
+	.sk-download__button {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.9rem 1.25rem;
+		border-radius: var(--sk-radius);
+		background: var(--sl-color-accent);
+		text-decoration: none;
+		box-shadow: var(--sk-glow);
+		transition:
+			transform 0.15s ease,
+			box-shadow 0.15s ease;
+	}
+	.sk-download__button:hover {
+		transform: translateY(-2px);
+	}
+	.sk-download__button:active {
+		transform: translateY(0) scale(0.98);
+	}
+	.sk-download__button span {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		line-height: 1.3;
+	}
+	.sk-download__button strong {
+		font-family: var(--sk-font-display);
+		font-size: var(--sl-text-lg);
+		font-weight: 800;
+	}
+	.sk-download__button small {
+		font-size: var(--sl-text-sm);
+		opacity: 0.9;
+	}
+	.sk-download__links,
+	.sk-download__alt,
+	.sk-download__store {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		align-items: center;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.sk-download a {
+		color: var(--sl-color-text-accent);
+	}
+	.sk-download a.sk-download__button {
+		color: var(--sl-color-black);
+	}
+	:root[data-theme='light'] .sk-download a.sk-download__button {
+		color: #fff;
+	}
+	.sk-download__chip {
+		display: inline-flex;
+		padding: 0.4rem 0.9rem;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 999px;
+		font-weight: 600;
+		text-decoration: none;
+	}
+	.sk-download__chip:hover {
+		border-color: var(--sl-color-accent);
+	}
+</style>

@@ -34,6 +34,7 @@ jobs:
       rules: ${{ steps.plan.outputs.rules }}
       android: ${{ steps.plan.outputs.android }}
       mac: ${{ steps.plan.outputs.mac }}
+      website: ${{ steps.plan.outputs.website }}
       range: ${{ steps.plan.outputs.range }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -214,6 +215,29 @@ jobs:
           Bundle/bundle.sh --unsigned --app-store
           Bundle/smoke.sh
 
+  # The website (website/, published by website.yml from main): built without the GitHub API (SUKRARA_RELEASE=offline:
+  # a pull request never depends on it), then every internal link and anchor, every site URL an app opens, App Links,
+  # universal links and the update feed checked (website/scripts/check.mjs).
+  website:
+    needs: changes
+    if: needs.changes.outputs.website == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: website/.node-version
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Build and check
+        working-directory: website
+        env:
+          SUKRARA_RELEASE: offline
+        run: |
+          npm ci
+          npm run build
+          npm run check
+
   # No PoC build jobs: poc/ is frozen (never edited; untouched since the monorepo began), so jobs that ran only when
   # poc/ changed never ran. Its Python reference still runs in `rules` (sync_crosscheck.py).
 
@@ -221,7 +245,7 @@ jobs:
     # The only required check. Passes only when every job either succeeded, or was skipped because `changes` said
     # it wasn't needed; a failed, cancelled or unexpectedly skipped job fails it.
     if: always()
-    needs: [changes, rules, android, android-lint, android-release, android-play, mac]
+    needs: [changes, rules, android, android-lint, android-release, android-play, mac, website]
     runs-on: ubuntu-latest
     steps:
       - name: Every job that should have run passed
@@ -235,7 +259,7 @@ jobs:
           android = out.get("android") == "true"
           wanted = {"changes": True, "rules": out.get("rules") == "true", "android": android,
                     "android-lint": android, "android-release": android, "android-play": android,
-                    "mac": out.get("mac") == "true"}
+                    "mac": out.get("mac") == "true", "website": out.get("website") == "true"}
           bad = []
           for job, should in wanted.items():
               r = needs.get(job, {}).get("result")

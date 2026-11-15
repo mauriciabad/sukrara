@@ -2,7 +2,8 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Every `uses:` in .github/workflows is pinned to a commit SHA with its release tag in a comment; Dependabot opens a
-# weekly PR that moves the SHA and the comment together when an action publishes a new release.
+# weekly PR that moves the SHA and the comment together when an action publishes a new release; and the website's npm
+# packages.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -11,4 +12,13 @@ updates:
       interval: weekly
     groups:
       actions:
+        patterns: ["*"]
+  # The website's dependencies (website/package.json: Astro, Starlight and its plugins): one weekly PR, everything
+  # moved together (Astro and Starlight are released in step).
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: weekly
+    groups:
+      website:
         patterns: ["*"]

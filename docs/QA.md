@@ -300,7 +300,7 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       *Development build · x.y.z + n commits · <commit> · <date>* (selectable), Settings › General › Version the same
       line, and *Check for Updates…* doesn't offer x.y.z itself; the notarized dmg of the release says *GitHub version*
       / *x.y.z · GitHub version* there instead.
-- [ ] Updates (Sparkle, #91), after a release that added an item to `docs/appcast.xml`: on a Mac with the previous
+- [ ] Updates (Sparkle, #91), after a release that added an item to `website/public/appcast.xml`: on a Mac with the previous
       GitHub version installed from its dmg or the cask (not a dev build), right-click › *Check for Updates…* →
       Sparkle's window with the new version and its notes → *Install Update* → the download → *Install and Relaunch*
       → Sukrara quits and comes back as the new version (About), still following, alerts and the widgets as before,
@@ -1056,3 +1056,23 @@ Every app change (CLAUDE.md *Design from the person's life first*, *Make it juic
       reject); motion shows where things came from and went; numbers that change animate; no jank on a mid-range phone.
 - [ ] With reduced motion / remove animations on, and with TalkBack / VoiceOver, everything still works and reads well.
 
+
+## Q27 Website
+
+sukrara.mauri.app (`website/`, [`website/README.md`](../website/README.md)). Automated already: `npm run check`
+(links, anchors, the apps' URLs, App Links, the feed). Locally: `cd website && npm run build && npx astro preview`.
+
+- [ ] Home, Android, Mac, privacy, join (`/join/#` + 32 letters, and without), sounds, developers, one report and a
+      wrong URL (the 404), each in light and dark, at desktop width and at ~400 px: nothing scrolls sideways, every
+      app picture matches the theme, the hero's card and Mac panel don't hide each other.
+- [ ] Spanish: the same pages under `/es/`; the language menu switches both ways; with the browser in Spanish an
+      English page shows the hint, which keeps the `#section` and whose × hides it for good.
+- [ ] The download buttons show the newest release's version, size and date (a build that reached GitHub); *What's
+      new* opens it; on a phone the APK downloads and installs.
+- [ ] Sounds: a number plays with its progress ring, a second click stops it, *Play a random high…* plays one per
+      pack.
+- [ ] Keyboard and screen reader: the skip link, the header links, search (⌘K / Ctrl+K), every sound button says its
+      pack, alert and number; with reduced motion the hero, the live dot and the sharing diagram stand still.
+- [ ] After a deploy: `/.well-known/assetlinks.json` and `/.well-known/apple-app-site-association` answer 200 with
+      the files, `/appcast.xml` is the feed, an invite link opens the app on a phone with Sukrara, and a page's link
+      pasted in a chat app shows its own preview.

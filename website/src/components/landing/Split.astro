@@ -1,0 +1,39 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Text beside a picture on wide screens, the picture under the text on narrow ones: <Split><p>…</p><div slot="aside">…</div></Split>
+---
+
+<div class="sk-split">
+	<div class="sk-split__text"><slot /></div>
+	<div class="sk-split__aside"><slot name="aside" /></div>
+</div>
+
+<style>
+	.sk-split {
+		display: grid;
+		gap: 2rem;
+		align-items: center;
+	}
+	@media (min-width: 50rem) {
+		.sk-split {
+			grid-template-columns: 1.15fr 1fr;
+		}
+	}
+	.sk-split__text :global(ul) {
+		padding-inline-start: 1.25rem;
+	}
+	.sk-split__text :global(li + li) {
+		margin-top: 0.6rem;
+	}
+	.sk-split__aside {
+		display: grid;
+		place-items: center;
+		gap: 1rem;
+	}
+	.sk-split__aside :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+</style>

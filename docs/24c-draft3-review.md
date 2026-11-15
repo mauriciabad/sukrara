@@ -337,7 +337,7 @@ m14 counts as rejected: it was deferred in the review and then decided against (
 | Reference | `core.Epoch.clip`; `member` (epoch end, grant format, ordering, ties); `owner` (`end_epoch`, frozen memberships, grants, history cap, auto invites, `days`); `control` (invite sizes); `ble` (`AUTH`); `vectors`; `e2e` (removed writer) |
 | Vectors | regenerated: 44 events, 10 wraps, a 42-step scenario, BLE `AUTH` |
 
-The site pages (`poc/spec/drafts/site-page.md`, `docs/ogs.md`) make no claim that changed ("the keys that relays see
+The site pages (`poc/spec/drafts/site-page.md`, `website/src/content/docs/open-glucose-stream.md`) make no claim that changed ("the keys that relays see
 change every day" is still true), so they are unchanged.
 
 ## Status

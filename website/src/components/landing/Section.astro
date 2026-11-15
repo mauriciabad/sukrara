@@ -1,0 +1,47 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// A home page section: a short title, an optional lead, then its content.
+interface Props {
+	title: string;
+	id?: string;
+	lead?: string;
+}
+const { title, id, lead } = Astro.props;
+---
+
+<section class="sk-section" id={id}>
+	<h2>{title}</h2>
+	{lead && <p class="sk-section__lead">{lead}</p>}
+	<slot />
+</section>
+
+<style>
+	.sk-section {
+		padding-block: 3.5rem 0.5rem;
+	}
+	.sk-section h2 {
+		margin: 0;
+		font-family: var(--sk-font-display);
+		font-weight: 800;
+		font-size: clamp(1.8rem, 4vw, 2.6rem);
+		line-height: 1.1;
+		letter-spacing: -0.02em;
+		color: var(--sl-color-white);
+		text-wrap: balance;
+	}
+	.sk-section__lead {
+		margin: 0.75rem 0 0;
+		max-width: 42rem;
+		font-size: var(--sl-text-lg);
+		color: var(--sl-color-gray-2);
+		text-wrap: pretty;
+	}
+	.sk-section > :global(* + *) {
+		margin-top: 1.75rem;
+	}
+	.sk-section > :global(.sk-section__lead) {
+		margin-top: 0.75rem;
+	}
+</style>

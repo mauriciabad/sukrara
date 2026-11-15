@@ -256,8 +256,8 @@ What is done (2026-10-19):
    - `README.md` from `poc/spec/drafts/standalone-README.md`;
    - `LICENSE`: the official CC0-1.0 legal code;
    - a CI workflow that runs the vector check and the tests.
-2. **The website page** is `docs/ogs.md`, linked from `docs/index.md`. It goes live when the branch is merged into
-   main.
+2. **The website page** is [Open Glucose Stream](https://sukrara.mauri.app/open-glucose-stream/)
+   (`website/src/content/docs/open-glucose-stream.md`, English and Spanish), linked from the home page.
 
 Left for the maintainer:
 1. Create `github.com/mauriciabad/open-glucose-stream`, then push the local repository and its tag.

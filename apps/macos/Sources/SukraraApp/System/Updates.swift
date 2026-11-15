@@ -32,8 +32,8 @@ public final class Updates {
         case available(version: String, ready: Bool)
     }
 
-    /// The feed every GitHub version reads (Info.plist `SUFeedURL`, `Bundle/sparkle.plist`): docs/appcast.xml on the
-    /// website, which `tools/release/mac-release.sh` writes.
+    /// The feed every GitHub version reads (Info.plist `SUFeedURL`, `Bundle/sparkle.plist`): the website's
+    /// appcast (website/public/appcast.xml), which `tools/release/mac-release.sh` writes.
     public static let feedURL = URL(string: "https://sukrara.mauri.app/appcast.xml")!
     public private(set) var reminder: Reminder = .none
     /// False while the updater is busy (a check or an install already running): *Check for Updates…* is dimmed.

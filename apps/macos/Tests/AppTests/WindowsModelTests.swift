@@ -95,7 +95,7 @@ func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
             var applinks: Links
         }
         let repo = LocalizationTests.macRoot.deletingLastPathComponent().deletingLastPathComponent()
-        let data = try Data(contentsOf: repo.appending(path: "docs/.well-known/apple-app-site-association"))
+        let data = try Data(contentsOf: repo.appending(path: "website/public/.well-known/apple-app-site-association"))
         let details = try JSONDecoder().decode(Association.self, from: data).applinks.details
         #expect(details.count == 1)
         #expect(details.first?.appIDs == ["\(SukraraIDs.teamID).\(SukraraIDs.appBundleID)"])

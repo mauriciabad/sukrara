@@ -1,12 +1,16 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-# The website (sukrara.mauri.app) from docs/. Built here instead of Pages' branch build so links that leave docs/
-# (the reports' ../poc/spikes/… evidence, code and specs) can point at the files on GitHub (.github/site_links.py).
+# The website (sukrara.mauri.app): website/ (Astro + Starlight) built and checked, then published on GitHub Pages.
+# From main on every push, and again whenever a release is published, so the download buttons name and link the newest
+# release (website/src/lib/release.ts reads it at build time). tools/release/release.py waits for this workflow's run on
+# main before it checks the Sparkle feed (website/public/appcast.xml → /appcast.xml).
 name: Website
 on:
   push:
     branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,15 +24,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Copy docs/, point links outside it at GitHub
-        run: python3 .github/site_links.py docs site "${{ github.repository }}" "${{ github.sha }}"
-      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
-      - uses: actions/jekyll-build-pages@44a6e6beabd48582f863aeeb6cb2151cc1716697 # v1.0.13
         with:
-          source: ./site
-          destination: ./_site
+          # The whole history without file contents: "Last updated" comes from each page's last commit.
+          fetch-depth: 0
+          filter: blob:none
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: website/.node-version
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - run: npm ci
+        working-directory: website
+      - name: Build (the newest release from the GitHub API)
+        run: npm run build
+        working-directory: website
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Check links, the apps' URLs, App Links and the update feed
+        run: npm run check
+        working-directory: website
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
+          path: website/dist
           # /.well-known (apple-app-site-association: Mac universal links; assetlinks.json: Android App Links) is a
           # hidden folder, which the artifact leaves out by default (both answered 404 after the 0.12.0 deploy)
           include-hidden-files: true

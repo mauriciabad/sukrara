@@ -1,0 +1,136 @@
+---
+title: Your sugar, now
+description: Live glucose from your CGM sensor on your Android phone, your Mac and the phones of the people who look after you. Alerts, widgets, the status bar. End-to-end encrypted, no account, no cloud. Free and open source.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+  title: Your sugar, <em>now</em>.
+  tagline: Your glucose live on your Android phone, your Mac and the phones of the people who look after you. End-to-end encrypted, with no account and no cloud.
+  actions:
+    - text: Get it for Android
+      link: /android/#get-it
+      variant: primary
+    - text: Get it for Mac
+      link: /mac/#get-it
+      variant: secondary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import Chips from '../../components/landing/Chips.astro';
+import Flow from '../../components/landing/Flow.astro';
+import Section from '../../components/landing/Section.astro';
+import Split from '../../components/landing/Split.astro';
+import Tile from '../../components/landing/Tile.astro';
+import Tiles from '../../components/landing/Tiles.astro';
+import Download from '../../components/Download.astro';
+import Screenshot from '../../components/Screenshot.astro';
+
+<Section title="Glucose wherever you look" lead="So you rarely need to open the app.">
+  <Tiles>
+    <Tile shot="card" title="One card everywhere" width={420} wide>
+      The value, a trend arrow that turns with how fast glucose moves, your last insulin and carbs, and 12 hours of
+      chart with the time you spent at each level. The same card on the phone, in the notification and on the Mac.
+    </Tile>
+    <Tile shot="widget" title="Home-screen widgets" width={320}>
+      Value, chart and time in range on the home screen, without opening anything.
+    </Tile>
+    <Tile shot="notification" title="Status bar and notification" width={300}>
+      The number in the status bar and the chart in the notification. With root, as text next to the system icons.
+    </Tile>
+    <Tile shot="lockscreen" title="Lock screen" width={320}>
+      The card around the fingerprint icon, and insulin or carbs logged without unlocking. Needs root and LSPosed.
+    </Tile>
+    <Tile shot="macPanel" title="Mac menu bar" width={250} href="/mac/">
+      The number in the menu bar, about a second behind the phone, with the same alerts.
+    </Tile>
+  </Tiles>
+</Section>
+
+<Section title="For you, and for the people who look after you">
+  <CardGrid>
+    <Card title="You wear the sensor" icon="mobile-android">
+      Sukrara reads a FreeStyle Libre 3 straight from the sensor, alerts you, logs insulin and carbs in seconds, and
+      keeps your clinic's LibreView or Tidepool up to date if you want.
+    </Card>
+    <Card title="You look after someone" icon="heart">
+      Follow a partner, a parent or a friend from your phone or your Mac, with alerts of your own. You see when their
+      phone stops sending, and a very low nobody answers alerts you too.
+    </Card>
+    <Card title="Your child has diabetes" icon="star">
+      Set it up on your child's phone and follow from yours, both parents at once. Let a follower add the carbs from
+      school, and remove anyone in one tap.
+    </Card>
+  </CardGrid>
+</Section>
+
+<Section title="Shared without a cloud" lead="No account to create and no server to run. An invite link or QR code, and you allow each person.">
+  <Flow
+    you="Your phone"
+    youNote="reads the sensor"
+    internet="Over the internet"
+    internetNote="public Nostr relays, about a second"
+    nearby="Nearby"
+    nearbyNote="Bluetooth, no internet needed"
+    phone="Their phone"
+    mac="Their Mac"
+  />
+  - **End-to-end encrypted:** relays pass your readings on and can't read them. Your name and picture travel encrypted
+    too, never public.
+  - **You decide who follows:** remove someone and the keys change; everyone else carries on.
+  - **Open:** the way Sukrara shares is becoming a standard any app can implement, the
+    [Open Glucose Stream](/open-glucose-stream/).
+</Section>
+
+<Section title="Alerts that know what you just did">
+  <Split>
+    - Very low to extremely high, fast changes and no data, each with your own threshold and sound.
+    - Quiet after you take insulin or eat, and while glucose is already heading back into range. Extremely high always
+      alerts.
+    - Four sound packs, a different sound each time, and a vibration for each alert, so you can tell a low from a high
+      in your pocket. [Listen to them](/sounds/).
+    - Followers alert when you do, with their own settings if they want.
+    <div slot="aside"><Screenshot name="alert" width={400} /></div>
+  </Split>
+</Section>
+
+<Section title="Works with what you already use" lead="Everything is off until you turn it on.">
+  <Chips
+    label="Apps and services"
+    items={['LibreView', 'Tidepool', 'Nightscout', 'Health Connect', 'AAPS', 'xDrip+', 'GlucoDataHandler', 'Juggluco', 'Garmin watch faces', 'Home Assistant']}
+  />
+  **Sensors.** Read straight from the sensor: FreeStyle Libre 3 and 3 Plus. Read straight from the sensor but not yet
+  tested on a real one: Dexcom G6, G7 and ONE+, Accu-Chek SmartGuide, LinX / AiDEX X. Through Juggluco: FreeStyle Libre
+  2 and 2 Plus, Sibionics GS1, CareSens Air.
+</Section>
+
+<Section title="Yours, and free">
+  <CardGrid>
+    <Card title="No account" icon="approve-check-circle">
+      Nothing to sign up for, no ads, no analytics, no tracking.
+    </Card>
+    <Card title="Your data stays on your phone" icon="padlock">
+      It leaves only when you turn on a feature that sends it, and only to where that feature says.
+      [Privacy policy](/privacy/)
+    </Card>
+    <Card title="Free and open source" icon="github">
+      GPL-3.0 on [GitHub](https://github.com/mauriciabad/sukrara). Every feature started as an investigation with a
+      written report: [Research](/developers/).
+    </Card>
+  </CardGrid>
+</Section>
+
+<Section title="Get Sukrara" id="get-it">
+  <CardGrid>
+    <Card title="Android" icon="mobile-android">
+      Android 16 or newer, 64-bit (arm64).
+      <Download app="android" />
+      [Install steps and versions](/android/#get-it)
+    </Card>
+    <Card title="Mac" icon="laptop">
+      Apple silicon (M1 or newer), macOS 15 or newer.
+      <Download app="mac" />
+      [Install steps](/mac/#get-it)
+    </Card>
+  </CardGrid>
+</Section>

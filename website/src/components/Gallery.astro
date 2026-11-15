@@ -1,0 +1,31 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// A row of app pictures (lib/screens.ts) that wraps on narrow screens: <Gallery shots={[['card', 360], ['widget', 300]]} />
+import type { ScreenName } from '../lib/screens';
+import Screenshot from './Screenshot.astro';
+
+interface Props {
+	/** [picture, width in CSS pixels] */
+	shots: [ScreenName, number][];
+}
+const { shots } = Astro.props;
+---
+
+<div class="sk-gallery not-content">
+	{shots.map(([name, width]) => <Screenshot name={name} width={width} />)}
+</div>
+
+<style>
+	.sk-gallery {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		align-items: flex-start;
+	}
+	.sk-gallery :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+</style>

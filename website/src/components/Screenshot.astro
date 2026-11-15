@@ -1,0 +1,51 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * One app picture from lib/screens.ts, in the page's language and the viewer's theme: the light picture in the light
+ * theme, the dark one in the dark theme (Starlight's light:/dark: classes). Optimised and sized by Astro.
+ *   <Screenshot name="card" width={360} />
+ */
+import { Image } from 'astro:assets';
+import { SCREENS, type ScreenName } from '../lib/screens';
+
+interface Props {
+	name: ScreenName;
+	/** The width it's shown at, in CSS pixels (it shrinks with the column). */
+	width: number;
+	/** Above the fold: load at once. */
+	eager?: boolean;
+	class?: string;
+	/** Force one theme's picture, e.g. on the always-dark hero. */
+	theme?: 'light' | 'dark';
+}
+
+const { name, width, eager = false, class: className, theme } = Astro.props;
+const lang = Astro.locals.starlightRoute?.lang === 'es' ? 'es' : 'en';
+const screen = SCREENS[name];
+const pictures = ('es' in screen.pictures && lang === 'es' ? screen.pictures.es : undefined) ?? screen.pictures.en;
+const alt = screen.alt[lang];
+const common = {
+	alt,
+	width,
+	widths: [width, Math.min(width * 2, pictures.light.width)],
+	sizes: `(max-width: ${width + 32}px) calc(100vw - 2rem), ${width}px`,
+	loading: eager ? ('eager' as const) : ('lazy' as const),
+	decoding: 'async' as const,
+};
+const dark = pictures.dark;
+---
+
+{
+	!dark || theme === 'light' ? (
+		<Image src={pictures.light} {...common} class:list={['sk-shot', className]} />
+	) : theme === 'dark' ? (
+		<Image src={dark} {...common} class:list={['sk-shot', className]} />
+	) : (
+		<>
+			<Image src={pictures.light} {...common} class:list={['sk-shot dark:sl-hidden', className]} />
+			<Image src={dark} {...common} class:list={['sk-shot light:sl-hidden', className]} />
+		</>
+	)
+}

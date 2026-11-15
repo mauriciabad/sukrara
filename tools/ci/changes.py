@@ -29,9 +29,14 @@ import sys
 #   the release scripts run on the release Mac). VERSION reaches only Bundle/bundle.sh's Info.plist, and the release
 #   command's gate bundles, notarizes and launch-smokes the app with the new VERSION before anything is published, so
 #   the version commit doesn't run the Mac job again over an unchanged app.
+# - website: it publishes docs/ (the reports and developer docs), shows the Android snapshot goldens and the brand,
+#   reads the alert contracts (the sound test page), and checks every site URL the apps' code opens and the release
+#   key App Links name (tools/release/android-cert.sha256).
 GROUPS = {
     "android": (["apps/android/", "contracts/", "tools/", "VERSION", "assets/"], ["apps/android/fastlane/"]),
     "mac": (["apps/macos/", "contracts/", "assets/"], ["apps/macos/AppStore/whats-new/"]),
+    "website": (["website/", "docs/", "assets/", "contracts/", "apps/", "tools/release/android-cert.sha256",
+                 ".github/workflows/website.yml"], ["apps/android/fastlane/", "apps/macos/AppStore/whats-new/"]),
 }
 DEPTH = 300
 

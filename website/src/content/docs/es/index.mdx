@@ -1,0 +1,139 @@
+---
+title: Tu azúcar, ahora
+description: Tu glucosa del sensor en directo en tu móvil Android, tu Mac y los móviles de quienes te cuidan. Alertas, widgets, la barra de estado. Cifrado de extremo a extremo, sin cuenta y sin nube. Gratis y de código abierto.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+  title: Tu azúcar, <em>ahora</em>.
+  tagline: Tu glucosa en directo en tu móvil Android, tu Mac y los móviles de quienes te cuidan. Cifrada de extremo a extremo, sin cuenta y sin nube.
+  actions:
+    - text: Descargar para Android
+      link: /es/android/#descarga
+      variant: primary
+    - text: Descargar para Mac
+      link: /es/mac/#descarga
+      variant: secondary
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import Chips from '../../../components/landing/Chips.astro';
+import Flow from '../../../components/landing/Flow.astro';
+import Section from '../../../components/landing/Section.astro';
+import Split from '../../../components/landing/Split.astro';
+import Tile from '../../../components/landing/Tile.astro';
+import Tiles from '../../../components/landing/Tiles.astro';
+import Download from '../../../components/Download.astro';
+import Screenshot from '../../../components/Screenshot.astro';
+
+<Section title="La glucosa, mires donde mires" lead="Para que casi nunca tengas que abrir la app.">
+  <Tiles>
+    <Tile shot="card" title="Una tarjeta en todas partes" width={420} wide>
+      El valor, una flecha de tendencia que gira según lo rápido que se mueve la glucosa, tu última insulina y tus
+      últimos hidratos, y 12 horas de gráfica con el tiempo que pasaste en cada nivel. La misma tarjeta en el móvil, en
+      la notificación y en el Mac.
+    </Tile>
+    <Tile shot="widget" title="Widgets de la pantalla de inicio" width={320}>
+      Valor, gráfica y tiempo en rango en la pantalla de inicio, sin abrir nada.
+    </Tile>
+    <Tile shot="notification" title="Barra de estado y notificación" width={300}>
+      El número en la barra de estado y la gráfica en la notificación. Con root, como texto junto a los iconos del
+      sistema.
+    </Tile>
+    <Tile shot="lockscreen" title="Pantalla de bloqueo" width={320}>
+      La tarjeta alrededor del icono de la huella, e insulina o hidratos apuntados sin desbloquear. Necesita root y
+      LSPosed.
+    </Tile>
+    <Tile shot="macPanel" title="Barra de menús del Mac" width={250} href="/es/mac/">
+      El número en la barra de menús, alrededor de un segundo por detrás del móvil, con las mismas alertas.
+    </Tile>
+  </Tiles>
+</Section>
+
+<Section title="Para ti, y para quienes te cuidan">
+  <CardGrid>
+    <Card title="Llevas el sensor" icon="mobile-android">
+      Sukrara lee un FreeStyle Libre 3 directamente del sensor, te avisa, apunta insulina e hidratos en segundos y, si
+      quieres, mantiene al día el LibreView o el Tidepool de tu consulta.
+    </Card>
+    <Card title="Cuidas de alguien" icon="heart">
+      Sigue a tu pareja, a tu madre o a un amigo desde tu móvil o tu Mac, con tus propias alertas. Ves cuándo su móvil
+      deja de enviar, y una muy baja que nadie atiende también te avisa a ti.
+    </Card>
+    <Card title="Tu hijo o hija tiene diabetes" icon="star">
+      Configúralo en su móvil y síguele desde el tuyo, los dos progenitores a la vez. Deja que un seguidor apunte los
+      hidratos del colegio, y quita a quien sea con un toque.
+    </Card>
+  </CardGrid>
+</Section>
+
+<Section title="Compartida sin nube" lead="Sin cuenta que crear ni servidor que mantener. Un enlace de invitación o un código QR, y tú aceptas a cada persona.">
+  <Flow
+    you="Tu móvil"
+    youNote="lee el sensor"
+    internet="Por internet"
+    internetNote="relés públicos de Nostr, en un segundo"
+    nearby="Cerca"
+    nearbyNote="Bluetooth, sin internet"
+    phone="Su móvil"
+    mac="Su Mac"
+  />
+  - **Cifrada de extremo a extremo:** los relés pasan tus lecturas y no pueden leerlas. Tu nombre y tu imagen también
+    viajan cifrados, nunca en público.
+  - **Tú decides quién te sigue:** si quitas a alguien, las claves cambian; los demás siguen como si nada.
+  - **Abierta:** la forma en que Sukrara comparte se está convirtiendo en un estándar que cualquier app puede usar, el
+    [Open Glucose Stream](/es/open-glucose-stream/).
+</Section>
+
+<Section title="Alertas que saben lo que acabas de hacer">
+  <Split>
+    - De muy baja a extremadamente alta, cambios rápidos y sin datos, cada una con tu umbral y tu sonido.
+    - Calladas después de que te pongas insulina o comas, y mientras la glucosa ya vuelve al rango. La extremadamente
+      alta siempre avisa.
+    - Cuatro paquetes de sonidos, un sonido distinto cada vez y una vibración para cada alerta, para distinguir una baja
+      de una alta con el móvil en el bolsillo. [Escúchalos](/es/sounds/).
+    - Tus seguidores reciben las alertas contigo, con sus propios ajustes si quieren.
+    <div slot="aside"><Screenshot name="alert" width={400} /></div>
+  </Split>
+</Section>
+
+<Section title="Funciona con lo que ya usas" lead="Todo está desactivado hasta que tú lo actives.">
+  <Chips
+    label="Apps y servicios"
+    items={['LibreView', 'Tidepool', 'Nightscout', 'Health Connect', 'AAPS', 'xDrip+', 'GlucoDataHandler', 'Juggluco', 'Esferas de reloj Garmin', 'Home Assistant']}
+  />
+  **Sensores.** Leídos directamente del sensor: FreeStyle Libre 3 y 3 Plus. Leídos directamente pero aún sin probar con
+  uno real: Dexcom G6, G7 y ONE+, Accu-Chek SmartGuide, LinX / AiDEX X. A través de Juggluco: FreeStyle Libre 2 y 2 Plus,
+  Sibionics GS1, CareSens Air.
+</Section>
+
+<Section title="Tuya, y gratis">
+  <CardGrid>
+    <Card title="Sin cuenta" icon="approve-check-circle">
+      Nada en lo que registrarse, sin anuncios, sin analíticas, sin rastreo.
+    </Card>
+    <Card title="Tus datos se quedan en tu móvil" icon="padlock">
+      Solo salen cuando activas una función que los envía, y solo adonde esa función dice.
+      [Política de privacidad](/es/privacy/)
+    </Card>
+    <Card title="Gratis y de código abierto" icon="github">
+      GPL-3.0 en [GitHub](https://github.com/mauriciabad/sukrara). Cada función empezó como una investigación con un
+      informe escrito: [Investigación](/developers/) (en inglés).
+    </Card>
+  </CardGrid>
+</Section>
+
+<Section title="Consigue Sukrara" id="descarga">
+  <CardGrid>
+    <Card title="Android" icon="mobile-android">
+      Android 16 o posterior, de 64 bits (arm64).
+      <Download app="android" />
+      [Pasos de instalación y versiones](/es/android/#descarga)
+    </Card>
+    <Card title="Mac" icon="laptop">
+      Apple silicon (M1 o posterior), macOS 15 o posterior.
+      <Download app="mac" />
+      [Pasos de instalación](/es/mac/#descarga)
+    </Card>
+  </CardGrid>
+</Section>

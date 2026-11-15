@@ -36,7 +36,8 @@
     "apps/android/*/src/test/snapshots/*",
     "apps/macos/Tests/*/__Snapshots__/*",
     "apps/macos/Bundle/*.xcassets/*",
-    "apps/macos/Bundle/*.icns"
+    "apps/macos/Bundle/*.icns",
+    "website/src/assets/*"
   ],
   "images_extra": [],
   "large_bytes": 2000000,

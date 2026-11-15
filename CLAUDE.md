@@ -23,6 +23,11 @@ sections your change touches.
   ("In Sukrara" section). *(not checked: needs judgement)*
 - **The README always stays up to date** with what every Sukrara app does. Update it in the same change as the
   feature. *(check `features`: a NOTE when app code changes without README.md)*
+- **The website** ([`website/`](website/README.md), sukrara.mauri.app) says what each app does for the person, in
+  English and Spanish (the developers' pages and reports, published from `docs/`: English). A change that makes a page
+  wrong updates it in the same change. It loads nothing from another host (the privacy policy says so), shows only
+  synthetic app pictures, and never drops a URL the apps open. *(job `website`: `npm run check` fails on a broken link
+  or anchor, a URL the apps' code opens that the site lacks, App Links / universal links / the update feed)*
 - **No backwards compatibility.** Replace formats outright and delete superseded code paths. This covers local
   storage too (settings, files, databases) and anything from the PoC. The **wire formats** in `contracts/protocol`
   (Nostr v2, identity) are versioned: every app speaks the same version. *(not checked)*
@@ -40,8 +45,8 @@ sections your change touches.
 - **Never commit secrets** (`nsec1…`, `secrets/`, keys, keystores, APKs/dmgs, build dirs) **or the owner's health
   screenshots** (synthetic/emulator data, cropped). The Android release key lives outside the repo
   (`~/.android/sukrara-release.jks`, password in the Keychain). *(checks `secrets`, `large`, `images`: images only
-  under `docs/img/`, `assets/brand/`, `res/`, the snapshot goldens or `poc/spikes/*/evidence/`; full-phone captures
-  flagged)*
+  under `docs/img/`, `assets/brand/`, `res/`, the snapshot goldens, `website/src/assets/` or `poc/spikes/*/evidence/`;
+  full-phone captures flagged)*
 - **Whoever creates a leftover removes it.** Every worktree, branch, emulator, background process and temp file is
   removed by the session or agent that made it, as soon as it's no longer needed: it alone knows whether it still is.
   An agent stops its emulators and background processes and deletes its temp files before reporting; it can't remove

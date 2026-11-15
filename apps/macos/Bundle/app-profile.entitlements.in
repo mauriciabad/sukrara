@@ -6,7 +6,7 @@
      app.entitlements.in has (not sandboxed, hardened runtime only, the App Group shared with the widget, the camera for
      the QR scanner), plus what only a profile grants. Time Sensitive: alarms break through a Focus (TimeSensitive).
      keychain-access-groups: the follower key in the data-protection keychain (KeychainStore.secrets). Associated
-     Domains: the web invite https://sukrara.mauri.app/join opens the app (docs/.well-known/apple-app-site-association).
+     Domains: the web invite https://sukrara.mauri.app/join opens the app (website/public/.well-known/apple-app-site-association).
      The app reads them at launch (Entitlements.current) and falls back without them. No get-task-allow. -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

@@ -20,14 +20,14 @@ left (resume with --from <step>; every step can run again):
                  version's entry; commit, push to next (fast-forward; its Checks run is awaited before github)
   gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
                  play-bundle.sh, mac-release.sh (notarized, Sparkle-signed, verify-app.sh --notarized inside, writes
-                 docs/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate). ./gradlew check and swift test
+                 website/public/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate). ./gradlew check and swift test
                  aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest green
                  commit with the same Mac sources: VERSION reaches only the bundle, which this gate builds and smokes).
   github         the release commit's Checks run green (its push or one started by hand, any branch; the one wait for
                  CI); main fast-forwarded, tag v<version>, the GitHub release (a normal one, Latest) with the APK, the
                  Android mapping, the dmg and the zip, notes from the CHANGELOG entry. main's own run isn't awaited:
                  the commit's green run is what it finds (tools/ci/changes.py)
-  sparkle        docs/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
+  sparkle        website/public/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
                  at https://sukrara.mauri.app/appcast.xml serves the item
   homebrew       the tap's workflow committed the cask for this version (the dmg's sha256)
   play           the play bundle on Google Play's internal and production tracks with the en-US / es-ES notes (Android
@@ -218,7 +218,7 @@ def read_appstore_notes(root, version):
 
 
 def appcast_item(feed, version):
-    """{length, signature, url} of the version's item in docs/appcast.xml, or None."""
+    """{length, signature, url} of the version's item in website/public/appcast.xml, or None."""
     m = re.search(r"<item>\s*<title>Sukrara %s</title>(.*?)</item>" % re.escape(version), feed, re.S)
     if not m:
         return None
@@ -267,10 +267,10 @@ def start_problems(head, origin_next, dirty):
 
 
 def resume_problems(dirty):
-    """Why --from a later step can't go on ([] when it can): changes besides docs/appcast.xml, which the gate writes
+    """Why --from a later step can't go on ([] when it can): changes besides website/public/appcast.xml, which the gate writes
     and the sparkle step commits. The branch doesn't matter; main() checks VERSION is the release's."""
-    extra = [f for f in dirty if f != "docs/appcast.xml"]
-    return ["the tree has changes besides docs/appcast.xml: %s" % ", ".join(extra)] if extra else []
+    extra = [f for f in dirty if f != "website/public/appcast.xml"]
+    return ["the tree has changes besides website/public/appcast.xml: %s" % ", ".join(extra)] if extra else []
 
 
 def commit_runs(runs):
@@ -496,22 +496,22 @@ class Release:
         # rebuilds build/Sukrara.app as the App Store version; its validated pkg is the one testflight uploads
         self.sh([r + "mac-appstore.sh"], capture=False)
         if self.dry:
-            print("  would check the files it leaves, docs/appcast.xml's %s item, and that nothing else changed" % self.v)
+            print("  would check the files it leaves, website/public/appcast.xml's %s item, and that nothing else changed" % self.v)
             return
         for rel in list(artifacts(self.v).values()) + ["%s/Sukrara-%s-play.aab" % (DIST, self.v), appstore_pkg(self.v)]:
             self.ok(os.path.exists(self.path(rel)), "the gate left no %s" % rel)
-        self.ok(appcast_item(self.read("docs/appcast.xml"), self.v),
-                "docs/appcast.xml has no item for %s (was the build notarized?)" % self.v)
-        extra = [f for f in self.dirty() if f != "docs/appcast.xml"]
+        self.ok(appcast_item(self.read("website/public/appcast.xml"), self.v),
+                "website/public/appcast.xml has no item for %s (was the build notarized?)" % self.v)
+        extra = [f for f in self.dirty() if f != "website/public/appcast.xml"]
         self.ok(not extra, "the gate changed files it shouldn't: %s" % ", ".join(extra))
 
     def check_dmg_is_the_signed_one(self):
         if self.dry:
-            print("  would check the dmg is the one docs/appcast.xml signs (length, sign_update --verify)")
+            print("  would check the dmg is the one website/public/appcast.xml signs (length, sign_update --verify)")
             return
-        item = appcast_item(self.read("docs/appcast.xml"), self.v)
+        item = appcast_item(self.read("website/public/appcast.xml"), self.v)
         dmg = self.path(artifacts(self.v)["dmg"])
-        if not self.ok(item is not None, "docs/appcast.xml has no item for %s: run the gate (mac-release.sh)" % self.v):
+        if not self.ok(item is not None, "website/public/appcast.xml has no item for %s: run the gate (mac-release.sh)" % self.v):
             return
         if not self.ok(os.path.exists(dmg), "no %s" % dmg):
             return
@@ -565,16 +565,16 @@ class Release:
         # own run finds (tools/ci/changes.py: an already green commit needs nothing again).
 
     def sparkle(self):
-        item = appcast_item(self.read("docs/appcast.xml"), self.v)
+        item = appcast_item(self.read("website/public/appcast.xml"), self.v)
         if self.dry and item is None:
-            print("  would check docs/appcast.xml has the %s item (mac-release.sh writes it in the gate) and the "
+            print("  would check website/public/appcast.xml has the %s item (mac-release.sh writes it in the gate) and the "
                   "release's dmg matches it" % self.v)
-            print("  would run: git commit docs/appcast.xml; git push origin HEAD:main")
+            print("  would run: git commit website/public/appcast.xml; git push origin HEAD:main")
             self.push_next()
             print("  would wait for GitHub Pages and %s to serve %s" % (FEED_URL, self.v))
             return
-        self.ok(item is not None, "docs/appcast.xml has no item for %s" % self.v)
-        committed = "docs/appcast.xml" not in self.dirty()
+        self.ok(item is not None, "website/public/appcast.xml has no item for %s" % self.v)
+        committed = "website/public/appcast.xml" not in self.dirty()
         if not committed:
             # the download the item names must be there first (#91)
             asset = self.gh_json(["release", "view", "v" + self.v, "-R", REPO, "--json", "assets"]) if not self.dry else None
@@ -582,7 +582,7 @@ class Release:
                 dig = {a["name"]: a.get("digest") for a in asset["assets"]}.get(os.path.basename(item["url"]))
                 self.ok(dig == "sha256:" + sha256(self.path(artifacts(self.v)["dmg"])),
                         "the release has no dmg matching the appcast (%s)" % dig)
-            self.sh(["git", "add", "docs/appcast.xml"])
+            self.sh(["git", "add", "website/public/appcast.xml"])
             self.sh(["git", "commit", "-q", "-m", "Sparkle feed: Sukrara %s" % self.v, "-m",
                      "The GitHub release v%s with its dmg is published (#91)." % self.v, "-m",
                      "Features-skip: the update feed only"])

@@ -1,0 +1,70 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Starlight's footer (edit link, last updated, previous / next), then the site's: every section, the not-a-medical-
+// device sentence the apps show (Settings › About, setup), the licence and the trademarks.
+import Default from '@astrojs/starlight/components/Footer.astro';
+import { GITHUB, ISSUES, RELEASES } from '../../site';
+
+const { locale } = Astro.locals.starlightRoute;
+const t = Astro.locals.t;
+const prefix = locale ? `/${locale}` : '';
+const es = locale === 'es';
+const links = [
+	{ text: t('site.nav.android'), href: `${prefix}/android/` },
+	{ text: t('site.nav.mac'), href: `${prefix}/mac/` },
+	{ text: 'Open Glucose Stream', href: `${prefix}/open-glucose-stream/` },
+	{ text: es ? 'Sonidos' : 'Sounds', href: `${prefix}/sounds/` },
+	{ text: t('site.footer.privacy'), href: `${prefix}/privacy/` },
+	{ text: t('site.nav.developers'), href: '/developers/' },
+	{ text: t('site.footer.releases'), href: RELEASES },
+	{ text: t('site.footer.source'), href: GITHUB },
+	{ text: t('site.footer.issues'), href: ISSUES },
+];
+---
+
+<Default />
+<div class="sk-footer" data-pagefind-ignore>
+	<nav aria-label={t('site.nav.label')}>
+		<ul>{links.map(({ text, href }) => <li><a href={href}>{text}</a></li>)}</ul>
+	</nav>
+	<p class="sk-footer__warning">{t('site.footer.notMedical')}</p>
+	<p>{t('site.footer.free')} {t('site.footer.trademarks')}</p>
+</div>
+
+<style>
+	.sk-footer {
+		margin-top: 3rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--sl-color-hairline);
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.sk-footer ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1.25rem;
+	}
+	.sk-footer a {
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+	}
+	.sk-footer a:hover {
+		color: var(--sl-color-white);
+		text-decoration: underline;
+	}
+	.sk-footer p {
+		margin: 0;
+		max-width: 60rem;
+	}
+	.sk-footer__warning {
+		color: var(--sl-color-gray-2);
+	}
+</style>

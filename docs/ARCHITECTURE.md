@@ -602,5 +602,5 @@ every app). Alert scenario expectations change only with the owner's OK.
 `verify-apk.sh --play`; the play flavor has every feature, root and the LSPosed module included, but no updater:
 `app/src/play`, `Store`, no `:update`; `:monitor`'s `RootFeatures` stays optional for the fallback if Play rejects root);
 Mac: `tools/release/mac-release.sh` (bundle + dmg + `verify-app.sh`; a notarized dmg is signed with the Sparkle
-EdDSA key and added to `docs/appcast.xml` by `tools/release/appcast.py`). Every release is a normal GitHub release
+EdDSA key and added to `website/public/appcast.xml` by `tools/release/appcast.py`). Every release is a normal GitHub release
 (marked *Latest*); every app's updater, and the Homebrew cask, skips a GitHub prerelease (a release candidate).

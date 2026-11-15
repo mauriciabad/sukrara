@@ -179,11 +179,11 @@ Dev, fixture, snapshot and test runs never create the updater (`LaunchPlan`). Wh
 docs/FEATURES.md › Updates (Mac, GitHub version). Notarization with Sparkle's XPC services inside: accepted on
 2026-11-11 (submission `1d7bb1ff-e862-4853-84a7-57e80fcd5176`, `verify-app.sh --notarized` all ok).
 
-**Where the feed lives: GitHub Pages, `docs/appcast.xml`.** A release asset can't be the feed: a per-release URL would have to be
+**Where the feed lives: GitHub Pages, `website/public/appcast.xml`.** A release asset can't be the feed: a per-release URL would have to be
 known before the release exists, and the stable `releases/latest/download/…` URL skipped every 0.x release while they
 were prereleases (until 2026-11-12). Pages is HTTPS on the project's own
 domain, already serves the site and `.well-known`, deploys on every push to `main` (`.github/workflows/website.yml`;
-Jekyll copies the file unchanged, `.github/site_links.py` only touches `.md` / `.html`), and the file is reviewed in
+the site build copies `website/public/` unchanged), and the file is reviewed in
 git like the rest. The enclosures stay on GitHub Releases (the same dmg as the download and the cask).
 
 **No channels.** Until 0.14.5 every 0.x release was a GitHub prerelease in Sparkle's `prerelease` channel, which 0.x
@@ -195,12 +195,12 @@ before still allow the old channel too, so they take the new items as well.
 Sparkle's `sign_update` (from the SwiftPM artifact, `apps/macos/.build/artifacts/sparkle/Sparkle/bin`) signs it with
 the key in the login keychain (macOS may ask once to let `sign_update` use it: *Always Allow*), checks the signature,
 checks the keychain's public key is the app's `SUPublicEDKey`, and `tools/release/appcast.py` adds the item to
-`docs/appcast.xml`: version and build, `minimumSystemVersion` 15.0, the channel, the GitHub release page as the full
+`website/public/appcast.xml`: version and build, `minimumSystemVersion` 15.0, the channel, the GitHub release page as the full
 notes, the version's `CHANGELOG.md` section as the notes Sparkle shows, and the enclosure
 `https://github.com/mauriciabad/sukrara/releases/download/v<version>/Sukrara-<version>.dmg` with its length and EdDSA
 signature (re-running replaces that version's item). Only the dmg is the update; the zip stays a plain download. An
 unnotarized build never goes in. Then, in this order: publish the GitHub release with that exact dmg (any rebuild
-changes the signature: run `mac-release.sh` again), **then** commit `docs/appcast.xml` and merge it to `main`; Pages
+changes the signature: run `mac-release.sh` again), **then** commit `website/public/appcast.xml` and merge it to `main`; Pages
 deploys it within minutes and every GitHub install sees the update at its next daily check. Committing it first would
 offer a download that isn't there yet. `tools/release/release.py` keeps that order (its `github`, then `sparkle` step) and checks the
 dmg on the release is the one the item signs. `UpdatesTests` checks every item (the GitHub URL, a 64-byte signature, the
@@ -246,7 +246,7 @@ nothing installed. The owner's app and its defaults were untouched (no `SU*` key
 **In Sukrara.** Added: the above. Discarded, with the reason: `generate_appcast` (it wants every archive in one local
 folder and rewrites the whole feed; one item per release from `appcast.py` is simpler and keeps the history in git);
 delta updates (a 10 MB dmg once a week doesn't need them, and they'd need the previous archives); a signed feed
-(`SURequireSignedFeed`: every hand edit of `docs/appcast.xml` would then lock all installs out; the archives are
+(`SURequireSignedFeed`: every hand edit of `website/public/appcast.xml` would then lock all installs out; the archives are
 signed and verified before extraction, which is what protects the install); a notification for a found update
 (notifications are for glucose; the panel row and Sparkle's window are enough); automatic install on by default (a
 follower's alarm should not change under the person without them knowing; it's one switch away); removing Sparkle's
@@ -286,9 +286,9 @@ reads its own entitlements at launch and falls back without them:
    --last 5m --info --predicate 'subsystem == "app.mauri.sukrara"'`). `spctl -a -vv` says *Unnotarized Developer ID*
    until the build is notarized (above); a build made on this Mac has no quarantine, so it launches. All of this ran on
    2026-11-10 with the profiles above; a build without them logs `no` three times.
-5. **Site**: `docs/.well-known/apple-app-site-association` gives `/join` to `QWUV9H4A3G.app.mauri.sukrara` (the
+5. **Site**: `website/public/.well-known/apple-app-site-association` gives `/join` to `QWUV9H4A3G.app.mauri.sukrara` (the
    profile's `TeamIdentifier`; a new team changes it there, in `bundle.sh` `TEAM`, `SukraraIDs.teamID` and
-   `verify-app.sh`). GitHub Pages publishes it (`_config.yml` includes `.well-known`); Macs read it through Apple's CDN,
+   `verify-app.sh`). GitHub Pages publishes it (the Pages artifact includes hidden files); Macs read it through Apple's CDN,
    `curl -s https://app-site-association.cdn-apple.com/a/v1/sukrara.mauri.app` shows what they see (refreshed within
    about a day of a change).
 6. **QA** on the owner's Mac (docs/QA.md Q6, Q8), then close #19: a Focus doesn't hold back an alarm; the follower key
@@ -593,7 +593,8 @@ same change. `LocalizationTests` normalises every specifier to `%@`, so it can't
 6. **Business › EU trader status** (Digital Services Act). It's needed before the version can go out in the EU.
 7. **0.14.0 › App Store Version Release**: pick manual or automatic release. Then **Add for Review → Submit**.
 
-The website's Mac page (`docs/mac/index.md` › *Get it*) gets an App Store badge once the app is live.
+The website's Mac page (`website/src/content/docs/mac.mdx` › *Get it*) links the App Store once the app is live
+(`STORES.appStore` in `website/src/site.ts`).
 
 ## Android
 
@@ -617,7 +618,7 @@ open testing at once, with no *Apply for production* step) and no new fee.
   key from Java keystore*, PEPK with `--rsa-aes-encryption`). Play had generated its own key at app creation; it was
   replaced before any upload. App signing key **and** upload key are both `27:EC:21:…:8D:96`
   (`tools/release/android-cert.sha256`), so every channel shares one signature and `android-release.sh`'s output is
-  uploadable as is. Play's Digital Asset Links snippet matches `docs/.well-known/assetlinks.json`.
+  uploadable as is. Play's Digital Asset Links snippet matches `website/public/.well-known/assetlinks.json`.
 - **API access**: Google Cloud project `sukrara-play` with the Google Play Android Developer API enabled; service
   account `sukrara-play-upload@sukrara-play.iam.gserviceaccount.com`, JSON key at **`~/.android/sukrara-play.json`**
   (0600, outside the repo; recreate with `gcloud iam service-accounts keys create`). In Play Console, for Sukrara only: *View
@@ -811,7 +812,7 @@ Steps 1–2 above are done; step 3's migration is dropped (the app starts clean)
 - **Where:** `~/.android/sukrara-release.jks` (PKCS12, RSA 4096, valid 30 years, alias `sukrara`), outside the repo,
   made once by `tools/release/make-keystore.sh` (it refuses to overwrite an existing key). Its random password is in
   the macOS Keychain item **`sukrara-android-release`** (account `sukrara`). Public fingerprint:
-  `tools/release/android-cert.sha256` (also in `docs/.well-known/assetlinks.json` for `app.mauri.sukrara`, with the
+  `tools/release/android-cert.sha256` (also in `website/public/.well-known/assetlinks.json` for `app.mauri.sukrara`, with the
   debug key's for debug builds).
 - **How a release build finds it:** the keystore from `SUKRARA_KEYSTORE` (default the path above), the password from
   the environment variable `SUKRARA_KEYSTORE_PASSWORD` only (Gradle never reads the Keychain); `tools/install.sh` and the
@@ -969,7 +970,7 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   `Store.updates()` returns null, so About has no update rows (`ManifestTest`; `verify-apk.sh --play`: no
   `app.mauri.sukrara.update` class in the mapping, no updater in the manifest, no `api.github.com` in the dex).
 - **About says which version it is** (*0.12.0 · Google Play version* / *GitHub version*) and links to the website's
-  [Versions](https://sukrara.mauri.app/android/#versions) (`docs/android/index.md`: same app and key; who updates
+  [Versions](https://sukrara.mauri.app/android/#versions) (`website/src/content/docs/android.mdx`: same app and key; who updates
   each; where to get each; anything a store version leaves out, today only the updater). No disabled rows and no
   "install elsewhere to unlock" prompts in the Play build (Device and Network Abuse: no means to reach a non-compliant
   APK).
@@ -1027,7 +1028,7 @@ confusing choice).
 
 ### Google Play: Data safety, Health apps and permission declarations (drafts)
 
-Derived from the code on 2026-11-10 for the play build (the facts are the privacy page's, `docs/privacy.md`); only the
+Derived from the code on 2026-11-10 for the play build (the facts are the privacy page's, `website/src/content/docs/privacy.md`); only the
 owner submits them, in Play Console › App content. Play's rules used here [[G14]](https://support.google.com/googleplay/android-developer/answer/10787469): data the app sends off the
 device is *collected* (Sukrara has no server, so everything below goes to services the person signs in to); data that
 is end-to-end encrypted, so no one in between can read it, doesn't need to be disclosed; a transfer the person starts
@@ -1388,7 +1389,7 @@ The planned own watch app (watch face / data field / app, investigation 08) goes
 - **Channels**: `stable` (Play production, Sparkle `appcast.xml`, cask) and `beta` (Play closed/open test, Sparkle
   `appcast-beta.xml` via `sparkle:channel`, GitHub pre-releases). The closed test needed for production access
   becomes the permanent beta channel.
-- **Privacy page** https://sukrara.mauri.app/privacy (`docs/privacy.md`, HTML, not PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511); since 2026-11-10):
+- **Privacy page** https://sukrara.mauri.app/privacy (`website/src/content/docs/privacy.md`, HTML, not PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511); since 2026-11-10):
   what stays on the device, what each opt-in feature sends where (Nostr relays: end-to-end encrypted events, public
   keys, timing, IP; LibreView, Tidepool, Nightscout: what each upload carries; Health Connect, apps on the phone, the
   calendar, the password manager, the export), followers, the Mac app, how long things last and how to delete them, no

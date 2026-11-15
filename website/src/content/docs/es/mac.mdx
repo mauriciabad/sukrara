@@ -1,0 +1,99 @@
+---
+title: Sukrara para Mac
+description: Tu glucosa en la barra de menús del Mac, alrededor de un segundo por detrás del móvil, con las mismas alertas, tratamientos e informe de glucosa. Sigue a Sukrara para Android por Bluetooth o por internet. Apple silicon, macOS 15+, gratis.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Download from '../../../components/Download.astro';
+import Gallery from '../../../components/Gallery.astro';
+
+Tu glucosa en la barra de menús, alrededor de un segundo por detrás del móvil, con las mismas alertas. Sukrara para Mac
+sigue a un móvil con [Sukrara para Android](/es/android/): el tuyo, o el de la persona a la que cuidas.
+
+<Gallery shots={[['macPanel', 330], ['macReport', 340]]} />
+
+## Descarga
+
+<Download app="mac" />
+
+<Steps>
+
+1. Haz clic en **Descargar para Mac** aquí arriba, abre el archivo descargado y arrastra **Sukrara** a
+   **Aplicaciones**. O instálala con el comando de Homebrew.
+2. Abre Sukrara. Está firmada y notarizada por Apple, así que se abre como cualquier otra app, y vive en la barra de
+   menús (sin icono en el Dock).
+3. Sigue a alguien: pega el enlace `https://sukrara.mauri.app/join#…` que comparte su móvil, escanea su código QR con
+   la cámara del Mac o empareja por Bluetooth cerca. Esa persona acepta este Mac en su móvil.
+
+</Steps>
+
+Sukrara se actualiza sola: una vez al día busca una versión nueva, firmada por Sukrara y comprobada antes de instalarse,
+y te la ofrece en su panel; **Instalar y reiniciar** es un clic. Homebrew deja las actualizaciones a la app.
+
+## Qué hace
+
+- **Barra de menús:** el valor y la flecha de tendencia, en rojo o naranja fuera de rango y tachado cuando la lectura es
+  antigua, y cómo llegan las lecturas: cerca por Bluetooth, por internet o sin conexión.
+- **El panel:** la misma tarjeta y gráfica que el móvil, silenciar y reactivar, y cada ventana a un clic.
+- **Alertas:** las mismas alertas y sonidos que el móvil, con los umbrales de quien lleva el sensor o los de este Mac.
+- **Tratamientos:** añade insulina, hidratos y notas, ahora o antes; llegan al registro de quien lleva el sensor si lo
+  permite.
+- **Informe de glucosa:** tiempo en rangos, glucosa media, GMI y variabilidad de 1 a 30 días, con exportación CSV.
+- **Widgets** en el escritorio y en el Centro de notificaciones.
+- **Juggluco en tu red de casa:** lee la glucosa directamente de Juggluco en lugar de seguir a alguien.
+
+<Gallery shots={[['macTreatment', 340], ['macWidget', 300]]} />
+
+Cada comportamiento, con sus reglas y sus números, está en el
+[catálogo de comportamientos](/developers/features/#mac-menu-and-windows) (en inglés).
+
+## Requisitos
+
+- Un Mac con Apple silicon (M1 o posterior) y macOS 15 o posterior.
+- El móvil de alguien con [Sukrara para Android](/es/android/) al que seguir (el tuyo o el suyo), o Juggluco en la misma
+  red.
+
+## Versiones
+
+La **versión de GitHub** (la descarga de arriba y Homebrew) se actualiza sola, como se explica arriba. Llegará una
+**versión del Mac App Store**: la misma app, aislada y actualizada por la App Store, así que sin actualizador propio.
+**Acerca de Sukrara** dice cuál tienes.
+
+## Preguntas
+
+<details>
+<summary>¿Necesito un iPhone, una cuenta o un servicio en la nube?</summary>
+
+No. Sukrara para Mac sigue directamente a un móvil con Sukrara para Android: por Bluetooth cuando estáis cerca, por
+relés públicos de Nostr desde cualquier sitio, cifrado de extremo a extremo. Nada en lo que registrarse.
+
+</details>
+
+<details>
+<summary>¿Funciona en un Mac con Intel?</summary>
+
+No, necesita Apple silicon (M1 o posterior) y macOS 15 o posterior.
+
+</details>
+
+<details>
+<summary>¿Suenan las alertas durante un modo de concentración?</summary>
+
+Un modo de concentración (No molestar, Dormir…) retiene las alertas de Sukrara como las de cualquier app, salvo que
+dejes pasar a Sukrara: **Ajustes › Alertas › Dejar pasar a Sukrara**. El panel te avisa cuando las notificaciones, los
+avisos o los sonidos están desactivados para Sukrara.
+
+</details>
+
+<details>
+<summary>¿Puede leer mi sensor?</summary>
+
+Por sí sola no: el sensor lo lee el móvil con el que está emparejado. El Mac sigue a ese móvil, o lee Juggluco en tu red
+de casa.
+
+</details>
+
+<Aside type="caution" title="Una versión preliminar, no un producto sanitario">
+Sukrara es una versión preliminar (0.x), no autorizada ni aprobada por ningún organismo regulador. No tomes decisiones
+de tratamiento basándote en ella.
+</Aside>

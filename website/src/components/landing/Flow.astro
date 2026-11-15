@@ -1,0 +1,152 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * How sharing travels, drawn: the wearer's phone on one side, the followers' phone and Mac on the other, and the two
+ * ways between them (relays over the internet, Bluetooth nearby) with a reading moving along each. Words come from the
+ * page, so each language writes its own:
+ *   <Flow you="Your phone" youNote="reads the sensor" internet="…" internetNote="…" nearby="…" nearbyNote="…"
+ *         phone="Their phone" mac="Their Mac" />
+ */
+import { Icon } from '@astrojs/starlight/components';
+
+interface Props {
+	you: string;
+	youNote: string;
+	internet: string;
+	internetNote: string;
+	nearby: string;
+	nearbyNote: string;
+	phone: string;
+	mac: string;
+}
+const p = Astro.props;
+---
+
+<div class="sk-flow not-content">
+	<div class="sk-flow__node is-you">
+		<Icon name="mobile-android" size="2rem" />
+		<strong>{p.you}</strong>
+		<small>{p.youNote}</small>
+	</div>
+	<div class="sk-flow__routes">
+		<p class="sk-flow__route">
+			<span class="sk-flow__dot" aria-hidden="true"></span>
+			<strong>{p.internet}</strong>
+			<small>{p.internetNote}</small>
+		</p>
+		<p class="sk-flow__route is-nearby">
+			<span class="sk-flow__dot" aria-hidden="true"></span>
+			<strong>{p.nearby}</strong>
+			<small>{p.nearbyNote}</small>
+		</p>
+	</div>
+	<div class="sk-flow__followers">
+		<div class="sk-flow__node"><Icon name="mobile-android" size="1.5rem" /><strong>{p.phone}</strong></div>
+		<div class="sk-flow__node"><Icon name="laptop" size="1.5rem" /><strong>{p.mac}</strong></div>
+	</div>
+</div>
+
+<style>
+	.sk-flow {
+		display: grid;
+		gap: 1rem;
+		align-items: center;
+	}
+	@media (min-width: 50rem) {
+		.sk-flow {
+			grid-template-columns: 11rem 1fr 11rem;
+			gap: 1.5rem;
+		}
+	}
+	.sk-flow__node {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.25rem;
+		padding: 1rem;
+		border-radius: var(--sk-radius);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+		text-align: center;
+		color: var(--sl-color-white);
+	}
+	.sk-flow__node small {
+		color: var(--sl-color-gray-3);
+		line-height: 1.3;
+	}
+	.sk-flow__node.is-you {
+		background: var(--sk-gradient);
+		color: #fff;
+		border: 0;
+	}
+	.sk-flow__node.is-you small {
+		color: rgb(255 255 255 / 0.85);
+	}
+	.sk-flow__followers {
+		display: grid;
+		gap: 0.75rem;
+		grid-template-columns: 1fr 1fr;
+	}
+	@media (min-width: 50rem) {
+		.sk-flow__followers {
+			grid-template-columns: 1fr;
+		}
+	}
+	.sk-flow__routes {
+		display: grid;
+		gap: 0.75rem;
+	}
+	.sk-flow__route {
+		container-type: inline-size;
+		position: relative;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		padding: 0.75rem 1.25rem 0.75rem 2.75rem;
+		border-radius: 999px;
+		border: 2px dashed var(--sl-color-gray-5);
+		color: var(--sl-color-white);
+		line-height: 1.35;
+	}
+	.sk-flow__route small {
+		color: var(--sl-color-gray-3);
+	}
+	/* A reading on its way: the live dot crossing the route, again and again. */
+	.sk-flow__dot {
+		position: absolute;
+		left: 1rem;
+		top: calc(50% - 0.45rem);
+		width: 0.9rem;
+		height: 0.9rem;
+		border-radius: 50%;
+		background: var(--sk-lime);
+		box-shadow: 0 0 1rem rgb(198 244 50 / 0.8);
+		animation: sk-travel 2.6s cubic-bezier(0.45, 0, 0.25, 1) infinite;
+	}
+	.is-nearby .sk-flow__dot {
+		animation-delay: -1.3s;
+	}
+	@keyframes sk-travel {
+		0% {
+			transform: translateX(0);
+			opacity: 0;
+		}
+		12% {
+			opacity: 1;
+		}
+		80% {
+			opacity: 1;
+		}
+		100% {
+			transform: translateX(calc(100cqw - 2.5rem));
+			opacity: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.sk-flow__dot {
+			animation: none;
+		}
+	}
+</style>

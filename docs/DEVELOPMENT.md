@@ -12,6 +12,8 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 - Android SDK at `~/Library/Android/sdk`; emulator binary `~/Library/Android/sdk/emulator/emulator` (at most two
   emulators at once); the `android` CLI at `~/.local/bin/android` (create / start AVDs, screenshots, UI dumps).
 - Xcode (Swift 6) for the Mac app; `swift build` / `swift test` in `apps/macos`.
+- Node 24 (`website/.node-version`; `brew install node`) for the website: `npm ci` in `website/` once
+  ([`website/README.md`](../website/README.md)).
 - The Libre 3 native core builds from `third_party/Juggluco` (gitignored, pinned by `apps/android/sensor/juggluco.lock`;
   from a worktree the main checkout's copy is found). A release build fails without it.
 
@@ -26,6 +28,8 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Play Store icon + apple-touch-icon | `python3 -I tools/brand/store_icons.py` (from the frozen `poc/spikes/brand/brand.py` shapes) |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
+| Website: live preview | `cd website && npm run dev` (http://localhost:4321) |
+| Website: what CI runs | `cd website && npm run build && npm run check` (links, the apps' URLs, App Links, the feed) |
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
 | Version | `tools/release/version.sh` → `0.14.5 14005` (from `VERSION`) |
 
@@ -34,8 +38,9 @@ cancel each other; a pull request's newer push cancels its older run). Its `chan
 compares the commit with the newest ancestor that has a green run of its own, not with the push before: the rules
 run over that range, the Android jobs when `apps/android/` (but its `fastlane/` Play notes), `contracts/`, `tools/`,
 `VERSION` or `assets/` changed in it, the Mac job when `apps/macos/`, `contracts/` or `assets/` did (no Mac step reads
-`tools/`; `VERSION` reaches only the bundle, which the release gate builds and smokes); docs and CHANGELOG.md alone run
-only the rules. The PoC has no build jobs: it is frozen. A commit
+`tools/`; `VERSION` reaches only the bundle, which the release gate builds and smokes), the `website` job (build +
+`website/scripts/check.mjs`) when `website/`, `docs/`, `assets/`, `contracts/` or `apps/` did (it publishes docs/,
+shows the goldens and checks every site URL the apps open); CHANGELOG.md alone runs only the rules. The PoC has no build jobs: it is frozen. A commit
 that already has a green run (main fast-forwarded to next's commit, a tag) runs nothing again. `gate` is the only
 required check. Android is four jobs side by side: `android` (`./gradlew check -x lint` + Roborazzi verify),
 `android-lint` (`lint`; the two together are exactly `check`), `android-release` (the shrunk release APK keeps the
@@ -99,7 +104,7 @@ scratch folders for such a dry run.
 - **Mac updates (Sparkle)**: the EdDSA private key that signs every update is in the login keychain (Sparkle's
   `generate_keys`: service `https://sparkle-project.org`, account `ed25519`), with a backup at `~/.apple-dev/sparkle-eddsa-private.key` (chmod 600) for the
   password manager; its public key is `SUPublicEDKey` in `apps/macos/Bundle/sparkle.plist`. `mac-release.sh` signs the
-  notarized dmg with it and writes `docs/appcast.xml` (docs/20-publishing.md › Sparkle: the update feed).
+  notarized dmg with it and writes `website/public/appcast.xml` (docs/20-publishing.md › Sparkle: the update feed).
 
 ## Development and release builds
 
@@ -109,14 +114,14 @@ the Mac Info.plist `SukraraBuild`):
 
 - **Release** (`release`): only with `SUKRARA_RELEASE_BUILD=1`, which only the release scripts set
   (`android-release.sh`, `play-bundle.sh`, `mac-release.sh`, `mac-appstore.sh`), and only from the release commit (the
-  last commit that changed `VERSION`, with no other change and no untracked file; `docs/appcast.xml` may differ:
+  last commit that changed `VERSION`, with no other change and no untracked file; `website/public/appcast.xml` may differ:
   `mac-release.sh` writes it in the gate and `release.py` commits it before `testflight`); anything else stops the
   build. About and Settings keep *0.14.5 · GitHub version* / *Google Play version* / *App Store version*.
 - **Development** (`development <commits> <commit> <date>`): every other build: `tools/install.sh` (which unsets the
   flag), CI, Android debug builds (`development` alone, so the build cache keeps them), `swift build` / `swift test`
   (no Info.plist). About and Settings say *Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov* (Spanish
   *Versión de desarrollo · 0.14.5 + 23 cambios · …*): the commits since the release commit (those that change more than
-  `docs/appcast.xml`), HEAD's hash and its commit date; what git can't tell (a shallow clone) is left out. Reports
+  `website/public/appcast.xml`), HEAD's hash and its commit date; what git can't tell (a shallow clone) is left out. Reports
   (*Copy report*, sensor feedback, the import's issue, the Mac's *Copy Report*) say *0.14.5 development build +23
   d744fd74 2026-11-14*.
 - **Checks**: `verify-apk.sh` / `verify-app.sh` expect a development build unless given `--release` (the release
@@ -154,7 +159,7 @@ again: it skips what's already there):
    green commit, the previous HEAD's included; it is the release's one wait for CI, in `github`.
 3. `gate`: `android-release.sh` (signed APK, `verify-apk.sh`, the mapping), `android-smoke.sh --final --no-build` on
    the emulator, `play-bundle.sh`, `mac-release.sh` (notarized, Sparkle-signed, `verify-app.sh --notarized`, writes
-   `docs/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool --validate-app`: the pkg `testflight`
+   `website/public/appcast.xml`), `Bundle/smoke.sh`, `mac-appstore.sh` (build + `altool --validate-app`: the pkg `testflight`
    uploads). `./gradlew check` and `swift test` aren't run again: the release commit's green Checks run ran them (the
    Mac job ran on the newest green commit with the same Mac sources: `VERSION` reaches only the bundle, which this
    gate builds, notarizes and smokes).
@@ -162,7 +167,7 @@ again: it skips what's already there):
    --latest` (a normal release, *Latest*) with the APK, the Android mapping, the dmg and the zip (their
    sha256 checked against the release's), notes from the CHANGELOG entry with the disclaimer and the files. `main`'s
    own run isn't awaited: it finds the commit's green run and runs nothing again.
-5. `sparkle`: the dmg on the release is the one `docs/appcast.xml` signs → the appcast committed and pushed to `main`
+5. `sparkle`: the dmg on the release is the one `website/public/appcast.xml` signs → the appcast committed and pushed to `main`
    and `next` (if `next` moved meanwhile, the commit is merged into it; HEAD stays on the appcast commit, so a re-run
    never brings `next`'s other work to `main`), Pages deployed, and https://sukrara.mauri.app/appcast.xml serves the
    item.

@@ -1,0 +1,32 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// A row of names as pills: the apps and services Sukrara works with, the sensors it reads.
+interface Props {
+	items: string[];
+	label: string;
+}
+const { items, label } = Astro.props;
+---
+
+<ul class="sk-chips not-content" aria-label={label}>{items.map((item) => <li>{item}</li>)}</ul>
+
+<style>
+	.sk-chips {
+		list-style: none;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.sk-chips li {
+		padding: 0.4rem 0.9rem;
+		border-radius: 999px;
+		border: 1px solid var(--sk-surface-line);
+		background: var(--sk-surface);
+		color: var(--sl-color-gray-1);
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+	}
+</style>

@@ -1,0 +1,94 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * The invite link's fallback (https://sukrara.mauri.app/join#<32 characters>): shown when the link opens in a browser,
+ * because the app isn't installed or it's a computer. The invite lives in the #fragment, which browsers never send to
+ * the server; this reads it in the browser only. With an invite: open it in the app (sukrara:join#…, the Mac and
+ * phones whose App Links aren't verified) and copy the link. Without one: the slot's explanation only.
+ *   <Invite open="Open in Sukrara" copy="Copy the link" copied="Copied">…text with an invite…</Invite>
+ */
+interface Props {
+	open: string;
+	copy: string;
+	copied: string;
+}
+const { open, copy, copied } = Astro.props;
+---
+
+<div class="sk-invite not-content" hidden>
+	<slot />
+	<p class="sk-invite__actions">
+		<a class="sk-invite__open" href="#">{open}</a>
+		<button type="button" class="sk-invite__copy" data-copied={copied}>{copy}</button>
+	</p>
+	<p><code class="sk-invite__link"></code></p>
+</div>
+
+<script>
+	const invite = location.hash.slice(1);
+	for (const box of document.querySelectorAll<HTMLElement>('.sk-invite')) {
+		if (!/^[A-Za-z0-9_-]{32}$/.test(invite)) continue;
+		const link = `https://sukrara.mauri.app/join#${invite}`;
+		box.querySelector('.sk-invite__link')!.textContent = link;
+		box.querySelector<HTMLAnchorElement>('.sk-invite__open')!.href = `sukrara:join#${invite}`;
+		const copy = box.querySelector<HTMLButtonElement>('.sk-invite__copy')!;
+		copy.addEventListener('click', async () => {
+			try {
+				await navigator.clipboard.writeText(link);
+				copy.textContent = copy.dataset.copied!;
+			} catch {}
+		});
+		box.hidden = false;
+		document.documentElement.dataset.invite = '';
+	}
+</script>
+
+<style>
+	.sk-invite {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		padding: 1.5rem;
+		border-radius: calc(var(--sk-radius) + 0.25rem);
+		background: var(--sk-surface);
+		border: 2px solid var(--sl-color-accent);
+	}
+	.sk-invite[hidden] {
+		display: none;
+	}
+	.sk-invite :global(p) {
+		margin: 0;
+	}
+	.sk-invite__actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem;
+	}
+	.sk-invite__open,
+	.sk-invite__copy {
+		display: inline-flex;
+		padding: 0.75rem 1.4rem;
+		border-radius: 999px;
+		font: 800 var(--sl-text-base) / 1 var(--sk-font-display);
+		text-decoration: none;
+		cursor: pointer;
+	}
+	.sk-invite__open {
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	:root[data-theme='light'] .sk-invite__open {
+		color: #fff;
+	}
+	.sk-invite__copy {
+		background: none;
+		border: 2px solid var(--sl-color-gray-5);
+		color: var(--sl-color-white);
+	}
+	.sk-invite__link {
+		word-break: break-all;
+		font-size: var(--sl-text-xs);
+	}
+</style>

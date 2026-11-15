@@ -123,10 +123,15 @@ import Testing
         let feed = try #require(sparkle["SUFeedURL"] as? String)
         #expect(feed == Updates.feedURL.absoluteString)
         #expect(Updates.feedURL.scheme == "https")
-        let cname = try String(contentsOf: Self.repoRoot.appending(path: "docs/CNAME"), encoding: .utf8)
-        #expect(Updates.feedURL.host() == cname.trimmingCharacters(in: .whitespacesAndNewlines))
+        // the website's domain is the brand's (assets/brand/sukrara/brand.json; website/src/site.ts reads it too)
+        let brand =
+            try JSONSerialization.jsonObject(
+                with: Data(contentsOf: Self.repoRoot.appending(path: "assets/brand/sukrara/brand.json")))
+            as? [String: Any]
+        #expect(Updates.feedURL.host() == brand?["domain"] as? String)
         #expect(Updates.feedURL.lastPathComponent == "appcast.xml")
-        #expect(FileManager.default.fileExists(atPath: Self.repoRoot.appending(path: "docs/appcast.xml").path))
+        let published = Self.repoRoot.appending(path: "website/public/appcast.xml")  // served at /appcast.xml
+        #expect(FileManager.default.fileExists(atPath: published.path))
         let key = try #require((sparkle["SUPublicEDKey"] as? String).flatMap { Data(base64Encoded: $0) })
         _ = try Curve25519.Signing.PublicKey(rawRepresentation: key)
         #expect(sparkle["SUVerifyUpdateBeforeExtraction"] as? Bool == true)
@@ -148,16 +153,16 @@ import Testing
         #expect(!info.contains("<key>SU"))
     }
 
-    /// Every item of docs/appcast.xml: a GitHub release's dmg over https with an EdDSA signature and its length, a
+    /// Every item of website/public/appcast.xml: a GitHub release's dmg over https with an EdDSA signature and its length, a
     /// numeric build, the minimum macOS of Info.plist.in, no Sparkle channel (every release is a normal one that every
     /// install takes).
     @Test func theAppcastsItemsAreSignedGitHubReleases() throws {
-        let data = try Data(contentsOf: Self.repoRoot.appending(path: "docs/appcast.xml"))
+        let data = try Data(contentsOf: Self.repoRoot.appending(path: "website/public/appcast.xml"))
         let parsed = AppcastItems()
         let parser = XMLParser(data: data)
         parser.shouldProcessNamespaces = false
         parser.delegate = parsed
-        #expect(parser.parse(), "docs/appcast.xml isn't well-formed: \(String(describing: parser.parserError))")
+        #expect(parser.parse(), "the appcast isn't well-formed: \(String(describing: parser.parserError))")
         #expect(parsed.channels == 1)
         let info = try plist("Bundle/Info.plist.in")
         let minimumOS = try #require(info["LSMinimumSystemVersion"] as? String)

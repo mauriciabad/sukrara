@@ -1,0 +1,174 @@
+---
+title: Sukrara para Android
+description: Sukrara lee tu sensor de glucosa, muestra tu glucosa en la pantalla de inicio, la barra de estado y la pantalla de bloqueo, te avisa y la comparte cifrada de extremo a extremo. O sigue a otra persona, con tus propias alertas. Android 16+, gratis.
+---
+
+import { Aside, Steps } from '@astrojs/starlight/components';
+import Download from '../../../components/Download.astro';
+import Gallery from '../../../components/Gallery.astro';
+
+El móvil con el que llevas el sensor: Sukrara lee el sensor, muestra tu glucosa por todo el móvil, te avisa y la
+comparte con las personas y los dispositivos que elijas. O sigue la glucosa de otra persona, con tus propias alertas.
+
+<Gallery shots={[['home', 200], ['widget', 290], ['notification', 190]]} />
+
+## Descarga
+
+<Download app="android" />
+
+<Steps>
+
+1. En tu móvil, toca **Descargar para Android** aquí arriba.
+2. Abre el archivo descargado. Si Android te lo pide, permite las instalaciones desde tu navegador (**Ajustes ›
+   Permitir desde esta fuente**), vuelve y toca **Instalar**.
+3. Abre Sukrara. La configuración solo pregunta lo que necesitan las alertas y la monitorización: los permisos, tu
+   sensor y tus niveles de alerta. Los seguidores, las plumas de insulina, las actualizaciones y tu historial pueden
+   venir después, desde **Ajustes › Termina la configuración**.
+
+</Steps>
+
+Android avisa de cualquier app que no venga de una tienda; si Google Play Protect se ofrece a analizar Sukrara, deja
+que lo haga. Las actualizaciones se instalan encima de la versión anterior y conservan tus datos: activa **Mantén
+Sukrara al día** (la configuración y un aviso te lo ofrecen) y Sukrara buscará una versión nueva una vez al día, o deja
+que [Obtainium](https://obtainium.imranr.dev/) la mantenga al día.
+
+## Qué hace
+
+### Si llevas el sensor
+
+- **Lee el sensor ella misma:** un FreeStyle Libre 3 o 3 Plus por Bluetooth tras un toque NFC, con una pantalla guiada
+  de *Sensor nuevo* y recordatorios antes de que termine. Otros sensores directamente (aún sin probar) o a través de
+  Juggluco.
+- **La glucosa de un vistazo:** widgets de la pantalla de inicio, la notificación de glucosa, la barra de estado (un
+  chip, el icono de la notificación o, con root, como texto junto a los iconos del sistema) y, con root y LSPosed, la
+  pantalla de bloqueo.
+- **Alertas:** de muy baja a extremadamente alta, cambios rápidos y sin datos, cada una con tu umbral, su repetición y
+  su sonido. Calladas después de un tratamiento y mientras la glucosa ya vuelve al rango; la extremadamente alta siempre
+  avisa. Los [paquetes de sonidos](/es/sounds/) y una vibración para cada alerta.
+- **Tratamientos en segundos:** insulina, hidratos y notas desde la notificación, un widget, los Ajustes rápidos o la
+  pantalla de bloqueo. Una NovoPen Echo Plus apunta sus dosis al acercarla al móvil (NovoPen 6: sin probar).
+- **Tu consulta lo sigue viendo todo:** envíos a LibreView, Tidepool y tu propio Nightscout, y Health Connect, cada
+  uno desactivado hasta que lo actives.
+- **El informe para el médico:** tiempo en rangos, glucosa media, GMI y variabilidad, y una exportación CSV.
+
+### Si sigues a alguien
+
+- Abre el enlace de invitación o escanea el código QR que te envíe: Sukrara te muestra quién te invita, y esa persona
+  te acepta.
+- La misma tarjeta, widgets, notificación y alertas que la suya, con sus ajustes de alertas o los tuyos.
+- Cuando su móvil deja de enviar, ves cuándo llegó la última lectura y suena tu alerta de sin datos.
+- Si te deja, apunta en su registro los hidratos o la insulina que tomó.
+
+<Gallery shots={[['share', 170], ['treatments', 250], ['lockTreatment', 260]]} />
+
+Cada comportamiento, con sus reglas y sus números, está en el [catálogo de comportamientos](/developers/features/) (en
+inglés).
+
+## Requisitos
+
+- Android 16 o posterior, en un móvil de 64 bits (arm64).
+- Para leer un sensor: NFC y Bluetooth. Para iniciar un Libre 3 nuevo hace falta una cuenta de LibreView.
+- Opcional: root con LSPosed, para la tarjeta de glucosa en la pantalla de bloqueo y el valor como texto en la barra de
+  estado. Sukrara te avisa cuando falta el root o el módulo, y de cómo arreglarlo.
+
+{/* The apps open /android/#versions: the same anchor here, so the Spanish page lands on this section too. */}
+<span id="versions"></span>
+
+## Versiones
+
+Sukrara para Android tiene dos versiones: la **versión de GitHub** y la **versión de Google Play**. Son la misma app,
+hecha con el mismo código fuente y firmada con la misma clave, así que cualquiera de las dos se instala encima de la
+otra y conserva tus datos. **Ajustes › Acerca de** muestra cuál tienes, junto al número de versión.
+
+| | Versión de GitHub | Versión de Google Play |
+|---|---|---|
+| Actualizaciones | Sukrara se actualiza sola en cuanto lo activas (la configuración y un aviso te lo ofrecen; desactivado hasta que lo hagas): una vez al día pregunta a GitHub si hay una versión nueva, te lo dice en una notificación discreta y la instala con un toque tras comprobar que es de Sukrara (o sola, si también activas eso), nunca mientras se muestra una alerta. Obtainium también sirve. | Google Play la actualiza, como cualquier app de Play. |
+| Dónde conseguirla | [Versiones en GitHub](https://github.com/mauriciabad/sukrara/releases), [Obtainium](https://obtainium.imranr.dev/) | Google Play (enviada, en revisión) |
+| Funciones | Todas | Todas |
+
+**Lo que la versión de Google Play deja fuera:** solo el actualizador propio de Sukrara, porque Google Play trae las
+actualizaciones. Todo lo demás, incluidas las alertas, compartir, los widgets y la glucosa en la barra de estado, está
+en las dos. Si alguna vez una versión de tienda tiene que dejar fuera algo más, aparecerá aquí.
+
+## Preguntas
+
+<details>
+<summary>¿Me despertarán las alertas, con el móvil bloqueado o en No molestar?</summary>
+
+Las alertas de muy baja y extremadamente alta suenan con el volumen de alarma, como un despertador (y cualquier otra que
+marques *Como una alarma*). De serie, Sukrara respeta No molestar; para que suene igualmente, elige **Dejar pasar a
+Sukrara** en **Ajustes › Fiabilidad de las alertas**. Esa página también comprueba todo lo demás que necesitan las
+alertas (notificaciones, alertas a pantalla completa, restricciones de batería, el sonido), abre el ajuste de Android
+que falta y envía una alerta de prueba real. El inicio te avisa cuando algo está bloqueado.
+
+</details>
+
+<details>
+<summary>¿Es segura la descarga? ¿Por qué me avisa Android?</summary>
+
+Android avisa de toda app que no venga de una tienda. El código fuente de Sukrara es público, cada versión se compila a
+partir de él y se firma con la clave de Sukrara, y Sukrara comprueba esa firma antes de instalar una actualización.
+Descárgala solo desde esta página o desde las [versiones en GitHub](https://github.com/mauriciabad/sukrara/releases), y
+deja que Google Play Protect la analice si se ofrece.
+
+</details>
+
+<details>
+<summary>¿Puedo seguir usando la app Libre de Abbott?</summary>
+
+Un Libre 3 habla con una sola app a la vez. Sukrara inicia los sensores nuevos con tu cuenta de LibreView, para que la
+app de Abbott con la misma cuenta pueda recuperar el sensor, y Sukrara pueda volver a tomarlo con un toque. Con el envío
+a LibreView activado, tu consulta sigue viendo en LibreView tu glucosa, tu insulina y tus hidratos.
+
+</details>
+
+<details>
+<summary>¿Cuánto tardan mis seguidores en ver mi glucosa, y qué pasa si mi móvil se apaga?</summary>
+
+Alrededor de un segundo por internet, y al instante por Bluetooth cuando estáis cerca. Si tu móvil deja de enviar
+(apagado, sin cobertura, sin batería), tus seguidores ven cuándo llegó la última lectura y suena su alerta de sin datos;
+las lecturas que se perdieron se completan cuando vuelve. Si nadie atiende una muy baja en tu móvil, tus seguidores
+también reciben el aviso.
+
+</details>
+
+<details>
+<summary>¿Qué sensores lee?</summary>
+
+Directamente del sensor: FreeStyle Libre 3 y 3 Plus. Directamente pero aún sin probar con uno real: Dexcom G6, G7 y
+ONE+, Accu-Chek SmartGuide, LinX / AiDEX X; Sukrara te pide tu opinión hasta que cada uno se confirme. A través de
+Juggluco en el mismo móvil: FreeStyle Libre 2 y 2 Plus, Sibionics GS1, CareSens Air.
+
+</details>
+
+<details>
+<summary>¿Hay versión para iPhone?</summary>
+
+No. Tus seguidores pueden usar un móvil Android o [un Mac](/es/mac/). La forma en que Sukrara comparte se está
+convirtiendo en un estándar abierto, el [Open Glucose Stream](/es/open-glucose-stream/), para que otras apps puedan
+sumarse.
+
+</details>
+
+<details>
+<summary>¿Es gratis? ¿Quién la hace?</summary>
+
+Sí: gratis y de código abierto (GPL-3.0), sin anuncios, sin cuenta y sin nada que comprar. Maurici Abad la hizo para uso
+propio, la usa a diario y la comparte con todo el mundo; el código, cada decisión y la investigación que hay detrás son
+[públicos](/developers/).
+
+</details>
+
+<details>
+<summary>¿Está aprobada como producto sanitario?</summary>
+
+No. Sukrara es una versión preliminar (0.x) independiente, no autorizada ni aprobada por ningún organismo regulador.
+Los valores pueden ser erróneos, llegar tarde o faltar, y las alertas pueden no sonar: mira la app de tu sensor o un
+glucómetro, y consulta a tu médico, antes de decidir un tratamiento.
+
+</details>
+
+<Aside type="caution" title="Una versión preliminar, no un producto sanitario">
+Sukrara es una versión preliminar (0.x) hasta que se haya probado más tiempo con un sensor real. No tomes decisiones de
+tratamiento basándote en ella.
+</Aside>
