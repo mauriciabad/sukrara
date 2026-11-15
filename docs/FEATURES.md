@@ -1181,6 +1181,23 @@ leaves once either is signed in and on. *Closed* → stays closed (restoring clo
 Settings → Share with apps. Follower → never shown. Before the app knows whether both are signed in (start-up) → not
 shown.
 
+## LibreView-stalled banner
+
+Android, wearer only ([docs/04](04-libreview.md#in-sukrara-glucose-that-never-went-up)): home's
+banner place (`BannerKind.ClinicUploadBehind`, below the safety, taps and blocked-feature banners, above the tips).
+While the LibreView upload is on with *Glucose* and the phone's newest reading from its own sensor is more than 2 h
+(or two *Upload every*) newer than the newest glucose LibreView accepted (or than the moment glucose was switched on),
+whatever the reason (`LibreViewQueue.behind`, `LibreViewUploader.glucoseBehind`): a card with the crossed-out cloud
+of the treatment list's "upload stopped" mark says *LibreView isn't getting your glucose* · "Your clinic sees nothing
+since 11:00." (the time within 12 h, else date and time) with *Fix* (opens Settings › Share with apps › LibreView,
+which says why) and a close button. Not shown when the only problem is that the phone has no internet (it goes up by
+itself once back; the page still says it). Mac: none (the Mac doesn't upload).
+
+**States and exits**: *shown* → *Fix* opens the LibreView page (Back returns): there the person turns *Glucose* or the
+upload off, signs in again or takes over, or waits for the retry; the banner leaves by itself once glucose reaches
+LibreView, glucose or the upload is off, or the account is signed out. *Closed* → hidden for this stall only (a new
+stall, from a later time, shows again); *Undo* and Settings › *Show closed tips* bring it back. Follower → never shown.
+
 ## Home screen widgets
 
 Android (`apps/android/widgets`, Glance; tests `WidgetUpdaterTest`, `WidgetTapTest`, `WidgetSettingsStoreTest`,
@@ -2667,7 +2684,10 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
   without an account at start (signed out while the app wasn't running) is dropped too.
 - *Upload to LibreView* (enabled once signed in; turning it off always works, also after signing out or on a follower
   phone, which sees "Only the phone that wears the sensor uploads"), *Status* ("Last upload 4 min ago · 3 items", "On ·
-  nothing sent yet", "<reason> Trying again soon.", "Another device uploads to this LibreView account. Tap to take
+  nothing sent yet", "<reason> Trying again soon.", "No glucose sent since 11:00. <reason, or: Trying again by
+  itself.>" once the phone has readings more than 2 h newer than LibreView's newest glucose (the
+  [LibreView-stalled banner](#libreview-stalled-banner)'s rule; with Juggluco as the source just "No glucose sent since
+  …", the *Glucose* switch says why), "Another device uploads to this LibreView account. Tap to take
   over." — tapping it opens *Take over*; "Sign in to LibreView first" / the sign-in-again sentence — tapping it opens the
   account screen).
 - *What to send*: *Glucose* ("From a Libre 3 connected to this phone, since <date time>") and *Insulin, carbs and
@@ -2684,7 +2704,12 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
   another device wait 2 min. Glucose: only readings Sukrara takes from a Libre 3 itself (the sensor link tags each
   batch with its serial; Juggluco's readings never go up), record number = the serial's base | life count; the newest
   reading as current (< 5 min old), the 5-minute history, `sensorstart` once per sensor after `PUT /api/nisperson`
-  registered it (skipped if sign-in didn't return the profile, so it can't blank it). History LibreView hasn't got yet
+  registered it (never in the cycle that just signed in: LibreView refuses the first registration after a sign-in;
+  skipped if sign-in didn't return the profile, so it can't blank it). A registration LibreView doesn't accept
+  (`status` ≠ 0, `status 20` "invalid …", no profile, network) holds that sensor's glucose and is tried again with
+  backoff (30 s doubling to 15 min ±20 %), every third failure after a new sign-in; treatments go up meanwhile. Glucose
+  read through Juggluco or from another sensor family can't go up: the *Glucose* switch says so at once ("Not sent:
+  your glucose comes from Juggluco. Only a Libre 3 connected to Sukrara can go up."). History LibreView hasn't got yet
   is also kept in the typed store `libreview-unsent` (one sensor, at most 3 days, only what would go up; rewritten
   when it changes and after each upload), so a restart or a process death never loses it: the next cycle sends it.
 - When: after each new Libre 3 reading, treatment change or setting change, and every 5 minutes. At most 100 treatments and
@@ -2693,9 +2718,8 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
   cycle signs in again with the saved account (the contract's re-auth): an expired token goes on by itself, another
   device that took over shows *Take over* (a token refused right after it was given counts as that too); treatments
   LibreView refuses (`status` ≠ 0)
-  wait until a treatment or a setting changes (glucose goes on without them), refused glucose retries with the backoff,
-  a refused sensor registration holds that sensor's glucose until the upload's next sign-in; the reason is in the
-  status. An
+  wait until a treatment or a setting changes (glucose goes on without them), refused glucose retries with the backoff;
+  the reason is in the status, and a treatments-only upload never clears glucose's (`LvState.glucoseError`). An
   treatment whose kind changed is retracted under the kind LibreView has. Redirects are never followed.
 
 - Home's treatment list (wearer, while the upload is signed in and on with *Insulin, carbs and notes*): a small grey
@@ -2712,7 +2736,9 @@ returns and nothing changes). *Another device uploads* → the status row → *T
 open) or *Cancel*. *LibreView refused the saved password* → *Account* / the status row → the account screen, the
 email filled in (sign in again, or *Sign out*). *Off* (default) → main switch. *On · nothing sent yet / last upload* →
 main switch off; signing out is the account screen's. *Trying again* → retries by itself; switch off to stop. *Refused*
-→ change or switch off. *Follower phone* → switch shown off and disabled with the reason. Back leaves the page.
+→ change or switch off. *No glucose sent since …* (also home's banner) → retries by itself; *Glucose* or the main switch
+off; with Juggluco or another family as the source, glucose can't go up from Sukrara (switch it off, or read a Libre 3
+here). *Follower phone* → switch shown off and disabled with the reason. Back leaves the page.
 
 ## Nightscout upload (docs/25)
 

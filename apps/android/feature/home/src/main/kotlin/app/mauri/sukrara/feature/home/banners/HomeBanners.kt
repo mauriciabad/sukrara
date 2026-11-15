@@ -40,6 +40,13 @@ enum class BannerKind(val safety: Boolean) {
     FeatureBlocked(safety = false),
 
     /**
+     * The LibreView upload is on but the wearer's glucose hasn't reached LibreView for hours ([HomeEnvironment.clinicBehind]):
+     * their clinic sees a gap. *Fix* opens the LibreView page (it says why and has the way out); closing it hides this
+     * stall only (a new one shows again). It goes by itself once glucose goes up.
+     */
+    ClinicUploadBehind(safety = false),
+
+    /**
      * Sukrara's System UI module is enabled but System UI doesn't run it yet (or runs an older build): *Restart System
      * UI* (root) loads it. Closing it hides it for this state and this build of the app; a new build asks again.
      */
@@ -77,7 +84,12 @@ data class HomeEnvironment(
     val systemUiRestart: ModuleState? = null,
     /** This app's build (its version code): a closed restart card comes back with a new build. */
     val build: Long = 0,
+    /** Since when the clinic upload lacks the wearer's glucose while it has stalled (LibreView); null = it hasn't. */
+    val clinicBehind: Instant? = null,
 ) {
+    /** What a closed stalled-upload banner is remembered under: that stall (its start). */
+    val behindKey: String? get() = clinicBehind?.let { "${BannerKind.ClinicUploadBehind.name}:${it.epochSecond}" }
+
     /** What a closed restart card is remembered under: the module's state and the build. */
     val restartKey: String? get() = systemUiRestart?.let { "${BannerKind.RestartSystemUi.name}:$it:$build" }
 
@@ -154,7 +166,7 @@ data class BannerMemory(
 }
 
 /** Banners whose closing (if any) is remembered by their own key, never by the kind ([HomeEnvironment]). */
-private val KEYED = setOf(BannerKind.TapsBlocked, BannerKind.FeatureBlocked, BannerKind.RestartSystemUi)
+private val KEYED = setOf(BannerKind.TapsBlocked, BannerKind.FeatureBlocked, BannerKind.ClinicUploadBehind, BannerKind.RestartSystemUi)
 
 /** "Later" on Finish setup: it comes back after a day until setup is done. */
 val SETUP_LATER: Duration = Duration.ofHours(24)
@@ -180,6 +192,7 @@ object HomeBanners {
                     BannerKind.DataProblem -> dataProblems > 0
                     BannerKind.TapsBlocked -> env.tapsBlocked.any
                     BannerKind.FeatureBlocked -> env.blockedShown(memory) != null
+                    BannerKind.ClinicUploadBehind -> env.behindKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.FinishSetup -> env.nextSetupStep != null
                     BannerKind.TurnOnUpdates -> env.updateChecksOff == true

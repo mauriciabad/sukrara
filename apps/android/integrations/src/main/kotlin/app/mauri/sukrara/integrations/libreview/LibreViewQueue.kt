@@ -29,8 +29,13 @@ data class LvSensorState(
     val lastCurrent: Int = -1,
     val registered: Boolean = false,
     val startSent: Boolean = false,
-    /** LibreView refused to register it: its glucose waits for the next sign-in. */
-    val refusedRegistration: Boolean = false,
+    /**
+     * Registrations LibreView didn't accept in a row: its glucose waits and the registration is tried again at
+     * [registerAfterMs] (backoff), never given up on (a refusal kept until the next sign-in held a sensor's glucose back
+     * for good while treatments still went up).
+     */
+    val registerFailures: Int = 0,
+    val registerAfterMs: Long = 0,
 )
 
 /**
@@ -57,9 +62,14 @@ data class LvState(
     val otherDevice: Boolean = false,
     val failures: Int = 0,
     val nextAttemptMs: Long = 0,
+    /** The last upload LibreView accepted (treatments, glucose or both). */
     val lastOkMs: Long = 0,
     val lastCount: Int = 0,
     val lastError: Trouble? = null,
+    /** The newest 5-minute glucose LibreView accepted (epoch s; what its reports are built from; 0 = none yet). */
+    val glucoseUpToS: Long = 0,
+    /** Why glucose isn't going up now (a sensor registration LibreView didn't accept); only glucose going up clears it. */
+    val glucoseError: Trouble? = null,
 )
 
 /**
@@ -237,12 +247,40 @@ object LibreViewQueue {
         return (listOf(updated) + sensors.filter { it.serial != s.serial }).take(2)
     }
 
-    fun registrationRefused(
+    /** [serial]'s registration failed again: tried again at [retryAtMs] of the new count (the caller's backoff). */
+    fun registrationFailed(
         sensors: List<LvSensorState>,
         serial: String,
+        retryAtMs: (failures: Int) -> Long,
     ): List<LvSensorState> {
         val old = sensors.firstOrNull { it.serial == serial } ?: LvSensorState(serial)
-        return (listOf(old.copy(refusedRegistration = true)) + sensors.filter { it.serial != serial }).take(2)
+        val n = old.registerFailures + 1
+        return (listOf(old.copy(registerFailures = n, registerAfterMs = retryAtMs(n))) + sensors.filter { it.serial != serial }).take(2)
+    }
+
+    /**
+     * The phone has glucose this much newer than LibreView's newest: a stall worth telling the person about (the
+     * 5-minute history trails the live reading by ~16 min, plus one upload interval, normally).
+     */
+    const val BEHIND_S = 2 * 3600L
+
+    /**
+     * Since when LibreView lacks the glucose the phone has (epoch s: the newest it got [upToS], or the moment glucose
+     * was switched on [from]), once the phone's newest reading [latestS] is more than [BEHIND_S] (or two upload
+     * intervals, [intervalMin]) past it; else null. Whatever the reason: a sensor LibreView doesn't register, readings
+     * that can't go up (Juggluco, another family), an upload that keeps failing. No readings (no sensor, warm-up) are
+     * never behind; glucose off ([from] 0) neither.
+     */
+    fun behind(
+        latestS: Long?,
+        upToS: Long,
+        from: Long,
+        intervalMin: Double,
+    ): Long? {
+        if (from <= 0 || latestS == null) return null
+        val since = maxOf(upToS, from)
+        val limit = maxOf(BEHIND_S, (2 * intervalMin * 60).toLong())
+        return since.takeIf { latestS - it > limit }
     }
 
     fun registered(
@@ -250,6 +288,7 @@ object LibreViewQueue {
         serial: String,
     ): List<LvSensorState> {
         val old = sensors.firstOrNull { it.serial == serial } ?: LvSensorState(serial)
-        return (listOf(old.copy(registered = true)) + sensors.filter { it.serial != serial }).take(2)
+        return (listOf(old.copy(registered = true, registerFailures = 0, registerAfterMs = 0)) + sensors.filter { it.serial != serial })
+            .take(2)
     }
 }

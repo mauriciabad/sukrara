@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.upload
 
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.designsystem.errors.Trouble
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -48,6 +49,12 @@ sealed interface UploadStatus {
     data object Waiting : UploadStatus
 
     data class Ok(val at: Instant, val count: Int) : UploadStatus
+
+    /**
+     * On, but what should have gone up since [since] hasn't, for longer than normal: [why] = the last reason, null =
+     * none known (it is tried again by itself); [source] = the data comes from a source this upload can't send.
+     */
+    data class Behind(val since: Instant, val why: Trouble?, val source: SourceId? = null) : UploadStatus
 
     /** The last cycle failed; it is tried again by itself ([why] in plain words; the detail is in the log). */
     data class Failing(val why: Trouble, val lastOk: Instant?) : UploadStatus

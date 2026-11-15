@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.errors.UserErrors
@@ -41,6 +42,8 @@ import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.integrations.R
+import app.mauri.sukrara.integrations.ui.behindWhy
+import app.mauri.sukrara.integrations.ui.since
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import app.mauri.sukrara.settings.SettingsSpec
@@ -132,9 +135,22 @@ fun libreViewStatusText(
     now: Instant,
 ): String =
     when (status) {
-        UploadStatus.Setup -> stringResource(R.string.in_lv_status_setup)
-        UploadStatus.AuthFailed -> stringResource(R.string.in_lv_status_auth)
-        else -> uploadStatusText(status, now)
+        UploadStatus.Setup -> {
+            stringResource(R.string.in_lv_status_setup)
+        }
+
+        UploadStatus.AuthFailed -> {
+            stringResource(R.string.in_lv_status_auth)
+        }
+
+        is UploadStatus.Behind -> {
+            val why = status.source?.let { stringResource(R.string.in_lv_why_other_source, sourceName(it)) } ?: behindWhy(status)
+            stringResource(R.string.in_lv_status_behind, since(status.since, now), why)
+        }
+
+        else -> {
+            uploadStatusText(status, now)
+        }
     }
 
 /**
@@ -188,7 +204,21 @@ fun LibreViewContent(
     if (s.on && wearer) {
         SettingsGroup {
             val status = state.status
-            val text = if (state.signInAgain) stringResource(R.string.in_lv_status_again) else libreViewStatusText(status, now)
+            val text =
+                when {
+                    state.signInAgain -> {
+                        stringResource(R.string.in_lv_status_again)
+                    }
+
+                    // the Glucose switch below already says where the glucose comes from
+                    status is UploadStatus.Behind && status.source != null -> {
+                        stringResource(R.string.in_lv_status_behind_only, since(status.since, now))
+                    }
+
+                    else -> {
+                        libreViewStatusText(status, now)
+                    }
+                }
             when (status) {
                 // another device uploads: only the person's *Take over* gets past it
                 UploadStatus.AuthFailed -> {
@@ -246,8 +276,15 @@ fun LibreViewContent(
 @Composable
 private fun intervalText(min: Double): String = Durations.text(min.toLong(), CardWords.of(LocalContext.current.resources).durations)
 
+/** Where glucose that can't go up comes from, in words: "Juggluco", or "another kind of sensor". */
+@Composable
+fun sourceName(source: SourceId): String =
+    if (source == SourceId.Juggluco) stringResource(R.string.in_lv_source_juggluco) else stringResource(R.string.in_lv_source_other)
+
 @Composable
 private fun glucoseSummary(state: LvPageState): String {
+    // switched on, but what the phone reads can't go up: said at once, not only once it has stalled
+    state.otherSource?.takeIf { state.settings.glucose }?.let { return stringResource(R.string.in_lv_glucose_other_source, sourceName(it)) }
     val from = state.glucoseFrom ?: return stringResource(R.string.in_lv_glucose_summary)
     val ctx = LocalContext.current
     val at =

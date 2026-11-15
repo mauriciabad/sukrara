@@ -66,6 +66,12 @@ sealed interface LvPost {
     /** The token no longer works (another device took over, or it expired): sign in again. */
     data object SignInAgain : LvPost
 
+    /**
+     * `status 20` with an "invalid …" reason: LibreView doesn't take the token (yet: the first registration right after
+     * a sign-in answers this, docs/04; or any more). Tried again later; again and again, with a new sign-in.
+     */
+    data object InvalidSession : LvPost
+
     /** Try again later (network, 5xx, 408, 429), [why] in plain words. */
     data class Retry(val why: Trouble) : LvPost
 
@@ -225,6 +231,7 @@ class LibreViewClient internal constructor(
                 when {
                     status == 0 -> LvPost.Ok
                     status == 20 && "wrongDevice" in reason -> LvPost.SignInAgain
+                    status == 20 && "invalid" in reason.lowercase() -> LvPost.InvalidSession
                     else -> LvPost.Rejected("$status ${reason.take(80)}".trim())
                 }
             }

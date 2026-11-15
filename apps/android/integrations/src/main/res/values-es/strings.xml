@@ -93,6 +93,8 @@
         <item quantity="other">Última subida %1$s · %2$d elementos</item>
     </plurals>
     <string name="in_status_failing">%1$s Se reintentará pronto.</string>
+    <string name="in_status_behind">No se ha enviado nada desde %1$s. %2$s</string>
+    <string name="in_status_retrying">Se reintenta solo.</string>
     <string name="in_status_follower">Solo sube datos el móvil que lleva el sensor</string>
 
     <!-- Nightscout upload -->
@@ -152,6 +154,11 @@
     <string name="in_lv_main_needs_account">Inicia sesión en LibreView primero</string>
     <string name="in_lv_status_setup">Inicia sesión en LibreView primero</string>
     <string name="in_lv_status_auth">Otro dispositivo sube datos a esta cuenta de LibreView. Toca para tomar el relevo.</string>
+    <string name="in_lv_status_behind">No se ha enviado glucosa desde %1$s. %2$s</string>
+    <string name="in_lv_status_behind_only">No se ha enviado glucosa desde %1$s</string>
+    <string name="in_lv_why_other_source">Tu glucosa llega de %1$s y solo puede subir la de un Libre 3 conectado a Sukrara.</string>
+    <string name="in_lv_glucose_other_source">No se envía: tu glucosa llega de %1$s. Solo puede subir la de un Libre 3 conectado a Sukrara.</string>
+    <string name="in_lv_source_other">otro tipo de sensor</string>
     <string name="in_lv_status_again">LibreView ya no acepta la contraseña guardada. Vuelve a iniciar sesión.</string>
     <string name="in_lv_glucose">Glucosa</string>
     <string name="in_lv_glucose_summary">De un Libre 3 conectado a este teléfono, desde que lo activas</string>

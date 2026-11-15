@@ -154,6 +154,7 @@ class IntegrationsModule(
             dispatchers.io,
             log,
             uploadHold,
+            readings.latest(),
         )
 
     val xdrip = XdripServer(settings, readings, sensor, jugglucoIsSource, clock, dispatchers.io)

@@ -976,6 +976,21 @@ private fun banner(
             )
         }
 
+        // the treatment list's "upload stopped" cloud: Fix opens the LibreView page, which says why
+        BannerKind.ClinicUploadBehind -> {
+            val since = state.clinicBehind ?: return null
+            Banner(
+                "${kind.name}:${since.epochSecond}",
+                R.drawable.home_ic_cloud_off,
+                stringResource(R.string.banner_lv_behind_title),
+                stringResource(R.string.banner_lv_behind_text, sinceTime(since, state.now)),
+                stringResource(R.string.banner_alerts_action),
+                open(HomeAction.OpenClinicUpload),
+                dismiss,
+                severity,
+            )
+        }
+
         BannerKind.RestartSystemUi -> {
             val updated = state.systemUiUpdated
             Banner(

@@ -8,7 +8,9 @@ import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -31,6 +33,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -73,6 +76,8 @@ data class LvPageState(
     val intervalMin: Double = LibreViewUploader.INTERVAL.default,
     /** LibreView no longer accepts the account's saved password: sign in again on the account screen. */
     val signInAgain: Boolean = false,
+    /** The glucose comes from a source that can't go up (Juggluco, another family): only a Libre 3 read here can. */
+    val otherSource: SourceId? = null,
 )
 
 /**
@@ -133,6 +138,8 @@ class LibreViewUploader(
     private val log: (String) -> Unit = {},
     /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
     private val hold: UploadHold = UploadHold.NONE,
+    /** The newest stored reading: what the phone has that LibreView should get (the stall warning). */
+    latest: Flow<Reading?> = flowOf(null),
 ) {
     /** *Upload every*, ms: the loop's wait, and how often new glucose wakes it. */
     @Volatile private var intervalMs = (INTERVAL.default * 60_000).toLong()
@@ -148,19 +155,61 @@ class LibreViewUploader(
 
     val intervalFlow: Flow<Double> = settings.flow(INTERVAL)
 
+    /** The wearer's newest reading from this phone's own sensor (any source: what LibreView should get). */
+    private val newest: Flow<Reading?> = latest.map { r -> r?.takeIf { it.source in SourceId.Wearer } }.distinctUntilChanged()
+
+    /**
+     * Since when LibreView lacks the glucose the phone has (epoch s) once uploading it has stalled
+     * ([LibreViewQueue.behind]), null while it hasn't or glucose isn't uploading.
+     */
+    private val behindS: Flow<Long?> =
+        combine(settingsFlow, store.data, newest, intervalFlow) { s, st, r, every ->
+            if (s.on && s.glucose) LibreViewQueue.behind(r?.t?.epochSecond, st.glucoseUpToS, st.glucoseFrom, every) else null
+        }.distinctUntilChanged()
+
+    /** Where the newest reading came from when it can't go up (only a Libre 3 this phone reads itself can), else null. */
+    private val otherSource: Flow<SourceId?> = newest.map { r -> r?.source?.takeIf { it != SourceId.Libre3 } }.distinctUntilChanged()
+
     val page: Flow<LvPageState> =
-        combine(settingsFlow, login.account, store.data, role, intervalFlow) { s, a, st, r, every ->
+        combine(
+            combine(settingsFlow, login.account, store.data, role, intervalFlow) { s, a, st, r, every -> Page(s, a, st, r, every) },
+            behindS,
+            otherSource,
+        ) { (s, a, st, r, every), behind, other ->
             val from = st.glucoseFrom.takeIf { it > 0 }?.let(Instant::ofEpochSecond)
             LvPageState(
                 s,
                 a is LibreViewAccountState.SignedIn,
                 a.email.orEmpty(),
-                status(s, a, st, r),
+                status(s, a, st, r, behind, other),
                 from,
                 every,
                 a is LibreViewAccountState.SignInAgain,
+                other,
             )
         }
+
+    private data class Page(
+        val s: LvSettings,
+        val a: LibreViewAccountState,
+        val st: LvState,
+        val r: Role?,
+        val every: Double,
+    )
+
+    /**
+     * Home's warning: since when LibreView lacks the wearer's glucose while uploading it has stalled (the oldest
+     * 5-minute value it lacks), null otherwise: off, signed out, a follower, or only the internet missing (it goes up
+     * by itself once the phone is back online; the page still says so).
+     */
+    val glucoseBehind: Flow<Instant?> =
+        combine(behindS, login.account, store.data, role) { b, a, st, r ->
+            b
+                ?.takeIf {
+                    r == Role.Wearer && a != LibreViewAccountState.SignedOut &&
+                        (st.glucoseError ?: st.lastError) != Trouble.NoInternet
+                }?.let(Instant::ofEpochSecond)
+        }.distinctUntilChanged()
 
     /** What LibreView has of the entries while the upload runs (home's cloud marks); null while it's off. */
     val entryMarks: Flow<LvEntryMarks?> =
@@ -328,8 +377,8 @@ class LibreViewUploader(
             base.copy(
                 email = e,
                 accountId = id,
-                // a new sign-in may bring the profile the sensor registration needs
-                sensors = base.sensors.map { st -> st.copy(refusedRegistration = false) },
+                // a new sign-in may bring the profile the sensor registration needs: it is tried at the next cycle
+                sensors = base.sensors.map { st -> st.copy(registerAfterMs = 0) },
                 otherDevice = false,
                 refused = false,
                 failures = 0,
@@ -435,34 +484,52 @@ class LibreViewUploader(
         val batch = if (s.glucose) glucoseBatch(state, nowS) else null
         if (entries.isEmpty() && batch == null) return
 
-        val refusedSensor = batch != null && state.sensors.any { it.serial == batch.serial && it.refusedRegistration }
-        var sensorPart = batch.takeIf { !refusedSensor }
-        if (batch != null && !refusedSensor && state.sensors.none { it.serial == batch.serial && it.registered }) {
-            when (val r = withContext(io) { client.putSensor(session, batch.serial) }) {
-                LvPost.Ok -> {
-                    state = state.copy(sensors = LibreViewQueue.registered(state.sensors, batch.serial)).also { save(it) }
+        // glucose goes only for a sensor LibreView registered; treatments never wait for it
+        var sensorPart: LvSensor? = null
+        var renew = false
+        if (batch != null) {
+            val sensorState = state.sensors.firstOrNull { it.serial == batch.serial }
+            when {
+                sensorState?.registered == true -> {
+                    sensorPart = batch
                 }
 
-                LvPost.SignInAgain -> {
-                    return tokenRefused(state, fresh)
+                // a token given a moment ago isn't known yet to the registration (docs/04): the next cycle registers
+                fresh || nowMs < (sensorState?.registerAfterMs ?: 0L) -> {
+                    Unit
                 }
 
-                is LvPost.Retry -> {
-                    return save(failed(state, nowMs, r.why))
-                }
+                else -> {
+                    when (val r = withContext(io) { client.putSensor(session, batch.serial) }) {
+                        LvPost.Ok -> {
+                            log("libreview: sensor registered")
+                            state = state.copy(sensors = LibreViewQueue.registered(state.sensors, batch.serial)).also { save(it) }
+                            sensorPart = batch
+                        }
 
-                // glucose waits for a sensor LibreView knows; entries still go
-                is LvPost.Rejected -> {
-                    log("libreview: sensor not registered (${r.why})")
-                    state =
-                        state
-                            .copy(sensors = LibreViewQueue.registrationRefused(state.sensors, batch.serial), lastError = Trouble.Refused)
-                            .also { save(it) }
-                    sensorPart = null
+                        LvPost.SignInAgain -> {
+                            return tokenRefused(state, fresh)
+                        }
+
+                        is LvPost.Retry -> {
+                            state = registrationFailed(state, batch.serial, nowMs, r.why).also { save(it) }
+                        }
+
+                        LvPost.InvalidSession, is LvPost.Rejected -> {
+                            log("libreview: sensor not registered (${(r as? LvPost.Rejected)?.why ?: "invalid session"})")
+                            state = registrationFailed(state, batch.serial, nowMs, Trouble.Refused).also { save(it) }
+                            // still not accepted: the next try signs in again first (a new session, the profile again)
+                            val n = state.sensors.first { it.serial == batch.serial }.registerFailures
+                            renew = n % RENEW_EVERY == 0
+                        }
+                    }
                 }
             }
         }
-        if (entries.isEmpty() && sensorPart == null) return
+        if (entries.isEmpty() && sensorPart == null) {
+            if (renew) dropToken()
+            return
+        }
         val body = LibreViewPayload.payload(entries, state.deviceId, session.token, nowS, clock.zone, sensorPart)
         when (val r = withContext(io) { client.postMeasurements(session, body) }) {
             LvPost.Ok -> {
@@ -476,9 +543,14 @@ class LibreViewUploader(
                         lastError = null,
                         lastOkMs = nowMs,
                         lastCount = count,
+                        // LibreView keeps only the 5-minute values (the current one feeds LibreLinkUp)
+                        glucoseUpToS = maxOf(state.glucoseUpToS, sensorPart?.history?.maxOfOrNull { it.epochSec } ?: 0L),
+                        // a treatments-only upload says nothing about glucose: its problem stays
+                        glucoseError = if (sensorPart != null) null else state.glucoseError,
                     )
                 save(state)
                 if (sensorPart != null) keepUnsent()
+                if (renew) dropToken()
                 // more than one upload's worth waiting (a long backfill): go on at once
                 if (entries.size == LibreViewQueue.MAX_ENTRIES ||
                     (sensorPart?.history?.size ?: 0) == LibreViewQueue.MAX_HISTORY
@@ -491,13 +563,18 @@ class LibreViewUploader(
                 tokenRefused(state, fresh)
             }
 
+            // a token given a moment ago: tried again later; an older one: the next cycle signs in again
+            LvPost.InvalidSession -> {
+                if (fresh) save(failed(state, nowMs, Trouble.Refused)) else tokenRefused(state, fresh = false)
+            }
+
             is LvPost.Retry -> {
                 save(failed(state, nowMs, r.why))
             }
 
             is LvPost.Rejected -> {
                 log("libreview: upload refused (${r.why})")
-                // refused entries wait for a change (glucose goes on without them); refused glucose backs off
+                // refused treatments wait for a change (glucose goes on without them); refused glucose backs off
                 save(
                     if (entries.isNotEmpty()) {
                         state.copy(
@@ -505,13 +582,28 @@ class LibreViewUploader(
                             lastError = Trouble.Refused,
                         )
                     } else {
-                        failed(state, nowMs, Trouble.Refused)
+                        failed(state, nowMs, Trouble.Refused).copy(glucoseError = Trouble.Refused)
                     },
                 )
                 if (entries.isNotEmpty() && sensorPart != null) loop.kick()
             }
         }
     }
+
+    /** [serial]'s registration didn't go through ([why]): glucose waits, the registration is tried again with backoff. */
+    private fun registrationFailed(
+        st: LvState,
+        serial: String,
+        nowMs: Long,
+        why: Trouble,
+    ): LvState =
+        st.copy(
+            sensors =
+                LibreViewQueue.registrationFailed(st.sensors, serial) { n ->
+                    nowMs + UploadBackoff.ms(n, 30_000, 15 * 60_000L, Random)
+                },
+            glucoseError = why,
+        )
 
     /**
      * The upload's token: the saved one, or a new one from the account's own login (`SetDevice:false`: it never takes
@@ -623,24 +715,58 @@ class LibreViewUploader(
 
     private suspend fun save(st: LvState) = store.update { st }
 
+    /**
+     * The page's status. Glucose that stalled ([behind], epoch s) wins over the last upload: a treatments-only upload
+     * never reads as "uploading" while glucose doesn't go.
+     */
     private fun status(
         s: LvSettings,
         account: LibreViewAccountState,
         st: LvState,
         r: Role?,
+        behind: Long?,
+        other: SourceId?,
     ): UploadStatus =
         when {
-            !s.on || r != Role.Wearer -> UploadStatus.Off
-            account !is LibreViewAccountState.SignedIn -> UploadStatus.Setup
-            st.otherDevice -> UploadStatus.AuthFailed
-            st.lastError != null -> UploadStatus.Failing(st.lastError, st.lastOkMs.takeIf { it > 0 }?.let(Instant::ofEpochMilli))
-            st.lastOkMs > 0 -> UploadStatus.Ok(Instant.ofEpochMilli(st.lastOkMs), st.lastCount)
-            else -> UploadStatus.Waiting
+            !s.on || r != Role.Wearer -> {
+                UploadStatus.Off
+            }
+
+            account !is LibreViewAccountState.SignedIn -> {
+                UploadStatus.Setup
+            }
+
+            st.otherDevice -> {
+                UploadStatus.AuthFailed
+            }
+
+            behind != null -> {
+                UploadStatus.Behind(Instant.ofEpochSecond(behind), st.glucoseError ?: st.lastError, other)
+            }
+
+            st.lastError != null -> {
+                UploadStatus.Failing(st.lastError, st.lastOkMs.takeIf { it > 0 }?.let(Instant::ofEpochMilli))
+            }
+
+            s.glucose && st.glucoseError != null -> {
+                UploadStatus.Failing(st.glucoseError, st.lastOkMs.takeIf { it > 0 }?.let(Instant::ofEpochMilli))
+            }
+
+            st.lastOkMs > 0 -> {
+                UploadStatus.Ok(Instant.ofEpochMilli(st.lastOkMs), st.lastCount)
+            }
+
+            else -> {
+                UploadStatus.Waiting
+            }
         }
 
     companion object {
         val INTERVAL = SchemaSettings.number("apps.libreviewInterval")
         const val NAME = "libreview"
+
+        /** Every this many registrations LibreView doesn't accept in a row, the next one signs in again first. */
+        const val RENEW_EVERY = 3
         val SETTING = SchemaSettings.text("apps.libreview", default = "")
         private val json = Json { ignoreUnknownKeys = true }
 

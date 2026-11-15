@@ -253,6 +253,8 @@ data class HomeUiState(
     val blockedTaps: BlockedTaps = BlockedTaps(),
     /** The blocked feature the banner names ([BannerKind.FeatureBlocked]). */
     val blockedFeature: BlockedFeature? = null,
+    /** Since when LibreView lacks the glucose ([BannerKind.ClinicUploadBehind]). */
+    val clinicBehind: Instant? = null,
 ) {
     val mutedUntil: Instant? get() = glucose.alerts.mutedUntil?.takeIf { it > now }
 }
@@ -327,6 +329,7 @@ class HomeViewModel(
                 widgetPinnable = env.widgetPinnable,
                 blockedTaps = env.tapsBlocked,
                 blockedFeature = env.blockedShown(memory),
+                clinicBehind = env.clinicBehind,
                 dataProblems = problems,
                 treatments = listed,
                 history = history,
@@ -366,6 +369,11 @@ class HomeViewModel(
         if (kind.safety) return
         if (kind == BannerKind.RestartSystemUi) {
             val key = deps.environment.value.restartKey ?: return
+            viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(key, deps.clock.now()) } }
+            return
+        }
+        if (kind == BannerKind.ClinicUploadBehind) {
+            val key = deps.environment.value.behindKey ?: return
             viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(key, deps.clock.now()) } }
             return
         }

@@ -5,10 +5,13 @@ package app.mauri.sukrara.integrations.ui
 
 import android.text.format.DateUtils
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.upload.UploadStatus
+import java.time.Duration
 import java.time.Instant
 
 /** "5 min ago" in the phone's language. */
@@ -16,6 +19,21 @@ fun ago(
     at: Instant,
     now: Instant,
 ): String = DateUtils.getRelativeTimeSpanString(at.toEpochMilli(), now.toEpochMilli(), DateUtils.MINUTE_IN_MILLIS).toString()
+
+/** "14:05" within the last 12 hours, else the date and time ("Nov 12, 14:05"), as home says when a silence began. */
+@Composable
+fun since(
+    at: Instant,
+    now: Instant,
+): String {
+    if (Duration.between(at, now) < Duration.ofHours(12)) return ClockText.time(at.epochSecond)
+    val flags = DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_TIME or DateUtils.FORMAT_ABBREV_MONTH
+    return DateUtils.formatDateTime(LocalContext.current, at.toEpochMilli(), flags)
+}
+
+/** What [UploadStatus.Behind] adds after "since …": the reason, or that it is tried again by itself. */
+@Composable
+fun behindWhy(status: UploadStatus.Behind): String = stringResource(status.why?.text ?: R.string.in_status_retrying)
 
 /** One upload's state in words, the same on every upload page and in Share with apps. */
 @Composable
@@ -32,4 +50,5 @@ fun uploadStatusText(
         UploadStatus.Waiting -> stringResource(R.string.in_status_waiting)
         is UploadStatus.Ok -> pluralStringResource(R.plurals.in_status_ok, status.count, ago(status.at, now), status.count)
         is UploadStatus.Failing -> stringResource(R.string.in_status_failing, stringResource(status.why.text))
+        is UploadStatus.Behind -> stringResource(R.string.in_status_behind, since(status.since, now), behindWhy(status))
     }

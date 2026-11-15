@@ -123,6 +123,18 @@ class BannerSlotTest {
         assertEquals(BannerKind.RestartSystemUi, pick(env = env, memory = memory.restore(BannerKind.RestartSystemUi)))
     }
 
+    @Test fun `a stalled LibreView upload shows until closed, for that stall only, below blocked features`() {
+        val env = HomeEnvironment(backedUp = false, clinicBehind = NOW.minus(Duration.ofHours(3)))
+        assertEquals(BannerKind.ClinicUploadBehind, pick(env = env))
+        assertEquals(BannerKind.FeatureBlocked, pick(env = env.copy(blocked = listOf(BlockedFeature.HealthConnect))))
+        val memory = BannerMemory().dismissKey(env.behindKey!!, NOW)
+        assertEquals(BannerKind.NotBackedUp, pick(env = env, memory = memory))
+        // a later stall shows again; Undo brings this one back
+        assertEquals(BannerKind.ClinicUploadBehind, pick(env = env.copy(clinicBehind = NOW.minus(Duration.ofHours(2))), memory = memory))
+        assertEquals(BannerKind.ClinicUploadBehind, pick(env = env, memory = memory.restore(BannerKind.ClinicUploadBehind)))
+        assertEquals(BannerKind.NotBackedUp, pick(env = env.copy(clinicBehind = null)))
+    }
+
     @Test fun `Undo and Show closed tips bring closed tips back`() {
         val env = HomeEnvironment(backedUp = false, widgetPlaced = false)
         val two = BannerMemory().dismiss(BannerKind.NotBackedUp, NOW).dismiss(BannerKind.AddWidget, NOW)

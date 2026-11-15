@@ -204,3 +204,34 @@ longer held the import (the import didn't log a refused file then; now it logs t
 | The upload's own sign-in dialog and its "not your sensor's account" question | one account for the app: the upload and the sensor can't disagree any more |
 | Taking over the uploading device when re-signing in by itself | it would cut off LibreLink / Juggluco without the person choosing: *Take over* stays a tap |
 | Guessing the time zone of a file's times from the readings already on the phone | LibreView writes no offset and the guess could shift a whole day of history; the phone's zone is right unless the person travelled |
+
+## In Sukrara: glucose that never went up
+
+*2026-11-15.* The owner: LibreView's last glucose was 2 Nov while Sukrara said "Last upload 9 h ago". Their LibreView
+export by device: the earlier app's device has 5-minute glucose from 17 Oct to **2 Nov 18:59** (the end of a 15-day
+Libre 3 Plus) and treatments until 10 Nov; Sukrara's device (from 11 Nov) has only treatments, no glucose at all. Since
+2 Nov the owner wears a **Libre 2 read through Juggluco**. Both apps send glucose only from a Libre 3 they read
+themselves (record numbers come from the Libre 3 serial and life count), so nothing went up, and nothing said so: the
+status showed the last upload of any kind (treatments), the *Glucose* switch stayed on with "From a Libre 3 connected
+to this phone". Reading the code found the same silence on the Libre 3 path: a sensor registration LibreView refused
+once (including `status 20` "invalid session", which this report saw on the first registration after a sign-in) held
+that sensor's glucose until the next sign-in, which a working token never needs, and a treatments upload cleared the
+error.
+
+Others: Juggluco shows "Success" while LibreView can still lack data ([issue #271](https://github.com/j-kaltes/Juggluco/issues/271));
+Abbott's apps show no upload state at all; Juggluco's help asks to check that the sensor is on the account and to wait
+15–20 min ([help](https://www.juggluco.nl/Jugglucohelp/libreview.html), [Libre 3 patch guide](https://github.com/maheini/FreeStyle-Libre-3-patch/blob/main/Juggluco-solution/instructions/en/instructions.md)).
+LibreView answers `status 0` before it ingests, so the app can only compare what it has with what LibreView accepted.
+
+| Added | Where |
+|---|---|
+| A stall is measured from the data, whatever the cause: the phone's newest own reading more than 2 h (or two intervals) newer than the newest 5-minute glucose LibreView accepted (`glucoseUpToS`) or than the switch-on → status "No glucose sent since …" and home's *LibreView isn't getting your glucose* banner (*Fix* → the page; closed per stall; not for no internet alone) | `LibreViewQueue.behind`, `LibreViewUploader.glucoseBehind`, `UploadStatus.Behind`, `BannerKind.ClinicUploadBehind`; `LibreViewUploaderTest`, `BannerSlotTest` |
+| The *Glucose* switch says at once when the readings come from Juggluco or another family | `LvPageState.otherSource`, `LibreViewPage` |
+| Registration never given up: retried with backoff, never in the cycle that signed in, every third failure after a new sign-in; `status 20` "invalid …" is its own answer (`LvPost.InvalidSession`); glucose's own error, kept until glucose goes up | `LibreViewUploader`, `LibreViewClient`, `LvSensorState.registerFailures` |
+
+| Discarded | Why |
+|---|---|
+| Uploading the Libre 2 from Juggluco's readings in this round | another identity (LibreLink's `FSLibreLink.Android`, its own device and record numbers) that has to be proved against a real account first, as this report did for the Libre 3: a separate investigation |
+| Telling the person to turn on Juggluco's *Send to Libreview* | unverified whether its Libre 2 uploads and Sukrara's treatments (Libre 3 identity) can share one account without the take-over fight above |
+| A notification for the stall | the clinic gap is not urgent the way an alert is; home's banner and the page are where the person looks, without a notification (CLAUDE.md "Complete flows") |
+| Backfilling 2–11 Nov | those readings were the earlier app's and Juggluco's (a Libre 2): Sukrara has no Libre 3 record for them |

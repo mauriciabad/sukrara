@@ -49,6 +49,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
 
 /**
  * The home screen's ports, built from the modules `AppGraph` composes: [glucose] is the hub's state and [readiness]
@@ -90,6 +91,8 @@ class HomeModule(
     private val penReadOf: () -> Flow<PenRead?> = { flowOf(null) },
     /** The wearer's clinic upload is set (null on a follower): the *Share your data with your clinic* banner. */
     private val clinicUploadSet: () -> Flow<Boolean?> = { emptyFlow() },
+    /** Since when LibreView lacks the wearer's glucose while its upload has stalled (null: it hasn't, or a follower). */
+    private val clinicBehind: () -> Flow<Instant?> = { emptyFlow() },
     /** The daily update check is off (the GitHub version's suggestion banner); null = no updater in this build. */
     private val updateChecksOff: () -> Flow<Boolean?> = { emptyFlow() },
     /** What the clinic upload has of the entries (the list's cloud marks); a function: integrations start later. */
@@ -146,6 +149,7 @@ class HomeModule(
             sharing().collect { s -> env.update { it.copy(backedUp = (s as? OwnerShareState.Sharing)?.backedUp) } }
         }
         scope.launch { clinicUploadSet().collect { set -> env.update { it.copy(clinicUploadSet = set) } } }
+        scope.launch { clinicBehind().collect { at -> env.update { it.copy(clinicBehind = at) } } }
         scope.launch { updateChecksOff().collect { off -> env.update { it.copy(updateChecksOff = off) } } }
         scope.launch { featureChecks.blocked.collect { b -> env.update { it.copy(blocked = b) } } }
     }

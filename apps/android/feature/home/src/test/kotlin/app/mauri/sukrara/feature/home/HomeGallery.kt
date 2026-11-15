@@ -156,6 +156,8 @@ class HomeGallery {
             "widget-banner-manual" to ui(Samples.wearer(), banner = BannerKind.AddWidget).copy(widgetPinnable = false),
             "libreview-marks" to
                 ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.Uploaded, "b" to UploadMark.Pending)),
+            "libreview-behind" to
+                ui(Samples.wearer(), banner = BannerKind.ClinicUploadBehind).copy(clinicBehind = NOW.minus(Duration.ofHours(3))),
             "libreview-stopped" to ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.Stopped)),
         )
     }

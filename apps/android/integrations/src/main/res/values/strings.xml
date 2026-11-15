@@ -94,6 +94,8 @@
         <item quantity="other">Last upload %1$s · %2$d items</item>
     </plurals>
     <string name="in_status_failing">%1$s Trying again soon.</string>
+    <string name="in_status_behind">Nothing sent since %1$s. %2$s</string>
+    <string name="in_status_retrying">Trying again by itself.</string>
     <string name="in_status_follower">Only the phone that wears the sensor uploads</string>
 
     <!-- Nightscout upload -->
@@ -154,6 +156,12 @@
     <string name="in_lv_main_needs_account">Sign in to LibreView first</string>
     <string name="in_lv_status_setup">Sign in to LibreView first</string>
     <string name="in_lv_status_auth">Another device uploads to this LibreView account. Tap to take over.</string>
+    <string name="in_lv_status_behind">No glucose sent since %1$s. %2$s</string>
+    <string name="in_lv_status_behind_only">No glucose sent since %1$s</string>
+    <string name="in_lv_why_other_source">Your glucose comes from %1$s, and only a Libre 3 connected to Sukrara can go up.</string>
+    <string name="in_lv_glucose_other_source">Not sent: your glucose comes from %1$s. Only a Libre 3 connected to Sukrara can go up.</string>
+    <string name="in_lv_source_juggluco" translatable="false">Juggluco</string>
+    <string name="in_lv_source_other">another kind of sensor</string>
     <string name="in_lv_status_again">LibreView no longer accepts the saved password. Sign in again.</string>
     <string name="in_lv_glucose">Glucose</string>
     <string name="in_lv_glucose_summary">From a Libre 3 connected to this phone, from the moment you switch it on</string>

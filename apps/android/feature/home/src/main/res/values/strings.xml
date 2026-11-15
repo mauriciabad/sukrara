@@ -90,6 +90,8 @@
     <string name="banner_updates_turn_on">Turn on</string>
     <string name="banner_updates_not_now">Not now</string>
     <string name="banner_updates_on">Sukrara checks for updates once a day. Settings › About changes it.</string>
+    <string name="banner_lv_behind_title">LibreView isn\'t getting your glucose</string>
+    <string name="banner_lv_behind_text">Your clinic sees nothing since %1$s.</string>
     <string name="banner_clinic_title">Share your data with your clinic</string>
     <string name="banner_clinic_text">Upload your readings and treatments to LibreView or Tidepool so your care team sees them.</string>
     <string name="banner_clinic_libreview">LibreView</string>

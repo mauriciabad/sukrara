@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.Density
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.storage.ImportSource
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.integrations.broadcasts.AppProblem
 import app.mauri.sukrara.integrations.broadcasts.BcActions
@@ -230,6 +231,43 @@ class IntegrationsGallery {
             "libreview-ok" to {
                 LibreViewContent(
                     LvPageState(LvSettings(on = true), true, "person@example.com", UploadStatus.Ok(now - Duration.ofMinutes(4), 3), lvFrom),
+                    true,
+                    LvTakeOverUi.Idle,
+                    now,
+                    LibreViewActions(),
+                    false,
+                    {},
+                )
+            },
+            // glucose read through Juggluco: said at once in the switch, and in the status once it has stalled
+            "libreview-other-source" to {
+                LibreViewContent(
+                    LvPageState(
+                        LvSettings(on = true),
+                        true,
+                        "person@example.com",
+                        UploadStatus.Behind(now - Duration.ofHours(3), null, SourceId.Juggluco),
+                        lvFrom,
+                        otherSource = SourceId.Juggluco,
+                    ),
+                    true,
+                    LvTakeOverUi.Idle,
+                    now,
+                    LibreViewActions(),
+                    false,
+                    {},
+                )
+            },
+            // a Libre 3 LibreView doesn't register: the reason, and that it is tried again by itself
+            "libreview-behind" to {
+                LibreViewContent(
+                    LvPageState(
+                        LvSettings(on = true),
+                        true,
+                        "person@example.com",
+                        UploadStatus.Behind(now - Duration.ofDays(4), Trouble.Refused),
+                        lvFrom,
+                    ),
                     true,
                     LvTakeOverUi.Idle,
                     now,

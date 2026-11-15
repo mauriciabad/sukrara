@@ -5,7 +5,9 @@ package app.mauri.sukrara.integrations.libreview
 
 import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -15,6 +17,7 @@ import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import kotlinx.coroutines.Dispatchers
@@ -68,6 +71,12 @@ class LibreViewUploaderTest {
     private var refuseTokenOnce = false
     private var refuseRegistration = false
 
+    /** The next registrations' answers, in order (then [refuseRegistration] decides). */
+    private val registrationAnswers = ArrayDeque<String>()
+
+    /** The phone's newest reading (the stall warning compares it with what LibreView got). */
+    private val latest = MutableStateFlow<Reading?>(null)
+
     private lateinit var uploader: LibreViewUploader
 
     @Before
@@ -105,7 +114,10 @@ class LibreViewUploaderTest {
                         }
 
                         "/api/nisperson" -> {
-                            MockResponse().setBody(if (refuseRegistration) """{"status":7,"reason":"no"}""" else """{"status":0}""")
+                            MockResponse().setBody(
+                                registrationAnswers.removeFirstOrNull()
+                                    ?: if (refuseRegistration) """{"status":7,"reason":"no"}""" else """{"status":0}""",
+                            )
                         }
 
                         "/api/measurements" -> {
@@ -142,6 +154,7 @@ class LibreViewUploaderTest {
             LibreViewClient(OkHttpClient(), server.url("/assets").toString(), allowLoopbackHttp = true),
             clock,
             Dispatchers.Unconfined,
+            latest = latest,
         )
 
     /** The fake's accounts: an alias of "me" is the same account. */
@@ -526,28 +539,139 @@ class LibreViewUploaderTest {
             assertEquals(2, uploads().size)
         }
 
+    private fun registrations() = requests.count { it.path == "/api/nisperson" }
+
     @Test
-    fun `a refused sensor registration isn't asked again until the next sign-in`() =
+    fun `a sensor registration LibreView doesn't accept is tried again, and its glucose goes up once it does`() =
         runBlocking {
             signedInAndOn()
             clock.advance(Duration.ofMinutes(10))
             val t = clock.now().epochSecond
             sensor.value = CurrentSensor("3MH000ABCD", now - Duration.ofDays(2), now + Duration.ofDays(12))
             refuseRegistration = true
-            uploader.buffer(LvReadings("3MH000ABCD", LvGlucose(2880, 123, t), emptyList()))
+            uploader.buffer(LvReadings("3MH000ABCD", LvGlucose(2880, 123, t), listOf(LvGlucose(2875, 120, t - 300))))
             uploader.cycle()
             uploader.cycle()
-            assertEquals(1, requests.count { it.path == "/api/nisperson" })
+            assertEquals("backoff: asked once", 1, registrations())
             assertEquals(0, uploads().size)
             assertTrue(uploader.page.first().status is UploadStatus.Failing)
-            refuseRegistration = false
-            // signed out and in again: the upload's next sign-in may bring the profile
-            signOut()
-            login.save("me@example.com", "secret-pw")
-            uploader.followLogin(login.current())
+
+            // never given up on (it was kept until the next sign-in, which a working token never needs)
+            clock.advance(Duration.ofMinutes(1))
             uploader.cycle()
-            assertEquals(2, requests.count { it.path == "/api/nisperson" })
+            assertEquals(2, registrations())
+            refuseRegistration = false
+            clock.advance(Duration.ofMinutes(2))
+            uploader.cycle()
+            assertEquals(3, registrations())
+            val body = uploads().single()
+            assertTrue("\"recordNumber\":${LibreViewPayload.histor("3MH000ABCD") or 2875L}," in body)
+            assertTrue(uploader.page.first().status is UploadStatus.Ok)
+        }
+
+    @Test
+    fun `a registration LibreView answers with an invalid session is tried again, and a new sign-in waits a cycle`() =
+        runBlocking {
+            login.save("me@example.com", "secret-pw")
+            uploader.change { it.copy(on = true) }
+            clock.advance(Duration.ofMinutes(10))
+            val t = clock.now().epochSecond
+            sensor.value = CurrentSensor("3MH000ABCD", now - Duration.ofDays(2), now + Duration.ofDays(12))
+            // (the sign-in below starts glucose from now: a new account's)
+            uploader.buffer(LvReadings("3MH000ABCD", null, listOf(LvGlucose(2875, 120, t))))
+            // the cycle that signs in doesn't register yet (docs/04: the first PUT after a sign-in is refused)
+            uploader.cycle()
+            assertEquals(1, logins().size)
+            assertEquals(0, registrations())
+            registrationAnswers += """{"status":20,"reason":"invalid session"}"""
+            uploader.cycle()
+            assertEquals(1, registrations())
+            assertEquals(0, uploads().size)
+            clock.advance(Duration.ofMinutes(1))
+            uploader.cycle()
+            assertEquals(2, registrations())
             assertEquals(1, uploads().size)
+            assertEquals("the token kept", 1, logins().size)
+        }
+
+    @Test
+    fun `registrations LibreView keeps refusing sign in again every third time`() =
+        runBlocking {
+            signedInAndOn()
+            clock.advance(Duration.ofMinutes(10))
+            val t = clock.now().epochSecond
+            sensor.value = CurrentSensor("3MH000ABCD", now - Duration.ofDays(2), now + Duration.ofDays(12))
+            refuseRegistration = true
+            uploader.buffer(LvReadings("3MH000ABCD", null, listOf(LvGlucose(2875, 120, t - 300))))
+            repeat(3) {
+                uploader.cycle()
+                clock.advance(Duration.ofMinutes(20))
+            }
+            assertEquals(3, registrations())
+            assertEquals("the token dropped", null, secure.read(LibreViewUploader.NAME))
+            uploader.cycle()
+            assertEquals(2, logins().size)
+        }
+
+    @Test
+    fun `the owner's case - treatments going up never read as glucose going up`() =
+        runBlocking {
+            signedInAndOn()
+            val from = store.data.first().glucoseFrom
+            sensor.value = CurrentSensor("3MH000ABCD", now - Duration.ofDays(2), now + Duration.ofDays(12))
+            refuseRegistration = true
+            uploader.buffer(LvReadings("3MH000ABCD", null, listOf(LvGlucose(2875, 120, from + 60))))
+            treatments.upsertIfNewer(treatment("a", 0, modified = clock.now() + Duration.ofSeconds(1)))
+            uploader.cycle()
+            assertTrue("insulinType" in uploads().single())
+            // the treatment went up: the glucose problem stays
+            assertTrue(uploader.page.first().status is UploadStatus.Failing)
+
+            // hours of readings LibreView doesn't have: the page and home say since when
+            clock.advance(Duration.ofHours(3))
+            latest.value = Reading(clock.now(), 120, null, SourceId.Libre3)
+            val status = uploader.page.first().status
+            assertEquals(UploadStatus.Behind(Instant.ofEpochSecond(from), Trouble.Refused), status)
+            assertEquals(Instant.ofEpochSecond(from), uploader.glucoseBehind.first())
+        }
+
+    @Test
+    fun `glucose read through Juggluco can't go up - the page says so at once and home once it stalls`() =
+        runBlocking {
+            signedInAndOn()
+            val from = store.data.first().glucoseFrom
+            latest.value = Reading(clock.now(), 120, null, SourceId.Juggluco)
+            val page = uploader.page.first()
+            assertEquals(SourceId.Juggluco, page.otherSource)
+            assertEquals(null, uploader.glucoseBehind.first())
+
+            clock.advance(Duration.ofHours(3))
+            latest.value = Reading(clock.now(), 121, null, SourceId.Juggluco)
+            assertEquals(UploadStatus.Behind(Instant.ofEpochSecond(from), null, SourceId.Juggluco), uploader.page.first().status)
+            assertEquals(Instant.ofEpochSecond(from), uploader.glucoseBehind.first())
+            // switching glucose off ends it
+            uploader.change { it.copy(glucose = false) }
+            assertEquals(null, uploader.glucoseBehind.first())
+        }
+
+    @Test
+    fun `glucose going up keeps the warning away, and only the internet missing doesn't warn on home`() =
+        runBlocking {
+            signedInAndOn()
+            clock.advance(Duration.ofMinutes(10))
+            val t = clock.now().epochSecond
+            sensor.value = CurrentSensor("3MH000ABCD", now - Duration.ofDays(2), now + Duration.ofDays(12))
+            uploader.buffer(LvReadings("3MH000ABCD", null, listOf(LvGlucose(2875, 120, t - 300))))
+            uploader.cycle()
+            assertEquals(t - 300, store.data.first().glucoseUpToS)
+            latest.value = Reading(clock.now(), 120, null, SourceId.Libre3)
+            assertEquals(null, uploader.glucoseBehind.first())
+
+            store.update { it.copy(lastError = Trouble.NoInternet) }
+            clock.advance(Duration.ofHours(3))
+            latest.value = Reading(clock.now(), 121, null, SourceId.Libre3)
+            assertTrue(uploader.page.first().status is UploadStatus.Behind)
+            assertEquals(null, uploader.glucoseBehind.first())
         }
 
     @Test

@@ -88,6 +88,8 @@
     <string name="banner_updates_turn_on">Activar</string>
     <string name="banner_updates_not_now">Ahora no</string>
     <string name="banner_updates_on">Sukrara busca actualizaciones una vez al día. Se cambia en Ajustes › Acerca de.</string>
+    <string name="banner_lv_behind_title">LibreView no recibe tu glucosa</string>
+    <string name="banner_lv_behind_text">Tu clínica no ve nada desde %1$s.</string>
     <string name="banner_clinic_title">Comparte tus datos con tu clínica</string>
     <string name="banner_clinic_text">Sube tus lecturas y tratamientos a LibreView o Tidepool para que tu equipo médico los vea.</string>
     <string name="banner_clinic_libreview">LibreView</string>

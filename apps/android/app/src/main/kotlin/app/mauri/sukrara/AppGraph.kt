@@ -735,6 +735,7 @@ class AppGraph(
             penQuestionsOf = { pens.homeQuestions },
             penReadOf = { pens.lastRead.map { r -> r?.let { PenRead(it.first, it.second) } } },
             clinicUploadSet = { integrations.clinicUploadSet },
+            clinicBehind = { integrations.libreView.glucoseBehind },
             updateChecksOff = { updateSuggestion?.checksOff ?: emptyFlow() },
             clinicMarks = { integrations.libreView.entryMarks.map { m -> m?.let(::LibreViewMarks) } },
             untestedSensor =
