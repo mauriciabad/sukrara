@@ -9,6 +9,8 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.os.UserManager
 import androidx.test.core.app.ApplicationProvider
+import app.mauri.sukrara.core.data.readings.TrendReadings
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.debug.SyntheticSource
 import app.mauri.sukrara.monitor.AlertsHost
@@ -138,11 +140,15 @@ class LockedGraphTest {
             assertFalse(host.getDatabasePath("sukrara.db").exists())
             assertEquals(emptyList<Throwable>(), crashes.toList())
 
-            // the unlock: every reading taken before it in the history, once; the hub reads the history now
+            // the unlock: every reading taken before it in the history, once; the hub reads the history now. The source
+            // goes on reading meanwhile (a new reading every minute), so the counts compare what was there at the unlock
             users.setUserUnlocked(true)
             graph.onUnlocked()
             assertTrue(graph.unlocked.value)
             val history = graph.data.readings.range(Instant.EPOCH, Instant.now().plusSeconds(60))
+            val upTo = history.last().t
+
+            fun Iterable<Reading>.byUnlock() = count { !it.t.isAfter(upTo) }
             val seen = graph.monitor.hub.state.value.recent
             assertEquals(history.size, history.distinctBy { it.t to it.source }.size)
             assertTrue(
@@ -159,7 +165,7 @@ class LockedGraphTest {
                 graph.hubReadings
                     .window(Instant.EPOCH)
                     .first()
-                    .size,
+                    .byUnlock(),
             )
             assertTrue(seen.isNotEmpty())
             graph.onUnlocked()
@@ -168,7 +174,7 @@ class LockedGraphTest {
                 history.size,
                 graph.data.readings
                     .range(Instant.EPOCH, Instant.now().plusSeconds(60))
-                    .size,
+                    .byUnlock(),
             )
             assertEquals(emptyList<Throwable>(), crashes.toList())
         }
@@ -179,6 +185,14 @@ class LockedGraphTest {
             host.graph.role.update { it.copy(role = Role.Follower) }
             host.graph.monitorReady.start()
             assertFalse(host.graph.monitorsLocked.await())
+            // what the hub's readings take their trend from: a follower's *Settings from* is credential-encrypted, so
+            // reading it before the unlock threw in the hub and took the process down (a CI flake found it)
+            assertEquals(
+                TrendReadings.TrendArrow.default,
+                host.graph.followerSettings.settings
+                    .flow(TrendReadings.TrendArrow)
+                    .first(),
+            )
             assertNull(host.awaitAlerts())
             assertNull(host.alertsNow)
             LockedBootReceiver.lockedBootCompleted(host, LockedBootReceiver.lockedBoot(host))

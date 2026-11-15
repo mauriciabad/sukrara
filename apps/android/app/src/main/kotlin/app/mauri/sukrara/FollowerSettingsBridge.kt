@@ -43,6 +43,12 @@ class FollowerSettingsBridge(
     private val own: SettingsRepository,
     private val alerts: AlertsAccess,
     role: Flow<Role?>,
+    /**
+     * The credential-encrypted storage is open (`AppGraph.unlocked`): the stored choice is in it, so a follower uses its
+     * own settings until the first unlock after a restart (#160; nothing of a follower's runs then that the choice
+     * changes).
+     */
+    unlocked: Flow<Boolean>,
     private val wearer: Flow<SettingsPayload?>,
     wearerName: Flow<String?>,
 ) : SettingsFromPort {
@@ -57,12 +63,14 @@ class FollowerSettingsBridge(
 
     /**
      * The choice in effect: the stored one on a follower, Custom (its own) on the wearer's phone, which never reads it
-     * (it is credential-encrypted, and the wearer's phone monitors before the first unlock: #160).
+     * (it is credential-encrypted, and the wearer's phone monitors before the first unlock: #160), and on a follower
+     * before that unlock too: reading it then throws, and the hub's readings (their trend setting comes from here)
+     * would take the process down with it.
      */
     private val from: Flow<SettingsFrom> =
-        role
+        combine(role.distinctUntilChanged(), unlocked.distinctUntilChanged()) { r, open -> r == Role.Follower && open }
             .distinctUntilChanged()
-            .flatMapLatest { r -> if (r == Role.Follower) stored else flowOf(SettingsFrom.Custom) }
+            .flatMapLatest { readsStored -> if (readsStored) stored else flowOf(SettingsFrom.Custom) }
             .distinctUntilChanged()
 
     /** The wearer's payload while *Wearer* is in effect, null otherwise. */

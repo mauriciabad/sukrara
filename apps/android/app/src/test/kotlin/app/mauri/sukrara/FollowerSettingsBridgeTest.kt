@@ -61,7 +61,14 @@ class FollowerSettingsBridgeTest {
         alerts: Alerts,
         role: Role? = Role.Follower,
         wearer: SettingsPayload? = payload,
-    ) = FollowerSettingsBridge(own, alerts, MutableStateFlow(role), MutableStateFlow(wearer), MutableStateFlow("Ana"))
+    ) = FollowerSettingsBridge(
+        own,
+        alerts,
+        MutableStateFlow(role),
+        MutableStateFlow(true),
+        MutableStateFlow(wearer),
+        MutableStateFlow("Ana"),
+    )
 
     @Test
     fun `wearer mode runs the wearer's mirrored rules, everything else stays this phone's`() {

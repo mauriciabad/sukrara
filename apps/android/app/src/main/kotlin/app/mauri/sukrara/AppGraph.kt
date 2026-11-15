@@ -343,6 +343,7 @@ class AppGraph(
                     override suspend fun update(transform: (AlertSettings) -> AlertSettings) = alerts.store.updateSettings(transform)
                 },
             role = role.data.map { it.role },
+            unlocked = unlocked,
             wearer = flow { emitAll(follower.engine.wearerSettings) },
             wearerName = flow { emitAll(monitor.hub.state) }.map { it.link?.wearerName }.distinctUntilChanged(),
         )
