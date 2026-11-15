@@ -73,6 +73,7 @@ import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
+import app.mauri.sukrara.feature.settings.sensor.SensorFamily
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsContent
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsState
@@ -156,6 +157,8 @@ class SettingsGallery {
             SensorState.Active(now.plusSeconds(9 * 86_400 + 4 * 3600)),
             SensorSummary("3MH00SYNTH1", now.minusSeconds(5 * 86_400 + 20 * 3600), now.plusSeconds(9 * 86_400 + 4 * 3600)),
             LibreViewSummary("wearer@example.invalid", 2_864_434_397),
+            // read directly, the family is named (the Sensor row: its icon is the page's sensor icon)
+            family = SensorFamily("Libre 3", untested = false),
         )
 
     /** A follower of a made-up wearer whose settings arrived yesterday. */
@@ -481,7 +484,7 @@ class SettingsGallery {
                 { SensorSettingsContent(sensorWorking.copy(state = SensorState.Ended), now, zone, SensorSettingsActions()) {} },
             "sensor-juggluco-signed-out" to {
                 SensorSettingsContent(
-                    sensorWorking.copy(source = SourceChoice.Juggluco, sensor = null, account = null),
+                    sensorWorking.copy(source = SourceChoice.Juggluco, sensor = null, account = null, family = null),
                     now,
                     zone,
                     SensorSettingsActions(),
@@ -490,7 +493,7 @@ class SettingsGallery {
             },
             "sensor-juggluco-unreachable" to {
                 SensorSettingsContent(
-                    sensorWorking.copy(source = SourceChoice.Juggluco, link = SourceLink.JugglucoUnreachable),
+                    sensorWorking.copy(source = SourceChoice.Juggluco, link = SourceLink.JugglucoUnreachable, family = null),
                     now,
                     zone,
                     SensorSettingsActions(),

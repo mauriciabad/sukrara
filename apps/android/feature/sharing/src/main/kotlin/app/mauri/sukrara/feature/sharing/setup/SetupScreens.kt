@@ -907,7 +907,7 @@ private fun ColumnScope.NotificationStep(
 ) {
     LaunchedEffect(Unit) { actions.notificationShown() }
     val root = u.root
-    StepCircle(DsR.drawable.ds_ic_top_panel_open)
+    StepCircle(DsR.drawable.ds_ic_status_bar_notification)
     StepHeader(stringResource(R.string.sh_setup_notification_title), stringResource(R.string.sh_setup_notification_body))
     GlucoseNotificationChoice(root.style, root.offered, actions.chooseNotification)
     if (root.style == NotificationStyle.Text) {
@@ -934,7 +934,7 @@ private val SetupStep.icon: Int
         when (this) {
             SetupStep.Updates -> DsR.drawable.ds_ic_update
             SetupStep.Root -> DsR.drawable.ds_ic_key
-            SetupStep.Notification -> DsR.drawable.ds_ic_top_panel_open
+            SetupStep.Notification -> DsR.drawable.ds_ic_status_bar_notification
             SetupStep.Identity -> DsR.drawable.ds_ic_group
             SetupStep.Pens -> DsR.drawable.ds_ic_dia_pen
             SetupStep.History -> DsR.drawable.ds_ic_history

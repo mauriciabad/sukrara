@@ -412,9 +412,10 @@ data class OverviewAbout(
 )
 
 /**
- * About's summary (the owner, 2026-11-15: "a description, like updates, and links"): an update found says so
- * (*Update available: 0.14.6*); else the version and what the page has, the updater only in the GitHub version
- * (*Version 0.14.5 · updates, report a problem, source code*).
+ * About's summary (the owner, 2026-11-15: "a description, like updates, and links", then "only 1 line"): an update
+ * found says so (*Update available: 0.14.6*); else the version and what the page has, the updater only in the GitHub
+ * version (*Version 0.14.5 · updates and links*, Google Play *Version 0.14.5 · links*). One line on a phone in every
+ * language (AboutSummaryTest).
  */
 @Composable
 private fun aboutSummary(

@@ -332,7 +332,8 @@ private fun SensorGroup(
                         R.string.st_sensor_reading_from_direct
                     },
                 ),
-            icon = DsR.drawable.ds_ic_dia_sensor,
+            // the glucose drop: the sensor icon is the Sensor row's under it (no icon twice on a page)
+            icon = DsR.drawable.ds_ic_water_drop,
         )
         state.family?.let { f ->
             InfoRow(

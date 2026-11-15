@@ -102,7 +102,7 @@ enum class Section(
     Readings(DsR.drawable.ds_ic_water_drop, Category.Purple),
     Graph(DsR.drawable.ds_ic_monitoring, Category.Purple),
     Metrics(DsR.drawable.ds_ic_speed, Category.Purple),
-    StatusBar(DsR.drawable.ds_ic_top_panel_open, Category.Indigo),
+    StatusBar(DsR.drawable.ds_ic_status_bar_notification, Category.Indigo),
     LockScreen(DsR.drawable.ds_ic_screen_lock_portrait, Category.Teal),
     Sensor(DsR.drawable.ds_ic_dia_sensor, Category.Green),
     SensorEnd(DsR.drawable.ds_ic_sports_score, Category.Orange),

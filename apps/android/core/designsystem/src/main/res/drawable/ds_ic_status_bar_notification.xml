@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Custom icon: the status bar and a notification card (the owner's pick, 2026-11-15): a phone screen open at the
+     bottom, the status bar as a line across its top and a filled card under it (Settings › Status bar & notification,
+     its search results, setup's step and its row in Ready). Drawn on the Material Symbols grid (960 units = 24 dp,
+     60–80-unit strokes = weight 400), so it sits with the Material Symbols rows; tinted by Compose Icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp"
+    android:viewportWidth="960" android:viewportHeight="960" android:autoMirrored="false">
+    <path android:pathData="M120,880 V210 a90,90 0 0,1 90,-90 h540 a90,90 0 0,1 90,90 v670" android:strokeColor="@android:color/white" android:strokeWidth="80" android:strokeLineJoin="round"/>
+    <path android:pathData="M240,260 H720" android:strokeColor="@android:color/white" android:strokeWidth="60" android:strokeLineCap="round"/>
+    <path android:fillColor="@android:color/white" android:pathData="M300,390 h360 a50,50 0 0,1 50,50 v150 a50,50 0 0,1 -50,50 h-360 a50,50 0 0,1 -50,-50 v-150 a50,50 0 0,1 50,-50 Z"/>
+</vector>

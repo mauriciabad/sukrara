@@ -855,11 +855,13 @@ live update, the trend arrow is ellipsed on my phone". Emulator Android 17.0, th
 | *Status bar* | Android's word | The notification half hides there (round 4: people looking for the notification don't look there) |
 | **Status bar & notification** | Both halves in Android's own words and style ("Network & internet", "Sound & vibration"); 25 characters; es *Barra de estado y notificación* (Android's "y") | — |
 
-Icon: Material Symbols [`top_panel_open`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:top_panel_open)
-(`ds_ic_top_panel_open`): a screen with its top bar and a panel pulled down from it, the status bar and the shade.
-Compared: `smartphone` (was: any phone setting), `notifications` (Alerts' bell), `notification_settings` (a bell
-again), `app_badging` (notification dots), `toolbar` (no shade), `splitscreen_top` (split screen). Setup's step and its
-row in *Ready* take the same name and icon.
+Icon: drawn for Sukrara (`ds_ic_status_bar_notification`, the owner's pick from a picker, 2026-11-15): a screen open at
+the bottom, the status bar as a line across its top and a notification card under it, on the Material Symbols grid. It
+replaced Material Symbols [`top_panel_open`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:top_panel_open)
+(a screen with its top bar and a panel pulled down from it, the status bar and the shade). Compared before:
+`smartphone` (was: any phone setting), `notifications` (Alerts' bell), `notification_settings` (a bell again),
+`app_badging` (notification dots), `toolbar` (no shade), `splitscreen_top` (split screen). Setup's step and its row in
+*Ready* take the same name and icon.
 
 ### 14.2 What Android allows (sources)
 
