@@ -888,6 +888,9 @@
     <string name="st_finetune_footer">Rarely needed: the defaults suit most people. Search finds every row here.</string>
     <string name="st_files_title">Import and export</string>
     <string name="st_overview_files">Export data, import history, settings file</string>
+    <!-- Settings overview › About: the version and what the page has (GitHub version: with its updater) -->
+    <string name="st_overview_about_updates">Version %1$s · updates, report a problem, source code</string>
+    <string name="st_overview_about">Version %1$s · report a problem, source code, privacy</string>
     <string name="st_files_keywords">Files, CSV, Nightscout, settings file, Advanced, Export</string>
     <string name="st_files_footer">Files you make or open yourself. Sharing and Share with apps send your data live; Backup keeps your sharing identity.</string>
     <string name="st_night_shared">The same night keeps the sensor reminders quiet (Sensor end).</string>

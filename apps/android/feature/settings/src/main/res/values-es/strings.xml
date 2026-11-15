@@ -901,6 +901,9 @@
     <string name="st_finetune_footer">Pocas veces hace falta: los valores por defecto sirven a casi todos. La búsqueda encuentra cada fila de aquí.</string>
     <string name="st_files_title">Importar y exportar</string>
     <string name="st_overview_files">Exportar datos, importar historial, archivo de ajustes</string>
+    <!-- Settings overview › About: the version and what the page has (GitHub version: with its updater) -->
+    <string name="st_overview_about_updates">Versión %1$s · actualizaciones, informar de un problema, código fuente</string>
+    <string name="st_overview_about">Versión %1$s · informar de un problema, código fuente, privacidad</string>
     <string name="st_files_keywords">Archivos, CSV, Nightscout, archivo de ajustes, Avanzado, Exportar</string>
     <string name="st_files_footer">Archivos que creas o abres tú. Compartir y Compartir con apps envían tus datos en vivo; Copia de seguridad guarda tu identidad para compartir.</string>
     <string name="st_night_shared">La misma noche mantiene en silencio los recordatorios del sensor (Fin del sensor).</string>

@@ -152,7 +152,7 @@ release's file and signed with Sukrara's key, and installs it, never while an al
 monitoring comes back by itself right after. Android asks you once to allow installs from Sukrara; with *Install
 updates automatically* on (Settings › About › Updates, off by default) it updates without a tap where Android allows
 it ([docs/FEATURES.md › Updates](docs/FEATURES.md#updates-android-github-version)). The **Google Play version** (in
-preparation) is updated by Play and therefore has no updater of its own; that is the only difference. Settings › About says which one is installed, that Sukrara isn't a medical device (setup's Welcome
+preparation) is updated by Play and therefore has no updater of its own; that is the only difference. Settings' *About* row shows the version (or the update found); the page says which one is installed, that Sukrara isn't a medical device (setup's Welcome
 too), links the privacy policy and links to the website's
 [Versions](https://sukrara.mauri.app/android/#versions) ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 

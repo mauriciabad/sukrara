@@ -24,6 +24,7 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.data.settings.UpdateSettings
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.UpdateState
 import app.mauri.sukrara.designsystem.rows.SettingsChrome
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.advanced.AdvancedScreen
@@ -248,6 +249,7 @@ private fun SettingsPages(
             val sharing by deps.overviewSharing.collectAsStateWithLifecycle(OverviewSharing())
             val blocked by deps.featureChecks.blocked.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
+            val update by (deps.updates?.state ?: remember { MutableStateFlow(null) }).collectAsStateWithLifecycle()
             val recent = recentSearches(deps)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                 deps.readiness.refresh()
@@ -294,6 +296,7 @@ private fun SettingsPages(
                 updatesBanner = updatesBanner,
                 setupExtras = extras,
                 blocked = blocked,
+                about = OverviewAbout(deps.appVersion, (update as? UpdateState.Available)?.release?.version),
                 onBack = onBack,
             )
         }

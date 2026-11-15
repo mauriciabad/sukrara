@@ -107,6 +107,8 @@ fun SettingsOverviewContent(
     setupExtras: String? = null,
     /** The features Android blocks: the Sharing / Share with apps row says the first in the warning colour (docs/40). */
     blocked: List<BlockedFeature> = emptyList(),
+    /** What About's row says: the version, or the update waiting. */
+    about: OverviewAbout = OverviewAbout(),
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -393,12 +395,38 @@ fun SettingsOverviewContent(
                     ),
                 leading = { SectionIcon(Section.Advanced) },
             )
-            NavigationRow(stringResource(R.string.st_about_title), {
-                actions.open(SettingsRoute.About)
-            }, leading = { SectionIcon(Section.About) })
+            NavigationRow(
+                stringResource(R.string.st_about_title),
+                { actions.open(SettingsRoute.About) },
+                summary = aboutSummary(about, BuildFeature.UpdateCheck in actions.build),
+                leading = { SectionIcon(Section.About) },
+            )
         }
     }
 }
+
+/** About's row on the overview: the installed [version] ("" = unknown: no summary) and the [update] found, if any. */
+data class OverviewAbout(
+    val version: String = "",
+    val update: String? = null,
+)
+
+/**
+ * About's summary (the owner, 2026-11-15: "a description, like updates, and links"): an update found says so
+ * (*Update available: 0.14.6*); else the version and what the page has, the updater only in the GitHub version
+ * (*Version 0.14.5 · updates, report a problem, source code*).
+ */
+@Composable
+private fun aboutSummary(
+    about: OverviewAbout,
+    updater: Boolean,
+): String? =
+    when {
+        about.update != null -> stringResource(R.string.st_update_available, about.update)
+        about.version.isEmpty() -> null
+        updater -> stringResource(R.string.st_overview_about_updates, about.version)
+        else -> stringResource(R.string.st_overview_about, about.version)
+    }
 
 /** The blocked features whose fix is on Settings › Sharing (the others are on Share with apps). */
 private val SHARING_FEATURES = setOf(BlockedFeature.BluetoothSharing, BlockedFeature.BluetoothFollowing)
