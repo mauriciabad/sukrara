@@ -89,6 +89,7 @@ import app.mauri.sukrara.graph.RingSpec
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -584,11 +585,17 @@ class SettingsGallery {
         }
         val theme = if (dark) "dark" else "light"
         val font = if (fontScale > 1f) "font2x" else "font1x"
+        val repeats = mutableListOf<String>()
         pages.filter { only == null || it.first in only }.forEach { (name, page) ->
             current = page
             compose.waitForIdle()
+            // once per page: no row icon twice on one page
+            if (!dark && fontScale == 1f && prefix.isEmpty() && !ringsPage(name)) {
+                compose.repeatedRowIcons().takeIf { it.isNotEmpty() }?.let { repeats += "$name repeats $it" }
+            }
             compose.onRoot().captureRoboImage("build/outputs/roborazzi/settings-$prefix$name-$theme-$font.png")
         }
+        assertTrue(repeats.joinToString("\n"), repeats.isEmpty())
     }
 
     /**

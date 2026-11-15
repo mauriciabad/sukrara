@@ -96,6 +96,8 @@ import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.pens.PenDetectionContent
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
+import app.mauri.sukrara.feature.settings.repeatedRowIcons
+import app.mauri.sukrara.feature.settings.ringsPage
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
@@ -240,13 +242,12 @@ class SettingsIndexTest {
                             clock,
                             AlertKindActions(playback = channels),
                             // the fast alerts show the trend arrow's choice (the app passes it for those two)
-                            trend = {
-                                if (kind == AlertKind.FALLING_FAST ||
-                                    kind == AlertKind.RISING_FAST
-                                ) {
-                                    TrendChoiceRow(TrendSetting.Balanced, {})
-                                }
-                            },
+                            trend =
+                                if (kind == AlertKind.FALLING_FAST || kind == AlertKind.RISING_FAST) {
+                                    { TrendChoiceRow(TrendSetting.Balanced, {}) }
+                                } else {
+                                    null
+                                },
                         ) {}
                     }
                 }.toTypedArray(),
@@ -550,6 +551,20 @@ class SettingsIndexTest {
                 .filter { string(it.title) !in shown.getValue(it.on) }
                 .map { "${it.on}: \"${string(it.title)}\"" }
         assertTrue("index entries their page doesn't show:\n" + stale.joinToString("\n"), stale.isEmpty())
+    }
+
+    /** Icons tell rows apart: no page shows a row icon twice (every page here, an alert's with its channel row). */
+    @Test
+    fun noPageRepeatsARowIcon() {
+        var current by mutableStateOf(scenes.first().content)
+        compose.setContent { SukraraTheme(dark = false, dynamic = false) { current() } }
+        val repeats = mutableListOf<String>()
+        for (scene in scenes.filterNot { ringsPage(it.name) }) {
+            current = scene.content
+            compose.waitForIdle()
+            compose.repeatedRowIcons().takeIf { it.isNotEmpty() }?.let { repeats += "${scene.name} repeats $it" }
+        }
+        assertTrue(repeats.joinToString("\n"), repeats.isEmpty())
     }
 
     /** The title of the group around [node] (null: a group without one). */

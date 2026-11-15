@@ -26,6 +26,7 @@ import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
+import app.mauri.sukrara.designsystem.rows.iconRes
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.rows.whyRes
@@ -38,8 +39,8 @@ import com.android.settingslib.spa.widget.ui.SettingsTitle
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * Alert reliability: the same checklist as home's row and the setup step, every item an SPA row with its state (a
- * check, or the error icon and colour while missing) and, while missing, the row opens the system screen for it
+ * Alert reliability: the same checklist as home's row and the setup step, every item an SPA row with its own icon and
+ * its state (in words; the error colour while missing) and, while missing, the row opens the system screen for it
  * (TalkBack: "double tap to fix"; a failed alert step: copies the report). SPA's status banner says when all is on.
  * Two items carry their own controls: *Do Not Disturb* (never a fault: where Sukrara stands, and one button to change
  * it, #184) and *Sound while the phone is unlocked* (a test alert and what it did, #183). The page refreshes when it comes back.
@@ -88,7 +89,7 @@ internal fun ReliabilityContent(
                     }
 
                     !missing -> {
-                        InfoRow(title, summary = stringResource(R.string.st_req_ok) + " · " + why, icon = DsR.drawable.ds_ic_check_circle)
+                        InfoRow(title, summary = stringResource(R.string.st_req_ok) + " · " + why, icon = requirement.iconRes())
                     }
 
                     // a failed alert step (an alert that couldn't be shown, or another step): its way out is the report
@@ -97,7 +98,7 @@ internal fun ReliabilityContent(
                             title,
                             copyReport,
                             summary = stringResource(R.string.st_req_failed) + " · " + why,
-                            icon = DsR.drawable.ds_ic_error,
+                            icon = requirement.iconRes(),
                             warning = true,
                             onClickLabel = stringResource(DsR.string.ds_copy_report),
                         )
@@ -108,7 +109,7 @@ internal fun ReliabilityContent(
                             title,
                             { onFix(requirement) },
                             summary = stringResource(R.string.st_req_missing) + " · " + why,
-                            icon = DsR.drawable.ds_ic_error,
+                            icon = requirement.iconRes(),
                             warning = true,
                             onClickLabel = stringResource(R.string.st_fix),
                         )

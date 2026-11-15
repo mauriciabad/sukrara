@@ -67,6 +67,7 @@ import app.mauri.sukrara.integrations.nightscout.NsSettings
 import app.mauri.sukrara.integrations.nightscout.NsTestUi
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -333,11 +334,17 @@ class IntegrationsGallery {
         }
         val theme = if (dark) "dark" else "light"
         val font = if (fontScale > 1f) "font2x" else "font1x"
+        val repeats = mutableListOf<String>()
         pages.forEach { (name, page) ->
             current = page
             compose.waitForIdle()
+            // once per page: no row icon twice on one page
+            if (!dark && fontScale == 1f && prefix.isEmpty()) {
+                compose.repeatedRowIcons().takeIf { it.isNotEmpty() }?.let { repeats += "$name repeats $it" }
+            }
             compose.onRoot().captureRoboImage("build/outputs/roborazzi/integrations-$prefix$name-$theme-$font.png")
         }
+        assertTrue(repeats.joinToString("\n"), repeats.isEmpty())
     }
 
     @Test fun lightDefault() = gallery(dark = false, fontScale = 1f)

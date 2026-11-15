@@ -317,7 +317,6 @@ fun AdvancedContent(
                 for (relay in state.relays) {
                     InfoRow(
                         hostOf(relay.url),
-                        icon = DsR.drawable.ds_ic_hub,
                         summary =
                             when {
                                 relay.connected -> stringResource(R.string.st_adv_relay_connected)

@@ -134,7 +134,10 @@ class SecondPlacesTest {
                 trend = { TrendChoiceRow(TrendSetting.Balanced, { chosen = it }) },
             ) {}
         }
-        compose.onNodeWithText("Trend arrow").performScrollTo().performClick()
+        // its own group says what it is, and that it's Readings' choice
+        compose.onNodeWithText("Trend arrow").performScrollTo()
+        compose.onNodeWithText("The same choice as Readings › Trend arrow", substring = true).assertExists()
+        compose.onNodeWithText("Trend from").performScrollTo().performClick()
         compose.onNodeWithText("Quick").performClick()
         assertEquals(TrendSetting.Quick, chosen)
     }

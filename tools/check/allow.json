@@ -264,5 +264,9 @@
       "version": "1.5.0-rc01",
       "reason": "Settings and setup rows are Material 3 Expressive SegmentedListItems, which exist only in 1.5 (1.4.0, the newest stable and the Compose BOM 2026.09.00 one, has none). 1.5.0-rc01 (2026-11-04) has no API changes since beta01, only fixes. The owner prefers the newest libraries (#81): move to 1.5.0 as soon as it is stable, then drop this entry."
     }
+  },
+  "reused_ok": {
+    "Settings from": "General's Settings from picker; the mirrored panes' read-only Settings from: Wearer row sits in their own section whose footer says what is in use and To change these on this Mac, choose Custom",
+    "Trend from": "Readings: the Trend arrow section with the preview; a fast alert's Details: its own Trend arrow section whose footer says it is the same choice as Readings > Trend arrow and that every arrow and spoken trend follow it"
   }
 }

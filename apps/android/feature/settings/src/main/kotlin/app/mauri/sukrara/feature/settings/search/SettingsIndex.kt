@@ -561,9 +561,10 @@ object SettingsIndex {
                     R.string.st_channel_settings to R.string.st_channel_settings_summary,
                 )
             }
-            // the fast alerts use the trend arrow: its choice is on their pages too (docs/35 §7: the same setting)
+            // the fast alerts use the trend arrow: its choice is on their pages too (docs/35 §7: the same setting), as
+            // *Trend from* in a *Trend arrow* group of its own (under *Alert when* it read as a condition)
             for (kind in listOf(AlertKind.FALLING_FAST, AlertKind.RISING_FAST)) {
-                rows(SettingsRoute.AlertKindPage(kind), R.string.st_alert_when, R.string.st_trend_title to null)
+                rows(SettingsRoute.AlertKindPage(kind), R.string.st_trend_title, R.string.st_trend_from to R.string.st_trend_shared_footer)
             }
             // Alerts › Night alerts, and each alert's night rule
             rows(
@@ -800,8 +801,13 @@ object SettingsIndex {
                 R.string.st_sensorend_countdown_hours to null,
                 R.string.st_sensorend_warmup to R.string.st_sensorend_warmup_summary,
             )
-            // the sensor's time left on the card: its home is here, Graph has the same row (docs/35 §7, docs/38)
-            pageRow(SettingsRoute.PlacePage(PlaceSetting.SensorTime), null, keywords = R.string.st_places_keywords)
+            // the sensor's time left on the graph: its home is here, Graph has the same row (docs/35 §7, docs/38); here
+            // its group says where it shows
+            pageRow(
+                SettingsRoute.PlacePage(PlaceSetting.SensorTime),
+                R.string.st_sensorend_on_graph,
+                keywords = R.string.st_places_keywords,
+            )
             rows(SettingsRoute.PlacePage(PlaceSetting.SensorTime), null, R.string.st_sensor_time_show to null)
             places(PlaceSetting.SensorTime)
             rows(sensorEnd, R.string.st_sensorend_after, R.string.st_sensorend_again to null)

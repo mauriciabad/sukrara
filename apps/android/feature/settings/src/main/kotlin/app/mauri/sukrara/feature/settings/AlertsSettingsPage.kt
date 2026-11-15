@@ -301,7 +301,7 @@ fun AlertsSettingsContent(
                 stringResource(R.string.st_notification_settings),
                 { context.openNotificationSettings() },
                 summary = stringResource(R.string.st_notification_settings_summary),
-                icon = DsR.drawable.ds_ic_tune,
+                icon = DsR.drawable.ds_ic_settings,
             )
         }
         // the rarely touched rows: one named subpage at the end (docs/35: no global advanced mode)
@@ -429,9 +429,9 @@ enum class WaitKind(
     @StringRes val title: Int,
     @DrawableRes val icon: Int,
 ) {
-    Low("alerts.persistence.lowMin", R.string.st_wait_low, DsR.drawable.ds_ic_timer),
-    High("alerts.persistence.highMin", R.string.st_wait_high, DsR.drawable.ds_ic_timer),
-    Margin("alerts.persistence.marginMgdl", R.string.st_wait_margin, DsR.drawable.ds_ic_trending_down),
+    Low("alerts.persistence.lowMin", R.string.st_wait_low, DsR.drawable.ds_ic_dia_low),
+    High("alerts.persistence.highMin", R.string.st_wait_high, DsR.drawable.ds_ic_dia_high),
+    Margin("alerts.persistence.marginMgdl", R.string.st_wait_margin, DsR.drawable.ds_ic_dia_range),
     ;
 
     fun value(s: AlertSettings): Int =

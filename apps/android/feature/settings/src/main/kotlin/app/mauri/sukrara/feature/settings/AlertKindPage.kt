@@ -82,8 +82,11 @@ fun AlertKindContent(
     actions: AlertKindActions,
     /** Above the page's groups (a follower's *Settings from* note while [AlertsUi.mirrors] this kind). */
     header: @Composable () -> Unit = {},
-    /** The fast alerts' *Trend arrow* row (docs/35 §7: the same setting as Readings › Trend arrow), under *Alert when*. */
-    trend: @Composable () -> Unit = {},
+    /**
+     * The fast alerts' *Trend from* row (docs/35 §7: the same setting as Readings › Trend arrow), in a *Trend arrow*
+     * group of its own whose footer says it is Readings' choice; null = the alert doesn't use the trend.
+     */
+    trend: (@Composable () -> Unit)? = null,
     onBack: () -> Unit,
 ) {
     val rule = ui.settings.rule(kind)
@@ -121,7 +124,10 @@ fun AlertKindContent(
                 icon = DsR.drawable.ds_ic_repeat,
                 readOnly = ui.mirrors(kind),
             )
-            trend()
+        }
+        trend?.let { row ->
+            SettingsGroup(title = stringResource(R.string.st_trend_title)) { row() }
+            FooterText(stringResource(R.string.st_trend_shared_footer))
         }
 
         SettingsGroup(title = stringResource(R.string.st_sound_title)) {
@@ -145,7 +151,7 @@ fun AlertKindContent(
                 stringResource(R.string.st_notification_settings),
                 { context.openNotificationSettings() },
                 summary = stringResource(R.string.st_notification_settings_summary),
-                icon = DsR.drawable.ds_ic_tune,
+                icon = DsR.drawable.ds_ic_settings,
             )
         }
         TryOutGroup(kind, ui.settings, actions.playback)

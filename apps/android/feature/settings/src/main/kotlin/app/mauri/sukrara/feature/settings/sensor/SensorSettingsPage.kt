@@ -656,7 +656,7 @@ private fun AccountGroup(
                 InfoRow(
                     stringResource(R.string.st_sensor_receiver_id),
                     summary = it.toString(),
-                    icon = DsR.drawable.ds_ic_key,
+                    icon = DsR.drawable.ds_ic_receipt_long,
                 )
             }
         }

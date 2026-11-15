@@ -133,7 +133,7 @@ class SchemaSearchTest {
     /** The second places (docs/35 §7): the same setting editable on another page, found there too. */
     private val alsoIn: Map<String, Pair<Int, SearchTarget>> =
         mapOf(
-            "glucose.trend" to (R.string.st_trend_title to page(SettingsRoute.AlertKindPage(AlertKind.FALLING_FAST))),
+            "glucose.trend" to (R.string.st_trend_from to page(SettingsRoute.AlertKindPage(AlertKind.FALLING_FAST))),
             "alerts.night.from" to (R.string.st_sensorend_bedtime to page(SettingsRoute.SensorEnd)),
             "alerts.night.to" to (R.string.st_sensorend_wakeup to page(SettingsRoute.SensorEnd)),
             "graph.sensorTime" to (R.string.st_graph_sensor to page(SettingsRoute.Graph)),

@@ -142,6 +142,7 @@
     <string name="st_places_keywords">por lugar, notificación, widgets, propio, distinto, igual que la app</string>
     <string name="st_trend_keywords">flecha, tendencia, dirección, velocidad, retraso, suavizado, sensor</string>
     <string name="st_trend_from">Tendencia a partir de</string>
+    <string name="st_trend_shared_footer">La misma elección que Lecturas › Flecha de tendencia: todas las flechas y la tendencia leída en voz alta también la siguen.</string>
     <string name="st_trend_quick">Rápida</string>
     <string name="st_trend_quick_summary">De las lecturas: gira antes, se mueve más.</string>
     <string name="st_trend_balanced">Equilibrada</string>
@@ -432,6 +433,7 @@
     <string name="st_sensorend_warmup">Cuenta atrás del calentamiento</string>
     <string name="st_sensorend_warmup_summary">La primera hora de un sensor nuevo, hasta su primera lectura</string>
     <string name="st_sensorend_after">Después del final</string>
+    <string name="st_sensorend_on_graph">En la gráfica</string>
     <string name="st_sensorend_again">Recordar de nuevo</string>
     <string name="st_sensorend_again_off">Desactivado</string>
     <plurals name="st_sensorend_again_every">
@@ -479,7 +481,7 @@
     <string name="st_ring_target">En rango · %1$d–%2$d</string>
     <string name="st_ring_high">Alto · %1$d–%2$d</string>
     <string name="st_ring_very_high">Muy alto · desde %1$d</string>
-    <string name="st_graph_lines">Líneas en el gráfico</string>
+    <string name="st_graph_lines">Líneas en la gráfica</string>
     <string name="st_graph_line_add">Añadir una línea</string>
     <string name="st_graph_line_add_summary">Hasta %1$d líneas</string>
     <string name="st_graph_line_full">%1$d líneas: quita una para añadir otra</string>
@@ -502,11 +504,11 @@
     <string name="st_ring_counts_tight">Muy bien (%1$s–%2$s %3$s)</string>
     <string name="st_ring_order">Orden del anillo</string>
     <string name="st_ring_order_footer">Los colores del anillo en el sentido del reloj desde las 12. Arrastra una fila por su asa o mantenla pulsada; TalkBack ofrece Subir y Bajar.</string>
-    <string name="st_graph_beside_graph">Junto al gráfico</string>
-    <string name="st_marks_title">Tratamientos en el gráfico</string>
+    <string name="st_graph_beside_graph">Junto a la gráfica</string>
+    <string name="st_marks_title">Tratamientos en la gráfica</string>
     <string name="st_graph_sensor">Tiempo restante del sensor</string>
-    <string name="st_graph_reset_all">Restablecer el gráfico</string>
-    <string name="st_graph_reset_all_title">¿Restablecer el gráfico?</string>
+    <string name="st_graph_reset_all">Restablecer la gráfica</string>
+    <string name="st_graph_reset_all_title">¿Restablecer la gráfica?</string>
     <string name="st_graph_reset_all_text">Las líneas, el tiempo mostrado, junto a la gráfica, los tratamientos en la gráfica y el tiempo del sensor vuelven a sus valores por defecto. Tus rangos y anillos se mantienen.</string>
     <string name="st_move_up">Subir</string>
     <string name="st_move_down">Bajar</string>
@@ -525,8 +527,8 @@
     <string name="st_marks_line_summary">Hasta que vuelven las alertas que calla</string>
     <string name="st_marks_amount">Cantidad</string>
     <string name="st_marks_time">Tiempo desde</string>
-    <string name="st_marks_reset">Restablecer tratamientos en el gráfico</string>
-    <string name="st_marks_footer">Se aplica a todos los gráficos: la app, la notificación, los widgets y la pantalla de bloqueo.</string>
+    <string name="st_marks_reset">Restablecer tratamientos en la gráfica</string>
+    <string name="st_marks_footer">Se aplica a todas las gráficas: la app, la notificación, los widgets y la pantalla de bloqueo.</string>
     <string name="st_ranges_reset">Restablecer rangos</string>
     <string name="st_ranges_reset_summary">Vuelven a los rangos por defecto</string>
     <string name="st_lock_title">Pantalla de bloqueo</string>

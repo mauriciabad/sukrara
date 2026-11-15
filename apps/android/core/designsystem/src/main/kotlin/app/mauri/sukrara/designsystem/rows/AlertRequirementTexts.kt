@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.designsystem.rows
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.core.model.AlertRequirement
@@ -40,4 +41,24 @@ fun AlertRequirement.whyRes(): Int =
         AlertRequirement.DoNotDisturb -> R.string.ds_req_dnd_why
         AlertRequirement.SoundWhenUnlocked -> R.string.ds_req_unlocked_why
         AlertRequirement.Bluetooth -> R.string.ds_req_bluetooth_why
+    }
+
+/**
+ * The item's own icon: a checklist row tells its items apart by icon (the owner, 2026-11-15: icons are there to tell
+ * rows apart), its state is the row's words and colour (a missing item in the error colour), not a check repeated on
+ * every row.
+ */
+@DrawableRes
+fun AlertRequirement.iconRes(): Int =
+    when (this) {
+        AlertRequirement.AlertShown -> R.drawable.ds_ic_notifications_active
+        AlertRequirement.AlertDelivery -> R.drawable.ds_ic_send
+        AlertRequirement.Notifications -> R.drawable.ds_ic_notifications
+        AlertRequirement.FullScreenIntent -> R.drawable.ds_ic_screen_lock_portrait
+        AlertRequirement.ExactAlarm -> R.drawable.ds_ic_schedule
+        AlertRequirement.BatteryExemption -> R.drawable.ds_ic_battery_full
+        AlertRequirement.AlertChannel -> R.drawable.ds_ic_volume_up
+        AlertRequirement.DoNotDisturb -> R.drawable.ds_ic_bedtime
+        AlertRequirement.SoundWhenUnlocked -> R.drawable.ds_ic_lock_open
+        AlertRequirement.Bluetooth -> R.drawable.ds_ic_bluetooth
     }

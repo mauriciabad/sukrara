@@ -196,8 +196,9 @@ fun trendChoiceName(s: TrendSetting): String = stringResource(s.title)
 
 /**
  * The *Trend arrow* choice as a row of the fast alerts' pages (docs/35 §7: a setting editable where people expect it,
- * the same setting and store as Readings › Trend arrow, never a copy): the choice in use, a tap opens the four choices
- * (SPA's ListPreference dialog). [readOnly] = a follower mirroring the wearer's.
+ * the same setting and store as Readings › Trend arrow, never a copy): *Trend from* and the choice in use (the page's
+ * *Trend arrow* group says what it is), a tap opens the four choices (SPA's ListPreference dialog). [readOnly] = a
+ * follower mirroring the wearer's.
  */
 @Composable
 fun TrendChoiceRow(
@@ -207,7 +208,7 @@ fun TrendChoiceRow(
 ) {
     var choosing by rememberSaveable { mutableStateOf(false) }
     ValueRow(
-        stringResource(R.string.st_trend_title),
+        stringResource(R.string.st_trend_from),
         stringResource(choice.title),
         { choosing = true },
         icon = DsR.drawable.ds_ic_trending_up,
@@ -215,7 +216,7 @@ fun TrendChoiceRow(
     )
     if (choosing) {
         ChoiceDialog(
-            stringResource(R.string.st_trend_title),
+            stringResource(R.string.st_trend_from),
             TrendSetting.entries.map { Choice(stringResource(it.title), it, sub = stringResource(it.summary)) },
             choice,
             { choosing = false },

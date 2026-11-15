@@ -133,7 +133,7 @@ fun AboutContent(
                 stringResource(R.string.st_about_versions),
                 { context.openUrl(VERSIONS_URL) },
                 summary = stringResource(R.string.st_about_versions_summary),
-                icon = DsR.drawable.ds_ic_open_in_new,
+                icon = DsR.drawable.ds_ic_apps,
             )
         }
         if (updates != null) {
@@ -143,7 +143,7 @@ fun AboutContent(
                     updates.automaticChecks,
                     updates.setAutomaticChecks,
                     summary = stringResource(R.string.st_update_auto_checks_summary),
-                    icon = DsR.drawable.ds_ic_update,
+                    icon = DsR.drawable.ds_ic_schedule,
                 )
                 // like the Mac: installing by itself needs the daily check, so it is dimmed while that is off
                 SwitchRow(
@@ -154,7 +154,7 @@ fun AboutContent(
                         stringResource(
                             if (updates.automaticChecks) R.string.st_update_auto_install_summary else R.string.st_update_auto_install_off,
                         ),
-                    icon = DsR.drawable.ds_ic_download,
+                    icon = DsR.drawable.ds_ic_update,
                     enabled = updates.automaticChecks,
                 )
             }
@@ -196,7 +196,7 @@ private fun UpdateRows(
         null -> {}
 
         UpdateState.Checking -> {
-            InfoRow(stringResource(R.string.st_update_checking), icon = DsR.drawable.ds_ic_update)
+            InfoRow(stringResource(R.string.st_update_checking), icon = DsR.drawable.ds_ic_search)
         }
 
         UpdateState.UpToDate -> {
@@ -213,12 +213,12 @@ private fun UpdateRows(
                 stringResource(R.string.st_update_offline),
                 actions.check,
                 summary = stringResource(R.string.st_update_check_again),
-                icon = DsR.drawable.ds_ic_update,
+                icon = DsR.drawable.ds_ic_link_off,
             )
             NavigationRow(
                 stringResource(R.string.st_update_offline_summary),
                 { context.openUrl(ProjectLinks.RELEASES_URL) },
-                icon = DsR.drawable.ds_ic_open_in_new,
+                icon = DsR.drawable.ds_ic_public,
             )
         }
 
@@ -256,7 +256,7 @@ private fun UpdateRows(
                 stringResource(R.string.st_update_ready, update.release.version),
                 actions.cancel,
                 summary = stringResource(R.string.st_update_waiting_summary),
-                icon = DsR.drawable.ds_ic_update,
+                icon = DsR.drawable.ds_ic_pause_circle,
             )
         }
 
@@ -274,7 +274,7 @@ private fun UpdateRows(
             InfoRow(
                 stringResource(R.string.st_update_installing, update.release.version),
                 summary = stringResource(R.string.st_update_installing_summary),
-                icon = DsR.drawable.ds_ic_update,
+                icon = DsR.drawable.ds_ic_hourglass_top,
             )
             CardRow { LinearProgressIndicator(Modifier.fillMaxWidth()) }
         }
@@ -284,7 +284,7 @@ private fun UpdateRows(
                 stringResource(R.string.st_update_failed, update.release.version),
                 actions.update,
                 summary = stringResource(failure(update.reason), installed),
-                icon = DsR.drawable.ds_ic_update,
+                icon = DsR.drawable.ds_ic_warning,
             )
         }
     }
@@ -293,7 +293,7 @@ private fun UpdateRows(
             stringResource(R.string.st_update_notes),
             { context.openUrl(r.notesUrl) },
             summary = stringResource(R.string.st_update_notes_summary),
-            icon = DsR.drawable.ds_ic_open_in_new,
+            icon = DsR.drawable.ds_ic_receipt_long,
         )
     }
 }

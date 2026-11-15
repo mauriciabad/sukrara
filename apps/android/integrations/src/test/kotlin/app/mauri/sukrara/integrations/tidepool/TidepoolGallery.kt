@@ -22,8 +22,10 @@ import androidx.compose.ui.unit.Density
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
+import app.mauri.sukrara.integrations.repeatedRowIcons
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import com.github.takahirom.roborazzi.captureRoboImage
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -82,11 +84,17 @@ class TidepoolGallery {
         }
         val theme = if (dark) "dark" else "light"
         val font = if (fontScale > 1f) "font2x" else "font1x"
+        val repeats = mutableListOf<String>()
         pages.forEach { (name, page) ->
             current = page
             compose.waitForIdle()
+            // once per page: no row icon twice on one page
+            if (!dark && fontScale == 1f && prefix.isEmpty()) {
+                compose.repeatedRowIcons().takeIf { it.isNotEmpty() }?.let { repeats += "$name repeats $it" }
+            }
             compose.onRoot().captureRoboImage("build/outputs/roborazzi/tidepool-$prefix$name-$theme-$font.png")
         }
+        assertTrue(repeats.joinToString("\n"), repeats.isEmpty())
     }
 
     @Test fun lightDefault() = gallery(dark = false, fontScale = 1f)

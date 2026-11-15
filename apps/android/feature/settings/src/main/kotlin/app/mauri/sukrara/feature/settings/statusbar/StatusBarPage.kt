@@ -298,7 +298,7 @@ private fun RootChoiceRows(
             actions.setRootColor,
             summary = if (root && !module) needsModule else null,
             enabled = root && module,
-            icon = DsR.drawable.ds_ic_palette,
+            icon = DsR.drawable.ds_ic_dia_range,
         )
     }
 }

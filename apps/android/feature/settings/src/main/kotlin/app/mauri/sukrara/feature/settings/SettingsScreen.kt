@@ -324,7 +324,7 @@ private fun SettingsPages(
                     clock,
                     AlertKindActions(vm::edit, vm::unmute, vm::remindAsUsual, deps.alertPlayback),
                     header = { if (it.mirrors(route.kind)) SettingsFromNote(from, { navigate(SettingsRoute.SettingsFrom) }) },
-                    trend = { if (route.kind in RateKinds) RateTrendRow(deps, from.readOnly) },
+                    trend = if (route.kind in RateKinds) ({ RateTrendRow(deps, from.readOnly) }) else null,
                     onBack = onBack,
                 )
             }
@@ -680,7 +680,7 @@ private fun SettingsPages(
 private val RateKinds = setOf(AlertKind.FALLING_FAST, AlertKind.RISING_FAST)
 
 /**
- * The fast alerts' *Trend arrow* row (docs/35 §7): the same setting as Readings › Trend arrow (`glucose.trend`, one
+ * The fast alerts' *Trend from* row (docs/35 §7): the same setting as Readings › Trend arrow (`glucose.trend`, one
  * store), read-only while a follower mirrors the wearer's.
  */
 @Composable

@@ -198,6 +198,12 @@ positional arguments, `<plurals>` for counts, `translatable="false"` for brand n
 hidratos, insulina rápida / lenta, tiempo en rango). Compose reads `stringResource`; `StringsParityTest` and the
 `strings` check fail on a missing key.
 
+A setting shown in a second place (another page, setup, a widget's settings, the other app's pane) gets words for
+where it is: its own title, or a group / section header (or a footer) that says what it is there. Android
+`SameWordsTest` fails on a row title that is on two kinds of settings page in the same group; the Mac `reused` check
+fails on a control label written in two settings / setup files without an `allow.json` `reused_ok` entry. Row icons
+tell rows apart: none repeats on a page, a list of one kind of thing has none (`SettingsIndexTest`, the galleries).
+
 ## Debug and test code
 
 Debug commands that replace the sensor or make up data live only in `src/debug` (Android) or `#if DEBUG` / the

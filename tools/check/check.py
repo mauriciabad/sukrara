@@ -107,8 +107,16 @@ Checks
               under the same version); a schema change bumps the version, commits the new file and deletes the old
               one (only the current version is kept, so an old one goes only when a newer one replaces it). No
               migration code in Android sources (Migration, addMigrations, AutoMigration, runMigrationsAndValidate).
+  reused      a setting shown in a second place says what it does there (the owner, 2026-11-15: Graph's "Sensor
+              time left" row reused in Sensor end without words for that page). Mac: a control's label (Toggle,
+              Picker, LabeledContent, Stepper, label: / title:) written in two files of the settings and setup windows
+              is one setting in two places: it is listed in allow.json 'reused_ok' with the words each place has (its
+              section header, footer or own label); a listed label in fewer than two files fails too. Android: the
+              settings search index is checked by SameWordsTest (a row on two kinds of page differs in title or group).
+              Whole tree.
   qa          prints the docs/QA.md sections the change touches
 """
+import collections
 import fnmatch
 import json
 import os
@@ -1134,7 +1142,7 @@ def check_paths(ch, rep):
         if not any(fnmatch.fnmatchcase(p, v["path"]) for p in files):
             rep.add("FAIL", "paths", "allow.json vendored '%s' matches no tracked file: take the entry off the list."
                     % v["path"])
-    for glob in (ANDROID_KT, KT_MODEL + "*.kt", MAC_SOURCES + "*.swift", *KT_SETTINGS_SCREENS, SWIFT_SETTINGS_SCREENS,
+    for glob in (ANDROID_KT, KT_MODEL + "*.kt", MAC_SOURCES + "*.swift", *KT_SETTINGS_SCREENS, SWIFT_SETTINGS_SCREENS, *MAC_REUSED,
                  *SWIFT_FORMATTED, *(d + "*" for d in MAC_DEBUG_TARGETS)):
         if not any(fnmatch.fnmatchcase(p, glob) for p in files):
             rep.add("FAIL", "paths", "tools/check/check.py scans '%s', which matches no tracked file: point it at the\n"
@@ -1276,6 +1284,32 @@ def check_states(ch, rep):
             rep.add("FAIL", "states", "tools/check/allow.json states_pending lists '## %s', which docs/FEATURES.md doesn't have." % name)
 
 
+MAC_REUSED = (MAC_SOURCES + "SukraraApp/Windows/Settings/*.swift", MAC_SOURCES + "SukraraApp/Windows/Setup/*.swift")
+MAC_CONTROL_LABEL = re.compile(r'(?:\b(?:Toggle|Picker|LabeledContent|Stepper)\(\s*|\b(?:label|title):\s*)L10n\.t\(\s*"([^"\\]+)"')
+
+
+def check_reused(ch, rep):
+    """reused: see the module doc."""
+    files = collections.defaultdict(set)
+    for path in tree_files(ch):
+        if not match(path, MAC_REUSED):
+            continue
+        for _, line in code_lines(ch.blob(path)):
+            for m in MAC_CONTROL_LABEL.finditer(line):
+                files[m.group(1)].add(path)
+    allowed = load("allow.json").get("reused_ok", {})
+    for label, where in sorted(files.items()):
+        if len(where) > 1 and not allowed.get(label):
+            rep.add("FAIL", "reused", "Mac: \"%s\" labels a control in %s: one setting in two places. Give the second place\n"
+                    "words for where it is (its own label, a section header or a footer that says what it does there),\n"
+                    "then list it in tools/check/allow.json reused_ok as \"%s\": \"the words each place has\"."
+                    % (label, ", ".join(sorted(where)), label))
+    for label in sorted(allowed):
+        if len(files.get(label, ())) < 2:
+            rep.add("FAIL", "reused", "tools/check/allow.json reused_ok lists \"%s\", which isn't in two Mac settings / setup\n"
+                    "files any more: take it off the list." % label)
+
+
 CATALOG = ANDROID + "gradle/libs.versions.toml"
 PRERELEASE = re.compile(r"(?i)-(alpha|beta|rc|dev|eap|snapshot)")
 
@@ -1411,6 +1445,7 @@ def main(argv):
         check_trend(ch, rep)
         check_settings(ch, rep)
         check_states(ch, rep)
+        check_reused(ch, rep)
         check_durations(ch, rep)
         check_prerelease(ch, rep)
         check_format(ch, rep)

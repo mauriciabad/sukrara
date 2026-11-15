@@ -163,9 +163,10 @@ fun reminderDays(d: Int): String =
 /**
  * Settings › Sensor end (the wearer): this sensor's end, the reminders (rows; a row opens its dialog with Remove,
  * *Add reminder* below the list up to six), first-unlock delivery, the night (evening reminder, bedtime, wake-up:
- * Android doesn't share its Bedtime schedule), the live countdowns (end countdown and its hours, warm-up) and the
- * sensor's end in the calendar ([calendar]: null = not offered), the sensor's time left per place (its home; Graph
- * has the same switches) and *See also* Sensor and Night alerts. The night is THE night (docs/35 §7): the same time
+ * Android doesn't share its Bedtime schedule), the live countdowns (end countdown and its hours, warm-up), the
+ * sensor's time left per place under *On the graph* (its home; Graph has the same row, where the page says it), *After
+ * the end*, the sensor's end in the calendar ([calendar]: null = not offered) and *See also* Sensor and Night alerts.
+ * The night is THE night (docs/35 §7): the same time
  * range as Night alerts, edited from either page. [countdownReadOnly] = a follower not in Custom: the countdown's hours
  * and the night are mirrored (*Settings from*), shown in use under [countdownNote] (why, and the way to change it).
  */
@@ -196,14 +197,10 @@ fun SensorEndContent(
             )
         }
         SettingsGroup(title = stringResource(R.string.st_sensorend_reminders)) {
-            if (c.reminders.isEmpty()) InfoRow(stringResource(R.string.st_sensorend_no_reminders), icon = DsR.drawable.ds_ic_calendar_month)
+            // no icons: a list of reminders under its title (one icon on every row would tell nothing apart)
+            if (c.reminders.isEmpty()) InfoRow(stringResource(R.string.st_sensorend_no_reminders))
             c.reminders.forEachIndexed { i, r ->
-                ValueRow(
-                    reminderDays(r.daysBefore),
-                    ClockText.minuteOfDay(r.minuteOfDay),
-                    { editing = i },
-                    icon = DsR.drawable.ds_ic_calendar_month,
-                )
+                ValueRow(reminderDays(r.daysBefore), ClockText.minuteOfDay(r.minuteOfDay), { editing = i })
             }
         }
         // adding is a button under the list (SettingsLib's SectionButtonPreference), not a row of it
@@ -228,7 +225,7 @@ fun SensorEndContent(
                 c.evening,
                 { v -> actions.change { it.copy(evening = v) } },
                 summary = stringResource(R.string.st_sensorend_evening_summary, ClockText.minuteOfDay(evening)),
-                icon = DsR.drawable.ds_ic_bedtime,
+                icon = DsR.drawable.ds_ic_notifications,
             )
             ValueRow(
                 stringResource(R.string.st_sensorend_bedtime),
@@ -261,7 +258,7 @@ fun SensorEndContent(
                 pluralStringResource(R.plurals.st_sensorend_hours_before, prefs.countdownHours, prefs.countdownHours),
                 { choosingHours = true },
                 enabled = c.countdown,
-                icon = DsR.drawable.ds_ic_hourglass_top,
+                icon = DsR.drawable.ds_ic_schedule,
                 readOnly = countdownReadOnly,
             )
 
@@ -270,20 +267,21 @@ fun SensorEndContent(
                 c.warmup,
                 { v -> actions.change { it.copy(warmup = v) } },
                 summary = stringResource(R.string.st_sensorend_warmup_summary),
-                icon = DsR.drawable.ds_ic_hourglass_top,
+                icon = DsR.drawable.ds_ic_timer,
             )
+        }
+        // the sensor's time left on the graph: its home is here, Graph shows the same row; here its group says where it
+        // shows (on Graph the page does)
+        SettingsGroup(title = stringResource(R.string.st_sensorend_on_graph)) {
+            SensorTimeRow(prefs.sensorTime, prefs.sensorPlace, actions.setSensorTime, actions.openSensorPlaces)
         }
         SettingsGroup(title = stringResource(R.string.st_sensorend_after)) {
             ValueRow(
                 stringResource(R.string.st_sensorend_again),
                 againText(c.endedRepeatHours),
                 { choosingAgain = true },
-                icon = DsR.drawable.ds_ic_dia_sensor,
+                icon = DsR.drawable.ds_ic_repeat,
             )
-        }
-        // the sensor's time left on the card: its home is here, Graph shows the same row (docs/38)
-        SettingsGroup {
-            SensorTimeRow(prefs.sensorTime, prefs.sensorPlace, actions.setSensorTime, actions.openSensorPlaces)
         }
         calendar?.let { (state, port) -> SensorCalendarGroup(state, port) }
         FooterText(stringResource(R.string.st_sensorend_footer))

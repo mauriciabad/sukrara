@@ -142,6 +142,8 @@
     <string name="st_places_keywords">per place, notification, widgets, own, different, same as the app</string>
     <string name="st_trend_keywords">arrow, trend, direction, rate, delay, lag, smoothing, sensor</string>
     <string name="st_trend_from">Trend from</string>
+    <!-- the fast alerts' pages: the footer of their Trend arrow group (the same setting as Readings › Trend arrow) -->
+    <string name="st_trend_shared_footer">The same choice as Readings › Trend arrow: every arrow and spoken trend follow it too.</string>
     <string name="st_trend_quick">Quick</string>
     <string name="st_trend_quick_summary">From the readings: turns soonest, moves more.</string>
     <string name="st_trend_balanced">Balanced</string>
@@ -431,6 +433,8 @@
     <string name="st_sensorend_warmup">Warm-up countdown</string>
     <string name="st_sensorend_warmup_summary">A new sensor\'s first hour, until its first reading</string>
     <string name="st_sensorend_after">After the end</string>
+    <!-- Sensor end: the group of the sensor time left row, which the graph shows (the row is Graph's too) -->
+    <string name="st_sensorend_on_graph">On the graph</string>
     <string name="st_sensorend_again">Remind again</string>
     <string name="st_sensorend_again_off">Off</string>
     <plurals name="st_sensorend_again_every">
