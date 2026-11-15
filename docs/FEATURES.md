@@ -2253,11 +2253,11 @@ past the other app's event; blocks again if it's still running) or *Help*.
   *Bea · phone* / *Sam · Mac*, their picture), then the followers paired with *Pair nearby* that aren't connected
   (*Disconnected*, by name), like Android's Connected devices (`NearbyDevices.rows`, `NearbyDevicesTest`). Which
   followers paired nearby is kept on this phone only (`OwnerState.nearbyPaired`, never in the owner backup) and cleared
-  by Remove. The follower's dialog says *Connected* / *Disconnected* for such a device. A connection is named only by the identity proof in its `HELLO`
+  by Remove. The follower's sheet says *Connected* / *Disconnected* for such a device. A connection is named only by the identity proof in its `HELLO`
   (poc/spec/ogs-ble.md B§5/B§6): the follower signs a kind-21080 event with content `H("cgm2:ble-id:"+sid+":"+nonce+":"+dev)`
   with its follower key, and the wearer's phone checks it against each active follower and device type
   (`HelloProof.identify`; vector `ble.hello_id`). An unnamed link is not listed (no made-up name); a replayed `HELLO`
-  names nothing. A row opens the follower's dialog; *Remove* there also drops that follower's Bluetooth links
+  names nothing. A row opens the follower's sheet; *Remove* there also drops that follower's Bluetooth links
   (`OwnerEngine.forget`), and a device that connects again is neither named nor trusted.
 - The wearer's phone (`AndroidNearbyServer`, protocol in `NearbyServerCore`) advertises the Sukrara service connectable
   with **no name** (no scan response), opens a new GATT server after Bluetooth comes back, and stops with a visible state
@@ -2343,7 +2343,7 @@ back returns and the page looks again); permission missing → *Allow Nearby dev
 stays, and its next tap opens the app's Android settings page); the same state on home's *Bluetooth sharing is blocked* banner and
 the Sharing row in Settings → *Allow* / *Turn off*; no follower yet → serves once someone follows; unsupported → nothing to do, sharing goes on over the internet. A
 device in *Nearby devices* *Connected* / *Disconnected* → it moves between the two by itself as it comes into or out of
-range; its row opens its follower dialog (*Close*, *Remove* → confirm → removed, disconnected and no longer listed;
+range; its row opens its follower sheet (*Done*, *Remove* → confirm → removed, disconnected and no longer listed;
 *Pair nearby* pairs it again from scratch). Follower:
 the Bluetooth line follows the link by itself; Bluetooth off → *Turn on Bluetooth*; permission missing → *Allow Nearby
 devices*; *Stop following* ends Bluetooth with the relays. *Pair nearby* open → its switch (*Stop*), or it closes by

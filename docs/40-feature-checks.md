@@ -78,4 +78,15 @@ if it is made. The fix is to make it at the right moment.
   the renamed strings.
 - Tests: `FeatureChecksTest`, `BannerSlotTest`, `OwnerEngineTest.theInvitesCanAddTreatmentsChoice…`,
   `BlockedFeaturesTests` (Mac).
-- Pictures (synthetic data): `docs/img/permissions/`.
+- Pictures (synthetic data, Roborazzi / `sukrara-snap`):
+
+| Home: Bluetooth sharing blocked | A follower's Bluetooth (no switch) | Mac panel |
+|---|---|---|
+| <img src="img/permissions/android-home-blocked-light.png" width="260"> | <img src="img/permissions/android-home-blocked-follower-light.png" width="260"> | <img src="img/permissions/mac-panel-bluetooth-blocked-light.png" width="260"> |
+
+| Share with someone | Approve | Followers | Follower sheet |
+|---|---|---|---|
+| <img src="img/permissions/android-share-invite-light.png" width="200"> | <img src="img/permissions/android-approve-writer-light.png" width="200"> | <img src="img/permissions/android-followers-light.png" width="200"> | <img src="img/permissions/android-follower-sheet-light.png" width="200"> |
+
+The *Can add treatments* switch has no icon anywhere (the owner's earlier "no icon" on it; FEATURES "Settings"); the
+mark is on the follower's picture.

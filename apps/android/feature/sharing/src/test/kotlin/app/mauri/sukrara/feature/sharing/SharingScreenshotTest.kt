@@ -206,7 +206,7 @@ class SharingScreenshotTest {
                 ),
         )
 
-    private fun scenes(): List<Pair<String, @Composable () -> Unit>> {
+    internal fun scenes(): List<Pair<String, @Composable () -> Unit>> {
         // the app passes Settings' threshold rows; this module only sees their slot
         val a =
             SetupActions(thresholdRows = { settings, _ ->
