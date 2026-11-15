@@ -20,7 +20,19 @@ concurrency:
   group: pages
   cancel-in-progress: false
 jobs:
+  # A release event runs on its tag, which the github-pages environment doesn't deploy (main only): it starts this
+  # workflow again on main instead (a workflow_dispatch from the workflow's token does start a run).
+  rebuild-on-main:
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - run: gh workflow run website.yml --ref main -R "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
   build:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,11 +47,12 @@ jobs:
           cache-dependency-path: website/package-lock.json
       - run: npm ci
         working-directory: website
-      - name: Build (the newest release from the GitHub API)
+      - name: Build (the newest release from the GitHub API, required: the buttons download its files)
         run: npm run build
         working-directory: website
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          SUKRARA_RELEASE: required
       - name: Check links, the apps' URLs, App Links and the update feed
         run: npm run check
         working-directory: website

@@ -3,13 +3,22 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * How to get one app: the newest release's file straight from GitHub (looked up at build time, lib/release.ts), then
- * the other ways in (Obtainium / Homebrew) and the stores, each with its state (lib/site.ts STORES).
+ * How to get one app: the newest release's file, downloaded straight from GitHub (looked up at build time,
+ * lib/release.ts), the store, the other way in (Obtainium / Homebrew), and how to check the file is Sukrara's: the
+ * signing certificate (Android) or the Developer ID and notarization (Mac), the file's SHA-256 as GitHub recorded it,
+ * GitHub's own check of an immutable release, and the same file on GitHub.
  *   <Download app="android" />
  */
 import { Code, Icon } from '@astrojs/starlight/components';
+import googlePlayEn from '../assets/badges/google-play-en.png';
+import googlePlayEs from '../assets/badges/google-play-es.png';
+import appStoreBlackEn from '../assets/badges/mac-app-store-black-en.svg';
+import appStoreBlackEs from '../assets/badges/mac-app-store-black-es.svg';
+import appStoreWhiteEn from '../assets/badges/mac-app-store-white-en.svg';
+import appStoreWhiteEs from '../assets/badges/mac-app-store-white-es.svg';
+import obtainium from '../assets/badges/obtainium.svg';
 import { latestRelease, megabytes } from '../lib/release';
-import { HOMEBREW, OBTAINIUM, RELEASES, STORES } from '../site';
+import { APPLICATION_ID, GITHUB, HOMEBREW, OBTAINIUM, REPO, RELEASES, SIGNING, STORES } from '../site';
 
 interface Props {
 	app: 'android' | 'mac';
@@ -17,15 +26,16 @@ interface Props {
 
 const { app } = Astro.props;
 const t = Astro.locals.t;
-const lang = Astro.locals.starlightRoute.lang;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
 const release = await latestRelease();
 const file = app === 'android' ? release.apk : release.dmg;
-const store = app === 'android' ? { name: 'Google Play', ...STORES.play } : { name: 'Mac App Store', ...STORES.appStore };
 const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(release.date);
 const meta =
 	release.version && file && date
 		? t('site.download.meta', { version: release.version, size: megabytes(file.size), date })
 		: t('site.download.newest');
+const appStore = lang === 'es' ? { light: appStoreBlackEs, dark: appStoreWhiteEs } : { light: appStoreBlackEn, dark: appStoreWhiteEn };
+const name = file?.name ?? (app === 'android' ? 'Sukrara.apk' : 'Sukrara.dmg');
 ---
 
 <div class="sk-download not-content">
@@ -35,34 +45,87 @@ const meta =
 			<strong>{t(app === 'android' ? 'site.download.android' : 'site.download.mac')}</strong>
 			<small>{meta}</small>
 		</span>
-		<Icon name="download" size="1.25rem" class="sk-download__arrow" />
+		<Icon name="download" size="1.25rem" />
 	</a>
 	<p class="sk-download__links">
 		<a href={release.page}>{t('site.download.notes')}</a>
 		<span aria-hidden="true">·</span>
 		<a href={RELEASES}>{t('site.download.all')}</a>
 	</p>
-	{
-		app === 'android' ? (
-			<p class="sk-download__alt">
-				<a class="sk-download__chip" href={OBTAINIUM.add}>
-					{t('site.obtainium.add')}
-				</a>
-				<a href={OBTAINIUM.home}>{t('site.obtainium.get')}</a>
-			</p>
-		) : (
-			<Code code={HOMEBREW} lang="sh" frame="terminal" title="Homebrew" />
-		)
-	}
-	<p class="sk-download__store">
+
+	<div class="sk-download__others">
 		{
-			store.status === 'live' ? (
-				<a href={store.url}>{t('site.store.get', { store: store.name })}</a>
+			app === 'android' ? (
+				<>
+					<a class="sk-download__store is-play" href={STORES.play(lang)}>
+						<img src={(lang === 'es' ? googlePlayEs : googlePlayEn).src} alt={t('site.store.play')} width="161" height="62" />
+					</a>
+					<a class="sk-download__chip" href={OBTAINIUM.add}>
+						<img src={obtainium.src} alt="" width="20" height="20" />
+						{t('site.obtainium.add')}
+					</a>
+					<a class="sk-download__small" href={OBTAINIUM.home}>
+						{t('site.obtainium.get')}
+					</a>
+				</>
 			) : (
-				t(store.status === 'review' ? 'site.store.review' : 'site.store.planned', { store: store.name })
+				<a class="sk-download__store" href={STORES.appStore(lang)}>
+					<img class="dark:sl-hidden" src={appStore.light.src} alt={t('site.store.appStore')} width="156" height="40" />
+					<img class="light:sl-hidden" src={appStore.dark.src} alt={t('site.store.appStore')} width="156" height="40" />
+				</a>
 			)
 		}
-	</p>
+	</div>
+	{app === 'mac' && <Code code={HOMEBREW} lang="sh" frame="terminal" title="Homebrew" />}
+
+	<details class="sk-verify">
+		<summary><Icon name="approve-check-circle" size="1.1rem" />{t('site.verify.title')}</summary>
+		{
+			app === 'android' ? (
+				<>
+					<p>{t('site.verify.android.cert')}</p>
+					<Code code={`${APPLICATION_ID}\n${SIGNING.androidCert}`} lang="txt" frame="none" wrap />
+					<p>
+						<a href="https://github.com/soupslurpr/AppVerifier">AppVerifier</a> {t('site.verify.android.phone')}{' '}
+						{t('site.verify.android.computer')}
+					</p>
+					<Code code={`apksigner verify --print-certs ${name}`} lang="sh" frame="none" wrap />
+				</>
+			) : (
+				<>
+					<p>{t('site.verify.mac.signed')}</p>
+					<Code code={`spctl -a -vv /Applications/Sukrara.app`} lang="sh" frame="none" wrap />
+					<p>{t('site.verify.mac.answer')}</p>
+					<Code code={`source=Notarized Developer ID\norigin=${SIGNING.macIdentity}`} lang="txt" frame="none" wrap />
+					<p>{t('site.verify.mac.updates')}</p>
+				</>
+			)
+		}
+		{
+			file?.sha256 && (
+				<>
+					<p>{t('site.verify.hash')}</p>
+					<Code code={file.sha256} lang="txt" frame="none" wrap />
+					<p>{t('site.verify.hashCheck')}</p>
+					<Code code={`shasum -a 256 ${name}\n# Windows: certutil -hashfile ${name} SHA256`} lang="sh" frame="none" wrap />
+					{app === 'mac' && <p>{t('site.verify.homebrew')}</p>}
+				</>
+			)
+		}
+		{
+			release.immutable && release.tag && (
+				<>
+					<p>{t('site.verify.attested')}</p>
+					<Code code={`gh release verify-asset ${release.tag} ${name} -R ${REPO}`} lang="sh" frame="none" wrap />
+				</>
+			)
+		}
+		<p class="sk-download__links">
+			<a href={release.page}>{t('site.verify.github', { file: name })}</a>
+			<span aria-hidden="true">·</span>
+			<a href={release.tag ? `${GITHUB}/tree/${release.tag}` : GITHUB}>{t('site.verify.source')}</a>
+		</p>
+	</details>
 </div>
 
 <style>
@@ -70,7 +133,7 @@ const meta =
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
-		max-width: 30rem;
+		max-width: 32rem;
 	}
 	.sk-download__button {
 		display: flex;
@@ -81,9 +144,7 @@ const meta =
 		background: var(--sl-color-accent);
 		text-decoration: none;
 		box-shadow: var(--sk-glow);
-		transition:
-			transform 0.15s ease,
-			box-shadow 0.15s ease;
+		transition: transform 0.15s ease;
 	}
 	.sk-download__button:hover {
 		transform: translateY(-2px);
@@ -106,14 +167,11 @@ const meta =
 		font-size: var(--sl-text-sm);
 		opacity: 0.9;
 	}
-	.sk-download__links,
-	.sk-download__alt,
-	.sk-download__store {
+	.sk-download__links {
 		margin: 0;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem 1rem;
-		align-items: center;
 		font-size: var(--sl-text-sm);
 		color: var(--sl-color-gray-3);
 	}
@@ -126,15 +184,72 @@ const meta =
 	:root[data-theme='light'] .sk-download a.sk-download__button {
 		color: #fff;
 	}
+	.sk-download__others {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.75rem 1rem;
+	}
+	.sk-download__store {
+		display: inline-flex;
+		line-height: 0;
+		transition: transform 0.15s ease;
+	}
+	.sk-download__store:hover {
+		transform: translateY(-2px);
+	}
+	.sk-download__store img {
+		height: 40px;
+		width: auto;
+	}
+	/* Google's badge carries its own transparent margin: drawn larger so the badge itself is 40 px high. */
+	.sk-download__store.is-play img {
+		height: 62px;
+		margin: -11px -10px;
+	}
 	.sk-download__chip {
 		display: inline-flex;
-		padding: 0.4rem 0.9rem;
+		align-items: center;
+		gap: 0.5rem;
+		height: 40px;
+		padding: 0 1rem 0 0.75rem;
 		border: 1px solid var(--sl-color-gray-5);
 		border-radius: 999px;
 		font-weight: 600;
+		font-size: var(--sl-text-sm);
 		text-decoration: none;
 	}
 	.sk-download__chip:hover {
 		border-color: var(--sl-color-accent);
+	}
+	.sk-download__small {
+		font-size: var(--sl-text-sm);
+	}
+	.sk-verify {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sk-verify summary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		cursor: pointer;
+		color: var(--sl-color-text-accent);
+		font-weight: 600;
+	}
+	.sk-verify[open] {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		padding: 1rem;
+		border-radius: var(--sk-radius);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+	}
+	.sk-verify p {
+		margin: 0;
+	}
+	.sk-verify :global(.expressive-code) {
+		margin: 0;
 	}
 </style>

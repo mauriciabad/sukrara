@@ -23,8 +23,9 @@ npm run check     # what CI checks on dist/ (below); `node scripts/check.mjs --e
 | `src/content/i18n/{en,es}.json` | The components' words (`site.*`): every English key must exist in Spanish, or the build fails |
 | `src/components/` | `Download` (newest release + Obtainium / Homebrew + store state), `Screenshot` / `Gallery`, `Invite` (`/join`), `SoundBoard`, `landing/*` (home page), `overrides/*` (Starlight's hero, header links, banner, footer) |
 | `src/lib/screens.ts` | Every app picture by name, with its alt text in both languages (below) |
-| `src/lib/release.ts` | The newest GitHub release, looked up at build time: the download buttons link its APK / dmg and show its version |
-| `src/site.ts` | Domain (from `assets/brand/sukrara/brand.json`), repository, **store states** (`STORES`: Google Play `review`, Mac App Store `planned`; a store going live is its `status: 'live'` and `url`) |
+| `src/lib/release.ts` | The newest GitHub release, looked up at build time: the download buttons download its APK / dmg directly and show its version, size and the SHA-256 GitHub recorded (the deploy fails without it: `SUKRARA_RELEASE=required`) |
+| `src/site.ts` | Domain (from `assets/brand/sukrara/brand.json`), repository, the store listings, what a download is checked against (the APK certificate from `tools/release/android-cert.sha256`, the Mac's Developer ID) |
+| `src/assets/badges/` | The stores' official badges (Google Play: Google's PNGs, en / es; Mac App Store: Apple's SVGs, black / white, en / es) and Obtainium's icon (GPL-3.0, its repository). Unmodified, as their guidelines ask; the trademark lines are in the footer |
 | `src/styles/theme.css` | The brand on Starlight: the icon's cyan-to-navy gradient, navy greys, the lime "now" dot; Nunito (self-hosted) for headings |
 | `src/pages/og/` | Each page's link preview (`/og/<page>.png`), rendered at build time; `src/route-data.ts` sets `og:image` |
 | `public/` | Served as is: `appcast.xml` (the Mac update feed, written by `tools/release/mac-release.sh`), `.well-known/` (App Links, universal links), `sounds/` (the alert sounds as m4a), `robots.txt` |
@@ -73,5 +74,13 @@ change to `website/`, `docs/`, `assets/`, `contracts/` or `apps/`; the deploy ru
 
 ## Privacy
 
-The site loads nothing from another host: fonts, search (Pagefind) and pictures are its own; no analytics, no
+The site loads nothing from another host: fonts, search (Pagefind), pictures and badges are its own; no analytics, no
 cookies. The download buttons link GitHub. The privacy policy says so (*This website*): keep it true.
+
+## Trust
+
+Under each download, *Check it's the real Sukrara*: the APK's signing certificate in AppVerifier's format (the same for
+the GitHub and the Google Play version; Android refuses an update with another one) and the `apksigner` command, or the
+Mac's Developer ID and notarization with the `spctl` command; the file's SHA-256 as GitHub recorded it on upload, with
+the commands to compare; `gh release verify-asset` (releases are immutable since 2026-11-15, so GitHub keeps a signed
+record of each release's files); the same file on GitHub and the source at its tag.

@@ -854,8 +854,11 @@ reading a crash trace in an issue can use it (`retrace` from the Android SDK's c
 mapping.txt trace.txt`); it isn't secret (the source is public under the GPL). About lists no download (*Sukrara on
 other devices* opens the website, #179). The Android GitHub version's updater (#188) takes only the asset named exactly
 `Sukrara-<version>.apk` of a release, and only with the SHA-256 GitHub lists for it (the asset's `digest`, which GitHub
-computes on upload): keep that name, and never replace an asset by hand after publishing without expecting installs
-to refuse it until the digest matches. Play builds need no
+computes on upload): keep that name. **Releases are immutable** since 2026-11-15 (Settings › General › Releases, the
+owner's OK): once published, a release's assets and tag can't change, and GitHub keeps a signed record of them, which
+`gh release verify-asset v<version> <file> -R mauriciabad/sukrara` checks a download against (the website's *Check
+it's the real Sukrara* shows the command; `gh release create` with the files uploads them to a draft first, so the
+one-command release is unaffected). A wrong asset needs a new version. Play builds need no
 separate mapping: they are app bundles with the mapping inside (`BUNDLE-METADATA`), which Play reads to deobfuscate
 crash reports (the API's `deobfuscationfiles` upload is only for APKs). Every release is a normal one and becomes *Latest* (since
 2026-11-12; v0.12.0 … v0.14.5 were switched from prereleases then); it bumps the Homebrew cask (`homebrew-tap.yml` on

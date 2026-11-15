@@ -6,8 +6,10 @@
  * name its version, with no version written anywhere in the site. .github/workflows/website.yml builds again when a
  * release is published, so the buttons follow every release.
  *
- * Without the API (offline, rate limit) the buttons still work: they open the newest release's page, without a version.
- * SUKRARA_RELEASE=offline skips the lookup (the link checker's CI build does, so a pull request never depends on it).
+ * SUKRARA_RELEASE=required (the deploy) fails the build when the lookup fails or the release lacks the APK or the dmg,
+ * so a published button always downloads the file. Otherwise (a local build, offline) the buttons fall back to the
+ * newest release's page, without a version; SUKRARA_RELEASE=offline skips the lookup (CI's check build, so a pull
+ * request never depends on the API).
  */
 import { REPO, RELEASES } from '../site';
 
@@ -16,6 +18,8 @@ export interface Asset {
 	/** Bytes. */
 	size: number;
 	name: string;
+	/** The SHA-256 GitHub recorded when the file was uploaded (hex), if it did. */
+	sha256?: string;
 }
 
 export interface Release {
@@ -24,6 +28,10 @@ export interface Release {
 	date?: Date;
 	/** The release's page on GitHub (its notes). */
 	page: string;
+	/** `v0.14.5` */
+	tag?: string;
+	/** An immutable release: its files can't change, and `gh release verify-asset` checks one against it. */
+	immutable?: boolean;
 	apk?: Asset;
 	dmg?: Asset;
 }
@@ -39,7 +47,8 @@ export function latestRelease(): Promise<Release> {
 }
 
 async function lookUp(): Promise<Release> {
-	if (process.env.SUKRARA_RELEASE === 'offline') return FALLBACK;
+	const mode = process.env.SUKRARA_RELEASE;
+	if (mode === 'offline') return FALLBACK;
 	const headers: Record<string, string> = { Accept: 'application/vnd.github+json', 'User-Agent': 'sukrara-website' };
 	if (process.env.GITHUB_TOKEN) headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
 	try {
@@ -52,20 +61,27 @@ async function lookUp(): Promise<Release> {
 			tag_name: string;
 			html_url: string;
 			published_at: string;
-			assets: { name: string; size: number; browser_download_url: string }[];
+			immutable?: boolean;
+			assets: { name: string; size: number; browser_download_url: string; digest?: string | null }[];
 		};
 		const asset = (pattern: RegExp): Asset | undefined => {
 			const a = json.assets.find((a) => pattern.test(a.name));
-			return a && { url: a.browser_download_url, size: a.size, name: a.name };
+			const sha256 = a?.digest?.startsWith('sha256:') ? a.digest.slice(7) : undefined;
+			return a && { url: a.browser_download_url, size: a.size, name: a.name, sha256 };
 		};
-		return {
+		const release: Release = {
 			version: json.tag_name.replace(/^v/, ''),
+			tag: json.tag_name,
 			date: new Date(json.published_at),
 			page: json.html_url,
+			immutable: json.immutable === true,
 			apk: asset(/^Sukrara-[\d.]+\.apk$/),
 			dmg: asset(/^Sukrara-[\d.]+\.dmg$/),
 		};
+		if (!release.apk || !release.dmg) throw new Error(`${json.tag_name} has no APK or no dmg`);
+		return release;
 	} catch (error) {
+		if (mode === 'required') throw new Error(`[release] the newest release is required here: ${error}`);
 		console.warn(`[release] the newest release couldn't be looked up (${error}); the buttons open ${FALLBACK.page}`);
 		return FALLBACK;
 	}

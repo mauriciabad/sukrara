@@ -2,32 +2,27 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * The site's facts in one place: the domain (from the brand), the repository, and where each app is published.
- * A store going live is one line here: its `status` becomes 'live' and its `url` the listing.
+ * The site's facts in one place: the domain (from the brand), the repository, the stores, and what a download can be
+ * checked against.
  */
 import brand from '../../assets/brand/sukrara/brand.json' with { type: 'json' };
+import androidCert from '../../tools/release/android-cert.sha256?raw';
 
 /** https://sukrara.mauri.app: the brand's own URL, the one the apps open (assets/brand/sukrara/brand.json). */
 export const SITE = brand.url;
 export const BRAND = brand.brand;
+export const APPLICATION_ID = brand.applicationId;
 export const REPO = 'mauriciabad/sukrara';
 export const GITHUB = `https://github.com/${REPO}`;
 export const RELEASES = `${GITHUB}/releases`;
 export const ISSUES = `${GITHUB}/issues`;
 
-/**
- * Where each app is published. `status`: 'live' (show it, link it), 'review' (submitted, waiting for the store) or
- * 'planned'. Only 'live' stores get a badge; the others are named as coming, never linked.
- */
+/** The store listings, in the page's language. */
 export const STORES = {
-	/** Google Play: #142, in production review since 2026-11-13 (docs/20-publishing.md). */
-	play: {
-		status: 'review',
-		url: `https://play.google.com/store/apps/details?id=${brand.applicationId}`,
-	},
-	/** Mac App Store: TestFlight first (docs/20-publishing.md › Mac App Store). */
-	appStore: { status: 'planned', url: '' },
-} as const satisfies Record<string, { status: 'live' | 'review' | 'planned'; url: string }>;
+	play: (lang: string) => `https://play.google.com/store/apps/details?id=${brand.applicationId}&hl=${lang}`,
+	/** App Store Connect app id 6833533014 (docs/20-publishing.md › Mac App Store). */
+	appStore: (lang: string) => `https://apps.apple.com/${lang === 'es' ? 'es' : 'us'}/app/sukrara/id6833533014?mt=12`,
+};
 
 /** Obtainium adds the GitHub releases and checks each APK is signed with Sukrara's key (docs/20-publishing.md). */
 export const OBTAINIUM = {
@@ -37,3 +32,13 @@ export const OBTAINIUM = {
 
 /** The Homebrew cask (mauriciabad/homebrew-tap, updated by .github/workflows/homebrew-tap.yml). */
 export const HOMEBREW = 'brew install --cask mauriciabad/tap/sukrara';
+
+/**
+ * What a download can be checked against. Android: the SHA-256 of the certificate every Sukrara APK is signed with (the
+ * GitHub and the Google Play version alike; tools/release/android-cert.sha256, also in the App Links file), as
+ * AA:BB:… Mac: the Developer ID the app is signed with and notarized under.
+ */
+export const SIGNING = {
+	androidCert: androidCert.trim().match(/../g)!.join(':'),
+	macIdentity: 'Developer ID Application: Maurici Abad Gutierrez (QWUV9H4A3G)',
+};
