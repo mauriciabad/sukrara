@@ -419,18 +419,18 @@
         }
       }
     },
-    "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”." : {
+    "Alert me, also when muted here, if nobody answers it on their phone: “Very low · no response”." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”."
+            "value" : "Alert me, also when muted here, if nobody answers it on their phone: “Very low · no response”."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Avisarme, también si he silenciado aquí, si nadie la responde en su teléfono: «Glucosa muy baja · sin respuesta»."
+            "value" : "Avisarme, también si he silenciado aquí, si nadie la responde en su teléfono: «Muy baja · sin respuesta»."
           }
         }
       }
@@ -7349,34 +7349,34 @@
         }
       }
     },
-    "%@ alerts: Change time" : {
+    "%@: Change time" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ alerts: Change time"
+            "value" : "%@: Change time"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas %@: cambiar duración"
+            "value" : "%@: cambiar duración"
           }
         }
       }
     },
-    "%@ alerts: Mute" : {
+    "%@: Mute" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ alerts: Mute"
+            "value" : "%@: Mute"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alertas %@: silenciar"
+            "value" : "%@: silenciar"
           }
         }
       }

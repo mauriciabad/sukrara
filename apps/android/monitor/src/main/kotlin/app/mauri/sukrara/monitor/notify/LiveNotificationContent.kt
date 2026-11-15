@@ -24,12 +24,16 @@ data class UiText(
 
 /**
  * The status-bar settings and what Android allows, as the glucose notification needs them: [chip] = Settings › Status
- * bar › *Live Update chip*; [promotionAllowed] = Android lets the app post Live Updates now; [numberIcon] = *Number
- * icon* (the small icon is the value while there's no chip); [cardKey] = everything the custom card draws besides
- * the hub state (treatments, graph settings, theme, the minute), so equal contents mean the same card.
+ * bar › *Glucose notification* (the chip, else the card with the graph); [promotionAllowed] = Android lets the app
+ * post Live Updates now; [rootValue] = the root value is in the status bar (the card then, automatically: the bar
+ * already shows the value); [numberIcon] = *Number icon* (the small icon is the value while there's no chip);
+ * [colorize] = the card in the range colour; [cardKey] = everything the custom card draws besides the hub state
+ * (treatments, graph settings, theme, the minute), so equal contents mean the same card.
  */
 data class NotificationPrefs(
     val chip: Boolean = true,
+    val rootValue: Boolean = false,
+    val colorize: Boolean = false,
     val promotionAllowed: Boolean = false,
     val numberIcon: Boolean = true,
     val cardKey: Any? = null,
@@ -89,6 +93,13 @@ data class LiveNotificationContent(
     val sharing: SharingLine? = null,
     /** [NotificationPrefs.lockScreen]: public on the lock screen, else private with a public "Monitoring". */
     val lockScreen: Boolean = true,
+    /**
+     * The value's range in words for the Live Update's title on Android 17 (*In range*, *Low*, *High*…: the big value
+     * is the metric's), null without a value.
+     */
+    val rangeWords: UiText? = null,
+    /** [NotificationPrefs.colorize]: the card in the range colour, else the system's notification colour. */
+    val colorize: Boolean = false,
 ) {
     /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value itself; the others are the states' icons. */
     enum class Icon { TREND, NO_TREND, NUMBER, NO_READINGS, SENSOR_ENDED, APP }
@@ -105,8 +116,14 @@ data class LiveNotificationContent(
     }
 
     sealed interface Target {
-        /** The quick "Add treatment" dialog; Carbs focused while a low is going on. */
-        data class QuickTreatment(val focusCarbs: Boolean) : Target
+        /**
+         * The quick "Add treatment" dialog; Carbs focused while a low is going on. [alertKind]: the alert the glucose
+         * notification carries, so opening it answers that alert (#39).
+         */
+        data class QuickTreatment(
+            val focusCarbs: Boolean,
+            val alertKind: String? = null,
+        ) : Target
 
         data object OpenApp : Target
 
@@ -116,8 +133,7 @@ data class LiveNotificationContent(
     data class Action(val label: UiText, val target: Target)
 
     companion object {
-        private val LOW_KINDS = setOf("low", "very_low")
-        private val OPEN_APP = Action(UiText(R.string.monitor_action_open_app), Target.OpenApp)
+        private val LOW_KINDS = setOf("low", "very_low", "falling_fast")
         private val REPLACE_SENSOR = Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup)
 
         /**
@@ -174,7 +190,7 @@ data class LiveNotificationContent(
                     if (state.notMonitoring != null) {
                         notMonitoring(state)
                     } else {
-                        plain(UiText(R.string.monitor_notif_waiting), detail, Icon.APP, quickTreatment(state), listOf(OPEN_APP))
+                        plain(UiText(R.string.monitor_notif_waiting), detail, Icon.APP, quickTreatment(state))
                     }
                 }
 
@@ -188,7 +204,7 @@ data class LiveNotificationContent(
                         icon = Icon.NO_READINGS,
                         readingAt = at,
                         tap = quickTreatment(state),
-                        actions = listOf(OPEN_APP),
+                        actions = emptyList(),
                     )
                 }
 
@@ -199,10 +215,12 @@ data class LiveNotificationContent(
         }
 
         /**
-         * A value: a Live Update when the chip is wanted and allowed, else the colorized card. The chip's arrow is its
-         * icon (the renderer's), never a text arrow too: two arrows could disagree. It can't strike text through: from
-         * 5 min it shows the reading's time (with the ring icon) instead of a bare number that would read as current.
-         * Without the chip the small icon is the number itself when *Number icon* is on.
+         * A value: a Live Update when the chip is wanted and allowed and the root value isn't in the bar, else the card
+         * with the graph. The chip's arrow is its icon (the renderer's), never a text arrow too: two arrows could
+         * disagree. It can't strike text through: from 5 min it shows the reading's time (with the ring icon) instead
+         * of a bare number that would read as current. Without the chip the small icon is the number itself when
+         * *Number icon* is on. No unit anywhere (the owner, 2026-11-14: "they're obvious"); no *Open Sukrara* (the tap
+         * opens Add treatment).
          */
         private fun value(
             state: GlucoseState,
@@ -211,7 +229,7 @@ data class LiveNotificationContent(
             prefs: NotificationPrefs,
         ): LiveNotificationContent {
             val reading = state.latest!!
-            val live = prefs.chip && prefs.promotionAllowed
+            val live = prefs.chip && prefs.promotionAllowed && !prefs.rootValue
             val chip =
                 when {
                     !live -> null
@@ -224,15 +242,12 @@ data class LiveNotificationContent(
                     look.trend == TrendMark.ARROW -> Icon.TREND
                     else -> Icon.NO_TREND
                 }
+            val range = RangeState.shown(look, reading.mgdl, prefs.bands, null)
             return LiveNotificationContent(
-                // the range in words too, never by colour alone (#26): "64 mg/dL ↘ · Low", "3,6 mmol/L ↘ · Baja"
+                // the range in words too, never by colour alone (#26): "64 ↘ · Low", "3,6 ↘ · Baja"
                 title =
-                    RangeState.shown(look, reading.mgdl, prefs.bands, null)?.let {
-                        UiText(
-                            R.string.monitor_notif_value_range,
-                            listOf(look.text!!, prefs.unit.symbol, look.arrowText!!, UiText(it.words)),
-                        )
-                    } ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, prefs.unit.symbol, look.arrowText!!)),
+                    range?.let { UiText(R.string.monitor_notif_value_range, listOf(look.text!!, look.arrowText!!, UiText(it.words))) }
+                        ?: UiText(R.string.monitor_notif_value, listOf(look.text!!, look.arrowText!!)),
                 // a sensor past its end whose readings keep arriving (#3): the value, and under it that it has ended
                 text =
                     when {
@@ -247,21 +262,20 @@ data class LiveNotificationContent(
                 trendBand = look.band.takeIf { look.trend == TrendMark.ARROW },
                 readingAt = if (look.fresh.showTime) reading.t else null,
                 tap = quickTreatment(state),
-                actions = if (look.ended && state.role == Role.Wearer) listOf(OPEN_APP, REPLACE_SENSOR) else listOf(OPEN_APP),
+                actions = if (look.ended && state.role == Role.Wearer) listOf(REPLACE_SENSOR) else emptyList(),
                 layout = if (live) Layout.LIVE_UPDATE else Layout.CARD,
                 look = look,
                 mgdl = reading.mgdl,
                 cardKey = if (live) null else prefs.cardKey,
+                rangeWords = UiText(range?.words ?: R.string.monitor_range_in_range),
+                colorize = prefs.colorize,
             )
         }
 
+        /** Not monitoring: the wearer's *Set up sensor*; a follower's tap opens the app (no button repeating it). */
         private fun notMonitoring(state: GlucoseState): LiveNotificationContent {
-            val setUp =
-                if (state.role == Role.Follower) {
-                    Action(UiText(R.string.monitor_action_open_app), Target.OpenApp)
-                } else {
-                    Action(UiText(R.string.monitor_action_set_up_sensor), Target.SensorSetup)
-                }
+            if (state.role == Role.Follower) return plain(UiText(R.string.monitor_notif_not_monitoring), null, Icon.APP, Target.OpenApp)
+            val setUp = Action(UiText(R.string.monitor_action_set_up_sensor), Target.SensorSetup)
             return plain(UiText(R.string.monitor_notif_not_monitoring), null, Icon.APP, setUp.target, listOf(setUp))
         }
 

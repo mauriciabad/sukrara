@@ -176,8 +176,8 @@ class MuteCopyTest {
 
         fun side(s: Side) =
             when (s) {
-                Side.LOW -> "Low"
-                Side.HIGH -> "High"
+                Side.LOW -> "Lows"
+                Side.HIGH -> "Highs"
                 Side.FALLING_FAST -> "Falling fast"
                 Side.RISING_FAST -> "Rising fast"
                 Side.NO_DATA -> "No data"
@@ -186,25 +186,25 @@ class MuteCopyTest {
         fun word(l: MuteLine, clock: String?): String =
             when (l) {
                 is MuteLine.SideMuted -> {
-                    "${side(l.side)} alerts muted" + (l.leftMin?.let { " · ${text(it)} left" } ?: "")
+                    "${side(l.side)} muted" + (l.leftMin?.let { " · ${text(it)} left" } ?: "")
                 }
 
                 is MuteLine.SideAfter -> {
                     "${side(
                         l.side,
-                    )} alerts muted after ${if (l.treatment == TreatmentKind.CARBS) "carbs" else "insulin"} · ${text(l.leftMin)} left"
+                    )} muted after ${if (l.treatment == TreatmentKind.CARBS) "carbs" else "insulin"} · ${text(l.leftMin)} left"
                 }
 
                 is MuteLine.SideFalling -> {
-                    "${side(l.side)} alerts muted while falling back into range"
+                    "${side(l.side)} muted while falling back into range"
                 }
 
                 is MuteLine.SideRising -> {
-                    "${side(l.side)} alerts muted while rising back into range"
+                    "${side(l.side)} muted while rising back into range"
                 }
 
                 is MuteLine.SideLess -> {
-                    "${side(l.side)} reminders every ${text(l.intervalMin.toLong())}"
+                    "${side(l.side)}: remind every ${text(l.intervalMin.toLong())}"
                 }
 
                 is MuteLine.AllTimed -> {

@@ -207,7 +207,7 @@ class HomeGallery {
                 HomeContent(ui(Samples.wearer().copy(alerts = quietAlerts)), HomeCallbacks(onAlert = { asked += it }))
             }
         }
-        compose.onNodeWithText("Low alerts muted · 25 min left").performClick()
+        compose.onNodeWithText("Lows muted · 25 min left").performClick()
         compose.waitForIdle()
         compose.onNodeWithTag("quiet-sheet").assertExists()
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/home-quiet-sheet-light-font1x.png")

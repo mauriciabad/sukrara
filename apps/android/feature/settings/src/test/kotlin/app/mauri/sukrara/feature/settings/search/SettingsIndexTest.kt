@@ -29,6 +29,7 @@ import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
@@ -107,11 +108,9 @@ import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarState
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndPrefs
-import app.mauri.sukrara.feature.settings.statusbar.RootActions
-import app.mauri.sukrara.feature.settings.statusbar.RootSettings
-import app.mauri.sukrara.feature.settings.statusbar.RootStatusBarSection
+import app.mauri.sukrara.feature.settings.statusbar.NotificationPageActions
+import app.mauri.sukrara.feature.settings.statusbar.NotificationPagePrefs
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
-import app.mauri.sukrara.feature.settings.statusbar.StatusBarPrefs
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.MarkShow
@@ -332,18 +331,38 @@ class SettingsIndexTest {
                 val ui by pensViewModel.ui.collectAsState()
                 ui?.let { PenDetectionContent(it, pensViewModel, {}) }
             },
-            Scene("status bar", SearchTarget.Page(SettingsRoute.StatusBar)) {
-                StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) {
-                    RootStatusBarSection(
-                        RootSettings(on = true, position = HookPosition.DEFAULT, color = true, hideIcon = true),
-                        SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed"),
-                        busy = false,
-                        problem = null,
-                        choosing = false,
-                        onChoosing = {},
-                        actions = RootActions({}, {}, {}, {}, {}, {}, {}),
-                    )
-                }
+            Scene("glucose notification, chip", SearchTarget.Page(SettingsRoute.StatusBar)) {
+                StatusBarContent(
+                    notificationPrefs(NotificationStyle.Chip),
+                    true,
+                    true,
+                    rootActive,
+                    false,
+                    null,
+                    NotificationPageActions(),
+                ) {}
+            },
+            Scene("glucose notification, icon", SearchTarget.Page(SettingsRoute.StatusBar)) {
+                StatusBarContent(
+                    notificationPrefs(NotificationStyle.Icon),
+                    true,
+                    true,
+                    rootActive,
+                    false,
+                    null,
+                    NotificationPageActions(),
+                ) {}
+            },
+            Scene("glucose notification, root", SearchTarget.Page(SettingsRoute.StatusBar)) {
+                StatusBarContent(
+                    notificationPrefs(NotificationStyle.Root),
+                    true,
+                    true,
+                    rootActive,
+                    false,
+                    null,
+                    NotificationPageActions(),
+                ) {}
             },
             Scene("sensor end", SearchTarget.Page(SettingsRoute.SensorEnd)) {
                 SensorEndContent(
@@ -612,3 +631,10 @@ class SettingsIndexTest {
         assertTrue("results that don't flash their row:\n" + missed.joinToString("\n"), missed.isEmpty())
     }
 }
+
+/** The glucose notification page's prefs with [style] chosen. */
+private fun notificationPrefs(style: NotificationStyle) =
+    NotificationPagePrefs(style, numberIcon = true, lockScreen = true, colorize = false, position = HookPosition.DEFAULT, rootColor = true)
+
+/** Root and the module working. */
+private val rootActive = SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed")

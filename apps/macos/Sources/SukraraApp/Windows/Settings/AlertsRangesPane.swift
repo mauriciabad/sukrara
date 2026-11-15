@@ -60,7 +60,7 @@ struct AlertsRangesPane: View {
             } footer: {
                 Text(
                     L10n.t(
-                        "Alert me, also when muted here, if nobody answers it on their phone: “Very low glucose · no response”."
+                        "Alert me, also when muted here, if nobody answers it on their phone: “Very low · no response”."
                     )
                 )
                 .formFooter()

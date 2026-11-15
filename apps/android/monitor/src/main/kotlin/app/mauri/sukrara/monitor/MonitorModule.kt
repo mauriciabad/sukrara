@@ -89,7 +89,7 @@ class MonitorModule(
     val storedHistory: Flow<List<Reading>> =
         glucoseHistory.stored.shareIn(scope, SharingStarted.WhileSubscribed(HISTORY_STOP_MS), replay = 1)
 
-    val notification = LiveNotification(context)
+    val notification = LiveNotification(context, { hubImpl.state.value })
 
     private val alarms = AndroidAlarms(context)
 
@@ -129,7 +129,11 @@ class MonitorModule(
             sharing.catch { emit(null) },
         ) { chip, icon, list, config, line -> NotificationInputs(chip, icon, list, config, line) }
             .combine(settings.flow(SurfaceSettings.LockScreen)) { inputs, lock -> inputs.copy(lockScreen = lock) }
-            .combine(storedHistory.onStart { emit(emptyList()) }) { inputs, stored -> inputs.copy(stored = stored) }
+            .combine(settings.flow(SurfaceSettings.Colorize)) { inputs, on -> inputs.copy(colorize = on) }
+            // the root value in the bar: the card, automatically (only in a build with root features)
+            .combine(if (rootFeatures == null) flowOf(false) else settings.flow(SurfaceSettings.RootValue)) { inputs, on ->
+                inputs.copy(rootValue = on)
+            }.combine(storedHistory.onStart { emit(emptyList()) }) { inputs, stored -> inputs.copy(stored = stored) }
             .distinctUntilChanged()
             // a failing store must never stop the foreground notification: it goes on with the defaults
             .catch {
@@ -231,6 +235,10 @@ data class NotificationInputs(
     val stored: List<Reading> = emptyList(),
     /** The value shows on the lock screen ([SurfaceSettings.LockScreen]). */
     val lockScreen: Boolean = true,
+    /** The card in the range colour ([SurfaceSettings.Colorize]). */
+    val colorize: Boolean = false,
+    /** The root value is in the status bar ([SurfaceSettings.RootValue]): the card, never the chip. */
+    val rootValue: Boolean = false,
 )
 
 /** The `Application` gives the monitor's Android components (service, receivers) their module. */

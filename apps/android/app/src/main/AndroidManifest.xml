@@ -72,6 +72,23 @@
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.NoDisplay" />
+        <!-- An alert's lengths over the lock screen (NavTargets.ACTION_MUTE_ALERT): Mute of the glucose notification
+             while it is a Live Update, which drops the direct reply (docs/36). Opened only by Sukrara's own
+             notification (not exported). -->
+        <activity
+            android:name=".MuteAlertActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Sukrara.Window.Overlay">
+            <intent-filter>
+                <action android:name="app.mauri.sukrara.action.MUTE_ALERT" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
         <!-- Health Connect grants health permissions only to apps that show their privacy rationale -->
         <activity-alias
             android:name=".HealthPermissionsRationale"

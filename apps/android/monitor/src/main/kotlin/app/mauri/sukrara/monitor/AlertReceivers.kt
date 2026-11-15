@@ -8,6 +8,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertLimits
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.monitor.alerts.AlertsModule
@@ -37,9 +38,9 @@ internal val Context.alertsModuleNow: AlertsModule?
 private const val TAG = "Sukrara.alerts"
 
 /**
- * The alert notification's buttons (non-exported; immutable PendingIntents except the direct reply's): *Mute…* /
- * *Change time* (a chip like "1 h" or a typed length), *Remind less*, *Remind as usual*, *Unmute*, and the swipe's
- * tidy-up. They work from the lock screen without opening the app. A reply that isn't a length in range changes
+ * The alert's buttons (non-exported; immutable PendingIntents except the direct reply's): *Mute* (a chip like "1h" or
+ * a typed length), *Remind less*, *Remind as usual*, *Unmute*, and the swipe's tidy-up (of the glucose notification
+ * carrying the alert, or of a separate alert). They work from the lock screen without opening the app. A reply that isn't a length in range changes
  * nothing and shows the notification again, which also takes the reply's spinner away.
  */
 class AlertActionReceiver : BroadcastReceiver() {
@@ -68,11 +69,15 @@ class AlertActionReceiver : BroadcastReceiver() {
                 }
 
                 TIDY -> {
-                    // a swipe is an answer on this phone (#39) and keeps the alert away until its next ring (#195),
-                    // then the group's tidy-up
+                    // a swipe is an answer on this phone (#39) and keeps the alert away until its next ring (#195);
+                    // the glucose notification that carried it comes back at once without it (silently), a separate
+                    // alert's group is tidied up
+                    val firing = intent.getStringExtra(FIRING)
                     runtime.acknowledge(kind)
-                    runtime.dismissed(kind, intent.getStringExtra(FIRING))
-                    NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
+                    runtime.dismissed(kind, firing)
+                    if (!intent.getBooleanExtra(GLUCOSE, false)) NotificationGroups.tidy(context, NotificationGroups.Group.ALERTS)
+                    // seen: the glucose notification drops it too (a full-screen ring's own notification swiped)
+                    AlertKind.fromWire(kind)?.let { module.presenter.swiped(it, firing) }
                 }
             }
         }
@@ -89,6 +94,9 @@ class AlertActionReceiver : BroadcastReceiver() {
 
         /** The swiped notification's firing (its delete intent's own): a swipe of an older one changes nothing. */
         const val FIRING = "firing"
+
+        /** The swiped notification was the glucose notification carrying the alert (docs/36), not a separate alert. */
+        const val GLUCOSE = "glucose"
         const val TYPED = "minutes"
     }
 }

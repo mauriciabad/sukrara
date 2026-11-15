@@ -43,9 +43,9 @@ import Testing
             Issue.record("restore must end with a schedule")
             return
         }
-        #expect(highs(&after, 16, start: 4) == ["15 High glucose"])
+        #expect(highs(&after, 16, start: 4) == ["15 High"])
         var fresh = AlertEngine(context: AlertContext())
-        #expect(highs(&fresh, 1, start: 4) == ["4 High glucose"])
+        #expect(highs(&fresh, 1, start: 4) == ["4 High"])
     }
 
     @Test func episodesThatEndedWhileDownAreDropped() {
@@ -60,7 +60,7 @@ import Testing
         #expect(AlertEngine.Snapshot.decode(Data("garbage".utf8)) == nil)
         #expect(AlertEngine.Snapshot.decode(Data(#"{"v":2,"episodes":[],"snoozes":{"sides":{}}}"#.utf8)) == nil)
         var (e, _) = AlertEngine.restore(nil, context: AlertContext(), at: minute(0))
-        #expect(highs(&e, 1) == ["0 High glucose"])
+        #expect(highs(&e, 1) == ["0 High"])
     }
 
     @Test func untrustworthyMutesAreSanitized() throws {

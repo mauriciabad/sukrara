@@ -6,24 +6,35 @@ import SukraraAlerts
 import SukraraCore
 
 /// The event log's lines for what changed the alerts' state (the Android app's *Lately* history), worded like the app's
-/// own lines (`MuteCopy`: side names, `Durations`), so a person can see afterwards why something did or didn't ring.
+/// own lines (the history's side names, `Durations`), so a person can see afterwards why something did or didn't ring.
 /// Never a glucose value. The log stays in English.
 enum AlertLog {
+    /// The side as the history names it ("Low alerts muted for 30 min", Android's *Lately*).
+    private static func name(_ side: AlertSide) -> String {
+        switch side {
+        case .low: "Low"
+        case .high: "High"
+        case .fallingFast: "Falling fast"
+        case .risingFast: "Rising fast"
+        case .noData: "No data"
+        }
+    }
+
     /// "Low alerts muted for 30 min".
     static func muted(_ side: AlertSide, minutes: Int) -> String {
-        "\(MuteCopy.sideName(side, .en)) alerts muted for \(Durations.text(minutes))"
+        "\(name(side)) alerts muted for \(Durations.text(minutes))"
     }
 
     /// "Low alerts unmuted".
-    static func unmuted(_ side: AlertSide) -> String { "\(MuteCopy.sideName(side, .en)) alerts unmuted" }
+    static func unmuted(_ side: AlertSide) -> String { "\(name(side)) alerts unmuted" }
 
-    /// *Remind Less*: "Low reminders every 30 min" (`MuteCopy.sideLess`).
+    /// *Remind Less*: "Low reminders every 30 min".
     static func remindLess(_ side: AlertSide, intervalMin: Int) -> String {
-        MuteCopy.sideLess(side, intervalMin: intervalMin, .en)
+        "\(name(side)) reminders every \(Durations.text(intervalMin))"
     }
 
     /// "Low reminders as usual".
-    static func remindAsUsual(_ side: AlertSide) -> String { "\(MuteCopy.sideName(side, .en)) reminders as usual" }
+    static func remindAsUsual(_ side: AlertSide) -> String { "\(name(side)) reminders as usual" }
 
     /// Mute all: "All alerts muted for 2 h" / "All alerts muted until you turn it off".
     static func allMuted(until: Date, now: Date) -> String {
@@ -39,7 +50,7 @@ enum AlertLog {
     static let allBack = "Alerts back on"
 
     /// A side's Mute / Remind Less ended by the back-in-range margin: "Low back in range: alerts as usual".
-    static func back(_ side: AlertSide) -> String { "\(MuteCopy.sideName(side, .en)) back in range: alerts as usual" }
+    static func back(_ side: AlertSide) -> String { "\(name(side)) back in range: alerts as usual" }
 
     /// #6: this Mac watches someone else's readings now: its mutes and Mute all ended.
     static let freshState = "Watching other readings: mutes and Mute all ended"

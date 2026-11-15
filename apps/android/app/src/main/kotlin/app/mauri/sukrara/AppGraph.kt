@@ -324,6 +324,8 @@ class AppGraph(
             },
             // a low-side alert's *Log carbs* only where it opens the dialog (never before the unlock: the log is locked)
             canLogTreatments = { userUnlocked() && runCatching { treatments.canAdd() }.getOrDefault(false) },
+            // the glucose notification IS the alert while one is up (docs/36), unless *Separate alert notifications*
+            glucose = monitor.notification,
         )
     }
 
@@ -591,6 +593,8 @@ class AppGraph(
             updates = updateSuggestion?.setup(),
             // the optional insulin pens step (a phone with NFC)
             pens = SetupPens(pens.setupAnswer, pens::turnOnReading),
+            // the root step and the status bar text (builds with root features)
+            systemAccess = monitor.root?.access,
         )
     }
 

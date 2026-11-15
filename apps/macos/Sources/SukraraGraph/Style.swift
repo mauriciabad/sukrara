@@ -321,6 +321,12 @@ struct CardStyle {
     /// The unit every number of the card is written in (the user's setting): the value, the chart's range labels,
     /// the spoken sentence (contracts/settings/units.json).
     var unit: GlucoseUnit = .mgdl
+    /// The colour the card is drawn on when its surface paints it itself (Android's colourised glucose notification: its
+    /// range colour); nil = the palette's own surface. Every pill keeps its contrast there (`PillContrast`).
+    var ground: CGColor? = nil
+    /// The place around the card already says the value's range in words (a title that names the level alert): no
+    /// range word under the value (#26 is met there), the status pill stays.
+    var rangeSaid = false
     /// The language the card's words are drawn in (the pill, the slots' periods, the value's place); the chart's are
     /// `graph.words`, set together by `speaking`.
     var words: CardWords = .en

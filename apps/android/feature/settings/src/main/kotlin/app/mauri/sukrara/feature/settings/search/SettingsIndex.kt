@@ -504,6 +504,7 @@ object SettingsIndex {
                 R.string.st_sounds_title,
                 R.string.st_sound_pack to null,
                 R.string.st_shuffle to null,
+                R.string.st_alerts_separate to R.string.st_alerts_separate_on,
                 R.string.st_notification_settings to R.string.st_notification_settings_summary,
             )
             // the rarely touched rows: one named subpage at the end of Alerts (docs/35: no global advanced mode)
@@ -752,20 +753,31 @@ object SettingsIndex {
             rows(detection, null, R.string.st_pens_reset to null, pensOnly = true)
 
             val statusBar = SettingsRoute.StatusBar
+            // THE choice (docs/36 §11): each option by its name
             rows(
                 statusBar,
-                null,
-                R.string.st_statusbar_chip to R.string.st_statusbar_chip_summary,
-                R.string.st_statusbar_number_icon to R.string.st_statusbar_number_icon_summary,
+                DsR.string.ds_notif_style_heading,
+                DsR.string.ds_notif_style_chip to DsR.string.ds_notif_style_chip_summary,
+                DsR.string.ds_notif_style_icon to DsR.string.ds_notif_style_icon_summary,
+            )
+            rows(
+                statusBar,
+                DsR.string.ds_notif_style_heading,
+                DsR.string.ds_notif_style_root to DsR.string.ds_notif_style_root_summary,
+                needs = BuildFeature.Root,
+            )
+            rows(statusBar, null, R.string.st_statusbar_number_icon to R.string.st_statusbar_number_icon_summary)
+            rows(
+                statusBar,
+                R.string.st_statusbar_notification,
+                R.string.st_statusbar_colorize to R.string.st_statusbar_colorize_on,
                 R.string.st_statusbar_lock_screen to R.string.st_statusbar_lock_screen_on,
             )
             rows(
                 statusBar,
-                R.string.st_root_group,
-                R.string.st_root_value to null,
+                null,
                 R.string.st_root_colour to null,
                 R.string.st_root_placement to null,
-                R.string.st_root_hide_icon to R.string.st_root_hide_icon_summary,
                 needs = BuildFeature.Root,
             )
 

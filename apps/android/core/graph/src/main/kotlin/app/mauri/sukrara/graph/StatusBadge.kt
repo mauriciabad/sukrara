@@ -161,14 +161,25 @@ object StatusBadge {
         val text: Paint,
     )
 
+    /** The pill's colours on [ground] ([PillContrast]: null = the palette's own surface). */
+    internal fun colors(
+        look: Look,
+        dark: Boolean,
+        ground: Int?,
+    ): PillContrast.Colors {
+        val c = TreatmentMarks.color(TreatmentMarks.palette(dark), look.kind)
+        val bg = if (look.tonal) TreatmentMarks.tonalTint(c, dark) else c
+        val fg = if (look.tonal) TreatmentMarks.tonalInk(look.kind, dark) else TreatmentMarks.onColor(dark)
+        return PillContrast.of(bg, fg, ground ?: GraphPalette.of(dark).bg, boundary = !look.tonal)
+    }
+
     private fun paints(
         look: Look,
         h: Float,
         dark: Boolean,
+        ground: Int? = null,
     ): Paints {
-        val c = TreatmentMarks.color(TreatmentMarks.palette(dark), look.kind)
-        val bg = if (look.tonal) TreatmentMarks.tonalTint(c, dark) else c
-        val fg = if (look.tonal) TreatmentMarks.tonalInk(look.kind, dark) else TreatmentMarks.onColor(dark)
+        val (bg, fg) = colors(look, dark, ground)
         val text =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = fg
@@ -188,7 +199,8 @@ object StatusBadge {
 
     /**
      * Draw the pill [h] px tall at ([x], [y]), at most [maxW] wide: full words, short words, or only the icon in a
-     * circle. Returns the width used, 0 if not even the circle fits.
+     * circle. Returns the width used, 0 if not even the circle fits. [ground] = what it sits on ([CardStyle.ground];
+     * null = the palette's surface): [PillContrast] keeps it legible there.
      */
     internal fun draw(
         cv: Canvas,
@@ -198,8 +210,9 @@ object StatusBadge {
         maxW: Float,
         look: Look,
         dark: Boolean,
+        ground: Int? = null,
     ): Float {
-        val p = paints(look, h, dark)
+        val p = paints(look, h, dark, ground)
         val words =
             when {
                 width(look, h, dark) <= maxW -> look.text

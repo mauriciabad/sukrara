@@ -91,7 +91,8 @@ enum StatusBadge {
         ctx.saveGState(); ctx.addPath(p); ctx.setFillColor(color); ctx.fillPath(); ctx.restoreGState()
     }
 
-    static func colors(_ look: Look, dark: Bool, knockout: Bool) -> (bg: CGColor, fg: CGColor) {
+    /// The pill's colours; on `ground` (`CardStyle.ground`; nil = the palette's surface) `PillContrast` keeps it legible.
+    static func colors(_ look: Look, dark: Bool, knockout: Bool, ground: CGColor? = nil) -> (bg: CGColor, fg: CGColor) {
         // Tinted: white (full opacity in either tinted mode); needed = solid pill with the words cut out, taken = a
         // faint pill under solid words, so the two stay apart as in full colour.
         if knockout {
@@ -100,9 +101,13 @@ enum StatusBadge {
                 : (CGColor(gray: 1, alpha: 1), CGColor(gray: 0, alpha: 1))
         }
         let c = TreatmentMarks.color(look.kind, dark: dark)
-        return look.tonal
+        let (bg, fg) =
+            look.tonal
             ? (c.copy(alpha: (dark ? 0x3D : 0x2E) / 255.0)!, TreatmentMarks.tonalInk(look.kind, dark: dark))
             : (c, TreatmentMarks.onColor(dark: dark))
+        let r = PillContrast.of(
+            fill: bg, fg: fg, ground: ground ?? GraphPalette.of(dark: dark).bg, boundary: !look.tonal)
+        return (r.fill, r.fg)
     }
     private static func font(_ h: CGFloat) -> CTFont { Ink.font(h * 0.56, .semibold) }
 
@@ -113,13 +118,13 @@ enum StatusBadge {
 
     /// Draw the badge `h` tall with its top-left at (`x`, `y`), at most `maxW` wide: the full words, the short ones, or
     /// (no room for words) only the icon in a circle. Returns the width used, 0 if not even the circle fits.
-    /// `knockout` (tinted widgets): see `GraphPalette.knockout`.
+    /// `knockout` (tinted widgets): see `GraphPalette.knockout`. `ground` = what it sits on (`CardStyle.ground`).
     @discardableResult
     static func draw(
         _ ctx: CGContext, x: CGFloat, y: CGFloat, h: CGFloat, maxW: CGFloat, _ look: Look, dark: Bool,
-        knockout: Bool = false
+        knockout: Bool = false, ground: CGColor? = nil
     ) -> CGFloat {
-        let (bg, fg) = colors(look, dark: dark, knockout: knockout)
+        let (bg, fg) = colors(look, dark: dark, knockout: knockout, ground: ground)
         let cut = knockout && !look.tonal
         let words: String?
         if width(look, h: h) <= maxW {

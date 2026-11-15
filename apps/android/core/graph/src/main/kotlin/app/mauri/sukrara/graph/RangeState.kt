@@ -98,6 +98,27 @@ internal object RangeTag {
         onSurface: Int?,
     ) = onSurface ?: pal.ink
 
+    /**
+     * The tag's colours on [ground] ([PillContrast]; null = the palette's surface): the tint and the card's ink, or on a
+     * surface painted in the range's own colour ([onSurface]) no fill (outlined) and that surface's ink; the ground's
+     * ink when either fails there.
+     */
+    fun colors(
+        tint: Int,
+        pal: GraphPalette,
+        onSurface: Int?,
+        ground: Int?,
+    ): PillContrast.Colors {
+        // an ink without its ground: the surface chose that ink for its own colour, which it hasn't said here
+        if (onSurface != null && ground == null) return PillContrast.Colors(0, onSurface, swapped = false)
+        return PillContrast.of(
+            if (onSurface == null) background(tint, pal.dark) else 0,
+            ink(pal, onSurface),
+            ground ?: pal.bg,
+            boundary = false,
+        )
+    }
+
     /** Draws the tag [h] tall at ([x], [y]); returns its box. */
     fun draw(
         cv: Canvas,
@@ -108,23 +129,26 @@ internal object RangeTag {
         tint: Int,
         pal: GraphPalette,
         onSurface: Int?,
+        ground: Int? = null,
     ): RectF {
         val box = RectF(x, y, x + width(text, h), y + h)
+        val c = colors(tint, pal, onSurface, ground)
+        val outlined = onSurface != null && !c.swapped
         val shape =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                if (onSurface == null) {
-                    color = background(tint, pal.dark)
+                if (!outlined) {
+                    color = c.fill
                 } else {
                     // on a surface in the range's own colour (the notification): outlined, the word keeps that
                     // surface's contrast with the value's ink
-                    color = onSurface
+                    color = c.fg
                     style = Paint.Style.STROKE
                     strokeWidth = h * 0.08f
                 }
             }
-        val inset = if (onSurface == null) 0f else h * 0.04f
+        val inset = if (outlined) h * 0.04f else 0f
         cv.drawRoundRect(RectF(box.left + inset, box.top + inset, box.right - inset, box.bottom - inset), h / 2, h / 2, shape)
-        val p = paint(h, ink(pal, onSurface))
+        val p = paint(h, c.fg)
         val fm = p.fontMetrics
         cv.drawText(text, x + h * 0.45f, y + h / 2 - (fm.ascent + fm.descent) / 2, p)
         return box

@@ -35,6 +35,8 @@ val SetupStep.title: Int
             SetupStep.Alerts -> R.string.sh_setup_alerts_title
             SetupStep.Ready -> R.string.sh_setup_ready_title
             SetupStep.Updates -> R.string.sh_setup_updates_title
+            SetupStep.Root -> R.string.sh_setup_root_title
+            SetupStep.Notification -> R.string.sh_setup_notification_title
             SetupStep.Identity -> R.string.sh_identity_title
             SetupStep.Pens -> R.string.sh_setup_pens_title
             SetupStep.History -> R.string.sh_setup_history_title

@@ -120,6 +120,46 @@ default 60), `bands` (the person's, missing = the defaults) and `pill` (`{kind, 
 absent = none). `expect`: `range` (`very_low`, `low`, `high`, `very_high`, `extremely_high` or `null` = no word) and
 `text` (the English word drawn). Where it goes on each surface is `layout/rules.json` `status` (`value.range`).
 
+## Pills per surface
+
+What the value's place says in pills (the status pill `value.status` / `value.pill`, the range word `value.range`),
+decided by the renderer from two style inputs the place around the card sets, never from the surface's name
+(`layout/rules.json` `status`, facts `ground` and `rangeSaid`):
+
+| Place | Status pill | Range word |
+|---|---|---|
+| Widgets, lock-screen widget, app panel, *Sensor ready* | yes | yes (#26), unless the pill says the side |
+| Android glucose notification, title naming a level alert (`rangeSaid`: "Low · Eat carbs", "Lows muted") | yes | no: the title says it in words |
+| Android glucose notification, no alert in the title | yes | yes |
+
+**Contrast on any ground** (`PillContrast`, both platforms; Android `PillContrastTest`, Mac `PillContrastTests`): a
+pill sits on `CardStyle.ground` (a surface that paints the card itself: Android's colourised notification, its range
+colour or the stale grey) or else on the palette's surface. A filled pill's fill reaches 3:1 against it (WCAG 1.4.11)
+and its words 4.5:1 on the fill (WCAG 1.4.3); a tonal pill and the range word are faint tints whose words carry them,
+so only their words count (4.5:1 on the tint over the ground). A pill that fails is drawn in the ground's ink (black
+or white, whichever stands out more) with the other ink for its words: "Muted · 45m" on the red notification. Outlined
+range words on a colourised card keep the ink the surface chose for its own colour.
+
+## The value with a pill
+
+A pill (the status pill or the range word) costs the number little (round 3 of #36; the owner, 2026-11-14: "when
+there are pills under the glucose value, the value's text size is decreased … it's fine to decrease it a little";
+Android `ValueFace.drawNumber`, Mac `GlucoseCard.drawValue`, tests `PillValueSizeTest` / `PillValueSizeTests`). The
+number keeps at least **85 %** of its size without the pill (`PILL_KEEP` / `pillKeep`), the slots never change, and
+the place is the first of:
+
+1. **Under it, the number whole**: the pill row right under the number's baseline (the digits have no descent; a gap
+   of 0.15 pill heights), the number and the row centred together in the box.
+2. **Beside it, the number whole**: after the arrow, when the pill's short words (or the range word) fit there.
+3. **Under it, the number down to 85 %.**
+4. **Beside it with the pill's icon**, the number whole or down to 85 % to make room.
+5. **Under it, the number as large as the row allows**, while the number's box keeps 26 dp (the last resort: a
+   110 × 48 value widget); else the pill is left out (`(no room)`).
+
+The late reading's time shares the pill's row, else has its own row under the number. Where the pill goes is the
+layout report's `[row]` / `[beside]` (stripped by the `status` rule: the same pill on every surface, wherever it
+sits). The PoC gave the row its whole height (`widgets/poc.json` lists the number's box as a difference there).
+
 ## Ranges at their limits (`range/bands.json`)
 
 Which range a value is in (#181; the owner, 2026-11-12: "the 70 is the threshold, but 70 itself is excluded from the

@@ -193,7 +193,7 @@ object DebugFakes {
 
     /**
      * `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder true]`: posts made-up alerts of [kinds] (contract ids) through the
-     * real notifier, one after another [gapMs] apart, with the alert settings in use (each kind's alarm, sound,
+     * real presenter (the glucose notification rings, docs/36), one after another [gapMs] apart, with the alert settings in use (each kind's alarm, sound,
      * channel). Outside the alert runtime: their actions change nothing, and they replace a real alert showing in the
      * same slot (emulator only). For checking how Android plays alerts that
      * come close together (`adb logcat -b events -s notification_alert`: politeness state and mute reason).
@@ -211,7 +211,8 @@ object DebugFakes {
                     .first()
             val gap = intent.getLongExtra("gapMs", 0L)
             val reminder = intent.getBooleanExtra("reminder", false)
-            val notifier = graph.alerts.notifier
+            // through the presenter: the glucose notification rings (or, with Separate alert notifications, separate alerts)
+            val notifier = graph.alerts.presenter
             val kinds =
                 (intent.getStringExtra("kinds") ?: "low,falling_fast").split(',').mapNotNull { w ->
                     AlertKind.entries.firstOrNull { it.wire == w.trim() }.also {

@@ -292,19 +292,29 @@ While an alert is up, the glucose notification is the alert. There is no second 
 
 ## In Sukrara
 
-Nothing is brought in yet; no app code changed. The build plan, pending the owner's decisions, is one round on both
-apps where it applies:
+Brought in (round 3, branch `i36-one-notification`; the owner's decisions after §8: one notification, A by default and
+B with the root value, a choice between them, *Alerts on my watch*, no *Open Sukrara*; details §9):
 
-| Step | Where |
+| Added | Where |
 |---|---|
-| Live Update content: `FixedText(value + arrow, unit)`, the range or late time as the label, no *Open Sukrara*; the card as the default, *Live Update chip* default off with the summary above | `:monitor` `LiveNotification`, `LiveNotificationContent`, `contracts/settings/settings.json` (`statusbar.chip` default), FEATURES *Live notification*, surfaces `notification-text` |
-| The merged alert presentation: `AlertNotifier` posts through the glucose notification (channel per ring, the ring window, back to silent, swipe re-post silent, the service-dead path); `showPlain` and the problem notice stay the fallbacks | `:monitor` `alerts/`, `LiveNotification`, `PostGate` (a ring bypasses the 1 s gate) |
-| The card's header carries the alert headline (the pill) on every card surface | `:core:graph` + `SukraraGraph` (`GlucoseCard`), `contracts/graph`, both apps' goldens |
-| *Alerts on my watch* | `contracts/settings/settings.json`, `:monitor`, FEATURES |
-| SPEC §1 "Showing an alert" and FEATURES *What stays on screen* rewritten; scenario steps for the presentation | `contracts/alerts/SPEC.md`, `scenarios/notifications.txt`, `AlertScenarioTest`, Mac `AlertsTests` (no-op steps) |
-| Checks on the owner's phone (debug build, synthetic alerts): ring, re-ring, full screen when locked, DND, swipe, promotion kept | QA.md |
+| The glucose notification is the alert: rings on the kind's channel, the 10 s ring window, back to silent with the alert, Mute / clear / swipe silent at once, full screen only from silent, the swipe = answer + seen with a silent re-post, two groups as a line, the service-dead post | `:monitor` `GlucoseAlertPresenter`, `LiveNotification` (`GlucoseAlertSink`), `GlucoseAlert`, `AlertActions`, `AlertActionReceiver` (`TIDY` with `GLUCOSE`), `OneNotificationTest` |
+| *Alerts on my watch* (`alerts.watch`): the separate alerts as before, the glucose notification without them | `contracts/settings/settings.json`, Settings › Alerts, `AlertsModule` |
+| The chip by default, the card whenever the root value is on; the illustrated picker; *Card in the range colour* (`statusbar.colorize`) | `LiveNotificationContent`, `MonitorModule`, Settings › Status bar (`NotificationStylePicker`) |
+| No unit, no *Open Sukrara*; Android 17 metric *Now* / the late time, the muted *Time left* | `LiveNotificationContent`, `LiveNotification` |
+| Actions *Treatment* (both sides) · *Remind less* · *Mute*, no "…", Unmute only when muted, compact chips, the lengths sheet in a Live Update | copy.json, both apps (Mac: `NotificationIDs`, `AlertText`), `AlertActions`, `MuteAlertActivity` |
+| The card: value + slots as separate renderer parts, two rings; pills per surface and the contrast rule | `NotificationCard`, `:core:graph` + `SukraraGraph` (`CardStyle.ground` / `rangeSaid`, `PillContrast`), contracts/graph |
+| SPEC §1 "Showing an alert" (one notification), §2 actions, §6; FEATURES, QA, README | docs |
 
-**Left out**
+Discarded, with the reason:
+
+| Left out | Why |
+|---|---|
+| The sparkline / ProgressStyle strip in the Live Update (option C) | §9.1: MetricStyle drops the large icon; a thumbnail isn't the graph; a new renderer surface |
+| Action icons as the label | Android 16 / 17 draw none in these templates (measured); words carry the meaning |
+| *Change time* on the muted notification | The owner: unmute and mute again |
+| Scenario changes | Alert timing didn't change: the rules and their scenarios are the same; the presentation is Android's (`OneNotificationTest`) |
+
+**Left out (round 1, still)**
 
 | Left out | Why |
 |---|---|
@@ -540,3 +550,223 @@ swipe, *Alerts on my watch*. The one addition is that *Mute…* is a plain butto
 
 **Phone follow-ups (no code):** turn off the PoC's module in LSPosed (or uninstall PoC 0.11.52), then *Restart System
 UI* once.
+
+## 9. Built (round 3): the one notification
+
+*2026-11-14, after the owner approved one notification (A by default, B with the root value, a choice between them,
+Alerts on my watch, no Open Sukrara) and reviewed the §8 pictures point by point. Emulators Android 17 (API 37.0) and
+Android 16 QPR2 (API 36.1), the debug build's synthetic sensor (`SYNTHETIC`, now with a 3-day backfill so the 1-day and
+7-day rings show); real alerts from the runtime, except the Android 16 card's ring (`ALERTS --es kinds low`, which now
+goes through the same presenter). No real data.*
+
+### 9.1 What was decided where the owner left it open
+
+| Point | Decision | Why |
+|---|---|---|
+| The A metric label ("Low (mg/dL)") | **Now** while fresh, the reading's time once late (it also replaces the separate *Reading* metric, which frees a slot: two rings as words, *in range 1d · in range 7d*); the title says the range (*In range*, *Low*…) or the alert | The label can't be empty (`Metric(value, label)` takes a label); the range is the title's, the unit is obvious; *Now* / *14:05* says the one thing the big number can't: how fresh it is |
+| Units | None: the title `138 ↗`, the metric `138 ↑`, `62 ↓ · Low glucose · Eat carbs` on Android 16 | The owner's call; the alert's own body (watch mode, the plain fallback) keeps its unit (it's read alone, on a watch) |
+| Action icons | Every action carries one (Treatment *add*, Remind less *snooze*, Mute *notifications off*, Unmute *notifications active*) | Measured: Android 16 and 17 draw **no** action icon in the standard, promoted (Live Update) or decorated-custom templates (the v2 pictures: text buttons only). The icons show on Wear OS (watch mode's separate alert) and cost nothing; the words must stand alone |
+| *Mute* or *Mute for* | **Mute** (es *Silenciar*), no "…" anywhere (copy.json) | Android's actions are short verbs that name the result ("Reply", "Snooze"); Apple's HIG: "a short, title-case name that clearly describes the result". *Mute for* reads unfinished as a Live Update button (where it opens a sheet); the chips / the sheet / the direct reply's label *Mute for (e.g. 45 min, 1 h 30)* give the length |
+| *Treatment* in Spanish | **Tratamiento** | The app's dialog is *Añadir tratamiento*; the button names the place it opens. On the high side it opens on Rapid insulin; the word advises no dose (SPEC §1 "Headline") |
+| Sparkline in A | **Not added.** Android 17 keeps MetricStyle (big value in the range's colour, the slots); Android 16 BigText | MetricStyle draws no large icon ("this style doesn't display the large icon"), so a sparkline means giving up the big coloured value on 17 for a 48 dp thumbnail the AOD draws grey (§8.3), and a new renderer surface (`CardPart`) to keep in step. The graph is B's; the picker now makes that choice obvious |
+| Mute in a Live Update | A plain button that opens the **lengths sheet** over the lock screen (`MuteAlertActivity`: 15m 30m 1h 2h, TalkBack "Mute for 30 min") | Android drops a direct reply from a promoted notification (§8.5) |
+| Muted, A | The title *Low alerts muted*, a timer metric *Time left* (Android's own countdown), *Treatment* · *Unmute* | The owner: Unmute only |
+| B title | A TextView over the card with the alert's title (*Low glucose*, *Low alerts muted*), and the heads-up while it rings shows title + header (no chart) | A decorated custom view shows the app name, not the title; the pill under the value already says *Eat carbs* |
+| B sizes | The value drawn in a 48 dp box (40 collapsed) beside the slots at the header's full height (64 / 48 dp) | The renderer's own parts (`CardPart.VALUE` + `CardPart.SLOTS`): the value is smaller, the rings full size, two of them (the widget's two); collapsed rings no longer shrink |
+| B colour | The system's notification colour by default (the value in its range colour, the theme's palette); **Card in the range colour** (`statusbar.colorize`) for the old look | The owner's call |
+| Pills per surface | Renderer rules in both apps (contracts/graph *Pills per surface*): a level alert's title names the range, so the notification draws no separate range word (`CardStyle.rangeSaid`); on a colourised card every pill passes 3:1 against its ground and 4.5:1 for its words, else it turns black / white (`CardStyle.ground`, `PillContrast`, tested on every pill kind × palette × ground) | The owner: the amber mute pill on red was illegible, *Low* beside *Low glucose* redundant |
+| The setting | Settings › Status bar › *Glucose notification*: **Chip** and **Graph** side by side, each with a picture (chip + text notification / number icon + the card with ring and curve), one radio group; with the root value on, Graph and the chip disabled with its note | AOSP's illustrated choices (System navigation: `IllustrationPreference` over `SelectorWithWidgetPreference`); here each choice has its own picture because the point is comparing them |
+| Alerts on my watch | Settings › Alerts › Sounds, off by default; the summary suggests it when the Wear OS, Pixel Watch or Galaxy Wearable app is installed (`<queries>` for those three) | Whether a watch is paired can't be read without Bluetooth permission prompts; the companion app is the honest signal |
+
+### 9.2 Pictures (v2)
+
+Replaced by §10.3's v3 pictures after the owner's review; the Android 16 in-range pictures (nothing changed in
+them) stay:
+
+![](img/notification/v2-a-normal-android36.png)
+![](img/notification/v2-b-normal-android36.png)
+
+Found and fixed on the emulator: the card's title TextView took a RemoteViews call (`setImportantForAccessibility`) that
+System UI refuses, which crashed the foreground service (`BadForegroundServiceNotificationException`); it's in the
+layout now, and `OneNotificationTest` inflates every view of the card with an alert as System UI does.
+
+### 9.3 Alert-safety review (2026-11-14)
+
+An independent read of the code and the emulators (Android 17 API 37.0, Android 16 QPR2 API 36.1; `dumpsys
+notification`, `logcat -b events notification_alert`), with what it changed:
+
+| Found | What the person got | Now |
+|---|---|---|
+| The full-screen intent rode on an update of the glucose notification. System UI starts one only in `onEntryAdded` (AOSP `HeadsUpCoordinator`); on Android 16 QPR2 a very low *like an alarm* with the screen off rang but never opened full screen (Android 17 did) | A very low at night: sound only, no screen | An alarm-level ring that may open full screen is the alert's own notification for the 10 s (added: full screen on both), the glucose notification shows it silently and carries it on (`GlucoseAlertPresenter`, `OneNotificationTest`) |
+| Two rings on one reading: the runtime posts the one that must be heard first, the presenter put the newest in front | *Falling fast* as the title over *Also: Very low glucose*, the notification moved off the alarm channel (Android had muted the second ring: `MUTE_REASON_RATE_LIMIT`) | The first stays in front on its channel, the second is a line |
+| The glucose notification's channel turned off: Android drops every post on it | A ring stayed as it rang: never updated, muted or cleared | The alerts are notifications of their own then (as *Alerts on my watch*), what is up moves there silently |
+| The card without its pictures (screen off: nothing is drawn) titled only *Low glucose* | No value on the lock screen until the redraw | `62 ↓ · Low glucose · Eat carbs`, as the text notification |
+
+Checked and sound: the ring's channel and flags (no only-alert-once on a ring; the 10 s posts `MUTE_REASON_SILENT_UPDATE`
+and the sound plays on; `glucose.live` is IMPORTANCE_DEFAULT without sound, so the window's end and a Mute stop it,
+and the notification stays on the lock screen where silent ones are hidden); the heads-up of an update (System UI's
+`shouldHunAgain`: not only-alert-once); Android's update rate limit (5 a second, an average: the gate allows one a
+second plus a ring); the post lock (a post built before a ring never lands after it); the swipe of an older firing;
+the muted note; watch mode; the plain stand-in; `:core:alerts` and the scenarios untouched; the debug `ALERTS` and the
+3-day backfill only in `src/debug`. The *Time left* label of the muted metric is the code's (§10.3 shows it).
+
+Not covered: a real watch (watch mode's buzz), the Pixel's own System UI, Do Not Disturb and the full-screen intent
+locked on a phone (QA.md Q5 lists them for the owner's debug build), and the emulators had no audio (the ring is read
+from `dumpsys notification`: the channel and the flags).
+
+## 10. Round 3 feedback
+
+*2026-11-14, the owner on the v2 pictures. Each point: what changed and why, with the alternatives weighed. Emulators
+Android 17 (API 37.0) and Android 16 QPR2 (API 36.1), the synthetic sensor, synthetic data only; rings from the
+runtime, and from the debug `ALERTS` command (the same presenter) where a ring had to be shot on a settled service.*
+
+### 10.1 A, the chip / Live Update
+
+| Point | Done | Why (alternatives) |
+|---|---|---|
+| "'In range 7d' should be dynamic and show what the 2nd ring would show" | It already was: the metrics are `GlucoseCard.slotTexts` over the card's own style (`notificationCardStyle`), the configured slots in the card's order (default TIR 1 d, TIR 7 d). `SlotTextTest` now pins it for other slot kinds too | A second list of metrics would drift from the rings; the renderer's own list can't |
+| "Some places uppercase, some all lowercase" | Every label in sentence case: the slot labels come out of the renderer as *In range 1d*, *Avg 7d* (`Slots.text`, `SlotTextTest`), the value's label too | Android's writing guidelines: sentence case for labels and titles; the renderer's word list stays lower case for sentences (TalkBack) and capitalises where it is a label |
+| "'Now' as the description is nonsense" | The value's label is the **trend in words** (*Falling*, *Steady*, *Rising fast*) while fresh; the **rate** (*2.4/min*) when a rate alert's title already says the trend (*Falling fast*); the **reading's time** once late (`MetricLabelTest`) | Considered: no label (the API takes one: `Metric(value, label)`), the reading's time always (it repeats the notification's own time while fresh), the range (the title's). The trend in words says what the arrow says for TalkBack and at a glance, never the title |
+| "A better arrow asset, or text only?" | **Text only, THE text arrows** (`TrendAngle`). Picture `v3-arrows-android37` | A metric's value is a `CharSequence`; a picture can't travel in it (an `ImageSpan` isn't parcelable), and a bold `StyleSpan` was dropped by System UI (tried on the emulator). In the system font, Supplemental Arrows-C (wide-headed, all 8 directions) is missing (tofu, sets 3–5); the Dingbats / Misc Symbols arrows (set 2) mix weights: a heavy ➡ beside light diagonals. The current set (set 1) is the only one with one weight and one centre line in every direction |
+| "The mute time picker is ugly" | The app's own Material 3 length dialog (`NumberDialog`): *Mute lows* · *For 15 min* … *For 2 h* · *Custom…* radio rows, the person's first length selected, *Cancel* | Compared: the chips sheet (wrapped 3 + 1, no selected state, nonstandard), a bottom sheet with a slider (imprecise), Android's Do Not Disturb duration dialog (radio rows with − / + and *Until you turn off*), Clock's snooze list. A radio list is the M3 "simple dialog" pattern and the one *Mute alerts* on home already uses (same component, same words), so the app has one way to pick a length |
+| "'Low alerts muted' can be 'Lows muted'" | Mute lines name the side short on both apps: *Lows muted · 12 min left*, *Lows: remind every 30 min*, TalkBack *Lows: mute for 30 min* (es *Bajas silenciadas · quedan 12 min*; Spanish side names are feminine plurals so *silenciadas* agrees: *Bajas*, *Altas*, *Bajadas rápidas*, *Subidas rápidas*, *Alertas sin datos*) | copy.json, `MuteText` / `MuteCopy`; the settings history (*Lately*) keeps its own sentences |
+| "Don't show the same info twice" | Checked every state: the muted Live Update says *Lows muted* · *Time left 29m* (the label no longer repeats the title); a level alert's or a muted side's title names the side, so the card draws no separate range word (`rangeSaid` for the muted note too); the title adds the pill's words only when the headline doesn't already say what to do (*Low · eat more* gets none) and, on the card, the mute's time left where the value box only has room for the pill's icon; the Live Update on 17 counts a mute down in its metric, not in the title | The pill under the value and the title are in different views (collapsed vs expanded), never both saying it in one |
+
+### 10.2 B, the card
+
+| Point | Done | Why (alternatives) |
+|---|---|---|
+| The Status bar copy | The two choices say exactly what each puts where: **Chip** · *Status bar: your glucose in a chip / Notification: basic*; **Graph** · *Status bar: the notification icon / Notification: complete, with the graph*, the icon highlighted in its picture. Every summary adds something: *Number as notification icon* · *Otherwise the trend arrow*; *Coloured background* · *Red when low, orange when high, green in range*; *Only with the graph* where a row doesn't apply to the chip; the footer says why it's one or the other | "Notification icon" is Android's own user-facing name (the status bar's *Notification icons*); the developer docs' "small icon" isn't a user word |
+| The value shrinks under a pill | The renderer keeps the value at ≥ 85 % of its size: the pill goes in a row right under the baseline, or beside the arrow where it fits whole (words, else its icon), the rings never change (contracts/graph "The value with a pill", `PillValueSizeTest` / `PillValueSizeTests`, both apps) | Compared: shrinking the rings (the owner: no), moving the pill above (it would sit between the title and the number), a fixed pill row (the v2 look) |
+| "Just 'Very low' is enough" | Headlines without "glucose" on both apps: *Very low*, *Low*, *High*, *Very high*, *Extremely high*, *Falling fast*, *Rising fast*, *No data* (es *Muy baja*, *Baja*, *Alta*, *Muy alta*, *Extremadamente alta*, *Bajada rápida*, *Subida rápida*, *Sin datos*); context *Low · eat more*, *High · still after insulin*, *Very low · no response*; the test alert *Test · Low*; the locked-boot alarm *No data · unlock your phone*; the escalation settings' quotes. Kept: "Open Sukrara to see your glucose." (glucose is the object there), channel names | copy.json, SPEC §1, `AlertCopy` / `AlertText`; the scenario drivers write their own words, so no timeline changed |
+| Red in dark, white in light | Confirmed: v2's dark picture had *Card in the range colour* on, the light one off. Both themes already behave the same; the setting is now **Coloured background** and the picture `v3-b-background-android37` shows it off and on in both themes. The card's art is also redrawn when the pill's state changes (its cache key missed it) | — |
+| "'Alerts on my watch' is a bad name" | **Separate alert notifications** (`alerts.separate`): *Each alert is also its own notification, apart from the glucose one. Watches and other connected devices get only these*; off: *Alerts ring in the glucose notification. Watches and other connected devices don't get it*; the watch app suggestion stays a summary. The glucose channel turned off still falls back to it (3caad9a6) | Android calls a notification that stands alone a separate notification (as opposed to a grouped or an ongoing one); the watch is one reason, not the feature |
+
+### 10.3 Pictures (v3)
+
+Android 17 unless named `android36`; dark theme unless said. They replace v2's (the Android 16 normal states
+`v2-a-normal-android36` and `v2-b-normal-android36` stay: nothing in them changed). On Android 16 the card is the same
+renderer picture as on 17.
+
+| Picture | What |
+|---|---|
+| ![](img/notification/v3-a-normal-android37.png) | A in range: title *In range*, the value labelled *Rising fast*, *In range 1d* · *In range 7d* (the rings) |
+| ![](img/notification/v3-a-ring-android37.png) | A, a low ringing: *Low*, *Falling fast* `56 ↓` (a muted side's countdown would add *Time left*) |
+| ![](img/notification/v3-a-between-android37.png) | A between rings, back on the silent channel: *Low*, *Falling* |
+| ![](img/notification/v3-a-muted-android37.png) | A, *Mute*: the length dialog, then *Lows muted* · *Time left 29m*, *Treatment* · *Unmute* |
+| ![](img/notification/v3-a-ring-android36.png) | A on Android 16 ringing: `60 ↓ · Low · eat carbs`; the always-on display |
+| ![](img/notification/v3-b-normal-android37.png) | B in range: the value large, two rings, expanded and collapsed |
+| ![](img/notification/v3-b-ring-android37.png) | B, a low ringing: *Low · eat carbs*, the chips 15m 30m 1h 2h |
+| ![](img/notification/v3-b-between-android37.png) | B between rings |
+| ![](img/notification/v3-b-muted-android37.png) | B muted: *Lows muted · 29m left*, no range word |
+| ![](img/notification/v3-b-background-android37.png) | *Coloured background* off and on, dark and light |
+| (Settings › Status bar) | Replaced by `v4-settings-glucose-notification` (§11) |
+| ![](img/notification/v3-separate-alerts-android37.png) | *Separate alert notifications* on: the alert of its own above the glucose card, which carries none |
+| ![](img/notification/v3-arrows-android37.png) | Arrow sets in the system font (1 = THE text arrows, 2 = Dingbats / Misc Symbols, 3–5 = Supplemental Arrows-C: not in the font) and the Live Update's value |
+
+Seen on the way: a ring that comes while the monitoring service starts (here a debug `SYNTHETIC` restart) is posted
+first as the text notification (the foreground start never draws the card), then the service's own post follows.
+
+## 11. Round 4 feedback
+
+*2026-11-15, the owner on the v3 pictures. Each point: the alternatives weighed, the choice and why. Emulator Android 17
+(API 37.0), the synthetic sensor, synthetic data only; the settings and setup pages also from the Robolectric galleries
+(`SettingsGallery`, `SharingScreenshotTest`).*
+
+### 11.1 "The icon for Separate alert notifications is wrong; it should not be a watch"
+
+| Option | For | Against |
+|---|---|---|
+| Watch (was) | The main reason to turn it on | Names one use, not the feature (the owner) |
+| `notifications_active` (ringing bell) | Alerts | Already the alerts' own icon in Settings: two rows, one icon |
+| `stacks` / `library_add` (layers) | "Separate" | Says nothing about notifications |
+| **`notification_add` (bell with a plus)** | A notification of its own added beside the glucose one: what the switch does | — |
+
+Chosen: Material Symbols [`notification_add`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:notification_add)
+(`ds_ic_notification_add`; `ds_ic_watch` deleted). Picture `v4-separate-alerts-icon-android37`.
+
+### 11.2 "No screenshot of the Live Update with different dynamic values, especially after treatments"
+
+Taken on Android 17 with real entries from *Add treatment* (rapid 4 u, carbs 30 g, both). The metrics after the value
+are the card's own slots in the card's priority (main ring, a recent treatment, the second ring: `GlucoseCard.slotTexts`),
+so a treatment takes the second ring's place, as on the card.
+
+Found on the way and fixed: **with both, the carbs were lost**. The card draws running insulin and the carbs that ride
+along it as one pair, but the text slot only wrote the insulin (`4u`). Now `4u · 30g` (`Slots.text`, `SlotTextTest`
+written first and failing). Kept as decided in #206: the time since it is the value (it is what changes) and the amount
+its label. Considered: the amount as the value and *Rapid · 12m ago* as the label (a label that changes every minute
+and needs a word per kind); a stopwatch metric (`Metric.TimeDifference`) counting up from the entry (live without a post,
+but MetricStyle shows it as `12:04`, a clock, for a time that matters in minutes).
+
+The Live Update follows a new entry on the next reading (≤ 1 min with Libre 3), as the card does.
+
+### 11.3 The settings cards: hierarchy, light-theme contrast, equal heights, simpler texts
+
+Researched how Android does "choose how the system shows something": AOSP Settings' **System navigation**
+(`SystemNavigationGestureSettings`: an [`IllustrationPreference`](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/packages/SettingsLib/IllustrationPreference/)
+of the *selected* option over [`SelectorWithWidgetPreference`](https://cs.android.com/android/platform/superproject/main/+/main:frameworks/base/packages/SettingsLib/SelectorWithWidgetPreference/)
+radio rows; [a copy of the source](https://github.com/xDroidOSS-Pixel/packages_apps_settings/blob/thirteen/src/com/android/settings/gestures/SystemNavigationGestureSettings.java)),
+Material 3 [radio buttons](https://m3.material.io/components/radio-button/guidelines) ("listed vertically, one always
+selected") and [lists](https://m3.material.io/components/lists/guidelines) (the whole row is the target). Other diabetes
+apps don't help here: Juggluco has one on/off *Glucose notification* ([settings help](https://www.juggluco.nl/Jugglucohelp/settinghelp.html)),
+GlucoDataHandler adds extra notifications only to get more status bar icons, and its users find an app icon where the
+value should be "useless" ([GDH #241](https://github.com/pachi81/GlucoDataHandler/issues/241)); xDrip+ users can't find
+how to hide its status bar icon ([xDrip #3485](https://github.com/NightscoutFoundation/xDrip/discussions/3485)): the
+choice must be findable and say what it changes.
+
+| Option | Hierarchy | Equal heights | Light theme | Cost |
+|---|---|---|---|---|
+| Cards side by side (v3) | Picture, title, two-line summary per card, all equal weight | No: text wraps differently | The notification's grey vanished in the selected card's tint | — |
+| Cards stacked, full width | Better | Still text-driven | Same tint problem | — |
+| **One picture of the selected choice + radio rows** (System navigation) | Picture first (what you get), then one list of names | Yes: one-line title, one-line summary | The picture sits on the page, not in a tinted card: the notification on its own surface with an outline in both themes | Pictures compared by switching, not side by side |
+| Dropdown | Compact | — | — | Hides the choices; no picture |
+
+Chosen: the System navigation pattern, as one shared component (`GlucoseNotificationChoice`, `:core:designsystem`) for
+the settings page and setup. The texts are names: the title is what the **status bar** shows (*Chip*, *Notification
+icon*, *Status bar text*), the summary what the **notification** is (*Basic notification*, *Notification with the
+graph*, *… · Needs root*); the group title *Glucose in the status bar* says what the names are of, so neither repeats
+it. The picture draws the status bar (the glucose highlighted where it shows) and the notification (short and basic, or
+with the graph and a ring); it fades through on a change (cut with reduced motion), TalkBack reads it as one sentence.
+Under the choice only the chosen one's own rows; then *Notification* (*Coloured background*, *Glucose on the lock
+screen*). Picture `v4-settings-glucose-notification` (chip and notification icon light, status bar text dark).
+
+### 11.4 Where the choice lives, the root option, setup's steps
+
+**The page.** Considered: keep it inside *Status bar* (the owner: someone looking for the notification won't look
+there); split it over *Status bar* and a *Notification* page (the two halves of one choice on two pages); **one page
+named for the thing people look for, *Glucose notification*** (the overview row and search: *Where your glucose shows
+in the status bar*). Chosen: the last; *Status bar* is gone, its rows (root placement and colour, number icon, lock
+screen) are under the choice they belong to. The *Lock screen* page (the root lock-screen widget) stays its own.
+
+**The third option, *Status bar text* (root only).** The root value in the status bar, Sukrara's notification icon
+hidden, the notification with the graph. One stored choice over the existing keys (`NotificationStyleSettings`:
+`statusbar.hook` on + `statusbar.hideNotifIcon` on; otherwise `statusbar.chip`), so the hook, the module and the
+settings schema didn't change. Choosing it is the request for root (#178: never asked before), with root's or the
+module's missing step as the shared card below it (`AccessStepBanner`, moved to `:core:designsystem/root` so setup
+can show it). A build without root features shows two options.
+
+**Setup.** Two optional steps after *Keep Sukrara up to date*: **Root** (root builds only), then **Glucose notification**.
+Root: *Is this phone rooted?* with *Yes, it's rooted* / *It isn't rooted* / *Later*. "Automatic if possible": when the
+phone already shows signs of root (LSPosed answers, a `su` file, the module), the question is skipped and the check
+runs by itself; otherwise only the person's *Yes* asks, because asking `su` unprompted pops Magisk's dialog (where it still has one)
+on a phone whose owner didn't expect it, and KernelSU hides `su` from every app not allowed in its manager ("su is
+invisible to all applications by default", [KernelSU #1838](https://github.com/tiann/KernelSU/issues/1838)), so a
+silent probe can't tell "not rooted" from "not allowed yet". Magisk is going the same way: its interactive prompt is
+being removed for granting apps ahead of time in its Superuser list ([Magisk #10139](https://github.com/topjohnwu/Magisk/pull/10139)),
+which is why the card's first instruction is to allow Sukrara there and come back. After *Yes*: the shared card (*Allow root for Sukrara*, *Root
+needed*, … with *Check again*); root granted completes the step by itself. Glucose notification: the same component,
+*Status bar text* already picked when Sukrara has root (once; the person can choose another), *Continue* only (the chip
+is already an answer). Considered: one step with the root question inside the choice (the question would sit between
+three options and hide the picture); the root check inside *Permissions* (an essential step for an optional feature).
+Picture `v4-setup-root-notification`: the question, *Yes* on a phone without usable root, the choice without root, the
+choice with root picked.
+
+### 11.5 Pictures (v4)
+
+| Picture | What |
+|---|---|
+| ![](img/notification/v4-a-treatments-android37.png) | Live Update on 17: no treatment (*In range 1d*); rapid 4 u (*4u* · *1m*); carbs 30 g (*30g* · *1m*); both (*4u · 30g* · *24m*, the value high); carbs in the dark theme |
+| ![](img/notification/v4-settings-glucose-notification.png) | Settings › Glucose notification: chip (light), notification icon (light), status bar text with root (dark) |
+| ![](img/notification/v4-setup-root-notification.png) | Setup: *Root*; after *Yes* on a phone without usable root; *Glucose notification* without root; with root granted, *Status bar text* picked |
+| ![](img/notification/v4-separate-alerts-icon-android37.png) | Settings › Alerts › *Separate alert notifications* with its new icon |
+

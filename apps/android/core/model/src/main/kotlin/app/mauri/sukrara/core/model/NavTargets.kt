@@ -27,10 +27,16 @@ object NavTargets {
     const val EXTRA_FROM_APP = "app.mauri.sukrara.extra.FROM_APP"
 
     /**
-     * String extra of [ACTION_QUICK_TREATMENT]: opened from this alert's *Log carbs* (the kind's wire name), an answer
-     * to the alert on this phone like its other actions (#39).
+     * String extra of [ACTION_QUICK_TREATMENT] and [ACTION_MUTE_ALERT]: opened from this alert's *Treatment* / *Mute*
+     * (the kind's wire name), an answer to the alert on this phone like its other actions (#39).
      */
     const val EXTRA_ALERT_KIND = "app.mauri.sukrara.extra.ALERT_KIND"
+
+    /**
+     * The alert's lengths sheet over the lock screen ([EXTRA_ALERT_KIND]): *Mute* of the glucose notification while it
+     * is a Live Update, where Android drops the direct reply that offers the lengths as chips (docs/36 §8.5).
+     */
+    const val ACTION_MUTE_ALERT = "app.mauri.sukrara.action.MUTE_ALERT"
 
     /**
      * The new-sensor / sensor setup flow. Intents for it target [SENSOR_SETUP_ACTIVITY] explicitly (not exported:

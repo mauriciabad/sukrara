@@ -113,10 +113,19 @@ object Slots {
         }
 
     /**
-     * A slot as words for a text-only place (value, short label): "86%" · "in range 1d"; the last treatment as the ring
-     * draws it (#206), the time since it as the value and the amount as its label: "12m" · "4.5u".
+     * A slot as words for a text-only place (value, label): "86%" · "In range 1d"; the last treatment as the ring draws
+     * it (#206), the time since it as the value and the amount as its label: "12m" · "4.5u", with the carbs riding along
+     * running insulin "12m" · "4.5u · 45g" (round 4 of #36: they were lost). The label stands alone (the
+     * Live Update's metric labels), so it is in sentence case like every other label there (the owner, round 3 of #36),
+     * in the words' language.
      */
     fun text(
+        item: SlotItem,
+        now: Long,
+        w: CardWords,
+    ): Pair<String, String>? = words(item, now, w)?.let { (value, label) -> value to label.replaceFirstChar { it.titlecase(w.locale) } }
+
+    private fun words(
         item: SlotItem,
         now: Long,
         w: CardWords,
@@ -134,8 +143,10 @@ object Slots {
                 }
             }
 
+            // the carbs riding along running insulin too (the ring draws the pair): "4u · 30g"
             is SlotItem.Last -> {
-                w.shortDuration(now - item.info.tr.t) to (TreatmentMarks.label(item.info.tr, 8) ?: item.info.tr.k)
+                w.shortDuration(now - item.info.tr.t) to
+                    listOfNotNull(item.info, item.info.carbs).joinToString(" · ") { TreatmentMarks.label(it.tr, 8) ?: it.tr.k }
             }
         }
 

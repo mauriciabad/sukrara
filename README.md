@@ -54,11 +54,13 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Minimal alert fatigue: alerts go quiet when you've already acted, and wait while your glucose is clearly heading
   back into range.
 - An alert on screen shows the current value, updated silently, and stays up while you're still out of range.
+- One notification on Android: the glucose notification rings as the alert itself, no duplicate. Optionally, alerts
+  also as their own notifications for your watch.
 - Optionally, alarms can ring loud, even in Do Not Disturb.
 - Configure how alarms repeat while your glucose stays out of range.
 - Falling fast / rising fast alerts on the readings' trend, once the fast move has lasted 5 minutes.
 - Unacknowledged very lows can alert the people who follow you.
-- Quick actions in notifications, like Mute for 1 h, or Log carbs on a low.
+- Quick actions in notifications: Treatment, Remind less, Mute for 1h.
 - [Planned]: Predictions, more and cooler sound packs...
 
 ### Ready in a few steps
@@ -72,7 +74,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   - NovoPen Echo® Plus.
   - Tells priming apart from injections.
 - Quick actions in notifications.
-- Quick log pop-up by tapping the widget, the notification, a low alert's Log carbs or the Quick Settings tile.
+- Quick log pop-up by tapping the widget, the notification, an alert's Treatment or the Quick Settings tile.
 - Set when it happened by scrolling back the minutes and hours in one wheel, or with one tap (5m, 15m, 30m, 1h).
 - Add logs from the Sukrara companion apps.
 - Your last 24 h of logs on the home screen, and a Treatments page with 31 days: each entry with its chart marker,
@@ -82,8 +84,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 ### Glucose always at a glance
 
-- Status bar chip via Live Update.
-- Anywhere in the status bar with root (e.g. next to the signal icons).
+- Your glucose in the status bar as a Live Update chip, as the notification icon with the graph in the notification,
+  or with root as text anywhere in the status bar (e.g. next to the signal icons): one choice in setup and in Settings,
+  root checked and picked for you when the phone has it.
 - Home screen widget. You never need to open the app.
 - Lock screen widget with root. No need to unlock or touch the phone.
 - Persistent notification with the widget.

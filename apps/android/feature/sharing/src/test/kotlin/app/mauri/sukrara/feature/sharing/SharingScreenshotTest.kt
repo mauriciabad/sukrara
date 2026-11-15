@@ -19,7 +19,11 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.RootAccess
+import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.sharing.backup.BackupScreen
 import app.mauri.sukrara.feature.sharing.backup.BackupUi
@@ -42,6 +46,7 @@ import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.feature.sharing.setup.RoleChange
+import app.mauri.sukrara.feature.sharing.setup.RootUi
 import app.mauri.sukrara.feature.sharing.setup.ScanInvite
 import app.mauri.sukrara.feature.sharing.setup.ScanState
 import app.mauri.sukrara.feature.sharing.setup.SetupActions
@@ -250,10 +255,48 @@ class SharingScreenshotTest {
                         SetupStep.Ready,
                         0,
                         live,
-                    ).copy(count = 0, extras = listOf(SetupStep.Updates, SetupStep.Identity, SetupStep.Pens, SetupStep.History)),
+                    ).copy(
+                        count = 0,
+                        extras =
+                            listOf(
+                                SetupStep.Updates,
+                                SetupStep.Root,
+                                SetupStep.Notification,
+                                SetupStep.Identity,
+                                SetupStep.Pens,
+                                SetupStep.History,
+                            ),
+                    ),
                     a,
                 )
             },
+            // docs/36 §11: is this phone rooted; the way to allow root; the choice with root picked; without root features
+            "setup-6c-root" to { SetupContent(ui(SetupStep.Root, 2, live.copy(root = false)).copy(count = 6), a) },
+            "setup-6c-root-allow" to {
+                SetupContent(
+                    ui(SetupStep.Root, 2, live.copy(root = false)).copy(
+                        count = 6,
+                        root = RootUi(SystemAccessState(root = RootAccess.Missing, rootSeen = true), rooted = true, offered = true),
+                    ),
+                    a,
+                )
+            },
+            "setup-6d-notification-root" to {
+                SetupContent(
+                    ui(SetupStep.Notification, 3, live.copy(root = true)).copy(
+                        count = 6,
+                        root =
+                            RootUi(
+                                SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed"),
+                                rooted = true,
+                                style = NotificationStyle.Root,
+                                offered = true,
+                            ),
+                    ),
+                    a,
+                )
+            },
+            "setup-6d-notification" to { SetupContent(ui(SetupStep.Notification, 1, live).copy(count = 4), a) },
             "setup-6b-pens" to { SetupContent(ui(SetupStep.Pens, 3, live.copy(pens = false)).copy(count = 4), a) },
             "conflict-screen" to { IdentityConflictScreen(conflict, {}, {}) },
             "share-new" to { ShareScreen(InviteUi.None, {}, {}, {}) },

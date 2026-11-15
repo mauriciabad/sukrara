@@ -62,12 +62,17 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.PageBackHandler
+import app.mauri.sukrara.designsystem.notification.GlucoseNotificationChoice
+import app.mauri.sukrara.designsystem.root.AccessStepBanner
+import app.mauri.sukrara.designsystem.root.accessStep
 import app.mauri.sukrara.designsystem.rows.DndChoice
 import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
 import app.mauri.sukrara.designsystem.rows.nameRes
@@ -187,6 +192,17 @@ data class SetupActions(
     val completePens: () -> Unit = {},
     /** *Bring it back* on the history step: Import history. */
     val openHistoryImport: () -> Unit = {},
+    /** *Yes, it's rooted* / *Check again* on the root step: ask for root. */
+    val checkRoot: () -> Unit = {},
+    /** *No* on the root step (final), or *Continue* once Sukrara has root. */
+    val completeRoot: () -> Unit = {},
+    /** The LSPosed module's fixes on the glucose notification step's card. */
+    val requestScope: () -> Unit = {},
+    val restartSystemUi: () -> Unit = {},
+    val chooseNotification: (NotificationStyle) -> Unit = {},
+    /** The glucose notification step shows (with root: the status bar text is picked once). */
+    val notificationShown: () -> Unit = {},
+    val completeNotification: () -> Unit = {},
 )
 
 @Composable
@@ -237,6 +253,13 @@ private fun SetupViewModel.actions(
             readPens = ::readPens,
             completePens = ::completePens,
             openHistoryImport = { openHistoryImport(onOpenHistoryImport) },
+            checkRoot = ::checkRoot,
+            completeRoot = ::completeRoot,
+            requestScope = ::requestScope,
+            restartSystemUi = ::restartSystemUi,
+            chooseNotification = ::chooseNotification,
+            notificationShown = ::notificationShown,
+            completeNotification = ::completeNotification,
         )
     }
 }
@@ -280,6 +303,8 @@ fun SetupContent(
                         SetupStep.Join -> JoinStep(u, actions)
                         SetupStep.Permissions -> PermissionsStep(u, actions)
                         SetupStep.Updates -> UpdatesStep(u, actions)
+                        SetupStep.Root -> RootStep(u, actions)
+                        SetupStep.Notification -> NotificationStep(u, actions)
                         SetupStep.Sensor -> SensorStep(u, actions)
                         SetupStep.Alerts -> AlertConfirmStep(u, actions)
                         SetupStep.Ready -> ReadyStep(u, actions)
@@ -774,11 +799,108 @@ private fun ColumnScope.PensStep(
     }
 }
 
+/**
+ * *Root* (builds with root features; docs/36 §11): is this phone rooted? Signs of root (LSPosed, a root manager)
+ * answer the question and ask for root at once; otherwise *Yes, it's rooted* asks. Then the one missing step with its
+ * fix and *Check again* (the shared card, as Settings › Glucose notification shows it), until Sukrara has root:
+ * *Continue*. *It isn't rooted* is final; *Later* keeps it on *Finish setup*.
+ */
+@Composable
+private fun ColumnScope.RootStep(
+    u: SetupUi,
+    actions: SetupActions,
+) {
+    val root = u.root
+    val access = root.access
+    // signs of root: no question, the check runs by itself (once: the card then has Check again)
+    val auto = access.rootSeen && access.root == RootAccess.Unknown && !access.asking && !root.busy
+    LaunchedEffect(auto) { if (auto) actions.checkRoot() }
+    val haptics = rememberHaptics()
+    LaunchedEffect(access.granted) { if (access.granted) haptics.confirm() }
+    StepCircle(DsR.drawable.ds_ic_key)
+    StepHeader(stringResource(R.string.sh_setup_root_title), stringResource(R.string.sh_setup_root_body))
+    when {
+        access.granted -> {
+            NoteCard(stringResource(R.string.sh_setup_root_granted))
+            StepButtons(stringResource(R.string.sh_setup_continue), actions.completeRoot, enabled = !u.busy)
+        }
+
+        root.rooted -> {
+            AccessStepBanner(
+                accessStep(access, valueOn = true),
+                access,
+                root.busy,
+                root.problem,
+                actions.checkRoot,
+                actions.requestScope,
+                actions.restartSystemUi,
+            )
+            StepButtons(
+                null,
+                {},
+                secondary =
+                    listOf(
+                        stringResource(R.string.sh_setup_root_no) to actions.completeRoot,
+                        stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Root) },
+                    ),
+            )
+        }
+
+        else -> {
+            StepButtons(
+                stringResource(R.string.sh_setup_root_yes),
+                actions.checkRoot,
+                enabled = !u.busy,
+                secondary =
+                    listOf(
+                        stringResource(R.string.sh_setup_root_no) to actions.completeRoot,
+                        stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Root) },
+                    ),
+            )
+        }
+    }
+}
+
+/**
+ * *Glucose notification* (docs/36 §11): THE choice, the same component as Settings › Glucose notification; with root
+ * the status bar text is already picked. Under the status bar text, the module's missing step (the shared card).
+ * *Continue* keeps the choice (stored as it is made); no *Later*: the chip is already an answer.
+ */
+@Composable
+private fun ColumnScope.NotificationStep(
+    u: SetupUi,
+    actions: SetupActions,
+) {
+    LaunchedEffect(Unit) { actions.notificationShown() }
+    val root = u.root
+    StepCircle(DsR.drawable.ds_ic_smartphone)
+    StepHeader(stringResource(R.string.sh_setup_notification_title), stringResource(R.string.sh_setup_notification_body))
+    GlucoseNotificationChoice(root.style, root.offered, actions.chooseNotification)
+    if (root.style == NotificationStyle.Root) {
+        AccessStepBanner(
+            accessStep(root.access, valueOn = true),
+            root.access,
+            root.busy,
+            root.problem,
+            actions.checkRoot,
+            actions.requestScope,
+            actions.restartSystemUi,
+        )
+    }
+    StepButtons(
+        stringResource(R.string.sh_setup_continue),
+        actions.completeNotification,
+        enabled = !u.busy,
+    )
+}
+
 /** An optional step's icon in its row of Ready's list. */
 private val SetupStep.icon: Int
     get() =
         when (this) {
             SetupStep.Updates -> DsR.drawable.ds_ic_update
+            SetupStep.Root -> DsR.drawable.ds_ic_key
+            SetupStep.Notification -> DsR.drawable.ds_ic_smartphone
             SetupStep.Identity -> DsR.drawable.ds_ic_group
             SetupStep.Pens -> DsR.drawable.ds_ic_dia_pen
             SetupStep.History -> DsR.drawable.ds_ic_history

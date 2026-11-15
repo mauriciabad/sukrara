@@ -96,35 +96,35 @@ struct AlertText: Equatable {
         guard language == .es else { return f.headline }
         let base: String
         switch f.kind {
-        case .veryLow: base = "Glucosa muy baja"
-        case .low: base = "Glucosa baja"
-        case .high: base = "Glucosa alta"
-        case .veryHigh: base = "Glucosa muy alta"
-        case .extremelyHigh: base = "Glucosa extremadamente alta"
+        case .veryLow: base = "Muy baja"
+        case .low: base = "Baja"
+        case .high: base = "Alta"
+        case .veryHigh: base = "Muy alta"
+        case .extremelyHigh: base = "Extremadamente alta"
         case .fallingFast: base = "Bajada rápida"
         case .risingFast: base = "Subida rápida"
-        case .noData: base = "Sin datos de glucosa"
+        case .noData: base = "Sin datos"
         }
         guard f.treated > 0, f.kind.group == .level else { return base }
         if f.kind.isLowSide { return base + (f.treated == 1 ? " · come más" : " · vuelve a comer") }
-        return base + (f.treated == 1 ? " · sigue alta tras la insulina" : " · sigue alta tras más insulina")
+        return base + (f.treated == 1 ? " · sigue tras la insulina" : " · sigue tras más insulina")
     }
 
-    /// The muted note: "Low alerts muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
+    /// The muted note: "Lows muted" / "Until 10:42" (`MuteCopy`, contracts/alerts/copy.json).
     func mutedTitle(_ side: AlertSide) -> String { MuteCopy.notificationTitle(side, language) }
 
     func mutedBody(until: String) -> String { MuteCopy.notificationText(until: until, language) }
 
-    /// Settings › Alerts › Send Test Alert: "Test · Low glucose".
+    /// Settings › Alerts › Send Test Alert: "Test · Low".
     func testTitle(_ f: AlertFiring) -> String { "\(language == .en ? "Test" : "Prueba") · \(title(f))" }
 
-    // Action titles (HIG title case in English; the ellipsis = more input follows).
-    var mute: String { language == .en ? "Mute…" : "Silenciar…" }
+    // Action titles: HIG title case in English, a short name for the result, never an ellipsis (the owner's review,
+    // 2026-11-14: Treatment opens a window without one, so the ellipsis no longer meant anything).
+    var mute: String { language == .en ? "Mute" : "Silenciar" }
     var muteButton: String { language == .en ? "Mute" : "Silenciar" }
-    var mutePlaceholder: String { language == .en ? "30 min, 1 h, 2 h…" : "30 min, 1 h, 2 h…" }
+    var mutePlaceholder: String { "30 min, 1 h, 2 h" }
     var remindLess: String { language == .en ? "Remind Less" : "Avisar menos" }
     var remindAsUsual: String { language == .en ? "Remind as Usual" : "Avisar como siempre" }
     var unmute: String { language == .en ? "Unmute" : "Reactivar" }
-    var changeTime: String { language == .en ? "Change Time…" : "Cambiar duración…" }
-    var logCarbs: String { language == .en ? "Log Carbs…" : "Registrar hidratos…" }
+    var treatment: String { language == .en ? "Treatment" : "Tratamiento" }
 }

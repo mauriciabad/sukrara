@@ -23,10 +23,10 @@ import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
+import app.mauri.sukrara.designsystem.root.AccessStep
+import app.mauri.sukrara.designsystem.root.lockAccessStep
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.settings.R
-import app.mauri.sukrara.feature.settings.statusbar.AccessStep
-import app.mauri.sukrara.feature.settings.statusbar.lockAccessStep
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +44,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * Settings › Lock screen's widget (#66): on by default and visible as such, its look chosen in dialogs, the module's
@@ -131,9 +132,9 @@ class LockScreenPageTest {
             }
             compose.onNodeWithText(text(R.string.st_lock_widget_needs_module)).assertExists()
             // the module waits for a restart: the card with its button, which restarts System UI
-            compose.onNodeWithText(text(R.string.st_access_restart_text)).assertExists()
+            compose.onNodeWithText(text(DsR.string.ds_access_restart_text)).assertExists()
             // the card's title and its button
-            compose.onAllNodesWithText(text(R.string.st_access_restart_title)).assertCountEquals(2)
+            compose.onAllNodesWithText(text(DsR.string.ds_access_restart_title)).assertCountEquals(2)
             compose.onNodeWithText(text(R.string.st_lock_bg_frosted)).assertExists()
             compose.onNodeWithText(text(R.string.st_lock_look_auto)).assertExists()
             // Background › Shadow
@@ -151,7 +152,7 @@ class LockScreenPageTest {
             compose.waitForIdle()
             assertEquals(false, settings.flow(SurfaceSettings.LockWidget).first())
             compose.onNodeWithText(text(R.string.st_lock_widget_off)).assertExists()
-            compose.onNodeWithText(text(R.string.st_access_restart_text)).assertDoesNotExist()
+            compose.onNodeWithText(text(DsR.string.ds_access_restart_text)).assertDoesNotExist()
             compose.onNodeWithText(text(R.string.st_lock_background)).assertIsNotEnabled()
             vm.refresh()
             assertEquals("back on the page: LSPosed is asked again", 1, access.refreshed)

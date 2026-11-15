@@ -140,7 +140,7 @@ class AlertNotificationShapeTest {
         notifier.show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 0)
         val low = posted(AlertGroup.LEVEL)
         assertEquals(
-            listOf(label(R.string.alert_action_mute), label(R.string.alert_action_remind_less)),
+            listOf(label(R.string.alert_action_remind_less), label(R.string.alert_action_mute)),
             low.actions.map { it.title.toString() },
         )
         assertEquals(
@@ -152,7 +152,7 @@ class AlertNotificationShapeTest {
         notifier.show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 30)
         val relaxed = posted(AlertGroup.LEVEL)
         assertEquals(
-            listOf(label(R.string.alert_action_mute), label(R.string.alert_action_remind_usual)),
+            listOf(label(R.string.alert_action_remind_usual), label(R.string.alert_action_mute)),
             relaxed.actions.map { it.title.toString() },
         )
         assertEquals(
@@ -165,7 +165,7 @@ class AlertNotificationShapeTest {
         assertEquals(listOf(label(R.string.alert_action_mute)), posted(AlertGroup.NO_DATA).actions.map { it.title.toString() })
     }
 
-    @Test fun `a muted card is silent, counts down to its end and offers Unmute and Change time`() {
+    @Test fun `a muted card is silent, counts down to its end and offers only Unmute`() {
         val until = now + 30 * 60
         AlertNotifier(ctx).showMuted(AlertGroup.LEVEL, Side.LOW, AlertKind.LOW, until, settings, now)
         val muted = posted(AlertGroup.LEVEL)
@@ -183,19 +183,18 @@ class AlertNotificationShapeTest {
             Triple(AlertActionReceiver.UNMUTE, "low", false),
             target(muted.action(label(R.string.alert_action_unmute)).actionIntent),
         )
-        val change = muted.action(label(R.string.alert_action_change))
-        assertEquals(AlertActionReceiver.TYPED, change.remoteInputs.single().resultKey)
-        assertEquals(Triple(AlertActionReceiver.MUTE, "low", true), target(change.actionIntent))
+        assertEquals("the person unmutes and mutes again: no Change time", listOf(label(R.string.alert_action_unmute)), muted.titles())
     }
 
     private fun Notification.titles() = actions.orEmpty().map { it.title.toString() }
 
-    @Test fun `a low-side alert offers Log carbs first where this phone can add entries, on Carbs in the dialog`() {
+    @Test fun `an alert offers Treatment first where this phone can add entries, on Carbs for a low`() {
         val notifier = AlertNotifier(ctx, canLog = { true })
-        val log = label(R.string.alert_action_log_carbs)
+        val log = label(R.string.alert_action_treatment)
         notifier.show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 0)
         val low = posted(AlertGroup.LEVEL)
-        assertEquals(listOf(log, label(R.string.alert_action_mute), label(R.string.alert_action_remind_less)), low.titles())
+        assertEquals(listOf(log, label(R.string.alert_action_remind_less), label(R.string.alert_action_mute)), low.titles())
+        assertTrue("never an ellipsis in an action (the owner, 2026-11-14)", low.titles().none { it.contains('…') || it.contains("...") })
 
         // straight to the quick treatment dialog (an activity: no trampoline), immutable, Carbs focused, the alert named
         val pi = shadowOf(low.action(log).actionIntent)
@@ -215,26 +214,52 @@ class AlertNotificationShapeTest {
         assertEquals(log, falling.titles().first())
         assertEquals("falling_fast", shadowOf(falling.action(log).actionIntent).savedIntent.getStringExtra(NavTargets.EXTRA_ALERT_KIND))
 
-        // the highs and no data never: carbs don't answer them
+        // the highs too, on Rapid (the dialog's first field); no data never: nothing logged answers it
         notifier.show(fire(AlertKind.HIGH, 220), settings, silent = false, who = null, relaxedMin = 0)
-        assertFalse(log in posted(AlertGroup.LEVEL).titles())
+        val high = posted(AlertGroup.LEVEL)
+        assertEquals(log, high.titles().first())
+        assertFalse(
+            "Rapid, not Carbs",
+            shadowOf(high.action(log).actionIntent).savedIntent.getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, true),
+        )
         notifier.show(fire(AlertKind.NO_DATA, 0), settings, silent = false, who = null, relaxedMin = 0)
         assertFalse(log in posted(AlertGroup.NO_DATA).titles())
 
-        // the muted note keeps it first, before its ways out; a high's muted note has none
+        // the muted note keeps it first, then only Unmute, on either side
         notifier.showMuted(AlertGroup.LEVEL, Side.LOW, AlertKind.LOW, now + 1800, settings, now)
-        assertEquals(
-            listOf(log, label(R.string.alert_action_unmute), label(R.string.alert_action_change)),
-            posted(AlertGroup.LEVEL).titles(),
-        )
+        assertEquals(listOf(log, label(R.string.alert_action_unmute)), posted(AlertGroup.LEVEL).titles())
         notifier.showMuted(AlertGroup.LEVEL, Side.HIGH, AlertKind.HIGH, now + 1800, settings, now)
-        assertEquals(listOf(label(R.string.alert_action_unmute), label(R.string.alert_action_change)), posted(AlertGroup.LEVEL).titles())
+        assertEquals(listOf(log, label(R.string.alert_action_unmute)), posted(AlertGroup.LEVEL).titles())
     }
 
-    @Test fun `no Log carbs where this phone can't add entries, nor on the plain alert`() {
-        val log = label(R.string.alert_action_log_carbs)
+    @Test fun `Mute's chips are short and say their whole meaning to TalkBack`() {
+        AlertNotifier(ctx).show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 0)
+        val chips =
+            posted(AlertGroup.LEVEL)
+                .action(label(R.string.alert_action_mute))
+                .remoteInputs
+                .single()
+                .choices
+        assertEquals(listOf("15m", "30m", "1h", "2h"), chips.map { it.toString() }.filter { it in setOf("15m", "30m", "1h", "2h") })
+        val spoken =
+            (chips.first() as android.text.Spanned)
+                .getSpans(
+                    0,
+                    chips.first().length,
+                    android.text.style.TtsSpan::class.java,
+                ).single()
+        assertTrue(
+            spoken.args
+                .getString(android.text.style.TtsSpan.ARG_TEXT)
+                .orEmpty()
+                .contains("min"),
+        )
+    }
+
+    @Test fun `no Treatment where this phone can't add entries, nor on the plain alert`() {
+        val log = label(R.string.alert_action_treatment)
         AlertNotifier(ctx, canLog = { false }).show(fire(AlertKind.LOW, 62), settings, silent = false, who = null, relaxedMin = 0)
-        assertEquals(listOf(label(R.string.alert_action_mute), label(R.string.alert_action_remind_less)), posted(AlertGroup.LEVEL).titles())
+        assertEquals(listOf(label(R.string.alert_action_remind_less), label(R.string.alert_action_mute)), posted(AlertGroup.LEVEL).titles())
 
         // a failing check is a no: the alert still posts
         AlertNotifier(

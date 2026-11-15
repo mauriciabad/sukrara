@@ -6,14 +6,12 @@ package app.mauri.sukrara.monitor.alerts
 import android.app.Notification
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.RemoteInput
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.StrikethroughSpan
-import android.text.style.TtsSpan
 import androidx.annotation.StringRes
 import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.alerts.AlertKind
@@ -21,19 +19,19 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.alerts.TreatmentKind
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.GlucoseUnit
-import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
+import app.mauri.sukrara.monitor.notify.AlertButton
 import app.mauri.sukrara.monitor.notify.AppActivities
 import app.mauri.sukrara.monitor.notify.Channels
+import app.mauri.sukrara.monitor.notify.GlucoseAlert
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.SoundGap
@@ -66,6 +64,10 @@ class AlertNotifier(
     /** The app's words now, read once per post: a language change renames the next alert at once. */
     private fun words(): AlertWords = AlertWords.of(ctx, AlertWords.Ids + AlertCopy.Ids, strict = true)
 
+    /**
+     * The alert as a notification of its own (*Separate alert notifications*: a watch is bridged only to these; the glucose
+     * notification then shows no alert). The same words, buttons and channel as the glucose notification's alert.
+     */
     override fun show(
         firing: Firing,
         settings: AlertSettings,
@@ -75,40 +77,123 @@ class AlertNotifier(
         now: Long,
     ) {
         val kind = firing.kind
-        // #39: the wearer's very low nobody answered rings like an alarm here, whatever this kind's setting
-        val alarm = settings.rule(kind).alarm || firing.escalated
         val words = words()
+        val part = glucoseAlert(firing, settings, who, relaxedMin, now, words)
         val body = AlertCopy.bodyOf(firing, words, unit(), now = now)
         val text = if (body.strikeTo > 0) struck(body) else body.text
         // the header's age ("now", "3m", kept current by the system) is the reading's: the value's age, not the ring's
         val reading = firing.reading?.takeIf { kind != AlertKind.NO_DATA }
         val b =
-            base(kind, alarm, silent, firing.id)
-                .setContentTitle(AlertCopy.headline(kind, firing.treated, words, firing.escalated))
+            base(kind, part.alarm, silent, firing.id)
+                .setContentTitle(part.title)
                 .setContentText(text)
                 .setWhen((reading?.t ?: firing.at) * 1000)
                 .setShowWhen(true)
                 .setAutoCancel(true)
+        part.sub?.let(b::setSubText)
+        part.buttons.forEach { b.addAction(actions.action(kind, it, words, promoted = false)) }
+        if (part.alarm && !silent && nm.canUseFullScreenIntent()) b.setFullScreenIntent(openApp(), true)
+        post(kind.group, b.build(), part.channel)
+        // the app's info notifications wait until Android's one-sound-per-second limit can't mute this one
+        if (!silent) rang(kind.group, part.channel, part.alarm)
+    }
+
+    /**
+     * What the glucose notification shows of [firing] (docs/36): the headline, the value line, the kind's channel and
+     * category, the buttons in order (*Treatment* where this phone can add entries: the low side on Carbs, the high
+     * side on Rapid; *Remind less* / *Remind as usual*; *Mute*) and the sub text (the followed person, the relaxed
+     * interval). [now]: the value's look is the reading's at this time.
+     */
+    fun glucoseAlert(
+        firing: Firing,
+        settings: AlertSettings,
+        who: String?,
+        relaxedMin: Int,
+        now: Long,
+        words: AlertWords = words(),
+    ): GlucoseAlert {
+        val kind = firing.kind
+        // #39: the wearer's very low nobody answered rings like an alarm here, whatever this kind's setting
+        val alarm = settings.rule(kind).alarm || firing.escalated
         val relaxed =
             relaxedMin
-                .takeIf {
-                    it > 0
-                }?.let { ctx.getString(R.string.alert_relaxed_subtext, Durations.text(it.toLong(), words.durations)) }
-        listOfNotNull(who, relaxed).takeIf { it.isNotEmpty() }?.let { b.setSubText(it.joinToString(" · ")) }
-        b.addLogAction(kind)
-        b.addMuteAction(kind, ctx.getString(R.string.alert_action_mute), settings.muteChoices(), words)
-        when {
-            relaxedMin > 0 -> b.addAction(action(kind, AlertActionReceiver.REMIND_AS_USUAL, R.string.alert_action_remind_usual))
-            settings.canRelax(kind) -> b.addAction(action(kind, AlertActionReceiver.REMIND_LESS, R.string.alert_action_remind_less))
-        }
-        if (alarm && !silent && nm.canUseFullScreenIntent()) b.setFullScreenIntent(openApp(), true)
-        post(kind.group, b.build(), AlertChannels.id(ctx, kind, alarm))
-        // the app's info notifications wait until Android's one-sound-per-second limit can't mute this one
-        if (!silent) {
-            SoundGap.shared.alertRang()
-            unlocked?.ringing(kind.group, AlertChannels.id(ctx, kind, alarm), alarm)
-        }
+                .takeIf { it > 0 }
+                ?.let { ctx.getString(R.string.alert_relaxed_subtext, Durations.text(it.toLong(), words.durations)) }
+        val buttons =
+            listOfNotNull(
+                treatment(kind),
+                when {
+                    relaxedMin > 0 -> AlertButton.RemindAsUsual
+                    settings.canRelax(kind) -> AlertButton.RemindLess
+                    else -> null
+                },
+                AlertButton.Mute(settings.muteChoices()),
+            )
+        return GlucoseAlert(
+            group = kind.group,
+            kind = kind,
+            firingId = firing.id,
+            title = AlertCopy.headline(kind, firing.treated, words, firing.escalated),
+            body = AlertCopy.bodyOf(firing, words, unit(), now = now).text,
+            channel = AlertChannels.id(ctx, kind, alarm),
+            alarm = alarm,
+            category = AlertCategory.of(alarm, AlertCategory.Dnd.of(nm)),
+            buttons = buttons,
+            sub = listOfNotNull(who, relaxed).takeIf { it.isNotEmpty() }?.joinToString(" · "),
+            rangeSaid = kind.isLevel,
+        )
     }
+
+    /** A side's muted note on the glucose notification: "Low alerts muted", its countdown, *Treatment* and *Unmute*. */
+    fun mutedAlert(
+        side: Side,
+        kind: AlertKind,
+        until: Long,
+        settings: AlertSettings,
+        words: AlertWords = words(),
+    ): GlucoseAlert {
+        val alarm = settings.rule(kind).alarm
+        return GlucoseAlert(
+            group = kind.group,
+            kind = kind,
+            firingId = null,
+            title = MuteText.line(MuteLine.SideMuted(side, null), words),
+            body = MuteText.line(MuteLine.NotifUntil(until), words, ::clockTime),
+            channel = AlertChannels.id(ctx, kind, alarm),
+            alarm = alarm,
+            category = AlertCategory.of(alarm, AlertCategory.Dnd.of(nm)),
+            buttons = listOfNotNull(treatment(kind), AlertButton.Unmute),
+            mutedUntil = until,
+            // "Lows muted" already names the side: no range word beside the value (nothing said twice)
+            rangeSaid = kind.isLevel,
+        )
+    }
+
+    /** *Treatment* on [kind]'s alert where this phone can add entries (no data has none: nothing logged answers it). */
+    private fun treatment(kind: AlertKind): AlertButton? {
+        if (kind == AlertKind.NO_DATA || !runCatching(canLog).getOrDefault(false)) return null
+        return AlertButton.Treatment(carbs = kind.side == Side.LOW)
+    }
+
+    /** A ring went out on [channel]: info sounds wait (one sound per second), Sukrara's own unlocked sound starts. */
+    fun rang(
+        group: AlertGroup,
+        channel: String,
+        alarm: Boolean,
+    ) {
+        SoundGap.shared.alertRang()
+        unlocked?.ringing(group, channel, alarm)
+    }
+
+    /** Sukrara's own unlocked sound of [group] stops (a mute, a clear, a swipe). */
+    fun stopSound(group: AlertGroup) {
+        unlocked?.stop(group)
+    }
+
+    /** The words now, for the glucose notification's alert (read once per post). */
+    fun wordsNow(): AlertWords = words()
+
+    internal val actions = AlertActions(ctx)
 
     /**
      * [show]'s stand-in when it failed: "High glucose" / "220 mg/dL ↗" / *Open Sukrara*, from [headlineRes] and
@@ -169,23 +254,21 @@ class AlertNotifier(
     override suspend fun beforeRing() = delay(SoundGap.shared.alertWaitMs())
 
     override fun showMuted(group: AlertGroup, side: Side, kind: AlertKind, until: Long, settings: AlertSettings, now: Long) {
-        val alarm = settings.rule(kind).alarm
         val words = words()
+        val part = mutedAlert(side, kind, until, settings, words)
         val b =
-            base(kind, alarm, silent = true)
-                .setContentTitle(MuteText.line(MuteLine.SideMuted(side, null), words))
-                .setContentText(MuteText.line(MuteLine.NotifUntil(until), words, ::clockTime))
+            base(kind, part.alarm, silent = true)
+                .setContentTitle(part.title)
+                .setContentText(part.body)
                 .setWhen(until * 1000)
                 .setShowWhen(true)
                 .setUsesChronometer(true)
                 .setChronometerCountDown(true)
                 .setOnlyAlertOnce(true)
                 .setTimeoutAfter(((until - now) * 1000).coerceAtLeast(1_000))
-        b.addLogAction(kind)
-        b.addAction(action(kind, AlertActionReceiver.UNMUTE, R.string.alert_action_unmute))
-        b.addMuteAction(kind, ctx.getString(R.string.alert_action_change), settings.muteChoices(), words)
+        part.buttons.forEach { b.addAction(actions.action(kind, it, words, promoted = false)) }
         unlocked?.stop(group)
-        post(group, b.build(), AlertChannels.id(ctx, kind, alarm))
+        post(group, b.build(), part.channel)
     }
 
     /**
@@ -220,6 +303,14 @@ class AlertNotifier(
 
     override fun clear(group: AlertGroup) {
         unlocked?.stop(group)
+        clearSlot(group)
+    }
+
+    /** Whether Android lets an alarm-level alert open full screen now (the person can turn it off per app). */
+    fun canFullScreen(): Boolean = runCatching { nm.canUseFullScreenIntent() }.getOrDefault(false)
+
+    /** [group]'s separate notification goes (a stand-in once the alert itself shows); a sound playing goes on. */
+    fun clearSlot(group: AlertGroup) {
         NotificationGroups.cancel(ctx, idOf(group), NotificationGroups.Group.ALERTS)
     }
 
@@ -257,79 +348,9 @@ class AlertNotifier(
 
     private fun clockTime(epochS: Long): String = ClockText.time(epochS)
 
-    /**
-     * *Mute…* / *Change time*: a direct reply with the lengths as one-tap chips, shortest first (and a typed one); each
-     * chip says what it does to TalkBack ([muteChoices]).
-     */
-    private fun Notification.Builder.addMuteAction(kind: AlertKind, title: String, choices: List<Int>, words: AlertWords) =
-        addAction(
-            Notification.Action
-                .Builder(null, title, broadcast(kind, AlertActionReceiver.MUTE, mutable = true))
-                .addRemoteInput(
-                    RemoteInput
-                        .Builder(AlertActionReceiver.TYPED)
-                        .setLabel(ctx.getString(R.string.alert_action_mute_for_label))
-                        .setChoices(muteChoices(kind, choices, words))
-                        .setAllowFreeFormInput(true)
-                        .setEditChoicesBeforeSending(RemoteInput.EDIT_CHOICES_BEFORE_SENDING_DISABLED)
-                        .build(),
-                ).build(),
-        )
-
-    /**
-     * The chips, shortest first ("15 min", "30 min", "1 h", "2 h"; the person's own first length among them). A chip has
-     * no label of its own, so each carries what TalkBack says as a [TtsSpan]: "Low alerts: mute for 30 min". The reply
-     * comes back as the chip's text (the span is dropped with it), which [AlertActionReceiver] parses.
-     */
-    internal fun muteChoices(kind: AlertKind, minutes: List<Int>, words: AlertWords = words()): Array<CharSequence> {
-        val side = MuteText.sideName(kind.side, words)
-        val durations = words.durations
-        return minutes
-            .distinct()
-            .sorted()
-            .map { min ->
-                val shown = Durations.text(min.toLong(), durations)
-                val spoken = ctx.getString(R.string.alert_mute_choice_a11y, side, shown)
-                SpannableString(shown).apply { setSpan(TtsSpan.TextBuilder(spoken).build(), 0, length, Spanned.SPAN_INCLUSIVE_INCLUSIVE) }
-            }.toTypedArray()
-    }
-
-    /**
-     * *Log carbs*, first: on the kinds carbs answer (very low, low, falling fast; their muted note too) where this phone
-     * can add entries. It opens the quick treatment dialog with Carbs focused (Rapid is there for a meal that needs
-     * insulin), straight from the button: Android lets only an activity's own PendingIntent start it from a
-     * notification action, and asks for the unlock first. The alert stays until the carbs quiet it (`muteAfterCarbs`)
-     * or it ends; the dialog takes the alert's kind as an answer (#39).
-     */
-    private fun Notification.Builder.addLogAction(kind: AlertKind) {
-        if (kind.answeredBy != TreatmentKind.CARBS || !runCatching(canLog).getOrDefault(false)) return
-        val dialog =
-            Intent(NavTargets.ACTION_QUICK_TREATMENT)
-                .setPackage(ctx.packageName)
-                .putExtra(NavTargets.EXTRA_FOCUS_CARBS, true)
-                .putExtra(NavTargets.EXTRA_ALERT_KIND, kind.wire)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        val pi =
-            PendingIntent.getActivity(
-                ctx,
-                LOG_REQUEST + kind.ordinal,
-                dialog,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-            )
-        addAction(Notification.Action.Builder(null, ctx.getString(R.string.alert_action_log_carbs), pi).build())
-    }
-
-    private fun action(kind: AlertKind, what: String, label: Int) =
-        Notification.Action.Builder(null, ctx.getString(label), broadcast(kind, what, mutable = false)).build()
-
-    /** A broadcast to the non-exported [AlertActionReceiver]; only the direct reply's is mutable (the system adds the text). */
-    private fun broadcast(kind: AlertKind, what: String, mutable: Boolean): PendingIntent =
-        PendingIntent.getBroadcast(
-            ctx,
-            requestCode(kind, what),
-            Intent(ctx, AlertActionReceiver::class.java).setAction(what).putExtra(AlertActionReceiver.KIND, kind.wire),
-            PendingIntent.FLAG_UPDATE_CURRENT or if (mutable) PendingIntent.FLAG_MUTABLE else PendingIntent.FLAG_IMMUTABLE,
-        )
+    /** The chips of *Mute* ([AlertActions.muteChoices]). */
+    internal fun muteChoices(kind: AlertKind, minutes: List<Int>, words: AlertWords = words()): Array<CharSequence> =
+        actions.muteChoices(kind, minutes, words)
 
     /**
      * The swipe's broadcast, one per firing (#195): its own id rides along (a data URI keeps each firing's PendingIntent
@@ -341,7 +362,7 @@ class AlertNotifier(
     ): PendingIntent =
         PendingIntent.getBroadcast(
             ctx,
-            requestCode(kind, AlertActionReceiver.TIDY),
+            AlertActions.requestCode(kind, AlertActionReceiver.TIDY),
             Intent(ctx, AlertActionReceiver::class.java)
                 .setAction(AlertActionReceiver.TIDY)
                 .setData(Uri.fromParts("sukrara-alert", firingId ?: "none", null))
@@ -351,7 +372,7 @@ class AlertNotifier(
         )
 
     /** The app (found before the first unlock too: from the lock screen Android asks for the unlock first). */
-    private fun openApp(): PendingIntent =
+    fun openApp(): PendingIntent =
         PendingIntent.getActivity(
             ctx,
             1,
@@ -364,11 +385,6 @@ class AlertNotifier(
         fun idOf(group: AlertGroup): Int = NotificationIds.ALERTS_BASE + group.ordinal
 
         const val TEST_TIMEOUT_MS = 2 * 60_000L
-
-        /** *Log carbs*'s request codes, one per kind (activity PendingIntents: apart from the receiver's broadcasts). */
-        private const val LOG_REQUEST = 3000
-
-        private fun requestCode(kind: AlertKind, what: String) = 2000 + kind.ordinal * 16 + AlertActionReceiver.ACTIONS.indexOf(what)
 
         /** "Low", "Very high"…: the kind's name (the sound's title in Android's channel settings). */
         fun kindLabel(ctx: Context, kind: AlertKind): String =

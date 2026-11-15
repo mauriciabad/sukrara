@@ -121,7 +121,7 @@ class SearchOpensNightAlertsTest {
         // Back: Alerts, with the quiet side's line
         stack.removeAt(stack.lastIndex)
         compose.waitForIdle()
-        compose.onAllNodesWithText("Low alerts muted after carbs", substring = true)[0].assertExists()
+        compose.onAllNodesWithText("Lows muted after carbs", substring = true)[0].assertExists()
     }
 }
 

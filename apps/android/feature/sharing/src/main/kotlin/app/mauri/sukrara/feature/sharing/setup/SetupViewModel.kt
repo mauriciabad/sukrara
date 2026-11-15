@@ -12,7 +12,11 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SystemAccessState
+import app.mauri.sukrara.designsystem.root.AccessProblem
+import app.mauri.sukrara.designsystem.root.AccessRunner
 import app.mauri.sukrara.feature.sharing.RoleLoss
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.following
@@ -106,6 +110,23 @@ data class SetupUi(
     val canBack: Boolean,
     /** The role step's open confirmation (null = none). */
     val roleChange: RoleChange? = null,
+    /** The root step and the glucose notification step. */
+    val root: RootUi = RootUi(),
+)
+
+/** The root step's and the glucose notification step's state. */
+data class RootUi(
+    /** Root and the LSPosed module now. */
+    val access: SystemAccessState = SystemAccessState(),
+    /** *Yes, it's rooted* was tapped (or signs of root answered the question): the check and its card show. */
+    val rooted: Boolean = false,
+    /** A root / LSPosed action is running; [problem] = why the last one failed. */
+    val busy: Boolean = false,
+    val problem: AccessProblem? = null,
+    /** The glucose notification choice now. */
+    val style: NotificationStyle = NotificationStyle.Chip,
+    /** This build offers the status bar text (root features). */
+    val offered: Boolean = false,
 )
 
 /**
@@ -146,6 +167,21 @@ class SetupViewModel(
     /** The thresholds being edited on the alert step (null = the stored ones). */
     private val editing = MutableStateFlow<AlertSettings?>(null)
 
+    /** *Yes, it's rooted* on the root step (screen state: a rotation keeps it). */
+    private val saidRooted = saved.getMutableStateFlow(ROOTED, false)
+
+    private val runner = AccessRunner(viewModelScope)
+
+    private val rootUi =
+        combine(
+            m.access,
+            saidRooted,
+            combine(runner.busy, runner.problem, ::Pair),
+            m.notificationStyle,
+        ) { access, said, (busy, problem), style ->
+            RootUi(access, said || access.rootSeen, busy, problem, style, m.systemAccess != null)
+        }
+
     private val inputs =
         combine(
             m.setupStore.data,
@@ -157,7 +193,8 @@ class SetupViewModel(
                 m.alertsConfirmedAt,
                 m.updateChoice,
                 m.pensAnswered,
-            ) { a, c, u, p -> Answers(a, c != null, u, p) },
+                m.rootGranted,
+            ) { a, c, u, p, r -> Answers(a, c != null, u, p, r) },
         ) {
             record,
             role,
@@ -175,8 +212,8 @@ class SetupViewModel(
             m.readiness.readiness,
             combine(mode, alone, shown, ::Triple),
             combine(restore, busy, editing, ::Locals),
-            combine(joining, m.pendingInvite, roleChange, ::Triple),
-        ) { i, readiness, (modeName, aloneName, backTo), l, (join, invite, change) ->
+            combine(joining, m.pendingInvite, roleChange, rootUi, ::Others),
+        ) { i, readiness, (modeName, aloneName, backTo), l, (join, invite, change, root) ->
             // opened from home: nothing until the walk-or-finish decision is made (no step flashes, no early "over")
             val mode = modeName?.let(Mode::valueOf) ?: return@combine null
             val now = m.clock.now()
@@ -189,6 +226,7 @@ class SetupViewModel(
                     alertsConfirmed = i.answers.confirmed,
                     updates = i.answers.updates,
                     pens = i.answers.pens,
+                    root = i.answers.root,
                 )
             val steps = SetupMachine.steps(facts)
             val single = mode != Mode.Walk
@@ -219,6 +257,7 @@ class SetupViewModel(
                 single = single,
                 canBack = !single && step != null && SetupMachine.previous(step, facts) != null,
                 roleChange = change.takeIf { step == SetupStep.Role },
+                root = root,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -544,6 +583,46 @@ class SetupViewModel(
     /** *I don't use a smart pen* (final: a pen tap still asks), or *Continue* once pens are read: the pens step is done. */
     fun completePens() = record(SetupMachine::completePens)
 
+    /** *Yes, it's rooted*, or signs of root on the root step: ask for root now (the root manager's prompt). */
+    fun checkRoot() {
+        saidRooted.value = true
+        runner.run {
+            m.systemAccess?.checkRoot()
+            null
+        }
+    }
+
+    /** *No* (final), or *Continue* once Sukrara has root. */
+    fun completeRoot() = record(SetupMachine::completeRoot)
+
+    fun requestScope() = runner.run { m.systemAccess?.requestScope() }
+
+    fun restartSystemUi() = runner.run { m.systemAccess?.restartSystemUi() }
+
+    /** A choice on the glucose notification step, stored at once (as on the settings page). */
+    fun chooseNotification(style: NotificationStyle) {
+        viewModelScope.launch {
+            m.setNotificationStyle(style)
+            if (style == NotificationStyle.Root && ui.value
+                    ?.root
+                    ?.access
+                    ?.granted == false
+            ) {
+                checkRoot()
+            }
+        }
+    }
+
+    /** The glucose notification step shows: with root, the status bar text is picked (once; the person may change it). */
+    fun notificationShown() {
+        if (saved.get<Boolean>(PICKED) == true || ui.value?.facts?.root != true) return
+        saved[PICKED] = true
+        viewModelScope.launch { m.setNotificationStyle(NotificationStyle.Root) }
+    }
+
+    /** *Continue* on the glucose notification step. */
+    fun completeNotification() = record(SetupMachine::completeNotification)
+
     /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, then the walk goes on. */
     fun turnOnUpdates() =
         act {
@@ -630,12 +709,20 @@ class SetupViewModel(
         val answers: Answers,
     )
 
-    /** The answers kept elsewhere: the thresholds, whether they were confirmed, updates and pens. */
+    /** The answers kept elsewhere: the thresholds, whether they were confirmed, updates, pens and root. */
     private data class Answers(
         val alerts: AlertSettings,
         val confirmed: Boolean,
         val updates: UpdateChoice?,
         val pens: Boolean?,
+        val root: Boolean?,
+    )
+
+    private data class Others(
+        val join: JoinUi,
+        val invite: String?,
+        val change: RoleChange?,
+        val root: RootUi,
     )
 
     private data class Locals(
@@ -652,6 +739,8 @@ class SetupViewModel(
         private const val ALONE = "setup.alone"
         private const val VISITED = "setup.visited"
         private const val SHOWN = "setup.shown"
+        private const val ROOTED = "setup.rooted"
+        private const val PICKED = "setup.rootPicked"
 
         fun factory(
             module: SetupModule,

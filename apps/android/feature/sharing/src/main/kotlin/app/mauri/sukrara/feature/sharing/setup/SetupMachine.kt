@@ -36,6 +36,22 @@ enum class SetupStep {
      * switch.
      */
     Updates,
+
+    /**
+     * Builds with root features only (null [SetupFacts.root] = Google Play: never shown), before [Notification]:
+     * *Root*, whether this phone is rooted. Signs of root (LSPosed, a root manager) skip the question. *Yes* asks for
+     * root at once (the root manager's prompt), then the one missing step with its fix and *Check again* (the same card
+     * as Settings › Glucose notification); granted root completes it and picks the status bar text on the next step.
+     * *No* is final; *Later* keeps it on *Finish setup*. Done by itself once Sukrara has root.
+     */
+    Root,
+
+    /**
+     * *Glucose notification* (docs/36 §11): the same choice as Settings › Glucose notification (chip, notification
+     * icon, status bar text with root), the status bar text already picked when Sukrara has root. *Continue* keeps the
+     * choice; no *Later*: the chip is already an answer, and Settings changes it any time.
+     */
+    Notification,
     Identity,
 
     /**
@@ -99,6 +115,8 @@ data class SetupFacts(
      * here, in Settings › Insulin pens or at a pen tap); false = still *Ask at the first pen tap*.
      */
     val pens: Boolean? = null,
+    /** Root as setup sees it: null = a build without root features (no root step); true = Sukrara has root. */
+    val root: Boolean? = null,
 )
 
 /** Where the GitHub version's daily update check stands (it is opt-in: off until the person turns it on). */
@@ -159,13 +177,19 @@ object SetupMachine {
                         SetupStep.Alerts,
                         SetupStep.Ready,
                         SetupStep.Updates,
+                        SetupStep.Root,
+                        SetupStep.Notification,
                     )
                 }
 
                 Role.Wearer, null -> {
                     SetupStep.entries - SetupStep.Join
                 }
-            }.filter { (it != SetupStep.Updates || facts.updates != null) && (it != SetupStep.Pens || facts.pens != null) }
+            }.filter {
+                (it != SetupStep.Updates || facts.updates != null) &&
+                    (it != SetupStep.Pens || facts.pens != null) &&
+                    (it != SetupStep.Root || facts.root != null)
+            }
         // nothing optional on this phone: the essentials end setup
         return if (all.none { it.extra }) all - SetupStep.Ready else all
     }
@@ -289,6 +313,10 @@ object SetupMachine {
         } else if (step == SetupStep.Ready) {
             // an install that went past it before it existed
             step in record.completed || passed(step, record, facts)
+        } else if (step == SetupStep.Root) {
+            step in record.completed || facts.root == true || passed(step, record, facts)
+        } else if (step == SetupStep.Notification) {
+            step in record.completed || passed(step, record, facts)
         } else if (step == SetupStep.Pens) {
             step in record.completed || facts.pens == true
         } else {
@@ -301,7 +329,7 @@ object SetupMachine {
 
     /**
      * The walk already went past [step]: a later step was answered. Only for a step added to the walk after people
-     * finished it (*Keep Sukrara up to date*, [SetupStep.Ready]): an install from before it isn't sent back into setup
+     * finished it (*Keep Sukrara up to date*, [SetupStep.Ready], [SetupStep.Root], [SetupStep.Notification]): an install from before it isn't sent back into setup
      * for it.
      */
     private fun passed(
@@ -320,6 +348,12 @@ object SetupMachine {
 
     /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, the step done. */
     fun completeUpdates(record: SetupRecord): SetupRecord = record.done(SetupStep.Updates)
+
+    /** *No* on the root step (final), or *Continue* once Sukrara has root. */
+    fun completeRoot(record: SetupRecord): SetupRecord = record.done(SetupStep.Root)
+
+    /** *Continue* on the glucose notification step: the choice made there stays. */
+    fun completeNotification(record: SetupRecord): SetupRecord = record.done(SetupStep.Notification)
 
     /** P10: the role to store, or why not: refused until [confirmed]. */
     fun chooseRole(

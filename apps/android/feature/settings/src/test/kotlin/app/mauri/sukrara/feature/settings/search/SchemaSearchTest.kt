@@ -18,6 +18,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * THE schema against the search (#205, docs/35): every setting of `contracts/settings/settings.json` that has a row on
@@ -103,14 +104,16 @@ class SchemaSearchTest {
             put("alerts.night.kind.alarm", R.string.st_alarm to page(SettingsRoute.NightKindPage(low)))
             put("alerts.sounds.pack", R.string.st_sound_pack to page(SettingsRoute.Alerts))
             put("alerts.sounds.shuffle", R.string.st_shuffle to page(SettingsRoute.Alerts))
+            put("alerts.separate", R.string.st_alerts_separate to page(SettingsRoute.Alerts))
             put("alerts.unlockedSound", AlertRequirement.SoundWhenUnlocked.nameRes() to page(SettingsRoute.Reliability))
-            put("statusbar.chip", R.string.st_statusbar_chip to page(SettingsRoute.StatusBar))
+            put("statusbar.chip", DsR.string.ds_notif_style_chip to page(SettingsRoute.StatusBar))
+            put("statusbar.colorize", R.string.st_statusbar_colorize to page(SettingsRoute.StatusBar))
             put("statusbar.icon", R.string.st_statusbar_number_icon to page(SettingsRoute.StatusBar))
             put("statusbar.lockScreen", R.string.st_statusbar_lock_screen to page(SettingsRoute.StatusBar))
-            put("statusbar.hook", R.string.st_root_value to page(SettingsRoute.StatusBar))
+            put("statusbar.hook", DsR.string.ds_notif_style_root to page(SettingsRoute.StatusBar))
             put("statusbar.hookPosition", R.string.st_root_placement to page(SettingsRoute.StatusBar))
             put("statusbar.hookColor", R.string.st_root_colour to page(SettingsRoute.StatusBar))
-            put("statusbar.hideNotifIcon", R.string.st_root_hide_icon to page(SettingsRoute.StatusBar))
+            put("statusbar.hideNotifIcon", DsR.string.ds_notif_style_root to page(SettingsRoute.StatusBar))
             put("lock.widget", R.string.st_lock_widget to page(SettingsRoute.LockScreen))
             put("lock.background", R.string.st_lock_background to page(SettingsRoute.LockScreen))
             put("lock.appearance", R.string.st_lock_appearance to page(SettingsRoute.LockScreen))

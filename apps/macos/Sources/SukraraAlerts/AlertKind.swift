@@ -77,17 +77,18 @@ public enum AlertKind: String, CaseIterable, Codable, Sendable {
         case .extremelyHigh: "Extremely high"
         case .fallingFast: "Falling fast"
         case .risingFast: "Rising fast"
-        case .noData: "No glucose data"
+        case .noData: "No data"
         }
     }
 
-    /// The notification headline (SPEC §1). Level alerts acknowledge the answering treatments logged in the episode
-    /// (`treated` 1, or 2 for two or more); highs never suggest more insulin.
+    /// The notification headline (SPEC §1): the kind alone, never "glucose" (the owner, 2026-11-14: "it's obvious it's
+    /// glucose"). Level alerts acknowledge the answering treatments logged in the episode (`treated` 1, or 2 for two or
+    /// more); highs never suggest more insulin.
     public func headline(treated: Int = 0) -> String {
-        let base = group == .level ? "\(title) glucose" : title
+        let base = title
         guard treated > 0, group == .level else { return base }
         if isLowSide { return base + (treated == 1 ? " · eat more" : " · eat more again") }
-        return base + (treated == 1 ? " · still high after insulin" : " · still high after more insulin")
+        return base + (treated == 1 ? " · still after insulin" : " · still after more insulin")
     }
 }
 
