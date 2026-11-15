@@ -491,8 +491,14 @@ private fun FollowersLine(
         if (nearby > 0) "$words, " + pluralStringResource(R.plurals.home_followers_nearby, nearby, nearby) else words
     FirstThatFits(
         listOf(
-            { MarkedLine(listOf(LinePart.Words(words)) + near, null) },
-            { MarkedLine(listOf(LinePart.Glyph(DsR.drawable.ds_ic_group), LinePart.Words(" $followers")) + near, null) },
+            { MarkedLine(listOf(LinePart.Words(words)) + near, null, plainBluetooth = true) },
+            {
+                MarkedLine(
+                    listOf(LinePart.Glyph(DsR.drawable.ds_ic_group), LinePart.Words(" $followers")) + near,
+                    null,
+                    plainBluetooth = true,
+                )
+            },
         ),
         Modifier.testTag(FOLLOWERS_LINE_TAG).clearAndSetSemantics { contentDescription = description },
     )
@@ -556,6 +562,7 @@ private fun FollowerHeader(state: HomeUiState) {
                 "${stringResource(path.words)}, $line",
                 color = color,
                 maxLines = 2,
+                plainBluetooth = true,
             )
         }
     }

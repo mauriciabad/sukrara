@@ -692,8 +692,9 @@ private struct AlertBlocks: View {
 }
 
 /// How the wearer's readings come now, at the end of the mute row (the owner, 2026-11-15: "know if the connection is
-/// through nearby Bluetooth or internet"): the Bluetooth mark with *Nearby*, the globe with *Internet*, or *Offline*
-/// in red, as Apple Watch marks its iPhone or Wi-Fi link (a shape per path, never colour alone). A click opens Settings
+/// through nearby Bluetooth or internet"): the Bluetooth mark with *Nearby*, the globe with *Internet*, both in the
+/// text's colour (the owner: "the normal text color, not colored"), or *Offline* in red, as Apple Watch marks its
+/// iPhone or Wi-Fi link (a shape per path, never colour alone). A click opens Settings
 /// › Following, where the Bluetooth line and its fixes are; VoiceOver reads it in words.
 struct PathBadge: View {
     let path: LinkPath
@@ -702,7 +703,7 @@ struct PathBadge: View {
     var body: some View {
         let label = HStack(spacing: 4) {
             switch path {
-            case .nearby: BluetoothGlyph().fill(Color.accentColor).frame(width: 12, height: 12)
+            case .nearby: BluetoothGlyph().frame(width: 12, height: 12)
             case .internet: Image(systemName: "globe")
             case .offline: Image(systemName: "network.slash")
             }

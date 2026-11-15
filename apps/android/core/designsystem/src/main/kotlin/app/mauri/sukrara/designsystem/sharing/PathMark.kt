@@ -74,9 +74,9 @@ val PathMarkKey = SemanticsPropertyKey<PathMark>("PathMark")
 const val PATH_ICON_TAG = "path-icon"
 
 /**
- * A [PathMark]: Bluetooth connected in the primary colour, Bluetooth out of range dimmed, the globe in [tint], no
- * connection in the error colour. Decorative: the row or line around it says [PathMark.words]. [size] null = the
- * space it's given (a mark in a line of text).
+ * A [PathMark]: Bluetooth connected in the primary colour (or [nearbyTint]), Bluetooth out of range dimmed, the globe in
+ * [tint], no connection in the error colour. Decorative: the row or line around it says [PathMark.words]. [size] null =
+ * the space it's given (a mark in a line of text).
  */
 @Composable
 fun PathIcon(
@@ -84,6 +84,7 @@ fun PathIcon(
     modifier: Modifier = Modifier,
     size: Dp? = 20.dp,
     tint: Color = LocalContentColor.current,
+    nearbyTint: Color? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     Icon(
@@ -96,7 +97,7 @@ fun PathIcon(
                 .semantics { this[PathMarkKey] = mark },
         tint =
             when (mark) {
-                PathMark.Nearby -> scheme.primary
+                PathMark.Nearby -> nearbyTint ?: scheme.primary
                 PathMark.Paired -> scheme.onSurfaceVariant.copy(alpha = PAIRED_ALPHA)
                 PathMark.Internet -> tint
                 PathMark.Offline -> scheme.error
@@ -125,7 +126,8 @@ sealed interface LinePart {
  * A line of text with marks in it, each a little taller than a capital, so it grows with the font size. [description]
  * is what TalkBack reads for the whole line (the marks have no words of their own; null = the caller says it around
  * the line). One line unless [maxLines] says more: [FirstThatFits] picks a shorter line where a long one doesn't fit,
- * so nothing is cut.
+ * so nothing is cut. [plainBluetooth]: the Bluetooth mark in the text's [color] (home's header lines, as the Mac
+ * panel's: the owner, 2026-11-15, "the normal text color, not colored").
  */
 @Composable
 fun MarkedLine(
@@ -135,6 +137,7 @@ fun MarkedLine(
     style: TextStyle = MaterialTheme.typography.bodySmall,
     color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     maxLines: Int = 1,
+    plainBluetooth: Boolean = false,
 ) {
     val text =
         buildAnnotatedString {
@@ -155,7 +158,10 @@ fun MarkedLine(
                     }
 
                     is LinePart.Mark -> {
-                        "$MARK_ID$i" to InlineTextContent(placeholder) { PathIcon(p.mark, Modifier.fillMaxSize(), size = null) }
+                        "$MARK_ID$i" to
+                            InlineTextContent(placeholder) {
+                                PathIcon(p.mark, Modifier.fillMaxSize(), size = null, nearbyTint = color.takeIf { plainBluetooth })
+                            }
                     }
 
                     is LinePart.Glyph -> {
