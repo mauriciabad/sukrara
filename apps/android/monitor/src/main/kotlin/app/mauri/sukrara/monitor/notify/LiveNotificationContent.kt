@@ -7,6 +7,7 @@ import androidx.annotation.StringRes
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NotMonitoringReason
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.GlucoseLook
@@ -26,7 +27,7 @@ data class UiText(
  * The status-bar settings and what Android allows, as the glucose notification needs them: [chip] = Settings › Status
  * bar › *Glucose notification* (the chip, else the card with the graph); [promotionAllowed] = Android lets the app
  * post Live Updates now; [rootValue] = the root value is in the status bar (the card then, automatically: the bar
- * already shows the value); [numberIcon] = *Number icon* (the small icon is the value while there's no chip);
+ * already shows the value); [icon] = the notification's icon while there's no chip (*Nothing* posts Sukrara's icon);
  * [colorize] = the card in the range colour; [cardKey] = everything the custom card draws besides the hub state
  * (treatments, graph settings, theme, the minute), so equal contents mean the same card.
  */
@@ -35,7 +36,7 @@ data class NotificationPrefs(
     val rootValue: Boolean = false,
     val colorize: Boolean = false,
     val promotionAllowed: Boolean = false,
-    val numberIcon: Boolean = true,
+    val icon: NotificationIcon = NotificationIcon.DEFAULT,
     val cardKey: Any? = null,
     val sharing: SharingLine? = null,
     /** The person's ranges: the title says an out-of-range value's range in words (#26). */
@@ -101,8 +102,8 @@ data class LiveNotificationContent(
     /** [NotificationPrefs.colorize]: the card in the range colour, else the system's notification colour. */
     val colorize: Boolean = false,
 ) {
-    /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value itself; the others are the states' icons. */
-    enum class Icon { TREND, NO_TREND, NUMBER, NO_READINGS, SENSOR_ENDED, APP }
+    /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value and its trend, [VALUE] = the value alone; the others are the states' icons. */
+    enum class Icon { TREND, NO_TREND, NUMBER, VALUE, NO_READINGS, SENSOR_ENDED, APP }
 
     enum class Layout {
         /** A promoted Live Update: the chip (arrow + value), MetricStyle expanded on Android 17. */
@@ -218,8 +219,8 @@ data class LiveNotificationContent(
          * A value: a Live Update when the chip is wanted and allowed and the root value isn't in the bar, else the card
          * with the graph. The chip's arrow is its icon (the renderer's), never a text arrow too: two arrows could
          * disagree. It can't strike text through: from 5 min it shows the reading's time (with the ring icon) instead
-         * of a bare number that would read as current. Without the chip the small icon is the number itself when
-         * *Number icon* is on. No unit anywhere (the owner, 2026-11-14: "they're obvious"); no *Open Sukrara* (the tap
+         * of a bare number that would read as current. Without the chip the small icon is the person's
+         * *Notification icon* ([NotificationIcon]). No unit anywhere (the owner, 2026-11-14: "they're obvious"); no *Open Sukrara* (the tap
          * opens Add treatment).
          */
         private fun value(
@@ -236,11 +237,25 @@ data class LiveNotificationContent(
                     look.strike -> UiText(R.string.monitor_chip_stale, listOf(reading.t))
                     else -> UiText(R.string.monitor_chip_value, listOf(look.text!!))
                 }
+            val trend = if (look.trend == TrendMark.ARROW) Icon.TREND else Icon.NO_TREND
             val icon =
                 when {
-                    !live && prefs.numberIcon -> Icon.NUMBER
-                    look.trend == TrendMark.ARROW -> Icon.TREND
-                    else -> Icon.NO_TREND
+                    live -> {
+                        trend
+                    }
+
+                    else -> {
+                        when (prefs.icon) {
+                            // hidden by the module while its value shows; without it the value stays in the bar
+                            NotificationIcon.ValueTrend, NotificationIcon.None -> Icon.NUMBER
+
+                            NotificationIcon.Value -> Icon.VALUE
+
+                            NotificationIcon.Trend -> trend
+
+                            NotificationIcon.App -> Icon.APP
+                        }
+                    }
                 }
             val range = RangeState.shown(look, reading.mgdl, prefs.bands, null)
             return LiveNotificationContent(

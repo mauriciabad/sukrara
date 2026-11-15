@@ -924,10 +924,10 @@ private fun ColumnScope.NotificationStep(
 ) {
     LaunchedEffect(Unit) { actions.notificationShown() }
     val root = u.root
-    StepCircle(DsR.drawable.ds_ic_smartphone)
+    StepCircle(DsR.drawable.ds_ic_top_panel_open)
     StepHeader(stringResource(R.string.sh_setup_notification_title), stringResource(R.string.sh_setup_notification_body))
     GlucoseNotificationChoice(root.style, root.offered, actions.chooseNotification)
-    if (root.style == NotificationStyle.Root) {
+    if (root.style == NotificationStyle.Text) {
         AccessStepBanner(
             accessStep(root.access, valueOn = true),
             root.access,
@@ -951,7 +951,7 @@ private val SetupStep.icon: Int
         when (this) {
             SetupStep.Updates -> DsR.drawable.ds_ic_update
             SetupStep.Root -> DsR.drawable.ds_ic_key
-            SetupStep.Notification -> DsR.drawable.ds_ic_smartphone
+            SetupStep.Notification -> DsR.drawable.ds_ic_top_panel_open
             SetupStep.Identity -> DsR.drawable.ds_ic_group
             SetupStep.Pens -> DsR.drawable.ds_ic_dia_pen
             SetupStep.History -> DsR.drawable.ds_ic_history

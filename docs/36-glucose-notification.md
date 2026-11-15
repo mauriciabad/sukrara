@@ -837,3 +837,112 @@ Update's rate. Kept with a point: the wire formats (Nightscout, LibreView, expor
 | Picture | What |
 |---|---|
 | ![](img/notification/v6-es-labels-android37.png) | Live Update on 17 in Spanish with three metrics (a high muted, the synthetic sensor rising fast): *Subida rápida* · *Restante* · *En rango 1 d*, all whole |
+
+## 14. Round 7: Status bar & notification, no notification, the arrow cut
+
+*2026-11-15, the owner on the build (Pixel 10 Pro, Android 17.1 `CP3A.261005.005`, rooted, LSPosed): the section's
+name and icon, the root option's style, the notification icon as a picker, the merge setting on the page, an option
+with no notification and nothing in the bar (alerts must still work), the notification optional with root; and "In the
+live update, the trend arrow is ellipsed on my phone". Emulator Android 17.0, the synthetic sensor; the phone read only
+(its System UI, framework and fonts were read from the device, nothing changed on it).*
+
+### 14.1 Name and icon
+
+| Option | For | Against |
+|---|---|---|
+| *Glucose notification* (was) | Short | Says half: the page is as much the status bar (the owner) |
+| *Status bar and permanent notification* (the owner's) | Says both | Long (37 characters, two lines as a title); "permanent" isn't Android's word (it says ongoing, and Android 14+ lets it be swiped) |
+| *Status bar* | Android's word | The notification half hides there (round 4: people looking for the notification don't look there) |
+| **Status bar & notification** | Both halves in Android's own words and style ("Network & internet", "Sound & vibration"); 25 characters; es *Barra de estado y notificación* (Android's "y") | — |
+
+Icon: Material Symbols [`top_panel_open`](https://fonts.google.com/icons?selected=Material+Symbols+Outlined:top_panel_open)
+(`ds_ic_top_panel_open`): a screen with its top bar and a panel pulled down from it, the status bar and the shade.
+Compared: `smartphone` (was: any phone setting), `notifications` (Alerts' bell), `notification_settings` (a bell
+again), `app_badging` (notification dots), `toolbar` (no shade), `splitscreen_top` (split screen). Setup's step and its
+row in *Ready* take the same name and icon.
+
+### 14.2 What Android allows (sources)
+
+- **An app can't hide its own foreground-service notification.** `NotificationManagerService.enqueueNotificationInternal`
+  raises an FGS notification on a MIN or NONE channel to LOW "unless the user had an opinion otherwise" (the person's
+  own MIN / off is kept) ([android16-release](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/core/java/com/android/server/notification/NotificationManagerService.java)).
+- **The person can.** Turning off the channel, its group or the app's notifications drops every post silently
+  (`isRecordBlockedLocked`) and cancels what showed, the FGS notification included (`REASON_CHANNEL_BANNED`).
+  `startForeground` still succeeds (it throws only for a missing channel or icon: `ServiceRecord.postNotification`), the
+  service keeps running, and Android 13+ lists the app under Active apps ("they still see notices related to these
+  foreground services in the Task Manager",
+  [notification permission](https://developer.android.com/develop/ui/views/notifications/notification-permission#exemptions)).
+  Measured here on Android 17.0: channel off → no Sukrara notification, `MonitoringService isForeground=true`, also
+  after a force-stop and a fresh start; a low rang as `alert.low` ids 1000/1001.
+- **Swiping it** (Android 14+, [behaviour changes](https://developer.android.com/about/versions/14/behavior-changes-all))
+  only hides it until the next post, and never on the lock screen: not a way to have none.
+- **Root without LSPosed can't hide one app's notification icon.** The status bar's icon list is System UI's
+  (`NotificationIconsInteractor`); `icon_blacklist` covers system icon slots only; `cmd notification` has no importance
+  command ([NotificationShellCmd](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/services/core/java/com/android/server/notification/NotificationShellCmd.java)).
+  A MIN channel shows no icon ([SystemUI](https://android.googlesource.com/platform/frameworks/base/+/refs/heads/android16-release/packages/SystemUI/src/com/android/systemui/statusbar/notification/icon/domain/interactor/NotificationIconsInteractor.kt)),
+  and uid 0 could set it through `INotificationManager`, but MIN also collapses the notification and drops it from the
+  lock screen: not "the icon hidden". So the icon picker is offered there too, and *None* needs the module.
+- **Others.** xDrip+ ("There is no way to eliminate the notification", [#1793](https://github.com/NightscoutFoundation/xDrip/issues/1793);
+  a night-low user who can't hide it, [#3485](https://github.com/NightscoutFoundation/xDrip/discussions/3485)),
+  Juggluco (always, "obliged by Android", [help](https://www.juggluco.nl/Jugglucohelp/settinghelp.html)), AAPS (enforced,
+  [source](https://github.com/nightscout/AndroidAPS/blob/master/app/src/main/kotlin/app/aaps/persistentNotification/PersistentNotificationPlugin.kt)),
+  GlucoDataHandler (swipe it and set the icon to the app's, [strings](https://github.com/pachi81/GlucoDataHandler/blob/master/common/src/main/res/values/strings.xml)):
+  none hides it in-app; they all point at Android's switches.
+
+### 14.3 The page
+
+- **Glucose in the status bar**: *Chip* · *Basic notification*, *Notification icon* · *Notification with the graph*,
+  *Status bar text* · *Notification with the graph, or none* with a **Root** label at the row's end, *Nothing* · *No
+  notification*. The label is a new shared component (`RowTag`, a tonal pill in the label style; SPA's `Radio2` got a
+  trailing slot): Material 3 draws a status that isn't an action as a small label, not a chip; it is read with the row.
+  Considered: "· Needs root" in the summary (was: the owner said no), a key icon (an icon reads as the row's, not a
+  requirement), a disabled row (it is choosable: choosing it is the request).
+- **What the icon shows** (the notification icon and the root text): *Value and trend*, *Value*, *Trend*, *Sukrara
+  icon*, and with the text *None* (tagged *Root*); each row shows the newest reading drawn as that icon by the renderer's
+  glyphs (`notification-icon-preview`, no made-up value). Considered: one row opening a dialog (hides the pictures), a
+  grid of icons (not the app's radio pattern). Without the module, *None* says so and the icon stays the value: the
+  glucose never leaves the bar because a hook isn't loaded.
+- **Nothing** = the person turns off *Glucose* in Android. The page shows the one step left as a row (*Turn off the
+  glucose notification* / *Turn on the glucose notification* when a choice needs it and Android has it off), opening
+  the channel's page, and reads Android's state on return. The root text has the same as a *Glucose notification* row.
+  The channel was called *Glucose (always shown)*: now *Glucose*.
+- **Alerts in the notification**: Alerts' *Separate alert notifications*, here the other way round and worded for the
+  page (a second place). Without the notification it isn't shown; the footer says every alert is a notification of its
+  own, which is forced: `canCarry` now checks the channel, its group and the app's switch on every ring (it checked the
+  channel only: a group turned off would have sent a ring into a dropped notification).
+- Stored: `statusbar.show` (chip / icon / text / off) and `statusbar.notifIcon` replace `statusbar.chip`,
+  `statusbar.hook`, `statusbar.icon` and `statusbar.hideNotifIcon` (no migration). `HookCode.VERSION` changed:
+  System UI needs one restart after the install.
+
+| Choice | Status bar | Notification | Alerts | Edge cases |
+|---|---|---|---|---|
+| Chip | Live Update chip | Basic (Live Update) | In it, or separate | Live Updates refused → the card with *What the icon shows*' icon and the *Allow* row; channel off → *Turn on* row, nothing in the bar |
+| Notification icon | The chosen icon | Card with the graph | In it, or separate | Channel off → *Turn on* row; *Sukrara icon* = no glucose in the bar, the person's choice |
+| Status bar text (root) | Text / system icons | Card, or none (Android's switch) | In it while shown, else separate | No root / root lost → the root card, the notification's icon is still the value (*None* without the module too); no module → `slot:` icons only, *None* says it needs the module; notification off and root lost → only the app, widgets and lock-screen widget show the value (the page's root card says why) |
+| Nothing | Nothing | None once Android's switch is off; until then the notification with Sukrara's drop and the *Turn off* row | Separate, always | Reboot / locked boot: the service starts on the blocked channel (`startForeground` succeeds), alerts separate; followers the same on their phone; notifications revoked → every alert is dropped too: Alert reliability's *Notifications* item already says so |
+
+### 14.4 The arrow cut in the Live Update
+
+**Cause.** The phone runs Android 17.1, whose framework draws a MetricStyle value in `variable-display-small-emphasized`
+at 28 sp (Google Sans Flex, weight 500); 17.0, the emulator's, used the `-narrow` family (read from the phone's
+`framework-res.apk` and the SDK's 37.0 / 37.2 resources). Every metric gets a third of the row ("Each metric receives
+equal horizontal space", [MetricStyle](https://developer.android.com/develop/ui/views/notifications/metric-style)):
+411 dp − 2 × 16 (shade) − 72 − 16 (content margins) − 2 × 4 = 94.5 dp, and the value ends in "…" (`ellipsize end`).
+Measured with the phone's own fonts (HarfBuzz, `tnum`): *138 ↗* 85 dp, but the steady *138 →* 93.7 dp (the → falls back
+to Roboto's wide arrow) and *13,8 →* 102.8 dp: the arrow is what's cut. Not the chip: the framework takes
+`setShortCriticalText` before the critical metric (`Notification.getDefaultCompactContent`, read from the phone).
+
+**Fix** (`MetricRoom`, `MetricRoomTest`): the value is measured on the phone in the system's own
+`NotificationExpandedMetricValue` style (size, family and features read from the framework, the row from its dimens),
+then written with a thin space if that fits, else the card's slots give way (two metrics, half the row each, then one).
+Considered: a smaller arrow as the unit (the unit goes to the label in the expanded view), the arrow in the label (14 sp,
+lost at a glance), always two metrics (drops a ring for every value), a fixed width table (wrong on the next font).
+
+| Picture | What |
+|---|---|
+| ![](img/notification/v7-status-bar-and-notification-android37.png) | Android 17.0 emulator, synthetic sensor: *Notification icon* with *What the icon shows* (109 ↓ in the bar); *Nothing* with its step while Android still shows the drop; a low ringing as its own notification with the glucose notification off |
+
+**In Sukrara (round 7).** Added: everything above. Left out: hiding the notification for the person through root
+(`INotificationManager` as uid 0 to set the channel MIN or off: it changes the person's own channel behind Android's
+settings, and MIN also takes the value off the lock screen); *Nothing* in setup (setup shouldn't send the person out to
+Android's settings; Settings has it).

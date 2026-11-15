@@ -118,7 +118,7 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
       *Closes in N seconds*, one announcement at 10 s. *Remove animations*: the ring steps per second.
 - [ ] No other app's notifications in the screenshots.
 
-## Q5 Glucose notification
+## Q5 Status bar & notification
 
 - [ ] Emulator: pull down the shade; collapsed (value + slots) and expanded (card) in light and dark.
 - [ ] Lock screen version (public/redacted) shows what the settings say.
@@ -143,12 +143,27 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
       turned off in Android's settings during an alert: the alert shows as a notification of its own. Graph: the value smaller than the
       rings, two rings expanded and collapsed, no *Low* word beside a level alert's title, *Coloured background*
       keeps every pill legible (white / black on red).
-- [ ] Settings › Glucose notification (docs/36 §11): the picture follows the choice (fade, cut with reduced motion;
-      TalkBack reads it as one sentence); *Chip*, *Notification icon*, *Status bar text* (root builds only) are one radio
-      group of equal rows; under it only the chosen one's rows (chip: *Allow Live Updates* while refused; icon: *Number as
-      notification icon*; status bar text: root's card, *Placement*, *Colour by range*), then *Notification*. Light
-      theme: the picture's notification is clearly outlined. Searching "chip" or "status bar text" finds the row and
-      flashes it. Spanish. Settings › Alerts › *Separate alert notifications* (its icon a bell with a plus): on →
+- [ ] Settings › Status bar & notification (docs/36 §11, §14; its overview icon the status bar with the shade pulled
+      down): the picture follows the choice (fade, cut with reduced motion; TalkBack reads it as one sentence);
+      *Chip*, *Notification icon*, *Status bar text* (root builds only, a *Root* label at its end that TalkBack reads with
+      the row), *Nothing* are one radio group of equal rows; under it only the chosen one's rows (chip: *Allow Live
+      Updates* while refused; icon and text: *What the icon shows* with the newest value drawn as each icon, *None*
+      only with the text; text: root's card, *Placement*, *Colour by range*, *Glucose notification*), then
+      *Notification* with *Alerts in the notification* (flipping it flips Alerts › *Separate alert notifications*).
+      Light theme: the picture's notification is clearly outlined. Searching "chip", "status bar text" or "value and
+      trend" finds the row and flashes it. Spanish.
+- [ ] Each icon (emulator, synthetic sensor): *Value and trend*, *Value*, *Trend*, *Sukrara icon* each show in the status
+      bar as their picture on the page; with the text and the module (phone) *None* hides it while the value shows;
+      without the module *None* says so and the icon stays the value.
+- [ ] *Nothing* (Android 16 and 17): *Turn off the glucose notification* opens Android's *Glucose* switch; off and back →
+      the row is gone, nothing of Sukrara's in the bar or the shade, the footer says alerts stand alone; monitoring keeps
+      running (Quick Settings › *Active apps* lists Sukrara; readings keep arriving in the app and widgets); a low rings as
+      a notification of its own (`dumpsys notification`: an `alert.low` record, ids 1000+, no id 1); reboot → monitoring
+      starts, still no glucose notification, an alert still rings. Then *Chip* → *Turn on the glucose notification* until
+      Android's switch is back on. The same with *Status bar text* and its *Glucose notification* row (phone with root).
+- [ ] Live Update value (phone, Android 17.1+, three metrics, steady arrow `→`, mg/dL and mmol/L): the value shows whole
+      with its arrow, never *138 …*; a decimal that can't fit a third drops a ring instead.
+- [ ] Settings › Alerts › *Separate alert notifications* (its icon a bell with a plus): on →
       a separate alert beside the glucose notification (ids 1000+), which carries no alert; its summary suggests it with
       a watch app installed. Real watch (when one is paired): the separate alert buzzes the watch.
 
@@ -158,7 +173,7 @@ Phone with root + the LSPosed module (System UI restarted after the install), *S
 system-icon placement. Read-only checks; screenshots stay off the repo (health data).
 
 - [ ] Root for Sukrara (#178), fresh install, another choice: nothing asks for root until *Status bar text* is chosen
-      (Settings › Glucose notification) or setup's *Yes, it's rooted*. Chosen with Sukrara not allowed in
+      (Settings › Status bar & notification) or setup's *Yes, it's rooted*. Chosen with Sukrara not allowed in
       KernelSU: *Allow root for Sukrara* (Magisk: its prompt; Deny → *Root refused*). Allow it in the root manager's
       Superuser list and come back: the card goes by itself, the value shows, a confirm haptic. TalkBack reads the card.
 - [ ] `adb logcat -s LSPosedFramework Sukrara` after the System UI start: `icon fit hooks: 1`, no `icon fit … failed`.
@@ -433,7 +448,7 @@ over nothing:
   nothing that says to install another version. Searching "check again" or "install updates" finds nothing;
   "versions" finds *About the versions*. Android's Settings › Apps › Sukrara › Notifications has no *App updates*
   channel, and *Install unknown apps* doesn't list Sukrara.
-- [ ] The same app as the GitHub build otherwise: Settings › Glucose notification has *Status bar text* (searching "root" finds its
+- [ ] The same app as the GitHub build otherwise: Settings › Status bar & notification has *Status bar text* (searching "root" finds its
   rows) and setup has the *Root* step; a fresh install's alert checklist has no *Alarms and reminders* item (`USE_EXACT_ALARM` is granted at
   install).
 - [ ] The GitHub build's About says *0.14.5 · GitHub version* with the same *About the versions* link and its update
@@ -447,7 +462,7 @@ over nothing:
 ## Q11 Sensor reminders and countdowns
 
 - [ ] Emulator (wearer): `SYNTHETIC --ez on true --ei endsInMin 300` → the end countdown in the shade (bar, timer);
-      with Settings › Glucose notification › *Notification icon* chosen the status bar chip shows the timer. A reminder set in
+      with Settings › Status bar & notification › *Notification icon* chosen the status bar chip shows the timer. A reminder set in
       Settings › Sensor end for a minute ahead → it shows then ("Sensor ends today at …"). `--ei endsInMin 1` →
       "Sensor ended" a minute later.
 - [ ] `SYNTHETIC --ez on true --ei warmupMin 20` → the warm-up countdown (bar filling, chip timer); at its end the
@@ -636,7 +651,7 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       walks up through Alerts to Settings; *battery*, *vary*, *garmin* open Alert reliability, Alerts, Share with apps
       scrolled to the row, which flashes; each result has its section's icon and where it is in the accent colour.
 - [ ] Settings sections (#205, docs/35 §7), light and dark, English and Spanish, wearer and follower: the overview
-      reads [Alerts · Alert reliability] [Settings from · Readings (drop) · Graph · Metrics] [Glucose notification · Lock screen]
+      reads [Alerts · Alert reliability] [Settings from · Readings (drop) · Graph · Metrics] [Status bar & notification · Lock screen]
       [Sensor · Sensor end (chequered flag) · Insulin pens] [Sharing · Share with apps · Backup · Import and export]
       [Advanced · About]; each page's title is its row's. Search *ranges*, *mmol*, *rings*, *gmi*, *export*, *settings
       file*, *margin*: each finds the page the row moved to and flashes the row. Alerts › *Fine-tuning* holds the waits
@@ -764,9 +779,9 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
       *Your followers* keeps it on the row, *Not now* / *Start empty* don't. `PEN_TAGS --ez blocked false` (made-up NFC):
       *Insulin pens* → *Read my pens* turns Settings › Insulin pens' reading On; *I don't use a smart pen* leaves *Ask*.
       Dark mode and Spanish (*Paso opcional 1 de 3*, *Termina la configuración*); TalkBack reads each step's counter.
-- [ ] Setup's *Root* and *Glucose notification* (docs/36 §11; GitHub build): *Root* asks *Is this phone rooted?*; *Yes,
+- [ ] Setup's *Root* and *Status bar & notification* (docs/36 §11; GitHub build): *Root* asks *Is this phone rooted?*; *Yes,
       it's rooted* asks for root at once (Magisk's prompt; KernelSU not allowed → *Allow root for Sukrara* with *Check
-      again*); allowed and back → the walk goes on by itself to *Glucose notification* with *Status bar text* picked
+      again*); allowed and back → the walk goes on by itself to *Status bar & notification* with *Status bar text* picked
       and a confirm haptic; *It isn't rooted* → the chip stays picked. On a rooted phone with LSPosed the question is
       skipped and the check runs by itself. Google Play build: no *Root* step, two choices. Spanish, TalkBack.
 

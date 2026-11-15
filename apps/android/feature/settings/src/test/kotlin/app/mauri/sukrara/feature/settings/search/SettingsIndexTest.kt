@@ -29,6 +29,7 @@ import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
@@ -113,6 +114,7 @@ import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarState
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndPrefs
+import app.mauri.sukrara.feature.settings.statusbar.AndroidNotification
 import app.mauri.sukrara.feature.settings.statusbar.NotificationPageActions
 import app.mauri.sukrara.feature.settings.statusbar.NotificationPagePrefs
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
@@ -357,7 +359,7 @@ class SettingsIndexTest {
                 StatusBarContent(
                     notificationPrefs(NotificationStyle.Chip),
                     true,
-                    true,
+                    AndroidNotification(liveUpdates = true, shown = true),
                     rootActive,
                     false,
                     null,
@@ -368,7 +370,7 @@ class SettingsIndexTest {
                 StatusBarContent(
                     notificationPrefs(NotificationStyle.Icon),
                     true,
-                    true,
+                    AndroidNotification(liveUpdates = true, shown = true),
                     rootActive,
                     false,
                     null,
@@ -377,9 +379,9 @@ class SettingsIndexTest {
             },
             Scene("glucose notification, root", SearchTarget.Page(SettingsRoute.StatusBar)) {
                 StatusBarContent(
-                    notificationPrefs(NotificationStyle.Root),
+                    notificationPrefs(NotificationStyle.Text),
                     true,
-                    true,
+                    AndroidNotification(liveUpdates = true, shown = true),
                     rootActive,
                     false,
                     null,
@@ -665,7 +667,15 @@ class SettingsIndexTest {
 
 /** The glucose notification page's prefs with [style] chosen. */
 private fun notificationPrefs(style: NotificationStyle) =
-    NotificationPagePrefs(style, numberIcon = true, lockScreen = true, colorize = false, position = HookPosition.DEFAULT, rootColor = true)
+    NotificationPagePrefs(
+        style,
+        if (style == NotificationStyle.Text) NotificationIcon.None else NotificationIcon.ValueTrend,
+        lockScreen = true,
+        colorize = false,
+        position = HookPosition.DEFAULT,
+        rootColor = true,
+        alertsInside = true,
+    )
 
 /** Root and the module working. */
 private val rootActive = SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed")

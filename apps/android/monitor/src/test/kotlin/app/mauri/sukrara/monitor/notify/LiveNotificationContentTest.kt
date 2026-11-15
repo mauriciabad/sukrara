@@ -6,6 +6,7 @@ package app.mauri.sukrara.monitor.notify
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -75,7 +76,8 @@ class LiveNotificationContentTest {
 
     @Test
     fun `chip off is the colorized card with the number icon and its card key`() {
-        val c = content(state(), NotificationPrefs(chip = false, promotionAllowed = true, numberIcon = true, cardKey = "k"))
+        val c =
+            content(state(), NotificationPrefs(chip = false, promotionAllowed = true, icon = NotificationIcon.ValueTrend, cardKey = "k"))
         assertEquals(LiveNotificationContent.Layout.CARD, c.layout)
         assertNull(c.chip)
         assertEquals(Icon.NUMBER, c.icon)
@@ -95,7 +97,7 @@ class LiveNotificationContentTest {
 
     @Test
     fun `chip wanted but Live Updates refused falls back to the card`() {
-        val c = content(state(), NotificationPrefs(chip = true, promotionAllowed = false, numberIcon = false))
+        val c = content(state(), NotificationPrefs(chip = true, promotionAllowed = false, icon = NotificationIcon.Trend))
         assertEquals(LiveNotificationContent.Layout.CARD, c.layout)
         assertNull(c.chip)
         assertEquals(Icon.TREND, c.icon)
@@ -103,7 +105,7 @@ class LiveNotificationContentTest {
 
     @Test
     fun `a struck value keeps the number icon struck, from the face`() {
-        val c = content(state(ageS = 600), NotificationPrefs(chip = false, numberIcon = true))
+        val c = content(state(ageS = 600), NotificationPrefs(chip = false, icon = NotificationIcon.ValueTrend))
         assertEquals(Icon.NUMBER, c.icon)
         assertTrue(c.look!!.strike)
     }

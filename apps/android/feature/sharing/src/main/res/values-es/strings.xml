@@ -513,8 +513,8 @@
     <string name="sh_setup_root_yes">Sí, tiene root</string>
     <string name="sh_setup_root_no">No tiene root</string>
     <string name="sh_setup_root_granted">Sukrara tiene root.</string>
-    <string name="sh_setup_notification_title">Notificación de glucosa</string>
-    <string name="sh_setup_notification_body">Puedes cambiarlo más tarde en Ajustes › Notificación de glucosa.</string>
+    <string name="sh_setup_notification_title">Barra de estado y notificación</string>
+    <string name="sh_setup_notification_body">Puedes cambiarlo más tarde en Ajustes › Barra de estado y notificación.</string>
     <string name="sh_setup_pens_title">Plumas de insulina</string>
     <string name="sh_setup_pens_body">Con una pluma de insulina inteligente como NovoPen 6 o NovoPen Echo Plus, acércala a la parte trasera del móvil después de pincharte: Sukrara registra la dosis.</string>
     <string name="sh_setup_pens_on">Leer mis plumas</string>

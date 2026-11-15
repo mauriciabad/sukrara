@@ -212,14 +212,12 @@ object SettingsSpec {
         SettingInfo("sharing.nostr", "bool", null, false, null, "sharing:relaySharing", "", null, "android", "The wearer's phone publishes; a Mac follower only reads", listOf()),
         SettingInfo("sharing.nostrInterval", "number", "nostrInterval", false, null, "sharing:relayInterval", "", null, "android", "The wearer's phone publishes; a Mac follower only reads", listOf()),
         SettingInfo("sharing.bleFollowers", "bool", null, false, null, "sharing:nearbySharing", "", null, "android", "The wearer's phone is the Bluetooth peripheral; the Mac connects to it when nearby", listOf()),
-        SettingInfo("statusbar.chip", "bool", null, false, null, "statusbar:statusChip", "", null, "android", "Android status bar; the Mac shows the value in its menu bar always", listOf()),
+        SettingInfo("statusbar.show", "enum", null, false, null, "statusbar:statusShow", "", null, "android", "Android status bar and its foreground-service notification; the Mac shows the value in its menu bar always", listOf()),
         SettingInfo("statusbar.colorize", "bool", null, false, null, "statusbar:colorize", "", null, "android", "The Android glucose notification's card; the Mac has no glucose notification (the menu bar shows the value)", listOf()),
-        SettingInfo("statusbar.icon", "bool", null, false, null, "statusbar:statusIcon", "", null, "android", "Android status bar", listOf()),
+        SettingInfo("statusbar.notifIcon", "enum", null, false, null, "statusbar:notifIcon", "", null, "android", "Android status bar", listOf()),
         SettingInfo("statusbar.lockScreen", "bool", null, false, null, "statusbar:lockScreen", "", null, "android", "The Android glucose notification's lock-screen visibility; the Mac has no lock-screen notification of the value", listOf()),
-        SettingInfo("statusbar.hook", "bool", null, false, null, "statusbar:statusHook", "", null, "android", "Android status bar (root / LSPosed)", listOf()),
         SettingInfo("statusbar.hookPosition", "enum", null, false, null, "statusbar:statusHookPosition", "", null, "android", "Android status bar (root / LSPosed)", listOf()),
         SettingInfo("statusbar.hookColor", "bool", null, false, null, "statusbar:statusHookColor", "", null, "android", "Android status bar (LSPosed); the Mac menu bar colours by range always", listOf()),
-        SettingInfo("statusbar.hideNotifIcon", "bool", null, false, null, "statusbar:hideNotificationIcon", "", null, "android", "Android status bar (LSPosed)", listOf()),
         SettingInfo("lock.widget", "bool", null, false, null, "lock:lockWidget", "", null, "android", "Android lock screen (LSPosed); macOS has no lock screen widgets", listOf()),
         SettingInfo("lock.background", "enum", null, false, null, "lock:lockBackground", "", null, "android", "Android lock screen (LSPosed)", listOf()),
         SettingInfo("lock.appearance", "enum", null, false, null, "lock:lockAppearance", "", null, "android", "Android lock screen (LSPosed)", listOf()),
@@ -306,14 +304,12 @@ object SettingsSpec {
         const val RELAY_SHARING = "relaySharing"
         const val RELAY_INTERVAL = "relayInterval"
         const val NEARBY_SHARING = "nearbySharing"
-        const val STATUS_CHIP = "statusChip"
+        const val STATUS_SHOW = "statusShow"
         const val COLORIZE = "colorize"
-        const val STATUS_ICON = "statusIcon"
+        const val NOTIF_ICON = "notifIcon"
         const val LOCK_SCREEN = "lockScreen"
-        const val STATUS_HOOK = "statusHook"
         const val STATUS_HOOK_POSITION = "statusHookPosition"
         const val STATUS_HOOK_COLOR = "statusHookColor"
-        const val HIDE_NOTIFICATION_ICON = "hideNotificationIcon"
         const val LOCK_WIDGET = "lockWidget"
         const val LOCK_BACKGROUND = "lockBackground"
         const val LOCK_APPEARANCE = "lockAppearance"

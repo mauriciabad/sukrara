@@ -220,8 +220,12 @@
     <string name="ds_notif_style_icon">Icono de notificación</string>
     <string name="ds_notif_style_icon_summary">Notificación con la gráfica</string>
     <string name="ds_notif_style_root">Texto en la barra de estado</string>
-    <string name="ds_notif_style_root_summary">Notificación con la gráfica · Necesita root</string>
+    <string name="ds_notif_style_root_summary">Notificación con la gráfica, o ninguna</string>
     <string name="ds_notif_style_chip_preview">Vista previa: tu glucosa en un chip junto al reloj, y una notificación básica</string>
     <string name="ds_notif_style_icon_preview">Vista previa: tu glucosa como icono de notificación, y la notificación con la gráfica</string>
     <string name="ds_notif_style_root_preview">Vista previa: tu glucosa como texto en la barra de estado, y la notificación con la gráfica</string>
+    <string name="ds_notif_style_off">Nada</string>
+    <string name="ds_notif_style_off_summary">Sin notificación</string>
+    <string name="ds_notif_style_off_preview">Vista previa: sin glucosa en la barra de estado y sin notificación</string>
+    <string name="ds_tag_root">Root</string>
 </resources>

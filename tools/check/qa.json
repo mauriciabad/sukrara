@@ -2,7 +2,7 @@
   "_about": "Changed path -> docs/QA.md sections to check by hand (printed by tools/check/run.sh). Globs: fnmatch ('*' crosses '/'). App paths only (not poc/).",
   "map": [
     {"paths": ["apps/android/core/graph/*", "apps/macos/Sources/SukraraGraph/*", "contracts/graph/*"],
-     "qa": ["Q2 Graph and value card", "Q3 Android widgets", "Q5 Glucose notification", "Q6 Mac menubar panel", "Q7 Mac widgets"]},
+     "qa": ["Q2 Graph and value card", "Q3 Android widgets", "Q5 Status bar & notification", "Q6 Mac menubar panel", "Q7 Mac widgets"]},
     {"paths": ["apps/macos/Sources/SukraraApp/*"], "qa": ["Q6 Mac menubar panel"]},
     {"paths": ["contracts/trend/*", "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/TrendRate.kt", "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/readings/TrendReadings.kt", "apps/android/feature/settings/*TrendArrowPage.kt", "apps/macos/Sources/SukraraCore/Model/TrendRate.swift", "apps/macos/Sources/SukraraApp/Windows/Settings/TrendArrowSection.swift"], "qa": ["Q26 Trend arrow"]},
     {"paths": ["apps/macos/Sources/SukraraWidget/*"], "qa": ["Q7 Mac widgets"]},
@@ -11,7 +11,7 @@
     {"paths": ["apps/android/update/*", "apps/android/feature/settings/*/AboutPage.kt", "tools/updates/*"], "qa": ["Q25 Updates (Android, GitHub version)", "Q10 Release build"]},
     {"paths": ["apps/android/monitor/src/main/kotlin/app/mauri/sukrara/monitor/systemui/*", "apps/android/feature/settings/*/lock/*"], "qa": ["Q4 Lock screen widget", "Q5b Root status bar in a full row"]},
     {"paths": ["apps/android/widgets/*LockWidget*", "apps/android/widgets/*widget_lock*"], "qa": ["Q4 Lock screen widget"]},
-    {"paths": ["apps/android/monitor/*"], "qa": ["Q5 Glucose notification", "Q8 Alerts on a device"]},
+    {"paths": ["apps/android/monitor/*"], "qa": ["Q5 Status bar & notification", "Q8 Alerts on a device"]},
     {"paths": ["apps/android/core/alerts/*", "apps/macos/Sources/SukraraAlerts/*", "apps/macos/Sources/SukraraApp/Alerts/*", "contracts/alerts/*"], "qa": ["Q8 Alerts on a device"]},
     {"paths": ["apps/android/*/src/main/res/values*/strings.xml"], "qa": ["Q9 Translations"]},
     {"paths": ["apps/android/*build.gradle.kts", "apps/android/*proguard-rules.pro", "apps/android/*consumer-rules.pro", "apps/android/build-logic/*", "apps/android/app/src/play/*", "apps/android/app/src/full/*", "tools/release/*", "VERSION"], "qa": ["Q10 Release build"]},

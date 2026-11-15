@@ -19,6 +19,7 @@ import app.mauri.sukrara.core.model.TrendSetting
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.feature.settings.TrendArrowPreview
+import app.mauri.sukrara.feature.settings.statusbar.NotificationIconPreview
 import app.mauri.sukrara.feature.treatments.TreatmentTileService
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.CardWords
@@ -198,6 +199,21 @@ class TrendEverywhereTest {
             }
         out["trend preview"] =
             if (asked.isNotEmpty() && asked.all { it == CardSurface.TREND_PREVIEW }) preview.arrowText!! else "not its surface"
+        // Settings › Status bar & notification's icon picker: its own surface, the hub's arrow
+        asked.clear()
+        GlucoseCard.faceObserver = { surface, _ -> if (Thread.currentThread() == me) asked += surface }
+        val iconPreview =
+            try {
+                NotificationIconPreview.look(s.recent, now, GlucoseUnit.MGDL)!!
+            } finally {
+                GlucoseCard.faceObserver = null
+            }
+        out["notification icon preview"] =
+            if (asked.isNotEmpty() && asked.all { it == CardSurface.NOTIFICATION_ICON_PREVIEW }) {
+                iconPreview.arrowText!!
+            } else {
+                "not its surface"
+            }
         return out
     }
 

@@ -50,7 +50,7 @@ object Channels {
         val silent: Boolean = false,
     )
 
-    const val GLUCOSE = "glucose.live"
+    const val GLUCOSE = app.mauri.sukrara.core.model.GlucoseNotificationChannel.ID
     const val STATUS = "status"
     const val REQUESTS = "requests"
     const val SENSOR = "sensor"

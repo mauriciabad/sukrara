@@ -102,7 +102,7 @@ enum class Section(
     Readings(DsR.drawable.ds_ic_water_drop, Category.Purple),
     Graph(DsR.drawable.ds_ic_monitoring, Category.Purple),
     Metrics(DsR.drawable.ds_ic_speed, Category.Purple),
-    StatusBar(DsR.drawable.ds_ic_smartphone, Category.Indigo),
+    StatusBar(DsR.drawable.ds_ic_top_panel_open, Category.Indigo),
     LockScreen(DsR.drawable.ds_ic_screen_lock_portrait, Category.Teal),
     Sensor(DsR.drawable.ds_ic_dia_sensor, Category.Green),
     SensorEnd(DsR.drawable.ds_ic_sports_score, Category.Orange),
@@ -771,12 +771,13 @@ object SettingsIndex {
             rows(detection, null, R.string.st_pens_reset to null, pensOnly = true)
 
             val statusBar = SettingsRoute.StatusBar
-            // THE choice (docs/36 §11): each option by its name
+            // THE choice (docs/36 §11, §14): each option by its name
             rows(
                 statusBar,
                 DsR.string.ds_notif_style_heading,
                 DsR.string.ds_notif_style_chip to DsR.string.ds_notif_style_chip_summary,
                 DsR.string.ds_notif_style_icon to DsR.string.ds_notif_style_icon_summary,
+                DsR.string.ds_notif_style_off to DsR.string.ds_notif_style_off_summary,
             )
             rows(
                 statusBar,
@@ -784,18 +785,34 @@ object SettingsIndex {
                 DsR.string.ds_notif_style_root to DsR.string.ds_notif_style_root_summary,
                 needs = BuildFeature.Root,
             )
-            rows(statusBar, null, R.string.st_statusbar_number_icon to R.string.st_statusbar_number_icon_summary)
+            rows(
+                statusBar,
+                R.string.st_statusbar_icon_group,
+                R.string.st_statusbar_icon_value_trend to null,
+                R.string.st_statusbar_icon_value to null,
+                R.string.st_statusbar_icon_trend to null,
+                R.string.st_statusbar_icon_app to null,
+            )
             rows(
                 statusBar,
                 R.string.st_statusbar_notification,
                 R.string.st_statusbar_colorize to R.string.st_statusbar_colorize_on,
                 R.string.st_statusbar_lock_screen to R.string.st_statusbar_lock_screen_on,
+                R.string.st_statusbar_alerts to R.string.st_statusbar_alerts_on,
             )
             rows(
                 statusBar,
                 null,
                 R.string.st_root_colour to null,
                 R.string.st_root_placement to null,
+                needs = BuildFeature.Root,
+            )
+            // with the root text: the icon hidden, the notification's on / off (Android's)
+            rows(statusBar, R.string.st_statusbar_icon_group, R.string.st_statusbar_icon_none to null, needs = BuildFeature.Root)
+            rows(
+                statusBar,
+                R.string.st_statusbar_notification,
+                R.string.st_statusbar_glucose_notification to null,
                 needs = BuildFeature.Root,
             )
 

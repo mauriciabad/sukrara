@@ -490,7 +490,7 @@ fun DangerRow(
  * One option of a choice that stays on the page (two or three options that shouldn't hide behind a dialog): SPA
  * RadioPreferences' row (Radio2); the whole row selects (TalkBack: "radio button, selected"). Put the options of one
  * choice in one [SettingsGroup] with `Modifier.selectableGroup()`. [icon] / [leading] after the radio button, as SPA
- * draws an option's icon.
+ * draws an option's icon. [tag]: what the option needs, as a label at the row's end ([RowTag], e.g. *Root*).
  */
 @Composable
 fun RadioRow(
@@ -502,16 +502,47 @@ fun RadioRow(
     enabled: Boolean = true,
     @DrawableRes icon: Int? = null,
     leading: (@Composable () -> Unit)? = null,
+    tag: String? = null,
 ) {
     val haptics = rememberHaptics()
     val i = iconOf(icon, leading)
     RowBox(title, modifier) {
-        Radio2(ListPreferenceOption(id = 1, text = title, summary = summary.orEmpty(), icon = i), if (selected) 1 else 0, enabled) {
+        Radio2(
+            ListPreferenceOption(id = 1, text = title, summary = summary.orEmpty(), icon = i),
+            if (selected) 1 else 0,
+            enabled,
+            trailing = tag?.let { { RowTag(it) } },
+        ) {
             if (!selected) haptics.tick()
             onSelect()
         }
     }
 }
+
+/**
+ * THE label for what an option needs (*Root*), at a row's end: a small tonal pill in the label style, as Material 3
+ * draws a status that isn't an action (not a chip: it can't be tapped). TalkBack reads it with the row.
+ */
+@Composable
+fun RowTag(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text,
+        modifier
+            .testTag(ROW_TAG_TAG)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        color = MaterialTheme.colorScheme.onSecondaryContainer,
+        style = MaterialTheme.typography.labelMedium,
+        maxLines = 1,
+    )
+}
+
+/** [RowTag]'s test tag. */
+const val ROW_TAG_TAG = "row-tag"
 
 /** SPA's CheckboxPreference: the whole row toggles a check box at its end (an option, not a feature switch). */
 @Composable

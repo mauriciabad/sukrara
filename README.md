@@ -89,9 +89,10 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 ### Glucose always at a glance
 
-- Your glucose in the status bar as a Live Update chip, as the notification icon with the graph in the notification,
-  or with root as text anywhere in the status bar (e.g. next to the signal icons): one choice in setup and in Settings,
-  root checked and picked for you when the phone has it.
+- Your glucose in the status bar as a Live Update chip, as the notification icon (value and trend, value, trend or
+  just Sukrara's icon) with the graph in the notification, or with root as text anywhere in the status bar (e.g. next
+  to the signal icons), its notification optional: one choice in setup and in Settings › Status bar & notification,
+  root checked and picked for you when the phone has it. Or nothing at all: monitoring and every alert keep working.
 - Home screen widget. You never need to open the app.
 - Lock screen widget with root. No need to unlock or touch the phone.
 - Persistent notification with the widget.

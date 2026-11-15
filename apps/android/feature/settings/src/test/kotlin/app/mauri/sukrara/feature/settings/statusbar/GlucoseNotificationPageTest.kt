@@ -14,6 +14,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SystemAccessPort
@@ -46,8 +47,8 @@ import org.robolectric.annotation.Config
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * docs/36 §11: Settings › Glucose notification is one choice (chip, notification icon, status bar text with root) and
- * under it only the chosen one's rows. #178 still holds: the page never waits for root it never asked for; choosing
+ * docs/36 §11, §14: Settings › Status bar & notification is one choice (chip, notification icon, status bar text with
+ * root, nothing) and under it only the chosen one's rows, with the one step Android's settings still need. #178 still holds: the page never waits for root it never asked for; choosing
  * the status bar text is the request; each answer has its card and way out; the page asks again on its own only while
  * that choice is on and root isn't granted (back from the root manager).
  */
@@ -92,12 +93,13 @@ class GlucoseNotificationPageTest {
     private fun show(
         vm: StatusBarViewModel,
         liveUpdates: Boolean = true,
-    ) = compose.setContent { Page(vm, liveUpdates) }
+        shown: Boolean = true,
+    ) = compose.setContent { Page(vm, AndroidNotification(liveUpdates, shown)) }
 
     @Composable
     private fun Page(
         vm: StatusBarViewModel,
-        liveUpdates: Boolean,
+        android: AndroidNotification,
     ) = SukraraTheme(dark = false, dynamic = false) {
         val prefs by vm.prefs.collectAsState()
         val access by vm.access.collectAsState()
@@ -107,15 +109,16 @@ class GlucoseNotificationPageTest {
             StatusBarContent(
                 it,
                 vm.rootOffered,
-                liveUpdates,
+                android,
                 access,
                 busy,
                 problem,
                 NotificationPageActions(
                     setStyle = vm::setStyle,
-                    setNumberIcon = vm::setNumberIcon,
+                    setIcon = vm::setIcon,
                     setColorize = vm::setColorize,
                     setLockScreen = vm::setLockScreen,
+                    setAlertsInside = vm::setAlertsInside,
                     checkRoot = vm::checkRoot,
                 ),
                 {},
@@ -145,25 +148,71 @@ class GlucoseNotificationPageTest {
         val settings = InMemorySettingsRepository()
         val vm = StatusBarViewModel(settings, FakeAccess(RootAccess.Granted))
         show(vm, liveUpdates = false)
-        // the chip (default): Android's Live Updates switch while it's off; no graph, so no number icon or background
+        // the chip (default): Android's Live Updates switch while it's off; no graph, so no icon to pick or background
         compose.onNodeWithText(text(R.string.st_statusbar_allow_live_updates)).assertExists()
-        compose.onNodeWithText(text(R.string.st_statusbar_number_icon)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.st_statusbar_icon_group)).assertDoesNotExist()
         compose.onNodeWithText(text(R.string.st_statusbar_colorize)).assertDoesNotExist()
         compose.onNodeWithText(text(R.string.st_root_placement)).assertDoesNotExist()
         compose.onNodeWithText(text(R.string.st_statusbar_lock_screen)).assertExists()
         compose.onNodeWithText(text(DsR.string.ds_notif_style_icon)).performClick()
         compose.waitForIdle()
         compose.onNodeWithText(text(R.string.st_statusbar_allow_live_updates)).assertDoesNotExist()
-        compose.onNodeWithText(text(R.string.st_statusbar_number_icon)).assertExists()
+        compose.onNodeWithText(text(R.string.st_statusbar_icon_group)).assertExists()
+        compose.onNodeWithText(text(R.string.st_statusbar_icon_app)).assertExists()
+        compose.onNodeWithText(text(R.string.st_statusbar_icon_none)).assertDoesNotExist()
         compose.onNodeWithText(text(R.string.st_statusbar_colorize)).assertExists()
         compose.onNodeWithText(text(DsR.string.ds_notif_style_root)).performClick()
         compose.waitForIdle()
-        compose.onNodeWithText(text(R.string.st_statusbar_number_icon)).assertDoesNotExist()
+        // hiding the icon only with the text, tagged Root
+        compose.onNodeWithText(text(R.string.st_statusbar_icon_none)).assertExists()
         compose.onNodeWithText(text(R.string.st_root_placement)).assertExists()
         compose.onNodeWithText(text(R.string.st_root_colour)).assertExists()
+        compose.onNodeWithText(text(R.string.st_statusbar_glucose_notification)).assertExists()
+        compose.onNodeWithText(text(DsR.string.ds_notif_style_off)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText(text(R.string.st_statusbar_icon_group)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.st_statusbar_lock_screen)).assertDoesNotExist()
     }
 
-    @Test fun `a build without root features offers two choices`() {
+    @Test fun `Nothing asks for the one step in Android's settings until the notification is off`() {
+        val settings = InMemorySettingsRepository()
+        val vm = StatusBarViewModel(settings, null)
+        vm.setStyle(NotificationStyle.Off)
+        show(vm, shown = true)
+        compose.onNodeWithText(text(R.string.st_statusbar_turn_off)).assertExists()
+        compose.onNodeWithText(text(R.string.st_statusbar_no_notification_footer)).assertExists()
+    }
+
+    @Test fun `the notification off in Android under Nothing - no step, the alerts' footer`() {
+        val vm = StatusBarViewModel(InMemorySettingsRepository(), null)
+        vm.setStyle(NotificationStyle.Off)
+        show(vm, shown = false)
+        compose.onNodeWithText(text(R.string.st_statusbar_turn_off)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.st_statusbar_alerts)).assertDoesNotExist()
+        compose.onNodeWithText(text(R.string.st_statusbar_no_notification_footer)).assertExists()
+    }
+
+    @Test fun `a choice that needs the notification while Android has it off asks to turn it on`() {
+        val vm = StatusBarViewModel(InMemorySettingsRepository(), null)
+        vm.setStyle(NotificationStyle.Icon)
+        show(vm, shown = false)
+        compose.onNodeWithText(text(R.string.st_statusbar_turn_on)).assertExists()
+        compose.onNodeWithText(text(R.string.st_statusbar_icon_group)).assertDoesNotExist()
+    }
+
+    @Test fun `alerts in the notification is the separate alerts setting the other way round`() =
+        runTest {
+            val settings = InMemorySettingsRepository()
+            val vm = StatusBarViewModel(settings, null)
+            show(vm)
+            compose.onNodeWithText(text(R.string.st_statusbar_alerts_on)).assertExists()
+            compose.onNodeWithText(text(R.string.st_statusbar_alerts)).performClick()
+            compose.waitForIdle()
+            assertTrue(settings.flow(SurfaceSettings.SeparateAlerts).first())
+            compose.onNodeWithText(text(R.string.st_statusbar_alerts_off)).assertExists()
+        }
+
+    @Test fun `a build without root features offers no root text`() {
         val vm = StatusBarViewModel(InMemorySettingsRepository(), null)
         assertFalse(vm.rootOffered)
         show(vm)
@@ -185,8 +234,12 @@ class GlucoseNotificationPageTest {
             compose.onNodeWithText(text(DsR.string.ds_notif_style_root)).performClick()
             compose.waitForIdle()
             assertEquals("choosing it is the request", 1, access.asked)
-            assertTrue(settings.flow(SurfaceSettings.RootValue).first())
-            assertTrue("the status bar shows it: the notification's icon goes", settings.flow(SurfaceSettings.HideNotificationIcon).first())
+            assertEquals(NotificationStyle.Text.key, settings.flow(SurfaceSettings.StatusShow).first())
+            assertEquals(
+                "the status bar shows it: the notification's icon goes",
+                NotificationIcon.None.key,
+                settings.flow(SurfaceSettings.NotifIcon).first(),
+            )
             // KernelSU hides su until Sukrara is allowed; LSPosed says root is there: how to allow it
             compose.onNodeWithText(text(DsR.string.ds_access_not_allowed_title)).assertExists()
             compose.onNodeWithText(text(R.string.st_root_unavailable_no_root)).assertExists()
@@ -205,7 +258,7 @@ class GlucoseNotificationPageTest {
             val access = FakeAccess(RootAccess.Refused, seen = true)
             access.state.update { it.copy(root = RootAccess.Refused) }
             val settings = InMemorySettingsRepository()
-            settings.set(SurfaceSettings.RootValue, true)
+            settings.set(SurfaceSettings.StatusShow, NotificationStyle.Text.key)
             val vm = StatusBarViewModel(settings, access)
             show(vm)
             compose.onNodeWithText(text(DsR.string.ds_access_refused_title)).assertExists()
@@ -225,9 +278,9 @@ class GlucoseNotificationPageTest {
             access.state.update { it.copy(root = RootAccess.Granted) }
             val settings = InMemorySettingsRepository()
             val vm = StatusBarViewModel(settings, access)
-            vm.setStyle(NotificationStyle.Root)
+            vm.setStyle(NotificationStyle.Text)
             assertEquals(0, access.asked)
-            assertTrue(settings.flow(SurfaceSettings.RootValue).first())
+            assertEquals(NotificationStyle.Text.key, settings.flow(SurfaceSettings.StatusShow).first())
             assertEquals(HookPosition.DEFAULT, settings.flow(SurfaceSettings.RootPosition).first())
             vm.refresh()
             assertEquals(0, access.asked)

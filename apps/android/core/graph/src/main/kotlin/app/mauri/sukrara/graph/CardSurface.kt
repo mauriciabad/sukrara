@@ -41,6 +41,12 @@ enum class CardSurface(
     /** Settings › Ranges › Trend arrow's live preview (#204): the newest value and its arrow under each choice. */
     TREND_PREVIEW("trend-preview", Kind.GLYPH),
 
+    /**
+     * Settings › Status bar & notification › *What the icon shows* (docs/36 §14): the newest value drawn as each
+     * notification icon, as the glucose notification draws it.
+     */
+    NOTIFICATION_ICON_PREVIEW("notification-icon-preview", Kind.GLYPH),
+
     /** Picture sheets and fixtures (tests only; tools/check keeps it out of the app). */
     TEST("test", Kind.CARD),
     ;

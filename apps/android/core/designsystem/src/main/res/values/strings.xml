@@ -224,8 +224,12 @@
     <string name="ds_notif_style_icon">Notification icon</string>
     <string name="ds_notif_style_icon_summary">Notification with the graph</string>
     <string name="ds_notif_style_root">Status bar text</string>
-    <string name="ds_notif_style_root_summary">Notification with the graph · Needs root</string>
+    <string name="ds_notif_style_root_summary">Notification with the graph, or none</string>
     <string name="ds_notif_style_chip_preview">Preview: your glucose in a chip by the clock, and a basic notification</string>
     <string name="ds_notif_style_icon_preview">Preview: your glucose as the notification icon, and the notification with the graph</string>
     <string name="ds_notif_style_root_preview">Preview: your glucose as text in the status bar, and the notification with the graph</string>
+    <string name="ds_notif_style_off">Nothing</string>
+    <string name="ds_notif_style_off_summary">No notification</string>
+    <string name="ds_notif_style_off_preview">Preview: no glucose in the status bar, and no notification</string>
+    <string name="ds_tag_root">Root</string>
 </resources>

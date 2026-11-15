@@ -6,6 +6,8 @@ package app.mauri.sukrara.core.data.settings
 import app.mauri.sukrara.core.model.LockAppearance
 import app.mauri.sukrara.core.model.LockBackground
 import app.mauri.sukrara.core.model.LockLook
+import app.mauri.sukrara.core.model.NotificationIcon
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -24,11 +26,15 @@ import kotlinx.serialization.json.Json
  */
 object SurfaceSettings {
     /**
-     * Settings › Status bar › *Glucose notification*: true = the status-bar chip (a promoted Live Update, no graph),
-     * false = the card with the graph and the number icon. The card whenever the root value ([RootValue]) is on: the
-     * bar already shows the value there, so the chip would only cost the graph (docs/36 §8.8).
+     * Settings › Status bar & notification: where the glucose shows in the status bar, and so what the glucose
+     * notification is ([app.mauri.sukrara.core.model.NotificationStyle], read through [NotificationStyleSettings]).
      */
-    val StatusChip = SchemaSettings.bool("statusbar.chip", default = true)
+    val StatusShow =
+        SchemaSettings.text(
+            "statusbar.show",
+            NotificationStyle.DEFAULT.key,
+            NotificationStyle.entries.map { it.key }.toSet(),
+        )
 
     /** The card in the range colour (colourised); off = the system's notification colour, the value in its range colour. */
     val Colorize = SchemaSettings.bool("statusbar.colorize", default = false)
@@ -40,8 +46,9 @@ object SurfaceSettings {
      */
     val SeparateAlerts = SchemaSettings.bool("alerts.separate", default = false)
 
-    /** Without the chip, the notification's small icon is the number itself. */
-    val NumberIcon = SchemaSettings.bool("statusbar.icon", default = true)
+    /** The glucose notification's icon in the status bar ([NotificationIcon]); the chip's is always its arrow. */
+    val NotifIcon =
+        SchemaSettings.text("statusbar.notifIcon", NotificationIcon.DEFAULT.key, NotificationIcon.entries.map { it.key }.toSet())
 
     /**
      * The glucose notification shows its value on the lock screen (#94; public). Off: private, the lock screen says only
@@ -49,17 +56,11 @@ object SurfaceSettings {
      */
     val LockScreen = SchemaSettings.bool("statusbar.lockScreen", default = true)
 
-    /** The value drawn in the status bar with root: system icons (root) or the System UI module's text. */
-    val RootValue = SchemaSettings.bool("statusbar.hook", default = false)
-
     /** Where the root value goes ([HookPosition]). */
     val RootPosition = SchemaSettings.text("statusbar.hookPosition", HookPosition.DEFAULT, HookPosition.ALL.toSet())
 
     /** The root value in its range colour (module). */
     val RootColor = SchemaSettings.bool("statusbar.hookColor", default = true)
-
-    /** Drop Sukrara's notification icon from the status bar while the root value shows (module). */
-    val HideNotificationIcon = SchemaSettings.bool("statusbar.hideNotifIcon", default = true)
 
     /**
      * The lock-screen widget around the fingerprint icon (#66), hosted by the System UI module. On by default as in the

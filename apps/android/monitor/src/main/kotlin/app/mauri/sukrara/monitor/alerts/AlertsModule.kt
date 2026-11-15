@@ -17,6 +17,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
@@ -200,7 +201,7 @@ class AlertsModule(
             // THE night (docs/35 §7): the sensor reminders keep quiet in the night alerts' window
             store.settings.map { it.night.fromMin to it.night.toMin }.distinctUntilChanged(),
             alertSettings.flow(SurfaceSettings.CountdownHours),
-            alertSettings.flow(SurfaceSettings.StatusChip),
+            alertSettings.flow(SurfaceSettings.StatusShow).map { NotificationStyle.of(it) == NotificationStyle.Chip },
         ) { config, night, hours, chip -> SensorEndSettings(config.withNight(night.first, night.second), hours.toInt(), chip) }
             .distinctUntilChanged()
             // a settings store that fails must never take the service down: the defaults hold

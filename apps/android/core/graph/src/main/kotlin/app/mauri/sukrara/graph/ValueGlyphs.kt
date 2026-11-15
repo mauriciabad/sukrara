@@ -122,10 +122,14 @@ object ValueGlyphs {
         }
     }
 
-    /** Alpha-mask small icon: the number fills the width, the arrow (or ring) underneath; struck at half strength. */
+    /**
+     * Alpha-mask small icon: the number fills the width, the arrow (or ring) underneath; struck at half strength.
+     * [trend] false: the number alone, centred (*Notification icon › Value*).
+     */
     fun icon(
         look: GlucoseLook,
         size: Int = 96,
+        trend: Boolean = true,
     ): Bitmap {
         val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ALPHA_8)
         val text = look.text ?: return bmp
@@ -136,6 +140,17 @@ object ValueGlyphs {
                 textAlign = Paint.Align.CENTER
             }
         if (look.strike) cv.saveLayerAlpha(null, 128)
+        if (!trend) {
+            // the digits' cap height at most 72 % of the square, centred; as wide as the square allows
+            p.textSize = size * 0.72f / 0.72f
+            p.textSize *= min(1f, size / p.measureText(text))
+            val cap = p.textSize * 0.72f
+            val base = (size + cap) / 2f
+            cv.drawText(text, size / 2f, base, p)
+            if (look.strike) cv.drawRect(0f, base - cap * 0.55f, size.toFloat(), base - cap * 0.55f + size * 0.07f, p)
+            if (look.strike) cv.restore()
+            return bmp
+        }
         val numberH = size * 0.62f
         p.textSize = numberH / 0.72f
         p.textSize *= min(1f, size / p.measureText(text))

@@ -643,8 +643,8 @@
     <string name="sh_setup_root_yes">Yes, it\'s rooted</string>
     <string name="sh_setup_root_no">It isn\'t rooted</string>
     <string name="sh_setup_root_granted">Sukrara has root.</string>
-    <string name="sh_setup_notification_title">Glucose notification</string>
-    <string name="sh_setup_notification_body">You can change it later in Settings › Glucose notification.</string>
+    <string name="sh_setup_notification_title">Status bar &amp; notification</string>
+    <string name="sh_setup_notification_body">You can change it later in Settings › Status bar &amp; notification.</string>
     <string name="sh_setup_pens_title">Insulin pens</string>
     <string name="sh_setup_pens_body">With a smart insulin pen such as NovoPen 6 or NovoPen Echo Plus, hold it to the back of the phone after you inject: Sukrara logs the dose.</string>
     <string name="sh_setup_pens_on">Read my pens</string>

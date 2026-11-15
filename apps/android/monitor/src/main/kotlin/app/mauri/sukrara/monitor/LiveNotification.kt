@@ -50,6 +50,7 @@ import app.mauri.sukrara.monitor.notify.LiveNotificationContent
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent.Icon
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent.Layout
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent.Target
+import app.mauri.sukrara.monitor.notify.MetricRoom
 import app.mauri.sukrara.monitor.notify.NotificationArt
 import app.mauri.sukrara.monitor.notify.NotificationCard
 import app.mauri.sukrara.monitor.notify.NotificationIds
@@ -214,9 +215,17 @@ class LiveNotification(
 
     override fun showing(): Boolean = runCatching { nm.activeNotifications.any { it.id == NotificationIds.GLUCOSE } }.getOrDefault(true)
 
+    /**
+     * Android shows the glucose notification now: the person hasn't turned off its channel or the channel's group (both
+     * drop every post silently, and cancel what was showing: docs/36 §14), so an alert can ring in it. *Nothing* in
+     * Settings is exactly this state; the alerts are notifications of their own then.
+     */
     override fun canCarry(): Boolean =
-        runCatching { nm.getNotificationChannel(Channels.GLUCOSE)?.importance != NotificationManager.IMPORTANCE_NONE }
-            .getOrDefault(true)
+        runCatching {
+            val channel = nm.getNotificationChannel(Channels.GLUCOSE) ?: return@runCatching true
+            val groupOff = channel.group?.let { nm.getNotificationChannelGroup(it)?.isBlocked } == true
+            channel.importance != NotificationManager.IMPORTANCE_NONE && !groupOff && nm.areNotificationsEnabled()
+        }.getOrDefault(true)
 
     private fun notifyNow(
         content: LiveNotificationContent,
@@ -410,7 +419,7 @@ class LiveNotification(
     ): Notification =
         Notification
             .Builder(context, channel)
-            .setSmallIcon(R.drawable.monitor_ic_app)
+            .setSmallIcon(app.mauri.sukrara.core.designsystem.R.drawable.ds_ic_status_sukrara)
             .setContentTitle(alert?.title ?: context.getString(R.string.monitor_notif_public_title))
             .setContentText(if (alert == null) context.getString(R.string.monitor_notif_public_text) else null)
             .setOngoing(true)
@@ -460,7 +469,8 @@ class LiveNotification(
         // text only (docs/36 §10): a metric's value is a CharSequence, a picture can't travel in it, System UI draws it in
         // its own style (a bold span is dropped), and the system font has no heavier arrow set in all eight directions
         // (Supplemental Arrows-C is missing; the Dingbats / Misc arrows mix weights): THE text arrow
-        val shown = listOfNotNull(look.text, look.arrowText).joinToString(" ")
+        // the value whole in its cell (docs/36 §14): a thin space, then fewer of the card's slots, before Android's "…"
+        val (shown, maxMetrics) = MetricRoom.value(context, look.text, look.arrowText, MAX_METRICS)
         val value =
             if (look.strike || content.mgdl == null) {
                 Notification.Metric(Notification.Metric.FixedText(shown), label)
@@ -480,7 +490,7 @@ class LiveNotification(
                 ),
             )
         }
-        val room = MAX_METRICS - style.metrics.size
+        val room = maxMetrics - style.metrics.size
         if (frame != null && content.mgdl != null && room > 0) {
             val model = cardModelOf(frame.state, frame.treatments, now, CardWords.of(context.resources), frame.slots(now))
             GlucoseCard.slotTexts(model, notificationCardStyle(frame.config), room).forEach { (value, label) ->
@@ -664,7 +674,10 @@ class LiveNotification(
     /** Drops a post still waiting in the gate (the service is going away). */
     fun cancelPending() = gate.cancelPending()
 
-    /** The trend arrow as the renderer draws it (its continuous angle), the number itself, or the state's icon. */
+    /**
+     * The trend arrow as the renderer draws it (its continuous angle), the number with or without it, or the state's
+     * icon.
+     */
     private fun smallIcon(content: LiveNotificationContent): android.graphics.drawable.Icon =
         when {
             content.icon == Icon.TREND -> {
@@ -675,6 +688,11 @@ class LiveNotification(
             content.icon == Icon.NUMBER && content.look != null -> {
                 android.graphics.drawable.Icon
                     .createWithBitmap(ValueGlyphs.icon(content.look))
+            }
+
+            content.icon == Icon.VALUE && content.look != null -> {
+                android.graphics.drawable.Icon
+                    .createWithBitmap(ValueGlyphs.icon(content.look, trend = false))
             }
 
             else -> {
@@ -821,10 +839,10 @@ class LiveNotification(
         /** A state's icon resource ([Icon.TREND] is drawn by the renderer instead). */
         fun iconRes(icon: Icon): Int =
             when (icon) {
-                Icon.TREND, Icon.NO_TREND, Icon.NUMBER -> R.drawable.monitor_ic_no_trend
+                Icon.TREND, Icon.NO_TREND, Icon.NUMBER, Icon.VALUE -> R.drawable.monitor_ic_no_trend
                 Icon.NO_READINGS -> R.drawable.monitor_ic_no_readings
                 Icon.SENSOR_ENDED -> R.drawable.monitor_ic_sensor_ended
-                Icon.APP -> R.drawable.monitor_ic_app
+                Icon.APP -> app.mauri.sukrara.core.designsystem.R.drawable.ds_ic_status_sukrara
             }
     }
 }

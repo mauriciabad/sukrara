@@ -4,10 +4,13 @@
 package app.mauri.sukrara.monitor
 
 import android.content.Context
+import app.mauri.sukrara.core.data.settings.NotificationStyleSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
+import app.mauri.sukrara.core.model.NotificationIcon
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.Role
@@ -122,23 +125,30 @@ class MonitorModule(
      */
     val notificationInputs: Flow<NotificationInputs> =
         combine(
-            settings.flow(SurfaceSettings.StatusChip),
-            settings.flow(SurfaceSettings.NumberIcon),
+            // the root text only in a build with root features (otherwise read as the chip)
+            NotificationStyleSettings.flow(settings, rootBuild = rootFeatures != null),
+            NotificationStyleSettings.iconFlow(settings, rootBuild = rootFeatures != null),
             treatments,
             graphConfig,
             sharing.catch { emit(null) },
-        ) { chip, icon, list, config, line -> NotificationInputs(chip, icon, list, config, line) }
-            .combine(settings.flow(SurfaceSettings.LockScreen)) { inputs, lock -> inputs.copy(lockScreen = lock) }
+        ) { style, icon, list, config, line ->
+            NotificationInputs(
+                chip = style == NotificationStyle.Chip,
+                icon = icon,
+                treatments = list,
+                config = config,
+                sharing = line,
+                rootValue = style == NotificationStyle.Text,
+                off = style == NotificationStyle.Off,
+            )
+        }.combine(settings.flow(SurfaceSettings.LockScreen)) { inputs, lock -> inputs.copy(lockScreen = lock) }
             .combine(settings.flow(SurfaceSettings.Colorize)) { inputs, on -> inputs.copy(colorize = on) }
-            // the root value in the bar: the card, automatically (only in a build with root features)
-            .combine(if (rootFeatures == null) flowOf(false) else settings.flow(SurfaceSettings.RootValue)) { inputs, on ->
-                inputs.copy(rootValue = on)
-            }.combine(storedHistory.onStart { emit(emptyList()) }) { inputs, stored -> inputs.copy(stored = stored) }
+            .combine(storedHistory.onStart { emit(emptyList()) }) { inputs, stored -> inputs.copy(stored = stored) }
             .distinctUntilChanged()
             // a failing store must never stop the foreground notification: it goes on with the defaults
             .catch {
                 android.util.Log.w("Sukrara.monitor", "notification inputs failed: ${it.javaClass.simpleName}")
-                emit(NotificationInputs(chip = true, numberIcon = true, treatments = emptyList(), config = GraphConfig()))
+                emit(NotificationInputs(chip = true, icon = NotificationIcon.DEFAULT, treatments = emptyList(), config = GraphConfig()))
             }
 
     /**
@@ -227,7 +237,8 @@ class MonitorModule(
 /** The glucose notification's inputs besides the hub state. */
 data class NotificationInputs(
     val chip: Boolean,
-    val numberIcon: Boolean,
+    /** The notification's icon in the status bar ([SurfaceSettings.NotifIcon], for the choice in use). */
+    val icon: NotificationIcon,
     val treatments: List<Treatment>,
     val config: GraphConfig,
     val sharing: SharingLine? = null,
@@ -237,8 +248,10 @@ data class NotificationInputs(
     val lockScreen: Boolean = true,
     /** The card in the range colour ([SurfaceSettings.Colorize]). */
     val colorize: Boolean = false,
-    /** The root value is in the status bar ([SurfaceSettings.RootValue]): the card, never the chip. */
+    /** The root text is the status bar's choice: the card, never the chip. */
     val rootValue: Boolean = false,
+    /** *Nothing* is the choice: while Android still shows the notification, it shows no glucose in the bar. */
+    val off: Boolean = false,
 )
 
 /** The `Application` gives the monitor's Android components (service, receivers) their module. */

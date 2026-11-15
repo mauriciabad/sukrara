@@ -293,7 +293,7 @@ class SharingScreenshotTest {
                             RootUi(
                                 SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed"),
                                 rooted = true,
-                                style = NotificationStyle.Root,
+                                style = NotificationStyle.Text,
                                 offered = true,
                             ),
                     ),

@@ -21,6 +21,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -33,6 +34,7 @@ import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.rows.RadioRow
+import app.mauri.sukrara.designsystem.rows.RowTag
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 
 /**
@@ -41,8 +43,10 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
  * selected option over `SelectorWithWidgetPreference` radio rows, packages/apps/Settings
  * `system_navigation_gesture_settings.xml`): one picture of the selected choice (the status bar and the notification it
  * gives, what shows the glucose highlighted), fading through on a change, then one radio row per choice (equal rows,
- * the title what the status bar shows, the summary what the notification is). [rootOffered] false (a build without
- * root features) leaves the root choice out; it is chosen even before root works: choosing it is the request.
+ * the title what the status bar shows, the summary what the notification is, what an option needs as a [RowTag]).
+ * [rootOffered] false (a build without root features) leaves the root text out; it is chosen even before root works:
+ * choosing it is the request. [offOffered]: *Nothing* (Settings only: setup doesn't send the person to Android's
+ * notification settings).
  */
 @Composable
 fun GlucoseNotificationChoice(
@@ -50,17 +54,20 @@ fun GlucoseNotificationChoice(
     rootOffered: Boolean,
     onChoose: (NotificationStyle) -> Unit,
     modifier: Modifier = Modifier,
+    offOffered: Boolean = false,
 ) {
     Column(modifier.fillMaxWidth()) {
         Preview(style)
         SettingsGroup(Modifier.selectableGroup(), title = stringResource(R.string.ds_notif_style_heading)) {
             for (option in NotificationStyle.entries) {
-                if (option == NotificationStyle.Root && !rootOffered) continue
+                if (option == NotificationStyle.Text && !rootOffered) continue
+                if (option == NotificationStyle.Off && !offOffered && style != NotificationStyle.Off) continue
                 RadioRow(
                     stringResource(titleOf(option)),
                     option == style,
                     { onChoose(option) },
                     summary = stringResource(summaryOf(option)),
+                    tag = if (option == NotificationStyle.Text) stringResource(R.string.ds_tag_root) else null,
                 )
             }
         }
@@ -72,21 +79,24 @@ fun titleOf(style: NotificationStyle): Int =
     when (style) {
         NotificationStyle.Chip -> R.string.ds_notif_style_chip
         NotificationStyle.Icon -> R.string.ds_notif_style_icon
-        NotificationStyle.Root -> R.string.ds_notif_style_root
+        NotificationStyle.Text -> R.string.ds_notif_style_root
+        NotificationStyle.Off -> R.string.ds_notif_style_off
     }
 
 private fun summaryOf(style: NotificationStyle): Int =
     when (style) {
         NotificationStyle.Chip -> R.string.ds_notif_style_chip_summary
         NotificationStyle.Icon -> R.string.ds_notif_style_icon_summary
-        NotificationStyle.Root -> R.string.ds_notif_style_root_summary
+        NotificationStyle.Text -> R.string.ds_notif_style_root_summary
+        NotificationStyle.Off -> R.string.ds_notif_style_off_summary
     }
 
 private fun previewOf(style: NotificationStyle): Int =
     when (style) {
         NotificationStyle.Chip -> R.string.ds_notif_style_chip_preview
         NotificationStyle.Icon -> R.string.ds_notif_style_icon_preview
-        NotificationStyle.Root -> R.string.ds_notif_style_root_preview
+        NotificationStyle.Text -> R.string.ds_notif_style_root_preview
+        NotificationStyle.Off -> R.string.ds_notif_style_off_preview
     }
 
 /** The colours a preview is drawn in: the theme's, the notification on its own surface with an outline (both themes). */
@@ -165,7 +175,11 @@ private fun DrawScope.phone(
             )
         }
 
-        NotificationStyle.Root -> {
+        NotificationStyle.Off -> {
+            // nothing of Sukrara's in the bar
+        }
+
+        NotificationStyle.Text -> {
             // the value as text before the system icons, highlighted
             val x = size.width - pad - 40.dp.toPx() - 52.dp.toPx()
             drawRoundRect(ink.accent.copy(alpha = 0.22f), Offset(x - 6.dp.toPx(), barY), Size(48.dp.toPx(), barH), CornerRadius(barH / 2))
@@ -173,8 +187,19 @@ private fun DrawScope.phone(
             arrow(Offset(x + 31.dp.toPx(), cy), 5.dp.toPx(), ink.accent)
         }
     }
-    // the notification
+    // the notification (none with *Nothing*: the shade's empty place, outlined)
     val top = barY + barH + 12.dp.toPx()
+    if (style == NotificationStyle.Off) {
+        val empty = Size(size.width - 2 * pad, minOf(size.height - top - pad, 62.dp.toPx()))
+        drawRoundRect(
+            ink.outline.copy(alpha = 0.5f),
+            Offset(pad, top),
+            empty,
+            CornerRadius(16.dp.toPx()),
+            style = Stroke(1.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))),
+        )
+        return
+    }
     // basic: as short as the notification is; with the graph: the rest of the screen
     val full = size.height - top - pad
     val card = Size(size.width - 2 * pad, if (style == NotificationStyle.Chip) minOf(full, 62.dp.toPx()) else full)

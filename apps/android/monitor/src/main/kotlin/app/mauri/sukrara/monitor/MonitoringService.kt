@@ -14,6 +14,7 @@ import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.util.Log
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.monitor.notify.CardFrame
@@ -174,7 +175,7 @@ class MonitoringService : Service() {
                 chip = inputs.chip,
                 rootValue = inputs.rootValue,
                 colorize = inputs.colorize,
-                numberIcon = inputs.numberIcon,
+                icon = if (inputs.off) NotificationIcon.App else inputs.icon,
                 cardKey =
                     listOf(
                         now.epochSecond / 60,

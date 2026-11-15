@@ -83,7 +83,7 @@
     <string name="monitor_group_alerts">Glucose alerts</string>
     <string name="monitor_group_alerts_alarm">Glucose alarms</string>
     <string name="monitor_group_info">Other</string>
-    <string name="monitor_channel_glucose">Glucose (always shown)</string>
+    <string name="monitor_channel_glucose">Glucose</string>
     <string name="monitor_channel_status">Monitoring problems</string>
     <string name="monitor_channel_requests">Requests</string>
     <string name="monitor_channel_sensor">Sensor</string>

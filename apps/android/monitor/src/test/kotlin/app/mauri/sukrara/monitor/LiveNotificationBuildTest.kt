@@ -10,6 +10,7 @@ import android.text.Spanned
 import android.text.style.StrikethroughSpan
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
@@ -43,7 +44,7 @@ class LiveNotificationBuildTest {
     private val ctx: Context = ApplicationProvider.getApplicationContext()
     private val now = Instant.parse("2026-01-15T12:00:00Z")
     private val live = LiveNotification(ctx)
-    private val card = NotificationPrefs(chip = false, numberIcon = true)
+    private val card = NotificationPrefs(chip = false, icon = NotificationIcon.ValueTrend)
 
     private fun state(
         mgdl: Int? = 138,

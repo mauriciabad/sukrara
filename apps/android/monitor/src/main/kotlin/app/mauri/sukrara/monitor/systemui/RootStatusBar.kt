@@ -10,12 +10,15 @@ import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
 import app.mauri.sukrara.core.data.settings.HookPosition
+import app.mauri.sukrara.core.data.settings.NotificationStyleSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.NotificationIcon
+import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.graph.CardSurface
@@ -98,12 +101,14 @@ class RootStatusBar(
 
     val prefs: Flow<RootPrefs> =
         combine(
-            settings.flow(SurfaceSettings.RootValue),
+            NotificationStyleSettings.flow(settings, rootBuild = true),
             settings.flow(SurfaceSettings.RootPosition),
             settings.flow(SurfaceSettings.RootColor),
-            settings.flow(SurfaceSettings.HideNotificationIcon),
-            ::RootPrefs,
-        )
+            NotificationStyleSettings.iconFlow(settings, rootBuild = true),
+        ) { style, position, color, icon ->
+            // the notification's icon hidden only where the person chose so (with the text; only while it shows)
+            RootPrefs(style == NotificationStyle.Text, position, color, icon == NotificationIcon.None)
+        }
 
     /** The lock-screen widget's settings (Settings › Lock screen): on, and how it looks. */
     private val lockPrefs: Flow<LockPrefs> =
@@ -131,7 +136,7 @@ class RootStatusBar(
                 }
         }
         // only someone who turned the value on is asked for root (Magisk shows its prompt; KernelSU / APatch answer at once)
-        scope.launch { if (settings.flow(SurfaceSettings.RootValue).first()) runCatching { access.checkRoot() } }
+        scope.launch { if (prefs.first().on) runCatching { access.checkRoot() } }
     }
 
     /** Settings changed outside the flows (the hello): send again now. */

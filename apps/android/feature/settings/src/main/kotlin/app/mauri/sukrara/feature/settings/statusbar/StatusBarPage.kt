@@ -20,7 +20,12 @@ import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.data.settings.NotificationStyleSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
+import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.GlucoseNotificationChannel
+import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.NotificationStyle
+import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.storage.SettingSpec
@@ -36,21 +41,27 @@ import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
+import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.GraphSettings
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * Settings › Glucose notification (docs/36 §11; was a section of *Status bar*): where the glucose shows in the status
- * bar decides what the notification can be, so the one choice is here, and under it only the rows of the chosen one.
+ * Settings › Status bar & notification (docs/36 §11, §14): where the glucose shows in the status bar decides what the
+ * glucose notification can be, so the one choice is here, and under it only the rows of the chosen one.
  */
 data class NotificationPagePrefs(
     val style: NotificationStyle,
-    val numberIcon: Boolean,
+    /** The notification's icon for the choice in use ([NotificationStyleSettings.icon]). */
+    val icon: NotificationIcon,
     /** The glucose notification's value on the lock screen (#94). */
     val lockScreen: Boolean,
     /** The card in the range colour. */
@@ -58,24 +69,45 @@ data class NotificationPagePrefs(
     /** The root value's placement ([app.mauri.sukrara.core.data.settings.HookPosition]) and colour. */
     val position: String,
     val rootColor: Boolean,
+    /** Alerts ring in the glucose notification (*Separate alert notifications* off). */
+    val alertsInside: Boolean,
+    /** The newest reading as the card shows it, for the icon picker's pictures; null without one. */
+    val look: GlucoseLook? = null,
+)
+
+/**
+ * What Android allows and shows now (re-read on resume: the person changes them in Android's settings):
+ * [liveUpdates] = Sukrara may post Live Updates, [shown] = the glucose notification's channel, its group and the app's
+ * notifications are on.
+ */
+data class AndroidNotification(
+    val liveUpdates: Boolean,
+    val shown: Boolean,
 )
 
 class StatusBarViewModel(
     private val settings: SettingsRepository,
     /** null: this build has no root features (Google Play): no root choice. */
     private val systemAccess: SystemAccessPort?,
+    recent: Flow<List<Reading>> = flowOf(emptyList()),
+    private val clock: Clock? = null,
 ) : ViewModel() {
     val rootOffered: Boolean = systemAccess != null
+
+    private val look: Flow<GlucoseLook?> =
+        combine(recent, settings.flow(GraphSettings.GlucoseUnitSetting)) { readings, unit ->
+            clock?.let { NotificationIconPreview.look(readings, it.now(), GlucoseUnit.of(unit)) }
+        }.onStart { emit(null) }
 
     val prefs: StateFlow<NotificationPagePrefs?> =
         combine(
             NotificationStyleSettings.flow(settings, rootOffered),
-            settings.flow(SurfaceSettings.NumberIcon),
-            settings.flow(SurfaceSettings.LockScreen),
-            settings.flow(SurfaceSettings.Colorize),
+            NotificationStyleSettings.iconFlow(settings, rootOffered),
+            combine(settings.flow(SurfaceSettings.LockScreen), settings.flow(SurfaceSettings.Colorize), ::Pair),
             combine(settings.flow(SurfaceSettings.RootPosition), settings.flow(SurfaceSettings.RootColor), ::Pair),
-        ) { style, icon, lock, colorize, (position, color) ->
-            NotificationPagePrefs(style, icon, lock, colorize, position, color)
+            combine(settings.flow(SurfaceSettings.SeparateAlerts), look, ::Pair),
+        ) { style, icon, (lock, colorize), (position, color), (separate, look) ->
+            NotificationPagePrefs(style, icon, lock, colorize, position, color, alertsInside = !separate, look = look)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val access: StateFlow<SystemAccessState> = systemAccess?.state ?: MutableStateFlow(SystemAccessState())
@@ -86,14 +118,18 @@ class StatusBarViewModel(
     val busy: StateFlow<Boolean> = runner.busy
     val problem: StateFlow<AccessProblem?> = runner.problem
 
-    /** The choice; the root one is also the request for root (Magisk's prompt; KernelSU / APatch answer at once). */
+    /** The choice; the root text is also the request for root (Magisk's prompt; KernelSU / APatch answer at once). */
     fun setStyle(style: NotificationStyle) {
         viewModelScope.launch {
             NotificationStyleSettings.set(settings, style)
-            if (style == NotificationStyle.Root && systemAccess?.state?.value?.granted == false) {
+            if (style == NotificationStyle.Text && systemAccess?.state?.value?.granted == false) {
                 runCatching { systemAccess.checkRoot() }
             }
         }
+    }
+
+    fun setIcon(icon: NotificationIcon) {
+        viewModelScope.launch { NotificationStyleSettings.setIcon(settings, icon) }
     }
 
     fun checkRoot() =
@@ -113,7 +149,7 @@ class StatusBarViewModel(
     fun refresh() {
         val access = systemAccess ?: return
         access.refresh()
-        if (!access.state.value.granted && prefs.value?.style == NotificationStyle.Root) {
+        if (!access.state.value.granted && prefs.value?.style == NotificationStyle.Text) {
             viewModelScope.launch { runCatching { access.checkRoot() } }
         }
     }
@@ -129,22 +165,26 @@ class StatusBarViewModel(
 
     fun setLockScreen(on: Boolean) = set(SurfaceSettings.LockScreen, on)
 
-    fun setNumberIcon(on: Boolean) = set(SurfaceSettings.NumberIcon, on)
-
     fun setPosition(position: String) = set(SurfaceSettings.RootPosition, position)
 
     fun setRootColor(on: Boolean) = set(SurfaceSettings.RootColor, on)
+
+    /** *Alerts in the notification* (the same setting as Alerts › *Separate alert notifications*, the other way round). */
+    fun setAlertsInside(on: Boolean) = set(SurfaceSettings.SeparateAlerts, !on)
 }
 
 /** What the page does. */
 class NotificationPageActions(
     val setStyle: (NotificationStyle) -> Unit = {},
-    val setNumberIcon: (Boolean) -> Unit = {},
+    val setIcon: (NotificationIcon) -> Unit = {},
     val setColorize: (Boolean) -> Unit = {},
     val setLockScreen: (Boolean) -> Unit = {},
+    val setAlertsInside: (Boolean) -> Unit = {},
     val setPosition: (String) -> Unit = {},
     val setRootColor: (Boolean) -> Unit = {},
     val allowLiveUpdates: () -> Unit = {},
+    /** Android's page of the glucose notification's channel (where the person turns it on or off). */
+    val openGlucoseChannel: () -> Unit = {},
     val checkRoot: () -> Unit = {},
     val requestScope: () -> Unit = {},
     val restart: () -> Unit = {},
@@ -154,6 +194,20 @@ class NotificationPageActions(
 fun Context.liveUpdatesAllowed(): Boolean =
     Build.VERSION.SDK_INT_FULL >= Build.VERSION_CODES_FULL.BAKLAVA_1 &&
         runCatching { getSystemService(NotificationManager::class.java).canPostPromotedNotifications() }.getOrDefault(false)
+
+/**
+ * Whether Android shows the glucose notification: its channel, the channel's group and Sukrara's notifications are on
+ * (any of them off drops every post; docs/36 §14). No channel yet (before monitoring ever ran): shown.
+ */
+fun Context.glucoseNotificationShown(): Boolean =
+    runCatching {
+        val nm = getSystemService(NotificationManager::class.java)
+        val channel = nm.getNotificationChannel(GlucoseNotificationChannel.ID) ?: return@runCatching nm.areNotificationsEnabled()
+        val groupOff = channel.group?.let { nm.getNotificationChannelGroup(it)?.isBlocked } == true
+        nm.areNotificationsEnabled() && channel.importance != NotificationManager.IMPORTANCE_NONE && !groupOff
+    }.getOrDefault(true)
+
+fun Context.androidNotification() = AndroidNotification(liveUpdatesAllowed(), glucoseNotificationShown())
 
 /** Android's per-app Live Updates switch. */
 fun Context.openLiveUpdateSettings() {
@@ -165,16 +219,36 @@ fun Context.openLiveUpdateSettings() {
 }
 
 /**
- * The page: the choice ([GlucoseNotificationChoice], shared with setup), then only what the chosen one has. The chip:
- * *Allow Live Updates for Sukrara* while Android refuses it. The notification icon: *Number as notification icon*.
- * The status bar text (root): the one step root or the module is missing (the shared card), *Placement*, *Colour by
- * range*. The two with the graph: *Coloured background*. All: *Glucose on the lock screen* (#94).
+ * Android's page of the glucose notification's channel (its on / off switch), or the app's notifications while
+ * they are all off (the channel's page can't turn them on).
+ */
+fun Context.openGlucoseChannelSettings() {
+    val appOff = runCatching { !getSystemService(NotificationManager::class.java).areNotificationsEnabled() }.getOrDefault(false)
+    val intent =
+        if (appOff) {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        } else {
+            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_CHANNEL_ID, GlucoseNotificationChannel.ID)
+        }.putExtra(Settings.EXTRA_APP_PACKAGE, packageName).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { startActivity(intent) }
+}
+
+/**
+ * The page: the choice ([GlucoseNotificationChoice], shared with setup), then only what the chosen one has, then the
+ * notification's own rows while Android shows it.
+ * - The chip: *Allow Live Updates for Sukrara* while Android refuses it.
+ * - The notification icon and the root text: *What the icon shows* ([NotificationIconPicker]).
+ * - The root text: the one step root or the module is missing (the shared card), *Placement*, *Colour by range*, and
+ *   *Glucose notification* (its on / off is Android's: the row opens it).
+ * - *Nothing*, or a choice that needs the notification while Android has it off: the one step in Android's settings.
+ * - The notification (while shown): *Coloured background* (not the chip), *Glucose on the lock screen* (#94), *Alerts
+ *   in the notification*. Without it, a footer: every alert is a notification of its own.
  */
 @Composable
 fun StatusBarContent(
     prefs: NotificationPagePrefs,
     rootOffered: Boolean,
-    liveUpdatesAllowed: Boolean,
+    android: AndroidNotification,
     access: SystemAccessState,
     busy: Boolean,
     problem: AccessProblem?,
@@ -191,60 +265,100 @@ fun StatusBarContent(
         wasAsking = access.asking
     }
     SettingsPage(stringResource(R.string.st_statusbar_title), onBack) {
-        GlucoseNotificationChoice(style, rootOffered, actions.setStyle)
-        // the chosen one's own rows (what the status bar shows), then the notification's
-        when (style) {
-            NotificationStyle.Root -> {
-                RootChoiceRows(prefs, access, busy, problem, actions) { choosing = true }
+        GlucoseNotificationChoice(style, rootOffered, actions.setStyle, offOffered = true)
+        // the step Android's settings still need for the choice: the notification on, or off
+        when {
+            style.needsNotification && !android.shown -> {
+                StepRow(R.string.st_statusbar_turn_on, R.string.st_statusbar_turn_on_summary, actions.openGlucoseChannel)
             }
 
-            NotificationStyle.Icon -> {
+            style == NotificationStyle.Off && android.shown -> {
+                StepRow(R.string.st_statusbar_turn_off, R.string.st_statusbar_turn_off_summary, actions.openGlucoseChannel)
+            }
+
+            style == NotificationStyle.Chip && !android.liveUpdates -> {
                 SettingsGroup {
-                    SwitchRow(
-                        stringResource(R.string.st_statusbar_number_icon),
-                        prefs.numberIcon,
-                        actions.setNumberIcon,
-                        summary = stringResource(R.string.st_statusbar_number_icon_summary),
-                        icon = DsR.drawable.ds_ic_notifications,
+                    NavigationRow(
+                        stringResource(R.string.st_statusbar_allow_live_updates),
+                        actions.allowLiveUpdates,
+                        summary = stringResource(R.string.st_statusbar_allow_live_updates_summary),
+                        icon = DsR.drawable.ds_ic_tune,
                     )
                 }
             }
-
-            NotificationStyle.Chip -> {
-                if (!liveUpdatesAllowed) {
-                    SettingsGroup {
-                        NavigationRow(
-                            stringResource(R.string.st_statusbar_allow_live_updates),
-                            actions.allowLiveUpdates,
-                            summary = stringResource(R.string.st_statusbar_allow_live_updates_summary),
-                            icon = DsR.drawable.ds_ic_tune,
-                        )
-                    }
-                }
-            }
         }
+        // the chosen one's own rows (what the status bar shows)
+        if (style == NotificationStyle.Text) RootChoiceRows(prefs, access, busy, problem, actions) { choosing = true }
+        val shown = android.shown && style != NotificationStyle.Off
+        if (shown) NotificationIconPicker(style, prefs.icon, prefs.look, access.module.active, actions.setIcon)
+        // the notification's own rows
         SettingsGroup(title = stringResource(R.string.st_statusbar_notification)) {
-            if (style != NotificationStyle.Chip) {
-                SwitchRow(
-                    stringResource(R.string.st_statusbar_colorize),
-                    prefs.colorize,
-                    actions.setColorize,
-                    summary = stringResource(R.string.st_statusbar_colorize_on),
-                    icon = DsR.drawable.ds_ic_palette,
+            if (style == NotificationStyle.Text) {
+                NavigationRow(
+                    stringResource(R.string.st_statusbar_glucose_notification),
+                    actions.openGlucoseChannel,
+                    summary =
+                        stringResource(
+                            if (android.shown) {
+                                R.string.st_statusbar_glucose_notification_on
+                            } else {
+                                R.string.st_statusbar_glucose_notification_off
+                            },
+                        ),
+                    icon = if (android.shown) DsR.drawable.ds_ic_notifications else DsR.drawable.ds_ic_notifications_off,
                 )
             }
-            SwitchRow(
-                stringResource(R.string.st_statusbar_lock_screen),
-                prefs.lockScreen,
-                actions.setLockScreen,
-                summary =
-                    stringResource(if (prefs.lockScreen) R.string.st_statusbar_lock_screen_on else R.string.st_statusbar_lock_screen_off),
-                icon = DsR.drawable.ds_ic_screen_lock_portrait,
-            )
+            if (shown) NotificationRows(prefs, actions)
         }
-        FooterText(stringResource(R.string.st_statusbar_footer))
+        FooterText(
+            stringResource(if (shown) R.string.st_statusbar_footer else R.string.st_statusbar_no_notification_footer),
+        )
     }
     if (choosing) PlacementDialog(prefs.position, access.module.active, { choosing = false }, actions.setPosition)
+}
+
+/** The glucose notification's own rows, while Android shows it. */
+@Composable
+private fun NotificationRows(
+    prefs: NotificationPagePrefs,
+    actions: NotificationPageActions,
+) {
+    if (prefs.style != NotificationStyle.Chip) {
+        SwitchRow(
+            stringResource(R.string.st_statusbar_colorize),
+            prefs.colorize,
+            actions.setColorize,
+            summary = stringResource(R.string.st_statusbar_colorize_on),
+            icon = DsR.drawable.ds_ic_palette,
+        )
+    }
+    SwitchRow(
+        stringResource(R.string.st_statusbar_lock_screen),
+        prefs.lockScreen,
+        actions.setLockScreen,
+        summary = stringResource(if (prefs.lockScreen) R.string.st_statusbar_lock_screen_on else R.string.st_statusbar_lock_screen_off),
+        icon = DsR.drawable.ds_ic_screen_lock_portrait,
+    )
+    // the same setting as Alerts › Separate alert notifications, worded for this page (a second place)
+    SwitchRow(
+        stringResource(R.string.st_statusbar_alerts),
+        prefs.alertsInside,
+        actions.setAlertsInside,
+        summary = stringResource(if (prefs.alertsInside) R.string.st_statusbar_alerts_on else R.string.st_statusbar_alerts_off),
+        icon = DsR.drawable.ds_ic_notifications_active,
+    )
+}
+
+/** A step in Android's settings the choice still needs (opens the glucose notification's page there). */
+@Composable
+private fun StepRow(
+    title: Int,
+    summary: Int,
+    onClick: () -> Unit,
+) {
+    SettingsGroup {
+        NavigationRow(stringResource(title), onClick, summary = stringResource(summary), icon = DsR.drawable.ds_ic_open_in_new)
+    }
 }
 
 /** Under the root choice: the missing step's card, *Placement*, *Colour by range*. */

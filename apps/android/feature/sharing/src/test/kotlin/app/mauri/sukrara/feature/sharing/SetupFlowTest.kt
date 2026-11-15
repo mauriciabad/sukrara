@@ -337,7 +337,7 @@ class SetupFlowTest {
         // root: the walk goes on, the status bar text already picked
         shows("Glucose notification")
         compose.onNodeWithText("Status bar text").assertIsSelected()
-        assertEquals(NotificationStyle.Root, runBlocking { module.notificationStyle.first() })
+        assertEquals(NotificationStyle.Text, runBlocking { module.notificationStyle.first() })
         // the person can still choose another one
         tap("Chip")
         compose.onNodeWithText("Chip").assertIsSelected()

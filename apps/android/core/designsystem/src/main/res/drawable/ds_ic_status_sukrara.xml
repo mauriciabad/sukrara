@@ -2,7 +2,7 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- status-bar icon: Sukrara (a drop) -->
+<!-- status-bar icon: Sukrara (a drop), the notifications' and Settings' notification icon picker -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"

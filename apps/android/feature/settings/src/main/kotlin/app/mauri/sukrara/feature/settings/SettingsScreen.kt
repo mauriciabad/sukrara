@@ -63,7 +63,8 @@ import app.mauri.sukrara.feature.settings.sensorend.SensorEndViewModel
 import app.mauri.sukrara.feature.settings.statusbar.NotificationPageActions
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarContent
 import app.mauri.sukrara.feature.settings.statusbar.StatusBarViewModel
-import app.mauri.sukrara.feature.settings.statusbar.liveUpdatesAllowed
+import app.mauri.sukrara.feature.settings.statusbar.androidNotification
+import app.mauri.sukrara.feature.settings.statusbar.openGlucoseChannelSettings
 import app.mauri.sukrara.feature.settings.statusbar.openLiveUpdateSettings
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.NonCancellable
@@ -572,34 +573,36 @@ private fun SettingsPages(
         }
 
         SettingsRoute.StatusBar -> {
-            val vm = viewModel { StatusBarViewModel(deps.settings, deps.systemAccess) }
+            val vm = viewModel { StatusBarViewModel(deps.settings, deps.systemAccess, deps.recent, deps.clock) }
             val prefs by vm.prefs.collectAsStateWithLifecycle()
             val access by vm.access.collectAsStateWithLifecycle()
             val busy by vm.busy.collectAsStateWithLifecycle()
             val problem by vm.problem.collectAsStateWithLifecycle()
             val context = LocalContext.current
-            // the person may come back from Android's Live Updates switch, KernelSU or LSPosed: read them again on resume
-            var allowed by remember { mutableStateOf(context.liveUpdatesAllowed()) }
+            // the person may come back from Android's notification settings, KernelSU or LSPosed: read them again on resume
+            var android by remember { mutableStateOf(context.androidNotification()) }
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-                allowed = context.liveUpdatesAllowed()
+                android = context.androidNotification()
                 vm.refresh()
             }
             prefs?.let {
                 StatusBarContent(
                     it,
                     vm.rootOffered,
-                    allowed,
+                    android,
                     access,
                     busy,
                     problem,
                     NotificationPageActions(
                         setStyle = vm::setStyle,
-                        setNumberIcon = vm::setNumberIcon,
+                        setIcon = vm::setIcon,
                         setColorize = vm::setColorize,
                         setLockScreen = vm::setLockScreen,
+                        setAlertsInside = vm::setAlertsInside,
                         setPosition = vm::setPosition,
                         setRootColor = vm::setRootColor,
                         allowLiveUpdates = context::openLiveUpdateSettings,
+                        openGlucoseChannel = context::openGlucoseChannelSettings,
                         checkRoot = vm::checkRoot,
                         requestScope = vm::requestScope,
                         restart = vm::restart,

@@ -345,6 +345,15 @@
         ],
         "entry": "TrendArrowViewModel.previews",
         "what": "Settings › Ranges › Trend arrow (#204): the newest value and its arrow under each choice (the preview on top, the arrow beside each choice) as the card shows them, turned with a spring, and where the trend came from"
+      },
+      {
+        "id": "notification-icon-preview",
+        "kind": "glyph",
+        "files": [
+          "apps/android/feature/settings/src/main/kotlin/app/mauri/sukrara/feature/settings/statusbar/NotificationIconPicker.kt"
+        ],
+        "entry": "NotificationIconPreview.look",
+        "what": "Settings › Status bar & notification › What the icon shows (docs/36 §14): the newest value as each notification icon (value and trend, value, trend), drawn by ValueGlyphs as the glucose notification draws it"
       }
     ]
   },

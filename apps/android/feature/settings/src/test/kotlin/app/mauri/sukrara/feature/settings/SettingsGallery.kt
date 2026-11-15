@@ -32,6 +32,7 @@ import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
@@ -83,6 +84,7 @@ import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarState
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndContent
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndPrefs
+import app.mauri.sukrara.feature.settings.statusbar.AndroidNotification
 import app.mauri.sukrara.feature.settings.statusbar.NotificationPageActions
 import app.mauri.sukrara.feature.settings.statusbar.NotificationPagePrefs
 import app.mauri.sukrara.feature.settings.statusbar.PlacementDialog
@@ -499,37 +501,41 @@ class SettingsGallery {
             "statusbar" to { notificationPage(prefs(NotificationStyle.Chip)) },
             "statusbar-live-updates-off" to { notificationPage(prefs(NotificationStyle.Chip), liveUpdates = false) },
             "statusbar-icon" to { notificationPage(prefs(NotificationStyle.Icon)) },
-            "statusbar-root" to { notificationPage(prefs(NotificationStyle.Root), rootActive) },
+            "statusbar-root" to { notificationPage(prefs(NotificationStyle.Text), rootActive) },
+            // docs/36 §14: the root text without the notification; Nothing before and after Android's switch
+            "statusbar-root-no-notification" to { notificationPage(prefs(NotificationStyle.Text), rootActive, shown = false) },
+            "statusbar-off" to { notificationPage(prefs(NotificationStyle.Off)) },
+            "statusbar-off-done" to { notificationPage(prefs(NotificationStyle.Off), shown = false) },
             // #94: the value hidden on the lock screen
             "statusbar-lock-screen-off" to { notificationPage(prefs(NotificationStyle.Chip).copy(lockScreen = false)) },
             // #178: asking, root on the phone but not allowed, refused, no root at all
             "statusbar-root-asking" to {
                 notificationPage(
-                    prefs(NotificationStyle.Root),
+                    prefs(NotificationStyle.Text),
                     SystemAccessState(asking = true, rootSeen = true, module = ModuleState.Restart),
                 )
             },
             "statusbar-root-not-allowed" to {
-                notificationPage(prefs(NotificationStyle.Root), noRoot.copy(rootSeen = true, module = ModuleState.Restart))
+                notificationPage(prefs(NotificationStyle.Text), noRoot.copy(rootSeen = true, module = ModuleState.Restart))
             },
             "statusbar-root-refused" to {
-                notificationPage(prefs(NotificationStyle.Root), noRoot.copy(root = RootAccess.Refused, rootSeen = true))
+                notificationPage(prefs(NotificationStyle.Text), noRoot.copy(root = RootAccess.Refused, rootSeen = true))
             },
-            "statusbar-root-missing" to { notificationPage(prefs(NotificationStyle.Root), noRoot) },
+            "statusbar-root-missing" to { notificationPage(prefs(NotificationStyle.Text), noRoot) },
             "statusbar-root-icons" to {
                 notificationPage(
-                    prefs(NotificationStyle.Root),
+                    prefs(NotificationStyle.Text),
                     SystemAccessState(root = RootAccess.Granted, module = ModuleState.Missing, framework = null),
                 )
             },
             "statusbar-root-restart" to {
                 notificationPage(
-                    prefs(NotificationStyle.Root).copy(position = HookPosition.AFTER_CLOCK),
+                    prefs(NotificationStyle.Text).copy(position = HookPosition.AFTER_CLOCK),
                     SystemAccessState(root = RootAccess.Granted, module = ModuleState.Update),
                 )
             },
             "statusbar-root-placement" to {
-                notificationPage(prefs(NotificationStyle.Root), SystemAccessState(root = RootAccess.Granted, module = ModuleState.Missing))
+                notificationPage(prefs(NotificationStyle.Text), SystemAccessState(root = RootAccess.Granted, module = ModuleState.Missing))
                 PlacementDialog(HookPosition.DEFAULT, module = false, onClose = {}, onPick = {})
             },
             "sensorend" to {
@@ -791,7 +797,15 @@ private val noRoot = SystemAccessState(root = RootAccess.Missing, module = Modul
 private val rootActive = SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed 2.0")
 
 private fun prefs(style: NotificationStyle) =
-    NotificationPagePrefs(style, numberIcon = true, lockScreen = true, colorize = false, position = HookPosition.DEFAULT, rootColor = true)
+    NotificationPagePrefs(
+        style,
+        if (style == NotificationStyle.Text) NotificationIcon.None else NotificationIcon.ValueTrend,
+        lockScreen = true,
+        colorize = false,
+        position = HookPosition.DEFAULT,
+        rootColor = true,
+        alertsInside = true,
+    )
 
 /** Settings › Glucose notification with made-up access states (no root, no LSPosed: pictures only). */
 @Composable
@@ -799,4 +813,13 @@ private fun notificationPage(
     prefs: NotificationPagePrefs,
     access: SystemAccessState = SystemAccessState(),
     liveUpdates: Boolean = true,
-) = StatusBarContent(prefs, rootOffered = true, liveUpdates, access, busy = false, problem = null, NotificationPageActions()) {}
+    shown: Boolean = true,
+) = StatusBarContent(
+    prefs,
+    rootOffered = true,
+    AndroidNotification(liveUpdates, shown),
+    access,
+    busy = false,
+    problem = null,
+    NotificationPageActions(),
+) {}

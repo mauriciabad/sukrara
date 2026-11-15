@@ -63,6 +63,8 @@ fun Radio2(
     option: ListPreferenceOption,
     selectedId: Int,
     enabled: Boolean,
+    // Sukrara: a label at the row's end (what the option needs, e.g. "Root")
+    trailing: (@Composable () -> Unit)? = null,
     onIdSelected: (id: Int) -> Unit,
 ) {
     val selected = option.id == selectedId
@@ -113,6 +115,10 @@ fun Radio2(
                     body = option.summary,
                 )
             }
+        }
+        trailing?.let {
+            Spacer(modifier = Modifier.width(SettingsSpace.extraSmall6))
+            it()
         }
     }
 }

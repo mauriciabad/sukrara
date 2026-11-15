@@ -69,7 +69,7 @@
     <string name="monitor_group_alerts">Avisos de glucosa</string>
     <string name="monitor_group_alerts_alarm">Alarmas de glucosa</string>
     <string name="monitor_group_info">Otras</string>
-    <string name="monitor_channel_glucose">Glucosa (siempre visible)</string>
+    <string name="monitor_channel_glucose">Glucosa</string>
     <string name="monitor_channel_status">Problemas de monitorización</string>
     <string name="monitor_channel_requests">Solicitudes</string>
     <string name="monitor_channel_sensor">Sensor</string>

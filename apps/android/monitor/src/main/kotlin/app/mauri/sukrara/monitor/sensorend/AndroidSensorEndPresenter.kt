@@ -257,7 +257,7 @@ class AndroidSensorEndPresenter(
             Channels.createCore(ctx) // idempotent; the alarm receiver may post before the app made them
             channelsReady = true
         }
-        return Notification.Builder(ctx, channel).setSmallIcon(R.drawable.monitor_ic_app)
+        return Notification.Builder(ctx, channel).setSmallIcon(app.mauri.sukrara.core.designsystem.R.drawable.ds_ic_status_sukrara)
     }
 
     private fun canPromote() =

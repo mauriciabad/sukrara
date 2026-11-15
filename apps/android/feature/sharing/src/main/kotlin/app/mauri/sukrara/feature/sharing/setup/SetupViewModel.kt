@@ -603,7 +603,7 @@ class SetupViewModel(
     fun chooseNotification(style: NotificationStyle) {
         viewModelScope.launch {
             m.setNotificationStyle(style)
-            if (style == NotificationStyle.Root && ui.value
+            if (style == NotificationStyle.Text && ui.value
                     ?.root
                     ?.access
                     ?.granted == false
@@ -617,7 +617,7 @@ class SetupViewModel(
     fun notificationShown() {
         if (saved.get<Boolean>(PICKED) == true || ui.value?.facts?.root != true) return
         saved[PICKED] = true
-        viewModelScope.launch { m.setNotificationStyle(NotificationStyle.Root) }
+        viewModelScope.launch { m.setNotificationStyle(NotificationStyle.Text) }
     }
 
     /** *Continue* on the glucose notification step. */

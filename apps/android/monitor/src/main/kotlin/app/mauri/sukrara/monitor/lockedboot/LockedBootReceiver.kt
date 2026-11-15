@@ -145,7 +145,11 @@ class AndroidLockedBootSurface(
         )
 
     override fun showMonitoring() =
-        notice(R.string.monitor_locked_boot_monitoring_title, R.string.monitor_locked_boot_monitoring_text, R.drawable.monitor_ic_app)
+        notice(
+            R.string.monitor_locked_boot_monitoring_title,
+            R.string.monitor_locked_boot_monitoring_text,
+            app.mauri.sukrara.core.designsystem.R.drawable.ds_ic_status_sukrara,
+        )
 
     private fun notice(
         @StringRes title: Int,

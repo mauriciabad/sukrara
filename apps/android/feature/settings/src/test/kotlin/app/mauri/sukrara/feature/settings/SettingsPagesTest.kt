@@ -113,15 +113,13 @@ class SettingsPagesTest {
             "source.source",
             // Settings › Sensor › Juggluco's web server (the SecureStore, through the sensor module)
             "source.jugglucoSecret",
-            // Settings › Status bar and Settings › Sensor end
-            "statusbar.chip",
+            // Settings › Status bar & notification and Settings › Sensor end
+            "statusbar.show",
             "statusbar.colorize",
-            "statusbar.icon",
+            "statusbar.notifIcon",
             "statusbar.lockScreen",
-            "statusbar.hook",
             "statusbar.hookPosition",
             "statusbar.hookColor",
-            "statusbar.hideNotifIcon",
             "sensor.reminders",
             "sensor.countdownHours",
             // Settings › Sensor end › Calendar
