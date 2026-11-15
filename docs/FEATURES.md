@@ -1791,6 +1791,9 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   monitoring goes on (the service starts and runs after a reboot or a locked boot too; Android lists Sukrara under
   *Active apps*), and every alert is a notification of its own on its own channel: the presenter checks the channel, its
   group and the app's switch on every ring (`LiveNotification.canCarry`), whatever *Alerts in the notification* says.
+  Android's broadcasts for those switches (`NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED`, the group's, the app's) move an
+  alert that is up to the side that can carry it at once and post the glucose notification again, so turning it back on
+  shows it within seconds, not at the next reading.
   Nothing else of Sukrara's changes: the widgets, the lock-screen widget, the root status bar and the app show the value.
 - **States and exits**: *Chip* ↔ *Notification icon* ↔ *Status bar text* ↔ *Nothing* → Settings › Status bar &
   notification (setup's *Glucose notification* step: the first three) (or Android's per-app Live Updates setting, or

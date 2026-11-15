@@ -909,7 +909,9 @@ row in *Ready* take the same name and icon.
 - **Alerts in the notification**: Alerts' *Separate alert notifications*, here the other way round and worded for the
   page (a second place). Without the notification it isn't shown; the footer says every alert is a notification of its
   own, which is forced: `canCarry` now checks the channel, its group and the app's switch on every ring (it checked the
-  channel only: a group turned off would have sent a ring into a dropped notification).
+  channel only: a group turned off would have sent a ring into a dropped notification). Android's block-state
+  broadcasts move an alert that is up at once and post the notification again: found on the emulator, turned back on
+  it only came back with the next reading (up to a minute; five with some sensors).
 - Stored: `statusbar.show` (chip / icon / text / off) and `statusbar.notifIcon` replace `statusbar.chip`,
   `statusbar.hook`, `statusbar.icon` and `statusbar.hideNotifIcon` (no migration). `HookCode.VERSION` changed:
   System UI needs one restart after the install.

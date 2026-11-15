@@ -223,6 +223,14 @@ class GlucoseAlertPresenter(
     }
 
     /**
+     * Android showing the glucose notification changed (its channel, group or Sukrara's notifications turned on or off):
+     * what is up moves to the side that can carry it now, without waiting for the next reading (docs/36 §14).
+     */
+    fun recheck() {
+        onWatch()
+    }
+
+    /**
      * *Separate alert notifications* now; when it changed, what was up moves to the other side (the glucose notification drops
      * its alert; the separate notifications go): the runtime shows them again from its own state on its next pass.
      */

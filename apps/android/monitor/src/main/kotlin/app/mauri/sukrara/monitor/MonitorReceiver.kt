@@ -4,6 +4,7 @@
 package app.mauri.sukrara.monitor
 
 import android.app.AlarmManager
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -23,7 +24,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  *  - exact-alarm permission changed → check alerts (which arms the alert alarm again) and reschedule the health check;
  *  - the health check alarm → start the service if it should run, schedule the next check;
  *  - the freshness step → redraw the glucose surfaces;
- *  - the glucose notification was swiped away → post it again.
+ *  - the glucose notification was swiped away, or its channel, group or Sukrara's notifications turned on or off in
+ *    Android's settings → post it again.
  * The last three (`HealthCheckReceiver`) are direct-boot aware: they run before the first unlock while the wearer's
  * phone monitors then (docs/30-direct-boot.md, #160).
  */
@@ -96,6 +98,16 @@ abstract class MonitorReceiver : BroadcastReceiver() {
                 // the service posts it again as it is (a forced post, with its card)
                 if (MonitoringService.isRunning) monitor.repost()
             }
+
+            NotificationManager.ACTION_NOTIFICATION_CHANNEL_BLOCK_STATE_CHANGED,
+            NotificationManager.ACTION_NOTIFICATION_CHANNEL_GROUP_BLOCK_STATE_CHANGED,
+            NotificationManager.ACTION_APP_BLOCK_STATE_CHANGED,
+            -> {
+                // Android shows the glucose notification again, or stopped (docs/36 §14): an alert up moves to the side
+                // that can carry it now, and the notification is posted again (a post while it was off was dropped)
+                context.awaitAlertsModule()?.presenter?.recheck()
+                if (MonitoringService.isRunning) monitor.repost()
+            }
         }
     }
 
@@ -138,7 +150,10 @@ abstract class MonitorReceiver : BroadcastReceiver() {
     }
 }
 
-/** The system's broadcasts: boot, app update, time / time-zone / language change, exact-alarm permission change. */
+/**
+ * The system's broadcasts: boot, app update, time / time-zone / language change, exact-alarm permission change, the
+ * notifications turned on or off.
+ */
 class BootReceiver : MonitorReceiver()
 
 /** The monitor's own alarms and intents: the health check, the freshness step, the glucose notification swiped away. */
