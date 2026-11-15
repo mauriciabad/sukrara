@@ -1068,7 +1068,12 @@ sukrara.mauri.app (`website/`, [`website/README.md`](../website/README.md)). Aut
 - [ ] Spanish: the same pages under `/es/`; the language menu switches both ways; with the browser in Spanish an
       English page shows the hint, which keeps the `#section` and whose × hides it for good.
 - [ ] The download buttons show the newest release's version, size and date (a build that reached GitHub); *What's
-      new* opens it; on a phone the APK downloads and installs.
+      new* opens it; on a phone the APK downloads and installs. The badges under it (Google Play / Mac App Store,
+      Obtainium, GitHub) are one row of the same height and open their place; *Get Obtainium* sits under Obtainium's.
+- [ ] Pictures arrive as JPEG XL in Chrome 155+, Firefox 158+ and Safari (DevTools › Network › Type `jxl`), as AVIF
+      in a browser without it, never WebP; no card, crown or widget is cut at its edge.
+- [ ] The sharing drawing: side by side on a wide window, top to bottom at ~400 px, every word inside its box; a dot
+      leaves the phone on each route at once and the Bluetooth one arrives first.
 - [ ] Sounds: a number plays with its progress ring, a second click stops it, *Play a random high…* plays one per
       pack.
 - [ ] Keyboard and screen reader: the skip link, the header links, search (⌘K / Ctrl+K), every sound button says its

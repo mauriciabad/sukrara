@@ -8,6 +8,7 @@
  * phone's glucose card with the Mac's menu bar panel beside it, the live dot beating.
  */
 import { latestRelease } from '../../lib/release';
+import Logo from '../Logo.astro';
 import Screenshot from '../Screenshot.astro';
 
 const { data } = Astro.locals.starlightRoute.entry;
@@ -15,6 +16,8 @@ const { lang } = Astro.locals.starlightRoute;
 const t = Astro.locals.t;
 const { title = data.title, tagline, actions = [] } = data.hero ?? {};
 const release = await latestRelease();
+/** An action to an app's page wears that platform's mark. */
+const mark = (link: string) => (/\/android\//.test(link) ? 'android' : /\/mac\//.test(link) ? 'apple' : undefined);
 const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(release.date);
 ---
 
@@ -27,15 +30,13 @@ const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium'
 			{
 				actions.map(({ link, text, variant }) => (
 					<a href={link} class:list={['sk-hero__action', variant === 'primary' ? 'is-primary' : 'is-secondary']}>
+						{mark(link) && <Logo name={mark(link)!} size="1.35rem" />}
 						{text}
 					</a>
 				))
 			}
 		</div>
-		<p class="sk-hero__version">
-			{release.version && date && <>{t('site.hero.version', { version: release.version, date })} · </>}
-			{t('site.preview')}
-		</p>
+		{release.version && date && <p class="sk-hero__version">{t('site.hero.version', { version: release.version, date })}</p>}
 	</div>
 	<div class="sk-hero__art">
 		<div class="sk-hero__phone"><Screenshot name="card" width={460} theme="dark" eager /></div>
@@ -131,6 +132,7 @@ const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium'
 	.sk-hero__action {
 		display: inline-flex;
 		align-items: center;
+		gap: 0.55rem;
 		padding: 0.85rem 1.5rem;
 		border-radius: 999px;
 		font-family: var(--sk-font-display);
@@ -179,7 +181,6 @@ const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium'
 		overflow: hidden;
 	}
 	.sk-hero__phone {
-		padding: 1.25rem;
 		animation: sk-float 7s ease-in-out infinite;
 	}
 	.sk-hero__mac {

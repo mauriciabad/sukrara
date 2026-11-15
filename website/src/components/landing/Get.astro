@@ -1,0 +1,35 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The home page's last section: both apps side by side, each with its download and its other ways in (<Download>).
+import Download from '../Download.astro';
+import Section from './Section.astro';
+
+interface Props {
+	title: string;
+	id: string;
+}
+const { title, id } = Astro.props;
+---
+
+<Section title={title} id={id}>
+	<div class="sk-get not-content">
+		<div><Download app="android" heading /></div>
+		<div><Download app="mac" heading /></div>
+	</div>
+</Section>
+
+<style>
+	.sk-get {
+		display: grid;
+		gap: 1.25rem;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+	}
+	.sk-get > div {
+		padding: clamp(1rem, 4vw, 1.5rem);
+		border-radius: calc(var(--sk-radius) + 0.25rem);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+	}
+</style>

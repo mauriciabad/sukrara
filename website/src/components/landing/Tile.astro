@@ -14,11 +14,13 @@ interface Props {
 	/** Spans two columns on wide screens. */
 	wide?: boolean;
 	href?: string;
+	/** A wide strip of a picture (the status bar): its left part, filling the picture's place. */
+	crop?: boolean;
 }
-const { title, shot, width = 300, wide = false, href } = Astro.props;
+const { title, shot, width = 300, wide = false, href, crop = false } = Astro.props;
 ---
 
-<article class:list={['sk-tile', { 'is-wide': wide }]}>
+<article class:list={['sk-tile', { 'is-wide': wide, 'is-crop': crop }]}>
 	<div class="sk-tile__picture"><Screenshot name={shot} width={width} /></div>
 	<h3>{href ? <a href={href}>{title}</a> : title}</h3>
 	<div class="sk-tile__text"><slot /></div>
@@ -58,6 +60,20 @@ const { title, shot, width = 300, wide = false, href } = Astro.props;
 		height: auto;
 		max-height: 22rem;
 		width: auto;
+	}
+	.sk-tile.is-crop .sk-tile__picture {
+		padding: 0;
+		overflow: hidden;
+		border-radius: var(--sk-radius);
+	}
+	.sk-tile.is-crop .sk-tile__picture :global(img) {
+		width: 100%;
+		height: 11rem;
+		max-height: none;
+		object-fit: cover;
+		object-position: left center;
+		border-radius: 0;
+		box-shadow: none;
 	}
 	.sk-tile h3 {
 		margin: 0;

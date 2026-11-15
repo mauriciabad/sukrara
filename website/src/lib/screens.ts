@@ -12,10 +12,11 @@
  */
 import type { ImageMetadata } from 'astro';
 
-import cardDark from '@repo/apps/android/core/graph/src/test/snapshots/card-in-range-dark.png';
-import cardLight from '@repo/apps/android/core/graph/src/test/snapshots/card-in-range-light.png';
-import notificationDark from '@repo/apps/android/monitor/src/test/snapshots/notification-card-fresh-dark.png';
-import notificationLight from '@repo/apps/android/monitor/src/test/snapshots/notification-card-fresh-light.png';
+// The card with room for what it draws past its edges (the value, the crown, the laurels).
+import cardDark from '@repo/apps/android/core/graph/src/test/snapshots/panel-in-range-dark.png';
+import cardLight from '@repo/apps/android/core/graph/src/test/snapshots/panel-in-range-light.png';
+import lockscreenDark from '@repo/apps/android/widgets/src/test/snapshots/widget-lock-fresh-dark.png';
+import lockscreenLight from '@repo/apps/android/widgets/src/test/snapshots/widget-lock-fresh-light.png';
 import widgetDark from '@repo/apps/android/widgets/src/test/snapshots/widget-combined-4x2-fresh-dark.png';
 import widgetLight from '@repo/apps/android/widgets/src/test/snapshots/widget-combined-4x2-fresh-light.png';
 import treatmentsDark from '@repo/apps/android/feature/home/src/test/snapshots/treatment-list-dark.png';
@@ -25,9 +26,8 @@ import shareLight from '@repo/apps/android/feature/sharing/src/test/snapshots/sh
 import lockTreatmentDark from '@repo/apps/android/feature/treatments/src/test/snapshots/treatment-dialog-lock-dark.png';
 import lockTreatmentLight from '@repo/apps/android/feature/treatments/src/test/snapshots/treatment-dialog-lock-light.png';
 import home from '@repo/docs/img/home/home.png';
-import lockscreen from '@repo/docs/img/lockscreen/lockscreen.png';
 import alert from '@repo/docs/img/notification/alert-actions.png';
-import statusBar from '@repo/docs/img/notification/v7-status-bar-and-notification-android37.png';
+import statusBar from '@repo/docs/img/statusbar-chip.png';
 import macWidgetDark from '@repo/docs/img/16/mac-widget-medium-dark.png';
 import macWidgetLight from '@repo/docs/img/16/mac-widget-medium-light.png';
 import macPanelDark from '../assets/mac/en/panel-dark.png';
@@ -53,11 +53,14 @@ export interface Screen {
 	/** Per language; Spanish falls back to English. */
 	pictures: Partial<Record<Lang, Pictures>> & { en: Pictures };
 	alt: Record<Lang, string>;
+	/** The picture's plain background, per theme, when it's drawn edge to edge: shown as a margin around it. */
+	ground?: { light: string; dark: string };
 }
 
 export const SCREENS = {
 	card: {
 		pictures: { en: { light: cardLight, dark: cardDark } },
+		ground: { light: '#ffffff', dark: '#1c1c1e' },
 		alt: {
 			en: 'The glucose card: 125 mg/dL with its trend arrow, 40 minutes since 4.5 units of insulin and 45 g of carbs, a full day in range with its crown, and the 12-hour chart with the time spent at each level.',
 			es: 'La tarjeta de glucosa: 125 mg/dL con su flecha de tendencia, 40 minutos desde 4,5 unidades de insulina y 45 g de carbohidratos, un día entero en rango con su corona y la gráfica de 12 horas con el tiempo pasado en cada nivel.',
@@ -68,13 +71,6 @@ export const SCREENS = {
 		alt: {
 			en: 'A home-screen widget: 140 mg/dL, 72% of the day in range, and the night’s chart.',
 			es: 'Un widget de la pantalla de inicio: 140 mg/dL, un 72 % del día en rango y la gráfica de la noche.',
-		},
-	},
-	notification: {
-		pictures: { en: { light: notificationLight, dark: notificationDark } },
-		alt: {
-			en: 'The glucose notification: the value in large type with the time in range, and its chart when expanded.',
-			es: 'La notificación de glucosa: el valor en grande con el tiempo en rango, y su gráfica al desplegarla.',
 		},
 	},
 	treatments: {
@@ -106,10 +102,10 @@ export const SCREENS = {
 		},
 	},
 	lockscreen: {
-		pictures: { en: { light: lockscreen } },
+		pictures: { en: { light: lockscreenLight, dark: lockscreenDark } },
 		alt: {
-			en: 'The glucose card on the lock screen, around the fingerprint icon (needs root and LSPosed).',
-			es: 'La tarjeta de glucosa en la pantalla de bloqueo, alrededor del icono de la huella (necesita root y LSPosed).',
+			en: 'The lock screen widget: 140 mg/dL, 72% of the day in range and the night’s chart, around the fingerprint sensor.',
+			es: 'El widget de la pantalla de bloqueo: 140 mg/dL, un 72 % del día en rango y la gráfica de la noche, alrededor del sensor de huellas.',
 		},
 	},
 	alert: {
@@ -122,8 +118,8 @@ export const SCREENS = {
 	statusBar: {
 		pictures: { en: { light: statusBar } },
 		alt: {
-			en: 'Settings › Status bar & notification: glucose as a chip, as the notification icon (value and trend, value, trend or Sukrara’s icon), as status bar text with root, or nothing.',
-			es: 'Ajustes › Barra de estado y notificación: la glucosa como chip, como icono de la notificación (valor y tendencia, valor, tendencia o el icono de Sukrara), como texto en la barra de estado con root, o nada.',
+			en: 'The status bar: Sukrara’s chip, 138 and rising fast, next to the clock.',
+			es: 'La barra de estado: el chip de Sukrara, 138 y subiendo rápido, junto a la hora.',
 		},
 	},
 	macPanel: {

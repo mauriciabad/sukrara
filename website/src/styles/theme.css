@@ -100,3 +100,10 @@ h1 {
 .sk-section .card-grid {
 	grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
 }
+
+/* An app's or service's own icon (AppIcon), shaped as a launcher shows it. */
+.sk-app-icon {
+	display: block;
+	flex: none;
+	border-radius: 22%;
+}

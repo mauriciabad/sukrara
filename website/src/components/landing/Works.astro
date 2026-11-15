@@ -1,0 +1,84 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * The apps and services Sukrara works with, each with its own icon (lib/apps.ts) or mark (lib/logos.ts), its name
+ * and what Sukrara does with it, in the page's words:
+ *   <Works label="Apps and services" items={[{ app: 'libreview', note: 'Sends to it' }, { logo: 'garmin', name: 'Garmin', note: '…' }]} />
+ */
+import type { AppName } from '../../lib/apps';
+import { APPS } from '../../lib/apps';
+import type { LogoName } from '../../lib/logos';
+import AppIcon from '../AppIcon.astro';
+import Logo from '../Logo.astro';
+
+type Item = { note: string } & ({ app: AppName } | { logo: LogoName; name: string });
+interface Props {
+	label: string;
+	items: Item[];
+}
+const { label, items } = Astro.props;
+---
+
+<ul class="sk-works not-content" aria-label={label}>
+	{
+		items.map((item) => (
+			<li>
+				{'app' in item ? (
+					<AppIcon name={item.app} size={44} />
+				) : (
+					<span class="sk-works__mark">
+						<Logo name={item.logo} size="2.4rem" />
+					</span>
+				)}
+				<span>
+					<strong>{'app' in item ? APPS[item.app].name : item.name}</strong>
+					<small>{item.note}</small>
+				</span>
+			</li>
+		))
+	}
+</ul>
+
+<style>
+	.sk-works {
+		list-style: none;
+		padding: 0;
+		display: grid;
+		gap: 0.75rem;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+	}
+	.sk-works li {
+		margin: 0;
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 0.75rem 1rem;
+		border-radius: var(--sk-radius);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+	}
+	.sk-works li > span:last-child {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.3;
+	}
+	.sk-works strong {
+		color: var(--sl-color-white);
+	}
+	.sk-works small {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+	}
+	.sk-works__mark {
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		flex: none;
+		border-radius: 22%;
+		background: #000;
+		color: #fff;
+	}
+</style>

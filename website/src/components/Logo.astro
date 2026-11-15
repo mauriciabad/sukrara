@@ -1,0 +1,33 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// A brand's one-colour mark from lib/logos.ts, in the text's colour: <Logo name="android" size="1.25rem" />
+import { LOGOS, type LogoName } from '../lib/logos';
+
+interface Props {
+	name: LogoName;
+	size?: string;
+	/** Read out instead of hidden, when the mark stands alone. */
+	label?: string;
+	class?: string;
+}
+const { name, size = '1em', label, class: className } = Astro.props;
+---
+
+<svg
+	viewBox="0 0 24 24"
+	width={size}
+	height={size}
+	fill="currentColor"
+	class:list={['sk-logo', className]}
+	role={label ? 'img' : undefined}
+	aria-label={label}
+	aria-hidden={label ? undefined : 'true'}><path d={LOGOS[name]} /></svg
+>
+
+<style>
+	.sk-logo {
+		flex: none;
+	}
+</style>

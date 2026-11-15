@@ -4,10 +4,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * One app picture from lib/screens.ts, in the page's language and the viewer's theme: the light picture in the light
- * theme, the dark one in the dark theme (Starlight's light:/dark: classes). Optimised and sized by Astro.
+ * theme, the dark one in the dark theme (Starlight's light:/dark: classes). JPEG XL, then AVIF, then PNG, sized by
+ * Astro (lib/image-service.ts). A picture drawn edge to edge on a plain ground (the card) gets a margin of that ground,
+ * so nothing that reaches its edge looks cut.
  *   <Screenshot name="card" width={360} />
  */
-import { Image } from 'astro:assets';
+import { Picture } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 import { SCREENS, type ScreenName } from '../lib/screens';
 
 interface Props {
@@ -25,27 +28,54 @@ const { name, width, eager = false, class: className, theme } = Astro.props;
 const lang = Astro.locals.starlightRoute?.lang === 'es' ? 'es' : 'en';
 const screen = SCREENS[name];
 const pictures = ('es' in screen.pictures && lang === 'es' ? screen.pictures.es : undefined) ?? screen.pictures.en;
-const alt = screen.alt[lang];
+const ground = 'ground' in screen ? screen.ground : undefined;
+
 const common = {
-	alt,
+	alt: screen.alt[lang],
 	width,
-	widths: [width, Math.min(width * 2, pictures.light.width)],
 	sizes: `(max-width: ${width + 32}px) calc(100vw - 2rem), ${width}px`,
 	loading: eager ? ('eager' as const) : ('lazy' as const),
 	decoding: 'async' as const,
+	formats: ['jxl', 'avif'] as const,
+	fallbackFormat: 'png' as const,
 };
-const dark = pictures.dark;
+const widths = (src: ImageMetadata) => [width, Math.min(width * 2, src.width)];
+
+const shown: { src: ImageMetadata; which: 'light' | 'dark'; hide?: string }[] =
+	!pictures.dark || theme === 'light'
+		? [{ src: pictures.light, which: 'light' }]
+		: theme === 'dark'
+			? [{ src: pictures.dark, which: 'dark' }]
+			: [
+					{ src: pictures.light, which: 'light', hide: 'dark:sl-hidden' },
+					{ src: pictures.dark, which: 'dark', hide: 'light:sl-hidden' },
+				];
 ---
 
 {
-	!dark || theme === 'light' ? (
-		<Image src={pictures.light} {...common} class:list={['sk-shot', className]} />
-	) : theme === 'dark' ? (
-		<Image src={dark} {...common} class:list={['sk-shot', className]} />
-	) : (
-		<>
-			<Image src={pictures.light} {...common} class:list={['sk-shot dark:sl-hidden', className]} />
-			<Image src={dark} {...common} class:list={['sk-shot light:sl-hidden', className]} />
-		</>
+	shown.map(({ src, which, hide }) =>
+		// The theme class sits on a wrapper of its own: the frame's `display` would otherwise win over Starlight's.
+		ground ? (
+			<span class:list={[hide]}>
+				<span class:list={['sk-shot sk-shot--framed', className]} style={`--ground: ${ground[which]}; max-width: ${width}px`}>
+					<Picture src={src} widths={widths(src)} {...common} />
+				</span>
+			</span>
+		) : (
+			<Picture src={src} widths={widths(src)} {...common} class:list={['sk-shot', className]} pictureAttributes={{ class: hide }} />
+		),
 	)
 }
+
+<style>
+	.sk-shot--framed {
+		display: block;
+		padding: 6%;
+		background: var(--ground);
+	}
+	.sk-shot--framed :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+</style>

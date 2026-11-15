@@ -9,22 +9,24 @@
  * GitHub's own check of an immutable release, and the same file on GitHub.
  *   <Download app="android" />
  */
+import { Picture } from 'astro:assets';
 import { Code, Icon } from '@astrojs/starlight/components';
 import googlePlayEn from '../assets/badges/google-play-en.png';
 import googlePlayEs from '../assets/badges/google-play-es.png';
-import appStoreBlackEn from '../assets/badges/mac-app-store-black-en.svg';
-import appStoreBlackEs from '../assets/badges/mac-app-store-black-es.svg';
-import appStoreWhiteEn from '../assets/badges/mac-app-store-white-en.svg';
-import appStoreWhiteEs from '../assets/badges/mac-app-store-white-es.svg';
-import obtainium from '../assets/badges/obtainium.svg';
+import appStoreEn from '../assets/badges/mac-app-store-black-en.svg?url';
+import appStoreEs from '../assets/badges/mac-app-store-black-es.svg?url';
 import { latestRelease, megabytes } from '../lib/release';
-import { APPLICATION_ID, GITHUB, HOMEBREW, OBTAINIUM, REPO, RELEASES, SIGNING, STORES } from '../site';
+import { APPLICATION_ID, GITHUB, HOMEBREW, OBTAINIUM, REPO, SIGNING, STORES } from '../site';
+import AppIcon from './AppIcon.astro';
+import Logo from './Logo.astro';
 
 interface Props {
 	app: 'android' | 'mac';
+	/** The platform's name and what it needs above the button (the home page). */
+	heading?: boolean;
 }
 
-const { app } = Astro.props;
+const { app, heading = false } = Astro.props;
 const t = Astro.locals.t;
 const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
 const release = await latestRelease();
@@ -34,51 +36,84 @@ const meta =
 	release.version && file && date
 		? t('site.download.meta', { version: release.version, size: megabytes(file.size), date })
 		: t('site.download.newest');
-const appStore = lang === 'es' ? { light: appStoreBlackEs, dark: appStoreWhiteEs } : { light: appStoreBlackEn, dark: appStoreWhiteEn };
 const name = file?.name ?? (app === 'android' ? 'Sukrara.apk' : 'Sukrara.dmg');
+const logo = app === 'android' ? 'android' : 'apple';
 ---
 
 <div class="sk-download not-content">
+	{
+		heading && (
+			<p class="sk-download__heading">
+				<Logo name={logo} size="2rem" />
+				<span>
+					<strong>{t(app === 'android' ? 'site.nav.android' : 'site.nav.mac')}</strong>
+					<small>{t(app === 'android' ? 'site.req.android' : 'site.req.mac')}</small>
+				</span>
+			</p>
+		)
+	}
 	<a class="sk-download__button" href={file?.url ?? release.page}>
-		<Icon name={app === 'android' ? 'mobile-android' : 'laptop'} size="1.5rem" />
+		<Logo name={logo} size="1.75rem" />
 		<span>
 			<strong>{t(app === 'android' ? 'site.download.android' : 'site.download.mac')}</strong>
 			<small>{meta}</small>
 		</span>
 		<Icon name="download" size="1.25rem" />
 	</a>
-	<p class="sk-download__links">
-		<a href={release.page}>{t('site.download.notes')}</a>
-		<span aria-hidden="true">·</span>
-		<a href={RELEASES}>{t('site.download.all')}</a>
-	</p>
+	<p class="sk-download__links"><a href={release.page}>{t('site.download.notes')}</a></p>
 
-	<div class="sk-download__others">
+	<ul class="sk-badges" role="list">
 		{
 			app === 'android' ? (
-				<>
-					<a class="sk-download__store is-play" href={STORES.play(lang)}>
-						<img src={(lang === 'es' ? googlePlayEs : googlePlayEn).src} alt={t('site.store.play')} width="161" height="62" />
+				<li>
+					<a class="sk-badge is-official" href={STORES.play(lang)}>
+						<Picture
+							src={lang === 'es' ? googlePlayEs : googlePlayEn}
+							alt={t('site.store.play')}
+							height={44}
+							densities={[1, 2]}
+							formats={['jxl', 'avif']}
+							fallbackFormat="png"
+						/>
 					</a>
-					<a class="sk-download__chip" href={OBTAINIUM.add}>
-						<img src={obtainium.src} alt="" width="20" height="20" />
-						{t('site.obtainium.add')}
-					</a>
-					<a class="sk-download__small" href={OBTAINIUM.home}>
-						{t('site.obtainium.get')}
-					</a>
-				</>
+				</li>
 			) : (
-				<a class="sk-download__store" href={STORES.appStore(lang)}>
-					<img class="dark:sl-hidden" src={appStore.light.src} alt={t('site.store.appStore')} width="156" height="40" />
-					<img class="light:sl-hidden" src={appStore.dark.src} alt={t('site.store.appStore')} width="156" height="40" />
-				</a>
+				<li>
+					<a class="sk-badge is-official" href={STORES.appStore(lang)}>
+						<img src={lang === 'es' ? appStoreEs : appStoreEn} alt={t('site.store.appStore')} height="44" width="172" />
+					</a>
+				</li>
 			)
 		}
-	</div>
+		{
+			app === 'android' && (
+				<li>
+					<a class="sk-badge" href={OBTAINIUM.add}>
+						<AppIcon name="obtainium" size={26} />
+						<span>
+							<small>{t('site.badge.obtainium')}</small>
+							<strong>Obtainium</strong>
+						</span>
+					</a>
+					<a class="sk-badge__note" href={OBTAINIUM.home}>
+						{t('site.obtainium.get')}
+					</a>
+				</li>
+			)
+		}
+		<li>
+			<a class="sk-badge" href={release.page}>
+				<Logo name="github" size="1.6rem" />
+				<span>
+					<small>{t('site.badge.github')}</small>
+					<strong>GitHub</strong>
+				</span>
+			</a>
+		</li>
+	</ul>
 	{app === 'mac' && <Code code={HOMEBREW} lang="sh" frame="terminal" title="Homebrew" />}
 
-	<details class="sk-verify">
+<details class="sk-verify">
 		<summary><Icon name="approve-check-circle" size="1.1rem" />{t('site.verify.title')}</summary>
 		{
 			app === 'android' ? (
@@ -184,46 +219,91 @@ const name = file?.name ?? (app === 'android' ? 'Sukrara.apk' : 'Sukrara.dmg');
 	:root[data-theme='light'] .sk-download a.sk-download__button {
 		color: #fff;
 	}
-	.sk-download__others {
+	.sk-download__heading {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0;
+		color: var(--sl-color-white);
+	}
+	.sk-download__heading span {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.3;
+	}
+	.sk-download__heading strong {
+		font-family: var(--sk-font-display);
+		font-size: var(--sl-text-2xl);
+		font-weight: 800;
+	}
+	.sk-download__heading small {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+	}
+	/* The other ways in, as one row of store-style badges: the stores' own badges unchanged, and Obtainium's and
+	   GitHub's drawn to match them (black, a grey hairline, the mark, a small line over the name). */
+	.sk-badges {
+		list-style: none;
+		margin: 0;
+		padding: 0;
 		display: flex;
 		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.75rem 1rem;
+		align-items: flex-start;
+		gap: 0.75rem;
 	}
-	.sk-download__store {
+	.sk-badges li {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.35rem;
+	}
+	.sk-badge {
 		display: inline-flex;
-		line-height: 0;
+		align-items: center;
+		gap: 0.55rem;
+		height: 44px;
+		padding: 0 1rem 0 0.7rem;
+		border-radius: 8px;
+		background: #000;
+		box-shadow: inset 0 0 0 1px #a6a6a6;
+		color: #fff !important;
+		text-decoration: none;
+		line-height: 1.05;
 		transition: transform 0.15s ease;
 	}
-	.sk-download__store:hover {
+	.sk-badge:hover {
 		transform: translateY(-2px);
 	}
-	.sk-download__store img {
-		height: 40px;
+	.sk-badge:active {
+		transform: translateY(0) scale(0.97);
+	}
+	.sk-badge span {
+		display: flex;
+		flex-direction: column;
+	}
+	.sk-badge small {
+		font-size: 0.62rem;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+	.sk-badge strong {
+		font-size: 1.15rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+	.sk-badge.is-official {
+		padding: 0;
+		box-shadow: none;
+		background: none;
+	}
+	.sk-badge.is-official :global(img) {
+		display: block;
+		height: 44px;
 		width: auto;
 	}
-	/* Google's badge carries its own transparent margin: drawn larger so the badge itself is 40 px high. */
-	.sk-download__store.is-play img {
-		height: 62px;
-		margin: -11px -10px;
-	}
-	.sk-download__chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5rem;
-		height: 40px;
-		padding: 0 1rem 0 0.75rem;
-		border: 1px solid var(--sl-color-gray-5);
-		border-radius: 999px;
-		font-weight: 600;
-		font-size: var(--sl-text-sm);
-		text-decoration: none;
-	}
-	.sk-download__chip:hover {
-		border-color: var(--sl-color-accent);
-	}
-	.sk-download__small {
-		font-size: var(--sl-text-sm);
+	.sk-badge__note {
+		font-size: var(--sl-text-xs);
 	}
 	.sk-verify {
 		font-size: var(--sl-text-sm);

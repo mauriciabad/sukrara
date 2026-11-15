@@ -1,16 +1,16 @@
 ---
 title: Sukrara for Mac
-description: Your glucose in the Mac menu bar, about a second behind the phone, with the same alerts, treatments and glucose report. Follows Sukrara for Android over Bluetooth or the internet. Apple silicon, macOS 15+, free.
+description: Your glucose in the Mac menu bar, about a second behind the phone, with the same alarms, treatments and glucose report. Follows Sukrara for Android over Bluetooth or the internet. Apple silicon, macOS 15+, free.
 ---
 
-import { Aside, Steps } from '@astrojs/starlight/components';
+import { Steps } from '@astrojs/starlight/components';
 import Download from '../../components/Download.astro';
 import Gallery from '../../components/Gallery.astro';
 
-Your glucose in the menu bar, about a second behind the phone, with the same alerts. Sukrara for Mac follows a phone
-running [Sukrara for Android](/android/): yours, or the person you look after.
+Your glucose in the menu bar, about a second behind the phone, with the same alarms. It follows a phone with
+[Sukrara for Android](/android/): yours, or the person you look after.
 
-<Gallery shots={[['macPanel', 330], ['macReport', 340]]} />
+<Gallery shots={[['macPanel', 300], ['macReport', 380]]} />
 
 ## Get it
 
@@ -18,77 +18,54 @@ running [Sukrara for Android](/android/): yours, or the person you look after.
 
 <Steps>
 
-1. Click **Download for Mac** above, open the downloaded file and drag **Sukrara** onto **Applications**. Or install
-   it with the Homebrew command.
-2. Open Sukrara. It's signed and notarized by Apple, so it opens like any other app, and it lives in the menu bar (no
-   Dock icon).
-3. Follow someone: paste the `https://sukrara.mauri.app/join#…` link their phone shares, scan its QR code with the
-   Mac's camera, or pair over Bluetooth nearby. They allow this Mac on their phone.
+1. Open the downloaded file and drag **Sukrara** onto **Applications**.
+2. Open Sukrara. It lives in the menu bar and updates itself.
+3. Follow someone: paste their invite link, scan their QR code, or pair over Bluetooth nearby.
 
 </Steps>
 
-Sukrara updates itself: once a day it looks for a new version, signed by Sukrara and checked before it installs, and
-offers it in its panel; **Install and Relaunch** is one click. Homebrew leaves updates to the app.
-
 ## What it does
 
-- **Menu bar:** the value and trend arrow, in red or orange when out of range and struck through when the reading is
-  old, and how the readings come: nearby over Bluetooth, over the internet, or offline.
-- **The panel:** the same card and chart as the phone, mute and unmute, and every window one click away.
-- **Alerts:** the same alerts and sounds as the phone, with the wearer's thresholds or this Mac's own.
-- **Treatments:** add insulin, carbs and notes, now or earlier; they reach the wearer's log if they allow it.
-- **Glucose report:** time in ranges, average glucose, GMI and variability over 1 to 30 days, with a CSV export.
-- **Widgets** on the desktop and in Notification Center.
-- **Juggluco on your home network:** read glucose straight from Juggluco instead of following someone.
+- The value and trend in the menu bar; out of range in colour, old readings struck through.
+- The same card, alarms and sounds as the phone.
+- Add insulin, carbs and notes to the wearer's log, if they allow it.
+- A glucose report over 1 to 30 days, with a CSV export.
+- Widgets on the desktop and in Notification Center.
+- Or read Juggluco on your home network instead.
 
 <Gallery shots={[['macTreatment', 340], ['macWidget', 300]]} />
 
-Every behaviour, with its rules and numbers, is in the [behaviour catalog](/developers/features/#mac-menu-and-windows).
-
 ## Requirements
 
-- A Mac with Apple silicon (M1 or newer) and macOS 15 or newer.
-- Someone's phone with [Sukrara for Android](/android/) to follow (yours or theirs), or Juggluco on the same network.
+- Apple silicon (M1 or newer), macOS 15 or newer.
+- A phone with [Sukrara for Android](/android/) to follow, or Juggluco on the same network.
 
 ## Versions
 
-The **GitHub version** (the download above and Homebrew) updates itself as above. The **Mac App Store version** is the
-same app, sandboxed and updated by the App Store, so without its own updater. **About Sukrara** says which one you
-have.
+The GitHub version (the download and Homebrew) updates itself. The Mac App Store version is the same app, updated by
+the App Store. **About Sukrara** says which one you have.
 
 ## Questions
 
 <details>
 <summary>Do I need an iPhone, an account or a cloud service?</summary>
 
-No. Sukrara for Mac follows a phone running Sukrara for Android directly: over Bluetooth when you're near each other,
-over public Nostr relays from anywhere, end-to-end encrypted. Nothing to sign up for.
+No. It follows a phone with Sukrara for Android directly: over Bluetooth nearby, or over Nostr relays from anywhere,
+end-to-end encrypted.
 
 </details>
 
 <details>
 <summary>Does it work on an Intel Mac?</summary>
 
-No, it needs Apple silicon (M1 or newer) and macOS 15 or newer.
+No, it needs Apple silicon (M1 or newer).
 
 </details>
 
 <details>
-<summary>Will the alerts sound during a Focus?</summary>
+<summary>Do alerts ring during a Focus?</summary>
 
-A Focus (Do Not Disturb, Sleep…) holds Sukrara's alerts back like any app's, unless you let Sukrara through: **Settings
-› Alerts › Let Sukrara Through**. The panel warns you when notifications, banners or sounds are off for Sukrara.
-
-</details>
-
-<details>
-<summary>Can it read my sensor?</summary>
-
-Not by itself: the sensor is read by the phone it's paired with. The Mac follows that phone, or reads Juggluco on your
-home network.
+Only if you let Sukrara through: **Settings › Alerts › Let Sukrara Through**. The panel tells you when notifications or
+sounds are off.
 
 </details>
-
-<Aside type="caution" title="A preview, not a medical device">
-Sukrara is a preview (0.x), not cleared or approved by any regulator. Don't make treatment decisions from it.
-</Aside>

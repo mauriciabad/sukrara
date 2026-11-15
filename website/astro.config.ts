@@ -82,6 +82,8 @@ export default defineConfig({
 			'/apple-touch-icon.png': '../assets/brand/sukrara/web/apple-touch-icon.png',
 		}),
 	],
+	// JPEG XL first, then AVIF, then PNG (src/lib/image-service.ts; never WebP).
+	image: { service: { entrypoint: './src/lib/image-service.ts' } },
 	vite: {
 		// Screenshots are imported from where the apps' tests write them (src/lib/screens.ts).
 		resolve: { alias: { '@repo': fileURLToPath(new URL('..', import.meta.url)) } },

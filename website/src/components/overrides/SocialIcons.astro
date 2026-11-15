@@ -4,22 +4,25 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // The header's links to the apps and the developers' section, before Starlight's GitHub icon (also in the mobile menu).
 import Default from '@astrojs/starlight/components/SocialIcons.astro';
+import type { LogoName } from '../../lib/logos';
+import Logo from '../Logo.astro';
 
 const { locale } = Astro.locals.starlightRoute;
 const t = Astro.locals.t;
 const prefix = locale ? `/${locale}` : '';
-const links = [
-	{ key: 'site.nav.android', href: `${prefix}/android/` },
-	{ key: 'site.nav.mac', href: `${prefix}/mac/` },
+const links: { key: 'site.nav.android' | 'site.nav.mac' | 'site.nav.developers'; href: string; logo?: LogoName }[] = [
+	{ key: 'site.nav.android', href: `${prefix}/android/`, logo: 'android' },
+	{ key: 'site.nav.mac', href: `${prefix}/mac/`, logo: 'apple' },
 	{ key: 'site.nav.developers', href: '/developers/' },
-] as const;
+];
 const path = Astro.url.pathname;
 ---
 
 <nav aria-label={t('site.nav.label')} class="sk-nav sl-flex">
 	{
-		links.map(({ key, href }) => (
+		links.map(({ key, href, logo }) => (
 			<a href={href} aria-current={path.startsWith(href) ? 'page' : undefined}>
+				{logo && <Logo name={logo} size="1.1rem" />}
 				{t(key)}
 			</a>
 		))
@@ -34,6 +37,9 @@ const path = Astro.url.pathname;
 		margin-inline-end: 0.5rem;
 	}
 	.sk-nav a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
 		color: var(--sl-color-gray-2);
 		text-decoration: none;
 		font-weight: 600;
