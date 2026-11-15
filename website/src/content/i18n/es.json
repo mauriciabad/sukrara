@@ -66,5 +66,6 @@
   "site.badge.homebrew": "Instálala con",
   "site.brew.get": "Conseguir Homebrew",
   "site.brew.paste": "Pega esto en Terminal y pulsa Retorno:",
-  "site.brew.copied": "Copiado. Pégalo en Terminal y pulsa Retorno:"
+  "site.brew.copied": "Copiado. Pégalo en Terminal y pulsa Retorno:",
+  "site.badge.fdroid": "Disponible en"
 }

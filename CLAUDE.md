@@ -26,8 +26,10 @@ sections your change touches.
 - **The website** ([`website/`](website/README.md), sukrara.mauri.app) says what each app does for the person, in
   English and Spanish (the developers' pages and reports, published from `docs/`: English). A change that makes a page
   wrong updates it in the same change. It loads nothing from another host (the privacy policy says so), shows only
-  synthetic app pictures, and never drops a URL the apps open. *(job `website`: `npm run check` fails on a broken link
-  or anchor, a URL the apps' code opens that the site lacks, App Links / universal links / the update feed)*
+  synthetic app pictures, and never drops a URL the apps open. A link to another site opens it in the page's language
+  when that site has one (Spanish page → Spanish Google Play, F-Droid, Homebrew…). *(job `website`: `npm run check`
+  fails on a broken link or anchor, a URL the apps' code opens that the site lacks, an outside link in the wrong
+  language, App Links / universal links / the update feed)*
 - **No backwards compatibility.** Replace formats outright and delete superseded code paths. This covers local
   storage too (settings, files, databases) and anything from the PoC. The **wire formats** in `contracts/protocol`
   (Nostr v2, identity) are versioned: every app speaks the same version. *(not checked)*

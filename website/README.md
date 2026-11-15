@@ -21,7 +21,7 @@ npm run check     # what CI checks on dist/ (below); `node scripts/check.mjs --e
 | `src/content/docs/*.md(x)` | The pages, English, at their path: `android.mdx` → `/android/`. Spanish: the same file in `es/` → `/es/android/` |
 | `../docs/*.md` | The repository's docs, read where they live (`src/lib/repo-docs.ts`): `FEATURES.md` → `/developers/features/`, `09-brand.md` → `/research/09-brand/`, `docs/img` → `/img/`. Written for GitHub; their links are rewritten at build time (other docs → their page, the rest of the repo → GitHub at this commit). A new report appears by itself, in the sidebar and in `/developers/` |
 | `src/content/i18n/{en,es}.json` | The components' words (`site.*`): every English key must exist in Spanish, or the build fails |
-| `src/components/` | `Download` (the newest release's button, then one row of store-style badges: Google Play / Mac App Store as the stores give them, Obtainium, Homebrew and GitHub drawn to match; Homebrew's copies `brew install …` and shows it to paste into Terminal, as no link can install; *Check it's the real Sukrara*), `Screenshot` / `Gallery`, `Logo` / `AppIcon` (brands' marks, apps' icons), `Invite` (`/join`), `SoundBoard`, `landing/*` (home page: `Sharing` is the drawing of how a reading travels), `overrides/*` (Starlight's hero, header links, banner, footer) |
+| `src/components/` | `Download` (the newest release's button, then one row of store-style badges: Google Play / Mac App Store as the stores give them, F-Droid, Obtainium, Homebrew and GitHub drawn to match; Homebrew's copies `brew install …` and shows it to paste into Terminal, as no link can install; *Check it's the real Sukrara*), `Screenshot` / `Gallery`, `Logo` / `AppIcon` (brands' marks, apps' icons), `Invite` (`/join`), `SoundBoard`, `landing/*` (home page: `Sharing` is the drawing of how a reading travels), `overrides/*` (Starlight's hero, header links, banner, footer) |
 | `src/lib/screens.ts` | Every app picture by name, with its alt text in both languages (below) |
 | `src/lib/logos.ts`, `src/lib/apps.ts`, `src/assets/logos/` | Other brands' one-colour marks (Android, Apple, GitHub, Nostr…: Simple Icons, CC0) and the icons of the apps and services Sukrara works with (the Android app's own, plus AAPS's); sources in `src/assets/logos/README.md` |
 | `src/lib/image-service.ts` | Astro's image service with JPEG XL: every picture is served as JPEG XL, then AVIF, then PNG (never WebP). Sharp resizes; libjxl (WebAssembly, `@jsquash/jxl`) encodes the JPEG XL |
@@ -69,12 +69,18 @@ using the apps has both; the developers' pages and reports are English only, and
 with Starlight's notice. The apps open the English pages; a browser that prefers Spanish gets a one-line hint to the
 Spanish page (the × hides it for good). An anchor the apps open (`#versions`) exists on both languages' pages.
 
+A link to another site opens that site in the page's language when it has one: Google Play (`&hl=es`), the App
+Store (`/es/`), F-Droid (`/es/`), Homebrew (`brew.sh/es/`). `src/site.ts` builds those links from the page's language;
+`npm run check` fails on a Spanish page that links one of them in English, or the other way round (`LOCALIZED` in
+`scripts/check.mjs`: add a site there when a page starts linking one that has pages per language).
+
 ## What `npm run check` fails on
 
 Every internal link and picture of every page leads to a file of the build, with its `#anchor` on the target page;
 every `https://sukrara.mauri.app/…` the apps' code opens exists; `assetlinks.json` names the release key
 (`tools/release/android-cert.sha256`); `apple-app-site-association` gives `/join` to the Mac app; the appcast has a
-release; the sitemap, `robots.txt`, favicon and 404 exist. CI (`checks.yml`, job `website`) builds and checks every
+release; the sitemap, `robots.txt`, favicon and 404 exist; every link to a site with pages per language opens the
+page's language (above). CI (`checks.yml`, job `website`) builds and checks every
 change to `website/`, `docs/`, `assets/`, `contracts/` or `apps/`; the deploy runs the same check before publishing.
 
 ## Privacy

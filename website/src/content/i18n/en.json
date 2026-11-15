@@ -66,5 +66,6 @@
   "site.badge.homebrew": "Install with",
   "site.brew.get": "Get Homebrew",
   "site.brew.paste": "Paste this into Terminal and press Return:",
-  "site.brew.copied": "Copied. Paste it into Terminal and press Return:"
+  "site.brew.copied": "Copied. Paste it into Terminal and press Return:",
+  "site.badge.fdroid": "Get it on"
 }

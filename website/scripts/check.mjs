@@ -11,7 +11,10 @@
  *     (an invite's #code excepted). GitHub Pages redirects /privacy to /privacy/, so an app's URL may leave the
  *     slash out;
  *   - the files other systems read: App Links (assetlinks.json with Sukrara's release key, tools/release/android-cert.sha256),
- *     universal links (apple-app-site-association for /join), the Mac update feed (appcast.xml), the sitemap, the 404.
+ *     universal links (apple-app-site-association for /join), the Mac update feed (appcast.xml), the sitemap, the 404;
+ *   - a link to another site, in the page's language, that this site has in that language: a Spanish page links the
+ *     Spanish store pages and Spanish Homebrew, an English page the English ones (LOCALIZED below; add a site there
+ *     when a page links one that has pages per language).
  * External links aren't fetched (that would make the build depend on other sites): `--external` checks them too.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
@@ -39,14 +42,16 @@ function walk(dir) {
 
 // The 404 pages are served for any path, so their own canonical links point nowhere by design.
 const files = walk(DIST).filter((f) => !f.includes(`${DIST}/pagefind/`) && !/\/404(\.html|\/index\.html)$/.test(f));
-const pages = new Map(); // '/android/index.html' → { ids, links }
+const pages = new Map(); // '/android/index.html' → { lang, ids, links }
 for (const file of files.filter((f) => f.endsWith('.html'))) {
 	const html = readFileSync(file, 'utf8').replace(/<script\b[\s\S]*?<\/script>/g, '');
 	const ids = new Set([...html.matchAll(/\s(?:id|name)="([^"]+)"/g)].map((m) => m[1]));
 	const links = [...html.matchAll(/<(?:a|link|img|source|audio|video|script)\b[^>]*?\s(?:href|src)="([^"]*)"/g)].map((m) =>
 		m[1].replaceAll('&amp;', '&'),
 	);
-	pages.set('/' + relative(DIST, file).split('\\').join('/'), { ids, links });
+	// The content's language: a Spanish URL whose page isn't translated yet shows the English one (Starlight's fallback).
+	const lang = (html.match(/<main\b[^>]*\slang="([a-z]+)/) ?? html.match(/<html\b[^>]*\slang="([a-z]+)/))?.[1] ?? 'en';
+	pages.set('/' + relative(DIST, file).split('\\').join('/'), { lang, ids, links });
 }
 
 /** The file a site path is served from, or undefined. Pages need their trailing slash unless `lenient`. */
@@ -74,11 +79,27 @@ function checkLink(from, href, { lenient = false, anchors = true } = {}) {
 	}
 }
 
+/**
+ * Other sites with a page per language: the language a link of theirs opens in, or undefined when the link doesn't
+ * say (then the site shows its default, English, or the browser's language: fine on an English page only).
+ */
+const LOCALIZED = {
+	'play.google.com': (u) => u.searchParams.get('hl') ?? undefined,
+	'apps.apple.com': (u) => ({ us: 'en', es: 'es' })[u.pathname.split('/')[1]],
+	'f-droid.org': (u) => u.pathname.split('/')[1].match(/^[a-z]{2}(?:[_-][A-Za-z]+)?$/)?.[0],
+	'brew.sh': (u) => (u.pathname.startsWith('/es/') ? 'es' : undefined),
+};
+
 // Every link of every page.
 let count = 0;
-for (const [page, { links }] of pages) {
+for (const [page, { lang, links }] of pages) {
 	const from = page.replace(/index\.html$/, '');
 	for (const href of links) {
+		const host = /^https:\/\//.test(href) && new URL(href).host;
+		const opens = host && LOCALIZED[host] ? (LOCALIZED[host](new URL(href)) ?? 'en') : lang;
+		if (opens !== lang) {
+			fail(`${from}: ${href} isn't ${host}'s page in this page's language (${lang})`);
+		}
 		if (href.startsWith('#')) {
 			const anchor = decodeURIComponent(href.slice(1));
 			if (anchor && !pages.get(page).ids.has(anchor)) fail(`${from}: no #${anchor} on the page`);

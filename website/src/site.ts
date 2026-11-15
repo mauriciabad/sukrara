@@ -17,11 +17,16 @@ export const GITHUB = `https://github.com/${REPO}`;
 export const RELEASES = `${GITHUB}/releases`;
 export const ISSUES = `${GITHUB}/issues`;
 
-/** The store listings, in the page's language. */
+/**
+ * The store listings, in the page's language. Every outside link that has a page in the reader's language goes to that
+ * one (Spanish page → Spanish store page); `scripts/check.mjs` fails on one that doesn't (LOCALIZED there).
+ */
 export const STORES = {
 	play: (lang: string) => `https://play.google.com/store/apps/details?id=${brand.applicationId}&hl=${lang}`,
 	/** App Store Connect app id 6833533014 (docs/20-publishing.md › Mac App Store). */
 	appStore: (lang: string) => `https://apps.apple.com/${lang === 'es' ? 'es' : 'us'}/app/sukrara/id6833533014?mt=12`,
+	/** F-Droid's main repository (docs/20-publishing.md, #191). */
+	fdroid: (lang: string) => `https://f-droid.org/${lang}/packages/${brand.applicationId}/`,
 };
 
 /** Obtainium adds the GitHub releases and checks each APK is signed with Sukrara's key (docs/20-publishing.md). */
@@ -32,7 +37,8 @@ export const OBTAINIUM = {
 
 /** The Homebrew cask (mauriciabad/homebrew-tap, updated by .github/workflows/homebrew-tap.yml). */
 export const HOMEBREW = 'brew install --cask mauriciabad/tap/sukrara';
-export const HOMEBREW_HOME = 'https://brew.sh/';
+/** Homebrew's home page, in the page's language. */
+export const HOMEBREW_HOME = (lang: string) => `https://brew.sh/${lang === 'es' ? 'es/' : ''}`;
 
 /**
  * What a download can be checked against. Android: the SHA-256 of the certificate every Sukrara APK is signed with (the

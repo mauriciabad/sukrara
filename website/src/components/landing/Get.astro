@@ -2,7 +2,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The home page's last section: both apps side by side, each with its download and its other ways in (<Download>).
+// The home page's last section: both apps, one above the other, each with its download and its other ways in (<Download>).
 import Download from '../Download.astro';
 import Section from './Section.astro';
 
@@ -24,7 +24,7 @@ const { title, id } = Astro.props;
 	.sk-get {
 		display: grid;
 		gap: 1.25rem;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+		grid-template-columns: minmax(0, 1fr);
 	}
 	.sk-get > div {
 		padding: clamp(1rem, 3vw, 1.25rem);

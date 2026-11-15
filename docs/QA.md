@@ -1068,8 +1068,8 @@ sukrara.mauri.app (`website/`, [`website/README.md`](../website/README.md)). Aut
 - [ ] Spanish: the same pages under `/es/`; the language menu switches both ways; with the browser in Spanish an
       English page shows the hint, which keeps the `#section` and whose × hides it for good.
 - [ ] The download buttons show the newest release's version, size and date (a build that reached GitHub); *What's
-      new* opens it; on a phone the APK downloads and installs. The badges under it (Google Play / Mac App Store,
-      Obtainium / Homebrew, GitHub) are one row of the same height and open their place; *Get Obtainium* / *Get
+      new* opens it; on a phone the APK downloads and installs. The badges under it (Google Play, F-Droid / Mac App
+      Store, Obtainium / Homebrew, GitHub) are one row of the same height and open their place; *Get Obtainium* / *Get
       Homebrew* sit under theirs. Homebrew's copies the command and shows it with "Copied. Paste it into Terminal…";
       pasted into Terminal, it installs Sukrara.
 - [ ] Pictures arrive as JPEG XL in Chrome 155+, Firefox 158+ and Safari (DevTools › Network › Type `jxl`), as AVIF
