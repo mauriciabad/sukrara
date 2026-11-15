@@ -10,7 +10,8 @@
   python3 -I lv2.py signin --gateway libre3|librelink [--take-over]
   python3 -I lv2.py register SERIAL                          PUT nisperson activeSensor (Libre 3 identity)
   python3 -I lv2.py post FILE --serial S --start EPOCH --from E --to E --really
-  python3 -I lv2.py nickname DEVICE_ID NICKNAME --really     the website's updateNickname with the LibreLinkUp login
+  python3 -I lv2.py nickname SERIAL NICKNAME --really        the website's updateNickname with the LibreLinkUp login
+                                                             (refused: 400 ProductMismatch, docs/41)
 
 Nothing reaches LibreView without `signin` and, for data, `--really`. Credentials: $LV_EMAIL and the login keychain
 item `dev.spike.libreview` (investigation 04's), read only when signing in; the password is never printed or stored.
