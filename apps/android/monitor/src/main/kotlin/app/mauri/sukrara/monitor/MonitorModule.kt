@@ -153,6 +153,7 @@ class MonitorModule(
 
     /**
      * Post the glucose notification again even if unchanged: the screen came on (its card isn't drawn while it's off),
+     * the phone was unlocked or blur turned on or off (its ground follows System UI's, [ShadeColor][app.mauri.sukrara.monitor.notify.ShadeColor]),
      * or the person swiped it away.
      */
     val repostTicks: SharedFlow<Unit> = screenOn

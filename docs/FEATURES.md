@@ -1731,9 +1731,13 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   (with a value or without, an alert up or not): System UI's first section holds only a promoted Live Update, a
   colorized foreground service or a call (AOSP `ColorizedFgsCoordinator`), anything else sorts by time under newer
   notifications (the owner, 2026-11-15: it had sunk to the bottom since *Coloured background* became optional). So
-  whatever isn't a promoted Live Update is colorized: in the range colour, or in the shade's own colour
-  (`materialColorSurfaceContainerHigh` of the theme, `NotificationCard.surface`), which System UI doesn't tint, so it
-  looks uncoloured (`LiveNotificationBuildTest`, `OneNotificationTest`). A level alert's title names the range, so
+  whatever isn't a promoted Live Update is colorized: in the range colour, or in the ground System UI gives the other
+  notifications where it shows now, so it looks uncoloured (`ShadeColor`, the owner 2026-11-15: "slightly different"
+  from the others). On a Pixel (SystemUIGoogle 17.1, read from the phone): unlocked with blur, the see-through
+  `system_surface_effect_1` of the wallpaper's palette; on the lock screen or without blur, `system_surface_container`;
+  a System UI without effect colours (AOSP), `system_surface_container_high`. It is posted again on unlock, screen on
+  and when blur turns on or off; on the system's ground the chart has no panel of its own (it would show as a box)
+  (`LiveNotificationBuildTest`, `OneNotificationTest`, `ShadeColorTest`, `NotificationCardShotsTest`). A level alert's title names the range, so
   the card draws no separate range word then (`CardStyle.rangeSaid`, contracts/graph *Pills per surface*). The slots count the stored days and the live window (`CardFrame.slots`, the 31-day history), so
   the 7–30-day rings match home and the widgets. Roborazzi goldens `NotificationCardShotsTest` (light / dark × fresh,
   struck, status pill). Small icon = *What the icon shows*: the number with the arrow under it (`ValueGlyphs.icon`,

@@ -64,8 +64,8 @@ class NotificationArt(
  * The glucose notification's custom card (surface `notification`), shown when the notification isn't the Live Update
  * chip: the card's value ([CardPart.VALUE]: value, trend or "no trend" ring, the late reading's time, the status pill)
  * and its slots ([CardPart.SLOTS], two rings where the column allows, as on the widget) side by side in one header
- * picture, as the renderer draws them on every card, and the chart ([CardPart.GRAPH]) below on a rounded surface of the
- * theme. The value is drawn a little shorter than the slots (the owner, 2026-11-14: the value was too large, the
+ * picture, as the renderer draws them on every card, and the chart ([CardPart.GRAPH]) below (on the range colour on a
+ * rounded surface of the theme). The value is drawn a little shorter than the slots (the owner, 2026-11-14: the value was too large, the
  * collapsed ring too small). Android 12+ clips custom content right of the icon column, so the pictures fill the
  * content column. Drawn at most at 2x density so the three pictures stay far below the binder's parcel limit.
  *
@@ -228,12 +228,16 @@ object NotificationCard {
                 )
                 createBitmap(w, h).also { out ->
                     Canvas(out).apply {
-                        drawRoundRect(
-                            RectF(0f, 0f, w.toFloat(), h.toFloat()),
-                            12 * d,
-                            12 * d,
-                            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = surface },
-                        )
+                        // a panel in the theme's surface on the range colour; on the system's ground (ShadeColor,
+                        // see-through on a Pixel) none: it would show as a box of another colour
+                        if (bg != null) {
+                            drawRoundRect(
+                                RectF(0f, 0f, w.toFloat(), h.toFloat()),
+                                12 * d,
+                                12 * d,
+                                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = surface },
+                            )
+                        }
                         drawBitmap(plot, pad, pad, null)
                     }
                     plot.recycle()

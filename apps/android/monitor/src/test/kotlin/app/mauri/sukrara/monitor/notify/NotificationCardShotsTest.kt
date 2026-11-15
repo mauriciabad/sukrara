@@ -128,6 +128,24 @@ class NotificationCardShotsTest {
         }
     }
 
+    /**
+     * Without the range colour the notification's ground is System UI's own (see-through over the blur on a Pixel,
+     * [ShadeColor]): the chart sits on it, an opaque panel would show as a box of another colour. On the range colour the
+     * chart keeps its panel in the theme's surface.
+     */
+    @Test
+    fun `the chart has a panel of its own only on the range colour`() {
+        for (dark in listOf(false, true)) {
+            val f = frame(Duration.ofMinutes(1), dark)
+            val model = cardModelOf(f.state, f.treatments, now, CardWords.of(context.resources), f.slots(now))
+            val plain = NotificationCard.renderNotificationArt(context, model, f.config, null, dark, 300f).graph!!
+            // the top edge's middle: the panel only (the plot is inset by its padding)
+            assertEquals("no panel on the system's ground (dark=$dark)", 0, Color.alpha(plain.getPixel(plain.width / 2, 1)))
+            val ranged = NotificationCard.renderNotificationArt(context, model, f.config, 0xFF4CAF50.toInt(), dark, 300f).graph!!
+            assertEquals("the panel on the range colour (dark=$dark)", 255, Color.alpha(ranged.getPixel(ranged.width / 2, 1)))
+        }
+    }
+
     @Test
     fun `the slots count the stored days like home, not only the live 24 h`() {
         fun texts(f: CardFrame) =

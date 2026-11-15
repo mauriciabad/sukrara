@@ -13,6 +13,7 @@ import android.content.IntentFilter
 import android.content.pm.ServiceInfo
 import android.content.res.Configuration
 import android.util.Log
+import android.view.WindowManager
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.ServiceState
@@ -22,6 +23,7 @@ import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.NotificationPrefs
+import app.mauri.sukrara.monitor.notify.ShadeColor
 import app.mauri.sukrara.monitor.service.bluetoothPower
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -55,6 +57,9 @@ class MonitoringService : Service() {
     private var bluetoothReceiver: BroadcastReceiver? = null
     private var screenReceiver: BroadcastReceiver? = null
 
+    /** Blur turned on or off: the glucose notification's ground follows ([ShadeColor]). */
+    private var blurListener: java.util.function.Consumer<Boolean>? = null
+
     override fun onBind(intent: Intent?) = null
 
     override fun onCreate() {
@@ -81,6 +86,8 @@ class MonitoringService : Service() {
         bluetoothReceiver = null
         screenReceiver?.let { runCatching { unregisterReceiver(it) } }
         screenReceiver = null
+        blurListener?.let { l -> runCatching { getSystemService(WindowManager::class.java)?.removeCrossWindowBlurEnabledListener(l) } }
+        blurListener = null
         scope.cancel()
         // a post still waiting in the gate must not bring back a notification nothing updates any more
         monitor.notification.cancelPending()
@@ -195,7 +202,9 @@ class MonitoringService : Service() {
 
     /**
      * Unlock and screen on can't be declared in the manifest: registered while the service runs. An unlock may bring
-     * a sensor-end reminder forward; screen on redraws the glucose notification's card (not drawn while it's off).
+     * a sensor-end reminder forward; screen on redraws the glucose notification's card (not drawn while it's off); both,
+     * and blur turning on or off, post it again on the ground System UI gives notifications there ([ShadeColor]: the
+     * lock screen's and the unlocked shade's differ).
      */
     private fun watchScreen(m: MonitorModule) {
         val receiver =
@@ -205,14 +214,23 @@ class MonitoringService : Service() {
                     intent: Intent,
                 ) {
                     when (intent.action) {
-                        Intent.ACTION_USER_PRESENT -> scope.launch { awaitAlertsModule()?.sensorEnd?.unlocked() }
-                        Intent.ACTION_SCREEN_ON -> m.repost()
+                        Intent.ACTION_USER_PRESENT -> {
+                            m.repost()
+                            scope.launch { awaitAlertsModule()?.sensorEnd?.unlocked() }
+                        }
+
+                        Intent.ACTION_SCREEN_ON -> {
+                            m.repost()
+                        }
                     }
                 }
             }
         val filter = IntentFilter(Intent.ACTION_USER_PRESENT).apply { addAction(Intent.ACTION_SCREEN_ON) }
         registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED)
         screenReceiver = receiver
+        val blur = java.util.function.Consumer<Boolean> { m.repost() }
+        runCatching { getSystemService(WindowManager::class.java)?.addCrossWindowBlurEnabledListener(mainExecutor, blur) }
+            .onSuccess { blurListener = blur }
     }
 
     private fun watchBluetooth(m: MonitorModule) {

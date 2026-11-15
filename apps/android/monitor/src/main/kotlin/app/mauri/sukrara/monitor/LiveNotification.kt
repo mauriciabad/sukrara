@@ -58,6 +58,7 @@ import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.NotificationPrefs
 import app.mauri.sukrara.monitor.notify.PostCounts
 import app.mauri.sukrara.monitor.notify.PostGate
+import app.mauri.sukrara.monitor.notify.ShadeColor
 import app.mauri.sukrara.monitor.notify.SharingLine
 import app.mauri.sukrara.monitor.notify.UiText
 import kotlinx.coroutines.flow.StateFlow
@@ -344,8 +345,8 @@ class LiveNotification(
     }
 
     /**
-     * The shade's notification colour (`materialColorSurfaceContainerHigh`, the theme's: [frame]'s, or the configuration
-     * now before the first card): a notification colorized in it looks uncoloured.
+     * The ground System UI gives the other notifications where this one shows now ([ShadeColor]; the theme: [frame]'s,
+     * or the configuration now before the first card): colorized in it, the notification looks uncoloured.
      */
     private fun shadeColor(frame: CardFrame?): Int {
         val dark =
@@ -353,7 +354,7 @@ class LiveNotification(
                 (context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                     Configuration.UI_MODE_NIGHT_YES
             )
-        return NotificationCard.surface(context, dark)
+        return ShadeColor.of(context, dark)
     }
 
     /**
