@@ -27,6 +27,3 @@ internal fun ComposeContentTestRule.repeatedRowIcons(): Set<String> {
         .map { resources.getResourceEntryName(it) }
         .toSet()
 }
-
-/** Settings › Rings is being redesigned from scratch (its own round checks it). */
-internal fun ringsPage(name: String) = name.startsWith("rings")

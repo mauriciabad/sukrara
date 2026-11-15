@@ -52,6 +52,8 @@ on the Mac.
 | Time-in-range rings | One page (Android) / section (Mac): number in the ring (with the values each counts), rewards, colour order | Inline on the main page (ring-only options as siblings of the metrics) |
 | The last treatment | Its own row and page (switch, *Where*), its fallback a row under it using the metric page | A fourth "kind" in the metric list (priority and position are separate in the renderer; a big layout change for no gain) |
 | A widget's own | *Metrics*: at most N things beside the value, in the card's priority (the renderer's new `maxSlots`) | Keeping a ring count that ignored the last treatment |
+| Row icons | Each row its own (the owner: icons "make items easy to tell apart"): the three metrics a glyph of the card's three places with theirs filled (the main at the right), the last treatment a clock, no recent treatment a timelapse; the kinds a ring, a flask (the lab's A1c), a line over time (the average), a trace between a low and a high (variability) | The kind's icon on each row (two rows both a ring when both show time in range) |
+| The notification | Nothing of its own: the glucose notification (docs/36) draws the card's slots and its Live Update metrics from the same settings, as many as fit | A notification-only metric setting (a second place to keep in step) |
 
 The Mac keeps Apple's patterns: a grouped form, switches with *Details…* sheets (radio group, the period pop-up,
 *Dimmed* with its subtitle), the rings' look inline. **Discarded for later**: highlighting the metric being edited
@@ -92,9 +94,9 @@ on the live card (a renderer change on both platforms); a live card in the Mac p
 | ![Android before](img/metrics/rings-before-android-light.png) | ![Android after](img/metrics/metrics-rows-light.png) |
 | ![Mac before](img/metrics/rings-before-mac-light.png) | ![Mac after](img/metrics/mac-metrics-light.png) |
 
-[`img/metrics/`](img/metrics/): Android on an emulator with the synthetic sensor (the main and second metric set to
-12 h so they fill on a fresh emulator; the app panel fits two slots, so the 12-hour average gives way to the last
-treatment): `metrics-light`, `metrics-rows-light`, `metrics-dark`, `metrics-es-dark`, `metric-third-light`,
+[`img/metrics/`](img/metrics/): Android on an emulator with the synthetic sensor and 4 u of rapid insulin just logged
+(the defaults: the panel shows the last treatment and the 1-day ring; a fresh emulator hasn't the data a 7-day ring
+or a GMI needs yet): `metrics-light`, `metrics-rows-light`, `metrics-dark`, `metrics-es-dark`, `metric-third-light`,
 `metrics-last-off-light` (*No recent treatment* greyed), `tir-rings-light`. Mac (`sukrara-snap windows`):
 `mac-metrics-light` / `-dark`, `mac-metrics-wearer-light` (outside Custom), `mac-metric-details-light`,
 `mac-last-treatment-details-dark`, `mac-no-recent-details-dark`, `mac-metrics-es-dark`.

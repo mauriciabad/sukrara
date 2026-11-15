@@ -101,7 +101,6 @@ import app.mauri.sukrara.feature.settings.pens.PenDetectionContent
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
 import app.mauri.sukrara.feature.settings.repeatedRowIcons
-import app.mauri.sukrara.feature.settings.ringsPage
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
@@ -576,7 +575,7 @@ class SettingsIndexTest {
         var current by mutableStateOf(scenes.first().content)
         compose.setContent { SukraraTheme(dark = false, dynamic = false) { current() } }
         val repeats = mutableListOf<String>()
-        for (scene in scenes.filterNot { ringsPage(it.name) }) {
+        for (scene in scenes) {
             current = scene.content
             compose.waitForIdle()
             compose.repeatedRowIcons().takeIf { it.isNotEmpty() }?.let { repeats += "${scene.name} repeats $it" }

@@ -841,8 +841,8 @@ mirrored (a follower in *Settings from: Wearer* shows the wearer's, read-only).
 - A metric shows once its period has data for a quarter of it; as many as fit, in the card's priority (main, last
   treatment, second, no recent treatment, third). One home-screen widget can show fewer: *Metrics* in its own settings
   (Home screen widgets).
-- **Android**: Settings › *Metrics* (`ds_ic_speed`): the live card on top; the three metrics, then the last treatment
-  and *No recent treatment*, each a two-target row (the switch shows or hides it, the row opens its page; summary
+- **Android**: Settings › *Metrics* (`ds_ic_speed`): the live card on top; the three metrics (each row's icon the card's
+  three places with its own filled), then the last treatment and *No recent treatment*, each a two-target row (the switch shows or hides it, the row opens its page; summary
   *Time in range · 1 day* or *Off*); *Time-in-range rings* (summary *In range (70–179 mg/dL) · rewards*); *Reset
   metrics* while anything differs. A metric's page: the live card, its main switch (*Show the main metric*…), *Shows*
   as radio rows (each with what it is and its goal: *Estimated A1c · goal under 7 %*, *Goal under 154 mg/dL*,

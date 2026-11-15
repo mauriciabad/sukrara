@@ -595,7 +595,7 @@ class SettingsGallery {
             current = page
             compose.waitForIdle()
             // once per page: no row icon twice on one page
-            if (!dark && fontScale == 1f && prefix.isEmpty() && !ringsPage(name)) {
+            if (!dark && fontScale == 1f && prefix.isEmpty()) {
                 compose.repeatedRowIcons().takeIf { it.isNotEmpty() }?.let { repeats += "$name repeats $it" }
             }
             compose.onRoot().captureRoboImage("build/outputs/roborazzi/settings-$prefix$name-$theme-$font.png")

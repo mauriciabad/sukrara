@@ -68,11 +68,13 @@ enum class MetricSlot(
     @param:StringRes val title: Int,
     @param:StringRes val show: Int,
     @param:StringRes val footer: Int,
+    /** Its row's icon: where it sits among the three (the main at the right end), or the last treatment's place. */
+    @param:DrawableRes val icon: Int,
 ) {
-    Main(R.string.st_metric_main, R.string.st_metric_show_main, R.string.st_metric_main_footer),
-    Second(R.string.st_metric_second, R.string.st_metric_show_second, R.string.st_metric_other_footer),
-    Third(R.string.st_metric_third, R.string.st_metric_show_third, R.string.st_metric_other_footer),
-    NoRecent(R.string.st_last_else, R.string.st_last_else_show, R.string.st_last_else_footer),
+    Main(R.string.st_metric_main, R.string.st_metric_show_main, R.string.st_metric_main_footer, DsR.drawable.ds_ic_metric_main),
+    Second(R.string.st_metric_second, R.string.st_metric_show_second, R.string.st_metric_other_footer, DsR.drawable.ds_ic_metric_second),
+    Third(R.string.st_metric_third, R.string.st_metric_show_third, R.string.st_metric_other_footer, DsR.drawable.ds_ic_metric_third),
+    NoRecent(R.string.st_last_else, R.string.st_last_else_show, R.string.st_last_else_footer, DsR.drawable.ds_ic_timelapse),
     ;
 
     /** This metric's settings in [c]. */
@@ -99,8 +101,15 @@ fun RingSpec.withKind(kind: SlotKind): RingSpec {
     return copy(kind = kind, windowS = if (spec.valid(windowS.toDouble())) windowS else spec.default.toLong())
 }
 
+/** A kind's icon, each its own: a ring, the lab's A1c, a glucose line over time, a trace between a low and a high. */
 @DrawableRes
-fun metricIcon(kind: SlotKind): Int = if (kind == SlotKind.TIR) DsR.drawable.ds_ic_donut_large else DsR.drawable.ds_ic_speed
+fun metricKindIcon(kind: SlotKind): Int =
+    when (kind) {
+        SlotKind.TIR -> DsR.drawable.ds_ic_donut_large
+        SlotKind.GMI -> DsR.drawable.ds_ic_science
+        SlotKind.AVERAGE -> DsR.drawable.ds_ic_monitoring
+        SlotKind.CV -> DsR.drawable.ds_ic_dia_range
+    }
 
 @Composable
 fun metricKindName(kind: SlotKind): String =
@@ -189,7 +198,7 @@ fun MetricsContent(
                     { on -> slot.write(actions, c, spec.copy(on = on)) },
                     { actions.openMetric(slot) },
                     summary = metricSummary(spec),
-                    icon = metricIcon(spec.kind),
+                    icon = slot.icon,
                     switchEnabled = !readOnly,
                 )
             }
@@ -212,7 +221,7 @@ fun MetricsContent(
                 { on -> actions.lastElse(other.copy(on = on)) },
                 { actions.openMetric(MetricSlot.NoRecent) },
                 summary = if (c.lastOn) metricSummary(other) else stringResource(R.string.st_last_else_needs),
-                icon = metricIcon(other.kind),
+                icon = MetricSlot.NoRecent.icon,
                 enabled = c.lastOn,
                 switchEnabled = c.lastOn && !readOnly,
             )
@@ -286,7 +295,7 @@ fun MetricContent(
                     { set(spec.withKind(kind)) },
                     summary = metricKindSummary(kind),
                     enabled = editable,
-                    icon = metricIcon(kind),
+                    icon = metricKindIcon(kind),
                 )
             }
         }
