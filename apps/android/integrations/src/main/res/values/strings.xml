@@ -7,8 +7,8 @@
 
     <!-- Export data -->
     <string name="in_export_title">Export data</string>
-    <string name="in_export_intro">Your readings and entries as one spreadsheet file in LibreView\'s layout, for your clinic, Tidepool or a spreadsheet. Only what is on this phone.</string>
-    <string name="in_export_intro_follower">The readings and entries of the person you follow, as one spreadsheet file in LibreView\'s layout. Only what this phone has received: it is their data, not yours.</string>
+    <string name="in_export_intro">Your readings and treatments as one spreadsheet file in LibreView\'s layout, for your clinic, Tidepool or a spreadsheet. Only what is on this phone.</string>
+    <string name="in_export_intro_follower">The readings and treatments of the person you follow, as one spreadsheet file in LibreView\'s layout. Only what this phone has received: it is their data, not yours.</string>
     <string name="in_export_period">Period</string>
     <string name="in_export_period_sensor">This sensor</string>
     <string name="in_export_period_all">Everything on this phone</string>
@@ -23,8 +23,8 @@
         <item quantity="other">%d readings</item>
     </plurals>
     <plurals name="in_export_treatments">
-        <item quantity="one">%d entry</item>
-        <item quantity="other">%d entries</item>
+        <item quantity="one">%d treatment</item>
+        <item quantity="other">%d treatments</item>
     </plurals>
     <string name="in_export_save">Save file</string>
     <string name="in_export_share">Share</string>
@@ -58,7 +58,7 @@
 
     <!-- Nightscout API on this phone -->
     <string name="in_nsapi_title">Nightscout API on this phone</string>
-    <string name="in_nsapi_intro">Apps on this phone that read a Nightscout site (xDrip+, GlucoDataHandler, watch faces) can read your glucose and entries from here instead, without the internet. They need the API secret below.</string>
+    <string name="in_nsapi_intro">Apps on this phone that read a Nightscout site (xDrip+, GlucoDataHandler, watch faces) can read your glucose and treatments from here instead, without the internet. They need the API secret below.</string>
     <string name="in_nsapi_switch">Share with apps on this phone</string>
     <string name="in_nsapi_off">Off</string>
     <string name="in_nsapi_on">On · http://127.0.0.1:17581</string>
@@ -81,7 +81,7 @@
     <string name="in_nsapi_new_secret_title">Make a new API secret?</string>
     <string name="in_nsapi_new_secret_text">Apps that use the current secret can\'t read your glucose anymore until you enter the new one in them.</string>
     <string name="in_nsapi_new_secret_action">New secret</string>
-    <string name="in_nsapi_footer">Only apps on this phone can reach it (and devices on your home Wi-Fi while that option is on), and only with the secret. It serves the last 7 days of glucose and 30 days of entries; each reading says where it came from (this phone\'s sensor, an untested sensor, or the person you follow). It isn\'t a source for a closed loop.</string>
+    <string name="in_nsapi_footer">Only apps on this phone can reach it (and devices on your home Wi-Fi while that option is on), and only with the secret. It serves the last 7 days of glucose and 30 days of treatments; each reading says where it came from (this phone\'s sensor, an untested sensor, or the person you follow). It isn\'t a source for a closed loop.</string>
     <!-- Upload status (every upload page) -->
     <string name="in_status_off">Off</string>
     <string name="in_status_setup">Set up the site first</string>
@@ -98,7 +98,7 @@
 
     <!-- Nightscout upload -->
     <string name="in_ns_title">Nightscout upload</string>
-    <string name="in_ns_intro">Send your glucose, entries and sensor changes to your own Nightscout site, so LoopFollow, Nightguard, Nightscout reports and Home Assistant see them from anywhere.</string>
+    <string name="in_ns_intro">Send your glucose, treatments and sensor changes to your own Nightscout site, so LoopFollow, Nightguard, Nightscout reports and Home Assistant see them from anywhere.</string>
     <string name="in_ns_site">Site</string>
     <string name="in_ns_site_none">Not set up</string>
     <string name="in_ns_main">Upload to my Nightscout</string>
@@ -145,7 +145,7 @@
 
     <!-- LibreView upload -->
     <string name="in_lv_title" translatable="false">LibreView</string>
-    <string name="in_lv_intro">Send your Libre 3 glucose and your entries to your LibreView account, the way the FreeStyle Libre 3 app does, so your clinic sees them in its reports.</string>
+    <string name="in_lv_intro">Send your Libre 3 glucose and your treatments to your LibreView account, the way the FreeStyle Libre 3 app does, so your clinic sees them in its reports.</string>
     <string name="in_lv_account">Account</string>
     <string name="in_lv_sign_in">Sign in to LibreView</string>
     <string name="in_lv_signed_in">Signed in</string>
@@ -158,7 +158,7 @@
     <string name="in_lv_glucose">Glucose</string>
     <string name="in_lv_glucose_summary">From a Libre 3 connected to this phone, from the moment you switch it on</string>
     <string name="in_lv_glucose_from">From a Libre 3 connected to this phone, since %1$s</string>
-    <string name="in_lv_entries_summary">Entries you make or change from now on; edits and deletes correct what LibreView has</string>
+    <string name="in_lv_entries_summary">Treatments you add or change from now on; edits and deletes correct what LibreView has</string>
     <string name="in_lv_footer">Sukrara uses the LibreView account you signed in with once (the one LibreLink or the Libre 3 app uses): its email and password stay encrypted on this phone, and the upload signs in with them by itself. Only one device uploads for a LibreView account: if LibreLink, the Libre 3 app or Juggluco does, Sukrara asks before it takes over. Glucose goes up only from a Libre 3 that Sukrara connects to itself.</string>
     <string name="in_lv_take_over_title">Another device uploads for this account</string>
     <string name="in_lv_take_over_text">LibreView takes data from one device per account, today another one (LibreLink, the Libre 3 app or Juggluco). If Sukrara takes over, that device stops uploading to LibreView. Take over only if Sukrara should be the one that uploads.</string>
@@ -168,7 +168,7 @@
     <!-- Tidepool upload -->
     <string name="in_tp_title" translatable="false">Tidepool</string>
     <string name="in_tp_intro">Tidepool keeps your diabetes data in one place for you and your clinic. Sukrara can upload your glucose and your insulin, carbs and notes to your Tidepool account.</string>
-    <string name="in_tp_intro_follower">Tidepool keeps diabetes data in one place. If you choose to, Sukrara can upload the glucose and entries of the person you follow to a Tidepool account.</string>
+    <string name="in_tp_intro_follower">Tidepool keeps diabetes data in one place. If you choose to, Sukrara can upload the glucose and treatments of the person you follow to a Tidepool account.</string>
     <string name="in_tp_account">Account</string>
     <string name="in_tp_sign_in">Sign in</string>
     <string name="in_tp_signed_in">Signed in</string>
@@ -314,8 +314,8 @@
         <item quantity="other">%d readings</item>
     </plurals>
     <plurals name="in_import_entries">
-        <item quantity="one">%d entry</item>
-        <item quantity="other">%d entries</item>
+        <item quantity="one">%d treatment</item>
+        <item quantity="other">%d treatments</item>
     </plurals>
     <plurals name="in_import_already">
         <item quantity="one">%d was already here</item>

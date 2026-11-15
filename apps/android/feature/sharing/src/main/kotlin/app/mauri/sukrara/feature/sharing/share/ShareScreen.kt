@@ -62,6 +62,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SettingsScaffoldPage
 import app.mauri.sukrara.feature.sharing.Invite
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.feature.sharing.WriterSwitch
 import app.mauri.sukrara.feature.sharing.setup.NoteCard
 import app.mauri.sukrara.feature.sharing.setup.startSafely
 import app.mauri.sukrara.protocol.event.Profile
@@ -88,7 +89,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 @Composable
 fun ShareScreen(
     invite: InviteUi,
-    onCreate: (String) -> Unit,
+    /** Make the invite: the label and *Can add treatments*. */
+    onCreate: (label: String, writer: Boolean) -> Unit,
     onAnother: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -100,6 +102,8 @@ fun ShareScreen(
 ) = SettingsScaffoldPage(stringResource(R.string.sh_share_title), onBack, modifier) {
     val outcome = invite is InviteUi.Ready && progress !is InviteProgress.Open && progress !is InviteProgress.Asked
     var label by rememberSaveable { mutableStateOf("") }
+    // whoever joins starts with it; the approve dialog shows it again and the follower's sheet changes it later
+    var writer by rememberSaveable { mutableStateOf(false) }
     SettingsIntro(stringResource(R.string.sh_share_body))
     Column(
         Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 24.dp),
@@ -115,6 +119,11 @@ fun ShareScreen(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                WriterSwitch(
+                    writer,
+                    title = stringResource(R.string.sh_share_writer),
+                    summary = stringResource(R.string.sh_share_writer_summary),
+                ) { writer = it }
                 if (invite is InviteUi.Failed) NoteCard(stringResource(R.string.sh_share_failed), error = true)
                 if (internetOff) {
                     NoteCard(stringResource(R.string.sh_share_internet_off))
@@ -123,7 +132,7 @@ fun ShareScreen(
                     }
                 }
                 Button(
-                    onClick = { onCreate(label) },
+                    onClick = { onCreate(label, writer) },
                     enabled = invite !is InviteUi.Creating && !internetOff,
                     modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                 ) { Text(stringResource(if (invite is InviteUi.Failed) R.string.sh_share_try_again else R.string.sh_share_create)) }

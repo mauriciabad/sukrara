@@ -44,8 +44,13 @@ data class InviteRecord(
     val nearby: Boolean = false,
     /** *Pair nearby*: the wearer's pairing nonce `nb` (the offer carries its commitment; the claimer gets it). */
     val pairNonce: String? = null,
+    /**
+     * *Can add treatments*, chosen when the invite was made: the approve dialog starts from it and Allow from the
+     * notification applies it. This phone only (not in the backup: an invite lives a day).
+     */
+    val writer: Boolean = false,
 ) {
-    override fun toString() = "InviteRecord(nearby=$nearby, claimed=${claimedBy != null}, done=$done)"
+    override fun toString() = "InviteRecord(nearby=$nearby, claimed=${claimedBy != null}, done=$done, writer=$writer)"
 }
 
 /** An access request waiting for the wearer. [others] = later phones that tried the same invite (a leaked link). */
@@ -66,6 +71,8 @@ data class PendingRequest(
      * pairing); the wearer allows only if the follower's phone shows the same.
      */
     val nearby: Boolean = false,
+    /** *Can add treatments* as chosen on the invite (the approve dialog's switch starts from it). */
+    val writer: Boolean = false,
 ) {
     /** Allow only with the match code typed from the follower's phone: other phones tried the same link. */
     val needsTypedCode: Boolean get() = others > 0 && !nearby

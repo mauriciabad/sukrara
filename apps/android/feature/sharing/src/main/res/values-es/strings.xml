@@ -230,10 +230,8 @@
     <string name="sh_backup_row_done">Hecha</string>
     <!-- Backup row: not backed up -->
     <string name="sh_backup_row_missing">Sin copia: con un teléfono nuevo perderías a tus seguidores</string>
-    <!-- Follower row: may add entries -->
-    <string name="sh_followers_can_add">Puede añadir entradas</string>
-    <!-- Follower row: only sees -->
-    <string name="sh_followers_sees_only">Solo ve</string>
+    <!-- TalkBack on a follower row whose picture carries the Can add treatments mark -->
+    <string name="sh_followers_can_add">Puede añadir tratamientos</string>
     <!-- Button: show removed followers -->
     <string name="sh_followers_removed_show">Eliminados</string>
     <!-- Button: fold removed followers -->
@@ -242,10 +240,17 @@
     <string name="sh_followers_removed">Eliminados</string>
     <!-- Removed follower; %1$s = date -->
     <string name="sh_followers_removed_at">Eliminado el %1$s</string>
-    <!-- Switch: follower may add entries -->
-    <string name="sh_followers_writer">Puede añadir entradas</string>
+    <!-- The follower sheet's switch: this follower may add treatments -->
+    <string name="sh_followers_writer">Puede añadir tratamientos</string>
     <!-- Switch summary -->
     <string name="sh_followers_writer_summary">Las comidas, la insulina y las notas que añada aparecen en tu registro.</string>
+    <!-- The follower sheet's closing button [CHAR LIMIT=15] -->
+    <string name="sh_followers_done">Hecho</string>
+    <!-- Share with someone: the switch for whoever joins with this invite -->
+    <string name="sh_share_writer">Dejar que añada tratamientos</string>
+    <string name="sh_share_writer_summary">Podrá añadir comidas, insulina y notas a tu registro. Puedes cambiarlo al permitirle el acceso y más adelante.</string>
+    <!-- The approve dialog's switch; %1$s = the person asking -->
+    <string name="sh_approve_writer">Dejar que %1$s añada tratamientos</string>
     <!-- Writer switch refused -->
     <string name="sh_followers_writer_refused">No se pudo cambiar: compartir está en pausa mientras otra app comparte como tú.</string>
     <!-- Backup intro, backed up -->
@@ -406,13 +411,13 @@
     <string name="sh_following_ended">Ya no sigues a %1$s</string>
     <string name="sh_following_last_heard">Última lectura recibida %1$s</string>
     <string name="sh_following_never">Aún no ha llegado ninguna lectura</string>
-    <string name="sh_following_can_write">Puedes añadir entradas a su registro</string>
-    <string name="sh_following_cannot_write">Solo esa persona puede añadir entradas a su registro</string>
+    <string name="sh_following_can_write">Puedes añadir tratamientos a su registro</string>
+    <string name="sh_following_cannot_write">Solo esa persona puede añadir tratamientos a su registro</string>
     <string name="sh_following_relays">Conectado a %1$d de %2$d relays</string>
     <string name="sh_following_relays_off">Sin conexión (la monitorización no está en marcha)</string>
     <string name="sh_following_stop">Dejar de seguir</string>
     <string name="sh_following_stop_title">¿Dejar de seguir a %1$s?</string>
-    <string name="sh_following_stop_text">Sus lecturas, entradas y alertas se borran de este teléfono. Para volver a seguirle necesitas un enlace de invitación nuevo.</string>
+    <string name="sh_following_stop_text">Sus lecturas, tratamientos y alertas se borran de este teléfono. Para volver a seguirle necesitas un enlace de invitación nuevo.</string>
     <string name="sh_following_stop_failed">No se ha podido borrar la clave de este teléfono. Vuelve a intentarlo.</string>
     <string name="sh_following_unreadable">Este teléfono no puede abrir ahora la clave de seguidor. Sukrara sigue intentándolo; sus lecturas guardadas y las alertas se mantienen. Si no se recupera, deja de seguir y vuelve a unirte.</string>
     <string name="sh_following_damaged">La clave de seguidor de este teléfono está dañada. Deja de seguir y vuelve a unirte con un enlace nuevo.</string>

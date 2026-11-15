@@ -94,14 +94,17 @@ class SharingViewModel(
     private val _profileSave = MutableStateFlow(ProfileSave.Idle)
     val profileSave: StateFlow<ProfileSave> = _profileSave.asStateFlow()
 
-    /** A "Can add entries" change that was refused (the switch shows the engine's value again; a note says why). */
+    /** A *Can add treatments* change that was refused (the switch shows the engine's value again; a note says why). */
     private val _writerRefused = MutableStateFlow<String?>(null)
     val writerRefused: StateFlow<String?> = _writerRefused.asStateFlow()
 
-    fun createInvite(label: String) {
+    fun createInvite(
+        label: String,
+        writer: Boolean = false,
+    ) {
         _invite.value = InviteUi.Creating
         viewModelScope.launch {
-            _invite.value = sharing.createInvite(label)?.let(InviteUi::Ready) ?: InviteUi.Failed
+            _invite.value = sharing.createInvite(label, writer)?.let(InviteUi::Ready) ?: InviteUi.Failed
         }
     }
 
@@ -110,12 +113,19 @@ class SharingViewModel(
         _invite.value = InviteUi.None
     }
 
-    /** Allow, once: a second tap while it runs does nothing (the dialog may already show the next request). */
-    fun approve(request: PendingRequest, typedCode: String? = null) {
+    /**
+     * Allow, once: a second tap while it runs does nothing (the dialog may already show the next request). [writer] =
+     * the dialog's *Can add treatments* switch.
+     */
+    fun approve(
+        request: PendingRequest,
+        typedCode: String? = null,
+        writer: Boolean? = null,
+    ) {
         if (_approve.value?.working == true) return
         _approve.value = ApproveUi(request, working = true)
         viewModelScope.launch {
-            val result = sharing.approve(request.follower, typedCode)
+            val result = sharing.approve(request.follower, typedCode, writer)
             _approve.value = if (result == ApproveResult.Allowed) null else ApproveUi(request, working = false, refused = result)
         }
     }

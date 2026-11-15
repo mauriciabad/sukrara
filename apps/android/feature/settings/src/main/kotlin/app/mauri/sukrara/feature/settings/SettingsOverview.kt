@@ -15,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.Banner
@@ -27,6 +28,7 @@ import app.mauri.sukrara.designsystem.rows.Category
 import app.mauri.sukrara.designsystem.rows.CategoryIcon
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.titleRes
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
 import app.mauri.sukrara.feature.settings.search.BuildFeature
@@ -103,6 +105,8 @@ fun SettingsOverviewContent(
     updatesBanner: Boolean = false,
     /** Setup's optional steps still open, by title (the *Finish setup* row's summary); null = none, no row. */
     setupExtras: String? = null,
+    /** The features Android blocks: the Sharing / Share with apps row says the first in the warning colour (docs/40). */
+    blocked: List<BlockedFeature> = emptyList(),
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -315,15 +319,23 @@ fun SettingsOverviewContent(
         }
         // your data: live to people, live to apps, an automatic copy, files you make yourself
         SettingsGroup {
+            // a blocked feature marks the row whose page has its fix (as stock Settings marks a row that needs you)
+            val sharingBlocked = blocked.firstOrNull { it in SHARING_FEATURES }
             NavigationRow(
                 stringResource(R.string.st_sharing),
                 actions.openSharing,
-                summary = stringResource(R.string.st_sharing_summary),
+                summary = sharingBlocked?.let { stringResource(it.titleRes()) } ?: stringResource(R.string.st_sharing_summary),
                 leading = { SectionIcon(Section.Sharing) },
+                warning = sharingBlocked != null,
             )
-            NavigationRow(stringResource(R.string.st_apps), actions.openApps, summary = appsSummary(appsShared), leading = {
-                SectionIcon(Section.Apps)
-            })
+            val appsBlocked = blocked.firstOrNull { it !in SHARING_FEATURES }
+            NavigationRow(
+                stringResource(R.string.st_apps),
+                actions.openApps,
+                summary = appsBlocked?.let { stringResource(it.titleRes()) } ?: appsSummary(appsShared),
+                leading = { SectionIcon(Section.Apps) },
+                warning = appsBlocked != null,
+            )
             if (sharing.wearer) {
                 NavigationRow(
                     stringResource(R.string.st_backup_title),
@@ -389,6 +401,9 @@ fun SettingsOverviewContent(
         }
     }
 }
+
+/** The blocked features whose fix is on Settings › Sharing (the others are on Share with apps). */
+private val SHARING_FEATURES = setOf(BlockedFeature.BluetoothSharing, BlockedFeature.BluetoothFollowing)
 
 /** "LibreView · Nightscout upload · xDrip+ server", or what the page is for while nothing is on. */
 @Composable

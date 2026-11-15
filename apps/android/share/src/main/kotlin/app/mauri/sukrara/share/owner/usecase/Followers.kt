@@ -20,7 +20,12 @@ import app.mauri.sukrara.share.owner.PendingRequest
 class CreateInvite(private val ctx: OwnerContext) {
     data class Created(val step: Step, val link: InviteLink, val expiry: Long)
 
-    operator fun invoke(s: OwnerState, label: String, now: Long): Created {
+    operator fun invoke(
+        s: OwnerState,
+        label: String,
+        now: Long,
+        writer: Boolean = false,
+    ): Created {
         val expiry = now + TTL
         val profile = ControlEvents.profile(s) ?: Profile("", null)
         val (link, wrap) =
@@ -33,7 +38,7 @@ class CreateInvite(private val ctx: OwnerContext) {
                 s.relays,
                 profile,
             )
-        val invite = InviteRecord(link.token, expiry, label.trim().take(Profile.MAX_NAME), sentAt = now)
+        val invite = InviteRecord(link.token, expiry, label.trim().take(Profile.MAX_NAME), sentAt = now, writer = writer)
         val next = s.copy(invites = s.invites.filter { it.expiry >= now } + invite)
         return Created(Step(next, listOf(wrap)) + { ControlEvents.backup(ctx, it, now) }, link, expiry)
     }
@@ -181,6 +186,7 @@ class HandleInbox(private val ctx: OwnerContext) {
                 label = invite.label,
                 inviteSentAt = invite.sentAt,
                 nearby = invite.nearby,
+                writer = invite.writer,
             )
         val next =
             s.copy(

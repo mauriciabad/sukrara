@@ -41,6 +41,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   - Via Bluetooth when nearby, or Nostr (internet) when far away.
   - Platforms: macOS and Android.
   - End-to-end encrypted, no server to host.
+  - Choose who can add treatments to your log when you invite them; change it any time from their sheet.
 - Can read glucose data from Juggluco.
 - Everything stays on your phone by default.
 - [Planned]: Define a formal open standard for sharing glucose over Nostr.
@@ -67,6 +68,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 - Setup asks only what alerts and monitoring need (permissions, sensor, alert levels); followers, insulin pens, updates
   and your old history come after, right away or later from Settings › Finish setup.
+- A feature you use that Android or macOS blocks (a missing permission, a login item waiting for you) never fails
+  silently: home or the menu bar panel says so, with Allow and Turn off.
 
 ### Log effortlessly
 
@@ -77,8 +80,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Quick log pop-up by tapping the widget, the notification, an alert's Treatment or the Quick Settings tile.
 - Set when it happened by scrolling back the minutes and hours in one wheel, or with one tap (5m, 15m, 30m, 1h).
 - Add logs from the Sukrara companion apps.
-- Your last 24 h of logs on the home screen, and a Treatments page with 31 days: each entry with its chart marker,
-  the glucose and trend when you logged it, and a mark only when it isn't in LibreView yet. Tap an entry to
+- Your last 24 h of logs on the home screen, and a Treatments page with 31 days: each treatment with its chart marker,
+  the glucose and trend when you logged it, and a mark only when it isn't in LibreView yet. Tap a treatment to
   edit it or add a note (pen doses too) in a sheet; swipe it away to delete, with Undo.
 - [Planned]: Garmin watch app, MCP for AI assistants, voice assistants...
 

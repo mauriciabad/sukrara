@@ -9,7 +9,9 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.PenAnswer
@@ -95,6 +97,9 @@ interface HomeDeps {
 
     /** Opens the system screen that fixes [requirement]. */
     fun fix(requirement: AlertRequirement)
+
+    /** The features Android blocks (the banner after the taps one) and their ways out (docs/40). */
+    val featureChecks: FeatureChecksSource get() = FeatureChecksSource.None
 
     /**
      * Deletes treatment [id] through the treatment log (a tombstone version, synced to the other devices); returns the
@@ -246,6 +251,8 @@ data class HomeUiState(
     val widgetPinnable: Boolean = true,
     /** What the taps-blocked banner names: pen taps, sensor taps or both. */
     val blockedTaps: BlockedTaps = BlockedTaps(),
+    /** The blocked feature the banner names ([BannerKind.FeatureBlocked]). */
+    val blockedFeature: BlockedFeature? = null,
 ) {
     val mutedUntil: Instant? get() = glucose.alerts.mutedUntil?.takeIf { it > now }
 }
@@ -319,6 +326,7 @@ class HomeViewModel(
                 systemUiUpdated = env.systemUiRestart == ModuleState.Update,
                 widgetPinnable = env.widgetPinnable,
                 blockedTaps = env.tapsBlocked,
+                blockedFeature = env.blockedShown(memory),
                 dataProblems = problems,
                 treatments = listed,
                 history = history,
@@ -361,6 +369,12 @@ class HomeViewModel(
             viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(key, deps.clock.now()) } }
             return
         }
+        // only a feature without a switch is closed, that one alone
+        if (kind == BannerKind.FeatureBlocked) {
+            val feature = state.value.blockedFeature?.takeUnless { it.canTurnOff } ?: return
+            viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(HomeEnvironment.blockedKey(feature), deps.clock.now()) } }
+            return
+        }
         viewModelScope.launch { deps.bannerMemory.update { it.dismiss(kind, deps.clock.now()) } }
     }
 
@@ -374,6 +388,12 @@ class HomeViewModel(
     fun acknowledge(problem: DataProblem) = deps.acknowledge(problem)
 
     fun fix(requirement: AlertRequirement) = deps.fix(requirement)
+
+    /** The blocked features' checklist (*Allow* asks through it). */
+    val featureChecks: FeatureChecksSource get() = deps.featureChecks
+
+    /** *Turn off* on a blocked feature's banner: its own switch goes off; the banner goes with it. */
+    fun turnOff(feature: BlockedFeature) = deps.featureChecks.turnOff(feature)
 
     /**
      * Deletes [treatment] through the treatment log and offers Undo on the snackbar (none when the log refused). The

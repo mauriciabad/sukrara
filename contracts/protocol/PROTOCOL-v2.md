@@ -124,7 +124,7 @@ entries, deletes.
 - BLE: every treatment event is pushed to subscribed centrals like any publish; the `HELLO` backlog also carries the
   treatment events of the last 30 days (newest 200), after the chunks and before live.
 - Sukrara for Mac follows over v2 like any follower; while it is a writer, its entries go over v2 only (not the
-  legacy Mac link), so "Can add entries" governs the Mac too. The legacy link (SPEC §2) refuses entries unless the
+  legacy Mac link), so "Can add treatments" governs the Mac too. The legacy link (SPEC §2) refuses entries unless the
   wearer explicitly allows that unauthenticated path on the phone.
 - The owner accepts a writer event only if the author ∈ roster `writers` ∧ active follower (docs/07) **and** the `id`
   is new or that writer created it (the owner keeps the first writer per `id`; an `id` in its log with no writer is the
@@ -145,8 +145,8 @@ entries, deletes.
   follower's Nightscout API (`/api/v1/treatments`, SPEC §5 mapping).
 
 **Writers** (followers in roster `writers`):
-- Show *Add entry* only while the follower's own key `F` is in the newest roster's `writers` (live: a roster without
-  it hides the form at once; otherwise "*<wearer> hasn't allowed you to add entries*").
+- Show *Add treatment* only while the follower's own key `F` is in the newest roster's `writers` (live: a roster without
+  it hides the form at once; otherwise "*<wearer> hasn't allowed you to add treatments*").
 - Per entry the writer sent: *sending* → *sent* (a relay `OK true` or the BLE write response) → **accepted** when an
   event for the same `id` signed by a **roster device key** arrives with `u ≥` the sent `u` (the echo). No echo after
   ~2 min ⇒ shown as *not accepted yet* (keeps listening; the owner may be offline). There is no explicit NACK:

@@ -82,7 +82,7 @@ private fun amounts(list: List<Double>): String {
     }
 }
 
-/** The question's line: "1u and 1.5u at 13:02", "Pen 8.5u at 13:12 · yours 8u at 13:05", "… · 2 typed entries nearby". */
+/** The question's line: "1u and 1.5u at 13:02", "Pen 8.5u at 13:12 · yours 8u at 13:05", "… · 2 typed treatments nearby". */
 @Composable
 fun penQuestionLine(
     q: PenQuestionInfo,

@@ -232,9 +232,13 @@ private fun SettingsPages(
             val closedTips by deps.closedTips.collectAsStateWithLifecycle(0)
             val extras by deps.setupExtras.collectAsStateWithLifecycle(null)
             val sharing by deps.overviewSharing.collectAsStateWithLifecycle(OverviewSharing())
+            val blocked by deps.featureChecks.blocked.collectAsStateWithLifecycle()
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             val recent = recentSearches(deps)
-            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { deps.readiness.refresh() }
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
+                deps.readiness.refresh()
+                deps.featureChecks.refresh()
+            }
             SettingsOverviewContent(
                 ui?.settings?.on ?: true,
                 ui?.alerts ?: AlertUiState(),
@@ -275,6 +279,7 @@ private fun SettingsPages(
                 moreSearch = deps.moreSearch,
                 updatesBanner = updatesBanner,
                 setupExtras = extras,
+                blocked = blocked,
                 onBack = onBack,
             )
         }

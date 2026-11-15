@@ -13,7 +13,7 @@
     <string name="treatment_edit_long">Editar insulina lenta</string>
     <string name="treatment_edit_carbs">Editar hidratos</string>
     <string name="treatment_edit_note">Editar nota</string>
-    <string name="treatment_edit_gone">Esta entrada ya no se puede cambiar</string>
+    <string name="treatment_edit_gone">Este tratamiento ya no se puede cambiar</string>
     <string name="treatment_rapid">Rápida</string>
     <string name="treatment_long">Lenta</string>
     <string name="treatment_carbs">Hidratos</string>
@@ -34,7 +34,7 @@
     <string name="treatment_unlock_a11y">Desbloquear para seguir editando</string>
     <string name="treatment_lock_not_saved">No guardado: el diálogo se cerró en la pantalla de bloqueo</string>
     <string name="treatment_lock_draft_kept">Aún sin guardar: desbloquea y toca la notificación para terminar</string>
-    <!-- La confirmación tras Guardar; %1$s = las entradas en palabras, p. ej. "4.5u de insulina rápida · 30g de hidratos" -->
+    <!-- La confirmación tras Guardar; %1$s = los tratamientos en palabras, p. ej. "4.5u de insulina rápida · 30g de hidratos" -->
     <string name="treatment_saved_snack">Guardado: %1$s</string>
     <string name="treatment_sent_snack">Se enviará a quien lleva el sensor: %1$s</string>
     <string name="treatment_changed_snack">Cambiado: %1$s</string>
@@ -46,11 +46,11 @@
     <string name="treatment_entry_rapid">%1$s de insulina rápida</string>
     <string name="treatment_entry_long">%1$s de insulina lenta</string>
     <string name="treatment_entry_carbs">%1$s de hidratos</string>
-    <!-- La notificación que ofrece lo que tenía el diálogo cuando se cerró en la pantalla de bloqueo; %1$s = las entradas -->
+    <!-- La notificación que ofrece lo que tenía el diálogo cuando se cerró en la pantalla de bloqueo; %1$s = los tratamientos -->
     <string name="treatment_draft_title">Tratamiento sin guardar</string>
     <string name="treatment_draft_text">%1$s. Toca para terminar de guardarlo.</string>
     <string name="treatment_draft_tap">Toca para terminar de guardarlo.</string>
-    <!-- En el diálogo, sobre la entrada guardada como borrador; %1$s = la hora -->
+    <!-- En el diálogo, sobre el tratamiento guardado como borrador; %1$s = la hora -->
     <string name="treatment_draft_line">Borrador de las %1$s, aún sin guardar</string>
     <string name="treatment_draft_discard">Descartar</string>
     <plurals name="treatment_lock_closes_in">

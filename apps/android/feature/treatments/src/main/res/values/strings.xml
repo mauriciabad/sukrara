@@ -13,7 +13,7 @@
     <string name="treatment_edit_long">Edit long insulin</string>
     <string name="treatment_edit_carbs">Edit carbs</string>
     <string name="treatment_edit_note">Edit note</string>
-    <string name="treatment_edit_gone">This entry can\'t be changed any more</string>
+    <string name="treatment_edit_gone">This treatment can\'t be changed any more</string>
     <string name="treatment_rapid">Rapid</string>
     <string name="treatment_long">Long</string>
     <string name="treatment_carbs">Carbs</string>
@@ -36,7 +36,7 @@
     <string name="treatment_unlock_a11y">Unlock to keep editing</string>
     <string name="treatment_lock_not_saved">Not saved: the dialog closed on the lock screen</string>
     <string name="treatment_lock_draft_kept">Not saved yet: unlock and tap the notification to finish</string>
-    <!-- The confirmation after Save; %1$s = the entries in words, e.g. "4.5u rapid insulin · 30g carbs" -->
+    <!-- The confirmation after Save; %1$s = the treatments in words, e.g. "4.5u rapid insulin · 30g carbs" -->
     <string name="treatment_saved_snack">Saved: %1$s</string>
     <string name="treatment_sent_snack">Will be sent to the wearer: %1$s</string>
     <string name="treatment_changed_snack">Changed: %1$s</string>
@@ -48,11 +48,11 @@
     <string name="treatment_entry_rapid">%1$s rapid insulin</string>
     <string name="treatment_entry_long">%1$s long insulin</string>
     <string name="treatment_entry_carbs">%1$s carbs</string>
-    <!-- The notification that offers what the lock-screen countdown closed on; %1$s = the entries in words -->
+    <!-- The notification that offers what the lock-screen countdown closed on; %1$s = the treatments in words -->
     <string name="treatment_draft_title">Treatment not saved</string>
     <string name="treatment_draft_text">%1$s. Tap to finish saving it.</string>
     <string name="treatment_draft_tap">Tap to finish saving it.</string>
-    <!-- In the dialog, above the kept entry; %1$s = the time it was kept -->
+    <!-- In the dialog, above the kept treatment; %1$s = the time it was kept -->
     <string name="treatment_draft_line">Kept at %1$s, not saved yet</string>
     <string name="treatment_draft_discard">Discard</string>
     <!-- The countdown on Cancel over the lock screen, for TalkBack (5 s steps); %1$d = seconds [CHAR LIMIT=40] -->

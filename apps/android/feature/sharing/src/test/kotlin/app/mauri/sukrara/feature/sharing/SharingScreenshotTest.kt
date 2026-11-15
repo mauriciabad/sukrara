@@ -35,7 +35,7 @@ import app.mauri.sukrara.feature.sharing.backup.ReplaceStep
 import app.mauri.sukrara.feature.sharing.backup.ReplaceUi
 import app.mauri.sukrara.feature.sharing.conflict.IdentityConflictScreen
 import app.mauri.sukrara.feature.sharing.follower.FollowingContent
-import app.mauri.sukrara.feature.sharing.followers.FollowerDialog
+import app.mauri.sukrara.feature.sharing.followers.FollowerSheet
 import app.mauri.sukrara.feature.sharing.followers.FollowersActions
 import app.mauri.sukrara.feature.sharing.followers.FollowersPage
 import app.mauri.sukrara.feature.sharing.followers.NearbyPage
@@ -225,6 +225,10 @@ class SharingScreenshotTest {
                     a.copy(sendTestAlert = {}),
                 )
             },
+            // docs/40: a follower's phone asks Nearby devices with the rest (Bluetooth, the internet's backup)
+            "setup-3-permissions-follower" to {
+                SetupContent(ui(SetupStep.Permissions, 3, facts.copy(role = Role.Follower, following = true)), a)
+            },
             "setup-3b-updates" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.Open)), a) },
             "setup-3b-updates-on" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.On)), a) },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },
@@ -299,22 +303,22 @@ class SharingScreenshotTest {
             "setup-6d-notification" to { SetupContent(ui(SetupStep.Notification, 1, live).copy(count = 4), a) },
             "setup-6b-pens" to { SetupContent(ui(SetupStep.Pens, 3, live.copy(pens = false)).copy(count = 4), a) },
             "conflict-screen" to { IdentityConflictScreen(conflict, {}, {}) },
-            "share-new" to { ShareScreen(InviteUi.None, {}, {}, {}) },
+            "share-new" to { ShareScreen(InviteUi.None, { _, _ -> }, {}, {}) },
             "share-ready" to {
                 ShareScreen(
                     InviteUi.Ready(Invite("https://sukrara.mauri.app/join#c3ludGhldGljLWludml0ZS1mb3ItdGVzdHM", "Anna", 1_761_600_000)),
-                    {},
+                    { _, _ -> },
                     {},
                     {},
                 )
             },
             // #174: the share screen moves on with its invite
-            "share-asked" to { ShareScreen(readyInvite, {}, {}, {}, progress = InviteProgress.Asked(request)) },
+            "share-asked" to { ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Asked(request)) },
             "share-following" to {
-                ShareScreen(readyInvite, {}, {}, {}, progress = InviteProgress.Following(followers[0]))
+                ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Following(followers[0]))
             },
-            "share-denied" to { ShareScreen(readyInvite, {}, {}, {}, progress = InviteProgress.Denied("Dad")) },
-            "share-expired" to { ShareScreen(readyInvite, {}, {}, {}, progress = InviteProgress.Expired) },
+            "share-denied" to { ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Denied("Dad")) },
+            "share-expired" to { ShareScreen(readyInvite, { _, _ -> }, {}, {}, progress = InviteProgress.Expired) },
             "followers" to { FollowersPage(sharing, FollowersActions()) },
             "nearby-pair" to {
                 NearbyPage(
@@ -336,6 +340,8 @@ class SharingScreenshotTest {
                     now = { 1_761_600_000 },
                 )
             },
+            // the owner's case (docs/40): someone follows, Nearby devices doesn't cover advertising
+            "nearby-permission" to { NearbyPage(sharing, NearbyUi(status = NearbyStatus.NeedsPermission), FollowersActions()) },
             "nearby-off" to { NearbyPage(sharing, NearbyUi(on = false), FollowersActions()) },
             "nearby-bluetooth-off" to { NearbyPage(sharing, NearbyUi(status = NearbyStatus.BluetoothOff), FollowersActions()) },
             "followers-bluetooth-off" to
@@ -398,7 +404,7 @@ class SharingScreenshotTest {
                 ApproveDialog(
                     request.copy(nearby = true, code = "021472", label = ""),
                     working = false,
-                    onAllow = {},
+                    onAllow = { _, _ -> },
                     onDeny = {},
                     onLater = {},
                     time = ::utcTime,
@@ -407,30 +413,38 @@ class SharingScreenshotTest {
             "followers-empty" to {
                 FollowersPage(OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0), FollowersActions())
             },
-            "follower-dialog" to {
-                FollowerDialog(followers[0], nearby = null, writer = true, refused = false, onWriter = {}, onRemove = {}, onClose = {})
+            "follower-sheet" to {
+                FollowerSheet(followers[0], nearby = null, writer = true, refused = false, onWriter = {}, onRemove = {}, onClose = {})
             },
             "approve" to
-                { ApproveDialog(request, working = false, onAllow = {}, onDeny = {}, onLater = {}, time = ::utcTime) },
+                { ApproveDialog(request, working = false, onAllow = { _, _ -> }, onDeny = {}, onLater = {}, time = ::utcTime) },
             // #173: a long label stays whole (two lines), the hint wraps under it
             "approve-long-label" to {
                 ApproveDialog(
                     request.copy(name = "Maurici", label = "Maurici's MacBook Pro at the office"),
                     working = false,
-                    onAllow = {},
+                    onAllow = { _, _ -> },
                     onDeny = {},
                     onLater = {},
                     time = ::utcTime,
                 )
             },
+            // the invite was made with Let them add treatments: the switch starts on
+            "approve-writer" to {
+                ApproveDialog(request.copy(writer = true), working = false, onAllow = {
+                    _,
+                    _,
+                    ->
+                }, onDeny = {}, onLater = {}, time = ::utcTime)
+            },
             "approve-no-label" to {
-                ApproveDialog(request.copy(label = ""), working = false, onAllow = {}, onDeny = {}, onLater = {}, time = ::utcTime)
+                ApproveDialog(request.copy(label = ""), working = false, onAllow = { _, _ -> }, onDeny = {}, onLater = {}, time = ::utcTime)
             },
             "approve-leaked" to {
                 ApproveDialog(
                     request.copy(others = 2),
                     working = false,
-                    onAllow = {},
+                    onAllow = { _, _ -> },
                     onDeny = {},
                     onLater = {},
                     time = ::utcTime,

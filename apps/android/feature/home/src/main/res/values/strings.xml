@@ -91,7 +91,7 @@
     <string name="banner_updates_not_now">Not now</string>
     <string name="banner_updates_on">Sukrara checks for updates once a day. Settings › About changes it.</string>
     <string name="banner_clinic_title">Share your data with your clinic</string>
-    <string name="banner_clinic_text">Upload your readings and entries to LibreView or Tidepool so your care team sees them.</string>
+    <string name="banner_clinic_text">Upload your readings and treatments to LibreView or Tidepool so your care team sees them.</string>
     <string name="banner_clinic_libreview">LibreView</string>
     <string name="banner_clinic_tidepool">Tidepool</string>
 
@@ -122,14 +122,14 @@
     <string name="home_treatment_long">%1$s long insulin</string>
     <string name="home_treatment_carbs">%1$s carbs</string>
     <string name="home_treatment_note">Note</string>
-    <!-- TalkBack: an entry an insulin pen logged (its row's pen icon) -->
+    <!-- TalkBack: a treatment an insulin pen logged (its row's pen icon) -->
     <string name="home_treatment_pen_source">from the pen</string>
-    <!-- TalkBack: what tapping a pen entry's row does -->
+    <!-- TalkBack: what tapping a pen treatment's row does -->
     <string name="home_pen_open">show its doses</string>
-    <string name="home_pen_changed">Entry changed</string>
+    <string name="home_pen_changed">Treatment changed</string>
     <string name="home_pen_removed">Removed from your log</string>
-    <string name="home_pen_changed_since">This entry changed meanwhile. Nothing was saved.</string>
-    <string name="home_pen_undo_failed">Couldn\'t undo: the entry changed since</string>
+    <string name="home_pen_changed_since">This treatment changed meanwhile. Nothing was saved.</string>
+    <string name="home_pen_undo_failed">Couldn\'t undo: the treatment changed since</string>
     <!-- TalkBack: what a tap on a treatment row does -->
     <string name="home_treatment_edit">edit</string>
     <string name="home_treatment_sending">Sending…</string>
@@ -146,14 +146,14 @@
     <!-- #207: the list's "view more" and the history page -->
     <string name="home_treatments_see_all">See all</string>
     <string name="home_treatments_none_today">Nothing logged in the last 24 hours</string>
-    <!-- TalkBack: %1$s = "142 milligrams per decilitre, rising": the glucose when the entry was logged -->
+    <!-- TalkBack: %1$s = "142 milligrams per decilitre, rising": the glucose when the treatment was logged -->
     <string name="home_treatment_glucose_then">glucose then %1$s</string>
     <string name="history_title">Treatments</string>
     <string name="history_today">Today</string>
     <string name="history_yesterday">Yesterday</string>
     <string name="history_empty">No treatments in the last 31 days</string>
-    <string name="history_empty_hint">Entries you log, and doses your pen reads, show up here.</string>
-    <string name="history_footer">The last 31 days. Older entries are in your export and in LibreView or Tidepool if you upload there.</string>
+    <string name="history_empty_hint">Treatments you log, and doses your pen reads, show up here.</string>
+    <string name="history_footer">The last 31 days. Older treatments are in your export and in LibreView or Tidepool if you upload there.</string>
     <string name="history_back">Back</string>
     <string name="home_undo">Undo</string>
 

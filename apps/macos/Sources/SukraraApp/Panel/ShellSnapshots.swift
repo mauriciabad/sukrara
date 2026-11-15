@@ -54,7 +54,7 @@
                 link: LinkState = .following(wearer: "Marta", canWrite: true), readings: [Reading],
                 setup: SetupFlow = done, permission: NotificationPermission = .allowed,
                 mode: LaunchMode = .normal, scroll: ChartScroll = ChartScroll(),
-                keychainUnreadable: Bool = false, update: Updates.Reminder = .none,
+                keychainUnreadable: Bool = false, update: Updates.Reminder = .none, nearby: NearbyState? = nil,
                 act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
@@ -74,6 +74,7 @@
                 snapshot.link = link
                 snapshot.readings = readings
                 snapshot.keychainUnreadable = keychainUnreadable
+                snapshot.nearby = nearby
                 let start = Int(now.timeIntervalSince1970) - 6 * 86400
                 snapshot.sensor = WearerSensor(start: start, end: start + 14 * 86400, warmupEnd: start + 3600)
                 model.apply(snapshot)
@@ -174,6 +175,8 @@
                         setup: SetupFlow(states: [.welcome: .done, .follow: .skipped, .alerts: .done]))
                 ),
                 ("panel-notifications-off", scene(readings: ending(105, rate: 0), permission: .denied)),
+                // following, Bluetooth not allowed: the blocked feature with its ways out (docs/40)
+                ("panel-bluetooth-blocked", scene(readings: ending(112, rate: -0.4), nearby: .unauthorized)),
                 // a scheduled check found an update (gentle reminder), then the same once it is downloaded
                 (
                     "panel-update-available",

@@ -62,6 +62,7 @@ struct PanelView: View {
                     SetupRows(links: links, needsFollow: model.needsFollow && !linkAction)
                 }
                 if model.notificationPermission.needsAttention { notificationsWarning }
+                if let blocked = model.blocked.first { blockedWarning(blocked) }
                 if let failed = model.alerts?.failedSteps, !failed.isEmpty { alertNotShownWarning(failed) }
                 if let alerts = model.alerts {
                     NightRow(alerts: alerts, open: links.map { l in { l.openSettingsPane(.alerts) } })
@@ -115,6 +116,32 @@ struct PanelView: View {
             .fixedSize(horizontal: false, vertical: true)
             Button(L10n.t("Copy Report")) { AlertReport.copy(failed) }
         }
+    }
+
+    /// A feature macOS blocks (docs/40): what it costs, the way to allow it, and Turn Off or Not Now beside it.
+    private func blockedWarning(_ feature: BlockedFeature) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(feature.title, systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+            Text(feature.text)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack {
+                Button(feature.allow) {
+                    switch feature {
+                    case .bluetoothFollowing: BlockedFeature.openBluetoothSettings()
+                    case .openAtLogin: model.loginItem?.openSettings()
+                    }
+                }
+                if feature.canTurnOff {
+                    Button(L10n.t("Turn Off")) { model.loginItem?.set(false) }
+                } else {
+                    Button(L10n.t("Not Now")) { model.notNowBlocked.insert(feature) }
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
     }
 
     private var notificationsWarning: some View {
@@ -418,7 +445,7 @@ enum AddTreatmentAvailability: Equatable {
     case notFollowing
     /// Access asked, the wearer hasn't allowed this Mac yet.
     case waiting(wearer: String?)
-    /// Following, but the wearer hasn't turned on "Can add entries" for this Mac.
+    /// Following, but the wearer hasn't turned on "Can add treatments" for this Mac.
     case notWriter(wearer: String?)
     /// The wearer stopped sharing with this Mac.
     case revoked
@@ -449,8 +476,8 @@ enum AddTreatmentAvailability: Equatable {
         case .notFollowing: L10n.t("Follow someone to add treatments.")
         case .waiting(let w?): L10n.t("Waiting for \(w) to approve this Mac")
         case .waiting(nil): L10n.t("Waiting for the wearer to approve this Mac")
-        case .notWriter(let w?): L10n.t("\(w) hasn't turned on “Can add entries” for this Mac")
-        case .notWriter(nil): L10n.t("The wearer hasn't turned on “Can add entries” for this Mac")
+        case .notWriter(let w?): L10n.t("\(w) hasn't turned on “Can add treatments” for this Mac")
+        case .notWriter(nil): L10n.t("The wearer hasn't turned on “Can add treatments” for this Mac")
         case .revoked: L10n.t("The wearer stopped sharing with this Mac")
         case .ended: L10n.t("Not following anyone: ask for a new invite")
         case .keyUnreadable: L10n.t("Can't add treatments until the follower key can be read")

@@ -4,6 +4,9 @@
 package app.mauri.sukrara.feature.sharing.setup
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
@@ -80,6 +83,8 @@ import app.mauri.sukrara.designsystem.rows.whyRes
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.restore.IdentityStep
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.share.ble.AndroidNearbyCentral
+import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.follower.NearbyOffer
 import androidx.compose.ui.semantics.Role as SemanticsRole
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -555,12 +560,48 @@ private fun ColumnScope.PermissionsStep(
             }
         })
     }
+    // a follower's Bluetooth path, the internet's backup: asked here with the rest (docs/40), never needed to go on
+    if (u.facts.role == Role.Follower) NearbyFollowRow()
     actions.sendTestAlert?.let { TestAlertCard(it) }
     val allOk = items.none { it in u.readiness.missing }
     StepButtons(
         stringResource(if (allOk) R.string.sh_setup_continue else R.string.sh_setup_permissions_continue_anyway),
         actions.completePermissions,
         secondary = if (allOk) emptyList() else listOf(stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Permissions) }),
+    )
+}
+
+/**
+ * *Nearby devices* on a follower's phone: readings over Bluetooth when the wearer's internet is down. *Allow* asks the
+ * system dialog the first time, then opens the app's settings page; it rereads on the way back.
+ */
+@Composable
+private fun NearbyFollowRow() {
+    val context = LocalContext.current
+    val permissions = AndroidNearbyCentral.PERMISSIONS
+
+    fun granted() = permissions.all { context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
+    var ok by remember { mutableStateOf(granted()) }
+    var asked by rememberSaveable { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        ok = granted()
+        onPauseOrDispose { }
+    }
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { ok = granted() }
+    ChecklistRow(
+        stringResource(DsR.string.ds_blocked_nearby_follow),
+        stringResource(DsR.string.ds_blocked_nearby_follow_why),
+        ok,
+        onFix = {
+            if (!asked) {
+                asked = true
+                ask.launch(permissions.toTypedArray())
+            } else {
+                context.startSafely(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)),
+                )
+            }
+        },
     )
 }
 
@@ -572,9 +613,17 @@ private fun ChecklistRow(
     /** A choice, not a requirement ([AlertRequirement.DoNotDisturb]): a neutral icon instead of the tick / to-do. */
     choice: Boolean = false,
     below: @Composable () -> Unit = {},
+) = ChecklistRow(stringResource(r.nameRes()), stringResource(r.whyRes()), ok, onFix, choice, below)
+
+@Composable
+private fun ChecklistRow(
+    title: String,
+    why: String,
+    ok: Boolean,
+    onFix: (() -> Unit)?,
+    choice: Boolean = false,
+    below: @Composable () -> Unit = {},
 ) {
-    val title = stringResource(r.nameRes())
-    val why = stringResource(r.whyRes())
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         modifier = Modifier.fillMaxWidth(),
@@ -653,12 +702,14 @@ private fun TestAlertCard(send: () -> Unit) {
 
 /**
  * The runtime permissions the system dialog can grant for [r] (asked in context the first time), or null. Nearby devices
- * is connecting and scanning: one dialog for both, as the new-sensor flow asks (the checklist checks both).
+ * on the wearer's phone is the sensor's connecting and scanning and Bluetooth sharing's advertising (on by default):
+ * one dialog for all three, so the first follower gets readings nearby without another question (docs/40: Android
+ * grants only what is asked, the group's dialog covers none of the others).
  */
 private fun runtimePermissions(r: AlertRequirement): Array<String>? =
     when (r) {
         AlertRequirement.Notifications -> arrayOf(android.Manifest.permission.POST_NOTIFICATIONS)
-        AlertRequirement.Bluetooth -> arrayOf(android.Manifest.permission.BLUETOOTH_CONNECT, android.Manifest.permission.BLUETOOTH_SCAN)
+        AlertRequirement.Bluetooth -> (AndroidNearbyCentral.PERMISSIONS + AndroidNearbyServer.PERMISSIONS).distinct().toTypedArray()
         else -> null
     }
 

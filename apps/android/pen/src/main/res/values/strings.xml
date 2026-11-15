@@ -10,7 +10,7 @@
     <string name="pen_kind_long">Long</string>
     <string name="pen_primed">%1$s primed</string>
     <string name="pen_added">%1$s added</string>
-    <string name="pen_read_replaced">Replaced your %1$s entry at %2$s</string>
+    <string name="pen_read_replaced">Replaced your %1$s treatment at %2$s</string>
     <string name="pen_read_since">%1$s since %2$s</string>
     <string name="pen_read_grew">Now %1$s</string>
     <string name="pen_read_nothing">Nothing new</string>
@@ -40,8 +40,8 @@
         <item quantity="other">%1$d injections logged</item>
     </plurals>
     <plurals name="pen_read_replaced_several">
-        <item quantity="one">%1$d replaced your entry</item>
-        <item quantity="other">%1$d replaced your entries</item>
+        <item quantity="one">%1$d replaced your treatment</item>
+        <item quantity="other">%1$d replaced your treatments</item>
     </plurals>
     <plurals name="pen_q_several">
         <item quantity="one">%1$d pen dose to check</item>
@@ -57,7 +57,7 @@
     <string name="pen_untested_added">Untested pen added</string>
     <string name="pen_untested_added_line">%1$s · check it once before Sukrara logs it</string>
     <string name="pen_set_up">Set up</string>
-    <string name="pen_matches_short">Matches your %1$s entry</string>
+    <string name="pen_matches_short">Matches your %1$s treatment</string>
     <string name="pen_read_big_since">Since %1$s</string>
     <string name="pen_review">Review</string>
     <string name="pen_kind_rapid_lower">rapid</string>
@@ -72,11 +72,11 @@
     <string name="pen_notif_public">Pen read</string>
     <string name="pen_read_failed_tip">Touch the phone where the circle is, take cards out of the case, and check the counter shows 0.</string>
     <string name="pen_read_first_slow">The first read takes a few seconds.</string>
-    <string name="pen_read_replaced_by">Replaced %1$s\'s %2$s entry at %3$s</string>
-    <string name="pen_read_replaced_other">Replaced the %1$s entry at %2$s</string>
+    <string name="pen_read_replaced_by">Replaced %1$s\'s %2$s treatment at %3$s</string>
+    <string name="pen_read_replaced_other">Replaced the %1$s treatment at %2$s</string>
     <plurals name="pen_m_nearby">
-        <item quantity="one">%1$d of your entries nearby</item>
-        <item quantity="other">%1$d of your entries nearby</item>
+        <item quantity="one">%1$d of your treatments nearby</item>
+        <item quantity="other">%1$d of your treatments nearby</item>
     </plurals>
     <string name="pen_read_clock_held">Not logged: %1$s. Check its doses.</string>
     <string name="pen_untested_title">Untested pen</string>
@@ -88,6 +88,6 @@
     <string name="pen_check_it">Check it</string>
     <string name="pen_notusable_title">Pen not usable</string>
     <string name="pen_notusable_text">%1$s didn\'t match its display, so Sukrara logs nothing from it. Type its doses by hand.</string>
-    <!-- A pen injection near several typed entries: opens home to choose which one it is [CHAR LIMIT=15] -->
+    <!-- A pen injection near several typed treatments: opens home to choose which one it is [CHAR LIMIT=15] -->
     <string name="pen_choose">Choose</string>
 </resources>

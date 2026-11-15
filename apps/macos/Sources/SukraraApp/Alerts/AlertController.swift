@@ -45,7 +45,7 @@ final class AlertController {
     var failedSteps: Set<String> = []
     /// `ui` changed (an alert came up or ended, a mute started or ran out): the widgets redraw the card's badge.
     @ObservationIgnored var onUIChange: (() -> Void)?
-    /// Whether this Mac can add entries now (following with *Can add entries*): the notifications then offer *Treatment*
+    /// Whether this Mac can add treatments now (following with *Can add treatments*): the notifications then offer *Treatment*
     /// (elsewhere Add Treatment couldn't open; the click already opens the panel).
     @ObservationIgnored var canLog: () -> Bool = { false }
     /// *Treatment* was chosen: Add Treatment focused on what answers the side (`AppDelegate`).

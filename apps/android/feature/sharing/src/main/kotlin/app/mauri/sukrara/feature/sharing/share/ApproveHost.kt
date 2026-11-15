@@ -11,7 +11,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.feature.sharing.rememberAskNearby
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.owner.ApproveResult
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -46,6 +48,9 @@ fun ApproveHost(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val putOff by later.ids.collectAsStateWithLifecycle()
     val approving by viewModel.approve.collectAsStateWithLifecycle()
+    val nearby by viewModel.nearby.collectAsStateWithLifecycle()
+    // the moment Bluetooth sharing becomes useful: the follower about to be allowed gets readings nearby too (docs/40)
+    val askNearby = rememberAskNearby(AndroidNearbyServer.PERMISSIONS, viewModel::refreshNearby)
     // an Allow that didn't happen says why, also when its request is gone (expired, used, sharing paused)
     approving?.refused?.let { refused ->
         ApproveRefusedDialog(approving!!.request, refused, onClose = viewModel::approveSeen)
@@ -55,7 +60,10 @@ fun ApproveHost(
     ApproveDialog(
         request,
         working = approving?.working == true && approving?.request?.follower == request.follower,
-        onAllow = { code -> viewModel.approve(request, code) },
+        onAllow = { code, writer ->
+            viewModel.approve(request, code, writer)
+            if (nearby.on) askNearby()
+        },
         onDeny = { viewModel.deny(request.follower) },
         onLater = { later.later(request.follower) },
     )

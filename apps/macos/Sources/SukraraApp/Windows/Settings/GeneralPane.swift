@@ -296,6 +296,9 @@ struct FollowingRows: View {
                     Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                 }
                 .fixedSize(horizontal: false, vertical: true)
+                if follow.bluetoothBlocked {
+                    Button(L10n.t("Open Bluetooth Settings")) { BlockedFeature.openBluetoothSettings() }
+                }
             }
             if let me = follow.me {
                 IdentityRow(me: me, wearer: wearer) { name, avatar in

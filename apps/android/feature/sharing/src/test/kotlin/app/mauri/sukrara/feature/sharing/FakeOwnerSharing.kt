@@ -103,15 +103,19 @@ class FakeOwnerSharing(
         return restoreResult
     }
 
-    override suspend fun createInvite(label: String): Invite? {
-        calls += "invite:$label"
+    override suspend fun createInvite(label: String, writer: Boolean): Invite? {
+        calls += "invite:$label" + if (writer) ":writer" else ""
         return invite
     }
 
     var approveResult = ApproveResult.Allowed
 
-    override suspend fun approve(follower: String, typedCode: String?): ApproveResult {
-        calls += "approve:$follower" + (typedCode?.let { ":$it" } ?: "")
+    override suspend fun approve(
+        follower: String,
+        typedCode: String?,
+        writer: Boolean?,
+    ): ApproveResult {
+        calls += "approve:$follower" + (typedCode?.let { ":$it" } ?: "") + if (writer == true) ":writer" else ""
         return approveResult
     }
 

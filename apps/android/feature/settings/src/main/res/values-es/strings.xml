@@ -582,7 +582,7 @@
     <string name="st_overview_pens">NovoPen · acércala para registrar insulina</string>
     <string name="st_pens_reading">Leer plumas de insulina</string>
     <string name="st_pens_reading_ask">Desactivado · pregunta cuando tocas una pluma</string>
-    <string name="st_pens_reading_footer">Acerca la pluma a la parte trasera del móvil, desbloqueado, desde cualquier app: Sukrara registra la insulina inyectada y separa el purgado. Desactivado: acercar la pluma no hace nada; tus plumas y registros se mantienen.</string>
+    <string name="st_pens_reading_footer">Acerca la pluma a la parte trasera del móvil, desbloqueado, desde cualquier app: Sukrara registra la insulina inyectada y separa el purgado. Desactivado: acercar la pluma no hace nada; tus plumas y tratamientos se mantienen.</string>
     <string name="st_pens_notify">Notificación tras cada lectura</string>
     <string name="st_pens_notify_summary">Con Deshacer y Añadir tratamiento. Las dosis por revisar siempre notifican.</string>
     <string name="st_pens_detection">Detección automática</string>
@@ -603,7 +603,7 @@
     <string name="st_pens_priming_footer">Las dosis menores que esto antes de una mayor son purgado; después, se suman a ella. Las dosis pequeñas así de antes de una inyección también son su purgado.</string>
     <string name="st_pens_injections_footer">Las dosis así de cercanas son una inyección. Las dosis pequeñas sueltas esperan este tiempo a una inyección antes de que Sukrara pregunte. La última inyección de una pluma nueva se ofrece para registrar si es así de reciente.</string>
     <string name="st_pens_typed_footer">Una dosis que escribiste así de cerca de una de la pluma, y de cantidad parecida, se sustituye por la de la pluma.</string>
-    <string name="st_pens_reset_text">Cada regla de esta página vuelve a su valor predeterminado. Las entradas ya registradas no cambian.</string>
+    <string name="st_pens_reset_text">Cada regla de esta página vuelve a su valor predeterminado. Los tratamientos ya registrados no cambian.</string>
     <string name="st_pens_reset_title">¿Restablecer la detección automática?</string>
     <string name="st_pens_reset_confirm">Restablecer</string>
     <string name="st_pens_supported">Sukrara lee NovoPen Echo Plus y NovoPen 6 (sin probar: aún no se registra). Otras plumas NFC, y plumas o capuchones Bluetooth como Tempo, InPen o Mallya, no son compatibles.</string>
@@ -632,8 +632,8 @@
     <string name="st_pen_logged">Registrado</string>
     <string name="st_pen_changed_since">Algo cambió mientras tanto. No se registró nada.</string>
     <string name="st_pen_removed">Quitado de tu registro</string>
-    <string name="st_pen_entry_changed">Entrada cambiada</string>
-    <string name="st_pen_undo_failed">No se pudo deshacer: la entrada cambió</string>
+    <string name="st_pen_entry_changed">Tratamiento cambiado</string>
+    <string name="st_pen_undo_failed">No se pudo deshacer: el tratamiento cambió</string>
     <string name="st_pen_undo">Deshacer</string>
     <string name="st_pen_review_title">Revisar lectura</string>
     <string name="st_pen_review_row">Revisar la última lectura</string>
@@ -647,13 +647,13 @@
     <string name="st_pen_undo_read">Deshacer esta lectura</string>
     <string name="st_pen_undo_read_title">¿Deshacer esta lectura?</string>
     <plurals name="st_pen_undo_read_text">
-        <item quantity="one">Su entrada sale de tu registro (vuelve la entrada tuya que sustituyó). Puedes volver a registrar cada dosis aquí.</item>
-        <item quantity="many">Sus %1$d entradas salen de tu registro (vuelven las entradas tuyas que sustituyeron). Puedes volver a registrar cada una aquí.</item>
-        <item quantity="other">Sus %1$d entradas salen de tu registro (vuelven las entradas tuyas que sustituyeron). Puedes volver a registrar cada una aquí.</item>
+        <item quantity="one">Su tratamiento sale de tu registro (vuelve el tuyo que sustituyó). Puedes volver a registrar cada dosis aquí.</item>
+        <item quantity="many">Sus %1$d tratamientos salen de tu registro (vuelven los tuyos que sustituyeron). Puedes volver a registrar cada dosis aquí.</item>
+        <item quantity="other">Sus %1$d tratamientos salen de tu registro (vuelven los tuyos que sustituyeron). Puedes volver a registrar cada dosis aquí.</item>
     </plurals>
     <string name="st_pen_undo_read_confirm">Deshacer lectura</string>
     <string name="st_pen_read_undone">Lectura deshecha: sus dosis no están registradas</string>
-    <string name="st_pen_undo_read_changed">No se pudo deshacer: algunas de estas entradas cambiaron después. Corrige cada una en su hoja.</string>
+    <string name="st_pen_undo_read_changed">No se pudo deshacer: algunos de estos tratamientos cambiaron después. Corrige cada uno en su hoja.</string>
     <string name="st_pen_undo_read_gone">No queda nada que deshacer de esa lectura</string>
     <string name="st_pen_untested_tag">Modelo sin probar</string>
     <string name="st_pen_model">Modelo: %1$s</string>
@@ -683,8 +683,8 @@
     <string name="st_pen_check_no">No</string>
     <string name="st_pen_check_yes">Coincide</string>
     <string name="st_pen_offer">Última inyección antes de Sukrara: %1$s a las %2$s</string>
-    <string name="st_pen_matches">Coincide con tu entrada de %1$s a las %2$s</string>
-    <string name="st_pen_replace_entry">Reemplazar tu entrada</string>
+    <string name="st_pen_matches">Coincide con tu tratamiento de %1$s a las %2$s</string>
+    <string name="st_pen_replace_entry">Reemplazar tu tratamiento</string>
     <string name="st_pen_log_it">Registrarla</string>
     <string name="st_pen_totals">Últimos 30 días: %1$s registradas, %2$s de purgado</string>
     <string name="st_pen_no_doses">Aún no hay dosis leídas</string>
@@ -694,7 +694,7 @@
     <string name="st_pen_yesterday">Ayer</string>
     <string name="st_pen_h_logged">Registrada</string>
     <string name="st_pen_h_logged_primed">Registrada · %1$s de purgado</string>
-    <string name="st_pen_h_merged">Registrada · reemplazó tu entrada de %1$s</string>
+    <string name="st_pen_h_merged">Registrada · reemplazó tu tratamiento de %1$s</string>
     <string name="st_pen_h_corrected">Registrada · cambiada por ti</string>
     <string name="st_pen_h_priming">Solo purgado</string>
     <string name="st_pen_h_same">¿La misma inyección?</string>
@@ -707,7 +707,7 @@
     <string name="st_pen_h_incomplete">%1$s · incompleta</string>
     <string name="st_pen_seg_priming">Purgado</string>
     <string name="st_pen_nothing_injected">Nada inyectado</string>
-    <string name="st_pen_add_to_entry">Añadir a la entrada de las %1$s</string>
+    <string name="st_pen_add_to_entry">Añadir al tratamiento de las %1$s</string>
     <string name="st_pen_log_as_injection">Registrar como inyección</string>
     <string name="st_pen_log_injection">Registrar esta inyección</string>
     <plurals name="st_pen_older">
@@ -721,14 +721,14 @@
         <item quantity="other">%1$d horas</item>
     </plurals>
     <string name="st_pen_earlier_doses">Dosis anteriores</string>
-    <string name="st_pen_changed_since_open">Esa entrada cambió o se borró mientras tanto</string>
+    <string name="st_pen_changed_since_open">Ese tratamiento cambió o se borró mientras tanto</string>
     <string name="st_updates_banner_title">Mantén Sukrara al día</string>
     <string name="st_updates_banner_text">Sukrara puede preguntar a GitHub una vez al día si hay una versión nueva y avisarte. Las actualizaciones llegan de GitHub, fuera de cualquier tienda de apps, y no se instala nada sin tu permiso. Una versión antigua puede dejar de compartir.</string>
     <string name="st_updates_banner_turn_on">Activar</string>
     <string name="st_updates_banner_not_now">Ahora no</string>
     <string name="st_updates_banner_on">Sukrara busca actualizaciones una vez al día. Se cambia en Acerca de.</string>
     <string name="st_clinic_title">Comparte tus datos con tu clínica</string>
-    <string name="st_clinic_text">Sube tus lecturas y anotaciones a LibreView o Tidepool para que tu equipo médico las vea.</string>
+    <string name="st_clinic_text">Sube tus lecturas y tratamientos a LibreView o Tidepool para que tu equipo médico los vea.</string>
     <string name="st_clinic_libreview">LibreView</string>
     <string name="st_clinic_tidepool">Tidepool</string>
     <!-- Settings › Alerts › Lately: the alerts' recent history -->

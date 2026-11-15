@@ -9,6 +9,7 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SystemAccessPort
@@ -62,6 +63,8 @@ class SettingsModule(
     overviewSharing: Flow<OverviewSharing> = flowOf(OverviewSharing()),
     settingsFrom: SettingsFromPort = SettingsFromPort.None,
     sensorCalendar: () -> SensorCalendarPort = { SensorCalendarPort.None },
+    /** The features Android blocks ([SettingsDeps.featureChecks]); a function: it reads the role's modules. */
+    featureChecks: () -> FeatureChecksSource = { FeatureChecksSource.None },
     /** Other features' rows the settings search finds ([SettingsDeps.moreSearch]). */
     moreSearch: List<SearchEntry> = emptyList(),
 ) {
@@ -80,6 +83,7 @@ class SettingsModule(
             override val sensor = sensor
             override val recent = recent
             override val appsShared = appsShared
+            override val featureChecks: FeatureChecksSource by lazy { featureChecks() }
             override val systemAccess = systemAccess
             override val alertPlayback = alertPlayback
 

@@ -11,6 +11,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
@@ -77,6 +78,8 @@ class HomeModule(
     private val sharing: () -> Flow<OwnerShareState> = { emptyFlow() },
     /** The NFC taps that are on but blocked by Android (home's banner); read on every resume. */
     private val tapsBlocked: suspend () -> BlockedTaps = { BlockedTaps() },
+    /** The features Android blocks (home's banner after the taps one, docs/40). */
+    override val featureChecks: FeatureChecksSource = FeatureChecksSource.None,
     /** A pen entry with its doses (any role), for home's pen entry sheet. */
     private val penEntryOf: suspend (String) -> PenEntryInfo? = { null },
     /** The pens on this phone while they can be used (the wearer's with NFC), else null: the sheet is read only. */
@@ -144,6 +147,7 @@ class HomeModule(
         }
         scope.launch { clinicUploadSet().collect { set -> env.update { it.copy(clinicUploadSet = set) } } }
         scope.launch { updateChecksOff().collect { off -> env.update { it.copy(updateChecksOff = off) } } }
+        scope.launch { featureChecks.blocked.collect { b -> env.update { it.copy(blocked = b) } } }
     }
 
     override val profile: Flow<HomeProfile?> by lazy {
@@ -175,6 +179,7 @@ class HomeModule(
     fun refresh() {
         readinessSource.refresh()
         refreshSetup()
+        featureChecks.refresh()
         env.update { it.copy(widgetPlaced = widgetPlaced(), widgetPinnable = widgetPinnable()) }
         scope.launch { runCatching { tapsBlocked() }.getOrNull()?.let { b -> env.update { it.copy(tapsBlocked = b) } } }
     }

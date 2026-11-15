@@ -7,7 +7,7 @@
     <string name="ds_cancel">Cancelar</string>
     <string name="ds_delete">Borrar</string>
     <string name="ds_undo">Deshacer</string>
-    <!-- a pen entry's note field in its sheet -->
+    <!-- a pen treatment's note field in its sheet -->
     <string name="ds_pen_note">Nota</string>
     <string name="ds_dismiss">Descartar</string>
     <string name="ds_custom">Personalizado…</string>
@@ -65,6 +65,23 @@
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">El sensor envía las lecturas por Bluetooth.</string>
 
+    <!-- Una función activada que Android bloquea (docs/40): el aviso de inicio y la fila de Ajustes que lleva a su página -->
+    <string name="ds_blocked_bluetooth_sharing">Compartir por Bluetooth está bloqueado</string>
+    <string name="ds_blocked_bluetooth_sharing_text">Permite Dispositivos cercanos para que quien te sigue cerca reciba tus lecturas sin internet.</string>
+    <string name="ds_blocked_bluetooth_following">El Bluetooth está bloqueado</string>
+    <string name="ds_blocked_bluetooth_following_text">Permite Dispositivos cercanos para que las lecturas sigan llegando por Bluetooth cuando estés cerca y no haya internet.</string>
+    <string name="ds_blocked_health_connect">Health Connect está bloqueado</string>
+    <string name="ds_blocked_health_connect_text">Health Connect ya no deja a Sukrara escribir tu glucosa.</string>
+    <string name="ds_blocked_home_network">El acceso al Wi-Fi de casa está bloqueado</string>
+    <string name="ds_blocked_home_network_text">Permite Dispositivos cercanos para que los dispositivos de tu Wi-Fi puedan leer la API de Nightscout.</string>
+    <!-- Las salidas de una función bloqueada [CHAR LIMIT=15] -->
+    <string name="ds_blocked_allow">Permitir</string>
+    <string name="ds_blocked_turn_off">Desactivar</string>
+    <string name="ds_blocked_not_now">Ahora no</string>
+    <!-- El paso de permisos en el móvil de quien sigue: el Bluetooth como respaldo de internet -->
+    <string name="ds_blocked_nearby_follow">Dispositivos cercanos</string>
+    <string name="ds_blocked_nearby_follow_why">Lecturas por Bluetooth cuando estés cerca y no haya internet.</string>
+
     <!-- Mute / remind-less lines (contracts/alerts/copy.json; MuteText, AlertCopyTest). Side names fill %1$s. -->
     <string name="side_low">Bajas</string>
     <string name="side_high">Altas</string>
@@ -114,7 +131,7 @@
     <string name="ds_err_refused">El servicio no ha aceptado los datos.</string>
     <string name="ds_err_address">Esa dirección no funciona. Revísala, incluido https://.</string>
     <string name="ds_err_other">Algo ha fallado. Inténtalo de nuevo.</string>
-    <!-- A pen entry's sheet (Settings › Insulin pens › Doses read, home's pen rows) -->
+    <!-- A pen treatment's sheet (Settings › Insulin pens › Doses read, home's pen rows) -->
     <string name="ds_pen_priming">Purgado</string>
     <string name="ds_pen_injected">Inyectado</string>
     <!-- %1$s time, %2$s amount in words, %3$s Priming / Injected -->
@@ -125,7 +142,7 @@
     <string name="ds_pen_nothing_injected">Nada inyectado</string>
     <string name="ds_pen_from_pen">De la pluma</string>
     <string name="ds_pen_primed">%1$s de purgado</string>
-    <string name="ds_pen_replaced">Reemplazó tu entrada de %1$s a las %2$s</string>
+    <string name="ds_pen_replaced">Reemplazó tu tratamiento de %1$s a las %2$s</string>
     <string name="ds_pen_remove">Quitar del registro</string>
     <string name="ds_pen_save">Guardar</string>
     <string name="ds_pen_done">Hecho</string>
@@ -144,9 +161,9 @@
     <string name="ds_pen_q_same_one">Pluma %1$s a las %2$s · tuya %3$s a las %4$s</string>
     <string name="ds_pen_q_same_line">Pluma %1$s a las %2$s</string>
     <plurals name="ds_pen_q_nearby">
-        <item quantity="one">%d entrada escrita cerca</item>
-        <item quantity="many">%d entradas escritas cerca</item>
-        <item quantity="other">%d entradas escritas cerca</item>
+        <item quantity="one">%d tratamiento escrito cerca</item>
+        <item quantity="many">%d tratamientos escritos cerca</item>
+        <item quantity="other">%d tratamientos escritos cerca</item>
     </plurals>
     <plurals name="ds_pen_q_more">
         <item quantity="one">%d más por revisar</item>
@@ -159,12 +176,12 @@
     <string name="ds_pen_q_different">Inyecciones distintas</string>
     <string name="ds_pen_q_choose">Elegir</string>
     <string name="ds_pen_q_sheet_pen">Tu pluma: %1$s a las %2$s</string>
-    <string name="ds_pen_q_sheet_ask">¿Es una de las entradas que escribiste? Esa entrada pasa a ser la de la pluma, así la dosis no se registra dos veces.</string>
+    <string name="ds_pen_q_sheet_ask">¿Es uno de los tratamientos que escribiste? Ese pasa a ser el de la pluma, así la dosis no se registra dos veces.</string>
     <string name="ds_pen_q_candidate">%1$s a las %2$s</string>
-    <string name="ds_pen_q_by_phone">Escrita en este móvil</string>
-    <string name="ds_pen_q_by_mac">Escrita en el Mac</string>
-    <string name="ds_pen_q_by_follower">Añadida por alguien que te sigue</string>
-    <string name="ds_pen_q_none">Ninguna</string>
+    <string name="ds_pen_q_by_phone">Escrito en este móvil</string>
+    <string name="ds_pen_q_by_mac">Escrito en el Mac</string>
+    <string name="ds_pen_q_by_follower">Añadido por alguien que te sigue</string>
+    <string name="ds_pen_q_none">Ninguno</string>
     <string name="ds_pen_q_none_text">Registrar la dosis de la pluma como una inyección aparte</string>
     <!-- A build that isn't a published release (AppBuildInfo.developmentText): "Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov" -->
     <string name="ds_version_development">Versión de desarrollo</string>

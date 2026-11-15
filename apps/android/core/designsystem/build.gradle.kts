@@ -19,6 +19,8 @@ dependencies {
     // ScreenHost: the back gesture (predictive back) and each screen's lifecycle
     implementation(libs.androidx.navigationevent.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    // a blocked feature's Allow asks the system's permission dialog (rememberAllowFeature, docs/40)
+    implementation(libs.androidx.activity.compose)
     // the settings pages, rows and dialogs are the stock Settings app's Compose components (rows/, #168); features
     // place SPA's own pieces (paddings, theme) beside the rows
     api(project(":settingslib-spa"))

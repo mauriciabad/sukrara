@@ -249,7 +249,7 @@ interface PensPort {
         id: String,
     ): Boolean
 
-    /** The hand-typed entry logging [units] at [t] would replace (*Matches your 8u entry at 13:10*). */
+    /** The hand-typed entry logging [units] at [t] would replace (*Matches your 8u treatment at 13:10*). */
     suspend fun match(
         serial: String,
         t: Long,

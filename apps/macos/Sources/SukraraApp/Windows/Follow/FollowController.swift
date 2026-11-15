@@ -110,6 +110,8 @@ public final class FollowModel {
     public var source: String?
     /// The newest problem with the link in words (Bluetooth not allowed, a damaged file moved aside), nil = none.
     public var problem: String?
+    /// Bluetooth isn't allowed while following: the problem line offers System Settings (docs/40).
+    public var bluetoothBlocked = false
     @ObservationIgnored private weak var actions: (any FollowActions)?
     /// Look for phones offering nearby pairing (on while a follow step is on screen and not following).
     @ObservationIgnored public var searchNearby: (Bool) -> Void = { _ in }

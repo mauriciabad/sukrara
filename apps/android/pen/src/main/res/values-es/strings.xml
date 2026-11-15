@@ -10,7 +10,7 @@
     <string name="pen_kind_long">Lenta</string>
     <string name="pen_primed">%1$s purgadas</string>
     <string name="pen_added">%1$s añadidas</string>
-    <string name="pen_read_replaced">Sustituye tu entrada de %1$s de las %2$s</string>
+    <string name="pen_read_replaced">Sustituye tu tratamiento de %1$s de las %2$s</string>
     <string name="pen_read_since">%1$s desde %2$s</string>
     <string name="pen_read_grew">Ahora %1$s</string>
     <string name="pen_read_nothing">Nada nuevo</string>
@@ -40,8 +40,8 @@
         <item quantity="other">%1$d inyecciones registradas</item>
     </plurals>
     <plurals name="pen_read_replaced_several">
-        <item quantity="one">%1$d sustituye tu entrada</item>
-        <item quantity="other">%1$d sustituyen tus entradas</item>
+        <item quantity="one">%1$d sustituye tu tratamiento</item>
+        <item quantity="other">%1$d sustituyen tus tratamientos</item>
     </plurals>
     <plurals name="pen_q_several">
         <item quantity="one">%1$d dosis de la pluma por revisar</item>
@@ -57,7 +57,7 @@
     <string name="pen_untested_added">Pluma sin probar añadida</string>
     <string name="pen_untested_added_line">%1$s · compruébala una vez para que Sukrara la registre</string>
     <string name="pen_set_up">Configurar</string>
-    <string name="pen_matches_short">Coincide con tu entrada de %1$s</string>
+    <string name="pen_matches_short">Coincide con tu tratamiento de %1$s</string>
     <string name="pen_read_big_since">Desde el %1$s</string>
     <string name="pen_review">Revisar</string>
     <string name="pen_kind_rapid_lower">rápida</string>
@@ -72,11 +72,11 @@
     <string name="pen_notif_public">Pluma leída</string>
     <string name="pen_read_failed_tip">Toca el teléfono donde está el círculo, saca las tarjetas de la funda y comprueba que el contador marca 0.</string>
     <string name="pen_read_first_slow">La primera lectura tarda unos segundos.</string>
-    <string name="pen_read_replaced_by">Sustituye la entrada de %1$s de %2$s de las %3$s</string>
-    <string name="pen_read_replaced_other">Sustituye la entrada de %1$s de las %2$s</string>
+    <string name="pen_read_replaced_by">Sustituye el tratamiento de %1$s de %2$s de las %3$s</string>
+    <string name="pen_read_replaced_other">Sustituye el tratamiento de %1$s de las %2$s</string>
     <plurals name="pen_m_nearby">
-        <item quantity="one">%1$d entrada tuya cerca</item>
-        <item quantity="other">%1$d entradas tuyas cerca</item>
+        <item quantity="one">%1$d tratamiento tuyo cerca</item>
+        <item quantity="other">%1$d tratamientos tuyos cerca</item>
     </plurals>
     <string name="pen_read_clock_held">Sin registrar: %1$s. Revisa sus dosis.</string>
     <string name="pen_untested_title">Pluma sin probar</string>

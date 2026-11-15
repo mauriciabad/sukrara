@@ -11,6 +11,7 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.AppBuild
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
@@ -79,6 +80,9 @@ interface SettingsDeps {
 
     /** Which outputs Share with apps has on (the overview row's summary). */
     val appsShared: Flow<Set<AppOutput>>
+
+    /** The features Android blocks (docs/40): the overview marks the row of the page that has the fix. */
+    val featureChecks: FeatureChecksSource get() = FeatureChecksSource.None
 
     /** The wearer's data doesn't go to their clinic yet and the banner wasn't dismissed (the same memory as home's). */
     val clinicBanner: Flow<Boolean> get() = flowOf(false)

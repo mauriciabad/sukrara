@@ -21,6 +21,8 @@ import app.mauri.sukrara.feature.sharing.conflict.IdentityConflictScreen
 import app.mauri.sukrara.feature.sharing.followers.FollowersActions
 import app.mauri.sukrara.feature.sharing.followers.FollowersPage
 import app.mauri.sukrara.feature.sharing.followers.NearbyPage
+import app.mauri.sukrara.feature.sharing.rememberAskNearby
+import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.owner.OwnerShareState
 
 /**
@@ -45,6 +47,12 @@ fun SharingScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val writerRefused by viewModel.writerRefused.collectAsStateWithLifecycle()
     val nearby by viewModel.nearby.collectAsStateWithLifecycle()
+    // turned on: Nearby devices asked right then, if it is missing (docs/40)
+    val askNearby = rememberAskNearby(AndroidNearbyServer.PERMISSIONS, viewModel::refreshNearby)
+    val setNearby: (Boolean) -> Unit = { on ->
+        viewModel.setNearby(on)
+        if (on) askNearby()
+    }
     Box(modifier.fillMaxSize()) {
         when (val s = state) {
             OwnerShareState.Loading -> {
@@ -81,7 +89,7 @@ fun SharingScreen(
                         closeFollower = viewModel::writerSeen,
                         setInternet = viewModel::setInternet,
                         setInterval = viewModel::setUploadInterval,
-                        setNearby = viewModel::setNearby,
+                        setNearby = setNearby,
                         refreshNearby = viewModel::refreshNearby,
                         pairNearby = viewModel::pairNearby,
                         openNearby = onNearby,
@@ -108,6 +116,12 @@ fun NearbyScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val writerRefused by viewModel.writerRefused.collectAsStateWithLifecycle()
     val nearby by viewModel.nearby.collectAsStateWithLifecycle()
+    // turned on: Nearby devices asked right then, if it is missing (docs/40)
+    val askNearby = rememberAskNearby(AndroidNearbyServer.PERMISSIONS, viewModel::refreshNearby)
+    val setNearby: (Boolean) -> Unit = { on ->
+        viewModel.setNearby(on)
+        if (on) askNearby()
+    }
     val close by rememberUpdatedState(onClose)
     when (val s = state) {
         OwnerShareState.Loading -> {
@@ -122,7 +136,7 @@ fun NearbyScreen(
                     remove = { viewModel.remove(it) },
                     setWriter = viewModel::setWriter,
                     closeFollower = viewModel::writerSeen,
-                    setNearby = viewModel::setNearby,
+                    setNearby = setNearby,
                     refreshNearby = viewModel::refreshNearby,
                     pairNearby = viewModel::pairNearby,
                 ),

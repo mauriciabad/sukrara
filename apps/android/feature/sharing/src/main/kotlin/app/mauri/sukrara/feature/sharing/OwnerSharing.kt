@@ -53,7 +53,7 @@ interface OwnerSharing {
     /** "How you appear" (name + picture) for followers. False without an identity or while another app shares as it. */
     suspend fun setProfile(profile: Profile): Boolean
 
-    /** "Can add entries" for an active follower; false when refused (not a follower any more, another app shares as you). */
+    /** *Can add treatments* for an active follower; false when refused (not a follower any more, another app shares as you). */
     suspend fun setWriter(follower: String, allowed: Boolean): Boolean
 
     /** A recovery code (the identity encrypted with [password]); null without an identity. Slow (scrypt): off the main thread. */
@@ -81,13 +81,15 @@ interface OwnerSharing {
         replace: Boolean = false,
     ): RestoreIdentity.Result
 
-    suspend fun createInvite(label: String): Invite?
+    /** A single-use invite; [writer] = whoever joins with it starts with *Can add treatments*. */
+    suspend fun createInvite(label: String, writer: Boolean = false): Invite?
 
     /**
      * Allow, and what happened (expired or used invite / no longer waiting, another app shares as you, or a leaked link
-     * without the right [typedCode] from the follower's phone).
+     * without the right [typedCode] from the follower's phone). [writer]: *Can add treatments* from the start (null = as
+     * the invite was made).
      */
-    suspend fun approve(follower: String, typedCode: String? = null): ApproveResult
+    suspend fun approve(follower: String, typedCode: String? = null, writer: Boolean? = null): ApproveResult
 
     suspend fun deny(follower: String)
 
@@ -163,12 +165,20 @@ class EngineOwnerSharing(
         replace: Boolean,
     ): RestoreIdentity.Result = engine.restore(scope, code, password, replaceExisting = replace)
 
-    override suspend fun createInvite(label: String): Invite? {
+    override suspend fun createInvite(label: String, writer: Boolean): Invite? {
         val at = now()
-        return engine.createInvite(label)?.let { Invite(it, label.trim(), at + CreateInvite.TTL, InviteLink.parse(it)?.token.orEmpty()) }
+        return engine
+            .createInvite(
+                label,
+                writer,
+            )?.let { Invite(it, label.trim(), at + CreateInvite.TTL, InviteLink.parse(it)?.token.orEmpty()) }
     }
 
-    override suspend fun approve(follower: String, typedCode: String?): ApproveResult = engine.approve(follower, typedCode)
+    override suspend fun approve(
+        follower: String,
+        typedCode: String?,
+        writer: Boolean?,
+    ): ApproveResult = engine.approve(follower, typedCode, writer)
 
     override suspend fun deny(follower: String) {
         engine.deny(follower)

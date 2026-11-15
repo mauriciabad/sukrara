@@ -61,7 +61,7 @@ class ShareScreenGoldenTest {
             }
         captureRoboImage("src/test/snapshots/$name.png", roborazziComposeOptions = options) {
             // what MainActivity puts around the navigation: the app's theme only
-            SukraraTheme(dark = dark, dynamic = false) { ShareScreen(invite, {}, {}, {}) }
+            SukraraTheme(dark = dark, dynamic = false) { ShareScreen(invite, { _, _ -> }, {}, {}) }
         }
     }
 

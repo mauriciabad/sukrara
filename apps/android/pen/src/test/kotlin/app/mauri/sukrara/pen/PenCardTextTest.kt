@@ -46,7 +46,7 @@ class PenCardTextTest {
         val card = text().card(state(r, es))
         assertEquals("3 injections logged", card.title)
         assertTrue(card.lines[0], card.lines[0].startsWith("Since 16 Oct"))
-        assertEquals("1 replaced your entry", card.lines[1])
+        assertEquals("1 replaced your treatment", card.lines[1])
         assertEquals(PenAction.Review("P1"), card.actions.first())
         assertTrue(PenAction.Undo in card.actions)
     }

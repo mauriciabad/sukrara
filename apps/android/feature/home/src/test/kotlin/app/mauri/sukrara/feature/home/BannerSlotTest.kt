@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.home
 
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.feature.home.Samples.NOW
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -63,6 +64,28 @@ class BannerSlotTest {
             assertEquals(BannerKind.DataProblem, pick(env = env, problems = 1))
         }
         assertEquals(BannerKind.FinishSetup, pick(env = everything.copy(tapsBlocked = BlockedTaps())))
+    }
+
+    @Test fun `a blocked feature shows after the taps and before the tips, and only one without a switch closes`() {
+        val sharing = everything.copy(blocked = listOf(BlockedFeature.BluetoothSharing, BlockedFeature.HealthConnect))
+        assertEquals(BannerKind.FeatureBlocked, pick(env = sharing))
+        assertEquals(BlockedFeature.BluetoothSharing, sharing.blockedShown(BannerMemory()))
+        assertEquals(BannerKind.TapsBlocked, pick(env = sharing.copy(tapsBlocked = BlockedTaps(pen = true))))
+        assertEquals(BannerKind.AlertsUnreliable, pick(broken, sharing))
+        // Turn off is its way out: a stored close never hides it
+        val closedSharing = BannerMemory(mapOf(HomeEnvironment.blockedKey(BlockedFeature.BluetoothSharing) to 1L))
+        assertEquals(BannerKind.FeatureBlocked, pick(env = sharing, memory = closedSharing))
+        // Bluetooth following has no switch: Not now closes it, for that feature only
+        val following = everything.copy(blocked = listOf(BlockedFeature.BluetoothFollowing))
+        assertEquals(BannerKind.FeatureBlocked, pick(env = following))
+        val closed = BannerMemory().dismissKey(HomeEnvironment.blockedKey(BlockedFeature.BluetoothFollowing), NOW)
+        assertEquals(BannerKind.FinishSetup, pick(env = following, memory = closed))
+        assertEquals(
+            BlockedFeature.HomeNetwork,
+            following.copy(blocked = listOf(BlockedFeature.BluetoothFollowing, BlockedFeature.HomeNetwork)).blockedShown(closed),
+        )
+        // Show closed tips brings it back
+        assertEquals(BannerKind.FeatureBlocked, pick(env = following, memory = closed.restoreAll()))
     }
 
     @Test fun `damaged data comes before finish setup`() =

@@ -7,7 +7,7 @@
     <string name="ds_cancel">Cancel</string>
     <string name="ds_delete">Delete</string>
     <string name="ds_undo">Undo</string>
-    <!-- a pen entry's note field in its sheet -->
+    <!-- a pen treatment's note field in its sheet -->
     <string name="ds_pen_note">Note</string>
     <string name="ds_dismiss">Dismiss</string>
     <string name="ds_custom">Custom…</string>
@@ -66,6 +66,23 @@
     <string name="ds_req_bluetooth">Bluetooth</string>
     <string name="ds_req_bluetooth_why">The sensor sends readings over Bluetooth.</string>
 
+    <!-- A feature that is on but Android blocks (docs/40): home's banner and the Settings row that leads to its page -->
+    <string name="ds_blocked_bluetooth_sharing">Bluetooth sharing is blocked</string>
+    <string name="ds_blocked_bluetooth_sharing_text">Allow Nearby devices so followers near you get your readings without the internet.</string>
+    <string name="ds_blocked_bluetooth_following">Bluetooth is blocked</string>
+    <string name="ds_blocked_bluetooth_following_text">Allow Nearby devices so readings still come over Bluetooth when you\'re near them and the internet is down.</string>
+    <string name="ds_blocked_health_connect">Health Connect is blocked</string>
+    <string name="ds_blocked_health_connect_text">Health Connect no longer lets Sukrara write your glucose.</string>
+    <string name="ds_blocked_home_network">Home Wi-Fi access is blocked</string>
+    <string name="ds_blocked_home_network_text">Allow Nearby devices so devices on your Wi-Fi can read the Nightscout API.</string>
+    <!-- The ways out of a blocked feature [CHAR LIMIT=15] -->
+    <string name="ds_blocked_allow">Allow</string>
+    <string name="ds_blocked_turn_off">Turn off</string>
+    <string name="ds_blocked_not_now">Not now</string>
+    <!-- Setup's permission step on a follower's phone: Bluetooth as the internet's backup -->
+    <string name="ds_blocked_nearby_follow">Nearby devices</string>
+    <string name="ds_blocked_nearby_follow_why">Readings over Bluetooth when you\'re near them and the internet is down.</string>
+
     <!-- Mute / remind-less lines (contracts/alerts/copy.json; MuteText, AlertCopyTest). Side names fill %1$s. -->
     <string name="side_low">Lows</string>
     <string name="side_high">Highs</string>
@@ -116,7 +133,7 @@
     <string name="ds_err_refused">The service didn\'t accept the data.</string>
     <string name="ds_err_address">That address doesn\'t work. Check it, including https://.</string>
     <string name="ds_err_other">Something went wrong. Try again.</string>
-    <!-- A pen entry's sheet (Settings › Insulin pens › Doses read, home's pen rows) -->
+    <!-- A pen treatment's sheet (Settings › Insulin pens › Doses read, home's pen rows) -->
     <string name="ds_pen_priming">Priming</string>
     <string name="ds_pen_injected">Injected</string>
     <!-- %1$s time, %2$s amount in words, %3$s Priming / Injected -->
@@ -127,7 +144,7 @@
     <string name="ds_pen_nothing_injected">Nothing injected</string>
     <string name="ds_pen_from_pen">From the pen</string>
     <string name="ds_pen_primed">%1$s primed</string>
-    <string name="ds_pen_replaced">Replaced your %1$s entry at %2$s</string>
+    <string name="ds_pen_replaced">Replaced your %1$s treatment at %2$s</string>
     <string name="ds_pen_remove">Remove from log</string>
     <string name="ds_pen_save">Save</string>
     <string name="ds_pen_done">Done</string>
@@ -144,12 +161,12 @@
     <!-- %1$s the doses ("1u and 1.5u"), %2$s their time -->
     <string name="ds_pen_q_doses_line">%1$s at %2$s</string>
     <string name="ds_pen_and">%1$s and %2$s</string>
-    <!-- %1$s / %2$s the pen's injection, %3$s / %4$s the entry typed by hand -->
+    <!-- %1$s / %2$s the pen's injection, %3$s / %4$s the treatment typed by hand -->
     <string name="ds_pen_q_same_one">Pen %1$s at %2$s · yours %3$s at %4$s</string>
     <string name="ds_pen_q_same_line">Pen %1$s at %2$s</string>
     <plurals name="ds_pen_q_nearby">
-        <item quantity="one">%d typed entry nearby</item>
-        <item quantity="other">%d typed entries nearby</item>
+        <item quantity="one">%d typed treatment nearby</item>
+        <item quantity="other">%d typed treatments nearby</item>
     </plurals>
     <plurals name="ds_pen_q_more">
         <item quantity="one">%d more to check</item>
@@ -160,11 +177,11 @@
     <string name="ds_pen_q_all_priming">All priming</string>
     <string name="ds_pen_q_same_yes">Same injection</string>
     <string name="ds_pen_q_different">Different injections</string>
-    <!-- Opens the sheet with the typed entries to choose from [CHAR LIMIT=15] -->
+    <!-- Opens the sheet with the typed treatments to choose from [CHAR LIMIT=15] -->
     <string name="ds_pen_q_choose">Choose</string>
     <string name="ds_pen_q_sheet_pen">Your pen: %1$s at %2$s</string>
-    <string name="ds_pen_q_sheet_ask">Is it one of the entries you typed? That entry becomes the pen\'s, so the dose isn\'t logged twice.</string>
-    <!-- A typed entry: amount and time -->
+    <string name="ds_pen_q_sheet_ask">Is it one of the treatments you typed? That one becomes the pen\'s, so the dose isn\'t logged twice.</string>
+    <!-- A typed treatment: amount and time -->
     <string name="ds_pen_q_candidate">%1$s at %2$s</string>
     <string name="ds_pen_q_by_phone">Typed on this phone</string>
     <string name="ds_pen_q_by_mac">Typed on the Mac</string>

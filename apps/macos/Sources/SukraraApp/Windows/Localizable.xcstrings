@@ -7397,18 +7397,18 @@
         }
       }
     },
-    "%@ hasn't turned on “Can add entries” for this Mac" : {
+    "%@ hasn't turned on “Can add treatments” for this Mac" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ hasn't turned on “Can add entries” for this Mac"
+            "value" : "%@ hasn't turned on “Can add treatments” for this Mac"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ no ha activado «Puede añadir entradas» para este Mac"
+            "value" : "%@ no ha activado «Puede añadir tratamientos» para este Mac"
           }
         }
       }
@@ -7509,18 +7509,18 @@
         }
       }
     },
-    "Entries logged on the phone or here show up in this list." : {
+    "Treatments logged on the phone or here show up in this list." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entries logged on the phone or here show up in this list."
+            "value" : "Treatments logged on the phone or here show up in this list."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las entradas registradas en el móvil o aquí aparecen en esta lista."
+            "value" : "Los tratamientos registrados en el móvil o aquí aparecen en esta lista."
           }
         }
       }
@@ -7813,18 +7813,18 @@
         }
       }
     },
-    "The wearer hasn't turned on “Can add entries” for this Mac" : {
+    "The wearer hasn't turned on “Can add treatments” for this Mac" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The wearer hasn't turned on “Can add entries” for this Mac"
+            "value" : "The wearer hasn't turned on “Can add treatments” for this Mac"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor no ha activado «Puede añadir entradas» para este Mac"
+            "value" : "Quien lleva el sensor no ha activado «Puede añadir tratamientos» para este Mac"
           }
         }
       }
@@ -9969,6 +9969,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Dirección en blanco: Sukrara encuentra Juggluco por sí sola. Secreto en blanco: Juggluco no pide ninguno."
+          }
+        }
+      }
+    },
+    "Bluetooth is blocked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bluetooth is blocked"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El Bluetooth está bloqueado"
+          }
+        }
+      }
+    },
+    "Open at login is waiting for you" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open at login is waiting for you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir al iniciar sesión espera tu permiso"
+          }
+        }
+      }
+    },
+    "Allow Bluetooth so readings still come from the phone nearby when the internet is down." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Bluetooth so readings still come from the phone nearby when the internet is down."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permite el Bluetooth para que las lecturas sigan llegando del móvil cercano cuando no haya internet."
+          }
+        }
+      }
+    },
+    "Allow Sukrara in Login Items, or it won't start after a restart and nothing alerts you." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Sukrara in Login Items, or it won't start after a restart and nothing alerts you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permite Sukrara en Ítems de inicio de sesión, o no se abrirá tras reiniciar y nada te avisará."
+          }
+        }
+      }
+    },
+    "Open Bluetooth Settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Bluetooth Settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir los ajustes de Bluetooth"
+          }
+        }
+      }
+    },
+    "Open Login Items" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Login Items"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Ítems de inicio de sesión"
+          }
+        }
+      }
+    },
+    "Turn Off" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn Off"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desactivar"
+          }
+        }
+      }
+    },
+    "Not Now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahora no"
           }
         }
       }

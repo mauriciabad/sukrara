@@ -76,6 +76,7 @@ import app.mauri.sukrara.alerts.MuteLine
 import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
+import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.PenAnswer
@@ -106,8 +107,11 @@ import app.mauri.sukrara.designsystem.motion.Reveal
 import app.mauri.sukrara.designsystem.motion.Swap
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
 import app.mauri.sukrara.designsystem.pen.PenQuestionCard
+import app.mauri.sukrara.designsystem.rows.rememberAllowFeature
 import app.mauri.sukrara.designsystem.rows.rememberCopyAlertReport
 import app.mauri.sukrara.designsystem.rows.showUndo
+import app.mauri.sukrara.designsystem.rows.textRes
+import app.mauri.sukrara.designsystem.rows.titleRes
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -138,6 +142,7 @@ fun HomeScreen(
     val penNotice by viewModel.penNotice.collectAsStateWithLifecycle()
     val penQuestions by viewModel.penQuestions.collectAsStateWithLifecycle()
     val penRead by viewModel.penRead.collectAsStateWithLifecycle()
+    val allowFeature = rememberAllowFeature(viewModel.featureChecks)
     HomeContent(
         state = state,
         pen = pen,
@@ -150,6 +155,8 @@ fun HomeScreen(
                 onDismiss = viewModel::dismiss,
                 onRestore = viewModel::restore,
                 onFix = viewModel::fix,
+                onAllowFeature = allowFeature,
+                onTurnOffFeature = viewModel::turnOff,
                 onAlert = viewModel::alert,
                 onDelete = viewModel::delete,
                 onUndo = viewModel::undoDelete,
@@ -180,6 +187,9 @@ data class HomeCallbacks(
     /** Undo on the "Tip closed" snackbar. */
     val onRestore: (BannerKind) -> Unit = {},
     val onFix: (AlertRequirement) -> Unit = {},
+    /** A blocked feature's *Allow* (the permission dialog, then Android's screen) and *Turn off* (docs/40). */
+    val onAllowFeature: (BlockedFeature) -> Unit = {},
+    val onTurnOffFeature: (BlockedFeature) -> Unit = {},
     /** Mute alerts, Unmute, a side's Alert me anyway / Remind as usual / Change to (the alert runtime). */
     val onAlert: (HomeAlertAction) -> Unit = {},
     val onDelete: (Treatment) -> Unit = {},
@@ -935,6 +945,34 @@ private fun banner(
                 null,
                 severity,
                 secondary = stringResource(R.string.banner_taps_turn_off) to open(HomeAction.TurnOffTaps(taps)),
+            )
+        }
+
+        // the taps banner's shape: Allow in front, Turn off beside it; a feature without a switch closes instead
+        BannerKind.FeatureBlocked -> {
+            val feature = state.blockedFeature ?: return null
+            val haptics = rememberHaptics()
+            Banner(
+                "${kind.name}:${feature.name}",
+                R.drawable.home_ic_warning,
+                stringResource(feature.titleRes()),
+                stringResource(feature.textRes()),
+                stringResource(DsR.string.ds_blocked_allow),
+                {
+                    haptics.confirm()
+                    callbacks.onAllowFeature(feature)
+                },
+                dismiss.takeUnless { feature.canTurnOff },
+                severity,
+                secondary =
+                    if (feature.canTurnOff) {
+                        stringResource(DsR.string.ds_blocked_turn_off) to {
+                            haptics.toggle(false)
+                            callbacks.onTurnOffFeature(feature)
+                        }
+                    } else {
+                        null
+                    },
             )
         }
 

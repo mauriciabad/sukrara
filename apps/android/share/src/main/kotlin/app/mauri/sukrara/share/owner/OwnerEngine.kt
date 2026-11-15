@@ -631,11 +631,14 @@ class OwnerEngine(
             true
         }
 
-    /** A new single-use invite link, or null without an identity or during a conflict. */
-    suspend fun createInvite(label: String): String? =
+    /**
+     * A new single-use invite link, or null without an identity or during a conflict. [writer]: whoever joins with it
+     * starts with *Can add treatments* (the approve dialog shows the choice; Allow from the notification applies it).
+     */
+    suspend fun createInvite(label: String, writer: Boolean = false): String? =
         locked {
             val s = owner?.takeIf { it.conflict == null } ?: return@locked null
-            val created = CreateInvite(ctx)(s, label, now())
+            val created = CreateInvite(ctx)(s, label, now(), writer)
             // the invite wrap goes to the relays only (B§6: never over Bluetooth)
             apply(created.step, overBluetooth = false)
             created.link.link
@@ -644,9 +647,10 @@ class OwnerEngine(
     /**
      * Allow: [ApproveResult.Allowed] only when [follower] is now an active follower, else why not, so the caller can
      * say it didn't work. When other phones also tried the invite (a leaked link) the wearer must type the code shown
-     * on the follower's phone: [typedCode] must match.
+     * on the follower's phone: [typedCode] must match. [writer]: *Can add treatments* from the start (null = as the
+     * invite was made); it goes out in the same roster the approval sends.
      */
-    suspend fun approve(follower: String, typedCode: String? = null): ApproveResult {
+    suspend fun approve(follower: String, typedCode: String? = null, writer: Boolean? = null): ApproveResult {
         if (owner?.conflict != null) return ApproveResult.Paused
         val request = pendingRequest(follower) ?: return ApproveResult.Gone
         if (request.needsTypedCode && typedCode != request.code) return ApproveResult.NeedsCode
@@ -657,10 +661,25 @@ class OwnerEngine(
                 // re-checked under the lock: a conflict, or another phone tried the link meanwhile
                 val p = st.pending.firstOrNull { it.follower == follower }
                 when {
-                    st.conflict != null -> null.also { refused = ApproveResult.Paused }
-                    p == null -> null
-                    p.needsTypedCode && typedCode != p.code -> null.also { refused = ApproveResult.NeedsCode }
-                    else -> ApproveRequest(ctx)(st, follower, now())?.also { apply(it) }?.state
+                    st.conflict != null -> {
+                        null.also { refused = ApproveResult.Paused }
+                    }
+
+                    p == null -> {
+                        null
+                    }
+
+                    p.needsTypedCode && typedCode != p.code -> {
+                        null.also { refused = ApproveResult.NeedsCode }
+                    }
+
+                    else -> {
+                        val canAdd = writer ?: p.writer
+                        ApproveRequest(ctx)(st, follower, now())
+                            ?.let { step -> if (canAdd) step + { SetWriter(ctx)(it, follower, true, now()) ?: Step(it) } else step }
+                            ?.also { apply(it) }
+                            ?.state
+                    }
                 }
             } ?: return refused
         if (s.activeFollowers().none { it.key == follower }) return ApproveResult.Gone
@@ -700,7 +719,7 @@ class OwnerEngine(
     /** The request [follower] has waiting, if any. */
     fun pendingRequest(follower: String): PendingRequest? = owner?.pending?.firstOrNull { it.follower == follower }
 
-    /** "Can add entries" for an active follower (writer scope); refused during a conflict (it publishes a roster). */
+    /** *Can add treatments* for an active follower (writer scope); refused during a conflict (it publishes a roster). */
     suspend fun setWriter(follower: String, allowed: Boolean) = act { SetWriter(ctx)(it, follower, allowed, now()) }
 
     suspend fun deny(follower: String) = act { DenyRequest(ctx)(it, follower, now()) }

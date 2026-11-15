@@ -67,6 +67,10 @@ public final class AppModel {
     /// The wearer's live treatments (the CSV export).
     private(set) var treatments: [Treatment] = []
     private(set) var link: LinkState = .notFollowing
+    /// The Bluetooth path to the wearer's phone while following (nil = it doesn't run).
+    private(set) var nearby: NearbyState?
+    /// Blocked features put off with Not Now (this launch only; the settings pane keeps the fix).
+    var notNowBlocked: Set<BlockedFeature> = []
     /// The wearer's readings feed the card and the alert rules: following, or following with the Keychain retrying.
     private var followMonitoring = false
     /// The Keychain won't read the follower key; the runtime retries (and the alerts go on over the stored readings).
@@ -100,6 +104,13 @@ public final class AppModel {
     /// "Now" for the card: moved by the freshness ticker at each freshness step, so a value greys and strikes on time.
     private(set) var now: Date
     var notificationPermission: NotificationPermission = .allowed
+
+    /// The features macOS blocks now (docs/40), without those put off with Not Now: the panel names the first.
+    var blocked: [BlockedFeature] {
+        BlockedFeature.of(link: link, nearby: nearby, login: loginItem?.status).filter {
+            $0.canTurnOff || !notNowBlocked.contains($0)
+        }
+    }
 
     @ObservationIgnored let alerts: AlertController?
     @ObservationIgnored let updates: Updates?
@@ -161,6 +172,7 @@ public final class AppModel {
         let wasMonitoring = monitoring
         link = snapshot.link
         keychainUnreadable = snapshot.keychainUnreadable
+        nearby = snapshot.nearby
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
         followMonitoring = link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty)
         followReadings = followMonitoring ? snapshot.readings : []

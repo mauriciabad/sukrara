@@ -581,7 +581,7 @@
     <string name="st_overview_pens">NovoPen · tap to log insulin</string>
     <string name="st_pens_reading">Read insulin pens</string>
     <string name="st_pens_reading_ask">Off · asks when you tap a pen</string>
-    <string name="st_pens_reading_footer">Hold your pen to the back of the phone, unlocked, from any app: Sukrara logs the insulin you injected and keeps priming apart. Off: pen taps do nothing; your pens and entries stay.</string>
+    <string name="st_pens_reading_footer">Hold your pen to the back of the phone, unlocked, from any app: Sukrara logs the insulin you injected and keeps priming apart. Off: pen taps do nothing; your pens and treatments stay.</string>
     <string name="st_pens_notify">Notification after each read</string>
     <string name="st_pens_notify_summary">With Undo and Add treatment. Doses to check always notify.</string>
     <string name="st_pens_detection">Automatic detection</string>
@@ -602,7 +602,7 @@
     <string name="st_pens_priming_footer">Doses under this size before a bigger one are priming; after it, they\'re added to it. Small doses this long before an injection are its priming too.</string>
     <string name="st_pens_injections_footer">Doses this close are one injection. Small doses on their own wait this long for an injection before Sukrara asks. A new pen\'s last injection is offered to log if it\'s this recent.</string>
     <string name="st_pens_typed_footer">A dose you typed this close to a pen dose, and about the same amount, is replaced by the pen\'s.</string>
-    <string name="st_pens_reset_text">Every rule on this page goes back to its default. Entries already logged don\'t change.</string>
+    <string name="st_pens_reset_text">Every rule on this page goes back to its default. Treatments already logged don\'t change.</string>
     <string name="st_pens_reset_title">Reset automatic detection?</string>
     <string name="st_pens_reset_confirm">Reset</string>
     <string name="st_pens_supported">Sukrara reads NovoPen Echo Plus and NovoPen 6 (untested: not logged yet). Other NFC pens, and Bluetooth pens or caps like Tempo, InPen or Mallya, aren\'t supported.</string>
@@ -631,8 +631,8 @@
     <string name="st_pen_logged">Logged</string>
     <string name="st_pen_changed_since">Something changed since. Nothing was logged.</string>
     <string name="st_pen_removed">Removed from your log</string>
-    <string name="st_pen_entry_changed">Entry changed</string>
-    <string name="st_pen_undo_failed">Couldn\'t undo: the entry changed since</string>
+    <string name="st_pen_entry_changed">Treatment changed</string>
+    <string name="st_pen_undo_failed">Couldn\'t undo: the treatment changed since</string>
     <string name="st_pen_undo">Undo</string>
     <string name="st_pen_review_title">Review read</string>
     <string name="st_pen_review_row">Review the last read</string>
@@ -645,12 +645,12 @@
     <string name="st_pen_undo_read">Undo this read</string>
     <string name="st_pen_undo_read_title">Undo this read?</string>
     <plurals name="st_pen_undo_read_text">
-        <item quantity="one">Its entry leaves your log (an entry of yours it replaced comes back). You can log each dose again here.</item>
-        <item quantity="other">Its %1$d entries leave your log (entries of yours they replaced come back). You can log each one again here.</item>
+        <item quantity="one">Its treatment leaves your log (one of yours it replaced comes back). You can log each dose again here.</item>
+        <item quantity="other">Its %1$d treatments leave your log (any of yours they replaced come back). You can log each one again here.</item>
     </plurals>
     <string name="st_pen_undo_read_confirm">Undo read</string>
     <string name="st_pen_read_undone">Read undone: its doses aren\'t logged</string>
-    <string name="st_pen_undo_read_changed">Couldn\'t undo: some of these entries changed since. Fix each one in its sheet.</string>
+    <string name="st_pen_undo_read_changed">Couldn\'t undo: some of these treatments changed since. Fix each one in its sheet.</string>
     <string name="st_pen_undo_read_gone">Nothing left to undo from that read</string>
     <string name="st_pen_untested_tag">Untested model</string>
     <string name="st_pen_model">Model: %1$s</string>
@@ -680,8 +680,8 @@
     <string name="st_pen_check_no">It doesn\'t</string>
     <string name="st_pen_check_yes">It matches</string>
     <string name="st_pen_offer">Last injection before Sukrara: %1$s at %2$s</string>
-    <string name="st_pen_matches">Matches your %1$s entry at %2$s</string>
-    <string name="st_pen_replace_entry">Replace your entry</string>
+    <string name="st_pen_matches">Matches your %1$s treatment at %2$s</string>
+    <string name="st_pen_replace_entry">Replace your treatment</string>
     <string name="st_pen_log_it">Log it</string>
     <string name="st_pen_totals">Last 30 days: %1$s logged, %2$s priming</string>
     <string name="st_pen_no_doses">No doses read yet</string>
@@ -691,7 +691,7 @@
     <string name="st_pen_yesterday">Yesterday</string>
     <string name="st_pen_h_logged">Logged</string>
     <string name="st_pen_h_logged_primed">Logged · %1$s primed</string>
-    <string name="st_pen_h_merged">Logged · replaced your %1$s entry</string>
+    <string name="st_pen_h_merged">Logged · replaced your %1$s treatment</string>
     <string name="st_pen_h_corrected">Logged · changed by you</string>
     <string name="st_pen_h_priming">Only priming</string>
     <string name="st_pen_h_same">Same injection?</string>
@@ -704,7 +704,7 @@
     <string name="st_pen_h_incomplete">%1$s · incomplete</string>
     <string name="st_pen_seg_priming">Priming</string>
     <string name="st_pen_nothing_injected">Nothing injected</string>
-    <string name="st_pen_add_to_entry">Add to the %1$s entry</string>
+    <string name="st_pen_add_to_entry">Add to the %1$s treatment</string>
     <string name="st_pen_log_as_injection">Log as injection</string>
     <string name="st_pen_log_injection">Log this injection</string>
     <plurals name="st_pen_older">
@@ -716,14 +716,14 @@
         <item quantity="other">%1$d hours</item>
     </plurals>
     <string name="st_pen_earlier_doses">Earlier doses</string>
-    <string name="st_pen_changed_since_open">That entry changed or was deleted meanwhile</string>
+    <string name="st_pen_changed_since_open">That treatment changed or was deleted meanwhile</string>
     <string name="st_updates_banner_title">Keep Sukrara up to date</string>
     <string name="st_updates_banner_text">Sukrara can ask GitHub for a new version once a day and tell you. Updates come from GitHub, outside any app store, and nothing installs without your OK. An old version can stop sharing.</string>
     <string name="st_updates_banner_turn_on">Turn on</string>
     <string name="st_updates_banner_not_now">Not now</string>
     <string name="st_updates_banner_on">Sukrara checks for updates once a day. About changes it.</string>
     <string name="st_clinic_title">Share your data with your clinic</string>
-    <string name="st_clinic_text">Upload your readings and entries to LibreView or Tidepool so your care team sees them.</string>
+    <string name="st_clinic_text">Upload your readings and treatments to LibreView or Tidepool so your care team sees them.</string>
     <string name="st_clinic_libreview">LibreView</string>
     <string name="st_clinic_tidepool">Tidepool</string>
     <!-- Settings › Alerts › Lately: the alerts' recent history -->

@@ -49,6 +49,7 @@ import androidx.compose.ui.window.DialogProperties
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.feature.sharing.WriterSwitch
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.invite.NearbyPairing
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -82,7 +83,8 @@ const val ALLOW_ARM_MS = 600L
 fun ApproveDialog(
     request: PendingRequest,
     working: Boolean,
-    onAllow: (typedCode: String?) -> Unit,
+    /** Allow, with the code typed (a leaked link) and the *Can add treatments* choice. */
+    onAllow: (typedCode: String?, writer: Boolean) -> Unit,
     onDeny: () -> Unit,
     onLater: () -> Unit,
     modifier: Modifier = Modifier,
@@ -96,6 +98,8 @@ fun ApproveDialog(
     val typeCode = request.needsTypedCode
     var armed by remember(request.follower) { mutableStateOf(false) }
     var typed by remember(request.follower) { mutableStateOf("") }
+    // as chosen on the invite (off for *Pair nearby*); changeable here and later in the follower's sheet
+    var writer by remember(request.follower) { mutableStateOf(request.writer) }
     LaunchedEffect(request.follower) {
         delay(ALLOW_ARM_MS)
         armed = true
@@ -165,6 +169,8 @@ fun ApproveDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
+                Spacer(Modifier.height(4.dp))
+                WriterSwitch(writer, title = stringResource(R.string.sh_approve_writer, name), enabled = !working) { writer = it }
                 // an ordinary link nobody else tried: no code (PROTOCOL-v2 "Invite link / QR": single use, the wearer's
                 // Allow); the follower's screen keeps its match code for the leaked case only
                 Spacer(Modifier.height(12.dp))
@@ -191,7 +197,7 @@ fun ApproveDialog(
                     Button(
                         onClick = {
                             haptics.confirm()
-                            onAllow(typed.takeIf { typeCode })
+                            onAllow(typed.takeIf { typeCode }, writer)
                         },
                         enabled = armed && !working && (!typeCode || typed == request.code),
                         modifier = Modifier.heightIn(min = 48.dp),

@@ -208,7 +208,7 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Test build at another path (never over the installed `/Applications/Sukrara.app`): menubar number + colour; click → panel
       (card in its module, Return opens *Add Treatment*: Tab rapid → long → carbs → note, `4.5u` keeps `4.5`,
       quiet line, limits line at 600g, time chip popover, Return saves all, Escape cancels; Escape / click outside
-      closes the panel); right-click menu; Treatments… (7 days, delete with ⌫ / context menu, ⌘W; a pen entry from the phone: total as title, *From the pen · 1.5u primed*, the triangle opens the doses with *primed* on air shots, tooltip *Read from the pen on …'s phone* (no serial); Add Treatment with rapid within 45 min of a pen entry → *Already logged by the pen?*, Cancel keeps the insulin typed and saves carbs / note, Log Anyway saves; VoiceOver reads the row as one sentence and each dose as *12:37, 1 unit, primed*; a correction on the phone shows here within seconds; chart mark = the total; synthetic: `sukrara-snap windows <dir>` → `treatments-*.png`, `treatment-add-*.png`); Glucose Report (report only, period, Export CSV…); Settings (each pane; ⌘, ⌘W, paste in
+      closes the panel); right-click menu; Treatments… (7 days, delete with ⌫ / context menu, ⌘W; a pen treatment from the phone: total as title, *From the pen · 1.5u primed*, the triangle opens the doses with *primed* on air shots, tooltip *Read from the pen on …'s phone* (no serial); Add Treatment with rapid within 45 min of a pen treatment → *Already logged by the pen?*, Cancel keeps the insulin typed and saves carbs / note, Log Anyway saves; VoiceOver reads the row as one sentence and each dose as *12:37, 1 unit, primed*; a correction on the phone shows here within seconds; chart mark = the total; synthetic: `sukrara-snap windows <dir>` → `treatments-*.png`, `treatment-add-*.png`); Glucose Report (report only, period, Export CSV…); Settings (each pane; ⌘, ⌘W, paste in
       the invite field); light and dark, over a bright and a dark window/wallpaper, Increase Contrast and Reduce
       Transparency (System Settings → Accessibility → Display).
 - [ ] Add Treatment placement and inputs (#181), in the running test build: from the panel (row, Return, a pill) it
@@ -547,7 +547,7 @@ over nothing:
       This sensor shows only when the current sensor is known (`Exporter.currentSensor`).
 - [ ] *Save file*: the system picker suggests `sukrara-glucose-<from>-to-<to>.csv`; saving shows "File saved";
       `adb shell cat` the file (or open it in Files): line 1 `Glucose Data,…`, 5-minute rows, treatments with
-      `Entered By`; a pen entry has its priming in `Primed Insulin (units)` (`1.5`, `0.0` without), typed entries leave it empty.
+      `Entered By`; a pen treatment has its priming in `Primed Insulin (units)` (`1.5`, `0.0` without), typed treatments leave it empty.
 - [ ] *Share*: the share sheet shows the CSV (a preview line with the file name, no person's name); sending it to an
       app (Drive, Gmail, Files) attaches the file.
 - [ ] Follower (`small_phone`): the same page reads "already on this phone" and exports what it received.
@@ -733,9 +733,9 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
       muted after carbs*; again with *Cancel*: nothing saved, the alert stays and repeats. `ALERTS --es kinds high`: no
       *Log carbs*. Mute a low → the muted notification has *Log carbs*, *Unmute*, *Change time*. Lock the phone (a
       PIN): *Log carbs* asks for the unlock, then the dialog; *Mute…* still works locked. A follower without *Can add
-      entries*: no *Log carbs*; with it: the entry reaches the wearer and the wearer's *clear* removes the follower's low
+      treatments*: no *Log carbs*; with it: the treatment reaches the wearer and the wearer's *clear* removes the follower's low
       (its very low keeps repeating, #2). TalkBack reads *Log carbs*. Spanish: *Registrar hidratos*. Mac following
-      with *Can add entries*: a low's *Options* list *Log Carbs…* first → Add Treatment on Carbs, the low comes back
+      with *Can add treatments*: a low's *Options* list *Log Carbs…* first → Add Treatment on Carbs, the low comes back
       silently; without it (or Juggluco) no *Log Carbs…*.
 - [ ] First-run setup (emulator, fresh install, #175): on every step a rotation, home → back from recents and a process
       death (home, then `adb shell run-as app.mauri.sukrara kill -9 <pid>`, reopen) return to the same step, also on a
@@ -776,12 +776,12 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       added · … · 412 earlier doses left out* with *Log 8.5u* + *Set up* (opens the pen's page: Name, Insulin, *Log it*; no separate setup screen); *No* → later taps do nothing, Settings off.
 - [ ] `1, 0.5, 8, 0.5` → card *8.5u logged · Rapid · 13:12 · 1.5u primed*, *Add treatment* + *Undo*, no scrim, closes
       by itself; the low-importance notification has the same text; home row `8.5u rapid · from the pen`.
-- [ ] *Undo* → *Undone*; a merged hand entry is back with its note; Doses read *Not logged* → *Log this injection*.
+- [ ] *Undo* → *Undone*; a merged typed treatment is back with its note; Doses read *Not logged* → *Log this injection*.
 - [ ] Rescan → *Nothing new*; top-up → *Now 8.5u · 0.5u added*; `1, 1.5` 40 min ago → *Priming or injected?* card
       + home card + notification, *Log 1.5u* clears all three.
-- [ ] Entry sheet: flip a dose → header updates, *Save* → snackbar *Entry changed · Undo*; all priming → *Remove from
+- [ ] Pen treatment sheet: flip a dose → header updates, *Save* → snackbar *Treatment changed · Undo*; all priming → *Remove from
       log*; TalkBack reads one node per dose with *Mark as injected / priming*.
-- [ ] Type 8u rapid within 45 min of a pen entry → *Already logged by your pen?*; carbs in the same save are saved.
+- [ ] Type 8u rapid within 45 min of a pen treatment → *Already logged by your pen?*; carbs in the same save are saved.
       Rotate with the question open: it is asked again. Over the lock screen the countdown ring stands still while it is
       open; *Cancel* → the form, the ring runs again.
 - [ ] Light and dark (`adb shell cmd uimode night yes|no`, #181): the read card over home and over another app
@@ -798,7 +798,7 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       injections logged · Since <day> <time>* with *Review* first and *Undo*; the doses are on the graph. *Review* →
       *Review read* with *3 injections logged on <today>*, only that read's rows; a row opens its sheet. *Undo this
       read* → dialog → *Undo read* → snackbar *Read undone*, the rows stay as *Not logged*, the graph loses them. Again
-      with a row's entry deleted first (sheet *Delete*) → *Couldn't undo: some of these entries changed since…*,
+      with a row's treatment deleted first (sheet *Delete*) → *Couldn't undo: some of these treatments changed since…*,
       nothing else changes. The pen page shows *Review the last read* until undone. An everyday read (`-30:4` alone)
       has no *Review*. With *Notification after each read* on, the notification has *Review* and *Undo*. Spanish.
 - [ ] Pens page intro: the phone's back with the circle on this phone's NFC antenna (the same spot as the new-sensor
@@ -813,7 +813,7 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       logged*); a failure shakes once. *Remove animations* on: none of it, a still ring, final numbers.
 - [ ] Home question card (`PEN_READ` with `1, 1.5` 40 min ago, and a typed 8u near an 8.5u read twice for *Same
       injection?*): under the glucose card, never above it; *Log 1.5u* / *All priming* answer it and the next one fades
-      in; several typed entries → *Choose* → the sheet (radio rows, *None of these*, *Save* disabled until a choice);
+      in; several typed treatments → *Choose* → the sheet (radio rows, *None of these*, *Save* disabled until a choice);
       the same sheet from Doses read; TalkBack reads amounts as units. Light, dark, largest font.
 - [ ] Add treatment with a pen (a real pen, on the phone, by the user): *Injected? Hold your pen to the phone.* under
       the fields; holding the pen → *Reading your pen…*, the dose counts into Rapid (Long-acting for a long pen) and
@@ -823,7 +823,7 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       just tap your pen* (once a day, 3 times). A day without a read → *Pen read 1d ago* on the treatments' title opens
       the pen. Carbs typed alone → *Injected? Hold your pen to the phone.* under the treatments for an hour.
 - [ ] Uploads (LibreView / Nightscout / Tidepool on): a pen dose goes up only 10 min after its last dose; a top-up
-      within those 10 min goes up as one entry.
+      within those 10 min goes up as one treatment.
 - [ ] *Notification after each read* off (default): a read posts no *Pen reads* notification (*Pen doses to check*
       still posts). On: the read's notification, silent, no heads-up; `dumpsys notification --noredact` shows it in
       Sukrara's info group (`g:app.mauri.sukrara.INFO`), never in `g:Aggregate_…` with the glucose card or an alert
@@ -846,12 +846,12 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       amount apart, big doses), a footer under each group; each row shows its value, no row icons but Reset's;
       each opens the one number input; *Reset to defaults* disabled at the defaults, else a dialog (*Cancel* keeps the
       values, *Reset* restores them). Changing *One injection* to 15 min and reading `4` then `4` 12 min later logs one 8u
-      entry; entries already logged keep their split. Search finds every row.
-- [ ] A new pen whose last injection matches a hand-typed entry: the pen page's card says *Matches your 8u entry at …*
-      and the button *Replace your entry* (*Sustituir tu entrada*); tapping it replaces the hand entry (pen time and amount) and the card goes; the read card's pill *Replace with
-      8.5u*; Doses read → the session's sheet *Replace your entry*. Without a match: *Log it* / *Log 8.5u* / *Log this
+      treatment; treatments already logged keep their split. Search finds every row.
+- [ ] A new pen whose last injection matches a hand-typed treatment: the pen page's card says *Matches your 8u treatment at …*
+      and the button *Replace your treatment* (*Reemplazar tu tratamiento*); tapping it replaces the typed treatment (pen time and amount) and the card goes; the read card's pill *Replace with
+      8.5u*; Doses read → the session's sheet *Replace your treatment*. Without a match: *Log it* / *Log 8.5u* / *Log this
       injection* as before.
-- [ ] Follower: no Insulin pens row; pen entries open read-only.
+- [ ] Follower: no Insulin pens row; pen treatments open read-only.
 - [ ] LibreView / Nightscout / Tidepool / CSV / graph / insulin mute: `a` only; CSV column 23 *Primed Insulin*.
 - [ ] Spanish: *pluma*, *purgado*, amounts `8.5u`.
 
@@ -885,7 +885,14 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    (`adb shell run-as app.mauri.sukrara kill <pid>`; the notification stays), then the notification's *Allow*: the
    follower is let in within seconds, the notification leaves, and the wearer keeps sharing (Settings › Sharing still
    *Sharing*, the relay keeps logging its events, the follower's next minute's reading arrives).
-7. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
+7. Can add treatments and Nearby devices (docs/40): on the wearer, before step 4, revoke *Nearby devices*
+   (`adb shell pm revoke app.mauri.sukrara android.permission.BLUETOOTH_ADVERTISE`) and turn *Let them add treatments*
+   on in *Share with someone*. The approve dialog shows *Let <name> add treatments* already on; *Allow* asks *Nearby
+   devices* right then (deny it). Home shows *Bluetooth sharing is blocked* (*Allow* / *Turn off*), Settings › Sharing
+   says it in red, and the follower's row carries the *Can add treatments* mark; its sheet has the switch on. *Allow* →
+   the banner leaves. On the follower, setup's permission step lists *Nearby devices*; revoked while following, home
+   shows *Bluetooth is blocked* with its close.
+8. Optional, Replace this identity (#161): wearer Settings › Sharing › Backup › *Replace this identity* › *Start
    fresh*, confirmed. *Telling your followers…* fills (*1 of 1 told*) and ends on *Started fresh*; the relay logs the
    kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
    home), no No data alarm afterwards. Again with the relay stopped: *Telling your followers…* waits 15 s with

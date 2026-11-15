@@ -89,7 +89,7 @@
     <string name="banner_updates_not_now">Ahora no</string>
     <string name="banner_updates_on">Sukrara busca actualizaciones una vez al día. Se cambia en Ajustes › Acerca de.</string>
     <string name="banner_clinic_title">Comparte tus datos con tu clínica</string>
-    <string name="banner_clinic_text">Sube tus lecturas y anotaciones a LibreView o Tidepool para que tu equipo médico las vea.</string>
+    <string name="banner_clinic_text">Sube tus lecturas y tratamientos a LibreView o Tidepool para que tu equipo médico los vea.</string>
     <string name="banner_clinic_libreview">LibreView</string>
     <string name="banner_clinic_tidepool">Tidepool</string>
 
@@ -116,14 +116,14 @@
     <string name="home_treatment_long">%1$s de insulina lenta</string>
     <string name="home_treatment_carbs">%1$s de hidratos</string>
     <string name="home_treatment_note">Nota</string>
-    <!-- TalkBack: una entrada que registró una pluma (el icono de pluma de su fila) -->
+    <!-- TalkBack: un tratamiento que registró una pluma (el icono de pluma de su fila) -->
     <string name="home_treatment_pen_source">de la pluma</string>
-    <!-- TalkBack: what tapping a pen entry's row does -->
+    <!-- TalkBack: what tapping a pen treatment's row does -->
     <string name="home_pen_open">ver sus dosis</string>
-    <string name="home_pen_changed">Entrada cambiada</string>
+    <string name="home_pen_changed">Tratamiento cambiado</string>
     <string name="home_pen_removed">Quitado de tu registro</string>
-    <string name="home_pen_changed_since">Esta entrada cambió mientras tanto. No se guardó nada.</string>
-    <string name="home_pen_undo_failed">No se pudo deshacer: la entrada cambió</string>
+    <string name="home_pen_changed_since">Este tratamiento cambió mientras tanto. No se guardó nada.</string>
+    <string name="home_pen_undo_failed">No se pudo deshacer: el tratamiento cambió</string>
     <!-- TalkBack: lo que hace tocar una fila de tratamiento -->
     <string name="home_treatment_edit">editar</string>
     <string name="home_treatment_sending">Enviando…</string>
@@ -146,8 +146,8 @@
     <string name="history_today">Hoy</string>
     <string name="history_yesterday">Ayer</string>
     <string name="history_empty">Ningún tratamiento en los últimos 31 días</string>
-    <string name="history_empty_hint">Aquí aparecen las entradas que anotas y las dosis que lee tu pluma.</string>
-    <string name="history_footer">Los últimos 31 días. Las entradas anteriores están en tu exportación, y en LibreView o Tidepool si subes allí.</string>
+    <string name="history_empty_hint">Aquí aparecen los tratamientos que anotas y las dosis que lee tu pluma.</string>
+    <string name="history_footer">Los últimos 31 días. Los tratamientos anteriores están en tu exportación, y en LibreView o Tidepool si subes allí.</string>
     <string name="history_back">Atrás</string>
     <string name="home_undo">Deshacer</string>
 

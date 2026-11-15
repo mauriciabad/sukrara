@@ -350,6 +350,42 @@ class OwnerEngineTest {
             e.stop()
         }
 
+    /** docs/40: *Let them add treatments* on the invite reaches the request and, unless changed at Allow, the roster. */
+    @Test fun theInvitesCanAddTreatmentsChoiceStartsTheRequestAndAllowMayChangeIt() =
+        runTest {
+            val e = engine()
+            assertTrue(e.createIdentity(backgroundScope, null))
+            runCurrent()
+
+            suspend fun s() = (store.load() as OwnerIdentityStore.Load.Loaded).state
+            val dad = crypto.generate()
+            val dadLink = InviteLink.parse(e.createInvite("Dad", writer = true)!!)!!
+            relay.deliver("inbox", OwnerFixtures.request(dad, s(), dadLink.token, "Dad"))
+            runCurrent()
+            assertTrue(e.pendingRequest(dad.public.hex)!!.writer)
+            // as the invite was made: a writer from the first roster
+            assertEquals(ApproveResult.Allowed, e.approve(dad.public.hex))
+            assertTrue(dad.public.hex in (e.state.value as OwnerShareState.Sharing).writers)
+
+            val mom = crypto.generate()
+            val momLink = InviteLink.parse(e.createInvite("Mom", writer = true)!!)!!
+            relay.deliver("inbox", OwnerFixtures.request(mom, s(), momLink.token, "Mom"))
+            runCurrent()
+            // switched off in the approve dialog: only sees
+            assertEquals(ApproveResult.Allowed, e.approve(mom.public.hex, writer = false))
+            assertFalse(mom.public.hex in (e.state.value as OwnerShareState.Sharing).writers)
+
+            val kid = crypto.generate()
+            val kidLink = InviteLink.parse(e.createInvite("Kid")!!)!!
+            relay.deliver("inbox", OwnerFixtures.request(kid, s(), kidLink.token, "Kid"))
+            runCurrent()
+            assertFalse(e.pendingRequest(kid.public.hex)!!.writer)
+            // the default invite, switched on at Allow
+            assertEquals(ApproveResult.Allowed, e.approve(kid.public.hex, writer = true))
+            assertTrue(kid.public.hex in (e.state.value as OwnerShareState.Sharing).writers)
+            e.stop()
+        }
+
     private object NoHub : GlucoseHub {
         override val state = MutableStateFlow(GlucoseState.Initial)
 

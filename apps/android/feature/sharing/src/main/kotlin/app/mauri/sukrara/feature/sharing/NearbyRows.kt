@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.sharing
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -77,6 +78,25 @@ fun ColumnScope.NearbyFixRow(
         else -> {
             Unit
         }
+    }
+}
+
+/**
+ * Asks for [permissions] in context, only while one is missing: the moment Bluetooth sharing becomes useful (its switch
+ * turned on, a follower allowed: docs/40). Android asks nothing when the Nearby devices group is already allowed (the
+ * sensor's grant covers the dialog) and nothing after *Don't allow* twice; [onAnswer] then looks again. Returns the
+ * function that asks.
+ */
+@Composable
+fun rememberAskNearby(
+    permissions: List<String>,
+    onAnswer: () -> Unit,
+): () -> Unit {
+    val context = LocalContext.current
+    val answered by rememberUpdatedState(onAnswer)
+    val ask = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { answered() }
+    return {
+        if (permissions.any { context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }) ask.launch(permissions.toTypedArray())
     }
 }
 

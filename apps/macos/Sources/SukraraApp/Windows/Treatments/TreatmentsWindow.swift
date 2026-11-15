@@ -360,7 +360,7 @@ public struct TreatmentsView: View {
             if TreatmentsModel.byDay(model.rows, now: now()).isEmpty {
                 ContentUnavailableView(
                     L10n.t("No treatments in the last 7 days"), systemImage: "syringe",
-                    description: Text(L10n.t("Entries logged on the phone or here show up in this list.")))
+                    description: Text(L10n.t("Treatments logged on the phone or here show up in this list.")))
             } else {
                 TimelineView(.periodic(from: .now, by: 60)) { context in
                     let days = TreatmentsModel.byDay(model.rows, now: context.date)

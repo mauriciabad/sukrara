@@ -29,7 +29,7 @@ class ShareScreenBackTest {
     @Test
     fun theQrPageHasAnOnScreenBack() {
         var back = 0
-        compose.setContent { SukraraTheme(dynamic = false) { ShareScreen(ready, {}, {}, onBack = { back++ }) } }
+        compose.setContent { SukraraTheme(dynamic = false) { ShareScreen(ready, { _, _ -> }, {}, onBack = { back++ }) } }
         compose.onNodeWithContentDescription("Navigate up").performClick()
         assertEquals(1, back)
     }
@@ -38,7 +38,7 @@ class ShareScreenBackTest {
     fun anOutcomeHasAnOnScreenBack() {
         var back = 0
         compose.setContent {
-            SukraraTheme(dynamic = false) { ShareScreen(ready, {}, {}, onBack = { back++ }, progress = InviteProgress.Expired) }
+            SukraraTheme(dynamic = false) { ShareScreen(ready, { _, _ -> }, {}, onBack = { back++ }, progress = InviteProgress.Expired) }
         }
         compose.onNodeWithContentDescription("Navigate up").performClick()
         assertEquals(1, back)

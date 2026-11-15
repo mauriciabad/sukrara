@@ -465,6 +465,7 @@ class AppGraph(
                         alarm: Boolean,
                     ) = alerts.tryOut.channelId(kind, alarm)
                 },
+            featureChecks = { featureChecks },
             appsShared =
                 integrations.summary.map { s ->
                     setOfNotNull(
@@ -671,6 +672,41 @@ class AppGraph(
         GraphSettings.config(followerSettings.settings).shareIn(scope, SharingStarted.WhileSubscribed(SHARE_STOP_MS), replay = 1)
     }
 
+    /**
+     * THE blocked-features checklist (docs/40): home's banner, Settings' rows and setup read this one instance. Each
+     * feature's state comes from the module that has it, read only on its role.
+     */
+    val featureChecks by lazy {
+        AppFeatureChecks(
+            app,
+            scope,
+            role.data.map { it.role },
+            sharing =
+                AppFeatureChecks.Port(
+                    { shareOwner.ownerEngine.nearbyStatus },
+                    { shareOwner.ownerEngine.refreshNearby() },
+                    {
+                        // as the switch on Settings › Sharing: Pair nearby closes with it
+                        data.settings.set(ShareOwnerModule.NearbySharing, false)
+                        shareOwner.ownerEngine.closeNearbyPairing()
+                    },
+                ),
+            following = AppFeatureChecks.Port({ follower.engine.nearbyStatus }, { follower.engine.refreshNearby() }),
+            healthConnect =
+                AppFeatureChecks.Port(
+                    { integrations.healthConnect.status },
+                    { integrations.healthConnect.recheck() },
+                    { integrations.healthConnect.setOn(false) },
+                ),
+            homeNetwork =
+                AppFeatureChecks.Port(
+                    { integrations.nightscoutApi.lan },
+                    { integrations.nightscoutApi.recheckLan() },
+                    { integrations.nightscoutApi.setLan(false) },
+                ),
+        )
+    }
+
     val home by lazy {
         HomeModule(
             data = data,
@@ -692,6 +728,7 @@ class AppGraph(
             treatmentLog = { treatments.log },
             sharing = { shareOwner.ownerEngine.state },
             tapsBlocked = { BlockedTaps(pen = pens.tapsBlockedWhileOn(), sensor = sensor.tapLaunch.onButBlocked()) },
+            featureChecks = featureChecks,
             penEntryOf = { pens.port.entry(it) },
             penPort = { pens.port.takeIf { pens.available() } },
             penQuestionsOf = { pens.homeQuestions },

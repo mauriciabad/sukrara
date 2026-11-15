@@ -848,7 +848,7 @@ private fun EntrySheet(
 
 /**
  * A session that isn't an entry (before Sukrara, not logged, only priming, after a pen clock reset): its doses with
- * *Priming* / *Injected*, what logging it would do (*Matches your 8u entry at 13:10*), *Log this injection* (*Log as
+ * *Priming* / *Injected*, what logging it would do (*Matches your 8u treatment at 13:10*), *Log this injection* (*Log as
  * injection* for priming), or *Add to the 13:10 entry* for a dose that belongs to an entry's session.
  */
 @OptIn(ExperimentalMaterial3Api::class)

@@ -24,6 +24,7 @@ import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.ClockBehind
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
@@ -137,6 +138,12 @@ class HomeGallery {
             "quiet-chips" to ui(Samples.wearer().copy(alerts = quietAlerts)),
             "alerts-unreliable" to ui(Samples.wearer(), banner = BannerKind.AlertsUnreliable),
             "finish-setup" to ui(Samples.wearer(), banner = BannerKind.FinishSetup),
+            // docs/40: Bluetooth sharing on, someone follows, Nearby devices doesn't cover it: Allow / Turn off
+            "feature-blocked" to
+                ui(Samples.wearer(), banner = BannerKind.FeatureBlocked).copy(blockedFeature = BlockedFeature.BluetoothSharing),
+            // a follower's Bluetooth (no switch): Allow, and the close
+            "feature-blocked-follower" to
+                ui(Samples.wearer(), banner = BannerKind.FeatureBlocked).copy(blockedFeature = BlockedFeature.BluetoothFollowing),
             "data-problem" to ui(Samples.wearer(), banner = BannerKind.DataProblem, problems = 1),
             "profile-not-backed-up" to
                 ui(Samples.wearer(), banner = BannerKind.NotBackedUp)

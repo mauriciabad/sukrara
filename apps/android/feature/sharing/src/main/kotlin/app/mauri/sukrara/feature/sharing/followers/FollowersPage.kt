@@ -84,7 +84,7 @@ class FollowersActions(
 
 /**
  * Settings › Sharing while sharing: how the wearer appears (opens How you appear), Backup, requests waiting, the
- * followers with their pictures and whether they can add entries (a follower opens [FollowerDialog]), and the removed
+ * followers with their pictures, those who can add treatments marked (a follower opens [FollowerSheet]), and the removed
  * ones folded under a count. Share invites someone.
  */
 @Composable
@@ -135,9 +135,9 @@ fun FollowersPage(
                 )
             }
             for (f in active) {
+                // the exception only, as a mark on the picture (the treatment list's way); TalkBack reads it as words
                 val since = stringResource(R.string.sh_followers_since, date(f.since))
-                val scope = stringResource(if (f.key in state.writers) R.string.sh_followers_can_add else R.string.sh_followers_sees_only)
-                PersonRow(f.avatarJson, f.name, "$since · $scope") { open = f.key }
+                PersonRow(f.avatarJson, f.name, since, writer = f.key in state.writers) { open = f.key }
             }
         }
         SettingsGroup(title = stringResource(R.string.sh_nearby_group)) {
@@ -194,7 +194,7 @@ fun FollowersPage(
         )
     }
     active.firstOrNull { it.key == open }?.let { f ->
-        FollowerDialog(
+        FollowerSheet(
             f,
             nearby =
                 when {
@@ -241,83 +241,32 @@ private fun YouRow(
     )
 }
 
-/** A person (a follower, a request) as SPA's Preference with their picture; [onClick] null: a fact, not tappable. */
+/**
+ * A person (a follower, a request) as SPA's Preference with their picture; [writer]: the picture carries the *Can add
+ * treatments* mark ([FollowerPicture]). [onClick] null: a fact, not tappable.
+ */
 @Composable
 internal fun PersonRow(
     avatarJson: String?,
     name: String,
     summary: String,
+    writer: Boolean = false,
     onClick: (() -> Unit)?,
 ) {
     val shown = Profile.shownName(name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
-    val picture: @Composable () -> Unit = { AvatarImage(avatarJson, shown, size = 40.dp) }
+    val picture: @Composable () -> Unit = { FollowerPicture(avatarJson, shown, writer) }
     if (onClick != null) {
-        NavigationRow(shown, onClick, summary = summary, leading = picture)
+        val canAdd = stringResource(R.string.sh_followers_can_add)
+        NavigationRow(
+            shown,
+            onClick,
+            summary = summary,
+            leading = picture,
+            summaryDescription = if (writer) "$summary, $canAdd" else null,
+        )
     } else {
         InfoRow(shown, summary = summary, leading = picture)
     }
 }
 
-/**
- * One follower: picture, since when, *Can add entries* (a refused change snaps back and says why), and Remove —
- * confirmed, saying what it means.
- */
-@Composable
-fun FollowerDialog(
-    follower: FollowerRecord,
-    /** A nearby device: true = *Connected*, false = paired but *Disconnected*, null = not one (no line). */
-    nearby: Boolean?,
-    writer: Boolean,
-    refused: Boolean,
-    onWriter: (Boolean) -> Unit,
-    onRemove: () -> Unit,
-    onClose: () -> Unit,
-) {
-    var confirming by rememberSaveable { mutableStateOf(false) }
-    val haptics = rememberHaptics()
-    val name = Profile.shownName(follower.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
-    if (!confirming) {
-        AlertDialog(
-            onDismissRequest = onClose,
-            icon = { AvatarImage(follower.avatarJson, name, size = 64.dp) },
-            title = { Text(name, maxLines = 2) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    nearby?.let {
-                        Text(stringResource(if (it) R.string.sh_nearby_device_connected else R.string.sh_nearby_device_disconnected))
-                    }
-                    Text(stringResource(R.string.sh_followers_since, date(follower.since)))
-                    SwitchRow(
-                        title = stringResource(R.string.sh_followers_writer),
-                        checked = writer,
-                        onCheckedChange = onWriter,
-                        summary = stringResource(R.string.sh_followers_writer_summary),
-                    )
-                    if (refused) Text(stringResource(R.string.sh_followers_writer_refused), color = MaterialTheme.colorScheme.error)
-                }
-            },
-            confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.sh_followers_close)) } },
-            dismissButton = {
-                TextButton(
-                    onClick = { confirming = true },
-                ) { Text(stringResource(R.string.sh_followers_remove), color = MaterialTheme.colorScheme.error) }
-            },
-        )
-    } else {
-        AlertDialog(
-            onDismissRequest = onClose,
-            title = { Text(stringResource(R.string.sh_followers_remove_title, name)) },
-            text = { Text(stringResource(R.string.sh_followers_remove_text)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    haptics.confirm()
-                    onRemove()
-                    onClose()
-                }) { Text(stringResource(R.string.sh_followers_remove), color = MaterialTheme.colorScheme.error) }
-            },
-            dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.sh_setup_cancel)) } },
-        )
-    }
-}
-
-private fun date(epochS: Long): String = DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(epochS * 1000))
+private fun date(epochS: Long): String = followerDate(epochS)

@@ -57,7 +57,7 @@ private val FIXABLE = setOf(NearbyStatus.BluetoothOff, NearbyStatus.NeedsPermiss
 /**
  * Settings › Sharing › *Over Bluetooth nearby*, like stock Bluetooth's page: the main switch with what its state
  * means, the fix while Bluetooth or the permission blocks it, *Pair nearby* (greyed while off or blocked; an open
- * pairing keeps its switch) and the follower devices nearby (a follower opens [FollowerDialog]). Back leaves.
+ * pairing keeps its switch) and the follower devices nearby (a follower opens [FollowerSheet]). Back leaves.
  */
 @Composable
 fun NearbyPage(
@@ -102,7 +102,7 @@ fun NearbyPage(
         }
     }
     state.followers.firstOrNull { it.active && it.key == open }?.let { f ->
-        FollowerDialog(
+        FollowerSheet(
             f,
             nearby =
                 when {

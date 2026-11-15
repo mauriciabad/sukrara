@@ -34,7 +34,7 @@ class ShareScreenThemeTest {
     private fun pageColor(dark: Boolean): Color {
         // the phone's dark theme (the settings pages follow it, as the app's theme does)
         if (dark) RuntimeEnvironment.setQualifiers("+night")
-        compose.setContent { SukraraTheme(dark = dark, dynamic = false) { ShareScreen(InviteUi.None, {}, {}, {}) } }
+        compose.setContent { SukraraTheme(dark = dark, dynamic = false) { ShareScreen(InviteUi.None, { _, _ -> }, {}, {}) } }
         val pixels = compose.onRoot().captureToImage().toPixelMap()
         return pixels[8, pixels.height - 8]
     }

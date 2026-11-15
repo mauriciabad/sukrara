@@ -118,7 +118,7 @@ class TreatmentsSyncTest {
             val sync = SyncTreatments(OwnerFixtures.context(), repo)
             assertEquals(Verdict.Accepted, sync.receive(owner, event("writer-edit"), now, null).verdict)
             assertEquals(Verdict.Older, sync.receive(owner, event("writer-rapid"), now, null).verdict)
-            // the writer lost "Can add entries"
+            // the writer lost "Can add treatments"
             assertEquals(Verdict.NotWriter, sync.receive(owner.copy(writers = emptySet()), event("writer-edit"), now, null).verdict)
         }
 

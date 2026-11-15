@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.home.banners
 
 import app.mauri.sukrara.core.model.AlertReadiness
+import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.ModuleState
 import kotlinx.serialization.Serializable
 import java.time.Duration
@@ -29,6 +30,14 @@ enum class BannerKind(val safety: Boolean) {
      * *Turn off* turns the blocked features off; it goes by itself once allowed (checked on every resume).
      */
     TapsBlocked(safety = false),
+
+    /**
+     * A feature that is on and in use but Android blocks it ([HomeEnvironment.blocked], docs/40): Bluetooth sharing
+     * while someone follows, Bluetooth following, Health Connect, the home Wi-Fi API. It names the first one; *Allow*
+     * asks Android, *Turn off* turns the feature off; one without a switch ([BlockedFeature.canTurnOff] false) is
+     * closed instead, for that feature only (its page keeps the fix). It goes by itself once allowed.
+     */
+    FeatureBlocked(safety = false),
 
     /**
      * Sukrara's System UI module is enabled but System UI doesn't run it yet (or runs an older build): *Restart System
@@ -62,6 +71,8 @@ data class HomeEnvironment(
     val updateChecksOff: Boolean? = null,
     /** What Android blocks of the taps that are on (pen reading On, *Open Sukrara when you scan a sensor*). */
     val tapsBlocked: BlockedTaps = BlockedTaps(),
+    /** The features Android blocks, in [BlockedFeature] order ([app.mauri.sukrara.core.model.FeatureChecksSource]). */
+    val blocked: List<BlockedFeature> = emptyList(),
     /** The System UI module needs a restart ([ModuleState.Restart] / [ModuleState.Update]); null = it doesn't. */
     val systemUiRestart: ModuleState? = null,
     /** This app's build (its version code): a closed restart card comes back with a new build. */
@@ -69,6 +80,14 @@ data class HomeEnvironment(
 ) {
     /** What a closed restart card is remembered under: the module's state and the build. */
     val restartKey: String? get() = systemUiRestart?.let { "${BannerKind.RestartSystemUi.name}:$it:$build" }
+
+    /** The blocked feature the banner names: the first not closed (only one without a switch can be closed). */
+    fun blockedShown(memory: BannerMemory): BlockedFeature? = blocked.firstOrNull { it.canTurnOff || !memory.dismissedKey(blockedKey(it)) }
+
+    companion object {
+        /** What a closed blocked-feature banner is remembered under: the feature. */
+        fun blockedKey(feature: BlockedFeature): String = "${BannerKind.FeatureBlocked.name}:${feature.name}"
+    }
 }
 
 /**
@@ -134,6 +153,9 @@ data class BannerMemory(
     fun restoreAll(): BannerMemory = BannerMemory(dismissedAtMs.filterKeys { it == BannerKind.FinishSetup.name })
 }
 
+/** Banners whose closing (if any) is remembered by their own key, never by the kind ([HomeEnvironment]). */
+private val KEYED = setOf(BannerKind.TapsBlocked, BannerKind.FeatureBlocked, BannerKind.RestartSystemUi)
+
 /** "Later" on Finish setup: it comes back after a day until setup is done. */
 val SETUP_LATER: Duration = Duration.ofHours(24)
 
@@ -157,6 +179,7 @@ object HomeBanners {
                     BannerKind.AlertsUnreliable -> readiness?.ready == false
                     BannerKind.DataProblem -> dataProblems > 0
                     BannerKind.TapsBlocked -> env.tapsBlocked.any
+                    BannerKind.FeatureBlocked -> env.blockedShown(memory) != null
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.FinishSetup -> env.nextSetupStep != null
                     BannerKind.TurnOnUpdates -> env.updateChecksOff == true
@@ -164,7 +187,6 @@ object HomeBanners {
                     BannerKind.AddWidget -> env.widgetPlaced == false
                     BannerKind.ShareWithClinic -> env.clinicUploadSet == false
                 }
-            wanted &&
-                (kind.safety || kind == BannerKind.TapsBlocked || kind == BannerKind.RestartSystemUi || !memory.dismissed(kind, now))
+            wanted && (kind.safety || kind in KEYED || !memory.dismissed(kind, now))
         }
 }

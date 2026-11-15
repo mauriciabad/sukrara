@@ -356,10 +356,8 @@
     <string name="sh_backup_row_done">Backed up</string>
     <!-- Backup row: not backed up -->
     <string name="sh_backup_row_missing">Not backed up: a new phone would lose your followers</string>
-    <!-- Follower row: may add entries -->
-    <string name="sh_followers_can_add">Can add entries</string>
-    <!-- Follower row: only sees -->
-    <string name="sh_followers_sees_only">Sees only</string>
+    <!-- TalkBack on a follower row whose picture carries the Can add treatments mark -->
+    <string name="sh_followers_can_add">Can add treatments</string>
     <!-- Button: show removed followers -->
     <string name="sh_followers_removed_show">Removed</string>
     <!-- Button: fold removed followers -->
@@ -368,10 +366,17 @@
     <string name="sh_followers_removed">Removed</string>
     <!-- Removed follower; %1$s = date -->
     <string name="sh_followers_removed_at">Removed %1$s</string>
-    <!-- Switch: follower may add entries -->
-    <string name="sh_followers_writer">Can add entries</string>
+    <!-- The follower sheet's switch: this follower may add treatments -->
+    <string name="sh_followers_writer">Can add treatments</string>
     <!-- Switch summary -->
     <string name="sh_followers_writer_summary">Meals, insulin and notes they add appear in your log.</string>
+    <!-- The follower sheet's closing button [CHAR LIMIT=15] -->
+    <string name="sh_followers_done">Done</string>
+    <!-- Share with someone: the switch for whoever joins with this invite -->
+    <string name="sh_share_writer">Let them add treatments</string>
+    <string name="sh_share_writer_summary">They can add meals, insulin and notes to your log. You can change it when you allow them, and later.</string>
+    <!-- The approve dialog's switch; %1$s = the person asking -->
+    <string name="sh_approve_writer">Let %1$s add treatments</string>
     <!-- Writer switch refused -->
     <string name="sh_followers_writer_refused">Couldn\'t change it: sharing is paused while another app shares as you.</string>
     <!-- Backup intro, backed up -->
@@ -533,13 +538,13 @@
     <string name="sh_following_ended">Not following %1$s</string>
     <string name="sh_following_last_heard">Last reading arrived %1$s</string>
     <string name="sh_following_never">No reading has arrived yet</string>
-    <string name="sh_following_can_write">You can add entries to their log</string>
-    <string name="sh_following_cannot_write">Only they can add entries to their log</string>
+    <string name="sh_following_can_write">You can add treatments to their log</string>
+    <string name="sh_following_cannot_write">Only they can add treatments to their log</string>
     <string name="sh_following_relays">Connected to %1$d of %2$d relays</string>
     <string name="sh_following_relays_off">Not connected (monitoring isn\'t running)</string>
     <string name="sh_following_stop">Stop following</string>
     <string name="sh_following_stop_title">Stop following %1$s?</string>
-    <string name="sh_following_stop_text">Their readings, entries and alerts leave this phone. To follow again you need a new invite link.</string>
+    <string name="sh_following_stop_text">Their readings, treatments and alerts leave this phone. To follow again you need a new invite link.</string>
     <string name="sh_following_stop_failed">Couldn\'t remove the key from this phone. Try again.</string>
     <string name="sh_following_unreadable">This phone can\'t open the follower key right now. Sukrara keeps trying; their stored readings and alerts stay. If it doesn\'t recover, stop following and join again.</string>
     <string name="sh_following_damaged">The follower key on this phone is damaged. Stop following, then join again with a new link.</string>
