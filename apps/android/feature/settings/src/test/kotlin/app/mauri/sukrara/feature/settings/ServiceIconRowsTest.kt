@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.settings
 
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasAnyDescendant
@@ -16,17 +14,13 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performScrollTo
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
-import app.mauri.sukrara.core.model.PenTaps
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.testing.FakeClock
-import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.icons.serviceIconTag
 import app.mauri.sukrara.designsystem.rows.ROW_ICON_TAG
 import app.mauri.sukrara.designsystem.rows.ROW_TAG
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
-import app.mauri.sukrara.feature.settings.pens.PensContent
-import app.mauri.sukrara.feature.settings.pens.PensViewModel
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsContent
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsState
@@ -45,8 +39,7 @@ import java.time.ZoneOffset
 
 /**
  * #181 ("in settings we had app icons in some items, bring all of them back"): the settings rows that stand for
- * Juggluco show its own icon (the reading source's radio, the pens page's *Juggluco also reads pens*), as the PoC's
- * did, and the overview's clinic banner shows LibreView's and Tidepool's. Review images:
+ * Juggluco show its own icon (the reading source's radio), as the PoC's did, and the overview's clinic banner shows LibreView's and Tidepool's. Review images:
  * build/outputs/roborazzi/icons-*.png.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -57,9 +50,6 @@ class ServiceIconRowsTest {
 
     private val now = Instant.parse("2026-10-27T14:00:00Z")
     private val zone = ZoneOffset.UTC
-
-    // Built outside the composable (lint ViewModelConstructorInComposable).
-    private val pens by lazy { PensViewModel(InMemorySettingsRepository(), null) }
 
     /** The row titled [title] carries the icon tagged [tag]. */
     private fun assertRowIcon(
@@ -103,18 +93,6 @@ class ServiceIconRowsTest {
         assertRowIcon("This phone reads the sensor", ROW_ICON_TAG)
         compose.onNode(hasText("Juggluco") and hasAnyAncestor(hasTestTag(ROW_TAG))).performScrollTo()
         capture("sensor")
-    }
-
-    @Test
-    fun pensJugglucoRowShowsJuggluco() {
-        compose.setContent {
-            SukraraTheme(dark = false, dynamic = false) {
-                val ui by pens.ui.collectAsState()
-                ui?.let { PensContent(it.copy(reading = "on", taps = PenTaps(false, false, false, juggluco = true)), pens, {}) }
-            }
-        }
-        assertRowIcon("Juggluco also reads pens", serviceIconTag(Service.Juggluco))
-        capture("pens")
     }
 
     @Test

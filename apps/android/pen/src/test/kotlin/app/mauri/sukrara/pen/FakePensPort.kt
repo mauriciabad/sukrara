@@ -97,6 +97,4 @@ class FakePensPort(
     override fun openNfcSettings() = Unit
 
     override fun openNotifySettings() = Unit
-
-    override fun openJugglucoInfo() = Unit
 }

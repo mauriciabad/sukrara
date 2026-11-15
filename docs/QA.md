@@ -775,8 +775,9 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       has no *Review*. With *Notification after each read* on, the notification has *Review* and *Undo*. Spanish.
 - [ ] Pens page intro: the phone's back with the circle on this phone's NFC antenna (the same spot as the new-sensor
       scan) and *Touch the back of the phone with the end of your pen…*; TalkBack reads the drawing's description and
-      the sentence. `PEN_JUGGLUCO --ez installed true` with reading On → warning row *Juggluco also reads pens* (opens
-      Juggluco's App info; on the emulator Android's App info page for a missing app); `false` + resume → gone.
+      the sentence. `PEN_JUGGLUCO --ez installed true` with reading On → footer *A pen tapped while Juggluco is open on screen…*
+      (text only); `false` + resume → gone. Main switch: fresh install *Off · asks when you tap a pen*; on → the
+      settings and pens show; off → only *Your pens* (if any) and the footers; no row icon twice on the page.
 - [ ] A bank / transit card or a passport held to the phone (reading on): nothing at all (no card, no vibration, no
       notification); only a pen tap shows the card (the filter is IsoDep + NfcA since 0.11.46).
 - [ ] Failed read → red card, REJECT haptic, nothing logged; a second one within 2 min adds the tips. The card springs
@@ -811,9 +812,10 @@ only on the user's phone, by the user. The full checklist is `poc/spikes/novopen
       Mallya, aren't supported.* / *Sukrara lee NovoPen Echo Plus y NovoPen 6 (sin probar). …*; TalkBack reads it as
       one paragraph. Settings search *NovoPen 6*, *novopen*, *pen*, Spanish *pluma* → *Insulin pens*. Light and dark,
       largest font.
-- [ ] *Automatic detection* (pens page, reading Ask / On): intro (applies from now on), groups *Priming* (priming size,
-      priming ahead of time), *Injections* (one injection, small doses on their own, last injection on a new pen),
-      *Doses you type* (time apart, amount apart, amount apart for big doses); each summary states the rule with its value;
+- [ ] *Automatic detection* (pens page row *Priming under 2u · one injection within 10 min*, reading Ask / On; its own
+      page): intro (applies from now on), groups *Priming* (priming size, priming ahead of time), *Injections* (one
+      injection, small doses on their own, last injection on a new pen), *Doses you type* (time apart, amount apart,
+      amount apart, big doses), a footer under each group; each row shows its value, no row icons but Reset's;
       each opens the one number input; *Reset to defaults* disabled at the defaults, else a dialog (*Cancel* keeps the
       values, *Reset* restores them). Changing *One injection* to 15 min and reading `4` then `4` 12 min later logs one 8u
       entry; entries already logged keep their split. Search finds every row.

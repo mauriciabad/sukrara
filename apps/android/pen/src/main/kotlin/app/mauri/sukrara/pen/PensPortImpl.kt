@@ -272,10 +272,6 @@ class PensPortImpl(
         start(module.notices.readChannelSettings())
     }
 
-    override fun openJugglucoInfo() {
-        start(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", PensModule.JUGGLUCO, null)))
-    }
-
     private fun start(i: Intent): Boolean =
         try {
             context.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

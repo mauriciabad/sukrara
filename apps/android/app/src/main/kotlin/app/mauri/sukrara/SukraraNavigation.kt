@@ -276,6 +276,10 @@ data class SettingsKey(
                 SettingsRoute.Pens
             }
 
+            "pendetection" -> {
+                SettingsRoute.PenDetection
+            }
+
             "reliability" -> {
                 SettingsRoute.Reliability
             }
@@ -332,6 +336,7 @@ data class SettingsKey(
                 is SettingsRoute.PlacePage -> SettingsKey("places", route.setting.name)
                 SettingsRoute.LockScreen -> SettingsKey("lock")
                 SettingsRoute.Pens -> SettingsKey("pens")
+                SettingsRoute.PenDetection -> SettingsKey("pendetection")
                 is SettingsRoute.Pen -> SettingsKey("pen", serial = route.serial)
                 is SettingsRoute.PenDoses -> SettingsKey("pendoses", serial = route.serial, review = route.review)
                 SettingsRoute.Reliability -> SettingsKey("reliability")

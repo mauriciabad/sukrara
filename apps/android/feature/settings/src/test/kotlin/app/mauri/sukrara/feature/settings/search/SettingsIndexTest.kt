@@ -92,6 +92,7 @@ import app.mauri.sukrara.feature.settings.graph.SensorTimeContent
 import app.mauri.sukrara.feature.settings.graph.TimeShownContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
+import app.mauri.sukrara.feature.settings.pens.PenDetectionContent
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
@@ -326,6 +327,10 @@ class SettingsIndexTest {
             Scene("pens", SearchTarget.Page(SettingsRoute.Pens)) {
                 val ui by pensViewModel.ui.collectAsState()
                 ui?.let { PensContent(it, pensViewModel, {}) }
+            },
+            Scene("pen detection", SearchTarget.Page(SettingsRoute.PenDetection)) {
+                val ui by pensViewModel.ui.collectAsState()
+                ui?.let { PenDetectionContent(it, pensViewModel, {}) }
             },
             Scene("status bar", SearchTarget.Page(SettingsRoute.StatusBar)) {
                 StatusBarContent(StatusBarPrefs(chip = true, numberIcon = true), true, {}, {}, {}, {}) {

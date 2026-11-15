@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
@@ -44,6 +45,7 @@ import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
 import app.mauri.sukrara.designsystem.pen.PenQuestionCard
 import app.mauri.sukrara.designsystem.pen.PenSameSheet
+import app.mauri.sukrara.designsystem.rows.RowIconRes
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.feature.home.HomeCallbacks
 import app.mauri.sukrara.feature.home.HomeContent
@@ -53,6 +55,7 @@ import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.home.homeLook
 import app.mauri.sukrara.feature.settings.pens.DosesReadPage
+import app.mauri.sukrara.feature.settings.pens.PenDetectionContent
 import app.mauri.sukrara.feature.settings.pens.PenPage
 import app.mauri.sukrara.feature.settings.pens.PenViewModel
 import app.mauri.sukrara.feature.settings.pens.PensContent
@@ -64,6 +67,7 @@ import app.mauri.sukrara.pen.engine.Pen
 import com.github.takahirom.roborazzi.captureRoboImage
 import com.github.takahirom.roborazzi.captureScreenRoboImage
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -77,10 +81,10 @@ import java.util.TimeZone
 
 /**
  * Goldens of the pen screens (synthetic pens only): Settings › Insulin pens (empty, pens, taps blocked, NFC off,
- * notification blocked), a pen's page (tested, the untested pen's check, not usable, a new pen's last injection),
+ * notification blocked, Juggluco installed, reading off) and *Automatic detection*, a pen's page (tested, the untested pen's check, not usable, a new pen's last injection),
  * *Doses read* and its *Review*, the entry sheet and the *Same injection?* sheet, home's question card and *Pen taps
  * are blocked* banner, and the read card's *Untested pen* / *Pen not usable*; light + dark × default + largest font.
- * The Goldens workflow (CI, Linux) records src/test/snapshots.
+ * Every screen is also checked for a row icon used twice. The Goldens workflow (CI, Linux) records src/test/snapshots.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -251,12 +255,24 @@ class PenShotsTest {
                 scale = f
                 current = name to content
                 compose.waitForIdle()
+                if (!d && f == 1f) assertNoRepeatedIcons(name)
                 val file = "src/test/snapshots/pen-$name-${if (d) "dark" else "light"}${if (f > 1f) "-largest" else ""}.png"
                 if (screen) captureScreenRoboImage(file) else compose.onRoot().captureRoboImage(file)
             }
         }
         current = null
         compose.waitForIdle()
+    }
+
+    /** Icons are there to tell rows apart (the owner, 2026-11-15): no row icon appears twice on one pen screen. */
+    private fun assertNoRepeatedIcons(name: String) {
+        val icons =
+            compose
+                .onAllNodes(SemanticsMatcher.keyIsDefined(RowIconRes), useUnmergedTree = true)
+                .fetchSemanticsNodes()
+                .map { it.config[RowIconRes] }
+        val repeated = icons.groupingBy { it }.eachCount().filterValues { it > 1 }
+        assertTrue("$name repeats row icons ${repeated.keys}", repeated.isEmpty())
     }
 
     private fun pens(
@@ -268,6 +284,8 @@ class PenShotsTest {
 
     private val PensUi.tag get() =
         when {
+            reading == "off" -> "off"
+            taps.juggluco -> "juggluco"
             taps.blocked -> "taps-blocked"
             taps.nfcOff -> "nfc-off"
             taps.notifyBlocked -> "notify-blocked"
@@ -287,6 +305,21 @@ class PenShotsTest {
         pens(PensUi("on", notify = false, rules = rules, pens = listOf(rapid), taps = off), port(taps = off))
         val muted = PenTaps(blocked = false, nfcOff = false, notifyBlocked = true)
         pens(PensUi("on", notify = true, rules = rules, pens = listOf(rapid), taps = muted), port(taps = muted))
+        // Juggluco installed: the footer says what happens with Juggluco open (no warning row: nothing to turn off)
+        val juggluco = PenTaps(blocked = false, nfcOff = false, notifyBlocked = false, juggluco = true)
+        pens(PensUi("on", notify = false, rules = rules, pens = listOf(rapid), taps = juggluco), port(taps = juggluco))
+        // the main switch off: the reading settings go, the pens stay
+        pens(PensUi("off", notify = false, rules = rules, pens = listOf(rapid)), port(listOf(rapid)))
+    }
+
+    @Test fun automaticDetection() {
+        scene("settings-detection") {
+            PenDetectionContent(
+                PensUi("on", notify = false, rules = rules),
+                remember { PensViewModel(InMemorySettingsRepository(), port(emptyList())) },
+                onBack = {},
+            )
+        }
     }
 
     private fun page(

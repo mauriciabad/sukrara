@@ -35,18 +35,17 @@ import app.mauri.sukrara.core.model.PenInfo
 import app.mauri.sukrara.core.model.PenTaps
 import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.storage.SettingsRepository
-import app.mauri.sukrara.designsystem.dialog.Choice
-import app.mauri.sukrara.designsystem.dialog.ChoiceDialog
 import app.mauri.sukrara.designsystem.dialog.NumberDialog
 import app.mauri.sukrara.designsystem.dialog.NumberInput
-import app.mauri.sukrara.designsystem.icons.Service
-import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.nfc.AntennaArt
 import app.mauri.sukrara.designsystem.nfc.antennaSpot
+import app.mauri.sukrara.designsystem.rows.ActionRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
+import app.mauri.sukrara.designsystem.rows.MainSwitchRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.rows.ValueRow
@@ -131,10 +130,11 @@ class PensViewModel(
         _allowResult.value = null
     }
 
-    fun setReading(value: String) {
-        viewModelScope.launch { settings.set(Reading, value) }
+    /** The main switch: reading On or Off (*Ask* is only the state before anyone chose). */
+    fun setOn(on: Boolean) {
+        viewModelScope.launch { settings.set(Reading, if (on) "on" else "off") }
         // switched on while Android blocks the taps: straight to Android's allow screen, once
-        if (value == "on" && taps.value.blocked && port?.openTagSettings() == true) askedAllow = true
+        if (on && taps.value.blocked && port?.openTagSettings() == true) askedAllow = true
     }
 
     fun allowTaps() {
@@ -147,10 +147,6 @@ class PensViewModel(
 
     fun openNotify() {
         port?.openNotifySettings()
-    }
-
-    fun openJuggluco() {
-        port?.openJugglucoInfo()
     }
 
     fun setNotify(on: Boolean) {
@@ -170,15 +166,17 @@ class PensViewModel(
 }
 
 /**
- * Settings › Insulin pens (the wearer's phone with NFC): *Read insulin pens* (Ask at the first tap / On / Off),
- * *Notification after each read*, the *Automatic detection* rules (the one number input each, *Reset to defaults*),
- * and which pens work.
+ * Settings › Insulin pens (the wearer's phone with NFC): the *Read insulin pens* main switch (off with a note while
+ * still *Ask*; off shows only what pens Sukrara reads),
+ * *Notification after each read*, *Automatic detection* (its own page, [PenDetectionContent]), your pens, and which
+ * pens work.
  */
 @Composable
 fun PensContent(
     ui: PensUi,
     vm: PensViewModel,
     onBack: () -> Unit,
+    openDetection: () -> Unit = {},
     openPen: (String) -> Unit = {},
 ) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
@@ -191,99 +189,140 @@ fun PensContent(
         Toast.makeText(context, if (r) allowedText else stillText, Toast.LENGTH_SHORT).show()
         vm.allowShown()
     }
-    var choosing by rememberSaveable { mutableStateOf(false) }
-    var editing by rememberSaveable { mutableStateOf(-1) }
-    var resetting by rememberSaveable { mutableStateOf(false) }
-    val label = numberLabeler()
-    val readingLabels =
-        mapOf(
-            "ask" to stringResource(R.string.st_pens_reading_ask),
-            "on" to stringResource(R.string.st_pens_reading_on),
-            "off" to stringResource(R.string.st_pens_reading_off),
-        )
     SettingsPage(stringResource(R.string.st_pens_title), onBack) {
         // Android blocks the taps (reading Ask or On): every tap does nothing until allowed
         if (ui.reading != "off" && ui.taps.blocked) TapsBlockedCard(BlockedTapsKind.Pen, vm::allowTaps)
         // where to touch: this phone's NFC antenna (its own spot when Android knows it)
         AntennaIntro()
-        SettingsGroup {
-            ValueRow(stringResource(R.string.st_pens_reading), readingLabels.getValue(ui.reading), {
-                choosing = true
-            }, icon = DsR.drawable.ds_ic_dia_pen)
-            if (ui.reading != "off" && ui.taps.nfcOff) {
-                NavigationRow(
-                    stringResource(R.string.st_pens_nfc_off),
-                    vm::openNfc,
-                    summary = stringResource(R.string.st_pens_nfc_off_summary),
-                    icon = DsR.drawable.ds_ic_nfc_off,
-                )
-            }
-            if (ui.reading == "on" && ui.taps.juggluco) {
-                // both apps answer the same tap: a dose could be logged twice (re-checked on resume)
-                NavigationRow(
-                    stringResource(R.string.st_pens_juggluco),
-                    vm::openJuggluco,
-                    summary = stringResource(R.string.st_pens_juggluco_summary),
-                    leading = { ServiceIcon(Service.Juggluco) },
-                )
-            }
-            if (ui.notify && ui.taps.notifyBlocked) {
-                // on but blocked in Android: the row opens the channel's settings, the switch still turns it off
-                SplitSwitchRow(
-                    stringResource(R.string.st_pens_notify),
-                    true,
-                    vm::setNotify,
-                    vm::openNotify,
-                    summary = stringResource(R.string.st_pens_notify_blocked),
-                    icon = DsR.drawable.ds_ic_notifications,
-                )
-            } else {
-                SwitchRow(
-                    stringResource(R.string.st_pens_notify),
-                    ui.notify,
-                    vm::setNotify,
-                    summary = stringResource(R.string.st_pens_notify_summary),
-                    icon = DsR.drawable.ds_ic_notifications,
-                )
-            }
+        // the page's main switch (the PoC's, SPA MainSwitchPreference): On or Off; *Ask* (nobody chose yet: setup's
+        // step or the first pen tap's card asks) shows as off with what a tap does then
+        MainSwitchRow(
+            stringResource(R.string.st_pens_reading),
+            ui.reading == "on",
+            vm::setOn,
+            note = if (ui.reading == "ask") stringResource(R.string.st_pens_reading_ask) else null,
+        )
+        // Off: the rest of the reading settings go (SPA's main switch), the pens stay reachable (their doses, Forget)
+        val on = ui.reading != "off"
+        if (on) {
+            ReadingGroup(ui, vm::openNfc, vm::setNotify, vm::openNotify, openDetection)
         }
         FooterText(stringResource(R.string.st_pens_reading_footer))
-        SettingsGroup(title = stringResource(R.string.st_pens_yours)) {
-            if (ui.pens.isEmpty()) {
-                InfoRow(
-                    stringResource(R.string.st_pens_none),
-                    summary = stringResource(R.string.st_pens_none_summary),
-                    icon = DsR.drawable.ds_ic_dia_pen,
-                )
+        // Juggluco reads any pen tapped while it's open on screen (its reader mode: no setting of its own or Android's
+        // turns that off, and Android tells no app which one is in front): a fact to know, not a state to fix
+        if (ui.reading == "on" && ui.taps.juggluco) FooterText(stringResource(R.string.st_pens_juggluco))
+        // no icons: a list of pens under its title (one pen icon on every row would tell nothing apart)
+        if (on || ui.pens.isNotEmpty()) {
+            SettingsGroup(title = stringResource(R.string.st_pens_yours)) {
+                if (ui.pens.isEmpty()) {
+                    InfoRow(
+                        stringResource(R.string.st_pens_none),
+                        summary = stringResource(R.string.st_pens_none_summary),
+                    )
+                }
+                for (p in ui.pens) NavigationRow(p.name, { openPen(p.serial) }, summary = penSummary(p))
             }
-            for (p in ui.pens) NavigationRow(p.name, { openPen(p.serial) }, summary = penSummary(p), icon = DsR.drawable.ds_ic_dia_pen)
         }
-        SettingsGroup(title = stringResource(R.string.st_pens_detection)) {
-            Rules.forEachIndexed {
-                i,
-                r,
-                ->
-                ValueRow(stringResource(r.title), label(r.spec, ui.rules[i]), { editing = i }, icon = DsR.drawable.ds_ic_tune)
+        FooterText(stringResource(R.string.st_pens_supported))
+    }
+}
+
+/** The pens page's settings while reading is on (or still *Ask*): NFC off, the read notification, Automatic detection. */
+@Composable
+private fun ReadingGroup(
+    ui: PensUi,
+    openNfc: () -> Unit,
+    setNotify: (Boolean) -> Unit,
+    openNotify: () -> Unit,
+    openDetection: () -> Unit,
+) {
+    val label = numberLabeler()
+    SettingsGroup {
+        if (ui.taps.nfcOff) {
+            NavigationRow(
+                stringResource(R.string.st_pens_nfc_off),
+                openNfc,
+                summary = stringResource(R.string.st_pens_nfc_off_summary),
+                icon = DsR.drawable.ds_ic_nfc_off,
+            )
+        }
+        if (ui.notify && ui.taps.notifyBlocked) {
+            // on but blocked in Android: the row opens the channel's settings, the switch still turns it off
+            SplitSwitchRow(
+                stringResource(R.string.st_pens_notify),
+                true,
+                setNotify,
+                openNotify,
+                summary = stringResource(R.string.st_pens_notify_blocked),
+                icon = DsR.drawable.ds_ic_notifications,
+            )
+        } else {
+            SwitchRow(
+                stringResource(R.string.st_pens_notify),
+                ui.notify,
+                setNotify,
+                summary = stringResource(R.string.st_pens_notify_summary),
+                icon = DsR.drawable.ds_ic_notifications,
+            )
+        }
+        NavigationRow(
+            stringResource(R.string.st_pens_detection),
+            openDetection,
+            summary =
+                stringResource(
+                    R.string.st_pens_detection_summary,
+                    label(Rules[0].spec, ui.rules[0]),
+                    label(Rules[2].spec, ui.rules[2]),
+                ),
+            icon = DsR.drawable.ds_ic_tune,
+        )
+    }
+}
+
+/** One group of *Automatic detection*: its title, its rules ([Rules] indices) and the footer that says what they do. */
+private data class DetectionGroup(
+    val title: Int,
+    val rules: IntRange,
+    val footer: Int,
+)
+
+private val DetectionGroups =
+    listOf(
+        DetectionGroup(R.string.st_pens_priming_group, 0..1, R.string.st_pens_priming_footer),
+        DetectionGroup(R.string.st_pens_injections_group, 2..4, R.string.st_pens_injections_footer),
+        DetectionGroup(R.string.st_pens_typed_group, 5..7, R.string.st_pens_typed_footer),
+    )
+
+/**
+ * Settings › Insulin pens › Automatic detection (the PoC's page): the rules in groups (*Priming*, *Injections*, *Doses
+ * you type*), each the one number input showing its value, a footer per group saying what its rules do, and *Reset to
+ * defaults* (dialog). No icons on the rules: eight numbers of one kind are told apart by their titles and groups.
+ */
+@Composable
+fun PenDetectionContent(
+    ui: PensUi,
+    vm: PensViewModel,
+    onBack: () -> Unit,
+) {
+    var editing by rememberSaveable { mutableStateOf(-1) }
+    var resetting by rememberSaveable { mutableStateOf(false) }
+    val label = numberLabeler()
+    SettingsPage(stringResource(R.string.st_pens_detection), onBack) {
+        SettingsIntro(stringResource(R.string.st_pens_detection_intro))
+        for (g in DetectionGroups) {
+            SettingsGroup(title = stringResource(g.title)) {
+                for (i in g.rules) ValueRow(stringResource(Rules[i].title), label(Rules[i].spec, ui.rules[i]), { editing = i })
             }
-            ValueRow(
+            FooterText(stringResource(g.footer))
+        }
+        SettingsGroup {
+            ActionRow(
                 stringResource(R.string.st_pens_reset),
-                stringResource(R.string.st_pens_reset_summary),
                 { resetting = true },
                 enabled = Rules.indices.any { ui.rules[it] != Rules[it].spec.default },
                 icon = DsR.drawable.ds_ic_restart_alt,
             )
         }
-        FooterText(stringResource(R.string.st_pens_detection_footer))
-        FooterText(stringResource(R.string.st_pens_supported))
-    }
-    if (choosing) {
-        ChoiceDialog(
-            stringResource(R.string.st_pens_reading),
-            listOf("ask", "on", "off").map { Choice(readingLabels.getValue(it), it) },
-            ui.reading,
-            { choosing = false },
-            onChoose = vm::setReading,
-        )
     }
     if (editing >= 0) {
         val r = Rules[editing]
@@ -296,6 +335,7 @@ fun PensContent(
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { resetting = false },
             title = { androidx.compose.material3.Text(stringResource(R.string.st_pens_reset_title)) },
+            text = { androidx.compose.material3.Text(stringResource(R.string.st_pens_reset_text)) },
             confirmButton = {
                 androidx.compose.material3.TextButton({
                     vm.reset()

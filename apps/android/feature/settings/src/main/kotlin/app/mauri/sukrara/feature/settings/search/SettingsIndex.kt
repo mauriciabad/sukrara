@@ -178,6 +178,7 @@ object SettingsIndex {
             is SettingsRoute.PlacePage -> placeTitle(route.setting)
             SettingsRoute.LockScreen -> R.string.st_lock_title
             SettingsRoute.Pens -> R.string.st_pens_title
+            SettingsRoute.PenDetection -> R.string.st_pens_detection
             SettingsRoute.Reliability -> R.string.st_reliability_title
             SettingsRoute.StatusBar -> R.string.st_statusbar_title
             SettingsRoute.SensorEnd -> R.string.st_sensorend_title
@@ -224,7 +225,7 @@ object SettingsIndex {
                 SettingsRoute.Advanced
             }
 
-            is SettingsRoute.Pen -> {
+            SettingsRoute.PenDetection, is SettingsRoute.Pen -> {
                 SettingsRoute.Pens
             }
 
@@ -279,6 +280,7 @@ object SettingsIndex {
         @StringRes group: Int?,
         @StringRes summary: Int? = null,
         @StringRes keywords: Int? = null,
+        pensOnly: Boolean = false,
     ) {
         val parent = checkNotNull(parent(route))
         val title = checkNotNull(pageTitle(route))
@@ -292,6 +294,7 @@ object SettingsIndex {
                 group,
                 highlight = null,
                 keywords = keywords,
+                pensOnly = pensOnly,
             ),
         )
     }
@@ -720,21 +723,33 @@ object SettingsIndex {
                     pensOnly = true,
                 ),
             )
+            pageRow(SettingsRoute.PenDetection, null, pensOnly = true)
             rows(pens, R.string.st_pens_yours, R.string.st_pens_yours to null, pensOnly = true)
+            val detection = SettingsRoute.PenDetection
             rows(
-                pens,
-                R.string.st_pens_detection,
+                detection,
+                R.string.st_pens_priming_group,
                 R.string.st_pens_prime_below to null,
                 R.string.st_pens_prime_before to null,
+                pensOnly = true,
+            )
+            rows(
+                detection,
+                R.string.st_pens_injections_group,
                 R.string.st_pens_cluster to null,
                 R.string.st_pens_pending to null,
                 R.string.st_pens_offer to null,
+                pensOnly = true,
+            )
+            rows(
+                detection,
+                R.string.st_pens_typed_group,
                 R.string.st_pens_match to null,
                 R.string.st_pens_match_units to null,
                 R.string.st_pens_match_share to null,
-                R.string.st_pens_reset to R.string.st_pens_reset_summary,
                 pensOnly = true,
             )
+            rows(detection, null, R.string.st_pens_reset to null, pensOnly = true)
 
             val statusBar = SettingsRoute.StatusBar
             rows(

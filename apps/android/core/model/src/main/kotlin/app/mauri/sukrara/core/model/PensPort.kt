@@ -186,7 +186,11 @@ data class PenTaps(
     val nfcOff: Boolean,
     /** *Notification after each read* is on but its channel or the app's notifications are off. */
     val notifyBlocked: Boolean,
-    /** Juggluco (it reads NovoPens too) is installed: both apps react to the same tap, a dose could be logged twice. */
+    /**
+     * Juggluco is installed: it reads any pen tapped while it is open on screen (its reader mode, which no setting turns
+     * off), so its doses then end up in both apps. Android tells no app which app is in front or whether another app may
+     * receive tag intents, so this is all that can be known; the pens page says it as a fact, not as a warning.
+     */
     val juggluco: Boolean = false,
 )
 
@@ -289,9 +293,6 @@ interface PensPort {
     fun openNfcSettings()
 
     fun openNotifySettings()
-
-    /** Juggluco's App info (where the person can turn it off or uninstall it). */
-    fun openJugglucoInfo()
 }
 
 /**

@@ -406,7 +406,8 @@ fun PenPage(
                     stringResource(R.string.st_pen_review_row),
                     openReview,
                     summary = pluralStringResource(R.plurals.st_pen_review_line, r.entries, r.entries, ClockText.dayLabel(r.at)),
-                    icon = DsR.drawable.ds_ic_history,
+                    // not Doses read's history icon right under it: checking one read is another thing to do
+                    icon = DsR.drawable.ds_ic_fact_check,
                 )
             }
             NavigationRow(stringResource(R.string.st_pen_doses_read), openDoses, icon = DsR.drawable.ds_ic_history)

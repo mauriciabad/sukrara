@@ -117,14 +117,14 @@ class SchemaSearchTest {
             put("lock.treatmentTime", R.string.st_lock_time to page(SettingsRoute.LockScreen))
             put("pens.reading", R.string.st_pens_reading to page(SettingsRoute.Pens))
             put("pens.notify", R.string.st_pens_notify to page(SettingsRoute.Pens))
-            put("pens.primeBelow", R.string.st_pens_prime_below to page(SettingsRoute.Pens))
-            put("pens.primeBefore", R.string.st_pens_prime_before to page(SettingsRoute.Pens))
-            put("pens.cluster", R.string.st_pens_cluster to page(SettingsRoute.Pens))
-            put("pens.pending", R.string.st_pens_pending to page(SettingsRoute.Pens))
-            put("pens.offer", R.string.st_pens_offer to page(SettingsRoute.Pens))
-            put("pens.match", R.string.st_pens_match to page(SettingsRoute.Pens))
-            put("pens.matchUnits", R.string.st_pens_match_units to page(SettingsRoute.Pens))
-            put("pens.matchShare", R.string.st_pens_match_share to page(SettingsRoute.Pens))
+            put("pens.primeBelow", R.string.st_pens_prime_below to page(SettingsRoute.PenDetection))
+            put("pens.primeBefore", R.string.st_pens_prime_before to page(SettingsRoute.PenDetection))
+            put("pens.cluster", R.string.st_pens_cluster to page(SettingsRoute.PenDetection))
+            put("pens.pending", R.string.st_pens_pending to page(SettingsRoute.PenDetection))
+            put("pens.offer", R.string.st_pens_offer to page(SettingsRoute.PenDetection))
+            put("pens.match", R.string.st_pens_match to page(SettingsRoute.PenDetection))
+            put("pens.matchUnits", R.string.st_pens_match_units to page(SettingsRoute.PenDetection))
+            put("pens.matchShare", R.string.st_pens_match_share to page(SettingsRoute.PenDetection))
         }
 
     /** The second places (docs/35 §7): the same setting editable on another page, found there too. */

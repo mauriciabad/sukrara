@@ -310,7 +310,7 @@ object DebugFakes {
     }
 
     /**
-     * `PEN_JUGGLUCO --ez installed true|false`: Settings › Insulin pens shows *Juggluco also reads pens* as if Juggluco
+     * `PEN_JUGGLUCO --ez installed true|false`: Settings › Insulin pens shows its Juggluco footer as if Juggluco
      * were installed (pen reading On). The page reads it on resume.
      */
     private fun penJuggluco(

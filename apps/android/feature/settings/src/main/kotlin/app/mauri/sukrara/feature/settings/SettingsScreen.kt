@@ -45,6 +45,7 @@ import app.mauri.sukrara.feature.settings.graph.TimeShownContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenViewModel
 import app.mauri.sukrara.feature.settings.pens.DosesReadPage
+import app.mauri.sukrara.feature.settings.pens.PenDetectionContent
 import app.mauri.sukrara.feature.settings.pens.PenPage
 import app.mauri.sukrara.feature.settings.pens.PenViewModel
 import app.mauri.sukrara.feature.settings.pens.PensContent
@@ -114,6 +115,9 @@ sealed interface SettingsRoute {
 
     /** Settings › Insulin pens (the wearer's phone with NFC). */
     data object Pens : SettingsRoute
+
+    /** Settings › Insulin pens › Automatic detection (the dose rules). */
+    data object PenDetection : SettingsRoute
 
     /** Settings › Insulin pens › one pen. */
     data class Pen(val serial: String) : SettingsRoute
@@ -461,7 +465,13 @@ private fun SettingsPages(
         SettingsRoute.Pens -> {
             val vm = viewModel { PensViewModel(deps.settings, deps.pens) }
             val ui by vm.ui.collectAsStateWithLifecycle()
-            ui?.let { PensContent(it, vm, onBack) { s -> navigate(SettingsRoute.Pen(s)) } }
+            ui?.let { PensContent(it, vm, onBack, { navigate(SettingsRoute.PenDetection) }) { s -> navigate(SettingsRoute.Pen(s)) } }
+        }
+
+        SettingsRoute.PenDetection -> {
+            val vm = viewModel { PensViewModel(deps.settings, deps.pens) }
+            val ui by vm.ui.collectAsStateWithLifecycle()
+            ui?.let { PenDetectionContent(it, vm, onBack) }
         }
 
         is SettingsRoute.Pen -> {

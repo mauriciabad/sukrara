@@ -94,8 +94,14 @@ import com.android.settingslib.spa.widget.ui.SettingsBody
 /** The test tag of every row (the settings search index test reads each row's title, its first text, by it). */
 const val ROW_TAG = "settings-row"
 
-/** The test tag of a row's icon (tests check rows carry one: every row has an icon). */
+/** The test tag of a row's icon (tests check the rows that need one carry it). */
 const val ROW_ICON_TAG = "settings-row-icon"
+
+/**
+ * Which drawable a row's icon is (no TalkBack effect): icons are there to tell rows apart, so tests check that no icon
+ * repeats on a page.
+ */
+val RowIconRes = SemanticsPropertyKey<Int>("RowIconRes")
 
 /**
  * The title of a [SettingsGroup], on the semantics around its rows (no TalkBack effect): the settings search index test
@@ -195,7 +201,7 @@ internal fun RowIcon(
     Icon(
         painterResource(icon),
         contentDescription = null,
-        modifier = Modifier.size(SettingsDimension.itemIconSize).testTag(ROW_ICON_TAG),
+        modifier = Modifier.size(SettingsDimension.itemIconSize).testTag(ROW_ICON_TAG).semantics { this[RowIconRes] = icon },
         tint = if (warning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
