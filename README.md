@@ -13,13 +13,14 @@
 </p>
 
 Sukrara shows your continuous glucose monitor (CGM) readings live on your **Android phone**, at a glance: in the status
-bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It reads a **FreeStyle
-Libre 3** straight from the sensor, and [other sensors](#compatible-cgm-sensors) directly or through Juggluco. It
-alerts you when glucose goes low or high or stops arriving, with minimal alarm fatigue thanks to smart features and
-discreet sound packs, and lets you log insulin and carbs in seconds. The people who look after you see your glucose
-live on their Android phone or in their **Mac menu bar** (or your own), shared **end-to-end encrypted** over public
-Nostr relays or Bluetooth nearby. There's no cloud account to create and no server to host. It's compatible with the
-DIY diabetes ecosystem (xDrip+, Nightscout...), and its glucose charts are advanced, beautiful and easy to understand.
+bar, home screen widgets, lock screen and notifications, so you rarely need to open the app, and on your **Garmin
+watch** as the Sukrara Aura watch face. It reads a **FreeStyle Libre 3** straight from the sensor, and [other
+sensors](#compatible-cgm-sensors) directly or through Juggluco. It alerts you when glucose goes low or high or stops
+arriving, with minimal alarm fatigue thanks to smart features and discreet sound packs, and lets you log insulin and
+carbs in seconds. The people who look after you see your glucose live on their Android phone or in their **Mac menu
+bar** (or your own), shared **end-to-end encrypted** over public Nostr relays or Bluetooth nearby. There's no cloud
+account to create and no server to host. It's compatible with the DIY diabetes ecosystem (xDrip+, Nightscout...), and
+its glucose charts are advanced, beautiful and easy to understand.
 The name is Catalan-ish: *sucre* (sugar) + *ara* (now).
 
 > **Important disclaimer: a DIY project**
@@ -97,18 +98,14 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Home screen widget. You never need to open the app.
 - Lock screen widget with root. No need to unlock or touch the phone.
 - Persistent notification with the widget.
-- Any other device, like a Mac or a Garmin watch.
-- Sukrara Aura on your Garmin watch: each reading reaches the face through Garmin Connect within seconds, with nothing
-  to set up; the face also asks the phone every 5 minutes in case a message gets lost, and an old value never looks
-  current. Settings › Share with apps › Garmin shows each watch, the reading it has and whether the face is in use, and
-  turns it off; other Garmin faces and data fields made for xDrip+ read the xDrip+ server.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
-- Sukrara Aura, a Garmin watch face (Descent Mk3i 43 mm): time, glucose with its trend arrow or the last hour, a
-  level rail and the battery on the bezel's screws, Sukrara's pill (eat, take insulin, muted), the reading's age, your
-  fields (weather, steps, last treatment, a second time zone…), always-on and night looks, and a private mode that shows
-  the value only while you hold the screen. Its dial is the aura of your glucose (grain, contours, waterline, lasers,
-  glow or a map): it gathers at your level and spreads the further out of range you are, with a seconds sweep at the
-  rim. In English and Spanish.
+- **Sukrara Aura**, a watch face for Garmin watches (Descent Mk3i 43 mm for now): the time and your glucose with its
+  trend arrow or the last hour, a level rail, what Sukrara wants from you (carbs, insulin, muted) and your own fields
+  (weather, steps, last treatment, a second time zone…). Its dial is the aura of your glucose: it gathers at your level
+  and spreads the further out of range you are. Always-on and night looks; a private mode shows the value only while
+  you hold the screen. Each reading arrives through Garmin Connect within seconds, with nothing to set up, and an old
+  value never looks current. Settings › Share with apps › Garmin shows what each watch has. English and Spanish.
+- Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
 - [Planned]: Android Auto, Home Assistant, Pebble...
@@ -185,6 +182,8 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
   updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
   works).
+- **Garmin** (Descent Mk3i 43 mm): Sukrara Aura is on its way to the Connect IQ store. It needs Sukrara for Android
+  and Garmin Connect on the phone.
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
   link handler. Such a build isn't a release and says so: About shows *Development build · 0.14.5 + 23 commits ·
@@ -196,6 +195,7 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
 apps/
   android/       Sukrara for Android (Kotlin, Compose; Gradle root)               → apps/android/README.md
   macos/         Sukrara for Mac (Swift 6, SwiftPM; menu bar app + widget)         → apps/macos/README.md
+  garmin/        Sukrara Aura, the Garmin watch face (Monkey C, Connect IQ)        → apps/garmin/README.md
 contracts/       what every app agrees on: alert rules + scenarios, card fixtures, settings schema, protocol,
                  treatments, export, sensor traces (every app's tests read it)      → contracts/README.md
 assets/brand/    app icons and brand art

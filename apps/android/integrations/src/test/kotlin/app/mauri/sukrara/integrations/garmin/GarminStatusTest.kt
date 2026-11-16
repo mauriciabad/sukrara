@@ -9,8 +9,8 @@ import java.time.Duration
 import java.time.Instant
 
 /**
- * Every state the Garmin row and page say, and which one wins (docs/FEATURES.md "Garmin: Sukrara on the watch", States
- * and exits): the row's one line, each watch's line, and the face's.
+ * Every state the Garmin row and page say, and which one wins (docs/FEATURES.md "Garmin watch face (Sukrara Aura)",
+ * States and exits): the row's one line, each watch's line, and the face's.
  */
 class GarminStatusTest {
     private val now = Instant.parse("2026-11-16T10:09:36Z")
