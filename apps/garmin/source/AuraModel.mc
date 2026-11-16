@@ -73,6 +73,7 @@ class AuraModel {
     var x0 as Float = 0.0;
     var vFill as Number = 0;
     var inverted as Boolean = false;
+    var blkCol as Number = 0; // the very-low block: very low; always-on at 35 % (SPEC.md §8)
     var ax as Float = 0.0;
     var ay as Float = 0.0;
     var deg as Float = 0.0;
@@ -420,11 +421,12 @@ class AuraModel {
         ax = AuraMath.r1(spark ? 0 : x0 + vW + gap + box / 2);
         ay = AuraMath.r1(vBase - V / 2.0);
         inverted = !struck && bk.equals("veryLow");
+        blkCol = aod ? 0x441715 : c("veryLow");
         vFill = c("ink");
         if (struck) {
             vFill = c("grey");
         } else if (inverted) {
-            vFill = 0xFFFFFF;
+            vFill = aod ? c("ink") : 0xFFFFFF; // always-on: the dimmer ink on the dimmed block (SPEC.md §8)
         } else if (out) {
             vFill = c(ck);
         } else if (inp.rangeColour) {
@@ -528,7 +530,7 @@ class AuraModel {
         spRay = [spEnd[0] + AuraMath.r1(22 * Math.cos(rad)), spEnd[1] + AuraMath.r1(22 * Math.sin(rad))];
         spLimits = [sparkY(inp.limits[3]), sparkY(inp.limits[1])];
         spLineCol = struck ? c("dim") : c("soft");
-        spRayCol = vFill == 0xFFFFFF ? c("veryLow") : vFill;
+        spRayCol = inverted ? c("veryLow") : vFill;
         spEndFill = current && trendOn ? beadCol : null;
         spEndStroke = current && trendOn ? null : struck ? c("grey") : vFill;
     }

@@ -2078,7 +2078,8 @@ the time, so the reading ages by itself from its own time with the phone away.
   long for the arc: the least important field goes. A value the watch doesn't have shows `--` (time in range before a
   quarter of the day, or after the phone's midnight); no treatment in 24 h leaves that field out.
 - **Modes**: *always-on* (the watch's display setting): outlined time, value, pill and messages in a dimmer palette,
-  rail without ticks, trail or zone, no fields, no battery; the whole face moves up to 2 px a minute against burn-in.
+  rail without ticks, trail or zone, no fields, no battery; very low's red block dimmed so no state lights more than
+  about 7 % of the screen (Garmin blanks a face over 10 %); the whole face moves up to 2 px a minute against burn-in.
   A wrist raise or a button always wakes it to the full face, whatever the display mode said before; the face
   reports its screen events and the mode it drew to the phone (docs/43 "The screen", logcat only). *Night* (while
   the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night palette,

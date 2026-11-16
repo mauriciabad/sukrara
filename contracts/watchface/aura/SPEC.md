@@ -113,7 +113,8 @@ Three palettes (`pal()` in aura.js). **Awake:**
 **Always-on**: as awake but ink `#C9C9CE`, soft `#7A7A80`, dim `#55555A`, faint `#323236`, grid `#1C1C1F`, band and
 band2 `#2A2A2E`, grey `#6E6E73`, now `#A9CF2A`.
 
-- **The value's colour**: struck (old) → grey; very low (≤ 55, and LO) → `#FFFFFF` on a very-low block (inverted);
+- **The value's colour**: struck (old) → grey; very low (≤ 55, and LO) → `#FFFFFF` on a very-low block (inverted;
+  always-on: the always-on ink on the block at 35 %, `#441715`, §8);
   out of range → its colour (extremely high from 300 has its own); in range → tight / target when *green in range* is
   on (default), else ink.
 - **Pills**: filled = the kind's colour with text and icon `#1C1C1E`; tonal = the kind's colour at **0.24** opacity
@@ -298,7 +299,8 @@ glyph centres −118.1 −51.4 0 51.4 118.1. Always-on: no fill, stroke grey 2.2
 - **No trend** (no rate, LO / HI, old): a hollow ring where the arrow goes, r 0.24·box, stroke 0.11·box, the value's
   colour. Never a flat arrow.
 - **Very low (≤ 55) and LO — inverted**: a block `x0 − 12, vBase − V − 12, (arrow: total; sparkline: vW) + 24,
-  V + 24`, rx 12, filled very low; digits and arrow `#FFFFFF`.
+  V + 24`, rx 12, filled very low; digits and arrow `#FFFFFF`. Always-on: the block `#441715` (very low at 35 % over
+  black) with the digits and arrow in the always-on ink (§8); the sparkline's ray stays very-low red.
 - **Old — struck**: a line from x0 − 6 to x0 + vW + 6 at y = vBase − 0.48·V, width 0.075·fs, round caps, grey; the
   digits grey.
 - **Private, held — reveal line**: neon `#C6F432`, 3 px, round, at y = vBase + 13, centred on the digits, length
@@ -496,10 +498,15 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
 - **Always-on**: outlined time; no sweep, no dial, no top field, no bottom fields, no battery (their rows kept); rail
   hairline, 2 px band, mid and major ticks, bead r 6, no trail, no glow, no zone; value, arrow, chip row, pill and
   messages as awake in the always-on palette. Must stay **under 10 % of the total luminance** (API 5+; over it the face
-  goes black in always-on) and follow Garmin's burn-in shift (≤ 4 px a minute, the whole face). Measured on the
-  reference (linear luminance / sRGB-weighted): in range 1.5 % / 2.9 %; a filled pill 2.8 % / 5.1 %; no readings
-  1.3 % / 2.8 %; the brightest, very low and LO (the filled red block) 5.1 % / 8.0 %. Confirm in the simulator
-  (Settings › Display Mode › Always On warns over 10 %), very low and LO first.
+  goes black in always-on) and follow Garmin's burn-in shift (≤ 4 px a minute, the whole face). **Keep a margin: no
+  state above about 7 %**, so a very low never risks a black screen. That's why the very-low block is dimmed in
+  always-on (`#441715`, very low at 35 %) with the digits in the always-on ink instead of white: the shape, the light
+  digits on red and the pill keep their meaning, and very low and LO went from 9.7 % / 9.9 % to about 7 %. Measured as
+  the share of the round screen's light (Rec. 709 luminance of the sRGB values, `garmin_test.py`'s always-on lines; in
+  brackets the same in linear light), on the reference: in range 3.7 % (2.0 %); no readings 3.6 % (1.7 %); a filled
+  pill (high) 6.1 % (3.4 %); very low 6.9 % (3.6 %); LO 7.2 % (3.8 %). The face in the simulator, 2026-11-16: LO
+  7.1 %, very low 6.8 %, high 6.1 %, in range 3.8 %. Its run measures every always-on variant (`aod-*`) this way and
+  fails at 10 %.
 - **Night** (while the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night
   palette; no sweep, no dial; everything else as awake. Not the profile's sleep and wake times: on the Descent they
   aren't the Sleep Mode schedule (set per day) and put the face in night in the afternoon. A low at night keeps its colour, place and pill.

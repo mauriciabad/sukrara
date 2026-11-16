@@ -315,6 +315,7 @@ module AuraDump {
         out("val.xs", xs);
         out("val.fill", col(m.vFill));
         out("val.blk", disp(m.inverted));
+        out("val.blkCol", col(m.blkCol));
         out("val.bx", m.blk[0]);
         out("val.by", m.blk[1]);
         out("val.bw", m.blk[2]);

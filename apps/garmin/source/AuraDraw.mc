@@ -391,7 +391,7 @@ module AuraDraw {
             return;
         }
         if (m.inverted) {
-            fill(dc, m.c("veryLow"), 1.0);
+            fill(dc, m.blkCol, 1.0);
             dc.fillRoundedRectangle(cx + m.blk[0], cy + m.blk[1], m.blk[2], m.blk[3], 12);
         }
         var key = "v" + m.V.toString();
