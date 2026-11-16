@@ -5,20 +5,26 @@
 /**
  * The watch face playground: the face drawn by its own reference implementation, presets, inputs and "Speed up time".
  * The page holds the frame; playground.ts fills and runs it. The first face is drawn at build time, so it shows
- * before the script runs. The face is the screen alone, no watch around it.
+ * before the script runs. The face is the screen alone, in the round screen the tour's sits in.
+ *   <FacePlayground />            <FacePlayground id="pg2" />
  */
 import { aura } from './aura/index.ts';
+import FaceScreen from './FaceScreen.astro';
 import { words } from './strings.ts';
 
+type Props = { id?: string };
+const { id = 'pg' } = Astro.props;
 const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
 const w = words(lang);
-const first = aura.render(aura.defaults(), lang);
+const first = aura.render(aura.defaults(), lang, { id });
 ---
 
-<div class="fp not-content" data-lang={lang}>
+<div class="fp not-content" data-uid={id} data-lang={lang}>
 	<div class="fp-stage">
 		<figure class="fp-screen" aria-label={w.face}>
-			<div class="fp-face" data-face set:html={first} />
+			<FaceScreen size="22rem">
+				<div data-face set:html={first} />
+			</FaceScreen>
 		</figure>
 		<div class="fp-time" role="group" aria-label={w.play}>
 			<div class="fp-row">
@@ -85,25 +91,6 @@ const first = aura.render(aura.defaults(), lang);
 	}
 	.fp-screen {
 		margin: 0;
-		padding: 1rem;
-		border-radius: 2rem;
-		background: #0a0a0c;
-		box-shadow: var(--sk-glow);
-	}
-	.fp-face {
-		aspect-ratio: 1;
-		width: 100%;
-		max-width: 22rem;
-		margin-inline: auto;
-	}
-	.fp-face :global(svg) {
-		width: 100%;
-		height: auto;
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.fp-face :global(*) {
-			transition: none !important;
-		}
 	}
 	.fp-time,
 	.fp-panel {

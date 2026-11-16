@@ -9,12 +9,13 @@
  *   <FaceTour />            <FaceTour id="home" start={450} />
  */
 import { aura } from './aura/index.ts';
+import FaceScreen from './FaceScreen.astro';
 import { DAY } from './day/index.ts';
-import { caption, frame } from './tour-model.ts';
+import { caption, frame, START } from './tour-model.ts';
 import { words } from './strings.ts';
 
 type Props = { id?: string; start?: number };
-const { id = 'tour', start = 7 * 60 + 30 } = Astro.props;
+const { id = 'tour', start = START } = Astro.props;
 const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
 const w = words(lang);
 const look = String(aura.defaults()[aura.looks.key]);
@@ -31,9 +32,9 @@ const fade = aura.parts
 
 <section class="ft not-content" data-uid={id} data-lang={lang} data-start={start} data-look-start={look} aria-label={w.tour}>
 	<div class="ft-stage">
-		<div class="ft-screen">
+		<FaceScreen>
 			<div class="ft-face" data-face set:html={svg} />
-		</div>
+		</FaceScreen>
 		<p class="ft-now" data-now aria-live="off">{caption(first, lang)}</p>
 		<div class="ft-time">
 			<button type="button" class="ft-play" data-play aria-pressed="false">{w.playDay}</button>
@@ -121,23 +122,11 @@ const fade = aura.parts
 		flex-direction: column;
 		gap: 0.75rem;
 	}
-	.ft-screen {
-		padding: 0.9rem;
-		border-radius: 50%;
-		background: #0a0a0c;
-		box-shadow: var(--sk-glow);
-		width: min(100%, 24rem);
-		margin-inline: auto;
-		aspect-ratio: 1;
-		box-sizing: border-box;
-	}
-	.ft-face,
 	.ft-look__face {
 		display: block;
 		aspect-ratio: 1;
 		width: 100%;
 	}
-	.ft-face :global(svg),
 	.ft-look__face :global(svg) {
 		width: 100%;
 		height: auto;

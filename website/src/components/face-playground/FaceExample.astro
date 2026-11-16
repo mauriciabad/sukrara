@@ -8,6 +8,7 @@
  *   <FaceExample id="alerts-low" width={300} />
  */
 import { aura } from './aura/index.ts';
+import FaceScreen from './FaceScreen.astro';
 
 type Props = { id: string; width?: number };
 const { id, width = 300 } = Astro.props;
@@ -16,9 +17,9 @@ const e = aura.examples.flatMap((g) => g.examples).find((x) => x.id === id);
 if (!e) throw new Error(`FaceExample: no example ${id}`);
 ---
 
-<div class="fx" style={`max-width: ${width}px`}>
-	<div class="fx-face" data-example={e.id} role="img" aria-label={`${e.title[lang]}. ${e.note[lang]}`}></div>
-</div>
+<FaceScreen size={`${width}px`} pad="0.5rem">
+	<div data-example={e.id} role="img" aria-label={`${e.title[lang]}. ${e.note[lang]}`}></div>
+</FaceScreen>
 
 <script>
 	import { aura } from './aura/index.ts';
@@ -27,20 +28,3 @@ if (!e) throw new Error(`FaceExample: no example ${id}`);
 	mountGalleries(aura, document.documentElement.lang.startsWith('es') ? 'es' : 'en');
 </script>
 
-<style>
-	.fx {
-		margin-inline: auto;
-		border-radius: 50%;
-		background: #0a0a0c;
-		padding: 0.5rem;
-		box-shadow: var(--sk-glow);
-	}
-	.fx-face {
-		aspect-ratio: 1;
-		width: 100%;
-	}
-	.fx-face :global(svg) {
-		width: 100%;
-		height: auto;
-	}
-</style>

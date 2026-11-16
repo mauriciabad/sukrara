@@ -10,6 +10,7 @@ import { advance, clampTo, start, wrap } from './clock.ts';
 import { HISTORY, liveAt, SCENARIOS } from './scenarios.ts';
 import { ticker } from './ticker.ts';
 import { scopeIds } from './svg-ids.ts';
+import { chapterAt, scene, START } from './tour-model.ts';
 import { curve, dayScenario, inSpan, keyframes, type DayData } from './day/day.ts';
 import { auraFromLive, createAura, type AuraCase } from './aura/adapter.ts';
 import { evaluateAura } from './aura/evaluate.ts';
@@ -59,10 +60,35 @@ test('one ticker drives every listener with the same moment', () => {
 		assert.equal(frames.length, 0);
 		t.seek(-60);
 		assert.equal(t.clock.minutes, 1380);
+		// pausing a stopped clock tells no one
+		const before = seen[0].length;
+		t.pause();
+		assert.equal(seen[0].length, before);
+		// the playground's: a scenario that stops at its end, at the speed picked
+		const p = ticker({ speed: 60, period: 1440 });
+		p.set({ period: 30, stop: true, speed: 600 });
+		p.seek(0);
+		p.play();
+		frames.shift()!(performance.now() + 5000); // 50 minutes at 600×: stops at 30
+		assert.deepEqual(p.clock, { minutes: 30, speed: 600, running: false });
+		assert.equal(frames.length, 0, 'a stopped clock asks for no more frames');
 	} finally {
 		g.requestAnimationFrame = saved.raf;
 		g.cancelAnimationFrame = saved.caf;
 	}
+});
+
+test('a scenario on a moving face: whole minutes and no sweep when fast, the day’s chapters', () => {
+	const s = scenario('night-low');
+	const slow = scene(face, s, 61.5, false);
+	assert.equal(slow.values.time, '2:31:30');
+	assert.deepEqual(slow.still, {});
+	const fast = scene(face, s, 61.5, true);
+	assert.equal(fast.values.time, '2:31:00');
+	assert.deepEqual(fast.still, face.moving);
+	assert.equal(chapterAt(day, START).id, chapterAt(day, START + 1440).id);
+	assert.equal(chapterAt(day, day.chapters[1].at).id, day.chapters[1].id);
+	assert.equal(chapterAt(day, 0).id, day.chapters[0].at === 0 ? day.chapters[0].id : day.chapters.at(-1)!.id);
 });
 
 test('a reading that stops arriving ages with the clock: late, old, then none', () => {

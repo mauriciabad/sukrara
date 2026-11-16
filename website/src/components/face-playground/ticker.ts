@@ -5,21 +5,28 @@
  * One running clock (clock.ts) for everything a component shows, so every face it drives draws the same moment: one
  * requestAnimationFrame loop, any number of listeners. Each component makes its own; nothing is global.
  */
-import { advance, wrap, type Clock } from './clock.ts';
+import { advance, clampTo, wrap, type Clock } from './clock.ts';
 
 export type Ticker = ReturnType<typeof ticker>;
 
-/** A clock at `speed` that loops every `period` minutes, from `minutes`, stopped until play(). */
-export function ticker(o: { speed: number; period: number; minutes?: number }) {
-	let clock: Clock = { minutes: o.minutes ?? 0, speed: o.speed, running: false };
+type Course = { speed: number; period: number; stop?: boolean };
+
+/**
+ * A clock at `speed` over `period` minutes, from `minutes`, stopped until play(): past the end it loops, or with
+ * `stop` it stops there.
+ */
+export function ticker(init: Course & { minutes?: number }) {
+	const o: Course = { ...init };
+	let clock: Clock = { minutes: init.minutes ?? 0, speed: o.speed, running: false };
 	let frame = 0;
 	const listeners = new Set<(c: Clock) => void>();
 	const emit = () => listeners.forEach((f) => f(clock));
+	const fit = (c: Clock) => (o.stop ? clampTo(c, o.period) : wrap(c, o.period));
 	const loop = (prev: number) => {
 		frame = requestAnimationFrame((now) => {
-			clock = wrap(advance(clock, now - prev), o.period);
+			clock = fit(advance(clock, now - prev));
 			emit();
-			loop(now);
+			if (clock.running) loop(now);
 		});
 	};
 	return {
@@ -39,13 +46,20 @@ export function ticker(o: { speed: number; period: number; minutes?: number }) {
 			loop(performance.now());
 		},
 		pause() {
+			if (!clock.running) return;
 			cancelAnimationFrame(frame);
 			clock = { ...clock, running: false };
 			emit();
 		},
 		seek(minutes: number) {
-			clock = wrap({ ...clock, minutes }, o.period);
+			clock = fit({ ...clock, minutes });
+			if (!clock.running) cancelAnimationFrame(frame);
 			emit();
+		},
+		/** Changes the speed, the period or how it ends from the next tick on; seek() to show it now. */
+		set(c: Partial<Course>) {
+			Object.assign(o, c);
+			clock = { ...clock, speed: o.speed };
 		},
 	};
 }
