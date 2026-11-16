@@ -34,6 +34,7 @@ import Screenshot from '../../../components/Screenshot.astro';
     <Tile shot="statusBar" title="Barra de estado" width={1080} crop>Un chip de actualización en directo, o en cualquier sitio con configuración avanzada.</Tile>
     <Tile shot="lockscreen" title="Pantalla de bloqueo" width={360}>Sin desbloquear ni tocar el móvil.</Tile>
     <Tile shot="macPanel" title="Barra de menús del Mac" width={230} href="/es/mac/">Con las mismas alarmas, y widgets.</Tile>
+    <Tile shot="garmin" title="Esfera para Garmin" width={230} wide href="/es/garmin/">El aura de tu glucosa, cada lectura en segundos.</Tile>
   </Tiles>
 </Section>
 
@@ -82,7 +83,6 @@ import Screenshot from '../../../components/Screenshot.astro';
       { app: 'xdrip', note: 'Actúa como su API' },
       { app: 'aaps', note: 'Le emite la glucosa' },
       { app: 'juggluco', note: 'Lee la glucosa de ella' },
-      { logo: 'garmin', name: 'Garmin', note: 'Esferas, por la API de xDrip+' },
     ]}
   />
   <Chips

@@ -1,6 +1,6 @@
 ---
 title: Features
-description: Everything Sukrara does, at a glance. Your CGM glucose everywhere you look, discreet alerts, live sharing without a cloud, quick logging, reports, the sensors it reads and the apps it works with. Android and Mac, free and open source.
+description: Everything Sukrara does, at a glance. Your CGM glucose everywhere you look, discreet alerts, live sharing without a cloud, quick logging, reports, the sensors it reads and the apps it works with. Android, Mac and Garmin, free and open source.
 editUrl: false
 lastUpdated: false
 ---
@@ -100,6 +100,19 @@ import FeatureTile from '../../components/features/FeatureTile.astro';
   <FeatureTile icon="edit_note" title="Log and report" shot="macTreatment" shotWidth={300}>Treatments and the glucose report, with a CSV export.</FeatureTile>
   <FeatureTile app="juggluco" title="Juggluco on your network">Reads it on your home Wi-Fi, with alerts of its own.</FeatureTile>
   <FeatureTile icon="volume_up" title="Read aloud">⌃⇧⌘G, from any app.</FeatureTile>
+</FeatureGrid>
+
+## On your Garmin watch
+
+<FeatureGrid>
+  <FeatureTile icon="palette" title="The aura of your glucose" shot="garminHigh" shotWidth={300}>The dial gathers at your level and spreads the further out of range you are.</FeatureTile>
+  <FeatureTile icon="speed" title="Within seconds">Each reading through Garmin Connect, nothing to set up.</FeatureTile>
+  <FeatureTile icon="trending_up" title="Arrow or the last hour" shot="garminSparkline" shotWidth={300}>Sukrara's trend arrow, or the last hour as a small line.</FeatureTile>
+  <FeatureTile icon="dia_carbs" title="What to do now" shot="garminLow" shotWidth={300}>Carbs or Insulin when needed; quiet and muted alerts with their time left.</FeatureTile>
+  <FeatureTile icon="history" title="Never old as current" shot="garminOld" shotWidth={300}>Late, struck through, then "No reading since".</FeatureTile>
+  <FeatureTile icon="visibility_off" title="Private" shot="garminPrivate" shotWidth={300}>The value only while you hold the screen.</FeatureTile>
+  <FeatureTile icon="bedtime" title="Always-on and night" shot="garminNight" shotWidth={300}>Dimmer looks, the time always readable.</FeatureTile>
+  <FeatureTile icon="tune" title="Your fields">Weather, steps, last treatment, time in range, a second time zone…</FeatureTile>
 </FeatureGrid>
 
 ## Private and dependable

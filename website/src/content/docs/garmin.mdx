@@ -1,0 +1,84 @@
+---
+title: Sukrara Aura for Garmin
+description: A watch face for Garmin watches whose dial is the aura of your glucose. Each reading from Sukrara for Android within seconds, the trend or the last hour, what to do now, and never an old value as current. Free.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Gallery from '../../components/Gallery.astro';
+
+A watch face whose dial is the aura of your glucose: it gathers at your level and spreads the further out of range you
+are. Each reading comes from [Sukrara for Android](/android/) within seconds.
+
+<Gallery shots={[['garmin', 150], ['garminLow', 150], ['garminVeryHigh', 150]]} />
+
+## Get it
+
+Sukrara Aura is on its way to the Connect IQ store.
+
+<Steps>
+
+1. Install [Sukrara for Android](/android/) and Garmin Connect on your phone.
+2. Install Sukrara Aura from the Connect IQ store and make it your watch face.
+3. That's it: Sukrara sends each reading to the watch by itself.
+
+</Steps>
+
+## What it does
+
+- The time, and your glucose in its band's colour with Sukrara's trend arrow, or the last hour as a small line.
+- A level rail from 1:30 to 4:30: where you are between your limits, with the last 30 minutes as a fading trail.
+- What to do now: *Carbs* or *Insulin* when needed; alerts held after a treatment or muted, with the time left.
+- An old reading never looks current: late, then struck through in grey, then *No reading since* and its time.
+- The dial reacts to your glucose: grain, contours, waterline, lasers or glow; or a calm map, or black.
+- Fields of your choice: weather, steps, last treatment, time in range, sunset, a second time zone and more.
+- Always-on and night looks that keep the time readable; a private mode shows the value only while you hold the
+  screen.
+- On the phone, **Settings › Share with apps › Garmin** shows which reading each watch has.
+- In English and Spanish, as your watch is.
+
+<Gallery shots={[['garminSparkline', 150], ['garminPrivate', 150], ['garminOld', 150], ['garminAlwaysOn', 150], ['garminNight', 150], ['garminHigh', 150]]} />
+
+## Requirements
+
+- A Garmin Descent Mk3i 43 mm, for now. More watches will follow.
+- An Android phone with [Sukrara for Android](/android/) and Garmin Connect, running in the background.
+
+## Questions
+
+<details>
+<summary>Does it need the internet, an account or another app?</summary>
+
+No. Sukrara on your phone sends each reading through Garmin Connect, which your watch already uses. If a message gets
+lost, the face asks the phone again within 5 minutes.
+
+</details>
+
+<details>
+<summary>What happens when my phone is out of reach?</summary>
+
+The reading ages by itself on the watch: late, then struck through, then *No reading since* with its time, and the
+watch shows *No phone*. Back in reach, the current reading arrives within a minute.
+
+</details>
+
+<details>
+<summary>Does it work with an iPhone?</summary>
+
+No. It needs Sukrara for Android on the phone your watch is paired with.
+
+</details>
+
+<details>
+<summary>I use another Garmin watch face or data field. Can it show Sukrara's glucose?</summary>
+
+Faces and data fields made for xDrip+ can read Sukrara's xDrip+ server: **Settings › Share with apps › Garmin › xDrip+
+server**.
+
+</details>
+
+<details>
+<summary>Is it a medical device?</summary>
+
+No, and no regulator has cleared or approved it. Check your sensor's app or a meter before you decide on a treatment.
+
+</details>

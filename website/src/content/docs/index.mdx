@@ -34,6 +34,7 @@ import Screenshot from '../../components/Screenshot.astro';
     <Tile shot="statusBar" title="Status bar" width={1080} crop>A Live Update chip, or anywhere with advanced setup.</Tile>
     <Tile shot="lockscreen" title="Lock screen" width={360}>No need to unlock or touch the phone.</Tile>
     <Tile shot="macPanel" title="Mac menu bar" width={230} href="/mac/">With the same alarms, and widgets.</Tile>
+    <Tile shot="garmin" title="Garmin watch face" width={230} wide href="/garmin/">The aura of your glucose, each reading within seconds.</Tile>
   </Tiles>
 </Section>
 
@@ -82,7 +83,6 @@ import Screenshot from '../../components/Screenshot.astro';
       { app: 'xdrip', note: 'Acts as its API' },
       { app: 'aaps', note: 'Broadcasts glucose to it' },
       { app: 'juggluco', note: 'Reads glucose from it' },
-      { logo: 'garmin', name: 'Garmin', note: 'Watch faces, through the xDrip+ API' },
     ]}
   />
   <Chips

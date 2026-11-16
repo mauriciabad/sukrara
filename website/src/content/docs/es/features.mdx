@@ -1,6 +1,6 @@
 ---
 title: Funciones
-description: Todo lo que hace Sukrara, de un vistazo. La glucosa de tu sensor donde mires, alertas discretas, compartida en directo sin nube, registro rápido, informes, los sensores que lee y las apps con las que funciona. Android y Mac, gratis y de código abierto.
+description: Todo lo que hace Sukrara, de un vistazo. La glucosa de tu sensor donde mires, alertas discretas, compartida en directo sin nube, registro rápido, informes, los sensores que lee y las apps con las que funciona. Android, Mac y Garmin, gratis y de código abierto.
 editUrl: false
 lastUpdated: false
 ---
@@ -99,6 +99,19 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
   <FeatureTile icon="edit_note" title="Registro e informe" shot="macTreatment" shotWidth={300}>Tratamientos y el informe de glucosa, con exportación CSV.</FeatureTile>
   <FeatureTile app="juggluco" title="Juggluco en tu red">Lo lee en el wifi de casa, con sus propias alertas.</FeatureTile>
   <FeatureTile icon="volume_up" title="En voz alta">⌃⇧⌘G, desde cualquier app.</FeatureTile>
+</FeatureGrid>
+
+## En tu reloj Garmin
+
+<FeatureGrid>
+  <FeatureTile icon="palette" title="El aura de tu glucosa" shot="garminHigh" shotWidth={300}>El fondo se concentra en tu nivel y se extiende cuanto más fuera de rango estás.</FeatureTile>
+  <FeatureTile icon="speed" title="En segundos">Cada lectura por Garmin Connect, sin configurar nada.</FeatureTile>
+  <FeatureTile icon="trending_up" title="Flecha o la última hora" shot="garminSparkline" shotWidth={300}>La flecha de tendencia de Sukrara, o la última hora como una pequeña línea.</FeatureTile>
+  <FeatureTile icon="dia_carbs" title="Qué hacer ahora" shot="garminLow" shotWidth={300}>Hidratos o Insulina cuando hace falta; alertas en calma o silenciadas con su tiempo restante.</FeatureTile>
+  <FeatureTile icon="history" title="Nunca lo antiguo como actual" shot="garminOld" shotWidth={300}>Tarde, tachado y luego «Sin lecturas desde».</FeatureTile>
+  <FeatureTile icon="visibility_off" title="Privada" shot="garminPrivate" shotWidth={300}>El valor solo mientras mantienes pulsada la pantalla.</FeatureTile>
+  <FeatureTile icon="bedtime" title="Siempre activa y de noche" shot="garminNight" shotWidth={300}>Colores más tenues, la hora siempre legible.</FeatureTile>
+  <FeatureTile icon="tune" title="Tus campos">Tiempo, pasos, último tratamiento, tiempo en rango, otra zona horaria…</FeatureTile>
 </FeatureGrid>
 
 ## Privada y fiable

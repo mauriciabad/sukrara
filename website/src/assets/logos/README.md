@@ -13,5 +13,5 @@ it; the site's footer says so.
 | `aaps.svg` | AAPS's logo, unchanged: `_docs/logo/logo-vector-2023.svg` in [nightscout/AndroidAPS](https://github.com/nightscout/AndroidAPS) (AGPL-3.0) |
 
 xDrip+'s icon is read where the Android app keeps it (`ds_ic_app_xdrip.png`, xDrip's own launcher icon, GPL-3.0). The
-one-colour marks (Android, Apple, GitHub, Google Play, Garmin, Bluetooth, Homebrew, Obtainium, Nostr) are paths in
+one-colour marks (Android, Apple, GitHub, Google Play, Bluetooth, Homebrew, Obtainium, Nostr) are paths in
 `src/lib/logos.ts`, from Simple Icons (CC0-1.0) and Starlight (MIT).

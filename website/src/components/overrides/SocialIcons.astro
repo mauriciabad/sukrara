@@ -10,9 +10,11 @@ import Logo from '../Logo.astro';
 const { locale } = Astro.locals.starlightRoute;
 const t = Astro.locals.t;
 const prefix = locale ? `/${locale}` : '';
-const links: { key: 'site.nav.android' | 'site.nav.mac' | 'site.nav.developers'; href: string; logo?: LogoName }[] = [
+const links: { key: 'site.nav.android' | 'site.nav.mac' | 'site.nav.garmin' | 'site.nav.developers'; href: string; logo?: LogoName }[] = [
 	{ key: 'site.nav.android', href: `${prefix}/android/`, logo: 'android' },
 	{ key: 'site.nav.mac', href: `${prefix}/mac/`, logo: 'apple' },
+	// No mark: Garmin's logo needs its written permission.
+	{ key: 'site.nav.garmin', href: `${prefix}/garmin/` },
 	{ key: 'site.nav.developers', href: '/developers/' },
 ];
 const path = Astro.url.pathname;
