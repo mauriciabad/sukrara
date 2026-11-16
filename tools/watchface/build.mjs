@@ -5,7 +5,8 @@
 // Sukrara Aura: regenerate the expectations and the reference pictures from the reference implementation (aura.js).
 //   node tools/watchface/build.mjs            expect.json + every PNG (needs Google Chrome; set CHROME to its binary)
 //   node tools/watchface/build.mjs --json     expect.json only
-//   node tools/watchface/build.mjs --case <id> [--out <file.png>] [--size 390] [--bezel]   one picture
+//   node tools/watchface/build.mjs --case <id> [--out <file.png>] [--size 390] [--bezel] [--cfg '{"lang":"es"}']   one
+//     picture; --cfg adds or replaces the case's inputs (SPEC.md §3), e.g. the same state in Spanish
 // Also writes a gallery of every case to the system temp folder (printed at the end) for a quick look.
 
 import { createRequire } from 'node:module';
@@ -78,7 +79,7 @@ if (flag('--case')) {
   if (!c) throw new Error('no case ' + id);
   const size = Number(opt('--size', flag('--bezel') ? 1168 : 390));
   const file = path.resolve(opt('--out', id + '.png'));
-  await shoot(Object.assign({ size, bezel: flag('--bezel') }, c.cfg), file, size);
+  await shoot(Object.assign({ size, bezel: flag('--bezel') }, c.cfg, JSON.parse(opt('--cfg', '{}'))), file, size);
   console.log('wrote', file);
 } else {
   writeExpect();
