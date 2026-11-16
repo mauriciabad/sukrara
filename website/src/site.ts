@@ -18,6 +18,12 @@ export const RELEASES = `${GITHUB}/releases`;
 export const ISSUES = `${GITHUB}/issues`;
 
 /**
+ * Sukrara Aura's app id on the Connect IQ store, from its listing's URL. PLACEHOLDER until the listing is public: put the
+ * real id here (the developer dashboard shows it) and every link to the listing follows.
+ */
+export const CONNECT_IQ_APP_ID = 'PLACEHOLDER-connect-iq-app-id';
+
+/**
  * The store listings, in the page's language. Every outside link that has a page in the reader's language goes to that
  * one (Spanish page → Spanish store page); `scripts/check.mjs` fails on one that doesn't (LOCALIZED there).
  */
@@ -27,6 +33,8 @@ export const STORES = {
 	appStore: (lang: string) => `https://apps.apple.com/${lang === 'es' ? 'es' : 'us'}/app/sukrara/id6833533014?mt=12`,
 	/** F-Droid's main repository (docs/20-publishing.md, #191). */
 	fdroid: (lang: string) => `https://f-droid.org/${lang}/packages/${brand.applicationId}/`,
+	/** Sukrara Aura on the Connect IQ store (docs/20-publishing.md › Connect IQ store). */
+	connectIq: (lang: string) => `https://apps.garmin.com/${lang === 'es' ? 'es-ES' : 'en-US'}/apps/${CONNECT_IQ_APP_ID}`,
 };
 
 /** Obtainium adds the GitHub releases and checks each APK is signed with Sukrara's key (docs/20-publishing.md). */

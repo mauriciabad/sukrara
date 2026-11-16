@@ -14,4 +14,9 @@ it; the site's footer says so.
 
 xDrip+'s icon is read where the Android app keeps it (`ds_ic_app_xdrip.png`, xDrip's own launcher icon, GPL-3.0). The
 one-colour marks (Android, Apple, GitHub, Google Play, Bluetooth, Homebrew, Obtainium, Nostr) are paths in
-`src/lib/logos.ts`, from Simple Icons (CC0-1.0) and Starlight (MIT).
+`src/lib/logos.ts`, from Simple Icons (CC0-1.0) and Starlight (MIT). Garmin's is its delta, the triangle of its logo, from
+[SVG Repo](https://www.svgrepo.com/) (`garmin-svgrepo-com.svg`, CC0-1.0; the one path, unchanged, checked to hold
+nothing else), drawn in one colour like the others; the owner chose it (2026-11-17). Garmin's rules for third parties
+([Connect IQ](https://developer.garmin.com/brand-guidelines/connect-iq/), [Garmin Connect](https://developer.garmin.com/brand-guidelines/connect/))
+ask that its images aren't altered and that app icons carry none of its branding; the site uses the mark only to name the
+platform, never in Sukrara's own icons, and the footer names Garmin's trademarks.

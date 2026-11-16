@@ -12,6 +12,7 @@ const t = Astro.locals.t;
 const prefix = locale ? `/${locale}` : '';
 const es = locale === 'es';
 const links = [
+	{ text: t('site.nav.features'), href: `${prefix}/features/` },
 	{ text: t('site.nav.android'), href: `${prefix}/android/` },
 	{ text: t('site.nav.mac'), href: `${prefix}/mac/` },
 	{ text: t('site.nav.garmin'), href: `${prefix}/garmin/` },

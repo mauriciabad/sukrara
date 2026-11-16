@@ -9,10 +9,8 @@
  * certificate (Android) or the Developer ID and notarization (Mac), the file's SHA-256 as GitHub recorded it, GitHub's
  * own check of an immutable release, and the same file on GitHub.
  *   <Download app="android" />
- * The Garmin face (`app="garmin"`) has no file to download: its button leads to the Garmin page's Get it and the other
- * column lists the steps. Once it's on the Connect IQ store, that one change: Garmin's badge into assets/badges, its
- * listing in STORES, the badge in a `sk-badges` row above the steps like the Mac App Store's, and the button's line
- * says it's on the store.
+ * The Garmin face (`app="garmin"`) has no file to download: its button leads to the Garmin page's Get it, and the other
+ * column has Garmin's Connect IQ store badge (its listing, STORES.connectIq) above the steps.
  */
 import { Picture } from 'astro:assets';
 import { Code, Icon } from '@astrojs/starlight/components';
@@ -22,6 +20,7 @@ import appStoreEn from '../assets/badges/mac-app-store-black-en.svg?url';
 import appStoreEs from '../assets/badges/mac-app-store-black-es.svg?url';
 import { latestRelease, megabytes } from '../lib/release';
 import { APPLICATION_ID, GITHUB, HOMEBREW, HOMEBREW_HOME, OBTAINIUM, REPO, SIGNING, STORES } from '../site';
+import ConnectIqBadge from './ConnectIqBadge.astro';
 import Logo from './Logo.astro';
 
 interface Props {
@@ -42,8 +41,8 @@ const meta =
 		? t('site.download.meta', { version: release.version, size: megabytes(file.size), date })
 		: t('site.download.newest');
 const name = file?.name ?? (app === 'android' ? 'Sukrara.apk' : 'Sukrara.dmg');
-/** The platform's mark: none of Garmin's (it needs Garmin's written permission), a plain watch. */
-const logo = ({ android: 'android', mac: 'apple', garmin: 'watch' } as const)[app];
+/** The platform's mark. */
+const logo = ({ android: 'android', mac: 'apple', garmin: 'garmin' } as const)[app];
 const prefix = lang === 'es' ? '/es' : '';
 /** The Garmin page's Get it (its anchor in each language). */
 const garminGet = `${prefix}/garmin/#${lang === 'es' ? 'descarga' : 'get-it'}`;
@@ -71,7 +70,7 @@ const brewId = `sk-brew-${crypto.randomUUID().slice(0, 8)}`;
 						<Logo name={logo} size="1.75rem" />
 						<span>
 							<strong>{t('site.garmin.button')}</strong>
-							<small>{t('site.garmin.soon')}</small>
+							<small>{t('site.garmin.store')}</small>
 						</span>
 						<Icon name="right-arrow" size="1.25rem" />
 					</a>
@@ -100,6 +99,11 @@ const brewId = `sk-brew-${crypto.randomUUID().slice(0, 8)}`;
 	{
 		app === 'garmin' ? (
 			<div class="sk-download__more">
+				<ul class="sk-badges" role="list">
+					<li>
+						<ConnectIqBadge />
+					</li>
+				</ul>
 				<ol class="sk-download__steps">
 					<li>{t('site.garmin.step1')}</li>
 					<li>{t('site.garmin.step2')}</li>

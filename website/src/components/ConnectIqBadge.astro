@@ -1,0 +1,41 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * Garmin's "Available on the Connect IQ Store" badge (black, from Garmin's Connect IQ brand assets, unmodified; English
+ * only, as Garmin gives it), linking Sukrara Aura's listing in the page's language. Its SVG keeps a transparent margin
+ * for its shadow, so it's drawn a little taller than the other stores' 40 px badges to look the same size.
+ *   <ConnectIqBadge />
+ */
+import connectIq from '../assets/badges/connect-iq-black.svg?url';
+import { STORES } from '../site';
+
+const t = Astro.locals.t;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+---
+
+<a class="sk-ciq not-content" href={STORES.connectIq(lang)}>
+	<img src={connectIq} alt={t('site.store.connectIq')} width="129" height="44" />
+</a>
+
+<style>
+	.sk-ciq {
+		display: inline-block;
+		margin: -2px;
+		transition: transform 0.15s ease;
+	}
+	.sk-ciq:hover {
+		transform: translateY(-2px);
+	}
+	.sk-ciq:active {
+		transform: translateY(0) scale(0.97);
+	}
+	.sk-ciq img {
+		display: block;
+		height: 44px;
+		width: auto;
+		box-shadow: none;
+		border-radius: 0;
+	}
+</style>

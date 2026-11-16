@@ -1,5 +1,7 @@
 {
   "site.nav.label": "Sections",
+  "site.nav.features": "Features",
+  "site.nav.get": "Get Sukrara",
   "site.features.close": "Close",
   "site.features.seeAll": "See all",
   "site.nav.android": "Android",
@@ -35,6 +37,7 @@
   "site.sounds.vibration": "Vibration pattern, {{ms}} ms",
   "site.store.play": "Get it on Google Play",
   "site.store.appStore": "Download on the Mac App Store",
+  "site.store.connectIq": "Available on the Connect IQ Store",
   "site.verify.title": "Check it’s the real Sukrara",
   "site.verify.android.cert": "Every Sukrara APK, from here and from Google Play, is signed with this certificate, and Android installs an update over Sukrara only when it has the same one:",
   "site.verify.android.phone": "shows the certificate of the downloaded APK, or of the Sukrara on your phone: paste the text above into it to compare.",
@@ -73,9 +76,9 @@
   "site.brew.copied": "Copied. Paste it into Terminal and press Return:",
   "site.badge.fdroid": "Get it on",
   "site.garmin.button": "Sukrara Aura",
-  "site.garmin.soon": "On its way to the Connect IQ store",
+  "site.garmin.store": "Free on the Connect IQ store",
   "site.garmin.try": "Try it yourself",
   "site.garmin.step1": "Install Sukrara for Android and Garmin Connect on your phone.",
-  "site.garmin.step2": "Install Sukrara Aura from the Connect IQ store, once it’s there, and make it your watch face.",
+  "site.garmin.step2": "Install Sukrara Aura from the Connect IQ store and make it your watch face.",
   "site.garmin.step3": "That’s it: Sukrara sends each reading to the watch by itself."
 }

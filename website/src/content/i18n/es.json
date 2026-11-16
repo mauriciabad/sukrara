@@ -1,5 +1,7 @@
 {
   "site.nav.label": "Secciones",
+  "site.nav.features": "Funciones",
+  "site.nav.get": "Consigue Sukrara",
   "site.features.close": "Cerrar",
   "site.features.seeAll": "Ver todo",
   "site.nav.android": "Android",
@@ -35,6 +37,7 @@
   "site.sounds.vibration": "Patrón de vibración, {{ms}} ms",
   "site.store.play": "Disponible en Google Play",
   "site.store.appStore": "Descárgalo en el Mac App Store",
+  "site.store.connectIq": "Disponible en la tienda Connect IQ",
   "site.verify.title": "Comprueba que es la Sukrara de verdad",
   "site.verify.android.cert": "Cada APK de Sukrara, de aquí y de Google Play, está firmado con este certificado, y Android solo instala una actualización encima de Sukrara si tiene el mismo:",
   "site.verify.android.phone": "muestra el certificado del APK descargado, o de la Sukrara de tu móvil: pega en ella el texto de arriba para comparar.",
@@ -73,9 +76,9 @@
   "site.brew.copied": "Copiado. Pégalo en Terminal y pulsa Retorno:",
   "site.badge.fdroid": "Disponible en",
   "site.garmin.button": "Sukrara Aura",
-  "site.garmin.soon": "Llegará pronto a la tienda Connect IQ",
+  "site.garmin.store": "Gratis en la tienda Connect IQ",
   "site.garmin.try": "Pruébala tú",
   "site.garmin.step1": "Instala Sukrara para Android y Garmin Connect en tu móvil.",
-  "site.garmin.step2": "Instala Sukrara Aura desde la tienda Connect IQ, cuando esté, y ponla como esfera.",
+  "site.garmin.step2": "Instala Sukrara Aura desde la tienda Connect IQ y ponla como esfera.",
   "site.garmin.step3": "Listo: Sukrara envía cada lectura al reloj por sí sola."
 }

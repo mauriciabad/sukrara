@@ -88,6 +88,7 @@ const LOCALIZED = {
 	'apps.apple.com': (u) => ({ us: 'en', es: 'es' })[u.pathname.split('/')[1]],
 	'f-droid.org': (u) => u.pathname.split('/')[1].match(/^[a-z]{2}(?:[_-][A-Za-z]+)?$/)?.[0],
 	'brew.sh': (u) => (u.pathname.startsWith('/es/') ? 'es' : undefined),
+	'apps.garmin.com': (u) => ({ 'en-US': 'en', 'es-ES': 'es' })[u.pathname.split('/')[1]],
 };
 
 // Every link of every page.
