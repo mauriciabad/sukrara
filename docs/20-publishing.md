@@ -35,7 +35,7 @@ unused).
 | Mac, non-developers | Notarized dmg from sukrara.mauri.app / GitHub Releases + **Sparkle 2** in-app updates | Paid Apple Developer Program (Developer ID) | 99 USD/year |
 | Mac, developers | **Own tap** `mauriciabad/homebrew-tap` → `brew install --cask mauriciabad/tap/sukrara`; later the official cask | Official cask needs Gatekeeper-passing (notarized) builds + notability | 0 |
 | Mac App Store | **Go** (2026-11-11): a sandboxed build without the update check, TestFlight first ([review risk](#mac-app-store-review-risk-2026-11-11-186)) | The App Store Connect app record and the distribution certificates (the owner) | (same 99 USD) |
-| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the updater (decided 2026-11-11, [Flavors](#flavors)) | Health/medical declarations; `USE_EXACT_ALARM` and root-feature review (no 12-tester rule: the account predates it) | paid (old account) |
+| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the updater (decided 2026-11-11, [Flavors](#flavors)) None: **live** since 2026-11 (0.14.5, [the account section](#google-play-the-account-and-app-as-set-up-2026-11-10)) | paid (old account) |
 | Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; the "full" flavor with the updater (#188) | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
 | Android, F-Droid main repo | Later, optional | Build from source incl. Juggluco core + rust-nostr; likely *NonFreeNet* anti-feature | 0 |
 | Garmin | Connect IQ Store, free app | Developer account; privacy policy; no medical claims | 0 |
@@ -647,6 +647,9 @@ open testing at once, with no *Apply for production* step) and no new fee.
   often with improvements and new features. Found a problem or have an idea? Tell me at
   github.com/mauriciabad/sukrara/issues". The Health Connect declaration never appeared. Steps as they were:
   [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
+- **Approved: live in production** (0.14.5, seen by the owner 2026-11-16; Play dates it Nov 13): https://play.google.com/store/apps/details?id=app.mauri.sukrara, linked from
+  the README and the website's Android page. No questions from Play about `USE_EXACT_ALARM`, root or LSPosed. Left:
+  the listing icon (#210) and item 6's check below.
 
 ### Google Play: reviewer access (App access)
 
@@ -1339,8 +1342,8 @@ Done 2026-11-12: the store listing's new text (en-US + es-ES), its AI asset decl
 
 Done 2026-11-13: all of 1–4 below; the release went to **production**, not open testing (see the account section).
 
-Left: watch the review (answer Play truthfully: root and LSPosed, the text above; a rejection of `USE_EXACT_ALARM`
-or the root features: the note at the end); after approval, item 6's check on a spare phone (does Play take over a
+Approved and live (2026-11-16, [the account section](#google-play-the-account-and-app-as-set-up-2026-11-10)). Left:
+the listing icon (#210); item 6's check on a spare phone (does Play take over a
 GitHub install?) before telling GitHub users to switch.
 
 The steps, as they were:

@@ -126,7 +126,7 @@ steps.</sub></p>
 | [17](17-lockscreen-widget) | Glucose on the lock screen | The graph around the fingerprint icon (root + LSPosed); log a treatment without unlocking |
 | [18](18-metrics) | The doctor's report in the app | Time in ranges, average, GMI and CV with their goals, on the home screen and in widget slots |
 | [19](19-notification-templates) | Notification templates | Which templates use the space under the icon: only Android 17's Live Update bar and buttons. Not in Sukrara yet |
-| [20](20-publishing) | Publishing on every platform | Research; the Homebrew tap is live since 0.11.14. Next: notarized Mac app, Google Play plus GitHub/IzzyOnDroid for Android, Connect IQ Store for Garmin |
+| [20](20-publishing) | Publishing on every platform | The Homebrew tap is live since 0.11.14, the notarized Mac app since 0.12, Google Play since 0.14.5. Next: the Mac App Store, IzzyOnDroid / F-Droid, Connect IQ Store for Garmin |
 | [23](23-sensors) | More sensors, more brands | Dexcom G7 / ONE+ (reading along with the official Dexcom app), Dexcom G6 / ONE, Accu-Chek SmartGuide and Aidex X ported as a proof of concept, tested against recorded traces; what every other brand would cost. In the app: the sensor-driver layer and the four other families as untested, with a feedback banner until each is verified |
 | [21](21-new-sensor-flow) | Starting a new sensor | One guided screen from the NFC tap to the first reading |
 | [22](22-ecosystem-outputs) | Sukrara in the diabetes-tech ecosystem | The xDrip+, LibreLink and Juggluco broadcasts, Health Connect and a CSV export Tidepool imports |
