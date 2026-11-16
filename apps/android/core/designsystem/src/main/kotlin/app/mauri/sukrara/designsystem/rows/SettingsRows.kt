@@ -19,10 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -59,6 +61,8 @@ import com.android.settingslib.spa.framework.compose.HighlightSurface
 import com.android.settingslib.spa.framework.theme.SettingsDimension
 import com.android.settingslib.spa.framework.theme.SettingsShape
 import com.android.settingslib.spa.framework.theme.SettingsSpace
+import com.android.settingslib.spa.widget.button.ActionButton
+import com.android.settingslib.spa.widget.button.ActionButtons
 import com.android.settingslib.spa.widget.button.CategoryButton
 import com.android.settingslib.spa.widget.preference.CheckboxPreference
 import com.android.settingslib.spa.widget.preference.CheckboxPreferenceModel
@@ -621,6 +625,42 @@ fun MainSwitchRow(
                     SettingsBody(note)
                 }
             }
+        }
+    }
+}
+
+/** One of [ActionButtonsRow]'s buttons: what it does ([text], short: "Send now"), its symbol and its action. */
+data class RowButton(
+    val text: String,
+    @DrawableRes val icon: Int,
+    val enabled: Boolean = true,
+    val onClick: () -> Unit,
+)
+
+/**
+ * The actions on the thing a page is about, at its top (stock Settings' ActionButtonsPreference: App info's *Open /
+ * Uninstall / Force stop*, a Bluetooth device's *Disconnect / Forget*), drawn by SPA's ActionButtons: a tonal icon
+ * button with its label under it, side by side (stacked when a label would take four lines). Up to three or four; a tap
+ * confirms with a haptic, and the page shows the result. TalkBack reads each as a button named by its label.
+ */
+@Composable
+fun ActionButtonsRow(
+    buttons: List<RowButton>,
+    modifier: Modifier = Modifier,
+) {
+    val haptics = rememberHaptics()
+    val vectors = buttons.map { ImageVector.vectorResource(it.icon) }
+    // SPA draws the labels in the content colour: the page's text colour, whatever surface is around
+    Box(modifier.fillMaxWidth()) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+            ActionButtons(
+                buttons.mapIndexed { i, b ->
+                    ActionButton(b.text, vectors[i], b.enabled) {
+                        haptics.confirm()
+                        b.onClick()
+                    }
+                },
+            )
         }
     }
 }
