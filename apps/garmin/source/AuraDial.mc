@@ -287,19 +287,23 @@ class AuraDial {
             return;
         }
         var rq = AuraMath.r1(rr < 5.4 ? rr : 5.4);
-        // a dot under 1 px is one pixel at the dot's area (an anti-aliased circle that small crashes the simulator's
-        // firmware: the blue triangle); Connect IQ's filled circle comes out ~0.75 px wider than its radius, so the
-        // others are drawn that much smaller (measured against the reference's dots), 1 px at least
-        var tiny = rq < 1;
-        if (!tiny) {
-            rq = AuraMath.max(1, rq - 0.75);
+        // Connect IQ's filled circle comes out ~0.75 px wider than its radius (measured against the reference's dots),
+        // and a small anti-aliased circle drawn into a bitmap crashes the simulator's firmware (the blue triangle):
+        // dots up to r 2.25 are a 1 to 4 px square holding the dot's area of colour, the others a circle 0.75 px smaller
+        var side = 0;
+        var a = o1;
+        if (rq < 2.25) {
+            side = AuraMath.clamp(Math.round(1.77 * rq), 1, 4).toNumber();
+            a = o1 * Math.PI * rq * rq / (side * side);
+        } else {
+            rq -= 0.75;
         }
-        dc.setFill(pm(f1 as Number, tiny ? o1 * Math.PI * rq * rq : o1));
+        dc.setFill(pm(f1 as Number, a));
         for (var x = -192; x <= 192; x += 12) {
             var xx = x + ((y / 12) % 2 != 0 ? 6 : 0);
             if (xx * xx + y * y <= 190 * 190) {
-                if (tiny) {
-                    dc.fillRectangle(Math.floor(ox + xx), Math.floor(oy + y), 1, 1);
+                if (side > 0) {
+                    dc.fillRectangle(Math.floor(ox + xx + 1 - side / 2.0), Math.floor(oy + y + 1 - side / 2.0), side, side);
                 } else {
                     dc.fillCircle(ox + xx, oy + y, rq);
                 }
