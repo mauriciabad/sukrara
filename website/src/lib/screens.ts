@@ -7,6 +7,7 @@
  *   - the Android snapshot goldens (apps/android/<module>/src/test/snapshots): drawn by the app's own code from
  *     synthetic data, light and dark, and updated with the code;
  *   - Mac renders by `sukrara-snap` (website/src/assets/mac: how to render them again is in website/README.md);
+ *   - Sukrara Aura renders by its reference implementation (website/src/assets/garmin, the same README);
  *   - report pictures in docs/img.
  * A golden that's renamed or deleted fails the build here, never a broken picture on the site.
  */
@@ -42,6 +43,24 @@ import macTreatmentDark from '../assets/mac/en/treatment-add-dark.png';
 import macTreatmentLight from '../assets/mac/en/treatment-add-light.png';
 import macTreatmentDarkEs from '../assets/mac/es/treatment-add-dark.png';
 import macTreatmentLightEs from '../assets/mac/es/treatment-add-light.png';
+import garminHero from '../assets/garmin/en/hero.png';
+import garminHeroEs from '../assets/garmin/es/hero.png';
+import garminHigh from '../assets/garmin/en/high.png';
+import garminHighEs from '../assets/garmin/es/high.png';
+import garminLow from '../assets/garmin/en/low.png';
+import garminLowEs from '../assets/garmin/es/low.png';
+import garminVeryHigh from '../assets/garmin/en/very-high.png';
+import garminVeryHighEs from '../assets/garmin/es/very-high.png';
+import garminSparkline from '../assets/garmin/en/sparkline.png';
+import garminSparklineEs from '../assets/garmin/es/sparkline.png';
+import garminPrivate from '../assets/garmin/en/private.png';
+import garminPrivateEs from '../assets/garmin/es/private.png';
+import garminOld from '../assets/garmin/en/old.png';
+import garminOldEs from '../assets/garmin/es/old.png';
+import garminAlwaysOn from '../assets/garmin/en/always-on.png';
+import garminAlwaysOnEs from '../assets/garmin/es/always-on.png';
+import garminNight from '../assets/garmin/en/night.png';
+import garminNightEs from '../assets/garmin/es/night.png';
 
 type Lang = 'en' | 'es';
 interface Pictures {
@@ -55,6 +74,8 @@ export interface Screen {
 	alt: Record<Lang, string>;
 	/** The picture's plain background, per theme, when it's drawn edge to edge: shown as a margin around it. */
 	ground?: { light: string; dark: string };
+	/** A round watch screen: shown in a plain dark ring (no brand's bezel), the same in both themes. */
+	round?: true;
 }
 
 export const SCREENS = {
@@ -157,6 +178,78 @@ export const SCREENS = {
 		alt: {
 			en: 'A Sukrara widget on the Mac desktop with the value, trend and chart.',
 			es: 'Un widget de Sukrara en el escritorio del Mac con el valor, la tendencia y la gráfica.',
+		},
+	},
+	garmin: {
+		pictures: { en: { light: garminHero }, es: { light: garminHeroEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura on a round watch screen: Monday 16 November, 14°, 10:09, and 112 in green with a steady arrow, in range; the level rail’s bead in the green band, 9 days of battery, 6,420 steps and 2 units of insulin 1 h 20 min ago.',
+			es: 'Sukrara Aura en una pantalla de reloj redonda: lunes 16 de noviembre, 14°, 10:09 y 112 en verde con una flecha estable, en rango; la bolita del riel de nivel en la franja verde, 9 días de batería, 6.420 pasos y 2 unidades de insulina hace 1 h 20 min.',
+		},
+	},
+	garminHigh: {
+		pictures: { en: { light: garminHigh }, es: { light: garminHighEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura, high: 236 in amber, rising, with the grain dial spread wide around it; alerts quiet for 25 more minutes after 4.5 units of insulin and 45 g of carbs 35 minutes ago.',
+			es: 'Sukrara Aura, alta: 236 en ámbar, subiendo, con el grano extendido a su alrededor; alertas en calma 25 minutos más tras 4,5 unidades de insulina y 45 g de hidratos hace 35 minutos.',
+		},
+	},
+	garminLow: {
+		pictures: { en: { light: garminLow }, es: { light: garminLowEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura, low: 62 in red, falling, with a red glow rising from below and the Carbs pill under it.',
+			es: 'Sukrara Aura, baja: 62 en rojo, bajando, con un brillo rojo desde abajo y la píldora Hidratos debajo.',
+		},
+	},
+	garminVeryHigh: {
+		pictures: { en: { light: garminVeryHigh }, es: { light: garminVeryHighEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura, very high: 320 in magenta, steady, magenta lasers across the face and the Insulin pill under it.',
+			es: 'Sukrara Aura, muy alta: 320 en magenta, estable, láseres magenta cruzando la esfera y la píldora Insulina debajo.',
+		},
+	},
+	garminSparkline: {
+		pictures: { en: { light: garminSparkline }, es: { light: garminSparklineEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura with the last hour instead of the arrow: 77, turning up after a dip, as a small line next to the value.',
+			es: 'Sukrara Aura con la última hora en vez de la flecha: 77, subiendo tras una bajada, como una pequeña línea junto al valor.',
+		},
+	},
+	garminPrivate: {
+		pictures: { en: { light: garminPrivate }, es: { light: garminPrivateEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura in private mode while you hold the screen: 142 with a shrinking neon line under it, before it hides again.',
+			es: 'Sukrara Aura en modo privado mientras mantienes la pantalla: 142 con una línea neón que se acorta debajo, antes de ocultarse otra vez.',
+		},
+	},
+	garminOld: {
+		pictures: { en: { light: garminOld }, es: { light: garminOldEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura with an old reading: 104 struck through in grey, a hollow ring instead of the arrow, and the reading’s time, 10:00.',
+			es: 'Sukrara Aura con una lectura antigua: 104 tachado en gris, un anillo hueco en vez de la flecha y la hora de la lectura, 10:00.',
+		},
+	},
+	garminAlwaysOn: {
+		pictures: { en: { light: garminAlwaysOn }, es: { light: garminAlwaysOnEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura always-on: the time outlined and 112 in green on black, without fields or dial.',
+			es: 'Sukrara Aura siempre activa: la hora perfilada y 112 en verde sobre negro, sin campos ni fondo.',
+		},
+	},
+	garminNight: {
+		pictures: { en: { light: garminNight }, es: { light: garminNightEs } },
+		round: true,
+		alt: {
+			en: 'Sukrara Aura at night: the same face in dimmer colours, 118 steady and in range.',
+			es: 'Sukrara Aura de noche: la misma esfera en colores más tenues, 118 estable y en rango.',
 		},
 	},
 } satisfies Record<string, Screen>;

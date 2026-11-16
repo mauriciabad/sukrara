@@ -6,7 +6,7 @@
  * One app picture from lib/screens.ts, in the page's language and the viewer's theme: the light picture in the light
  * theme, the dark one in the dark theme (Starlight's light:/dark: classes). JPEG XL, then AVIF, then PNG, sized by
  * Astro (lib/image-service.ts). A picture drawn edge to edge on a plain ground (the card) gets a margin of that ground,
- * so nothing that reaches its edge looks cut.
+ * so nothing that reaches its edge looks cut. A round watch screen sits in a plain dark ring.
  *   <Screenshot name="card" width={360} />
  */
 import { Picture } from 'astro:assets';
@@ -29,6 +29,7 @@ const lang = Astro.locals.starlightRoute?.lang === 'es' ? 'es' : 'en';
 const screen = SCREENS[name];
 const pictures = ('es' in screen.pictures && lang === 'es' ? screen.pictures.es : undefined) ?? screen.pictures.en;
 const ground = 'ground' in screen ? screen.ground : undefined;
+const round = 'round' in screen && screen.round;
 
 const common = {
 	alt: screen.alt[lang],
@@ -55,7 +56,11 @@ const shown: { src: ImageMetadata; which: 'light' | 'dark'; hide?: string }[] =
 {
 	shown.map(({ src, which, hide }) =>
 		// The theme class sits on a wrapper of its own: the frame's `display` would otherwise win over Starlight's.
-		ground ? (
+		round ? (
+			<span class:list={['sk-shot sk-shot--round', className]} style={`max-width: ${width}px`}>
+				<Picture src={src} widths={widths(src)} {...common} />
+			</span>
+		) : ground ? (
 			<span class:list={[hide]}>
 				<span class:list={['sk-shot sk-shot--framed', className]} style={`--ground: ${ground[which]}; max-width: ${width}px`}>
 					<Picture src={src} widths={widths(src)} {...common} />
@@ -72,6 +77,22 @@ const shown: { src: ImageMetadata; which: 'light' | 'dark'; hide?: string }[] =
 		display: block;
 		padding: 6%;
 		background: var(--ground);
+	}
+	/* A watch screen in a plain ring: no brand's bezel (Garmin's print needs its permission). */
+	.sk-shot--round {
+		display: block;
+		border-radius: 50%;
+		background: #000;
+		box-shadow:
+			0 0 0 0.45rem #1c1c1f,
+			0 0 0 0.55rem #3a3a3e;
+		margin: 0.55rem;
+	}
+	.sk-shot--round :global(img) {
+		display: block;
+		width: 100%;
+		height: auto;
+		border-radius: 50%;
 	}
 	.sk-shot--framed :global(img) {
 		display: block;

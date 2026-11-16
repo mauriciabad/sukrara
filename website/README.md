@@ -37,7 +37,8 @@ npm run check     # what CI checks on dist/ (below); `node scripts/check.mjs --e
 ## URLs
 
 The apps and other systems open some of them, so they don't move: `/android/#versions` (Android: Settings › About ›
-*About the versions*), `/android/` and `/mac/` (each app's *Sukrara on other devices*), `/privacy` (both apps and the
+*About the versions*), `/android/` and `/mac/` (each app's *Sukrara on other devices*), `/garmin/` (the face's store
+listing), `/privacy` (both apps and the
 store listings), `/join#<invite>` (every invite link; App Links and universal links claim `/join`), `/.well-known/*`,
 `/appcast.xml` (the SUFeedURL of every installed Mac app). `npm run check` fails when a URL written in the apps' code
 doesn't exist on the site.
@@ -46,8 +47,8 @@ doesn't exist on the site.
 
 From where they're already kept, never copied: the Android snapshot goldens (`apps/android/*/src/test/snapshots`,
 light + dark, drawn by the app's code from synthetic data and kept current by its tests; the card is
-`panel-in-range`, which leaves room for what the card draws past its edges), report pictures in `docs/img`, and the
-Mac renders in `src/assets/mac/{en,es}` (`sukrara-snap`, synthetic data). A picture drawn edge to edge on a plain
+`panel-in-range`, which leaves room for what the card draws past its edges), report pictures in `docs/img`, the
+Mac renders in `src/assets/mac/{en,es}` (`sukrara-snap`, synthetic data) and the Garmin face's in `src/assets/garmin`. A picture drawn edge to edge on a plain
 ground gets a margin of that ground (`ground` in `screens.ts`), so nothing looks cut. Render those again when
 the menu bar panel, the report or Add Treatment change visibly:
 
@@ -57,6 +58,18 @@ R=$(mktemp -d); "$SNAP" shell $R/en/shell; "$SNAP" windows $R/en/windows; "$SNAP
 for l in en es; do for t in light dark; do A=../../website/src/assets/mac/$l
   cp $R/$l/shell/panel-nearby-$t.png $A/panel-$t.png; cp $R/$l/windows/report-$t.png $A/report-$t.png
   cp $R/$l/windows/treatment-add-$t.png $A/treatment-add-$t.png; done; done; rm -rf $R
+```
+
+Sukrara Aura's pictures (`src/assets/garmin/{en,es}`, synthetic data) are renders of its reference implementation at
+640 px without the bezel: the bezel drawing prints Garmin's name, which Garmin allows only with its written
+permission, so `Screenshot` puts each screen in a plain dark ring (`round` in `screens.ts`). Render them again when the
+face changes visibly (from the repository root):
+
+```sh
+for l in en es; do for p in hero:hero grain-high:high glow-low:low lasers-very-high:very-high sparkline:sparkline \
+  modes-private-held:private glucose-old:old always-on:always-on night:night; do
+  node tools/watchface/build.mjs --case ${p%%:*} --size 640 --cfg "{\"lang\":\"$l\"}" --out website/src/assets/garmin/$l/${p##*:}.png
+done; done
 ```
 
 Never a person's data or a real phone's screenshot (CLAUDE.md). A picture is shown by name: `<Screenshot name="card"
