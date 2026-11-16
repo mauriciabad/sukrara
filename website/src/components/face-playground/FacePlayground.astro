@@ -1,0 +1,252 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * The watch face playground: the face drawn by its own reference implementation, presets, inputs and "Speed up time".
+ * The page holds the frame; playground.ts fills and runs it. The first face is drawn at build time, so it shows
+ * before the script runs. The face is the screen alone, no watch around it.
+ */
+import { aura } from './aura/index.ts';
+import { words } from './strings.ts';
+
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+const w = words(lang);
+const first = aura.render(aura.defaults(), lang);
+---
+
+<div class="fp not-content" data-lang={lang}>
+	<div class="fp-stage">
+		<figure class="fp-screen" aria-label={w.face}>
+			<div class="fp-face" data-face set:html={first} />
+		</figure>
+		<div class="fp-time" role="group" aria-label={w.play}>
+			<div class="fp-row">
+				<label class="fp-inline">
+					<span>{w.scenario}</span>
+					<select data-scenario></select>
+				</label>
+				<button type="button" class="fp-play" data-play>{w.play}</button>
+			</div>
+			<p class="fp-about" data-about></p>
+			<input type="range" class="fp-scrub" data-scrub min="0" max="1" step="any" value="0" aria-label={w.timeline} />
+			<div class="fp-row">
+				<span class="fp-at" data-at aria-live="off"></span>
+				<div class="fp-speeds" role="group" aria-label={w.speed} data-speeds></div>
+			</div>
+		</div>
+	</div>
+	<div class="fp-panel">
+		<div class="fp-row">
+			<label class="fp-inline fp-grow">
+				<span>{w.presets}</span>
+				<select data-preset></select>
+			</label>
+			<button type="button" class="fp-reset" data-reset>{w.reset}</button>
+		</div>
+		<div class="fp-controls" data-controls aria-label={w.inputs} role="group"></div>
+	</div>
+</div>
+
+<script>
+	import { aura } from './aura/index.ts';
+	import { mountPlayground } from './playground.ts';
+
+	for (const root of document.querySelectorAll<HTMLElement>('.fp')) {
+		mountPlayground(root, aura, root.dataset.lang === 'es' ? 'es' : 'en');
+	}
+</script>
+
+<style>
+	:global(:root:has(.fp)) {
+		--sl-content-width: 62rem;
+	}
+	.fp {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.5rem;
+		margin-block: 1.5rem;
+	}
+	@media (min-width: 50rem) {
+		.fp {
+			grid-template-columns: minmax(0, 23rem) minmax(0, 1fr);
+			align-items: start;
+		}
+		.fp-stage {
+			position: sticky;
+			top: calc(var(--sl-nav-height, 4rem) + 1rem);
+		}
+	}
+	.fp-stage,
+	.fp-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.fp-screen {
+		margin: 0;
+		padding: 1rem;
+		border-radius: 2rem;
+		background: #0a0a0c;
+		box-shadow: var(--sk-glow);
+	}
+	.fp-face {
+		aspect-ratio: 1;
+		width: 100%;
+		max-width: 22rem;
+		margin-inline: auto;
+	}
+	.fp-face :global(svg) {
+		width: 100%;
+		height: auto;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.fp-face :global(*) {
+			transition: none !important;
+		}
+	}
+	.fp-time,
+	.fp-panel {
+		padding: 1rem;
+		border-radius: var(--sk-radius, 1rem);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+	}
+	.fp-time {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.fp-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 0.75rem;
+		align-items: end;
+		justify-content: space-between;
+	}
+	.fp-inline {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.fp-grow {
+		flex: 1;
+	}
+	.fp-about {
+		margin: 0;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.fp-at {
+		font-family: var(--__sl-font-mono);
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-2);
+	}
+	.fp-scrub {
+		width: 100%;
+		accent-color: var(--sl-color-accent);
+	}
+	.fp :global(select),
+	.fp :global(input[type='number']),
+	.fp :global(input[type='time']) {
+		font: inherit;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-white);
+		background: var(--sl-color-bg);
+		border: 1px solid var(--sk-surface-line);
+		border-radius: 0.5rem;
+		padding: 0.4rem 0.5rem;
+		min-height: 2.5rem;
+	}
+	.fp :global(select) {
+		max-width: 100%;
+	}
+	.fp :global(button) {
+		font: 700 var(--sl-text-sm) / 1 var(--sk-font-display);
+		color: var(--sl-color-white);
+		background: var(--sl-color-bg);
+		border: 1px solid var(--sk-surface-line);
+		border-radius: 999px;
+		padding: 0.6rem 1rem;
+		min-height: 2.5rem;
+		cursor: pointer;
+	}
+	.fp :global(button:hover) {
+		border-color: var(--sl-color-accent);
+	}
+	.fp .fp-play {
+		min-width: 10rem;
+		color: var(--sl-color-black);
+		background: var(--sl-color-accent);
+		border-color: var(--sl-color-accent);
+	}
+	.fp-speeds {
+		display: flex;
+		gap: 0.25rem;
+	}
+	.fp-speeds :global(button) {
+		padding-inline: 0.7rem;
+	}
+	.fp-speeds :global(button[aria-pressed='true']) {
+		border-color: var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+	}
+	.fp-controls {
+		display: grid;
+		gap: 1rem;
+	}
+	.fp-controls :global(fieldset) {
+		margin: 0;
+		padding: 0.75rem 0 0;
+		border: 0;
+		border-top: 1px solid var(--sk-surface-line);
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
+		gap: 0.75rem 1rem;
+	}
+	.fp-controls :global(legend) {
+		font: 700 var(--sl-text-base) / 1.2 var(--sk-font-display);
+		color: var(--sl-color-white);
+		padding-inline-end: 0.5rem;
+	}
+	.fp-controls :global(.fp-field) {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.fp-controls :global(.fp-number) {
+		grid-column: 1 / -1;
+	}
+	.fp-controls :global(.fp-pair) {
+		display: flex;
+		gap: 0.5rem;
+		align-items: center;
+	}
+	.fp-controls :global(.fp-pair input[type='range']) {
+		flex: 1;
+		min-width: 0;
+		accent-color: var(--sl-color-accent);
+	}
+	.fp-controls :global(.fp-pair input[type='number']) {
+		width: 5.5rem;
+	}
+	.fp-controls :global(.fp-toggle) {
+		flex-direction: row;
+		align-items: center;
+		gap: 0.5rem;
+		min-height: 2.5rem;
+	}
+	.fp-controls :global(.fp-toggle input) {
+		width: 1.25rem;
+		height: 1.25rem;
+		accent-color: var(--sl-color-accent);
+	}
+	.fp :global(:disabled) {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
+</style>

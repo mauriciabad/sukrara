@@ -58,7 +58,7 @@ export default defineConfig({
 							{
 								label: 'More',
 								translations: { es: 'Más' },
-								items: ['open-glucose-stream', 'sounds', 'privacy'],
+								items: ['open-glucose-stream', 'sounds', 'watch-face', 'privacy'],
 							},
 						],
 					},
