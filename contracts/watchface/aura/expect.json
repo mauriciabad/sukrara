@@ -18795,7 +18795,7 @@
      }
     },
     "rail": {
-     "disp": "inline",
+     "disp": "none",
      "dL": "none",
      "dR": "inline",
      "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
@@ -18814,7 +18814,7 @@
      "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
     },
     "bead": {
-     "disp": "inline",
+     "disp": "none",
      "deg": 95,
      "col": "#3DD47A",
      "fill": "#3DD47A",
@@ -22337,6 +22337,1078 @@
    }
   },
   {
+   "id": "modes-private-aod",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. glucose hidden."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": "M0 0"
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.2827,
+     "toward": -0.25,
+     "I": 1.1625,
+     "spd": 0.1667,
+     "levelY": -18.9,
+     "idealY": 15.3,
+     "colour": "#8CC63F"
+    },
+    "sides": {
+     "left": "battery",
+     "right": "level",
+     "marks": false
+    },
+    "layout": {
+     "T": 76,
+     "V": 60,
+     "TF": 26,
+     "roomy": true,
+     "chipKind": null,
+     "msgKind": null,
+     "tfBase": -87.3,
+     "tTop": -67.3,
+     "tBase": 8.7,
+     "vTop": 30.7,
+     "vBase": 90.7,
+     "chipC": 90.7
+    },
+    "dial": {
+     "d1": "M0 0",
+     "f1": "none",
+     "s1": "none",
+     "w1": 1,
+     "o1": 1,
+     "d1D": "none",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "none",
+     "col": "#8CC63F",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -159.4,
+     "ty": -77.3,
+     "tw": 318.9,
+     "th": 96,
+     "vx": 0,
+     "vy": 0,
+     "vw": 0,
+     "vh": 0,
+     "cx": -8,
+     "cy": 67.7,
+     "cw": 0,
+     "ch": 0,
+     "fx": -61.8,
+     "fy": -112.7,
+     "fw": 0,
+     "fh": 0,
+     "sx": 18.6,
+     "sy": 16.7,
+     "sw": 0,
+     "sh": 90,
+     "spD": "none",
+     "ringD": "none",
+     "ringR": 22.9,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#55555A",
+     "dayFill": "#7A7A80"
+    },
+    "tf": {
+     "y": -87.3,
+     "fs": 26,
+     "i0": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-125 -63.2 -11.5 40.2 113.5",
+     "y": 8.7,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 113.8,
+     "fill": "none",
+     "stroke": "#6E6E73",
+     "sw": 2.2
+    },
+    "batt": {
+     "disp": "none",
+     "dL": "inline",
+     "dR": "none",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "onR": {
+      "path": "9 subpaths",
+      "chars": 324
+     },
+     "offR": "M133.1 -124.1A182 182 0 0 1 147.2 -107",
+     "col": "#7A7A80",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": 29.4,
+     "y2": 53.1,
+     "fs": 22,
+     "xL": -166,
+     "xR": 166,
+     "mL": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "mR": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     }
+    },
+    "sens": {
+     "disp": "none",
+     "dL": "none",
+     "dR": "none",
+     "n": 15,
+     "on": {
+      "path": "10 subpaths",
+      "chars": 380
+     },
+     "off": {
+      "path": "5 subpaths",
+      "chars": 201
+     },
+     "onR": {
+      "path": "10 subpaths",
+      "chars": 360
+     },
+     "offR": {
+      "path": "5 subpaths",
+      "chars": 191
+     },
+     "col": "#7A7A80",
+     "w": 600,
+     "t": "9d",
+     "tD": "inline",
+     "y": 29.4,
+     "fs": 22,
+     "xL": -166,
+     "xR": 166,
+     "mL": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "mR": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     }
+    },
+    "rail": {
+     "disp": "none",
+     "dL": "none",
+     "dR": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 2,
+     "zone": "M0 0",
+     "zoneCol": "#8CC63F",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "none",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "none",
+     "deg": 84.1,
+     "col": "#8CC63F",
+     "fill": "#8CC63F",
+     "stroke": "none",
+     "r": 6,
+     "glow": "none",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 84.1,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "none"
+    },
+    "t1": {
+     "deg": 84.1,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t2": {
+     "deg": 84.1,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t3": {
+     "deg": 84.1,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "none"
+    },
+    "t4": {
+     "deg": 84.1,
+     "r": 4,
+     "o": 0.4,
+     "d": "none"
+    },
+    "t5": {
+     "deg": 84.1,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "none"
+    },
+    "val": {
+     "disp": "none",
+     "str": "150",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 89.8,
+     "y": 90.7,
+     "xs": "-119.7 -73.3 -16.8",
+     "fill": "#8CC63F",
+     "blk": "none",
+     "blkCol": "#441715",
+     "bx": -151,
+     "by": 18.7,
+     "bw": 175.6,
+     "bh": 84,
+     "strike": "none",
+     "sx1": -145,
+     "sx2": 18.6,
+     "sy": 61.9,
+     "sw": 6.7,
+     "arrow": "M-24.6 -4.1H14.6V4.1H-24.6ZM26.9 0L3.5 17.5L9.4 0L3.5 -17.5Z",
+     "tf": "translate(0px, 60.7px) rotate(-15deg)",
+     "arrowD": "none",
+     "ax": 0,
+     "ay": 60.7,
+     "ringR": 13.4,
+     "ringW": 6.1,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -108.7,
+     "rx2": -17.7,
+     "ry": 103.7
+    },
+    "sp": {
+     "disp": "none",
+     "framed": true,
+     "mid": 125,
+     "x": 26.6,
+     "w": 112.3,
+     "age": 79,
+     "fy0": 12.7,
+     "fy1": 24.7,
+     "fy2": 98.7,
+     "fy3": 110.7,
+     "o1": 0.12240000000000001,
+     "o2": 0.8776,
+     "oh1": 0.061200000000000004,
+     "oh2": 0.9388,
+     "bandY": 28.7,
+     "bandH": 66,
+     "bandCol": "#3DD47A",
+     "limits": "M26.6 28.7H139M26.6 94.7H139",
+     "limCol": "#3A3A3E",
+     "line": "M28.7 58.1L31.8 56.2L35.1 54.5L38.6 53L42.4 51.7L46.5 50.8L50.9 50.2L55.8 49.8L61.1 49.6L67.1 49.6L73.9 49.6L81.7 49.6L90.9 49.4L102.1 48.8L116.5 48L136.5 46.7",
+     "lineCol": "#7A7A80",
+     "ray": "M136.5 46.7l21.3 -5.7",
+     "rayD": "inline",
+     "rayCol": "#8CC63F",
+     "ex": 136.5,
+     "ey": 46.7,
+     "endFill": "#8CC63F",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": 0,
+     "y": 98.7,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "none",
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "fill": "#000",
+     "fo": 1,
+     "tc": "#000",
+     "tx": 0,
+     "ty": 0,
+     "t": "",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#C9C9CE",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#7A7A80",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "none",
+     "i0": {
+      "key": "ring",
+      "d": "M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16M12 4a8 8 0 0 1 7.6 10.5",
+      "tf": "translate(-96.2 132.9) rotate(35.9) scale(0.833) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#7A7A80",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(-12.5 163.5) rotate(4.4) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 63.3,
+      "s": "82%",
+      "col": "#C9C9CE",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 156.9,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 192.8,
+      "s": "1h 20m",
+      "col": "#7A7A80",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
+   "id": "modes-private-aod-act",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. 212 mg/dL, steady, Insulin."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": "M0 0"
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.6247,
+     "toward": -0.15,
+     "I": 1.0975,
+     "spd": 0.1,
+     "levelY": -59.1,
+     "idealY": 15.3,
+     "colour": "#F5A524"
+    },
+    "sides": {
+     "left": "battery",
+     "right": "level",
+     "marks": false
+    },
+    "layout": {
+     "T": 68,
+     "V": 54,
+     "TF": 24,
+     "roomy": false,
+     "chipKind": "pill",
+     "msgKind": null,
+     "tfBase": -109,
+     "tTop": -89,
+     "tBase": -21,
+     "vTop": 1,
+     "vBase": 55,
+     "chipC": 92
+    },
+    "dial": {
+     "d1": "M0 0",
+     "f1": "none",
+     "s1": "none",
+     "w1": 1,
+     "o1": 1,
+     "d1D": "none",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "none",
+     "col": "#F5A524",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -143.7,
+     "ty": -99,
+     "tw": 287.4,
+     "th": 88,
+     "vx": -167.9,
+     "vy": -11,
+     "vw": 335.8,
+     "vh": 78,
+     "cx": -78,
+     "cy": 69,
+     "cw": 156,
+     "ch": 46,
+     "fx": -57.7,
+     "fy": -133,
+     "fw": 0,
+     "fh": 0,
+     "sx": -3.4,
+     "sy": -13,
+     "sw": 167.3,
+     "sh": 84,
+     "spD": "inline",
+     "ringD": "none",
+     "ringR": 21.3,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#55555A",
+     "dayFill": "#7A7A80"
+    },
+    "tf": {
+     "y": -109,
+     "fs": 24,
+     "i0": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-111.8 -56.5 -10.3 36 101.5",
+     "y": -21,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 101.8,
+     "fill": "none",
+     "stroke": "#6E6E73",
+     "sw": 2.2
+    },
+    "batt": {
+     "disp": "none",
+     "dL": "inline",
+     "dR": "none",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "onR": {
+      "path": "9 subpaths",
+      "chars": 324
+     },
+     "offR": "M133.1 -124.1A182 182 0 0 1 147.2 -107",
+     "col": "#7A7A80",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": -0.3,
+     "y2": 23.4,
+     "fs": 22,
+     "xL": -166,
+     "xR": 166,
+     "mL": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "mR": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     }
+    },
+    "sens": {
+     "disp": "none",
+     "dL": "none",
+     "dR": "none",
+     "n": 15,
+     "on": {
+      "path": "10 subpaths",
+      "chars": 380
+     },
+     "off": {
+      "path": "5 subpaths",
+      "chars": 201
+     },
+     "onR": {
+      "path": "10 subpaths",
+      "chars": 360
+     },
+     "offR": {
+      "path": "5 subpaths",
+      "chars": 191
+     },
+     "col": "#7A7A80",
+     "w": 600,
+     "t": "9d",
+     "tD": "inline",
+     "y": -0.3,
+     "fs": 22,
+     "xL": -166,
+     "xR": 166,
+     "mL": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "mR": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     }
+    },
+    "rail": {
+     "disp": "none",
+     "dL": "none",
+     "dR": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 2,
+     "zone": "M164.7 -77.4A182 182 0 0 1 177.5 -40.3",
+     "zoneCol": "#F5A524",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "none",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "none",
+     "deg": 71,
+     "col": "#F5A524",
+     "fill": "#F5A524",
+     "stroke": "none",
+     "r": 6,
+     "glow": "none",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 71,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "none"
+    },
+    "t1": {
+     "deg": 71,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t2": {
+     "deg": 71,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t3": {
+     "deg": 71,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "none"
+    },
+    "t4": {
+     "deg": 71,
+     "r": 4,
+     "o": 0.4,
+     "d": "none"
+    },
+    "t5": {
+     "deg": 71,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "none"
+    },
+    "val": {
+     "disp": "inline",
+     "str": "212",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 80.8,
+     "y": 55,
+     "xs": "-132.9 -92.5 -52.2",
+     "fill": "#F5A524",
+     "blk": "none",
+     "blkCol": "#441715",
+     "bx": -167.9,
+     "by": -11,
+     "bw": 150.8,
+     "bh": 78,
+     "strike": "none",
+     "sx1": -161.9,
+     "sx2": -23.2,
+     "sy": 29.1,
+     "sw": 6.1,
+     "arrow": "M-22.1 -3.7H13.2V3.7H-22.1ZM24.2 0L3.2 15.8L8.4 0L3.2 -15.8Z",
+     "tf": "translate(0px, 28px) rotate(-9deg)",
+     "arrowD": "none",
+     "ax": 0,
+     "ay": 28,
+     "ringR": 12,
+     "ringW": 5.5,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -130.6,
+     "rx2": -54.5,
+     "ry": 68
+    },
+    "sp": {
+     "disp": "inline",
+     "framed": false,
+     "mid": 210.8,
+     "x": 4.6,
+     "w": 151.3,
+     "age": 180,
+     "fy0": -17,
+     "fy1": -5,
+     "fy2": 63,
+     "fy3": 75,
+     "o1": 0.13040000000000002,
+     "o2": 0.8696,
+     "oh1": 0.06520000000000001,
+     "oh2": 0.9348,
+     "bandY": 47.5,
+     "bandH": 27.3,
+     "bandCol": "#3DD47A",
+     "limits": "M4.6 47.5H155.9M4.6 74.8H155.9",
+     "limCol": "#3A3A3E",
+     "line": {
+      "path": "1 subpaths",
+      "chars": 339
+     },
+     "lineCol": "#7A7A80",
+     "ray": "M153.4 28.3l21.7 -3.4",
+     "rayD": "inline",
+     "rayCol": "#F5A524",
+     "ex": 153.4,
+     "ey": 28.3,
+     "endFill": "#F5A524",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": -70,
+     "y": 100,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "inline",
+     "x": -70,
+     "y": 73,
+     "w": 140,
+     "fill": "#8AB4FF",
+     "fo": 1,
+     "tc": "#1C1C1E",
+     "tx": -21.7,
+     "ty": 100,
+     "t": "Insulin",
+     "mark": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(-43 92) rotate(0) scale(0.983) translate(-12 -12)",
+      "fill": "#1C1C1E",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#C9C9CE",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#7A7A80",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "none",
+     "i0": {
+      "key": "ring",
+      "d": "M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16M12 4a8 8 0 0 1 7.6 10.5",
+      "tf": "translate(-96.2 132.9) rotate(35.9) scale(0.833) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#7A7A80",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(-12.5 163.5) rotate(4.4) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 63.3,
+      "s": "82%",
+      "col": "#C9C9CE",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 156.9,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 192.8,
+      "s": "1h 20m",
+      "col": "#7A7A80",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "sensor-none-es",
    "values": {
     "v": {
@@ -25305,7 +26377,7 @@
      }
     },
     "rail": {
-     "disp": "inline",
+     "disp": "none",
      "dL": "none",
      "dR": "inline",
      "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
@@ -25324,7 +26396,7 @@
      "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
     },
     "bead": {
-     "disp": "inline",
+     "disp": "none",
      "deg": 93,
      "col": "#3DD47A",
      "fill": "#3DD47A",
@@ -57450,7 +58522,7 @@
      }
     },
     "rail": {
-     "disp": "inline",
+     "disp": "none",
      "dL": "inline",
      "dR": "inline",
      "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
@@ -57469,7 +58541,7 @@
      "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
     },
     "bead": {
-     "disp": "inline",
+     "disp": "none",
      "deg": 124.8,
      "col": "#C2413B",
      "fill": "#C2413B",
@@ -57988,7 +59060,7 @@
      }
     },
     "rail": {
-     "disp": "inline",
+     "disp": "none",
      "dL": "inline",
      "dR": "none",
      "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
@@ -58007,7 +59079,7 @@
      "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
     },
     "bead": {
-     "disp": "inline",
+     "disp": "none",
      "deg": 95,
      "col": "#3DD47A",
      "fill": "#3DD47A",

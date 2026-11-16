@@ -579,7 +579,8 @@ class AuraFace {
     const tick = (v, a, b2) => { const p1 = P(a, A(v)), p2 = P(b2, A(v)); return 'M' + p1[0] + ' ' + p1[1] + 'L' + p2[0] + ' ' + p2[1]; };
     const zones = { veryLow: [A(lim[0]), 133], low: [A(lim[1]), A(lim[0])], high: [A(lim[4]), A(lim[3])], veryHigh: [47, A(lim[4])] };
     const z = zones[bk];
-    const railOn = c.sensor !== 'none';
+    // the glucose rail: not when nothing is paired, and not in always-on (no side element shows there)
+    const railOn = c.sensor !== 'none' && !aod;
     const beadOn = hasValue && railOn;
     const beadA = lo ? 133 : hi ? 47 : A(g);
     const rail = {

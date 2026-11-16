@@ -427,14 +427,15 @@ gives the right rail's numbers and `rail.dR` / `rail.dL` say which sides draw it
   **angle(g) = 133° − 86° · (K(g) − K(40)) / (K(400) − K(40))**, g clamped to 40–400 (40 at 133°, 400 at 47°; up =
   higher). Default limits land at 55 → 121.3°, 70 → 112.4°, 112.5 → 94.8°, 140 → 86.6°, 180 → 77.2°, 250 → 64.8°,
   300 → 57.9°. Lows get ~24 % of the rail (8 % on a linear scale).
+- **Not in always-on** (§8), nor when not monitoring.
 - **Track**: hairline arc r 182 from 47° to 133°, faint, 1.5 px. In-range band arc r 182 from angle(180) to angle(70),
-  6 px (always-on 2 px), band; its very-good part angle(140)→angle(70) band2.
+  6 px, band; its very-good part angle(140)→angle(70) band2.
 - **Zone**: when out of range and current (not always-on), the current zone's arc in its colour, 3 px, opacity 0.85:
   very low angle(55)→133°, low angle(70)→angle(55), high angle(250)→angle(180), very high 47°→angle(250).
 - **Ticks** (radial lines): minor 50 60 80 90 100 110 120 130 150 160 170 200 220 240 280 350 from r 177 to 187, faint
   1.4 (hidden in always-on); mid 40 140 300 400 from r 175 to 189, dim 1.6; major (the limits) 55 70 180 250 from r
   171 to 192, soft 2.
-- **Bead** at P(182, angle(g)), r 7 (always-on 6); colour: out of range its band's colour; in range tight / target
+- **Bead** at P(182, angle(g)), r 7; colour: out of range its band's colour; in range tight / target
   (green on) or neon (green off); a glow r 13 at opacity 0.2 when awake. Old: hollow (black, stroke grey 2.4). No
   value: no bead. LO pinned at 133°, HI at 47°, with a chevron beyond the end: LO tip P(182, 139.5), base P(176.5,
   135.6) P(187.5, 135.6); HI tip P(182, 40.5), base P(176.5, 44.4) P(187.5, 44.4).
@@ -476,7 +477,7 @@ gives the right rail's numbers and `rail.dR` / `rail.dL` say which sides draw it
 - **Ended, ended but sending**: every segment unlit, no label (the flag message and the pills say it;
   `sensor-rail-ended`, `sensor-rail-ended-sending`).
 - **Dates not known** (the phone sent none): unlit, label `--` (`sensor-rail-no-dates`). No end means no countdown either.
-- **Not monitoring**: hidden, as the glucose rail (`sensor-rail-none`). **Always-on**: hidden, as the battery.
+- **Not monitoring**: hidden, as the glucose rail (`sensor-rail-none`). **Always-on**: hidden, as every side element.
 - On either side, or both (`sensor-rail-both-ending`); with a battery rail on screen both labels get their marks (§6.9).
 
 ### 6.10 Bottom fields
@@ -604,17 +605,19 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
 
 ## 8. Modes
 - **Awake** (wrist raised, ~10 s, 1 Hz): everything.
-- **Always-on**: outlined time; no sweep, no dial, no top field, no bottom fields, no battery or sensor rail (their rows
-  kept); the glucose rail on its side or sides (both: `sides-level-twice-aod-very-low`): hairline, 2 px band, mid and major ticks, bead r 6, no trail, no glow, no zone; value, arrow, chip row, pill and
-  messages as awake in the always-on palette. Must stay **under 10 % of the total luminance** (API 5+; over it the face
+- **Always-on**: outlined time; no sweep, no dial, no top field, no bottom fields and **no side element** (no glucose
+  rail, battery or sensor rail, whatever the sides are set to; the owner, 2026-11-17: the simplified face doesn't need
+  them; their rows kept, so nothing moves); value, arrow, chip row, pill and messages as awake in the always-on
+  palette. With *private* on, always-on shows the outlined time and only what private already shows: the pill or a
+  message, and the value when a needed pill unmasks it (`modes-private-aod`, `modes-private-aod-act`). Must stay **under 10 % of the total luminance** (API 5+; over it the face
   goes black in always-on) and follow Garmin's burn-in shift (≤ 4 px a minute, the whole face). **Keep a margin: no
   state above about 7 %**, so a very low never risks a black screen. That's why the very-low block is dimmed in
   always-on (`#441715`, very low at 35 %) with the digits in the always-on ink instead of white: the shape, the light
   digits on red and the pill keep their meaning, and very low and LO went from 9.7 % / 9.9 % to about 7 %. Measured as
   the share of the round screen's light (Rec. 709 luminance of the sRGB values, `garmin_test.py`'s always-on lines; in
-  brackets the same in linear light), on the reference: in range 3.7 % (2.0 %); no readings 3.6 % (1.7 %); a filled
-  pill (high) 6.1 % (3.4 %); very low 6.9 % (3.6 %); LO 7.2 % (3.8 %). The face in the simulator, 2026-11-16: LO
-  7.1 %, very low 6.8 %, high 6.1 %, in range 3.8 %. Its run measures every always-on variant (`aod-*`) this way and
+  brackets the same in linear light), on the reference without the rail (2026-11-17): in range 4.1 % (1.9 %, the
+  3 h sparkline); no readings 3.5 % (1.7 %); a filled pill (high) 6.3 % (3.4 %); very low 6.7 % (3.4 %); LO 7.0 %
+  (3.7 %). Its run measures every always-on variant (`aod-*`) this way and
   fails at 10 %.
 - **Night** (while the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night
   palette; no sweep, no dial; everything else as awake. Not the profile's sleep and wake times: on the Descent they

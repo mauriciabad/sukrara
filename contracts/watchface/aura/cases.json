@@ -376,7 +376,7 @@
    "id": "modes-aod",
    "group": "modes",
    "title": "Always-on",
-   "expect": "Outlined time; no sweep, top field, bottom fields, battery or dial; nothing moves from where it was. The rail keeps its notches (thin band) and the bead.",
+   "expect": "Outlined time; no sweep, top field, bottom fields or dial, and no side element at all (no glucose rail, battery or sensor rail); nothing moves from where it was.",
    "cfg": {
     "glucose": 112,
     "rate": 0.3,
@@ -452,6 +452,30 @@
    }
   },
   {
+   "id": "modes-private-aod",
+   "group": "modes",
+   "title": "Private, always-on, in range",
+   "expect": "Private hides the number and always-on shows no rail: the outlined time alone (and the pill or message when there is one). Nothing is lost that private didn't already hide: the person chose it.",
+   "cfg": {
+    "glucose": 150,
+    "rate": 0.5,
+    "privacy": "private",
+    "mode": "aod"
+   }
+  },
+  {
+   "id": "modes-private-aod-act",
+   "group": "modes",
+   "title": "Private, always-on, high",
+   "expect": "A needed pill unmasks the value in always-on too: 212 with its sparkline and the Insulin pill.",
+   "cfg": {
+    "glucose": 212,
+    "rate": 0.3,
+    "privacy": "private",
+    "mode": "aod"
+   }
+  },
+  {
    "id": "sensor-none-es",
    "group": "sensor",
    "title": "Nothing paired, Spanish, battery days and percent",
@@ -513,7 +537,7 @@
    "id": "sensor-rail-ending-aod",
    "group": "sensor",
    "title": "Sensor rail ending, always-on",
-   "expect": "Always-on hides the sensor rail as it hides the battery and the bottom fields: nothing about the countdown shows, exactly as without the rail.",
+   "expect": "Always-on shows no side element and no bottom fields: nothing about the countdown shows, exactly as without the rail.",
    "cfg": {
     "sideL": "sensor",
     "sensor": "ending",
@@ -1481,7 +1505,7 @@
    "id": "sides-level-twice-aod-very-low",
    "group": "sides",
    "title": "Both rails, always-on, very low",
-   "expect": "Both rails as always-on draws one (hairline, 2 px band, notches, bead r 6); still well under Garmin’s 10 %.",
+   "expect": "A glucose rail on both sides, always-on: neither shows (no side element in always-on); the dimmed very-low block, the arrow and the pill carry it.",
    "cfg": {
     "sideL": "level",
     "sideR": "level",
@@ -1494,7 +1518,7 @@
    "id": "sides-level-left-aod",
    "group": "sides",
    "title": "Glucose rail left, always-on",
-   "expect": "The left rail stays in always-on; the sensor rail on the right goes with the battery.",
+   "expect": "A glucose rail on the left and a sensor rail on the right, always-on: neither shows.",
    "cfg": {
     "sideL": "level",
     "sideR": "sensor",

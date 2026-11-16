@@ -776,7 +776,7 @@ class AuraModel {
     // --- the level rail: Kovatchev's scale, the person's limits as notches (SPEC.md §6.8) ---
     hidden function rails() as Void {
         var l = inp.limits;
-        railOn = !inp.sensor.equals("none");
+        railOn = !inp.sensor.equals("none") && !aod; // no side element in always-on (SPEC.md §8)
         beadOn = hasValue && railOn;
         var g = inp.glucose;
         beadA = lo ? 133.0 : hi ? 47.0 : AuraMath.ang(g);

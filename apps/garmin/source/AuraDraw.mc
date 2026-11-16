@@ -96,6 +96,8 @@ module AuraDraw {
             var left = cx + 0.5 + x;
             if (just == Graphics.TEXT_JUSTIFY_CENTER) {
                 left -= dc.getTextWidthInPixels(s, fr) / 2.0;
+            } else if (just == Graphics.TEXT_JUSTIFY_RIGHT) {
+                left -= dc.getTextWidthInPixels(s, fr);
             }
             dc.drawText(Math.floor(left + 0.5), cy + 0.5 + baseline - (a[1] as Number) - 1, fr, s, Graphics.TEXT_JUSTIFY_LEFT);
             return;
@@ -105,6 +107,8 @@ module AuraDraw {
         var pen = cx + 0.5 + x;
         if (just == Graphics.TEXT_JUSTIFY_CENTER) {
             pen -= arcWidth(key, s, 0) / 2.0;
+        } else if (just == Graphics.TEXT_JUSTIFY_RIGHT) {
+            pen -= arcWidth(key, s, 0);
         }
         var top = cy + 0.5 + baseline - (a[3] as Number);
         var cs = s.toCharArray();
@@ -349,7 +353,7 @@ module AuraDraw {
         if (side < 0) {
             text(dc, key, -166 + m.mkW, y, s, col, Graphics.TEXT_JUSTIFY_LEFT);
         } else {
-            text(dc, key, 166 - m.mkW - arcWidth(key, s, 0), y, s, col, Graphics.TEXT_JUSTIFY_LEFT);
+            text(dc, key, 166 - m.mkW, y, s, col, Graphics.TEXT_JUSTIFY_RIGHT);
         }
         if (mark != null && m.marks) {
             icon(dc, mark, 20, side * 156, y - fs * 0.334, 0, col);
