@@ -2095,7 +2095,7 @@ the time, so the reading ages by itself from its own time with the phone away.
   is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field, Bottom field 1 and
   2, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
 - Words in English and Spanish (the watch's language). Readings come from the phone: [Sukrara Aura: readings to the
-  Garmin face](#sukrara-aura-readings-to-the-garmin-face-docs43).
+  Garmin face](#garmin-sukrara-on-the-watch-docs43).
 - **The aura** (setting *Dial*, awake only, not at night or always-on): the dial gathers at your level, spreads the
   further out of range you are, fades heading back to the ideal and strengthens heading away: *grain* (dots, the
   default), *contours*, *waterline*, *lasers*, *glow*, *map* (decorative, never reacts) or *black*. Grey and still
@@ -2552,7 +2552,7 @@ page shows the same card; *Stop following* ends it in every state), Bluetooth of
 rows; leaving the join step stops looking. Every state works with TalkBack (rows are buttons with text, the code is read
 digit by digit).
 
-## Sukrara Aura: readings to the Garmin face (docs/43)
+## Garmin: Sukrara on the watch (docs/43)
 
 - Sukrara Aura (the Garmin watch face, `contracts/watchface/aura`) shows what this phone's card and glucose
   notification show: the phone builds one payload from THE glucose state (the hub: THE trend with its doubling, the
@@ -2560,7 +2560,8 @@ digit by digit).
   absolute times so the watch keeps every age and countdown right between messages (`:integrations`
   `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 1; tests `AuraPayloadFixtureTest`).
 - **Two ways, nothing to set up** (`garmin/AuraLink`, on by default whenever Garmin Connect is installed; schema
-  `apps.garminFace`): **pushed** through Garmin Connect's Connect IQ service to every connected watch with the face on
+  `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face now, its data field and app when they come):
+  **pushed** through Garmin Connect's Connect IQ service to every connected watch with the face on
   each change (a new reading, a status, a treatment, a setting), within seconds; a message Garmin Connect fails or
   never confirms is sent again after 15 s, 30 s, 60 s, then every 2 min until a newer one replaces it; a watch that
   reconnects gets the current one at once (checked every minute). The face also **fetches** the same payload every
@@ -2568,22 +2569,38 @@ digit by digit).
   loopback only), so a lost message or Garmin Connect's messaging bug costs at most 5 min. **The fetch port opens only
   while a watch is known to have the face** (Garmin Connect says Sukrara Aura is installed on it, or a push reached it;
   checked when the watch connects and every 30 min) and closes when the switch goes off, Garmin Connect goes or the face
-  is gone: on a phone without the face nothing listens. A watch Garmin Connect doesn't answer about still gets pushes. Sukrara talks to Garmin
-  Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free software). One message per
-  change: a reading that changes the payload in steps (the hub, then today's readings) is sent once it settles (3 s).
-  Tests: `AuraLinkTest`, `AuraStatusTest`.
+  is gone: on a phone without the face nothing listens. A watch Garmin Connect doesn't answer about still gets pushes.
+  Sukrara talks to Garmin Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free
+  software). One message per change: a reading that changes the payload in steps (the hub, then today's readings) is
+  sent once it settles (3 s). Each watch remembers the time of the reading its last delivered message carried. Tests:
+  `AuraLinkTest`, `GarminStatusTest`.
 - **The face reports back** with every fetch: its last 10 deliveries (push or fetch, the watch's time, which payload,
-  which reading) and the reading it draws since when. The page shows *On the watch* "The reading from 14:21 · as of
-  2 minutes ago" (the newest reading the face kept: what it shows at the next wrist raise); logcat `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer)
-  and each report, times only. So an agent or the person can see what the watch got without looking at it.
-- Settings › Share with apps › *Watches* › **Sukrara Aura** (first in the group, Garmin Connect's icon; settings search
-  "Garmin", "watch face"), its line saying what the link does now; it opens the page: *Send to Sukrara Aura* (the
-  switch, with the same line), *Watches* (each watch Garmin Connect knows: connected and when the last reading got
-  there, not connected since, the face not installed, Garmin Connect not confirming, trying again), *The face asking
-  this phone* (when the face last fetched: proof it is the face in use; "Closed until a watch has Sukrara Aura" while
-  the port is closed), *Send now*, *Open Garmin Connect*, and a
-  footer: Garmin Connect must run in the background; while a watch has the face any app on this phone can read what
-  the face reads; other Garmin faces read the xDrip+ server.
+  which reading) and the reading it draws since when. While one watch has the face, its line says the newer of the
+  reading Garmin Connect delivered and the one the face says it keeps (the fetch doesn't say which watch asked); logcat
+  `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer) and each report, times
+  only. So an agent or the person can see what the watch got without looking at it.
+- Settings › Share with apps › *Watches* › **Garmin** (Garmin Connect's icon; settings search "watch", "watch face",
+  "data field", "Connect IQ", "Sukrara Aura"), its line saying what the link does now ("Descent Mk3i 43mm has the 14:21
+  reading"; the watch's name is Garmin Connect's, never a fixed model), in the error colour when something outside the
+  app stops it. It opens the **Garmin** page (`garmin/GarminPage`), built like a stock device page:
+  - the main switch *Send to Sukrara on your watch* (SPA MainSwitchPreference), with a note under it only when the
+    whole link is stopped (off, no Garmin Connect, Garmin Connect not answering);
+  - the actions as stock action buttons (SPA ActionButtons, App info's and Bluetooth device details' pattern, the
+    designsystem's `ActionButtonsRow`): *Send now* (sends the current payload to every watch again, a confirming
+    haptic) and *Open Garmin Connect*; without Garmin Connect, *Get Garmin Connect* (its store page);
+  - *Watches*: every watch Garmin Connect knows, by its own name, one line each, one time on it, a clock time to
+    compare with the phone's: "Connected · has the 14:21 reading", "Not connected · has the 13:52 reading",
+    "Connected · Sukrara Aura isn't on it", "… · Garmin Connect loses messages, so it updates every 5 minutes",
+    "… · Garmin Connect doesn't confirm messages, trying again", "… · the last message didn't arrive, trying again",
+    "Connected · waiting for a reading"; "No watch · Pair your watch in Garmin Connect" when it knows none. A list of
+    things of one kind: no icons;
+  - *Sukrara on your watch*: *Sukrara Aura* "Watch face · in use, asked this phone at 14:23" (its fetch within 11 min:
+    it is the face in use), "… · not in use (it asks this phone every 5 minutes while it's the watch face)", "… · not
+    installed", "… · another app uses port 17582, so only Garmin Connect's messages reach it". Sukrara's data field
+    and app join this group;
+  - *Other watch faces and data fields*: the *xDrip+ server* row (its own page, below);
+  - a footer: Garmin Connect must run in the background; while a watch has the face any app on this phone can read
+    what the face reads.
 - On the watch (`apps/garmin/source/link`): the face's background wakes on each push and fetches every 5 min; the face
   keeps the newest payload (by when the phone built it; a burst of queued ones never puts an older one back) in
   storage, so after a restart it shows the last reading at once, aging. Every draw works the inputs out from the
@@ -2594,20 +2611,22 @@ digit by digit).
 - Debug builds: `GARMIN_SIM --ez on true` sends to the Connect IQ simulator instead of Garmin Connect (adb forward
   tcp:7381, simulator › Connection › Start; the fetch through adb forward tcp:17582).
 
-**States and exits**: in priority order, each on the row's line and the page's switch line (en / es):
-*off* ("Off · the face shows no readings"; out: the switch); *no Garmin Connect* ("Needs Garmin Connect on this phone";
-out: install it, or the switch); *Garmin Connect not answering* ("… isn't answering · open it"; out: *Open Garmin
-Connect*); *no watch* ("No watch in Garmin Connect · pair it there"); *the face on no watch* ("Sukrara Aura isn't on
-your watch"; out: install the face, or the switch); *watch away* ("Descent isn't connected · last reading 5 min ago";
-out: bring it near, Bluetooth, *Open Garmin Connect*; it resumes by itself on reconnect); *sent* ("Sent to Descent 1 min
-ago"); *messages lost, the face fetching* ("Garmin Connect loses messages · the face asked 3 min ago, so it updates every
-5 minutes"; out: *Open Garmin Connect*, restart the watch; it keeps working meanwhile); *messages lost, nothing fetched*
-("Messages don't reach Descent · open Garmin Connect or restart the watch"; out: those, *Send now*); *waiting* ("On ·
-waiting for the next reading"). The fetch port's own state is on *The face asking this phone*: *closed* (no watch
-known to have the face; out: install the face, or a push reaching it opens it), *open* ("Last asked …"), *port taken*
-(the footer says only Garmin Connect's messages reach the face; out: stop the other app); *On the watch* appears with
-the face's first report. On the watch the face never shows an old value as current: every state there ages by
-itself and Garmin's *No phone* shows the link is down. Every row is a plain TalkBack row with its text.
+**States and exits**: the Garmin row's line on Share with apps, in priority order (en / es): *off* ("Off"; the page's
+note "Your watch gets no readings from this phone"; out: the main switch); *no Garmin Connect* ("Needs Garmin Connect
+on this phone"; out: *Get Garmin Connect*, or the switch); *Garmin Connect not answering* ("… isn't answering · open
+it", error colour; out: *Open Garmin Connect*; the watch groups hide until it answers); *no watch* ("No watch in Garmin
+Connect"; the page's "No watch · Pair your watch in Garmin Connect"; out: *Open Garmin Connect*); *the face on no
+watch* ("Sukrara Aura isn't on your watch", error colour; each watch's line says so and the face's row says "not
+installed"; out: install the face, or the switch); *watch away* ("Descent Mk3i 43mm isn't connected"; its line "Not
+connected · has the 13:52 reading"; out: bring it near, Bluetooth, *Open Garmin Connect*; it resumes by itself on
+reconnect); *sent* ("Descent Mk3i 43mm has the 14:21 reading"); *messages lost, the face fetching* ("Updates every 5
+minutes · Garmin Connect loses messages"; out: *Open Garmin Connect*, restart the watch; it keeps working meanwhile);
+*messages lost, nothing fetched* ("Messages don't reach Descent Mk3i 43mm · open Garmin Connect", error colour; out:
+those, *Send now*); *waiting* ("Waiting for the next reading"). The face's own states are on its row: *in use*, *not in
+use* (out: pick it as the watch face on the watch), *not installed*, *port taken* (out: stop the other app). Back
+leaves the page. On the watch the face never shows an old value as current: every state there ages by itself and
+Garmin's *No phone* shows the link is down. Every row is a plain TalkBack row with its text; each action button reads
+as a button named by its label.
 
 ## Share with apps on this phone (investigation 22)
 
@@ -2617,25 +2636,31 @@ itself and Garmin's *No phone* shows the link is down. Every row is a plain Talk
   that stands for another app or service shows that app's own icon, the way AOSP Settings draws app icons (the app's
   unbadged icon with the launcher shadow under the device's icon shape, the work-profile badge, 32 dp in the row's
   icon place, loaded off the main thread; a failed load leaves the place empty): *LibreView*, *Tidepool*, *Nightscout
-  upload*, *xDrip+ server*, each app that reads the xDrip+ server, *Health Connect* and *Nightscout API on this phone*
-  here; each app on *Send glucose to apps* (an uninstalled one: Android's default app icon); *Tidepool* and *LibreView*
+  upload*, *Garmin* (Garmin Connect's), *xDrip+ server*, *Health Connect* and *Nightscout API on this phone* here;
+  each app that reads the xDrip+ server on its page; each app on *Send glucose to apps* (an uninstalled one: Android's default app icon); *Tidepool* and *LibreView*
   on *Import history*; *Juggluco* in Settings › Sensor's *Reading source*; the clinic banner's pills. Juggluco, xDrip+ and Health Connect show the installed app's icon (manifest
   `<queries>`), else Sukrara's copy of it; Nightscout, LibreView and Tidepool always Sukrara's copy (sources and
   licences: docs/10-showcase.md "Service and app icons"). The other rows of these groups keep a symbol (*Send glucose to
   apps*, *Import history*, *Export data*), so titles line up. Tests: `AppIconsTest`, `ServiceRowsTest`,
   `ServiceIconRowsTest`.
 - *Nightscout* group (wearer only): *Nightscout upload* with its status line ([Nightscout upload](#nightscout-upload-docs25)).
-- *Watches* group: *xDrip+ server* switch, **off by default** (schema `apps.xdrip`). On, it listens on
-  `127.0.0.1:17580` only (`LocalHttpServer`: loopback, 4 workers + 8 queued, 8 KiB request head, 5 s per connection,
-  GET / HEAD only, only for the host 127.0.0.1 / localhost and without CORS headers so a web page can't read it;
-  anything more is closed, never a new thread; a failing request can't stop the app). Summary: "On ·
-  127.0.0.1:17580 · last asked 2 min ago" ("not asked yet"), plus "read by Garmin Connect" when Garmin Connect or
-  Connect IQ is installed (manifest `<queries>`); each of them is also a row under it, with its own icon, *Through the
-  xDrip+ server* and the server's switch (where the person looks for Garmin; the PoC's rows). Port taken by another app → "Another app uses port 17580 · turn its
-  server off, then this one off and on" (no retry loop). While Juggluco is the sensor source the port is Juggluco's:
-  the server stays down and the row says "Juggluco is the source, so Juggluco serves the watch" (our Juggluco source
-  refuses entries that say `device: Sukrara`, so it can never read its own answers). Any app on this phone can read the
-  last 24 h of glucose from it while it is on; the switch and the footer say so.
+- *Watches* group: *Garmin* ([Garmin](#garmin-sukrara-on-the-watch-docs43)).
+- **xDrip+ server** (*Apps on this phone* group, last; also *Other watch faces and data fields* on the Garmin page,
+  where a person with another Garmin face looks; `localserver/XdripPage`): a row with its line ("Off", "On · read by
+  Garmin Connect", "Another app uses port 17580" in the error colour, "Juggluco answers instead, as the reading
+  source") that opens its page: the main switch *Use xDrip+ server* (SPA MainSwitchPreference), **off by default**
+  (schema `apps.xdrip`), with what it does under it ("Listening on 127.0.0.1:17580 · last asked at 14:22" / "not asked
+  yet"); *Apps that read it*: Garmin Connect and Connect IQ when installed (manifest `<queries>`), each with its own
+  icon and no switch (the server is one switch for every app that reads it; which app asked can't be known on
+  loopback, so it lists the apps that can), "None on this phone · Garmin watches read it through Garmin Connect"
+  otherwise; a footer: any app on this phone can read the last 24 h of glucose from it while it is on. On, it listens
+  on `127.0.0.1:17580` only (`LocalHttpServer`: loopback, 4 workers + 8 queued, 8 KiB request head, 5 s per
+  connection, GET / HEAD only, only for the host 127.0.0.1 / localhost and without CORS headers so a web page can't
+  read it; anything more is closed, never a new thread; a failing request can't stop the app). Port taken by another
+  app → "Another app uses port 17580 · turn its server off, then this one off and on" (no retry loop). While Juggluco
+  is the sensor source the port is Juggluco's: the server stays down and the page says "Juggluco is the reading
+  source, so Juggluco's own server answers" (our Juggluco source refuses entries that say `device: Sukrara`, so it can
+  never read its own answers).
 - Answers are Juggluco's server byte for byte (`XdripEndpoint`, `LocalHttpServerTest`): `/sgv.json`,
   `/api/v1/entries[/sgv].json`, `/api/v1/entries` (`count` (floats cut at the dot), `interval` with 10 % slack,
   `brief_mode`, `sensor` → `sensor_status` "dd-mm-yy HH:MM (Xd Yh)"), `/pebble`, `/status.json`; readings from the
@@ -2739,8 +2764,8 @@ itself and Garmin's *No phone* shows the link is down. Every row is a plain Talk
   when it was left on). A history copy cut short (rate limit, process stop) is finished on the next passes; a new
   reading never cancels a running pass. Glucose only: carbs and insulin aren't written (see *Not included*).
 
-**States and exits**: *xDrip+ server off* (default) → switch on (or a Garmin Connect / Connect IQ row's switch, the
-same one). *On / listening* → switch off stops it at once.
+**States and exits**: *xDrip+ server off* (default) → its row (Share with apps or the Garmin page) → *Use xDrip+
+server*. *On / listening* → the switch off stops it at once.
 *Port in use* → turn the other app's server off, then the switch off and on. *Left to Juggluco* → change the source in
 Settings › Sensor, or switch the server off. *Nightscout API off* (default) → its switch. *On* → switch off (the secret
 stays). *Port in use* → as for the xDrip+ server. *Secret can't be read* → *New secret* (the API starts with it).

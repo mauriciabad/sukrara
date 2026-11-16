@@ -34,9 +34,9 @@ import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportViewModel
 import app.mauri.sukrara.integrations.export.Exporter
 import app.mauri.sukrara.integrations.garmin.AuraLink
-import app.mauri.sukrara.integrations.garmin.AuraViewModel
 import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
+import app.mauri.sukrara.integrations.garmin.GarminViewModel
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectSync
@@ -56,6 +56,7 @@ import app.mauri.sukrara.integrations.localserver.NightscoutApiServer
 import app.mauri.sukrara.integrations.localserver.NightscoutApiViewModel
 import app.mauri.sukrara.integrations.localserver.NsApiState
 import app.mauri.sukrara.integrations.localserver.XdripServer
+import app.mauri.sukrara.integrations.localserver.XdripViewModel
 import app.mauri.sukrara.integrations.nightscout.NightscoutUploader
 import app.mauri.sukrara.integrations.nightscout.NightscoutViewModel
 import app.mauri.sukrara.integrations.nightscout.NsState
@@ -279,8 +280,11 @@ class IntegrationsModule(
     val broadcastsViewModels: ViewModelProvider.Factory
         get() = viewModelFactory { initializer { BroadcastsViewModel(broadcasts, installedApps, wearer, dispatchers.io) } }
 
-    val auraViewModels: ViewModelProvider.Factory
-        get() = viewModelFactory { initializer { AuraViewModel(aura, context) } }
+    val garminViewModels: ViewModelProvider.Factory
+        get() = viewModelFactory { initializer { GarminViewModel(aura, xdrip, context, dispatchers.io) } }
+
+    val xdripViewModels: ViewModelProvider.Factory
+        get() = viewModelFactory { initializer { XdripViewModel(xdrip, context, dispatchers.io) } }
 
     val healthConnectViewModels: ViewModelProvider.Factory
         get() = viewModelFactory { initializer { HealthConnectViewModel(healthConnect, health) } }

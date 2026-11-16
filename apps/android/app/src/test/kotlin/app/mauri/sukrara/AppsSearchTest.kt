@@ -25,7 +25,7 @@ import app.mauri.sukrara.integrations.AppsActions
 import app.mauri.sukrara.integrations.AppsContent
 import app.mauri.sukrara.integrations.AppsUi
 import app.mauri.sukrara.integrations.DataFileRowsContent
-import app.mauri.sukrara.integrations.ServerReader
+import app.mauri.sukrara.integrations.localserver.ServerReader
 import app.mauri.sukrara.integrations.localserver.XdripState
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import org.junit.Assert.assertTrue
@@ -39,8 +39,7 @@ import java.time.Instant
 /**
  * #181: the settings search finds Share with apps' rows and Import and export's data files ([AppsSearch], the PoC's
  * search did): the pages, as a wearer and
- * a follower see it, shows every entry with its group, has no row the search can't find (but the apps that read the
- * xDrip+ server, listed by their own names), and flashes each entry's row when a result opens it.
+ * a follower see it, shows every entry with its group, has no row the search can't find, and flashes each entry's row when a result opens it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "w411dp-h891dp")
@@ -51,7 +50,7 @@ class AppsSearchTest {
     private val now = Instant.parse("2026-11-12T10:00:00Z")
     private val reader = ServerReader("com.garmin.android.apps.connectmobile", "Garmin Connect")
 
-    private fun ui(wearer: Boolean) = AppsUi(wearer, xdripOn = true, XdripState.Off, listOf(reader), UploadStatus.Off)
+    private fun ui(wearer: Boolean) = AppsUi(wearer, XdripState.Off, listOf(reader), UploadStatus.Off)
 
     private fun string(id: Int) = context.getString(id)
 
@@ -94,7 +93,6 @@ class AppsSearchTest {
                     .fetchSemanticsNodes()
                     .flatMap { n -> n.config[SemanticsProperties.Text].map { it.text } }
             for ((title, group) in rows) {
-                if (title == reader.label) continue
                 val e = entries.firstOrNull { string(it.title) == title }
                 when {
                     e == null -> problems += "wearer=$w: \"$title\" isn't in AppsSearch"

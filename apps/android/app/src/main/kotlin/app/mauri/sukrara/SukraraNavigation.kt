@@ -88,11 +88,12 @@ import app.mauri.sukrara.integrations.DataFileRows
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsPage
 import app.mauri.sukrara.integrations.export.ExportPage
 import app.mauri.sukrara.integrations.export.ExportPeriod
-import app.mauri.sukrara.integrations.garmin.AuraPage
+import app.mauri.sukrara.integrations.garmin.GarminPage
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectPage
 import app.mauri.sukrara.integrations.history.ImportPage
 import app.mauri.sukrara.integrations.libreview.LibreViewPage
 import app.mauri.sukrara.integrations.localserver.NightscoutApiPage
+import app.mauri.sukrara.integrations.localserver.XdripPage
 import app.mauri.sukrara.integrations.nightscout.NightscoutPage
 import app.mauri.sukrara.integrations.tidepool.TidepoolPage
 import kotlinx.coroutines.Dispatchers
@@ -194,9 +195,13 @@ data object NightscoutApiRoute : NavKey
 @Serializable
 data object BroadcastsRoute : NavKey
 
-/** Settings › Share with apps › Sukrara Aura (the Garmin face's link). */
+/** Settings › Share with apps › Garmin (Sukrara's link to the watch: the face, later its data field and app). */
 @Serializable
-data object AuraRoute : NavKey
+data object GarminRoute : NavKey
+
+/** Settings › Share with apps › xDrip+ server (also from the Garmin page, for other faces and data fields). */
+@Serializable
+data object XdripRoute : NavKey
 
 /** Settings › Share with apps › Health Connect (also what Health Connect opens as the privacy rationale). */
 @Serializable
@@ -714,7 +719,8 @@ fun SukraraNavigation(
                                 openTidepool = { backStack.push(TidepoolRoute) },
                                 openBroadcasts = { backStack.push(BroadcastsRoute) },
                                 openHealthConnect = { backStack.push(HealthConnectRoute) },
-                                openAura = { backStack.push(AuraRoute) },
+                                openGarmin = { backStack.push(GarminRoute) },
+                                openXdrip = { backStack.push(XdripRoute) },
                             )
                             role?.let { r -> DataLinks(DataPage.Apps, r.role == Role.Wearer) { openData(it, backStack) } }
                         }
@@ -732,9 +738,16 @@ fun SukraraNavigation(
                             BroadcastsPage(viewModel(factory = graph.integrations.broadcastsViewModels), graph.clock::now)
                         }
                     }
-                    entry<AuraRoute> {
-                        SettingsPage(stringResource(IntegrationsR.string.in_aura_title), { backStack.pop(AuraRoute) }) {
-                            AuraPage(viewModel(factory = graph.integrations.auraViewModels), graph.clock::now)
+                    entry<GarminRoute> {
+                        SettingsPage(stringResource(IntegrationsR.string.in_garmin_title), { backStack.pop(GarminRoute) }) {
+                            GarminPage(viewModel(factory = graph.integrations.garminViewModels), graph.clock::now, openXdrip = {
+                                backStack.push(XdripRoute)
+                            })
+                        }
+                    }
+                    entry<XdripRoute> {
+                        SettingsPage(stringResource(IntegrationsR.string.in_apps_xdrip), { backStack.pop(XdripRoute) }) {
+                            XdripPage(viewModel(factory = graph.integrations.xdripViewModels), graph.clock::now)
                         }
                     }
                     entry<HealthConnectRoute> {

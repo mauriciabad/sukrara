@@ -100,7 +100,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Any other device, like a Mac or a Garmin watch.
 - Sukrara Aura on your Garmin watch: each reading reaches the face through Garmin Connect within seconds, with nothing
   to set up; the face also asks the phone every 5 minutes in case a message gets lost, and an old value never looks
-  current. Settings › Share with apps › Sukrara Aura shows whether it gets through, and turns it off.
+  current. Settings › Share with apps › Garmin shows each watch, the reading it has and whether the face is in use, and
+  turns it off; other Garmin faces and data fields made for xDrip+ read the xDrip+ server.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
 - Sukrara Aura, a Garmin watch face (Descent Mk3i 43 mm): time, glucose with its trend arrow or the last hour, a
   level rail and the battery on the bezel's screws, Sukrara's pill (eat, take insulin, muted), the reading's age, your

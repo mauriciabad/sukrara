@@ -1045,7 +1045,7 @@ for monitoring; `--ei cycle 135` brings a low (an alert), `--ei cycle 0` ends it
 - [ ] The release (not emulator): after publishing, the GitHub version on the owner's phone shows the update within a
   day, the asset is `Sukrara-<version>.apk` with GitHub's digest, and it installs and comes back monitoring.
 
-## Q27 Sukrara Aura link (phone → Garmin face)
+## Q27 Garmin link (phone → Sukrara Aura) and the xDrip+ server page
 
 Cheapest first: the simulator, then the owner's phone and watch (only after `tools/install.sh phone` and the face on the
 watch; the watch shows the real value: check it against the phone, never photograph it).
@@ -1054,21 +1054,32 @@ watch; the watch shows the real value: check it against the phone, never photogr
       `adb forward tcp:7381 tcp:7381` and `adb forward tcp:17582 tcp:17582`; run the face in the Connect IQ simulator
       (`descentmk343mm`), *adb Connection › Start* (and *Settings › Use Device HTTPS Requirements* off for the fetch; put
       it back after). Within a minute the face shows the emulator's value and trend;
-      *Simulation › Background Events › Temporal* makes it fetch (Share with apps › Sukrara Aura: *The face asking this
-      phone* "Last asked now"). Stop the emulator's app: the face's value goes late, struck, then *No reading since*,
+      *Simulation › Background Events › Temporal* makes it fetch (Share with apps › Garmin: *Sukrara Aura* "Watch face ·
+      in use, asked this phone at <now>"). Stop the emulator's app: the face's value goes late, struck, then *No reading since*,
       counting from the reading's time.
-- [ ] **Phone + watch**: Share with apps › *Sukrara Aura* says "Sent to <watch> … ago" within a minute of a reading;
+- [ ] **Phone + watch**: Share with apps › *Garmin* says "<watch> has the <time> reading" within a minute of a reading,
+      the time matching the phone's newest reading; the page's watch line says the same, with Garmin Connect's name for
+      the watch;
       the face's value and arrow match the phone's card within seconds of the phone's notification changing.
 - [ ] Walk away with the phone (or Bluetooth off on the phone): the row says "<watch> isn't connected"; the face goes
-      late → struck → *No reading since* and Garmin's *No phone*; back in reach, the face is current within a minute
+      late → struck → *No reading since* and Garmin's *No phone*; the page's line "Not connected · has the <time>
+      reading"; back in reach, the face is current within a minute
       without touching anything.
 - [ ] Watch restart, phone restart, Garmin Connect swiped away: the face shows the last reading aging right away, and
       is current again by itself (push on reconnect, or its 5-minute fetch).
-- [ ] The switch off: the row says "Off · the face shows no readings", nothing more reaches the face (it ages out); on
-      again: current within a minute. *Send now* sends at once. *Open Garmin Connect* opens it.
+- [ ] The main switch off: the row says "Off", the page's note "Your watch gets no readings from this phone", nothing
+      more reaches the face (it ages out); on again: current within a minute. *Send now* (an action button, a haptic)
+      sends at once. *Open Garmin Connect* opens it. Pick another face on the watch: within 11 minutes *Sukrara Aura*
+      says "not in use"; back, "in use" after its next fetch.
+- [ ] *Other watch faces and data fields › xDrip+ server* opens the xDrip+ server page (also from Share with apps ›
+      *Apps on this phone*): *Use xDrip+ server* on shows "Listening on 127.0.0.1:17580 · not asked yet", *Apps that
+      read it* lists Garmin Connect with its icon and no switch; a face made for xDrip+ asking it updates "last asked
+      at"; off again from either way in. Light, dark, largest font, Spanish: the action buttons' labels readable,
+      nothing clipped.
 - [ ] A low with the pill, a mute, a treatment: the face's pill and treatment field change within seconds of the
       phone's card.
-- [ ] TalkBack: the row and every page row read their text.
+- [ ] TalkBack: the row and every page row read their text; each action button reads as a button with its label; the
+      main switch reads as a switch with its note.
 ## Q28 Garmin watch face (Sukrara Aura)
 
 - [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]`

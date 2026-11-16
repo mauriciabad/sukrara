@@ -162,7 +162,8 @@ Added:
 - `:integrations` `garmin/`: `AuraPayload` (built from the hub's state, THE trend, the alert runtime's status, the
   sensor as the card decides it, the card's last treatment, today's time in range), `MonkeyC` (the wire format),
   `ConnectIq` (Garmin Connect's service, no SDK), `AuraLink` (push, retry, reconnect, the fetch server on
-  127.0.0.1:17582), `AuraPage` (Share with apps › Sukrara Aura, en / es); setting `apps.garminFace` (on).
+  127.0.0.1:17582), the page (Share with apps › Garmin since 2026-11-16's redesign: `GarminPage`, en / es); setting
+  `apps.garmin` (on).
 - `apps/garmin/source/link`: `AuraLinkService` (the face's background: the push, the 5-minute fetch) and `AuraLink`
   (the newest payload in storage, the inputs at every draw, THE SEAM's `AuraReading`); `LinkTest` runs every case.
 - Debug: `GARMIN_SIM` sends to the Connect IQ simulator (tethered mode).
@@ -186,6 +187,27 @@ Discarded, and why:
   the face gets nothing until one of them works; the page shows "Closed until a watch has Sukrara Aura".
 - **The xDrip+ server for the face**: off by default, Juggluco's port, and its format lacks the pill, the sensor and
   the treatments. It stays as it is for other Garmin faces.
+
+The settings (redesign, 2026-11-16; the owner: xDrip+ isn't a watch, its apps can't be switched one by one, "Sukrara
+Aura" is one face of several, three "minutes ago" that look alike, *Send now* not looking like an action):
+- **Share with apps › Watches › Garmin**, one row (the name says where, not which face), opening a page built like
+  stock Settings' device pages: a **main switch** for Sukrara's own link, because that is what can really be turned
+  off (`apps.garmin`: push and fetch together, for every Sukrara app on every watch; a per-watch or per-app switch has
+  no use: the person picks the face on the watch), the [AOSP guidelines](https://source.android.com/docs/core/settings/settings-guidelines)'
+  "main setting" for a feature that turns on or off as a whole; **action buttons** (*Send now*, *Open Garmin Connect*)
+  as App info and Bluetooth device details draw them (SPA `ActionButtons`), not rows; **Watches** with Garmin
+  Connect's own names, one line each with one clock time ("has the 14:21 reading", comparable with the phone); **Sukrara
+  on your watch** (the face now; the data field and app later), where the face's fetch says whether it is the face in
+  use.
+- **The xDrip+ server is a local server for apps, not a watch**: its row moves to *Apps on this phone* beside the
+  Nightscout API, with its own page (main switch, *Apps that read it* as a plain list with app icons, like stock
+  Location's app list, no switches), and the Garmin page links to it for other faces and data fields.
+- Compared: xDrip+ hides its server in Inter-app settings with a bare checkbox; GlucoDataHandler and Juggluco put a
+  web-server toggle among their sources ([GDH](https://github.com/pachi81/GlucoDataHandler/wiki/Juggluco),
+  [xDrip+](https://github.com/NightscoutFoundation/xDrip/blob/master/Documentation/technical/Local_Web_Services.md));
+  none says which watch got which reading. Discarded: a details page per watch (one or two watches don't need it;
+  their line holds all the link knows), a watch icon per row (a list of things of one kind has none), *Send now*
+  disabled when no watch is near (SPA draws a disabled button's label at full contrast; a send then does no harm).
 
 ## Open
 

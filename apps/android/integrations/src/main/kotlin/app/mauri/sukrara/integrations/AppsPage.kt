@@ -4,7 +4,6 @@
 package app.mauri.sukrara.integrations
 
 import android.content.Context
-import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,17 +15,16 @@ import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.designsystem.icons.PackageIcon
 import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.icons.ServiceIcon
-import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
-import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.integrations.broadcasts.BcStatus
 import app.mauri.sukrara.integrations.broadcasts.broadcastStatusText
 import app.mauri.sukrara.integrations.garmin.AuraLinkState
 import app.mauri.sukrara.integrations.garmin.AuraStatus
 import app.mauri.sukrara.integrations.garmin.ConnectIq
-import app.mauri.sukrara.integrations.garmin.auraStatusText
+import app.mauri.sukrara.integrations.garmin.garminStatusText
+import app.mauri.sukrara.integrations.garmin.isProblem
 import app.mauri.sukrara.integrations.garmin.ticking
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.healthStatusText
@@ -34,10 +32,12 @@ import app.mauri.sukrara.integrations.history.ImportState
 import app.mauri.sukrara.integrations.history.importStatusText
 import app.mauri.sukrara.integrations.libreview.libreViewStatusText
 import app.mauri.sukrara.integrations.localserver.NsApiState
+import app.mauri.sukrara.integrations.localserver.ServerReader
+import app.mauri.sukrara.integrations.localserver.ServerReaders
 import app.mauri.sukrara.integrations.localserver.XdripState
 import app.mauri.sukrara.integrations.localserver.nsApiStatusText
+import app.mauri.sukrara.integrations.localserver.xdripRowSummary
 import app.mauri.sukrara.integrations.tidepool.tidepoolStatusText
-import app.mauri.sukrara.integrations.ui.ago
 import app.mauri.sukrara.integrations.ui.uploadStatusText
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import kotlinx.coroutines.CoroutineDispatcher
@@ -54,7 +54,6 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 /** What Share with apps shows. */
 data class AppsUi(
     val wearer: Boolean,
-    val xdripOn: Boolean,
     val xdrip: XdripState,
     /** Installed apps that read the xDrip+ server (Garmin Connect). */
     val readers: List<ServerReader>,
@@ -73,52 +72,20 @@ data class AppsUi(
     val healthConnect: HcStatus = HcStatus.Off,
     /** Import history (wearer only). */
     val history: ImportState = ImportState.Idle,
-    /** Sukrara Aura, the Garmin face's link. */
+    /** Sukrara's Garmin link (the face). */
     val aura: AuraLinkState = AuraLinkState(),
 )
 
 class AppsActions(
-    val setXdrip: (Boolean) -> Unit = {},
     val openNightscout: () -> Unit = {},
     val openLibreView: () -> Unit = {},
     val openNightscoutApi: () -> Unit = {},
     val openTidepool: () -> Unit = {},
     val openBroadcasts: () -> Unit = {},
     val openHealthConnect: () -> Unit = {},
-    val openAura: () -> Unit = {},
+    val openGarmin: () -> Unit = {},
+    val openXdrip: () -> Unit = {},
 )
-
-/** An installed app that reads the xDrip+ server: its package (for its icon) and its name. */
-data class ServerReader(
-    val pkg: String,
-    val label: String,
-)
-
-/**
- * Installed apps known to read glucose from the xDrip+ server rather than broadcasts. Garmin watch apps can't open
- * sockets: Garmin Connect (or the Connect IQ app) makes the request for them. Each package is in the manifest's
- * `<queries>`.
- */
-object ServerReaders {
-    val PACKAGES =
-        listOf(
-            // Garmin Connect
-            "com.garmin.android.apps.connectmobile",
-            // the Connect IQ store app (older watches / setups)
-            "com.garmin.connectiq",
-        )
-
-    /** The installed ones, by name (PackageManager: call off the main thread). */
-    fun installed(context: Context): List<ServerReader> {
-        val pm = context.packageManager
-        return PACKAGES
-            .mapNotNull { p ->
-                runCatching { pm.getApplicationInfo(p, PackageManager.ApplicationInfoFlags.of(0)) }
-                    .getOrNull()
-                    ?.let { ServerReader(p, pm.getApplicationLabel(it).toString()) }
-            }.sortedBy { it.label.lowercase() }
-    }
-}
 
 private data class Others(
     val api: NsApiState,
@@ -138,7 +105,7 @@ class AppsViewModel(
     private val readers = MutableStateFlow<List<ServerReader>>(emptyList())
     val ui: StateFlow<AppsUi?> =
         combine(
-            combine(module.wearer, module.xdrip.on, module.xdrip.state) { w, on, x -> Triple(w, on, x) },
+            combine(module.wearer, module.xdrip.state) { w, x -> w to x },
             readers,
             module.nightscout.page,
             module.libreView.page,
@@ -149,17 +116,13 @@ class AppsViewModel(
                 module.healthConnect.status,
                 combine(module.history.state, module.aura.state) { h, a -> h to a },
             ) { (api, tp), bc, bs, hc, (h, a) -> Others(api, tp, bc.apps.size, bs, hc, h, a) },
-        ) { (w, on, x), r, ns, lv, o ->
-            AppsUi(w, on, x, r, ns.status, lv.status, o.api, o.tidepool, o.broadcastApps, o.broadcasts, o.health, o.history, o.aura)
+        ) { (w, x), r, ns, lv, o ->
+            AppsUi(w, x, r, ns.status, lv.status, o.api, o.tidepool, o.broadcastApps, o.broadcasts, o.health, o.history, o.aura)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
         val app = context.applicationContext
         viewModelScope.launch { readers.value = withContext(io) { ServerReaders.installed(app) } }
-    }
-
-    fun setXdrip(on: Boolean) {
-        viewModelScope.launch { module.xdrip.setOn(on) }
     }
 }
 
@@ -173,7 +136,8 @@ fun AppsPage(
     openTidepool: () -> Unit,
     openBroadcasts: () -> Unit,
     openHealthConnect: () -> Unit,
-    openAura: () -> Unit,
+    openGarmin: () -> Unit,
+    openXdrip: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -182,14 +146,14 @@ fun AppsPage(
             it,
             ticking(now),
             AppsActions(
-                viewModel::setXdrip,
                 openNightscout,
                 openLibreView,
                 openNightscoutApi,
                 openTidepool,
                 openBroadcasts,
                 openHealthConnect,
-                openAura,
+                openGarmin,
+                openXdrip,
             ),
             modifier,
         )
@@ -197,9 +161,9 @@ fun AppsPage(
 }
 
 /**
- * Settings › Share with apps: LibreView and the Nightscout upload (wearer), the xDrip+ server for Garmin watches with who
- * reads it and when it was last asked (and each installed app that reads it, with that server's switch), and the apps
- * on this phone. Every row that stands for another app or service shows that app's icon ([ServiceIcon] /
+ * Settings › Share with apps: LibreView and Tidepool, the Nightscout upload (wearer), *Garmin* under *Watches* (its own
+ * page), and the apps on this phone (broadcasts, Health Connect, and the two local servers, Nightscout API and xDrip+
+ * server, each on its own page). Every row that stands for another app or service shows that app's icon ([ServiceIcon] /
  * [PackageIcon]), as the PoC did. Export data and Import history are on Settings › Import and export ([DataFileRows]).
  */
 @Composable
@@ -237,30 +201,14 @@ fun AppsContent(
         }
     }
     SettingsGroup(title = stringResource(R.string.in_apps_watch_group)) {
-        // Sukrara's own face first: on by default, nothing to set up (docs/43)
+        val garmin = AuraStatus.of(ui.aura, now)
         NavigationRow(
-            stringResource(R.string.in_aura_title),
-            actions.openAura,
-            summary = auraStatusText(AuraStatus.of(ui.aura, now), now),
+            stringResource(R.string.in_garmin_title),
+            actions.openGarmin,
+            summary = garminStatusText(garmin, now),
             leading = { PackageIcon(ConnectIq.GCM) },
+            warning = garmin.isProblem(),
         )
-        SwitchRow(
-            stringResource(R.string.in_apps_xdrip),
-            ui.xdripOn,
-            actions.setXdrip,
-            summary = xdripSummary(ui, now),
-            leading = { ServiceIcon(Service.Xdrip) },
-        )
-        // where the person looks for Garmin: each installed app that reads the server, with the server's own switch
-        for (r in ui.readers) {
-            SwitchRow(
-                r.label,
-                ui.xdripOn,
-                actions.setXdrip,
-                summary = stringResource(R.string.in_apps_reader_summary),
-                leading = { PackageIcon(r.pkg) },
-            )
-        }
     }
     SettingsGroup(title = stringResource(R.string.in_apps_phone_group)) {
         if (ui.wearer) {
@@ -283,8 +231,14 @@ fun AppsContent(
             summary = nsApiStatusText(ui.nightscoutApi, now),
             leading = { ServiceIcon(Service.Nightscout) },
         )
+        NavigationRow(
+            stringResource(R.string.in_apps_xdrip),
+            actions.openXdrip,
+            summary = xdripRowSummary(ui.xdrip, ui.readers),
+            leading = { ServiceIcon(Service.Xdrip) },
+            warning = ui.xdrip == XdripState.PortBusy,
+        )
     }
-    FooterText(stringResource(R.string.in_apps_footer))
 }
 
 /**
@@ -323,34 +277,4 @@ fun DataFileRowsContent(
             icon = DsR.drawable.ds_ic_file_export,
         )
     }
-}
-
-@Composable
-private fun xdripSummary(
-    ui: AppsUi,
-    now: Instant,
-): String {
-    val parts = ArrayList<String>()
-    when (val x = ui.xdrip) {
-        XdripState.Off -> {
-            parts += stringResource(R.string.in_apps_xdrip_off)
-        }
-
-        XdripState.PortBusy -> {
-            parts += stringResource(R.string.in_apps_xdrip_busy)
-        }
-
-        XdripState.LeftToJuggluco -> {
-            parts += stringResource(R.string.in_apps_xdrip_juggluco)
-        }
-
-        is XdripState.Listening -> {
-            parts += stringResource(R.string.in_apps_xdrip_on)
-            parts +=
-                x.lastAsked?.let { stringResource(R.string.in_apps_xdrip_last_asked, ago(it, now)) }
-                    ?: stringResource(R.string.in_apps_xdrip_not_asked)
-        }
-    }
-    if (ui.readers.isNotEmpty()) parts += stringResource(R.string.in_apps_xdrip_read_by, ui.readers.joinToString { it.label })
-    return parts.joinToString(" · ")
 }
