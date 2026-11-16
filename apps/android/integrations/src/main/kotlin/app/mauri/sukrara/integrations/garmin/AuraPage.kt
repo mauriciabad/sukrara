@@ -184,8 +184,11 @@ fun AuraContent(
             InfoRow(
                 stringResource(R.string.in_aura_fetch_title),
                 summary =
-                    s.fetched?.let { stringResource(R.string.in_aura_fetched, ago(it, now)) }
-                        ?: stringResource(R.string.in_aura_not_fetched),
+                    when {
+                        !s.fetchOpen && !s.portBusy -> stringResource(R.string.in_aura_fetch_closed)
+                        s.fetched != null -> stringResource(R.string.in_aura_fetched, ago(s.fetched, now))
+                        else -> stringResource(R.string.in_aura_not_fetched)
+                    },
             )
         }
         SettingsGroup {

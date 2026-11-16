@@ -2549,16 +2549,20 @@ digit by digit).
   never confirms is sent again after 15 s, 30 s, 60 s, then every 2 min until a newer one replaces it; a watch that
   reconnects gets the current one at once (checked every minute). The face also **fetches** the same payload every
   5 min from `http://127.0.0.1:17582/sukrara/aura` (Garmin Connect's web proxy; the bounded `LocalHttpServer`,
-  loopback only), so a lost message or Garmin Connect's messaging bug costs at most 5 min. Sukrara talks to Garmin
+  loopback only), so a lost message or Garmin Connect's messaging bug costs at most 5 min. **The fetch port opens only
+  while a watch is known to have the face** (Garmin Connect says Sukrara Aura is installed on it, or a push reached it;
+  checked when the watch connects and every 30 min) and closes when the switch goes off, Garmin Connect goes or the face
+  is gone: on a phone without the face nothing listens. A watch Garmin Connect doesn't answer about still gets pushes. Sukrara talks to Garmin
   Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free software). Tests:
   `AuraLinkTest`, `AuraStatusTest`.
 - Settings › Share with apps › *Watches* › **Sukrara Aura** (first in the group, Garmin Connect's icon; settings search
   "Garmin", "watch face"), its line saying what the link does now; it opens the page: *Send to Sukrara Aura* (the
   switch, with the same line), *Watches* (each watch Garmin Connect knows: connected and when the last reading got
   there, not connected since, the face not installed, Garmin Connect not confirming, trying again), *The face asking
-  this phone* (when the face last fetched: proof it is the face in use), *Send now*, *Open Garmin Connect*, and a
-  footer: Garmin Connect must run in the background; any app on this phone can read what the face reads while this is
-  on; other Garmin faces read the xDrip+ server.
+  this phone* (when the face last fetched: proof it is the face in use; "Closed until a watch has Sukrara Aura" while
+  the port is closed), *Send now*, *Open Garmin Connect*, and a
+  footer: Garmin Connect must run in the background; while a watch has the face any app on this phone can read what
+  the face reads; other Garmin faces read the xDrip+ server.
 - On the watch (`apps/garmin/source/link`): the face's background wakes on each push and fetches every 5 min; the face
   keeps the newest payload (by when the phone built it; a burst of queued ones never puts an older one back) in
   storage, so after a restart it shows the last reading at once, aging. Every draw works the inputs out from the
@@ -2578,7 +2582,9 @@ out: bring it near, Bluetooth, *Open Garmin Connect*; it resumes by itself on re
 ago"); *messages lost, the face fetching* ("Garmin Connect loses messages · the face asked 3 min ago, so it updates every
 5 minutes"; out: *Open Garmin Connect*, restart the watch; it keeps working meanwhile); *messages lost, nothing fetched*
 ("Messages don't reach Descent · open Garmin Connect or restart the watch"; out: those, *Send now*); *waiting* ("On ·
-waiting for the next reading"). On the watch the face never shows an old value as current: every state there ages by
+waiting for the next reading"). The fetch port's own state is on *The face asking this phone*: *closed* (no watch
+known to have the face; out: install the face, or a push reaching it opens it), *open* ("Last asked …"), *port taken*
+(the footer says only Garmin Connect's messages reach the face; out: stop the other app). On the watch the face never shows an old value as current: every state there ages by
 itself and Garmin's *No phone* shows the link is down. Every row is a plain TalkBack row with its text.
 
 ## Share with apps on this phone (investigation 22)

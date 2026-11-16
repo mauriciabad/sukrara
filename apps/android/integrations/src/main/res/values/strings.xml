@@ -61,13 +61,14 @@
     <string name="in_aura_no_watch_title">No watch</string>
     <string name="in_aura_fetch_title">The face asking this phone</string>
     <string name="in_aura_fetched">Last asked %1$s</string>
+    <string name="in_aura_fetch_closed">Closed until a watch has Sukrara Aura (Garmin Connect says so, or a reading reaches it)</string>
     <string name="in_aura_not_fetched">Not yet · it asks every 5 minutes while it\'s your watch face</string>
     <string name="in_aura_send_now">Send now</string>
     <string name="in_aura_send_now_summary">Sends the current reading to every watch again</string>
     <string name="in_aura_open_gcm">Open Garmin Connect</string>
     <string name="in_aura_open_gcm_summary">Where the watch connects, syncs and installs faces</string>
-    <string name="in_aura_footer">Garmin Connect must be allowed to run in the background. Any app on this phone can read what the face reads (the last hour, on 127.0.0.1:17582) while this is on. Other Garmin faces and apps read the xDrip+ server instead.</string>
-    <string name="in_aura_footer_busy">Another app uses port 17582, so the face can\'t ask this phone every 5 minutes: only Garmin Connect\'s messages reach it. Any app on this phone can read what the face reads while this is on.</string>
+    <string name="in_aura_footer">Garmin Connect must be allowed to run in the background. While a watch has the face, any app on this phone can read what it reads (the last hour, on 127.0.0.1:17582). Other Garmin faces and apps read the xDrip+ server instead.</string>
+    <string name="in_aura_footer_busy">Another app uses port 17582, so the face can\'t ask this phone every 5 minutes: only Garmin Connect\'s messages reach it.</string>
     <string name="in_aura_off">Off · the face shows no readings</string>
     <string name="in_aura_no_gcm">Needs Garmin Connect on this phone</string>
     <string name="in_aura_not_answering">Garmin Connect isn\'t answering · open it</string>

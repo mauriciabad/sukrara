@@ -75,6 +75,8 @@ data class AuraLinkState(
     val fetched: Instant? = null,
     /** Another app holds the face's fetch port. */
     val portBusy: Boolean = false,
+    /** The face's fetch port is open (only while a watch is known to have the face). */
+    val fetchOpen: Boolean = false,
 )
 
 /**
@@ -85,7 +87,8 @@ data class AuraLinkState(
  *    status, a treatment, a setting), retried with backoff until a newer one replaces it, and again when a watch
  *    reconnects; the face's background wakes on it within seconds;
  * 2. **fetched** by the face itself every 5 min from 127.0.0.1:[PORT] (Garmin Connect's web proxy), in case Garmin
- *    Connect drops messages (its known bug) or one was lost.
+ *    Connect drops messages (its known bug) or one was lost. The port is open only while a watch is known to have the
+ *    face ([fetchOpen]): any app on the phone could read it, so a phone without the face serves nothing.
  *
  * On by default whenever Garmin Connect is installed: nothing to set up. The switch (`apps.garminFace`) stops both.
  */
@@ -126,22 +129,30 @@ class AuraLink(
         // the payload, rebuilt on every change of what it carries
         val payloads = payloads().shareIn(scope, SharingStarted.Eagerly, 1)
         scope.launch { payloads.collect { current = it } }
-        // the fetch port: bound while on and Garmin Connect is installed
+        // Garmin Connect, checked every minute
         scope.launch {
-            on.collectLatest { o ->
-                while (true) {
-                    val gcm = port.installed()
-                    _state.update { it.copy(garminConnect = gcm) }
+            while (true) {
+                val gcm = port.installed()
+                _state.update { it.copy(garminConnect = gcm) }
+                delay(CHECK_MS)
+            }
+        }
+        // the fetch port: open only while the link is on, Garmin Connect is there and a watch is known to have the face
+        // (Garmin Connect said so, or a push reached it): nobody else's glucose server on a phone without the face
+        scope.launch {
+            combine(on, _state) { o, s -> fetchOpen(o, s) }
+                .distinctUntilChanged()
+                .collect { open ->
                     withContext(io) {
-                        if (o && gcm) {
-                            if (!server.running) _state.update { it.copy(portBusy = !server.bind()) }
+                        if (open) {
+                            val bound = server.running || server.bind()
+                            _state.update { it.copy(fetchOpen = bound, portBusy = !bound) }
                         } else {
                             server.stop()
+                            _state.update { it.copy(fetchOpen = false, portBusy = false) }
                         }
                     }
-                    delay(CHECK_MS)
                 }
-            }
         }
         // the push: every new payload (or a kick, or a watch coming back) to every watch with the face
         scope.launch {
@@ -262,8 +273,14 @@ class AuraLink(
         if (fresh || !d.connected) return before?.installed
         val v = port.appVersion(d, APP_ID)
         checked[d.id] = clock.now()
-        // no answer keeps what was known: a lost broadcast never hides a watch that has the face
-        return if (v != null) true else before?.installed ?: false
+        return when (v) {
+            // no answer keeps what was known (unknown: still pushed to; the fetch opens once a push arrives)
+            ConnectIqPort.NO_ANSWER -> before?.installed
+
+            null -> false
+
+            else -> true
+        }
     }
 
     private val checked = HashMap<Long, Instant>()
@@ -295,6 +312,12 @@ class AuraLink(
 
         /** Today's time in range only with data for a quarter of the day so far (as the card's rings ask). */
         const val TIR_COVERAGE = 0.25
+
+        /** Whether the fetch port may be open: on, Garmin Connect installed, a watch known to have the face. */
+        internal fun fetchOpen(
+            on: Boolean,
+            s: AuraLinkState,
+        ) = on && s.garminConnect && s.watches.any { it.installed == true }
 
         /** Two payloads say the same apart from when they were built. */
         internal fun same(

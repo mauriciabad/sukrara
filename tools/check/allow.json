@@ -132,7 +132,7 @@
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/AuraLink.kt",
-      "reason": "Sukrara Aura's fetch: the bounded LocalHttpServer on 127.0.0.1:17582 only (loopback: Garmin Connect's web proxy for the face; nothing off the phone reaches it), GET /sukrara/aura; opens no outgoing connection"
+      "reason": "Sukrara Aura's fetch: the bounded LocalHttpServer on 127.0.0.1:17582 only (loopback: Garmin Connect's web proxy for the face; nothing off the phone reaches it), GET /sukrara/aura, open only while a watch is known to have the face; opens no outgoing connection"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/ConnectIq.kt",

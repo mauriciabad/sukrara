@@ -38,6 +38,7 @@ class AuraLinkTest {
         var gcm = true
         var watches: List<IqDevice>? = listOf(IqDevice(7, "Descent Mk3i 43mm", true))
         var face = true
+        var version: Int? = 3
         var answers = ArrayDeque<IqSend>()
         val sent = ArrayList<Map<*, *>>()
 
@@ -48,7 +49,7 @@ class AuraLinkTest {
         override suspend fun appVersion(
             device: IqDevice,
             app: String,
-        ): Int? = if (face) 3 else null
+        ): Int? = if (face) version else null
 
         override suspend fun send(
             device: IqDevice,
@@ -194,6 +195,57 @@ class AuraLinkTest {
             assertEquals(0, port.sent.size)
             assertEquals(AuraStatus.Off, AuraStatus.of(link.state.value, clock.now()))
         }
+
+    @Test
+    fun theFetchOpensOnlyWhileAWatchHasTheFace() =
+        runTest {
+            val port = FakePort()
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            runCurrent()
+            assertTrue(link.state.value.fetchOpen)
+            link.stop()
+        }
+
+    @Test
+    fun noFaceNoFetch() =
+        runTest {
+            val port = FakePort().apply { face = false }
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            runCurrent()
+            assertFalse(link.state.value.fetchOpen)
+        }
+
+    @Test
+    fun withoutAnAnswerAboutTheFaceItStillPushesAndOpensTheFetchOnceAPushArrives() =
+        runTest {
+            val port = FakePort().apply { version = ConnectIqPort.NO_ANSWER }
+            port.answers.add(IqSend.NoAnswer)
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            runCurrent()
+            assertEquals(1, port.sent.size)
+            assertNull(
+                link.state.value.watches
+                    .single()
+                    .installed,
+            )
+            assertFalse(link.state.value.fetchOpen)
+            advanceTimeBy(15_001)
+            assertEquals(2, port.sent.size)
+            assertTrue(link.state.value.fetchOpen)
+            link.stop()
+        }
+
+    @Test
+    fun theFetchRule() {
+        val face = AuraLinkState(garminConnect = true, watches = listOf(AuraWatch(1, "D", true, true)))
+        assertTrue(AuraLink.fetchOpen(true, face))
+        assertFalse(AuraLink.fetchOpen(false, face))
+        assertFalse(AuraLink.fetchOpen(true, face.copy(garminConnect = false)))
+        assertFalse(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", true, null)))))
+        assertFalse(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", true, false)))))
+        // a watch away that has the face keeps it open (the face fetches as soon as it is back)
+        assertTrue(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", false, true)))))
+    }
 
     @Test
     fun theFetchIsThePayloadAsJson() {

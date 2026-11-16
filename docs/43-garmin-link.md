@@ -112,8 +112,13 @@ Discarded, and why:
 - **Watch → phone acknowledgements by message**: that direction is the one CIQQA-4631 breaks first; the fetch is the
   acknowledgement.
 - **A secret for the fetch**: the face has no channel to learn one when push is broken, which is when the fetch is
-  needed. The fetch is loopback only and the switch turns it off; the page's footer and the privacy policy say any app
-  on the phone can read it while it is on, as with the xDrip+ server.
+  needed. Instead the port is narrowed (the main session's decision, 2026-11-16): it opens only while a watch is known
+  to have the face (Garmin Connect says it is installed, or a push reached it), loopback only, and the switch closes
+  it. **Left exposed**: while a watch has the face, any app on the phone can read the face's payload (the last hour,
+  the pill, the last treatment, the sensor's dates, today's time in range) from 127.0.0.1:17582, as any app can read
+  the xDrip+ server while that is on. A phone without the face, or with the link off, serves nothing. **Cost**: if
+  Garmin Connect neither answers about the face nor delivers a push (its bug at its worst), the port stays closed and
+  the face gets nothing until one of them works; the page shows "Closed until a watch has Sukrara Aura".
 - **The xDrip+ server for the face**: off by default, Juggluco's port, and its format lacks the pill, the sensor and
   the treatments. It stays as it is for other Garmin faces.
 

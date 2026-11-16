@@ -49,7 +49,7 @@ interface ConnectIqPort {
     /** The watches Garmin Connect knows; null = Garmin Connect couldn't be reached. */
     suspend fun devices(): List<IqDevice>?
 
-    /** [app]'s version on [device], or null when it isn't installed there (or no answer). */
+    /** [app]'s version on [device]; null when it isn't installed there; [NO_ANSWER] when Garmin Connect didn't say. */
     suspend fun appVersion(
         device: IqDevice,
         app: String,
@@ -60,6 +60,11 @@ interface ConnectIqPort {
         app: String,
         message: ByteArray,
     ): IqSend
+
+    companion object {
+        /** [appVersion]: Garmin Connect didn't answer (unknown, not "not installed"). */
+        const val NO_ANSWER = -1
+    }
 }
 
 /** Garmin Connect's Connect IQ service, bound for as long as [ConnectIq] is used. */
@@ -163,7 +168,7 @@ class ConnectIq(
         app: String,
     ): Int? =
         lock.withLock {
-            val b = service() ?: return null
+            val b = service() ?: return ConnectIqPort.NO_ANSWER
             val answer = CompletableDeferred<Int?>().also { pendingInfo = it }
             val sent =
                 oneway(b, TX_APP_INFO) { p ->
@@ -172,11 +177,11 @@ class ConnectIq(
                     writeDevice(p, device)
                     p.writeString(appId(app))
                 }
-            if (!sent) return null
+            if (!sent) return ConnectIqPort.NO_ANSWER
             try {
                 withTimeout(ANSWER_TIMEOUT_MS) { answer.await() }
             } catch (_: TimeoutCancellationException) {
-                null
+                ConnectIqPort.NO_ANSWER
             } finally {
                 pendingInfo = null
             }

@@ -60,13 +60,14 @@
     <string name="in_aura_no_watch_title">Ningún reloj</string>
     <string name="in_aura_fetch_title">La esfera preguntando a este móvil</string>
     <string name="in_aura_fetched">Última consulta %1$s</string>
+    <string name="in_aura_fetch_closed">Cerrado hasta que un reloj tenga Sukrara Aura (Garmin Connect lo confirma, o le llega una lectura)</string>
     <string name="in_aura_not_fetched">Aún no · pregunta cada 5 minutos mientras sea tu esfera</string>
     <string name="in_aura_send_now">Enviar ahora</string>
     <string name="in_aura_send_now_summary">Vuelve a enviar la lectura actual a cada reloj</string>
     <string name="in_aura_open_gcm">Abrir Garmin Connect</string>
     <string name="in_aura_open_gcm_summary">Donde el reloj se conecta, sincroniza e instala esferas</string>
-    <string name="in_aura_footer">Garmin Connect debe poder funcionar en segundo plano. Mientras esto está activado, cualquier app de este móvil puede leer lo que lee la esfera (la última hora, en 127.0.0.1:17582). Las demás esferas y apps de Garmin leen el servidor xDrip+.</string>
-    <string name="in_aura_footer_busy">Otra app usa el puerto 17582, así que la esfera no puede preguntar a este móvil cada 5 minutos: solo le llegan los mensajes de Garmin Connect. Mientras esto está activado, cualquier app de este móvil puede leer lo que lee la esfera.</string>
+    <string name="in_aura_footer">Garmin Connect debe poder funcionar en segundo plano. Mientras un reloj tenga la esfera, cualquier app de este móvil puede leer lo que ella lee (la última hora, en 127.0.0.1:17582). Las demás esferas y apps de Garmin leen el servidor xDrip+.</string>
+    <string name="in_aura_footer_busy">Otra app usa el puerto 17582, así que la esfera no puede preguntar a este móvil cada 5 minutos: solo le llegan los mensajes de Garmin Connect.</string>
     <string name="in_aura_off">Desactivado · la esfera no muestra lecturas</string>
     <string name="in_aura_no_gcm">Necesita Garmin Connect en este móvil</string>
     <string name="in_aura_not_answering">Garmin Connect no responde · ábrelo</string>
