@@ -95,14 +95,18 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
   - **Disconnections stop everything**, as designed: the watch on the Mac's USB (13:52–14:09, the phone link drops) and
     a Bluetooth toggle (14:11–14:19: the watch only came back when its Phone control was toggled) left the face aging
     from 13:52, then 14:19.
-  - **Open: the face applied the readings late.** At 14:21:58 it still showed 14:19 though 14:20 and 14:21 were
-    confirmed delivered; it updated at ~14:23 to a reading ~2 min old. The face's 5-minute fetch ran (14:23:39). The
-    hypothesis, from forum reports ([staff](https://forums.garmin.com/developer/connect-iq/f/discussion/6086/syncing-applications-when-doing-background-service-with-communications),
-    [AAPS push face](https://github.com/Pwb0186/aaps-garmin-push-watchface)): a face's background runs at most about
-    every 5 minutes, phone messages included, and messages in between wait in the watch's queue. Not proven yet: the
-    face's report (below) gives the watch's own times.
-  - So a phone sending one message per minute only queues them; the second message a couple of seconds after each
-    reading (the payload changing in two steps) is gone (one message per reading).
+  - **The face applied the readings late**: at 14:21:58 it still showed 14:19 though 14:20 and 14:21 were confirmed
+    delivered. The first guess, from forum reports, was a 5-minute limit on a face's background
+    ([staff](https://forums.garmin.com/developer/connect-iq/f/discussion/6086/syncing-applications-when-doing-background-service-with-communications),
+    [AAPS push face](https://github.com/Pwb0186/aaps-garmin-push-watchface)). **The face's report disproved it**
+    (14:36–14:43): the background ran within 0–3 s of every delivered message, once a minute, but each run got the
+    **oldest** waiting message: the three messages queued while the face was being installed stayed queued, so every
+    push gave the face the reading from 3 minutes before (runs at 14:39:47, 14:40:46, 14:41:51 got the payloads built
+    at 14:37:42, 14:38:22, 14:38:43). The 5-minute fetch (14:38:40, 14:43:41) brought the newest each time, which the
+    face kept over the older pushes. Fix: each push run takes every waiting message
+    (`Communications.registerForPhoneAppMessages`, called at once per waiting message) and hands the face the newest.
+  - The phone sent a second message a couple of seconds after each reading (the payload changing in two steps): gone,
+    one message per reading.
 - **Seeing the watch without looking at it**: Garmin's ways are `System.println` to `GARMIN/APPS/LOGS/<app>.TXT`
   (when that file exists) and crash reports in `GARMIN/APPS/LOGS/CIQ_LOG.YML`
   ([FAQ](https://forums.garmin.com/developer/connect-iq/w/wiki/4/new-developer-faq),

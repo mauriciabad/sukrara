@@ -48,7 +48,10 @@ module AuraLink {
         var sent = valid(d) ? (d as Dictionary).get("sent") : 0;
         var g = valid(d) ? (d as Dictionary).get("g") : null;
         // what arrived, when (the report the phone shows): p / f, or the fetch's error code
-        note((fetch ? (data.get("c") == 200 ? "f" : "e" + data.get("c")) : "p") + (kept ? "" : "x"), now, sent, g instanceof Dictionary ? g.get("t") : 0);
+        // p<n>: a push, n older messages taken with it
+        var n = data.get("n");
+        var kind = fetch ? (data.get("c") == 200 ? "f" : "e" + data.get("c")) : "p" + (n instanceof Number && n > 0 ? n : "");
+        note(kind + (kept ? "" : "x"), now, sent, g instanceof Dictionary ? g.get("t") : 0);
         return kept;
     }
 

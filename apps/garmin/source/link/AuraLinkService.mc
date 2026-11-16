@@ -18,6 +18,19 @@ module AuraLinkBackground {
     const FETCH_URL = "http://127.0.0.1:17582/sukrara/aura";
     const FETCH_EVERY_S = 300;
 
+    // The newer of two payloads by `sent` (an invalid one loses).
+    function newer(a, b) {
+        var sa = a instanceof Dictionary ? a.get("sent") : null;
+        var sb = b instanceof Dictionary ? b.get("sent") : null;
+        if (!(sb instanceof Number)) {
+            return a;
+        }
+        if (!(sa instanceof Number)) {
+            return b;
+        }
+        return sb > sa ? b : a;
+    }
+
     // Called by the face on every start: a fresh registration each time (a sideload or an update can drop it, and a
     // plain register sometimes does nothing).
     function register() as Void {
@@ -38,9 +51,26 @@ class AuraLinkService extends System.ServiceDelegate {
         ServiceDelegate.initialize();
     }
 
-    // The push: the message's data is the payload.
+    var _newest = null;
+    var _waiting as Number = 0;
+
+    // The push. The watch keeps the messages that arrived while the face couldn't take them (another face, USB, a
+    // restart) and wakes the background once per new message with the OLDEST one: taking one per run, the face stayed
+    // as many readings behind as it had queued (device check 2026-11-16, docs/43). So every run takes all waiting
+    // messages and hands the face the newest.
     function onPhoneAppMessage(msg as Communications.PhoneAppMessage) as Void {
-        Background.exit({"k" => "push", "d" => msg.data});
+        _newest = msg.data;
+        _waiting = 0;
+        if (Communications has :registerForPhoneAppMessages) {
+            // called at once for each waiting message
+            Communications.registerForPhoneAppMessages(method(:onWaiting));
+        }
+        Background.exit({"k" => "push", "d" => _newest, "n" => _waiting});
+    }
+
+    function onWaiting(msg as Communications.PhoneAppMessage) as Void {
+        _waiting += 1;
+        _newest = AuraLinkBackground.newer(_newest, msg.data);
     }
 
     // The fetch, every 5 minutes.

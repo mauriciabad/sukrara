@@ -100,6 +100,18 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
     return ok;
 }
 
+// A push run keeps the newest of the waiting messages.
+(:test)
+function linkNewestOfTheQueue(logger as Logger) as Boolean {
+    var a = {"v" => 1, "sent" => 100};
+    var b = {"v" => 1, "sent" => 200};
+    Test.assert(AuraLinkBackground.newer(a, b) == b);
+    Test.assert(AuraLinkBackground.newer(b, a) == b);
+    Test.assert(AuraLinkBackground.newer(a, "junk") == a);
+    Test.assert(AuraLinkBackground.newer(null, a) == a);
+    return true;
+}
+
 // THE SEAM: what AuraData.current() hands the face.
 (:test)
 function linkSeamReading(logger as Logger) as Boolean {

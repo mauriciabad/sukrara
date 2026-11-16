@@ -25,7 +25,7 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the fa
    event; Garmin Connect makes the request, plain http only to loopback). The answer is the same payload as JSON.
 
 The fetch carries the face's own report back as its query (`AuraLink.mc` `saveReport`, Android `AuraReport.parse`):
-`r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `f` a fetch,
+`r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `p<n>` a push that took n older waiting messages with it, `f` a fetch,
 `e<code>` a failed fetch, `x` appended when the face kept the older payload; `at` the watch clock; the last 10, oldest
 first) and `d` the reading the face draws (its time on the watch clock) and since when. Times only, never a value. The
 phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with each push's `sent` and result).
