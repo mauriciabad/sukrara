@@ -55,12 +55,14 @@ data class AuraWatch(
     val name: String,
     val connected: Boolean,
     val installed: Boolean?,
-    /** The last message Garmin Connect said reached it, and the reading it carried. */
+    /** The last message Garmin Connect said reached it. */
     val delivered: Instant? = null,
     /** The last message that didn't arrive (failed or no answer) after [delivered]. */
     val failed: Instant? = null,
     /** Garmin Connect took messages but never answered (its messaging bug): the face then fetches every 5 min. */
     val noAnswer: Boolean = false,
+    /** The time of the reading the last delivered message carried (null = none yet, or it carried none). */
+    val reading: Instant? = null,
 )
 
 /**
@@ -121,7 +123,7 @@ data class AuraReport(
 }
 
 /**
- * Everything Settings › Share with apps › Sukrara Aura shows: the switch ([on], default on), whether Garmin Connect is
+ * Everything Settings › Share with apps › Garmin shows: the switch ([on], default on), whether Garmin Connect is
  * there and answers, each watch, and when the face last fetched from this phone ([fetched]: proof it is the watch face
  * and the link works).
  */
@@ -151,7 +153,7 @@ data class AuraLinkState(
  *    Connect drops messages (its known bug) or one was lost. The port is open only while a watch is known to have the
  *    face ([fetchOpen]): any app on the phone could read it, so a phone without the face serves nothing.
  *
- * On by default whenever Garmin Connect is installed: nothing to set up. The switch (`apps.garminFace`) stops both.
+ * On by default whenever Garmin Connect is installed: nothing to set up. The switch (`apps.garmin`) stops both.
  */
 class AuraLink(
     private val settings: SettingsRepository,
@@ -309,14 +311,30 @@ class AuraLink(
                 devices.map { d ->
                     val before = _state.value.watches.firstOrNull { it.id == d.id }
                     val installed = installed(d, before)
-                    var w = AuraWatch(d.id, d.name, d.connected, installed, before?.delivered, before?.failed, before?.noAnswer ?: false)
+                    var w =
+                        AuraWatch(
+                            d.id,
+                            d.name,
+                            d.connected,
+                            installed,
+                            before?.delivered,
+                            before?.failed,
+                            before?.noAnswer ?: false,
+                            before?.reading,
+                        )
                     if (d.connected && installed != false) {
                         val result = port.send(d, APP_ID, bytes)
                         trace("push sent $sent reading $readingAt: $result")
                         w =
                             when (result) {
                                 IqSend.Delivered -> {
-                                    w.copy(delivered = clock.now(), failed = null, noAnswer = false, installed = true)
+                                    w.copy(
+                                        delivered = clock.now(),
+                                        failed = null,
+                                        noAnswer = false,
+                                        installed = true,
+                                        reading = (readingAt as? Int)?.let { Instant.ofEpochSecond(it.toLong()) },
+                                    )
                                 }
 
                                 IqSend.Failed -> {
@@ -386,7 +404,7 @@ class AuraLink(
         const val PATH = "sukrara/aura"
         const val TAG = "Sukrara.Aura"
 
-        val SETTING = SchemaSettings.bool("apps.garminFace", default = true)
+        val SETTING = SchemaSettings.bool("apps.garmin", default = true)
 
         private const val CHECK_MS = 60_000L
 
