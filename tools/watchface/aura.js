@@ -48,7 +48,7 @@ class AuraFace {
       rangeColour: b('rangeColour', true),
       seconds: b('seconds', true),
       halo: String(g('halo', 'outline')),
-      topField: String(g('topField', 'weather')),
+      topField: String(g('topField', 'steps')),
       fields: g('fields', null),
       last: g('last', null),
       lastKind: String(g('lastKind', 'rapid')),
@@ -58,7 +58,7 @@ class AuraFace {
       phone: b('phone', true),
       numerals: String(g('numerals', 'atkinson')),
       dial: String(g('dial', 'halftone')),
-      trendStyle: String(g('trendStyle', 'arrow')),
+      trendStyle: String(g('trendStyle', 'spark')),
       warm: Number(g('warm', 0.45)),
       sensorLeft: Number(g('sensorLeft', 5)),
       tir: c.tir === null ? null : Number(g('tir', 82)),
@@ -708,7 +708,7 @@ class AuraFace {
     while (tfT.length < 3) tfT.push(noText);
     if (!topOn) { tfI.forEach((x, n) => { tfI[n] = noIcon; }); tfT.forEach((x, n) => { tfT[n] = noText; }); }
 
-    let keys = Array.isArray(c.fields) ? c.fields.slice(0, 2) : ['steps', 'treatment'];
+    let keys = Array.isArray(c.fields) ? c.fields.slice(0, 2) : ['tir', 'treatment'];
     if (c.sensor === 'ending') keys = ['sensor', keys[1] || 'treatment'];
     if (!c.phone) keys = ['noPhone', keys[1] || 'treatment'];
     const BR = 172, BA0 = 232, BA1 = 128;

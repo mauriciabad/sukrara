@@ -5,11 +5,11 @@
 <properties>
     <property id="dial" type="number">0</property>
     <property id="halo" type="number">0</property>
-    <property id="trend" type="number">0</property>
+    <property id="trend" type="number">1</property>
     <property id="seconds" type="boolean">true</property>
     <property id="rangeColour" type="boolean">true</property>
-    <property id="topField" type="number">0</property>
-    <property id="field1" type="number">1</property>
+    <property id="topField" type="number">1</property>
+    <property id="field1" type="number">6</property>
     <property id="field2" type="number">10</property>
     <property id="battLabel" type="number">0</property>
     <property id="private" type="boolean">false</property>

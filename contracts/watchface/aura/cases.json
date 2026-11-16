@@ -9,7 +9,7 @@
    "id": "glucose-in-range",
    "group": "glucose",
    "title": "In range",
-   "expect": "Calm: no colour but the range green, the bead and the faint sweep at the rim. Nothing below the value, so time and value centre and grow (time caps 68, value caps 60, top field 26).",
+   "expect": "Calm: no colour but the range green, the bead and the faint sweep at the rim; the last hour as a sparkline beside the value (the default trend). Nothing below the value, so time and value centre and grow (time caps 66, value caps 58, top field 26).",
    "cfg": {
     "glucose": 112,
     "rate": 0.3
@@ -22,7 +22,8 @@
    "expect": "The arrow at 48° up (1.6 ÷ 3 × 90); the trail on the rail shows the last 30 minutes.",
    "cfg": {
     "glucose": 164,
-    "rate": 1.6
+    "rate": 1.6,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -32,7 +33,8 @@
    "expect": "Doubled arrow from −3 mg/dL/min, vertical at the clamp. In range: no pill.",
    "cfg": {
     "glucose": 96,
-    "rate": -3.4
+    "rate": -3.4,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -54,7 +56,8 @@
    "cfg": {
     "glucose": 104,
     "rate": -0.3,
-    "age": 9
+    "age": 9,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -100,7 +103,8 @@
    "title": "LO",
    "expect": "Below 40: LO, no number and no trend (hollow ring); inverted on very low red; the bead pinned past the rail’s bottom end with a chevron.",
    "cfg": {
-    "glucose": 38
+    "glucose": 38,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -109,7 +113,8 @@
    "title": "HI",
    "expect": "Above 400: HI in extremely high’s colour, hollow ring, bead pinned past the top end; the pill says Insulin.",
    "cfg": {
-    "glucose": 420
+    "glucose": 420,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -120,7 +125,8 @@
    "cfg": {
     "glucose": 400,
     "unit": "mmol",
-    "rate": 0.6
+    "rate": 0.6,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -238,7 +244,8 @@
    "cfg": {
     "glucose": 210,
     "rate": 0.3,
-    "status": "none"
+    "status": "none",
+    "trendStyle": "arrow"
    }
   },
   {
@@ -268,7 +275,8 @@
    "expect": "Nothing to do yet, so no pill: the steep arrow and the long trail say it.",
    "cfg": {
     "glucose": 84,
-    "rate": -2.6
+    "rate": -2.6,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -503,7 +511,7 @@
    "id": "fields-default",
    "group": "fields",
    "title": "Default fields",
-   "expect": "Weather under the date; steps and the last treatment at the bottom.",
+   "expect": "Steps under the date; today's time in range and the last treatment at the bottom; the last hour as a sparkline beside the value.",
    "cfg": {
     "glucose": 118,
     "rate": 0.3
@@ -538,10 +546,37 @@
    }
   },
   {
+   "id": "fields-meal-steps",
+   "group": "fields",
+   "title": "A meal beside steps",
+   "expect": "Steps and the meal don't both fit on the arc: steps goes (the least important), the meal stays, centred: ▼ 4.5u ● 45g 35m.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "fields": [
+     "steps",
+     "treatment"
+    ],
+    "last": {
+     "items": [
+      {
+       "k": "rapid",
+       "a": "4.5"
+      },
+      {
+       "k": "carbs",
+       "a": "45"
+      }
+     ],
+     "ago": 35
+    }
+   }
+  },
+  {
    "id": "fields-no-treatment",
    "group": "fields",
    "title": "No treatment today",
-   "expect": "Nothing logged in the last 24 h: the treatment field goes and steps sit alone, centred on the arc.",
+   "expect": "Nothing logged in the last 24 h: the treatment field goes and time in range sits alone, centred on the arc.",
    "cfg": {
     "last": {
      "items": []
@@ -567,7 +602,7 @@
    "id": "fields-sukrara",
    "group": "fields",
    "title": "Sukrara’s own",
-   "expect": "Today’s time in range on top; steps and notifications at the bottom.",
+   "expect": "Today's time in range on top instead of steps; steps and notifications at the bottom.",
    "cfg": {
     "glucose": 118,
     "rate": 0.3,
@@ -690,7 +725,8 @@
    "expect": "Sukrara’s arrow.",
    "cfg": {
     "glucose": 77,
-    "rate": 1
+    "rate": 1,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -979,7 +1015,8 @@
     "left": 10,
     "lastKind": "carbs",
     "lastAmount": 15,
-    "lastAgo": 5
+    "lastAgo": 5,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -1077,7 +1114,8 @@
     "left": 10,
     "lastKind": "carbs",
     "lastAmount": 15,
-    "lastAgo": 5
+    "lastAgo": 5,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -1175,7 +1213,8 @@
     "left": 10,
     "lastKind": "carbs",
     "lastAmount": 15,
-    "lastAgo": 5
+    "lastAgo": 5,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -1273,7 +1312,8 @@
     "left": 10,
     "lastKind": "carbs",
     "lastAmount": 15,
-    "lastAgo": 5
+    "lastAgo": 5,
+    "trendStyle": "arrow"
    }
   },
   {
@@ -1371,7 +1411,8 @@
     "left": 10,
     "lastKind": "carbs",
     "lastAmount": 15,
-    "lastAgo": 5
+    "lastAgo": 5,
+    "trendStyle": "arrow"
    }
   },
   {

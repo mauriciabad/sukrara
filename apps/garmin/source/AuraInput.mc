@@ -55,11 +55,11 @@ class AuraInput {
     // --- the face's settings (SPEC.md §11, SettingsSpec) ---
     var dial as String = "grain"; // grain, black, map, contours, waterline, lasers, glow
     var halo as String = "outline"; // outline, box, none
-    var trendStyle as String = "arrow"; // arrow, spark
+    var trendStyle as String = "spark"; // arrow, spark
     var seconds as Boolean = true;
     var rangeColour as Boolean = true;
-    var topField as String = "weather";
-    var fields as Array = ["steps", "treatment"] as Array;
+    var topField as String = "steps";
+    var fields as Array = ["tir", "treatment"] as Array;
     var battLabel as String = "days"; // days, percent, both
 
     function initialize() {}

@@ -218,7 +218,7 @@ Examples (from `expect.json`):
 
 | Case | Chip | T / V / TF | tfBase | tBase | vBase | chipC |
 |---|---|---|---|---|---|---|
-| `glucose-in-range` | none | 68 / 60 / 26 | −83.3 | 4.7 | 86.7 | — |
+| `glucose-in-range` | none | 66 / 58 / 26 | −81.3 | 4.7 | 84.7 | — |
 | `glucose-late` | age | 64 / 56 / 24 | −97.5 | −13.5 | 64.5 | 91 |
 | `alerts-high-insulin-taken` | pill | 62 / 54 / 24 | −106 | −24 | 52 | 89 |
 | `glucose-no-readings` | none | 66 / 58 / 26 | −86.7 | −0.7 | 90 (message) | — |
@@ -290,7 +290,7 @@ glyph centres −118.1 −51.4 0 51.4 118.1. Always-on: no fill, stroke grey 2.2
 ### 6.4 Value and arrow
 - **Text**: LO / HI; mmol/L `(g / 18.0182).toFixed(1)`; mg/dL rounded. Font px = V / 0.668, weight 600; digits in
   0.656·fs cells, a point in (0.253 + 0.06)·fs; letters use the digit cell.
-- **Arrow layout** (default): gap 0.08·fs, box 0.62·fs; total = vW + gap + box; the group is centred: `x0 = −total/2`;
+- **Arrow layout** (setting: trend = arrow): gap 0.08·fs, box 0.62·fs; total = vW + gap + box; the group is centred: `x0 = −total/2`;
   digits from x0; arrow centre `(x0 + vW + gap + box/2, vBase − V/2)`.
 - **Arrow**: Sukrara's glyph, unit path pointing right, scaled by s = 1.05·box: shaft rectangle (−0.42, −0.07)–(0.25,
   0.07); head (0.46, 0) (0.06, 0.30) (0.16, 0) (0.06, −0.30); a **second head** (0.12, 0) (−0.28, 0.30) (−0.18, 0)
@@ -306,7 +306,7 @@ glyph centres −118.1 −51.4 0 51.4 118.1. Always-on: no fill, stroke grey 2.2
 - **Private, held — reveal line**: neon `#C6F432`, 3 px, round, at y = vBase + 13, centred on the digits, length
   vW × the time left of the 5 s (1 → 0).
 
-### 6.5 Sparkline (setting: trend = sparkline)
+### 6.5 Sparkline (setting: trend = sparkline, the default)
 Replaces the arrow. Layout: total = vW + 14 + 100; digits from x0; the box at `sx = x0 + vW + 14`, width SW = 100,
 top `sy = vBase − V − 6`, height SH = V + 14.
 - **Time axis is logarithmic over the last hour**: x(age) = sx + SW·(1 − ln(1 + age/10) / ln 7); the newest 10 min
@@ -416,7 +416,7 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 
 | Field | Pieces |
 |---|---|
-| steps (default 1st) | steps icon (soft), 5, `6,420` (ink) |
+| steps (default top field) | steps icon (soft), 5, `6,420` (ink) |
 | treatment (default 2nd) | per item: its mark (▼ rapid / ▽ long / ● carbs, in its colour), 4, amount in its colour weight 600 (`4.5u`, `45g`); items 8 apart; then 9, time since (soft): `▼ 4.5u ● 45g 35m` |
 | weather | sun, 6, `14°` |
 | sunset | sunset, 6, `17:42` |
@@ -424,7 +424,7 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 | altitude | mountain, 6, `1,240 m` |
 | heart rate | heart, 5, `64` |
 | notifications | bell, 5, `3` |
-| time in range (Sukrara, today) | ring, 5, `82%` (`--` when not known, `fields-tir-unknown`) |
+| time in range (Sukrara, today; default 1st) | ring, 5, `82%` (`--` when not known, `fields-tir-unknown`) |
 | second time zone | globe, 6, the city's code and its time: `NYC 4:09` (the city: §11) |
 | floors | stairs, 5, `8` |
 | sensor ending (automatic) | sensor, 5, hours left (`5h`) |
@@ -435,7 +435,8 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 - **Automatic**: in the sensor's last 8 h the first field becomes *sensor ending*; with the phone out of reach it
   becomes *no phone*.
 - **Too long for the arc** (> 304 px): drop the least important field until it fits (sensor / no phone 3 > treatment 2
-  > others 1). A meal next to steps drops steps (`fields-meal`, `dial-*`).
+  > others 1). A meal next to steps drops steps (`fields-meal-steps`); time in range (the default 1st) is short enough
+  to stay beside a meal.
 - Hidden in always-on.
 
 ### 6.11 Seconds sweep
@@ -546,7 +547,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
 | sensor | warmup, almost, ending, ended-sending, ended, none, none-es, ended-es, phone-lost, battery-low | sensor, phone, battery states; Spanish messages beside the stacked battery label |
 | modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
-| fields | default, meal, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, seconds-off | fields and settings, missing values and readings |
+| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, seconds-off | fields and settings, missing values and readings |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
 
@@ -600,11 +601,11 @@ All user settings (the Garmin face's own, set on the watch and in the Connect IQ
 |---|---|---|
 | Dial (`dial`) | grain (`halftone`), black (`black`), map (`map`), contours (`topo`), waterline (`water`), lasers (`laser`), glow (`glow`) | grain |
 | Halo (`halo`) | outline, box, none | outline |
-| Trend (`trendStyle`) | arrow (`arrow`), sparkline (`spark`) | arrow |
+| Trend (`trendStyle`) | arrow (`arrow`), sparkline (`spark`) | sparkline |
 | Seconds sweep (`seconds`) | on, off | on |
 | Green in range (`rangeColour`) | on, off | on |
-| Top field (`topField`) | weather, steps, sunset (`sunset`), body battery (`bodyBattery`), altitude, notifications, time in range (`tir`), second time zone (`tz2`), floors, heart rate (`heart`), none | weather |
-| Bottom fields (`fields`: two keys) | the same list + treatment (`treatment`) | steps, treatment |
+| Top field (`topField`) | weather, steps, sunset (`sunset`), body battery (`bodyBattery`), altitude, notifications, time in range (`tir`), second time zone (`tz2`), floors, heart rate (`heart`), none | steps |
+| Bottom fields (`fields`: two keys) | the same list + treatment (`treatment`) | time in range, treatment |
 | Battery label (`battLabel`) | days, percent, both | days |
 | Private (`privacy`) | on (`private`), off (`open`) | off |
 | Second time zone (`tz2`) | a city, by its code: UTC LON LIS MAD PAR BER ATH CAI IST MOW DXB DEL BKK SIN HKG SHA TYO SEL SYD AKL HNL ANC LAX DEN MEX CHI NYC BOG SCL BUE SAO LOS JNB (its daylight saving follows the place) | NYC |
