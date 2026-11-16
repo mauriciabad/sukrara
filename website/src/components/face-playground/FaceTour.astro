@@ -91,26 +91,29 @@ const fade = aura.parts
 	:global(:root:has(.ft)) {
 		--sl-content-width: 62rem;
 	}
+	/* the dials right under the face, so a click shows on the face while it's still in sight */
 	.ft {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
+		grid-template-areas: 'stage' 'looks' 'explain';
 		gap: 1.5rem;
 		margin-block: 2rem;
+	}
+	.ft-stage {
+		grid-area: stage;
+	}
+	.ft-explain {
+		grid-area: explain;
+	}
+	.ft-looks {
+		grid-area: looks;
 	}
 	@media (min-width: 56rem) {
 		.ft {
 			grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
-			grid-template-areas: 'stage explain' 'looks looks';
+			grid-template-rows: auto 1fr;
+			grid-template-areas: 'stage explain' 'looks explain';
 			align-items: start;
-		}
-		.ft-stage {
-			grid-area: stage;
-		}
-		.ft-explain {
-			grid-area: explain;
-		}
-		.ft-looks {
-			grid-area: looks;
 		}
 	}
 	.ft-stage {
@@ -266,6 +269,17 @@ const fade = aura.parts
 		grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
 		gap: 0.75rem;
 		margin-top: 0.75rem;
+	}
+	/* on a phone, the dials in one row that scrolls sideways, so the face stays in sight */
+	@media (max-width: 55.99rem) {
+		.ft-looks__row {
+			grid-template-columns: none;
+			grid-auto-flow: column;
+			grid-auto-columns: 5.75rem;
+			overflow-x: auto;
+			scroll-snap-type: x proximity;
+			padding-block-end: 0.25rem;
+		}
 	}
 	.ft-look {
 		display: flex;
