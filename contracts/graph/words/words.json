@@ -37,5 +37,10 @@
   },
   "plurals": {
     "badge_time_left": {"en": {"one": "%1$s left", "other": "%1$s left"}, "es": {"one": "queda %1$s", "other": "quedan %1$s"}}
+  },
+  "faces": {
+    "_about": "Words only the watch faces draw (Sukrara Aura, contracts/watchface/aura/SPEC.md §5), with the card words above: the phone's and the Mac's cards don't draw these. apps/garmin/tools/garmin_test.py words checks the face's words (AuraWords.mc) against 'words' and 'faces'.",
+    "card_no_readings_short": {"en": "No readings", "es": "Sin lecturas"},
+    "face_no_phone": {"en": "No phone", "es": "Sin móvil"}
   }
 }

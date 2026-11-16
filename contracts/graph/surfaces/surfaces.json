@@ -555,5 +555,35 @@
         ]
       }
     ]
+  },
+  "garmin": {
+    "about": "The Garmin watch faces: their own renderers (Monkey C), drawn from the spec and reference in contracts/watchface, not from GlucoseCard. A face takes Sukrara's decisions (bands, trend, pill, sensor state) from the phone and applies the freshness steps itself (contracts/graph/freshness), so it is registered like every surface that shows the value. tools/check card-surface: every registered file and test exists, and only the registered files lay out or draw the face (AuraModel / AuraDraw).",
+    "surfaces": [
+      {
+        "id": "garmin-aura",
+        "kind": "face",
+        "entry": "AuraDraw.draw",
+        "parts": [
+          "all"
+        ],
+        "size": "the watch's screen, 390 x 390 (Descent Mk3i 43 mm)",
+        "sizes": [
+          [
+            390,
+            390
+          ]
+        ],
+        "spec": "contracts/watchface/aura/SPEC.md",
+        "files": [
+          "apps/garmin/source/AuraModel.mc",
+          "apps/garmin/source/AuraDraw.mc",
+          "apps/garmin/source/AuraView.mc"
+        ],
+        "tests": [
+          "apps/garmin/tools/garmin_test.py",
+          "apps/garmin/source-cases/AuraCases.mc"
+        ]
+      }
+    ]
   }
 }

@@ -8,8 +8,11 @@ import Toybox.WatchUi;
 
 // Draws an AuraModel (SPEC.md §4 z-order). Every position comes from the model; this file only paints.
 module AuraDraw {
-    var cx as Float = 195.0; // the screen's centre on the device, plus the always-on shift
-    var cy as Float = 195.0;
+    // the screen's centre for shapes (a shape at device x covers x - 0.5 .. x + 0.5: the reference's 0 is the edge between
+    // pixels 194 and 195), plus the always-on shift; bitmaps (text, glyphs, icons) are placed by their pixels' corners,
+    // at cx + 0.5
+    var cx as Float = 194.5;
+    var cy as Float = 194.5;
     var fonts as Dictionary = {};
     var atlases as Dictionary = {};
     var icons as Graphics.BitmapReference or Graphics.BitmapType or Null = null;
@@ -54,16 +57,24 @@ module AuraDraw {
         return Graphics.createColor(a, (col >> 16) & 255, (col >> 8) & 255, col & 255);
     }
 
+    // setFill / setStroke read ARGB (a 24-bit colour is transparent); opaque white, 0xFFFFFFFF, is -1, which is
+    // COLOR_TRANSPARENT, so it is drawn one blue step under (0xFFFFFE, the same on the 16-bit screen)
+    function opaque(col as Number) as Number {
+        var c = 0xFF000000 | col;
+        return c == -1 ? 0xFFFFFFFE : c;
+    }
+
     function fill(dc as Dc, col as Number, alpha as Float) as Void {
-        dc.setFill(alpha >= 1 ? (0xFF000000 | col) : argb(col, alpha));
+        dc.setFill(alpha >= 1 ? opaque(col) : argb(col, alpha));
     }
 
     function stroke(dc as Dc, col as Number, alpha as Float, w as Numeric) as Void {
-        dc.setStroke(alpha >= 1 ? (0xFF000000 | col) : argb(col, alpha));
+        dc.setStroke(alpha >= 1 ? opaque(col) : argb(col, alpha));
         dc.setPenWidth(w);
     }
 
-    // a text with its baseline at y (screen-centred coordinates)
+    // a text with its baseline at y (screen-centred coordinates); centred texts are placed by their own advance,
+    // rounded to the nearest pixel (the system's centring truncates); the system draws bitmap fonts 1 px under the line
     function text(dc as Dc, key as String, x as Numeric, baseline as Numeric, s as String, col as Number, just as Number) as Void {
         var f = font(key);
         var fr = f[0];
@@ -71,7 +82,11 @@ module AuraDraw {
             fr = fr.get();
         }
         dc.setColor(col, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(cx + x, cy + baseline - (f[1] as Number), fr, s, just);
+        var left = cx + 0.5 + x;
+        if (just == Graphics.TEXT_JUSTIFY_CENTER) {
+            left -= dc.getTextWidthInPixels(s, fr) / 2.0;
+        }
+        dc.drawText(Math.floor(left + 0.5), cy + 0.5 + baseline - (f[1] as Number) - 1, fr, s, Graphics.TEXT_JUSTIFY_LEFT);
     }
 
     // a line with round caps
@@ -108,7 +123,7 @@ module AuraDraw {
         var t = new Graphics.AffineTransform();
         t.rotate(rot * Math.PI / 180);
         t.translate(-box / 2.0 - (b[0] as Number), -box / 2.0 - (b[1] as Number));
-        dc.drawBitmap2(cx + x, cy + y, iconSheet(), {
+        dc.drawBitmap2(cx + 0.5 + x, cy + 0.5 + y, iconSheet(), {
             :bitmapX => b[0], :bitmapY => b[1], :bitmapWidth => box, :bitmapHeight => box,
             :tintColor => col, :filterMode => Graphics.FILTER_MODE_BILINEAR, :transform => t,
         });
@@ -168,7 +183,7 @@ module AuraDraw {
                 var tr = new Graphics.AffineTransform();
                 tr.rotate(phi);
                 tr.translate((xo - gx).toFloat(), (yo - base - gy).toFloat());
-                dc.drawBitmap2(cx + ox, cy + oy, a[0], {
+                dc.drawBitmap2(cx + 0.5 + ox, cy + 0.5 + oy, a[0], {
                     :bitmapX => gx, :bitmapY => gy, :bitmapWidth => gw, :bitmapHeight => gh,
                     :tintColor => col, :filterMode => Graphics.FILTER_MODE_BILINEAR, :transform => tr,
                 });
@@ -181,8 +196,8 @@ module AuraDraw {
     // ---------------------------------------------------------------------------------------------------------------
 
     function draw(dc as Dc, m as AuraModel, shiftX as Numeric, shiftY as Numeric) as Void {
-        cx = 195.0 + shiftX;
-        cy = 195.0 + shiftY;
+        cx = 194.5 + shiftX;
+        cy = 194.5 + shiftY;
         dc.setAntiAlias(true);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();

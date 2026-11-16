@@ -8,7 +8,7 @@ import Toybox.Time.Gregorian;
 
 // The reference's maths: rounding, the risk scale, points on the circle, label widths and the clock (aura.js).
 module AuraMath {
-    const NB = " ";
+    const NB = " ";
 
     // round to 0.1 px the way the reference does (JS Math.round: halves up)
     function r1(x as Numeric) as Float {

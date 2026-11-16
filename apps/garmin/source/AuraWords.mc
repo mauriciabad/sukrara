@@ -44,7 +44,7 @@ module AuraWords {
     function almost(lang as String) as String { return es(lang) ? "Casi listo" : "Almost ready"; } // card_almost_ready
     function noSince(lang as String) as String { return es(lang) ? "Sin lecturas desde" : "No reading since"; } // card_no_reading_since
     function noYet(lang as String) as String { return es(lang) ? "Sin lecturas" : "No readings"; } // card_no_readings_short
-    function noPhone(lang as String) as String { return es(lang) ? "Sin móvil" : "No phone"; } // the face's own
+    function noPhone(lang as String) as String { return es(lang) ? "Sin móvil" : "No phone"; } // face_no_phone
     function now(lang as String) as String { return es(lang) ? "ahora" : "now"; } // duration_now
 
     // card_ready_at
@@ -97,19 +97,19 @@ module AuraWords {
     }
 
     // a treatment's amount: 4.5u / 4,5u, 45g
-    function amount(lang as String, kind as String, a as Numeric) as String {
+    function amount(lang as String, kind as String, a as Numeric or String) as String {
         var s;
         if (a instanceof Float || a instanceof Double) {
             var f = a.toFloat();
             s = f == Math.floor(f) ? f.toNumber().toString() : f.format("%.1f");
-            if (es(lang)) {
-                var i = s.find(".");
-                if (i != null) {
-                    s = s.substring(0, i) + "," + s.substring(i + 1, s.length());
-                }
-            }
         } else {
             s = a.toString();
+        }
+        if (es(lang)) {
+            var i = s.find(".");
+            if (i != null) {
+                s = s.substring(0, i) + "," + s.substring(i + 1, s.length());
+            }
         }
         return s + (kind.equals("carbs") ? "g" : "u");
     }

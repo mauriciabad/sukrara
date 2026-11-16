@@ -687,7 +687,7 @@ class AuraModel {
                 }
                 r.add(["i", k, kc]);
                 r.add(["g", 4]);
-                r.add(["s", AuraWords.amount(lang, k, it[1] as Numeric), kc, 600]);
+                r.add(["s", AuraWords.amount(lang, k, it[1] as Numeric or String), kc, 600]);
             }
             r.add(["g", 9]);
             r.add(["s", AuraWords.dur(lang, inp.lastAgo), soft, 500]);

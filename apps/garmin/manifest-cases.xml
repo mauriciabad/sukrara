@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The debug case loader (cases.jungle): the face showing every case of contracts/watchface/aura/cases.json in turn.
+     Its own app id, so it never replaces the face. -->
+<iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <iq:application id="5b0d0e57-7c1e-4c39-9a0e-2a2f3c4f6a11" type="watchface" name="@Strings.AppName" entry="AuraCasesApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.1.0">
+        <iq:products>
+            <iq:product id="descentmk343mm"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="SensorHistory"/>
+            <iq:uses-permission id="UserProfile"/>
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>eng</iq:language>
+            <iq:language>spa</iq:language>
+        </iq:languages>
+        <iq:barrels/>
+    </iq:application>
+</iq:manifest>

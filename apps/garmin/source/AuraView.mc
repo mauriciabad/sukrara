@@ -23,7 +23,7 @@ class AuraView extends WatchUi.WatchFace {
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
-        var m = new AuraModel(AuraWatch.input());
+        var m = new AuraModel(input());
         var sx = 0;
         var sy = 0;
         if (m.aod) {
@@ -34,6 +34,11 @@ class AuraView extends WatchUi.WatchFace {
             sy = s[1];
         }
         AuraDraw.draw(dc, m, sx, sy);
+    }
+
+    // the input model (the debug case loader gives a case's instead)
+    function input() as AuraInput {
+        return AuraWatch.input();
     }
 
     // high power (a wrist raise): 1 Hz for ~10 s
