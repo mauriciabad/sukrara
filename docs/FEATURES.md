@@ -2075,10 +2075,22 @@ ages by itself from its own time with the phone away.
   very low and LO white on a red block; old (5–20 min) struck through and grey with a hollow ring for the arrow; from
   20 min no number at all: "No reading since" and the time (the weekday from 12 h or another day, the date after 6
   days). LO / HI never as a figure, no arrow (a ring).
-- **Level rail** (1:30–4:30, the bezel's screws): Kovatchev's risk scale with the person's limits as notches, the band,
-  the out-of-range zone, a bead at the value (hollow when old, none without a value) with the last 30 minutes as a
-  fading trail; LO / HI pinned at the ends with a chevron. **Battery rail** opposite: 10 segments (amber under 2 days,
-  red under 1) and its label (days, percent or both).
+- **The two sides** (settings *Left side* / *Right side*, the bezel's screws, 7:30–10:30 and 1:30–4:30): each shows
+  the watch battery, the sensor's days, the glucose rail or nothing; by default the battery on the left and the glucose
+  rail on the right. The same on both sides is allowed (each side is its own setting, as the bottom fields).
+  - **Glucose rail**: Kovatchev's risk scale with the person's limits as notches, the band, the out-of-range zone, a
+    bead at the value (hollow when old, none without a value) with the last 30 minutes as a fading trail; LO / HI
+    pinned at the ends with a chevron. On the left it is the right one mirrored (up is still higher); the aura's focus
+    follows the bead to its side (the centre with a rail on both sides).
+  - **Battery**: 10 segments filling from the bottom (amber under 2 days, red under 1) and its label under the time
+    (days, percent or both; right-aligned on the right).
+  - **Sensor days**: a segment per day of the sensor's life, from Sukrara's start and end (15 for a Libre 3 Plus, 11
+    for a G7 with its grace), lit for the days left; label `9d`, hours on the last day (`14h`); amber in Sukrara's
+    sensor countdown. In the warm-up it is a progress bar (the minutes to ready); ended: unlit, no label (the pill
+    says it); no dates from the phone: `--`; not monitoring: none.
+  - With a battery and a sensor label both on screen, each gets its mark (a battery icon, the sensor disc) on its
+    rail's side, so the two "9d" can't be confused; alone, a label has no mark.
+  - The labels never meet the value or a message: the sizes step down until both sides clear the row.
 - **Pill** (Sukrara's status, only with a current value): *Carbs* / *Insulin* when needed (filled); a quiet after a
   treatment or a muted side as the side's tonal pill with the time left in Sukrara's compact format (`1h 20m`, `6h`;
   *Muted* with no end); Mute all in range as a grey pill; *Ended* (the sensor ended but still sends) and *Sensor*
@@ -2088,22 +2100,25 @@ ages by itself from its own time with the phone away.
 - **Fields**: top (weather, steps, sunset, Body Battery, altitude, notifications, time in range, second time zone,
   floors, heart rate, none) and two along the bottom (the same + last treatment: `▼ 4.5u ● 45g 35m`; by default time in
   range and the last treatment). Automatic: the
-  sensor's last 8 h replace the first bottom field with its hours left; the phone out of reach with "No phone". Too
+  sensor's countdown (Sukrara's, the last 8 h by default) replaces the first bottom field with its hours left, unless a
+  sensor rail is on a side (it already counts down, in amber); the phone out of reach with "No phone" (which wins in
+  the countdown too). Too
   long for the arc: the least important field goes. A value the watch doesn't have shows `--` (time in range before a
   quarter of the day, or after the phone's midnight); no treatment in 24 h leaves that field out.
 - **Modes**: *always-on* (the watch's display setting): outlined time, value, pill and messages in a dimmer palette,
-  rail without ticks, trail or zone, no fields, no battery; very low's red block dimmed so no state lights more than
+  glucose rail (on its side or both) without ticks, trail or zone, no fields, no battery or sensor rail; very low's red block dimmed so no state lights more than
   about 7 % of the screen (Garmin blanks a face over 10 %); the whole face moves up to 2 px a minute against burn-in.
   A wrist raise or a button always wakes it to the full face, whatever the display mode said before; the face
   reports its screen events and the mode it drew to the phone (docs/43 "The screen", logcat only). *Night* (while
   the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night palette,
   everything else as awake.
-- **Private** (setting): the value row stays empty and the bead alone says where you are; touch and hold the face
+- **Private** (setting): the value row stays empty and the bead alone says where you are (with no glucose rail on
+  either side, the pill, the sweep and the dial's colour); touch and hold the face
   shows the value for 5 s with a shrinking neon line under it. A needed pill (*Carbs* / *Insulin*) shows the value
   anyway; the reading's time, quiet / mute pills and messages always show.
 - **Settings**: on the watch (hold MENU on the face › Watch face › Customize) and in the Connect IQ app (once the face
   is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field, Bottom field 1 and
-  2, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
+  2, Left side, Right side, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
 - Words in English and Spanish (the watch's language). Readings come from the phone (below).
 - **The aura** (setting *Dial*, awake only, not at night or always-on): the dial gathers at your level, spreads the
   further out of range you are, fades heading back to the ideal and strengthens heading away: *grain* (dots, the
@@ -2176,7 +2191,10 @@ ages by itself from its own time with the phone away.
 **States and exits**: on the watch: *value* (fresh → late → old → no reading since → long gap) → leaves by itself
 with the next reading; nothing to do on the watch. *Warm-up* / *Sensor ended* / *No readings* (nothing paired) → leave when Sukrara's
 sensor state changes on the phone. *Pill* → counts down and leaves at the quiet's or mute's end; mute and unmute are on
-the phone (Alerts › States and exits). *No phone* field → leaves when the phone is back in reach. *Private* → on and
+the phone (Alerts › States and exits). *No phone* field → leaves when the phone is back in reach. *Side elements* → Customize › Left side / Right side
+(battery, sensor days, glucose rail, nothing); the sensor rail's states (days left → countdown → ended; warm-up as a
+progress bar; `--` without dates) follow the sensor on the phone, and the automatic *sensor ending* field leaves when a
+sensor rail is chosen (and comes back when it isn't). *Private* → on and
 off in Customize › Private (or the Connect IQ app); *revealed* (touch and hold) → hides by itself after 5 s.
 *Always-on* → the watch's display settings; *night* → the watch's Do Not Disturb or Sleep Mode (hold LIGHT; hold MENU ›
 System › Sleep Mode › Schedule). Any setting → Customize (Back leaves a list without changing it). The face itself → choose another face on the watch (hold MENU ›

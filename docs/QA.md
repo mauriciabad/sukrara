@@ -1083,7 +1083,7 @@ watch; the watch shows the real value: check it against the phone, never photogr
 ## Q28 Garmin watch face (Sukrara Aura)
 
 - [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]`
-      (simulator, ~6 min): numbers 105 of 105, 0 differences; open the worst `diff-core/` images: every red pixel is a
+      (simulator, ~8 min): numbers for every case, 0 differences; open the worst `diff-core/` images: every red pixel is a
       glyph's edge (fonts rasterise differently) or a dial's anti-aliasing / its 16-bit colour, never a moved, missing or
       wrong-coloured element. `core_refs.mjs` makes the dial-less references.
 - [ ] The `dial-*` matrix and `halo-*` in `sim/` beside `docs/img/aura/ref/`: each dial gathers at the bead's height,
@@ -1095,6 +1095,12 @@ watch; the watch shows the real value: check it against the phone, never photogr
 - [ ] The run's "always-on" lines: every `aod-*` case under 10 % luminance (very low and LO the brightest). Simulator ›
       Settings › Display Mode › Always On on the very low and LO cases: no luminance warning.
 - [ ] On the watch, a new reading while awake: the bead, trail and arrow glide (0.9 s); the sweep steps once a second.
+- [ ] The sides (`sides-*`, `sensor-rail-*` in `sim/` beside the references): the glucose rail mirrored on the left (up
+      still higher, the dial's focus on its side), the battery and sensor labels right-aligned on the right, both marks
+      only with both labels, the warm-up bar, `--` without dates; the run's "combinations" line 0 overlapping. On the
+      watch: Customize › Left side / Right side change the face at once; with a sensor rail in the sensor's countdown
+      the bottom field stays the person's own (the rail is amber), and the sensor rail's days match the phone's sensor
+      page.
 - [ ] On the watch (`tools/install.sh watch`, then the owner selects the face): it draws, Customize opens and every
       setting changes the face; Private hides the value and touch and hold shows it for 5 s; Spanish with the watch in
       Spanish.
