@@ -2,8 +2,8 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- A neutral watch as an app icon, for when Garmin Connect isn't installed (normally designsystem's AppIcons loads its
-     own icon). Not Garmin's logo or Garmin Connect's icon: Garmin allows its name, logo and other trademarks only with
+<!-- A neutral watch as an app icon: the Garmin row (Share with apps › Watches), and an xDrip+ server reader that is gone.
+     Not Garmin's delta, logo or Garmin Connect's icon: Garmin allows its name, logo and other trademarks only with
      its written permission (Connect IQ SDK licence; developer.garmin.com/brand-guidelines/connect-iq/: "You cannot use
      any elements of Garmin branding in your icon without express permission"). The glyph (Material Symbols "watch",
      white) on a neutral grey, inside the 66 dp safe zone of the 108 dp adaptive canvas. -->

@@ -53,8 +53,9 @@ enum class Service(
     LibreView(emptyList(), R.drawable.ds_ic_app_libreview),
     Tidepool(emptyList(), R.drawable.ds_ic_app_tidepool),
 
-    // Garmin Connect (where Garmin watches connect); without it a neutral watch: Garmin allows its logo only with permission
-    Garmin(listOf("com.garmin.android.apps.connectmobile"), R.drawable.ds_ic_app_garmin),
+    // Garmin watches: always a neutral watch, not Garmin Connect's icon (the row is about the watches, the owner's
+    // choice) and not Garmin's delta or logo, which Garmin allows only with its written permission
+    Garmin(emptyList(), R.drawable.ds_ic_app_garmin),
 }
 
 /** The test tag of a [ServiceIcon] (tests check which row carries which icon). */
