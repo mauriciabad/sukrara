@@ -73,7 +73,7 @@ module AuraCombos {
         if (m.aod) {
             return null;
         }
-        // the row's left edge (centred: the right edge mirrors it)
+        // the row's edges: a message is centred; the value's row runs from x0 to the sparkline's now (the arrow: centred)
         var left;
         if (m.hasValue) {
             left = m.x0; // the value's left edge (the sparkline's row spans the fits' width, SPEC.md §6.5)
@@ -86,6 +86,7 @@ module AuraCombos {
         } else {
             left = -AuraMath.tw(m.msgT1, 25) / 2;
         }
+        var right = m.hasValue && m.spark ? m.sx + m.SW : -left;
         var ks = [m.sideL, m.sideR];
         for (var i = 0; i < 2; i++) {
             var k = ks[i] as String;
@@ -115,7 +116,7 @@ module AuraCombos {
             var top = y - fs * 0.668;
             var bottom = y + (l2.equals("") ? 0 : fs * 0.668 + 9);
             var clearBelow = bottom <= m.vTop + 0.05;
-            var clearBeside = left >= -166 + w + 8 - 0.05;
+            var clearBeside = i == 0 ? left >= -166 + w + 8 - 0.05 : right <= 166 - w - 8 + 0.05;
             if (!clearBelow && !clearBeside) {
                 return (i == 0 ? "left " : "right ") + k + " label " + l1 + "/" + l2 + " width " + w.format("%.1f") + " bottom " + bottom.format("%.1f")
                     + ", row left " + left.format("%.1f") + " top " + m.vTop.format("%.1f");

@@ -398,10 +398,19 @@ class AuraModel {
         return k.equals("battery") ? battH(one) : sensFs * 0.668;
     }
 
+    // the sparkline row's edges [left, right]: the circle's, each side's label kept 8 px clear wherever it sits (not
+    // always-on, where the labels hide): the value never runs under a label (SPEC.md §6.5)
+    hidden function rowEdges(one as Boolean) as Array<Float> {
+        var xh = AuraMath.min(halfAt(vTop), halfAt(vBase));
+        var wl = aod ? 0.0 : labW(sideL, one);
+        var wr = aod ? 0.0 : labW(sideR, one);
+        return [wl > 0 ? AuraMath.max(-xh, -166 + wl + 8) : -xh, wr > 0 ? AuraMath.min(xh, 166 - wr - 8) : xh];
+    }
+
     // the side's label is in the gap under the time, or beside the row (centred: the right side mirrors the left)
     hidden function okSide(k as String, one as Boolean, left as Float) as Boolean {
         var w = labW(k, one);
-        return aod || w == 0 || tBase + 6 + labH(k, one) <= vTop || left >= -166 + w + 8;
+        return aod || w == 0 || (hasValue && spark) || tBase + 6 + labH(k, one) <= vTop || left >= -166 + w + 8;
     }
 
     function halfAt(y as Float) as Float {
@@ -463,7 +472,9 @@ class AuraModel {
             timeGeom(T);
             valueGeom(V);
             var okT = tFit / 2 <= halfAt(tTop);
-            var okV = !hasValue || (total / 2 <= halfAt(vTop) && total / 2 <= halfAt(vBase));
+            var ed = rowEdges(one);
+            var okV = !hasValue || (spark ? ed[1] - ed[0] >= vW + 114 - 0.000000001
+                : total / 2 <= halfAt(vTop) && total / 2 <= halfAt(vBase));
             var left = hasValue ? -total / 2 : left0;
             if (okT && okV && okSide(sideL, one, left) && okSide(sideR, one, left)) {
                 return true;
@@ -552,11 +563,10 @@ class AuraModel {
         x0 = -total / 2;
         if (spark) {
             // the whole width the fits allow: the value from the left edge, now at the right edge (SPEC.md §6.5)
-            var xr = AuraMath.min(halfAt(vTop), halfAt(vBase));
-            var xl = -xr;
-            if (!aod && tBase + 6 + battH(battOne) > vTop) {
-                xl = AuraMath.max(xl, -166 + battW(battOne) + 8);
-            }
+            // each side's label: the left one moves the value's edge, the right one now, 8 px clear of it
+            var ed = rowEdges(battOne);
+            var xl = ed[0];
+            var xr = ed[1];
             var kt = 100 / Math.ln(7);
             SW = AuraMath.min(xr - (xl + vW + 14), kt * Math.ln(1 + SPAN_MAX / 10)).toFloat();
             spAge = AuraMath.min(SPAN_MAX, 10 * (Math.pow(Math.E, SW / kt) - 1)).toFloat();
@@ -659,9 +669,15 @@ class AuraModel {
             series = (inp.history as Array).slice(0, null);
             series.add(g);
         } else if (inp.rate != null) {
+            // the reference's made-up 3 h (aura.js madeUp(); only the cases come without history: the phone always
+            // sends its slots)
             series = [];
-            for (var k = 12; k >= 0; k--) {
-                series.add(g - inp.rate * 5 * k);
+            var rt = inp.rate as Float;
+            for (var j = 36; j >= 0; j--) {
+                var k = 5.0 * j;
+                var e = 1 - Math.pow(Math.E, -k / 45);
+                var v = g - 40 * rt * (1 - Math.pow(Math.E, -k / 40)) + 24 * e * e * Math.sin(k / 28 + 0.6);
+                series.add(j == 0 ? g : Math.round(AuraMath.clamp(v, 40, 400) * 10) / 10.0);
             }
         } else {
             series = [g];

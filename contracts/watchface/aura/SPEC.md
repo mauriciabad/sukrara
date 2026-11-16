@@ -170,7 +170,7 @@ default is the reference's (every case starts from it):
 | glucose (mg/dL) | `glucose` | 112 | Sukrara · < 40 = LO, > 400 = HI |
 | rate (mg/dL/min), trend present | `rate`, `trend`: true/false | 0.4, true | Sukrara's trend (docs/34) · no rate → no trend |
 | **age** of the reading (min) | `age` | 0.5 | Sukrara's reading time + the watch clock: age = now − reading time, recomputed at every draw, never from when the watch received it |
-| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 36 readings of the 3 hours before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
+| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 36 readings of the 3 hours before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes up 3 h (37 points, `madeUp()`: v(k) = g − 40·rate·(1 − e^(−k/40)) + 24·(1 − e^(−k/45))²·sin(k/28 + 0.6), k minutes ago, within 40–400) for the sparkline, and the trail from the rate (`g − 5·rate·k`) |
 | status | `status`: `auto` (needed when out of range), `quiet`, `muted`, `none`; `left`: minutes, or `"never"` (no end) | auto, 25 | Sukrara ([`contracts/graph/status.json`](../../graph/status.json)) · `quiet` = held after a treatment; `muted` = a side muted (out of range) or Mute all (in range); `none` = no pill: Sukrara says nothing, or a quiet or mute ran out on the watch's clock before the phone said what follows (the face never decides a need itself) |
 | last treatment(s) | `last`: `{items: [{k: rapid/long/carbs, a: amount}], ago: min}`, or `lastKind`, `lastAmount`, `lastAgo` | rapid 2u, 80 min | Sukrara · a meal = insulin + carbs together; `items: []` = none in the last 24 h |
 | sensor | `sensor`: `ok`, `warmup` (+ `warm`: fraction done), `almost`, `ending`, `endedSending`, `ended`, `none` | ok, 0.45 | Sukrara · "ending" = Sukrara's countdown (*Sensor countdown*, default the last 8 h); the ready time is Sukrara's (the reference fakes it from `warm`: ready = now + (1 − warm) · 60 min) |
@@ -222,8 +222,10 @@ Then: top-field baseline `tfBase = y₀ + TF·0.668`; time top `tTop` and baseli
 **Fits** when all hold: `halfAt(y) = √(171² − y²) − 6`;
 - time: tWfit/2 ≤ halfAt(tTop) (tWfit = the time's width with the widest tens-of-minutes digit 0–5 at this hour, §6.3,
   so the size changes only with the hour);
-- value (when there is one, **even while private hides it**): total/2 ≤ halfAt(vTop) and ≤ halfAt(vBase) (total =
-  value + arrow or sparkline, §6.4);
+- value (when there is one, **even while private hides it**): with the arrow, total/2 ≤ halfAt(vTop) and ≤ halfAt(vBase)
+  (total = value + arrow, §6.4); with the sparkline, the row's edges (§6.5: the circle's, each side's label kept 8 px
+  clear) leave at least vW + 14 + 100 (the value and the shortest sparkline), and then the labels need no test of their
+  own;
 - **each side's label** (the battery's §6.9, the sensor rail's §6.9b; the glucose rail has none), unless always-on: its
   bottom `tBase + 6 + labH ≤ vTop` (it sits in the gap above the row), or the row's left edge ≥ `−166 + labW + 8`.
   The row is centred, so its right edge is the left one mirrored and the same test holds for the right label. labW =
@@ -333,12 +335,14 @@ the time ≤ 13 px each side at T 76) and with the hour; its size only with the 
 
 ### 6.5 Sparkline (setting: trend = sparkline, the default)
 Replaces the arrow. **It takes the whole width the fits allow** (the owner: a shorter value leaves room, and the room
-shows more time, never a stretch). The row's edges: right `xr = min(halfAt(vTop), halfAt(vBase))` (§4); left `xl = −xr`,
-or, where the battery label sits beside the row (not always-on, its bottom below vTop), `max(−xr, −166 + battW + 8)`.
+shows more time, never a stretch). The row's edges, with `xh = min(halfAt(vTop), halfAt(vBase))` (§4): left `xl = −xh`,
+or, with a label on the left side (not always-on), `max(−xh, −166 + labW + 8)`; right `xr = xh`, or with a label on the
+right side `min(xh, 166 − labW − 8)` (labW §4, its mark included). **Wherever the label sits**, in the gap under the
+time too: a label 1–2 px above the row would otherwise sit right on the digits (`fields-spark-clear-label`).
 The digits start at `x0 = xl`; the box's right edge, *now*, is at xr whatever the value (it never moves with the
 reading); its width `SW = min(xr − (xl + vW + 14), K·ln 19)` (at least 100: the size sets' fit, §4, asks for
 vW + 14 + 100), so `sx = xr − SW`; total = xr − xl. Top `sy = vBase − V − 6`, height SH = V + 14. Examples: 112 at
-V 60, SW 135.6 (the last 2 h 10 min); 98 or 71, SW 151.3 (3 h); 180, 110.6 (1 h 16 min).
+V 60 beside the battery label, SW 128.4 (the last 1 h 52 min); 98, 149 (2 h 52 min); 71, 151.3 (3 h); 180, 103.4 (1 h 5 min).
 - **Time axis is logarithmic, the same scale at every width**: x(age) = xr − K·ln(1 + age/10), K = 100 / ln 7 (100 px
   = the last hour, as the box was); the newest 10 min take about 36 px. A wider box shows older readings: the box
   reaches back `min(180, 10·(e^(SW/K) − 1))` minutes. **At most 3 hours**: a meal's whole rise and fall and rapid
@@ -566,18 +570,23 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
   grown glyphs would merge into it anyway): the line's box is from Atkinson's ascender 0.73 em over the baseline to its
   descender 0.2 em under it, and the top field's reaches up to its icon (max(0.73·TF, icon/2 + 0.334·TF)):
   - the top field: (−w/2 − 5.5, tfBase − up − 5.5, w + 11, up + 0.2·TF + 11), rx 5.5;
-  - the battery label, each line: (−171.5, baseline − 0.73·fs − 5.5, its width + 11, 0.93·fs + 11), rx 5.5;
+  - the side labels (battery, sensor), each line with its mark: on the left (−171.5 + inset, baseline − 0.73·fs − 5.5,
+    its width + 11, 0.93·fs + 11), on the right mirrored (ending at 171.5 − inset), rx 5.5 (inset 24 for a battery's
+    second line under a mark, else 0);
   - the date: a band along its arc, centre r 169.5, 30 wide, over its width (each glyph + its letter-spacing 2) + 5.5 at
     each end;
   - the bottom fields: per piece a band along the arc over its length + 5.5 at each end: texts centre r 172 − 6.4,
     33.3 wide; icons centre r 164, 29.2 wide.
 
-  And rectangles: the sparkline box with its fade bands (sx − 8, sy − 20, 116, SH + 40, rx 8), the chip row with the reading time and the
-  pill (rx0 − 8, chipC − 23, its width + 16, 46, rx 22) and a message (below, rx 14). In the reference these shapes are
-  `arcs.halo` (not compared: the port draws them from the same rule).
+  And rectangles: the sparkline's box grown 8 px (sx − 8, sy − 8, SW + 16, SH + 16, rx 8), not its fade bands: what runs
+  into them (the line, the ray, the end dot) is cut by its own shape grown 6.5 px (the line stroked 18.4, the ray 16.4,
+  the end dot r 14; `halo-spark`); the chip row with the reading time and the pill (rx0 − 8, chipC − 23, its width + 16,
+  46, rx 22) and a message (below, rx 14); the no-trend ring a circle r 0.295·box + 6.5 (`halo-ring`). In the
+  reference the small texts' shapes are `arcs.halo` (not compared: the port draws them from the same rule).
 - **Box**: rounded rectangles: the time (t0 − 10, tBase − T − 10, tW + 20, T + 20, rx 16); the value (x0 − 12,
-  vBase − V − 12, total + 24, V + 24, rx 16) or the message's box; the chip row as above (rx 22); the top field
-  (−w/2 − 8, tfBase − TF·0.668 − 8, w + 16, TF·0.668 + 16, rx 12).
+  vBase − V − 12, total + 24, V + 24, rx 16) or the message's box; the sparkline's box and its line, ray and end dot as
+  in outline (`halo-box-spark`); the chip row as above (rx 22); the top field (−w/2 − 8, tfBase − TF·0.668 − 8,
+  w + 16, TF·0.668 + 16, rx 12).
 - **Message boxes** (x, y, w, h): warm-up (mx − 10, vTop − 6, tot + 20, chipC + 14 − vTop); sensor ended (mx − 10,
   vTop − 6, tot + 20, 44); not monitoring (−w/2 − 10, vTop − 8, w + 20, 36); no readings (−120, vTop − 8, 240,
   16.7 + 12 + cap + 16).

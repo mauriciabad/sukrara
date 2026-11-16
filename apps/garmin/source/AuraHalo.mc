@@ -39,8 +39,37 @@ class AuraHalo {
         c = [AuraMath.r1(m.rx0 - 8), AuraMath.r1(m.chipC - 23), chip ? AuraMath.r1(m.ageW + gapA + m.pillW + 16) : 0, chip ? 46 : 0];
         f = [AuraMath.r1(-m.topWidth() / 2 - 8), AuraMath.r1(m.tfBase - m.TF * 0.668 - 8), m.topOn ? AuraMath.r1(m.topW + 16) : 0,
             m.topOn ? AuraMath.r1(m.TF * 0.668 + 16) : 0];
-        s = [AuraMath.r1(m.sx - 8), AuraMath.r1(m.sy - 20), m.valueOn && m.spark ? AuraMath.r1(m.SW + 16) : 0, AuraMath.r1(m.SH + 40)]; // with the fade bands (§6.5)
+        // the sparkline's box grown 8 px, not its fade bands: what runs into them is cut by its own shape (sparkCut)
+        s = [AuraMath.r1(m.sx - 8), AuraMath.r1(m.sy - 8), m.valueOn && m.spark ? AuraMath.r1(m.SW + 16) : 0, AuraMath.r1(m.SH + 16)];
         mb = [AuraMath.r1(mb[0]), AuraMath.r1(mb[1]), m.msgKind != null ? AuraMath.r1(mb[2]) : 0, AuraMath.r1(mb[3])];
+    }
+
+    // the sparkline's line, ray and end dot grown 6.5 px (they run into the fade bands outside the box's cut)
+    function sparkCut(dc as Dc, m as AuraModel) as Void {
+        if (!m.valueOn || !m.spark) {
+            return;
+        }
+        var ox = AuraDraw.cx;
+        var oy = AuraDraw.cy;
+        dc.setStroke(0xFF000000);
+        dc.setPenWidth(18);
+        for (var r = 0; r < m.spPts.size(); r++) {
+            var run = m.spPts[r] as Array;
+            for (var i = 0; i < run.size(); i++) {
+                var a = run[i] as Array;
+                dc.fillCircle(ox + a[0], oy + a[1], 9.2);
+                if (i > 0) {
+                    var b = run[i - 1] as Array;
+                    dc.drawLine(ox + b[0], oy + b[1], ox + a[0], oy + a[1]);
+                }
+            }
+        }
+        if (m.trendOn) {
+            dc.setPenWidth(16);
+            dc.drawLine(ox + m.spEnd[0], oy + m.spEnd[1], ox + m.spRay[0], oy + m.spRay[1]);
+            dc.fillCircle(ox + m.spRay[0], oy + m.spRay[1], 8.2);
+        }
+        dc.fillCircle(ox + m.spEnd[0], oy + m.spEnd[1], 14);
     }
 
     // a message's box (aura.js msgBox)
@@ -85,6 +114,8 @@ class AuraHalo {
             rect(dc, v, 16);
             rect(dc, c, 22);
             rect(dc, f, 12);
+            rect(dc, s, 8);
+            sparkCut(dc, m);
             return;
         }
         var black = 0x000000;
@@ -122,6 +153,11 @@ class AuraHalo {
         }
         dc.setFill(0xFF000000);
         rect(dc, s, 8);
+        sparkCut(dc, m);
+        if (m.valueOn && m.ringD) {
+            // the no-trend ring: a circle 6.5 px past its stroke
+            dc.fillCircle(AuraDraw.cx + m.ax, AuraDraw.cy + m.ay, 0.295 * m.box + 6.5);
+        }
         rect(dc, c, 22);
         rect(dc, mb, 14);
         // the smaller texts: their line (Atkinson's ascender 0.73 em above the baseline, descender 0.2 em under it)

@@ -1264,6 +1264,18 @@
    }
   },
   {
+   "id": "fields-spark-clear-label",
+   "group": "fields",
+   "title": "The value clear of the battery label",
+   "expect": "With a pill the battery label sits in the gap under the time, just above the row: the value still starts 8 px right of it (it never runs under a label), and the sparkline takes the rest of the width.",
+   "cfg": {
+    "time": "9:59:36",
+    "glucose": 180,
+    "rate": -0.8,
+    "status": "muted"
+   }
+  },
+  {
    "id": "sides-mirrored",
    "group": "sides",
    "title": "Mirrored",
@@ -2155,6 +2167,71 @@
     "glucose": 150,
     "rate": 1.2,
     "halo": "none"
+   }
+  },
+  {
+   "id": "halo-spark",
+   "group": "halo",
+   "title": "Halo around the sparkline",
+   "expect": "Outline: the dial stops 8 px around the sparkline's box and around its line, ray and end dot where they run outside it (the fade bands), never a bigger dark rectangle.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 260,
+    "rate": 3.4,
+    "spark": [
+     80,
+     88,
+     98,
+     110,
+     124,
+     140,
+     157,
+     174,
+     192,
+     210,
+     228,
+     245,
+     260
+    ],
+    "dial": "halftone"
+   }
+  },
+  {
+   "id": "halo-box-spark",
+   "group": "halo",
+   "title": "Box halo with the sparkline",
+   "expect": "Box: the value's rectangle, the sparkline's box grown 8 px and its line where it overflows; no dial line crosses the line.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 260,
+    "rate": 3.4,
+    "spark": [
+     80,
+     88,
+     98,
+     110,
+     124,
+     140,
+     157,
+     174,
+     192,
+     210,
+     228,
+     245,
+     260
+    ],
+    "halo": "box"
+   }
+  },
+  {
+   "id": "halo-ring",
+   "group": "halo",
+   "title": "Halo around the trend ring",
+   "expect": "The no-trend ring (HI, arrow style) is cut out of the dial like the arrow.",
+   "cfg": {
+    "glucose": 401,
+    "trendStyle": "arrow",
+    "status": "none"
    }
   }
  ],

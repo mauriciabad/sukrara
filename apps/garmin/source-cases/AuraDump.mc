@@ -188,6 +188,9 @@ module AuraDump {
             out("halo." + names[i] + "w", b[2]);
             out("halo." + names[i] + "h", b[3]);
         }
+        out("halo.spD", disp(m.valueOn && m.spark));
+        out("halo.ringD", disp(m.valueOn && m.ringD));
+        out("halo.ringR", AuraMath.r1(0.295 * m.box + 6.5));
     }
 
     function dump(id as String, m as AuraModel) as Void {
