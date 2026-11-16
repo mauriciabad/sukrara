@@ -1,6 +1,10 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-# The face (release and debug builds). The debug case loader adds cases.jungle (apps/garmin/README.md).
+# The face (release and debug builds): only source/ and resources/ (the default would take every folder, the debug
+# case loader and its generated files too). The case loader is cases.jungle (apps/garmin/README.md).
 project.manifest = manifest.xml
 project.typecheck = 1
+base.sourcePath = source
+base.resourcePath = resources
+base.lang.spa = resources-spa

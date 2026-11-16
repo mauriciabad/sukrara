@@ -7,3 +7,4 @@ project.manifest = manifest-cases.xml
 base.sourcePath = source;source-cases;build/cases/source
 base.resourcePath = resources;build/cases/resources
 project.typecheck = 1
+base.lang.spa = resources-spa

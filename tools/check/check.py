@@ -457,8 +457,11 @@ def check_debug(ch, rep):
                 if "(:debug)" not in m.group(1):
                     rep.add("FAIL", "debug", "%s: %s without (:debug): everything in apps/garmin/source-cases/ is debug-only,\n"
                             "so a release build strips it even if a jungle ever names the folder." % (p, m.group(2)))
-        elif p == GARMIN + "monkey.jungle" and re.search(r"source-cases|build/cases", ch.blob(p) or ""):
-            rep.add("FAIL", "debug", "%s builds the debug case loader: the release jungle names only source/ and resources/." % p)
+        elif p == GARMIN + "monkey.jungle":
+            text = ch.blob(p) or ""
+            if re.search(r"source-cases|build/cases", text) or not re.search(r"(?m)^base\.sourcePath = source$", text):
+                rep.add("FAIL", "debug", "%s must build source/ only ('base.sourcePath = source': the default takes every\n"
+                        "folder, the debug case loader's source-cases/ and build/ too)." % p)
 
 
 # The docs that name debug commands (#111: they listed `cmd sensorEnd`, `--es stage`, … long after the code dropped them).
