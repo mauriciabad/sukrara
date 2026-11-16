@@ -105,7 +105,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Sukrara Aura, a Garmin watch face (Descent Mk3i 43 mm): time, glucose with its trend arrow or the last hour, a
   level rail and the battery on the bezel's screws, Sukrara's pill (eat, take insulin, muted), the reading's age, your
   fields (weather, steps, last treatment, a second time zone…), always-on and night looks, and a private mode that shows
-  the value only while you hold the screen. In English and Spanish.
+  the value only while you hold the screen. Its dial is the aura of your glucose (grain, contours, waterline, lasers,
+  glow or a map): it gathers at your level and spreads the further out of range you are, with a seconds sweep at the
+  rim. In English and Spanish.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
 - [Planned]: Android Auto, Home Assistant, Pebble...

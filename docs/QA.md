@@ -1073,12 +1073,17 @@ watch; the watch shows the real value: check it against the phone, never photogr
 
 - [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]`
       (simulator, ~6 min): numbers 105 of 105, 0 differences; open the worst `diff-core/` images: every red pixel is a
-      glyph's edge (fonts rasterise differently), never a moved, missing or wrong-coloured element. `core_refs.mjs`
-      makes the dial-less references; the dials, halo and sweep differ until they're built.
+      glyph's edge (fonts rasterise differently) or a dial's anti-aliasing / its 16-bit colour, never a moved, missing or
+      wrong-coloured element. `core_refs.mjs` makes the dial-less references.
+- [ ] The `dial-*` matrix and `halo-*` in `sim/` beside `docs/img/aura/ref/`: each dial gathers at the bead's height,
+      spreads with how far out of range, grey and dashed when old; no dial line touches a digit (never a strike-through)
+      with the halo on outline or box.
 - [ ] Look at `sim/` for the safety states side by side with `docs/img/aura/ref/`: old (struck, grey, hollow bead, no
       arrow), no reading since (no figure anywhere), LO / HI (no number, a ring), very low (white on red), warm-up,
       sensor ended, nothing paired. The time is readable in every one, always-on and night included.
-- [ ] Simulator › Settings › Display Mode › Always On on the very low and LO cases: no luminance warning.
+- [ ] The run's "always-on" lines: every `aod-*` case under 10 % luminance (very low and LO the brightest). Simulator ›
+      Settings › Display Mode › Always On on the very low and LO cases: no luminance warning.
+- [ ] On the watch, a new reading while awake: the bead, trail and arrow glide (0.9 s); the sweep steps once a second.
 - [ ] On the watch (`tools/install.sh watch`, then the owner selects the face): it draws, Customize opens and every
       setting changes the face; Private hides the value and touch and hold shows it for 5 s; Spanish with the watch in
       Spanish.

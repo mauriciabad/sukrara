@@ -98,4 +98,26 @@ module AuraMath {
         }
         return hh.toString() + ":" + m.format("%02d");
     }
+
+    // the glide's easing (SPEC.md §7): cubic-bezier(0.25, 0.9, 0.3, 1.1), a slight overshoot; t in 0..1
+    function ease(t as Float) as Float {
+        // solve x(s) = t by bisection (x is monotonic), then y(s)
+        var lo = 0.0;
+        var hi = 1.0;
+        var s = t;
+        for (var i = 0; i < 14; i++) {
+            s = (lo + hi) / 2;
+            if (bez(s, 0.25, 0.3) < t) {
+                lo = s;
+            } else {
+                hi = s;
+            }
+        }
+        return bez(s, 0.9, 1.1);
+    }
+
+    function bez(s as Float, p1 as Float, p2 as Float) as Float {
+        var u = 1 - s;
+        return 3 * u * u * s * p1 + 3 * u * s * s * p2 + s * s * s;
+    }
 }

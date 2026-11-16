@@ -40,9 +40,9 @@ esac
 if [ "$MODE" = export ]; then
   # the store package: every product of the manifest, no -d
   # shellcheck disable=SC2086
-  "$CIQ_SDK/bin/monkeyc" -f "$JUNGLE" -o "$OUT" -y "$KEY" -w $FLAGS
+  "$CIQ_SDK/bin/monkeyc" -f "$JUNGLE" -o "$OUT" -y "$KEY" -w -O 2z $FLAGS
 else
   # shellcheck disable=SC2086
-  "$CIQ_SDK/bin/monkeyc" -d "$DEVICE" -f "$JUNGLE" -o "$OUT" -y "$KEY" -w $FLAGS
+  "$CIQ_SDK/bin/monkeyc" -d "$DEVICE" -f "$JUNGLE" -o "$OUT" -y "$KEY" -w -O 2z $FLAGS
 fi
 echo "$HERE/$OUT"

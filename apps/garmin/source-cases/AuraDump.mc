@@ -77,6 +77,77 @@ module AuraDump {
         out(path + ".disp", "inline");
     }
 
+    // a long path as the reference's summary ("N subpaths"), the lasers' as the path
+    function paths(n as Number) as String {
+        return n == 0 ? "M0 0" : n + " subpaths";
+    }
+
+    function stroke(kind as String, c as Number) as String {
+        return kind.equals("grad") ? "url" : kind.equals("col") ? col(c) : "none";
+    }
+
+    // the lasers' path: the bright ones (d1, d3) or the others (d2)
+    function laserPath(d as AuraDial, bright as Boolean) as String {
+        var p = "";
+        for (var i = 0; i < d.lasers.size(); i++) {
+            var l = d.lasers[i] as Array;
+            if ((l[2] as Boolean) == bright) {
+                p += "M-200 " + (l[0] as Float).format("%.1f") + "L200 " + (l[1] as Float).format("%.1f");
+            }
+        }
+        return p.equals("") ? "M0 0" : p;
+    }
+
+    // the dial (aura.js "the dial"; AuraDial)
+    function dial(m as AuraModel) as Void {
+        var d = new AuraDial(m);
+        var lasers = d.kind.equals("lasers") && m.awake;
+        out("dial.d1", lasers ? laserPath(d, true) : paths(d.n1));
+        out("dial.f1", d.f1 == null ? "none" : col(d.f1));
+        out("dial.s1", stroke(d.s1, d.stroke1));
+        out("dial.w1", d.w1);
+        out("dial.o1", d.o1);
+        out("dial.d1D", disp(d.d1D));
+        out("dial.d2", lasers ? laserPath(d, false) : paths(d.n2));
+        out("dial.s2", stroke(d.s2, d.stroke1));
+        out("dial.w2", d.w2);
+        out("dial.o2", d.o2);
+        out("dial.d2D", disp(d.d2D));
+        out("dial.d3", lasers ? laserPath(d, true) : "M0 0");
+        out("dial.s3", stroke(d.s3, 0));
+        out("dial.w3", d.w3);
+        out("dial.o3", d.o3);
+        out("dial.d3D", disp(d.d3D));
+        out("dial.wy1", d.wy1);
+        out("dial.wy2", d.wy2);
+        out("dial.dash", d.dashed ? "2 6" : "none");
+        out("dial.glowD", disp(d.glowD));
+        out("dial.gx", d.gx);
+        out("dial.gy", d.gy);
+        out("dial.gr", d.gr);
+        out("dial.col", col(d.col));
+        out("dial.go", d.go);
+        out("dial.go2", d.go2);
+        out("dial.go3", d.go3);
+        out("dial.go4", d.go4);
+    }
+
+    // the halo (aura.js "the halo"; AuraHalo)
+    function halo(m as AuraModel) as Void {
+        var h = new AuraHalo(m);
+        out("halo.boxD", disp(h.mode.equals("box")));
+        out("halo.outD", disp(h.mode.equals("outline")));
+        var names = ["t", "v", "c", "f", "s", "m"];
+        var boxes = [h.t, h.v, h.c, h.f, h.s, h.mb];
+        for (var i = 0; i < 6; i++) {
+            var b = boxes[i] as Array;
+            out("halo." + names[i] + "x", b[0]);
+            out("halo." + names[i] + "y", b[1]);
+            out("halo." + names[i] + "w", b[2]);
+            out("halo." + names[i] + "h", b[3]);
+        }
+    }
+
     function dump(id as String, m as AuraModel) as Void {
         cid = id;
         var inp = m.inp;
@@ -105,6 +176,8 @@ module AuraDump {
         out("radar.disp", disp(m.sweepOn));
         out("radar.col", col(m.sweepCol));
         out("radar.deg", m.sweepDeg);
+        dial(m);
+        halo(m);
         // the palette
         var ks = m.pal.keys();
         for (var i = 0; i < ks.size(); i++) {

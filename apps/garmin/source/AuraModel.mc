@@ -76,6 +76,7 @@ class AuraModel {
     var ax as Float = 0.0;
     var ay as Float = 0.0;
     var deg as Float = 0.0;
+    var drawDeg as Float = 0.0; // the angle the arrow is drawn at (deg, or on its way there: the glide)
     var arrowPts as Array = [] as Array; // polygons (each [[x, y], ...]) already rotated and placed
     var arrowD as Boolean = false;
     var ringD as Boolean = false;
@@ -119,6 +120,7 @@ class AuraModel {
     var railOn as Boolean = false;
     var beadOn as Boolean = false;
     var beadA as Float = 0.0;
+    var beadDrawA as Float = 0.0; // the angle the bead is drawn at (beadA, or on its way there: the glide)
     var zone as Array? = null; // [from, to] degrees
     var zoneOn as Boolean = false;
     var trail as Array = [] as Array; // [deg, r, opacity] per drawn point
@@ -430,6 +432,22 @@ class AuraModel {
         }
         var r = inp.rate != null ? inp.rate : 0.0;
         deg = AuraMath.r1(-AuraMath.clamp(r / 3, -1, 1) * 90);
+        arrow(deg);
+        arrowD = valueOn && !spark && trendOn;
+        ringD = !spark && !trendOn;
+        ringR = AuraMath.r1(0.24 * box);
+        ringW = AuraMath.r1(0.11 * box);
+        var blkR = spark ? x0 + vW : x0 + total;
+        blk = [AuraMath.r1(x0 - 12), AuraMath.r1(vBase - V - 12), AuraMath.r1(blkR - x0 + 24), V + 24];
+        strike = [AuraMath.r1(x0 - 6), AuraMath.r1(x0 + vW + 6), AuraMath.r1(vBase - V * 0.48), AuraMath.r1(0.075 * vFs)];
+        var len = AuraMath.clamp(inp.reveal, 0, 1) * vW;
+        reveal = [AuraMath.r1(x0 + vW / 2 - len / 2), AuraMath.r1(x0 + vW / 2 + len / 2), AuraMath.r1(vBase + 13)];
+        beadCol = out ? c(ck) : inp.rangeColour ? c(bk) : c("now");
+    }
+
+    // the arrow's polygons turned to d degrees and placed (deg, or an angle of the glide on a new reading, SPEC.md §7)
+    function arrow(d as Numeric) as Void {
+        drawDeg = d.toFloat();
         var s = box * 1.05;
         var polys = [
             [[-0.42, -0.07], [0.25, -0.07], [0.25, 0.07], [-0.42, 0.07]],
@@ -438,7 +456,7 @@ class AuraModel {
         if (doubled) {
             polys.add([[0.12, 0.0], [-0.28, 0.3], [-0.18, 0.0], [-0.28, -0.3]]);
         }
-        var t = deg * Math.PI / 180;
+        var t = d * Math.PI / 180;
         var co = Math.cos(t);
         var si = Math.sin(t);
         arrowPts = [];
@@ -452,16 +470,6 @@ class AuraModel {
             }
             arrowPts.add(q);
         }
-        arrowD = valueOn && !spark && trendOn;
-        ringD = !spark && !trendOn;
-        ringR = AuraMath.r1(0.24 * box);
-        ringW = AuraMath.r1(0.11 * box);
-        var blkR = spark ? x0 + vW : x0 + total;
-        blk = [AuraMath.r1(x0 - 12), AuraMath.r1(vBase - V - 12), AuraMath.r1(blkR - x0 + 24), V + 24];
-        strike = [AuraMath.r1(x0 - 6), AuraMath.r1(x0 + vW + 6), AuraMath.r1(vBase - V * 0.48), AuraMath.r1(0.075 * vFs)];
-        var len = AuraMath.clamp(inp.reveal, 0, 1) * vW;
-        reveal = [AuraMath.r1(x0 + vW / 2 - len / 2), AuraMath.r1(x0 + vW / 2 + len / 2), AuraMath.r1(vBase + 13)];
-        beadCol = out ? c(ck) : inp.rangeColour ? c(bk) : c("now");
     }
 
     // --- the sparkline: the last hour, log time, the rail's risk scale (SPEC.md §6.5) ---
@@ -567,6 +575,7 @@ class AuraModel {
         beadOn = hasValue && railOn;
         var g = inp.glucose;
         beadA = lo ? 133.0 : hi ? 47.0 : AuraMath.ang(g);
+        beadDrawA = beadA;
         zone = null;
         if (bk.equals("veryLow")) {
             zone = [AuraMath.ang(l[0]), 133.0];
@@ -722,6 +731,11 @@ class AuraModel {
         return w;
     }
 
+    // the top field's width even where it is hidden (always-on keeps its row; the halo's numbers use it)
+    function topWidth() as Float {
+        return topOn || !topRow ? topW : measure(fieldRuns(inp.topField), TF, tfIcon);
+    }
+
     hidden function topField() as Void {
         tfIcon = Math.floor(TF * 0.83 + 0.5).toNumber();
         topRuns = topOn ? fieldRuns(inp.topField) : [];
@@ -799,7 +813,7 @@ class AuraModel {
 module AuraPalette {
     function of(mode as String) as Dictionary {
         var p = {
-            "ink" => 0xF2F2F2, "soft" => 0xA3A3A8, "dim" => 0x6E6E73, "faint" => 0x3A3A3E, "grid" => 0x26262A,
+            "ink" => 0xFFFFFF, "soft" => 0xA3A3A8, "dim" => 0x6E6E73, "faint" => 0x3A3A3E, "grid" => 0x26262A,
             "band" => 0x38383E, "band2" => 0x4E4E55, "grey" => 0x8E8E93, "texture" => 0x19191C,
             "veryLow" => 0xC2413B, "low" => 0xF0524F, "tight" => 0x3DD47A, "target" => 0x8CC63F, "high" => 0xF5A524,
             "veryHigh" => 0xFF7A45, "extremelyHigh" => 0xE35BD0, "now" => 0xC6F432, "rapid" => 0x8AB4FF,

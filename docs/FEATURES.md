@@ -2090,8 +2090,16 @@ the time, so the reading ages by itself from its own time with the phone away.
   is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field, Bottom field 1 and
   2, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
 - Words in English and Spanish (the watch's language). Readings come from the phone: [Sukrara Aura: readings to the
-  Garmin face](#sukrara-aura-readings-to-the-garmin-face-docs43). Not yet: the dials, the halo and the seconds sweep
-  (the dial is black).
+  Garmin face](#sukrara-aura-readings-to-the-garmin-face-docs43).
+- **The aura** (setting *Dial*, awake only, not at night or always-on): the dial gathers at your level, spreads the
+  further out of range you are, fades heading back to the ideal and strengthens heading away: *grain* (dots, the
+  default), *contours*, *waterline*, *lasers*, *glow*, *map* (decorative, never reacts) or *black*. Grey and still
+  (dashed) when the reading is old. *Halo* (outline, the default / box / none) keeps every dial line off the text, so
+  no line reads as the strike-through that means "old".
+- **Seconds sweep** (setting, awake only): a faint tail near the rim in the bead's colour, its leading edge the second
+  hand; it steps once a second.
+- **Motion**: on a new reading while the watch is awake, the bead and its trail glide to their new places and the arrow
+  turns (0.9 s, a slight overshoot); a reading that comes while the screen is dim is simply drawn in place.
 
 **States and exits**: *value* (fresh → late → old → no reading since → long gap) → leaves by itself with the next
 reading; nothing to do on the watch. *Warm-up* / *Sensor ended* / *No readings* (nothing paired) → leave when Sukrara's

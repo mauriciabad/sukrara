@@ -2,8 +2,9 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The debug case loader's data: every case of contracts/watchface/aura/cases.json as a Connect IQ jsonData resource
-(one per case, loaded only while it shows) and the table of them. Python 3.9 stdlib only; build.sh runs it for the
-'cases' and 'test' builds into apps/garmin/build/cases/ (ignored by git: never in a release build).
+(one per case, loaded only while it shows) and the table of them, then always-on variants of the brightest states (AOD).
+Python 3.9 stdlib only; build.sh runs it for the 'cases' and 'test' builds into apps/garmin/build/cases/ (ignored by
+git: never in a release build).
 
   python3 apps/garmin/tools/cases.py
 """
@@ -20,8 +21,29 @@ HEAD = ("Sukrara — https://github.com/mauriciabad/sukrara", "Copyright (C) 202
         "SPDX-License-Identifier: GPL-3.0-or-later")
 
 
-def main():
+# always-on variants of the brightest states, for the luminance check (SPEC.md §8: under 10 %, very low and LO first);
+# they have no reference picture or numbers: garmin_test.py measures their screenshots
+AOD = ("alerts-very-low", "glucose-lo", "alerts-high", "alerts-extremely-high", "glucose-no-readings", "sensor-warmup",
+       "sensor-ended", "modes-spanish", "fields-trend-spark", "glucose-hi")
+
+
+def all_cases():
+    """cases.json's cases, then the always-on variants ("aod-<id>")."""
     cases = json.load(open(CASES, encoding="utf-8"))["cases"]
+    extra = []
+    for c in cases:
+        if c["id"] in AOD:
+            cfg = dict(c["cfg"])
+            cfg["mode"] = "aod"
+            extra.append({"id": "aod-" + c["id"], "cfg": cfg})
+    every = cases + extra
+    # AURA_CASES=id,id…: only those (a quicker look while working on a few; numbers and pictures of the rest are skipped)
+    only = [s for s in os.environ.get("AURA_CASES", "").split(",") if s]
+    return [c for c in every if c["id"] in only] if only else every
+
+
+def main():
+    cases = all_cases()
     res = os.path.join(OUT, "resources")
     src = os.path.join(OUT, "source")
     os.makedirs(res, exist_ok=True)

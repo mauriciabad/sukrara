@@ -331,13 +331,20 @@ face signed with the same key, and the store app is tied to it. `CIQ_KEY` points
 **Simulator.** `"$SDK/bin/connectiq"` opens it, `"$SDK/bin/monkeydo" <prg> descentmk343mm` runs a build in it (the
 simulator must be running). It is one app for every session: don't quit one you didn't start; agents take turns.
 The debug case loader (`build.sh cases`, `manifest-cases.xml` with its own app id) shows a calibration frame, then
-every case of `cases.json` for 3 s each at the reference's clock, printing each case's layout; `garmin_test.py run`
+every case of `cases.json` for 6 s each at the reference's clock, printing each case's layout; `garmin_test.py run`
 reads the prints (numbers against `expect.json`: positions ±0.5 px, angles ±0.1°, opacities ±0.01, strings and
 colours exact) and screenshots each case (`simshot.py`: `screencapture` of the simulator's window, cropped where the
 calibration marks are) to diff with `docs/img/aura/ref/` (`compare -fuzz 15%` equivalent; diff images in `<dir>/diff`
 and, against the dial-less references, `<dir>/diff-core`). The loader is debug only: `source-cases/` (every symbol
 `(:debug)`) is built by `cases.jungle` alone; the `debug` check fails if the face's `source/` names it or
 `monkey.jungle` builds it, and `verify_prg.sh` refuses a `.prg` that carries it.
+The loader is a *watch-app* (its frames from a 1 s timer): the face and the layout dump together don't fit a face's
+128 KB, the face alone does (its memory is in the run's "cost" lines). It also shows always-on variants of the
+brightest states (`aod-*`, `tools/cases.py`), measured against Garmin's 10 % luminance rule. `AURA_CASES=id,id…`
+runs only those cases. monkeydo sometimes loses the simulator mid-run (it exits 0 while the app goes on; a new
+monkeydo can't reach that simulator): the run then quits the simulator and goes on with the cases left.
+A filled anti-aliased circle under 1 px drawn into a `BufferedBitmap` crashes the simulated firmware (the blue
+triangle): the dial draws such dots as single pixels.
 
 **On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to
 `GARMIN/Apps/SUKAURA.PRG` (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only that file is written; an older copy of it is
@@ -351,11 +358,32 @@ runs there under Xvfb (`xvfb-run`, Pillow 9+, ImageMagick's `import` for the scr
 
 **Platform decisions** (research with sources in the round's notes; the Garmin facts in
 [docs/evidence/42-watch-faces/garmin.md](evidence/42-watch-faces/garmin.md)):
-- *Fonts*: Atkinson Hyperlegible Next rendered by FreeType (unhinted, like the reference's browser) into Connect IQ
-  bitmap fonts (BMFont text + 8-bit alpha PNG, `antialias="true"`), one per size of SPEC §2; since API 4 they load into
-  the graphics pool, not the 128 KB heap ([Graphics](https://developer.garmin.com/connect-iq/core-topics/graphics/),
-  [Resources](https://developer.garmin.com/connect-iq/core-topics/resources/)). The always-on time is a stroked
-  variant (FreeType's stroker), not drawn twice.
+- *Fonts*: Atkinson Hyperlegible Next rendered by FreeType (unhinted, like the reference's browser) into one atlas per
+  size of SPEC §2 (white glyphs, 8-bit alpha PNG bitmaps, `packingFormat="png"`), every glyph drawn by the face with
+  `Dc.drawBitmap2` (`:bitmapX…`, `:tintColor`) at its pen position. Not Connect IQ font resources: `antialias="true"`
+  is the only anti-aliasing they offer and it keeps about 8 grey levels on the edges (measured on the simulator's time),
+  where a tinted PNG keeps all 256 ([Resources › Fonts](https://developer.garmin.com/connect-iq/core-topics/resources/)).
+  Bitmaps load into the graphics pool (3 MB on this watch), not the 128 KB heap
+  ([Graphics](https://developer.garmin.com/connect-iq/core-topics/graphics/)). The always-on time is a stroked
+  variant (FreeType's stroker), not drawn twice; the halo has grown variants of the time and value (`t*h`, `v*h`).
+- *Dials and alpha*: API 4's ARGB colours (`Graphics.createColor`, `setFill` / `setStroke`) and anti-aliasing work on
+  this AMOLED (`alphaBlendingSupport` in the device's `compiler.json`), but Connect IQ has no gradients and blending is
+  per primitive. So the dial is painted once into a 390 × 390 `BufferedBitmap` (graphics pool) and copied on every
+  frame; it is painted again only when its inputs change (a new reading, the mode, a setting). In that cache each
+  mark is drawn opaque in its colour pre-multiplied by its opacity over black (the cache holds only the dial and no two
+  marks overlap), and each gradient becomes one opacity per mark: a contour ring the fade at its radius, a wave at its
+  depth, a laser per 10 px piece, the glow 3 px rings (SPEC §13). The halo is drawn in black over the copy (the grown
+  glyphs, the arrow's polygons grown 6.5 px, boxes and arc bands for the small texts), then the sweep (ARGB arcs: 6° ×
+  10 px pieces of the tail, the leading line through the radial ramp), then the content.
+- *Motion*: watch faces may run a `Timer` only in high power, the ~10 s after a wrist raise
+  ([Watch faces](https://developer.garmin.com/connect-iq/user-experience-guidelines/watch-faces/)): the glide on a new
+  reading runs at 25 fps for 0.9 s then; a reading in low power is drawn in place. The sweep steps at the face's 1 Hz
+  (a smooth sweep would redraw the screen 10–25 times a second for the whole wrist raise). Connect IQ exposes no
+  reduced-motion setting (`DeviceSettings` has none), so the glide can't follow one.
+- *Always-on luminance*: Garmin's rule since the Venu 2 is under 10 % of the screen's luminance
+  ([AMOLED FAQ](https://developer.garmin.com/connect-iq/connect-iq-faq/how-do-i-make-a-watch-face-for-amoled-products/));
+  `garmin_test.py run` measures every always-on screenshot (the `aod-*` variants `cases.py` adds: very low, LO, a
+  filled pill…) and fails at 10 %.
 - *Text along the arcs*: `drawRadialText` takes only system vector fonts, so each glyph of the arc fonts is a
   sub-rectangle of its atlas drawn with `Dc.drawBitmap2` (API 4.2.1: `:bitmapX…`, `:tintColor`, `:transform`) at its
   angle; tinting needs `packingFormat="png"` ([Dc](https://developer.garmin.com/connect-iq/api-docs/Toybox/Graphics/Dc.html),

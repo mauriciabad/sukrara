@@ -5,25 +5,109 @@ import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.System;
 import Toybox.Time;
+import Toybox.Timer;
 import Toybox.WatchUi;
 
 // The face: every draw builds the input model from the watch (AuraWatch, THE SEAM inside), lays it out (AuraModel) and
 // paints it (AuraDraw). Always-on (low power) shifts the whole face a little every minute against burn-in (SPEC.md §8).
 class AuraView extends WatchUi.WatchFace {
+    // the glide on a new reading (SPEC.md §7): the bead, the trail and the arrow move to their new angles in 0.9 s.
+    // Only in high power (the ~10 s after a wrist raise, when a watch face may run a timer): a reading that arrives in
+    // low power is drawn in its place.
+    const GLIDE_MS = 900;
+    const FRAME_MS = 40;
+    var high as Boolean = false; // high power: the frame before was drawn awake after a wrist raise
+    var target as Array? = null; // the angles the last frame aimed at: [bead, trail (Array), arrow]
+    var shown as Array? = null; // the angles the last frame drew
+    var from as Array? = null; // a glide's start, null when none runs
+    var glideStart as Number = 0;
+    var timer as Timer.Timer? = null;
+
     function initialize() {
         WatchFace.initialize();
+    }
+
+    function trailDegs(m as AuraModel) as Array {
+        var d = [];
+        for (var i = 0; i < m.trail.size(); i++) {
+            d.add((m.trail[i] as Array)[0]);
+        }
+        return d;
+    }
+
+    function moved(a as Array, b as Array) as Boolean {
+        if ((a[0] as Float) != (b[0] as Float) || (a[2] as Float) != (b[2] as Float)) {
+            return true;
+        }
+        var ta = a[1] as Array;
+        var tb = b[1] as Array;
+        if (ta.size() != tb.size()) {
+            return true;
+        }
+        for (var i = 0; i < ta.size(); i++) {
+            if ((ta[i] as Float) != (tb[i] as Float)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function tick() as Void {
+        WatchUi.requestUpdate();
+    }
+
+    function stopGlide() as Void {
+        from = null;
+        if (timer != null) {
+            (timer as Timer.Timer).stop();
+            timer = null;
+        }
+    }
+
+    // starts a glide when the angles changed during high power, and draws its frame
+    function glide(m as AuraModel) as Void {
+        var tgt = [m.beadA, trailDegs(m), m.deg];
+        var awake = high && m.awake;
+        if (awake && target != null && shown != null && moved(tgt, target as Array)) {
+            from = shown;
+            glideStart = System.getTimer();
+            if (timer == null) {
+                timer = new Timer.Timer();
+                (timer as Timer.Timer).start(method(:tick), FRAME_MS, true);
+            }
+        }
+        target = tgt;
+        if (from != null) {
+            var t = (System.getTimer() - glideStart).toFloat() / GLIDE_MS;
+            if (t >= 1 || !awake) {
+                stopGlide();
+            } else {
+                var e = AuraMath.ease(t);
+                var f = from as Array;
+                m.beadDrawA = (f[0] as Float) + ((tgt[0] as Float) - (f[0] as Float)) * e;
+                var ft = f[1] as Array;
+                for (var i = 0; i < m.trail.size() && i < ft.size(); i++) {
+                    var p = m.trail[i] as Array;
+                    m.trail[i] = [(ft[i] as Float) + ((p[0] as Float) - (ft[i] as Float)) * e, p[1], p[2]];
+                }
+                m.arrow((f[2] as Float) + ((tgt[2] as Float) - (f[2] as Float)) * e);
+            }
+        }
+        shown = [m.beadDrawA, trailDegs(m), m.drawDeg];
     }
 
     function onLayout(dc as Graphics.Dc) as Void {}
 
     // shown (back from a menu, the face picked): awake; onEnterSleep or a low-power display mode follows if not
     function onShow() as Void {
+        high = true;
         AuraWatch.screen("S", false);
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
         var m = new AuraModel(input());
         AuraWatch.drew(m.aod ? "a" : m.night ? "n" : "w");
+        glide(m);
         var sx = 0;
         var sy = 0;
         if (m.aod) {
@@ -43,17 +127,21 @@ class AuraView extends WatchUi.WatchFace {
 
     // high power (a wrist raise, a button): 1 Hz for ~10 s. Always awake, whatever the display mode said before.
     function onExitSleep() as Void {
+        high = true;
         AuraWatch.screen("X", false);
         WatchUi.requestUpdate();
     }
 
     // low power: always-on if the person turned it on (AMOLED), else the screen goes dark
     function onEnterSleep() as Void {
+        high = false;
+        stopGlide();
         AuraWatch.screen("E", System.getDeviceSettings().requiresBurnInProtection);
         WatchUi.requestUpdate();
     }
 
     function onHide() as Void {
+        stopGlide();
         AuraDraw.release();
     }
 }

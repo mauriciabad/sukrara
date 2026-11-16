@@ -10,15 +10,19 @@
   uv run apps/garmin/tools/fonts.py          writes apps/garmin/resources/fonts/* and source/AuraFontTable.mc
   uv run apps/garmin/tools/fonts.py --check  fails if the committed output differs from a fresh build
 
-Fonts: Atkinson Hyperlegible Next (OFL, apps/garmin/fonts/), one Connect IQ bitmap font (AngelCode BMFont text .fnt +
-an 8-bit alpha PNG, white glyphs) per size and weight of SPEC.md §2, rendered by FreeType without hinting (the way the
-reference's browser draws it), the variable font set to the weight. Sizes are the reference's (cap / 0.668, to 0.1 px).
-The fonts drawn along the arcs (date, bottom fields) are also bitmaps: their glyph boxes and advances go into
-AuraFontTable.mc so the face can place each glyph on the curve (drawBitmap2 with a rotation).
+Fonts: Atkinson Hyperlegible Next (OFL, apps/garmin/fonts/), one atlas per size and weight of SPEC.md §2 (white glyphs
+with 8-bit alpha, a PNG bitmap resource), rendered by FreeType without hinting (the way the reference's browser draws it),
+the variable font set to the weight. Sizes are the reference's (cap / 0.668, to 0.1 px). Each glyph's box and advance go
+into AuraFontTable.mc and the face draws every glyph itself (Dc.drawBitmap2, tinted; rotated along the arcs). Not
+Connect IQ font resources: their antialias="true" keeps only a few grey levels (the simulator's edges showed about 8),
+a tinted PNG bitmap keeps all 256 (docs/DEVELOPMENT.md › Garmin, "Fonts").
+The halo (SPEC.md §6.13) has its own atlases for the time and the value: the glyphs grown by 6.5 px (the reference's
+13 px round stroke), which the face draws in black over the dial.
 
 Icons: the SVG paths of SPEC.md §2 rendered white on transparent by rsvg-convert at each size the face draws them, so
 the face tints and rotates them.
 """
+import base64
 import io
 import json
 import os
@@ -27,7 +31,7 @@ import subprocess
 import sys
 
 import freetype
-from PIL import Image
+from PIL import Image, ImageChops
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.dirname(HERE)
@@ -42,6 +46,11 @@ DIGITS = "0123456789"
 UPPER_ES = "ÁÉÍÓÚÑ"
 LATIN = "".join(chr(c) for c in range(0x20, 0x7F)) + "°·áéíóúñüÁÉÍÓÚÑÜ¿¡" + NB
 BATTERY = DIGITS + "dh%· " + NB
+# the atlases' sets (their glyph tables cost the heap): the field texts' letters, digits and marks; the no-reading
+# time's digits and the weekdays and months it may show (Freshness.timeText, en and es)
+FIELDS = "".join(c for c in LATIN if c.isalnum() or c in " ,.:%°·-'/+" + NB)
+GAP = "".join(sorted(set(DIGITS + ": " + NB + "SunMonTueWedThuFriSatdomlunmarmiéjueviesábJanFebMarAprMayJunJulAugSep"
+                         "OctNovDecenefebmarabrmayjunjulagosepoctnovdic")))
 CAP = 0.668
 
 
@@ -49,12 +58,14 @@ def r1(x):
     return round(x * 10) / 10
 
 
-# key, font px, weight, glyphs, drawn along an arc
+# key, font px, weight, glyphs, drawn along an arc (unused: every font is an atlas)
 FONTS = (
     [("t%d" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68)]
     + [("t%do" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68)]  # always-on: outlined
+    + [("t%dh" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68)]  # the halo: grown 6.5 px
     + [("v%d" % c, r1(c / CAP), 600, DIGITS + ".LOHI", False) for c in (54, 56, 58, 60)]
-    + [("g%d" % c, r1(c / CAP), 600, LATIN, False) for c in (36, 40)]
+    + [("v%dh" % c, r1(c / CAP), 600, DIGITS + ".LOHI", False) for c in (54, 56, 58, 60)]
+    + [("g%d" % c, r1(c / CAP), 600, GAP, False) for c in (36, 40)]
     + [
         ("d26", 26, 500, "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + UPPER_ES + " " + NB, True),
         ("d26b", 26, 700, DIGITS, True),
@@ -62,8 +73,8 @@ FONTS = (
         ("l20b", 20, 700, BATTERY, False),
         ("l22s", 22, 600, BATTERY, False),
         ("l22b", 22, 700, BATTERY, False),
-        ("l24m", 24, 500, LATIN, True),
-        ("l24s", 24, 600, LATIN, True),
+        ("l24m", 24, 500, FIELDS, True),
+        ("l24s", 24, 600, FIELDS, True),
         ("l25m", 25, 500, LATIN, False),
         ("l25s", 25, 600, LATIN, False),
         ("l26m", 26, 500, LATIN, False),
@@ -84,30 +95,49 @@ def face(size, weight):
 
 
 OUTLINE = 2.2  # the always-on time's stroke (SPEC.md §6.3), centred on the outline
+HALO = 6.5  # the halo's growth around the time and the value (SPEC.md §6.13: stroked 13 px, round joins)
 
 
-def render(size, weight, chars, outline=False):
-    """Each glyph: (char, alpha image, left, top, advance px float)."""
+def to_image(bm):
+    if not (bm.width and bm.rows):
+        return Image.new("L", (1, 1), 0)
+    if bm.pitch == bm.width:
+        return Image.frombytes("L", (bm.width, bm.rows), bytes(bm.buffer))
+    return Image.frombytes("L", (bm.width, bm.rows), b"".join(bytes(bm.buffer[r * bm.pitch:r * bm.pitch + bm.width]) for r in range(bm.rows)))
+
+
+def stroked(f, ch, radius):
+    """The glyph's outline stroked radius px each side (round caps and joins): (bitmap, left, top)."""
+    f.load_char(ch, freetype.FT_LOAD_NO_BITMAP | freetype.FT_LOAD_NO_HINTING)
+    stroker = freetype.Stroker()
+    stroker.set(int(round(radius * 64)), freetype.FT_STROKER_LINECAP_ROUND, freetype.FT_STROKER_LINEJOIN_ROUND, 0)
+    glyph = f.glyph.get_glyph()
+    glyph.stroke(stroker, True)
+    bg = glyph.to_bitmap(freetype.FT_RENDER_MODE_NORMAL, freetype.Vector(0, 0), True)
+    return to_image(bg.bitmap), bg.left, bg.top
+
+
+def render(size, weight, chars, kind=""):
+    """Each glyph: (char, alpha image, left, top, advance px float, width, height). kind: "" filled, "o" outlined (the
+    always-on time), "h" the halo (filled and grown by HALO)."""
     f = face(size, weight)
     out = []
     for ch in chars:
-        if outline:
-            f.load_char(ch, freetype.FT_LOAD_NO_BITMAP | freetype.FT_LOAD_NO_HINTING)
-            stroker = freetype.Stroker()
-            stroker.set(int(round(OUTLINE / 2 * 64)), freetype.FT_STROKER_LINECAP_ROUND, freetype.FT_STROKER_LINEJOIN_ROUND, 0)
-            glyph = f.glyph.get_glyph()
-            glyph.stroke(stroker, True)
-            bg = glyph.to_bitmap(freetype.FT_RENDER_MODE_NORMAL, freetype.Vector(0, 0), True)
-            bm, left, top = bg.bitmap, bg.left, bg.top
+        if kind == "o":
+            img, left, top = stroked(f, ch, OUTLINE / 2)
+        elif kind == "h":
+            img, left, top = stroked(f, ch, HALO)
+            f.load_char(ch, freetype.FT_LOAD_RENDER | freetype.FT_LOAD_NO_HINTING)
+            fill = to_image(f.glyph.bitmap)
+            layer = Image.new("L", img.size, 0)
+            layer.paste(fill, (f.glyph.bitmap_left - left, top - f.glyph.bitmap_top))
+            img = ImageChops.lighter(img, layer)
         else:
             f.load_char(ch if ch != NB else " ", freetype.FT_LOAD_RENDER | freetype.FT_LOAD_NO_HINTING)
             bm, left, top = f.glyph.bitmap, f.glyph.bitmap_left, f.glyph.bitmap_top
-        g = f.glyph
-        img = Image.new("L", (max(1, bm.width), max(1, bm.rows)), 0)
-        if bm.width and bm.rows:
-            img = Image.frombytes("L", (bm.width, bm.rows), bytes(bm.buffer)) if bm.pitch == bm.width else \
-                Image.frombytes("L", (bm.width, bm.rows), b"".join(bytes(bm.buffer[r * bm.pitch:r * bm.pitch + bm.width]) for r in range(bm.rows)))
-        out.append((ch, img, left, top, g.linearHoriAdvance / 65536.0, bm.width, bm.rows))
+            img = to_image(bm)
+        bw, bh = (img.width, img.height) if (img.width > 1 or img.height > 1) else (0, 0)
+        out.append((ch, img, left, top, f.glyph.linearHoriAdvance / 65536.0, bw, bh))
     return out
 
 
@@ -136,38 +166,59 @@ def png_bytes(img):
     return b.getvalue()
 
 
+def atlas_font(key, arc):
+    """Drawn glyph by glyph from an 8-bit alpha atlas: the big numbers (time, value, no-reading time; their outline and
+    halo variants) and the arc fonts. The small straight texts stay Connect IQ font resources: their glyph tables would
+    cost the face's heap ~1.5 KB a font, and at 20–32 px their edges show the few grey levels far less."""
+    return arc or key[0] in "tvg"
+
+
 def build_fonts():
     files = {}
     table = []
-    for key, size, weight, chars, arc in FONTS:
-        glyphs = render(size, weight, chars, key.endswith("o"))
+    for key, size, weight, chars, _arc in FONTS:
+        kind = key[-1] if key[-1] in "oh" else ""
+        glyphs = render(size, weight, chars, kind)
         sheet, pos = pack(glyphs)
         base = int(round(size * ASCENT))
-        line = int(round(size * (ASCENT + DESCENT)))
-        lines = [
-            'info face="AtkinsonHyperlegibleNext-%d" size=%d bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 '
-            'aa=1 padding=0,0,0,0 spacing=1,1' % (weight, round(size)),
-            "common lineHeight=%d base=%d scaleW=%d scaleH=%d pages=1 packed=0" % (line, base, sheet.width, sheet.height),
-            'page id=0 file="%s.png"' % key,
-            "chars count=%d" % len(glyphs),
-        ]
         metrics = []
         for (ch, img, left, top, adv, w, h), (px, py) in zip(glyphs, pos):
-            lines.append("char id=%d x=%d y=%d width=%d height=%d xoffset=%d yoffset=%d xadvance=%d page=0 chnl=15"
-                         % (ord(ch), px, py, w, h, left, base - top, int(round(adv))))
             metrics.append((ch, px, py, w, h, left, base - top, adv))
-        files[key + ".fnt"] = ("\n".join(lines) + "\n").encode()
         files[key + ".png"] = png_bytes(sheet)
-        table.append((key, size, weight, base, chars, arc, metrics))
+        if not atlas_font(key, _arc):
+            # a Connect IQ font resource: BMFont text + the PNG
+            line = int(round(size * (ASCENT + DESCENT)))
+            lines = [
+                'info face="AtkinsonHyperlegibleNext-%d" size=%d bold=0 italic=0 charset="" unicode=1 stretchH=100 '
+                'smooth=1 aa=1 padding=0,0,0,0 spacing=1,1' % (weight, round(size)),
+                "common lineHeight=%d base=%d scaleW=%d scaleH=%d pages=1 packed=0" % (line, base, sheet.width, sheet.height),
+                'page id=0 file="%s.png"' % key,
+                "chars count=%d" % len(glyphs),
+            ]
+            for ch, px, py, w, h, xo, yo, adv in metrics:
+                lines.append("char id=%d x=%d y=%d width=%d height=%d xoffset=%d yoffset=%d xadvance=%d page=0 chnl=15"
+                             % (ord(ch), px, py, w, h, xo, yo, int(round(adv))))
+            files[key + ".fnt"] = ("\n".join(lines) + "\n").encode()
+            table.append((key, size, weight, base, chars, None))
+            continue
+        bs = []
+        for ch, px, py, w, h, xo, yo, adv in metrics:
+            a = int(round(adv * 16))
+            assert 0 <= w < 256 and 0 <= h < 256 and -128 <= xo < 128 and -128 <= yo < 128, (key, ch)
+            bs += [px >> 8, px & 255, py >> 8, py & 255, w, h, xo & 255, yo & 255, a >> 8, a & 255]
+        files[key + ".json"] = (json.dumps([chars, base64.b64encode(bytes(bs)).decode(), base], ensure_ascii=False) + "\n").encode()
+        table.append((key, size, weight, base, chars, metrics))
     xml = ['<!-- Sukrara — https://github.com/mauriciabad/sukrara -->',
            '<!-- Copyright (C) 2026 Maurici Abad -->',
            '<!-- SPDX-License-Identifier: GPL-3.0-or-later -->',
            '<!-- Generated by apps/garmin/tools/fonts.py: Atkinson Hyperlegible Next (OFL, apps/garmin/fonts/OFL.txt). -->',
            "<resources>"]
-    for key, size, weight, base, chars, arc, metrics in table:
-        xml.append('    <font id="%s" filename="%s.fnt" antialias="true"/>' % (key, key))
-        if arc:
-            xml.append('    <bitmap id="%s_atlas" filename="%s.png" dithering="none" packingFormat="png"/>' % (key, key))
+    for key, size, weight, base, chars, metrics in table:
+        if metrics is None:
+            xml.append('    <font id="%s" filename="%s.fnt" antialias="true"/>' % (key, key))
+            continue
+        xml.append('    <bitmap id="%s" filename="%s.png" dithering="none" packingFormat="png"/>' % (key, key))
+        xml.append('    <jsonData id="%s_m" filename="%s.json"/>' % (key, key))
     xml.append("</resources>")
     files["fonts.xml"] = ("\n".join(xml) + "\n").encode()
     return files, table
@@ -178,52 +229,38 @@ def mc_string(s):
 
 
 def build_table(table):
-    """AuraFontTable.mc: each font's resource, its baseline (px from the top of the line) and, for the arc fonts, every
-    glyph's box in the atlas: 10 bytes per glyph (x, y as 16 bit; w, h; xoffset, yoffset as signed bytes; advance in
-    1/16 px as 16 bit)."""
+    """AuraFontTable.mc: each font's atlas and its glyph table, a jsonData resource [glyphs, metrics in base64, baseline px
+    from the line's top]; metrics are 10 bytes per glyph (x, y as 16 bit; w, h; xoffset, yoffset from the line's top as
+    signed bytes; advance in 1/16 px as 16 bit). Resources, not code: code counts against the face's 128 KB, a resource
+    only while it's loaded."""
     out = [
         "// Sukrara — https://github.com/mauriciabad/sukrara",
         "// Copyright (C) 2026 Maurici Abad",
         "// SPDX-License-Identifier: GPL-3.0-or-later",
-        "// Generated by apps/garmin/tools/fonts.py (do not edit): the fonts of SPEC.md §2, their baselines and the arc fonts'",
-        "// glyph boxes.",
+        "// Generated by apps/garmin/tools/fonts.py (do not edit): the fonts of SPEC.md §2 as atlases and their glyph",
+        "// tables (jsonData: [glyphs, metrics in base64, baseline]), and the icons.",
         "import Toybox.Lang;",
         "import Toybox.WatchUi;",
         "",
         "module AuraFontTable {",
-        "    // key → [font resource, baseline px from the line's top, font px]",
-        "    function font(key as String) as Array {",
+        "    // key → [atlas bitmap, glyph table], or [font resource, baseline px from the line's top] (the small straight",
+        "    // texts: Connect IQ fonts, in the graphics pool; an atlas's glyph table is in the heap while it's loaded)",
+        "    function atlas(key as String) as Array {",
     ]
-    first = True
-    for key, size, weight, base, chars, arc, metrics in table:
-        out.append("        %sif (key.equals(%s)) {" % ("" if first else "} else ", mc_string(key)))
-        out.append("            return [Rez.Fonts.%s, %d, %s];" % (key, base, repr(float(size))))
-        first = False
+    atl = [t for t in table if t[5] is not None]
+    fnt = [t for t in table if t[5] is None]
+    keys = [t[0] for t in atl] + [t[0] for t in fnt]
+    out.append("        var i = [%s].indexOf(key);" % ", ".join(mc_string(k) for k in keys))
+    out.append("        if (i < 0) {")
+    out.append("            return [];")
     out.append("        }")
-    out.append("        return [Rez.Fonts.l24m, 24, 24.0];")
-    out.append("    }")
-    out.append("")
-    out.append("    // the arc fonts: [atlas bitmap, glyphs (String), metrics (ByteArray, 10 bytes a glyph)]")
-    out.append("    function arc(key as String) as Array {")
-    first = True
-    for key, size, weight, base, chars, arc, metrics in table:
-        if not arc:
-            continue
-        bs = []
-        for ch, px, py, w, h, xo, yo, adv in metrics:
-            a = int(round(adv * 16))
-            bs += [px >> 8, px & 255, py >> 8, py & 255, w, h, xo & 255, yo & 255, a >> 8, a & 255]
-        out.append("        %sif (key.equals(%s)) {" % ("" if first else "} else ", mc_string(key)))
-        out.append("            return [")
-        out.append("                Rez.Drawables.%s_atlas," % key)
-        out.append("                %s," % mc_string(chars))
-        body = ", ".join("0x%02x" % b for b in bs)
-        wrapped = re.sub(r"((?:0x[0-9a-f]{2}, ){16})", r"\1\n                  ", body)
-        out.append("                [" + wrapped + "]b,")
-        out.append("            ];")
-        first = False
+    out.append("        if (i < %d) {" % len(atl))
+    out.append("            return [[%s][i], [%s][i]];" % (", ".join("Rez.Drawables.%s" % t[0] for t in atl),
+                                                         ", ".join("Rez.JsonData.%s_m" % t[0] for t in atl)))
     out.append("        }")
-    out.append("        return [];")
+    out.append("        i -= %d;" % len(atl))
+    out.append("        return [[%s][i], [%s][i]];" % (", ".join("Rez.Fonts.%s" % t[0] for t in fnt),
+                                                     ", ".join(str(t[3]) for t in fnt)))
     out.append("    }")
     out.append("}")
     return ("\n".join(out) + "\n").encode()

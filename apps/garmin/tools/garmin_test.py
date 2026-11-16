@@ -13,8 +13,8 @@
 
 Numbers: positions and sizes ±0.5 px, angles ±0.1°, opacities ±0.01, the dial's inputs ±0.01, colours and strings
 exact; an element's numbers only where it is drawn (its disp), its disp always. Paths compare number by number (a
-summarised path by its subpath count). Not compared: the dials, the halo and the seconds sweep's angle (face-aura), the
-fonts' family names.
+summarised path by its subpath count: the dial's dots, rings and waves). Not compared: the gradients' url() names (their
+centre, radius and stops are), the seconds sweep's angle (the clock), the fonts' family names.
 """
 import json
 import os
@@ -31,10 +31,10 @@ CASES = os.path.join(ROOT, "contracts", "watchface", "aura", "cases.json")
 REF = os.path.join(ROOT, "docs", "img", "aura", "ref")
 WORDS = os.path.join(ROOT, "contracts", "graph", "words", "words.json")
 
-SKIP_GROUPS = {"v", "ids", "metal", "arcs", "dial", "halo"}
+SKIP_GROUPS = {"v", "ids", "metal", "arcs"}
 SKIP_KEYS = {"fam", "fam2", "labelFam", "d"}  # font families; an icon's path data (the icon key says which)
 ANGLES = {"deg"}
-OPACITY = {"o", "fo"}
+OPACITY = {"o", "fo", "o1", "o2", "o3", "go", "go2", "go3", "go4"}
 INFO = {"ext", "toward", "I", "spd"}
 NUM = re.compile(r"-?\d+(?:\.\d+)?(?:e-?\d+)?")
 # the reference's dial names
@@ -72,7 +72,8 @@ def same(path, want, got):
     """None when equal within tolerance, else the reason."""
     if isinstance(want, dict) and "path" in want:
         n = int(want["path"].split()[0])
-        k = len(re.findall(r"M", got))
+        summary = re.match(r"^(\d+) subpaths$", got)
+        k = int(summary.group(1)) if summary else len(re.findall(r"M", got))
         return None if k == n else "%d subpaths, want %d" % (k, n)
     if want is None:
         return None if got in ("null", "none", "") else "want null"
@@ -122,6 +123,7 @@ SUBDISP = {  # flags inside an element that govern some of its fields
     "bead": {"chevDisp": ("chev",)},
     "batt": {"l2D": ("l2", "y2")},
     "msg": {"discD": ("pie", "dx", "dy"), "flagD": ("flag", "pole")},
+    "dial": {"d1D": ("d1", "f1", "s1", "w1", "o1"), "d2D": ("d2", "s2", "w2", "o2"), "d3D": ("d3", "s3", "w3", "o3")},
 }
 
 
@@ -143,6 +145,8 @@ def compare(case_id, want, got):
         hidden = any(w.get(group + "." + flag) == "none" and leaf in fields for flag, fields in sub.items())
         if hidden:
             continue
+        if isinstance(val, str) and val.startswith("url(") and got.get(path) == "url":
+            continue  # a gradient: its numbers are the dial's gx, gy, gr, col, go…
         if path == "info.dial":
             val = DIALS.get(val, val)
             if path not in got:
@@ -243,6 +247,18 @@ def start_simulator():
     raise SystemExit("garmin_test: the simulator didn't start")
 
 
+def srgb(path):
+    """A screenshot in sRGB: the grab carries the display's colour profile (macOS), the references are sRGB."""
+    import io
+    from PIL import Image, ImageCms
+    img = Image.open(path)
+    icc = img.info.get("icc_profile")
+    img = img.convert("RGB")
+    if icc:
+        img = ImageCms.profileToProfile(img, ImageCms.ImageCmsProfile(io.BytesIO(icc)), ImageCms.createProfile("sRGB"))
+    return img
+
+
 def colour_filter(img, kind):
     """The reference's colour checks (SPEC.md §8), applied to the screenshot so it compares with the reference."""
     if kind == "redshift":
@@ -258,7 +274,7 @@ def diff(sim_path, ref_path, out_path):
     """Pixels that differ by more than 15 % (SPEC.md §10: compare -fuzz 15%), inside the screen circle; the diff image
     shows the reference dimmed with the differing pixels in red. Returns the count."""
     from PIL import Image, ImageChops, ImageDraw
-    sim = Image.open(sim_path).convert("RGB")
+    sim = srgb(sim_path)
     ref = Image.open(ref_path).convert("RGBA")
     flat_ref = Image.new("RGB", ref.size, (0, 0, 0))
     flat_ref.paste(ref, mask=ref.getchannel("A"))
@@ -273,6 +289,47 @@ def diff(sim_path, ref_path, out_path):
     base.paste(red, mask=bad)
     base.save(out_path)
     return count
+
+
+def luminance(path):
+    """An always-on screenshot's light, as fractions of the screen (the circle r 195) at full white: the luminance
+    (Rec. 709 weights on the sRGB values, Garmin's "screen's luminance"), the same in linear light, and the pixels lit
+    (the older AMOLED rule). Outside the circle is the simulator's bezel, and a channel at 1–2 is the screenshot's
+    noise, not a lit pixel."""
+    from PIL import Image
+    img = srgb(path)
+    lin = [((v / 255) / 12.92 if v <= 10 else (((v / 255) + 0.055) / 1.055) ** 2.4) for v in range(256)]
+    y = yl = lit = n = 0.0
+    w, h = img.size
+    px = img.load()
+    for yy in range(h):
+        for xx in range(w):
+            if (xx + 0.5 - w / 2) ** 2 + (yy + 0.5 - h / 2) ** 2 > (w / 2) ** 2:
+                continue
+            n += 1
+            r, g, b = px[xx, yy]
+            if max(r, g, b) > 2:
+                lit += 1
+                y += (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+                yl += 0.2126 * lin[r] + 0.7152 * lin[g] + 0.0722 * lin[b]
+    return y / n, yl / n, lit / n
+
+
+def always_on(cases, shots):
+    """Every always-on screenshot against Garmin's 10 % rule (SPEC.md §8): the report's lines and the failures."""
+    out = ["", "always-on (SPEC.md §8: under 10 % of the screen's luminance): luminance, linear, pixels lit"]
+    fails = []
+    rows = []
+    for c in cases:
+        if c["cfg"].get("mode") != "aod" or c["id"] not in shots:
+            continue
+        y, yl, lit = luminance(shots[c["id"]])
+        rows.append((y, yl, lit, c["id"]))
+        if y >= 0.10:
+            fails.append("always-on %s: %.1f %% luminance" % (c["id"], y * 100))
+    rows.sort(reverse=True)
+    out += ["  %5.1f %%  %5.1f %%  %5.1f %%  %s" % (y * 100, yl * 100, lit * 100, cid) for y, yl, lit, cid in rows]
+    return out, fails
 
 
 def pictures(outdir, ids, shots, core=None):
@@ -295,37 +352,55 @@ def pictures(outdir, ids, shots, core=None):
     return out
 
 
-def run(outdir, core=None):
-    sys.path.insert(0, HERE)
-    import simshot  # noqa: E402
-    from PIL import Image
-    os.makedirs(outdir, exist_ok=True)
-    for sub in ("sim", "diff"):
-        os.makedirs(os.path.join(outdir, sub), exist_ok=True)
-    subprocess.run([os.path.join(APP, "build.sh"), "cases"], check=True, env=env(), stdout=subprocess.DEVNULL)
+def stop_simulator():
+    """Quits the simulator (a run whose monkeydo lost the simulator restarts it: a new monkeydo can't reach it)."""
+    if sys.platform == "darwin":
+        subprocess.run(["osascript", "-e", 'quit app "ConnectIQ"'], capture_output=True)
+    for _ in range(40):
+        if not simulator_running():
+            return
+        time.sleep(0.5)
+    subprocess.run(["pkill", "-f", SIM])
+    time.sleep(1)
+
+
+def attempt(outdir, cases, todo, shots, log, simshot):
+    """One case loader run: the cases in todo (all when it is every case), screenshots into shots; returns when the
+    loader is through them and the combinations, or when monkeydo stops (it loses the simulator now and then: the run
+    goes on from the cases left)."""
+    from PIL import Image, ImageChops
+    e = env()
+    if len(todo) < len(cases):
+        e["AURA_CASES"] = ",".join(c["id"] for c in todo)
+    subprocess.run([os.path.join(APP, "build.sh"), "cases"], check=True, env=e, stdout=subprocess.DEVNULL)
     if not simulator_running():
         start_simulator()
-    log = os.path.join(outdir, "cases.log")
-    cases = json.load(open(CASES, encoding="utf-8"))["cases"]
     with open(log, "w") as lf:
         proc = subprocess.Popen([os.path.join(sdk(), "bin", "monkeydo"), os.path.join(APP, "bin", "SukraraAura-cases.prg"),
                                  "descentmk343mm"], stdout=lf, stderr=subprocess.STDOUT, env=env())
-    shots = {}
     offset = None
+    filt_of = {c["id"]: c["cfg"].get("filter", "none") for c in cases}
     try:
-        deadline = time.time() + 2 * 3.1 * len(cases) + 400  # a missed case comes back after the combinations
-        while len(shots) < len(cases) and time.time() < deadline:
+        deadline = time.time() + 2 * 6.1 * len(todo) + 120
+        while any(c["id"] not in shots for c in todo) and time.time() < deadline and proc.poll() is None:
             time.sleep(0.25)
             if offset is None:
                 if any(l.startswith("CAL") for l in open(log, encoding="utf-8", errors="replace")):
                     time.sleep(0.8)
-                    offset = simshot.calibrate()
+                    for k in range(8):  # the window may still be opening
+                        try:
+                            offset = simshot.calibrate()
+                            break
+                        except SystemExit:
+                            if k == 7:
+                                raise
+                            time.sleep(1)
                     print("calibration: the screen is %.2f, %.2f pt off simulator.json" % offset)
                 continue
             lines = [l for l in open(log, encoding="utf-8", errors="replace") if l.startswith("CASE ")]
             if not lines:
                 continue
-            _, idx, cid, filt = lines[-1].split()
+            cid = lines[-1].split()[2]
             if cid in shots:
                 continue
             time.sleep(0.8)  # the frame is on screen
@@ -333,47 +408,115 @@ def run(outdir, core=None):
             simshot.shot(path, offset=offset)
             time.sleep(0.3)
             simshot.shot(path + ".2.png", offset=offset)
-            from PIL import ImageChops
             moved = ImageChops.difference(Image.open(path), Image.open(path + ".2.png")).getbbox()
             os.remove(path + ".2.png")
             if moved:
                 os.remove(path)
                 continue  # caught between two frames: again on the next round (or the next cycle)
-            again = [l for l in open(log, encoding="utf-8", errors="replace") if l.startswith("CASE ")]
-            if again[-1].split()[2] != cid:
+            again = [l for l in open(log, encoding="utf-8", errors="replace") if l.startswith(("CASE ", "PERF|"))]
+            last = again[-1].split()[2] if again[-1].startswith("CASE ") else again[-1].split("|")[1]
+            if last != cid:
                 os.remove(path)
                 continue  # the next case came while capturing: try it on the next round
-            if filt != "none":
-                colour_filter(Image.open(path), filt).save(path)
+            if filt_of.get(cid, "none") != "none":
+                colour_filter(srgb(path), filt_of[cid]).save(path)
             shots[cid] = path
         # then the battery label against every row (AuraCombos), a slice per frame
-        combos = None
         deadline = time.time() + 900
-        while combos is None and time.time() < deadline:
+        while time.time() < deadline and proc.poll() is None:
+            if any(l.startswith("COMBOS|") for l in open(log, encoding="utf-8", errors="replace")):
+                break
             time.sleep(1)
-            for line in open(log, encoding="utf-8", errors="replace"):
-                if line.startswith("COMBOS|"):
-                    combos = line.strip().split("|")
     finally:
+        lost = proc.poll() is not None
         proc.terminate()
-    done, total, fails = numbers(log)
+    return lost
+
+
+def run(outdir, core=None):
+    sys.path.insert(0, HERE)
+    import simshot  # noqa: E402
+    import cases as case_list  # noqa: E402
+    os.makedirs(outdir, exist_ok=True)
+    for sub in ("sim", "diff"):
+        os.makedirs(os.path.join(outdir, sub), exist_ok=True)
+    cases = case_list.all_cases()
+    with_ref = {c["id"] for c in json.load(open(CASES, encoding="utf-8"))["cases"]}
+    refs = [c["id"] for c in cases if c["id"] in with_ref]
+    shots = {}
+    logs = []
+    for n in range(8):
+        dumped = set(parse_logs(logs))
+        todo = [c for c in cases if c["id"] not in shots or (c["id"] in with_ref and c["id"] not in dumped)]
+        combos_done = any(l.startswith("COMBOS|") for lg in logs for l in open(lg, encoding="utf-8", errors="replace"))
+        if not todo and combos_done:
+            break
+        if not todo:
+            todo = cases[:1]  # only the combinations are left: they run after the loader's cases
+        log = os.path.join(outdir, "cases%d.log" % n)
+        logs.append(log)
+        lost = attempt(outdir, cases, todo, shots, log, simshot)
+        if lost:
+            print("monkeydo lost the simulator; restarting it for the %d cases left" % len(
+                [c for c in cases if c["id"] not in shots]))
+            stop_simulator()
+    merged = os.path.join(outdir, "cases.log")
+    with open(merged, "w", encoding="utf-8") as out:
+        for lg in logs:
+            out.write(open(lg, encoding="utf-8", errors="replace").read())
+            os.remove(lg)
+    combos = None
+    for line in open(merged, encoding="utf-8", errors="replace"):
+        if line.startswith("COMBOS|"):
+            combos = line.strip().split("|")
+    done, total, fails = numbers(merged)
     report = ["numbers: %d of %d cases, %d differences" % (done, total, len(fails))] + fails
     if combos is None:
         report.append("combinations: no result (the case loader didn't finish them)")
         fails.append("combinations")
     else:
-        bad = [l.strip() for l in open(log, encoding="utf-8", errors="replace") if l.startswith("COMBO_FAIL|")]
+        bad = [l.strip() for l in open(merged, encoding="utf-8", errors="replace") if l.startswith("COMBO_FAIL|")]
         report.append("combinations (battery label against every row, SPEC.md §9): %s, %s overlapping" % (combos[1], combos[2]))
         report += bad[:40]
         if bad:
             fails.append("combinations")
-    report += pictures(outdir, [c["id"] for c in cases], shots, core)
+    report += pictures(outdir, refs, shots, core)
+    lines, aod_fails = always_on(cases, shots)
+    report += lines
+    fails += aod_fails
+    report += cost(merged)
     text = "\n".join(report) + "\n"
     open(os.path.join(outdir, "report.txt"), "w").write(text)
     print(text)
     return 1 if fails or done < total else 0
 
 
+def parse_logs(logs):
+    """The cases whose layout some log holds."""
+    got = {}
+    for lg in logs:
+        got.update(parse(lg))
+    return got
+
+
+def cost(log):
+    """The loader's PERF lines (SPEC.md §13): the frames that paint the dial's cache and the ones that copy it, ms in
+    the simulator, and the memory in use."""
+    paint, copy, mem = [], [], []
+    for line in open(log, encoding="utf-8", errors="replace"):
+        if line.startswith("PERF|"):
+            _, cid, kind, lay, drw, used, total = line.strip().split("|")
+            (paint if kind == "first" else copy).append((int(drw), cid))
+            mem.append((int(used), cid))
+    if not mem:
+        return []
+    out = ["", "cost (simulator on this Mac, not the watch): a frame's paint in ms, memory in use (bytes)"]
+    for name, rows in (("painting the dial", paint), ("copying the dial", copy)):
+        if rows:
+            ms = sorted(r[0] for r in rows)
+            out.append("  %s: median %d, max %d (%s)" % (name, ms[len(ms) // 2], max(rows)[0], max(rows)[1]))
+    out.append("  memory: max %d (%s)" % max(mem))
+    return out
 def main(argv):
     if not argv:
         print(__doc__)

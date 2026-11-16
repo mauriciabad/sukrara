@@ -10,13 +10,13 @@ import Toybox.Time.Gregorian;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
-// THE DEBUG CASE LOADER (SPEC.md §10): the face showing every case of contracts/watchface/aura/cases.json in turn, 3 s
+// THE DEBUG CASE LOADER (SPEC.md §10): the face showing every case of contracts/watchface/aura/cases.json in turn, 6 s
 // each, the reference's fixed clock (Mon 16 Nov 2026, UTC), and printing each case's layout once (AuraDump) for
 // apps/garmin/tools/garmin_test.py. Only in the 'cases' build (cases.jungle, manifest-cases.xml): the release face
 // never has it, and every symbol here is (:debug), so a release build of these files strips it too.
 (:debug)
 module AuraCases {
-    const PERIOD_MS = 3000;
+    const PERIOD_MS = 6000;
 
     // a case's input model: the reference's defaults, then the case's cfg (SPEC.md §3)
     function input(i as Number) as AuraInput {
@@ -116,10 +116,12 @@ class AuraCasesApp extends AuraApp {
 (:debug)
 class AuraCasesView extends AuraView {
     var shown as Number = -1;
+    var timed as Number = -1;
     var start as Number = 0;
     var combo as Number = 0;
     var comboBad as Number = 0;
     var timer as Timer.Timer? = null;
+    var frames as Timer.Timer? = null;
 
     function combos() as Void {
         comboBad += AuraCombos.run(combo, combo + 3);
@@ -133,6 +135,14 @@ class AuraCasesView extends AuraView {
     function initialize() {
         AuraView.initialize();
         start = System.getTimer();
+        // a watch-app (a face's 128 KB can't hold the face and this loader's layout dump): its frames come from a
+        // timer, 1 Hz like an awake face
+        frames = new Timer.Timer();
+        frames.start(method(:frame), 1000, true);
+    }
+
+    function frame() as Void {
+        WatchUi.requestUpdate();
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
@@ -164,9 +174,23 @@ class AuraCasesView extends AuraView {
             return;
         }
         var i = (k - 1) % AuraCaseTable.COUNT;
+        var t0 = System.getTimer();
         var m = new AuraModel(AuraCases.input(i));
+        var t1 = System.getTimer();
         AuraDraw.draw(dc, m, 0, 0);
-        if (i != shown) {
+        var t2 = System.getTimer();
+        // the cost of a frame (SPEC.md §13): the layout and the paint in ms (the frames of a case that paint the dial's
+        // cache, then one that copies it) and the memory in use (bytes, of the total)
+        if (i != shown || timed != i) {
+            if (i == shown) {
+                timed = i;
+            }
+            var st = System.getSystemStats();
+            System.println("PERF|" + AuraCases.id(i) + "|" + (i != shown ? "first" : "next") + "|" + (t1 - t0) + "|" +
+                (t2 - t1) + "|" + st.usedMemory + "|" + st.totalMemory);
+        }
+        if (i != shown && !AuraDials.painting()) {
+            // the case is on screen: its layout (the dial paints a few units a frame, so this call has room)
             shown = i;
             System.println("CASE " + i + " " + AuraCases.id(i) + " " + AuraCases.filter(i));
             AuraDump.dump(AuraCases.id(i), m);

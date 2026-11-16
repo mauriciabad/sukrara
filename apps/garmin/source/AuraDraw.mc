@@ -4,6 +4,7 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
+import Toybox.StringUtil;
 import Toybox.WatchUi;
 
 // Draws an AuraModel (SPEC.md §4 z-order). Every position comes from the model; this file only paints.
@@ -13,26 +14,28 @@ module AuraDraw {
     // at cx + 0.5
     var cx as Float = 194.5;
     var cy as Float = 194.5;
-    var fonts as Dictionary = {};
     var atlases as Dictionary = {};
+    var used as Dictionary = {}; // the fonts the frame being drawn uses
     var icons as Graphics.BitmapReference or Graphics.BitmapType or Null = null;
 
-    function font(key as String) as Array {
-        var f = fonts[key];
-        if (f == null) {
-            var t = AuraFontTable.font(key);
-            f = [WatchUi.loadResource(t[0]), t[1]];
-            fonts[key] = f;
-        }
-        return f as Array;
-    }
-
-    // the arc fonts' atlas, glyphs and boxes
+    // a font: its atlas (8-bit alpha, white), glyphs, boxes and baseline (AuraFontTable, tools/fonts.py); or, for the
+    // small straight texts, [the Connect IQ font, baseline]
     function atlas(key as String) as Array {
+        used[key] = true;
         var a = atlases[key];
         if (a == null) {
-            var t = AuraFontTable.arc(key);
-            a = [WatchUi.loadResource(t[0]), t[1], t[2]];
+            var t = AuraFontTable.atlas(key);
+            if (t[1] instanceof Number) {
+                a = [WatchUi.loadResource(t[0]), t[1]];
+                atlases[key] = a;
+                return a;
+            }
+            var j = WatchUi.loadResource(t[1]) as Array;
+            var m = StringUtil.convertEncodedString(j[1], {
+                :fromRepresentation => StringUtil.REPRESENTATION_STRING_BASE64,
+                :toRepresentation => StringUtil.REPRESENTATION_BYTE_ARRAY,
+            });
+            a = [WatchUi.loadResource(t[0]), j[0], m, j[2]];
             atlases[key] = a;
         }
         return a as Array;
@@ -47,7 +50,11 @@ module AuraDraw {
 
     // drop the loaded fonts (the graphics pool may purge them; they reload on the next draw)
     function release() as Void {
-        fonts = {};
+        releaseFonts();
+        AuraDials.release();
+    }
+
+    function releaseFonts() as Void {
         atlases = {};
         icons = null;
     }
@@ -73,20 +80,54 @@ module AuraDraw {
         dc.setPenWidth(w);
     }
 
-    // a text with its baseline at y (screen-centred coordinates); centred texts are placed by their own advance,
-    // rounded to the nearest pixel (the system's centring truncates); the system draws bitmap fonts 1 px under the line
+    // a text with its baseline at y (screen-centred coordinates), left-aligned at x or centred on it by its advance:
+    // each glyph of the atlas drawn tinted at its pen position, on whole pixels (crisp), the pen advancing by the
+    // font's own fractional advances (as the reference's browser does)
     function text(dc as Dc, key as String, x as Numeric, baseline as Numeric, s as String, col as Number, just as Number) as Void {
-        var f = font(key);
-        var fr = f[0];
-        if (fr has :get) {
-            fr = fr.get();
+        var a = atlas(key);
+        if (a.size() == 2) {
+            // a Connect IQ font: centred by its own advance, rounded to the nearest pixel (the system's centring
+            // truncates); the system draws bitmap fonts 1 px under the line
+            var fr = a[0];
+            if (fr has :get) {
+                fr = fr.get();
+            }
+            dc.setColor(col, Graphics.COLOR_TRANSPARENT);
+            var left = cx + 0.5 + x;
+            if (just == Graphics.TEXT_JUSTIFY_CENTER) {
+                left -= dc.getTextWidthInPixels(s, fr) / 2.0;
+            }
+            dc.drawText(Math.floor(left + 0.5), cy + 0.5 + baseline - (a[1] as Number) - 1, fr, s, Graphics.TEXT_JUSTIFY_LEFT);
+            return;
         }
-        dc.setColor(col, Graphics.COLOR_TRANSPARENT);
-        var left = cx + 0.5 + x;
+        var chars = a[1] as String;
+        var m = a[2] as ByteArray;
+        var pen = cx + 0.5 + x;
         if (just == Graphics.TEXT_JUSTIFY_CENTER) {
-            left -= dc.getTextWidthInPixels(s, fr) / 2.0;
+            pen -= arcWidth(key, s, 0) / 2.0;
         }
-        dc.drawText(Math.floor(left + 0.5), cy + 0.5 + baseline - (f[1] as Number) - 1, fr, s, Graphics.TEXT_JUSTIFY_LEFT);
+        var top = cy + 0.5 + baseline - (a[3] as Number);
+        var cs = s.toCharArray();
+        for (var i = 0; i < cs.size(); i++) {
+            var k = chars.find(cs[i].toString());
+            if (k == null) {
+                continue;
+            }
+            var o = k * 10;
+            var gw = m[o + 4];
+            var gh = m[o + 5];
+            if (gw > 1 || gh > 1) {
+                var xo = m[o + 6] > 127 ? m[o + 6] - 256 : m[o + 6];
+                var yo = m[o + 7] > 127 ? m[o + 7] - 256 : m[o + 7];
+                // drawBitmap2 keeps the sub-rectangle where it sits in the atlas: move the atlas by its corner
+                var gx = (m[o] << 8) | m[o + 1];
+                var gy = (m[o + 2] << 8) | m[o + 3];
+                dc.drawBitmap2(Math.floor(pen + xo + 0.5) - gx, Math.floor(top + yo + 0.5) - gy, a[0], {
+                    :bitmapX => gx, :bitmapY => gy, :bitmapWidth => gw, :bitmapHeight => gh, :tintColor => col,
+                });
+            }
+            pen += adv(a, k);
+        }
     }
 
     // a line with round caps
@@ -153,7 +194,7 @@ module AuraDraw {
         var a = atlas(key);
         var chars = a[1] as String;
         var m = a[2] as ByteArray;
-        var base = AuraFontTable.font(key)[1] as Number;
+        var base = a[3] as Number;
         var pos = s0.toFloat();
         var cs = s.toCharArray();
         for (var i = 0; i < cs.size(); i++) {
@@ -201,7 +242,10 @@ module AuraDraw {
         dc.setAntiAlias(true);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
-        AuraDials.draw(dc, m);
+        // the dial (cached), cut by the halo, then the sweep (not cut), then the content (SPEC.md §4 z-order)
+        if (AuraDials.draw(dc, m)) {
+            new AuraHalo(m).paint(dc, m);
+        }
         AuraDials.sweep(dc, m);
         date(dc, m);
         topField(dc, m);
@@ -215,6 +259,14 @@ module AuraDraw {
         bottomFields(dc, m);
         stroke(dc, 0x121214, 1.0, 1);
         dc.drawCircle(cx, cy, 194.5);
+        // keep only the fonts this frame used (the sizes change with the rows: the others would pile up in the heap)
+        var ks = atlases.keys();
+        for (var i = 0; i < ks.size(); i++) {
+            if (used[ks[i]] == null) {
+                atlases.remove(ks[i]);
+            }
+        }
+        used = {};
     }
 
     function date(dc as Dc, m as AuraModel) as Void {
@@ -311,7 +363,7 @@ module AuraDraw {
             fill(dc, col, t[2] as Float);
             dc.fillCircle(cx + p[0], cy + p[1], t[1]);
         }
-        var b = AuraMath.P(182, m.beadA);
+        var b = AuraMath.P(182, m.beadDrawA);
         if (!m.struck && m.awake) {
             fill(dc, col, 0.2);
             dc.fillCircle(cx + b[0], cy + b[1], 13);
@@ -485,18 +537,5 @@ module AuraDraw {
                 arcText(dc, (rn[3] as Number) >= 600 ? "l24s" : "l24m", rn[1] as String, 172, 232, AuraMath.r1(s), false, 0, rn[2] as Number);
             }
         }
-    }
-}
-
-// The dials (SPEC.md §6.12) and the seconds sweep (§6.11): face-aura draws them here. For now every dial is black (draws
-// nothing) and the sweep is off; the halo (§6.13) behaves as none.
-module AuraDials {
-    function draw(dc as Graphics.Dc, m as AuraModel) as Void {
-        // m.inp.dial: grain, contours, waterline, lasers, glow, map (face-aura); black draws nothing.
-        // Inputs ready: m.ext, m.toward, m.I, m.spd, m.levelY, m.idealY, m.dialCol; awake only (m.awake).
-    }
-
-    function sweep(dc as Graphics.Dc, m as AuraModel) as Void {
-        // m.sweepOn, m.sweepCol, m.sweepDeg (face-aura)
     }
 }
