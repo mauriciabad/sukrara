@@ -1435,6 +1435,200 @@ on the normal GitHub release (the `.prg` for people who sideload); the `garmin` 
 the file, the version, the What's New text and the dashboard link (about two minutes), and `summary` lists it as
 the one manual step. If Garmin publishes an upload API, that step becomes a call like `play` and `appstore`.
 
+### Connect IQ store: what it asks and checks (research 2026-11-16, Sukrara Aura)
+
+| Topic | What the store wants | Source |
+|---|---|---|
+| Account | A Garmin account signed in at `apps-developer.garmin.com`; the first upload asks for a unique **developer name** (shown on every app and review; the owner chose `mauri.app`, 2026-11-16). No fee for free apps; the *Merchant Account* tab is only for paid apps. The Developer License Agreement is accepted by the upload itself ("By submitting this app, you agree…") | the dashboard, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) |
+| Upload | Step 1: the `.iq` (from `monkeyc -e`, every product in the manifest), *App Version* (≤ 20 characters, higher on every upload), the *Beta App* box. Step 2, once the file is verified: the description and images | the dashboard, [[C2]](https://developer.garmin.com/connect-iq/submit-an-app/) |
+| Beta app | Its own app id in the manifest; only the developer's account sees it, never reviewed, updated as often as wanted; the public app is a separate upload with the real id and the box unticked. Install it by opening `apps.garmin.com/en-US/apps/<id>` on the phone | [[C23]](https://developer.garmin.com/connect-iq/core-topics/beta-apps/), [[C21]](https://forums.garmin.com/developer/connect-iq/f/discussion/3643/beta-testing-uploaded-app/55912), [[C24]](https://github.com/andreiyurik/garmin-russia-trains/pull/4) |
+| Updates | Same key forever ("Signature check failed" otherwise), same app id ("App-id deviates"), a higher version | [[C15]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/402228/developer-key-lost), [[C25]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/443221/two-apps-stuck-in-pending-since-aug-31-replacement-upload-rejected-with-a-misleading-manifest-id-error/2059294) |
+| Store icon | 500 × 500, sRGB, 10 px margin, a solid background (not black, not transparent), no text, no Garmin branding; for a watch face "a preview of the watch face often works best". ≤ 300 KB (forum, not documented) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations) |
+| Hero image | 1440 × 720, one per language when it has text; the featured carousel uses it (name + tagline); ≤ 2 MB (forum) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C28]](https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/we-want-you-to-feel-seen), [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations) |
+| Screenshots | No documented size; others upload the device's resolution (390 × 390 here); ≤ 150 KB each (forum) | [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations), [[C29]](https://github.com/EnO33/foulee/issues/468) |
+| Description | Plain text, no markdown, ≤ 4000 characters, checked only after the CAPTCHA (count it first) | [[C30]](https://forums.garmin.com/developer/connect-iq/f/discussion/7753/ciq-store-doesn-t-enforce-4000-char-limit-while-typing-only-after-captcha) |
+| What a description must say | Every feature, requirement and dependency ("if the app's core features do not work without …, you must disclose that"), the compatible devices, no Garmin partnership or affiliation claim, whether it needs payment | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §4 |
+| Medical | An app for "diagnosis, cure, mitigation, treatment or prevention" needs regulatory clearance; otherwise the description, features and functionality must not indicate it, "informational purposes only". Also §1b: nothing that creates a false sense of security | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §1b–c, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) |
+| Dive watches | Apps for the Descent may not be intended only for use during a dive | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §1b |
+| Privacy | A privacy policy when the app collects data; it must say data goes to the developer, not Garmin; don't move its URL without a redirect | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §3c, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) Exhibit A |
+| Permissions | Shown on the store page from the manifest: Communications as "Send/receive information to/from the Internet" (a face may use it only in the background, hence *Background*) | [[C32]](https://forums.garmin.com/developer/connect-iq/f/discussion/6588/where-does-the-permission-send-receive-information-to-from-the-internet-come-from), [[C33]](https://forums.garmin.com/developer/connect-iq/f/discussion/6328/how-to-specify-permissions-for-watch-face-deployment) |
+| Brand | No Garmin branding in the icon without permission; IP of others only with permission; other images aren't covered (ask Garmin through its contact form) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §3a |
+| Review | Officially up to 3 days; since October 2026 a backlog of 7–14 days, new faces and updates alike | [[C34]](https://the5krunner.com/2026/10/16/connect-iq-store-delays/), [[C35]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/445602/in-review-delay-multiple-watch-faces-pending-approval-some-for-7-days-already) |
+
+**Other CGM faces in the store** say it the same way: Sugar Sense ("It is not a medical device and is not intended to
+diagnose, treat, cure, or prevent any disease", confirm with the CGM app or a meter, never rely on it for alarms)
+[[C36]](https://apps.garmin.com/en-US/apps/5bf02aaf-f9da-40d9-aded-76bb8158fb52), GlucoPulse ("not a medical device",
+not for insulin dosing) [[C37]](https://apps.garmin.com/en-US/apps/b309a480-c7f4-4dca-b2ec-ca1f4fd63cc2).
+
+**What follows for Sukrara Aura.** The listing follows the [Mac App Store listing](#mac-app-store-the-listing-entered-2026-11-11)
+and the Play one: no accuracy claim, no dosing words, the not-a-medical-device paragraph, the owner's own-risk line,
+not affiliated with Garmin or any sensor maker. *Garmin Connect* is named once, as the requirement the guidelines ask
+to disclose; never "Garmin" in the title, icon or images. The images use no bezel (the reference bezel prints GARMIN)
+and no *Carbs* / *Insulin* pill (the pill stays in the description as "the state of Sukrara's alerts"). The
+Communications permission is explained in the description, since the store words it as the internet while the face
+only reaches Sukrara on the same phone.
+
+### Connect IQ store: the listing (drafts, en + es)
+
+Nothing entered yet: Step 2 opens only after an upload is verified. The owner's display name is set (`mauri.app`).
+
+| Field | en | es |
+|---|---|---|
+| Title | `Sukrara Aura` (the manifest's `AppName`, the same in both) | `Sukrara Aura` |
+| Store icon | `docs/img/aura/store/ciq/icon-500.png` (500 × 500, 49 KB) | the same |
+| Hero | `docs/img/aura/store/ciq/hero-en.png` (1440 × 720, 327 KB): *Your glucose on your wrist* / *From Sukrara on your phone* | `hero-es.png`: *Tu glucosa en la muñeca* / *Desde Sukrara en tu móvil* |
+| Screenshots, in order | `docs/img/aura/store/ciq/screen-*.png` (390 × 390, ≤ 70 KB): hero, sparkline, contours, glow, lasers, waterline, muted, hiking fields, always-on, night | the same (no Spanish one without a pill yet) |
+| Category | Watch face (the manifest's type); any other category the form offers: Health / Medical, whichever is closest | the same |
+| Privacy policy / support | https://sukrara.mauri.app/privacy / https://sukrara.mauri.app | the same |
+| Price | Free | |
+
+The images are made by [`assets/brand/sukrara/connectiq/render.mjs`](../assets/brand/sukrara/connectiq/render.mjs)
+from the reference renderer with synthetic data (cases.json): `node assets/brand/sukrara/connectiq/render.mjs`, and
+again once the face's final look is approved (the digit spacing, defaults and sparkline were still changing on
+2026-11-16).
+
+**Description, en** (3119 characters):
+
+```text
+Sukrara Aura shows your glucose on your watch face, next to the time: the value in its range colour, the trend arrow or the last hour as a line, and how long ago it was read. It is the watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+
+What you need
+• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends every reading to the watch face through Garmin Connect.
+• iPhone is not supported.
+• Without Sukrara on your phone the face shows the time and your watch's own data, and "No readings".
+
+At a glance
+• Your glucose in your range's colours, with Sukrara's trend arrow, or the last hour as a sparkline on a fixed scale.
+• A level rail on the right with your own limits marked, and the last 30 minutes as a fading trail.
+• The reading ages on the watch's own clock: its time appears when it is late, then it is struck through and grey, then "No reading since" and the time. An old value never looks current, even with the phone out of reach.
+• The state of Sukrara's alerts on your phone (needs you, handled, muted and for how long) and of your sensor (warming up, ending, ended).
+• A background, the aura, that gathers at your level and spreads the further out of range you are: grain, contours, waterline, lasers or glow; or a map, or plain black.
+• Always-on and night modes that stay dim.
+• Private: hides the number until you touch and hold the screen.
+
+Fields
+• One field on top and two along the bottom: weather, steps, sunset, Body Battery, altitude, notifications, today's time in range, a second time zone, floors, heart rate, or the last treatment you logged in Sukrara.
+• The watch's battery as a rail, in days, percent or both.
+
+Settings
+In the Connect IQ app, or on the watch (hold MENU on the face › Watch face › Customize): dial, halo, trend (arrow or sparkline), seconds sweep, green in range, the three fields, battery label, private and second time zone.
+
+Watches
+Descent Mk3i 43 mm for now.
+
+Privacy
+The face only talks to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes the face asks Sukrara on the same phone for the latest one (that is the Communications permission; nothing goes to the internet). Your watch's data (heart rate, steps, Body Battery, sleep times) stays on the watch. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
+
+Free and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
+In English and Spanish. Help and feedback: https://sukrara.mauri.app
+
+Important
+Sukrara Aura is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and the watch face sounds no alerts. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
+
+Sukrara is not affiliated with Garmin or with any sensor maker.
+```
+
+**Description, es** (3307 characters):
+
+```text
+Sukrara Aura muestra tu glucosa en la esfera del reloj, junto a la hora: el valor en el color de su rango, la flecha de tendencia o la última hora como una línea, y hace cuánto se leyó. Es la esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+
+Qué necesitas
+• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura a la esfera a través de Garmin Connect.
+• No funciona con iPhone.
+• Sin Sukrara en el móvil, la esfera muestra la hora y los datos del propio reloj, y «Sin lecturas».
+
+De un vistazo
+• Tu glucosa en los colores de tu rango, con la flecha de tendencia de Sukrara, o la última hora como un minigráfico a escala fija.
+• Una barra de nivel a la derecha con tus propios límites marcados y los últimos 30 minutos como un rastro que se desvanece.
+• La lectura envejece con la hora del propio reloj: cuando llega tarde aparece su hora, luego se tacha y se vuelve gris, y luego «Sin lectura desde» y la hora. Un valor antiguo nunca parece actual, aunque el móvil esté lejos.
+• El estado de las alertas de Sukrara en tu móvil (te necesita, atendida, silenciada y hasta cuándo) y el de tu sensor (calentando, acabándose, terminado).
+• Un fondo, el aura, que se concentra en tu nivel y se extiende cuanto más te alejas del rango: grano, curvas, línea de agua, láseres o brillo; o un mapa, o negro.
+• Modos siempre encendido y noche que se mantienen tenues.
+• Privado: oculta el número hasta que mantienes pulsada la pantalla.
+
+Datos
+• Un dato arriba y dos abajo: tiempo, pasos, puesta de sol, Body Battery, altitud, notificaciones, tiempo en rango de hoy, una segunda zona horaria, pisos, frecuencia cardiaca o el último tratamiento que apuntaste en Sukrara.
+• La batería del reloj como una barra, en días, porcentaje o ambos.
+
+Ajustes
+En la app Connect IQ, o en el reloj (mantén MENU en la esfera › Esfera del reloj › Personalizar): esfera, halo, tendencia (flecha o minigráfico), barrido de segundos, verde en rango, los tres datos, texto de batería, privado y segunda zona horaria.
+
+Relojes
+Descent Mk3i 43 mm, de momento.
+
+Privacidad
+La esfera solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, y cada 5 minutos la esfera pide la última a Sukrara en el mismo móvil (ese es el permiso de Comunicaciones; nada sale a internet). Los datos de tu reloj (frecuencia cardiaca, pasos, Body Battery, horas de sueño) se quedan en el reloj. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/privacy
+
+Libre y gratuita (GPL-3.0): https://github.com/mauriciabad/sukrara
+En inglés y español. Ayuda y comentarios: https://sukrara.mauri.app
+
+Importante
+Sukrara Aura no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativa. Los valores pueden ser erróneos, llegar tarde o faltar, y la esfera no hace sonar alertas. No tomes decisiones de tratamiento basándote en ella: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsala bajo tu propia responsabilidad.
+
+Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
+```
+
+Before pasting, check the texts against the approved face: the setting names (`apps/garmin/resources*/strings`), the
+watch's Customize path and the devices in the manifest. A new device or setting changes both texts.
+
+### Connect IQ store: the build
+
+- `tools/release/garmin-release.sh --beta` → `apps/garmin/bin/dist/SukraraAura-beta.iq`: `build.sh export-beta`, the
+  face under the beta app id `635140ec-f724-44fb-bc08-976fa9111250` (fixed, so every beta upload updates the one beta
+  app), signed with the store key.
+- `tools/release/garmin-release.sh <version>` → `SukraraAura-<version>.iq` (the public app id) and each device's
+  `.prg`; needs `tools/release/garmin-key.sha256` (below) and the manifest at that version.
+- Every `.iq` is checked before it is kept: it unpacks (a 7-zip; `bsdtar`), carries the expected app id, version and
+  every manifest device, its `dev_key.pub` is the store key's public key, and each device's `.prg` passes
+  `verify_prg.sh` (the id, no debug code). Tried 2026-11-16 on the release Mac: both packages verified (418 KB, one
+  device). Nothing was uploaded.
+- **The beta gets no pushes.** Sukrara on the phone pushes to the face's real id (`AuraLink.APP_ID`) and opens the
+  5-minute fetch only while a watch is known to have that face. The beta face therefore shows readings only while the
+  sideloaded face (same real id) is also on the watch, and only from the fetch (up to 5 minutes late). Enough to try
+  the store install, the Connect IQ app's settings page and the listing's look; the push is tried with the public app.
+- **The pin.** `tools/release/garmin-key.sha256` (the store key's public SHA-256,
+  `1e34106fdcd521d2f6676bf5b0f3d92691a8535cbe667f44064b886e7cdf111f` on 2026-11-16) is the switch that puts the face
+  in `release.py`. Commit it in the change that makes the first public upload, so that release writes the version into
+  the manifest and builds the `.iq`.
+
+### Connect IQ store: the owner's steps (beta first, then public)
+
+Marked **[owner]**: only the owner does it. Everything else an agent can do or prepare. Nothing goes up before the
+owner approves the face on the watch.
+
+Beta (only the owner's account sees it, no review):
+
+1. **[owner]** Sign in at https://apps-developer.garmin.com/developer/dashboard (done 2026-11-16; developer name
+   `mauri.app`).
+2. An agent runs `tools/release/garmin-release.sh --beta` on the release Mac and re-renders the images
+   (`node assets/brand/sukrara/connectiq/render.mjs`), both from the approved `next`.
+3. **Upload an App** › *Choose file*: `apps/garmin/bin/dist/SukraraAura-beta.iq`; *App Version*: the manifest's
+   (`0.1.0` today); tick **Beta App** (*This app is for testing purposes only*).
+4. **[owner]** **Continue**. This uploads the file and accepts the Developer License Agreement and Terms of Use.
+5. Step 2, *Enter Details*: the title, the en description, the icon, hero and screenshots and the links from
+   [the listing](#connect-iq-store-the-listing-drafts-en--es); Spanish too if the form has languages. An agent may
+   fill this in; it notes here what the form really asks.
+6. **[owner]** **Submit**.
+7. **[owner]** On the phone: open `https://apps.garmin.com/en-US/apps/<beta store id>` (the dashboard shows it) in
+   the Connect IQ app, install it on the watch, choose it, and check the settings page in the Connect IQ app.
+
+Public (reviewed, 7–14 days at the moment):
+
+8. Commit `tools/release/garmin-key.sha256` (above), then build `SukraraAura-<version>.iq`: with the next Sukrara
+   release (`release.py`: the gate builds it, the `garmin` step prints the upload) or by hand
+   (`tools/release/garmin-release.sh <the manifest's version>`).
+9. **Upload an App** (not *Upload a new version* of the beta, which has the other id): the `.iq`, the version, **Beta
+   App unticked**. **[owner]** **Continue**.
+10. Step 2 as in 5, then **[owner]** **Submit**. Garmin e-mails when it is approved; the face is in the store from
+    then.
+11. After approval: put the store link on the website and the README (the website agent's part) and on the phone's
+    Sukrara Aura row. Delete the beta app from the dashboard, and the sideloaded copy from the watch (the store
+    copy replaces it: same id, same key).
+
+Later versions: `release.py`'s `garmin` step prints the file, version and What's New for **Upload a new version** of
+the public app, and the owner submits it (no upload API).
+
 ## Web and update channels
 
 - **sukrara.mauri.app as the install hub**: one *Download* page that detects the platform: Play badge, "APK /
@@ -1717,4 +1911,19 @@ All seen **2026-10-18**. "3rd-party" = not the platform owner.
   [C20] connectiq-starter ("not automatable") — https://github.com/oleg-koval/connectiq-starter;
   [C21] Garmin forum, beta apps — https://forums.garmin.com/developer/connect-iq/f/discussion/3643/beta-testing-uploaded-app/55912;
   [C22] GitHub, self-hosted runners and public repositories — https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners
+- [C23]–[C37] seen 2026-11-16: [C23] Garmin, Beta Apps — https://developer.garmin.com/connect-iq/core-topics/beta-apps/;
+  [C24] garmin-russia-trains #4, beta app id and install workaround — https://github.com/andreiyurik/garmin-russia-trains/pull/4;
+  [C25] Garmin forum, "App-id deviates" — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/443221/two-apps-stuck-in-pending-since-aug-31-replacement-upload-rejected-with-a-misleading-manifest-id-error/2059294;
+  [C26] Garmin, Connect IQ brand guidelines (icon, hero) — https://developer.garmin.com/brand-guidelines/connect-iq/;
+  [C27] Garmin forum, image size limits — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations;
+  [C28] Garmin, We want you to feel seen (hero images) — https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/we-want-you-to-feel-seen;
+  [C29] foulee #468, store visuals — https://github.com/EnO33/foulee/issues/468;
+  [C30] Garmin forum, 4000-character limit — https://forums.garmin.com/developer/connect-iq/f/discussion/7753/ciq-store-doesn-t-enforce-4000-char-limit-while-typing-only-after-captcha;
+  [C31] Garmin, Connect IQ App Review Guidelines (2021-10-13) — https://developer.garmin.com/connect-iq/app-review-guidelines/;
+  [C32] Garmin forum, the Internet permission's wording — https://forums.garmin.com/developer/connect-iq/f/discussion/6588/where-does-the-permission-send-receive-information-to-from-the-internet-come-from;
+  [C33] Garmin forum, watch face permissions — https://forums.garmin.com/developer/connect-iq/f/discussion/6328/how-to-specify-permissions-for-watch-face-deployment;
+  [C34] the5krunner, Connect IQ store delays (2026-10-16) — https://the5krunner.com/2026/10/16/connect-iq-store-delays/;
+  [C35] Garmin forum, review delays — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/445602/in-review-delay-multiple-watch-faces-pending-approval-some-for-7-days-already;
+  [C36] Sugar Sense Watch Face (store listing) — https://apps.garmin.com/en-US/apps/5bf02aaf-f9da-40d9-aded-76bb8158fb52;
+  [C37] GlucoPulse (store listing) — https://apps.garmin.com/en-US/apps/b309a480-c7f4-4dca-b2ec-ca1f4fd63cc2
 - [T1] Abbott trademark notice (via its Play listings and site, 3rd-party summary) — https://play.google.com/store/apps/details?id=com.abbott.adc.freestyle.libre.us
