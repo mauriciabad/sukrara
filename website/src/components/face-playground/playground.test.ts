@@ -14,6 +14,7 @@ import { chapterAt, scene, START } from './tour-model.ts';
 import { curve, dayScenario, inSpan, keyframes, type DayData } from './day/day.ts';
 import { auraFromLive, createAura, type AuraCase } from './aura/adapter.ts';
 import { evaluateAura } from './aura/evaluate.ts';
+import { edge, elbow, ringPlaces, target, toPx } from './lines.ts';
 import { PRESETS_ES } from './aura/presets.ts';
 
 const repo = new URL('../../../../', import.meta.url);
@@ -164,6 +165,51 @@ test('every part names elements of the drawing, and only the screen’s', () => 
 	assert.doesNotMatch(svg.slice(0, svg.indexOf('clip-path="url(')), /data-part/);
 });
 
+test('places: every part is somewhere on the screen, drawn or where it shows', () => {
+	const at = face.places(face.defaults());
+	assert.deepEqual(Object.keys(at).sort(), face.parts.map((p) => p.id).sort());
+	for (const [id, p] of Object.entries(at))
+		for (const b of p.boxes) assert.ok(Math.hypot(b.x + b.w / 2, b.y + b.h / 2) <= face.radius, `${id} is off the screen`);
+	// nothing to do in range: the pill isn't drawn; its line points under the value, where it shows
+	assert.equal(at.pill.shown, false);
+	assert.ok(at.pill.boxes[0].y > at.value.boxes[0].y + at.value.boxes[0].h / 2);
+	assert.equal(face.places({ ...face.defaults(), glucose: 250, rate: 2, status: 'auto' }).pill.shown, true);
+	// the sweep's spot stays put as it goes round; the night draws no dial
+	const sweep = (t: string) => face.places({ ...face.defaults(), time: t }).sweep.boxes[0];
+	assert.deepEqual(sweep('10:09:07'), sweep('10:09:42'));
+	assert.equal(face.places({ ...face.defaults(), mode: 'night' }).dial.shown, false);
+	// a warm-up has no reading: the rail, the last hours and the pill keep their usual places, not the centre
+	const warm = face.places({ ...face.defaults(), sensor: 'warmup' });
+	for (const id of ['rail', 'trend', 'pill']) assert.ok(!warm[id].shown && Math.hypot(warm[id].boxes[0].x, warm[id].boxes[0].y) > 40, id);
+});
+
+test('the tour’s settings set inputs the face has; a dial preview is the dial alone, at the reading', () => {
+	const s = face.settings;
+	for (const g of s.groups) for (const k of g.keys) assert.ok(s.list.some((x) => x.key === k), k);
+	const values = s.apply(s.defaults);
+	assert.deepEqual(values.fields, ['tir', 'treatment']);
+	assert.match(face.render({ ...face.defaults(), ...values }, 'es'), /<svg/);
+	const p = face.looks.preview({ ...face.defaults(), glucose: 60, sensor: 'ok', mode: 'night' });
+	assert.equal(p.glucose, 60);
+	assert.equal(p.mode, 'awake');
+	assert.equal(p.halo, 'none');
+	assert.ok(Number(p.rate) < 0, 'below the ideal it falls further, where the aura spreads most');
+	assert.equal(face.looks.preview({ ...face.defaults(), sensor: 'warmup' }).glucose, 112);
+});
+
+test('leader lines: into the near side of a part, elbows, numbers kept apart on the ring', () => {
+	const face_ = { left: 100, top: 50, width: 390 };
+	assert.deepEqual(toPx(face_, 195, { x: 0, y: 0, w: 10, h: 0 }), { x: 295, y: 245, w: 10, h: 0, hit: undefined });
+	const b = { x: 200, y: 100, w: 50, h: 40 };
+	assert.deepEqual(target(b, { x: 0, y: 0 }), { x: 200, y: 106 });
+	assert.deepEqual(target(b, { x: 400, y: 120 }), { x: 250, y: 120 });
+	assert.deepEqual(edge(b, false), { x: 250, y: 120 });
+	assert.equal(elbow({ x: 0, y: 10 }, { x: 100, y: 40 }, 60), 'M0 10H10L60 40H100');
+	const placed = ringPlaces({ x: 0, y: 0 }, 100, [{ x: 0, y: -50 }, { x: 1, y: -50 }, { x: 50, y: 0 }], 20);
+	assert.ok(Math.hypot(placed[0].x - placed[1].x, placed[0].y - placed[1].y) >= 19, 'two numbers overlap');
+	assert.ok(placed.every((p) => Math.abs(Math.hypot(p.x, p.y) - 100) < 0.2));
+});
+
 test('scoped ids: each drawing refers only to its own', () => {
 	const a = face.render(face.defaults(), 'en', { id: 'f1' });
 	const ids = [...a.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
@@ -216,7 +262,10 @@ test('the made-up day shows a bit of everything', () => {
 	const some = (f: (v: Record<string, unknown>) => boolean) => moments.some(({ v }) => f(v));
 	const g = (v: Record<string, unknown>) => (v.sensor === 'ok' || v.sensor === 'ending') && Number(v.age) < 1.5 ? Number(v.glucose) : NaN;
 	assert.ok(some((v) => g(v) >= 70 && g(v) <= 180), 'in range');
-	assert.ok(some((v) => g(v) < 70 && v.mode === 'night'), 'a low at night');
+	assert.ok(some((v) => g(v) < 70), 'a low');
+	// the night (Do Not Disturb) shows, briefly: there to be seen, not a third of the loop
+	const night = moments.filter(({ v }) => v.mode === 'night').length;
+	assert.ok(night > 0 && night <= 60, `the night lasts ${night} min`);
 	assert.ok(some((v) => g(v) > 180 && v.status === 'auto'), 'a high that asks for insulin');
 	assert.ok(some((v) => g(v) > 180 && v.status === 'quiet'), 'a high waiting after insulin');
 	assert.ok(some((v) => v.status === 'muted'), 'a mute');

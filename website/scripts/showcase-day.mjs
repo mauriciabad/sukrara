@@ -212,7 +212,8 @@ const out = {
 	quiet,
 	muted: [[H(19, 30), H(20, 30)]],
 	phoneAway: [[H(16, 50), H(18, 35)]],
-	dnd: [[H(23), H(7)]],
+	// Do Not Disturb (the night): short, so the tour shows it without spending a third of its loop on it
+	dnd: [[H(23), H(23, 45)]],
 	// the sensor: hours left, sped up (a fortnight in a day) and slower in its last 8 h; it ends, a new one warms up an hour
 	sensor: { ended: H(15), changed: H(15, 20), ready: H(16, 20), left: [[H(16, 20), 360], [H(12), 8], [H(15), 0]] },
 	// the watch's battery in days: charged while getting up, down to amber by the next dawn

@@ -3,16 +3,21 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * The face tour: the face living through a made-up day at 600×, what each of its parts is (pointing at one fades the
- * rest), and a live preview of every dial (a click puts it on the face). One clock drives them all (tour.ts). The first
- * frame is drawn at build time, so the face shows before the script runs.
+ * The face tour: the face living through a made-up day at 600× in the middle, every part named around it (its icon, a
+ * short line, a leader line to where it sits; pointing at one shows it alone), play and the day's slider under it, and
+ * its settings to try (the dials as previews, cards, switches, the fields). Narrow, the names become numbers on the
+ * screen's ring with the list under the face. One clock drives everything (tour.ts). The first frame is drawn at build
+ * time, so the face shows before the script runs.
  *   <FaceTour />            <FaceTour id="home" start={450} />
  */
+import DsIcon from '../DsIcon.astro';
 import { aura } from './aura/index.ts';
 import FaceScreen from './FaceScreen.astro';
+import PlayBar from './PlayBar.astro';
 import { DAY } from './day/index.ts';
 import { caption, frame, START } from './tour-model.ts';
 import { words } from './strings.ts';
+import './face-ui.css';
 
 type Props = { id?: string; start?: number };
 const { id = 'tour', start = START } = Astro.props;
@@ -20,62 +25,86 @@ const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
 const w = words(lang);
 const look = String(aura.defaults()[aura.looks.key]);
 const first = frame(aura, DAY, { minutes: start, look, seconds: null });
-const svg = aura.render(first.main, lang, { id: `${id}-m` });
-// pointing at a part: every other part of the face, and every other explanation, fades
-const fade = aura.parts
-	.map(
-		(p) =>
-			`.ft[data-focus='${p.id}'] .ft-face [data-part='${p.id}'],.ft[data-focus='${p.id}'] .ft-part[data-part-button='${p.id}']{opacity:1!important}`,
-	)
-	.join('');
+const values = { ...first.main, ...aura.settings.apply(aura.settings.defaults) };
+const svg = aura.render(values, lang, { id: `${id}-m` });
+const at = aura.places(values);
+const side = (s: 'left' | 'right') => aura.parts.map((p, i) => ({ ...p, n: i + 1 })).filter((p) => p.side === s);
+// a preview shows one part of the face alone (Aura: the dial)
+const only = `.ft-look__face [data-part]:not([data-part='${aura.looks.only}']){display:none}`;
 ---
 
 <section class="ft not-content" data-uid={id} data-lang={lang} data-start={start} data-look-start={look} aria-label={w.tour}>
-	<div class="ft-stage">
-		<FaceScreen>
-			<div class="ft-face" data-face set:html={svg} />
-		</FaceScreen>
-		<p class="ft-now" data-now aria-live="off">{caption(first, lang)}</p>
-		<div class="ft-time">
-			<button type="button" class="ft-play" data-play aria-pressed="false">{w.playDay}</button>
-			<input type="range" class="ft-scrub" data-scrub min="0" max={DAY.minutes - 1} step="1" value={start} aria-label={w.dayTime} />
+	<h3 class="ft-title">{w.parts}</h3>
+	<p class="ft-hint"><span class="ft-hint--pointer">{w.partsHint}</span><span class="ft-hint--touch">{w.partsHintTouch}</span></p>
+	<div class="ft-map" data-map>
+		{
+			(['left', 'right'] as const).map((s) => (
+				<ul class={`ft-col ft-col--${s}`} role="list">
+					{side(s).map((p) => (
+						<li>
+							<button type="button" class="ft-part" data-part-button={p.id} data-side={s} data-shown={String(at[p.id]?.shown ?? true)}>
+								<span class="ft-part__icon">
+									<DsIcon name={p.icon} size="1.25rem" />
+								</span>
+								<span class="ft-part__hidden" aria-hidden="true">
+									<DsIcon name="visibility_off" size="0.7rem" />
+								</span>
+								<span class="ft-part__n" aria-hidden="true">
+									{p.n}
+								</span>
+								<span class="ft-part__text">
+									<span class="ft-part__name">
+										{p.name[lang]}
+										<span class="ft-part__off"> ({w.notNow})</span>
+									</span>
+									<span class="ft-part__about">{p.about[lang]}</span>
+								</span>
+							</button>
+						</li>
+					))}
+				</ul>
+			))
+		}
+		<div class="ft-centre">
+			<FaceScreen size="100%">
+				<div class="ft-face" data-face set:html={svg} />
+			</FaceScreen>
+			<PlayBar label={w.playDay} scrubLabel={w.dayTime} max={DAY.minutes - 1} value={start} now={caption(first, lang)} />
 		</div>
+		<svg class="ft-lines" data-lines aria-hidden="true">
+			<defs>
+				<clipPath id={`${id}-in`}><circle data-clip></circle></clipPath>
+				<mask id={`${id}-out`} maskUnits="userSpaceOnUse">
+					<rect x="-9999" y="-9999" width="99999" height="99999" fill="#fff"></rect>
+					<circle data-clip fill="#000"></circle>
+				</mask>
+			</defs>
+			<g class="ft-lines__out" mask={`url(#${id}-out)`}>{aura.parts.map((p) => <path class="ft-line" data-line={p.id} />)}</g>
+			<g class="ft-lines__in" clip-path={`url(#${id}-in)`}>{aura.parts.map((p) => <path class="ft-line" data-line={p.id} />)}</g>
+			<g>{aura.parts.map((p) => <g class="ft-end" data-end={p.id} />)}</g>
+			<g class="ft-hits">{aura.parts.filter((p) => p.id !== aura.looks.only).map((p) => <g data-hit={p.id} />)}</g>
+		</svg>
 	</div>
-	<div class="ft-explain">
-		<h3 class="ft-title">{w.parts}</h3>
-		<p class="ft-hint">{w.partsHint}</p>
-		<ul class="ft-parts">
-			{
-				aura.parts.map((p) => (
-					<li>
-						<button type="button" class="ft-part" data-part-button={p.id} data-shown="true">
-							<span class="ft-part__name">
-								{p.name[lang]}
-								<span class="ft-part__off">({w.notNow})</span>
-							</span>
-							<span class="ft-part__about">{p.about[lang]}</span>
+	<div class="ft-settings">
+		<h4 class="ft-settings__title">{w.tryIt}</h4>
+		<div class="ft-looks" data-looks role="group" aria-label={w.looks}>
+			<span class="ft-looks__label">{aura.looks.label[lang]}</span>
+			<div class="ft-looks__row">
+				{
+					aura.looks.options.map((o) => (
+						<button type="button" class="ft-look" data-look={o.value} aria-pressed={String(o.value === look)}>
+							<span class="ft-look__face" data-preview aria-hidden="true" />
+							<span class="ft-look__name">{o.label[lang]}</span>
 						</button>
-					</li>
-				))
-			}
-		</ul>
-	</div>
-	<div class="ft-looks" data-looks role="group" aria-label={w.looks}>
-		<h3 class="ft-title">{aura.looks.label[lang]}</h3>
-		<div class="ft-looks__row">
-			{
-				aura.looks.options.map((o) => (
-					<button type="button" class="ft-look" data-look={o.value} aria-pressed={String(o.value === look)}>
-						<span class="ft-look__face" data-preview aria-hidden="true" />
-						<span class="ft-look__name">{o.label[lang]}</span>
-					</button>
-				))
-			}
+					))
+				}
+			</div>
 		</div>
+		<div class="ft-sets" data-sets></div>
 	</div>
 </section>
 
-<style is:inline set:html={fade} />
+<style is:inline set:html={only} />
 
 <script>
 	import { aura } from './aura/index.ts';
@@ -88,203 +117,333 @@ const fade = aura.parts
 </script>
 
 <style>
-	/* room for the face beside two columns of parts */
+	/* room for the face between two columns of names */
 	:global(:root:has(.ft)) {
 		--sl-content-width: 62rem;
 	}
-	/* the dials right under the face, so a click shows on the face while it's still in sight */
 	.ft {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr);
-		grid-template-areas: 'stage' 'looks' 'explain';
-		gap: 1.5rem;
-		margin-block: 2rem;
-	}
-	.ft-stage {
-		grid-area: stage;
-	}
-	.ft-explain {
-		grid-area: explain;
-	}
-	.ft-looks {
-		grid-area: looks;
-	}
-	@media (min-width: 56rem) {
-		.ft {
-			grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
-			grid-template-rows: auto 1fr;
-			grid-template-areas: 'stage explain' 'looks explain';
-			align-items: start;
-		}
-	}
-	.ft-stage {
+		container-type: inline-size;
 		display: flex;
 		flex-direction: column;
-		gap: 0.75rem;
-	}
-	.ft-look__face {
-		display: block;
-		aspect-ratio: 1;
-		width: 100%;
-	}
-	.ft-look__face :global(svg) {
-		width: 100%;
-		height: auto;
-	}
-	.ft :global([data-part]),
-	.ft-part {
-		transition: opacity 0.2s ease;
-	}
-	.ft[data-focus] .ft-face :global([data-part]),
-	.ft[data-focus] .ft-part {
-		opacity: 0.12;
-	}
-	.ft[data-focus] .ft-part {
-		opacity: 0.45;
-	}
-	@media (prefers-reduced-motion: reduce) {
-		.ft :global(*) {
-			transition: none !important;
-		}
-	}
-	.ft-now {
-		margin: 0;
-		text-align: center;
-		font: 700 var(--sl-text-base) / 1.3 var(--sk-font-display);
-		color: var(--sl-color-white);
-		min-height: 1.3em;
-	}
-	.ft-time {
-		display: flex;
-		gap: 0.75rem;
-		align-items: center;
-	}
-	.ft-scrub {
-		flex: 1;
-		min-width: 0;
-		accent-color: var(--sl-color-accent);
-	}
-	.ft button {
-		font: inherit;
-		color: inherit;
-		cursor: pointer;
-	}
-	.ft-play {
-		font: 700 var(--sl-text-sm) / 1 var(--sk-font-display) !important;
-		color: var(--sl-color-black) !important;
-		background: var(--sl-color-accent);
-		border: 1px solid var(--sl-color-accent);
-		border-radius: 999px;
-		padding: 0.6rem 1rem;
-		min-height: 2.75rem;
-		white-space: nowrap;
+		gap: 1rem;
+		margin-block: 2rem;
 	}
 	.ft-title {
 		margin: 0;
-		font: 700 var(--sl-text-h4) / 1.2 var(--sk-font-display);
+		font: 800 var(--sl-text-h4) / 1.2 var(--sk-font-display);
 		color: var(--sl-color-white);
 	}
 	.ft-hint {
-		margin: 0.25rem 0 0.75rem;
+		margin: -0.6rem 0 0;
 		font-size: var(--sl-text-sm);
 		color: var(--sl-color-gray-3);
 	}
-	.ft-parts {
+	.ft-hint--touch {
+		display: none;
+	}
+	@media (hover: none) {
+		.ft-hint--pointer {
+			display: none;
+		}
+		.ft-hint--touch {
+			display: inline;
+		}
+	}
+
+	/* wide: names on both sides of the face, lines between */
+	.ft-map {
+		--ft-face: clamp(15rem, 40cqi, 25rem);
+		--ft-mode: lines;
+		position: relative;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) var(--ft-face) minmax(0, 1fr);
+		grid-template-areas: 'left face right';
+		column-gap: clamp(1.75rem, 5cqi, 3.5rem);
+		align-items: start;
+		padding-block: 0.5rem;
+	}
+	.ft-centre {
+		grid-area: face;
+		align-self: center;
+		display: flex;
+		flex-direction: column;
+		gap: 0.9rem;
+		position: relative;
+		z-index: 1;
+	}
+	.ft-col {
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
-		gap: 0.5rem;
-	}
-	/* on a phone, the parts in a row that scrolls sideways, so the face stays in sight */
-	@media (max-width: 56rem) {
-		.ft-parts {
-			grid-template-columns: none;
-			grid-auto-flow: column;
-			grid-auto-columns: min(78%, 16rem);
-			overflow-x: auto;
-			scroll-snap-type: x mandatory;
-			padding-bottom: 0.5rem;
-		}
-		.ft-parts li {
-			scroll-snap-align: start;
-		}
-	}
-	.ft-parts li {
-		margin: 0;
-		display: flex;
-	}
-	.ft-part {
 		display: flex;
 		flex-direction: column;
-		gap: 0.15rem;
+		justify-content: space-around;
+		gap: 0.35rem;
+		align-self: stretch;
+		position: relative;
+		z-index: 2;
+	}
+	.ft-col--left {
+		grid-area: left;
+	}
+	.ft-col--right {
+		grid-area: right;
+	}
+	.ft-col li {
+		margin: 0;
+	}
+	.ft-part {
+		position: relative;
+		display: flex;
+		align-items: flex-start;
+		gap: 0.7rem;
 		width: 100%;
+		font: inherit;
+		color: inherit;
 		text-align: start;
-		padding: 0.6rem 0.8rem;
-		border-radius: 0.75rem;
-		border: 1px solid var(--sk-surface-line);
-		background: var(--sk-surface);
+		cursor: pointer;
+		background: none;
+		border: 0;
+		border-radius: 0.85rem;
+		padding: 0.45rem 0.5rem;
+		transition:
+			opacity 0.2s ease,
+			background-color 0.2s ease;
+	}
+	.ft-col--left .ft-part {
+		flex-direction: row-reverse;
+		text-align: end;
 	}
 	.ft-part:hover,
-	.ft-part:focus-visible {
-		border-color: var(--sl-color-accent);
+	.ft-part:global(.is-on) {
+		background: var(--sk-surface);
 	}
 	.ft-part:focus-visible {
 		outline: 2px solid var(--sl-color-accent);
-		outline-offset: 2px;
+		outline-offset: 1px;
+	}
+	.ft-part__icon {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 50%;
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent);
+		transition:
+			transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+			background-color 0.2s,
+			color 0.2s,
+			box-shadow 0.2s;
+	}
+	.ft-part:global(.is-on) .ft-part__icon {
+		transform: scale(1.08);
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	.ft-part__text {
+		display: flex;
+		flex-direction: column;
+		gap: 0.1rem;
+		min-width: 0;
+		padding-top: 0.1rem;
 	}
 	.ft-part__name {
-		font-weight: 700;
+		font: 800 var(--sl-text-sm) / 1.25 var(--sk-font-display);
 		color: var(--sl-color-white);
-	}
-	.ft-part__off {
-		display: none;
-		font-weight: 400;
-		font-size: var(--sl-text-xs);
-		color: var(--sl-color-gray-3);
-		margin-inline-start: 0.35rem;
-	}
-	.ft-part[data-shown='false'] .ft-part__off {
-		display: inline;
+		transition: color 0.2s;
 	}
 	.ft-part__about {
-		font-size: var(--sl-text-sm);
+		font-size: var(--sl-text-xs);
 		line-height: 1.4;
 		color: var(--sl-color-gray-2);
+		text-wrap: pretty;
+	}
+	.ft-part__n {
+		display: none;
+	}
+	/* not on screen now: said by the icon (a dashed ring, a crossed eye) and to screen readers; nothing moves */
+	.ft-part__off {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		overflow: hidden;
+		clip-path: inset(50%);
+		white-space: nowrap;
+	}
+	.ft-part[data-shown='true'] .ft-part__off {
+		display: none;
+	}
+	.ft-part__hidden {
+		position: absolute;
+		top: 0.15rem;
+		display: grid;
+		place-items: center;
+		width: 1.05rem;
+		height: 1.05rem;
+		border-radius: 50%;
+		background: var(--sl-color-bg);
+		color: var(--sl-color-gray-3);
+		box-shadow: 0 0 0 1.5px var(--sk-surface-line);
+		opacity: 0;
+		transform: scale(0.6);
+		transition:
+			opacity 0.2s,
+			transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+		pointer-events: none;
+	}
+	.ft-col--left .ft-part__hidden {
+		right: 0.2rem;
+	}
+	.ft-col--right .ft-part__hidden {
+		left: 0.2rem;
+	}
+	.ft-part[data-shown='false'] .ft-part__hidden {
+		opacity: 1;
+		transform: none;
+	}
+	.ft-part[data-shown='false'] .ft-part__icon {
+		background: none;
+		box-shadow: inset 0 0 0 1.5px var(--sk-surface-line);
+		color: var(--sl-color-gray-3);
+	}
+	.ft-part[data-shown='false'] .ft-part__name {
+		color: var(--sl-color-gray-2);
+	}
+
+	/* the lines: the page's accent outside the screen, a light one over the watch's black */
+	.ft-lines {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+		overflow: visible;
+		z-index: 3;
+		--ft-line-in: hsl(186, 80%, 70%);
+	}
+	.ft:global(.is-ready) .ft-lines {
+		animation: ft-in 0.7s ease both;
+	}
+	@keyframes ft-in {
+		from {
+			opacity: 0;
+		}
+	}
+	.ft-lines :global(.ft-hits *) {
+		pointer-events: all;
+		fill: transparent;
+		cursor: pointer;
+	}
+	.ft-line {
+		fill: none;
+		stroke-width: 1.25px;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		transition:
+			opacity 0.2s ease,
+			stroke-width 0.2s ease;
+	}
+	.ft-lines__out .ft-line {
+		stroke: var(--sl-color-accent);
+	}
+	.ft-lines__in .ft-line {
+		stroke: var(--ft-line-in);
+	}
+	.ft-line:global(.is-on) {
+		stroke-width: 2.25px;
+	}
+	.ft-line:global(.is-off) {
+		stroke-dasharray: 2 4;
+		opacity: 0.55;
+	}
+	.ft-end {
+		transition: opacity 0.2s ease;
+	}
+	.ft-lines :global(.ft-dot) {
+		fill: var(--ft-line-in);
+		stroke: #0a0a0c;
+		stroke-width: 1.5px;
+	}
+	.ft-lines :global(.is-off .ft-dot) {
+		fill: #0a0a0c;
+		stroke: var(--ft-line-in);
+	}
+	.ft-lines :global(.ft-badge) {
+		fill: var(--ft-line-in);
+		stroke: #0a0a0c;
+		stroke-width: 2px;
+	}
+	.ft-lines :global(.ft-badge-n) {
+		font: 800 11px/1 var(--sk-font-display);
+		fill: #0a0a0c;
+		text-anchor: middle;
+	}
+	.ft-lines :global(.is-off .ft-badge) {
+		fill: #0a0a0c;
+		stroke: var(--ft-line-in);
+		stroke-width: 1.5px;
+		stroke-dasharray: 2 2.5;
+	}
+	.ft-lines :global(.is-off .ft-badge-n) {
+		fill: var(--ft-line-in);
+	}
+
+	/* pointing at a part: the rest fades; pointing at the dial, only the dial stays */
+	.ft-face :global([data-part]) {
+		transition: opacity 0.2s ease;
+	}
+	.ft:global([data-focusing]) .ft-face :global([data-part]:not(.is-on)) {
+		opacity: 0.12;
+	}
+	.ft:global([data-focus='dial']) .ft-face :global([data-part]:not(.is-on)) {
+		opacity: 0;
+	}
+	.ft:global([data-focusing]) .ft-part:not(:global(.is-on)) {
+		opacity: 0.4;
+	}
+	.ft:global([data-focusing]) :is(.ft-line, .ft-end):not(:global(.is-on)) {
+		opacity: 0.1;
+	}
+
+	/* settings to try */
+	.ft-settings {
+		display: flex;
+		flex-direction: column;
+		gap: 0.85rem;
+		padding: 1rem;
+		border-radius: 1rem;
+		border: 1px solid var(--sk-surface-line);
+		background: var(--sk-surface);
+	}
+	.ft-settings__title {
+		margin: 0;
+		font: 800 var(--sl-text-lg) / 1.2 var(--sk-font-display);
+		color: var(--sl-color-white);
+	}
+	.ft-looks__label {
+		font: 600 var(--sl-text-xs) / 1.2 var(--sl-font);
+		color: var(--sl-color-gray-3);
 	}
 	.ft-looks__row {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
-		gap: 0.75rem;
-		margin-top: 0.75rem;
-	}
-	/* on a phone, the dials in one row that scrolls sideways, so the face stays in sight */
-	@media (max-width: 55.99rem) {
-		.ft-looks__row {
-			grid-template-columns: none;
-			grid-auto-flow: column;
-			grid-auto-columns: 5.75rem;
-			overflow-x: auto;
-			scroll-snap-type: x proximity;
-			padding-block-end: 0.25rem;
-		}
+		grid-template-columns: repeat(7, minmax(0, 1fr));
+		gap: 0.4rem;
+		margin-top: 0.35rem;
 	}
 	.ft-look {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.4rem;
-		padding: 0.5rem;
-		border-radius: 1rem;
+		gap: 0.3rem;
+		padding: 0.35rem;
+		border-radius: 0.9rem;
 		border: 2px solid transparent;
 		background: none;
-	}
-	.ft-look .ft-look__face {
-		border-radius: 50%;
-		background: #0a0a0c;
-		padding: 0.3rem;
-		box-sizing: border-box;
+		font: inherit;
+		color: inherit;
+		cursor: pointer;
 	}
 	.ft-look:hover {
 		border-color: var(--sk-surface-line);
@@ -297,9 +456,106 @@ const fade = aura.parts
 		outline: 2px solid var(--sl-color-accent);
 		outline-offset: 2px;
 	}
+	.ft-look__face {
+		display: block;
+		width: 100%;
+		max-width: 5.5rem;
+		aspect-ratio: 1;
+		border-radius: 50%;
+		background: #0a0a0c;
+		padding: 0.2rem;
+		box-sizing: border-box;
+	}
+	/* a dial is drawn for a dark wrist: brightened here, so each style reads at this size */
+	.ft-look__face :global(svg) {
+		width: 100%;
+		height: auto;
+		display: block;
+		filter: brightness(2.2) saturate(1.2);
+	}
 	.ft-look__name {
-		font-size: var(--sl-text-sm);
+		font-size: var(--sl-text-xs);
 		font-weight: 600;
 		color: var(--sl-color-white);
+	}
+	.ft-sets {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.9rem 1.25rem;
+	}
+	.ft-sets :global(.ft-fields) {
+		flex-basis: 100%;
+	}
+	.ft-sets :global(.ft-fields .fu-row) {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	/* narrow: numbers on the screen's ring, every part in one list under the face */
+	@container (max-width: 44rem) {
+		.ft-map {
+			--ft-mode: numbered;
+			--ft-face: min(100%, 22rem);
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'face' 'left' 'right';
+			justify-items: center;
+			row-gap: 0;
+		}
+		.ft-centre {
+			width: var(--ft-face);
+			margin-bottom: 1rem;
+		}
+		.ft-col {
+			width: 100%;
+			justify-content: flex-start;
+			gap: 0.1rem;
+		}
+		.ft-part,
+		.ft-col--left .ft-part {
+			flex-direction: row;
+			text-align: start;
+			padding: 0.5rem 0.4rem;
+			gap: 0.75rem;
+		}
+		.ft-part__icon {
+			width: 2rem;
+			height: 2rem;
+		}
+		.ft-col .ft-part__hidden {
+			left: 1.75rem;
+			right: auto;
+			top: 1.6rem;
+		}
+		.ft-part__n {
+			display: grid;
+			place-items: center;
+			position: absolute;
+			left: 0.1rem;
+			top: 0.25rem;
+			min-width: 1.05rem;
+			height: 1.05rem;
+			border-radius: 999px;
+			background: var(--sl-color-accent);
+			color: var(--sl-color-black);
+			font: 800 0.65rem/1 var(--sk-font-display);
+			z-index: 1;
+		}
+		.ft-looks__row {
+			grid-template-columns: none;
+			grid-auto-flow: column;
+			grid-auto-columns: 4.75rem;
+			overflow-x: auto;
+			scroll-snap-type: x proximity;
+			padding-bottom: 0.25rem;
+		}
+		.ft-sets :global(.ft-fields .fu-row) {
+			grid-template-columns: minmax(0, 1fr);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.ft :global(*) {
+			transition: none !important;
+			animation: none !important;
+		}
 	}
 </style>

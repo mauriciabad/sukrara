@@ -12,6 +12,8 @@ import type { AuraModule } from './evaluate.ts';
 import { scopeIds } from '../svg-ids.ts';
 import { examples } from './examples.ts';
 import { markParts, PARTS, partsOfMarkup } from './parts.ts';
+import { places } from './places.ts';
+import { tourSettings } from './settings.ts';
 import { GROUPS, PRESETS_ES } from './presets.ts';
 
 export type AuraCase = { id: string; group: string; title: string; cfg: Values };
@@ -124,7 +126,22 @@ export function createAura(aura: AuraModule, cases: AuraCase[], fonts: () => Pro
 			return o.id ? scopeIds(svg, o.id) : svg;
 		},
 		parts: PARTS,
-		looks: { key: 'dial', label: dial.label, options: dial.options },
+		radius: 195,
+		places: (values) => places((cfg) => aura.layout({ ...cfg, size: 390, bezel: false }), values),
+		settings: tourSettings(INPUTS),
+		looks: {
+			key: 'dial',
+			label: dial.label,
+			options: dial.options,
+			only: 'dial',
+			// the dial alone (no halo cut out of it) at the newest reading's colour and place, heading away from the
+			// ideal (112.5) as fast as the inputs go, where the aura spreads most; the moment's night or warm-up aside
+			preview: (values) => {
+				const reading = values.sensor === 'ok' || values.sensor === 'ending';
+				const glucose = reading && typeof values.glucose === 'number' ? values.glucose : 112;
+				return { ...defaults(), ...values, sensor: 'ok', mode: 'awake', glucose, rate: glucose >= 112.5 ? 4 : -4, trend: true, age: 0.5, halo: 'none', seconds: false };
+			},
+		},
 		moving: { seconds: false },
 		examples: examples(defaults(), (id) => cases.find((c) => c.id === id)?.cfg),
 		ready: fonts,

@@ -11,77 +11,48 @@ import type { Localized, Part } from '../types.ts';
 
 const L = (en: string, es: string): Localized => ({ en, es });
 
+// Top to bottom on each side of the face, as the parts sit there; the lines from the labels never cross.
 export const PARTS: Part[] = [
-	{ id: 'date', name: L('Date', 'Fecha'), about: L('Weekday, day and month along the top.', 'Día de la semana, día y mes por arriba.') },
+	{ id: 'date', side: 'left', icon: 'calendar_month', name: L('Date', 'Fecha'), about: L('Weekday, day and month.', 'Día de la semana, día y mes.') },
 	{
-		id: 'top',
-		name: L('Top field', 'Campo de arriba'),
-		about: L(
-			'One of your choice under the date: steps by default; weather, sunset, heart rate, energy, a second time zone, time in range…',
-			'Uno a tu elección bajo la fecha: pasos por defecto; tiempo, puesta de sol, pulso, energía, otra zona horaria, tiempo en rango…',
-		),
+		id: 'dial', side: 'left', icon: 'palette', name: L('Dial', 'Fondo'),
+		about: L('The aura of your glucose: it spreads the further out of range you are. Seven styles.', 'El aura de tu glucosa: se extiende cuanto más fuera de rango estás. Siete estilos.'),
 	},
-	{ id: 'time', name: L('Time', 'Hora'), about: L('Big, in the type’s own figures; it grows when there’s room.', 'Grande, con las cifras de la propia letra; crece cuando hay sitio.') },
+	{ id: 'time', side: 'left', icon: 'schedule', name: L('Time', 'Hora'), about: L('Big, and bigger when there’s room.', 'Grande, y más aún cuando hay sitio.') },
 	{
-		id: 'value',
-		name: L('Glucose', 'Glucosa'),
-		about: L(
-			'The newest reading, in its band’s colour. Late, its time shows; old, it’s struck through; then the face says since when. Warming up or ended, it says so.',
-			'La lectura más reciente, en el color de su franja. Con retraso, se ve su hora; antigua, tachada; después la esfera dice desde cuándo. Calentando o terminado, lo dice.',
-		),
-	},
-	{
-		id: 'trend',
-		name: L('The last hours', 'Las últimas horas'),
-		about: L(
-			'Your readings as a small line, up to 3 h, keeping your range in view, with Sukrara’s trend as a dashed ray. Or Sukrara’s arrow instead.',
-			'Tus lecturas como una pequeña línea, hasta 3 h, sin perder de vista tu rango, con la tendencia de Sukrara como un rayo discontinuo. O la flecha de Sukrara.',
-		),
-	},
-	{
-		id: 'rail',
-		name: L('Level rail', 'Riel de nivel'),
-		about: L(
-			'Where you are between your limits, from 1:30 to 4:30: up is higher. The bead is now, the trail the last 30 min.',
-			'Dónde estás entre tus límites, de la 1:30 a las 4:30: arriba es más alto. La bolita es ahora; la estela, los últimos 30 min.',
-		),
-	},
-	{
-		id: 'pill',
-		name: L('What to do', 'Qué hacer'),
-		about: L(
-			'Carbs or Insulin when Sukrara says so. After a treatment, a paused bell and the time left; muted, the crossed bell. A late reading’s time.',
-			'Hidratos o Insulina cuando Sukrara lo dice. Tras un tratamiento, una campana en pausa y el tiempo que queda; silenciadas, la campana tachada. La hora de una lectura con retraso.',
-		),
-	},
-	{
-		id: 'battery',
-		name: L('Watch battery', 'Batería del reloj'),
+		id: 'battery', side: 'left', icon: 'battery_full', name: L('Watch battery', 'Batería del reloj'),
 		about: L('A segment per day left; amber under 2 days, red under 1.', 'Un segmento por día restante; ámbar por debajo de 2 días, rojo por debajo de 1.'),
 	},
 	{
-		id: 'fields',
-		name: L('Two fields', 'Dos campos'),
+		id: 'value', side: 'left', icon: 'water_drop', name: L('Glucose', 'Glucosa'),
+		about: L('The newest reading in its range’s colour. Late or old, it says so.', 'La lectura más reciente, en el color de su rango. Si llega tarde o es antigua, lo dice.'),
+	},
+	{
+		id: 'fields', side: 'left', icon: 'metric_second', name: L('Two fields', 'Dos campos'),
+		about: L('Time in range and your last treatment, or steps, heart rate, altitude…', 'Tiempo en rango y tu último tratamiento, o pasos, pulso, altitud…'),
+	},
+	{
+		id: 'sweep', side: 'right', icon: 'timer', name: L('Seconds', 'Segundos'),
 		about: L(
-			'Today’s time in range and your last treatment by default; or steps, heart rate, altitude, notifications… In the sensor’s last hours, its countdown.',
-			'El tiempo en rango de hoy y tu último tratamiento por defecto; o pasos, pulso, altitud, notificaciones… En las últimas horas del sensor, su cuenta atrás.',
+			'A faint sweep by the rim, once a minute. It runs in real time here, while the day goes 600 times faster.',
+			'Un barrido tenue junto al borde, una vez por minuto. Aquí va en tiempo real, mientras el día va 600 veces más rápido.',
 		),
 	},
 	{
-		id: 'sweep',
-		name: L('Seconds', 'Segundos'),
-		about: L(
-			'A faint sweep near the rim, once a minute; it can be turned off. Here it runs in real time while you point at it: the day goes 600 times faster.',
-			'Un barrido tenue junto al borde, una vez por minuto; se puede desactivar. Aquí va en tiempo real mientras lo señalas: el día va 600 veces más rápido.',
-		),
+		id: 'top', side: 'right', icon: 'metric_main', name: L('Top field', 'Campo de arriba'),
+		about: L('Steps, or weather, sunset, heart rate, a second time zone…', 'Pasos, o tiempo, puesta de sol, pulso, otra zona horaria…'),
 	},
 	{
-		id: 'dial',
-		name: L('Dial', 'Fondo'),
-		about: L(
-			'The aura of your glucose: it gathers at your level and spreads the further out of range you are. Seven to choose from.',
-			'El aura de tu glucosa: se concentra en tu nivel y se extiende cuanto más fuera de rango estás. Siete para elegir.',
-		),
+		id: 'rail', side: 'right', icon: 'dia_range', name: L('Glucose rail', 'Riel de glucosa'),
+		about: L('Where you are between your limits; up is higher. The trail is the last 30 min.', 'Dónde estás entre tus límites; arriba es más alto. La estela, los últimos 30 min.'),
+	},
+	{
+		id: 'trend', side: 'right', icon: 'monitoring', name: L('The last hours', 'Las últimas horas'),
+		about: L('Up to 3 h of readings and where they’re heading. Or an arrow.', 'Hasta 3 h de lecturas y hacia dónde van. O una flecha.'),
+	},
+	{
+		id: 'pill', side: 'right', icon: 'notifications_active', name: L('What to do', 'Qué hacer'),
+		about: L('Carbs or Insulin when Sukrara says so; a bell while alerts wait or are muted.', 'Hidratos o Insulina cuando Sukrara lo dice; una campana mientras las alertas esperan o callan.'),
 	},
 ];
 

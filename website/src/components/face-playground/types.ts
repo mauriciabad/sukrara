@@ -48,8 +48,25 @@ export type Live = {
 	tir?: number | null;
 };
 
-/** A part of the face a person can point at: its name and what it tells them. */
-export type Part = { id: string; name: Localized; about: Localized };
+/**
+ * A part of the face a person can point at, as the face tour names it: the side of the face its label goes on, its icon
+ * (the Android app's own, lib/ds-icons.ts), its name and a short line on what it tells them.
+ */
+export type Part = { id: string; side: 'left' | 'right'; icon: string; name: Localized; about: Localized };
+
+/** A box on the screen, in the face's own units: (0, 0) its centre, the screen the circle r = `FaceAdapter.radius`, y down. A point has w = h = 0, and may name the box a pointer aims at (`hit`). */
+export type Box = { x: number; y: number; w: number; h: number; hit?: Box };
+/** Where a part is: its boxes; whether it's drawn now (if not, where it shows when it is); the drawing's part it names (data-part). */
+export type Place = { boxes: Box[]; shown: boolean; part: string };
+
+/**
+ * A setting a person can try on the face tour: cards to pick from (each with a drawing), a list, or an on / off card.
+ * `picture` is SVG markup (the elements inside a 48 × 48 view box, in currentColor).
+ */
+export type TourSetting =
+	| { key: string; label: Localized; kind: 'cards'; options: { value: string; label: Localized; picture: string }[] }
+	| { key: string; label: Localized; kind: 'select'; options: { value: string; label: Localized }[] }
+	| { key: string; label: Localized; kind: 'switch'; picture: string; on: unknown; off: unknown };
 
 /** One example of the face: what it shows, in words, and its inputs; `live` moves some of them with a clock. */
 export type Example = {
@@ -81,10 +98,19 @@ export interface FaceAdapter {
 	fromLive(live: Live): Values;
 	/** The face as SVG markup; every element that belongs to a part carries data-part="<Part.id>". */
 	render(values: Values, lang: Lang, options?: RenderOptions): string;
-	/** The parts, in reading order (FaceTour explains them). */
+	/** The parts, top to bottom on each side (FaceTour names them around the face). */
 	parts: Part[];
-	/** The inputs that pick a look the tour offers as previews (one key, its choices): Aura's dial. */
-	looks: { key: string; label: Localized; options: { value: string; label: Localized }[] };
+	/** The screen's radius in the drawing's units (the boxes of places() are in them). */
+	radius: number;
+	/** Where every part is with these inputs (by Part.id). */
+	places(values: Values): Record<string, Place>;
+	/** The settings the face tour lets a person try, their starting values, and the inputs they set. */
+	settings: { list: TourSetting[]; groups: { id: string; label: Localized; keys: string[] }[]; defaults: Values; apply(s: Values): Values };
+	/**
+	 * The inputs that pick a look the tour offers as previews (one key, its choices): Aura's dial. A preview shows the
+	 * part `only` alone, drawn with preview(values): the newest reading's colour and place, the look's effect plain.
+	 */
+	looks: { key: string; label: Localized; options: { value: string; label: Localized }[]; only: string; preview(values: Values): Values };
 	/** Inputs every moving preview takes (Aura: no seconds sweep, it would spin at a moving clock's speed). */
 	moving: Values;
 	/** Examples by group (FaceGallery shows them). */
