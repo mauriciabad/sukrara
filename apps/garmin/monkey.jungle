@@ -1,0 +1,6 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The face (release and debug builds). The debug case loader adds cases.jungle (apps/garmin/README.md).
+project.manifest = manifest.xml
+project.typecheck = 1

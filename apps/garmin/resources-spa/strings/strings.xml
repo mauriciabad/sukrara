@@ -1,0 +1,83 @@
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The face's settings words, Spanish (resources: English). -->
+<strings>
+    <string id="AppName">Sukrara Aura</string>
+    <string id="on">Activado</string>
+    <string id="off">Desactivado</string>
+    <string id="selected">Seleccionado</string>
+
+    <string id="set_dial">Esfera</string>
+    <string id="set_halo">Halo</string>
+    <string id="set_trend">Tendencia</string>
+    <string id="set_seconds">Barrido de segundos</string>
+    <string id="set_rangeColour">Verde en rango</string>
+    <string id="set_topField">Dato superior</string>
+    <string id="set_field1">Dato inferior 1</string>
+    <string id="set_field2">Dato inferior 2</string>
+    <string id="set_battLabel">Texto de batería</string>
+    <string id="set_private">Privado</string>
+    <string id="set_tz2">Segunda zona horaria</string>
+
+    <string id="opt_grain">Grano</string>
+    <string id="opt_black">Negro</string>
+    <string id="opt_map">Mapa</string>
+    <string id="opt_contours">Curvas</string>
+    <string id="opt_waterline">Línea de agua</string>
+    <string id="opt_lasers">Láseres</string>
+    <string id="opt_glow">Brillo</string>
+    <string id="opt_outline">Contorno</string>
+    <string id="opt_box">Caja</string>
+    <string id="opt_none">Ninguno</string>
+    <string id="opt_arrow">Flecha</string>
+    <string id="opt_spark">Minigráfico</string>
+    <string id="opt_weather">Tiempo</string>
+    <string id="opt_steps">Pasos</string>
+    <string id="opt_sunset">Puesta de sol</string>
+    <string id="opt_bodyBattery">Body Battery</string>
+    <string id="opt_altitude">Altitud</string>
+    <string id="opt_notifications">Notificaciones</string>
+    <string id="opt_tir">Tiempo en rango</string>
+    <string id="opt_tz2">Segunda zona horaria</string>
+    <string id="opt_floors">Pisos</string>
+    <string id="opt_heart">Frecuencia cardiaca</string>
+    <string id="opt_treatment">Último tratamiento</string>
+    <string id="opt_days">Días</string>
+    <string id="opt_percent">Porcentaje</string>
+    <string id="opt_both">Ambos</string>
+
+    <string id="opt_UTC">UTC</string>
+    <string id="opt_LON">Londres</string>
+    <string id="opt_LIS">Lisboa</string>
+    <string id="opt_MAD">Madrid</string>
+    <string id="opt_PAR">París</string>
+    <string id="opt_BER">Berlín</string>
+    <string id="opt_ATH">Atenas</string>
+    <string id="opt_CAI">El Cairo</string>
+    <string id="opt_IST">Estambul</string>
+    <string id="opt_MOW">Moscú</string>
+    <string id="opt_DXB">Dubái</string>
+    <string id="opt_DEL">Delhi</string>
+    <string id="opt_BKK">Bangkok</string>
+    <string id="opt_SIN">Singapur</string>
+    <string id="opt_HKG">Hong Kong</string>
+    <string id="opt_SHA">Shanghái</string>
+    <string id="opt_TYO">Tokio</string>
+    <string id="opt_SEL">Seúl</string>
+    <string id="opt_SYD">Sídney</string>
+    <string id="opt_AKL">Auckland</string>
+    <string id="opt_HNL">Honolulu</string>
+    <string id="opt_ANC">Anchorage</string>
+    <string id="opt_LAX">Los Ángeles</string>
+    <string id="opt_DEN">Denver</string>
+    <string id="opt_MEX">Ciudad de México</string>
+    <string id="opt_CHI">Chicago</string>
+    <string id="opt_NYC">Nueva York</string>
+    <string id="opt_BOG">Bogotá</string>
+    <string id="opt_SCL">Santiago</string>
+    <string id="opt_BUE">Buenos Aires</string>
+    <string id="opt_SAO">São Paulo</string>
+    <string id="opt_LOS">Lagos</string>
+    <string id="opt_JNB">Johannesburgo</string>
+</strings>

@@ -11,7 +11,9 @@
     ".mjs",
     ".xml",
     ".yml",
-    ".yaml"
+    ".yaml",
+    ".mc",
+    ".jungle"
   ],
   "header_exempt": [
     "*.gradle.kts",
@@ -36,7 +38,8 @@
     "apps/android/*/src/test/snapshots/*",
     "apps/macos/Tests/*/__Snapshots__/*",
     "apps/macos/Bundle/*.xcassets/*",
-    "apps/macos/Bundle/*.icns"
+    "apps/macos/Bundle/*.icns",
+    "apps/garmin/resources/*"
   ],
   "images_extra": [],
   "large_bytes": 2000000,
