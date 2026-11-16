@@ -58,6 +58,7 @@ object DebugFakes {
             PREFIX + "ALERTS" to ::alerts,
             PREFIX + "RELAYS" to ::relays,
             PREFIX + "UPDATES" to ::updates,
+            PREFIX + "GARMIN_SIM" to ::garminSim,
         )
 
     /** Runs [action] when it is a known fake; false otherwise. */
@@ -138,6 +139,21 @@ object DebugFakes {
             }
         }
         Log.i("SukraraDebug", "UPDATES: $server from the next start; ending the app process now")
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
+
+    /**
+     * `GARMIN_SIM --ez on true|false`: Sukrara Aura's push goes to the Connect IQ simulator (adb forward tcp:7381
+     * tcp:7381, simulator › Connection › Start) instead of Garmin Connect ([SimulatorConnectIq]). Saved, then the app
+     * process ends: open the app. Release builds have no such choice.
+     */
+    private fun garminSim(
+        context: Context,
+        intent: Intent,
+    ) {
+        val on = intent.getBooleanExtra("on", true)
+        SimulatorConnectIq.set(context, on)
+        Log.i("SukraraDebug", "GARMIN_SIM: $on from the next start; ending the app process now")
         android.os.Process.killProcess(android.os.Process.myPid())
     }
 

@@ -35,6 +35,11 @@ object AppsSearch {
             row(IntegrationsR.string.in_tp_title, IntegrationsR.string.in_apps_clinic_group),
             row(IntegrationsR.string.in_ns_title, IntegrationsR.string.in_apps_nightscout_group, Seen.Wearer),
             row(
+                IntegrationsR.string.in_aura_title,
+                IntegrationsR.string.in_apps_watch_group,
+                keywords = IntegrationsR.string.in_aura_keywords,
+            ),
+            row(
                 IntegrationsR.string.in_apps_xdrip,
                 IntegrationsR.string.in_apps_watch_group,
                 keywords = IntegrationsR.string.in_apps_xdrip_keywords,

@@ -30,6 +30,8 @@
      "qa": ["Q23 Import history"]},
     {"paths": ["apps/android/feature/sharing/src/main/kotlin/app/mauri/sukrara/feature/sharing/backup/*", "apps/android/feature/sharing/src/main/kotlin/app/mauri/sukrara/feature/sharing/restore/*"],
      "qa": ["Q24 Backup to a password manager"]},
+    {"paths": ["apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/*", "contracts/watchface/payload/*"],
+     "qa": ["Q27 Sukrara Aura link (phone → Garmin face)"]},
     {"paths": ["apps/android/*/src/main/*", "apps/macos/Sources/*"], "qa": ["Q19 Complete flows (states and exits)", "Q20 The person and the feel"]}
   ]
 }

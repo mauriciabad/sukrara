@@ -88,6 +88,7 @@ import app.mauri.sukrara.integrations.DataFileRows
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsPage
 import app.mauri.sukrara.integrations.export.ExportPage
 import app.mauri.sukrara.integrations.export.ExportPeriod
+import app.mauri.sukrara.integrations.garmin.AuraPage
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectPage
 import app.mauri.sukrara.integrations.history.ImportPage
 import app.mauri.sukrara.integrations.libreview.LibreViewPage
@@ -192,6 +193,10 @@ data object NightscoutApiRoute : NavKey
 /** Settings › Share with apps › Send glucose to apps. */
 @Serializable
 data object BroadcastsRoute : NavKey
+
+/** Settings › Share with apps › Sukrara Aura (the Garmin face's link). */
+@Serializable
+data object AuraRoute : NavKey
 
 /** Settings › Share with apps › Health Connect (also what Health Connect opens as the privacy rationale). */
 @Serializable
@@ -709,6 +714,7 @@ fun SukraraNavigation(
                                 openTidepool = { backStack.push(TidepoolRoute) },
                                 openBroadcasts = { backStack.push(BroadcastsRoute) },
                                 openHealthConnect = { backStack.push(HealthConnectRoute) },
+                                openAura = { backStack.push(AuraRoute) },
                             )
                             role?.let { r -> DataLinks(DataPage.Apps, r.role == Role.Wearer) { openData(it, backStack) } }
                         }
@@ -724,6 +730,11 @@ fun SukraraNavigation(
                     entry<BroadcastsRoute> {
                         SettingsPage(stringResource(IntegrationsR.string.in_bc_title), { backStack.pop(BroadcastsRoute) }) {
                             BroadcastsPage(viewModel(factory = graph.integrations.broadcastsViewModels), graph.clock::now)
+                        }
+                    }
+                    entry<AuraRoute> {
+                        SettingsPage(stringResource(IntegrationsR.string.in_aura_title), { backStack.pop(AuraRoute) }) {
+                            AuraPage(viewModel(factory = graph.integrations.auraViewModels), graph.clock::now)
                         }
                     }
                     entry<HealthConnectRoute> {

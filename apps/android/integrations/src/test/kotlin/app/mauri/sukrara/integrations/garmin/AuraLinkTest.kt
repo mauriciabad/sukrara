@@ -1,0 +1,203 @@
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+package app.mauri.sukrara.integrations.garmin
+
+import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceStatus
+import app.mauri.sukrara.core.testing.FakeClock
+import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
+import app.mauri.sukrara.core.testing.InMemorySettingsRepository
+import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.time.Duration
+import java.time.Instant
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class AuraLinkTest {
+    private val clock = FakeClock(Instant.parse("2026-11-16T10:09:36Z"))
+
+    /** Garmin Connect as the test sets it: the watches, whether the face is on them, what each send ends in. */
+    private class FakePort : ConnectIqPort {
+        var gcm = true
+        var watches: List<IqDevice>? = listOf(IqDevice(7, "Descent Mk3i 43mm", true))
+        var face = true
+        var answers = ArrayDeque<IqSend>()
+        val sent = ArrayList<Map<*, *>>()
+
+        override fun installed() = gcm
+
+        override suspend fun devices() = watches
+
+        override suspend fun appVersion(
+            device: IqDevice,
+            app: String,
+        ): Int? = if (face) 3 else null
+
+        override suspend fun send(
+            device: IqDevice,
+            app: String,
+            message: ByteArray,
+        ): IqSend {
+            sent += MonkeyCDecode.decode(message) as Map<*, *>
+            return answers.removeFirstOrNull() ?: IqSend.Delivered
+        }
+    }
+
+    private fun state(vararg mgdl: Pair<Long, Int>) =
+        GlucoseState(
+            role = Role.Wearer,
+            latest = mgdl.lastOrNull()?.let { reading(it) },
+            recent = mgdl.map(::reading),
+            sensor = SensorState.Active(clock.now() + Duration.ofDays(5)),
+            source = SourceStatus.NotStarted,
+            alerts = AlertUiState(),
+            link = null,
+            monitoringStartedAt = clock.now() - Duration.ofDays(1),
+        )
+
+    private fun reading(p: Pair<Long, Int>) = Reading(clock.now().plusSeconds(p.first), p.second, null, SourceId.Libre3)
+
+    private fun TestScope.link(
+        port: FakePort,
+        glucose: MutableStateFlow<GlucoseState>,
+        settings: InMemorySettingsRepository = InMemorySettingsRepository(),
+    ): AuraLink {
+        val d = StandardTestDispatcher(testScheduler)
+        return AuraLink(settings, glucose, InMemoryTreatmentsRepository(), InMemoryReadingsRepository(), port, clock, d, {}, fetchPort = 0)
+            .also { it.start(backgroundScope) }
+    }
+
+    @Test
+    fun everyNewReadingGoesToTheWatchWithTheFace() =
+        runTest {
+            val port = FakePort()
+            val glucose = MutableStateFlow(state(-30L to 112))
+            val link = link(port, glucose)
+            runCurrent()
+            assertEquals(1, port.sent.size)
+            assertEquals(112, (port.sent[0]["g"] as Map<*, *>)["v"])
+            val w =
+                link.state.value.watches
+                    .single()
+            assertEquals(clock.now(), w.delivered)
+            assertTrue(w.installed == true)
+
+            clock.advance(Duration.ofMinutes(1))
+            glucose.value = state(-90L to 112, -30L to 115)
+            runCurrent()
+            assertEquals(2, port.sent.size)
+            assertEquals(115, (port.sent[1]["g"] as Map<*, *>)["v"])
+        }
+
+    @Test
+    fun theSameStateIsNotSentTwice() =
+        runTest {
+            val port = FakePort()
+            val same = state(-30L to 112)
+            val glucose = MutableStateFlow(same)
+            link(port, glucose)
+            runCurrent()
+            clock.advance(Duration.ofSeconds(20))
+            glucose.value = same.copy()
+            runCurrent()
+            assertEquals(1, port.sent.size)
+        }
+
+    @Test
+    fun aLostMessageIsRetriedWithBackoffUntilItArrives() =
+        runTest {
+            val port = FakePort().apply { answers.addAll(listOf(IqSend.NoAnswer, IqSend.Failed, IqSend.Delivered)) }
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            runCurrent()
+            assertEquals(1, port.sent.size)
+            assertTrue(
+                link.state.value.watches
+                    .single()
+                    .noAnswer,
+            )
+            assertNull(
+                link.state.value.watches
+                    .single()
+                    .delivered,
+            )
+            advanceTimeBy(15_001)
+            assertEquals(2, port.sent.size)
+            advanceTimeBy(29_000)
+            assertEquals(2, port.sent.size)
+            advanceTimeBy(1_001)
+            assertEquals(3, port.sent.size)
+            val w =
+                link.state.value.watches
+                    .single()
+            assertFalse(w.noAnswer)
+            assertTrue(w.delivered != null)
+        }
+
+    @Test
+    fun aWatchWithoutTheFaceGetsNothing() =
+        runTest {
+            val port = FakePort().apply { face = false }
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            runCurrent()
+            assertEquals(0, port.sent.size)
+            assertEquals(
+                false,
+                link.state.value.watches
+                    .single()
+                    .installed,
+            )
+            assertEquals(AuraStatus.NotInstalled, AuraStatus.of(link.state.value, clock.now()))
+        }
+
+    @Test
+    fun aWatchAwayGetsNothingUntilItIsBack() =
+        runTest {
+            val port = FakePort().apply { watches = listOf(IqDevice(7, "Descent", false)) }
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            runCurrent()
+            assertEquals(0, port.sent.size)
+            port.watches = listOf(IqDevice(7, "Descent", true))
+            advanceTimeBy(60_001)
+            assertEquals(1, port.sent.size)
+            assertTrue(
+                link.state.value.watches
+                    .single()
+                    .connected,
+            )
+        }
+
+    @Test
+    fun offSendsNothing() =
+        runTest {
+            val settings = InMemorySettingsRepository()
+            settings.set(AuraLink.SETTING, false)
+            val port = FakePort()
+            val link = link(port, MutableStateFlow(state(-30L to 112)), settings)
+            runCurrent()
+            assertEquals(0, port.sent.size)
+            assertEquals(AuraStatus.Off, AuraStatus.of(link.state.value, clock.now()))
+        }
+
+    @Test
+    fun theFetchIsThePayloadAsJson() {
+        val p = mapOf("v" to 1, "g" to mapOf("rate" to 0.4f, "band" to null), "hist" to listOf(100, null), "ok" to true, "u" to "mgdl")
+        assertEquals("""{"v":1,"g":{"rate":0.4,"band":null},"hist":[100,null],"ok":true,"u":"mgdl"}""", AuraLink.json(p).toString())
+    }
+}

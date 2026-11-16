@@ -98,10 +98,13 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Lock screen widget with root. No need to unlock or touch the phone.
 - Persistent notification with the widget.
 - Any other device, like a Mac or a Garmin watch.
+- Sukrara Aura on your Garmin watch: each reading reaches the face through Garmin Connect within seconds, with nothing
+  to set up; the face also asks the phone every 5 minutes in case a message gets lost, and an old value never looks
+  current. Settings › Share with apps › Sukrara Aura shows whether it gets through, and turns it off.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
-- [Planned]: Android Auto, Home Assistant, Garmin, Pebble...
+- [Planned]: Android Auto, Home Assistant, Pebble...
 
 ### Data analysis and reports
 

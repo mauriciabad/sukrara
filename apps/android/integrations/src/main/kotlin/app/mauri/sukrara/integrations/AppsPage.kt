@@ -23,6 +23,10 @@ import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.integrations.broadcasts.BcStatus
 import app.mauri.sukrara.integrations.broadcasts.broadcastStatusText
+import app.mauri.sukrara.integrations.garmin.AuraLinkState
+import app.mauri.sukrara.integrations.garmin.AuraStatus
+import app.mauri.sukrara.integrations.garmin.ConnectIq
+import app.mauri.sukrara.integrations.garmin.auraStatusText
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.healthStatusText
 import app.mauri.sukrara.integrations.history.ImportState
@@ -68,6 +72,8 @@ data class AppsUi(
     val healthConnect: HcStatus = HcStatus.Off,
     /** Import history (wearer only). */
     val history: ImportState = ImportState.Idle,
+    /** Sukrara Aura, the Garmin face's link. */
+    val aura: AuraLinkState = AuraLinkState(),
 )
 
 class AppsActions(
@@ -78,6 +84,7 @@ class AppsActions(
     val openTidepool: () -> Unit = {},
     val openBroadcasts: () -> Unit = {},
     val openHealthConnect: () -> Unit = {},
+    val openAura: () -> Unit = {},
 )
 
 /** An installed app that reads the xDrip+ server: its package (for its icon) and its name. */
@@ -119,6 +126,7 @@ private data class Others(
     val broadcasts: BcStatus,
     val health: HcStatus,
     val history: ImportState = ImportState.Idle,
+    val aura: AuraLinkState = AuraLinkState(),
 )
 
 class AppsViewModel(
@@ -138,10 +146,10 @@ class AppsViewModel(
                 module.broadcasts.settingsFlow,
                 module.broadcasts.status,
                 module.healthConnect.status,
-                module.history.state,
-            ) { (api, tp), bc, bs, hc, h -> Others(api, tp, bc.apps.size, bs, hc, h) },
+                combine(module.history.state, module.aura.state) { h, a -> h to a },
+            ) { (api, tp), bc, bs, hc, (h, a) -> Others(api, tp, bc.apps.size, bs, hc, h, a) },
         ) { (w, on, x), r, ns, lv, o ->
-            AppsUi(w, on, x, r, ns.status, lv.status, o.api, o.tidepool, o.broadcastApps, o.broadcasts, o.health, o.history)
+            AppsUi(w, on, x, r, ns.status, lv.status, o.api, o.tidepool, o.broadcastApps, o.broadcasts, o.health, o.history, o.aura)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
@@ -164,6 +172,7 @@ fun AppsPage(
     openTidepool: () -> Unit,
     openBroadcasts: () -> Unit,
     openHealthConnect: () -> Unit,
+    openAura: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -179,6 +188,7 @@ fun AppsPage(
                 openTidepool,
                 openBroadcasts,
                 openHealthConnect,
+                openAura,
             ),
             modifier,
         )
@@ -226,6 +236,13 @@ fun AppsContent(
         }
     }
     SettingsGroup(title = stringResource(R.string.in_apps_watch_group)) {
+        // Sukrara's own face first: on by default, nothing to set up (docs/43)
+        NavigationRow(
+            stringResource(R.string.in_aura_title),
+            actions.openAura,
+            summary = auraStatusText(AuraStatus.of(ui.aura, now), now),
+            leading = { PackageIcon(ConnectIq.GCM) },
+        )
         SwitchRow(
             stringResource(R.string.in_apps_xdrip),
             ui.xdripOn,

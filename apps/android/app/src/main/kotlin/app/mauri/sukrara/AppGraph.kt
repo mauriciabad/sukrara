@@ -60,6 +60,7 @@ import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.IntegrationsModule
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
+import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.libreview.LvGlucose
 import app.mauri.sukrara.integrations.libreview.LvReadings
@@ -571,6 +572,11 @@ class AppGraph(
             log = { data.diagLog.log("integrations", it) },
             // a pen entry waits for its session to close (the pens module is built on first use)
             uploadHold = UploadHold { pens.uploadHold.until(it) },
+            // Sukrara Aura shows what the card and the glucose notification show
+            glucose = flow { emitAll(monitor.hub.state) },
+            connectIq =
+                BuildVariant.connectIq(app) { data.diagLog.log("integrations", it) }
+                    ?: ConnectIq(app) { data.diagLog.log("integrations", it) },
         )
     }
 

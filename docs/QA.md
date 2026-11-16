@@ -21,7 +21,8 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   true|false` and `PEN_JUGGLUCO --ez installed true|false` (docs/FEATURES.md "Sensor reminders and countdowns",
   "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
   = no relay: Q22), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local
-  test release and trusts the debug key: Q25). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
+  test release and trusts the debug key: Q25), `GARMIN_SIM --ez on true|false` (Sukrara Aura's push goes to the
+  Connect IQ simulator instead of Garmin Connect: Q27). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
   stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
@@ -1043,6 +1044,30 @@ for monitoring; `--ei cycle 135` brings a low (an alert), `--ei cycle 0` ends it
   notification's buttons; Spanish strings fit (the step and the banner at the largest font too).
 - [ ] The release (not emulator): after publishing, the GitHub version on the owner's phone shows the update within a
   day, the asset is `Sukrara-<version>.apk` with GitHub's digest, and it installs and comes back monitoring.
+
+## Q27 Sukrara Aura link (phone → Garmin face)
+
+Cheapest first: the simulator, then the owner's phone and watch (only after `tools/install.sh phone` and the face on the
+watch; the watch shows the real value: check it against the phone, never photograph it).
+
+- [ ] **Simulator** (debug build on `medium_phone`, `SYNTHETIC --ez on true`, `GARMIN_SIM --ez on true`, open the app):
+      `adb forward tcp:7381 tcp:7381` and `adb forward tcp:17582 tcp:17582`; run the face in the Connect IQ simulator
+      (`descentmk343mm`), *Connection › Start*. Within a minute the face shows the emulator's value and trend;
+      *Simulation › Background Events › Temporal* makes it fetch (Share with apps › Sukrara Aura: *The face asking this
+      phone* "Last asked now"). Stop the emulator's app: the face's value goes late, struck, then *No reading since*,
+      counting from the reading's time.
+- [ ] **Phone + watch**: Share with apps › *Sukrara Aura* says "Sent to <watch> … ago" within a minute of a reading;
+      the face's value and arrow match the phone's card within seconds of the phone's notification changing.
+- [ ] Walk away with the phone (or Bluetooth off on the phone): the row says "<watch> isn't connected"; the face goes
+      late → struck → *No reading since* and Garmin's *No phone*; back in reach, the face is current within a minute
+      without touching anything.
+- [ ] Watch restart, phone restart, Garmin Connect swiped away: the face shows the last reading aging right away, and
+      is current again by itself (push on reconnect, or its 5-minute fetch).
+- [ ] The switch off: the row says "Off · the face shows no readings", nothing more reaches the face (it ages out); on
+      again: current within a minute. *Send now* sends at once. *Open Garmin Connect* opens it.
+- [ ] A low with the pill, a mute, a treatment: the face's pill and treatment field change within seconds of the
+      phone's card.
+- [ ] TalkBack: the row and every page row read their text.
 
 ## Q20 The person and the feel
 
