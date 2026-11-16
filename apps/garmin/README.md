@@ -47,6 +47,7 @@ sending). `AuraApp` registers the background on every start and hands what it br
 ```sh
 apps/garmin/build.sh            # release .prg (debug code compiled out) → apps/garmin/bin/SukraraAura.prg
 apps/garmin/build.sh debug      # the face with debug code
+apps/garmin/build.sh export     # the store package .iq (export-beta: under the beta app id); release: tools/release/garmin-release.sh
 uv run apps/garmin/tools/fonts.py   # regenerate fonts and icons (--check: up to date?)
 python3 tools/settings/gen.py   # regenerate the settings after a schema change
 apps/garmin/tools/link-test.sh  # the phone link's tests (contracts/watchface/payload) in the simulator

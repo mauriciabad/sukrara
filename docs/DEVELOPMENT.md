@@ -321,6 +321,7 @@ face signed with the same key, and the store app is tied to it. `CIQ_KEY` points
 | What | Command |
 |---|---|
 | Release `.prg` (no debug code) | `apps/garmin/build.sh` → `apps/garmin/bin/SukraraAura.prg` (`debug`, `cases` for the others) |
+| Store packages (`.iq`, signed with the store key, verified) | `tools/release/garmin-release.sh <version>` (public) or `--beta` (the beta app id) → `apps/garmin/bin/dist/`; uploading: [docs/20 › Connect IQ store](20-publishing.md#connect-iq-store-the-owners-steps-beta-first-then-public) |
 | The face's words against `words.json` | `python3 apps/garmin/tools/garmin_test.py words` |
 | Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]` |
 | References without the dial, halo, sweep | `node apps/garmin/tools/core_refs.mjs <dir>` (Chrome, like `tools/watchface/build.mjs`) |
