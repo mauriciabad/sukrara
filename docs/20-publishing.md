@@ -1380,6 +1380,63 @@ The planned own watch app (watch face / data field / app, investigation 08) goes
   phone's local server) is shown on the store page.
 - Effort: small once the app exists (screenshots for 2–3 device sizes, description, privacy link).
 
+### Connect IQ: CI and publishing (2026-11-16, Sukrara Aura)
+
+The owner: "Would be nice if we configure the ci as well as automatic deployments/publishing (or at least leave it
+ready to complete later)". Built: Checks' `garmin` job and release.py's Garmin path; the setup and the owner's steps
+are in [DEVELOPMENT.md › Garmin face on CI](DEVELOPMENT.md#garmin-face-on-ci) and [› Release](DEVELOPMENT.md#release).
+
+**What CI needs.** The SDK is a public download listed in `sdks.json` [[C3]](https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json); `monkeyc` is Java. The
+device files (`compiler.json` & co., without which `monkeyc -d <device>` can't build) and the simulator's fonts come
+only through the SDK Manager with a Garmin sign-in; the SDK Manager has no CLI, and a Garmin forum thread still
+complains that CI ends up needing the developer's credentials [[C4]](https://forums.garmin.com/developer/connect-iq/f/discussion/303170/connectiq-docker-image-and-github-action). The Linux simulator (9.3.0) links
+WebKitGTK 4.0 (`libwebkit2gtk-4.0.so.37`, read from the binary), which Ubuntu ships up to 22.04, and runs headless
+under Xvfb [[C5]](https://github.com/matco/connectiq-tester); `monkeydo` needs a running simulator and its exit code doesn't say whether the tests passed
+(the last line says `PASSED` / `FAILED`) [[C5]](https://github.com/matco/connectiq-tester)[[C6]](https://nettek.ca/blog/monkeyc-and-monkeydo-garmin-linux/). Screenshots of the simulator are scriptable on
+macOS and Windows by window grabs (ciqkit, not on Linux yet) [[C7]](https://github.com/JohannesHoh/ciqkit) or in a container under Xvfb by a GTK hook
+(rules_ciq) [[C8]](https://github.com/semolina-solutions/rules_ciq).
+
+**How the device files reach CI** (blast radius = what a leak of the credential gives away):
+
+| Option | Blast radius | Reliability, upkeep | Verdict |
+|---|---|---|---|
+| The owner's Garmin account, password as a secret | Everything: the watch, health and dive data, the store's developer identity (the agreement forbids sharing its login, II.a.1 [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html)) | Breaks with two-step verification, which the CLI can't answer [[C9]](https://github.com/dnullproject/ues-widget/issues/14) | No |
+| **A Garmin account only for CI** (no watch, no data, no 2-step), password as secrets, signed in by [`connect-iq-sdk-manager-cli`](https://github.com/lindell/connect-iq-sdk-manager-cli) | An empty account that can download SDK files | Never expires; used only on a cache miss; breaks if Garmin blocks scripted sign-ins (Cloudflare blocked Garmin Connect libraries' sign-ins from March 2026 [[C10]](https://github.com/matin/garth/discussions/222)[[C11]](https://github.com/cyberjunky/python-garminconnect/issues/337)) | **Chosen** (others: [[C12]](https://github.com/stefiix92/coachd/pull/31)[[C13]](https://github.com/BartSte/garmin-connect-iq)) |
+| The same account's token from a browser sign-in (`token.json`, OAuth client `CIQ_SDK_MANAGER`) | That account's SDK Manager token; no password stored | Refresh lifetime undocumented; a refreshed token can't be written back to the secret, so it is replaced by hand when it expires [[C14]](https://github.com/EnO33/foulee/issues/466) | Fallback (`GARMIN_CI_TOKEN`) when sign-ins are blocked |
+| A public image with Garmin's device files (connectiq-tester-resources) | None of ours | Redistributes Garmin's Program Materials, which the agreement forbids (I.b) [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html)[[C7]](https://github.com/JohannesHoh/ciqkit); a third party's image | No |
+| A self-hosted runner on the release Mac (files already there) | The owner's Mac runs this public repo's workflow code | GitHub advises against self-hosted runners for public repositories [[C22]](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners) | No |
+
+The CLI (Apache-2.0, v0.8.4, 2026-02) is pinned by version and sha256; its sign-in is a form post to
+`sso.garmin.com` with `clientId=ConnectIqSdkManager`, then `services.garmin.com/api/oauth/token` (read in its source).
+The agreement hash is the MD5 the SDK Manager takes of the agreement's text: pinned, so a new agreement stops the job
+until someone reads it. Caching (GitHub drops entries unused for 7 days) keeps sign-ins to a new device or a long
+pause.
+
+**The developer key.** Every build is signed; the store ties an app to the key of its first upload and refuses a
+version signed with another ("All app versions have to be signed with the same key pair"); Garmin keeps only the
+public key, so a lost key means a new listing that existing users must move to [[C15]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/402228/developer-key-lost). CI therefore never gets it:
+its builds only run in the simulator and use a key made for the run. The store key stays on the release Mac
+(`~/.connectiq/sukrara-developer-key.der`, backup in the password manager, like the Android release key), and
+`tools/release/garmin-key.sha256` pins its public SHA-256; `garmin-release.sh` refuses any other key. Projects that
+release from CI keep it as a base64 or GPG-encrypted secret [[C16]](https://github.com/EnO33/foulee/issues/467)[[C17]](https://github.com/blackshadev/garmin-connectiq-release-action); Sukrara's releases already run on the
+release Mac with the other keys, so a CI copy would add a place to leak it and save nothing.
+
+**Store upload.** There is no upload API: uploads go through the developer dashboard (moved to
+`apps-developer.garmin.com` [[C18]](https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/changes-to-the-connect-iq-store)), Garmin reviews each upload and the store shows it once approved [[C2]](https://developer.garmin.com/connect-iq/submit-an-app/). A
+request for an upload API (May 2026) is *Acknowledged* with no answer [[C19]](https://forums.garmin.com/developer/connect-iq/i/bug-reports/connect-iq-upload-applications-updates-to-store-with-the-batch-api); others keep the last step by hand with
+a checklist [[C16]](https://github.com/EnO33/foulee/issues/467)[[C20]](https://github.com/oleg-koval/connectiq-starter). Scripting the dashboard would need the owner's full developer account in a browser robot
+(two-step verification, Cloudflare, an undocumented form that changes, a stray click submitting the wrong build):
+rejected. *Beta apps* (a separate app id, only the developer's account sees it, no review) [[C21]](https://forums.garmin.com/developer/connect-iq/f/discussion/3643/beta-testing-uploaded-app/55912) are uploaded
+the same way, so they don't automate anything either; useful only to try the face's phone settings before a public
+version.
+
+**The flow.** Every pushed change: the `garmin` job builds and tests the face. A release (`release.py`, once
+`tools/release/garmin-key.sha256` exists): the `version` step writes the version into the manifest; the gate builds
+the store package and every device's sideload `.prg` with the store key (debug code compiled out); `github` puts them
+on the normal GitHub release (the `.prg` for people who sideload); the `garmin` step prints the upload for the owner:
+the file, the version, the What's New text and the dashboard link (about two minutes), and `summary` lists it as
+the one manual step. If Garmin publishes an upload API, that step becomes a call like `play` and `appstore`.
+
 ## Web and update channels
 
 - **sukrara.mauri.app as the install hub**: one *Download* page that detects the platform: Play badge, "APK /
@@ -1646,4 +1703,23 @@ All seen **2026-10-18**. "3rd-party" = not the platform owner.
 - [F6] Accrescent publishing requirements — https://accrescent.app/docs/guide/appendix/requirements/
 - [C1] Garmin Connect IQ Developer Agreement (Exhibit A) — https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html
 - [C2] Garmin, Submit an app — https://developer.garmin.com/connect-iq/submit-an-app/
+- [C3]–[C22] seen 2026-11-16: Garmin's SDK list — https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json;
+  [C4] Garmin forum, ConnectIQ Docker image and GitHub Action — https://forums.garmin.com/developer/connect-iq/f/discussion/303170/connectiq-docker-image-and-github-action;
+  [C5] matco/connectiq-tester (Dockerfile, tester.sh) — https://github.com/matco/connectiq-tester;
+  [C6] monkeyc and monkeydo on Linux (3rd-party) — https://nettek.ca/blog/monkeyc-and-monkeydo-garmin-linux/;
+  [C7] ciqkit — https://github.com/JohannesHoh/ciqkit; [C8] rules_ciq — https://github.com/semolina-solutions/rules_ciq;
+  [C9] ues-widget #14, the CLI can't answer 2FA — https://github.com/dnullproject/ues-widget/issues/14;
+  [C10] garth, Deprecating Garth — https://github.com/matin/garth/discussions/222;
+  [C11] python-garminconnect #337, 429 at sign-in — https://github.com/cyberjunky/python-garminconnect/issues/337;
+  [C12] coachd #31, CI with a dedicated account — https://github.com/stefiix92/coachd/pull/31;
+  [C13] BartSte/garmin-connect-iq, CI with the CLI — https://github.com/BartSte/garmin-connect-iq;
+  [C14] foulee #466, token.json from a browser sign-in — https://github.com/EnO33/foulee/issues/466;
+  [C15] Garmin forum, Developer Key lost (Garmin's answer) — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/402228/developer-key-lost;
+  [C16] foulee #467, release workflow, manual upload — https://github.com/EnO33/foulee/issues/467;
+  [C17] garmin-connectiq-release-action — https://github.com/blackshadev/garmin-connectiq-release-action;
+  [C18] Garmin, Changes to the Connect IQ Store — https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/changes-to-the-connect-iq-store;
+  [C19] Garmin forum, upload API request — https://forums.garmin.com/developer/connect-iq/i/bug-reports/connect-iq-upload-applications-updates-to-store-with-the-batch-api;
+  [C20] connectiq-starter ("not automatable") — https://github.com/oleg-koval/connectiq-starter;
+  [C21] Garmin forum, beta apps — https://forums.garmin.com/developer/connect-iq/f/discussion/3643/beta-testing-uploaded-app/55912;
+  [C22] GitHub, self-hosted runners and public repositories — https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners
 - [T1] Abbott trademark notice (via its Play listings and site, 3rd-party summary) — https://play.google.com/store/apps/details?id=com.abbott.adc.freestyle.libre.us

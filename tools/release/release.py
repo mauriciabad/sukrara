@@ -16,16 +16,19 @@ left (resume with --from <step>; every step can run again):
                  (apps/android/fastlane/metadata/android/<en-US|es-ES>/changelogs/<versionCode>.txt, at most 500
                  characters) and the App Store notes (apps/macos/AppStore/whats-new/…, see appstore), no tag yet,
                  the keys and gh
-  version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md), CHANGELOG's Unreleased → the
-                 version's entry; commit, push to next (fast-forward; its Checks run is awaited before github)
+  version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md) and the Garmin face's manifest,
+                 CHANGELOG's Unreleased → the version's entry; commit, push to next (fast-forward; its Checks run is
+                 awaited before github)
   gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
                  play-bundle.sh, mac-release.sh (notarized, Sparkle-signed, verify-app.sh --notarized inside, writes
-                 docs/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate). ./gradlew check and swift test
+                 docs/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate), garmin-release.sh (the
+                 face's .iq and .prg, store key checked; once the face is released: tools/release/garmin-key.sha256). ./gradlew check and swift test
                  aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest green
                  commit with the same Mac sources: VERSION reaches only the bundle, which this gate builds and smokes).
   github         the release commit's Checks run green (its push or one started by hand, any branch; the one wait for
                  CI); main fast-forwarded, tag v<version>, the GitHub release (a normal one, Latest) with the APK, the
-                 Android mapping, the dmg and the zip, notes from the CHANGELOG entry. main's own run isn't awaited:
+                 Android mapping, the dmg and the zip (and the Garmin face's .iq and .prg), notes from the CHANGELOG
+                 entry. main's own run isn't awaited:
                  the commit's green run is what it finds (tools/ci/changes.py)
   sparkle        docs/appcast.xml committed to main and next once the release's dmg is there, Pages deployed, the feed
                  at https://sukrara.mauri.app/appcast.xml serves the item
@@ -39,6 +42,8 @@ left (resume with --from <step>; every step can run again):
                  apps/macos/AppStore/whats-new/<en-US|es-ES>/<versionCode>.txt (at most 4000 characters), released
                  after approval, submitted for App Review (needs the App Manager key); while another version is in
                  review it waits on TestFlight, and a later release submits the newest
+  garmin         the Connect IQ store has no upload API: the release's .iq (built and signed with the store key in the
+                 gate, on the GitHub release) and what to type, for the owner's upload at the developer dashboard
   summary        every channel's state
 
 --dry-run      runs the read-only checks, prints every command, request body and note it would use; changes nothing;
@@ -67,7 +72,7 @@ REPO_URL = "https://github.com/" + REPO
 TAP = "mauriciabad/homebrew-tap"
 FEED_URL = "https://sukrara.mauri.app/appcast.xml"
 STEPS = ["preconditions", "version", "gate", "github", "sparkle", "homebrew", "play", "testflight", "appstore",
-         "summary"]
+         "garmin", "summary"]
 PLAY_LANGS = ["en-US", "es-ES"]
 PLAY_TRACKS = ["internal", "production"]
 PLAY_NOTES = "apps/android/fastlane/metadata/android/%s/changelogs/%d.txt"
@@ -76,6 +81,12 @@ ASC_NOTES = "apps/macos/AppStore/whats-new/%s/%d.txt"
 DIST = "apps/android/app/build/dist"
 MAC_BUILD = "apps/macos/build"
 DOCS_WITH_VERSION = ["docs/DEVELOPMENT.md", "docs/QA.md", "docs/FEATURES.md"]
+# The Garmin face (apps/garmin): released once its store key's public SHA-256 is committed (GARMIN_KEY_PIN, the switch;
+# docs/20-publishing.md › Garmin). The manifest's version follows VERSION either way.
+GARMIN_MANIFEST = "apps/garmin/manifest.xml"
+GARMIN_KEY_PIN = "tools/release/garmin-key.sha256"
+GARMIN_DIST = "apps/garmin/bin/dist"
+GARMIN_DASHBOARD = "https://apps-developer.garmin.com/developer/dashboard"
 
 
 # --- pure parts (tools/release/test_release.py) ----------------------------------------------------------------------
@@ -155,8 +166,9 @@ def absolute_links(md, version):
                   lambda m: "](%s/blob/v%s/%s)" % (REPO_URL, version, m.group(1).lstrip("./")), md)
 
 
-def github_notes(changelog, version, cert_sha256):
-    """The GitHub release notes: the medical disclaimer, the CHANGELOG entry and the files."""
+def github_notes(changelog, version, cert_sha256, garmin_devices=()):
+    """The GitHub release notes: the medical disclaimer, the CHANGELOG entry and the files (the Garmin face's once it
+    is released: garmin_devices)."""
     entry = changelog_entry(changelog, version)
     if not entry:
         raise ValueError("CHANGELOG.md has no %s entry" % version)
@@ -172,7 +184,10 @@ def github_notes(changelog, version, cert_sha256):
         "Homebrew Mac app updates itself (Sparkle)." % (v, v),
         "- `Sukrara-%s-android-mapping.txt.gz`: the R8 mapping that makes an Android crash trace readable (for bug "
         "reports; not something to install)." % v,
-    ])
+    ] + ["- `SukraraAura-%s-%s.prg`: the Sukrara Aura watch face for the Garmin `%s`, to copy into the watch's "
+         "`GARMIN/APPS` folder (the Connect IQ store has the same face)." % (v, d, d) for d in garmin_devices] + (
+        ["- `SukraraAura-%s.iq`: the Connect IQ store package (every device; the store installs it, not by hand)." % v]
+        if garmin_devices else []))
     return head + "\n\n" + absolute_links(unwrap(entry[1]), v).strip() + "\n\n" + files + "\n"
 
 
@@ -233,6 +248,43 @@ def artifacts(version):
         "dmg": "%s/Sukrara-%s.dmg" % (MAC_BUILD, version),
         "zip": "%s/Sukrara-mac-%s.zip" % (MAC_BUILD, version),
     }
+
+
+def manifest_devices(manifest):
+    """The Connect IQ manifest's products, in order."""
+    return re.findall(r'<iq:product[^>]*\bid="([^"]+)"', manifest)
+
+
+def manifest_with_version(manifest, version):
+    """The Connect IQ manifest with <iq:application version="…"> set to the version (the store shows it). Refuses a
+    manifest whose application has no version attribute."""
+    new, n = re.subn(r'(<iq:application\b[^>]*?\sversion=")[^"]*(")', r"\g<1>%s\g<2>" % version, manifest, count=1)
+    if not n:
+        raise ValueError("%s: <iq:application> has no version attribute" % GARMIN_MANIFEST)
+    return new
+
+
+def garmin_artifacts(version, devices):
+    """garmin-release.sh's files: the store package and one sideload .prg per device."""
+    out = {"iq": "%s/SukraraAura-%s.iq" % (GARMIN_DIST, version)}
+    for d in devices:
+        out["prg-" + d] = "%s/SukraraAura-%s-%s.prg" % (GARMIN_DIST, version, d)
+    return out
+
+
+def garmin_upload_kit(version, iq, changelog):
+    """What the owner types at the Connect IQ developer dashboard (no upload API): the lines release.py prints."""
+    entry = changelog_entry(changelog, version)
+    notes = unwrap(entry[1]).strip() if entry else "(no CHANGELOG entry for %s)" % version
+    return "\n".join([
+        "Connect IQ store (no upload API: by hand, about two minutes):",
+        "  1. %s → Sukrara Aura → Upload a new version (sign in as the developer account)" % GARMIN_DASHBOARD,
+        "  2. File: %s" % iq,
+        "  3. Version: %s" % version,
+        "  4. What's new (the CHANGELOG entry; keep the Garmin lines):",
+    ] + ["       " + line for line in notes.splitlines()] + [
+        "  5. Submit. Garmin reviews it; the new version stays off the store until it is approved (e-mail).",
+    ])
 
 
 def appstore_pkg(version):
@@ -425,6 +477,13 @@ class Release:
     def current_changelog(self):
         return self.changelog if self.changelog is not None else self.read("CHANGELOG.md")
 
+    def garmin_on(self):
+        """The face is released once its store key is pinned (GARMIN_KEY_PIN) and its project exists."""
+        return os.path.exists(self.path(GARMIN_KEY_PIN)) and os.path.exists(self.path(GARMIN_MANIFEST))
+
+    def garmin_files(self):
+        return garmin_artifacts(self.v, manifest_devices(self.read(GARMIN_MANIFEST))) if self.garmin_on() else {}
+
     # steps
     def preconditions(self):
         current = self.read("VERSION").strip()
@@ -452,6 +511,11 @@ class Release:
             self.ok(os.path.exists(os.path.expanduser(f)), "no %s (%s)" % (what, f))
         key, issuer = stores.asc_key_paths()
         self.ok(bool(key and issuer), "no App Store Connect API key / issuer (~/.apple-dev)")
+        if self.garmin_on():
+            try:
+                self.sh(["tools/release/garmin-release.sh", "--key-check"], mutate=False)
+            except Stop as e:
+                self.ok(False, str(e))
         self.sh(["gh", "auth", "status"], mutate=False)
         # Not awaited here: the version commit's run (awaited in github) covers every change since the newest green
         # commit (tools/ci/changes.py), this one's included. Only a run that already failed stops the release.
@@ -470,6 +534,8 @@ class Release:
             files = {"VERSION": self.v + "\n", "CHANGELOG.md": new_changelog}
             for rel in DOCS_WITH_VERSION:
                 files[rel] = bump_docs(rel, self.read(rel), current, self.v)
+            if os.path.exists(self.path(GARMIN_MANIFEST)):
+                files[GARMIN_MANIFEST] = manifest_with_version(self.read(GARMIN_MANIFEST), self.v)
             if self.dry:
                 self.changelog = new_changelog
                 for rel, text in files.items():
@@ -495,10 +561,13 @@ class Release:
         self.sh(["apps/macos/Bundle/smoke.sh"], capture=False)
         # rebuilds build/Sukrara.app as the App Store version; its validated pkg is the one testflight uploads
         self.sh([r + "mac-appstore.sh"], capture=False)
+        if self.garmin_on():
+            self.sh([r + "garmin-release.sh", self.v], capture=False)
         if self.dry:
             print("  would check the files it leaves, docs/appcast.xml's %s item, and that nothing else changed" % self.v)
             return
-        for rel in list(artifacts(self.v).values()) + ["%s/Sukrara-%s-play.aab" % (DIST, self.v), appstore_pkg(self.v)]:
+        for rel in (list(artifacts(self.v).values()) + list(self.garmin_files().values())
+                    + ["%s/Sukrara-%s-play.aab" % (DIST, self.v), appstore_pkg(self.v)]):
             self.ok(os.path.exists(self.path(rel)), "the gate left no %s" % rel)
         self.ok(appcast_item(self.read("docs/appcast.xml"), self.v),
                 "docs/appcast.xml has no item for %s (was the build notarized?)" % self.v)
@@ -525,7 +594,7 @@ class Release:
                 "VERSION isn't %s: check out the release commit" % self.v)
         self.wait("Checks on %s" % sha[:8], lambda: self.checks_state(sha), 150 * 60)
         self.check_dmg_is_the_signed_one()
-        files = artifacts(self.v)
+        files = dict(artifacts(self.v), **self.garmin_files())
         for rel in files.values():
             self.ok(self.dry or os.path.exists(self.path(rel)), "no %s: run the gate" % rel)
         # main: fast-forward to the release commit
@@ -544,7 +613,8 @@ class Release:
         exists = subprocess.run(["gh", "release", "view", "v" + self.v, "-R", REPO], capture_output=True).returncode == 0
         if not exists:
             cert = self.read("tools/release/android-cert.sha256").strip()
-            notes = github_notes(self.current_changelog(), self.v, cert)
+            devices = manifest_devices(self.read(GARMIN_MANIFEST)) if self.garmin_on() else ()
+            notes = github_notes(self.current_changelog(), self.v, cert, devices)
             if self.dry:
                 print("  the notes:\n" + "\n".join("    " + l for l in notes.splitlines()))
             with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as f:
@@ -766,6 +836,17 @@ class Release:
         if action == "wait":
             self.notes_state.append("App Store: %s stays on TestFlight (%s); the next release after that review "
                                     "submits the newest" % (self.v, why))
+
+    def garmin(self):
+        """The Connect IQ store has no upload API (docs/20-publishing.md › Garmin): the gate built and signed the .iq,
+        github put it on the release; this prints what the owner uploads and types at the developer dashboard."""
+        if not self.garmin_on():
+            print("  the Garmin face isn't released yet (no %s): nothing to upload" % GARMIN_KEY_PIN)
+            return
+        iq = self.path(garmin_artifacts(self.v, [])["iq"])
+        self.ok(self.dry or os.path.exists(iq), "no %s: run the gate" % iq)
+        print("\n".join("  " + line for line in garmin_upload_kit(self.v, iq, self.current_changelog()).splitlines()))
+        self.notes_state.append("Connect IQ store: upload %s at %s (the garmin step's lines)" % (iq, GARMIN_DASHBOARD))
 
     def summary(self):
         print("Sukrara %s (%d):" % (self.v, self.code))
