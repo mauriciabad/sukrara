@@ -1148,6 +1148,11 @@ version with its spelling and grammar fixed, and its es-ES translation, both ent
 Review step's **AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*) is
 answered *Don't label assets*: no AI-generated content (the owner, 2026-11-12).
 
+**Sukrara Aura (2026-11-16, not entered yet)**: both descriptions name the Garmin watch face in *Glucose always at a
+glance* (replacing "Any other device, like a Garmin watch"), and the opening paragraph drops "(more coming soon...)" to
+stay under 4000. Enter it once the face is on the Connect IQ store, so the listing names nothing people can't get.
+Garmin is named only as the watches it runs on (no Garmin logo or device picture in the listing's art).
+
 | Field | en-US | es-ES |
 |---|---|---|
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
@@ -1158,10 +1163,10 @@ answered *Don't label assets*: no AI-generated content (the owner, 2026-11-12).
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
 | Contact | `support-googleplay@a.mauri.app`, https://sukrara.mauri.app (set) | the same |
 
-**Full description, en-US** (3993 characters):
+**Full description, en-US** (3992 characters):
 
 ```text
-Sukrara shows your continuous glucose monitor (CGM) readings live on your phone, at a glance: in the status bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It has all the alarms you'd expect, with minimal alarm fatigue thanks to smart features and discreet sound packs. Share your glucose with friends and family, or yourself, through the Android and macOS companion apps (more coming soon...). It's compatible with the DIY diabetes ecosystem (xDrip+, Nightscout...). And it has advanced glucose charts that are beautiful and easy to understand.
+Sukrara shows your continuous glucose monitor (CGM) readings live on your phone, at a glance: in the status bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It has all the alarms you'd expect, with minimal alarm fatigue thanks to smart features and discreet sound packs. Share your glucose with friends and family, or yourself, through the Android and macOS companion apps. It's compatible with the DIY diabetes ecosystem (xDrip+, Nightscout...). And it has advanced glucose charts that are beautiful and easy to understand.
 
 Important disclaimer
 I made Sukrara for myself and share it with everybody. I use it every day, at my own risk, and it works fine, but I can't guarantee it. Anyone else who uses it does so at their own risk too. The apps are still in development: all the core features are there, but many more improvements and cool features are coming.
@@ -1198,7 +1203,7 @@ Glucose always at a glance
 - Home screen widget. You never need to open the app.
 - Lock screen widget with advanced setup. No need to unlock or touch the phone.
 - Persistent notification with the widget.
-- Any other device, like a Garmin watch.
+- Sukrara Aura watch face for Garmin, updated within seconds.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
 
 Data analysis and reports
@@ -1232,10 +1237,10 @@ Legal
 Sukrara is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Don't make treatment decisions based on it. Use at your own risk. All product and company names mentioned are trademarks of their respective owners. Sukrara is an independent project, not affiliated with them.
 ```
 
-**Full description, es-ES** (3997 characters):
+**Full description, es-ES** (3995 characters):
 
 ```text
-Sukrara muestra en tu móvil, en directo y de un vistazo, la glucosa de tu monitor continuo (MCG): en la barra de estado, widgets, pantalla de bloqueo y notificaciones, así que casi nunca abres la app. Todas las alarmas que esperarías, con mínima fatiga gracias a funciones inteligentes y sonidos discretos. Comparte tu glucosa con familia y amigos, o contigo, con las apps para Android y macOS (y pronto más...). Compatible con el ecosistema DIY de diabetes (xDrip+, Nightscout...). Y con gráficas avanzadas, bonitas y fáciles de entender.
+Sukrara muestra en tu móvil, en directo y de un vistazo, la glucosa de tu monitor continuo (MCG): en la barra de estado, widgets, pantalla de bloqueo y notificaciones, así que casi nunca abres la app. Todas las alarmas que esperarías, con mínima fatiga gracias a funciones inteligentes y sonidos discretos. Comparte tu glucosa con familia y amigos, o contigo, con las apps para Android y macOS. Compatible con el ecosistema DIY de diabetes (xDrip+, Nightscout...). Y con gráficas avanzadas, bonitas y fáciles de entender.
 
 Aviso importante
 Hice Sukrara para mí y la comparto con todos. La uso a diario bajo mi responsabilidad y funciona bien, pero no puedo garantizarlo. Quien la use, también lo hace bajo la suya. Las apps siguen en desarrollo: lo esencial ya está, pero llegarán muchas más mejoras y novedades.
@@ -1272,7 +1277,7 @@ Tu glucosa siempre a la vista
 - Widget de pantalla de inicio. Nunca tienes que abrir la app.
 - Widget de pantalla de bloqueo, con configuración avanzada. Sin desbloquear ni tocar el móvil.
 - Notificación permanente con el widget.
-- Otros dispositivos, como un reloj Garmin.
+- Esfera Sukrara Aura para Garmin, actualizada en segundos.
 - App de macOS con la glucosa en la barra de menús, alarmas y widgets.
 
 Análisis e informes
