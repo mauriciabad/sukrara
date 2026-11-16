@@ -275,13 +275,13 @@ class SharingScreenshotTest {
                     a,
                 )
             },
-            // docs/36 §11: is this phone rooted; the way to allow root; the choice with root picked; without root features
+            // docs/36 §11: is this phone rooted; the way to allow root; the choice with root picked; without root
             "setup-6c-root" to { SetupContent(ui(SetupStep.Root, 2, live.copy(root = false)).copy(count = 6), a) },
             "setup-6c-root-allow" to {
                 SetupContent(
                     ui(SetupStep.Root, 2, live.copy(root = false)).copy(
                         count = 6,
-                        root = RootUi(SystemAccessState(root = RootAccess.Missing, rootSeen = true), rooted = true, offered = true),
+                        root = RootUi(SystemAccessState(root = RootAccess.Missing, rootSeen = true), rooted = true),
                     ),
                     a,
                 )
@@ -295,7 +295,6 @@ class SharingScreenshotTest {
                                 SystemAccessState(root = RootAccess.Granted, module = ModuleState.Active, framework = "LSPosed"),
                                 rooted = true,
                                 style = NotificationStyle.Text,
-                                offered = true,
                             ),
                     ),
                     a,

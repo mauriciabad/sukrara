@@ -39,7 +39,6 @@ import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.feature.settings.numberLabeler
 import app.mauri.sukrara.settings.SettingsSpec
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -74,8 +73,7 @@ class LockWidgetActions(
 
 class LockScreenViewModel(
     private val settings: SettingsRepository,
-    /** null: this build has no root features, so the page has no lock-screen widget. */
-    private val systemAccess: SystemAccessPort?,
+    private val systemAccess: SystemAccessPort,
 ) : ViewModel() {
     val seconds: StateFlow<Double?> =
         settings.flow(LockTreatmentTime).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -83,29 +81,25 @@ class LockScreenViewModel(
     private val runner = AccessRunner(viewModelScope)
 
     val widget: StateFlow<LockWidgetUi?> =
-        if (systemAccess == null) {
-            MutableStateFlow(null)
-        } else {
-            combine(
-                settings.flow(SurfaceSettings.LockWidget),
-                SurfaceSettings.lockLook(settings),
-                systemAccess.state,
-                runner.busy,
-                runner.problem,
-                ::LockWidgetUi,
-            ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-        }
+        combine(
+            settings.flow(SurfaceSettings.LockWidget),
+            SurfaceSettings.lockLook(settings),
+            systemAccess.state,
+            runner.busy,
+            runner.problem,
+            ::LockWidgetUi,
+        ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val actions =
         LockWidgetActions(
             setOn = { on -> viewModelScope.launch { settings.set(SurfaceSettings.LockWidget, on) } },
             setBackground = { b -> viewModelScope.launch { settings.set(SurfaceSettings.LockWidgetBackground, b.key) } },
             setAppearance = { a -> viewModelScope.launch { settings.set(SurfaceSettings.LockWidgetAppearance, a.key) } },
-            requestScope = { runner.run { systemAccess?.requestScope() } },
-            restart = { runner.run { systemAccess?.restartSystemUi() } },
+            requestScope = { runner.run { systemAccess.requestScope() } },
+            restart = { runner.run { systemAccess.restartSystemUi() } },
             checkRoot = {
                 runner.run {
-                    systemAccess?.checkRoot()
+                    systemAccess.checkRoot()
                     null
                 }
             },
@@ -117,7 +111,7 @@ class LockScreenViewModel(
 
     /** Back on the page: ask LSPosed again (the person may come back from enabling the module), never `su`. */
     fun refresh() {
-        systemAccess?.refresh()
+        systemAccess.refresh()
     }
 }
 
@@ -187,50 +181,48 @@ private fun LockAccessBanner(
 }
 
 /**
- * Settings › Lock screen: the lock-screen widget (in a build with root features: *Lock screen widget*, *Background*,
- * *Appearance*, the module's missing step as a card above them) and *Add treatment over the lock screen* (*Time to save*:
- * 10 / 20 / 30 / 60 s or a custom 10–120 s).
+ * Settings › Lock screen: the lock-screen widget (*Lock screen widget*, *Background*, *Appearance*, the module's
+ * missing step as a card above them) and *Add treatment over the lock screen* (*Time to save*: 10 / 20 / 30 / 60 s or
+ * a custom 10–120 s).
  */
 @Composable
 fun LockScreenContent(
     seconds: Double,
     onSet: (Double) -> Unit,
     onBack: () -> Unit,
-    widget: LockWidgetUi? = null,
+    widget: LockWidgetUi,
     actions: LockWidgetActions = LockWidgetActions(),
 ) {
     var dialog by rememberSaveable { mutableStateOf<LockDialog?>(null) }
     val label = numberLabeler()
     val spec = SettingsSpec.LOCK_TREATMENT_TIME
     SettingsPage(stringResource(R.string.st_lock_title), onBack) {
-        if (widget != null) {
-            LockAccessBanner(widget, actions)
-            val off = stringResource(R.string.st_lock_unavailable)
-            SettingsGroup(title = stringResource(R.string.st_root_group)) {
-                SwitchRow(
-                    stringResource(R.string.st_lock_widget),
-                    widget.on,
-                    actions.setOn,
-                    summary = stringResource(lockWidgetSummary(widget)),
-                    icon = DsR.drawable.ds_ic_widgets,
-                )
-                ValueRow(
-                    stringResource(R.string.st_lock_background),
-                    if (widget.on) stringResource(lockBackgroundLabel(widget.look.background)) else off,
-                    { dialog = LockDialog.Background },
-                    enabled = widget.on,
-                    icon = DsR.drawable.ds_ic_wallpaper,
-                )
-                ValueRow(
-                    stringResource(R.string.st_lock_appearance),
-                    if (widget.on) stringResource(lockAppearanceLabel(widget.look.appearance)) else off,
-                    { dialog = LockDialog.Appearance },
-                    enabled = widget.on,
-                    icon = DsR.drawable.ds_ic_palette,
-                )
-            }
-            FooterText(stringResource(R.string.st_lock_widget_footer))
+        LockAccessBanner(widget, actions)
+        val off = stringResource(R.string.st_lock_unavailable)
+        SettingsGroup(title = stringResource(R.string.st_root_group)) {
+            SwitchRow(
+                stringResource(R.string.st_lock_widget),
+                widget.on,
+                actions.setOn,
+                summary = stringResource(lockWidgetSummary(widget)),
+                icon = DsR.drawable.ds_ic_widgets,
+            )
+            ValueRow(
+                stringResource(R.string.st_lock_background),
+                if (widget.on) stringResource(lockBackgroundLabel(widget.look.background)) else off,
+                { dialog = LockDialog.Background },
+                enabled = widget.on,
+                icon = DsR.drawable.ds_ic_wallpaper,
+            )
+            ValueRow(
+                stringResource(R.string.st_lock_appearance),
+                if (widget.on) stringResource(lockAppearanceLabel(widget.look.appearance)) else off,
+                { dialog = LockDialog.Appearance },
+                enabled = widget.on,
+                icon = DsR.drawable.ds_ic_palette,
+            )
         }
+        FooterText(stringResource(R.string.st_lock_widget_footer))
         SettingsGroup(title = stringResource(R.string.st_lock_treatment)) {
             ValueRow(
                 stringResource(R.string.st_lock_time),
@@ -252,7 +244,7 @@ fun LockScreenContent(
                         sub = stringResource(lockBackgroundSummary(it)),
                     )
                 },
-                widget?.look?.background ?: LockBackground.DEFAULT,
+                widget.look.background,
                 { dialog = null },
                 onChoose = actions.setBackground,
             )
@@ -268,7 +260,7 @@ fun LockScreenContent(
                         sub = stringResource(lockAppearanceSummary(it)),
                     )
                 },
-                widget?.look?.appearance ?: LockAppearance.DEFAULT,
+                widget.look.appearance,
                 { dialog = null },
                 onChoose = actions.setAppearance,
             )

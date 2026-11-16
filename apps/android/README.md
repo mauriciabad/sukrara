@@ -141,8 +141,8 @@ broadcast): `:sensor` / `:share` register it at runtime while monitoring runs.
 - Two flavors, one package and key (docs/20-publishing.md › Flavors): `full` (GitHub: `assembleFullRelease`, an APK,
   `tools/release/android-release.sh`) and `play` (Google Play: `bundlePlayRelease`, an app bundle,
   `tools/release/play-bundle.sh`). The play flavor's differences are all in `app/src/play`: `Store` (no update
-  check; the root features are in both since 2026-11-11, #142, approved by Play with 0.14.5) and the manifest (no
-  changes).
+  check) and the manifest (no changes). Root and the LSPosed module are in every build (#142, approved by Play with
+  0.14.5): `:monitor`'s `MonitorModule` builds `systemui.SystemUiRoot`, with no flavor seam.
 - The Libre 3 core comes from Juggluco (`-Psukrara.juggluco=…`, env `SUKRARA_JUGGLUCO`, else
   `<main checkout>/third_party/Juggluco`) at the commit in `sensor/juggluco.lock`, clean tree. Debug builds without
   it only warn (the app reports the missing core). Any release output (`pre<Flavor>ReleaseBuild`) fails without the key

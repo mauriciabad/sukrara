@@ -358,7 +358,6 @@ class SettingsIndexTest {
             Scene("glucose notification, chip", SearchTarget.Page(SettingsRoute.StatusBar)) {
                 StatusBarContent(
                     notificationPrefs(NotificationStyle.Chip),
-                    true,
                     AndroidNotification(liveUpdates = true, shown = true),
                     rootActive,
                     false,
@@ -369,7 +368,6 @@ class SettingsIndexTest {
             Scene("glucose notification, icon", SearchTarget.Page(SettingsRoute.StatusBar)) {
                 StatusBarContent(
                     notificationPrefs(NotificationStyle.Icon),
-                    true,
                     AndroidNotification(liveUpdates = true, shown = true),
                     rootActive,
                     false,
@@ -380,7 +378,6 @@ class SettingsIndexTest {
             Scene("glucose notification, root", SearchTarget.Page(SettingsRoute.StatusBar)) {
                 StatusBarContent(
                     notificationPrefs(NotificationStyle.Text),
-                    true,
                     AndroidNotification(liveUpdates = true, shown = true),
                     rootActive,
                     false,

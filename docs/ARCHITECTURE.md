@@ -72,10 +72,11 @@ the rest (`AppGraph.unlocked`), `ready` loads it (root status bar, widgets, inte
 hub, the source and the alert runtime are the same objects before and after. Notifications resolve the app's
 activities with `AppActivities` (direct-boot-unaware matches included: a plain lookup before the unlock finds none).
 
-**Root status bar (`:monitor` `monitor/systemui/`).** `RootStatusBar` (built by `MonitorModule`, started in `ready()`)
-follows the hub, `SurfaceSettings.Root*`, the ranges and the freshness ticks; conflated on one background thread it
-(1) sends `HookState` to System UI (`${applicationId}.SYSTEMUI_STATE`, signature permission `…permission.SYSTEMUI_STATE`,
-sender identity shared) and (2) drives `SlotDaemon` (`su` + `app_process`, line protocol `DaemonProtocol`, own slots
+**Root status bar (`:monitor` `monitor/systemui/`).** In every build: `MonitorModule` builds `SystemUiRoot`
+(`SystemAccess` and `RootStatusBar`, started in `readyUnlocked()`), no flavor seam. `RootStatusBar` follows the hub,
+`SurfaceSettings.Root*`, the ranges and the freshness ticks; conflated on one background thread it (1) sends
+`HookState` to System UI (`${applicationId}.SYSTEMUI_STATE`, signature permission `…permission.SYSTEMUI_STATE`, sender
+identity shared) and (2) drives `SlotDaemon` (`su` + `app_process`, line protocol `DaemonProtocol`, own slots
 `sukrara_glucose*`, drawables `sb_*` from `tools/android/gen-slot-drawables.swift`, kept by `res/raw/keep_status_icons.xml`
 and `consumer-rules.pro`). `SystemUiHook` is the LSPosed module in the same APK (`src/main/resources/META-INF/xposed`,
 libxposed API `compileOnly`); its pure parts are `HookText`, `IconFit`, `SlotIcons`, and for the lock-screen widget

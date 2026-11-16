@@ -44,7 +44,6 @@ import app.mauri.sukrara.feature.settings.SettingsPage
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.GraphSettings
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -87,13 +86,10 @@ data class AndroidNotification(
 
 class StatusBarViewModel(
     private val settings: SettingsRepository,
-    /** null: this build has no root features (Google Play): no root choice. */
-    private val systemAccess: SystemAccessPort?,
+    private val systemAccess: SystemAccessPort,
     recent: Flow<List<Reading>> = flowOf(emptyList()),
     private val clock: Clock? = null,
 ) : ViewModel() {
-    val rootOffered: Boolean = systemAccess != null
-
     private val look: Flow<GlucoseLook?> =
         combine(recent, settings.flow(GraphSettings.GlucoseUnitSetting)) { readings, unit ->
             clock?.let { NotificationIconPreview.look(readings, it.now(), GlucoseUnit.of(unit)) }
@@ -101,8 +97,8 @@ class StatusBarViewModel(
 
     val prefs: StateFlow<NotificationPagePrefs?> =
         combine(
-            NotificationStyleSettings.flow(settings, rootOffered),
-            NotificationStyleSettings.iconFlow(settings, rootOffered),
+            NotificationStyleSettings.flow(settings),
+            NotificationStyleSettings.iconFlow(settings),
             combine(settings.flow(SurfaceSettings.LockScreen), settings.flow(SurfaceSettings.Colorize), ::Pair),
             combine(settings.flow(SurfaceSettings.RootPosition), settings.flow(SurfaceSettings.RootColor), ::Pair),
             combine(settings.flow(SurfaceSettings.SeparateAlerts), look, ::Pair),
@@ -110,7 +106,7 @@ class StatusBarViewModel(
             NotificationPagePrefs(style, icon, lock, colorize, position, color, alertsInside = !separate, look = look)
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    val access: StateFlow<SystemAccessState> = systemAccess?.state ?: MutableStateFlow(SystemAccessState())
+    val access: StateFlow<SystemAccessState> = systemAccess.state
 
     private val runner = AccessRunner(viewModelScope)
 
@@ -122,7 +118,7 @@ class StatusBarViewModel(
     fun setStyle(style: NotificationStyle) {
         viewModelScope.launch {
             NotificationStyleSettings.set(settings, style)
-            if (style == NotificationStyle.Text && systemAccess?.state?.value?.granted == false) {
+            if (style == NotificationStyle.Text && !systemAccess.state.value.granted) {
                 runCatching { systemAccess.checkRoot() }
             }
         }
@@ -134,23 +130,22 @@ class StatusBarViewModel(
 
     fun checkRoot() =
         runner.run {
-            systemAccess?.checkRoot()
+            systemAccess.checkRoot()
             null
         }
 
-    fun requestScope() = runner.run { systemAccess?.requestScope() }
+    fun requestScope() = runner.run { systemAccess.requestScope() }
 
-    fun restart() = runner.run { systemAccess?.restartSystemUi() }
+    fun restart() = runner.run { systemAccess.restartSystemUi() }
 
     /**
      * Back on the page: look for signs of root and ask LSPosed again (no `su`); ask for root again only while the root
      * choice is on and root isn't granted yet (the person may come back from allowing Sukrara in their root manager).
      */
     fun refresh() {
-        val access = systemAccess ?: return
-        access.refresh()
-        if (!access.state.value.granted && prefs.value?.style == NotificationStyle.Text) {
-            viewModelScope.launch { runCatching { access.checkRoot() } }
+        systemAccess.refresh()
+        if (!systemAccess.state.value.granted && prefs.value?.style == NotificationStyle.Text) {
+            viewModelScope.launch { runCatching { systemAccess.checkRoot() } }
         }
     }
 
@@ -247,7 +242,6 @@ fun Context.openGlucoseChannelSettings() {
 @Composable
 fun StatusBarContent(
     prefs: NotificationPagePrefs,
-    rootOffered: Boolean,
     android: AndroidNotification,
     access: SystemAccessState,
     busy: Boolean,
@@ -265,7 +259,7 @@ fun StatusBarContent(
         wasAsking = access.asking
     }
     SettingsPage(stringResource(R.string.st_statusbar_title), onBack) {
-        GlucoseNotificationChoice(style, rootOffered, actions.setStyle, offOffered = true)
+        GlucoseNotificationChoice(style, actions.setStyle, offOffered = true)
         // the step Android's settings still need for the choice: the notification on, or off
         when {
             style.needsNotification && !android.shown -> {

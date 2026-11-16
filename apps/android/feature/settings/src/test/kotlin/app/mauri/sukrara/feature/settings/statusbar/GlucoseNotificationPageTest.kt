@@ -35,7 +35,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -108,7 +107,6 @@ class GlucoseNotificationPageTest {
         prefs?.let {
             StatusBarContent(
                 it,
-                vm.rootOffered,
                 android,
                 access,
                 busy,
@@ -176,7 +174,7 @@ class GlucoseNotificationPageTest {
 
     @Test fun `Nothing asks for the one step in Android's settings until the notification is off`() {
         val settings = InMemorySettingsRepository()
-        val vm = StatusBarViewModel(settings, null)
+        val vm = StatusBarViewModel(settings, FakeAccess(RootAccess.Missing))
         vm.setStyle(NotificationStyle.Off)
         show(vm, shown = true)
         compose.onNodeWithText(text(R.string.st_statusbar_turn_off)).assertExists()
@@ -184,7 +182,7 @@ class GlucoseNotificationPageTest {
     }
 
     @Test fun `the notification off in Android under Nothing - no step, the alerts' footer`() {
-        val vm = StatusBarViewModel(InMemorySettingsRepository(), null)
+        val vm = StatusBarViewModel(InMemorySettingsRepository(), FakeAccess(RootAccess.Missing))
         vm.setStyle(NotificationStyle.Off)
         show(vm, shown = false)
         compose.onNodeWithText(text(R.string.st_statusbar_turn_off)).assertDoesNotExist()
@@ -193,7 +191,7 @@ class GlucoseNotificationPageTest {
     }
 
     @Test fun `a choice that needs the notification while Android has it off asks to turn it on`() {
-        val vm = StatusBarViewModel(InMemorySettingsRepository(), null)
+        val vm = StatusBarViewModel(InMemorySettingsRepository(), FakeAccess(RootAccess.Missing))
         vm.setStyle(NotificationStyle.Icon)
         show(vm, shown = false)
         compose.onNodeWithText(text(R.string.st_statusbar_turn_on)).assertExists()
@@ -203,7 +201,7 @@ class GlucoseNotificationPageTest {
     @Test fun `alerts in the notification is the separate alerts setting the other way round`() =
         runTest {
             val settings = InMemorySettingsRepository()
-            val vm = StatusBarViewModel(settings, null)
+            val vm = StatusBarViewModel(settings, FakeAccess(RootAccess.Missing))
             show(vm)
             compose.onNodeWithText(text(R.string.st_statusbar_alerts_on)).assertExists()
             compose.onNodeWithText(text(R.string.st_statusbar_alerts)).performClick()
@@ -211,15 +209,6 @@ class GlucoseNotificationPageTest {
             assertTrue(settings.flow(SurfaceSettings.SeparateAlerts).first())
             compose.onNodeWithText(text(R.string.st_statusbar_alerts_off)).assertExists()
         }
-
-    @Test fun `a build without root features offers no root text`() {
-        val vm = StatusBarViewModel(InMemorySettingsRepository(), null)
-        assertFalse(vm.rootOffered)
-        show(vm)
-        compose.onNodeWithText(text(DsR.string.ds_notif_style_chip)).assertExists()
-        compose.onNodeWithText(text(DsR.string.ds_notif_style_icon)).assertExists()
-        compose.onNodeWithText(text(DsR.string.ds_notif_style_root)).assertDoesNotExist()
-    }
 
     @Test fun `never asked - choosing the status bar text asks`() =
         runTest {

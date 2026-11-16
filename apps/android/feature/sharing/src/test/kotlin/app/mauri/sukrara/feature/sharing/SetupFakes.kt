@@ -11,15 +11,20 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceStatus
+import app.mauri.sukrara.core.model.SystemAccessPort
+import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 
 /** The phone's role store; [events] records each role written. */
 class FakeRoles(
@@ -82,4 +87,24 @@ class FakeHub : GlucoseHub {
     override fun setAlerts(alerts: AlertUiState) = Unit
 
     override fun setLink(link: LinkState?) = Unit
+}
+
+/** Root on this phone: a port whose `su` answers [answer] (a phone without root by default); counts the requests. */
+class FakeSystemAccess(
+    var answer: RootAccess = RootAccess.Missing,
+    seen: Boolean = false,
+) : SystemAccessPort {
+    override val state = MutableStateFlow(SystemAccessState(rootSeen = seen, module = ModuleState.Active))
+    var asked = 0
+
+    override suspend fun checkRoot() {
+        asked++
+        state.update { it.copy(root = answer) }
+    }
+
+    override fun refresh() = Unit
+
+    override suspend fun restartSystemUi(): String? = null
+
+    override suspend fun requestScope(): String? = null
 }

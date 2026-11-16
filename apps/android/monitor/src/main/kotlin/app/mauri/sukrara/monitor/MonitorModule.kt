@@ -31,6 +31,7 @@ import app.mauri.sukrara.monitor.service.AndroidStoppedNotice
 import app.mauri.sukrara.monitor.service.FreshnessTicker
 import app.mauri.sukrara.monitor.service.HealthCheck
 import app.mauri.sukrara.monitor.service.MonitorStarter
+import app.mauri.sukrara.monitor.systemui.SystemUiRoot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -74,8 +75,6 @@ class MonitorModule(
     sharing: Flow<SharingLine?> = flowOf(null),
     /** The role's reading source may have changed (Settings › Sensor): the service picks it again. */
     val sourceChanges: Flow<Unit> = emptyFlow(),
-    /** Root and the System UI module: `SystemUiRoot`; null in a build without them ([RootFeatures]). */
-    rootFeatures: RootFeatures.Factory? = null,
 ) {
     val hubImpl = GlucoseHubImpl(scope, dispatchers, clock, readings, record, role)
 
@@ -125,9 +124,8 @@ class MonitorModule(
      */
     val notificationInputs: Flow<NotificationInputs> =
         combine(
-            // the root text only in a build with root features (otherwise read as the chip)
-            NotificationStyleSettings.flow(settings, rootBuild = rootFeatures != null),
-            NotificationStyleSettings.iconFlow(settings, rootBuild = rootFeatures != null),
+            NotificationStyleSettings.flow(settings),
+            NotificationStyleSettings.iconFlow(settings),
             treatments,
             graphConfig,
             sharing.catch { emit(null) },
@@ -164,21 +162,19 @@ class MonitorModule(
 
     /**
      * Root for Sukrara, the System UI module and the value in the status bar with root (Settings › Status bar, the home
-     * restart card); null in a build without them ([RootFeatures]).
+     * restart card).
      */
-    val root: RootFeatures? =
-        rootFeatures?.create(
-            RootInputs(
-                context = context,
-                scope = scope,
-                io = dispatchers.io,
-                clock = clock,
-                hub = hubImpl.state,
-                settings = settings,
-                graphConfig = graphConfig,
-                freshnessTicks = freshnessTicks,
-                repostNotification = ::repost,
-            ),
+    val root: SystemUiRoot =
+        SystemUiRoot(
+            context = context,
+            scope = scope,
+            io = dispatchers.io,
+            clock = clock,
+            hub = hubImpl.state,
+            settings = settings,
+            graphConfig = graphConfig,
+            freshnessTicks = freshnessTicks,
+            repostNotification = ::repost,
         )
 
     /** *Read glucose aloud*: the sentence by text-to-speech from the app shortcut. */
@@ -200,7 +196,7 @@ class MonitorModule(
      * shortcut (Android's shortcuts refuse a locked user). Call once the phone is unlocked, after [ready].
      */
     fun readyUnlocked() {
-        root?.start()
+        root.start()
         readAloud.publish()
     }
 

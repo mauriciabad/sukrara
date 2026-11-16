@@ -954,7 +954,7 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   ([the draft](#exact-alarm-declaration)). Precedent: Juggluco, on Play, declares `USE_EXACT_ALARM`. **Settled**:
   approved by Play with 0.14.5 (2026-11-16), no questions asked.
 - **The root features ship in the Play build too**: the glucose in the status bar (root slot daemon, the LSPosed
-  module in System UI: `Store.rootFeatures = SystemUiRoot`, the module's manifest entries, `META-INF/xposed`) and the
+  module in System UI: `MonitorModule`'s `SystemUiRoot`, the module's manifest entries, `META-INF/xposed`) and the
   lock-screen widget (#66, the same module). They work only after the person roots their phone, installs LSPosed and
   enables Sukrara's module for System UI: the status-bar value is off by default and also needs root granted to
   Sukrara; the lock-screen widget's setting is on by default (as in the PoC) but shows nothing, and sends nothing to
@@ -1587,7 +1587,7 @@ notable. **Mac App Store** (2026-11-11, #186): go, as a second, sandboxed build 
 
 **Android**: one release key, package **`app.mauri.sukrara`**, two flavors. **Google Play** (the reinstated account,
 production only, live since 0.14.5) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor (with
-its own update check; the root features are in both since 2026-11-11); register the package and key for developer verification in the same Play Console account before the
+its own update check; the root features are in both); register the package and key for developer verification in the same Play Console account before the
 2027 global rollout. F-Droid main repo later, with reproducible builds.
 
 **Garmin**: Connect IQ Store, free, display-only claims.

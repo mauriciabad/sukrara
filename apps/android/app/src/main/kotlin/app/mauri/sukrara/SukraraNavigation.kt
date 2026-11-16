@@ -1015,9 +1015,8 @@ private fun route(
                 graph.scope.launch {
                     val problem =
                         try {
-                            graph.monitor.root
-                                ?.access
-                                ?.restartSystemUi()
+                            graph.monitor.root.access
+                                .restartSystemUi()
                         } finally {
                             restartingSystemUi.set(false)
                         } ?: return@launch

@@ -1967,11 +1967,11 @@ icon, above the shortcuts) shows the glucose card: the value and its arrow left 
   once (its view's `onConfigurationChanged`) and redraws the picture (the app's theme change).
 - **TalkBack** (glyph surface `lock-description`): the card's sentence (`A11y.card`; a follower's widget starts with
   the wearer's name), then *Add treatment* when that is what a tap does.
-- **Settings › Lock screen** (`:feature:settings` `lock/LockScreenPage.kt`), in a build with root features (both):
-  group *With root* with *Lock screen widget* (`lock.widget`, on by default as in the PoC: it does nothing without
-  the module), *Background* and *Appearance* (SPA list dialogs with a line under each choice; *Unavailable while the
-  widget is off* while off), a footer on what it needs and who can add treatments; then *Add treatment over the lock
-  screen* › *Time to save* (`lock.treatmentTime`). The overview's *Lock screen* row reads *Widget around the
+- **Settings › Lock screen** (`:feature:settings` `lock/LockScreenPage.kt`): group *With root* with *Lock screen
+  widget* (`lock.widget`, on by default as in the PoC: it does nothing without the module), *Background* and
+  *Appearance* (SPA list dialogs with a line under each choice; *Unavailable while the widget is off* while off), a
+  footer on what it needs and who can add treatments; then *Add treatment over the lock screen* › *Time to save*
+  (`lock.treatmentTime`). The overview's *Lock screen* row reads *Widget around the
   fingerprint, time to save a treatment*. Search finds the three rows.
 - **The module's state** (`SystemAccess`): the switch's line says *Your glucose and graph around the fingerprint icon.
   Tap it to add a treatment without unlocking* while the module runs, *On. Shows once the Sukrara LSPosed module runs

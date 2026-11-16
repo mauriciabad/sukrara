@@ -301,7 +301,6 @@ class AppGraph(
                         .distinctUntilChanged()
                 },
             sourceChanges = sourceChanges,
-            rootFeatures = Store.rootFeatures,
         )
     }
 
@@ -406,7 +405,7 @@ class AppGraph(
                 monitor.hub.state
                     .map { it.recent }
                     .distinctUntilChanged(),
-            systemAccess = monitor.root?.access,
+            systemAccess = monitor.root.access,
             distribution = Store.distribution,
             updates = { updates },
             pensAvailable = { pens.available() },
@@ -622,8 +621,8 @@ class AppGraph(
             updates = updateSuggestion?.setup(),
             // the optional insulin pens step (a phone with NFC)
             pens = SetupPens(pens.setupAnswer, pens::turnOnReading),
-            // the root step and the status bar text (builds with root features)
-            systemAccess = monitor.root?.access,
+            // the root step and the status bar text
+            systemAccess = monitor.root.access,
         )
     }
 
@@ -771,7 +770,7 @@ class AppGraph(
                 sensor.source.detail
                     .map { d -> (d as? SensorStatus.Direct)?.profile?.takeUnless { it.verified }?.label }
                     .distinctUntilChanged(),
-            systemAccess = monitor.root?.access?.state ?: emptyFlow(),
+            systemAccess = monitor.root.access.state,
             build = BuildConfig.VERSION_CODE.toLong(),
         )
     }

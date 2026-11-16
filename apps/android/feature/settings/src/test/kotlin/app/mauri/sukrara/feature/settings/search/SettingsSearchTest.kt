@@ -244,23 +244,29 @@ class SettingsSearchTest {
     }
 
     /**
-     * The Google Play build (root features, no update check: #142) finds no *Check again*; a build without root (Play's
-     * fallback) no root rows either; every build finds the privacy policy and *About the versions*.
+     * The Google Play build (no updater: #188) finds no *Check again* and no update switches; both builds find the root
+     * rows (#142), the privacy policy and *About the versions*.
      */
     @Test
     fun rowsOfTheOtherBuildAreNotFound() {
-        fun titles(
-            build: Set<BuildFeature>,
-        ) = SettingsIndex.entries.filter { it.shownOn(pens = true, wearer = true, build) }.map { it.title }
-        val noRoot = titles(emptySet())
-        val play = titles(setOf(BuildFeature.Root))
-        val full = titles(BuildFeature.entries.toSet())
-        val root = listOf(DsR.string.ds_notif_style_root, R.string.st_root_colour, R.string.st_root_placement)
-        for (t in root) assertTrue(t !in noRoot && t in play && t in full)
-        assertTrue(R.string.st_update_check_again !in play && R.string.st_update_check_again in full)
-        for (t in listOf(R.string.st_privacy, DsR.string.ds_notif_style_chip, R.string.st_about_version, R.string.st_about_versions)) {
-            assertTrue(t in noRoot && t in play && t in full)
+        fun titles(updater: Boolean) = SettingsIndex.entries.filter { it.shownOn(pens = true, wearer = true, updater) }.map { it.title }
+        val play = titles(updater = false)
+        val full = titles(updater = true)
+        for (t in listOf(R.string.st_update_check_again, R.string.st_update_auto_checks, R.string.st_update_auto_install)) {
+            assertTrue(t !in play && t in full)
         }
+        val both =
+            listOf(
+                DsR.string.ds_notif_style_root,
+                R.string.st_root_colour,
+                R.string.st_root_placement,
+                R.string.st_lock_widget,
+                R.string.st_privacy,
+                DsR.string.ds_notif_style_chip,
+                R.string.st_about_version,
+                R.string.st_about_versions,
+            )
+        for (t in both) assertTrue(t in play && t in full)
     }
 
     /** #134: a hit on an alert's own row opens that alert's page ("Remind every · Alerts › Low › Alert when"). */

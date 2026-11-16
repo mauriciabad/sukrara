@@ -146,8 +146,8 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
       keeps every pill legible (white / black on red).
 - [ ] Settings › Status bar & notification (docs/36 §11, §14; its overview icon the status bar with the shade pulled
       down): the picture follows the choice (fade, cut with reduced motion; TalkBack reads it as one sentence);
-      *Chip*, *Notification icon*, *Status bar text* (root builds only, a *Root* label at its end that TalkBack reads with
-      the row), *Nothing* are one radio group of equal rows; under it only the chosen one's rows (chip: *Allow Live
+      *Chip*, *Notification icon*, *Status bar text* (a *Root* label at its end that TalkBack reads with the row),
+      *Nothing* are one radio group of equal rows; under it only the chosen one's rows (chip: *Allow Live
       Updates* while refused; icon and text: *What the icon shows* with the newest value drawn as each icon, *None*
       only with the text; text: root's card, *Placement*, *Colour by range*, *Glucose notification*), then
       *Notification* with *Alerts in the notification* (flipping it flips Alerts › *Separate alert notifications*).

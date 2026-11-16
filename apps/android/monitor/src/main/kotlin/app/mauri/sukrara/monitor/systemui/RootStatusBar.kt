@@ -101,10 +101,10 @@ class RootStatusBar(
 
     val prefs: Flow<RootPrefs> =
         combine(
-            NotificationStyleSettings.flow(settings, rootBuild = true),
+            NotificationStyleSettings.flow(settings),
             settings.flow(SurfaceSettings.RootPosition),
             settings.flow(SurfaceSettings.RootColor),
-            NotificationStyleSettings.iconFlow(settings, rootBuild = true),
+            NotificationStyleSettings.iconFlow(settings),
         ) { style, position, color, icon ->
             // the notification's icon hidden only where the person chose so (with the text; only while it shows)
             RootPrefs(style == NotificationStyle.Text, position, color, icon == NotificationIcon.None)

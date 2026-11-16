@@ -7,11 +7,9 @@ import app.mauri.sukrara.core.model.AlertHold
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.feature.settings.Distribution
-import app.mauri.sukrara.monitor.RootFeatures
 import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
-import app.mauri.sukrara.monitor.systemui.SystemUiRoot
 import app.mauri.sukrara.update.UpdateEndpoint
 import app.mauri.sukrara.update.UpdateModule
 import app.mauri.sukrara.update.UpdateNotificationPorts
@@ -21,14 +19,12 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
- * The GitHub build (GitHub releases, Obtainium; docs/20-publishing.md › Flavors): root and the LSPosed module in
- * System UI, and the updater (#188: the daily check, the update notification, the checked install; `:update`). The
- * play flavor's `Store` has no updater.
+ * The GitHub build (GitHub releases, Obtainium; docs/20-publishing.md › Flavors): the updater (#188: the daily check,
+ * the update notification, the checked install; `:update`). The play flavor's `Store` has none; everything else, root
+ * and the LSPosed module in System UI included, is the same in both builds (`AppGraph`).
  */
 internal object Store {
     val distribution = Distribution.GitHub
-
-    val rootFeatures: RootFeatures.Factory? = SystemUiRoot
 
     /** The updater ([AppGraph.updates] keeps THE one; construction does no I/O, [start] runs it). */
     fun updates(graph: AppGraph): AppUpdates? = UpdateModule(graph.app, ports(graph))

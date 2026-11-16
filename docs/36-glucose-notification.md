@@ -743,9 +743,9 @@ hidden, the notification with the graph. One stored choice over the existing key
 `statusbar.hook` on + `statusbar.hideNotifIcon` on; otherwise `statusbar.chip`), so the hook, the module and the
 settings schema didn't change. Choosing it is the request for root (#178: never asked before), with root's or the
 module's missing step as the shared card below it (`AccessStepBanner`, moved to `:core:designsystem/root` so setup
-can show it). A build without root features shows two options.
+can show it). Every build has it (#142).
 
-**Setup.** Two optional steps after *Keep Sukrara up to date*: **Root** (root builds only), then **Glucose notification**.
+**Setup.** Two optional steps after *Keep Sukrara up to date*: **Root**, then **Glucose notification**.
 Root: *Is this phone rooted?* with *Yes, it's rooted* / *It isn't rooted* / *Later*. "Automatic if possible": when the
 phone already shows signs of root (LSPosed answers, a `su` file, the module), the question is skipped and the check
 runs by itself; otherwise only the person's *Yes* asks, because asking `su` unprompted pops Magisk's dialog (where it still has one)
