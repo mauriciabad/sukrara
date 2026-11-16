@@ -65,6 +65,12 @@ your data. Settings › About shows which one you have, next to the version numb
 else, alerts, sharing, widgets and the glucose in the status bar included, is in both. If a store version ever has to
 leave something else out, it is listed here.
 
+**From the GitHub version to Google Play:** open [Sukrara on Google Play](https://play.google.com/store/apps/details?id=app.mauri.sukrara) on the phone. If it
+offers *Update from Play*, tap it: Play installs its version over yours, keeps your data and updates it from then on.
+If it only says *Open*, you already have the newest version: switch with the next one (the update notification tells
+you when it's out; with *Install updates automatically* on, turn that off first in Settings › About › Updates). Don't
+uninstall the GitHub version first: that deletes what Sukrara keeps on the phone.
+
 > **A preview, not a medical device.** Sukrara is a preview (0.x) until it's been tested on a real sensor. Don't
 > make treatment decisions from it.
 

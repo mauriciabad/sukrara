@@ -649,7 +649,7 @@ open testing at once, with no *Apply for production* step) and no new fee.
   [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
 - **Approved: live in production** (0.14.5, seen by the owner 2026-11-16; Play dates it Nov 13): https://play.google.com/store/apps/details?id=app.mauri.sukrara, linked from
   the README and the website's Android page. No questions from Play about `USE_EXACT_ALARM`, root or LSPosed. Left:
-  item 6's check below. The fixed listing icon (#210) was sent for review 2026-11-16.
+  nothing: item 6's check below passed (2026-11-16). The fixed listing icon (#210) is live since 2026-11-16.
 
 ### Google Play: reviewer access (App access)
 
@@ -1170,7 +1170,7 @@ answered *Don't label assets*: no AI-generated content (the owner, 2026-11-12).
 |---|---|---|
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
 | Short description (≤ 80) | `Your glucose in status bar and home screen widget. Discreet alarms, cool sounds` (79) | `Tu glucosa en la barra de estado y en widgets. Alarmas discretas, sonidos chulos` (80) |
-| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art, cropped to what launchers show). In Play Console since 2026-11-16 (replacing the earlier render with the glyph at 2/3 size, #210; sent for review, AI declaration *Don't label assets*) | the same (es-ES has no icon of its own: it uses the default listing's) |
+| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art, cropped to what launchers show). Live since 2026-11-16 (replacing the earlier render with the glyph at 2/3 size, #210; AI declaration *Don't label assets*) | the same (es-ES has no icon of its own: it uses the default listing's) |
 | Feature graphic | `~/Pictures/sukrara-play/feature-graphic.png` (1024 × 500, no alpha: the wordmark beside a synthetic glucose card), source [`assets/brand/sukrara/play/feature-graphic.html`](../assets/brand/sukrara/play/README.md) | the same (its only word is the name) |
 | Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
@@ -1343,8 +1343,8 @@ Done 2026-11-12: the store listing's new text (en-US + es-ES), its AI asset decl
 Done 2026-11-13: all of 1–4 below; the release went to **production**, not open testing (see the account section).
 
 Approved and live (2026-11-16, [the account section](#google-play-the-account-and-app-as-set-up-2026-11-10)); the fixed
-listing icon (#210) in review since 2026-11-16. Left: item 6's check on a spare phone (does Play take over a
-GitHub install?) before telling GitHub users to switch.
+listing icon (#210) live since 2026-11-16. Item 6 passed (below); the website's Android page tells GitHub users
+how to switch.
 
 The steps, as they were:
 
@@ -1361,7 +1361,18 @@ The steps, as they were:
    text above).
 6. Install from the internal-testing link on a **spare** phone or emulator first (on the owner's daily phone it would
    replace the GitHub version: same package and key, the data stays), check Settings › About says *Google Play
-   version*. Open testing as a beta: dropped, no Play beta track: every release goes straight to production (the owner, 2026-11-16).
+   version*. **Done 2026-11-16** on the `medium_phone` emulator (Android 16, Play Store, the owner's account), with
+   the GitHub release APKs against Play's 0.14.5:
+   - GitHub 0.14.4 installed from the browser (installer Chrome): the listing says *The app installed on your device
+     didn't come from Google Play. You can update the app from the original source or from Google Play.* with
+     **Update from Play**, then *Update this app from Play?* (*…will be added to your Play library…*). It updates in
+     place: installer `com.android.vending`, Play's splits, `firstInstallTime` kept; About *0.14.5 · Google Play
+     version*, no updater (no `REQUEST_INSTALL_PACKAGES`), setup without *Keep Sukrara up to date*.
+   - GitHub 0.14.4 installed by Sukrara's own updater (installer `app.mauri.sukrara`; the updater doesn't claim update
+     ownership): plain **Update**, same result (this account already had Sukrara in its library from the first case).
+   - GitHub **0.14.5** (the same version as Play): only **Open**. Nothing to switch to until the next version; then it
+     is the first case. Not tested: Obtainium installs, and Play → GitHub on a real phone (adb skips the prompts).
+   Open testing as a beta: dropped, no Play beta track: every release goes straight to production (the owner, 2026-11-16).
 
 If Play rejects `USE_EXACT_ALARM` or the root features: [Flavors](#flavors) › *If Play rejects …*, a new bundle, and
 the next upload.
