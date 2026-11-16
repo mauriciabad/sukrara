@@ -106,8 +106,8 @@ Three palettes (`pal()` in aura.js). **Awake:**
 | rapid · long · carbs · note | `#8AB4FF` · `#C9B0FF` · `#FFB74D` · `#B4B4B4` | treatments and pills (note = mute / sensor) |
 | neutral | `#A3A3A8` | dials in range when green is off |
 
-**Night** (between the person's sleep and wake times): ink `#8C8C92`, soft `#5E5E64`, dim `#46464B`, faint
-`#2A2A2E`, grid `#1A1A1D`, band `#242428`, band2 `#303035`, grey `#56565B`, veryLow `#A63A35`, low `#B8433F`, tight
+**Night** (the watch in Do Not Disturb, which its Sleep Mode turns on): ink `#8C8C92`, soft `#5E5E64`, dim
+`#46464B`, faint `#2A2A2E`, grid `#1A1A1D`, band `#242428`, band2 `#303035`, grey `#56565B`, veryLow `#A63A35`, low `#B8433F`, tight
 `#2E9C5C`, target `#6B9631`, high `#B57C1E`, veryHigh `#BC5C36`, extremelyHigh `#A84A9C`, now `#7E9A26`, rapid
 `#5F7EB3`, long `#8C7AB3`, carbs `#B3833A`, note `#7A7A7E`, neutral `#5E5E64`.
 **Always-on**: as awake but ink `#C9C9CE`, soft `#7A7A80`, dim `#55555A`, faint `#323236`, grid `#1C1C1F`, band and
@@ -167,7 +167,7 @@ default is the reference's (every case starts from it):
 | time and date | `time`: `"H:MM:SS"` or `"live"` | 10:09:36, Mon 16 Nov 2026 | watch · 12/24 h from the watch |
 | language | `lang`: `en`, `es` | en | watch |
 | battery | `battery`: days left; `batteryPct` | 8.6; null (= days × 10) | watch |
-| mode | `mode`: `awake`, `aod`, `night` | awake | watch: wrist, power mode, the person's sleep window |
+| mode | `mode`: `awake`, `aod`, `night` | awake | watch: wrist, power mode, Do Not Disturb (its Sleep Mode) |
 | privacy | `privacy`: `open`, `private`, `revealed` (held); `reveal`: the fraction of the 5 s left | open, 0.6 | the setting + touch-and-hold (§8) |
 | phone connected | `phone`: true/false | true | watch |
 | colour check | `filter`: `none`, `redshift`, `grey` | none | reference only (§8) |
@@ -480,8 +480,9 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
   reference (linear luminance / sRGB-weighted): in range 1.5 % / 2.9 %; a filled pill 2.8 % / 5.1 %; no readings
   1.3 % / 2.8 %; the brightest, very low and LO (the filled red block) 5.1 % / 8.0 %. Confirm in the simulator
   (Settings › Display Mode › Always On warns over 10 %), very low and LO first.
-- **Night** (between the person's sleep and wake times, from the watch): the night palette; no sweep, no dial;
-  everything else as awake. A low at night keeps its colour, place and pill.
+- **Night** (while the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night
+  palette; no sweep, no dial; everything else as awake. Not the profile's sleep and wake times: on the Descent they
+  aren't the Sleep Mode schedule (set per day) and put the face in night in the afternoon. A low at night keeps its colour, place and pill.
 - **Private** (setting): the value row is empty (reserved) and the bead alone says where you are. **Press and hold**
   the face (the Descent gives faces touch-and-hold) shows the value for 5 s with the countdown line. A **needed** pill
   unmasks the value. Everything that isn't the number still shows: the reading's time when late or old, quiet / mute

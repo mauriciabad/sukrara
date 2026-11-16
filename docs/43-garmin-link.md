@@ -127,7 +127,7 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
   deliveries in `r` and in their shape, `<event>.<watch time>.<display mode>.0`: `S` onShow, `X` onExitSleep (wrist
   raise, button), `E` onEnterSleep, `C` onDisplayModeChanged, and `Da` / `Dn` / `Dw` the first draw in always-on /
   night / awake; the display mode is `System.getDisplayMode()` then (0 high power, 1 low power, 2 off). Times and
-  modes only. The owner switched to a Garmin face: normal brightness, so the face causes it. The face used to decide
+  modes only. The face used to decide
   always-on from the display mode alone on API 5 watches (Garmin staff advise it over the sleep callbacks,
   [forum](https://forums.garmin.com/developer/connect-iq/f/discussion/369120/backlight-detection)): `onShow` read
   it and `onExitSleep` was ignored. Had the Descent said low power on the way back from a menu, or not called
@@ -135,7 +135,22 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
   palette) while awake: both of the owner's symptoms. Now the last callback decides: `X` and `S` → awake, `E` →
   always-on on an AMOLED, `C` → the display mode. Reading a wake in logcat's runs: `X@<t>/sent 0` then
   `Dw@<t>/sent 0` (`Dn` in the sleep window; `sent` is the display mode); `S@<t>/sent 1` or no `C@<t>/sent 0` after
-  `X` confirms the old code's mistake. The panel's own brightness is the firmware's: the ambient light sensor dims a
+  `X` confirms the old code's mistake.
+  **What the device showed** (a4962d408, 15:51 EET): `X@1794837086/sent 0 … Dn@1794837086/sent 0 … E@1794837092/sent
+  2 … Da … X@1794837092/sent 0 … Dn@1794837093/sent 0`: every wrist raise woke the face, into the **night** palette
+  in the afternoon. In the watch-face picker every other face was bright and this one dimmer (the owner). Night came
+  from `UserProfile` sleepTime / wakeTime (documented as seconds since local midnight,
+  [Profile](https://developer.garmin.com/connect-iq/api-docs/Toybox/UserProfile/Profile.html)); on newer watches
+  the Sleep Mode schedule is set per day and doesn't reach those fields, which keep old or default values
+  ([forum](https://forums.garmin.com/developer/connect-iq/f/discussion/409020/is-it-impossible-to-configure-sleep-wake-time-for-fenix-8)).
+  The per-day `upcomingSleepTime` needs API 6 (the Descent has 5.1) and `ActivityMonitor` `isSleepMode` is
+  deprecated. Garmin's own way of the night is Sleep Mode (hold MENU › System › Sleep Mode: Schedule per day, Watch
+  Face, Display, Do Not Disturb, [Mk3 manual](https://www8.garmin.com/manuals/webhelp/GUID-9183E86B-2399-4CFC-AB50-EAFC6D6ED326/EN-US/GUID-10B3BD3D-5B72-4C4F-9B2D-93432AF67E43.html))
+  with its own During Sleep display settings, and Do Not Disturb "dims the screen". So the face is in night while
+  `DeviceSettings.doNotDisturb` is on (Sleep Mode turns it on unless the person turned that off), and the report
+  carries the raw facts once per change as a `P` entry, `Ps<sleepTime>w<wakeTime>t<clock>d<doNotDisturb>z<isSleepMode>
+  n<isNightModeEnabled>.<watch time>.<display mode>.0` (seconds since midnight; 1 / 0, 9 not on the watch, -1 no
+  value). The panel's own brightness is the firmware's: the ambient light sensor dims a
   wrist-raise wake in low light "by design" and a button gives full power
   ([Garmin, fēnix 8](https://forums.garmin.com/outdoor-recreation/outdoor-recreation/f/fenix-8-series/406596/fenix-8---51-amoled-screen-too-dim-in-low-light-dark-environments/1927570)),
   and always-on runs the panel dimmed, which a face can't change

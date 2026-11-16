@@ -68,7 +68,8 @@ data class AuraWatch(
  * with `x` when it kept the older payload; [at] the watch's clock; [sent] when the phone built that payload; [readingAt]
  * its reading's time (epoch s, 0 = none). After the deliveries come the face's screen events in the same shape (docs/43
  * "The screen"): [kind] `S` / `X` / `E` / `C` (onShow, onExitSleep, onEnterSleep, onDisplayModeChanged) or `Da` / `Dn`
- * / `Dw` (it drew always-on / night / awake), [sent] the display mode then, [readingAt] 0.
+ * / `Dw` (it drew always-on / night / awake) or `P…` (the night decision's raw facts), [sent] the display mode then,
+ * [readingAt] 0.
  */
 data class AuraRun(
     val kind: String,

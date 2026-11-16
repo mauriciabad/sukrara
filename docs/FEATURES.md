@@ -2080,7 +2080,9 @@ the time, so the reading ages by itself from its own time with the phone away.
 - **Modes**: *always-on* (the watch's display setting): outlined time, value, pill and messages in a dimmer palette,
   rail without ticks, trail or zone, no fields, no battery; the whole face moves up to 2 px a minute against burn-in.
   A wrist raise or a button always wakes it to the full face, whatever the display mode said before; the face
-  reports its screen events and the mode it drew to the phone (docs/43 "The screen", logcat only). *Night* (between the sleep and wake times set on the watch): the night palette, everything else as awake.
+  reports its screen events and the mode it drew to the phone (docs/43 "The screen", logcat only). *Night* (while
+  the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night palette,
+  everything else as awake.
 - **Private** (setting): the value row stays empty and the bead alone says where you are; touch and hold the face
   shows the value for 5 s with a shrinking neon line under it. A needed pill (*Carbs* / *Insulin*) shows the value
   anyway; the reading's time, quiet / mute pills and messages always show.
@@ -2096,7 +2098,7 @@ reading; nothing to do on the watch. *Warm-up* / *Sensor ended* / *No readings* 
 sensor state changes on the phone. *Pill* → counts down and leaves at the quiet's or mute's end; mute and unmute are on
 the phone (Alerts › States and exits). *No phone* field → leaves when the phone is back in reach. *Private* → on and
 off in Customize › Private (or the Connect IQ app); *revealed* (touch and hold) → hides by itself after 5 s.
-*Always-on* → the watch's display settings; *night* → the sleep window in the watch's user profile. Any setting →
+*Always-on* → the watch's display settings; *night* → the watch's Do Not Disturb or Sleep Mode (hold LIGHT; hold MENU › System › Sleep Mode › Schedule). Any setting →
 Customize (Back leaves a list without changing it). The face itself → choose another face on the watch (hold MENU ›
 Watch face). Garmin has no screen reader for watch faces: what the face says is on the phone's card too.
 

@@ -38,7 +38,15 @@ module AuraWatch {
     function drew(mode as String) as Void {
         if (!mode.equals(_drew)) {
             _drew = mode;
-            AuraLink.screen("D" + mode, Time.now().value(), displayMode());
+            var now = Time.now().value();
+            AuraLink.screen("D" + mode, now, displayMode());
+            var f = facts();
+            // the clock part always differs: compare without it
+            var key = f.substring(0, f.find("t")) + f.substring(f.find("d"), null);
+            if (!key.equals(_facts)) {
+                _facts = key;
+                AuraLink.screen(f, now, displayMode());
+            }
         }
     }
 
@@ -56,7 +64,7 @@ module AuraWatch {
         i.batteryPct = (st.battery + 0.5).toNumber();
         i.battery = days != null && days > 0 ? days.toFloat() : st.battery / 10.0;
         settings(i);
-        i.mode = lowPower ? "aod" : asleep(now) ? "night" : "awake";
+        i.mode = lowPower ? "aod" : asleep(ds) ? "night" : "awake";
         // private: touch and hold shows the value for 5 s with the countdown line (SPEC.md §8)
         if (i.privacy.equals("private") && revealUntil > 0) {
             var left = revealUntil - System.getTimer();
@@ -72,17 +80,33 @@ module AuraWatch {
         return i;
     }
 
-    // the person's sleep window, from the watch's profile (wraps past midnight)
-    function asleep(now as Number) as Boolean {
+    // Night: the watch's own Do Not Disturb, which its Sleep Mode turns on at the person's scheduled sleep (Descent: hold
+    // MENU › System › Sleep Mode; the schedule is per day). UserProfile's sleep and wake times are not that schedule:
+    // the owner's Descent put the face in night at 15:51 (docs/43 "The screen").
+    function asleep(ds as System.DeviceSettings) as Boolean {
+        return ds has :doNotDisturb && ds.doNotDisturb == true;
+    }
+
+    // What the night decision could rest on, as the report's P entry when it changes (docs/43 "The screen"):
+    // s / w UserProfile sleepTime / wakeTime (s since midnight, -1 none), t the clock (s since midnight), d Do Not
+    // Disturb, z ActivityMonitor isSleepMode, n isNightModeEnabled (1 / 0, 9 not on this watch).
+    var _facts as String = "";
+
+    function facts() as String {
         var p = UserProfile.getProfile();
-        if (p == null || p.sleepTime == null || p.wakeTime == null) {
-            return false;
-        }
+        var s = p != null && p.sleepTime != null ? p.sleepTime.value() : -1;
+        var w = p != null && p.wakeTime != null ? p.wakeTime.value() : -1;
         var c = System.getClockTime();
-        var t = c.hour * 3600 + c.min * 60 + c.sec;
-        var s = p.sleepTime.value();
-        var w = p.wakeTime.value();
-        return s <= w ? t >= s && t < w : t >= s || t < w;
+        var ds = System.getDeviceSettings();
+        var am = ActivityMonitor.getInfo();
+        var d = ds has :doNotDisturb ? flag(ds.doNotDisturb) : 9;
+        var z = am has :isSleepMode ? flag(am.isSleepMode) : 9;
+        var n = ds has :isNightModeEnabled ? flag(ds.isNightModeEnabled) : 9;
+        return "Ps" + s + "w" + w + "t" + (c.hour * 3600 + c.min * 60 + c.sec) + "d" + d + "z" + z + "n" + n;
+    }
+
+    function flag(v) as Number {
+        return v == true ? 1 : v == false ? 0 : 9;
     }
 
     function settings(i as AuraInput) as Void {
