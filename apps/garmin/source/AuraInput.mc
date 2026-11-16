@@ -24,7 +24,9 @@ class AuraInput {
     var lastAgo as Float = 80.0; // minutes since it
     var warm as Float = 0.45; // warm-up done, 0..1
     var readyMin as Float? = null; // minutes until the sensor is ready (null: (1 - warm) h, the reference's fake)
-    var sensorLeft as Float = 5.0; // hours left of the sensor (shown in its last 8 h)
+    var sensorLeft as Float? = null; // hours left of the sensor's life (null: the reference's, 5 when ending, else 225.6)
+    var sensorLife as Float = 15.0; // the sensor's whole life, days (its start to its end)
+    var sensorDates as Boolean = true; // false: the phone sent no dates (the sensor rail says --)
     var unit as String = "mgdl"; // mgdl, mmol
     var limits as Array = [55, 70, 140, 180, 250, 300] as Array; // very low, low, very good, high, very high, extreme
     var tir as Number? = 82; // today's time in range, %
@@ -61,6 +63,8 @@ class AuraInput {
     var topField as String = "steps";
     var fields as Array = ["tir", "treatment"] as Array;
     var battLabel as String = "days"; // days, percent, both
+    var sideL as String = "battery"; // the side elements: battery, sensor, level (the glucose rail), none
+    var sideR as String = "level";
 
     function initialize() {}
 }

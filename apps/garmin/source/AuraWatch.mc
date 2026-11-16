@@ -118,6 +118,8 @@ module AuraWatch {
         i.topField = AuraSettings.option(SettingsSpec.TOP_FIELD);
         i.fields = [AuraSettings.option(SettingsSpec.FIELD1), AuraSettings.option(SettingsSpec.FIELD2)];
         i.battLabel = AuraSettings.option(SettingsSpec.BATT_LABEL);
+        i.sideL = AuraSettings.option(SettingsSpec.SIDE_L);
+        i.sideR = AuraSettings.option(SettingsSpec.SIDE_R);
         i.privacy = AuraSettings.flag(SettingsSpec.PRIVATE) ? "private" : "open";
     }
 
@@ -145,7 +147,12 @@ module AuraWatch {
             i.warm = AuraMath.clamp((now - r.warmFrom) / (r.warmUntil - r.warmFrom).toFloat(), 0, 1);
             i.readyMin = AuraMath.max(0, r.warmUntil - now) / 60.0;
         }
+        // the sensor's life from Sukrara's start and end; without them the sensor rail says --
+        i.sensorDates = r.sensorStarts != null && r.sensorEnds != null && r.sensorEnds > r.sensorStarts;
         i.sensorLeft = r.sensorEnds != null ? AuraMath.max(0, r.sensorEnds - now) / 3600.0 : 0.0;
+        if (i.sensorDates) {
+            i.sensorLife = (r.sensorEnds - r.sensorStarts) / 86400.0;
+        }
         i.unit = r.unit;
         i.limits = r.limits;
         i.tir = r.tir;

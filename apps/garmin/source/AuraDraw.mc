@@ -250,8 +250,7 @@ module AuraDraw {
         date(dc, m);
         topField(dc, m);
         time(dc, m);
-        batteryRail(dc, m);
-        levelRail(dc, m);
+        sides(dc, m);
         value(dc, m);
         sparkline(dc, m);
         chipRow(dc, m);
@@ -304,54 +303,128 @@ module AuraDraw {
         }
     }
 
-    function batteryRail(dc as Dc, m as AuraModel) as Void {
-        if (m.aod) {
-            return;
+    // --- the two sides (SPEC.md §6.8-6.9b): each the battery, the sensor rail, the glucose rail or nothing ---
+    function sides(dc as Dc, m as AuraModel) as Void {
+        var ks = [m.sideL, m.sideR];
+        for (var i = 0; i < 2; i++) {
+            var k = ks[i] as String;
+            var side = i == 0 ? -1 : 1;
+            if (k.equals("battery")) {
+                batteryRail(dc, m, side);
+            } else if (k.equals("sensor")) {
+                sensorRail(dc, m, side);
+            }
         }
-        for (var i = 0; i < 10; i++) {
-            var a1 = 227 + i * 8.78;
-            arc(dc, 182, a1, a1 + 6.98, i < m.battLit ? m.battCol : m.c("grid"), 1.0, 6);
-        }
-        var key = "l" + m.battFs.toString() + (m.battBold ? "b" : "s");
-        text(dc, key, -166, m.by1, m.battL1, m.battCol, Graphics.TEXT_JUSTIFY_LEFT);
-        if (!m.battL2.equals("")) {
-            text(dc, key, -166, AuraMath.r1(m.by1 + m.battFs * 0.668 + 9), m.battL2, m.battCol, Graphics.TEXT_JUSTIFY_LEFT);
+        for (var i = 0; i < 2; i++) {
+            if ((ks[i] as String).equals("level")) {
+                levelRail(dc, m, i == 0);
+            }
         }
     }
 
-    function tick(dc as Dc, v as Numeric, r1 as Numeric, r2 as Numeric, col as Number, w as Numeric) as Void {
+    // n segments from the rail's bottom end (7:30 left, 4:30 right); lit(i) the lit part of segment i, from its bottom
+    function segments(dc as Dc, m as AuraModel, side as Number, n as Number, sensor as Boolean, col as Number) as Void {
+        var step = 87.8 / n;
+        var len = step - 1.8;
+        for (var i = 0; i < n; i++) {
+            var a1 = side < 0 ? 227 + step * i : 133 - step * i - len;
+            var f = sensor ? m.sensLit(i) : (i < m.battLit ? 1.0 : 0.0);
+            if (f >= 1) {
+                arc(dc, 182, a1, a1 + len, col, 1.0, 6);
+                continue;
+            }
+            arc(dc, 182, a1, a1 + len, m.c("grid"), 1.0, 6);
+            if (f > 0) {
+                if (side < 0) {
+                    arc(dc, 182, a1, a1 + len * f, col, 1.0, 6);
+                } else {
+                    arc(dc, 182, a1 + len * (1 - f), a1 + len, col, 1.0, 6);
+                }
+            }
+        }
+    }
+
+    // a side's label line: from x -166 on the left, to x 166 on the right; the mark on the rail's side when marks show
+    function sideLabel(dc as Dc, m as AuraModel, side as Number, key as String, y as Float, s as String, col as Number, fs as Number, mark as String?) as Void {
+        if (side < 0) {
+            text(dc, key, -166 + m.mkW, y, s, col, Graphics.TEXT_JUSTIFY_LEFT);
+        } else {
+            text(dc, key, 166 - m.mkW - arcWidth(key, s, 0), y, s, col, Graphics.TEXT_JUSTIFY_LEFT);
+        }
+        if (mark != null && m.marks) {
+            icon(dc, mark, 20, side * 156, y - fs * 0.334, 0, col);
+        }
+    }
+
+    function batteryRail(dc as Dc, m as AuraModel, side as Number) as Void {
+        if (m.aod) {
+            return;
+        }
+        segments(dc, m, side, 10, false, m.battCol);
+        var key = "l" + m.battFs.toString() + (m.battBold ? "b" : "s");
+        sideLabel(dc, m, side, key, m.by1, m.battL1, m.battCol, m.battFs, "battery");
+        if (!m.battL2.equals("")) {
+            sideLabel(dc, m, side, key, AuraMath.r1(m.by1 + m.battFs * 0.668 + 9), m.battL2, m.battCol, m.battFs, null);
+        }
+    }
+
+    function sensorRail(dc as Dc, m as AuraModel, side as Number) as Void {
+        if (m.aod || !m.sensOn) {
+            return;
+        }
+        segments(dc, m, side, m.sensN, true, m.sensCol);
+        if (!m.sensT.equals("")) {
+            sideLabel(dc, m, side, "l22" + (m.sensBold ? "b" : "s"), m.sy1, m.sensT, m.sensCol, m.sensFs, "sensor");
+        }
+    }
+
+    // the glucose rail's tick at v; mirrored on the left (an angle a at 360 - a)
+    function tick(dc as Dc, v as Numeric, r1 as Numeric, r2 as Numeric, col as Number, w as Numeric, mir as Boolean) as Void {
         var a = AuraMath.ang(v);
+        if (mir) {
+            a = 360 - a;
+        }
         var p1 = AuraMath.P(r1, a);
         var p2 = AuraMath.P(r2, a);
         stroke(dc, col, 1.0, w);
         dc.drawLine(cx + p1[0], cy + p1[1], cx + p2[0], cy + p2[1]);
     }
 
-    function levelRail(dc as Dc, m as AuraModel) as Void {
+    // an arc of the glucose rail from a1 to a2 (clockwise on the right), mirrored on the left
+    function railArc(dc as Dc, a1 as Numeric, a2 as Numeric, col as Number, alpha as Float, w as Numeric, mir as Boolean) as Void {
+        if (mir) {
+            arc(dc, 182, 360 - a2, 360 - a1, col, alpha, w);
+        } else {
+            arc(dc, 182, a1, a2, col, alpha, w);
+        }
+    }
+
+    function levelRail(dc as Dc, m as AuraModel, mir as Boolean) as Void {
         if (!m.railOn) {
             return;
         }
         var l = m.inp.limits;
-        arc(dc, 182, 47, 133, m.c("faint"), 1.0, 1.5);
+        var sg = mir ? -1 : 1; // x on the left: mirrored
+        railArc(dc, 47, 133, m.c("faint"), 1.0, 1.5, mir);
         var bw = m.aod ? 2 : 6;
-        arc(dc, 182, AuraMath.ang(l[3]), AuraMath.ang(l[1]), m.c("band"), 1.0, bw);
-        arc(dc, 182, AuraMath.ang(l[2]), AuraMath.ang(l[1]), m.c("band2"), 1.0, bw);
+        railArc(dc, AuraMath.ang(l[3]), AuraMath.ang(l[1]), m.c("band"), 1.0, bw, mir);
+        railArc(dc, AuraMath.ang(l[2]), AuraMath.ang(l[1]), m.c("band2"), 1.0, bw, mir);
         if (m.zoneOn && m.zone != null) {
-            arc(dc, 182, m.zone[0], m.zone[1], m.c(m.ck), 0.85, 3);
+            railArc(dc, m.zone[0], m.zone[1], m.c(m.ck), 0.85, 3, mir);
         }
         if (!m.aod) {
             var minor = [50, 60, 80, 90, 100, 110, 120, 130, 150, 160, 170, 200, 220, 240, 280, 350];
             for (var i = 0; i < minor.size(); i++) {
-                tick(dc, minor[i], 177, 187, m.c("faint"), 1.4);
+                tick(dc, minor[i], 177, 187, m.c("faint"), 1.4, mir);
             }
         }
         var mid = [40, l[2], l[5], 400];
         for (var i = 0; i < mid.size(); i++) {
-            tick(dc, mid[i], 175, 189, m.c("dim"), 1.6);
+            tick(dc, mid[i], 175, 189, m.c("dim"), 1.6, mir);
         }
         var major = [l[0], l[1], l[3], l[4]];
         for (var i = 0; i < major.size(); i++) {
-            tick(dc, major[i], 171, 192, m.c("soft"), 2);
+            tick(dc, major[i], 171, 192, m.c("soft"), 2, mir);
         }
         if (!m.beadOn) {
             return;
@@ -361,28 +434,29 @@ module AuraDraw {
             var t = m.trail[i] as Array;
             var p = AuraMath.P(182, t[0]);
             fill(dc, col, t[2] as Float);
-            dc.fillCircle(cx + p[0], cy + p[1], t[1]);
+            dc.fillCircle(cx + sg * p[0], cy + p[1], t[1]);
         }
         var b = AuraMath.P(182, m.beadDrawA);
+        var bx = cx + sg * b[0];
         if (!m.struck && m.awake) {
             fill(dc, col, 0.2);
-            dc.fillCircle(cx + b[0], cy + b[1], 13);
+            dc.fillCircle(bx, cy + b[1], 13);
         }
         var r = m.aod ? 6 : 7;
         if (m.struck) {
             fill(dc, 0x000000, 1.0);
-            dc.fillCircle(cx + b[0], cy + b[1], r);
+            dc.fillCircle(bx, cy + b[1], r);
             stroke(dc, m.c("grey"), 1.0, 2.4);
-            dc.drawCircle(cx + b[0], cy + b[1], r);
+            dc.drawCircle(bx, cy + b[1], r);
         } else {
             fill(dc, m.beadCol, 1.0);
-            dc.fillCircle(cx + b[0], cy + b[1], r);
+            dc.fillCircle(bx, cy + b[1], r);
         }
         if (m.lo || m.hi) {
             var t = AuraMath.P(182, m.lo ? 139.5 : 40.5);
             var b1 = AuraMath.P(176.5, m.lo ? 135.6 : 44.4);
             var b2 = AuraMath.P(187.5, m.lo ? 135.6 : 44.4);
-            poly(dc, [t, b1, b2], col, 1.0);
+            poly(dc, [[sg * t[0], t[1]], [sg * b1[0], b1[1]], [sg * b2[0], b2[1]]], col, 1.0);
         }
     }
 

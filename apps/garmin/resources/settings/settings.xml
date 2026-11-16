@@ -80,6 +80,22 @@
             <listEntry value="11">@Strings.opt_none</listEntry>
         </settingConfig>
     </setting>
+    <setting propertyKey="@Properties.sideL" title="@Strings.set_sideL">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.opt_battery</listEntry>
+            <listEntry value="1">@Strings.opt_sensor</listEntry>
+            <listEntry value="2">@Strings.opt_level</listEntry>
+            <listEntry value="3">@Strings.opt_none</listEntry>
+        </settingConfig>
+    </setting>
+    <setting propertyKey="@Properties.sideR" title="@Strings.set_sideR">
+        <settingConfig type="list">
+            <listEntry value="0">@Strings.opt_battery</listEntry>
+            <listEntry value="1">@Strings.opt_sensor</listEntry>
+            <listEntry value="2">@Strings.opt_level</listEntry>
+            <listEntry value="3">@Strings.opt_none</listEntry>
+        </settingConfig>
+    </setting>
     <setting propertyKey="@Properties.battLabel" title="@Strings.set_battLabel">
         <settingConfig type="list">
             <listEntry value="0">@Strings.opt_days</listEntry>

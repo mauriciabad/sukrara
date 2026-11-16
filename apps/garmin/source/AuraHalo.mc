@@ -62,6 +62,11 @@ class AuraHalo {
 
     // ------------------------------------------------------------------------------------------------------ painting
 
+    // a side label's line box grown 5.5 px (w its width, x0 how far it starts inwards of x -166 / 166)
+    hidden function label(dc as Dc, side as Number, y as Float, fs as Number, w as Float, x0 as Number) as Void {
+        rect(dc, [side < 0 ? -171.5 + x0 : 171.5 - x0 - w - 11, y - fs * 0.73 - 5.5, w + 11, fs * 0.93 + 11], 5.5);
+    }
+
     function rect(dc as Dc, b as Array, r as Numeric) as Void {
         if ((b[2] as Numeric) > 0 && (b[3] as Numeric) > 0) {
             dc.fillRoundedRectangle(AuraDraw.cx + b[0], AuraDraw.cy + b[1], b[2], b[3], r);
@@ -125,10 +130,20 @@ class AuraHalo {
             var up = AuraMath.max(m.TF * 0.73, m.tfIcon / 2.0 + m.TF * 0.334);
             rect(dc, [-m.topW / 2 - 5.5, m.tfBase - up - 5.5, m.topW + 11, up + m.TF * 0.2 + 11], 5.5);
         }
-        var bf = m.battFs;
-        rect(dc, [-171.5, m.by1 - bf * 0.73 - 5.5, AuraMath.tw(m.battL1, bf) + 11, bf * 0.93 + 11], 5.5);
-        if (!m.battL2.equals("")) {
-            rect(dc, [-171.5, m.by1 + bf * 0.668 + 9 - bf * 0.73 - 5.5, AuraMath.tw(m.battL2, bf) + 11, bf * 0.93 + 11], 5.5);
+        // the side labels, each line with its mark: from x -166 on the left, to x 166 on the right
+        var ks = [m.sideL, m.sideR];
+        for (var i = 0; i < 2; i++) {
+            var k = ks[i] as String;
+            var side = i == 0 ? -1 : 1;
+            if (k.equals("battery")) {
+                var bf = m.battFs;
+                label(dc, side, m.by1, bf, AuraMath.tw(m.battL1, bf) + m.mkW, 0);
+                if (!m.battL2.equals("")) {
+                    label(dc, side, m.by1 + bf * 0.668 + 9, bf, AuraMath.tw(m.battL2, bf), m.mkW);
+                }
+            } else if (k.equals("sensor") && m.sensOn && !m.sensT.equals("")) {
+                label(dc, side, m.sy1, m.sensFs, AuraMath.tw(m.sensT, m.sensFs) + m.mkW, 0);
+            }
         }
         // the date along its arc (r 160, over the top, glyph tops outward: capitals, accents above)
         var da = (AuraDraw.arcWidth("d26", m.dateWd, 2) + AuraDraw.arcWidth("d26b", m.dateDay, 2) +

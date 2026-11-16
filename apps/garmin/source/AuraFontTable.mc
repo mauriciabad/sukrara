@@ -98,10 +98,15 @@ module AuraFontTable {
             else if (size <= 21) { return [81, 174, 25]; }
             else if (size <= 22) { return [107, 174, 26]; }
             else if (true) { return [134, 174, 28]; }
+        } else if (name.equals("battery")) {
+            if (size <= 20) { return [163, 174, 24]; }
+            else if (size <= 21) { return [188, 174, 25]; }
+            else if (size <= 22) { return [214, 174, 26]; }
+            else if (true) { return [0, 203, 28]; }
         } else if (name.equals("bell_paused")) {
-            if (true) { return [163, 174, 28]; }
+            if (true) { return [29, 203, 28]; }
         } else if (name.equals("bell_off")) {
-            if (true) { return [192, 174, 28]; }
+            if (true) { return [58, 203, 28]; }
         }
         return null;
     }

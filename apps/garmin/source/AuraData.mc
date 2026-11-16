@@ -19,7 +19,8 @@ class AuraReading {
     var lastItems as Array? = null; // the last treatment: [[kind (rapid, long, carbs), amount (Float)], ...]
     var lastAt as Number? = null; // its time, epoch s
     var sensor as String = "ok"; // ok, warmup, almost, ending (its last 8 h), endedSending, ended, none
-    var sensorEnds as Number? = null; // the sensor's end, epoch s (ending)
+    var sensorStarts as Number? = null; // the sensor's start and end, epoch s (its life: the sensor rail)
+    var sensorEnds as Number? = null;
     var warmFrom as Number? = null; // warm-up start and end, epoch s (warmup, almost)
     var warmUntil as Number? = null;
     var unit as String = "mgdl"; // mgdl, mmol (the person's unit in Sukrara)

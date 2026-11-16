@@ -141,6 +141,27 @@ class AuraModel {
     var battLit as Number = 0;
     var by1 as Float = 0.0;
 
+    // the sides (SPEC.md §6.8-6.9b): each battery, sensor, level (the glucose rail) or none
+    var sideL as String = "battery";
+    var sideR as String = "level";
+    var battOn as Boolean = false; // a battery rail on either side
+    var sensOn as Boolean = false; // a sensor rail on either side (and monitoring)
+    var marks as Boolean = false; // both labels get their mark
+    var mkW as Number = 0; // the mark and its gap (24 with marks)
+    // the sensor rail
+    var sensT as String = "";
+    var sensFs as Number = 22;
+    var sensCol as Number = 0;
+    var sensBold as Boolean = false;
+    var sensN as Number = 15; // segments
+    var sensLeftH as Float = 0.0; // hours left
+    var warmSt as Boolean = false;
+    var sensWarm as Float = 0.0; // the warm-up's fraction (the progress bar)
+    var sensEnded as Boolean = false;
+    var sy1 as Float = 0.0;
+    // the dial's focus x: 30 (the bead on the right), -30 (only on the left), 0 (both sides)
+    var focusX as Float = 30.0;
+
     // the date
     var dateWd as String = "";
     var dateDay as String = "";
@@ -362,6 +383,27 @@ class AuraModel {
         return battBoth && !one ? battFs * 0.668 * 2 + 9 : battFs * 0.668;
     }
 
+    // a side's label: its width (the widest line and the mark) and height; 0 wide = no label
+    hidden function labW(k as String, one as Boolean) as Float {
+        if (k.equals("battery")) {
+            return battW(one) + mkW;
+        }
+        if (k.equals("sensor") && sensOn && !sensT.equals("")) {
+            return AuraMath.tw(sensT, sensFs) + mkW;
+        }
+        return 0.0;
+    }
+
+    hidden function labH(k as String, one as Boolean) as Float {
+        return k.equals("battery") ? battH(one) : sensFs * 0.668;
+    }
+
+    // the side's label is in the gap under the time, or beside the row (centred: the right side mirrors the left)
+    hidden function okSide(k as String, one as Boolean, left as Float) as Boolean {
+        var w = labW(k, one);
+        return aod || w == 0 || tBase + 6 + labH(k, one) <= vTop || left >= -166 + w + 8;
+    }
+
     function halfAt(y as Float) as Float {
         return Math.sqrt(AuraMath.max(0, 171 * 171 - y * y)).toFloat() - 6;
     }
@@ -422,10 +464,8 @@ class AuraModel {
             valueGeom(V);
             var okT = tFit / 2 <= halfAt(tTop);
             var okV = !hasValue || (total / 2 <= halfAt(vTop) && total / 2 <= halfAt(vBase));
-            var lBot = tBase + 6 + battH(one);
             var left = hasValue ? -total / 2 : left0;
-            var okL = aod || lBot <= vTop || left >= -166 + battW(one) + 8;
-            if (okT && okV && okL) {
+            if (okT && okV && okSide(sideL, one, left) && okSide(sideR, one, left)) {
                 return true;
             }
         }
@@ -449,8 +489,57 @@ class AuraModel {
         battL1 = inp.battLabel.equals("percent") ? battPctT : battDaysT;
         battFs = battBoth ? 20 : 22;
         battOneT = battDaysT + AuraMath.NB + "·" + AuraMath.NB + battPctT;
-        battOne = battBoth && !fitRows(false);
+        sides();
+        battOne = battBoth && battOn && !fitRows(false);
         fitRows(battOne);
+    }
+
+    // --- the sides and the sensor rail's label (SPEC.md §6.8-6.9b) ---
+    hidden function side(k as String) as String {
+        return k.equals("battery") || k.equals("sensor") || k.equals("level") ? k : "none";
+    }
+
+    hidden function sides() as Void {
+        sideL = side(inp.sideL);
+        sideR = side(inp.sideR);
+        var s = inp.sensor;
+        battOn = sideL.equals("battery") || sideR.equals("battery");
+        sensOn = (sideL.equals("sensor") || sideR.equals("sensor")) && !s.equals("none");
+        warmSt = s.equals("warmup") || s.equals("almost");
+        sensWarm = s.equals("almost") ? 0.96 : AuraMath.clamp(inp.warm, 0.02, 0.98).toFloat();
+        sensEnded = s.equals("ended") || s.equals("endedSending");
+        sensLeftH = inp.sensorLeft != null ? inp.sensorLeft as Float : s.equals("ending") ? 5.0 : 225.6;
+        // days left, hours on the last day; the warm-up's minutes to ready; nothing almost ready or ended; -- no dates
+        if (warmSt) {
+            var min = inp.readyMin != null ? inp.readyMin as Float : (1 - sensWarm) * 60;
+            sensT = s.equals("almost") ? "" : AuraWords.dur(lang, min);
+        } else if (sensEnded) {
+            sensT = "";
+        } else if (!inp.sensorDates) {
+            sensT = "--";
+        } else if (sensLeftH >= 24) {
+            sensT = AuraWords.d(lang, Math.floor(sensLeftH / 24).toNumber());
+        } else {
+            sensT = AuraWords.h(lang, AuraMath.max(1, Math.ceil(sensLeftH)).toNumber());
+        }
+        // the marks only tell two labels apart: a battery and a sensor label both on screen
+        marks = battOn && sensOn && !sensT.equals("");
+        mkW = marks ? 24 : 0;
+        var life = inp.sensorLife;
+        sensN = AuraMath.min(30, AuraMath.max(1, Math.ceil(life - 0.000001))).toNumber();
+        focusX = sideL.equals("level") ? (sideR.equals("level") ? 0.0 : -30.0) : 30.0;
+    }
+
+    // how much of the sensor rail's segment i is lit, 0 to 1 (the warm-up: a progress bar along the whole rail)
+    function sensLit(i as Number) as Float {
+        if (warmSt) {
+            return AuraMath.clamp(sensWarm * sensN - i, 0, 1).toFloat();
+        }
+        if (sensEnded || !inp.sensorDates) {
+            return 0.0;
+        }
+        var per = inp.sensorLife / sensN;
+        return i < Math.ceil(sensLeftH / 24 / per - 0.000000001) ? 1.0 : 0.0;
     }
 
     // --- the value with Sukrara's arrow (SPEC.md §6.4) ---
@@ -740,6 +829,9 @@ class AuraModel {
         battCol = battery < 1 ? c("low") : battery < 2 ? c("high") : c("soft");
         battBold = battery < 2;
         by1 = AuraMath.r1(tBase + 6 + battFs * 0.668);
+        sensCol = inp.sensor.equals("ending") ? c("high") : c("soft");
+        sensBold = inp.sensor.equals("ending");
+        sy1 = AuraMath.r1(tBase + 6 + sensFs * 0.668);
         battL2 = battBoth && !battOne ? battPctT : "";
         battL1 = battOne ? battOneT : battL1;
     }
@@ -778,7 +870,7 @@ class AuraModel {
         } else if (key.equals("floors")) {
             return [["i", "stairs", soft], ["g", 5], ["s", num(inp.floors, false), ink, 500]];
         } else if (key.equals("sensor")) {
-            return [["i", "sensor", soft], ["g", 5], ["s", AuraWords.dur(lang, inp.sensorLeft * 60), ink, 500]];
+            return [["i", "sensor", soft], ["g", 5], ["s", AuraWords.dur(lang, sensLeftH * 60), ink, 500]];
         } else if (key.equals("noPhone")) {
             return [["i", "phoneOff", soft], ["g", 5], ["s", AuraWords.noPhone(lang), ink, 500]];
         } else if (key.equals("treatment")) {
@@ -873,7 +965,8 @@ class AuraModel {
     hidden function bottomFields() as Void {
         var keys = inp.fields.slice(0, 2);
         var second = keys.size() > 1 ? keys[1] : "treatment";
-        if (inp.sensor.equals("ending")) {
+        // sensor ending takes the first field, unless a sensor rail already counts it down
+        if (inp.sensor.equals("ending") && !sideL.equals("sensor") && !sideR.equals("sensor")) {
             keys = ["sensor", second];
         }
         if (!inp.phone) {

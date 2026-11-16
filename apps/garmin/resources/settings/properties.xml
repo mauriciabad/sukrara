@@ -11,6 +11,8 @@
     <property id="topField" type="number">1</property>
     <property id="field1" type="number">6</property>
     <property id="field2" type="number">10</property>
+    <property id="sideL" type="number">0</property>
+    <property id="sideR" type="number">2</property>
     <property id="battLabel" type="number">0</property>
     <property id="private" type="boolean">false</property>
     <property id="tz2" type="number">26</property>

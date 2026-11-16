@@ -77,6 +77,48 @@ module AuraDump {
         out(path + ".disp", "inline");
     }
 
+    // a segmented rail's lit and unlit arcs as aura.js draws them (SPEC.md §6.9): [on, off], each a path or its summary
+    function segs(m as AuraModel, n as Number, side as Number, sensor as Boolean) as Array {
+        var step = 87.8 / n;
+        var len = step - 1.8;
+        var on = "";
+        var off = "";
+        var non = 0;
+        var noff = 0;
+        for (var i = 0; i < n; i++) {
+            var a1 = side < 0 ? 227 + step * i : 133 - step * i - len;
+            var f = sensor ? m.sensLit(i) : (i < m.battLit ? 1.0 : 0.0);
+            if (f >= 1) {
+                on += arc(182, a1, a1 + len, false);
+                non++;
+                continue;
+            }
+            off += arc(182, a1, a1 + len, false);
+            noff++;
+            if (f > 0) {
+                on += side < 0 ? arc(182, a1, a1 + len * f, false) : arc(182, a1 + len * (1 - f), a1 + len, false);
+                non++;
+            }
+        }
+        return [long(on, non), long(off, noff)];
+    }
+
+    // a path, or "M0 0" when empty (the comparison counts a summarised path's subpaths)
+    function long(d as String, k as Number) as String {
+        return k == 0 ? "M0 0" : d;
+    }
+
+    // a side label's marks (left and right), or none
+    function marks(m as AuraModel, p as String, key as String, y as Float, fs as Number, c as Number) as Void {
+        if (!m.marks) {
+            out(p + ".mL.disp", "none");
+            out(p + ".mR.disp", "none");
+            return;
+        }
+        icon(p + ".mL", key, -156, y - fs * 0.334, 0, 20, c);
+        icon(p + ".mR", key, 156, y - fs * 0.334, 0, 20, c);
+    }
+
     // a long path as the reference's summary ("N subpaths"), the lasers' as the path
     function paths(n as Number) as String {
         return n == 0 ? "M0 0" : n + " subpaths";
@@ -230,20 +272,20 @@ module AuraDump {
         out("time.fill", m.aod ? "none" : col(m.c("ink")));
         out("time.stroke", m.aod ? col(m.c("grey")) : "none");
         out("time.sw", m.aod ? 2.2 : 0);
+        // the sides (SPEC.md §6.8-6.9b)
+        out("sides.left", m.sideL);
+        out("sides.right", m.sideR);
+        out("sides.marks", m.marks ? "true" : "false");
         // battery
-        var on = "";
-        var off = "";
-        for (var i = 0; i < 10; i++) {
-            var a1 = 227 + i * 8.78;
-            if (i < m.battLit) {
-                on += arc(182, a1, a1 + 6.98, false);
-            } else {
-                off += arc(182, a1, a1 + 6.98, false);
-            }
-        }
-        out("batt.disp", disp(!m.aod));
-        out("batt.on", on.equals("") ? "M0 0" : on);
-        out("batt.off", off.equals("") ? "M0 0" : off);
+        var bl = segs(m, 10, -1, false);
+        var br = segs(m, 10, 1, false);
+        out("batt.disp", disp(!m.aod && m.battOn));
+        out("batt.dL", disp(m.sideL.equals("battery")));
+        out("batt.dR", disp(m.sideR.equals("battery")));
+        out("batt.on", bl[0]);
+        out("batt.off", bl[1]);
+        out("batt.onR", br[0]);
+        out("batt.offR", br[1]);
         out("batt.col", col(m.battCol));
         out("batt.w", m.battBold ? 700 : 600);
         out("batt.l1", m.battL1);
@@ -252,9 +294,39 @@ module AuraDump {
         out("batt.y1", m.by1);
         out("batt.y2", AuraMath.r1(m.by1 + m.battFs * 0.668 + 9));
         out("batt.fs", m.battFs);
+        out("batt.xL", -166 + m.mkW);
+        out("batt.xR", 166 - m.mkW);
+        marks(m, "batt", "battery", m.by1, m.battFs, m.battCol);
+        // the sensor rail
+        var sl = segs(m, m.sensN, -1, true);
+        var sr = segs(m, m.sensN, 1, true);
+        out("sens.disp", disp(!m.aod && m.sensOn));
+        out("sens.dL", disp(m.sideL.equals("sensor")));
+        out("sens.dR", disp(m.sideR.equals("sensor")));
+        out("sens.n", m.sensN);
+        out("sens.on", sl[0]);
+        out("sens.off", sl[1]);
+        out("sens.onR", sr[0]);
+        out("sens.offR", sr[1]);
+        out("sens.col", col(m.sensCol));
+        out("sens.w", m.sensBold ? 700 : 600);
+        out("sens.t", m.sensT);
+        out("sens.tD", disp(!m.sensT.equals("")));
+        out("sens.y", m.sy1);
+        out("sens.fs", m.sensFs);
+        out("sens.xL", -166 + m.mkW);
+        out("sens.xR", 166 - m.mkW);
+        if (m.sensT.equals("")) {
+            out("sens.mL.disp", "none");
+            out("sens.mR.disp", "none");
+        } else {
+            marks(m, "sens", "sensor", m.sy1, m.sensFs, m.sensCol);
+        }
         // the level rail
         var l = inp.limits;
         out("rail.disp", disp(m.railOn));
+        out("rail.dL", disp(m.sideL.equals("level")));
+        out("rail.dR", disp(m.sideR.equals("level")));
         out("rail.base", arc(182, 47, 133, false));
         out("rail.band", arc(182, AuraMath.ang(l[3]), AuraMath.ang(l[1]), false));
         out("rail.tight", arc(182, AuraMath.ang(l[2]), AuraMath.ang(l[1]), false));

@@ -16,6 +16,8 @@
     <string id="set_topField">Dato superior</string>
     <string id="set_field1">Dato inferior 1</string>
     <string id="set_field2">Dato inferior 2</string>
+    <string id="set_sideL">Lado izquierdo</string>
+    <string id="set_sideR">Lado derecho</string>
     <string id="set_battLabel">Texto de batería</string>
     <string id="set_private">Privado</string>
     <string id="set_tz2">Segunda zona horaria</string>
@@ -43,6 +45,9 @@
     <string id="opt_floors">Pisos</string>
     <string id="opt_heart">Frecuencia cardiaca</string>
     <string id="opt_treatment">Último tratamiento</string>
+    <string id="opt_battery">Batería del reloj</string>
+    <string id="opt_sensor">Días del sensor</string>
+    <string id="opt_level">Barra de glucosa</string>
     <string id="opt_days">Días</string>
     <string id="opt_percent">Porcentaje</string>
     <string id="opt_both">Ambos</string>

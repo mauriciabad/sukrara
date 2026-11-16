@@ -78,6 +78,10 @@ module AuraCases {
         inp.trendStyle = str(cfg, "trendStyle", inp.trendStyle);
         if (cfg.hasKey("warm")) { inp.warm = num(cfg["warm"]); }
         if (cfg.hasKey("sensorLeft")) { inp.sensorLeft = num(cfg["sensorLeft"]); }
+        if (cfg.hasKey("sensorLife")) { inp.sensorLife = num(cfg["sensorLife"]); }
+        if (cfg.hasKey("sensorDates")) { inp.sensorDates = cfg["sensorDates"] as Boolean; }
+        inp.sideL = str(cfg, "sideL", inp.sideL);
+        inp.sideR = str(cfg, "sideR", inp.sideR);
         return inp;
     }
 

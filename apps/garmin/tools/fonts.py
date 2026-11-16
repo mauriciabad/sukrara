@@ -45,7 +45,7 @@ NB = " "
 DIGITS = "0123456789"
 UPPER_ES = "ÁÉÍÓÚÑ"
 LATIN = "".join(chr(c) for c in range(0x20, 0x7F)) + "°·áéíóúñüÁÉÍÓÚÑÜ¿¡" + NB
-BATTERY = DIGITS + "dh%· " + NB
+BATTERY = DIGITS + "dhm%·- " + NB + "inowar"  # the side labels: days, hours, percent, the warm-up's minutes (now / ahora), --
 # the atlases' sets (their glyph tables cost the heap): the field texts' letters, digits and marks; the no-reading
 # time's digits and the weekdays and months it may show (Freshness.timeText, en and es)
 FIELDS = "".join(c for c in LATIN if c.isalnum() or c in " ,.:%°·-'/+" + NB)
@@ -283,12 +283,13 @@ ICONS = {
     "rapid": ("M2 4.2H22L12 20.9Z", 0),
     "long": ("M3.5 5.4H20.5L12 19.6Z", 2.8),
     "carbs": ("M20 12a8 8 0 1 1-16 0a8 8 0 1 1 16 0z", 0),
+    "battery": ("M7 5h10a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5v-14A1.5 1.5 0 0 1 7 5zM8.1 7.1v12.8h7.8V7.1zM9.5 2.5h5v2.5h-5zM9.7 12h4.6v6.3H9.7z", 0),
 }
 BELLS = {
     "paused": "M370-320h220v-72H480l110-136v-72H370v72h110L370-392v72ZM160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z",
     "off": "M160-200v-80h80v-280q0-33 8.5-65t25.5-61l60 60q-7 16-10.5 32.5T320-560v280h248L56-792l56-56 736 736-56 56-146-144H160Zm560-154-80-80v-126q0-66-47-113t-113-47q-26 0-50 8t-44 24l-58-58q20-16 43-28t49-18v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v206Zm-276-50Zm36 324q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Zm33-481Z",
 }
-# the icons' sizes: bottom fields 20, top field round(TF·0.83) for TF 24 / 25 / 26 = 20 / 21 / 22, pill marks 23.6
+# the icons' sizes: bottom fields and the side labels' marks 20, top field round(TF·0.83) for TF 24 / 25 / 26 = 20 / 21 / 22, pill marks 23.6
 ICON_SIZES = (20, 21, 22, 24)
 PAD = 2  # transparent margin around each icon so a rotation never clips it
 

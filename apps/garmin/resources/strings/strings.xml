@@ -16,6 +16,8 @@
     <string id="set_topField">Top field</string>
     <string id="set_field1">Bottom field 1</string>
     <string id="set_field2">Bottom field 2</string>
+    <string id="set_sideL">Left side</string>
+    <string id="set_sideR">Right side</string>
     <string id="set_battLabel">Battery label</string>
     <string id="set_private">Private</string>
     <string id="set_tz2">Second time zone</string>
@@ -43,6 +45,9 @@
     <string id="opt_floors">Floors</string>
     <string id="opt_heart">Heart rate</string>
     <string id="opt_treatment">Last treatment</string>
+    <string id="opt_battery">Watch battery</string>
+    <string id="opt_sensor">Sensor days</string>
+    <string id="opt_level">Glucose rail</string>
     <string id="opt_days">Days</string>
     <string id="opt_percent">Percent</string>
     <string id="opt_both">Both</string>

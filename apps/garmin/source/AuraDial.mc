@@ -88,7 +88,7 @@ class AuraDial {
             s1 = "grad";
             w1 = Math.round(1.3 * (0.8 + 0.3 * I) * 100) / 100.0;
             d1D = true;
-            gx = 30.0;
+            gx = m.focusX;
             gy = levelY;
             gr = AuraMath.r1(Rf);
             col = dcol;
@@ -148,7 +148,7 @@ class AuraDial {
                 }
             }
             var pk = current ? AuraMath.clamp((0.55 + 0.3 * ext) * I, 0.2, 1) : 0.3;
-            gx = 30.0;
+            gx = m.focusX;
             gy = levelY;
             gr = AuraMath.r1(200 + 140 * ext);
             col = dcol;
@@ -172,7 +172,7 @@ class AuraDial {
             var bp = AuraMath.P(182, m.beadA);
             var g = AuraMath.clamp((0.06 + 0.34 * ext) * I, 0.03, 0.55);
             glowD = true;
-            gx = bp[0];
+            gx = m.focusX == 0 ? 0.0 : m.focusX < 0 ? -bp[0] : bp[0]; // the bead's side; the centre with both
             gy = bp[1];
             gr = AuraMath.r1(90 + 320 * ext + 40 * spd);
             col = dcol;
@@ -419,7 +419,7 @@ class AuraDial {
     }
 
     // laser i in pass p (0 the bright ones' underlays, 1 the dim ones, 2 the bright ones on top), in 10 px pieces, each
-    // at the fade of its middle (its distance from (30, levelY))
+    // at the fade of its middle (its distance from (focusX, levelY))
     hidden function laser(dc as Dc, ox as Float, oy as Float, p as Number, i as Number) as Void {
         var l = lasers[i] as Array;
         var bright = l[2] as Boolean;
@@ -486,7 +486,7 @@ module AuraDials {
     // setting); otherwise a frame copies the cache
     function key(m as AuraModel) as String {
         return m.inp.dial + "|" + m.awake + "|" + m.current + "|" + m.hasValue + "|" + m.dialCol + "|" + m.levelY + "|" +
-            m.ext + "|" + m.I + "|" + m.spd + "|" + m.inp.glucose;
+            m.ext + "|" + m.I + "|" + m.spd + "|" + m.inp.glucose + "|" + m.focusX;
     }
 
     // the dial, awake only: from the cache (painted again when its key changes); true when something was drawn

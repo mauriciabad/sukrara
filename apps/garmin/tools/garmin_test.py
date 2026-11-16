@@ -122,6 +122,7 @@ SUBDISP = {  # flags inside an element that govern some of its fields
     "rail": {"zoneDisp": ("zone", "zoneCol"), "minorDisp": ("minor",)},
     "bead": {"chevDisp": ("chev",)},
     "batt": {"l2D": ("l2", "y2")},
+    "sens": {"tD": ("t",)},
     "msg": {"discD": ("pie", "dx", "dy"), "flagD": ("flag", "pole")},
     "dial": {"d1D": ("d1", "f1", "s1", "w1", "o1"), "d2D": ("d2", "s2", "w2", "o2"), "d3D": ("d3", "s3", "w3", "o3")},
 }
@@ -421,7 +422,7 @@ def attempt(outdir, cases, todo, shots, log, simshot):
             if filt_of.get(cid, "none") != "none":
                 colour_filter(srgb(path), filt_of[cid]).save(path)
             shots[cid] = path
-        # then the battery label against every row (AuraCombos), a slice per frame
+        # then the side labels against every row (AuraCombos), a slice per frame
         deadline = time.time() + 900
         while time.time() < deadline and proc.poll() is None:
             if any(l.startswith("COMBOS|") for l in open(log, encoding="utf-8", errors="replace")):
@@ -476,7 +477,7 @@ def run(outdir, core=None):
         fails.append("combinations")
     else:
         bad = [l.strip() for l in open(merged, encoding="utf-8", errors="replace") if l.startswith("COMBO_FAIL|")]
-        report.append("combinations (battery label against every row, SPEC.md §9): %s, %s overlapping" % (combos[1], combos[2]))
+        report.append("combinations (the side labels against every row, SPEC.md §9): %s, %s overlapping" % (combos[1], combos[2]))
         report += bad[:40]
         if bad:
             fails.append("combinations")

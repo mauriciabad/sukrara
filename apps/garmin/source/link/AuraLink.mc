@@ -223,6 +223,9 @@ module AuraLink {
         if (s.get("end") instanceof Number) {
             r.sensorEnds = (s.get("end") as Number) - _skew;
         }
+        if (s.get("start") instanceof Number) {
+            r.sensorStarts = (s.get("start") as Number) - _skew;
+        }
         if (s.get("start") instanceof Number && s.get("ready") instanceof Number) {
             r.warmFrom = (s.get("start") as Number) - _skew;
             r.warmUntil = (s.get("ready") as Number) - _skew;

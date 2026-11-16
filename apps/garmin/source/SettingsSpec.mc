@@ -21,6 +21,10 @@ module SettingsSpec {
     const FIELD1 = ["field1", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "treatment", "none"], "tir"];
     // Sukrara Aura: the second bottom field (§6.10)
     const FIELD2 = ["field2", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "treatment", "none"], "treatment"];
+    // Sukrara Aura: the left side element, the watch battery, the sensor's days, the glucose rail or nothing (§6.8-6.9b)
+    const SIDE_L = ["sideL", ["battery", "sensor", "level", "none"], "battery"];
+    // Sukrara Aura: the right side element, the same choices (§6.8-6.9b)
+    const SIDE_R = ["sideR", ["battery", "sensor", "level", "none"], "level"];
     // Sukrara Aura: the battery label, days, percent or both (§6.9)
     const BATT_LABEL = ["battLabel", ["days", "percent", "both"], "days"];
     // Sukrara Aura: private, the value hidden until you touch and hold the face (§8)
@@ -28,7 +32,7 @@ module SettingsSpec {
     // Sukrara Aura: the second time zone's city (the field tz2)
     const TZ2 = ["tz2", ["UTC", "LON", "LIS", "MAD", "PAR", "BER", "ATH", "CAI", "IST", "MOW", "DXB", "DEL", "BKK", "SIN", "HKG", "SHA", "TYO", "SEL", "SYD", "AKL", "HNL", "ANC", "LAX", "DEN", "MEX", "CHI", "NYC", "BOG", "SCL", "BUE", "SAO", "LOS", "JNB"], "NYC"];
 
-    const ALL = [DIAL, HALO, TREND, SECONDS, RANGE_COLOUR, TOP_FIELD, FIELD1, FIELD2, BATT_LABEL, PRIVATE, TZ2];
+    const ALL = [DIAL, HALO, TREND, SECONDS, RANGE_COLOUR, TOP_FIELD, FIELD1, FIELD2, SIDE_L, SIDE_R, BATT_LABEL, PRIVATE, TZ2];
 
     // the setting's title (resource string set_<key>)
     function title(key as String) as ResourceId {
@@ -48,6 +52,10 @@ module SettingsSpec {
             return Rez.Strings.set_field1;
         } else if (key.equals("field2")) {
             return Rez.Strings.set_field2;
+        } else if (key.equals("sideL")) {
+            return Rez.Strings.set_sideL;
+        } else if (key.equals("sideR")) {
+            return Rez.Strings.set_sideR;
         } else if (key.equals("battLabel")) {
             return Rez.Strings.set_battLabel;
         } else if (key.equals("private")) {
@@ -106,6 +114,12 @@ module SettingsSpec {
             return Rez.Strings.opt_heart;
         } else if (value.equals("treatment")) {
             return Rez.Strings.opt_treatment;
+        } else if (value.equals("battery")) {
+            return Rez.Strings.opt_battery;
+        } else if (value.equals("sensor")) {
+            return Rez.Strings.opt_sensor;
+        } else if (value.equals("level")) {
+            return Rez.Strings.opt_level;
         } else if (value.equals("days")) {
             return Rez.Strings.opt_days;
         } else if (value.equals("percent")) {
