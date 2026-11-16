@@ -2133,9 +2133,10 @@ ages by itself from its own time with the phone away.
 **From the phone** (docs/43).
 - Sukrara Aura (the Garmin watch face, `contracts/watchface/aura`) shows what this phone's card and glucose
   notification show: the phone builds one payload from THE glucose state (the hub: THE trend with its doubling, the
-  alert runtime's pill, the sensor, the last treatment, today's time in range, the person's unit and limits), with
+  alert runtime's pill, the sensor with its life's start and end from the sensor screen's dates (the sensor rail), the
+  last treatment, today's time in range, the person's unit and limits), with
   absolute times so the watch keeps every age and countdown right between messages (`:integrations`
-  `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 2; tests `AuraPayloadFixtureTest`).
+  `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 3; tests `AuraPayloadFixtureTest`).
 - **Two ways, nothing to set up** (`garmin/AuraLink`, on by default whenever Garmin Connect is installed; schema
   `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face now, its data field and app when they come):
   **pushed** through Garmin Connect's Connect IQ service to every connected watch with the face on

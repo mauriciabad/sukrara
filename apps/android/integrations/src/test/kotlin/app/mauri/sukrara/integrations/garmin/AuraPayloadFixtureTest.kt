@@ -20,6 +20,7 @@ import app.mauri.sukrara.core.model.TrendFrom
 import app.mauri.sukrara.core.model.TrendRate
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.graph.stats.Bands
+import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -146,7 +147,15 @@ class AuraPayloadFixtureTest {
             p["countdownHours"]?.jsonPrimitive?.int ?: 8,
             p["tir"]?.jsonPrimitive?.doubleOrNull,
             Instant.ofEpochSecond(now + (p["dayEnd"]?.jsonPrimitive?.long ?: 86_400)),
+            life(p.getValue("sensor").jsonObject),
         )
+    }
+
+    /** The sensor screen's dates (`start` and its life's `end`, or `lifeEnd` for a warm-up), when the case gives them. */
+    private fun life(s: JsonObject): CurrentSensor? {
+        val start = s["start"]?.jsonPrimitive?.long ?: return null
+        val end = (s["lifeEnd"] ?: s["end"])?.jsonPrimitive?.long ?: return null
+        return CurrentSensor("3MH00SYNTH1", Instant.ofEpochSecond(now + start), Instant.ofEpochSecond(now + end))
     }
 
     private fun sensor(s: JsonObject): SensorState {

@@ -205,7 +205,7 @@ class IntegrationsModule(
     private val installedApps = PlatformApps(context)
 
     /** Sukrara Aura, the Garmin face: readings pushed through Garmin Connect and fetched by the face (docs/43). */
-    val aura = AuraLink(settings, glucose, treatments, readings, connectIq, clock, dispatchers.io, log)
+    val aura = AuraLink(settings, glucose, treatments, readings, connectIq, clock, dispatchers.io, log, sensor = sensor)
 
     val broadcasts = Broadcaster(settings, broadcastState, libreLive, sensor, role, installedApps, clock, dispatchers.io, log)
 

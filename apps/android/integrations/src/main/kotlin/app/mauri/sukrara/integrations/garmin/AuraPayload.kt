@@ -17,6 +17,7 @@ import app.mauri.sukrara.graph.cardInfo
 import app.mauri.sukrara.graph.id
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Bands
+import app.mauri.sukrara.integrations.CurrentSensor
 import java.time.Instant
 import kotlin.math.abs
 import kotlin.math.floor
@@ -30,7 +31,7 @@ import kotlin.math.floor
  */
 object AuraPayload {
     /** The format's version (`v`); a face ignores a message of another version. */
-    const val VERSION = 2
+    const val VERSION = 3
 
     /** History slots before the newest reading (3 hours at 5 min: the sparkline's longest reach, SPEC.md §6.5). */
     const val HISTORY = 36
@@ -48,7 +49,8 @@ object AuraPayload {
     /**
      * The payload for [state] at [now]. [treatments] = the stored entries (newest or oldest first); [unit], [bands] and
      * [countdownHours] = the person's settings; [tir] = today's time in range (share 0…1, null = not enough data) and
-     * [dayEnd] = when today ends on this phone (the watch drops [tir] then).
+     * [dayEnd] = when today ends on this phone (the watch drops [tir] then); [sensor] = the wearer's sensor with its life
+     * (the sensor screen's: its start and end, null on a follower or before one is paired), for the face's sensor rail.
      */
     fun of(
         state: GlucoseState,
@@ -59,6 +61,7 @@ object AuraPayload {
         countdownHours: Int,
         tir: Double?,
         dayEnd: Instant,
+        sensor: CurrentSensor? = null,
     ): Map<String, Any?> {
         val nowS = now.epochSecond
         val monitoring = state.notMonitoring == null
@@ -73,7 +76,7 @@ object AuraPayload {
             "hist" to (latest?.let { history(it, state.recent) } ?: emptyList<Int?>()),
             "st" to status(state.alerts.status).takeIf { monitoring },
             "last" to last(state, treatments, nowS).takeIf { monitoring },
-            "sensor" to sensor(state, countdownHours),
+            "sensor" to sensor(state, countdownHours, sensor),
             "tir" to tir?.takeIf { monitoring }?.let { linkedMapOf("pct" to percent(it), "until" to dayEnd.epochSecond.toInt()) },
         )
     }
@@ -166,16 +169,21 @@ object AuraPayload {
 
     /**
      * The sensor as the card decides it ([cardInfo]), with absolute times: `warmup` from `start` (ready at `ready`, the
-     * state held until a reading after `start` or until `hold`), `active` (`end` and `warn`, the start of the
-     * countdown's last [countdownHours] hours, when known), `ended`, or `none` (not monitoring: nothing paired).
+     * state held until a reading after `start` or until `hold`; its life's `end` when known), `active` (its life's
+     * `start` when known, `end` and `warn`, the start of the countdown's last [countdownHours] hours, when known),
+     * `ended`, or `none` (not monitoring: nothing paired). The life ([life], the sensor screen's dates) counts only for
+     * the same sensor: one whose serial differs from the hub's is a sensor that is no longer there.
      */
     internal fun sensor(
         state: GlucoseState,
         countdownHours: Int,
+        life: CurrentSensor? = null,
     ): Map<String, Any?> {
         if (state.notMonitoring != null) return linkedMapOf("s" to "none")
         val s = state.sensor
         val info = s.cardInfo()
+        val id = (s as? SensorState.Active)?.id ?: (s as? SensorState.WarmingUp)?.id
+        val dates = life?.takeIf { id == null || it.serial == id }
         return when {
             s == SensorState.Ended -> {
                 linkedMapOf("s" to "ended")
@@ -187,15 +195,15 @@ object AuraPayload {
                     "start" to info.startS.toInt(),
                     "ready" to info.warmupEndS.toInt(),
                     "hold" to (info.warmupEndS + SensorTiming.WARMUP_GRACE_S).toInt(),
-                )
+                ).apply { dates?.let { put("end", it.end.epochSecond.toInt()) } }
             }
 
             info != null -> {
-                linkedMapOf(
-                    "s" to "active",
-                    "end" to info.endS.toInt(),
-                    "warn" to (info.endS - countdownHours * 3600L).toInt(),
-                )
+                linkedMapOf<String, Any?>("s" to "active").apply {
+                    dates?.let { put("start", it.start.epochSecond.toInt()) }
+                    put("end", info.endS.toInt())
+                    put("warn", (info.endS - countdownHours * 3600L).toInt())
+                }
             }
 
             else -> {

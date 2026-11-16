@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sukrara.mauri.app/contracts/watchface/payload/schema.json",
-  "title": "Sukrara Aura payload, version 2",
+  "title": "Sukrara Aura payload, version 3",
   "description": "What the phone sends the Garmin face (README.md). Times are absolute epoch seconds.",
   "type": "object",
   "additionalProperties": false,
@@ -13,7 +13,7 @@
     "side": {"enum": ["low", "high"]}
   },
   "properties": {
-    "v": {"const": 2},
+    "v": {"const": 3},
     "sent": {"$ref": "#/$defs/time"},
     "unit": {"enum": ["mgdl", "mmol"]},
     "bands": {"type": "array", "items": {"type": "integer"}, "minItems": 6, "maxItems": 6},
@@ -69,8 +69,8 @@
     "sensor": {
       "oneOf": [
         {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"enum": ["none", "ended"]}}},
-        {"type": "object", "additionalProperties": false, "required": ["s", "start", "ready", "hold"], "properties": {"s": {"const": "warmup"}, "start": {"$ref": "#/$defs/time"}, "ready": {"$ref": "#/$defs/time"}, "hold": {"$ref": "#/$defs/time"}}},
-        {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"const": "active"}, "end": {"$ref": "#/$defs/time"}, "warn": {"$ref": "#/$defs/time"}}}
+        {"type": "object", "additionalProperties": false, "required": ["s", "start", "ready", "hold"], "properties": {"s": {"const": "warmup"}, "start": {"$ref": "#/$defs/time"}, "ready": {"$ref": "#/$defs/time"}, "hold": {"$ref": "#/$defs/time"}, "end": {"$ref": "#/$defs/time"}}},
+        {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"const": "active"}, "start": {"$ref": "#/$defs/time"}, "end": {"$ref": "#/$defs/time"}, "warn": {"$ref": "#/$defs/time"}}}
       ]
     },
     "tir": {

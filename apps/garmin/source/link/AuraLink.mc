@@ -11,7 +11,7 @@ import Toybox.Time;
 // restart shows it at once, and the face's inputs worked out from it and the watch clock at every draw (README "On
 // the watch"). Sukrara decides; this only counts time.
 module AuraLink {
-    const VERSION = 2;
+    const VERSION = 3;
     const STORE = "auraLink";
     // a stored payload this far ahead of the watch clock gives way to any new one (the phone's clock was wrong)
     const AHEAD_S = 300;
@@ -343,6 +343,12 @@ module AuraLink {
         } else if ("active".equals(state)) {
             var end = s.get("end");
             var warn = s.get("warn");
+            var start = s.get("start");
+            // the sensor's life (the sensor rail): its days and the hours left, whenever the phone knows the dates
+            if (end instanceof Number && start instanceof Number && end > start) {
+                out.put("sensorLife", (end - start) / 86400.0);
+                out.put("sensorLeft", (end - t > 0 ? end - t : 0) / 3600.0);
+            }
             if (end instanceof Number && t >= end) {
                 name = "ended";
             } else if (end instanceof Number && warn instanceof Number && t >= warn) {

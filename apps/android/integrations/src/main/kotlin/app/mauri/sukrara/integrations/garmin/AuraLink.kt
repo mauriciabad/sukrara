@@ -16,6 +16,7 @@ import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucoseMetrics
 import app.mauri.sukrara.graph.stats.toPoint
+import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.localserver.HttpAnswer
 import app.mauri.sukrara.integrations.localserver.HttpRequest
 import app.mauri.sukrara.integrations.localserver.LocalHttpServer
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.update
@@ -165,6 +167,8 @@ class AuraLink(
     private val io: CoroutineDispatcher,
     private val log: (String) -> Unit,
     private val fetchPort: Int = PORT,
+    /** The wearer's sensor with its life (the sensor screen's dates): the face's sensor rail. */
+    private val sensor: Flow<CurrentSensor?> = flowOf(null),
 ) {
     private val _state = MutableStateFlow(AuraLinkState())
     val state: StateFlow<AuraLinkState> = _state.asStateFlow()
@@ -273,8 +277,14 @@ class AuraLink(
             }
         val today = since.flatMapLatest { readings.window(startOfDay(it)) }
         val entries = since.flatMapLatest { treatments.since(it - Duration.ofHours(25)) }
-        return combine(glucose, entries, combine(unit, bands, hours) { u, b, h -> Triple(u, b, h) }, today) { g, t, (u, b, h), day ->
-            build(g, t, u, b, h, day.map { it.toPoint() })
+        return combine(
+            glucose,
+            entries,
+            combine(unit, bands, hours) { u, b, h -> Triple(u, b, h) },
+            today,
+            sensor,
+        ) { g, t, (u, b, h), day, life ->
+            build(g, t, u, b, h, day.map { it.toPoint() }, life)
         }.distinctUntilChanged(::same)
     }
 
@@ -285,13 +295,14 @@ class AuraLink(
         bands: Bands,
         hours: Int,
         day: List<app.mauri.sukrara.graph.stats.GlucosePoint>,
+        life: CurrentSensor?,
     ): Map<String, Any?> {
         val now = clock.now()
         val from = startOfDay(now)
         val end = from.atZone(clock.zone).plusDays(1).toInstant()
         val tir = GlucoseMetrics.of(day, from.epochSecond, now.epochSecond, bands.sane()).tir
         val share = tir.inRange.takeIf { tir.coverage >= TIR_COVERAGE }
-        return AuraPayload.of(g, t, now, unit, bands, hours, share, end)
+        return AuraPayload.of(g, t, now, unit, bands, hours, share, end, life)
     }
 
     private fun startOfDay(at: Instant): Instant = LocalDate.ofInstant(at, clock.zone).atStartOfDay(clock.zone).toInstant()
