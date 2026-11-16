@@ -45,9 +45,7 @@ class AuraApp extends Application.AppBase {
 
     // always-on starts or ends (API 5: the display's power mode)
     function onDisplayModeChanged() as Void {
-        if (System has :getDisplayMode) {
-            AuraWatch.lowPower = System.getDisplayMode() == System.DISPLAY_MODE_LOW_POWER;
-        }
+        AuraWatch.screen("C", AuraWatch.displayMode() == 1);
         WatchUi.requestUpdate();
     }
 }

@@ -17,13 +17,12 @@ class AuraView extends WatchUi.WatchFace {
     function onLayout(dc as Graphics.Dc) as Void {}
 
     function onShow() as Void {
-        if (System has :getDisplayMode) {
-            AuraWatch.lowPower = System.getDisplayMode() == System.DISPLAY_MODE_LOW_POWER;
-        }
+        AuraWatch.screen("S", AuraWatch.displayMode() == 1);
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
         var m = new AuraModel(input());
+        AuraWatch.drew(m.aod ? "a" : m.night ? "n" : "w");
         var sx = 0;
         var sy = 0;
         if (m.aod) {
@@ -41,19 +40,15 @@ class AuraView extends WatchUi.WatchFace {
         return AuraWatch.input();
     }
 
-    // high power (a wrist raise): 1 Hz for ~10 s
+    // high power (a wrist raise, a button): 1 Hz for ~10 s. Always awake, whatever the display mode said before.
     function onExitSleep() as Void {
-        if (!(System has :getDisplayMode)) {
-            AuraWatch.lowPower = false;
-        }
+        AuraWatch.screen("X", false);
         WatchUi.requestUpdate();
     }
 
     // low power: always-on if the person turned it on (AMOLED), else the screen goes dark
     function onEnterSleep() as Void {
-        if (!(System has :getDisplayMode)) {
-            AuraWatch.lowPower = System.getDeviceSettings().requiresBurnInProtection;
-        }
+        AuraWatch.screen("E", System.getDeviceSettings().requiresBurnInProtection);
         WatchUi.requestUpdate();
     }
 

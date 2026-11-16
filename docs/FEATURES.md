@@ -2079,7 +2079,8 @@ the time, so the reading ages by itself from its own time with the phone away.
   long for the arc: the least important field goes.
 - **Modes**: *always-on* (the watch's display setting): outlined time, value, pill and messages in a dimmer palette,
   rail without ticks, trail or zone, no fields, no battery; the whole face moves up to 2 px a minute against burn-in.
-  *Night* (between the sleep and wake times set on the watch): the night palette, everything else as awake.
+  A wrist raise or a button always wakes it to the full face, whatever the display mode said before; the face
+  reports its screen events and the mode it drew to the phone (docs/43 "The screen", logcat only). *Night* (between the sleep and wake times set on the watch): the night palette, everything else as awake.
 - **Private** (setting): the value row stays empty and the bead alone says where you are; touch and hold the face
   shows the value for 5 s with a shrinking neon line under it. A needed pill (*Carbs* / *Insulin*) shows the value
   anyway; the reading's time, quiet / mute pills and messages always show.

@@ -17,9 +17,30 @@ import Toybox.Weather;
 // Fills the input model from the watch: the clock, the mode, the battery, the fields' data, the settings and THE SEAM
 // (AuraData.current(), Sukrara's reading). Every count of time happens here, at every draw, from absolute times.
 module AuraWatch {
-    var lowPower as Boolean = false; // set by the view (onEnterSleep / onExitSleep, getDisplayMode)
+    var lowPower as Boolean = false; // set by screen(): the last screen callback decides
     var revealUntil as Number = 0; // epoch ms (System.getTimer) until which a private value shows; 0 = hidden
     const REVEAL_MS = 5000;
+    var _drew as String = "";
+
+    // System.getDisplayMode(): 0 high power, 1 low power (always-on), 2 off; 9 where the watch hasn't it (API < 5)
+    function displayMode() as Number {
+        return System has :getDisplayMode ? System.getDisplayMode() as Number : 9;
+    }
+
+    // A screen callback ([event]: S onShow, X onExitSleep, E onEnterSleep, C onDisplayModeChanged) sets always-on, and
+    // the face reports it with the display mode (docs/43 "The screen").
+    function screen(event as String, low as Boolean) as Void {
+        lowPower = low;
+        AuraLink.screen(event, Time.now().value(), displayMode());
+    }
+
+    // The mode a draw used (a always-on, n night, w awake), reported when it changes (D<mode>).
+    function drew(mode as String) as Void {
+        if (!mode.equals(_drew)) {
+            _drew = mode;
+            AuraLink.screen("D" + mode, Time.now().value(), displayMode());
+        }
+    }
 
     function input() as AuraInput {
         var i = new AuraInput();

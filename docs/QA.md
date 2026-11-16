@@ -1082,6 +1082,9 @@ watch; the watch shows the real value: check it against the phone, never photogr
 - [ ] On the watch (`tools/install.sh watch`, then the owner selects the face): it draws, Customize opens and every
       setting changes the face; Private hides the value and touch and hold shows it for 5 s; Spanish with the watch in
       Spanish.
+- [ ] On the watch, raise the wrist a few times (outside the sleep window): the full face at the panel's brightness,
+      never the always-on look. After the next fetch, `adb logcat -s Sukrara.Aura` shows each `X@<t>` followed by
+      `Dw@<t>` within a second (docs/43 "The screen").
 
 ## Q20 The person and the feel
 

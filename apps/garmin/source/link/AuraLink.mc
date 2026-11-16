@@ -57,23 +57,40 @@ module AuraLink {
 
     // The watch's own account of the link, sent to the phone with every fetch (?r=…&d=…): the last background
     // deliveries (kind, watch time, the payload's sent, its reading's time) and since when the face draws which reading.
+    // After the deliveries, r carries the screen's last events in the same shape: <event>.<watch time>.<display mode>.0
+    // (docs/43 "The screen"; times and modes only).
     const REPORT = "auraReport";
     const RUNS = 10;
+    const SCREEN = 12;
     var _runs as Array<String>? = null;
+    var _screen as Array<String>? = null;
     var _drawn as String = "";
 
+    function stored(key as String) as Array<String> {
+        var r = Application.Storage.getValue(REPORT + key);
+        return r instanceof Array ? r as Array<String> : [] as Array<String>;
+    }
+
+    // keeps the last [n] of [list] plus [entry] under REPORT + [key]
+    function keep(list as Array<String>, entry as String, n as Number, key as String) as Array<String> {
+        list.add(entry);
+        if (list.size() > n) {
+            list = list.slice(list.size() - n, null);
+        }
+        Application.Storage.setValue(REPORT + key, list);
+        return list;
+    }
+
     function note(kind as String, at as Number, sent, gt) as Void {
-        if (_runs == null) {
-            var r = Application.Storage.getValue(REPORT + "Runs");
-            _runs = r instanceof Array ? r as Array<String> : [] as Array<String>;
-        }
-        var runs = _runs as Array<String>;
-        runs.add(kind + "." + at + "." + sent + "." + gt);
-        if (runs.size() > RUNS) {
-            runs = runs.slice(runs.size() - RUNS, null);
-            _runs = runs;
-        }
-        Application.Storage.setValue(REPORT + "Runs", runs);
+        _runs = keep(_runs != null ? _runs : stored("Runs"), kind + "." + at + "." + sent + "." + gt, RUNS, "Runs");
+        saveReport();
+    }
+
+    // A screen event (the face's foreground): [event] is the callback or the mode drawn (docs/43 "The screen"), [mode]
+    // what System.getDisplayMode() said then (0 high power, 1 low power, 2 off, 9 not on this watch).
+    function screen(event as String, at as Number, mode as Number) as Void {
+        var e = event + "." + at + "." + mode + ".0";
+        _screen = keep(_screen != null ? _screen : stored("Screen"), e, SCREEN, "Screen");
         saveReport();
     }
 
@@ -88,10 +105,19 @@ module AuraLink {
     }
 
     function saveReport() as Void {
-        var runs = _runs != null ? _runs as Array<String> : [] as Array<String>;
+        if (_runs == null) {
+            _runs = stored("Runs");
+        }
+        if (_screen == null) {
+            _screen = stored("Screen");
+        }
         var r = "";
-        for (var i = 0; i < runs.size(); i++) {
-            r += (i > 0 ? "_" : "") + runs[i];
+        var lists = [_runs, _screen];
+        for (var l = 0; l < 2; l++) {
+            var list = lists[l] as Array<String>;
+            for (var i = 0; i < list.size(); i++) {
+                r += (r.length() > 0 ? "_" : "") + list[i];
+            }
         }
         Application.Storage.setValue(REPORT, "r=" + r + "&d=" + _drawn);
     }
@@ -123,6 +149,7 @@ module AuraLink {
         _cache = null;
         _loaded = true;
         _runs = null;
+        _screen = null;
         _drawn = "";
         Application.Storage.deleteValue(STORE);
     }
