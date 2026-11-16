@@ -54,7 +54,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Highly customizable alarms.
 - Each alert type has its own sound and vibration.
 - Sounds are discreet, with a different intensity for each alert type.
-- Pick your favorite sound pack or make your own.
+- Pick a sound pack for every alert, or a different one per alert. On Android, any sound on your phone too.
 - Minimal alert fatigue: alerts go quiet when you've already acted, and wait while your glucose is clearly heading
   back into range.
 - An alert on screen shows the current value, updated silently, and stays up while you're still out of range.
@@ -64,7 +64,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Configure how alarms repeat while your glucose stays out of range.
 - Falling fast / rising fast alerts on the readings' trend, once the fast move has lasted 5 minutes.
 - Unacknowledged very lows can alert the people who follow you.
-- Quick actions in notifications: Treatment, Remind less, Mute for 1h.
+- Quick actions in notifications: Treatment, Remind less, Mute (15 min to 2 h, or a length you type).
 - [Planned]: Predictions, more and cooler sound packs...
 
 ### Ready in a few steps
@@ -136,8 +136,10 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 ### Compatible CGM sensors
 
-Abbott's FreeStyle Libre 2, 2 Plus, 3 and 3 Plus; Dexcom G6, G7 and ONE+; Accu-Chek SmartGuide; Sibionics GS1;
-CareSens Air; and LinX / AiDEX X. For some, you need to install Juggluco.
+- **Directly:** Abbott's FreeStyle Libre 3 and 3 Plus. Not yet tested on a real sensor: Dexcom G6, G7 / ONE+ and
+  G7 15 Day / Stelo; Accu-Chek SmartGuide; Aidex X / LinX.
+- **Through [Juggluco](https://github.com/j-kaltes/Juggluco)** (Sukrara reads what Juggluco reads): FreeStyle Libre 2,
+  2 Plus, 3 and 3 Plus; Sibionics GS1; Dexcom G7 / ONE+; Accu-Chek SmartGuide; CareSens Air; Aidex X.
 
 ## Install
 
