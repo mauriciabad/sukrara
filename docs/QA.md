@@ -1069,6 +1069,19 @@ watch; the watch shows the real value: check it against the phone, never photogr
 - [ ] A low with the pill, a mute, a treatment: the face's pill and treatment field change within seconds of the
       phone's card.
 - [ ] TalkBack: the row and every page row read their text.
+## Q28 Garmin watch face (Sukrara Aura)
+
+- [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]`
+      (simulator, ~6 min): numbers 105 of 105, 0 differences; open the worst `diff-core/` images: every red pixel is a
+      glyph's edge (fonts rasterise differently), never a moved, missing or wrong-coloured element. `core_refs.mjs`
+      makes the dial-less references; the dials, halo and sweep differ until they're built.
+- [ ] Look at `sim/` for the safety states side by side with `docs/img/aura/ref/`: old (struck, grey, hollow bead, no
+      arrow), no reading since (no figure anywhere), LO / HI (no number, a ring), very low (white on red), warm-up,
+      sensor ended, nothing paired. The time is readable in every one, always-on and night included.
+- [ ] Simulator › Settings › Display Mode › Always On on the very low and LO cases: no luminance warning.
+- [ ] On the watch (`tools/install.sh watch`, then the owner selects the face): it draws, Customize opens and every
+      setting changes the face; Private hides the value and touch and hold shows it for 5 s; Spanish with the watch in
+      Spanish.
 
 ## Q20 The person and the feel
 

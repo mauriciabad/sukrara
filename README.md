@@ -102,6 +102,10 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   to set up; the face also asks the phone every 5 minutes in case a message gets lost, and an old value never looks
   current. Settings › Share with apps › Sukrara Aura shows whether it gets through, and turns it off.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
+- Sukrara Aura, a Garmin watch face (Descent Mk3i 43 mm): time, glucose with its trend arrow or the last hour, a
+  level rail and the battery on the bezel's screws, Sukrara's pill (eat, take insulin, muted), the reading's age, your
+  fields (weather, steps, last treatment, a second time zone…), always-on and night looks, and a private mode that shows
+  the value only while you hold the screen. In English and Spanish.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
 - [Planned]: Android Auto, Home Assistant, Pebble...

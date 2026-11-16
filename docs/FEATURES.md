@@ -2051,6 +2051,54 @@ the app's first write replaces it. *A no-data reason* (no reading yet) → the c
 app (Alerts › States and exits). *Add treatment* (tap) → *Cancel* / Escape closes it with nothing saved. A widget is
 removed or resized from the desktop's *Edit Widgets* (system). No widget state blocks anything.
 
+## Garmin watch face (Sukrara Aura)
+
+A Connect IQ watch face, `apps/garmin` (Descent Mk3i 43 mm), drawn to the binding design
+[`contracts/watchface/aura/SPEC.md`](../contracts/watchface/aura/SPEC.md) (registered surface `garmin-aura`). It shows
+what Sukrara on the phone decides (the value, the trend, the bands, the pill, the sensor's state); the watch only counts
+the time, so the reading ages by itself from its own time with the phone away.
+- **Rows**, centred and as large as fit: the date along the top, one top field, the time, the value with Sukrara's arrow
+  (or the last hour as a sparkline on the rail's scale), and a chip row with the reading's time once it is late
+  (from 90 s) and the pill. The numbers step down a size when the chip row holds something.
+- **The value's looks**: in range green (very good / good; *Green in range* off: white); out of range its band's colour;
+  very low and LO white on a red block; old (5–20 min) struck through and grey with a hollow ring for the arrow; from
+  20 min no number at all: "No reading since" and the time (the weekday from 12 h or another day, the date after 6
+  days). LO / HI never as a figure, no arrow (a ring).
+- **Level rail** (1:30–4:30, the bezel's screws): Kovatchev's risk scale with the person's limits as notches, the band,
+  the out-of-range zone, a bead at the value (hollow when old, none without a value) with the last 30 minutes as a
+  fading trail; LO / HI pinned at the ends with a chevron. **Battery rail** opposite: 10 segments (amber under 2 days,
+  red under 1) and its label (days, percent or both).
+- **Pill** (Sukrara's status, only with a current value): *Carbs* / *Insulin* when needed (filled); a quiet after a
+  treatment or a muted side as the side's tonal pill with the time left (*Muted* with no end); Mute all in range as a
+  grey pill; *Ended* (the sensor ended but still sends) and *Sensor* (replace it).
+- **Messages** instead of a value: warm-up (a filling disc, "Ready at 10:54" / "Almost ready"), sensor ended (the flag
+  + *Ended*, pill *Sensor*), nothing paired ("No readings", no rail).
+- **Fields**: top (weather, steps, sunset, Body Battery, altitude, notifications, time in range, second time zone,
+  floors, heart rate, none) and two along the bottom (the same + last treatment: `▼ 4.5u ● 45g 35m`). Automatic: the
+  sensor's last 8 h replace the first bottom field with its hours left; the phone out of reach with "No phone". Too
+  long for the arc: the least important field goes.
+- **Modes**: *always-on* (the watch's display setting): outlined time, value, pill and messages in a dimmer palette,
+  rail without ticks, trail or zone, no fields, no battery; the whole face moves up to 2 px a minute against burn-in.
+  *Night* (between the sleep and wake times set on the watch): the night palette, everything else as awake.
+- **Private** (setting): the value row stays empty and the bead alone says where you are; touch and hold the face
+  shows the value for 5 s with a shrinking neon line under it. A needed pill (*Carbs* / *Insulin*) shows the value
+  anyway; the reading's time, quiet / mute pills and messages always show.
+- **Settings**: on the watch (hold MENU on the face › Watch face › Customize) and in the Connect IQ app (once the face
+  is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field, Bottom field 1 and
+  2, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
+- Words in English and Spanish (the watch's language). Not yet: the dials, the halo and the seconds sweep (the dial is
+  black), and the face's side of the phone link ([Sukrara Aura: readings to the Garmin face](#sukrara-aura-readings-to-the-garmin-face-docs43);
+  until it is in the face, the face shows "No readings").
+
+**States and exits**: *value* (fresh → late → old → no reading since → long gap) → leaves by itself with the next
+reading; nothing to do on the watch. *Warm-up* / *Sensor ended* / *No readings* (nothing paired) → leave when Sukrara's
+sensor state changes on the phone. *Pill* → counts down and leaves at the quiet's or mute's end; mute and unmute are on
+the phone (Alerts › States and exits). *No phone* field → leaves when the phone is back in reach. *Private* → on and
+off in Customize › Private (or the Connect IQ app); *revealed* (touch and hold) → hides by itself after 5 s.
+*Always-on* → the watch's display settings; *night* → the sleep window in the watch's user profile. Any setting →
+Customize (Back leaves a list without changing it). The face itself → choose another face on the watch (hold MENU ›
+Watch face). Garmin has no screen reader for watch faces: what the face says is on the phone's card too.
+
 ## Sensor reminders and countdowns
 
 Wearer only (`sensorend/`; rules in `SensorEndPlan`, tests `SensorEndPlanTest`); followers get none of these. Settings → **Sensor end**.
