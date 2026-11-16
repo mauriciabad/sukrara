@@ -50,6 +50,7 @@
   "site.verify.source": "Its source code",
   "site.req.android": "Android 16 or newer · 64-bit",
   "site.req.mac": "Apple silicon · macOS 15 or newer",
+  "site.req.garmin": "With Sukrara for Android · Descent Mk3i 43 mm",
   "site.badge.obtainium": "Add to",
   "site.badge.github": "Get it on",
   "site.share.label": "How a reading travels: my phone reads my sensor and sends each reading over Bluetooth to my Mac next to me, and over the internet to Nostr relays, which pass it on, end-to-end encrypted, to my Mac, my partner’s phone and a display at home.",
@@ -70,5 +71,11 @@
   "site.brew.get": "Get Homebrew",
   "site.brew.paste": "Paste this into Terminal and press Return:",
   "site.brew.copied": "Copied. Paste it into Terminal and press Return:",
-  "site.badge.fdroid": "Get it on"
+  "site.badge.fdroid": "Get it on",
+  "site.garmin.button": "Sukrara Aura",
+  "site.garmin.soon": "On its way to the Connect IQ store",
+  "site.garmin.try": "Try it yourself",
+  "site.garmin.step1": "Install Sukrara for Android and Garmin Connect on your phone.",
+  "site.garmin.step2": "Install Sukrara Aura from the Connect IQ store, once it’s there, and make it your watch face.",
+  "site.garmin.step3": "That’s it: Sukrara sends each reading to the watch by itself."
 }

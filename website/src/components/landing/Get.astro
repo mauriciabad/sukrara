@@ -2,7 +2,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The home page's last section: both apps, one above the other, each with its download and its other ways in (<Download>).
+// The home page's last section: the apps and the Garmin face, one above the other, each with its way in (<Download>).
 import Download from '../Download.astro';
 import Section from './Section.astro';
 
@@ -17,6 +17,7 @@ const { title, id } = Astro.props;
 	<div class="sk-get not-content">
 		<div><Download app="android" heading /></div>
 		<div><Download app="mac" heading /></div>
+		<div><Download app="garmin" heading /></div>
 	</div>
 </Section>
 
