@@ -136,6 +136,20 @@
       }
     },
     {
+      "name": "watchface-link",
+      "level": "fail",
+      "trigger": ["fixtures"],
+      "why": "Sukrara Aura's payload (contracts/watchface/payload, a versioned wire format): the phone that builds it (Android :integrations garmin, AuraPayloadFixtureTest) and the face that reads it (apps/garmin source/link, LinkTest) change together",
+      "sides": {
+        "fixtures": ["contracts/watchface/payload/*"],
+        "android": [
+          "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/*",
+          "apps/android/integrations/src/test/kotlin/app/mauri/sukrara/integrations/garmin/*"
+        ],
+        "garmin": ["apps/garmin/source/link/*", "apps/garmin/test/link/*"]
+      }
+    },
+    {
       "name": "export-impl",
       "level": "warn",
       "why": "One CSV export writer changed on one platform only: both write the same bytes (contracts/export), check the other",

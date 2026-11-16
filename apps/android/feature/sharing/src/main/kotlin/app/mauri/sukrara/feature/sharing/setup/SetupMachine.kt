@@ -38,11 +38,11 @@ enum class SetupStep {
     Updates,
 
     /**
-     * Builds with root features only (null [SetupFacts.root] = Google Play: never shown), before [Notification]:
-     * *Root*, whether this phone is rooted. Signs of root (LSPosed, a root manager) skip the question. *Yes* asks for
-     * root at once (the root manager's prompt), then the one missing step with its fix and *Check again* (the same card
-     * as Settings › Glucose notification); granted root completes it and picks the status bar text on the next step.
-     * *No* is final; *Later* keeps it on *Finish setup*. Done by itself once Sukrara has root.
+     * Before [Notification]: *Root*, whether this phone is rooted. Signs of root (LSPosed, a root manager) skip the
+     * question. *Yes* asks for root at once (the root manager's prompt), then the one missing step with its fix and
+     * *Check again* (the same card as Settings › Glucose notification); granted root completes it and picks the
+     * status bar text on the next step. *No* is final; *Later* keeps it on *Finish setup*. Done by itself once Sukrara
+     * has root.
      */
     Root,
 
@@ -115,8 +115,8 @@ data class SetupFacts(
      * here, in Settings › Insulin pens or at a pen tap); false = still *Ask at the first pen tap*.
      */
     val pens: Boolean? = null,
-    /** Root as setup sees it: null = a build without root features (no root step); true = Sukrara has root. */
-    val root: Boolean? = null,
+    /** Sukrara has root (the root step is then done by itself). */
+    val root: Boolean = false,
 )
 
 /** Where the GitHub version's daily update check stands (it is opt-in: off until the person turns it on). */
@@ -187,8 +187,7 @@ object SetupMachine {
                 }
             }.filter {
                 (it != SetupStep.Updates || facts.updates != null) &&
-                    (it != SetupStep.Pens || facts.pens != null) &&
-                    (it != SetupStep.Root || facts.root != null)
+                    (it != SetupStep.Pens || facts.pens != null)
             }
         // nothing optional on this phone: the essentials end setup
         return if (all.none { it.extra }) all - SetupStep.Ready else all
@@ -314,7 +313,7 @@ object SetupMachine {
             // an install that went past it before it existed
             step in record.completed || passed(step, record, facts)
         } else if (step == SetupStep.Root) {
-            step in record.completed || facts.root == true || passed(step, record, facts)
+            step in record.completed || facts.root || passed(step, record, facts)
         } else if (step == SetupStep.Notification) {
             step in record.completed || passed(step, record, facts)
         } else if (step == SetupStep.Pens) {

@@ -1,6 +1,7 @@
 {
   "_about": "Changed path -> docs/QA.md sections to check by hand (printed by tools/check/run.sh). Globs: fnmatch ('*' crosses '/'). App paths only (not poc/).",
   "map": [
+    {"paths": ["apps/garmin/*", "contracts/watchface/*"], "qa": ["Q28 Garmin watch face (Sukrara Aura)"]},
     {"paths": ["apps/android/core/graph/*", "apps/macos/Sources/SukraraGraph/*", "contracts/graph/*"],
      "qa": ["Q2 Graph and value card", "Q3 Android widgets", "Q5 Status bar & notification", "Q6 Mac menubar panel", "Q7 Mac widgets"]},
     {"paths": ["apps/macos/Sources/SukraraApp/*"], "qa": ["Q6 Mac menubar panel"]},
@@ -30,7 +31,9 @@
      "qa": ["Q23 Import history"]},
     {"paths": ["apps/android/feature/sharing/src/main/kotlin/app/mauri/sukrara/feature/sharing/backup/*", "apps/android/feature/sharing/src/main/kotlin/app/mauri/sukrara/feature/sharing/restore/*"],
      "qa": ["Q24 Backup to a password manager"]},
+    {"paths": ["apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/*", "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/XdripPage.kt", "contracts/watchface/payload/*", "apps/garmin/source/link/*"],
+     "qa": ["Q27 Garmin link (phone → Sukrara Aura) and the xDrip+ server page"]},
     {"paths": ["apps/android/*/src/main/*", "apps/macos/Sources/*"], "qa": ["Q19 Complete flows (states and exits)", "Q20 The person and the feel"]},
-    {"paths": ["website/*"], "qa": ["Q27 Website"]}
+    {"paths": ["website/*"], "qa": ["Q29 Website"]}
   ]
 }

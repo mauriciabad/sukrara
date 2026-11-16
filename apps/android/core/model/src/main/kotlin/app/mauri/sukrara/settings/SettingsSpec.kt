@@ -222,6 +222,7 @@ object SettingsSpec {
         SettingInfo("lock.background", "enum", null, false, null, "lock:lockBackground", "", null, "android", "Android lock screen (LSPosed)", listOf()),
         SettingInfo("lock.appearance", "enum", null, false, null, "lock:lockAppearance", "", null, "android", "Android lock screen (LSPosed)", listOf()),
         SettingInfo("lock.treatmentTime", "number", "lockTreatmentTime", false, null, "lock:lockTreatmentTime", "", null, "android", "The treatment dialog over the Android lock screen; the Mac has no lock screen entry", listOf()),
+        SettingInfo("apps.garmin", "bool", null, false, null, "integrations:garmin", "", null, "android", "Garmin Connect, the only way to a Garmin watch, runs on the phone the watch is paired to", listOf()),
         SettingInfo("apps.xdrip", "bool", null, false, null, "integrations:xdripServer", "", null, "android", "Watch apps read the phone the watch is paired to", listOf()),
         SettingInfo("apps.nightscout", "bool", null, false, null, "integrations:nightscoutServer", "", null, "android", "Phone-side local API for apps on the phone and the home network", listOf()),
         SettingInfo("apps.nightscoutLan", "bool", null, false, null, "integrations:nightscoutServerLan", "", null, "android", "Phone-side local API", listOf()),
@@ -314,6 +315,7 @@ object SettingsSpec {
         const val LOCK_BACKGROUND = "lockBackground"
         const val LOCK_APPEARANCE = "lockAppearance"
         const val LOCK_TREATMENT_TIME = "lockTreatmentTime"
+        const val GARMIN = "garmin"
         const val XDRIP_SERVER = "xdripServer"
         const val NIGHTSCOUT_SERVER = "nightscoutServer"
         const val NIGHTSCOUT_SERVER_LAN = "nightscoutServerLan"

@@ -19,12 +19,13 @@ DIFFS = {
     "contracts": ["contracts/alerts/SPEC.md"],
     "mac": ["apps/macos/Sources/App.swift"],
     "website": ["website/src/content/docs/android.mdx", ".github/workflows/website.yml"],
+    "garmin": ["apps/garmin/source/AuraView.mc"],
 }
 
 
 class Groups(unittest.TestCase):
     def test_groups(self):
-        none = {"android": False, "mac": False, "website": False}
+        none = {"android": False, "mac": False, "website": False, "garmin": False}
         self.assertEqual(changes.groups(["CHANGELOG.md", "README.md"]), none)
         self.assertEqual(changes.groups(DIFFS["docs"]), dict(none, website=True))  # the site publishes docs/
         self.assertEqual(changes.groups(DIFFS["notes"]), none)  # the Play / App Store notes: no build reads them
@@ -32,12 +33,19 @@ class Groups(unittest.TestCase):
         self.assertEqual(changes.groups(DIFFS["version"]), dict(none, android=True, website=True))
         self.assertEqual(changes.groups(["tools/check/check.py"]), dict(none, android=True))
         self.assertEqual(changes.groups(DIFFS["android"]), dict(none, android=True, website=True))
-        self.assertEqual(changes.groups(DIFFS["contracts"]), dict(none, android=True, mac=True, website=True))
+        self.assertEqual(changes.groups(DIFFS["contracts"]),
+                         dict(none, android=True, mac=True, website=True, garmin=True))
         self.assertEqual(changes.groups(DIFFS["mac"]), dict(none, mac=True, website=True))
         self.assertEqual(changes.groups(DIFFS["notes"] + DIFFS["android"]), dict(none, android=True, website=True))
         self.assertEqual(changes.groups(DIFFS["website"]), dict(none, website=True))
         # App Links name the release key: the site checks it
         self.assertEqual(changes.groups(["tools/release/android-cert.sha256"]), dict(none, android=True, website=True))
+        # the face (apps/: the site shows the apps), the pictures its screenshots are diffed against (docs/: on the site
+        # too), the reference renderer, its CI setup (tools/: android too)
+        self.assertEqual(changes.groups(DIFFS["garmin"]), dict(none, website=True, garmin=True))
+        self.assertEqual(changes.groups(["docs/img/aura/ref/hero.png"]), dict(none, website=True, garmin=True))
+        self.assertEqual(changes.groups(["docs/img/aura/store/hero.png"]), dict(none, website=True))
+        self.assertEqual(changes.groups(["tools/ci/garmin.lock"]), dict(none, android=True, garmin=True))
         self.assertEqual(changes.groups(["VERSIONS.md", ""]), none)  # a file prefix matches only itself
 
 

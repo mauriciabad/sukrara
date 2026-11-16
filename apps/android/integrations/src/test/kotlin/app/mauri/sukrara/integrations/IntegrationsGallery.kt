@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -37,6 +38,12 @@ import app.mauri.sukrara.integrations.export.ExportContent
 import app.mauri.sukrara.integrations.export.ExportData
 import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportUi
+import app.mauri.sukrara.integrations.garmin.AuraLinkState
+import app.mauri.sukrara.integrations.garmin.AuraReport
+import app.mauri.sukrara.integrations.garmin.AuraWatch
+import app.mauri.sukrara.integrations.garmin.GarminActions
+import app.mauri.sukrara.integrations.garmin.GarminContent
+import app.mauri.sukrara.integrations.garmin.GarminUi
 import app.mauri.sukrara.integrations.healthconnect.HcActions
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HcUi
@@ -59,7 +66,10 @@ import app.mauri.sukrara.integrations.localserver.NsApiActions
 import app.mauri.sukrara.integrations.localserver.NsApiState
 import app.mauri.sukrara.integrations.localserver.NsApiUi
 import app.mauri.sukrara.integrations.localserver.SecretView
+import app.mauri.sukrara.integrations.localserver.ServerReader
+import app.mauri.sukrara.integrations.localserver.XdripContent
 import app.mauri.sukrara.integrations.localserver.XdripState
+import app.mauri.sukrara.integrations.localserver.XdripUi
 import app.mauri.sukrara.integrations.nightscout.NightscoutActions
 import app.mauri.sukrara.integrations.nightscout.NightscoutContent
 import app.mauri.sukrara.integrations.nightscout.NsCredentialKind
@@ -96,26 +106,132 @@ class IntegrationsGallery {
 
     private val lvFrom = now - Duration.ofDays(2)
 
+    private val gcm = ServerReader("com.garmin.android.apps.connectmobile", "Garmin Connect")
+    private val ciq = ServerReader("com.garmin.connectiq", "Connect IQ")
+    private val sent =
+        AuraLinkState(
+            garminConnect = true,
+            answering = true,
+            watches =
+                listOf(
+                    AuraWatch(
+                        1,
+                        "Descent Mk3i 43mm",
+                        true,
+                        true,
+                        now - Duration.ofMinutes(1),
+                        reading =
+                            now - Duration.ofMinutes(1),
+                    ),
+                ),
+            fetched = now - Duration.ofMinutes(3),
+            fetchOpen = true,
+        )
+
     private val pages: List<Pair<String, @Composable () -> Unit>> =
         listOf(
-            "apps-off" to { AppsContent(AppsUi(true, false, XdripState.Off, emptyList(), UploadStatus.Off), now, AppsActions()) },
+            "apps-off" to { AppsContent(AppsUi(true, XdripState.Off, emptyList(), UploadStatus.Off), now, AppsActions()) },
             "apps-on" to {
                 AppsContent(
                     AppsUi(
                         true,
-                        true,
                         XdripState.Listening(now - Duration.ofMinutes(2)),
-                        listOf(ServerReader("com.garmin.android.apps.connectmobile", "Garmin Connect")),
+                        listOf(gcm),
                         configured.status,
                         UploadStatus.Ok(now - Duration.ofMinutes(1), 1),
                         broadcastApps = 2,
                         broadcasts = BcStatus(now - Duration.ofMinutes(1), null),
                         healthConnect = HcStatus.Written(now - Duration.ofMinutes(1), 1),
+                        aura = sent,
                     ),
                     now,
                     AppsActions(),
                 )
             },
+            // one watch with the face, current
+            "garmin-sent" to { GarminContent(GarminUi(sent, XdripState.Off, listOf(gcm)), now, GarminActions()) },
+            // two watches: one away with an older reading, one without the face; the xDrip+ server on for other faces
+            "garmin-two-watches" to {
+                GarminContent(
+                    GarminUi(
+                        sent.copy(
+                            watches =
+                                listOf(
+                                    AuraWatch(
+                                        1,
+                                        "Descent Mk3i 43mm",
+                                        false,
+                                        true,
+                                        now - Duration.ofMinutes(25),
+                                        reading =
+                                            now - Duration.ofMinutes(25),
+                                    ),
+                                    AuraWatch(2, "Forerunner 265", true, false),
+                                ),
+                            fetched = null,
+                        ),
+                        XdripState.Listening(now - Duration.ofMinutes(4)),
+                        listOf(gcm),
+                    ),
+                    now,
+                    GarminActions(),
+                )
+            },
+            // Garmin Connect loses the messages: the face keeps up by asking every 5 minutes
+            "garmin-slow" to {
+                GarminContent(
+                    GarminUi(
+                        sent.copy(
+                            watches =
+                                listOf(
+                                    AuraWatch(
+                                        1,
+                                        "Descent Mk3i 43mm",
+                                        true,
+                                        true,
+                                        failed = now,
+                                        noAnswer = true,
+                                        reading =
+                                            now - Duration.ofMinutes(9),
+                                    ),
+                                ),
+                            fetched = now - Duration.ofMinutes(2),
+                            report =
+                                AuraReport(
+                                    now - Duration.ofMinutes(2),
+                                    emptyList(),
+                                    now - Duration.ofMinutes(2),
+                                    now - Duration.ofMinutes(3),
+                                ),
+                        ),
+                    ),
+                    now,
+                    GarminActions(),
+                )
+            },
+            "garmin-no-face" to {
+                GarminContent(
+                    GarminUi(
+                        AuraLinkState(
+                            garminConnect = true,
+                            answering = true,
+                            watches = listOf(AuraWatch(1, "Descent Mk3i 43mm", true, false)),
+                        ),
+                    ),
+                    now,
+                    GarminActions(),
+                )
+            },
+            "garmin-no-watch" to { GarminContent(GarminUi(AuraLinkState(garminConnect = true, answering = true)), now, GarminActions()) },
+            "garmin-not-answering" to {
+                GarminContent(GarminUi(AuraLinkState(garminConnect = true, answering = false)), now, GarminActions())
+            },
+            "garmin-no-gcm" to { GarminContent(GarminUi(AuraLinkState(garminConnect = false)), now, GarminActions()) },
+            "garmin-off" to { GarminContent(GarminUi(AuraLinkState(on = false, garminConnect = true)), now, GarminActions()) },
+            "xdrip-off" to { XdripContent(XdripUi(false, XdripState.Off), now, {}) },
+            "xdrip-on" to { XdripContent(XdripUi(true, XdripState.Listening(now - Duration.ofMinutes(2)), listOf(gcm, ciq)), now, {}) },
+            "xdrip-busy" to { XdripContent(XdripUi(true, XdripState.PortBusy, listOf(gcm)), now, {}) },
+            "xdrip-juggluco" to { XdripContent(XdripUi(true, XdripState.LeftToJuggluco, listOf(gcm)), now, {}) },
             "import-idle" to
                 {
                     ImportContent(
@@ -162,7 +278,7 @@ class IntegrationsGallery {
             },
             "import-follower" to { ImportContent(ImportUi(false, ImportState.Idle, false), ImportActions()) },
             "apps-busy-follower" to
-                { AppsContent(AppsUi(false, true, XdripState.PortBusy, emptyList(), UploadStatus.Off), now, AppsActions()) },
+                { AppsContent(AppsUi(false, XdripState.PortBusy, emptyList(), UploadStatus.Off), now, AppsActions()) },
             "nsapi-off" to { NightscoutApiContent(NsApiUi(false, NsApiState.Off), now, NsApiActions()) },
             "nsapi-on" to {
                 NightscoutApiContent(NsApiUi(true, NsApiState.Listening(now - Duration.ofMinutes(1))), now, NsApiActions())
@@ -384,7 +500,8 @@ class IntegrationsGallery {
                     Column(
                         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceContainer).verticalScroll(rememberScrollState()),
                     ) {
-                        current()
+                        // the page's text colour, as the app's settings scaffold gives it (dark titles stay legible)
+                        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) { current() }
                     }
                 }
             }
@@ -399,6 +516,9 @@ class IntegrationsGallery {
             if (!dark && fontScale == 1f && prefix.isEmpty()) {
                 compose.repeatedRowIcons().takeIf { it.isNotEmpty() }?.let { repeats += "$name repeats $it" }
             }
+            // app icons load off the main thread
+            Thread.sleep(150)
+            compose.waitForIdle()
             compose.onRoot().captureRoboImage("build/outputs/roborazzi/integrations-$prefix$name-$theme-$font.png")
         }
         assertTrue(repeats.joinToString("\n"), repeats.isEmpty())

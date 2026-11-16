@@ -132,17 +132,17 @@ class SetupModule(
     val updates: SetupUpdates? = null,
     /** The insulin pens step's port; null = a build without pens (no step). */
     val pens: SetupPens? = null,
-    /** Root and the LSPosed module (the root step, the status bar text); null = a build without root features. */
-    val systemAccess: SystemAccessPort? = null,
+    /** Root and the LSPosed module (the root step, the status bar text). */
+    val systemAccess: SystemAccessPort,
 ) {
-    /** Root as setup's facts see it ([SetupFacts.root]): null = a build without root features. */
-    val rootGranted: Flow<Boolean?> by lazy { systemAccess?.state?.map { it.granted }?.distinctUntilChanged() ?: flowOf(null) }
+    /** Root as setup's facts see it ([SetupFacts.root]): Sukrara has root. */
+    val rootGranted: Flow<Boolean> by lazy { systemAccess.state.map { it.granted }.distinctUntilChanged() }
 
     /** Root and the module now (the root step's card). */
-    val access: Flow<SystemAccessState> by lazy { systemAccess?.state ?: flowOf(SystemAccessState()) }
+    val access: Flow<SystemAccessState> get() = systemAccess.state
 
     /** THE glucose notification choice, as Settings › Glucose notification stores it. */
-    val notificationStyle: Flow<NotificationStyle> by lazy { NotificationStyleSettings.flow(settings, systemAccess != null) }
+    val notificationStyle: Flow<NotificationStyle> by lazy { NotificationStyleSettings.flow(settings) }
 
     suspend fun setNotificationStyle(style: NotificationStyle) = NotificationStyleSettings.set(settings, style)
 
@@ -247,7 +247,7 @@ private data class Answers(
     val checklist: app.mauri.sukrara.core.model.AlertReadiness,
     val updates: UpdateChoice?,
     val pens: Boolean?,
-    val root: Boolean?,
+    val root: Boolean,
 )
 
 /** The setup record and the facts it is read against, at one moment ([SetupModule.progress]). */

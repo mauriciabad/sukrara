@@ -15,7 +15,8 @@
     <uses-permission android:name="android.permission.health.WRITE_BLOOD_GLUCOSE" />
 
     <queries>
-        <!-- Share with apps: Garmin Connect / Connect IQ read the xDrip+ server for the watch ("read by …") -->
+        <!-- Sukrara Aura: Garmin Connect's Connect IQ service carries the face's readings (garmin/ConnectIq); Share with apps:
+             Garmin Connect / Connect IQ read the xDrip+ server for the watch ("read by …") -->
         <package android:name="com.garmin.android.apps.connectmobile" />
         <package android:name="com.garmin.connectiq" />
         <!-- Glucose broadcasts (broadcasts/Broadcaster): the apps that receive one of the formats are listed by name

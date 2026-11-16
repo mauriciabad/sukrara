@@ -815,7 +815,22 @@ Before showing a design to the owner, check it against:
 What design rounds teach that applies to any face: the reason or the usability fix, not the design. Add an entry per
 lesson: date, the face (by name only), what was learned, why, and the evidence (the owner's words, a test).
 
-*None yet.*
+- **2026-11-16 · Sukrara Aura · a line behind a number reads as a strike-through.** In Sukrara a struck value means
+  "old", so any background (lines, rings, lasers) must stop short of every text. A cut-out that follows the glyphs keeps
+  the background whole; boxes look like stickers. Evidence: rounds 2–3, the owner chose the outline.
+- **2026-11-16 · Sukrara Aura · coverage is the signal only if it fades.** A background that fills the screen evenly
+  says nothing; fading with distance from the level makes "how far it spreads" readable, but too steep a fade hides it.
+  Evidence: the owner: "now they fill the screen with color almost uniformly", then "now the isobars fade too fast,
+  just an inbetween".
+- **2026-11-16 · Sukrara Aura · motion belongs at the rim.** A seconds sweep across the dial competed with the value;
+  confined to the outer quarter, faint and optional, it was kept. Lines with visible ends read as objects; drawn edge
+  to edge they read as light (the owner: "infinitely long so the ends are no visible").
+- **2026-11-16 · Sukrara Aura · empty rows give their space back.** When a row (pill, reading time) is absent, the
+  rest re-centres and grows; fixed slots left the face looking broken. Evidence: round 3, the owner asked for it.
+- **2026-11-16 · Sukrara Aura · short words keep the numbers big.** Every word on the face competes with the time and
+  the value for width; "Take insulin" became "Insulin", "Sensor ended" became the flag + "Ended", and the battery's
+  days and percent go on one line where a stack would touch the value. Evidence: the owner, in round 2 and again for the spec
+  ("shorten the texts so we had more space").
 
 ## Open questions
 

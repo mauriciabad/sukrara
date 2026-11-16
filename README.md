@@ -13,13 +13,14 @@
 </p>
 
 Sukrara shows your continuous glucose monitor (CGM) readings live on your **Android phone**, at a glance: in the status
-bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It reads a **FreeStyle
-Libre 3** straight from the sensor, and [other sensors](#compatible-cgm-sensors) directly or through Juggluco. It
-alerts you when glucose goes low or high or stops arriving, with minimal alarm fatigue thanks to smart features and
-discreet sound packs, and lets you log insulin and carbs in seconds. The people who look after you see your glucose
-live on their Android phone or in their **Mac menu bar** (or your own), shared **end-to-end encrypted** over public
-Nostr relays or Bluetooth nearby. There's no cloud account to create and no server to host. It's compatible with the
-DIY diabetes ecosystem (xDrip+, Nightscout...), and its glucose charts are advanced, beautiful and easy to understand.
+bar, home screen widgets, lock screen and notifications, so you rarely need to open the app, and on your **Garmin
+watch** as the Sukrara Aura watch face. It reads a **FreeStyle Libre 3** straight from the sensor, and [other
+sensors](#compatible-cgm-sensors) directly or through Juggluco. It alerts you when glucose goes low or high or stops
+arriving, with minimal alarm fatigue thanks to smart features and discreet sound packs, and lets you log insulin and
+carbs in seconds. The people who look after you see your glucose live on their Android phone or in their **Mac menu
+bar** (or your own), shared **end-to-end encrypted** over public Nostr relays or Bluetooth nearby. There's no cloud
+account to create and no server to host. It's compatible with the DIY diabetes ecosystem (xDrip+, Nightscout...), and
+its glucose charts are advanced, beautiful and easy to understand.
 The name is Catalan-ish: *sucre* (sugar) + *ara* (now).
 
 > **Important disclaimer: a DIY project**
@@ -97,11 +98,17 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Home screen widget. You never need to open the app.
 - Lock screen widget with root. No need to unlock or touch the phone.
 - Persistent notification with the widget.
-- Any other device, like a Mac or a Garmin watch.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
+- **Sukrara Aura**, a watch face for Garmin watches (Descent Mk3i 43 mm for now): the time and your glucose with its
+  trend arrow or the last hour, a level rail, what Sukrara wants from you (carbs, insulin, muted) and your own fields
+  (weather, steps, last treatment, a second time zone…). Its dial is the aura of your glucose: it gathers at your level
+  and spreads the further out of range you are. Always-on and night looks; a private mode shows the value only while
+  you hold the screen. Each reading arrives through Garmin Connect within seconds, with nothing to set up, and an old
+  value never looks current. Settings › Share with apps › Garmin shows what each watch has. English and Spanish.
+- Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
-- [Planned]: Android Auto, Home Assistant, Garmin, Pebble...
+- [Planned]: Android Auto, Home Assistant, Pebble...
 
 ### Data analysis and reports
 
@@ -143,7 +150,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 
 ## Install
 
-Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releases). What Sukrara keeps and what it
+Downloads are on [GitHub releases](https://github.com/mauriciabad/sukrara/releases); Android also on
+[Google Play](https://play.google.com/store/apps/details?id=app.mauri.sukrara). What Sukrara keeps and what it
 sends where: the [privacy policy](https://sukrara.mauri.app/privacy).
 
 Android comes in two versions, the same app with the same key (installs over each other, keeping the data): the
@@ -154,8 +162,8 @@ version, outside any app store, and says so in a quiet notification (*Update*, *
 release's file and signed with Sukrara's key, and installs it, never while an alert is showing or a very low is on;
 monitoring comes back by itself right after. Android asks you once to allow installs from Sukrara; with *Install
 updates automatically* on (Settings › About › Updates, off by default) it updates without a tap where Android allows
-it ([docs/FEATURES.md › Updates](docs/FEATURES.md#updates-android-github-version)). The **Google Play version** (in
-preparation) is updated by Play and therefore has no updater of its own; that is the only difference. Settings' *About* row shows the version (or the update found); the page says which one is installed, that Sukrara isn't a medical device (setup's Welcome
+it ([docs/FEATURES.md › Updates](docs/FEATURES.md#updates-android-github-version)). The [**Google Play
+version**](https://play.google.com/store/apps/details?id=app.mauri.sukrara) is updated by Play and therefore has no updater of its own; that is the only difference. Settings' *About* row shows the version (or the update found); the page says which one is installed, that Sukrara isn't a medical device (setup's Welcome
 too), links the privacy policy and links to the website's
 [Versions](https://sukrara.mauri.app/android/#versions) ([docs/20-publishing.md › Flavors](docs/20-publishing.md#flavors)).
 
@@ -166,7 +174,7 @@ install; [docs/FEATURES.md › Updates](docs/FEATURES.md#updates-mac-github-vers
 preparation, TestFlight first), sandboxed and updated by the Mac App Store, so without an updater of its own. About Sukrara (app menu, right-click menu, Settings › General) says which one is installed, that Sukrara isn't a medical device,
 and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](docs/FEATURES.md#mac-app-store-version-mac)).
 
-- **Android** (Android 16+, arm64): download `Sukrara-<version>.apk` on the phone and open it; allow installs from
+- **Android** (Android 16+, arm64): from [Google Play](https://play.google.com/store/apps/details?id=app.mauri.sukrara), or download `Sukrara-<version>.apk` on the phone and open it; allow installs from
   your browser when asked. Updates install over the old version and keep your data. With
   [Obtainium](https://obtainium.imranr.dev/), add `https://github.com/mauriciabad/sukrara`.
 - **Mac** (Apple Silicon, macOS 15+): download `Sukrara-<version>.dmg` and drag **Sukrara** onto **Applications**.
@@ -174,6 +182,8 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
   updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
   works).
+- **Garmin** (Descent Mk3i 43 mm): Sukrara Aura is on its way to the Connect IQ store. It needs Sukrara for Android
+  and Garmin Connect on the phone.
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
   link handler. Such a build isn't a release and says so: About shows *Development build · 0.14.5 + 23 commits ·
@@ -185,6 +195,7 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
 apps/
   android/       Sukrara for Android (Kotlin, Compose; Gradle root)               → apps/android/README.md
   macos/         Sukrara for Mac (Swift 6, SwiftPM; menu bar app + widget)         → apps/macos/README.md
+  garmin/        Sukrara Aura, the Garmin watch face (Monkey C, Connect IQ)        → apps/garmin/README.md
 contracts/       what every app agrees on: alert rules + scenarios, card fixtures, settings schema, protocol,
                  treatments, export, sensor traces (every app's tests read it)      → contracts/README.md
 assets/brand/    app icons and brand art

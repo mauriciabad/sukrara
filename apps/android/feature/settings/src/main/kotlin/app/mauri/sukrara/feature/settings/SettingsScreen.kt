@@ -55,7 +55,6 @@ import app.mauri.sukrara.feature.settings.pens.PenPage
 import app.mauri.sukrara.feature.settings.pens.PenViewModel
 import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
-import app.mauri.sukrara.feature.settings.search.BuildFeature
 import app.mauri.sukrara.feature.settings.search.RecentSearch
 import app.mauri.sukrara.feature.settings.search.RecentSearches
 import app.mauri.sukrara.feature.settings.sensorend.SensorEndActions
@@ -275,11 +274,7 @@ private fun SettingsPages(
                     restoreUpdatesBanner = deps::restoreUpdatesBanner,
                     restoreClosedTips = deps::restoreClosedTips,
                     pens = deps.pensAvailable(),
-                    build =
-                        buildSet {
-                            if (deps.systemAccess != null) add(BuildFeature.Root)
-                            if (deps.updates != null) add(BuildFeature.UpdateCheck)
-                        },
+                    updater = deps.updates != null,
                     openProfile = openProfile,
                     openBackup = openBackup,
                     openExport = openExport,
@@ -553,9 +548,10 @@ private fun SettingsPages(
             val widget by vm.widget.collectAsStateWithLifecycle()
             // the person may come back from LSPosed (module enabled, System UI added): ask it again on resume
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.refresh() }
-            // the whole page at once: in a build with root features the widget's rows are there from the first frame
+            // the whole page at once: the widget's rows are there from the first frame
             val time = seconds
-            if (time != null && (deps.systemAccess == null || widget != null)) LockScreenContent(time, vm::set, onBack, widget, vm.actions)
+            val ui = widget
+            if (time != null && ui != null) LockScreenContent(time, vm::set, onBack, ui, vm.actions)
         }
 
         SettingsRoute.Reliability -> {
@@ -591,7 +587,6 @@ private fun SettingsPages(
             prefs?.let {
                 StatusBarContent(
                     it,
-                    vm.rootOffered,
                     android,
                     access,
                     busy,

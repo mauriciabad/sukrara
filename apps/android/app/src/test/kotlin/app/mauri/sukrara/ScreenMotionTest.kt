@@ -43,6 +43,8 @@ class ScreenMotionTest {
                 LibreViewRoute,
                 TidepoolRoute,
                 NightscoutApiRoute,
+                XdripRoute,
+                GarminRoute,
                 BroadcastsRoute,
                 HealthConnectRoute,
                 NewSensorKey,

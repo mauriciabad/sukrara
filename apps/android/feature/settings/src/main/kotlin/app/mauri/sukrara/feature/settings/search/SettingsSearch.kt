@@ -178,8 +178,8 @@ const val SEARCH_RESULTS_TAG = "settings-search-results"
  * Settings search, as stock Settings and the PoC have it: the search pill under the overview's title (Material 3
  * Expressive's contained SearchBar) opens the full-screen search (ExpandedFullScreenContainedSearchBar) with its back
  * arrow. Empty, it lists the [recent] searches (tap = search it again; *Clear* forgets them). Typing lists every row
- * this phone and build show ([pens], [wearer], [build]) that matches, as SPA rows: the icon of its section, the title,
- * the summary and where it is ("Alerts › Quiet times", in the accent colour). A result closes the search and
+ * this phone and build show ([pens], [wearer], [updater]) that matches, as SPA rows: the icon of its section, the
+ * title, the summary and where it is ("Alerts › Quiet times", in the accent colour). A result closes the search and
  * opens its page through the pages above it, as the menus do ([onOpen] gets that path, Back walks up it; another
  * feature's page: [onOpenOther]), scrolled to its row, which flashes ([SettingsHighlight]); a result that is a page
  * opens it at its top. Every search starts empty. Exits: the back arrow, Back, the ×, opening a result. [initialQuery]:
@@ -193,7 +193,7 @@ fun SettingsSearchBar(
     modifier: Modifier = Modifier,
     pens: Boolean = false,
     wearer: Boolean = true,
-    build: Set<BuildFeature> = BuildFeature.entries.toSet(),
+    updater: Boolean = true,
     recent: RecentSearch = RecentSearch(),
     initialQuery: String? = null,
     /** Other features' rows ([app.mauri.sukrara.feature.settings.SettingsDeps.moreSearch]). */
@@ -205,8 +205,8 @@ fun SettingsSearchBar(
     val state = rememberContainedSearchBarState(if (initialQuery != null) SearchBarValue.Expanded else SearchBarValue.Collapsed)
     val text = rememberTextFieldState(initialQuery.orEmpty())
     val items =
-        remember(res, pens, wearer, build, more) {
-            (SettingsIndex.entries + more).filter { it.shownOn(pens, wearer, build) }.map { it.item(res) }
+        remember(res, pens, wearer, updater, more) {
+            (SettingsIndex.entries + more).filter { it.shownOn(pens, wearer, updater) }.map { it.item(res) }
         }
     val expanded = state.currentValue == SearchBarValue.Expanded || state.targetValue == SearchBarValue.Expanded
 

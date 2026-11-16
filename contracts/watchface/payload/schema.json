@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sukrara.mauri.app/contracts/watchface/payload/schema.json",
+  "title": "Sukrara Aura payload, version 1",
+  "description": "What the phone sends the Garmin face (README.md). Times are absolute epoch seconds.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["v", "sent", "unit", "bands", "g", "hist", "st", "last", "sensor", "tir"],
+  "$defs": {
+    "time": {"type": "integer", "minimum": 0, "maximum": 2147483647},
+    "until": {"type": "integer", "minimum": -1, "maximum": 2147483647, "description": "-1 = no end"},
+    "mgdl": {"type": "integer", "minimum": 39, "maximum": 401, "description": "39 = LO, 401 = HI"},
+    "side": {"enum": ["low", "high"]}
+  },
+  "properties": {
+    "v": {"const": 1},
+    "sent": {"$ref": "#/$defs/time"},
+    "unit": {"enum": ["mgdl", "mmol"]},
+    "bands": {"type": "array", "items": {"type": "integer"}, "minItems": 6, "maxItems": 6},
+    "g": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["t", "v", "rate", "band", "deg"],
+          "properties": {
+            "t": {"$ref": "#/$defs/time"},
+            "v": {"$ref": "#/$defs/mgdl"},
+            "rate": {"type": ["number", "null"]},
+            "band": {"oneOf": [{"type": "null"}, {"type": "integer", "minimum": -3, "maximum": 3}]},
+            "deg": {"oneOf": [{"type": "null"}, {"type": "number", "minimum": -90, "maximum": 90}]}
+          }
+        }
+      ]
+    },
+    "hist": {
+      "type": "array",
+      "description": "empty without g, else 12 slots oldest first",
+      "oneOf": [{"maxItems": 0}, {"minItems": 12, "maxItems": 12}],
+      "items": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/mgdl"}]}
+    },
+    "st": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "additionalProperties": false, "required": ["k", "side"], "properties": {"k": {"const": "needed"}, "side": {"$ref": "#/$defs/side"}}},
+        {"type": "object", "additionalProperties": false, "required": ["k", "side", "until"], "properties": {"k": {"enum": ["taken", "paused"]}, "side": {"$ref": "#/$defs/side"}, "until": {"$ref": "#/$defs/until"}}},
+        {"type": "object", "additionalProperties": false, "required": ["k", "until"], "properties": {"k": {"const": "muted"}, "until": {"$ref": "#/$defs/until"}}}
+      ]
+    },
+    "last": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["t", "items"],
+          "properties": {
+            "t": {"$ref": "#/$defs/time"},
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "object", "additionalProperties": false, "required": ["k", "a"], "properties": {"k": {"enum": ["rapid", "long", "carbs"]}, "a": {"type": "number", "minimum": 0}}}
+            }
+          }
+        }
+      ]
+    },
+    "sensor": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"enum": ["none", "ended"]}}},
+        {"type": "object", "additionalProperties": false, "required": ["s", "start", "ready", "hold"], "properties": {"s": {"const": "warmup"}, "start": {"$ref": "#/$defs/time"}, "ready": {"$ref": "#/$defs/time"}, "hold": {"$ref": "#/$defs/time"}}},
+        {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"const": "active"}, "end": {"$ref": "#/$defs/time"}, "warn": {"$ref": "#/$defs/time"}}}
+      ]
+    },
+    "tir": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "additionalProperties": false, "required": ["pct", "until"], "properties": {"pct": {"type": "integer", "minimum": 0, "maximum": 100}, "until": {"$ref": "#/$defs/time"}}}
+      ]
+    }
+  }
+}

@@ -188,12 +188,63 @@ again: it skips what's already there):
    another is in review, this release stays on TestFlight (the summary says so) and a later release submits the
    newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/release-AuthKey_<id>.p8`; the
    *Developer* notary key is `notary-AuthKey_<id>.p8`, notarization reads it from the keychain profile).
-10. `summary`: every channel's state (`--from summary` alone shows it any time).
+10. `garmin`: the Garmin face, once it is released (`tools/release/garmin-key.sha256` committed: the switch). The
+    gate built its store package and sideload builds with `garmin-release.sh` (signed with the store key after
+    checking it is the pinned one; `apps/garmin/build.sh`'s release and export builds, debug code compiled out) and
+    `github` put them on the release. The Connect IQ store has no upload API, so this step prints the file, the
+    version and the What's New text to upload at https://apps-developer.garmin.com/developer/dashboard; Garmin
+    reviews it before the store shows it ([docs/20](20-publishing.md#garmin)). The `version` step sets the manifest's
+    version to the release's either way.
+11. `summary`: every channel's state (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
 nothing, and exits 1 with the list when a check would stop the release. Read-only store checks: `python3
 tools/release/stores.py play-tracks` (opens an edit, lists the tracks, deletes the edit) and `asc-builds`.
 Every release goes to both stores' review: Play production and the App Store. Tests: `python3 tools/release/test_release.py` (CI).
+
+## Garmin face on CI
+
+Checks' `garmin` job (when `apps/garmin`, `contracts/`, `assets/`, `docs/img/aura/ref`, `tools/watchface` or its
+setup change) checks the face's words (`garmin_test.py words`, no SDK needed) and builds it on Linux (`ubuntu:22.04`:
+the SDK's simulator needs WebKitGTK 4.0) with `apps/garmin/build.sh`. The simulator runs there headless under Xvfb
+(`xvfb-run`; tried 2026-11-16 in that image: unit tests `PASSED`, the face drawn), and with no window manager its
+screen sits at `simulator.json`'s display location plus the 26 px menu bar (`import -window root -crop
+390x390+131+237` for the `descentmk343mm`); the tests and picture diffs join the job once `garmin_test.py run` starts
+the simulator and captures it there too (today `open -a` and Quartz, macOS only). `tools/ci/garmin-sdk.sh` gets what it needs, pinned in `tools/ci/garmin.lock`: the Connect IQ
+SDK (public download, sha256 checked) and the manifest's device files with their simulator fonts, which need a Garmin
+sign-in. It signs in only when the Actions cache lacks a device (a new device, or the cache unused for 7 days), with
+the headless SDK Manager [`connect-iq-sdk-manager-cli`](https://github.com/lindell/connect-iq-sdk-manager-cli)
+(version and sha256 pinned), deletes the token right after, and caches `Sdks/`, `Devices/` and `Fonts/` (never the
+token) before any of the project's code runs. Builds are signed with a key made for the run. Without the files and a
+credential (until the owner adds it, forks, pull requests from outside) the job says so in a notice and skips its
+steps: `gate` passes. `tools/ci/test_garmin_sdk.sh` (the rules job) proves that path offline.
+
+**The credential is a Garmin account made for CI only**, never the owner's own (that one holds the watch, health and
+dive data and the store's developer identity, and has two-step verification, which a scripted sign-in can't answer).
+The owner, once:
+
+1. Create a Garmin account at https://connect.garmin.com (Create one) with an address only for this (e.g. a
+   `+garmin-ci` alias), a new password from the password manager (item *Sukrara Garmin CI*), no watch paired, no
+   two-step verification. Confirm the e-mail.
+2. Add two repository secrets (GitHub › the repo › Settings › Secrets and variables › Actions › New repository secret,
+   or `gh secret set GARMIN_CI_USERNAME -R mauriciabad/sukrara`, which asks for the value): `GARMIN_CI_USERNAME`
+   (the e-mail) and `GARMIN_CI_PASSWORD`.
+3. Start a run: `gh workflow run checks.yml --ref next -f full=true`. The `garmin` job signs in once ("device files:
+   descentmk343mm (signing in as the CI account)"), keeps the files and builds.
+
+If that sign-in fails because Garmin refuses scripted sign-ins (it did for Garmin Connect tools in 2026, see
+[docs/20](20-publishing.md#garmin)), use a token from a browser sign-in of the same account instead:
+`brew install lindell/connect-iq-sdk-manager-cli/connect-iq-sdk-manager`, then `connect-iq-sdk-manager agreement
+accept` and `connect-iq-sdk-manager login` (the browser opens; sign in as the CI account), then
+`base64 -i ~/.Garmin/ConnectIQ/token.json | gh secret set GARMIN_CI_TOKEN -R mauriciabad/sukrara` and
+`rm ~/.Garmin/ConnectIQ/token.json`. The token wins over the password; when the job says it expired (Garmin doesn't
+say after how long), do it again.
+
+Rotate: a new password at Garmin (account › security), then `gh secret set GARMIN_CI_PASSWORD`. Revoke: `gh secret
+delete GARMIN_CI_USERNAME` / `GARMIN_CI_PASSWORD` / `GARMIN_CI_TOKEN`, then delete the Garmin account (Garmin account
+› data management). Either way the cached files keep the job working until a device is missing. When Garmin changes
+the SDK agreement the download stops with a message: read it (`connect-iq-sdk-manager agreement view`) and put its
+hash in `tools/ci/garmin.lock`, with the SDK's new version and sha256 when the SDK moves.
 
 ## Strings (Android, English + Spain Spanish)
 
@@ -216,8 +267,8 @@ Debug commands that replace the sensor or make up data live only in `src/debug` 
 `verify-app.sh`). Test with synthetic data on the emulator, never the owner's devices or real relays.
 
 The Android commands are `DebugFakes`' actions, `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
-app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS` and `UPDATES` (their
-extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens"; docs/QA.md "Emulator"). The Mac's:
+app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS`, `UPDATES` and `GARMIN_SIM` (their
+extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens", "Sukrara Aura"; docs/QA.md "Emulator", Q27). The Mac's:
 `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` (a debug dev run's
 QR scanner reads the made-up `SyntheticCamera` feed, never the Mac's camera). The `debug-docs` check fails when
 docs/FEATURES.md, docs/QA.md or this file name a command or extra the code doesn't have: add the command to the code
@@ -255,6 +306,118 @@ adb -s emulator-5584 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceive
 
 `--es server off` goes back to GitHub; `--es cert <sha256>` trusts another certificate. Android 17 treats 10.0.2.2 as
 the local network, hence the grant.
+
+## Garmin (Sukrara Aura)
+
+The watch face is `apps/garmin` (Monkey C, Connect IQ; how the code is laid out and the data seam:
+[apps/garmin/README.md](../apps/garmin/README.md); the design: `contracts/watchface/aura/SPEC.md`).
+
+**Setup.** `brew install --cask connectiq-sdk-manager`; in the SDK Manager sign in with a Garmin account, install the
+newest SDK (9.3.0 when written) and the *Descent Mk3 43mm / Mk3i 43mm* device (`descentmk343mm`): everything lands in
+`~/Library/Application Support/Garmin/ConnectIQ/` (`current-sdk.cfg` names the SDK). The compiler needs a JDK 17+
+(`brew install openjdk@17`; `build.sh` finds it). `brew install libmtp` for the watch on USB. Screenshots of the
+simulator need Screen Recording permission for the terminal app.
+
+**The developer key** signs every build: `~/.connectiq/sukrara-developer-key.der` (4096-bit RSA, PKCS#8 DER; the `.pem`
+beside it), outside the repo like the Android release key. Made once with `openssl genrsa -out k.pem 4096 && openssl
+pkcs8 -topk8 -inform PEM -outform DER -in k.pem -out k.der -nocrypt`. Keep it (back it up): the watch only updates a
+face signed with the same key, and the store app is tied to it. `CIQ_KEY` points `build.sh` elsewhere.
+
+| What | Command |
+|---|---|
+| Release `.prg` (no debug code) | `apps/garmin/build.sh` → `apps/garmin/bin/SukraraAura.prg` (`debug`, `cases` for the others) |
+| Store packages (`.iq`, signed with the store key, verified) | `tools/release/garmin-release.sh <version>` (public) or `--beta` (the beta app id) → `apps/garmin/bin/dist/`; uploading: [docs/20 › Connect IQ store](20-publishing.md#connect-iq-store-the-owners-steps-beta-first-then-public) |
+| The face's words against `words.json` | `python3 apps/garmin/tools/garmin_test.py words` |
+| Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]` |
+| References without the dial, halo, sweep | `node apps/garmin/tools/core_refs.mjs <dir>` (Chrome, like `tools/watchface/build.mjs`) |
+| Fonts and icons | `uv run apps/garmin/tools/fonts.py` (`--check`) |
+| One screenshot of the simulator | `uv run apps/garmin/tools/simshot.py out.png` |
+| Onto the owner's watch | `tools/install.sh watch` (then the owner picks the face) |
+
+**Simulator.** `"$SDK/bin/connectiq"` opens it, `"$SDK/bin/monkeydo" <prg> descentmk343mm` runs a build in it (the
+simulator must be running). It is one app for every session: don't quit one you didn't start; agents take turns.
+The debug case loader (`build.sh cases`, `manifest-cases.xml` with its own app id) shows a calibration frame, then
+every case of `cases.json` for 6 s each at the reference's clock, printing each case's layout; `garmin_test.py run`
+reads the prints (numbers against `expect.json`: positions ±0.5 px, angles ±0.1°, opacities ±0.01, strings and
+colours exact) and screenshots each case (`simshot.py`: `screencapture` of the simulator's window, cropped where the
+calibration marks are) to diff with `docs/img/aura/ref/` (`compare -fuzz 15%` equivalent; diff images in `<dir>/diff`
+and, against the dial-less references, `<dir>/diff-core`). The loader is debug only: `source-cases/` (every symbol
+`(:debug)`) is built by `cases.jungle` alone; the `debug` check fails if the face's `source/` names it or
+`monkey.jungle` builds it, and `verify_prg.sh` refuses a `.prg` that carries it.
+The loader is a *watch-app* (its frames from a 1 s timer): the face and the layout dump together don't fit a face's
+128 KB, the face alone does (its memory is in the run's "cost" lines). It also shows always-on variants of the
+brightest states (`aod-*`, `tools/cases.py`), measured against Garmin's 10 % luminance rule. `AURA_CASES=id,id…`
+runs only those cases. monkeydo sometimes loses the simulator mid-run (it exits 0 while the app goes on; a new
+monkeydo can't reach that simulator): the run then quits the simulator and goes on with the cases left.
+A filled anti-aliased circle under 1 px drawn into a `BufferedBitmap` crashes the simulated firmware (the blue
+triangle): the dial draws such dots as single pixels.
+
+**On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to
+`GARMIN/Apps/SUKAURA.PRG` (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only that file is written; an older copy of it is
+replaced; close Garmin Express / OpenMTP first). The watch installs it when unplugged; select it on the watch (hold
+MENU › Watch face). A sideloaded face has no settings page in the Connect IQ phone app (that needs the store package):
+use the watch's Customize menu.
+
+**CI**: [Garmin face on CI](#garmin-face-on-ci) (the SDK, a CI account's device files, a key made for the run).
+`fonts.py --check`, `gen.py --check` (settings) and `garmin_test.py words` need only Python; `garmin_test.py run`
+runs there under Xvfb (`xvfb-run`, Pillow 9+, ImageMagick's `import` for the screen).
+
+**Platform decisions** (research with sources in the round's notes; the Garmin facts in
+[docs/evidence/42-watch-faces/garmin.md](evidence/42-watch-faces/garmin.md)):
+- *Fonts*: Atkinson Hyperlegible Next rendered by FreeType (unhinted, like the reference's browser) into one atlas per
+  size of SPEC §2 (white glyphs, 8-bit alpha PNG bitmaps, `packingFormat="png"`), every glyph drawn by the face with
+  `Dc.drawBitmap2` (`:bitmapX…`, `:tintColor`) at its pen position. Not Connect IQ font resources: `antialias="true"`
+  is the only anti-aliasing they offer and it keeps about 8 grey levels on the edges (measured on the simulator's time),
+  where a tinted PNG keeps all 256 ([Resources › Fonts](https://developer.garmin.com/connect-iq/core-topics/resources/)).
+  Bitmaps load into the graphics pool (3 MB on this watch), not the 128 KB heap
+  ([Graphics](https://developer.garmin.com/connect-iq/core-topics/graphics/)). The always-on time is a stroked
+  variant (FreeType's stroker), not drawn twice; the halo has grown variants of the time and value (`t*h`, `v*h`).
+- *Dials and alpha*: API 4's ARGB colours (`Graphics.createColor`, `setFill` / `setStroke`) and anti-aliasing work on
+  this AMOLED (`alphaBlendingSupport` in the device's `compiler.json`), but Connect IQ has no gradients and blending is
+  per primitive. So the dial is painted once into a 390 × 390 `BufferedBitmap` (graphics pool) and copied on every
+  frame; it is painted again only when its inputs change (a new reading, the mode, a setting). In that cache each
+  mark is drawn opaque in its colour pre-multiplied by its opacity over black (the cache holds only the dial and no two
+  marks overlap), and each gradient becomes one opacity per mark: a contour ring the fade at its radius, a wave at its
+  depth, a laser per 10 px piece, the glow 3 px rings (SPEC §13). The halo is drawn in black over the copy (the grown
+  glyphs, the arrow's polygons grown 6.5 px, boxes and arc bands for the small texts), then the sweep (ARGB arcs: 6° ×
+  10 px pieces of the tail, the leading line through the radial ramp), then the content.
+- *Motion*: watch faces may run a `Timer` only in high power, the ~10 s after a wrist raise
+  ([Watch faces](https://developer.garmin.com/connect-iq/user-experience-guidelines/watch-faces/)): the glide on a new
+  reading runs at 25 fps for 0.9 s then; a reading in low power is drawn in place. The sweep steps at the face's 1 Hz
+  (a smooth sweep would redraw the screen 10–25 times a second for the whole wrist raise). Connect IQ exposes no
+  reduced-motion setting (`DeviceSettings` has none), so the glide can't follow one.
+- *Always-on luminance*: Garmin's rule since the Venu 2 is under 10 % of the screen's luminance
+  ([AMOLED FAQ](https://developer.garmin.com/connect-iq/connect-iq-faq/how-do-i-make-a-watch-face-for-amoled-products/));
+  `garmin_test.py run` measures every always-on screenshot (the `aod-*` variants `cases.py` adds: very low, LO, a
+  filled pill…) and fails at 10 %.
+- *Text along the arcs*: `drawRadialText` takes only system vector fonts, so each glyph of the arc fonts is a
+  sub-rectangle of its atlas drawn with `Dc.drawBitmap2` (API 4.2.1: `:bitmapX…`, `:tintColor`, `:transform`) at its
+  angle; tinting needs `packingFormat="png"` ([Dc](https://developer.garmin.com/connect-iq/api-docs/Toybox/Graphics/Dc.html),
+  [tint exception](https://forums.garmin.com/developer/connect-iq/f/discussion/359101/how-to-resolve-exception-source-must-not-use-a-color-palette)).
+  The icons are one tinted, rotated atlas the same way.
+- *Settings*: properties + `settings.xml` (generated from the schema) for the Connect IQ app, and `getSettingsView()`
+  (Menu2) on the watch, which sideloaded faces need
+  ([Properties](https://developer.garmin.com/connect-iq/core-topics/properties-and-app-settings/),
+  [sideloaded settings](https://forums.garmin.com/developer/connect-iq/f/discussion/429848/solved-settings-connect-iq-app-for-sideloaded-app---is-this-possible)).
+- *Touch and hold*: `WatchFaceDelegate.onPress` (4.2.0, the Descent Mk3 has hold but no tap on faces); it returns false
+  unless Private is on, so the watch's own hold still works
+  ([WatchFaceDelegate](https://developer.garmin.com/connect-iq/api-docs/Toybox/WatchUi/WatchFaceDelegate.html)).
+- *Always-on*: `System.getDisplayMode()` / `onDisplayModeChanged` (5.0) with `onEnterSleep` as the fallback; the whole
+  face shifts ±2 px a minute ([System](https://developer.garmin.com/connect-iq/api-docs/Toybox/System.html)).
+- *Night*: the sleep window from `UserProfile.getProfile().sleepTime / wakeTime`, wrapping past midnight
+  ([Profile](https://developer.garmin.com/connect-iq/api-docs/Toybox/UserProfile/Profile.html)).
+- *Battery*: `Stats.batteryInDays` (3.3.0), percent / 10 when it reads 0
+  ([Stats](https://developer.garmin.com/connect-iq/api-docs/Toybox/System/Stats.html)).
+- *Fields*: weather `Weather.getCurrentConditions()` (°F with the watch's statute units), sunset `Weather.getSunset`
+  at the weather's place, heart rate `Activity.Info` then `ActivityMonitor.getHeartRateHistory`, Body Battery
+  `SensorHistory.getBodyBatteryHistory`, altitude `Activity.Info.altitude`, steps / floors `ActivityMonitor.Info`,
+  notifications `DeviceSettings.notificationCount`; unknown → `--`.
+- *Second time zone*: the watch's own alternate zones aren't open to Connect IQ, so a city list (the setting) and
+  `Gregorian.localMoment(location, now)` (3.3.0), which applies the place's zone and daylight saving
+  ([Gregorian](https://developer.garmin.com/connect-iq/api-docs/Toybox/Time/Gregorian.html),
+  [forum](https://forums.garmin.com/developer/connect-iq/f/discussion/260362/how-can-i-get-the-user-s-configured-alternate-timezone-s-from-the-sdk)).
+- *Screenshots*: the SDK has no command for them; `screencapture -l` of the window, as
+  [garmin-simulator-crossplatform-mcp](https://github.com/wroblisko/garmin-simulator-crossplatform-mcp) does.
 
 ## Orchestration that worked
 

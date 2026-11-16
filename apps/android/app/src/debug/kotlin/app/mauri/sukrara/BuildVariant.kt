@@ -7,7 +7,9 @@ import android.content.Context
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.debug.DebugFakes
 import app.mauri.sukrara.debug.DebugRelays
+import app.mauri.sukrara.debug.SimulatorConnectIq
 import app.mauri.sukrara.debug.SyntheticSource
+import app.mauri.sukrara.integrations.garmin.ConnectIqPort
 import kotlinx.coroutines.withContext
 
 /**
@@ -24,6 +26,12 @@ internal object BuildVariant {
      * the release key, as in a release build.
      */
     fun updateServer(context: Context): Pair<String, String>? = DebugFakes.updateServer(context)
+
+    /** The `GARMIN_SIM` command's Connect IQ simulator instead of Garmin Connect, or null (release: always null). */
+    fun connectIq(
+        context: Context,
+        log: (String) -> Unit,
+    ): ConnectIqPort? = if (SimulatorConnectIq.isOn(context)) SimulatorConnectIq(log) else null
 
     /** Whether [wearerSource] gives a source, without building it (the starter's cheap check). */
     suspend fun hasWearerSource(graph: AppGraph): Boolean = withContext(graph.dispatchers.io) { SyntheticSource.isOn(graph.app) }

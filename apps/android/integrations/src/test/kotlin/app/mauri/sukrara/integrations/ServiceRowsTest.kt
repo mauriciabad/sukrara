@@ -33,7 +33,10 @@ import app.mauri.sukrara.integrations.history.ImportActions
 import app.mauri.sukrara.integrations.history.ImportContent
 import app.mauri.sukrara.integrations.history.ImportState
 import app.mauri.sukrara.integrations.history.ImportUi
+import app.mauri.sukrara.integrations.localserver.ServerReader
+import app.mauri.sukrara.integrations.localserver.XdripContent
 import app.mauri.sukrara.integrations.localserver.XdripState
+import app.mauri.sukrara.integrations.localserver.XdripUi
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertTrue
@@ -97,7 +100,6 @@ class ServiceRowsTest {
             AppsContent(
                 AppsUi(
                     wearer = true,
-                    xdripOn = true,
                     xdrip = XdripState.Listening(null),
                     readers = listOf(ServerReader("com.garmin.android.apps.connectmobile", "Garmin Connect")),
                     nightscout = UploadStatus.Off,
@@ -110,7 +112,7 @@ class ServiceRowsTest {
         assertRowIcon("Tidepool", serviceIconTag(Service.Tidepool))
         assertRowIcon("Nightscout upload", serviceIconTag(Service.Nightscout))
         assertRowIcon("xDrip+ server", serviceIconTag(Service.Xdrip))
-        assertRowIcon("Garmin Connect", packageIconTag("com.garmin.android.apps.connectmobile"))
+        assertRowIcon("Garmin", packageIconTag("com.garmin.android.apps.connectmobile"))
         assertRowIcon("Health Connect", serviceIconTag(Service.HealthConnect))
         assertRowIcon("Nightscout API on this phone", serviceIconTag(Service.Nightscout))
         assertRowSymbol("Send glucose to apps")
@@ -124,7 +126,6 @@ class ServiceRowsTest {
             DataFileRowsContent(
                 AppsUi(
                     wearer = true,
-                    xdripOn = false,
                     xdrip = XdripState.Off,
                     readers = emptyList(),
                     nightscout = UploadStatus.Off,
@@ -177,6 +178,19 @@ class ServiceRowsTest {
             )
         }
         assertRowIcon("Remove AAPS", packageIconTag("app.aaps"))
+    }
+
+    /** The xDrip+ server page lists the apps that read it by their own icons (a list, not switches). */
+    @Test
+    fun xdripReadersShowTheirIcons() {
+        show {
+            XdripContent(
+                XdripUi(true, XdripState.Listening(null), listOf(ServerReader("com.garmin.android.apps.connectmobile", "Garmin Connect"))),
+                now,
+                {},
+            )
+        }
+        assertRowIcon("Garmin Connect", packageIconTag("com.garmin.android.apps.connectmobile"))
     }
 
     @Test

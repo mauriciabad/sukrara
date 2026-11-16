@@ -35,6 +35,7 @@ jobs:
       android: ${{ steps.plan.outputs.android }}
       mac: ${{ steps.plan.outputs.mac }}
       website: ${{ steps.plan.outputs.website }}
+      garmin: ${{ steps.plan.outputs.garmin }}
       range: ${{ steps.plan.outputs.range }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,6 +68,8 @@ jobs:
         run: tools/check/run.sh --selftest
       - name: Which jobs a run needs (tools/ci/changes.py)
         run: python3 tools/ci/test_changes.py
+      - name: The Garmin job's SDK setup without credentials (skips cleanly, offline)
+        run: tools/ci/test_garmin_sdk.sh
       - name: Generated settings code is up to date
         run: python3 tools/settings/gen.py --check
       - name: The local test relay's tests (loopback only)
@@ -238,6 +241,94 @@ jobs:
           npm run build
           npm run check
 
+  # The Garmin face (apps/garmin; docs/DEVELOPMENT.md › Garmin face on CI). The SDK is public; the device files need a
+  # Garmin sign-in: tools/ci/garmin-sdk.sh signs in as the dedicated CI account (secrets GARMIN_CI_USERNAME +
+  # GARMIN_CI_PASSWORD, or GARMIN_CI_TOKEN) only when the cache lacks a device, and deletes the token before any of the
+  # project's code runs. Without the files and a credential (before the owner adds them, forks, outside pull requests)
+  # it writes ready=false with a notice: every later step is skipped and the job passes, so `gate` never fails for it.
+  # Builds are signed with a key made for the run; the store key never comes here (release.py, on the release Mac).
+  garmin:
+    needs: changes
+    if: needs.changes.outputs.garmin == 'true'
+    runs-on: ubuntu-latest
+    # The SDK's Linux simulator links WebKitGTK 4.0, which Ubuntu ships up to 22.04: that image, on the current runner.
+    container: ubuntu:22.04
+    timeout-minutes: 30
+    steps:
+      - name: What the SDK, its simulator and the picture diffs need
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends ca-certificates curl unzip zstd git openssl python3 \
+            openjdk-17-jre-headless libwebkit2gtk-4.0-37 libusb-1.0-0 libsm6 xvfb xauth imagemagick >/dev/null
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # No SDK needed: runs with or without the CI account
+      - name: The face's words are words.json's
+        if: hashFiles('apps/garmin/tools/garmin_test.py') != ''
+        run: python3 apps/garmin/tools/garmin_test.py words
+      - name: The devices the face needs
+        id: plan
+        run: tools/ci/garmin-sdk.sh plan
+      - name: The SDK from the cache
+        id: sdk-cache
+        if: steps.plan.outputs.project == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.Garmin/ConnectIQ/Sdks
+          key: garmin-sdk-${{ steps.plan.outputs.sdk }}
+      - name: The device files from the cache
+        id: devices-cache
+        if: steps.plan.outputs.project == 'true'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.Garmin/ConnectIQ/Devices
+            ~/.Garmin/ConnectIQ/Fonts
+          key: garmin-devices-${{ steps.plan.outputs.devices-key }}
+      - name: The SDK and the device files (signs in as the CI account only for missing devices)
+        id: sdk
+        env:
+          GARMIN_CI_USERNAME: ${{ secrets.GARMIN_CI_USERNAME }}
+          GARMIN_CI_PASSWORD: ${{ secrets.GARMIN_CI_PASSWORD }}
+          GARMIN_CI_TOKEN: ${{ secrets.GARMIN_CI_TOKEN }}
+        run: tools/ci/garmin-sdk.sh setup
+      # Saved before any build or test: a red test never costs another sign-in. The token isn't in these folders.
+      - name: Keep the SDK
+        if: steps.sdk.outputs.ready == 'true' && steps.sdk-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.Garmin/ConnectIQ/Sdks
+          key: garmin-sdk-${{ steps.plan.outputs.sdk }}
+      - name: Keep the device files
+        if: steps.sdk.outputs.downloaded == 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.Garmin/ConnectIQ/Devices
+            ~/.Garmin/ConnectIQ/Fonts
+          key: garmin-devices-${{ steps.plan.outputs.devices-key }}
+      - name: Release build (debug code compiled out)
+        if: steps.sdk.outputs.ready == 'true'
+        run: apps/garmin/build.sh release
+      # SPEC.md §10: the debug case loader in the simulator (Xvfb): every case's numbers against expect.json (fails the
+      # job), the battery label against every row, a screenshot of every case diffed with docs/img/aura/ref (kept as
+      # the artifact; the dials, halo and sweep differ until they are built)
+      - name: The face's tests in the simulator (numbers and pictures of every case)
+        if: steps.sdk.outputs.ready == 'true'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get install -y -qq --no-install-recommends python3-pil >/dev/null
+          xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
+      - name: The face's screenshots and diff images
+        if: always() && steps.sdk.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: garmin-test
+          path: ${{ runner.temp }}/garmin-test
+          if-no-files-found: ignore
+
   # No PoC build jobs: poc/ is frozen (never edited; untouched since the monorepo began), so jobs that ran only when
   # poc/ changed never ran. Its Python reference still runs in `rules` (sync_crosscheck.py).
 
@@ -245,7 +336,7 @@ jobs:
     # The only required check. Passes only when every job either succeeded, or was skipped because `changes` said
     # it wasn't needed; a failed, cancelled or unexpectedly skipped job fails it.
     if: always()
-    needs: [changes, rules, android, android-lint, android-release, android-play, mac, website]
+    needs: [changes, rules, android, android-lint, android-release, android-play, mac, website, garmin]
     runs-on: ubuntu-latest
     steps:
       - name: Every job that should have run passed
@@ -259,7 +350,8 @@ jobs:
           android = out.get("android") == "true"
           wanted = {"changes": True, "rules": out.get("rules") == "true", "android": android,
                     "android-lint": android, "android-release": android, "android-play": android,
-                    "mac": out.get("mac") == "true", "website": out.get("website") == "true"}
+                    "mac": out.get("mac") == "true", "website": out.get("website") == "true",
+                    "garmin": out.get("garmin") == "true"}
           bad = []
           for job, should in wanted.items():
               r = needs.get(job, {}).get("result")

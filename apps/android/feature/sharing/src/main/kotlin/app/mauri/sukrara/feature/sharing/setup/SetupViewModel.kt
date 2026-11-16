@@ -125,8 +125,6 @@ data class RootUi(
     val problem: AccessProblem? = null,
     /** The glucose notification choice now. */
     val style: NotificationStyle = NotificationStyle.Chip,
-    /** This build offers the status bar text (root features). */
-    val offered: Boolean = false,
 )
 
 /**
@@ -179,7 +177,7 @@ class SetupViewModel(
             combine(runner.busy, runner.problem, ::Pair),
             m.notificationStyle,
         ) { access, said, (busy, problem), style ->
-            RootUi(access, said || access.rootSeen, busy, problem, style, m.systemAccess != null)
+            RootUi(access, said || access.rootSeen, busy, problem, style)
         }
 
     private val inputs =
@@ -587,7 +585,7 @@ class SetupViewModel(
     fun checkRoot() {
         saidRooted.value = true
         runner.run {
-            m.systemAccess?.checkRoot()
+            m.systemAccess.checkRoot()
             null
         }
     }
@@ -595,9 +593,9 @@ class SetupViewModel(
     /** *No* (final), or *Continue* once Sukrara has root. */
     fun completeRoot() = record(SetupMachine::completeRoot)
 
-    fun requestScope() = runner.run { m.systemAccess?.requestScope() }
+    fun requestScope() = runner.run { m.systemAccess.requestScope() }
 
-    fun restartSystemUi() = runner.run { m.systemAccess?.restartSystemUi() }
+    fun restartSystemUi() = runner.run { m.systemAccess.restartSystemUi() }
 
     /** A choice on the glucose notification step, stored at once (as on the settings page). */
     fun chooseNotification(style: NotificationStyle) {
@@ -715,7 +713,7 @@ class SetupViewModel(
         val confirmed: Boolean,
         val updates: UpdateChoice?,
         val pens: Boolean?,
-        val root: Boolean?,
+        val root: Boolean,
     )
 
     private data class Others(

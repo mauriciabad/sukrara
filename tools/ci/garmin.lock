@@ -1,0 +1,17 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
+# What CI downloads for the Garmin face (tools/ci/garmin-sdk.sh), pinned: a change here is a reviewed change.
+# - The Connect IQ SDK for Linux: public, from Garmin's own list
+#   https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json (no sign-in). Same version as the Mac's SDK Manager.
+# - lindell/connect-iq-sdk-manager-cli (Apache-2.0): the headless SDK Manager that signs in and downloads the device
+#   files (they need a Garmin sign-in). The sha256 is the release's checksums.txt line for Linux_x86_64.
+# - The Connect IQ SDK agreement: the MD5 the SDK Manager computes over its text (the hash the owner accepted in the
+#   SDK Manager on the release Mac, 2026-11-16). When Garmin changes the text, the download stops; read the new
+#   one (`connect-iq-sdk-manager agreement view`) and put its hash here.
+CIQ_SDK_VERSION=9.3.0
+CIQ_SDK_LINUX_ZIP=connectiq-sdk-lin-9.3.0-2026-10-20-95888f262.zip
+CIQ_SDK_LINUX_SHA256=1653cc98edd70029670a3e3fcd4ad6e746974a8b758a7b736a4e11506dfd8bc8
+CIQ_CLI_VERSION=0.8.4
+CIQ_CLI_LINUX_SHA256=5d57b8f9cfcd02d3b3f48e19d6daca0480e4c6f627926f15d8617ef8a6f57e0b
+CIQ_AGREEMENT_HASH=CC737BBBA104D7740D5BBCF27D0F6382

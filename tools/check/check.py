@@ -397,6 +397,10 @@ STRING_KEY = re.compile(r'<(string|plurals)\s+name="([^"]+)"([^>]*)>')
 DEBUG_NAMES = re.compile(r"\b(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\b")
 DEBUG_FILE = re.compile(r"(^|/)(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\.kt$")
 MAC_DEBUG_NAMES = re.compile(r"\b(debugsend|DebugFakes|Synthetic\w*)\b")
+# the Garmin face: the release jungle builds apps/garmin/source; the debug case loader is apps/garmin/source-cases
+GARMIN_SOURCE = "apps/garmin/source/"
+GARMIN_DEBUG_SOURCE = "apps/garmin/source-cases/"
+GARMIN_DEBUG_NAMES = re.compile(r"\b(AuraCases\w*|AuraDump|AuraCaseTable)\b")
 ANDROID_DEBUG_DIRS = ("/src/debug/", "/src/test/", "/src/androidTest/", "/src/testDebug/")
 MAC_DEBUG_TARGETS = (MAC + "Tests/", MAC_SOURCES + "sukrara-snap/")
 
@@ -446,6 +450,23 @@ def check_debug(ch, rep):
                 if m:
                     rep.add("FAIL", "debug", "%s:%d %s outside #if DEBUG: debug commands and fakes are compiled out of release\n"
                             "builds (wrap it in #if DEBUG, or move it to the sukrara-snap / test targets)." % (p, n, m.group(1)))
+        elif p.startswith(GARMIN_SOURCE) and p.endswith(".mc"):
+            for n, l in code_lines(ch.blob(p) or ""):
+                m = GARMIN_DEBUG_NAMES.search(l)
+                if m:
+                    rep.add("FAIL", "debug", "%s:%d names %s: the Garmin face's debug code (the case loader) lives in\n"
+                            "apps/garmin/source-cases/ only, which the release jungle never builds." % (p, n, m.group(1)))
+        elif p.startswith(GARMIN_DEBUG_SOURCE) and p.endswith(".mc"):
+            text = ch.blob(p) or ""
+            for m in re.finditer(r"(?m)^((?:\(:\w+\)\s*\n)*)(?:module|class|function)\s+(\w+)", text):
+                if "(:debug)" not in m.group(1):
+                    rep.add("FAIL", "debug", "%s: %s without (:debug): everything in apps/garmin/source-cases/ is debug-only,\n"
+                            "so a release build strips it even if a jungle ever names the folder." % (p, m.group(2)))
+        elif p == GARMIN + "monkey.jungle":
+            text = ch.blob(p) or ""
+            if re.search(r"source-cases|build/cases", text) or not re.search(r"(?m)^base\.sourcePath = source$", text):
+                rep.add("FAIL", "debug", "%s must build source/ only ('base.sourcePath = source': the default takes every\n"
+                        "folder, the debug case loader's source-cases/ and build/ too)." % p)
 
 
 # The docs that name debug commands (#111: they listed `cmd sensorEnd`, `--es stage`, … long after the code dropped them).
@@ -660,6 +681,19 @@ def check_card(ch, rep):
         rep.add("FAIL", "card-surface", "%s is not valid JSON." % SURFACES)
         return
     files = set(tree_files(ch))
+    # the Garmin faces: their own renderers; every registered file and test exists, and only the registered files lay out
+    # or draw a face
+    garmin = reg.get("garmin") or {}
+    drawers = set()
+    for s in garmin.get("surfaces", []):
+        for f in s.get("files", []) + s.get("tests", []):
+            rep.pending(files, f, "card-surface", "surface %s (garmin)" % s["id"])
+        drawers |= set(s.get("files", []))
+    for p in sorted(f for f in files if f.startswith(GARMIN_SOURCE) and f.endswith(".mc") and f not in drawers):
+        for n, l in code_lines(ch.blob(p) or ""):
+            if re.search(r"\bAuraDraw\.draw\(|\bnew AuraModel\(", l):
+                rep.add("FAIL", "card-surface", "%s:%d lays out or draws the face outside its registered files (%s garmin)."
+                        % (p, n, SURFACES))
     for plat, swift in (("android", False), ("mac", True)):
         cfg = reg.get(plat)
         if not cfg:
@@ -957,6 +991,10 @@ def check_durations(ch, rep):
 SETTINGS_SCHEMA = CONTRACTS + "settings/settings.json"
 SETTINGS_KT = ANDROID + "core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt"
 SETTINGS_SWIFT = MAC_SOURCES + "SukraraCore/Settings/SettingsSpec.swift"
+GARMIN = "apps/garmin/"
+SETTINGS_MC = GARMIN + "source/SettingsSpec.mc"
+SETTINGS_PROPS = GARMIN + "resources/settings/properties.xml"
+SETTINGS_XML = GARMIN + "resources/settings/settings.xml"
 ALERT_SPEC = CONTRACTS + "alerts/SPEC.md"
 KEY_NAME = re.compile(r"^[a-z][A-Za-z0-9]*$")
 # a stored key written by hand (keys come from SettingsSpec.Keys)
@@ -1024,7 +1062,8 @@ def check_settings(ch, rep):
         return rep.add("FAIL", "settings", "%s is not valid JSON: %s" % (SETTINGS_SCHEMA, e))
     sys.path.insert(0, os.path.join(HERE, "..", "settings"))
     import gen  # noqa: E402  (tools/settings/gen.py, stdlib only)
-    for path, want in ((SETTINGS_KT, gen.kotlin(schema)), (SETTINGS_SWIFT, gen.swift(schema))):
+    for path, want in ((SETTINGS_KT, gen.kotlin(schema)), (SETTINGS_SWIFT, gen.swift(schema)), (SETTINGS_MC, gen.monkeyc(schema)),
+                       (SETTINGS_PROPS, gen.properties_xml(schema)), (SETTINGS_XML, gen.settings_xml(schema))):
         if ch.blob(path) != want:
             rep.add("FAIL", "settings", "%s is stale or edited by hand: run python3 tools/settings/gen.py and commit it." % path)
     numbers = schema.get("numbers", {})
@@ -1055,10 +1094,10 @@ def check_settings(ch, rep):
         seen.add(sid)
         if s.get("number") and s["number"] not in numbers:
             rep.add("FAIL", "settings", "setting %s: number '%s' isn't in 'numbers'." % (sid, s["number"]))
-        on = [p for p in ("android", "mac") if s.get(p)]
+        on = [p for p in ("android", "mac", "garmin") if s.get(p)]
         only = s.get("only") or {}
         if not on:
-            rep.add("FAIL", "settings", "setting %s is on neither platform." % sid)
+            rep.add("FAIL", "settings", "setting %s is on no platform." % sid)
         elif len(on) == 1 and (only.get("platform") != on[0] or len(only.get("reason", "").strip()) < 10):
             rep.add("FAIL", "settings", "setting %s exists on %s only: add it to the other platform, or give\n"
                     "'only': {\"platform\": \"%s\", \"reason\": \"why it can't be there\"}." % (sid, on[0], on[0]))

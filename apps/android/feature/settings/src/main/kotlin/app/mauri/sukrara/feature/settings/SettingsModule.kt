@@ -40,8 +40,8 @@ class SettingsModule(
     appsShared: Flow<Set<AppOutput>>,
     /** The hub's recent readings (the Trend arrow page's preview). */
     recent: Flow<List<Reading>>,
-    /** Root and the System UI module; null in a build without them. */
-    systemAccess: SystemAccessPort?,
+    /** Root and the System UI module. */
+    systemAccess: SystemAccessPort,
     /** Which version this is: Google Play or GitHub (About). */
     distribution: Distribution,
     /** The GitHub version's updater (About); returns null in the Google Play build. */

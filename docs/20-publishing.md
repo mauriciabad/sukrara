@@ -35,7 +35,7 @@ unused).
 | Mac, non-developers | Notarized dmg from sukrara.mauri.app / GitHub Releases + **Sparkle 2** in-app updates | Paid Apple Developer Program (Developer ID) | 99 USD/year |
 | Mac, developers | **Own tap** `mauriciabad/homebrew-tap` → `brew install --cask mauriciabad/tap/sukrara`; later the official cask | Official cask needs Gatekeeper-passing (notarized) builds + notability | 0 |
 | Mac App Store | **Go** (2026-11-11): a sandboxed build without the update check, TestFlight first ([review risk](#mac-app-store-review-risk-2026-11-11-186)) | The App Store Connect app record and the distribution certificates (the owner) | (same 99 USD) |
-| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the updater (decided 2026-11-11, [Flavors](#flavors)) | Health/medical declarations; `USE_EXACT_ALARM` and root-feature review (no 12-tester rule: the account predates it) | paid (old account) |
+| Android, everyone | **Google Play** (the reinstated personal account; app created 2026-11-10), every feature but the updater (decided 2026-11-11, [Flavors](#flavors)) None: **live** since 2026-11 (0.14.5, [the account section](#google-play-the-account-and-app-as-set-up-2026-11-10)) | paid (old account) |
 | Android, power users | **GitHub Releases + Obtainium**, **IzzyOnDroid**; the "full" flavor with the updater (#188) | Release key; package registered for developer verification before it is enforced globally (2027) | 0 |
 | Android, F-Droid main repo | Later, optional | Build from source incl. Juggluco core + rust-nostr; likely *NonFreeNet* anti-feature | 0 |
 | Garmin | Connect IQ Store, free app | Developer account; privacy policy; no medical claims | 0 |
@@ -648,6 +648,9 @@ open testing at once, with no *Apply for production* step) and no new fee.
   often with improvements and new features. Found a problem or have an idea? Tell me at
   github.com/mauriciabad/sukrara/issues". The Health Connect declaration never appeared. Steps as they were:
   [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
+- **Approved: live in production** (0.14.5, seen by the owner 2026-11-16; Play dates it Nov 13): https://play.google.com/store/apps/details?id=app.mauri.sukrara, linked from
+  the README and the website's Android page. No questions from Play about `USE_EXACT_ALARM`, root or LSPosed. Left:
+  nothing: item 6's check below passed (2026-11-16). The fixed listing icon (#210) is live since 2026-11-16.
 
 ### Google Play: reviewer access (App access)
 
@@ -729,9 +732,9 @@ tester list so nobody drops out by accident).
 | Target API | New apps/updates must target **API 36+** since 2026-08-31 [[G8]](https://support.google.com/googleplay/android-developer/answer/11926878) | Already `targetSdk 37` |
 | Health apps declaration | Every health/medical app fills the form; categories include *Diseases and Conditions Management* and **Medical Device Apps**, the latter including "any software interfacing with medical device hardware"; EEA apps regulated under MDR/IVDR must show device name, manufacturer, IFU, UDI-DI [[G9]](https://support.google.com/googleplay/android-developer/answer/14738291) | Declare *Diseases and Conditions Management*. Whether it must also be *Medical Device Apps* is the key risk (below) |
 | Health content | Non-regulated health apps must state in the description that the app is "not a medical device and does not diagnose, treat, cure, or prevent any medical condition"; external hardware must be disclosed; a privacy policy linked in Console **and in the app**, public, not a PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511) | Disclaimer + "requires a FreeStyle Libre 3 sensor" in the listing; privacy page on the site; link in Settings → About |
-| `USE_EXACT_ALARM` | Only for apps whose **core** function is an alarm/timer or calendar; everyone else should use `SCHEDULE_EXACT_ALARM` [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | Glucose alarms are arguably alarm-clock-like and Juggluco ships alarms on Play, but expect a declaration and possible rejection. Safer: switch the Play build to `SCHEDULE_EXACT_ALARM` + `canScheduleExactAlarms()` prompt (the alert timing doesn't need more). **Decided 2026-11-11: keep `USE_EXACT_ALARM` and declare it** ([Flavors](#flavors)) |
+| `USE_EXACT_ALARM` | Only for apps whose **core** function is an alarm/timer or calendar; everyone else should use `SCHEDULE_EXACT_ALARM` [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | Glucose alarms are arguably alarm-clock-like and Juggluco ships alarms on Play, but expect a declaration and possible rejection. Safer: switch the Play build to `SCHEDULE_EXACT_ALARM` + `canScheduleExactAlarms()` prompt (the alert timing doesn't need more). **Decided 2026-11-11: keep `USE_EXACT_ALARM` and declare it** ([Flavors](#flavors)); approved by Play with 0.14.5 (2026-11-16) |
 | Foreground service | Each FGS type declared in App content with description, user impact and a **demo video** [[G12]](https://support.google.com/googleplay/android-developer/answer/13392821) | `connectedDevice` (BLE to sensor/followers): record the video (start, notification, stop) |
-| Device and Network Abuse | No interfering with other apps / the system; **no self-updating outside Play**, no downloading executable code [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | Play flavor without the LSPosed/SystemUI hook, lock-screen widget hook, root status bar, `DUMP`; and without the in-app GitHub update check (`SettingsScreens.kt` calls `api.github.com/…/releases/latest`). **Decided 2026-11-11: the root features stay in the Play build (opt-in, the person's own root), only the update check goes** ([Flavors](#flavors)) |
+| Device and Network Abuse | No interfering with other apps / the system; **no self-updating outside Play**, no downloading executable code [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | Play flavor without the LSPosed/SystemUI hook, lock-screen widget hook, root status bar, `DUMP`; and without the in-app GitHub update check (`SettingsScreens.kt` calls `api.github.com/…/releases/latest`). **Decided 2026-11-11: the root features stay in the Play build (opt-in, the person's own root), only the update check goes** ([Flavors](#flavors)); approved by Play with 0.14.5 (2026-11-16) |
 | Data safety | Required, with a privacy policy, even if nothing is collected; E2E-encrypted data unreadable by the developer is not "collected"; a user-initiated transfer to a third party is not "sharing" [[G14]](https://support.google.com/googleplay/android-developer/answer/10787469) | Nostr readings: E2E encrypted → not collected (relays see public keys, timestamps, IP). LibreView: user-initiated upload of glucose + treatments + account credentials to Abbott → disclose as health data sent at the user's request. BLE/NFC: on-device. No analytics, no ads |
 | Signing | New apps are enrolled in **Play App Signing**; the developer may "Provide a copy of your app signing key" instead of a Google-generated one, before the first open/production release [[G15]](https://support.google.com/googleplay/android-developer/answer/9842756) | Upload **our own** release key so GitHub/IzzyOnDroid/F-Droid (reproducible) builds share one signature with Play |
 
@@ -952,20 +955,21 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   are the app's core, user-facing function, documented and promoted in the description
   [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241): glucose alarms are Sukrara's core
   function, the listing leads with them, and Play's exact-alarm declaration says so
-  ([the draft](#exact-alarm-declaration)). Precedent: Juggluco, on Play, declares `USE_EXACT_ALARM`.
+  ([the draft](#exact-alarm-declaration)). Precedent: Juggluco, on Play, declares `USE_EXACT_ALARM`. **Settled**:
+  approved by Play with 0.14.5 (2026-11-16), no questions asked.
 - **The root features ship in the Play build too**: the glucose in the status bar (root slot daemon, the LSPosed
-  module in System UI: `Store.rootFeatures = SystemUiRoot`, the module's manifest entries, `META-INF/xposed`) and the
+  module in System UI: `MonitorModule`'s `SystemUiRoot`, the module's manifest entries, `META-INF/xposed`) and the
   lock-screen widget (#66, the same module). They work only after the person roots their phone, installs LSPosed and
   enables Sukrara's module for System UI: the status-bar value is off by default and also needs root granted to
   Sukrara; the lock-screen widget's setting is on by default (as in the PoC) but shows nothing, and sends nothing to
   System UI, until that module runs. They change only Sukrara's own icons, text and widget in System UI. The listing
   names the user-facing feature briefly and honestly (*glucose in the status bar on supported phones, with advanced
   setup*), not the means; every Play declaration and reviewer question is answered truthfully (root and LSPosed are
-  named whenever Play asks how a feature works). The policy risk is Device and Network Abuse ("interfere with … the
-  user's device … including … other apps"
-  [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646)); the answer is that it runs only
-  with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar items and its
-  lock-screen widget.
+  named whenever Play asks how a feature works). Device and Network Abuse ("interfere with … the user's device …
+  including … other apps" [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646)) doesn't
+  apply: it runs only with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar
+  items and its lock-screen widget. **Settled**: approved by Play with 0.14.5 (2026-11-16), no questions asked; they're part of every
+  build from now on, new root features included, described the same way.
 - **No updater in the Play build**: an app from Play may not update itself, or send people to updates, other than
   through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646). The updater is its own
   module, `:update`, a dependency of the `full` flavor only (#188): the Play build has no update check, notification,
@@ -977,26 +981,7 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   each; where to get each; anything a store version leaves out, today only the updater). No disabled rows and no
   "install elsewhere to unlock" prompts in the Play build (Device and Network Abuse: no means to reach a non-compliant
   APK).
-- **The split stays for now**: the flavors and their code remain until Play approves a release with the root features;
-  then the split can go (the updater would then be the only thing `Store` decides).
-
-**If Play rejects …** (resubmit after each; the code is all still there):
-
-- *`USE_EXACT_ALARM`*: put the two lines of the exact-alarm fallback (in the comment of
-  `app/src/play/AndroidManifest.xml`) into the manifest and set `play_permissions` in `tools/check/allow.json` to
-  remove `USE_EXACT_ALARM` and add `SCHEDULE_EXACT_ALARM`, each with its reason; flip `ManifestTest`'s assertion that
-  the Play build declares `USE_EXACT_ALARM`. Nothing else: the alert checklist already names *Alarms and reminders*
-  with *Fix* when exact alarms aren't allowed, the checks already fall back to inexact while-idle alarms
-  (`AlarmPolicy`) and re-arm on `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`. Then FEATURES.md › Google Play build
-  and the website's Versions list it, and the exact-alarm declaration is withdrawn.
-- *The root features*: `Store.rootFeatures = null` in `app/src/play`, the root fallback in the comment of
-  `app/src/play/AndroidManifest.xml` into the manifest, the `META-INF/xposed/**` exclusion back in
-  `app/build.gradle.kts` (the commented line), `play_permissions` removes `app.mauri.sukrara.permission.SYSTEMUI_STATE`,
-  and the checks go back to "absent": `ManifestTest`'s Play tests, `verify-apk.sh --play` (no `META-INF/xposed`, no
-  module components, no `systemui` / libxposed class in the mapping; the hook check only for the GitHub build) and
-  `play-bundle.sh` (no `base/root/META-INF/xposed`). The last version with all of that is `ae4810b9` (`git show
-  ae4810b9:<path>`). Settings › Status bar then has no *With root* section and search no root rows (`BuildFeature`,
-  `SettingsSearchTest`); FEATURES.md and the website's Versions say the Play version leaves the status bar out.
+- **The flavors differ only in the updater** (`Store`): root and exact alarms are the same in both.
 
 Not in either release build, so there is nothing to leave out: `DUMP` (only the debug build's `DebugReceiver` declares
 it), `QUERY_ALL_PACKAGES` (the queries are listed one by one in `allow.json`). `REQUEST_INSTALL_PACKAGES` is in the
@@ -1132,11 +1117,11 @@ so this text (English) wasn't entered and is only what to answer if Play asks:
 > the first thing the store listing describes, and every alert can be tried in Settings › Alerts › an alert › Send a
 > test alert.
 
-Precedent if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. If Play rejects it: the
-fallback in [Flavors](#flavors) › *If Play rejects …*.
+Precedent if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. Play approved it
+with 0.14.5 without asking.
 
-**If Play asks about root, LSPosed or the status bar** (a reviewer question, or *App access* / Device and Network
-Abuse): answer truthfully, in English:
+**If Play ever asks about root, LSPosed or the status bar** (it didn't for 0.14.5; a reviewer question, or *App
+access* / Device and Network Abuse): answer truthfully, in English:
 
 > Glucose in the status bar is an optional, advanced feature, off by default. It works only on a phone the user has
 > rooted themselves, with the LSPosed framework installed and Sukrara's module enabled for System UI by the user, and
@@ -1167,20 +1152,25 @@ version with its spelling and grammar fixed, and its es-ES translation, both ent
 Review step's **AI asset declaration** (*Don't label assets* / *Label assets as created or edited using AI*) is
 answered *Don't label assets*: no AI-generated content (the owner, 2026-11-12).
 
+**Sukrara Aura (2026-11-16, not entered yet)**: both descriptions name the Garmin watch face in *Glucose always at a
+glance* (replacing "Any other device, like a Garmin watch"), and the opening paragraph drops "(more coming soon...)" to
+stay under 4000. Enter it once the face is on the Connect IQ store, so the listing names nothing people can't get.
+Garmin is named only as the watches it runs on (no Garmin logo or device picture in the listing's art).
+
 | Field | en-US | es-ES |
 |---|---|---|
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
 | Short description (≤ 80) | `Your glucose in status bar and home screen widget. Discreet alarms, cool sounds` (79) | `Tu glucosa en la barra de estado y en widgets. Alarmas discretas, sonidos chulos` (80) |
-| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art, cropped to what launchers show). The upload in Play Console is the earlier render (glyph at 2/3 size, #210): replace it once the production review is through, not during it | the same |
+| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art, cropped to what launchers show). Live since 2026-11-16 (replacing the earlier render with the glyph at 2/3 size, #210; AI declaration *Don't label assets*) | the same (es-ES has no icon of its own: it uses the default listing's) |
 | Feature graphic | `~/Pictures/sukrara-play/feature-graphic.png` (1024 × 500, no alpha: the wordmark beside a synthetic glucose card), source [`assets/brand/sukrara/play/feature-graphic.html`](../assets/brand/sukrara/play/README.md) | the same (its only word is the name) |
 | Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
 | Contact | `support-googleplay@a.mauri.app`, https://sukrara.mauri.app (set) | the same |
 
-**Full description, en-US** (3993 characters):
+**Full description, en-US** (3992 characters):
 
 ```text
-Sukrara shows your continuous glucose monitor (CGM) readings live on your phone, at a glance: in the status bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It has all the alarms you'd expect, with minimal alarm fatigue thanks to smart features and discreet sound packs. Share your glucose with friends and family, or yourself, through the Android and macOS companion apps (more coming soon...). It's compatible with the DIY diabetes ecosystem (xDrip+, Nightscout...). And it has advanced glucose charts that are beautiful and easy to understand.
+Sukrara shows your continuous glucose monitor (CGM) readings live on your phone, at a glance: in the status bar, home screen widgets, lock screen and notifications, so you rarely need to open the app. It has all the alarms you'd expect, with minimal alarm fatigue thanks to smart features and discreet sound packs. Share your glucose with friends and family, or yourself, through the Android and macOS companion apps. It's compatible with the DIY diabetes ecosystem (xDrip+, Nightscout...). And it has advanced glucose charts that are beautiful and easy to understand.
 
 Important disclaimer
 I made Sukrara for myself and share it with everybody. I use it every day, at my own risk, and it works fine, but I can't guarantee it. Anyone else who uses it does so at their own risk too. The apps are still in development: all the core features are there, but many more improvements and cool features are coming.
@@ -1217,7 +1207,7 @@ Glucose always at a glance
 - Home screen widget. You never need to open the app.
 - Lock screen widget with advanced setup. No need to unlock or touch the phone.
 - Persistent notification with the widget.
-- Any other device, like a Garmin watch.
+- Sukrara Aura watch face for Garmin, updated within seconds.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
 
 Data analysis and reports
@@ -1251,10 +1241,10 @@ Legal
 Sukrara is not a medical device and does not diagnose, treat, cure, or prevent any medical condition. Don't make treatment decisions based on it. Use at your own risk. All product and company names mentioned are trademarks of their respective owners. Sukrara is an independent project, not affiliated with them.
 ```
 
-**Full description, es-ES** (3997 characters):
+**Full description, es-ES** (3995 characters):
 
 ```text
-Sukrara muestra en tu móvil, en directo y de un vistazo, la glucosa de tu monitor continuo (MCG): en la barra de estado, widgets, pantalla de bloqueo y notificaciones, así que casi nunca abres la app. Todas las alarmas que esperarías, con mínima fatiga gracias a funciones inteligentes y sonidos discretos. Comparte tu glucosa con familia y amigos, o contigo, con las apps para Android y macOS (y pronto más...). Compatible con el ecosistema DIY de diabetes (xDrip+, Nightscout...). Y con gráficas avanzadas, bonitas y fáciles de entender.
+Sukrara muestra en tu móvil, en directo y de un vistazo, la glucosa de tu monitor continuo (MCG): en la barra de estado, widgets, pantalla de bloqueo y notificaciones, así que casi nunca abres la app. Todas las alarmas que esperarías, con mínima fatiga gracias a funciones inteligentes y sonidos discretos. Comparte tu glucosa con familia y amigos, o contigo, con las apps para Android y macOS. Compatible con el ecosistema DIY de diabetes (xDrip+, Nightscout...). Y con gráficas avanzadas, bonitas y fáciles de entender.
 
 Aviso importante
 Hice Sukrara para mí y la comparto con todos. La uso a diario bajo mi responsabilidad y funciona bien, pero no puedo garantizarlo. Quien la use, también lo hace bajo la suya. Las apps siguen en desarrollo: lo esencial ya está, pero llegarán muchas más mejoras y novedades.
@@ -1291,7 +1281,7 @@ Tu glucosa siempre a la vista
 - Widget de pantalla de inicio. Nunca tienes que abrir la app.
 - Widget de pantalla de bloqueo, con configuración avanzada. Sin desbloquear ni tocar el móvil.
 - Notificación permanente con el widget.
-- Otros dispositivos, como un reloj Garmin.
+- Esfera Sukrara Aura para Garmin, actualizada en segundos.
 - App de macOS con la glucosa en la barra de menús, alarmas y widgets.
 
 Análisis e informes
@@ -1343,9 +1333,9 @@ Done 2026-11-12: the store listing's new text (en-US + es-ES), its AI asset decl
 
 Done 2026-11-13: all of 1–4 below; the release went to **production**, not open testing (see the account section).
 
-Left: watch the review (answer Play truthfully: root and LSPosed, the text above; a rejection of `USE_EXACT_ALARM`
-or the root features: the note at the end); after approval, item 6's check on a spare phone (does Play take over a
-GitHub install?) before telling GitHub users to switch.
+Approved and live (2026-11-16, [the account section](#google-play-the-account-and-app-as-set-up-2026-11-10)); the fixed
+listing icon (#210) live since 2026-11-16. Item 6 passed (below); the website's Android page tells GitHub users
+how to switch.
 
 The steps, as they were:
 
@@ -1362,10 +1352,18 @@ The steps, as they were:
    text above).
 6. Install from the internal-testing link on a **spare** phone or emulator first (on the owner's daily phone it would
    replace the GitHub version: same package and key, the data stays), check Settings › About says *Google Play
-   version*, then open testing as the permanent beta.
-
-If Play rejects `USE_EXACT_ALARM` or the root features: [Flavors](#flavors) › *If Play rejects …*, a new bundle, and
-the next upload.
+   version*. **Done 2026-11-16** on the `medium_phone` emulator (Android 16, Play Store, the owner's account), with
+   the GitHub release APKs against Play's 0.14.5:
+   - GitHub 0.14.4 installed from the browser (installer Chrome): the listing says *The app installed on your device
+     didn't come from Google Play. You can update the app from the original source or from Google Play.* with
+     **Update from Play**, then *Update this app from Play?* (*…will be added to your Play library…*). It updates in
+     place: installer `com.android.vending`, Play's splits, `firstInstallTime` kept; About *0.14.5 · Google Play
+     version*, no updater (no `REQUEST_INSTALL_PACKAGES`), setup without *Keep Sukrara up to date*.
+   - GitHub 0.14.4 installed by Sukrara's own updater (installer `app.mauri.sukrara`; the updater doesn't claim update
+     ownership): plain **Update**, same result (this account already had Sukrara in its library from the first case).
+   - GitHub **0.14.5** (the same version as Play): only **Open**. Nothing to switch to until the next version; then it
+     is the first case. Not tested: Obtainium installs, and Play → GitHub on a real phone (adb skips the prompts).
+   Open testing as a beta: dropped, no Play beta track: every release goes straight to production (the owner, 2026-11-16).
 
 ## Garmin
 
@@ -1384,14 +1382,264 @@ The planned own watch app (watch face / data field / app, investigation 08) goes
   phone's local server) is shown on the store page.
 - Effort: small once the app exists (screenshots for 2–3 device sizes, description, privacy link).
 
+### Connect IQ: CI and publishing (2026-11-16, Sukrara Aura)
+
+The owner: "Would be nice if we configure the ci as well as automatic deployments/publishing (or at least leave it
+ready to complete later)". Built: Checks' `garmin` job and release.py's Garmin path; the setup and the owner's steps
+are in [DEVELOPMENT.md › Garmin face on CI](DEVELOPMENT.md#garmin-face-on-ci) and [› Release](DEVELOPMENT.md#release).
+
+**What CI needs.** The SDK is a public download listed in `sdks.json` [[C3]](https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json); `monkeyc` is Java. The
+device files (`compiler.json` & co., without which `monkeyc -d <device>` can't build) and the simulator's fonts come
+only through the SDK Manager with a Garmin sign-in; the SDK Manager has no CLI, and a Garmin forum thread still
+complains that CI ends up needing the developer's credentials [[C4]](https://forums.garmin.com/developer/connect-iq/f/discussion/303170/connectiq-docker-image-and-github-action). The Linux simulator (9.3.0) links
+WebKitGTK 4.0 (`libwebkit2gtk-4.0.so.37`, read from the binary), which Ubuntu ships up to 22.04, and runs headless
+under Xvfb [[C5]](https://github.com/matco/connectiq-tester); `monkeydo` needs a running simulator and its exit code doesn't say whether the tests passed
+(the last line says `PASSED` / `FAILED`) [[C5]](https://github.com/matco/connectiq-tester)[[C6]](https://nettek.ca/blog/monkeyc-and-monkeydo-garmin-linux/). Screenshots of the simulator are scriptable on
+macOS and Windows by window grabs (ciqkit, not on Linux yet) [[C7]](https://github.com/JohannesHoh/ciqkit) or in a container under Xvfb by a GTK hook
+(rules_ciq) [[C8]](https://github.com/semolina-solutions/rules_ciq).
+
+**How the device files reach CI** (blast radius = what a leak of the credential gives away):
+
+| Option | Blast radius | Reliability, upkeep | Verdict |
+|---|---|---|---|
+| The owner's Garmin account, password as a secret | Everything: the watch, health and dive data, the store's developer identity (the agreement forbids sharing its login, II.a.1 [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html)) | Breaks with two-step verification, which the CLI can't answer [[C9]](https://github.com/dnullproject/ues-widget/issues/14) | No |
+| **A Garmin account only for CI** (no watch, no data, no 2-step), password as secrets, signed in by [`connect-iq-sdk-manager-cli`](https://github.com/lindell/connect-iq-sdk-manager-cli) | An empty account that can download SDK files | Never expires; used only on a cache miss; breaks if Garmin blocks scripted sign-ins (Cloudflare blocked Garmin Connect libraries' sign-ins from March 2026 [[C10]](https://github.com/matin/garth/discussions/222)[[C11]](https://github.com/cyberjunky/python-garminconnect/issues/337)) | **Chosen** (others: [[C12]](https://github.com/stefiix92/coachd/pull/31)[[C13]](https://github.com/BartSte/garmin-connect-iq)) |
+| The same account's token from a browser sign-in (`token.json`, OAuth client `CIQ_SDK_MANAGER`) | That account's SDK Manager token; no password stored | Refresh lifetime undocumented; a refreshed token can't be written back to the secret, so it is replaced by hand when it expires [[C14]](https://github.com/EnO33/foulee/issues/466) | Fallback (`GARMIN_CI_TOKEN`) when sign-ins are blocked |
+| A public image with Garmin's device files (connectiq-tester-resources) | None of ours | Redistributes Garmin's Program Materials, which the agreement forbids (I.b) [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html)[[C7]](https://github.com/JohannesHoh/ciqkit); a third party's image | No |
+| A self-hosted runner on the release Mac (files already there) | The owner's Mac runs this public repo's workflow code | GitHub advises against self-hosted runners for public repositories [[C22]](https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners) | No |
+
+The CLI (Apache-2.0, v0.8.4, 2026-02) is pinned by version and sha256; its sign-in is a form post to
+`sso.garmin.com` with `clientId=ConnectIqSdkManager`, then `services.garmin.com/api/oauth/token` (read in its source).
+The agreement hash is the MD5 the SDK Manager takes of the agreement's text: pinned, so a new agreement stops the job
+until someone reads it. Caching (GitHub drops entries unused for 7 days) keeps sign-ins to a new device or a long
+pause.
+
+**The developer key.** Every build is signed; the store ties an app to the key of its first upload and refuses a
+version signed with another ("All app versions have to be signed with the same key pair"); Garmin keeps only the
+public key, so a lost key means a new listing that existing users must move to [[C15]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/402228/developer-key-lost). CI therefore never gets it:
+its builds only run in the simulator and use a key made for the run. The store key stays on the release Mac
+(`~/.connectiq/sukrara-developer-key.der`, backup in the password manager, like the Android release key), and
+`tools/release/garmin-key.sha256` pins its public SHA-256; `garmin-release.sh` refuses any other key. Projects that
+release from CI keep it as a base64 or GPG-encrypted secret [[C16]](https://github.com/EnO33/foulee/issues/467)[[C17]](https://github.com/blackshadev/garmin-connectiq-release-action); Sukrara's releases already run on the
+release Mac with the other keys, so a CI copy would add a place to leak it and save nothing.
+
+**Store upload.** There is no upload API: uploads go through the developer dashboard (moved to
+`apps-developer.garmin.com` [[C18]](https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/changes-to-the-connect-iq-store)), Garmin reviews each upload and the store shows it once approved [[C2]](https://developer.garmin.com/connect-iq/submit-an-app/). A
+request for an upload API (May 2026) is *Acknowledged* with no answer [[C19]](https://forums.garmin.com/developer/connect-iq/i/bug-reports/connect-iq-upload-applications-updates-to-store-with-the-batch-api); others keep the last step by hand with
+a checklist [[C16]](https://github.com/EnO33/foulee/issues/467)[[C20]](https://github.com/oleg-koval/connectiq-starter). Scripting the dashboard would need the owner's full developer account in a browser robot
+(two-step verification, Cloudflare, an undocumented form that changes, a stray click submitting the wrong build):
+rejected. *Beta apps* (a separate app id, only the developer's account sees it, no review) [[C21]](https://forums.garmin.com/developer/connect-iq/f/discussion/3643/beta-testing-uploaded-app/55912) are uploaded
+the same way, so they don't automate anything either; useful only to try the face's phone settings before a public
+version.
+
+**The flow.** Every pushed change: the `garmin` job builds and tests the face. A release (`release.py`, once
+`tools/release/garmin-key.sha256` exists): the `version` step writes the version into the manifest; the gate builds
+the store package and every device's sideload `.prg` with the store key (debug code compiled out); `github` puts them
+on the normal GitHub release (the `.prg` for people who sideload); the `garmin` step prints the upload for the owner:
+the file, the version, the What's New text and the dashboard link (about two minutes), and `summary` lists it as
+the one manual step. If Garmin publishes an upload API, that step becomes a call like `play` and `appstore`.
+
+### Connect IQ store: what it asks and checks (research 2026-11-16, Sukrara Aura)
+
+| Topic | What the store wants | Source |
+|---|---|---|
+| Account | A Garmin account signed in at `apps-developer.garmin.com`; the first upload asks for a unique **developer name** (shown on every app and review; the owner chose `mauri.app`, 2026-11-16). No fee for free apps; the *Merchant Account* tab is only for paid apps. The Developer License Agreement is accepted by the upload itself ("By submitting this app, you agree…") | the dashboard, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) |
+| Upload | Step 1: the `.iq` (from `monkeyc -e`, every product in the manifest), *App Version* (≤ 20 characters, higher on every upload), the *Beta App* box. Step 2, once the file is verified: the description and images | the dashboard, [[C2]](https://developer.garmin.com/connect-iq/submit-an-app/) |
+| Beta app | Its own app id in the manifest; only the developer's account sees it, never reviewed, updated as often as wanted; the public app is a separate upload with the real id and the box unticked. Install it by opening `apps.garmin.com/en-US/apps/<id>` on the phone | [[C23]](https://developer.garmin.com/connect-iq/core-topics/beta-apps/), [[C21]](https://forums.garmin.com/developer/connect-iq/f/discussion/3643/beta-testing-uploaded-app/55912), [[C24]](https://github.com/andreiyurik/garmin-russia-trains/pull/4) |
+| Updates | Same key forever ("Signature check failed" otherwise), same app id ("App-id deviates"), a higher version | [[C15]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/402228/developer-key-lost), [[C25]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/443221/two-apps-stuck-in-pending-since-aug-31-replacement-upload-rejected-with-a-misleading-manifest-id-error/2059294) |
+| Store icon | 500 × 500, sRGB, 10 px margin, a solid background (not black, not transparent), no text, no Garmin branding; for a watch face "a preview of the watch face often works best". ≤ 300 KB (forum, not documented) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations) |
+| Hero image | 1440 × 720, one per language when it has text; the featured carousel uses it (name + tagline); ≤ 2 MB (forum) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C28]](https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/we-want-you-to-feel-seen), [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations) |
+| Screenshots | No documented size; others upload the device's resolution (390 × 390 here); ≤ 150 KB each (forum) | [[C27]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations), [[C29]](https://github.com/EnO33/foulee/issues/468) |
+| Description | Plain text, no markdown, ≤ 4000 characters, checked only after the CAPTCHA (count it first) | [[C30]](https://forums.garmin.com/developer/connect-iq/f/discussion/7753/ciq-store-doesn-t-enforce-4000-char-limit-while-typing-only-after-captcha) |
+| What a description must say | Every feature, requirement and dependency ("if the app's core features do not work without …, you must disclose that"), the compatible devices, no Garmin partnership or affiliation claim, whether it needs payment | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §4 |
+| Medical | An app for "diagnosis, cure, mitigation, treatment or prevention" needs regulatory clearance; otherwise the description, features and functionality must not indicate it, "informational purposes only". Also §1b: nothing that creates a false sense of security | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §1b–c, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) |
+| Dive watches | Apps for the Descent may not be intended only for use during a dive | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §1b |
+| Privacy | A privacy policy when the app collects data; it must say data goes to the developer, not Garmin; don't move its URL without a redirect | [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §3c, [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) Exhibit A |
+| Permissions | Shown on the store page from the manifest: Communications as "Send/receive information to/from the Internet" (a face may use it only in the background, hence *Background*) | [[C32]](https://forums.garmin.com/developer/connect-iq/f/discussion/6588/where-does-the-permission-send-receive-information-to-from-the-internet-come-from), [[C33]](https://forums.garmin.com/developer/connect-iq/f/discussion/6328/how-to-specify-permissions-for-watch-face-deployment) |
+| Brand | No Garmin branding in the icon without permission; IP of others only with permission; other images aren't covered (ask Garmin through its contact form) | [[C26]](https://developer.garmin.com/brand-guidelines/connect-iq/), [[C31]](https://developer.garmin.com/connect-iq/app-review-guidelines/) §3a |
+| Review | Officially up to 3 days; since October 2026 a backlog of 7–14 days, new faces and updates alike | [[C34]](https://the5krunner.com/2026/10/16/connect-iq-store-delays/), [[C35]](https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/445602/in-review-delay-multiple-watch-faces-pending-approval-some-for-7-days-already) |
+
+**Other CGM faces in the store** say it the same way: Sugar Sense ("It is not a medical device and is not intended to
+diagnose, treat, cure, or prevent any disease", confirm with the CGM app or a meter, never rely on it for alarms)
+[[C36]](https://apps.garmin.com/en-US/apps/5bf02aaf-f9da-40d9-aded-76bb8158fb52), GlucoPulse ("not a medical device",
+not for insulin dosing) [[C37]](https://apps.garmin.com/en-US/apps/b309a480-c7f4-4dca-b2ec-ca1f4fd63cc2).
+
+**What follows for Sukrara Aura.** The listing follows the [Mac App Store listing](#mac-app-store-the-listing-entered-2026-11-11)
+and the Play one: no accuracy claim, no dosing words, the not-a-medical-device paragraph, the owner's own-risk line,
+not affiliated with Garmin or any sensor maker. *Garmin Connect* is named once, as the requirement the guidelines ask
+to disclose; never "Garmin" in the title, icon or images. The images use no bezel (the reference bezel prints GARMIN)
+and no *Carbs* / *Insulin* pill (the pill stays in the description as "the state of Sukrara's alerts"). The
+Communications permission is explained in the description, since the store words it as the internet while the face
+only reaches Sukrara on the same phone.
+
+### Connect IQ store: the listing (drafts, en + es)
+
+Nothing entered yet: Step 2 opens only after an upload is verified. The owner's display name is set (`mauri.app`).
+
+| Field | en | es |
+|---|---|---|
+| Title | `Sukrara Aura` (the manifest's `AppName`, the same in both) | `Sukrara Aura` |
+| Store icon | `docs/img/aura/store/ciq/icon-500.png` (500 × 500, 49 KB) | the same |
+| Hero | `docs/img/aura/store/ciq/hero-en.png` (1440 × 720, 327 KB): *Your glucose on your wrist* / *From Sukrara on your phone* | `hero-es.png`: *Tu glucosa en la muñeca* / *Desde Sukrara en tu móvil* |
+| Screenshots, in order | `docs/img/aura/store/ciq/screen-*.png` (390 × 390, ≤ 70 KB): hero, sparkline, contours, glow, lasers, waterline, muted, hiking fields, always-on, night | the same (no Spanish one without a pill yet) |
+| Category | Watch face (the manifest's type); any other category the form offers: Health / Medical, whichever is closest | the same |
+| Privacy policy / support | https://sukrara.mauri.app/privacy / https://sukrara.mauri.app | the same |
+| Price | Free | |
+
+The images are made by [`assets/brand/sukrara/connectiq/render.mjs`](../assets/brand/sukrara/connectiq/render.mjs)
+from the reference renderer with synthetic data (cases.json): `node assets/brand/sukrara/connectiq/render.mjs`, and
+again once the face's final look is approved (the digit spacing, defaults and sparkline were still changing on
+2026-11-16).
+
+**Description, en** (3119 characters):
+
+```text
+Sukrara Aura shows your glucose on your watch face, next to the time: the value in its range colour, the trend arrow or the last hour as a line, and how long ago it was read. It is the watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+
+What you need
+• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends every reading to the watch face through Garmin Connect.
+• iPhone is not supported.
+• Without Sukrara on your phone the face shows the time and your watch's own data, and "No readings".
+
+At a glance
+• Your glucose in your range's colours, with Sukrara's trend arrow, or the last hour as a sparkline on a fixed scale.
+• A level rail on the right with your own limits marked, and the last 30 minutes as a fading trail.
+• The reading ages on the watch's own clock: its time appears when it is late, then it is struck through and grey, then "No reading since" and the time. An old value never looks current, even with the phone out of reach.
+• The state of Sukrara's alerts on your phone (needs you, handled, muted and for how long) and of your sensor (warming up, ending, ended).
+• A background, the aura, that gathers at your level and spreads the further out of range you are: grain, contours, waterline, lasers or glow; or a map, or plain black.
+• Always-on and night modes that stay dim.
+• Private: hides the number until you touch and hold the screen.
+
+Fields
+• One field on top and two along the bottom: weather, steps, sunset, Body Battery, altitude, notifications, today's time in range, a second time zone, floors, heart rate, or the last treatment you logged in Sukrara.
+• The watch's battery as a rail, in days, percent or both.
+
+Settings
+In the Connect IQ app, or on the watch (hold MENU on the face › Watch face › Customize): dial, halo, trend (arrow or sparkline), seconds sweep, green in range, the three fields, battery label, private and second time zone.
+
+Watches
+Descent Mk3i 43 mm for now.
+
+Privacy
+The face only talks to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes the face asks Sukrara on the same phone for the latest one (that is the Communications permission; nothing goes to the internet). Your watch's data (heart rate, steps, Body Battery, sleep times) stays on the watch. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
+
+Free and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
+In English and Spanish. Help and feedback: https://sukrara.mauri.app
+
+Important
+Sukrara Aura is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and the watch face sounds no alerts. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
+
+Sukrara is not affiliated with Garmin or with any sensor maker.
+```
+
+**Description, es** (3307 characters):
+
+```text
+Sukrara Aura muestra tu glucosa en la esfera del reloj, junto a la hora: el valor en el color de su rango, la flecha de tendencia o la última hora como una línea, y hace cuánto se leyó. Es la esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+
+Qué necesitas
+• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura a la esfera a través de Garmin Connect.
+• No funciona con iPhone.
+• Sin Sukrara en el móvil, la esfera muestra la hora y los datos del propio reloj, y «Sin lecturas».
+
+De un vistazo
+• Tu glucosa en los colores de tu rango, con la flecha de tendencia de Sukrara, o la última hora como un minigráfico a escala fija.
+• Una barra de nivel a la derecha con tus propios límites marcados y los últimos 30 minutos como un rastro que se desvanece.
+• La lectura envejece con la hora del propio reloj: cuando llega tarde aparece su hora, luego se tacha y se vuelve gris, y luego «Sin lectura desde» y la hora. Un valor antiguo nunca parece actual, aunque el móvil esté lejos.
+• El estado de las alertas de Sukrara en tu móvil (te necesita, atendida, silenciada y hasta cuándo) y el de tu sensor (calentando, acabándose, terminado).
+• Un fondo, el aura, que se concentra en tu nivel y se extiende cuanto más te alejas del rango: grano, curvas, línea de agua, láseres o brillo; o un mapa, o negro.
+• Modos siempre encendido y noche que se mantienen tenues.
+• Privado: oculta el número hasta que mantienes pulsada la pantalla.
+
+Datos
+• Un dato arriba y dos abajo: tiempo, pasos, puesta de sol, Body Battery, altitud, notificaciones, tiempo en rango de hoy, una segunda zona horaria, pisos, frecuencia cardiaca o el último tratamiento que apuntaste en Sukrara.
+• La batería del reloj como una barra, en días, porcentaje o ambos.
+
+Ajustes
+En la app Connect IQ, o en el reloj (mantén MENU en la esfera › Esfera del reloj › Personalizar): esfera, halo, tendencia (flecha o minigráfico), barrido de segundos, verde en rango, los tres datos, texto de batería, privado y segunda zona horaria.
+
+Relojes
+Descent Mk3i 43 mm, de momento.
+
+Privacidad
+La esfera solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, y cada 5 minutos la esfera pide la última a Sukrara en el mismo móvil (ese es el permiso de Comunicaciones; nada sale a internet). Los datos de tu reloj (frecuencia cardiaca, pasos, Body Battery, horas de sueño) se quedan en el reloj. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/privacy
+
+Libre y gratuita (GPL-3.0): https://github.com/mauriciabad/sukrara
+En inglés y español. Ayuda y comentarios: https://sukrara.mauri.app
+
+Importante
+Sukrara Aura no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativa. Los valores pueden ser erróneos, llegar tarde o faltar, y la esfera no hace sonar alertas. No tomes decisiones de tratamiento basándote en ella: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsala bajo tu propia responsabilidad.
+
+Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
+```
+
+Before pasting, check the texts against the approved face: the setting names (`apps/garmin/resources*/strings`), the
+watch's Customize path and the devices in the manifest. A new device or setting changes both texts.
+
+### Connect IQ store: the build
+
+- `tools/release/garmin-release.sh --beta` → `apps/garmin/bin/dist/SukraraAura-beta.iq`: `build.sh export-beta`, the
+  face under the beta app id `635140ec-f724-44fb-bc08-976fa9111250` (fixed, so every beta upload updates the one beta
+  app), signed with the store key.
+- `tools/release/garmin-release.sh <version>` → `SukraraAura-<version>.iq` (the public app id) and each device's
+  `.prg`; needs `tools/release/garmin-key.sha256` (below) and the manifest at that version.
+- Every `.iq` is checked before it is kept: it unpacks (a 7-zip; `bsdtar`), carries the expected app id, version and
+  every manifest device, its `dev_key.pub` is the store key's public key, and each device's `.prg` passes
+  `verify_prg.sh` (the id, no debug code). Tried 2026-11-16 on the release Mac: both packages verified (418 KB, one
+  device). Nothing was uploaded.
+- **The beta gets no pushes.** Sukrara on the phone pushes to the face's real id (`AuraLink.APP_ID`) and opens the
+  5-minute fetch only while a watch is known to have that face. The beta face therefore shows readings only while the
+  sideloaded face (same real id) is also on the watch, and only from the fetch (up to 5 minutes late). Enough to try
+  the store install, the Connect IQ app's settings page and the listing's look; the push is tried with the public app.
+- **The pin.** `tools/release/garmin-key.sha256` (the store key's public SHA-256,
+  `1e34106fdcd521d2f6676bf5b0f3d92691a8535cbe667f44064b886e7cdf111f` on 2026-11-16) is the switch that puts the face
+  in `release.py`. Commit it in the change that makes the first public upload, so that release writes the version into
+  the manifest and builds the `.iq`.
+
+### Connect IQ store: the owner's steps (beta first, then public)
+
+Marked **[owner]**: only the owner does it. Everything else an agent can do or prepare. Nothing goes up before the
+owner approves the face on the watch.
+
+Beta (only the owner's account sees it, no review):
+
+1. **[owner]** Sign in at https://apps-developer.garmin.com/developer/dashboard (done 2026-11-16; developer name
+   `mauri.app`).
+2. An agent runs `tools/release/garmin-release.sh --beta` on the release Mac and re-renders the images
+   (`node assets/brand/sukrara/connectiq/render.mjs`), both from the approved `next`.
+3. **Upload an App** › *Choose file*: `apps/garmin/bin/dist/SukraraAura-beta.iq`; *App Version*: the manifest's
+   (`0.1.0` today); tick **Beta App** (*This app is for testing purposes only*).
+4. **[owner]** **Continue**. This uploads the file and accepts the Developer License Agreement and Terms of Use.
+5. Step 2, *Enter Details*: the title, the en description, the icon, hero and screenshots and the links from
+   [the listing](#connect-iq-store-the-listing-drafts-en--es); Spanish too if the form has languages. An agent may
+   fill this in; it notes here what the form really asks.
+6. **[owner]** **Submit**.
+7. **[owner]** On the phone: open `https://apps.garmin.com/en-US/apps/<beta store id>` (the dashboard shows it) in
+   the Connect IQ app, install it on the watch, choose it, and check the settings page in the Connect IQ app.
+
+Public (reviewed, 7–14 days at the moment):
+
+8. Commit `tools/release/garmin-key.sha256` (above), then build `SukraraAura-<version>.iq`: with the next Sukrara
+   release (`release.py`: the gate builds it, the `garmin` step prints the upload) or by hand
+   (`tools/release/garmin-release.sh <the manifest's version>`).
+9. **Upload an App** (not *Upload a new version* of the beta, which has the other id): the `.iq`, the version, **Beta
+   App unticked**. **[owner]** **Continue**.
+10. Step 2 as in 5, then **[owner]** **Submit**. Garmin e-mails when it is approved; the face is in the store from
+    then.
+11. After approval: put the store link on the website and the README (the website agent's part) and on the phone's
+    Sukrara Aura row. Delete the beta app from the dashboard, and the sideloaded copy from the watch (the store
+    copy replaces it: same id, same key).
+
+Later versions: `release.py`'s `garmin` step prints the file, version and What's New for **Upload a new version** of
+the public app, and the owner submits it (no upload API).
+
 ## Web and update channels
 
 - **sukrara.mauri.app as the install hub**: one *Download* page that detects the platform: Play badge, "APK /
   Obtainium / IzzyOnDroid" for power users, notarized dmg, `brew install --cask mauriciabad/tap/sukrara`, Garmin
   store link. Keep the README buttons pointing at the same assets (the `website.yml` link rewriting already exists).
-- **Channels**: `stable` (Play production, Sparkle `appcast.xml`, cask) and `beta` (Play closed/open test, Sparkle
-  `appcast-beta.xml` via `sparkle:channel`, GitHub pre-releases). The closed test needed for production access
-  becomes the permanent beta channel.
+- **Channels**: `stable` (Play production, Sparkle `appcast.xml`, cask) and `beta` (Sparkle `appcast-beta.xml` via
+  `sparkle:channel`, GitHub pre-releases); no Play beta track: every release goes straight to production (the owner, 2026-11-16).
 - **Privacy page** https://sukrara.mauri.app/privacy (`website/src/content/docs/privacy.md`, HTML, not PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511); since 2026-11-10):
   what stays on the device, what each opt-in feature sends where (Nostr relays: end-to-end encrypted events, public
   keys, timing, IP; LibreView, Tidepool, Nightscout: what each upload carries; Health Connect, apps on the phone, the
@@ -1540,9 +1788,9 @@ website; serve developers with an **own Homebrew tap** from the same release; su
 notable. **Mac App Store** (2026-11-11, #186): go, as a second, sandboxed build of the same app
 ([review risk](#mac-app-store-review-risk-2026-11-11-186)), TestFlight first.
 
-**Android**: one release key, package **`app.mauri.sukrara`**, two flavors. **Google Play** (new personal account,
-closed test as the permanent beta) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor (with
-its own update check; the root features are in both since 2026-11-11); register the package and key for developer verification in the same Play Console account before the
+**Android**: one release key, package **`app.mauri.sukrara`**, two flavors. **Google Play** (the reinstated account,
+production only, live since 0.14.5) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor (with
+its own update check; the root features are in both); register the package and key for developer verification in the same Play Console account before the
 2027 global rollout. F-Droid main repo later, with reproducible builds.
 
 **Garmin**: Connect IQ Store, free, display-only claims.
@@ -1570,8 +1818,8 @@ its own update check; the root features are in both since 2026-11-11); register 
    screenshots and the feature graphic (outside the repo), entered in Play Console the same day except Data safety
    and the FGS declaration ([Play Console, in order](#google-play-what-the-owner-does-in-play-console-in-order)). Open:
    the demo video (the emulator one was rejected; the owner records it, #185), an upload script.
-9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; use internal testing for
-   the first builds, then open testing as the permanent beta.
+9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; internal testing for
+   the first builds, then production directly (no beta track).
 10. Our key is the Play App Signing key (done 2026-11-10); developer verification for outside-Play installs follows
     from the Play registration of `app.mauri.sukrara` with that key.
 11. ~~*(agent)* IzzyOnDroid inclusion request~~ Dropped 2026-11-13: IzzyOnDroid rejects AI-written apps (above). Obtainium link on the site.
@@ -1588,11 +1836,9 @@ keystore and Sparkle EdDSA key, submit policy declarations, recruit testers, and
   removal. Mitigation: display/convenience framing, the sideload channel as fallback.
 - **Abbott**: a trademark or ToS complaint can pull the Play listing (reported for Juggluco [[P2]](https://forum.fudiabetes.org/t/juggluco-back-on-play-store/15038)); the LibreView
   upload uses an unofficial API.
-- **`USE_EXACT_ALARM` rejection** if kept in the Play build.
 - **Closed-test drop-outs** restart the 14-day clock [[G6]](https://support.google.com/googleplay/android-developer/answer/14151465)[[G7]](https://www.choicely.com/blog/google-play-12-tester-rule).
 - **Developer verification** may tighten (the advanced flow is new, and F-Droid's position is unresolved [[V4]](https://techaiwire.com/articles/android-developer-verification-enforcement-four-countries/));
   losing the release key makes the package unregistrable [[V2]](https://developer.android.com/developer-verification/guides/faq) — two backups.
-- **Same package on Play and GitHub**: Play may overwrite a root install with the play flavor.
 - **Team ID change** on the Mac when moving to the paid team (Keychain prompt, new App Group container).
 - **Homebrew tap trust** rules have changed twice in 2026 [[H6]](https://brew.sh/7.0.0-migration-guide/); recheck the cask instructions on each Homebrew major.
 
@@ -1650,4 +1896,38 @@ All seen **2026-10-18**. "3rd-party" = not the platform owner.
 - [F6] Accrescent publishing requirements — https://accrescent.app/docs/guide/appendix/requirements/
 - [C1] Garmin Connect IQ Developer Agreement (Exhibit A) — https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html
 - [C2] Garmin, Submit an app — https://developer.garmin.com/connect-iq/submit-an-app/
+- [C3]–[C22] seen 2026-11-16: Garmin's SDK list — https://developer.garmin.com/downloads/connect-iq/sdks/sdks.json;
+  [C4] Garmin forum, ConnectIQ Docker image and GitHub Action — https://forums.garmin.com/developer/connect-iq/f/discussion/303170/connectiq-docker-image-and-github-action;
+  [C5] matco/connectiq-tester (Dockerfile, tester.sh) — https://github.com/matco/connectiq-tester;
+  [C6] monkeyc and monkeydo on Linux (3rd-party) — https://nettek.ca/blog/monkeyc-and-monkeydo-garmin-linux/;
+  [C7] ciqkit — https://github.com/JohannesHoh/ciqkit; [C8] rules_ciq — https://github.com/semolina-solutions/rules_ciq;
+  [C9] ues-widget #14, the CLI can't answer 2FA — https://github.com/dnullproject/ues-widget/issues/14;
+  [C10] garth, Deprecating Garth — https://github.com/matin/garth/discussions/222;
+  [C11] python-garminconnect #337, 429 at sign-in — https://github.com/cyberjunky/python-garminconnect/issues/337;
+  [C12] coachd #31, CI with a dedicated account — https://github.com/stefiix92/coachd/pull/31;
+  [C13] BartSte/garmin-connect-iq, CI with the CLI — https://github.com/BartSte/garmin-connect-iq;
+  [C14] foulee #466, token.json from a browser sign-in — https://github.com/EnO33/foulee/issues/466;
+  [C15] Garmin forum, Developer Key lost (Garmin's answer) — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/402228/developer-key-lost;
+  [C16] foulee #467, release workflow, manual upload — https://github.com/EnO33/foulee/issues/467;
+  [C17] garmin-connectiq-release-action — https://github.com/blackshadev/garmin-connectiq-release-action;
+  [C18] Garmin, Changes to the Connect IQ Store — https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/changes-to-the-connect-iq-store;
+  [C19] Garmin forum, upload API request — https://forums.garmin.com/developer/connect-iq/i/bug-reports/connect-iq-upload-applications-updates-to-store-with-the-batch-api;
+  [C20] connectiq-starter ("not automatable") — https://github.com/oleg-koval/connectiq-starter;
+  [C21] Garmin forum, beta apps — https://forums.garmin.com/developer/connect-iq/f/discussion/3643/beta-testing-uploaded-app/55912;
+  [C22] GitHub, self-hosted runners and public repositories — https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#hardening-for-self-hosted-runners
+- [C23]–[C37] seen 2026-11-16: [C23] Garmin, Beta Apps — https://developer.garmin.com/connect-iq/core-topics/beta-apps/;
+  [C24] garmin-russia-trains #4, beta app id and install workaround — https://github.com/andreiyurik/garmin-russia-trains/pull/4;
+  [C25] Garmin forum, "App-id deviates" — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/443221/two-apps-stuck-in-pending-since-aug-31-replacement-upload-rejected-with-a-misleading-manifest-id-error/2059294;
+  [C26] Garmin, Connect IQ brand guidelines (icon, hero) — https://developer.garmin.com/brand-guidelines/connect-iq/;
+  [C27] Garmin forum, image size limits — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/427625/i-want-nice-things-reasonable-image-size-limitations;
+  [C28] Garmin, We want you to feel seen (hero images) — https://forums.garmin.com/developer/connect-iq/b/news-announcements/posts/we-want-you-to-feel-seen;
+  [C29] foulee #468, store visuals — https://github.com/EnO33/foulee/issues/468;
+  [C30] Garmin forum, 4000-character limit — https://forums.garmin.com/developer/connect-iq/f/discussion/7753/ciq-store-doesn-t-enforce-4000-char-limit-while-typing-only-after-captcha;
+  [C31] Garmin, Connect IQ App Review Guidelines (2021-10-13) — https://developer.garmin.com/connect-iq/app-review-guidelines/;
+  [C32] Garmin forum, the Internet permission's wording — https://forums.garmin.com/developer/connect-iq/f/discussion/6588/where-does-the-permission-send-receive-information-to-from-the-internet-come-from;
+  [C33] Garmin forum, watch face permissions — https://forums.garmin.com/developer/connect-iq/f/discussion/6328/how-to-specify-permissions-for-watch-face-deployment;
+  [C34] the5krunner, Connect IQ store delays (2026-10-16) — https://the5krunner.com/2026/10/16/connect-iq-store-delays/;
+  [C35] Garmin forum, review delays — https://forums.garmin.com/developer/connect-iq/f/connect-iq-web-store/445602/in-review-delay-multiple-watch-faces-pending-approval-some-for-7-days-already;
+  [C36] Sugar Sense Watch Face (store listing) — https://apps.garmin.com/en-US/apps/5bf02aaf-f9da-40d9-aded-76bb8158fb52;
+  [C37] GlucoPulse (store listing) — https://apps.garmin.com/en-US/apps/b309a480-c7f4-4dca-b2ec-ca1f4fd63cc2
 - [T1] Abbott trademark notice (via its Play listings and site, 3rd-party summary) — https://play.google.com/store/apps/details?id=com.abbott.adc.freestyle.libre.us

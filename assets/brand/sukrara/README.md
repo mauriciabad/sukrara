@@ -15,6 +15,7 @@ change the concept in `brand.py` and re-export.
 | `android/Brand.kt` | name, URL, brand + range colours for Compose |
 | `android/play-store-512.png` | store / about-screen icon: full bleed, cropped to the 72 units launchers show. Not from `brand.py` (it renders the whole 108 canvas, glyph at 2/3 size): `python3 -I tools/brand/store_icons.py` renders it and `web/apple-touch-icon.png` from `brand.py`'s shapes |
 | `garmin/launcher_icon_*.png` | Connect IQ `launcherIcon` (colour circle, or `_mono` for MIP screens); use the size the SDK's device profile asks for |
+| `connectiq/render.mjs` | Sukrara Aura's Connect IQ store icon (500 × 500), hero (1440 × 720, en / es) and screens (390 × 390), bezel-less from `tools/watchface` with synthetic cases → `docs/img/aura/store/ciq/`. Not from `brand.py`: `node assets/brand/sukrara/connectiq/render.mjs` (Chrome), again after the face changes |
 | `web/` | `favicon.svg`, `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png` (PWA manifest), `og.png` (link previews) |
 
 Ids: application / bundle id `app.mauri.sukrara`.

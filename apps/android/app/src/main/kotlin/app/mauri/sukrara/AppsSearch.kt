@@ -35,13 +35,18 @@ object AppsSearch {
             row(IntegrationsR.string.in_tp_title, IntegrationsR.string.in_apps_clinic_group),
             row(IntegrationsR.string.in_ns_title, IntegrationsR.string.in_apps_nightscout_group, Seen.Wearer),
             row(
-                IntegrationsR.string.in_apps_xdrip,
+                IntegrationsR.string.in_garmin_title,
                 IntegrationsR.string.in_apps_watch_group,
-                keywords = IntegrationsR.string.in_apps_xdrip_keywords,
+                keywords = IntegrationsR.string.in_garmin_keywords,
             ),
             row(IntegrationsR.string.in_bc_title, IntegrationsR.string.in_apps_phone_group, Seen.Wearer),
             row(IntegrationsR.string.in_hc_title, IntegrationsR.string.in_apps_phone_group, Seen.Wearer),
             row(IntegrationsR.string.in_nsapi_title, IntegrationsR.string.in_apps_phone_group),
+            row(
+                IntegrationsR.string.in_apps_xdrip,
+                IntegrationsR.string.in_apps_phone_group,
+                keywords = IntegrationsR.string.in_apps_xdrip_keywords,
+            ),
         ) + files
 
     /**

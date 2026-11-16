@@ -32,11 +32,16 @@ import sys
 # - website: it publishes docs/ (the reports and developer docs), shows the Android snapshot goldens and the brand,
 #   reads the alert contracts (the sound test page), and checks every site URL the apps' code opens and the release
 #   key App Links name (tools/release/android-cert.sha256).
+# - garmin: the face (apps/garmin), the contracts its tests read (the watchface spec's cases and expect.json, the
+#   words, settings), the brand assets (its icons), the reference pictures its screenshots are diffed against
+#   (docs/img/aura/ref), the reference renderer (tools/watchface) and the CI setup it runs (tools/ci/garmin*).
 GROUPS = {
     "android": (["apps/android/", "contracts/", "tools/", "VERSION", "assets/"], ["apps/android/fastlane/"]),
     "mac": (["apps/macos/", "contracts/", "assets/"], ["apps/macos/AppStore/whats-new/"]),
     "website": (["website/", "docs/", "assets/", "contracts/", "apps/", "tools/release/android-cert.sha256",
                  ".github/workflows/website.yml"], ["apps/android/fastlane/", "apps/macos/AppStore/whats-new/"]),
+    "garmin": (["apps/garmin/", "contracts/", "assets/", "docs/img/aura/ref/", "tools/watchface/", "tools/garmin/",
+                "tools/ci/garmin-sdk.sh", "tools/ci/garmin.lock"], []),
 }
 DEPTH = 300
 
@@ -56,7 +61,7 @@ def green_base(ancestors, green):
 
 
 def plan(event, head, green, ancestors, diff, pr_base="", full=False):
-    """{rules, android, mac: bool, base, range}. `diff(base)` lists the files changed from base to head."""
+    """{rules, android, mac, garmin: bool, base, range}. `diff(base)` lists the files changed from base to head."""
     everything = dict({name: True for name in GROUPS}, rules=True, base="", range="origin/main..%s" % head)
     if full:
         return everything

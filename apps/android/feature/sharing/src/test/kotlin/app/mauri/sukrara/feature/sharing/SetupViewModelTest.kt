@@ -93,6 +93,7 @@ class SetupViewModelTest {
             readiness = readiness,
             clock = clock,
             follower = follower,
+            systemAccess = FakeSystemAccess(),
         )
     }
 

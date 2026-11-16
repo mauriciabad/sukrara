@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Sukrara Aura, the watch face (contracts/watchface/aura/SPEC.md). The owner's Descent Mk3i 43 mm only, for now. -->
+<iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <iq:application id="9ace188f-9a3a-42d6-9f7d-1afd4ce93293" type="watchface" name="@Strings.AppName" entry="AuraApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.1.0">
+        <iq:products>
+            <iq:product id="descentmk343mm"/>
+        </iq:products>
+        <iq:permissions>
+            <iq:uses-permission id="Background"/>
+            <iq:uses-permission id="Communications"/>
+            <iq:uses-permission id="SensorHistory"/>
+            <iq:uses-permission id="UserProfile"/>
+        </iq:permissions>
+        <iq:languages>
+            <iq:language>eng</iq:language>
+            <iq:language>spa</iq:language>
+        </iq:languages>
+        <iq:barrels/>
+    </iq:application>
+</iq:manifest>

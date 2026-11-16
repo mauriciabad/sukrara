@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.storage.HistoryImportStore
@@ -32,6 +33,10 @@ import app.mauri.sukrara.integrations.broadcasts.PlatformApps
 import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportViewModel
 import app.mauri.sukrara.integrations.export.Exporter
+import app.mauri.sukrara.integrations.garmin.AuraLink
+import app.mauri.sukrara.integrations.garmin.ConnectIq
+import app.mauri.sukrara.integrations.garmin.ConnectIqPort
+import app.mauri.sukrara.integrations.garmin.GarminViewModel
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectSync
@@ -51,6 +56,7 @@ import app.mauri.sukrara.integrations.localserver.NightscoutApiServer
 import app.mauri.sukrara.integrations.localserver.NightscoutApiViewModel
 import app.mauri.sukrara.integrations.localserver.NsApiState
 import app.mauri.sukrara.integrations.localserver.XdripServer
+import app.mauri.sukrara.integrations.localserver.XdripViewModel
 import app.mauri.sukrara.integrations.nightscout.NightscoutUploader
 import app.mauri.sukrara.integrations.nightscout.NightscoutViewModel
 import app.mauri.sukrara.integrations.nightscout.NsState
@@ -62,6 +68,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 
@@ -115,6 +122,10 @@ class IntegrationsModule(
     log: (String) -> Unit,
     /** Holds back the uploads of a pen entry while its session is open (`:pen`); none without pens. */
     uploadHold: UploadHold = UploadHold.NONE,
+    /** THE glucose state (the hub): what Sukrara Aura shows, as the card and the glucose notification do. */
+    glucose: Flow<GlucoseState> = emptyFlow(),
+    /** How the face is reached: Garmin Connect, or a debug build's Connect IQ simulator. */
+    connectIq: ConnectIqPort = ConnectIq(context, log),
 ) {
     val wearer: Flow<Boolean> = role.map { it == Role.Wearer }
 
@@ -193,6 +204,9 @@ class IntegrationsModule(
 
     private val installedApps = PlatformApps(context)
 
+    /** Sukrara Aura, the Garmin face: readings pushed through Garmin Connect and fetched by the face (docs/43). */
+    val aura = AuraLink(settings, glucose, treatments, readings, connectIq, clock, dispatchers.io, log)
+
     val broadcasts = Broadcaster(settings, broadcastState, libreLive, sensor, role, installedApps, clock, dispatchers.io, log)
 
     private val health = PlatformHealth(context)
@@ -249,6 +263,7 @@ class IntegrationsModule(
         broadcasts.start(scope)
         healthConnect.start(scope)
         history.start(scope)
+        aura.start(scope)
     }
 
     // MARK: view models (the app's navigation entries create them)
@@ -264,6 +279,12 @@ class IntegrationsModule(
 
     val broadcastsViewModels: ViewModelProvider.Factory
         get() = viewModelFactory { initializer { BroadcastsViewModel(broadcasts, installedApps, wearer, dispatchers.io) } }
+
+    val garminViewModels: ViewModelProvider.Factory
+        get() = viewModelFactory { initializer { GarminViewModel(aura, xdrip, context, dispatchers.io) } }
+
+    val xdripViewModels: ViewModelProvider.Factory
+        get() = viewModelFactory { initializer { XdripViewModel(xdrip, context, dispatchers.io) } }
 
     val healthConnectViewModels: ViewModelProvider.Factory
         get() = viewModelFactory { initializer { HealthConnectViewModel(healthConnect, health) } }

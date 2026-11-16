@@ -60,6 +60,7 @@ import app.mauri.sukrara.integrations.CurrentSensor
 import app.mauri.sukrara.integrations.IntegrationsModule
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
+import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.libreview.LvGlucose
 import app.mauri.sukrara.integrations.libreview.LvReadings
@@ -300,7 +301,6 @@ class AppGraph(
                         .distinctUntilChanged()
                 },
             sourceChanges = sourceChanges,
-            rootFeatures = Store.rootFeatures,
         )
     }
 
@@ -405,7 +405,7 @@ class AppGraph(
                 monitor.hub.state
                     .map { it.recent }
                     .distinctUntilChanged(),
-            systemAccess = monitor.root?.access,
+            systemAccess = monitor.root.access,
             distribution = Store.distribution,
             updates = { updates },
             pensAvailable = { pens.available() },
@@ -571,6 +571,11 @@ class AppGraph(
             log = { data.diagLog.log("integrations", it) },
             // a pen entry waits for its session to close (the pens module is built on first use)
             uploadHold = UploadHold { pens.uploadHold.until(it) },
+            // Sukrara Aura shows what the card and the glucose notification show
+            glucose = flow { emitAll(monitor.hub.state) },
+            connectIq =
+                BuildVariant.connectIq(app) { data.diagLog.log("integrations", it) }
+                    ?: ConnectIq(app) { data.diagLog.log("integrations", it) },
         )
     }
 
@@ -616,8 +621,8 @@ class AppGraph(
             updates = updateSuggestion?.setup(),
             // the optional insulin pens step (a phone with NFC)
             pens = SetupPens(pens.setupAnswer, pens::turnOnReading),
-            // the root step and the status bar text (builds with root features)
-            systemAccess = monitor.root?.access,
+            // the root step and the status bar text
+            systemAccess = monitor.root.access,
         )
     }
 
@@ -765,7 +770,7 @@ class AppGraph(
                 sensor.source.detail
                     .map { d -> (d as? SensorStatus.Direct)?.profile?.takeUnless { it.verified }?.label }
                     .distinctUntilChanged(),
-            systemAccess = monitor.root?.access?.state ?: emptyFlow(),
+            systemAccess = monitor.root.access.state,
             build = BuildConfig.VERSION_CODE.toLong(),
         )
     }

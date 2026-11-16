@@ -1,0 +1,1585 @@
+{
+ "about": "Sukrara Aura reference cases (SPEC.md §9). Each case: id, group, title, expect (what must be true, in words), cfg (the inputs; anything missing takes the default in SPEC.md §3). Reference renders: docs/img/aura/ref/<id>.png (390×390, the screen 1:1, no bezel). Expected numbers: expect.json. Store/web renders: docs/img/aura/store/<id>.png (1168 px with the bezel, transparent). Regenerate both with node tools/watchface/build.mjs.",
+ "defaults": {
+  "time": "10:09:36",
+  "date": "Monday 16 November 2026"
+ },
+ "cases": [
+  {
+   "id": "glucose-in-range",
+   "group": "glucose",
+   "title": "In range",
+   "expect": "Calm: no colour but the range green, the bead and the faint sweep at the rim. Nothing below the value, so time and value centre and grow (time caps 68, value caps 60, top field 26).",
+   "cfg": {
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "glucose-rising",
+   "group": "glucose",
+   "title": "Rising",
+   "expect": "The arrow at 48° up (1.6 ÷ 3 × 90); the trail on the rail shows the last 30 minutes.",
+   "cfg": {
+    "glucose": 164,
+    "rate": 1.6
+   }
+  },
+  {
+   "id": "glucose-falling-fast",
+   "group": "glucose",
+   "title": "Falling fast, in range",
+   "expect": "Doubled arrow from −3 mg/dL/min, vertical at the clamp. In range: no pill.",
+   "cfg": {
+    "glucose": 96,
+    "rate": -3.4
+   }
+  },
+  {
+   "id": "glucose-late",
+   "group": "glucose",
+   "title": "Late",
+   "expect": "From 90 s the reading’s time appears under the value (10:06); the numbers grow a little less (time 64, value 56).",
+   "cfg": {
+    "glucose": 104,
+    "rate": -0.3,
+    "age": 3.2
+   }
+  },
+  {
+   "id": "glucose-old",
+   "group": "glucose",
+   "title": "Old",
+   "expect": "From 5 min: struck through and grey, a hollow ring for the arrow, the bead hollow, no trail, the sweep grey; the reading’s time under it.",
+   "cfg": {
+    "glucose": 104,
+    "rate": -0.3,
+    "age": 9
+   }
+  },
+  {
+   "id": "glucose-no-readings",
+   "group": "glucose",
+   "title": "No readings",
+   "expect": "From 20 min: no value at all, “No reading since” and the time it was, large. The bead is gone.",
+   "cfg": {
+    "age": 34
+   }
+  },
+  {
+   "id": "glucose-long-gap",
+   "group": "glucose",
+   "title": "Long gap",
+   "expect": "From 12 h the weekday joins the time (Sun 19:09).",
+   "cfg": {
+    "age": 900
+   }
+  },
+  {
+   "id": "glucose-another-day",
+   "group": "glucose",
+   "title": "No reading since yesterday",
+   "expect": "Only an hour old but from yesterday: “No reading since Sun 23:40”, the weekday with the time, since a bare clock time would read as today’s (Sukrara’s Freshness.timeText).",
+   "cfg": {
+    "time": "0:40:00",
+    "age": 60
+   }
+  },
+  {
+   "id": "glucose-week-old",
+   "group": "glucose",
+   "title": "No reading for a week",
+   "expect": "Over 6 days: the date instead of a time (“No reading since 9 Nov”).",
+   "cfg": {
+    "age": 10100
+   }
+  },
+  {
+   "id": "glucose-lo",
+   "group": "glucose",
+   "title": "LO",
+   "expect": "Below 40: LO, no number and no trend (hollow ring); inverted on very low red; the bead pinned past the rail’s bottom end with a chevron.",
+   "cfg": {
+    "glucose": 38
+   }
+  },
+  {
+   "id": "glucose-hi",
+   "group": "glucose",
+   "title": "HI",
+   "expect": "Above 400: HI in extremely high’s colour, hollow ring, bead pinned past the top end; the pill says Insulin.",
+   "cfg": {
+    "glucose": 420
+   }
+  },
+  {
+   "id": "glucose-mmol-widest",
+   "group": "glucose",
+   "title": "mmol/L at its widest",
+   "expect": "22.2 with one decimal; the point takes a narrow cell so the digits stay put.",
+   "cfg": {
+    "glucose": 400,
+    "unit": "mmol",
+    "rate": 0.6
+   }
+  },
+  {
+   "id": "alerts-low",
+   "group": "alerts",
+   "title": "Low",
+   "expect": "The band’s colour and the need, short: ● Carbs (filled carbs pill).",
+   "cfg": {
+    "glucose": 64,
+    "rate": -1.2
+   }
+  },
+  {
+   "id": "alerts-very-low",
+   "group": "alerts",
+   "title": "Very low",
+   "expect": "Inverted: white digits on very-low red, readable with no colour at all; ● Carbs.",
+   "cfg": {
+    "glucose": 51,
+    "rate": -2.2
+   }
+  },
+  {
+   "id": "alerts-low-carbs-taken",
+   "group": "alerts",
+   "title": "Low, carbs taken",
+   "expect": "Handled: the low alert waits 15 min after carbs; tonal carbs pill with the paused bell and 10m; the field shows ● 15g 5m.",
+   "cfg": {
+    "glucose": 66,
+    "rate": 0.8,
+    "status": "quiet",
+    "left": 10,
+    "lastKind": "carbs",
+    "lastAmount": 15,
+    "lastAgo": 5
+   }
+  },
+  {
+   "id": "alerts-muted-low",
+   "group": "alerts",
+   "title": "Muted, low",
+   "expect": "A mute is the paused bell and its time, in the colour of the side it holds (carbs).",
+   "cfg": {
+    "glucose": 65,
+    "rate": -0.6,
+    "status": "muted",
+    "left": 10
+   }
+  },
+  {
+   "id": "alerts-muted-in-range",
+   "group": "alerts",
+   "title": "Muted, in range",
+   "expect": "Mute all: the crossed bell and its time left (1h 20m), neutral grey tonal pill.",
+   "cfg": {
+    "glucose": 128,
+    "rate": 0.2,
+    "status": "muted",
+    "left": 80
+   }
+  },
+  {
+   "id": "alerts-muted-forever",
+   "group": "alerts",
+   "title": "Muted until turned off",
+   "expect": "Mute all with no end: the crossed bell and the word Muted (Silenciadas), neutral tonal pill.",
+   "cfg": {
+    "glucose": 128,
+    "rate": 0.2,
+    "status": "muted",
+    "left": "never"
+   }
+  },
+  {
+   "id": "alerts-muted-long",
+   "group": "alerts",
+   "title": "Long mute",
+   "expect": "Mute all for over 6 hours: the time left in Sukrara’s compact format, whole hours from 6 h (“6h”, never “6h 40m”).",
+   "cfg": {
+    "glucose": 128,
+    "rate": 0.2,
+    "status": "muted",
+    "left": 400
+   }
+  },
+  {
+   "id": "alerts-high",
+   "group": "alerts",
+   "title": "High",
+   "expect": "▼ Insulin (filled insulin pill).",
+   "cfg": {
+    "glucose": 212,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "alerts-high-insulin-taken",
+   "group": "alerts",
+   "title": "High, insulin taken",
+   "expect": "Highs wait 60 min after insulin: tonal insulin pill, paused bell, 45m; the field: ▼ 3u 15m.",
+   "cfg": {
+    "glucose": 236,
+    "rate": 0.9,
+    "status": "quiet",
+    "left": 45,
+    "lastAmount": 3,
+    "lastAgo": 15
+   }
+  },
+  {
+   "id": "alerts-quiet-ended",
+   "group": "alerts",
+   "title": "Quiet ran out",
+   "expect": "High, and the quiet after the insulin has just run out before the phone said what follows: no pill (the face never decides a need itself) until the next message; value and arrow as usual.",
+   "cfg": {
+    "glucose": 210,
+    "rate": 0.3,
+    "status": "none"
+   }
+  },
+  {
+   "id": "alerts-very-high",
+   "group": "alerts",
+   "title": "Very high",
+   "expect": "Further up the rail, very-high orange, ▼ Insulin.",
+   "cfg": {
+    "glucose": 268,
+    "rate": 1.1
+   }
+  },
+  {
+   "id": "alerts-extremely-high",
+   "group": "alerts",
+   "title": "Extremely high",
+   "expect": "Its own magenta from 300; a treatment never mutes it.",
+   "cfg": {
+    "glucose": 318,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "alerts-falling-fast-in-range",
+   "group": "alerts",
+   "title": "Falling fast, still in range",
+   "expect": "Nothing to do yet, so no pill: the steep arrow and the long trail say it.",
+   "cfg": {
+    "glucose": 84,
+    "rate": -2.6
+   }
+  },
+  {
+   "id": "sensor-warmup",
+   "group": "sensor",
+   "title": "Warming up",
+   "expect": "No figure that could pass for glucose: “Warming up” with a filling disc; “Ready at 10:51” on the row below. The rail has no bead.",
+   "cfg": {
+    "sensor": "warmup",
+    "warm": 0.3
+   }
+  },
+  {
+   "id": "sensor-almost",
+   "group": "sensor",
+   "title": "Almost ready",
+   "expect": "The disc nearly full; “Almost ready”.",
+   "cfg": {
+    "sensor": "almost"
+   }
+  },
+  {
+   "id": "sensor-ending",
+   "group": "sensor",
+   "title": "Sensor ending",
+   "expect": "In the last 8 h the countdown (sensor icon, 5h) takes the first bottom field.",
+   "cfg": {
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2
+   }
+  },
+  {
+   "id": "sensor-ended-sending",
+   "group": "sensor",
+   "title": "Ended, still sending",
+   "expect": "The value stays; the pill: sensor icon and Ended.",
+   "cfg": {
+    "sensor": "endedSending",
+    "glucose": 122,
+    "rate": 0.1
+   }
+  },
+  {
+   "id": "sensor-ended",
+   "group": "sensor",
+   "title": "Sensor ended",
+   "expect": "Readings stopped: checkered flag + “Ended” (Sukrara’s short word; the flag says it is the sensor), pill: sensor icon and Sensor (replace it). Never a last time that looks like a gap.",
+   "cfg": {
+    "sensor": "ended"
+   }
+  },
+  {
+   "id": "sensor-none",
+   "group": "sensor",
+   "title": "Nothing paired",
+   "expect": "Nothing paired: “No readings” (Sin lecturas); no level rail at all.",
+   "cfg": {
+    "sensor": "none"
+   }
+  },
+  {
+   "id": "sensor-phone-lost",
+   "group": "sensor",
+   "title": "Phone out of reach",
+   "expect": "The age counts from the reading, not from delivery: it goes old by itself (struck, 9:57). The first bottom field: phone-off icon and “No phone”.",
+   "cfg": {
+    "glucose": 110,
+    "rate": 0.2,
+    "age": 12,
+    "phone": false
+   }
+  },
+  {
+   "id": "sensor-battery-low",
+   "group": "sensor",
+   "title": "Battery low",
+   "expect": "Under a day: the reserve rail’s one lit segment and its label in low red, counting hours (14h).",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.1,
+    "battery": 0.6
+   }
+  },
+  {
+   "id": "modes-awake",
+   "group": "modes",
+   "title": "Awake",
+   "expect": "Wrist raised, about 10 s: everything, the sweep at the rim and the dial included.",
+   "cfg": {
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "modes-aod",
+   "group": "modes",
+   "title": "Always-on",
+   "expect": "Outlined time; no sweep, top field, bottom fields, battery or dial; nothing moves from where it was. The rail keeps its notches (thin band) and the bead.",
+   "cfg": {
+    "glucose": 112,
+    "rate": 0.3,
+    "mode": "aod"
+   }
+  },
+  {
+   "id": "modes-night",
+   "group": "modes",
+   "title": "Night",
+   "expect": "Between the sleep and wake times: the night palette, no sweep, no dial; nothing lights a bedroom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": -0.2,
+    "mode": "night"
+   }
+  },
+  {
+   "id": "modes-night-low",
+   "group": "modes",
+   "title": "Night, low",
+   "expect": "A low at night still has its colour, its place and its pill.",
+   "cfg": {
+    "glucose": 62,
+    "rate": -1,
+    "mode": "night"
+   }
+  },
+  {
+   "id": "modes-private",
+   "group": "modes",
+   "title": "Private",
+   "expect": "No number: the value row stays empty (reserved so nothing jumps on reveal); the bead alone.",
+   "cfg": {
+    "glucose": 142,
+    "rate": 0.8,
+    "privacy": "private"
+   }
+  },
+  {
+   "id": "modes-private-held",
+   "group": "modes",
+   "title": "Private, held",
+   "expect": "Press and hold: the number for 5 s; the neon line under it counts down (60 % left here).",
+   "cfg": {
+    "glucose": 142,
+    "rate": 0.8,
+    "privacy": "revealed",
+    "reveal": 0.6
+   }
+  },
+  {
+   "id": "modes-private-act",
+   "group": "modes",
+   "title": "Private, act now",
+   "expect": "Unmasks itself when Sukrara needs you to act (needed pill).",
+   "cfg": {
+    "glucose": 63,
+    "rate": -1.4,
+    "privacy": "private"
+   }
+  },
+  {
+   "id": "modes-private-old",
+   "group": "modes",
+   "title": "Private, old reading",
+   "expect": "The number stays hidden, but the reading’s time (10:00) shows on its row: an old reading says so without the value. Hollow bead, grey sweep and dial.",
+   "cfg": {
+    "glucose": 142,
+    "rate": 0.8,
+    "privacy": "private",
+    "age": 9.6
+   }
+  },
+  {
+   "id": "sensor-none-es",
+   "group": "sensor",
+   "title": "Nothing paired, Spanish, battery days and percent",
+   "expect": "“Sin lecturas” fits, with the battery’s days and percent stacked beside it.",
+   "cfg": {
+    "sensor": "none",
+    "lang": "es",
+    "battLabel": "both"
+   }
+  },
+  {
+   "id": "sensor-ended-es",
+   "group": "sensor",
+   "title": "Sensor ended, Spanish, battery days and percent",
+   "expect": "Flag + “Terminado” and the pill “Sensor” fit, with the battery’s days and percent stacked beside them.",
+   "cfg": {
+    "sensor": "ended",
+    "lang": "es",
+    "battLabel": "both"
+   }
+  },
+  {
+   "id": "modes-redshift",
+   "group": "modes",
+   "title": "Red Shift check",
+   "expect": "The whole screen tinted red (test only): very low still reads by inversion, the pill and its place.",
+   "cfg": {
+    "glucose": 51,
+    "rate": -2.2,
+    "filter": "redshift"
+   }
+  },
+  {
+   "id": "modes-grey",
+   "group": "modes",
+   "title": "Grey check",
+   "expect": "Colour-blind / tinted check: high reads by its place on the rail and the pill’s triangle and word.",
+   "cfg": {
+    "glucose": 212,
+    "rate": 0.3,
+    "filter": "grey"
+   }
+  },
+  {
+   "id": "modes-spanish",
+   "group": "modes",
+   "title": "Español",
+   "expect": "LUN 16 NOV, Hidratos, 6.420, 1 h 25 min: every word fits in Spanish.",
+   "cfg": {
+    "glucose": 64,
+    "rate": -1.2,
+    "lang": "es",
+    "lastAgo": 85
+   }
+  },
+  {
+   "id": "fields-default",
+   "group": "fields",
+   "title": "Default fields",
+   "expect": "Weather under the date; steps and the last treatment at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "fields-meal",
+   "group": "fields",
+   "title": "After a meal",
+   "expect": "Sunset on top; body battery, and the meal: ▼ 4.5u ● 45g in their colours, then 35m in grey.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "sunset",
+    "fields": [
+     "bodyBattery",
+     "treatment"
+    ],
+    "last": {
+     "items": [
+      {
+       "k": "rapid",
+       "a": "4.5"
+      },
+      {
+       "k": "carbs",
+       "a": "45"
+      }
+     ],
+     "ago": 35
+    }
+   }
+  },
+  {
+   "id": "fields-no-treatment",
+   "group": "fields",
+   "title": "No treatment today",
+   "expect": "Nothing logged in the last 24 h: the treatment field goes and steps sit alone, centred on the arc.",
+   "cfg": {
+    "last": {
+     "items": []
+    }
+   }
+  },
+  {
+   "id": "fields-hiking",
+   "group": "fields",
+   "title": "Hiking",
+   "expect": "A second time zone on top; altitude and floors at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "tz2",
+    "fields": [
+     "altitude",
+     "floors"
+    ]
+   }
+  },
+  {
+   "id": "fields-sukrara",
+   "group": "fields",
+   "title": "Sukrara’s own",
+   "expect": "Today’s time in range on top; steps and notifications at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "tir",
+    "fields": [
+     "steps",
+     "notifications"
+    ]
+   }
+  },
+  {
+   "id": "fields-tir-unknown",
+   "group": "fields",
+   "title": "Time in range not known",
+   "expect": "Under a quarter of the day so far, or the phone’s day over and no new message: the field says “--”.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "tir",
+    "tir": null
+   }
+  },
+  {
+   "id": "fields-long-acting",
+   "group": "fields",
+   "title": "Long-acting",
+   "expect": "Heart rate on top; the last basal, ▽ 18u in its own colour, 10h ago.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "heart",
+    "fields": [
+     "steps",
+     "treatment"
+    ],
+    "last": {
+     "items": [
+      {
+       "k": "long",
+       "a": "18"
+      }
+     ],
+     "ago": 600
+    }
+   }
+  },
+  {
+   "id": "fields-green-off",
+   "group": "fields",
+   "title": "Green in range: off",
+   "expect": "A setting: white when all is well; the bead and the seconds sweep in Sukrara’s neon, never green.",
+   "cfg": {
+    "glucose": 112,
+    "rate": 0.3,
+    "rangeColour": false
+   }
+  },
+  {
+   "id": "fields-green-very-good",
+   "group": "fields",
+   "title": "Green in range: very good (default)",
+   "expect": "70–140 in Sukrara’s very-good green: value, bead, dial, sweep.",
+   "cfg": {
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "fields-green-good",
+   "group": "fields",
+   "title": "Green in range: good",
+   "expect": "141–179 in the yellower green.",
+   "cfg": {
+    "glucose": 164,
+    "rate": 0.6
+   }
+  },
+  {
+   "id": "fields-battery-both",
+   "group": "fields",
+   "title": "Battery: days and percent",
+   "expect": "Both labels at 9 o’clock, one over the other. Amber under 2 days.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "battery": 1.6,
+    "batteryPct": 16,
+    "battLabel": "both"
+   }
+  },
+  {
+   "id": "fields-battery-percent",
+   "group": "fields",
+   "title": "Battery: percent",
+   "expect": "Percent only. Red under a day.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "battery": 0.6,
+    "batteryPct": 6,
+    "battLabel": "percent"
+   }
+  },
+  {
+   "id": "fields-battery-both-spark",
+   "group": "fields",
+   "title": "Days and percent beside a sparkline",
+   "expect": "The value and sparkline are too wide for the stacked label: it goes on one line (“9d · 86%”) in the gap above the value, never over it.",
+   "cfg": {
+    "glucose": 142,
+    "rate": 0.8,
+    "battLabel": "both",
+    "trendStyle": "spark"
+   }
+  },
+  {
+   "id": "fields-trend-arrow",
+   "group": "fields",
+   "title": "Trend: arrow (default)",
+   "expect": "Sukrara’s arrow.",
+   "cfg": {
+    "glucose": 77,
+    "rate": 1
+   }
+  },
+  {
+   "id": "fields-trend-spark",
+   "group": "fields",
+   "title": "Trend: sparkline",
+   "expect": "The last hour instead of the arrow, on the fixed scale (0.6 px per mg/dL): a steady hour is honestly flat. The hour and the whole range fit, so the window frames 70–180: both dotted limits and the quiet green band between them, still.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 112,
+    "rate": 0.1,
+    "spark": [
+     108,
+     110,
+     109,
+     111,
+     112,
+     110,
+     109,
+     111,
+     113,
+     112,
+     111,
+     112,
+     112
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-turning",
+   "group": "fields",
+   "title": "Sparkline, turning",
+   "expect": "It bottomed at 60 and is coming back: the V the arrow can’t show. 60–180 still fits the window, so it frames the range with the dip just under the low line.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 77,
+    "rate": 1,
+    "spark": [
+     96,
+     90,
+     84,
+     78,
+     72,
+     67,
+     63,
+     61,
+     60,
+     62,
+     66,
+     71,
+     77
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-old",
+   "group": "fields",
+   "title": "Sparkline, old reading",
+   "expect": "The line stops short of now; struck value, hollow end, no ray.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 112,
+    "rate": 0.1,
+    "age": 9,
+    "spark": [
+     108,
+     110,
+     109,
+     111,
+     112,
+     110,
+     109,
+     111,
+     113,
+     112,
+     111,
+     112,
+     112
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-gap",
+   "group": "fields",
+   "title": "Sparkline with missed readings",
+   "expect": "Missed readings leave gaps: the line breaks there, a lone reading between two gaps is a dot, and the rail’s trail skips the missing dot.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 118,
+    "rate": 0.5,
+    "spark": [
+     100,
+     104,
+     null,
+     null,
+     110,
+     112,
+     111,
+     113,
+     null,
+     114,
+     116,
+     117,
+     118
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-panned",
+   "group": "fields",
+   "title": "Sparkline, panned",
+   "expect": "A meal rise to 194 with the Insulin pill: the hour and the range no longer fit in the window, so it centres on the hour; the high line sits low in the box, the low line has left it (in the fade band, faint).",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 194,
+    "rate": 1.6,
+    "spark": [
+     102,
+     101,
+     103,
+     106,
+     114,
+     126,
+     140,
+     154,
+     166,
+     176,
+     184,
+     190,
+     194
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-overflow",
+   "group": "fields",
+   "title": "Sparkline, overflowing",
+   "expect": "A fast rise 80 → 260 is wider than any window: the newest reading stays inside, the start of the rise is squeezed into the fade band under the box, faint but there; the scale never shrinks.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 260,
+    "rate": 3.4,
+    "spark": [
+     80,
+     88,
+     98,
+     110,
+     124,
+     140,
+     157,
+     174,
+     192,
+     210,
+     228,
+     245,
+     260
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-wide-range",
+   "group": "fields",
+   "title": "Sparkline, a wide range",
+   "expect": "The person’s range is 70–250, wider than the window: it can never be framed, so the window centres on the hour; both limits fall in the fade bands, faint, and the green band fills the box.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 150,
+    "rate": 0.2,
+    "limits": [
+     55,
+     70,
+     140,
+     250,
+     300,
+     350
+    ],
+    "spark": [
+     138,
+     140,
+     141,
+     143,
+     142,
+     144,
+     146,
+     145,
+     147,
+     148,
+     147,
+     149,
+     150
+    ]
+   }
+  },
+  {
+   "id": "fields-seconds-off",
+   "group": "fields",
+   "title": "Seconds sweep off",
+   "expect": "A setting: no sweep at all.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "seconds": false,
+    "time": "10:09:52"
+   }
+  },
+  {
+   "id": "dial-grain-ideal",
+   "group": "dial",
+   "title": "Grain: In range, steady (112, the ideal)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 112,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "dial-grain-heading-up",
+   "group": "dial",
+   "title": "Grain: In range, heading up (165, away, fast)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 165,
+    "rate": 1.8
+   }
+  },
+  {
+   "id": "dial-grain-high-rising",
+   "group": "dial",
+   "title": "Grain: High, still rising (236, away)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "dial-grain-high-falling",
+   "group": "dial",
+   "title": "Grain: High, coming down (236, back, insulin taken)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 236,
+    "rate": -1.5,
+    "status": "quiet",
+    "left": 30,
+    "lastAmount": 3,
+    "lastAgo": 30
+   }
+  },
+  {
+   "id": "dial-grain-very-high",
+   "group": "dial",
+   "title": "Grain: Very high (320, extreme)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 320,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "dial-grain-low-falling",
+   "group": "dial",
+   "title": "Grain: Low, falling (62, away)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 62,
+    "rate": -1.4
+   }
+  },
+  {
+   "id": "dial-grain-low-recovering",
+   "group": "dial",
+   "title": "Grain: Low, recovering (62, back, carbs taken)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 62,
+    "rate": 1.4,
+    "status": "quiet",
+    "left": 10,
+    "lastKind": "carbs",
+    "lastAmount": 15,
+    "lastAgo": 5
+   }
+  },
+  {
+   "id": "dial-grain-old",
+   "group": "dial",
+   "title": "Grain: Old reading (104, 9 min)",
+   "expect": "See SPEC.md §7 (grain).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 104,
+    "rate": -0.3,
+    "age": 9
+   }
+  },
+  {
+   "id": "dial-contours-ideal",
+   "group": "dial",
+   "title": "Contours: In range, steady (112, the ideal)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 112,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "dial-contours-heading-up",
+   "group": "dial",
+   "title": "Contours: In range, heading up (165, away, fast)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 165,
+    "rate": 1.8
+   }
+  },
+  {
+   "id": "dial-contours-high-rising",
+   "group": "dial",
+   "title": "Contours: High, still rising (236, away)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "dial-contours-high-falling",
+   "group": "dial",
+   "title": "Contours: High, coming down (236, back, insulin taken)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 236,
+    "rate": -1.5,
+    "status": "quiet",
+    "left": 30,
+    "lastAmount": 3,
+    "lastAgo": 30
+   }
+  },
+  {
+   "id": "dial-contours-very-high",
+   "group": "dial",
+   "title": "Contours: Very high (320, extreme)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 320,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "dial-contours-low-falling",
+   "group": "dial",
+   "title": "Contours: Low, falling (62, away)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 62,
+    "rate": -1.4
+   }
+  },
+  {
+   "id": "dial-contours-low-recovering",
+   "group": "dial",
+   "title": "Contours: Low, recovering (62, back, carbs taken)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 62,
+    "rate": 1.4,
+    "status": "quiet",
+    "left": 10,
+    "lastKind": "carbs",
+    "lastAmount": 15,
+    "lastAgo": 5
+   }
+  },
+  {
+   "id": "dial-contours-old",
+   "group": "dial",
+   "title": "Contours: Old reading (104, 9 min)",
+   "expect": "See SPEC.md §7 (contours).",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 104,
+    "rate": -0.3,
+    "age": 9
+   }
+  },
+  {
+   "id": "dial-waterline-ideal",
+   "group": "dial",
+   "title": "Waterline: In range, steady (112, the ideal)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 112,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "dial-waterline-heading-up",
+   "group": "dial",
+   "title": "Waterline: In range, heading up (165, away, fast)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 165,
+    "rate": 1.8
+   }
+  },
+  {
+   "id": "dial-waterline-high-rising",
+   "group": "dial",
+   "title": "Waterline: High, still rising (236, away)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "dial-waterline-high-falling",
+   "group": "dial",
+   "title": "Waterline: High, coming down (236, back, insulin taken)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 236,
+    "rate": -1.5,
+    "status": "quiet",
+    "left": 30,
+    "lastAmount": 3,
+    "lastAgo": 30
+   }
+  },
+  {
+   "id": "dial-waterline-very-high",
+   "group": "dial",
+   "title": "Waterline: Very high (320, extreme)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 320,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "dial-waterline-low-falling",
+   "group": "dial",
+   "title": "Waterline: Low, falling (62, away)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 62,
+    "rate": -1.4
+   }
+  },
+  {
+   "id": "dial-waterline-low-recovering",
+   "group": "dial",
+   "title": "Waterline: Low, recovering (62, back, carbs taken)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 62,
+    "rate": 1.4,
+    "status": "quiet",
+    "left": 10,
+    "lastKind": "carbs",
+    "lastAmount": 15,
+    "lastAgo": 5
+   }
+  },
+  {
+   "id": "dial-waterline-old",
+   "group": "dial",
+   "title": "Waterline: Old reading (104, 9 min)",
+   "expect": "See SPEC.md §7 (waterline).",
+   "cfg": {
+    "dial": "water",
+    "glucose": 104,
+    "rate": -0.3,
+    "age": 9
+   }
+  },
+  {
+   "id": "dial-lasers-ideal",
+   "group": "dial",
+   "title": "Lasers: In range, steady (112, the ideal)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 112,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "dial-lasers-heading-up",
+   "group": "dial",
+   "title": "Lasers: In range, heading up (165, away, fast)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 165,
+    "rate": 1.8
+   }
+  },
+  {
+   "id": "dial-lasers-high-rising",
+   "group": "dial",
+   "title": "Lasers: High, still rising (236, away)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "dial-lasers-high-falling",
+   "group": "dial",
+   "title": "Lasers: High, coming down (236, back, insulin taken)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 236,
+    "rate": -1.5,
+    "status": "quiet",
+    "left": 30,
+    "lastAmount": 3,
+    "lastAgo": 30
+   }
+  },
+  {
+   "id": "dial-lasers-very-high",
+   "group": "dial",
+   "title": "Lasers: Very high (320, extreme)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 320,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "dial-lasers-low-falling",
+   "group": "dial",
+   "title": "Lasers: Low, falling (62, away)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 62,
+    "rate": -1.4
+   }
+  },
+  {
+   "id": "dial-lasers-low-recovering",
+   "group": "dial",
+   "title": "Lasers: Low, recovering (62, back, carbs taken)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 62,
+    "rate": 1.4,
+    "status": "quiet",
+    "left": 10,
+    "lastKind": "carbs",
+    "lastAmount": 15,
+    "lastAgo": 5
+   }
+  },
+  {
+   "id": "dial-lasers-old",
+   "group": "dial",
+   "title": "Lasers: Old reading (104, 9 min)",
+   "expect": "See SPEC.md §7 (lasers).",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 104,
+    "rate": -0.3,
+    "age": 9
+   }
+  },
+  {
+   "id": "dial-glow-ideal",
+   "group": "dial",
+   "title": "Glow: In range, steady (112, the ideal)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 112,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "dial-glow-heading-up",
+   "group": "dial",
+   "title": "Glow: In range, heading up (165, away, fast)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 165,
+    "rate": 1.8
+   }
+  },
+  {
+   "id": "dial-glow-high-rising",
+   "group": "dial",
+   "title": "Glow: High, still rising (236, away)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "dial-glow-high-falling",
+   "group": "dial",
+   "title": "Glow: High, coming down (236, back, insulin taken)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 236,
+    "rate": -1.5,
+    "status": "quiet",
+    "left": 30,
+    "lastAmount": 3,
+    "lastAgo": 30
+   }
+  },
+  {
+   "id": "dial-glow-very-high",
+   "group": "dial",
+   "title": "Glow: Very high (320, extreme)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 320,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "dial-glow-low-falling",
+   "group": "dial",
+   "title": "Glow: Low, falling (62, away)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 62,
+    "rate": -1.4
+   }
+  },
+  {
+   "id": "dial-glow-low-recovering",
+   "group": "dial",
+   "title": "Glow: Low, recovering (62, back, carbs taken)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 62,
+    "rate": 1.4,
+    "status": "quiet",
+    "left": 10,
+    "lastKind": "carbs",
+    "lastAmount": 15,
+    "lastAgo": 5
+   }
+  },
+  {
+   "id": "dial-glow-old",
+   "group": "dial",
+   "title": "Glow: Old reading (104, 9 min)",
+   "expect": "See SPEC.md §7 (glow).",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 104,
+    "rate": -0.3,
+    "age": 9
+   }
+  },
+  {
+   "id": "dial-black-ideal",
+   "group": "dial",
+   "title": "Black: In range, steady (112, the ideal)",
+   "expect": "Plain black: no dial at all.",
+   "cfg": {
+    "dial": "black",
+    "glucose": 112,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "dial-black-high-rising",
+   "group": "dial",
+   "title": "Black: High, still rising (236, away)",
+   "expect": "Plain black: no dial at all.",
+   "cfg": {
+    "dial": "black",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "dial-map-ideal",
+   "group": "dial",
+   "title": "Map: In range, steady (112, the ideal)",
+   "expect": "The decorative map: fixed contour lines in #19191C; never reacts.",
+   "cfg": {
+    "dial": "map",
+    "glucose": 112,
+    "rate": 0.2
+   }
+  },
+  {
+   "id": "dial-map-high-rising",
+   "group": "dial",
+   "title": "Map: High, still rising (236, away)",
+   "expect": "The decorative map: fixed contour lines in #19191C; never reacts.",
+   "cfg": {
+    "dial": "map",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "halo-outline",
+   "group": "halo",
+   "title": "Halo: outline",
+   "expect": "Default: the dial stops ~5.5–6.5 px around every glyph (stroke 11–13 in the mask).",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 150,
+    "rate": 1.2,
+    "halo": "outline"
+   }
+  },
+  {
+   "id": "halo-box",
+   "group": "halo",
+   "title": "Halo: box",
+   "expect": "A rounded box (rx 16) around each block.",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 150,
+    "rate": 1.2,
+    "halo": "box"
+   }
+  },
+  {
+   "id": "halo-none",
+   "group": "halo",
+   "title": "Halo: none",
+   "expect": "The dial runs straight behind the numbers.",
+   "cfg": {
+    "dial": "halftone",
+    "glucose": 150,
+    "rate": 1.2,
+    "halo": "none"
+   }
+  }
+ ],
+ "store": [
+  {
+   "id": "hero",
+   "title": "In range, the default face",
+   "cfg": {}
+  },
+  {
+   "id": "grain-high",
+   "title": "Grain, high and rising, insulin taken",
+   "cfg": {
+    "glucose": 236,
+    "rate": 1.5,
+    "status": "quiet",
+    "left": 25,
+    "last": {
+     "items": [
+      {
+       "k": "rapid",
+       "a": "4.5"
+      },
+      {
+       "k": "carbs",
+       "a": "45"
+      }
+     ],
+     "ago": 35
+    }
+   }
+  },
+  {
+   "id": "contours-high",
+   "title": "Contours, high and rising",
+   "cfg": {
+    "dial": "topo",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "waterline-high",
+   "title": "Waterline, high",
+   "cfg": {
+    "dial": "water",
+    "glucose": 236,
+    "rate": 1.5
+   }
+  },
+  {
+   "id": "lasers-very-high",
+   "title": "Lasers, very high",
+   "cfg": {
+    "dial": "laser",
+    "glucose": 320,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "glow-low",
+   "title": "Glow, low and falling",
+   "cfg": {
+    "dial": "glow",
+    "glucose": 62,
+    "rate": -1.4
+   }
+  },
+  {
+   "id": "sparkline",
+   "title": "Sparkline, turning after a low",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 77,
+    "rate": 1,
+    "spark": [
+     96,
+     90,
+     84,
+     78,
+     72,
+     67,
+     63,
+     61,
+     60,
+     62,
+     66,
+     71,
+     77
+    ]
+   }
+  },
+  {
+   "id": "always-on",
+   "title": "Always-on",
+   "cfg": {
+    "mode": "aod"
+   }
+  },
+  {
+   "id": "night",
+   "title": "Night",
+   "cfg": {
+    "mode": "night",
+    "glucose": 118,
+    "rate": -0.2
+   }
+  },
+  {
+   "id": "spanish",
+   "title": "Español, low",
+   "cfg": {
+    "lang": "es",
+    "glucose": 64,
+    "rate": -1.2
+   }
+  }
+ ]
+}

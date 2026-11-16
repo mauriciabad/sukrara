@@ -6,6 +6,8 @@
 #   tools/install.sh phone [--dry-run]   apps/android release APK → verify-apk.sh → adb install -r (keeps data)
 #   tools/install.sh mac   [--dry-run]   apps/macos bundle.sh → verify-app.sh → over the installed Sukrara.app
 #                                        (/Applications, else ~/Applications; one copy stays; quit and reopened)
+#   tools/install.sh watch [--dry-run]   apps/garmin release .prg (developer key) → verify_prg.sh → onto the Garmin on
+#                                        USB (MTP, GARMIN/Apps; the watch installs it when unplugged; the owner picks it)
 # Refuses unless: the tree is clean, HEAD contains origin/main and every branch in tools/check/integration.txt,
 # HEAD contains the commit installed last time (else features vanish from the device), and tools/check/run.sh passes.
 # Records what it installed in <git common dir>/sukrara-installed-<target> (shared by all worktrees).
@@ -17,7 +19,7 @@
 set -eu
 TARGET=${1:-}; DRY=0
 [ "${2:-}" = "--dry-run" ] && DRY=1
-case "$TARGET" in phone|mac) ;; *) echo "usage: tools/install.sh phone|mac [--dry-run]" >&2; exit 2 ;; esac
+case "$TARGET" in phone|mac|watch) ;; *) echo "usage: tools/install.sh phone|mac|watch [--dry-run]" >&2; exit 2 ;; esac
 ROOT=$(git rev-parse --show-toplevel); cd "$ROOT"
 unset SUKRARA_RELEASE_BUILD # only the release scripts build a release
 . tools/release/lib.sh
@@ -69,6 +71,14 @@ if [ "$TARGET" = phone ]; then
     GOT=$(adb -s "$SERIAL" shell dumpsys package app.mauri.sukrara | sed -n 's/.*versionName=//p' | head -1 | tr -d '\r')
     [ "$GOT" = "$VERSION" ] || die "phone reports versionName '$GOT' for app.mauri.sukrara, expected '$VERSION'."
   fi
+elif [ "$TARGET" = watch ]; then
+  # 2c. The face, a release build signed with the developer key (outside the repo, docs/DEVELOPMENT.md › Garmin),
+  # verified (no debug code, the face's id), copied onto the watch: only its own file in GARMIN/Apps changes.
+  PRG=apps/garmin/bin/SukraraAura.prg
+  run apps/garmin/build.sh release
+  run apps/garmin/tools/verify_prg.sh "$PRG"
+  run python3 apps/garmin/tools/sideload.py "$PRG"
+  GOT="Aura $(sed -n 's/.*iq:application .*version="\([0-9.]*\)".*/\1/p' apps/garmin/manifest.xml)"
 else
   # 2b. Team-signed bundle with the widget, replacing the installed copy wherever it is: /Applications (the notarized
   # release from the dmg or the cask) if it's there, else ~/Applications. Exactly one Sukrara stays on the Mac:

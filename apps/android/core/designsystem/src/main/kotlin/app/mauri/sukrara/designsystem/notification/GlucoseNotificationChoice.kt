@@ -44,14 +44,12 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
  * `system_navigation_gesture_settings.xml`): one picture of the selected choice (the status bar and the notification it
  * gives, what shows the glucose highlighted), fading through on a change, then one radio row per choice (equal rows,
  * the title what the status bar shows, the summary what the notification is, what an option needs as a [RowTag]).
- * [rootOffered] false (a build without root features) leaves the root text out; it is chosen even before root works:
- * choosing it is the request. [offOffered]: *Nothing* (Settings only: setup doesn't send the person to Android's
- * notification settings).
+ * The root text is chosen even before root works: choosing it is the request. [offOffered]: *Nothing* (Settings only:
+ * setup doesn't send the person to Android's notification settings).
  */
 @Composable
 fun GlucoseNotificationChoice(
     style: NotificationStyle,
-    rootOffered: Boolean,
     onChoose: (NotificationStyle) -> Unit,
     modifier: Modifier = Modifier,
     offOffered: Boolean = false,
@@ -60,7 +58,6 @@ fun GlucoseNotificationChoice(
         Preview(style)
         SettingsGroup(Modifier.selectableGroup(), title = stringResource(R.string.ds_notif_style_heading)) {
             for (option in NotificationStyle.entries) {
-                if (option == NotificationStyle.Text && !rootOffered) continue
                 if (option == NotificationStyle.Off && !offOffered && style != NotificationStyle.Off) continue
                 RadioRow(
                     stringResource(titleOf(option)),

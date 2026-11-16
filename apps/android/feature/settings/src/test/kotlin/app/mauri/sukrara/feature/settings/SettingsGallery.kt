@@ -341,7 +341,6 @@ class SettingsGallery {
             },
             "sensor-time" to { SensorTimeContent(GraphConfig(sensorPlace = mapOf(GraphPlace.WIDGETS to false)), GraphActions(), {}) },
             "graph-marks" to { GraphMarksContent(GraphConfig(), GraphActions(), {}) },
-            "lock" to { LockScreenContent(20.0, {}, {}) },
             // the lock-screen widget: shown (the module runs), waiting for a System UI restart, off
             "lock-widget" to {
                 LockScreenContent(20.0, {}, {}, LockWidgetUi(true, LockLook(), SystemAccessState(module = ModuleState.Active)))
@@ -819,7 +818,6 @@ private fun notificationPage(
     shown: Boolean = true,
 ) = StatusBarContent(
     prefs,
-    rootOffered = true,
     AndroidNotification(liveUpdates, shown),
     access,
     busy = false,

@@ -18,7 +18,6 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
-import app.mauri.sukrara.feature.settings.search.BuildFeature
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -44,7 +43,7 @@ class AboutSummaryTest {
     @get:Rule val compose = createComposeRule()
 
     private var about by mutableStateOf(OverviewAbout("0.14.5"))
-    private var build by mutableStateOf(BuildFeature.entries.toSet())
+    private var updater by mutableStateOf(true)
 
     private fun show() =
         compose.setContent {
@@ -54,7 +53,7 @@ class AboutSummaryTest {
                     AlertUiState(),
                     AlertReadiness.Ready,
                     FakeClock(Instant.parse("2026-11-15T12:00:00Z"), ZoneOffset.UTC),
-                    OverviewActions(build = build),
+                    OverviewActions(updater = updater),
                     about = about,
                 ) {}
             }
@@ -70,7 +69,7 @@ class AboutSummaryTest {
         show()
         summary("0.14.5 · updates and links")
         compose.onRoot().captureRoboImage("build/outputs/roborazzi/settings-overview-about-github.png")
-        build = setOf(BuildFeature.Root)
+        updater = false
         summary("0.14.5 · links")
     }
 
@@ -106,13 +105,13 @@ class AboutSummaryTest {
         show()
         val variants =
             listOf(
-                Triple(OverviewAbout(LONG_VERSION), BuildFeature.entries.toSet(), LONG_VERSION),
-                Triple(OverviewAbout(LONG_VERSION), setOf(BuildFeature.Root), LONG_VERSION),
-                Triple(OverviewAbout(LONG_VERSION, update = "0.14.16"), BuildFeature.entries.toSet(), update),
+                Triple(OverviewAbout(LONG_VERSION), true, LONG_VERSION),
+                Triple(OverviewAbout(LONG_VERSION), false, LONG_VERSION),
+                Triple(OverviewAbout(LONG_VERSION, update = "0.14.16"), true, update),
             )
         for ((a, b, start) in variants) {
             about = a
-            build = b
+            updater = b
             compose.waitForIdle()
             val node = compose.onNodeWithText(start, substring = true, useUnmergedTree = true)
             node.performScrollTo()

@@ -31,7 +31,6 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.titleRes
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
-import app.mauri.sukrara.feature.settings.search.BuildFeature
 import app.mauri.sukrara.feature.settings.search.OtherPage
 import app.mauri.sukrara.feature.settings.search.RecentSearch
 import app.mauri.sukrara.feature.settings.search.SearchEntry
@@ -62,8 +61,8 @@ class OverviewActions(
     val restoreClosedTips: () -> Unit = {},
     /** Settings › Insulin pens is offered (the wearer's phone with NFC). */
     val pens: Boolean = false,
-    /** What this build has: both in the GitHub build, root only in the Google Play build (search shows only those rows). */
-    val build: Set<BuildFeature> = BuildFeature.entries.toSet(),
+    /** This build has the updater: the GitHub version, not the Google Play one (search shows its rows only then). */
+    val updater: Boolean = true,
     /** The sharing profile (name and picture followers see). */
     val openProfile: () -> Unit = {},
     /** Backup of the sharing identity (password manager, recovery code). */
@@ -135,7 +134,7 @@ fun SettingsOverviewContent(
             },
             pens = actions.pens,
             wearer = sharing.wearer,
-            build = actions.build,
+            updater = actions.updater,
             recent = recent,
             initialQuery = searchQuery,
             more = moreSearch,
@@ -398,7 +397,7 @@ fun SettingsOverviewContent(
             NavigationRow(
                 stringResource(R.string.st_about_title),
                 { actions.open(SettingsRoute.About) },
-                summary = aboutSummary(about, BuildFeature.UpdateCheck in actions.build),
+                summary = aboutSummary(about, actions.updater),
                 leading = { SectionIcon(Section.About) },
             )
         }

@@ -21,7 +21,8 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   true|false` and `PEN_JUGGLUCO --ez installed true|false` (docs/FEATURES.md "Sensor reminders and countdowns",
   "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
   = no relay: Q22), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local
-  test release and trusts the debug key: Q25). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
+  test release and trusts the debug key: Q25), `GARMIN_SIM --ez on true|false` (Sukrara Aura's push goes to the
+  Connect IQ simulator instead of Garmin Connect: Q27). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
   stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
@@ -145,8 +146,8 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
       keeps every pill legible (white / black on red).
 - [ ] Settings › Status bar & notification (docs/36 §11, §14; its overview icon the status bar with the shade pulled
       down): the picture follows the choice (fade, cut with reduced motion; TalkBack reads it as one sentence);
-      *Chip*, *Notification icon*, *Status bar text* (root builds only, a *Root* label at its end that TalkBack reads with
-      the row), *Nothing* are one radio group of equal rows; under it only the chosen one's rows (chip: *Allow Live
+      *Chip*, *Notification icon*, *Status bar text* (a *Root* label at its end that TalkBack reads with the row),
+      *Nothing* are one radio group of equal rows; under it only the chosen one's rows (chip: *Allow Live
       Updates* while refused; icon and text: *What the icon shows* with the newest value drawn as each icon, *None*
       only with the text; text: root's card, *Placement*, *Colour by range*, *Glucose notification*), then
       *Notification* with *Alerts in the notification* (flipping it flips Alerts › *Separate alert notifications*).
@@ -1044,6 +1045,63 @@ for monitoring; `--ei cycle 135` brings a low (an alert), `--ei cycle 0` ends it
 - [ ] The release (not emulator): after publishing, the GitHub version on the owner's phone shows the update within a
   day, the asset is `Sukrara-<version>.apk` with GitHub's digest, and it installs and comes back monitoring.
 
+## Q27 Garmin link (phone → Sukrara Aura) and the xDrip+ server page
+
+Cheapest first: the simulator, then the owner's phone and watch (only after `tools/install.sh phone` and the face on the
+watch; the watch shows the real value: check it against the phone, never photograph it).
+
+- [ ] **Simulator** (debug build on `medium_phone`, `SYNTHETIC --ez on true`, `GARMIN_SIM --ez on true`, open the app):
+      `adb forward tcp:7381 tcp:7381` and `adb forward tcp:17582 tcp:17582`; run the face in the Connect IQ simulator
+      (`descentmk343mm`), *adb Connection › Start* (and *Settings › Use Device HTTPS Requirements* off for the fetch; put
+      it back after). Within a minute the face shows the emulator's value and trend;
+      *Simulation › Background Events › Temporal* makes it fetch (Share with apps › Garmin: *Sukrara Aura* "Watch face ·
+      in use, asked this phone at <now>"). Stop the emulator's app: the face's value goes late, struck, then *No reading since*,
+      counting from the reading's time.
+- [ ] **Phone + watch**: Share with apps › *Garmin* says "<watch> has the <time> reading" within a minute of a reading,
+      the time matching the phone's newest reading; the page's watch line says the same, with Garmin Connect's name for
+      the watch;
+      the face's value and arrow match the phone's card within seconds of the phone's notification changing.
+- [ ] Walk away with the phone (or Bluetooth off on the phone): the row says "<watch> isn't connected"; the face goes
+      late → struck → *No reading since* and Garmin's *No phone*; the page's line "Not connected · has the <time>
+      reading"; back in reach, the face is current within a minute
+      without touching anything.
+- [ ] Watch restart, phone restart, Garmin Connect swiped away: the face shows the last reading aging right away, and
+      is current again by itself (push on reconnect, or its 5-minute fetch).
+- [ ] The main switch off: the row says "Off", the page's note "Your watch gets no readings from this phone", nothing
+      more reaches the face (it ages out); on again: current within a minute. *Send now* (an action button, a haptic)
+      sends at once. *Open Garmin Connect* opens it. Pick another face on the watch: within 11 minutes *Sukrara Aura*
+      says "not in use"; back, "in use" after its next fetch.
+- [ ] *Other watch faces and data fields › xDrip+ server* opens the xDrip+ server page (also from Share with apps ›
+      *Apps on this phone*): *Use xDrip+ server* on shows "Listening on 127.0.0.1:17580 · not asked yet", *Apps that
+      read it* lists Garmin Connect with its icon and no switch; a face made for xDrip+ asking it updates "last asked
+      at"; off again from either way in. Light, dark, largest font, Spanish: the action buttons' labels readable,
+      nothing clipped.
+- [ ] A low with the pill, a mute, a treatment: the face's pill and treatment field change within seconds of the
+      phone's card.
+- [ ] TalkBack: the row and every page row read their text; each action button reads as a button with its label; the
+      main switch reads as a switch with its note.
+## Q28 Garmin watch face (Sukrara Aura)
+
+- [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]`
+      (simulator, ~6 min): numbers 105 of 105, 0 differences; open the worst `diff-core/` images: every red pixel is a
+      glyph's edge (fonts rasterise differently) or a dial's anti-aliasing / its 16-bit colour, never a moved, missing or
+      wrong-coloured element. `core_refs.mjs` makes the dial-less references.
+- [ ] The `dial-*` matrix and `halo-*` in `sim/` beside `docs/img/aura/ref/`: each dial gathers at the bead's height,
+      spreads with how far out of range, grey and dashed when old; no dial line touches a digit (never a strike-through)
+      with the halo on outline or box.
+- [ ] Look at `sim/` for the safety states side by side with `docs/img/aura/ref/`: old (struck, grey, hollow bead, no
+      arrow), no reading since (no figure anywhere), LO / HI (no number, a ring), very low (white on red), warm-up,
+      sensor ended, nothing paired. The time is readable in every one, always-on and night included.
+- [ ] The run's "always-on" lines: every `aod-*` case under 10 % luminance (very low and LO the brightest). Simulator ›
+      Settings › Display Mode › Always On on the very low and LO cases: no luminance warning.
+- [ ] On the watch, a new reading while awake: the bead, trail and arrow glide (0.9 s); the sweep steps once a second.
+- [ ] On the watch (`tools/install.sh watch`, then the owner selects the face): it draws, Customize opens and every
+      setting changes the face; Private hides the value and touch and hold shows it for 5 s; Spanish with the watch in
+      Spanish.
+- [ ] On the watch, raise the wrist a few times with Do Not Disturb off: the full face at the panel's brightness,
+      never the always-on look. After the next fetch, `adb logcat -s Sukrara.Aura` shows each `X@<t>` followed by
+      `Dw@<t>` within a second (docs/43 "The screen").
+
 ## Q20 The person and the feel
 
 Every app change (CLAUDE.md *Design from the person's life first*, *Make it juicy*; user, 2026-10-23).
@@ -1057,7 +1115,7 @@ Every app change (CLAUDE.md *Design from the person's life first*, *Make it juic
 - [ ] With reduced motion / remove animations on, and with TalkBack / VoiceOver, everything still works and reads well.
 
 
-## Q27 Website
+## Q29 Website
 
 sukrara.mauri.app (`website/`, [`website/README.md`](../website/README.md)). Automated already: `npm run check`
 (links, anchors, the apps' URLs, App Links, the feed). Locally: `cd website && npm run build && npx astro preview`.

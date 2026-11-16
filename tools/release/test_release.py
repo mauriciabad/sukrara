@@ -111,6 +111,14 @@ class NotesTest(unittest.TestCase):
         self.assertFalse(release.github_notes(release.changelog_release(CHANGELOG, "1.0.0"), "1.0.0", "AB")
                          .startswith("**Not a medical device.** 0.x"))
 
+    def test_github_notes_with_the_garmin_face(self):
+        out = release.changelog_release(CHANGELOG, "0.14.0")
+        self.assertNotIn("SukraraAura", release.github_notes(out, "0.14.0", "AB"))  # not released yet
+        notes = release.github_notes(out, "0.14.0", "AB", ["descentmk343mm"])
+        self.assertIn("- `SukraraAura-0.14.0-descentmk343mm.prg`: the Sukrara Aura watch face for the Garmin "
+                      "`descentmk343mm`, to copy into the watch's `GARMIN/APPS` folder", notes)
+        self.assertIn("- `SukraraAura-0.14.0.iq`: the Connect IQ store package", notes)
+
     def test_unwrap_keeps_structure(self):
         md = "Para one\ncontinues.\n\n- item\n  wrapped\n- next\n\n```\nkeep\nlines\n```\n## H\nText"
         self.assertEqual(release.unwrap(md),
@@ -433,6 +441,48 @@ class TestFlightTest(unittest.TestCase):
         ran, step = self.run_step(FakeAppStoreConnect([valid]))
         self.assertEqual(ran, [])
         self.assertEqual(step.notes_state, [])
+
+
+MANIFEST = """<?xml version="1.0"?>
+<iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
+    <iq:application id="9ace188f" type="watchface" name="@Strings.AppName" entry="AuraApp" minApiLevel="5.0.0" version="0.1.0">
+        <iq:products>
+            <iq:product id="descentmk343mm"/>
+            <iq:product id="fenix847mm"/>
+        </iq:products>
+    </iq:application>
+</iq:manifest>
+"""
+
+
+class GarminTest(unittest.TestCase):
+    def test_manifest_version_follows_the_release(self):
+        out = release.manifest_with_version(MANIFEST, "0.15.0")
+        self.assertIn('minApiLevel="5.0.0" version="0.15.0">', out)
+        self.assertIn('<iq:manifest version="3"', out)  # the manifest format's own version stays
+        self.assertEqual(out.replace("0.15.0", "0.1.0", 1), MANIFEST)
+        with self.assertRaises(ValueError):
+            release.manifest_with_version(MANIFEST.replace(' version="0.1.0"', ""), "0.15.0")
+
+    def test_files(self):
+        self.assertEqual(release.manifest_devices(MANIFEST), ["descentmk343mm", "fenix847mm"])
+        self.assertEqual(release.garmin_artifacts("0.15.0", ["descentmk343mm"]), {
+            "iq": "apps/garmin/bin/dist/SukraraAura-0.15.0.iq",
+            "prg-descentmk343mm": "apps/garmin/bin/dist/SukraraAura-0.15.0-descentmk343mm.prg"})
+
+    def test_upload_kit(self):
+        kit = release.garmin_upload_kit("0.14.0", "/r/SukraraAura-0.14.0.iq", release.changelog_release(CHANGELOG, "0.14.0"))
+        self.assertIn("https://apps-developer.garmin.com/developer/dashboard", kit)
+        self.assertIn("  2. File: /r/SukraraAura-0.14.0.iq\n  3. Version: 0.14.0", kit)
+        self.assertIn("       - **The Mac updates itself** (#91): once a day it looks for a new version, signed", kit)
+
+    def test_garmin_step_is_off_until_the_store_key_is_pinned(self):
+        rel = release.Release("9.9.9", dry=True)
+        on = os.path.exists(os.path.join(release.ROOT, release.GARMIN_KEY_PIN)) and \
+            os.path.exists(os.path.join(release.ROOT, release.GARMIN_MANIFEST))
+        self.assertEqual(rel.garmin_on(), on)
+        if not on:
+            self.assertEqual(rel.garmin_files(), {})
 
 
 class CheckoutTest(unittest.TestCase):

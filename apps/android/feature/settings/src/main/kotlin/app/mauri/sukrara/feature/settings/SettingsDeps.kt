@@ -69,8 +69,8 @@ interface SettingsDeps {
     /** The pens, their pages and Android's tap state (null on a phone that doesn't read pens). */
     val pens: PensPort? get() = null
 
-    /** Root for Sukrara and the System UI module (Settings › Status bar, "With root"); null in a build without them. */
-    val systemAccess: SystemAccessPort?
+    /** Root for Sukrara and the System UI module (Settings › Status bar, "With root"; Settings › Lock screen). */
+    val systemAccess: SystemAccessPort
 
     /** The wearer's sensor as the hub knows it (Settings › Sensor end shows its end). */
     val sensor: Flow<SensorState>

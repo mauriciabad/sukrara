@@ -7,7 +7,9 @@
     python3 tools/settings/gen.py --check   exit 1 when a generated file is stale (tools/check rule 'settings')
 
 Outputs: Android SettingsSpec.kt (:core:model, package app.mauri.sukrara.settings) and Mac SettingsSpec.swift
-(SukraraCore). Both carry the number formats ('numbers') as NumberSpec values, the option lists, the inventory
+(SukraraCore); for the Garmin face (the rows with a 'garmin' place: store 'properties', the key a Connect IQ property)
+SettingsSpec.mc (its keys, option lists and defaults), properties.xml and settings.xml (the Connect IQ app's settings
+page; titles and option names are the resource strings set_<key> and opt_<value>, en and es). Both carry the number formats ('numbers') as NumberSpec values, the option lists, the inventory
 ('settings') as SettingInfo rows (with 'mirror' / 'mirrorExcept': what a follower takes from the wearer) and the stored
 keys as constants (Stores / Keys), so the number inputs, the stores, the models' validation, the settings mirror and
 the schema tests read the same values on both platforms.
@@ -22,6 +24,9 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 SCHEMA = os.path.join(ROOT, "contracts/settings/settings.json")
 KT = os.path.join(ROOT, "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt")
 SWIFT = os.path.join(ROOT, "apps/macos/Sources/SukraraCore/Settings/SettingsSpec.swift")
+MC = os.path.join(ROOT, "apps/garmin/source/SettingsSpec.mc")
+PROPS = os.path.join(ROOT, "apps/garmin/resources/settings/properties.xml")
+SETTINGS_XML = os.path.join(ROOT, "apps/garmin/resources/settings/settings.xml")
 UNITS = os.path.join(ROOT, "contracts/settings/units.json")
 with open(UNITS, encoding="utf-8") as _f:
     MGDL_PER_MMOL = json.load(_f)["factor"]
@@ -132,7 +137,95 @@ def stored(schema, p, stores=None):
     return st, ks
 
 
+def apps(schema):
+    """The schema without the rows only the Garmin face has (the phone and the Mac never read them)."""
+    return dict(schema, settings=[s for s in schema["settings"] if s.get("android") or s.get("mac")])
+
+
+def garmin_rows(schema):
+    return [s for s in schema["settings"] if s.get("garmin")]
+
+
+def const_mc(key):
+    return const_kt(key)
+
+
+def monkeyc(schema):
+    """SettingsSpec.mc: each Garmin setting as [stored key, option values (null for a bool), default]."""
+    L = ["// " + l for l in HEADER.splitlines()]
+    L += ["// " + NOTE, "import Toybox.Lang;", "", "module SettingsSpec {"]
+    rows = garmin_rows(schema)
+    for s in rows:
+        g = s["garmin"]
+        vals = "null" if s["type"] == "bool" else "[%s]" % ", ".join(sstr(v) for v in s["values"])
+        d = ("true" if s["default"] else "false") if s["type"] == "bool" else sstr(s["default"])
+        L.append("    // %s" % s["label"])
+        L.append("    const %s = [%s, %s, %s];" % (const_mc(g["key"]), sstr(g["key"]), vals, d))
+    L.append("")
+    L.append("    const ALL = [%s];" % ", ".join(const_mc(s["garmin"]["key"]) for s in rows))
+    L.append("")
+    L.append("    // the setting's title (resource string set_<key>)")
+    L.append("    function title(key as String) as ResourceId {")
+    for i, s in enumerate(rows):
+        k = s["garmin"]["key"]
+        L.append("        %sif (key.equals(%s)) {" % ("" if i == 0 else "} else ", sstr(k)))
+        L.append("            return Rez.Strings.set_%s;" % k)
+    L.append("        }")
+    L.append("        return Rez.Strings.AppName;")
+    L.append("    }")
+    L.append("")
+    L.append("    // an option's name (resource string opt_<value>)")
+    L.append("    function label(value as String) as ResourceId {")
+    seen = []
+    for s in rows:
+        for v in s.get("values") or []:
+            if v not in seen:
+                seen.append(v)
+    for i, v in enumerate(seen):
+        L.append("        %sif (value.equals(%s)) {" % ("" if i == 0 else "} else ", sstr(v)))
+        L.append("            return Rez.Strings.opt_%s;" % v)
+    L.append("        }")
+    L.append("        return Rez.Strings.AppName;")
+    L.append("    }")
+    L.append("}")
+    return "\n".join(L) + "\n"
+
+
+def xml_head():
+    return ["<!-- " + l + " -->" for l in HEADER.splitlines()] + ["<!-- " + NOTE + " -->"]
+
+
+def properties_xml(schema):
+    L = xml_head() + ["<properties>"]
+    for s in garmin_rows(schema):
+        k = s["garmin"]["key"]
+        if s["type"] == "bool":
+            L.append('    <property id="%s" type="boolean">%s</property>' % (k, "true" if s["default"] else "false"))
+        else:
+            L.append('    <property id="%s" type="number">%d</property>' % (k, s["values"].index(s["default"])))
+    L.append("</properties>")
+    return "\n".join(L) + "\n"
+
+
+def settings_xml(schema):
+    L = xml_head() + ["<settings>"]
+    for s in garmin_rows(schema):
+        k = s["garmin"]["key"]
+        L.append('    <setting propertyKey="@Properties.%s" title="@Strings.set_%s">' % (k, k))
+        if s["type"] == "bool":
+            L.append('        <settingConfig type="boolean"/>')
+        else:
+            L.append('        <settingConfig type="list">')
+            for i, v in enumerate(s["values"]):
+                L.append('            <listEntry value="%d">@Strings.opt_%s</listEntry>' % (i, v))
+            L.append("        </settingConfig>")
+        L.append("    </setting>")
+    L.append("</settings>")
+    return "\n".join(L) + "\n"
+
+
 def kotlin(schema):
+    schema = apps(schema)
     L = ["// " + l for l in HEADER.splitlines()]
     L += ["// " + NOTE, "package app.mauri.sukrara.settings", "", "import app.mauri.sukrara.core.model.GlucoseUnit",
           "import kotlin.math.abs", "import kotlin.math.roundToLong", ""]
@@ -247,6 +340,7 @@ def lower_camel(name):
 
 
 def swift(schema):
+    schema = apps(schema)
     L = ["// " + l for l in HEADER.splitlines()]
     # generated, kept equal to this script's output by --check: swift-format would only reflow it
     L += ["// " + NOTE, "// swift-format-ignore-file", "import Foundation", ""]
@@ -356,7 +450,7 @@ def swift(schema):
 
 def outputs():
     s = load()
-    return {KT: kotlin(s), SWIFT: swift(s)}
+    return {KT: kotlin(s), SWIFT: swift(s), MC: monkeyc(s), PROPS: properties_xml(s), SETTINGS_XML: settings_xml(s)}
 
 
 def stale():

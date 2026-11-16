@@ -36,19 +36,14 @@ sealed interface SearchTarget {
 enum class Seen { Everyone, Wearer, Follower }
 
 /**
- * What a build may leave out (docs/20-publishing.md › Flavors): the Google Play build has no updater; root is in
- * both builds since 2026-11-11 (#142) and stays here for the fallback if Play rejects it.
- */
-enum class BuildFeature { Root, UpdateCheck }
-
-/**
  * One row the search finds: its [title] and [summary] as the page shows them (string resources, no format arguments),
  * the page it is [on] and the [trail] of page titles down to it with its [group]'s title (the result's breadcrumb:
  * "Alerts › Quiet times"), and what tapping the result opens: [target], at the row [highlight] (flashed, as
  * stock Settings' search does; the row itself, the group title it names, or null when the row opens a page of its own:
  * then the result opens that page, at its top). [keywords]: other words that find it, never shown (AOSP
  * `settings:keywords`). [pensOnly] rows exist only on a phone that reads insulin pens, [seen] says on whose phone the
- * row shows, [needs] which build has it (null: both).
+ * row shows, [updaterOnly] rows only in the build with the updater (the GitHub version; docs/20-publishing.md ›
+ * Flavors).
  */
 data class SearchEntry(
     @StringRes val title: Int,
@@ -61,7 +56,7 @@ data class SearchEntry(
     @StringRes val keywords: Int? = null,
     val pensOnly: Boolean = false,
     val seen: Seen = Seen.Everyone,
-    val needs: BuildFeature? = null,
+    val updaterOnly: Boolean = false,
 ) {
     /** The page the row is on (the trail's last page). */
     @get:StringRes
@@ -72,15 +67,15 @@ data class SearchEntry(
 
     /**
      * Whether this phone shows the row: [pens] = it reads insulin pens, [wearer] = the wearer's phone (else a
-     * follower's), [build] = what this build has.
+     * follower's), [updater] = this build has the updater.
      */
     fun shownOn(
         pens: Boolean,
         wearer: Boolean,
-        build: Set<BuildFeature> = BuildFeature.entries.toSet(),
+        updater: Boolean = true,
     ): Boolean =
         (pens || !pensOnly) &&
-            (needs == null || needs in build) &&
+            (updater || !updaterOnly) &&
             when (seen) {
                 Seen.Everyone -> true
                 Seen.Wearer -> wearer
@@ -259,11 +254,13 @@ object SettingsIndex {
         vararg rows: Pair<Int, Int?>,
         pensOnly: Boolean = false,
         seen: Seen = Seen.Everyone,
-        needs: BuildFeature? = null,
+        updaterOnly: Boolean = false,
     ) {
         val on = SearchTarget.Page(route)
         val trail = trail(route)
-        for ((t, s) in rows) add(SearchEntry(t, on, trail, summary = s, group = group, pensOnly = pensOnly, seen = seen, needs = needs))
+        for ((t, s) in rows) {
+            add(SearchEntry(t, on, trail, summary = s, group = group, pensOnly = pensOnly, seen = seen, updaterOnly = updaterOnly))
+        }
     }
 
     /**
@@ -727,7 +724,6 @@ object SettingsIndex {
                 R.string.st_lock_widget to R.string.st_lock_widget_on,
                 R.string.st_lock_background to null,
                 R.string.st_lock_appearance to null,
-                needs = BuildFeature.Root,
             )
 
             val pens = SettingsRoute.Pens
@@ -778,12 +774,7 @@ object SettingsIndex {
                 DsR.string.ds_notif_style_chip to DsR.string.ds_notif_style_chip_summary,
                 DsR.string.ds_notif_style_icon to DsR.string.ds_notif_style_icon_summary,
                 DsR.string.ds_notif_style_off to DsR.string.ds_notif_style_off_summary,
-            )
-            rows(
-                statusBar,
-                DsR.string.ds_notif_style_heading,
                 DsR.string.ds_notif_style_root to DsR.string.ds_notif_style_root_summary,
-                needs = BuildFeature.Root,
             )
             rows(
                 statusBar,
@@ -805,16 +796,10 @@ object SettingsIndex {
                 null,
                 R.string.st_root_colour to null,
                 R.string.st_root_placement to null,
-                needs = BuildFeature.Root,
             )
             // with the root text: the icon hidden, the notification's on / off (Android's)
-            rows(statusBar, R.string.st_statusbar_icon_group, R.string.st_statusbar_icon_none to null, needs = BuildFeature.Root)
-            rows(
-                statusBar,
-                R.string.st_statusbar_notification,
-                R.string.st_statusbar_glucose_notification to null,
-                needs = BuildFeature.Root,
-            )
+            rows(statusBar, R.string.st_statusbar_icon_group, R.string.st_statusbar_icon_none to null)
+            rows(statusBar, R.string.st_statusbar_notification, R.string.st_statusbar_glucose_notification to null)
 
             val sensorEnd = SettingsRoute.SensorEnd
             rows(sensorEnd, null, R.string.st_sensorend_current to null)
@@ -867,7 +852,7 @@ object SettingsIndex {
                     SearchTarget.Page(about),
                     trail(about),
                     highlight = R.string.st_update_none,
-                    needs = BuildFeature.UpdateCheck,
+                    updaterOnly = true,
                 ),
             )
             rows(
@@ -875,7 +860,7 @@ object SettingsIndex {
                 R.string.st_update_group,
                 R.string.st_update_auto_checks to R.string.st_update_auto_checks_summary,
                 R.string.st_update_auto_install to R.string.st_update_auto_install_summary,
-                needs = BuildFeature.UpdateCheck,
+                updaterOnly = true,
             )
             rows(about, null, R.string.st_about_versions to R.string.st_about_versions_summary)
             rows(about, R.string.st_other_devices, R.string.st_device_mac to R.string.st_device_mac_summary)

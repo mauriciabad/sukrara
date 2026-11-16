@@ -16,17 +16,10 @@ import kotlinx.coroutines.flow.map
  * place so the settings page, setup and the monitor can't disagree (docs/36 §14).
  */
 object NotificationStyleSettings {
-    /** The choice now ([rootBuild] false: a build without root features never reports *Text*: the chip instead). */
+    /** The choice now. */
     fun flow(
         settings: SettingsRepository,
-        rootBuild: Boolean,
-    ): Flow<NotificationStyle> = settings.flow(SurfaceSettings.StatusShow).map { of(it, rootBuild) }
-
-    fun of(
-        key: String,
-        rootBuild: Boolean,
-    ): NotificationStyle =
-        NotificationStyle.of(key).let { if (it == NotificationStyle.Text && !rootBuild) NotificationStyle.DEFAULT else it }
+    ): Flow<NotificationStyle> = settings.flow(SurfaceSettings.StatusShow).map { NotificationStyle.of(it) }
 
     /** The icon the notification shows for [style] (one the style offers; the stored one when it does). */
     fun icon(
@@ -39,11 +32,8 @@ object NotificationStyleSettings {
     }
 
     /** The icon now, for the choice now. */
-    fun iconFlow(
-        settings: SettingsRepository,
-        rootBuild: Boolean,
-    ): Flow<NotificationIcon> =
-        combine(flow(settings, rootBuild), settings.flow(SurfaceSettings.NotifIcon)) { style, key -> icon(style, key) }
+    fun iconFlow(settings: SettingsRepository): Flow<NotificationIcon> =
+        combine(flow(settings), settings.flow(SurfaceSettings.NotifIcon)) { style, key -> icon(style, key) }
 
     /**
      * Stores [style]. *Text* hides the notification's icon when it would repeat the value the bar now shows (the

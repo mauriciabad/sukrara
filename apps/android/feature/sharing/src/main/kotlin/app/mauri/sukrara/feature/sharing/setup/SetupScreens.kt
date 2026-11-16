@@ -834,10 +834,10 @@ private fun ColumnScope.PensStep(
 }
 
 /**
- * *Root* (builds with root features; docs/36 §11): is this phone rooted? Signs of root (LSPosed, a root manager)
- * answer the question and ask for root at once; otherwise *Yes, it's rooted* asks. Then the one missing step with its
- * fix and *Check again* (the shared card, as Settings › Glucose notification shows it), until Sukrara has root:
- * *Continue*. *It isn't rooted* is final; *Later* keeps it on *Finish setup*.
+ * *Root* (docs/36 §11): is this phone rooted? Signs of root (LSPosed, a root manager) answer the question and ask for
+ * root at once; otherwise *Yes, it's rooted* asks. Then the one missing step with its fix and *Check again* (the shared
+ * card, as Settings › Glucose notification shows it), until Sukrara has root: *Continue*. *It isn't rooted* is final;
+ * *Later* keeps it on *Finish setup*.
  */
 @Composable
 private fun ColumnScope.RootStep(
@@ -909,7 +909,7 @@ private fun ColumnScope.NotificationStep(
     val root = u.root
     StepCircle(DsR.drawable.ds_ic_status_bar_notification)
     StepHeader(stringResource(R.string.sh_setup_notification_title), stringResource(R.string.sh_setup_notification_body))
-    GlucoseNotificationChoice(root.style, root.offered, actions.chooseNotification)
+    GlucoseNotificationChoice(root.style, actions.chooseNotification)
     if (root.style == NotificationStyle.Text) {
         AccessStepBanner(
             accessStep(root.access, valueOn = true),
