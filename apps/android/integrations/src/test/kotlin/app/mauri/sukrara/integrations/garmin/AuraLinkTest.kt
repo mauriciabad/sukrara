@@ -291,6 +291,8 @@ class AuraLinkTest {
             r.runs,
         )
         assertEquals(Instant.ofEpochSecond(1794831696), r.drawn)
+        // the newest it kept: the push, not the older fetch it refused nor the failed one
+        assertEquals(Instant.ofEpochSecond(1794831696), r.has)
         assertEquals(Instant.ofEpochSecond(1794831701), r.drawnSince)
         assertNull(AuraReport.parse(mapOf("x" to "1"), now))
         assertEquals(null, AuraReport.parse(mapOf("r" to "", "d" to "junk"), now)!!.drawn)

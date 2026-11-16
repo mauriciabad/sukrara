@@ -85,6 +85,18 @@ data class AuraReport(
     val drawn: Instant?,
     val drawnSince: Instant?,
 ) {
+    /**
+     * The newest reading the face kept (its time): what it shows at the next wrist raise. [drawn] only moves while the
+     * screen draws, so a dark screen leaves it behind.
+     */
+    val has: Instant?
+        get() =
+            runs
+                .filter { !it.kind.endsWith("x") && it.readingAt > 0 }
+                .maxByOrNull { it.sent }
+                ?.let { Instant.ofEpochSecond(it.readingAt) }
+                ?: drawn
+
     companion object {
         /** `r=p.<at>.<sent>.<readingAt>_f.…&d=<readingAt>.<since>` (AuraLink.mc saveReport); null when there is none. */
         fun parse(

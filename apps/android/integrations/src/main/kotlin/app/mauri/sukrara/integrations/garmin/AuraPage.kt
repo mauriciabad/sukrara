@@ -210,10 +210,10 @@ fun AuraContent(
                     },
             )
             // the face's own account (sent with its fetch): which reading it draws
-            s.report?.drawn?.let { drawn ->
+            s.report?.has?.let { has ->
                 InfoRow(
                     stringResource(R.string.in_aura_face_shows_title),
-                    summary = stringResource(R.string.in_aura_face_shows, ClockText.time(drawn.epochSecond), ago(s.report.at, now)),
+                    summary = stringResource(R.string.in_aura_face_shows, ClockText.time(has.epochSecond), ago(s.report.at, now)),
                 )
             }
         }

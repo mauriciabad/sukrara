@@ -2558,7 +2558,7 @@ digit by digit).
   Tests: `AuraLinkTest`, `AuraStatusTest`.
 - **The face reports back** with every fetch: its last 10 deliveries (push or fetch, the watch's time, which payload,
   which reading) and the reading it draws since when. The page shows *On the watch* "The reading from 14:21 · as of
-  2 minutes ago"; logcat `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer)
+  2 minutes ago" (the newest reading the face kept: what it shows at the next wrist raise); logcat `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer)
   and each report, times only. So an agent or the person can see what the watch got without looking at it.
 - Settings › Share with apps › *Watches* › **Sukrara Aura** (first in the group, Garmin Connect's icon; settings search
   "Garmin", "watch face"), its line saying what the link does now; it opens the page: *Send to Sukrara Aura* (the

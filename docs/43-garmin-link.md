@@ -105,8 +105,16 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
     at 14:37:42, 14:38:22, 14:38:43). The 5-minute fetch (14:38:40, 14:43:41) brought the newest each time, which the
     face kept over the older pushes. Fix: each push run takes every waiting message
     (`Communications.registerForPhoneAppMessages`, called at once per waiting message) and hands the face the newest.
+  - **With the fix (52dfb22fc, 14:56–15:01)**: the first run after the install took the 3 waiting messages with it
+    (`p3`) and kept the newest; from then on every run got the message just sent, **1–7 s after the phone built it**
+    (14:56:48 → :50, 14:57:49 → :56, 14:58:49 → :50, 14:59:50 → :52, 15:00:52 → :53). The phone builds it 3–4 s after
+    the reading (it waits for the payload to settle), so **a reading reaches the watch in about 5–11 s**.
   - The phone sent a second message a couple of seconds after each reading (the payload changing in two steps): gone,
     one message per reading.
+  - Not done on the device: the Bluetooth-off test (turning the phone's Bluetooth off from the agent was refused by
+    its permission check); the two unplanned disconnections above showed the aging and the page's "isn't connected",
+    but also that the watch may need its *Phone* control toggled to come back after the phone's Bluetooth returns
+    (Garmin's link, not Sukrara's).
 - **Seeing the watch without looking at it**: Garmin's ways are `System.println` to `GARMIN/APPS/LOGS/<app>.TXT`
   (when that file exists) and crash reports in `GARMIN/APPS/LOGS/CIQ_LOG.YML`
   ([FAQ](https://forums.garmin.com/developer/connect-iq/w/wiki/4/new-developer-faq),
