@@ -200,8 +200,12 @@ Every release goes to both stores' review: Play production and the App Store. Te
 ## Garmin face on CI
 
 Checks' `garmin` job (when `apps/garmin`, `contracts/`, `assets/`, `docs/img/aura/ref`, `tools/watchface` or its
-setup change) builds the face and its tests on Linux (`ubuntu:22.04`: the SDK's simulator needs WebKitGTK 4.0) with
-`apps/garmin/build.sh`. `tools/ci/garmin-sdk.sh` gets what it needs, pinned in `tools/ci/garmin.lock`: the Connect IQ
+setup change) checks the face's words (`garmin_test.py words`, no SDK needed) and builds it on Linux (`ubuntu:22.04`:
+the SDK's simulator needs WebKitGTK 4.0) with `apps/garmin/build.sh`. The simulator runs there headless under Xvfb
+(`xvfb-run`; tried 2026-11-16 in that image: unit tests `PASSED`, the face drawn), and with no window manager its
+screen sits at `simulator.json`'s display location plus the 26 px menu bar (`import -window root -crop
+390x390+131+237` for the `descentmk343mm`); the tests and picture diffs join the job once `garmin_test.py run` starts
+the simulator and captures it there too (today `open -a` and Quartz, macOS only). `tools/ci/garmin-sdk.sh` gets what it needs, pinned in `tools/ci/garmin.lock`: the Connect IQ
 SDK (public download, sha256 checked) and the manifest's device files with their simulator fonts, which need a Garmin
 sign-in. It signs in only when the Actions cache lacks a device (a new device, or the cache unused for 7 days), with
 the headless SDK Manager [`connect-iq-sdk-manager-cli`](https://github.com/lindell/connect-iq-sdk-manager-cli)

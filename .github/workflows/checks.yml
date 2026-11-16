@@ -239,6 +239,10 @@ jobs:
           apt-get install -y -qq --no-install-recommends ca-certificates curl unzip zstd git openssl python3 \
             openjdk-17-jre-headless libwebkit2gtk-4.0-37 libusb-1.0-0 libsm6 xvfb xauth imagemagick >/dev/null
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # No SDK needed: runs with or without the CI account
+      - name: The face's words are words.json's
+        if: hashFiles('apps/garmin/tools/garmin_test.py') != ''
+        run: python3 apps/garmin/tools/garmin_test.py words
       - name: The devices the face needs
         id: plan
         run: tools/ci/garmin-sdk.sh plan
