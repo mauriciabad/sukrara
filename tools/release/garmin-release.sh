@@ -48,7 +48,7 @@ for device in $(sed -n 's/.*<iq:product[^>]*id="\([^"]*\)".*/\1/p' "$APP/manifes
   out="$(CIQ_DEVICE="$device" "$APP/build.sh" release | tail -1)"
   cp "$out" "$DIST/SukraraAura-$VERSION-$device.prg"
 done
-out="$("$APP/build.sh" export | tail -1)"
+out="$("$APP/build.sh" export | tail -1)" || die "apps/garmin/build.sh export failed (the store package: monkeyc -e -r)"
 [ "${out##*.}" = "iq" ] || die "apps/garmin/build.sh export made no .iq ($out)"
 cp "$out" "$DIST/SukraraAura-$VERSION.iq"
 ls -l "$DIST"

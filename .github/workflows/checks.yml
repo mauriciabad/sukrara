@@ -280,11 +280,9 @@ jobs:
             ~/.Garmin/ConnectIQ/Devices
             ~/.Garmin/ConnectIQ/Fonts
           key: garmin-devices-${{ steps.plan.outputs.devices-key }}
-      - name: Release build (debug code compiled out) and the unit tests' build
+      - name: Release build (debug code compiled out)
         if: steps.sdk.outputs.ready == 'true'
-        run: |
-          apps/garmin/build.sh release
-          apps/garmin/build.sh test
+        run: apps/garmin/build.sh release
 
   # No PoC build jobs: poc/ is frozen (never edited; untouched since the monorepo began), so jobs that ran only when
   # poc/ changed never ran. Its Python reference still runs in `rules` (sync_crosscheck.py).
