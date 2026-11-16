@@ -220,7 +220,7 @@ jobs:
 
   # The website (website/, published by website.yml from main): built without the GitHub API (SUKRARA_RELEASE=offline:
   # a pull request never depends on it), then every internal link and anchor, every site URL an app opens, App Links,
-  # universal links and the update feed checked (website/scripts/check.mjs).
+  # universal links and the update feed checked (website/scripts/check.mjs), and the site's unit tests (npm test).
   website:
     needs: changes
     if: needs.changes.outputs.website == 'true'
@@ -240,6 +240,7 @@ jobs:
           npm ci
           npm run build
           npm run check
+          npm test
 
   # The Garmin face (apps/garmin; docs/DEVELOPMENT.md › Garmin face on CI). The SDK is public; the device files need a
   # Garmin sign-in: tools/ci/garmin-sdk.sh signs in as the dedicated CI account (secrets GARMIN_CI_USERNAME +

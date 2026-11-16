@@ -94,8 +94,9 @@ Every internal link and picture of every page leads to a file of the build, with
 every `https://sukrara.mauri.app/…` the apps' code opens exists; `assetlinks.json` names the release key
 (`tools/release/android-cert.sha256`); `apple-app-site-association` gives `/join` to the Mac app; the appcast has a
 release; the sitemap, `robots.txt`, favicon and 404 exist; every link to a site with pages per language opens the
-page's language (above). CI (`checks.yml`, job `website`) builds and checks every
-change to `website/`, `docs/`, `assets/`, `contracts/` or `apps/`; the deploy runs the same check before publishing.
+page's language (above). CI (`checks.yml`, job `website`) builds, checks and runs `npm test` on every change to
+`website/`, `docs/`, `assets/`, `contracts/`, `apps/` or `tools/watchface/`; the deploy runs the same check before
+publishing.
 
 ## Privacy
 

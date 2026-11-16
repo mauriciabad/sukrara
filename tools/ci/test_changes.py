@@ -46,6 +46,8 @@ class Groups(unittest.TestCase):
         self.assertEqual(changes.groups(["docs/img/aura/ref/hero.png"]), dict(none, website=True, garmin=True))
         self.assertEqual(changes.groups(["docs/img/aura/store/hero.png"]), dict(none, website=True))
         self.assertEqual(changes.groups(["tools/ci/garmin.lock"]), dict(none, android=True, garmin=True))
+        # the reference renderer: the face's tests and the site's playground draw with it
+        self.assertEqual(changes.groups(["tools/watchface/aura.js"]), dict(none, android=True, website=True, garmin=True))
         self.assertEqual(changes.groups(["VERSIONS.md", ""]), none)  # a file prefix matches only itself
 
 
