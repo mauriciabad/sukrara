@@ -474,6 +474,237 @@
    }
   },
   {
+   "id": "sensor-rail-days",
+   "group": "sensor",
+   "title": "Sensor rail",
+   "expect": "Left: the sensor rail, a segment per day of its 15-day life, 10 lit from the bottom (9 d 9.6 h left), soft; label 9d under the time, no mark (the only segmented rail). Right: the glucose rail.",
+   "cfg": {
+    "sideL": "sensor",
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sensor-rail-last-day",
+   "group": "sensor",
+   "title": "Sensor rail, last day",
+   "expect": "Hours on the last day: one segment lit, label 14h, still soft (Sukrara’s countdown hasn’t started).",
+   "cfg": {
+    "sideL": "sensor",
+    "sensorLeft": 14,
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sensor-rail-ending",
+   "group": "sensor",
+   "title": "Sensor rail in the countdown",
+   "expect": "In Sukrara’s countdown the rail and its label (5h, bold) turn amber; the automatic “sensor ending” field stays away: the rail already counts it. The bottom fields are the person’s own (time in range, treatment).",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2
+   }
+  },
+  {
+   "id": "sensor-rail-ending-aod",
+   "group": "sensor",
+   "title": "Sensor rail ending, always-on",
+   "expect": "Always-on hides the sensor rail as it hides the battery and the bottom fields: nothing about the countdown shows, exactly as without the rail.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2,
+    "mode": "aod"
+   }
+  },
+  {
+   "id": "sensor-rail-ending-night",
+   "group": "sensor",
+   "title": "Sensor rail ending, night",
+   "expect": "Night: the rail and 5h in the night amber; no automatic field.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2,
+    "mode": "night"
+   }
+  },
+  {
+   "id": "sensor-rail-ending-private",
+   "group": "sensor",
+   "title": "Sensor rail ending, private",
+   "expect": "Private hides the number only: the rail, its 5h and the glucose rail’s bead show; no automatic field.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2,
+    "privacy": "private"
+   }
+  },
+  {
+   "id": "sensor-rail-both-ending",
+   "group": "sensor",
+   "title": "Sensor rail on both sides",
+   "expect": "The same rail on both sides, mirrored (both filling from the bottom), both labels 5h in amber, no marks (no battery on screen); no automatic field.",
+   "cfg": {
+    "sideL": "sensor",
+    "sideR": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2
+   }
+  },
+  {
+   "id": "sensor-rail-ended-sending",
+   "group": "sensor",
+   "title": "Sensor rail, ended but sending",
+   "expect": "The rail unlit and no label (the Ended pill says it); the value stays.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "endedSending",
+    "glucose": 120,
+    "rate": 0.1
+   }
+  },
+  {
+   "id": "sensor-rail-ended",
+   "group": "sensor",
+   "title": "Sensor rail, ended",
+   "expect": "The rail unlit, no label; the flag message and the Sensor pill.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ended"
+   }
+  },
+  {
+   "id": "sensor-rail-warmup",
+   "group": "sensor",
+   "title": "Sensor rail in the warm-up",
+   "expect": "The rail is a progress bar: lit from the bottom along 30 % of its length (partial segments), the same fraction as the message’s pie; label 42m (minutes to ready).",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "warmup",
+    "warm": 0.3
+   }
+  },
+  {
+   "id": "sensor-rail-almost",
+   "group": "sensor",
+   "title": "Sensor rail, almost ready",
+   "expect": "The bar nearly full (96 %), no label: “Almost ready” says it.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "almost"
+   }
+  },
+  {
+   "id": "sensor-rail-ending-no-phone",
+   "group": "sensor",
+   "title": "Sensor rail ending, phone out of reach",
+   "expect": "“No phone” takes the first bottom field as always; the rail still counts down (5h, amber) from the dates the watch keeps.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2,
+    "phone": false
+   }
+  },
+  {
+   "id": "sensor-rail-none",
+   "group": "sensor",
+   "title": "Sensor rail, not monitoring",
+   "expect": "Nothing paired: no sensor rail (as no glucose rail), “No readings”.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "none"
+   }
+  },
+  {
+   "id": "sensor-rail-ending-same-fields",
+   "group": "sensor",
+   "title": "Sensor rail ending, both fields steps",
+   "expect": "Both bottom fields set to steps (allowed) and both show: the sensor rail keeps the automatic field away.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2,
+    "fields": [
+     "steps",
+     "steps"
+    ]
+   }
+  },
+  {
+   "id": "sensor-rail-ending-meal",
+   "group": "sensor",
+   "title": "Sensor rail ending, a meal beside steps",
+   "expect": "No automatic field, so the person’s fields go through the overflow rule: steps drops, the meal stays.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2,
+    "fields": [
+     "steps",
+     "treatment"
+    ],
+    "last": {
+     "items": [
+      {
+       "k": "rapid",
+       "a": "4.5"
+      },
+      {
+       "k": "carbs",
+       "a": "45"
+      }
+     ],
+     "ago": 35
+    }
+   }
+  },
+  {
+   "id": "sensor-rail-no-dates",
+   "group": "sensor",
+   "title": "Sensor rail, dates not known",
+   "expect": "The phone didn’t send the sensor’s dates: the rail unlit, label --. Without an end there is no countdown, so no automatic field either.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensorDates": false,
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sensor-rail-g7",
+   "group": "sensor",
+   "title": "Sensor rail, a 10.5-day sensor",
+   "expect": "A Dexcom G7 (10 days + 12 h grace): 11 segments, 3 lit (2 d 12 h left), label 2d.",
+   "cfg": {
+    "sideL": "sensor",
+    "sensorLife": 10.5,
+    "sensorLeft": 60,
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
    "id": "modes-redshift",
    "group": "modes",
    "title": "Red Shift check",
@@ -1030,6 +1261,325 @@
     "rate": 0.3,
     "seconds": false,
     "time": "10:09:52"
+   }
+  },
+  {
+   "id": "sides-mirrored",
+   "group": "sides",
+   "title": "Mirrored",
+   "expect": "The glucose rail on the left (still up = higher: 40 at 7:30, 400 at 10:30) with its bead, trail and notches; the battery on the right, filling from the bottom, label 9d right-aligned under the time. The dial’s focus moves left with the bead.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "battery",
+    "glucose": 150,
+    "rate": 0.8
+   }
+  },
+  {
+   "id": "sides-battery-sensor",
+   "group": "sides",
+   "title": "Battery and sensor",
+   "expect": "Both segmented rails: each label gets its mark, the same size and style, on the rail’s side (battery icon 9d on the left, 9d sensor disc on the right). No glucose rail: the value, the sweep and the dial carry the level.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sides-sensor-battery-high",
+   "group": "sides",
+   "title": "Sensor and battery, high",
+   "expect": "Marks mirrored; the labels clear the value and the sparkline on both sides.",
+   "cfg": {
+    "sideL": "sensor",
+    "sideR": "battery",
+    "glucose": 212,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sides-battery-low-sensor-ending",
+   "group": "sides",
+   "title": "Battery low, sensor ending",
+   "expect": "Each label in its own colour with its mark: battery 1d amber, sensor 5h amber.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "battery": 1.4,
+    "sensor": "ending",
+    "sensorLeft": 5,
+    "glucose": 118,
+    "rate": -0.2
+   }
+  },
+  {
+   "id": "sides-battery-both-right",
+   "group": "sides",
+   "title": "Battery days and percent on the right",
+   "expect": "Days and percent don’t stack beside the sparkline with a mark, so the battery label is one line (9d · 86%), right-aligned with its mark; the sensor label on the left with its own.",
+   "cfg": {
+    "sideL": "sensor",
+    "sideR": "battery",
+    "battLabel": "both",
+    "battery": 9,
+    "batteryPct": 86
+   }
+  },
+  {
+   "id": "sides-level-sensor-warmup",
+   "group": "sides",
+   "title": "Glucose rail left, sensor warm-up right",
+   "expect": "The warm-up bar on the right with 42m; the left rail has no bead (no value).",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "sensor",
+    "sensor": "warmup",
+    "warm": 0.3
+   }
+  },
+  {
+   "id": "sides-none-level",
+   "group": "sides",
+   "title": "Nothing on the left",
+   "expect": "The left side black: no rail, no label.",
+   "cfg": {
+    "sideL": "none",
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sides-none-none",
+   "group": "sides",
+   "title": "Nothing on either side",
+   "expect": "Both sides black; the rows don’t move.",
+   "cfg": {
+    "sideL": "none",
+    "sideR": "none",
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sides-battery-twice",
+   "group": "sides",
+   "title": "Battery on both sides",
+   "expect": "Allowed: the same rail and label on both sides, mirrored; no marks.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "battery",
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sides-level-twice",
+   "group": "sides",
+   "title": "Glucose rail on both sides",
+   "expect": "Allowed: the bead, trail and notches on both sides, mirrored; the dial’s focus on the centre line (x 0).",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "level",
+    "glucose": 112,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sides-level-twice-high",
+   "group": "sides",
+   "title": "Glucose rail on both sides, high falling",
+   "expect": "Both rails with the high zone, the trail and the bead; tonal insulin pill.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "level",
+    "glucose": 205,
+    "rate": -1.2,
+    "status": "quiet",
+    "left": 25
+   }
+  },
+  {
+   "id": "sides-level-twice-contours",
+   "group": "sides",
+   "title": "Both rails, contours",
+   "expect": "Contours centred on the centre line at the bead’s height.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "level",
+    "glucose": 230,
+    "rate": 1.5,
+    "dial": "topo"
+   }
+  },
+  {
+   "id": "sides-level-twice-glow",
+   "group": "sides",
+   "title": "Both rails, glow, low",
+   "expect": "The glow on the centre line at the bead’s height.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "level",
+    "glucose": 62,
+    "rate": -1,
+    "dial": "glow"
+   }
+  },
+  {
+   "id": "sides-level-left-contours",
+   "group": "sides",
+   "title": "Glucose rail left, contours",
+   "expect": "Contours centred at x −30, the bead’s side.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "battery",
+    "glucose": 230,
+    "rate": 1.5,
+    "dial": "topo"
+   }
+  },
+  {
+   "id": "sides-level-left-lasers",
+   "group": "sides",
+   "title": "Glucose rail left, lasers",
+   "expect": "Lasers fade from x −30.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "sensor",
+    "glucose": 280,
+    "rate": 1,
+    "dial": "laser"
+   }
+  },
+  {
+   "id": "sides-level-left-glow",
+   "group": "sides",
+   "title": "Glucose rail left, glow",
+   "expect": "The glow on the left bead.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "sensor",
+    "glucose": 62,
+    "rate": -1,
+    "dial": "glow"
+   }
+  },
+  {
+   "id": "sides-level-twice-aod-very-low",
+   "group": "sides",
+   "title": "Both rails, always-on, very low",
+   "expect": "Both rails as always-on draws one (hairline, 2 px band, notches, bead r 6); still well under Garmin’s 10 %.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "level",
+    "glucose": 50,
+    "rate": -1,
+    "mode": "aod"
+   }
+  },
+  {
+   "id": "sides-level-left-aod",
+   "group": "sides",
+   "title": "Glucose rail left, always-on",
+   "expect": "The left rail stays in always-on; the sensor rail on the right goes with the battery.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "sensor",
+    "glucose": 112,
+    "rate": 0.3,
+    "mode": "aod"
+   }
+  },
+  {
+   "id": "sides-level-left-night-low",
+   "group": "sides",
+   "title": "Glucose rail left, night, low",
+   "expect": "Night palette on the left rail: the low keeps its colour, place and pill.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "sensor",
+    "glucose": 62,
+    "rate": -1,
+    "mode": "night"
+   }
+  },
+  {
+   "id": "sides-private-no-rail",
+   "group": "sides",
+   "title": "Private without a glucose rail",
+   "expect": "Nothing places the hidden value on a scale; the sweep and the dial keep the band’s colour.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "privacy": "private",
+    "glucose": 150,
+    "rate": 0.5
+   }
+  },
+  {
+   "id": "sides-private-no-rail-needed",
+   "group": "sides",
+   "title": "Private without a glucose rail, high",
+   "expect": "A needed pill unmasks the value, as always.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "privacy": "private",
+    "glucose": 212,
+    "rate": 0.3
+   }
+  },
+  {
+   "id": "sides-private-no-rail-quiet",
+   "group": "sides",
+   "title": "Private without a glucose rail, quiet",
+   "expect": "The tonal pill names the side (insulin) while the value stays hidden.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "privacy": "private",
+    "glucose": 212,
+    "rate": 0.3,
+    "status": "quiet",
+    "left": 40
+   }
+  },
+  {
+   "id": "sides-mmol-widest-right",
+   "group": "sides",
+   "title": "Widest value, labels both sides",
+   "expect": "mmol/L 22.2 with the sparkline: the sizes step down until both labels clear the row.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "unit": "mmol",
+    "glucose": 400,
+    "rate": 1
+   }
+  },
+  {
+   "id": "sides-lo-es",
+   "group": "sides",
+   "title": "LO, Spanish, sensor right",
+   "expect": "The LO block clears the right label (9 d) as the left.",
+   "cfg": {
+    "sideL": "level",
+    "sideR": "sensor",
+    "glucose": 39,
+    "lang": "es"
+   }
+  },
+  {
+   "id": "sides-ended-es",
+   "group": "sides",
+   "title": "Ended, Spanish, battery and sensor",
+   "expect": "“Terminado” clears the battery label; the sensor rail unlit with no label, so no marks (nothing to tell apart).",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "sensor": "ended",
+    "lang": "es"
    }
   },
   {

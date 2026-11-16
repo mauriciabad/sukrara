@@ -12,15 +12,16 @@ design canvases ([round 4, final](https://claude.ai/code/artifact/5566d39a-3822-
 **What it is.** A Sukrara face where the dial is the *aura* of your glucose: it gathers at your level, spreads the
 further out of range you are, fades as you head back to the ideal and strengthens as you head away. Around it, an
 instrument laid out on the bezel's four screws: the calendar and one field of yours on top, the time and the glucose
-value in the middle, a level rail from 1:30 to 4:30, the battery rail opposite, two fields along the bottom, the seconds
-as a faint sweep at the rim.
+value in the middle, two side elements (by default the glucose rail from 1:30 to 4:30 and the battery rail opposite; each
+side can show the watch battery, the sensor's days, the glucose rail or nothing), two fields along the bottom, the
+seconds as a faint sweep at the rim.
 
 **How to use this spec.** Everything here is also executable:
 
 | File | What it is | Use it to |
 |---|---|---|
 | [`tools/watchface/aura.js`](../../../tools/watchface/aura.js) | **The reference implementation**: one pure function, `layout(cfg)`, giving every value of the face, and `svg(cfg)` drawing it. Where this text and the code disagree, the code wins (and this text gets fixed). | Read the exact formula of anything; port it |
-| [`cases.json`](cases.json) | 115 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
+| [`cases.json`](cases.json) | 158 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
 | [`expect.json`](expect.json) | Every value `layout()` returns for each case (positions, sizes, colours, texts, angles) | Unit-test the port's numbers (§10) |
 | [`docs/img/aura/ref/<case>.png`](../../../docs/img/aura/ref/) | Each case drawn at **390 × 390, the screen 1:1**, no bezel | Compare with the simulator's screenshot (§10) |
 | [`docs/img/aura/store/*.png`](../../../docs/img/aura/store/) | 10 renders on the Descent, 1168 px, transparent | Connect IQ store, website (§12) |
@@ -92,7 +93,7 @@ as a faint sweep at the rim.
 | Date | 26 (weight 500, day 700), letter spacing 2 | A–Z incl. Á É Í Ó Ú Ñ |
 | Top field | 24, 25, 26 (500) | the field texts |
 | Pill, chip, bottom fields | 24 (pill 600, others 500; treatment amounts 600) | as used |
-| Battery label | 22; 20 for days and percent (600; 700 under 2 days) | `0–9 d h % ·` |
+| Side labels (battery, sensor) | 22; 20 for the battery's days and percent (600; 700 under 2 days, and in the sensor's countdown) | `0–9 d h m % · -` |
 | Messages | 25, 30, 32 (600) | the message words |
 
 ### Colour
@@ -152,6 +153,7 @@ round caps and joins), otherwise filled (even-odd). Path data (exact, also in `i
 | rapid ▼ (Sukrara's insulin mark) | f | `M2 4.2H22L12 20.9Z` |
 | long ▽ | s, width 2.8 | `M3.5 5.4H20.5L12 19.6Z` |
 | carbs ● | f | `M20 12a8 8 0 1 1-16 0a8 8 0 1 1 16 0z` |
+| battery (the battery label's mark, §6.9) | f | `M7 5h10a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5v-14A1.5 1.5 0 0 1 7 5zM8.1 7.1v12.8h7.8V7.1zM9.5 2.5h5v2.5h-5zM9.7 12h4.6v6.3H9.7z` |
 
 Bells in the pills are Material Symbols (Apache 2.0, the same Sukrara's card uses), 960 box, `transform:
 translate(cx − 11.8, cy − 11.8) scale(0.0246) translate(0 960)`: **paused** (quiet / a side muted)
@@ -171,7 +173,8 @@ default is the reference's (every case starts from it):
 | history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 36 readings of the 3 hours before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
 | status | `status`: `auto` (needed when out of range), `quiet`, `muted`, `none`; `left`: minutes, or `"never"` (no end) | auto, 25 | Sukrara ([`contracts/graph/status.json`](../../graph/status.json)) · `quiet` = held after a treatment; `muted` = a side muted (out of range) or Mute all (in range); `none` = no pill: Sukrara says nothing, or a quiet or mute ran out on the watch's clock before the phone said what follows (the face never decides a need itself) |
 | last treatment(s) | `last`: `{items: [{k: rapid/long/carbs, a: amount}], ago: min}`, or `lastKind`, `lastAmount`, `lastAgo` | rapid 2u, 80 min | Sukrara · a meal = insulin + carbs together; `items: []` = none in the last 24 h |
-| sensor | `sensor`: `ok`, `warmup` (+ `warm`: fraction done), `almost`, `ending` (+ `sensorLeft`: hours), `endedSending`, `ended`, `none` | ok, 0.45, 5 | Sukrara · "ending" = the last 8 h; the ready time is Sukrara's (the reference fakes it from `warm`) |
+| sensor | `sensor`: `ok`, `warmup` (+ `warm`: fraction done), `almost`, `ending`, `endedSending`, `ended`, `none` | ok, 0.45 | Sukrara · "ending" = Sukrara's countdown (*Sensor countdown*, default the last 8 h); the ready time is Sukrara's (the reference fakes it from `warm`: ready = now + (1 − warm) · 60 min) |
+| sensor's life | `sensorLeft`: hours left; `sensorLife`: the whole life in days (start to end); `sensorDates`: false = the phone sent no dates | 5 when ending, else 225.6 (9 d 9.6 h); 15; true | Sukrara (the payload's sensor `start` / `end`, §6.9b) · the face counts the hours left from the end and the watch clock |
 | unit | `unit`: `mgdl`, `mmol` | mgdl | Sukrara · mmol/L = mg/dL ÷ 18.0182, one decimal |
 | band limits | `limits`: [very low, low, very good, high, very high, extremely high] | 55, 70, 140, 180, 250, 300 | Sukrara (the payload's `bands`) · every band, the rail's notches and zones, the sparkline's range move with the person's limits (`fields-spark-wide-range`) |
 | time and date | `time`: `"H:MM:SS"` or `"live"` | 10:09:36, Mon 16 Nov 2026 | watch · 12/24 h from the watch |
@@ -183,6 +186,7 @@ default is the reference's (every case starts from it):
 | colour check | `filter`: `none`, `redshift`, `grey` | none | reference only (§8) |
 | field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); others fixed in the reference: 14°, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8 | 6420, 82 | watch / Sukrara (time in range, until the end of the phone's day) |
 | settings | §11 | | |
+| side elements | `sideL`, `sideR`: `battery`, `sensor`, `level`, `none` | battery, level | the settings (§11) |
 | mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze` | 584, true, carbon | not the face's |
 
 ## 4. Layout: what goes where
@@ -220,9 +224,12 @@ Then: top-field baseline `tfBase = y₀ + TF·0.668`; time top `tTop` and baseli
   so the size changes only with the hour);
 - value (when there is one, **even while private hides it**): total/2 ≤ halfAt(vTop) and ≤ halfAt(vBase) (total =
   value + arrow or sparkline, §6.4);
-- battery label (§6.9), unless always-on: its bottom `tBase + 6 + battH ≤ vTop` (it sits in the gap above the row), or
-  the row's left edge ≥ `−166 + battW + 8`. The row's left edge: the value's `−total/2`; or a message's first line:
-  warm-up `−(46 + w)/2`, sensor ended `−(38 + w)/2`, no readings / nothing paired `−w/2` (w = its text width, §6.7).
+- **each side's label** (the battery's §6.9, the sensor rail's §6.9b; the glucose rail has none), unless always-on: its
+  bottom `tBase + 6 + labH ≤ vTop` (it sits in the gap above the row), or the row's left edge ≥ `−166 + labW + 8`.
+  The row is centred, so its right edge is the left one mirrored and the same test holds for the right label. labW =
+  the label's width (its widest line) + 24 when it has a mark (§6.9); labH = its height (one line `fs·0.668`, the
+  stacked battery `fs·0.668·2 + 9`). The row's left edge: the value's `−total/2`; or a message's first line: warm-up
+  `−(46 + w)/2`, sensor ended `−(38 + w)/2`, no readings / nothing paired `−w/2` (w = its text width, §6.7).
 - **Days and percent** (§6.9) are stacked when some size set fits with the stack; otherwise the sizes are chosen with the
   one-line label, which always sits in the gap.
 
@@ -240,7 +247,7 @@ Examples (from `expect.json`):
 | `sensor-warmup` | age | 70 / 56 / 24 | −89.5 | 0.5 | 56.5 (message) | 83 |
 
 **Z-order** (back to front): black screen · glow dial · dial layers (laser glow, main, second) · seconds sweep · date
-· top field · time · battery rail and label · level rail (hairline, bands, zone, ticks, trail, bead, chevrons) · value
+· top field · time · battery rail and label · sensor rail and label · level rail (hairline, bands, zone, ticks, trail, bead, chevrons) · value
 (inverted block, digits, strike, arrow, ring, reveal line) · sparkline · reading time · pill · message · bottom
 fields · edge hairline (r 194.5, 1 px `#121214`). The dial layers are masked by the halo (§6.13); the sweep is not.
 
@@ -405,7 +412,13 @@ unmasks the value (§8).
 - **No readings / long gap**: "No reading since" (25, 600, soft) at vTop + 16.7, then the reading's time in the
   numeral font (cap 40 when the chip row is empty, else 36; 600; ink) at vTop + 16.7 + 12 + cap.
 
-### 6.8 Level rail (right, 1:30 → 4:30)
+### 6.8 Level rail (the glucose rail; right by default, 1:30 → 4:30)
+**On either side.** Each side element sits on one of two rails: the right one from 47° to 133° (1:30 → 4:30) or its
+mirror on the left from 227° to 313° (7:30 → 10:30). The geometry below is the right rail's; on the left everything is
+mirrored (x → −x, an angle a → 360° − a), so up is still higher: 40 at 227° (7:30), 400 at 313° (10:30). `layout()`
+gives the right rail's numbers and `rail.dR` / `rail.dL` say which sides draw it; on both sides (allowed,
+`sides-level-twice`) both draw the same bead, trail, zone and ticks.
+
 - **Scale: Kovatchev's risk transform** (Diabetes Care 1997): K(g) = 1.509·((ln g)^1.084 − 5.381), g in mg/dL.
   **angle(g) = 133° − 86° · (K(g) − K(40)) / (K(400) − K(40))**, g clamped to 40–400 (40 at 133°, 400 at 47°; up =
   higher). Default limits land at 55 → 121.3°, 70 → 112.4°, 112.5 → 94.8°, 140 → 86.6°, 180 → 77.2°, 250 → 64.8°,
@@ -425,16 +438,42 @@ unmasks the value (§8).
   0.1 + 0.07i, the bead's colour; a missed reading leaves its dot out. Not when old, always-on, LO / HI.
 - Hidden entirely when not monitoring.
 
-### 6.9 Reserve rail (left, battery)
-- 10 segments on r 182, 6 px: segment i from 227° + 8.78°·i to +6.98°. Lit: the first `ceil(days)` (max 10) in the
-  battery colour; the rest grid.
+### 6.9 Battery rail (left by default)
+- **Segments** (the battery's and the sensor's, §6.9b): n segments on r 182, 6 px, from the rail's bottom end:
+  step = 87.8°/n, each 1.8° short of it. Left: segment i from 227° + step·i to + (step − 1.8°); right (mirrored):
+  from 133° − step·i − (step − 1.8°) to 133° − step·i. They fill from the bottom on both sides (`batt.on` / `off` the
+  left's, `onR` / `offR` the right's; `dL` / `dR` which sides draw it).
+- **The battery**: 10 segments (step 8.78°, 6.98° each). Lit: the first `ceil(days)` (max 10) in the battery colour; the
+  rest grid.
 - **Battery colour**: soft; **amber (high) under 2 days, red (low) under 1 day**.
-- **Label at 9 o'clock, just under the time**: x = −166 (left-aligned), first baseline `tBase + 6 + fs·0.668`; font 22
-  (20 for both), weight 600 (700 under 2 days), the battery colour. Text by setting: days (`9d`; under a day hours,
-  `14h`, at least 1h), percent (`86%`), or both: stacked (days, then percent on a second line 0.668·fs + 9 lower) where
-  the stack fits beside the value or message (§4), else one line, days ␣·␣ percent (`9d · 86%`,
-  `fields-battery-both-spark`).
+- **Label just under the time**: first baseline `tBase + 6 + fs·0.668`; on the left from x = −166 (left-aligned), on the
+  right to x = 166 (right-aligned); font 22 (20 for both), weight 600 (700 under 2 days), the battery colour. Text by
+  setting: days (`9d`; under a day hours, `14h`, at least 1h), percent (`86%`), or both: stacked (days, then percent on a
+  second line 0.668·fs + 9 lower) where the stack fits beside the value or message (§4), else one line, days ␣·␣
+  percent (`9d · 86%`, `fields-battery-both-spark`).
+- **Marks** (`sides.marks`): only while a battery label and a sensor label (§6.9b) are both on screen, so two "9d" can be
+  told apart: the battery icon (§2) with the battery label and Sukrara's sensor disc with the sensor's, both 20 px,
+  filled, in the label's colour, on the rail's side: centred at x = ∓156, y = baseline − fs·0.334; the text moves 24 px
+  inwards (left from −142, right to 142; a stacked second line too). With one segmented rail on screen, or the sensor
+  label empty, no mark (`sides-battery-sensor`, `sides-battery-both-right`, `sides-ended-es`).
 - Hidden in always-on.
+
+### 6.9b Sensor rail (the sensor's days)
+- **Segments**: one per day of the sensor's own life, Sukrara's start to end: n = ceil(life in days), at most 30 (a
+  longer life: 30 segments of life/30 days each); a Libre 3 Plus 15, a G7 with its 12 h grace 11 (`sensor-rail-g7`).
+  Lit = ceil(hours left / 24 / (life / n)), from the bottom, as the battery (§6.9 geometry).
+- **Label** (font 22, the rail's colour, under the time as the battery's): whole days left, rounded down (`9d`); on the
+  last day hours, rounded up, at least 1 (`14h`); weight 600.
+- **Colour**: soft; in Sukrara's countdown (`ending`, *Sensor countdown*, default the last 8 h) **amber, label 700**
+  (`sensor-rail-ending`). No red: an ended sensor has its pill.
+- **Warm-up: a progress bar** (`sensor-rail-warmup`): the rail lit along its length by the warm-up's fraction (the
+  message's pie, §6.7), the last lit segment partly, from its bottom end; label the minutes to ready in Sukrara's
+  durations (`42m`). Almost ready: 96 %, no label (the message says it, `sensor-rail-almost`).
+- **Ended, ended but sending**: every segment unlit, no label (the flag message and the pills say it;
+  `sensor-rail-ended`, `sensor-rail-ended-sending`).
+- **Dates not known** (the phone sent none): unlit, label `--` (`sensor-rail-no-dates`). No end means no countdown either.
+- **Not monitoring**: hidden, as the glucose rail (`sensor-rail-none`). **Always-on**: hidden, as the battery.
+- On either side, or both (`sensor-rail-both-ending`); with a battery rail on screen both labels get their marks (§6.9).
 
 ### 6.10 Bottom fields
 Two fields on the arc **r = 172 from 232° to 128° counter-clockwise** (reads left to right along the bottom; length
@@ -461,8 +500,21 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 
 - **No value**: a field whose value the watch doesn't have (no weather yet, no altitude fix, time in range not known)
   shows `--`; the treatment field with nothing in the last 24 h is left out (`fields-no-treatment`); `none` shows nothing.
-- **Automatic**: in the sensor's last 8 h the first field becomes *sensor ending*; with the phone out of reach it
-  becomes *no phone*.
+- **Automatic**: in Sukrara's sensor countdown (default the last 8 h) the first field becomes *sensor ending*, **unless a
+  sensor rail is on either side** (it already counts the hours, in amber); with the phone out of reach it becomes *no
+  phone*, whatever the sides (in the countdown too: the phone out of reach is the more urgent). The edge cases, each a
+  case:
+  - a sensor rail that can't count (no dates, `--`): no end, so no countdown and no automatic field (`sensor-rail-no-dates`);
+  - always-on hides the rail and the bottom fields alike: nothing shows the countdown, with or without the rail
+    (`sensor-rail-ending-aod`); night and private show the rail and skip the field (`sensor-rail-ending-night`,
+    `sensor-rail-ending-private`); a rail on both sides the same (`sensor-rail-both-ending`);
+  - ended, ended but sending, warm-up, not monitoring: never *sensor ending* (`sensor-rail-ended`,
+    `sensor-rail-ended-sending`, `sensor-rail-warmup`, `sensor-rail-none`);
+  - no phone in the countdown: *no phone* takes the first field; a sensor rail still counts down from the dates the
+    watch keeps (`sensor-rail-ending-no-phone`);
+  - with the field skipped, the person's own two fields show as chosen, the same one twice too
+    (`sensor-rail-ending-same-fields`), and go through the overflow rule below (`sensor-rail-ending-meal`); without a
+    rail *sensor ending* (priority 3) keeps its place beside a meal.
 - **Too long for the arc** (> 304 px): drop the least important field until it fits (sensor / no phone 3 > treatment 2
   > others 1). A meal next to steps drops steps (`fields-meal-steps`); time in range (the default 1st) is short enough
   to stay beside a meal.
@@ -497,9 +549,10 @@ Common inputs (awake only; nothing in always-on or at night):
 | Dial (setting) | Drawing |
 |---|---|
 | **grain** (default) | Dots on a 12 px grid: rows y = −192, −180, … 192, columns x = −192 … 192, shifted +6 on rows where y/12 is odd; only dots with x² + y² ≤ 190². Each dot a filled circle in the colour. Radius = rmax·exp(−((y − levelY)/σ)²), σ = 16 + 20·ext + 175·ext², rmax = (0.75 + 1.5·ext)·I^0.9, capped 5.4, dots under 0.3 skipped. Layer opacity clamp((0.42 + 0.3·ext)·min(1.25, I), 0.2, 0.9). Not current: every dot 0.6, opacity 0.3. |
-| **contours** | Soft round rings that never touch, centred at (30, levelY): ring k = 1, 2, … while k·spc < Rf, spc = 22 − 7·ext, Rf = 85 + 270·ext (240 not current); r(θ) = k·spc·(1 + 0.05 sin(2θ + 0.9) + 0.035 sin(3θ + 2.1)) + spc·0.14·spd·sin(4θ + 0.5k), point = (30 + r cos θ, levelY + r sin θ), 120 samples. Width 1.3·(0.8 + 0.3·I). Opacity by distance from the centre (radial, radius Rf): 1, 0.72, 0.36, 0.11, 0 × peak at 0, 0.22, 0.48, 0.76, 1; peak = clamp((0.36 + 0.4·ext)·I, 0.1, 0.95) (0.22 not current, dashed 2 / 6). A high paints the top of the dial, a low the bottom. |
+| **focus** | The contours and the lasers centre on (fx, levelY): fx = 30 (the bead on the right), −30 when the glucose rail is only on the left, 0 with it on both sides (`sides-level-left-contours`, `sides-level-twice-contours`). The glow sits on the bead (the left one with the rail only on the left), at (0, its height) with a rail on both sides. |
+| **contours** | Soft round rings that never touch, centred at (fx, levelY): ring k = 1, 2, … while k·spc < Rf, spc = 22 − 7·ext, Rf = 85 + 270·ext (240 not current); r(θ) = k·spc·(1 + 0.05 sin(2θ + 0.9) + 0.035 sin(3θ + 2.1)) + spc·0.14·spd·sin(4θ + 0.5k), point = (fx + r cos θ, levelY + r sin θ), 120 samples. Width 1.3·(0.8 + 0.3·I). Opacity by distance from the centre (radial, radius Rf): 1, 0.72, 0.36, 0.11, 0 × peak at 0, 0.22, 0.48, 0.76, 1; peak = clamp((0.36 + 0.4·ext)·I, 0.1, 0.95) (0.22 not current, dashed 2 / 6). A high paints the top of the dial, a low the bottom. |
 | **waterline** | wave(y₀, a): a polyline, x from −196 to 196 every 6, y = y₀ + a·sin(x/14 + 0.8); a = 2 + 7·spd. The waterline wave(levelY, a): 2 px, the colour, opacity 0.75 (not current: 0.32, grey, dashed 2 / 6; no value: at y = 150). Below it (current only): waves at levelY + k·step, amplitude a·max(0.35, 1 − 0.04k), while k·step < depth and above y 196; step = clamp(9 − 3.4·(I − 0.45), 5, 9), depth = 45 + 150·ext; 1.3 px, opacity fading linearly from peak at levelY to 0 at levelY + max(20, depth); peak = clamp((0.36 + 0.32·ext)·I, 0.12, 0.9). |
-| **lasers** | Seeded LCG (seed 1337: s = (s·1664525 + 1013904223) mod 2³², value s/2³²; compute in 64-bit integers or the sequence drifts), drawn once into 70 tuples of 5 in order (u₁, u₂, x, unused, tilt); laser i uses tuple i. n = round(5 + 9·ext + 14·ext²) (4 not current), σ = 12 + 60·ext (90). Laser i: gz = √(−2 ln u₁)·cos(2πu₂), y = levelY + gz·σ, pivot x = −100 + 200·x, slope tan((2·tilt − 1)·(6 + 8·spd)°), drawn **edge to edge** (x −200 → 200). \|gz\| < 0.9 (current): bright 1.7 px at opacity pk + an underlay 6 px at 0.16·pk; others 1.1 px at 0.38·pk; pk = clamp((0.55 + 0.3·ext)·I, 0.2, 1) (0.3). All fade with distance from (30, levelY): 1, 0.9, 0.62, 0.3, 0 at 0, 0.22, 0.48, 0.76, 1 of r = 200 + 140·ext. Round caps. Not current: 4 thin grey lasers, σ 90, all at 0.38·0.3, dashed 2 / 6. |
+| **lasers** | Seeded LCG (seed 1337: s = (s·1664525 + 1013904223) mod 2³², value s/2³²; compute in 64-bit integers or the sequence drifts), drawn once into 70 tuples of 5 in order (u₁, u₂, x, unused, tilt); laser i uses tuple i. n = round(5 + 9·ext + 14·ext²) (4 not current), σ = 12 + 60·ext (90). Laser i: gz = √(−2 ln u₁)·cos(2πu₂), y = levelY + gz·σ, pivot x = −100 + 200·x, slope tan((2·tilt − 1)·(6 + 8·spd)°), drawn **edge to edge** (x −200 → 200). \|gz\| < 0.9 (current): bright 1.7 px at opacity pk + an underlay 6 px at 0.16·pk; others 1.1 px at 0.38·pk; pk = clamp((0.55 + 0.3·ext)·I, 0.2, 1) (0.3). All fade with distance from (fx, levelY): 1, 0.9, 0.62, 0.3, 0 at 0, 0.22, 0.48, 0.76, 1 of r = 200 + 140·ext. Round caps. Not current: 4 thin grey lasers, σ 90, all at 0.38·0.3, dashed 2 / 6. |
 | **glow** | Current only: a radial glow centred on the bead P(182, bead angle), radius 90 + 320·ext + 40·spd, opacity go at the centre, 0.4·go at half, 0 at the edge; go = clamp((0.06 + 0.34·ext)·I, 0.03, 0.55). |
 | **map** | Decorative, never reacts: 12 rings centred (−38, 52), r = 24k·(1 + 0.12 sin(3t + 1.3) + 0.07 sin(5t + 0.4) + 0.05 sin(2t + 2.2)) + 5 sin(4t + 0.9k), 120 samples, texture `#19191C`, 1.2 px. |
 | **black** | Nothing. |
@@ -542,8 +595,8 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
 
 ## 8. Modes
 - **Awake** (wrist raised, ~10 s, 1 Hz): everything.
-- **Always-on**: outlined time; no sweep, no dial, no top field, no bottom fields, no battery (their rows kept); rail
-  hairline, 2 px band, mid and major ticks, bead r 6, no trail, no glow, no zone; value, arrow, chip row, pill and
+- **Always-on**: outlined time; no sweep, no dial, no top field, no bottom fields, no battery or sensor rail (their rows
+  kept); the glucose rail on its side or sides (both: `sides-level-twice-aod-very-low`): hairline, 2 px band, mid and major ticks, bead r 6, no trail, no glow, no zone; value, arrow, chip row, pill and
   messages as awake in the always-on palette. Must stay **under 10 % of the total luminance** (API 5+; over it the face
   goes black in always-on) and follow Garmin's burn-in shift (≤ 4 px a minute, the whole face). **Keep a margin: no
   state above about 7 %**, so a very low never risks a black screen. That's why the very-low block is dimmed in
@@ -557,7 +610,10 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
 - **Night** (while the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night
   palette; no sweep, no dial; everything else as awake. Not the profile's sleep and wake times: on the Descent they
   aren't the Sleep Mode schedule (set per day) and put the face in night in the afternoon. A low at night keeps its colour, place and pill.
-- **Private** (setting): the value row is empty (reserved) and the bead alone says where you are. **Press and hold**
+- **Private** (setting): the value row is empty (reserved) and the bead alone says where you are. With no glucose rail
+  on either side nothing places the hidden value on a scale, the person's choice: a needed pill still unmasks the
+  value, a quiet or mute pill names the side, and the sweep and the dial keep the band's colour
+  (`sides-private-no-rail`, `-needed`, `-quiet`). **Press and hold**
   the face (the Descent gives faces touch-and-hold) shows the value for 5 s with the countdown line. A **needed** pill
   unmasks the value. Everything that isn't the number still shows: the reading's time when late or old, quiet / mute
   pills, messages, the rails (a hollow bead when old), the sweep and dial. The struck value and the trend ring go
@@ -574,9 +630,10 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 |---|---|---|
 | glucose | in-range, rising, falling-fast, late, old, no-readings, long-gap, another-day, week-old, lo, hi, mmol-widest | freshness and the reading's time, trend, LO / HI, units |
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
-| sensor | warmup, almost, ending, ended-sending, ended, none, none-es, ended-es, phone-lost, battery-low | sensor, phone, battery states; Spanish messages beside the stacked battery label |
+| sensor | warmup, almost, ending, ended-sending, ended, none, phone-lost, battery-low, none-es, ended-es, rail-days, rail-last-day, rail-ending, rail-ending-aod, rail-ending-night, rail-ending-private, rail-both-ending, rail-ended-sending, rail-ended, rail-warmup, rail-almost, rail-ending-no-phone, rail-none, rail-ending-same-fields, rail-ending-meal, rail-no-dates, rail-g7 | sensor, phone, battery states; Spanish messages beside the stacked battery label; the sensor rail through its life and every edge case of the automatic *sensor ending* field (§6.10) |
 | modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
 | fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off | fields and settings, missing values and readings |
+| sides | mirrored, battery-sensor, sensor-battery-high, battery-low-sensor-ending, battery-both-right, level-sensor-warmup, none-level, none-none, battery-twice, level-twice, level-twice-high, level-twice-contours, level-twice-glow, level-left-contours, level-left-lasers, level-left-glow, level-twice-aod-very-low, level-left-aod, level-left-night-low, private-no-rail, private-no-rail-needed, private-no-rail-quiet, mmol-widest-right, lo-es, ended-es | the side elements on either side, both, none; marks; the dial's focus; private, always-on and night with them |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
 
@@ -595,9 +652,9 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
   `Sin lecturas desde`, `Terminado` beside the stacked battery label). Words stay short ("Insulin", "Ended") so the
   numbers keep their size.
 - Private + old, private + no readings, private + always-on, night + out of range, always-on + old.
-- The battery label never meets the value or a message, whatever the width (sparkline, mmol/L `22.2`, LO / HI),
-  language, battery text (`9d`, `14h`, `86%`, both) or top field: in the reference, all 5,184 combinations of those are
-  clear. Test it the same way in the port.
+- The side labels never meet the value or a message, whatever the width (sparkline, mmol/L `22.2`, LO / HI), language,
+  battery text (`9d`, `14h`, `86%`, both), sensor text (`9d`, `14h`, `5h`, `42m`, none), marks, the side they're on or
+  the top field: in the reference, all 14,592 combinations of those are clear. Test it the same way in the port.
 - A mute with no end (`alerts-muted-forever`), Mute all while out of range (the side's pill with its time).
 - Phone out of reach: the value ages by itself (late → old → no readings) from the reading's own time.
 - A new sensor mid-warm-up after a gap; sensor ended while the phone is away.
@@ -635,6 +692,7 @@ All user settings (the Garmin face's own, set on the watch and in the Connect IQ
 | Green in range (`rangeColour`) | on, off | on |
 | Top field (`topField`) | weather, steps, sunset (`sunset`), body battery (`bodyBattery`), altitude, notifications, time in range (`tir`), second time zone (`tz2`), floors, heart rate (`heart`), none | steps |
 | Bottom fields (`fields`: two keys) | the same list + treatment (`treatment`) | time in range, treatment |
+| Left side (`sideL`), right side (`sideR`) | watch battery (`battery`), sensor days (`sensor`), glucose rail (`level`), nothing (`none`); the same on both is allowed | left battery, right glucose rail |
 | Battery label (`battLabel`) | days, percent, both | days |
 | Private (`privacy`) | on (`private`), off (`open`) | off |
 | Second time zone (`tz2`) | a city, by its code: UTC LON LIS MAD PAR BER ATH CAI IST MOW DXB DEL BKK SIN HKG SHA TYO SEL SYD AKL HNL ANC LAX DEN MEX CHI NYC BOG SCL BUE SAO LOS JNB (its daylight saving follows the place) | NYC |
