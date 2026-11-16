@@ -94,6 +94,8 @@ class AuraModel {
     var SH as Float = 0.0;
     var spPts as Array = [] as Array; // runs of points (a gap breaks the line)
     var spLimits as Array = [] as Array; // y of the high and low limits
+    var spMid as Float = 0.0; // the sparkline window's middle, mg/dL
+    var spFramed as Boolean = false; // the window frames the person's range
     var spEnd as Array = [0.0, 0.0] as Array;
     var spRay as Array = [0.0, 0.0] as Array; // the ray's end
     var spLineCol as Number = 0;
@@ -474,11 +476,28 @@ class AuraModel {
         }
     }
 
-    // --- the sparkline: the last hour, log time, the rail's risk scale (SPEC.md §6.5) ---
+    // --- the sparkline: the last hour, log time, a fixed scale (0.6 px per mg/dL) whose window pans (SPEC.md §6.5) ---
+    const SPARK_PX = 0.6;
+    const SPARK_FADE = 12.0;
+
+    // a value's height: straight on the fixed scale around spMid, squeezed into the fade band beyond the box
     function sparkY(v as Numeric) as Float {
-        var k40 = AuraMath.K(40);
-        var k300 = AuraMath.K(300);
-        return AuraMath.r1(sy + SH * (1 - (AuraMath.K(AuraMath.clamp(v, 40, 300)) - k40) / (k300 - k40)));
+        var y = sy + SH / 2 - (v - spMid) * SPARK_PX;
+        if (y < sy) {
+            y = sy - SPARK_FADE * (1 - Math.pow(Math.E, (y - sy) / SPARK_FADE));
+        } else if (y > sy + SH) {
+            y = sy + SH + SPARK_FADE * (1 - Math.pow(Math.E, (sy + SH - y) / SPARK_FADE));
+        }
+        return AuraMath.r1(y);
+    }
+
+    // the opacity at a height: 1 in the box, 0.45 at 6 px out, 0.15 at the fade band's edge
+    function sparkFade(y as Numeric) as Float {
+        var d = y < sy ? sy - y : y > sy + SH ? y - sy - SH : 0.0;
+        if (d <= 0) {
+            return 1.0;
+        }
+        return d <= SPARK_FADE / 2 ? 1 - 0.55 * d / (SPARK_FADE / 2) : AuraMath.max(0.15, 0.45 - 0.3 * (d - SPARK_FADE / 2) / (SPARK_FADE / 2));
     }
 
     hidden function sparkline() as Void {
@@ -501,9 +520,31 @@ class AuraModel {
         } else {
             series = [g];
         }
+        // the window: frame the person's range when the hour fits with it, else the hour's middle, the newest inside
+        var n = series.size();
+        var hLo = null;
+        var hHi = null;
+        var newest = g;
+        for (var j = 0; j < n; j++) {
+            var v = series[j];
+            if (v == null || inp.age + 5 * (n - 1 - j) > 60) {
+                continue;
+            }
+            hLo = hLo == null || v < hLo ? v : hLo;
+            hHi = hHi == null || v > hHi ? v : hHi;
+            newest = v;
+        }
+        if (hLo == null) {
+            hLo = g;
+            hHi = g;
+        }
+        var span = SH / SPARK_PX;
+        var rLo = AuraMath.min(hLo, inp.limits[1]);
+        var rHi = AuraMath.max(hHi, inp.limits[3]);
+        spFramed = rHi - rLo <= span;
+        spMid = spFramed ? (rLo + rHi) / 2.0 : AuraMath.clamp((hLo + hHi) / 2.0, newest - 0.4 * span, newest + 0.4 * span);
         spPts = [];
         var run = [];
-        var n = series.size();
         var ln7 = Math.ln(7);
         var last = null;
         for (var j = 0; j < n; j++) {

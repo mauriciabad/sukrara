@@ -345,6 +345,21 @@ module AuraDump {
         out("val.ry", m.reveal[2]);
         // the sparkline
         out("sp.disp", disp(m.valueOn && m.spark));
+        out("sp.framed", m.spFramed);
+        out("sp.mid", AuraMath.r1(m.spMid));
+        out("sp.x", AuraMath.r1(m.sx));
+        out("sp.fy0", AuraMath.r1(m.sy - 12));
+        out("sp.fy1", AuraMath.r1(m.sy));
+        out("sp.fy2", AuraMath.r1(m.sy + m.SH));
+        out("sp.fy3", AuraMath.r1(m.sy + m.SH + 12));
+        var fh = m.SH + 24;
+        out("sp.o1", 12 / fh);
+        out("sp.o2", (12 + m.SH) / fh);
+        out("sp.oh1", 6 / fh);
+        out("sp.oh2", (18 + m.SH) / fh);
+        out("sp.bandY", m.spLimits[0]);
+        out("sp.bandH", AuraMath.r1((m.spLimits[1] as Float) - (m.spLimits[0] as Float)));
+        out("sp.bandCol", col(m.c("tight")));
         out("sp.limits", "M" + r1(m.sx) + " " + n(m.spLimits[0]) + "H" + r1(m.sx + 100) + "M" + r1(m.sx) + " " + n(m.spLimits[1]) + "H" + r1(m.sx + 100));
         out("sp.limCol", m.aod ? "#3A3A3E" : "#5C5C62");
         var line = "";

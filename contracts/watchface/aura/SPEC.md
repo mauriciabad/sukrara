@@ -20,7 +20,7 @@ as a faint sweep at the rim.
 | File | What it is | Use it to |
 |---|---|---|
 | [`tools/watchface/aura.js`](../../../tools/watchface/aura.js) | **The reference implementation**: one pure function, `layout(cfg)`, giving every value of the face, and `svg(cfg)` drawing it. Where this text and the code disagree, the code wins (and this text gets fixed). | Read the exact formula of anything; port it |
-| [`cases.json`](cases.json) | 112 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
+| [`cases.json`](cases.json) | 115 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
 | [`expect.json`](expect.json) | Every value `layout()` returns for each case (positions, sizes, colours, texts, angles) | Unit-test the port's numbers (§10) |
 | [`docs/img/aura/ref/<case>.png`](../../../docs/img/aura/ref/) | Each case drawn at **390 × 390, the screen 1:1**, no bezel | Compare with the simulator's screenshot (§10) |
 | [`docs/img/aura/store/*.png`](../../../docs/img/aura/store/) | 10 renders on the Descent, 1168 px, transparent | Connect IQ store, website (§12) |
@@ -164,7 +164,7 @@ default is the reference's (every case starts from it):
 | last treatment(s) | `last`: `{items: [{k: rapid/long/carbs, a: amount}], ago: min}`, or `lastKind`, `lastAmount`, `lastAgo` | rapid 2u, 80 min | Sukrara · a meal = insulin + carbs together; `items: []` = none in the last 24 h |
 | sensor | `sensor`: `ok`, `warmup` (+ `warm`: fraction done), `almost`, `ending` (+ `sensorLeft`: hours), `endedSending`, `ended`, `none` | ok, 0.45, 5 | Sukrara · "ending" = the last 8 h; the ready time is Sukrara's (the reference fakes it from `warm`) |
 | unit | `unit`: `mgdl`, `mmol` | mgdl | Sukrara · mmol/L = mg/dL ÷ 18.0182, one decimal |
-| band limits | — (the reference uses the defaults) | 55, 70, 140, 180, 250, 300 | Sukrara · the rail's notches and every band move with the person's limits |
+| band limits | `limits`: [very low, low, very good, high, very high, extremely high] | 55, 70, 140, 180, 250, 300 | Sukrara (the payload's `bands`) · every band, the rail's notches and zones, the sparkline's range move with the person's limits (`fields-spark-wide-range`) |
 | time and date | `time`: `"H:MM:SS"` or `"live"` | 10:09:36, Mon 16 Nov 2026 | watch · 12/24 h from the watch |
 | language | `lang`: `en`, `es` | en | watch |
 | battery | `battery`: days left; `batteryPct` | 8.6; null (= days × 10) | watch |
@@ -314,9 +314,26 @@ top `sy = vBase − V − 6`, height SH = V + 14.
   **The axis ends at now**, so an old reading stops short of the right edge. A missed reading (`null`) leaves its point
   out: the line breaks there, and a lone reading between two gaps is a dot (its zero-length piece with the round cap,
   `fields-spark-gap`).
-- **Height is the rail's risk scale** (§6.8), clamped to 40–300: y(v) = sy + SH·(1 − (K(v) − K(40)) / (K(300) − K(40))).
-- **Range limits**: two dotted lines at y(180) and y(70) across the box, `#5C5C62` (always-on `#3A3A3E`), 1.4 px,
-  dash 1.5 / 4.5, round caps. No filled band.
+- **Height is a fixed scale, 0.6 px per mg/dL, never rescaled**, so a slope always means the same speed (the owner,
+  2026-11-16: rescaling makes you lose the notion of whether a slope is steep). The box shows a window of
+  span = SH / 0.6 mg/dL (113–123), centred on `mid`: y₀(v) = sy + SH/2 − (v − mid)·0.6.
+- **The window pans** (the owner's "band in view"). With the hour's readings from hLo to hHi, the newest `last`, and the
+  person's range from the low limit L to the high limit H:
+  - **Framed**: when the hour fits in the window together with the whole range (max(hHi, H) − min(hLo, L) ≤ span),
+    mid = (max(hHi, H) + min(hLo, L)) / 2: both limits show and the frame stays still while you stay near range
+    (`fields-trend-spark`, `fields-spark-turning`).
+  - **Panned**: otherwise mid = the hour's middle (hLo + hHi)/2, kept within 0.4·span of `last` so the newest reading
+    stays inside (`fields-spark-panned`, `fields-spark-overflow`). A range wider than the window is never framed: the
+    window follows the hour and the limits sit wherever they fall (`fields-spark-wide-range`).
+  - Without readings in the hour, hLo = hHi = last = the value.
+- **Overflow fades, never clips**: a y₀ outside the box is squeezed into a 12 px band beyond the edge it crossed,
+  y = sy − 12·(1 − e^((y₀ − sy)/12)) above, sy + SH + 12·(1 − e^((sy + SH − y₀)/12)) below; and everything in the
+  sparkline but the end dot is drawn with an opacity by height: 1 inside the box, 0.45 at 6 px out, 0.15 at 12 px
+  (linear between), so an overflowing start of a rise stays visible, faint (`fields-spark-overflow`). The fade reaches
+  2 px into the pill's top edge at most, at 15 %.
+- **Range**: the person's limits as two dotted lines at y(H) and y(L) across the box, `#5C5C62` (always-on `#3A3A3E`),
+  1.4 px, dash 1.5 / 4.5, round caps, always drawn at their squeezed height (faded when outside, so a line never
+  appears without the band's edge); between them a quiet band, the very-good green at **9 %** opacity.
 - **Line**: 5.4 px, soft (old: dim), round joins and caps.
 - **Trend ray** (when there is a trend): from the last point, 22 px at the arrow's angle, 3.4 px, dash 4.5 / 4.5, the
   value's colour (very low: very-low red).
@@ -472,7 +489,7 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
   - the bottom fields: per piece a band along the arc over its length + 5.5 at each end: texts centre r 172 − 6.4,
     33.3 wide; icons centre r 164, 29.2 wide.
 
-  And rectangles: the sparkline box (sx − 8, sy − 8, 116, SH + 16, rx 8), the chip row with the reading time and the
+  And rectangles: the sparkline box with its fade bands (sx − 8, sy − 20, 116, SH + 40, rx 8), the chip row with the reading time and the
   pill (rx0 − 8, chipC − 23, its width + 16, 46, rx 22) and a message (below, rx 14). In the reference these shapes are
   `arcs.halo` (not compared: the port draws them from the same rule).
 - **Box**: rounded rectangles: the time (t0 − 10, tBase − T − 10, tW + 20, T + 20, rx 16); the value (x0 − 12,
@@ -529,7 +546,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
 | sensor | warmup, almost, ending, ended-sending, ended, none, none-es, ended-es, phone-lost, battery-low | sensor, phone, battery states; Spanish messages beside the stacked battery label |
 | modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
-| fields | default, meal, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, seconds-off | fields and settings, missing values and readings |
+| fields | default, meal, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, seconds-off | fields and settings, missing values and readings |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
 

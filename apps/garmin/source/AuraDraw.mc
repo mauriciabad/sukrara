@@ -434,27 +434,58 @@ module AuraDraw {
         }
     }
 
+    // a colour at an opacity over black, opaque (no doubled alpha where round caps overlap)
+    function over(col as Number, a as Float) as Number {
+        if (a >= 1) {
+            return col;
+        }
+        return (((col >> 16) & 255) * a).toNumber() << 16 | (((col >> 8) & 255) * a).toNumber() << 8 | ((col & 255) * a).toNumber();
+    }
+
+    // SPEC.md §6.5: what runs past the box is squeezed into the fade bands and drawn fainter by height (sparkFade)
     function sparkline(dc as Dc, m as AuraModel) as Void {
         if (!m.valueOn || !m.spark) {
             return;
         }
+        // the person's range: a quiet band (very good green, 9 %), full inside the box, row by row in the fade bands
+        var top = m.spLimits[0] as Float;
+        var bot = m.spLimits[1] as Float;
+        var tight = m.c("tight");
+        var in0 = AuraMath.max(top, m.sy);
+        var in1 = AuraMath.min(bot, m.sy + m.SH);
+        if (in1 > in0) {
+            fill(dc, tight, 0.09);
+            dc.fillRectangle(cx + m.sx, cy + in0, 100, in1 - in0);
+        }
+        for (var y = top; y < bot; y += 1) {
+            if (y >= m.sy && y < m.sy + m.SH) {
+                y = m.sy + m.SH - 1;
+                continue;
+            }
+            fill(dc, tight, 0.09 * m.sparkFade(y + 0.5));
+            dc.fillRectangle(cx + m.sx, cy + y, 100, AuraMath.min(1, bot - y));
+        }
         var lim = m.aod ? 0x3A3A3E : 0x5C5C62;
         for (var i = 0; i < 2; i++) {
-            dashed(dc, m.sx, m.spLimits[i], m.sx + 100, m.spLimits[i], 0.01, 6, lim, 1.4);
+            var ly = m.spLimits[i] as Float;
+            dashed(dc, m.sx, ly, m.sx + 100, ly, 0.01, 6, over(lim, m.sparkFade(ly)), 1.4);
         }
         for (var r = 0; r < m.spPts.size(); r++) {
             var run = m.spPts[r] as Array;
             for (var i = 0; i < run.size(); i++) {
+                var p = run[i] as Array;
                 if (i > 0) {
-                    line(dc, run[i - 1][0], run[i - 1][1], run[i][0], run[i][1], m.spLineCol, 1.0, 5.4);
+                    var q = run[i - 1] as Array;
+                    var a = AuraMath.max(m.sparkFade(q[1]), m.sparkFade(p[1]));
+                    line(dc, q[0], q[1], p[0], p[1], over(m.spLineCol, a), 1.0, 5.4);
                 } else {
-                    fill(dc, m.spLineCol, 1.0);
-                    dc.fillCircle(cx + run[i][0], cy + run[i][1], 2.7);
+                    fill(dc, over(m.spLineCol, m.sparkFade(p[1])), 1.0);
+                    dc.fillCircle(cx + p[0], cy + p[1], 2.7);
                 }
             }
         }
         if (m.trendOn) {
-            dashed(dc, m.spEnd[0], m.spEnd[1], m.spRay[0], m.spRay[1], 4.5, 4.5, m.spRayCol, 3.4);
+            dashed(dc, m.spEnd[0], m.spEnd[1], m.spRay[0], m.spRay[1], 4.5, 4.5, over(m.spRayCol, m.sparkFade(m.spRay[1])), 3.4);
         }
         if (m.spEndFill != null) {
             fill(dc, m.spEndFill, 1.0);

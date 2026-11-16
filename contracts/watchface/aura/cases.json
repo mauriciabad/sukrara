@@ -697,7 +697,7 @@
    "id": "fields-trend-spark",
    "group": "fields",
    "title": "Trend: sparkline",
-   "expect": "The last hour instead of the arrow: 5.4 px line, the range as two dotted limits, Sukrara’s trend as the dashed ray from the end dot.",
+   "expect": "The last hour instead of the arrow, on the fixed scale (0.6 px per mg/dL): a steady hour is honestly flat. The hour and the whole range fit, so the window frames 70–180: both dotted limits and the quiet green band between them, still.",
    "cfg": {
     "trendStyle": "spark",
     "glucose": 112,
@@ -723,7 +723,7 @@
    "id": "fields-spark-turning",
    "group": "fields",
    "title": "Sparkline, turning",
-   "expect": "It bottomed at 60 and is coming back: the V the arrow can’t show.",
+   "expect": "It bottomed at 60 and is coming back: the V the arrow can’t show. 60–180 still fits the window, so it frames the range with the dip just under the low line.",
    "cfg": {
     "trendStyle": "spark",
     "glucose": 77,
@@ -795,6 +795,92 @@
      116,
      117,
      118
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-panned",
+   "group": "fields",
+   "title": "Sparkline, panned",
+   "expect": "A meal rise to 194 with the Insulin pill: the hour and the range no longer fit in the window, so it centres on the hour; the high line sits low in the box, the low line has left it (in the fade band, faint).",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 194,
+    "rate": 1.6,
+    "spark": [
+     102,
+     101,
+     103,
+     106,
+     114,
+     126,
+     140,
+     154,
+     166,
+     176,
+     184,
+     190,
+     194
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-overflow",
+   "group": "fields",
+   "title": "Sparkline, overflowing",
+   "expect": "A fast rise 80 → 260 is wider than any window: the newest reading stays inside, the start of the rise is squeezed into the fade band under the box, faint but there; the scale never shrinks.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 260,
+    "rate": 3.4,
+    "spark": [
+     80,
+     88,
+     98,
+     110,
+     124,
+     140,
+     157,
+     174,
+     192,
+     210,
+     228,
+     245,
+     260
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-wide-range",
+   "group": "fields",
+   "title": "Sparkline, a wide range",
+   "expect": "The person’s range is 70–250, wider than the window: it can never be framed, so the window centres on the hour; both limits fall in the fade bands, faint, and the green band fills the box.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 150,
+    "rate": 0.2,
+    "limits": [
+     55,
+     70,
+     140,
+     250,
+     300,
+     350
+    ],
+    "spark": [
+     138,
+     140,
+     141,
+     143,
+     142,
+     144,
+     146,
+     145,
+     147,
+     148,
+     147,
+     149,
+     150
     ]
    }
   },

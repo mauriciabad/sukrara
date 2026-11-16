@@ -2056,8 +2056,12 @@ A Connect IQ watch face, `apps/garmin` (Descent Mk3i 43 mm), drawn to the bindin
 what Sukrara on the phone decides (the value, the trend, the bands, the pill, the sensor's state); the watch only counts
 the time, so the reading ages by itself from its own time with the phone away.
 - **Rows**, centred and as large as fit: the date along the top, one top field, the time, the value with Sukrara's arrow
-  (or the last hour as a sparkline on the rail's scale, broken where a reading was missed), and a chip row with the reading's time once it is late
-  (from 90 s) and the pill. The numbers step down a size when the chip row holds something.
+  (or the last hour as a sparkline), and a chip row with the reading's time once it is late (from 90 s) and the pill.
+  The numbers step down a size when the chip row holds something.
+- **Sparkline** (setting *Trend*): the last hour on a fixed scale (0.6 px per mg/dL, never rescaled: a slope always
+  means the same speed), the newest minutes widest. It frames the person's range (both dotted limits and a quiet green
+  band) whenever the hour fits with it, and otherwise pans to the hour with the newest reading inside; what runs past
+  the box fades out above or below it instead of being cut. A missed reading breaks the line.
 - **The value's looks**: in range green (very good / good; *Green in range* off: white); out of range its band's colour;
   very low and LO white on a red block; old (5–20 min) struck through and grey with a hollow ring for the arrow; from
   20 min no number at all: "No reading since" and the time (the weekday from 12 h or another day, the date after 6

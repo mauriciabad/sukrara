@@ -71,6 +71,7 @@ module AuraCases {
             if (cfg.hasKey("lastAgo")) { inp.lastAgo = num(cfg["lastAgo"]); }
         }
         if (cfg.hasKey("steps")) { inp.steps = num(cfg["steps"]).toNumber(); }
+        if (cfg.hasKey("limits")) { inp.limits = cfg["limits"] as Array; }
         if (cfg.hasKey("tir")) { inp.tir = cfg["tir"] == null ? null : num(cfg["tir"]).toNumber(); }
         if (cfg.hasKey("phone")) { inp.phone = cfg["phone"] as Boolean; }
         inp.dial = dial(str(cfg, "dial", "halftone"));
