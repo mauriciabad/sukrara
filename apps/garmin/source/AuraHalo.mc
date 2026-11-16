@@ -39,7 +39,7 @@ class AuraHalo {
         c = [AuraMath.r1(m.rx0 - 8), AuraMath.r1(m.chipC - 23), chip ? AuraMath.r1(m.ageW + gapA + m.pillW + 16) : 0, chip ? 46 : 0];
         f = [AuraMath.r1(-m.topWidth() / 2 - 8), AuraMath.r1(m.tfBase - m.TF * 0.668 - 8), m.topOn ? AuraMath.r1(m.topW + 16) : 0,
             m.topOn ? AuraMath.r1(m.TF * 0.668 + 16) : 0];
-        s = [AuraMath.r1(m.sx - 8), AuraMath.r1(m.sy - 20), m.valueOn && m.spark ? 116 : 0, AuraMath.r1(m.SH + 40)]; // with the fade bands (§6.5)
+        s = [AuraMath.r1(m.sx - 8), AuraMath.r1(m.sy - 20), m.valueOn && m.spark ? AuraMath.r1(m.SW + 16) : 0, AuraMath.r1(m.SH + 40)]; // with the fade bands (§6.5)
         mb = [AuraMath.r1(mb[0]), AuraMath.r1(mb[1]), m.msgKind != null ? AuraMath.r1(mb[2]) : 0, AuraMath.r1(mb[3])];
     }
 

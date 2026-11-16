@@ -9,7 +9,7 @@ module SettingsSpec {
     const DIAL = ["dial", ["grain", "black", "map", "contours", "waterline", "lasers", "glow"], "grain"];
     // Sukrara Aura: where the dial stops short of the texts (§6.13)
     const HALO = ["halo", ["outline", "box", "none"], "outline"];
-    // Sukrara Aura: the trend beside the value, Sukrara's arrow or the last hour (§6.5)
+    // Sukrara Aura: the trend beside the value, Sukrara's arrow or the last hours (§6.5)
     const TREND = ["trend", ["arrow", "spark"], "spark"];
     // Sukrara Aura: the seconds sweep at the rim (§6.11)
     const SECONDS = ["seconds", null, true];

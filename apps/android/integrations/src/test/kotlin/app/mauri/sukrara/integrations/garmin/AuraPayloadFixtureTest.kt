@@ -66,20 +66,16 @@ class AuraPayloadFixtureTest {
 
     @Test
     fun garminsOwnBytes() {
+        // a version-1 payload as Garmin wrote it: the serialization doesn't change with the payload's version
         val bytes = file["bytes"]?.takeIf { it !is JsonNull }?.jsonObject ?: return
-        val case =
-            file.getValue("cases").jsonArray.map { it.jsonObject }.first {
-                it["name"]?.jsonPrimitive?.content ==
-                    bytes.getValue("case").jsonPrimitive.content
-            }
         val hex = bytes.getValue("hex").jsonPrimitive.content
         val raw = ByteArray(hex.length / 2) { hex.substring(2 * it, 2 * it + 2).toInt(16).toByte() }
-        assertSame("Garmin's bytes", case.getValue("payload"), MonkeyCDecode.decode(raw))
+        assertSame("Garmin's bytes", bytes.getValue("payload"), MonkeyCDecode.decode(raw))
     }
 
     @Test
     fun theFormatIsSmall() {
-        // a full payload (an hour of history, a meal, every field) stays far under a Connect IQ background's limits
+        // a full payload (three hours of history, a meal, every field) stays far under a Connect IQ background's limits
         val full =
             build(
                 file

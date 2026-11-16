@@ -348,6 +348,8 @@ module AuraDump {
         out("sp.framed", m.spFramed);
         out("sp.mid", AuraMath.r1(m.spMid));
         out("sp.x", AuraMath.r1(m.sx));
+        out("sp.w", AuraMath.r1(m.SW));
+        out("sp.age", AuraMath.r1(m.spAge));
         out("sp.fy0", AuraMath.r1(m.sy - 12));
         out("sp.fy1", AuraMath.r1(m.sy));
         out("sp.fy2", AuraMath.r1(m.sy + m.SH));
@@ -360,7 +362,7 @@ module AuraDump {
         out("sp.bandY", m.spLimits[0]);
         out("sp.bandH", AuraMath.r1((m.spLimits[1] as Float) - (m.spLimits[0] as Float)));
         out("sp.bandCol", col(m.c("tight")));
-        out("sp.limits", "M" + r1(m.sx) + " " + n(m.spLimits[0]) + "H" + r1(m.sx + 100) + "M" + r1(m.sx) + " " + n(m.spLimits[1]) + "H" + r1(m.sx + 100));
+        out("sp.limits", "M" + r1(m.sx) + " " + n(m.spLimits[0]) + "H" + r1(m.sx + m.SW) + "M" + r1(m.sx) + " " + n(m.spLimits[1]) + "H" + r1(m.sx + m.SW));
         out("sp.limCol", m.aod ? "#3A3A3E" : "#5C5C62");
         var line = "";
         for (var r = 0; r < m.spPts.size(); r++) {

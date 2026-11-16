@@ -1,4 +1,4 @@
-# Sukrara Aura's payload (version 1)
+# Sukrara Aura's payload (version 2)
 
 What the phone sends the Garmin face: everything the face shows from Sukrara (`../aura/SPEC.md` §3), decided by
 Sukrara exactly as the card and the glucose notification decide it (SPEC ground rule 1). Why it travels the way it
@@ -37,12 +37,12 @@ watch keeps every age and countdown right between messages. Decimals are floats;
 
 | Key | Value |
 |---|---|
-| `v` | `1`. A face ignores any other version (and anything that isn't a dictionary with `v` and `sent`) |
+| `v` | `2`. A face ignores any other version (and anything that isn't a dictionary with `v` and `sent`) |
 | `sent` | the phone's clock when it was built |
 | `unit` | `mgdl` / `mmol` (the face converts: mg/dL ÷ 18.0182, one decimal) |
 | `bands` | the person's limits, mg/dL: `[veryLow, low, tight, high, veryHigh, extremelyHigh]` (Sukrara's `Bands`, in order) |
 | `g` | the newest reading, or null (none, or not monitoring): `t` its time, `v` mg/dL (39 = LO, 401 = HI), `rate` mg/dL/min, `band` THE trend's band −3…3 (±3 = the doubled arrow), `deg` the arrow's rotation (negative = up); `rate` / `band` / `deg` null without a trend (and always for LO / HI) |
-| `hist` | the 12 readings before `g`, oldest first: slot i is the reading nearest `g.t − 300 s × (12 − i)` within 150 s, else null; `[]` without `g` |
+| `hist` | the 36 readings before `g` (3 hours: the sparkline's longest reach, `../aura/SPEC.md` §6.5), oldest first: slot i is the reading nearest `g.t − 300 s × (36 − i)` within 150 s, else null; `[]` without `g` |
 | `st` | the pill's status (Sukrara's alert runtime), null = none: `{k: needed, side}`, `{k: taken, side, until}` (quiet after a treatment), `{k: paused, side, until}` (a side muted), `{k: muted, until}` (Mute all); `side` `low` / `high`; `until` −1 = no end |
 | `last` | the treatment field, null = none: `{t, items: [{k: rapid / long / carbs, a}]}`: the card's last treatment (running insulin with the carbs riding along, the one covering the alert, or the newest rapid / carbs), else the newest of the last 24 h with whatever was logged in the same minute; notes never |
 | `sensor` | `{s: none}` (not monitoring: nothing paired) · `{s: warmup, start, ready, hold}` · `{s: active, end?, warn?}` (`warn` = the start of the person's countdown, *Sensor countdown*, default the last 8 h) · `{s: ended}` |

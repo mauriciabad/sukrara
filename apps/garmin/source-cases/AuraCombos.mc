@@ -76,7 +76,7 @@ module AuraCombos {
         // the row's left edge and top
         var left;
         if (m.hasValue) {
-            left = -m.total / 2;
+            left = m.x0; // the value's left edge (the sparkline's row spans the fits' width, SPEC.md §6.5)
         } else if ("warm".equals(m.msgKind)) {
             left = -(46 + AuraMath.tw(m.msgT1, 32)) / 2;
         } else if ("ended".equals(m.msgKind)) {

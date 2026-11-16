@@ -168,7 +168,7 @@ default is the reference's (every case starts from it):
 | glucose (mg/dL) | `glucose` | 112 | Sukrara · < 40 = LO, > 400 = HI |
 | rate (mg/dL/min), trend present | `rate`, `trend`: true/false | 0.4, true | Sukrara's trend (docs/34) · no rate → no trend |
 | **age** of the reading (min) | `age` | 0.5 | Sukrara's reading time + the watch clock: age = now − reading time, recomputed at every draw, never from when the watch received it |
-| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 12 readings of the hour before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
+| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 36 readings of the 3 hours before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
 | status | `status`: `auto` (needed when out of range), `quiet`, `muted`, `none`; `left`: minutes, or `"never"` (no end) | auto, 25 | Sukrara ([`contracts/graph/status.json`](../../graph/status.json)) · `quiet` = held after a treatment; `muted` = a side muted (out of range) or Mute all (in range); `none` = no pill: Sukrara says nothing, or a quiet or mute ran out on the watch's clock before the phone said what follows (the face never decides a need itself) |
 | last treatment(s) | `last`: `{items: [{k: rapid/long/carbs, a: amount}], ago: min}`, or `lastKind`, `lastAmount`, `lastAgo` | rapid 2u, 80 min | Sukrara · a meal = insulin + carbs together; `items: []` = none in the last 24 h |
 | sensor | `sensor`: `ok`, `warmup` (+ `warm`: fraction done), `almost`, `ending` (+ `sensorLeft`: hours), `endedSending`, `ended`, `none` | ok, 0.45, 5 | Sukrara · "ending" = the last 8 h; the ready time is Sukrara's (the reference fakes it from `warm`) |
@@ -325,17 +325,28 @@ the time ≤ 13 px each side at T 76) and with the hour; its size only with the 
   vW × the time left of the 5 s (1 → 0).
 
 ### 6.5 Sparkline (setting: trend = sparkline, the default)
-Replaces the arrow. Layout: total = vW + 14 + 100; digits from x0; the box at `sx = x0 + vW + 14`, width SW = 100,
-top `sy = vBase − V − 6`, height SH = V + 14.
-- **Time axis is logarithmic over the last hour**: x(age) = sx + SW·(1 − ln(1 + age/10) / ln 7); the newest 10 min
-  take about a third of the width. Points every 5 min, age of point j = reading age + 5·(n − 1 − j); only ages ≤ 60.
-  **The axis ends at now**, so an old reading stops short of the right edge. A missed reading (`null`) leaves its point
+Replaces the arrow. **It takes the whole width the fits allow** (the owner: a shorter value leaves room, and the room
+shows more time, never a stretch). The row's edges: right `xr = min(halfAt(vTop), halfAt(vBase))` (§4); left `xl = −xr`,
+or, where the battery label sits beside the row (not always-on, its bottom below vTop), `max(−xr, −166 + battW + 8)`.
+The digits start at `x0 = xl`; the box's right edge, *now*, is at xr whatever the value (it never moves with the
+reading); its width `SW = min(xr − (xl + vW + 14), K·ln 19)` (at least 100: the size sets' fit, §4, asks for
+vW + 14 + 100), so `sx = xr − SW`; total = xr − xl. Top `sy = vBase − V − 6`, height SH = V + 14. Examples: 112 at
+V 60, SW 135.6 (the last 2 h 10 min); 98 or 71, SW 151.3 (3 h); 180, 110.6 (1 h 16 min).
+- **Time axis is logarithmic, the same scale at every width**: x(age) = xr − K·ln(1 + age/10), K = 100 / ln 7 (100 px
+  = the last hour, as the box was); the newest 10 min take about 36 px. A wider box shows older readings: the box
+  reaches back `min(180, 10·(e^(SW/K) − 1))` minutes. **At most 3 hours**: a meal's whole rise and fall and rapid
+  insulin's main action; past that an hour takes under 15 px. Points every 5 min, age of point j = reading age +
+  5·(n − 1 − j); only the ages the box reaches. **The axis ends at now**, so an old reading stops short of the right
+  edge. A missed reading (`null`) leaves its point
   out: the line breaks there, and a lone reading between two gaps is a dot (its zero-length piece with the round cap,
   `fields-spark-gap`).
 - **Height is a fixed scale, 0.6 px per mg/dL, never rescaled**, so a slope always means the same speed (the owner,
   2026-11-16: rescaling makes you lose the notion of whether a slope is steep). The box shows a window of
   span = SH / 0.6 mg/dL (113–123), centred on `mid`: y₀(v) = sy + SH/2 − (v − mid)·0.6.
-- **The window pans** (the owner's "band in view"). With the hour's readings from hLo to hHi, the newest `last`, and the
+- **The window pans** (the owner's "band in view") **on the last hour alone**, whatever the width shows: what you act
+  on is the last hour and your range, an excursion 2 h ago must not drag the window away from now, and the window
+  doesn't move when a reading's width changes the box; older readings outside it fade in the bands (below). With the
+  hour's readings from hLo to hHi, the newest `last`, and the
   person's range from the low limit L to the high limit H:
   - **Framed**: when the hour fits in the window together with the whole range (max(hHi, H) − min(hLo, L) ≤ span),
     mid = (max(hHi, H) + min(hLo, L)) / 2: both limits show and the frame stays still while you stay near range
@@ -565,7 +576,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
 | sensor | warmup, almost, ending, ended-sending, ended, none, none-es, ended-es, phone-lost, battery-low | sensor, phone, battery states; Spanish messages beside the stacked battery label |
 | modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
-| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, seconds-off | fields and settings, missing values and readings |
+| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off | fields and settings, missing values and readings |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
 

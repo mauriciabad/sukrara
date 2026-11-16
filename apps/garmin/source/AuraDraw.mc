@@ -455,7 +455,7 @@ module AuraDraw {
         var in1 = AuraMath.min(bot, m.sy + m.SH);
         if (in1 > in0) {
             fill(dc, tight, 0.09);
-            dc.fillRectangle(cx + m.sx, cy + in0, 100, in1 - in0);
+            dc.fillRectangle(cx + m.sx, cy + in0, m.SW, in1 - in0);
         }
         for (var y = top; y < bot; y += 1) {
             if (y >= m.sy && y < m.sy + m.SH) {
@@ -463,12 +463,12 @@ module AuraDraw {
                 continue;
             }
             fill(dc, tight, 0.09 * m.sparkFade(y + 0.5));
-            dc.fillRectangle(cx + m.sx, cy + y, 100, AuraMath.min(1, bot - y));
+            dc.fillRectangle(cx + m.sx, cy + y, m.SW, AuraMath.min(1, bot - y));
         }
         var lim = m.aod ? 0x3A3A3E : 0x5C5C62;
         for (var i = 0; i < 2; i++) {
             var ly = m.spLimits[i] as Float;
-            dashed(dc, m.sx, ly, m.sx + 100, ly, 0.01, 6, over(lim, m.sparkFade(ly)), 1.4);
+            dashed(dc, m.sx, ly, m.sx + m.SW, ly, 0.01, 6, over(lim, m.sparkFade(ly)), 1.4);
         }
         for (var r = 0; r < m.spPts.size(); r++) {
             var run = m.spPts[r] as Array;

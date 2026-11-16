@@ -454,8 +454,27 @@ class AuraModel {
     }
 
     // --- the value with Sukrara's arrow (SPEC.md §6.4) ---
+    // the sparkline's box: its width and how far back it reaches (minutes)
+    var SW as Float = 100.0;
+    var spAge as Float = 60.0;
+    const SPAN_MAX = 180.0; // the sparkline reaches back at most 3 hours (SPEC.md §6.5)
+
     hidden function value() as Void {
         x0 = -total / 2;
+        if (spark) {
+            // the whole width the fits allow: the value from the left edge, now at the right edge (SPEC.md §6.5)
+            var xr = AuraMath.min(halfAt(vTop), halfAt(vBase));
+            var xl = -xr;
+            if (!aod && tBase + 6 + battH(battOne) > vTop) {
+                xl = AuraMath.max(xl, -166 + battW(battOne) + 8);
+            }
+            var kt = 100 / Math.ln(7);
+            SW = AuraMath.min(xr - (xl + vW + 14), kt * Math.ln(1 + SPAN_MAX / 10)).toFloat();
+            spAge = AuraMath.min(SPAN_MAX, 10 * (Math.pow(Math.E, SW / kt) - 1)).toFloat();
+            total = xr - xl;
+            x0 = xl;
+            sx = xr - SW;
+        }
         ax = AuraMath.r1(spark ? 0 : x0 + vW + gap + box / 2);
         ay = AuraMath.r1(vBase - V / 2.0);
         inverted = !struck && bk.equals("veryLow");
@@ -512,7 +531,7 @@ class AuraModel {
         }
     }
 
-    // --- the sparkline: the last hour, log time, a fixed scale (0.6 px per mg/dL) whose window pans (SPEC.md §6.5) ---
+    // --- the sparkline: up to the last 3 hours (100 px = the last hour, at any width), log time, a fixed scale (0.6 px per mg/dL) whose window pans (SPEC.md §6.5) ---
     const SPARK_PX = 0.6;
     const SPARK_FADE = 12.0;
 
@@ -537,8 +556,10 @@ class AuraModel {
     }
 
     hidden function sparkline() as Void {
-        var SW = 100.0;
-        sx = x0 + vW + 14;
+        if (!spark) {
+            SW = 100.0;
+            sx = x0 + vW + 14;
+        }
         SH = V + 14.0;
         sy = vBase - V - 6;
         var g = inp.glucose;
@@ -585,7 +606,7 @@ class AuraModel {
         var last = null;
         for (var j = 0; j < n; j++) {
             var a = inp.age + 5 * (n - 1 - j);
-            if (a > 60) {
+            if (a > spAge + 0.000001) {
                 continue;
             }
             var v = series[j];
@@ -596,7 +617,7 @@ class AuraModel {
                 }
                 continue;
             }
-            last = [AuraMath.r1(sx + SW * (1 - Math.ln(1 + a / 10.0) / ln7)), sparkY(v)];
+            last = [AuraMath.r1(sx + SW - 100 * Math.ln(1 + a / 10.0) / ln7), sparkY(v)];
             run.add(last);
         }
         if (run.size() > 0) {

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sukrara.mauri.app/contracts/watchface/payload/schema.json",
-  "title": "Sukrara Aura payload, version 1",
+  "title": "Sukrara Aura payload, version 2",
   "description": "What the phone sends the Garmin face (README.md). Times are absolute epoch seconds.",
   "type": "object",
   "additionalProperties": false,
@@ -13,7 +13,7 @@
     "side": {"enum": ["low", "high"]}
   },
   "properties": {
-    "v": {"const": 1},
+    "v": {"const": 2},
     "sent": {"$ref": "#/$defs/time"},
     "unit": {"enum": ["mgdl", "mmol"]},
     "bands": {"type": "array", "items": {"type": "integer"}, "minItems": 6, "maxItems": 6},
@@ -36,8 +36,8 @@
     },
     "hist": {
       "type": "array",
-      "description": "empty without g, else 12 slots oldest first",
-      "oneOf": [{"maxItems": 0}, {"minItems": 12, "maxItems": 12}],
+      "description": "empty without g, else 36 slots (3 h) oldest first",
+      "oneOf": [{"maxItems": 0}, {"minItems": 36, "maxItems": 36}],
       "items": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/mgdl"}]}
     },
     "st": {
