@@ -595,7 +595,7 @@ role lives in its own store (`role`), so a damaged setup file never asks for the
   for an install that finished setup before the step existed (a later step answered), passed: the banner asks there
   instead. Open, it is on Settings' *Finish setup* row like every optional step (home's updates banner is its other
   way in).
-- **Root** (optional, builds with root features: `SetupStep.Root`, `SetupFacts.root` null on Google Play; docs/36
+- **Root** (optional, both builds: `SetupStep.Root`; docs/36
   §11): a key in a tonal circle, *Root* · *Is this phone rooted? With root, your glucose can show as text in the status
   bar while the notification keeps the graph.*, **Yes, it's rooted** (asks for root at once: the root manager's
   prompt), *It isn't rooted* (final) and *Later*. Signs of root (LSPosed, a `su` file, the module) answer the question:
@@ -1666,10 +1666,8 @@ button and system Back (TalkBack's *Back* action, three-button navigation) do th
     has its strings), arm64 only, the Libre 3 core, the same permissions and components (`tools/check/allow.json`
     `play_permissions` is empty).
 - Same package and key: one build installs over the other and keeps the data.
-- If Play rejects the root features or `USE_EXACT_ALARM`, the play flavor leaves that one out again (docs/20-publishing.md
-  › Flavors › If Play rejects …; the alert checklist's *Alarms and reminders* item and the inexact while-idle fallback
-  are already in both builds for a `SCHEDULE_EXACT_ALARM` build), and this section and the website's *Versions* list
-  it.
+- Play approved the Play build with all of this, root, the System UI module and `USE_EXACT_ALARM` included (0.14.5,
+  2026-11-16).
 
 **States and exits**: the Google Play version has no state of its own: About names the version and *About the versions*
 opens the website (Back returns to About); the updater's states ([Updates (Android, GitHub version)](#updates-android-github-version))

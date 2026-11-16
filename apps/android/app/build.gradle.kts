@@ -130,8 +130,7 @@ androidComponents {
         }
     }
     // The Play build is an LSPosed module too (META-INF/xposed, from :monitor's resources; owner's decision 2026-11-11,
-    // #142). If Play rejects the root features, the fallback (docs/20-publishing.md › Flavors) excludes those files here:
-    // onVariants(selector().withFlavor("store" to "play")) { it.packaging.resources.excludes.add("META-INF/xposed/**") }
+    // #142; approved by Play with 0.14.5).
     onVariants(selector().withBuildType("release")) { variant ->
         val name = variant.name.replaceFirstChar { it.uppercase() }
         val apk = registerLibraryCheck("verify${name}ApkNativeCore", variant.artifacts.get(SingleArtifact.APK), "apk", NativeCore.LIBRARY)

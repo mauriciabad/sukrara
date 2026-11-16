@@ -38,7 +38,7 @@ enum class SetupStep {
     Updates,
 
     /**
-     * Builds with root features only (null [SetupFacts.root] = Google Play: never shown), before [Notification]:
+     * Builds with root features only (both release builds; null [SetupFacts.root]: never shown), before [Notification]:
      * *Root*, whether this phone is rooted. Signs of root (LSPosed, a root manager) skip the question. *Yes* asks for
      * root at once (the root manager's prompt), then the one missing step with its fix and *Check again* (the same card
      * as Settings › Glucose notification); granted root completes it and picks the status bar text on the next step.

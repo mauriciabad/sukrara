@@ -230,7 +230,7 @@
     "app.mauri.sukrara.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION": "androidx.core's signature permission for ContextCompat.registerReceiver (not shown to the person)"
   },
   "play_permissions": {
-    "_why": "The Play build declares `permissions` without the GitHub version's updater (#188: Play brings the updates and its policy forbids an app updating itself). Since the owner's decision of 2026-11-11 (#142) it keeps USE_EXACT_ALARM (with Play's exact-alarm declaration) and the System UI module's SYSTEMUI_STATE. If Play rejects one, its fallback (app/src/play/AndroidManifest.xml, docs/20-publishing.md › Flavors) adds the entries here: remove USE_EXACT_ALARM + add SCHEDULE_EXACT_ALARM, or remove SYSTEMUI_STATE.",
+    "_why": "The Play build declares `permissions` without the GitHub version's updater (#188: Play brings the updates and its policy forbids an app updating itself). Since the owner's decision of 2026-11-11 (#142) it keeps USE_EXACT_ALARM (with Play's exact-alarm declaration) and the System UI module's SYSTEMUI_STATE. Play approved both with 0.14.5 (2026-11-16).",
     "remove": {
       "android.permission.REQUEST_INSTALL_PACKAGES": "no updater in the Play build: :update is a full-flavor dependency only",
       "android.permission.UPDATE_PACKAGES_WITHOUT_USER_ACTION": "no updater in the Play build: :update is a full-flavor dependency only"

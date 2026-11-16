@@ -37,7 +37,7 @@ enum class Seen { Everyone, Wearer, Follower }
 
 /**
  * What a build may leave out (docs/20-publishing.md › Flavors): the Google Play build has no updater; root is in
- * both builds since 2026-11-11 (#142) and stays here for the fallback if Play rejects it.
+ * both builds (#142; approved by Play with 0.14.5).
  */
 enum class BuildFeature { Root, UpdateCheck }
 

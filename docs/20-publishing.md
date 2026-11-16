@@ -731,9 +731,9 @@ tester list so nobody drops out by accident).
 | Target API | New apps/updates must target **API 36+** since 2026-08-31 [[G8]](https://support.google.com/googleplay/android-developer/answer/11926878) | Already `targetSdk 37` |
 | Health apps declaration | Every health/medical app fills the form; categories include *Diseases and Conditions Management* and **Medical Device Apps**, the latter including "any software interfacing with medical device hardware"; EEA apps regulated under MDR/IVDR must show device name, manufacturer, IFU, UDI-DI [[G9]](https://support.google.com/googleplay/android-developer/answer/14738291) | Declare *Diseases and Conditions Management*. Whether it must also be *Medical Device Apps* is the key risk (below) |
 | Health content | Non-regulated health apps must state in the description that the app is "not a medical device and does not diagnose, treat, cure, or prevent any medical condition"; external hardware must be disclosed; a privacy policy linked in Console **and in the app**, public, not a PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511) | Disclaimer + "requires a FreeStyle Libre 3 sensor" in the listing; privacy page on the site; link in Settings → About |
-| `USE_EXACT_ALARM` | Only for apps whose **core** function is an alarm/timer or calendar; everyone else should use `SCHEDULE_EXACT_ALARM` [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | Glucose alarms are arguably alarm-clock-like and Juggluco ships alarms on Play, but expect a declaration and possible rejection. Safer: switch the Play build to `SCHEDULE_EXACT_ALARM` + `canScheduleExactAlarms()` prompt (the alert timing doesn't need more). **Decided 2026-11-11: keep `USE_EXACT_ALARM` and declare it** ([Flavors](#flavors)) |
+| `USE_EXACT_ALARM` | Only for apps whose **core** function is an alarm/timer or calendar; everyone else should use `SCHEDULE_EXACT_ALARM` [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241) | Glucose alarms are arguably alarm-clock-like and Juggluco ships alarms on Play, but expect a declaration and possible rejection. Safer: switch the Play build to `SCHEDULE_EXACT_ALARM` + `canScheduleExactAlarms()` prompt (the alert timing doesn't need more). **Decided 2026-11-11: keep `USE_EXACT_ALARM` and declare it** ([Flavors](#flavors)); approved by Play with 0.14.5 (2026-11-16) |
 | Foreground service | Each FGS type declared in App content with description, user impact and a **demo video** [[G12]](https://support.google.com/googleplay/android-developer/answer/13392821) | `connectedDevice` (BLE to sensor/followers): record the video (start, notification, stop) |
-| Device and Network Abuse | No interfering with other apps / the system; **no self-updating outside Play**, no downloading executable code [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | Play flavor without the LSPosed/SystemUI hook, lock-screen widget hook, root status bar, `DUMP`; and without the in-app GitHub update check (`SettingsScreens.kt` calls `api.github.com/…/releases/latest`). **Decided 2026-11-11: the root features stay in the Play build (opt-in, the person's own root), only the update check goes** ([Flavors](#flavors)) |
+| Device and Network Abuse | No interfering with other apps / the system; **no self-updating outside Play**, no downloading executable code [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646) | Play flavor without the LSPosed/SystemUI hook, lock-screen widget hook, root status bar, `DUMP`; and without the in-app GitHub update check (`SettingsScreens.kt` calls `api.github.com/…/releases/latest`). **Decided 2026-11-11: the root features stay in the Play build (opt-in, the person's own root), only the update check goes** ([Flavors](#flavors)); approved by Play with 0.14.5 (2026-11-16) |
 | Data safety | Required, with a privacy policy, even if nothing is collected; E2E-encrypted data unreadable by the developer is not "collected"; a user-initiated transfer to a third party is not "sharing" [[G14]](https://support.google.com/googleplay/android-developer/answer/10787469) | Nostr readings: E2E encrypted → not collected (relays see public keys, timestamps, IP). LibreView: user-initiated upload of glucose + treatments + account credentials to Abbott → disclose as health data sent at the user's request. BLE/NFC: on-device. No analytics, no ads |
 | Signing | New apps are enrolled in **Play App Signing**; the developer may "Provide a copy of your app signing key" instead of a Google-generated one, before the first open/production release [[G15]](https://support.google.com/googleplay/android-developer/answer/9842756) | Upload **our own** release key so GitHub/IzzyOnDroid/F-Droid (reproducible) builds share one signature with Play |
 
@@ -951,7 +951,8 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   are the app's core, user-facing function, documented and promoted in the description
   [[G11]](https://support.google.com/googleplay/android-developer/answer/16558241): glucose alarms are Sukrara's core
   function, the listing leads with them, and Play's exact-alarm declaration says so
-  ([the draft](#exact-alarm-declaration)). Precedent: Juggluco, on Play, declares `USE_EXACT_ALARM`.
+  ([the draft](#exact-alarm-declaration)). Precedent: Juggluco, on Play, declares `USE_EXACT_ALARM`. **Settled**:
+  approved by Play with 0.14.5 (2026-11-16), no questions asked.
 - **The root features ship in the Play build too**: the glucose in the status bar (root slot daemon, the LSPosed
   module in System UI: `Store.rootFeatures = SystemUiRoot`, the module's manifest entries, `META-INF/xposed`) and the
   lock-screen widget (#66, the same module). They work only after the person roots their phone, installs LSPosed and
@@ -960,11 +961,11 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   System UI, until that module runs. They change only Sukrara's own icons, text and widget in System UI. The listing
   names the user-facing feature briefly and honestly (*glucose in the status bar on supported phones, with advanced
   setup*), not the means; every Play declaration and reviewer question is answered truthfully (root and LSPosed are
-  named whenever Play asks how a feature works). The policy risk is Device and Network Abuse ("interfere with … the
-  user's device … including … other apps"
-  [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646)); the answer is that it runs only
-  with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar items and its
-  lock-screen widget.
+  named whenever Play asks how a feature works). Device and Network Abuse ("interfere with … the user's device …
+  including … other apps" [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646)) doesn't
+  apply: it runs only with the person's explicit setup and consent and touches nothing but Sukrara's own status-bar
+  items and its lock-screen widget. **Settled**: approved by Play with 0.14.5 (2026-11-16), no questions asked; they're part of every
+  build from now on, new root features included, described the same way.
 - **No updater in the Play build**: an app from Play may not update itself, or send people to updates, other than
   through Play [[G13]](https://support.google.com/googleplay/android-developer/answer/16559646). The updater is its own
   module, `:update`, a dependency of the `full` flavor only (#188): the Play build has no update check, notification,
@@ -976,26 +977,7 @@ below). The website and About call them the *GitHub version* and the *Google Pla
   each; where to get each; anything a store version leaves out, today only the updater). No disabled rows and no
   "install elsewhere to unlock" prompts in the Play build (Device and Network Abuse: no means to reach a non-compliant
   APK).
-- **The split stays for now**: the flavors and their code remain until Play approves a release with the root features;
-  then the split can go (the updater would then be the only thing `Store` decides).
-
-**If Play rejects …** (resubmit after each; the code is all still there):
-
-- *`USE_EXACT_ALARM`*: put the two lines of the exact-alarm fallback (in the comment of
-  `app/src/play/AndroidManifest.xml`) into the manifest and set `play_permissions` in `tools/check/allow.json` to
-  remove `USE_EXACT_ALARM` and add `SCHEDULE_EXACT_ALARM`, each with its reason; flip `ManifestTest`'s assertion that
-  the Play build declares `USE_EXACT_ALARM`. Nothing else: the alert checklist already names *Alarms and reminders*
-  with *Fix* when exact alarms aren't allowed, the checks already fall back to inexact while-idle alarms
-  (`AlarmPolicy`) and re-arm on `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`. Then FEATURES.md › Google Play build
-  and the website's Versions list it, and the exact-alarm declaration is withdrawn.
-- *The root features*: `Store.rootFeatures = null` in `app/src/play`, the root fallback in the comment of
-  `app/src/play/AndroidManifest.xml` into the manifest, the `META-INF/xposed/**` exclusion back in
-  `app/build.gradle.kts` (the commented line), `play_permissions` removes `app.mauri.sukrara.permission.SYSTEMUI_STATE`,
-  and the checks go back to "absent": `ManifestTest`'s Play tests, `verify-apk.sh --play` (no `META-INF/xposed`, no
-  module components, no `systemui` / libxposed class in the mapping; the hook check only for the GitHub build) and
-  `play-bundle.sh` (no `base/root/META-INF/xposed`). The last version with all of that is `ae4810b9` (`git show
-  ae4810b9:<path>`). Settings › Status bar then has no *With root* section and search no root rows (`BuildFeature`,
-  `SettingsSearchTest`); FEATURES.md and the website's Versions say the Play version leaves the status bar out.
+- **The flavors differ only in the updater** (`Store`): root and exact alarms are the same in both.
 
 Not in either release build, so there is nothing to leave out: `DUMP` (only the debug build's `DebugReceiver` declares
 it), `QUERY_ALL_PACKAGES` (the queries are listed one by one in `allow.json`). `REQUEST_INSTALL_PACKAGES` is in the
@@ -1131,11 +1113,11 @@ so this text (English) wasn't entered and is only what to answer if Play asks:
 > the first thing the store listing describes, and every alert can be tried in Settings › Alerts › an alert › Send a
 > test alert.
 
-Precedent if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. If Play rejects it: the
-fallback in [Flavors](#flavors) › *If Play rejects …*.
+Precedent if Play asks: Juggluco, a CGM app on Play, declares `USE_EXACT_ALARM` for the same alarms. Play approved it
+with 0.14.5 without asking.
 
-**If Play asks about root, LSPosed or the status bar** (a reviewer question, or *App access* / Device and Network
-Abuse): answer truthfully, in English:
+**If Play ever asks about root, LSPosed or the status bar** (it didn't for 0.14.5; a reviewer question, or *App
+access* / Device and Network Abuse): answer truthfully, in English:
 
 > Glucose in the status bar is an optional, advanced feature, off by default. It works only on a phone the user has
 > rooted themselves, with the LSPosed framework installed and Sukrara's module enabled for System UI by the user, and
@@ -1373,9 +1355,6 @@ The steps, as they were:
    - GitHub **0.14.5** (the same version as Play): only **Open**. Nothing to switch to until the next version; then it
      is the first case. Not tested: Obtainium installs, and Play → GitHub on a real phone (adb skips the prompts).
    Open testing as a beta: dropped, no Play beta track: every release goes straight to production (the owner, 2026-11-16).
-
-If Play rejects `USE_EXACT_ALARM` or the root features: [Flavors](#flavors) › *If Play rejects …*, a new bundle, and
-the next upload.
 
 ## Garmin
 
@@ -1654,11 +1633,9 @@ keystore and Sparkle EdDSA key, submit policy declarations, recruit testers, and
   removal. Mitigation: display/convenience framing, the sideload channel as fallback.
 - **Abbott**: a trademark or ToS complaint can pull the Play listing (reported for Juggluco [[P2]](https://forum.fudiabetes.org/t/juggluco-back-on-play-store/15038)); the LibreView
   upload uses an unofficial API.
-- **`USE_EXACT_ALARM` rejection** if kept in the Play build.
 - **Closed-test drop-outs** restart the 14-day clock [[G6]](https://support.google.com/googleplay/android-developer/answer/14151465)[[G7]](https://www.choicely.com/blog/google-play-12-tester-rule).
 - **Developer verification** may tighten (the advanced flow is new, and F-Droid's position is unresolved [[V4]](https://techaiwire.com/articles/android-developer-verification-enforcement-four-countries/));
   losing the release key makes the package unregistrable [[V2]](https://developer.android.com/developer-verification/guides/faq) — two backups.
-- **Same package on Play and GitHub**: Play may overwrite a root install with the play flavor.
 - **Team ID change** on the Mac when moving to the paid team (Keychain prompt, new App Group container).
 - **Homebrew tap trust** rules have changed twice in 2026 [[H6]](https://brew.sh/7.0.0-migration-guide/); recheck the cask instructions on each Homebrew major.
 
