@@ -2086,9 +2086,9 @@ the time, so the reading ages by itself from its own time with the phone away.
 - **Settings**: on the watch (hold MENU on the face › Watch face › Customize) and in the Connect IQ app (once the face
   is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field, Bottom field 1 and
   2, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
-- Words in English and Spanish (the watch's language). Not yet: the dials, the halo and the seconds sweep (the dial is
-  black), and the face's side of the phone link ([Sukrara Aura: readings to the Garmin face](#sukrara-aura-readings-to-the-garmin-face-docs43);
-  until it is in the face, the face shows "No readings").
+- Words in English and Spanish (the watch's language). Readings come from the phone: [Sukrara Aura: readings to the
+  Garmin face](#sukrara-aura-readings-to-the-garmin-face-docs43). Not yet: the dials, the halo and the seconds sweep
+  (the dial is black).
 
 **States and exits**: *value* (fresh → late → old → no reading since → long gap) → leaves by itself with the next
 reading; nothing to do on the watch. *Warm-up* / *Sensor ended* / *No readings* (nothing paired) → leave when Sukrara's
