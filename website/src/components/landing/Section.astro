@@ -2,17 +2,30 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
-// A home page section: a short title, an optional lead, then its content.
+// A home page section: a short title (with "See all" when the features page has its group), an optional lead, then
+// its content.
 interface Props {
 	title: string;
 	id?: string;
 	lead?: string;
+	/** Its group on the features page: /features/#alerts. */
+	more?: string;
 }
-const { title, id, lead } = Astro.props;
+const { title, id, lead, more } = Astro.props;
+const t = Astro.locals.t;
 ---
 
 <section class="sk-section" id={id}>
-	<h2>{title}</h2>
+	<div class="sk-section__head">
+		<h2>{title}</h2>
+		{
+			more && (
+				<a href={more} aria-label={`${t('site.features.seeAll')}: ${title}`}>
+					{t('site.features.seeAll')} <span aria-hidden="true">→</span>
+				</a>
+			)
+		}
+	</div>
 	{lead && <p class="sk-section__lead">{lead}</p>}
 	<slot />
 </section>
@@ -20,6 +33,22 @@ const { title, id, lead } = Astro.props;
 <style>
 	.sk-section {
 		padding-block: 3.5rem 0.5rem;
+	}
+	.sk-section__head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.5rem 1.5rem;
+	}
+	.sk-section__head a {
+		font-weight: 600;
+		color: var(--sl-color-text-accent);
+		text-decoration: none;
+		white-space: nowrap;
+	}
+	.sk-section__head a:hover {
+		text-decoration: underline;
 	}
 	.sk-section h2 {
 		margin: 0;

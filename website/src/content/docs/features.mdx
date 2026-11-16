@@ -1,120 +1,98 @@
 ---
 title: Features
-description: The main things Sukrara does. Your CGM glucose everywhere you look, discreet alerts, live sharing without a cloud, quick logging, reports, and the apps you already use. Android and Mac, free and open source.
-tableOfContents: false
+description: Everything Sukrara does, at a glance. Your CGM glucose everywhere you look, discreet alerts, live sharing without a cloud, quick logging, reports, the sensors it reads and the apps it works with. Android and Mac, free and open source.
+template: splash
+editUrl: false
+lastUpdated: false
 ---
 
-import Feature from '../../components/features/Feature.astro';
-import Features from '../../components/features/Features.astro';
-import Works from '../../components/landing/Works.astro';
-import { GITHUB } from '../../site';
+import FeatureGroup from '../../components/features/FeatureGroup.astro';
+import FeatureLead from '../../components/features/FeatureLead.astro';
+import FeatureTile from '../../components/features/FeatureTile.astro';
 
-{/* Sukrara's main features, a few each, from the README's "What it does": not every behaviour (that's docs/FEATURES.md). */}
+{/* For people deciding to install and for links shared in communities: everything worth asking "does it do X?" about, at
+    once. The home page links its sections to these groups. Not every behaviour: that's docs/FEATURES.md. */}
 
-The main things Sukrara does. Open one to learn more.
+<FeatureLead before="Everything Sukrara does. A tile with" after="shows it in the app." />
 
-<Features>
+<FeatureGroup id="glance" title="Glucose at a glance">
+  <FeatureTile icon="status_bar_notification" title="Status bar" shot="statusBar" shotWidth={400}>A Live Update chip, or with root, text next to the clock.</FeatureTile>
+  <FeatureTile icon="widgets" title="Home screen widgets" shot="widget">Glucose, chart and time in range, without opening the app.</FeatureTile>
+  <FeatureTile icon="screen_lock_portrait" title="Lock screen" shot="lockscreen">A card around the fingerprint sensor, with root.</FeatureTile>
+  <FeatureTile icon="notifications" title="Notification">The card with its chart, on the lock screen too. Or none at all.</FeatureTile>
+  <FeatureTile icon="trending_up" title="A trend arrow you can trust">From your readings, minutes sooner than the sensor's.</FeatureTile>
+  <FeatureTile icon="donut_large" title="Beside the value" shot="card">Time in range, GMI, average, variability or your last treatment.</FeatureTile>
+  <FeatureTile icon="dia_range" title="mg/dL or mmol/L">Your unit and your own ranges.</FeatureTile>
+  <FeatureTile icon="volume_up" title="Read aloud">Your glucose spoken, from a home screen shortcut.</FeatureTile>
+</FeatureGroup>
 
-<Feature id="everywhere" icon="widgets" title="Your glucose everywhere you look" summary="Status bar, home screen, lock screen and notification. On the Mac, the menu bar.">
+<FeatureGroup id="alerts" title="Alerts">
+  <FeatureTile icon="dia_very_low" title="Every kind of alert" shot="alert">Lows, highs, fast changes and no data, each at your thresholds.</FeatureTile>
+  <FeatureTile icon="music_note" title="Discreet sound packs">A different sound and intensity for each alert.</FeatureTile>
+  <FeatureTile icon="check_circle" title="Quiet once you've acted">After insulin or carbs, and while glucose heads back into range.</FeatureTile>
+  <FeatureTile icon="bedtime" title="Night alerts">Their own thresholds and rules at night.</FeatureTile>
+  <FeatureTile icon="snooze" title="Remind less or mute">Right on the alert. Mute them all for up to 8 hours.</FeatureTile>
+  <FeatureTile icon="notifications_active" title="Through Do Not Disturb">If you let Sukrara through.</FeatureTile>
+  <FeatureTile icon="notification_add" title="On your watch">Alerts as notifications of their own, if you want.</FeatureTile>
+  <FeatureTile icon="group" title="Followers are told">When a very low gets no answer.</FeatureTile>
+</FeatureGroup>
 
-- A Live Update chip in the status bar, or with root, next to the clock.
-- Home screen widgets with the chart and your time in range.
-- With root, a card on the lock screen: tap it to log without unlocking.
-- The same card on every screen, with a trend arrow from your readings, minutes sooner than the sensor's.
+<FeatureGroup id="sharing" title="Sharing and following">
+  <FeatureTile icon="share" title="Invite with a link or QR code" shot="share" shotWidth={300}>Single use. You approve each person.</FeatureTile>
+  <FeatureTile icon="key" title="End-to-end encrypted">Over public Nostr relays. No account, no server to host.</FeatureTile>
+  <FeatureTile icon="bluetooth" title="Bluetooth nearby">No internet needed when you're close.</FeatureTile>
+  <FeatureTile icon="person" title="Follow someone">On Android or a Mac, with alerts of your own.</FeatureTile>
+  <FeatureTile icon="edit_note" title="Followers can log">Insulin and carbs, if you allow them.</FeatureTile>
+  <FeatureTile icon="backup" title="New phone">Your followers come with you, from a recovery code or your password manager.</FeatureTile>
+</FeatureGroup>
 
-[See it on Android](/android/)
+<FeatureGroup id="logging" title="Logging">
+  <FeatureTile icon="dia_insulin_rapid" title="Insulin, carbs and notes" shot="treatments" shotWidth={300}>Rapid and long-acting insulin in one form, now or earlier.</FeatureTile>
+  <FeatureTile icon="lock_open" title="Without unlocking" shot="lockTreatment" shotWidth={300}>From the notification, a widget, an alert or Quick Settings.</FeatureTile>
+  <FeatureTile icon="dia_pen" title="NovoPen Echo® Plus">Logs its own doses, priming apart.</FeatureTile>
+  <FeatureTile icon="receipt_long" title="Your log">31 days with the glucose at the time. Edit, add a note or undo.</FeatureTile>
+</FeatureGroup>
 
-</Feature>
+<FeatureGroup id="reports" title="Reports and your data">
+  <FeatureTile icon="bar_chart" title="Glucose report" shot="macReport" shotWidth={400}>Time in ranges, average, GMI and variability, over 1 to 30 days.</FeatureTile>
+  <FeatureTile icon="crown" title="Rewards">A laurel from 90 % in range, flowers from 95 %, a crown at 100 %.</FeatureTile>
+  <FeatureTile icon="file_upload" title="Import your history">From LibreView, Tidepool or a CSV file.</FeatureTile>
+  <FeatureTile icon="file_export" title="Export">A CSV in LibreView's format, without your name.</FeatureTile>
+</FeatureGroup>
 
-<Feature id="alerts" icon="notifications_active" title="Discreet alerts, less alarm fatigue" summary="Each alert its own sound. Quiet once you've acted.">
+<FeatureGroup id="sensors" title="Sensors">
+  <FeatureTile icon="dia_sensor" title="FreeStyle Libre 3 / 3 Plus">Read directly. Start one with a tap of the phone.</FeatureTile>
+  <FeatureTile app="juggluco" title="Through Juggluco">FreeStyle Libre 2 / 2 Plus, Sibionics GS1, CareSens Air.</FeatureTile>
+  <FeatureTile icon="science" title="Directly, not yet tested">Dexcom G6 / G7 / ONE+, Accu-Chek SmartGuide, LinX / AiDEX X.</FeatureTile>
+  <FeatureTile icon="timer" title="Sensor end">A countdown, reminders, and your calendar if you want.</FeatureTile>
+</FeatureGroup>
 
-- Sound packs with a different intensity for each alert.
-- Quiet after insulin or carbs, and while glucose heads back into range.
-- Treatment, Remind less and Mute right on the alert.
-- Through Do Not Disturb, if you let them.
+<FeatureGroup id="apps" title="Works with">
+  <FeatureTile app="libreview" title="LibreView">Sends glucose and treatments, so your clinic keeps seeing them.</FeatureTile>
+  <FeatureTile app="tidepool" title="Tidepool">Sends glucose, insulin, carbs and notes.</FeatureTile>
+  <FeatureTile app="nightscout" title="Nightscout">Sends to your site, or acts as its API.</FeatureTile>
+  <FeatureTile app="healthConnect" title="Health Connect">Writes your glucose.</FeatureTile>
+  <FeatureTile app="xdrip" title="xDrip+">Acts as its API, for Garmin watch faces and more.</FeatureTile>
+  <FeatureTile app="aaps" title="AAPS">Gets your glucose live.</FeatureTile>
+  <FeatureTile app="juggluco" title="Juggluco">Reads glucose from it, on the phone or your network.</FeatureTile>
+</FeatureGroup>
 
-[Listen to the sounds](/sounds/)
+<FeatureGroup id="mac" title="On your Mac">
+  <FeatureTile icon="status_bar_notification" title="Menu bar" shot="macPanel" shotWidth={300}>Your glucose or someone else's, the chart a click away.</FeatureTile>
+  <FeatureTile icon="widgets" title="Widgets" shot="macWidget" shotWidth={300}>On the desktop and in Notification Center.</FeatureTile>
+  <FeatureTile icon="notifications_active" title="The same alarms">Sounds, quiet rules and mute, like the phone.</FeatureTile>
+  <FeatureTile icon="bluetooth" title="Next to your phone">Gets your glucose over Bluetooth.</FeatureTile>
+  <FeatureTile icon="edit_note" title="Log and report" shot="macTreatment" shotWidth={300}>Treatments and the glucose report, with a CSV export.</FeatureTile>
+  <FeatureTile app="juggluco" title="Juggluco on your network">Reads it on your home Wi-Fi, with alerts of its own.</FeatureTile>
+  <FeatureTile icon="volume_up" title="Read aloud">⌃⇧⌘G, from any app.</FeatureTile>
+</FeatureGroup>
 
-</Feature>
-
-<Feature id="sharing" icon="group" title="Shared live, without a cloud" summary="Family and friends follow your glucose on their phone or Mac.">
-
-- Invite them with a link or a QR code.
-- End-to-end encrypted over Nostr, or Bluetooth when they're nearby. No account, no server to host.
-- They get alerts of their own, and are told about a very low nobody answers.
-
-[How the sharing works](/open-glucose-stream/)
-
-</Feature>
-
-<Feature id="logging" icon="edit_note" title="Log in seconds" summary="Insulin, carbs and notes from a widget, the notification or an alert.">
-
-- Set when it happened with one wheel, or 15 minutes ago with a tap.
-- A NovoPen Echo® Plus logs its own doses.
-- Followers you allow can log for you.
-
-</Feature>
-
-<Feature id="reports" icon="bar_chart" title="Reports your clinic knows" summary="Time in ranges, average, GMI and variability.">
-
-- On the phone and the Mac, over 1 to 30 days.
-- Your clinic keeps getting your data through LibreView or Tidepool.
-- Import your history from LibreView or Tidepool, export it as a CSV.
-
-</Feature>
-
-<Feature id="sensors" icon="dia_sensor" title="Reads your sensor" summary="FreeStyle Libre 3 directly, other sensors through Juggluco.">
-
-- Start a Libre 3 or 3 Plus with a tap of the phone.
-- Libre 2, Sibionics GS1 and CareSens Air through Juggluco.
-- Dexcom G6, G7 and ONE+, Accu-Chek SmartGuide and LinX directly, not yet tested on a real one.
-- Reminders before your sensor ends.
-
-</Feature>
-
-<Feature id="apps" icon="hub" title="Works with what you already use" summary="LibreView, Tidepool, Nightscout, xDrip+, AAPS and more.">
-
-<Works
-  label="Apps and services"
-  items={[
-    { app: 'libreview', note: 'Sends to it' },
-    { app: 'tidepool', note: 'Sends to it' },
-    { app: 'nightscout', note: 'Sends to it, or acts as its API' },
-    { app: 'healthConnect', note: 'Writes to it' },
-    { app: 'xdrip', note: 'Acts as its API' },
-    { app: 'aaps', note: 'Broadcasts glucose to it' },
-    { app: 'juggluco', note: 'Reads glucose from it' },
-    { logo: 'garmin', name: 'Garmin', note: 'Watch faces, via the xDrip+ API' },
-  ]}
-/>
-
-</Feature>
-
-<Feature id="mac" logo="apple" title="On your Mac too" summary="Your glucose or someone else's in the menu bar, with the same alarms.">
-
-- Widgets on the desktop and in Notification Center.
-- Log treatments and see the glucose report.
-- Next to your phone, it gets your glucose over Bluetooth.
-
-[Sukrara for Mac](/mac/)
-
-</Feature>
-
-<Feature id="reliable" icon="check_circle" title="Keeps working" summary="It restarts itself, and tells you when something is in the way.">
-
-- Keeps monitoring after a restart, even before you unlock.
-- Says when Android or macOS blocks something, with the fix.
-- A test alert checks that alerts get through.
-
-</Feature>
-
-<Feature id="private" icon="privacy" title="Private, free and open source" summary="No account, no ads, no tracking. Your data stays on your phone.">
-
-- Nothing leaves your phone until you turn something on.
-- Free, with its source code public under the GPL-3.0.
-
-[Privacy policy](/privacy/) · <a href={GITHUB}>Source code</a>
-
-</Feature>
-
-</Features>
+<FeatureGroup id="private" title="Private and dependable">
+  <FeatureTile icon="privacy" title="No account, no tracking">No ads or analytics. Your data stays on your phone.</FeatureTile>
+  <FeatureTile icon="code" title="Free and open source">GPL-3.0, on GitHub.</FeatureTile>
+  <FeatureTile icon="restart_alt" title="Keeps working">Restarts itself, and monitors even before you unlock.</FeatureTile>
+  <FeatureTile icon="warning" title="Nothing fails silently">A blocked feature says so, with the fix.</FeatureTile>
+  <FeatureTile icon="battery_full" title="Easy on the battery">Made to run all day in the background.</FeatureTile>
+  <FeatureTile icon="settings" title="Settings explained">Organized, searchable, with good defaults.</FeatureTile>
+  <FeatureTile icon="public" title="English and Spanish">With your clock and number format.</FeatureTile>
+</FeatureGroup>

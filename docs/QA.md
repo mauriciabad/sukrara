@@ -1074,8 +1074,9 @@ sukrara.mauri.app (`website/`, [`website/README.md`](../website/README.md)). Aut
       pasted into Terminal, it installs Sukrara.
 - [ ] Pictures arrive as JPEG XL in Chrome 155+, Firefox 158+ and Safari (DevTools › Network › Type `jxl`), as AVIF
       in a browser without it, never WebP; no card, crown or widget is cut at its edge.
-- [ ] Features: each row opens and closes with a click, Enter or Space and its arrow turns; `/features/#alerts` opens
-      with Alerts open; every row still matches the README's "What it does".
+- [ ] Features: every tile visible, four across on a wide window, icon beside the words at ~400 px; a tile with the
+      picture mark opens its picture centred (Escape, × or a click outside closes it, focus back on the tile); each
+      home section's *See all* lands on its group; every tile still matches the README's "What it does".
 - [ ] The sharing drawing: side by side on a wide window, top to bottom at ~400 px, every word inside its box; a dot
       leaves the phone on each route at once and the Bluetooth one arrives first.
 - [ ] Sounds: a number plays with its progress ring, a second click stops it, *Play a random high…* plays one per

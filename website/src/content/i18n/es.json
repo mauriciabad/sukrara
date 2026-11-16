@@ -1,6 +1,8 @@
 {
   "site.nav.label": "Secciones",
   "site.nav.features": "Funciones",
+  "site.features.close": "Cerrar",
+  "site.features.seeAll": "Ver todo",
   "site.nav.android": "Android",
   "site.nav.mac": "Mac",
   "site.nav.developers": "Desarrollo",
