@@ -649,7 +649,7 @@ open testing at once, with no *Apply for production* step) and no new fee.
   [what the owner does in Play Console](#google-play-what-the-owner-does-in-play-console-in-order).
 - **Approved: live in production** (0.14.5, seen by the owner 2026-11-16; Play dates it Nov 13): https://play.google.com/store/apps/details?id=app.mauri.sukrara, linked from
   the README and the website's Android page. No questions from Play about `USE_EXACT_ALARM`, root or LSPosed. Left:
-  the listing icon (#210) and item 6's check below.
+  item 6's check below. The fixed listing icon (#210) was sent for review 2026-11-16.
 
 ### Google Play: reviewer access (App access)
 
@@ -1170,7 +1170,7 @@ answered *Don't label assets*: no AI-generated content (the owner, 2026-11-12).
 |---|---|---|
 | App name (≤ 30) | `Sukrara: glucose & alerts` (25) | `Sukrara: glucosa y alertas` (26) |
 | Short description (≤ 80) | `Your glucose in status bar and home screen widget. Discreet alarms, cool sounds` (79) | `Tu glucosa en la barra de estado y en widgets. Alarmas discretas, sonidos chulos` (80) |
-| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art, cropped to what launchers show). The upload in Play Console is the earlier render (glyph at 2/3 size, #210): replace it once the production review is through, not during it | the same |
+| App icon | `assets/brand/sukrara/android/play-store-512.png` (512 × 512, the Android launcher icon's art, cropped to what launchers show). In Play Console since 2026-11-16 (replacing the earlier render with the glyph at 2/3 size, #210; sent for review, AI declaration *Don't label assets*) | the same (es-ES has no icon of its own: it uses the default listing's) |
 | Feature graphic | `~/Pictures/sukrara-play/feature-graphic.png` (1024 × 500, no alpha: the wordmark beside a synthetic glucose card), source [`assets/brand/sukrara/play/feature-graphic.html`](../assets/brand/sukrara/play/README.md) | the same (its only word is the name) |
 | Phone screenshots | `~/Pictures/sukrara-play/en/` (1080 × 1920, synthetic data; [Reviewer access](#google-play-reviewer-access-app-access) says how they were made) | `~/Pictures/sukrara-play/es/` |
 | Category / tags | Medical (set); tags: *Diabetes*, *Health* (whatever Play offers closest) | the same |
@@ -1342,8 +1342,8 @@ Done 2026-11-12: the store listing's new text (en-US + es-ES), its AI asset decl
 
 Done 2026-11-13: all of 1–4 below; the release went to **production**, not open testing (see the account section).
 
-Approved and live (2026-11-16, [the account section](#google-play-the-account-and-app-as-set-up-2026-11-10)). Left:
-the listing icon (#210); item 6's check on a spare phone (does Play take over a
+Approved and live (2026-11-16, [the account section](#google-play-the-account-and-app-as-set-up-2026-11-10)); the fixed
+listing icon (#210) in review since 2026-11-16. Left: item 6's check on a spare phone (does Play take over a
 GitHub install?) before telling GitHub users to switch.
 
 The steps, as they were:
@@ -1361,7 +1361,7 @@ The steps, as they were:
    text above).
 6. Install from the internal-testing link on a **spare** phone or emulator first (on the owner's daily phone it would
    replace the GitHub version: same package and key, the data stays), check Settings › About says *Google Play
-   version*, then open testing as the permanent beta.
+   version*. Open testing as a beta: dropped, no Play beta track: every release goes straight to production (the owner, 2026-11-16).
 
 If Play rejects `USE_EXACT_ALARM` or the root features: [Flavors](#flavors) › *If Play rejects …*, a new bundle, and
 the next upload.
@@ -1445,9 +1445,8 @@ the one manual step. If Garmin publishes an upload API, that step becomes a call
 - **sukrara.mauri.app as the install hub**: one *Download* page that detects the platform: Play badge, "APK /
   Obtainium / IzzyOnDroid" for power users, notarized dmg, `brew install --cask mauriciabad/tap/sukrara`, Garmin
   store link. Keep the README buttons pointing at the same assets (the `website.yml` link rewriting already exists).
-- **Channels**: `stable` (Play production, Sparkle `appcast.xml`, cask) and `beta` (Play closed/open test, Sparkle
-  `appcast-beta.xml` via `sparkle:channel`, GitHub pre-releases). The closed test needed for production access
-  becomes the permanent beta channel.
+- **Channels**: `stable` (Play production, Sparkle `appcast.xml`, cask) and `beta` (Sparkle `appcast-beta.xml` via
+  `sparkle:channel`, GitHub pre-releases); no Play beta track: every release goes straight to production (the owner, 2026-11-16).
 - **Privacy page** https://sukrara.mauri.app/privacy (`docs/privacy.md`, HTML, not PDF [[G10]](https://support.google.com/googleplay/android-developer/answer/16679511); since 2026-11-10):
   what stays on the device, what each opt-in feature sends where (Nostr relays: end-to-end encrypted events, public
   keys, timing, IP; LibreView, Tidepool, Nightscout: what each upload carries; Health Connect, apps on the phone, the
@@ -1596,8 +1595,8 @@ website; serve developers with an **own Homebrew tap** from the same release; su
 notable. **Mac App Store** (2026-11-11, #186): go, as a second, sandboxed build of the same app
 ([review risk](#mac-app-store-review-risk-2026-11-11-186)), TestFlight first.
 
-**Android**: one release key, package **`app.mauri.sukrara`**, two flavors. **Google Play** (new personal account,
-closed test as the permanent beta) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor (with
+**Android**: one release key, package **`app.mauri.sukrara`**, two flavors. **Google Play** (the reinstated account,
+production only, live since 0.14.5) for everyone; **GitHub + Obtainium** and **IzzyOnDroid** for the full flavor (with
 its own update check; the root features are in both since 2026-11-11); register the package and key for developer verification in the same Play Console account before the
 2027 global rollout. F-Droid main repo later, with reproducible builds.
 
@@ -1626,8 +1625,8 @@ its own update check; the root features are in both since 2026-11-11); register 
    screenshots and the feature graphic (outside the repo), entered in Play Console the same day except Data safety
    and the FGS declaration ([Play Console, in order](#google-play-what-the-owner-does-in-play-console-in-order)). Open:
    the demo video (the emulator one was rejected; the owner records it, #185), an upload script.
-9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; use internal testing for
-   the first builds, then open testing as the permanent beta.
+9. ~~Recruit 12 testers, closed test 14 days~~ Not required for the reinstated account; internal testing for
+   the first builds, then production directly (no beta track).
 10. Our key is the Play App Signing key (done 2026-11-10); developer verification for outside-Play installs follows
     from the Play registration of `app.mauri.sukrara` with that key.
 11. ~~*(agent)* IzzyOnDroid inclusion request~~ Dropped 2026-11-13: IzzyOnDroid rejects AI-written apps (above). Obtainium link on the site.
