@@ -2,10 +2,16 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * The form for a face's inputs, built from its InputSpec list: a fieldset per group; a slider with a number box, a
- * select, a switch or a time field per input. It reports edits and shows values; it holds no state of its own.
+ * The form for a face's inputs, built from its InputSpec list: a fieldset per group; per input a slider with a number
+ * box, a time field, or the face pages' shared controls (choices.ts): cards for a few choices (with the drawing the
+ * face gives the tour's settings, when it has one), a list for many, an on / off card. It reports edits and shows
+ * values; it holds no state of its own.
  */
+import { cards, list, switchCard } from './choices.ts';
 import type { FaceAdapter, InputSpec, Lang, Values } from './types.ts';
+
+/** Up to this many choices show as cards; more, as a list. */
+const CARDS = 4;
 
 let uid = 0;
 
@@ -21,7 +27,7 @@ export const timeField = (v: unknown) => {
 	return [h, m, s].map((x) => x.padStart(2, '0')).join(':');
 };
 
-type Field = { spec: InputSpec; inputs: HTMLInputElement[] | [HTMLSelectElement]; show(v: unknown): void };
+type Field = { spec: InputSpec; inputs: (HTMLInputElement | HTMLSelectElement)[]; show(v: unknown): void };
 
 export function controls(host: HTMLElement, face: FaceAdapter, lang: Lang, onInput: (key: string, value: unknown) => void) {
 	const fields = new Map<string, Field>();
@@ -50,16 +56,18 @@ export function controls(host: HTMLElement, face: FaceAdapter, lang: Lang, onInp
 			return [row, { spec, inputs: [range, box], show }];
 		}
 		if (spec.kind === 'select') {
-			const select = el('select', { id }, ...spec.options.map((o) => el('option', { value: o.value }, o.label[lang])));
-			select.addEventListener('change', () => onInput(spec.key, select.value));
-			const show = (v: unknown) => void (select.value = String(v));
-			return [el('div', { className: 'fp-field' }, label, select), { spec, inputs: [select], show }];
+			const pics = face.settings.list.find((x) => x.key === spec.key);
+			const picture = (v: string) => (pics?.kind === 'cards' ? pics.options.find((p) => p.value === v)?.picture : undefined);
+			const options = spec.options.map((o) => ({ ...o, picture: picture(o.value) }));
+			const few = spec.options.length <= CARDS;
+			const c = (few ? cards : list)(spec.label, options, lang, (v) => onInput(spec.key, v));
+			c.root.classList.add(few ? 'fp-wide' : 'fp-field');
+			return [c.root, { spec, inputs: c.inputs, show: c.show }];
 		}
 		if (spec.kind === 'toggle') {
-			const box = el('input', { type: 'checkbox', id, role: 'switch' } as Partial<HTMLInputElement>);
-			box.addEventListener('change', () => onInput(spec.key, box.checked));
-			const show = (v: unknown) => void (box.checked = v === true || v === 'true');
-			return [el('div', { className: 'fp-field fp-toggle' }, box, label), { spec, inputs: [box], show }];
+			const pic = face.settings.list.find((x) => x.key === spec.key);
+			const c = switchCard(spec.label, pic?.kind === 'switch' ? pic.picture : undefined, lang, (on) => onInput(spec.key, on));
+			return [c.root, { spec, inputs: c.inputs, show: c.show }];
 		}
 		const time = el('input', { type: 'time', step: '1', id });
 		time.addEventListener('change', () => time.value && onInput(spec.key, time.value));
@@ -72,11 +80,14 @@ export function controls(host: HTMLElement, face: FaceAdapter, lang: Lang, onInp
 
 	for (const g of face.groups) {
 		const set = el('fieldset', { className: 'fp-group' }, el('legend', {}, g.label[lang]));
+		// the on / off cards together, in one row after the rest of their group
+		const switches = el('div', { className: 'fu-row fp-wide' });
 		for (const spec of face.inputs.filter((i) => i.group === g.id)) {
 			const [row, field] = make(spec);
-			set.append(row);
+			(spec.kind === 'toggle' ? switches : set).append(row);
 			fields.set(spec.key, field);
 		}
+		if (switches.childElementCount) set.append(switches);
 		host.append(set);
 	}
 

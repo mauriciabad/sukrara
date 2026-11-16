@@ -31,7 +31,7 @@ export function mountPlayground(root: HTMLElement, face: FaceAdapter, lang: Lang
 	const scenarioSelect = $<HTMLSelectElement>(root, '[data-scenario]');
 	const play = $<HTMLButtonElement>(root, '[data-play]');
 	const scrub = $<HTMLInputElement>(root, '[data-scrub]');
-	const at = $<HTMLElement>(root, '[data-at]');
+	const at = $<HTMLElement>(root, '[data-now]');
 	const about = $<HTMLElement>(root, '[data-about]');
 	const speeds = $<HTMLElement>(root, '[data-speeds]');
 
@@ -65,7 +65,7 @@ export function mountPlayground(root: HTMLElement, face: FaceAdapter, lang: Lang
 		scrub.value = String(c.minutes);
 		at.textContent = scenario === DAY ? `${hm(s.live.now)} · ${chapterAt(DAY, c.minutes).name[lang]}` : w.at(hm(s.live.now), c.minutes);
 		scrub.setAttribute('aria-valuetext', at.textContent);
-		play.textContent = wanted ? w.pause : !scenario.loop && c.minutes >= scenario.minutes ? w.again : w.play;
+		showPlay(wanted ? w.pause : !scenario.loop && c.minutes >= scenario.minutes ? w.again : w.play);
 		draw();
 	}
 
@@ -79,7 +79,13 @@ export function mountPlayground(root: HTMLElement, face: FaceAdapter, lang: Lang
 		wanted = false;
 		run();
 		form.lock(new Set());
-		play.textContent = w.play;
+		showPlay(w.play);
+	}
+
+	/** The play button's state: its icon follows aria-pressed, its words are for screen readers. */
+	function showPlay(label: string) {
+		play.setAttribute('aria-pressed', String(wanted));
+		play.setAttribute('aria-label', label);
 	}
 
 	function cue(s: Scenario) {

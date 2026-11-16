@@ -3,14 +3,17 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * The watch face playground: the face drawn by its own reference implementation, presets, inputs and "Speed up time".
- * The page holds the frame; playground.ts fills and runs it. The first face is drawn at build time, so it shows
- * before the script runs. The face is the screen alone, in the round screen the tour's sits in.
+ * The watch face playground: the face drawn by its own reference implementation, play and the timeline right under
+ * it, the scenario and its speed, then presets and every input. The page holds the frame; playground.ts fills and runs
+ * it. The first face is drawn at build time, so it shows before the script runs. The face sits in the tour's round
+ * screen; the play bar and the setting controls are the tour's too (PlayBar, choices.ts, face-ui.css).
  *   <FacePlayground />            <FacePlayground id="pg2" />
  */
 import { aura } from './aura/index.ts';
 import FaceScreen from './FaceScreen.astro';
+import PlayBar from './PlayBar.astro';
 import { words } from './strings.ts';
+import './face-ui.css';
 
 type Props = { id?: string };
 const { id = 'pg' } = Astro.props;
@@ -26,25 +29,22 @@ const first = aura.render(aura.defaults(), lang, { id });
 				<div data-face set:html={first} />
 			</FaceScreen>
 		</figure>
-		<div class="fp-time" role="group" aria-label={w.play}>
-			<div class="fp-row">
-				<label class="fp-inline">
-					<span>{w.scenario}</span>
-					<select data-scenario></select>
-				</label>
-				<button type="button" class="fp-play" data-play>{w.play}</button>
-			</div>
+		<PlayBar label={w.play} scrubLabel={w.timeline} max={1} value={0} step="any" />
+		<div class="fp-time" role="group" aria-label={w.scenario}>
+			<label class="fu-list">
+				<span>{w.scenario}</span>
+				<select data-scenario></select>
+			</label>
 			<p class="fp-about" data-about></p>
-			<input type="range" class="fp-scrub" data-scrub min="0" max="1" step="any" value="0" aria-label={w.timeline} />
-			<div class="fp-row">
-				<span class="fp-at" data-at aria-live="off"></span>
-				<div class="fp-speeds" role="group" aria-label={w.speed} data-speeds></div>
+			<div class="fu-set" role="group" aria-label={w.speed}>
+				<span class="fp-label" aria-hidden="true">{w.speed}</span>
+				<div class="fp-speeds" data-speeds></div>
 			</div>
 		</div>
 	</div>
 	<div class="fp-panel">
-		<div class="fp-row">
-			<label class="fp-inline fp-grow">
+		<div class="fp-presets">
+			<label class="fu-list">
 				<span>{w.presets}</span>
 				<select data-preset></select>
 			</label>
@@ -75,7 +75,7 @@ const first = aura.render(aura.defaults(), lang, { id });
 	}
 	@media (min-width: 50rem) {
 		.fp {
-			grid-template-columns: minmax(0, 23rem) minmax(0, 1fr);
+			grid-template-columns: minmax(0, 22rem) minmax(0, 1fr);
 			align-items: start;
 		}
 		.fp-stage {
@@ -104,53 +104,55 @@ const first = aura.render(aura.defaults(), lang, { id });
 		flex-direction: column;
 		gap: 0.75rem;
 	}
-	.fp-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5rem 0.75rem;
-		align-items: end;
-		justify-content: space-between;
-	}
-	.fp-inline {
-		display: flex;
-		flex-direction: column;
-		gap: 0.25rem;
-		font-size: var(--sl-text-sm);
-		color: var(--sl-color-gray-2);
-	}
-	.fp-grow {
-		flex: 1;
-	}
 	.fp-about {
 		margin: 0;
 		font-size: var(--sl-text-sm);
 		color: var(--sl-color-gray-2);
 	}
-	.fp-at {
-		font-family: var(--__sl-font-mono);
+	.fp-label {
+		display: block;
+		margin-bottom: 0.4rem;
 		font-size: var(--sl-text-xs);
-		color: var(--sl-color-gray-2);
+		color: var(--sl-color-gray-3);
 	}
-	.fp-scrub {
-		width: 100%;
-		accent-color: var(--sl-color-accent);
-	}
-	.fp :global(select),
-	.fp :global(input[type='number']),
-	.fp :global(input[type='time']) {
-		font: inherit;
-		font-size: var(--sl-text-sm);
-		color: var(--sl-color-white);
-		background: var(--sl-color-bg);
+	/* the speeds: one segmented row */
+	.fp-speeds {
+		display: flex;
+		padding: 2px;
+		border-radius: 999px;
 		border: 1px solid var(--sk-surface-line);
-		border-radius: 0.5rem;
-		padding: 0.4rem 0.5rem;
-		min-height: 2.5rem;
+		background: var(--sl-color-bg);
 	}
-	.fp :global(select) {
-		max-width: 100%;
+	.fp-speeds :global(button) {
+		flex: 1;
+		font: 700 var(--sl-text-xs) / 1 var(--sk-font-display);
+		color: var(--sl-color-gray-2);
+		background: none;
+		border: 0;
+		border-radius: 999px;
+		padding: 0.5rem 0.4rem;
+		min-height: 2.25rem;
+		cursor: pointer;
+		font-variant-numeric: tabular-nums;
 	}
-	.fp :global(button) {
+	.fp-speeds :global(button[aria-pressed='true']) {
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	.fp-speeds :global(button:focus-visible),
+	.fp-reset:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+	.fp-presets {
+		display: flex;
+		gap: 0.75rem;
+		align-items: end;
+	}
+	.fp-presets .fu-list {
+		flex: 1;
+	}
+	.fp-reset {
 		font: 700 var(--sl-text-sm) / 1 var(--sk-font-display);
 		color: var(--sl-color-white);
 		background: var(--sl-color-bg);
@@ -160,53 +162,38 @@ const first = aura.render(aura.defaults(), lang, { id });
 		min-height: 2.5rem;
 		cursor: pointer;
 	}
-	.fp :global(button:hover) {
+	.fp-reset:hover {
 		border-color: var(--sl-color-accent);
 	}
-	.fp .fp-play {
-		min-width: 10rem;
-		color: var(--sl-color-black);
-		background: var(--sl-color-accent);
-		border-color: var(--sl-color-accent);
-	}
-	.fp-speeds {
-		display: flex;
-		gap: 0.25rem;
-	}
-	.fp-speeds :global(button) {
-		padding-inline: 0.7rem;
-	}
-	.fp-speeds :global(button[aria-pressed='true']) {
-		border-color: var(--sl-color-accent);
-		background: var(--sl-color-accent-low);
-	}
+	/* the inputs: a group each, under its name; cards and switches take the whole row, the rest two to a row */
 	.fp-controls {
 		display: grid;
-		gap: 1rem;
+		gap: 1.25rem;
 	}
-	.fp-controls :global(fieldset) {
+	.fp-controls :global(.fp-group) {
 		margin: 0;
-		padding: 0.75rem 0 0;
+		padding: 1rem 0 0;
 		border: 0;
 		border-top: 1px solid var(--sk-surface-line);
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
-		gap: 0.75rem 1rem;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+		gap: 0.9rem 1rem;
 	}
-	.fp-controls :global(legend) {
-		font: 700 var(--sl-text-base) / 1.2 var(--sk-font-display);
+	.fp-controls :global(.fp-group > legend) {
+		font: 800 var(--sl-text-base) / 1.2 var(--sk-font-display);
 		color: var(--sl-color-white);
 		padding-inline-end: 0.5rem;
+	}
+	.fp-controls :global(.fp-wide),
+	.fp-controls :global(.fp-number) {
+		grid-column: 1 / -1;
 	}
 	.fp-controls :global(.fp-field) {
 		display: flex;
 		flex-direction: column;
 		gap: 0.25rem;
-		font-size: var(--sl-text-sm);
-		color: var(--sl-color-gray-2);
-	}
-	.fp-controls :global(.fp-number) {
-		grid-column: 1 / -1;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
 	}
 	.fp-controls :global(.fp-pair) {
 		display: flex;
@@ -218,19 +205,18 @@ const first = aura.render(aura.defaults(), lang, { id });
 		min-width: 0;
 		accent-color: var(--sl-color-accent);
 	}
-	.fp-controls :global(.fp-pair input[type='number']) {
-		width: 5.5rem;
-	}
-	.fp-controls :global(.fp-toggle) {
-		flex-direction: row;
-		align-items: center;
-		gap: 0.5rem;
+	.fp :global(input[type='number']),
+	.fp :global(input[type='time']) {
+		font: 600 var(--sl-text-sm) / 1.2 var(--__sl-font);
+		color: var(--sl-color-white);
+		background: var(--sl-color-bg);
+		border: 1px solid var(--sk-surface-line);
+		border-radius: 0.6rem;
+		padding: 0.4rem 0.5rem;
 		min-height: 2.5rem;
 	}
-	.fp-controls :global(.fp-toggle input) {
-		width: 1.25rem;
-		height: 1.25rem;
-		accent-color: var(--sl-color-accent);
+	.fp-controls :global(.fp-pair input[type='number']) {
+		width: 5.5rem;
 	}
 	.fp :global(:disabled) {
 		opacity: 0.55;
