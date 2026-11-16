@@ -180,7 +180,7 @@ Discarded, and why:
 - **A secret for the fetch**: the face has no channel to learn one when push is broken, which is when the fetch is
   needed. Instead the port is narrowed (the main session's decision, 2026-11-16): it opens only while a watch is known
   to have the face (Garmin Connect says it is installed, or a push reached it), loopback only, and the switch closes
-  it. **Left exposed**: while a watch has the face, any app on the phone can read the face's payload (the last hour,
+  it. **Left exposed**: while a watch has the face, any app on the phone can read the face's payload (the last 3 hours,
   the pill, the last treatment, the sensor's dates, today's time in range) from 127.0.0.1:17582, as any app can read
   the xDrip+ server while that is on. A phone without the face, or with the link off, serves nothing. **Cost**: if
   Garmin Connect neither answers about the face nor delivers a push (its bug at its worst), the port stays closed and

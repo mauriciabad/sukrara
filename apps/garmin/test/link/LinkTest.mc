@@ -80,8 +80,8 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
         var o = older[i] as Dictionary;
         AuraLink.reset();
         var stored = o.get("stored") as Number;
-        AuraLink.accept({"v" => 1, "sent" => stored}, stored);
-        AuraLink.accept({"v" => 1, "sent" => o.get("incoming")}, o.get("watch") as Number);
+        AuraLink.accept({"v" => AuraLink.VERSION, "sent" => stored}, stored);
+        AuraLink.accept({"v" => AuraLink.VERSION, "sent" => o.get("incoming")}, o.get("watch") as Number);
         var want = "stored".equals(o.get("keep")) ? stored : o.get("incoming");
         var got = (AuraLink.payload() as Dictionary).get("sent");
         if (got != want) {
@@ -126,7 +126,7 @@ function linkSeamReading(logger as Logger) as Boolean {
     Test.assertEqualMessage(r.readAt, now - 30 - 120, "reading time on the watch clock");
     Test.assertEqualMessage(r.mgdl, 112, "value");
     Test.assertEqualMessage(r.status, "none", "no pill");
-    Test.assertEqualMessage((r.history as Array).size(), 12, "history");
+    Test.assertEqualMessage((r.history as Array).size(), 36, "history");
     Test.assertEqualMessage(((r.lastItems as Array)[0] as Array)[0], "rapid", "last treatment");
     Test.assertEqualMessage(r.tir, 82, "time in range");
     for (var i = 0; i < cases.size(); i++) {

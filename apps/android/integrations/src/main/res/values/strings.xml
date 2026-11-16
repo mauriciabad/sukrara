@@ -70,7 +70,7 @@
     <string name="in_garmin_face_in_use">in use, asked this phone at %1$s</string>
     <string name="in_garmin_face_idle">not in use (it asks this phone every 5 minutes while it\'s the watch face)</string>
     <string name="in_garmin_other_group">Other watch faces and data fields</string>
-    <string name="in_garmin_footer">Garmin Connect must be allowed to run in the background. While a watch has Sukrara Aura, any app on this phone can read what the face reads (the last hour, on 127.0.0.1:17582).</string>
+    <string name="in_garmin_footer">Garmin Connect must be allowed to run in the background. While a watch has Sukrara Aura, any app on this phone can read what the face reads (the last 3 hours, on 127.0.0.1:17582).</string>
     <string name="in_garmin_off">Off</string>
     <string name="in_garmin_no_gcm">Needs Garmin Connect on this phone</string>
     <string name="in_garmin_not_answering">Garmin Connect isn\'t answering · open it</string>

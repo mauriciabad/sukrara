@@ -30,10 +30,10 @@ import kotlin.math.floor
  */
 object AuraPayload {
     /** The format's version (`v`); a face ignores a message of another version. */
-    const val VERSION = 1
+    const val VERSION = 2
 
-    /** History slots before the newest reading (an hour at 5 min: the sparkline's 13 points with the newest). */
-    const val HISTORY = 12
+    /** History slots before the newest reading (3 hours at 5 min: the sparkline's longest reach, SPEC.md §6.5). */
+    const val HISTORY = 36
 
     /** History step and the tolerance a reading may be off its slot (s). */
     const val STEP_S = 300L

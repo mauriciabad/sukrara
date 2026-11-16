@@ -13,7 +13,7 @@ class AuraReading {
     var rate as Float? = null; // mg/dL/min, Sukrara's trend (docs/34); null = no trend
     var doubled as Boolean = false; // Sukrara's doubled arrow (TrendAngle.isDouble)
     var history as Array? = null; // readings before this one, 5 min apart, oldest first, ending 5 min before readAt;
-    // null entries are gaps (at most the last hour: 12)
+    // null entries are gaps (at most the last 3 hours: 36)
     var status as String = "auto"; // auto (the pill shows the need), quiet (held after a treatment), muted
     var statusUntil as Number? = null; // when the quiet / mute ends, epoch s; null = no end
     var lastItems as Array? = null; // the last treatment: [[kind (rapid, long, carbs), amount (Float)], ...]

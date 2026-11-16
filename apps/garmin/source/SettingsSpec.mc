@@ -9,16 +9,16 @@ module SettingsSpec {
     const DIAL = ["dial", ["grain", "black", "map", "contours", "waterline", "lasers", "glow"], "grain"];
     // Sukrara Aura: where the dial stops short of the texts (§6.13)
     const HALO = ["halo", ["outline", "box", "none"], "outline"];
-    // Sukrara Aura: the trend beside the value, Sukrara's arrow or the last hour (§6.5)
-    const TREND = ["trend", ["arrow", "spark"], "arrow"];
+    // Sukrara Aura: the trend beside the value, Sukrara's arrow or the last hours (§6.5)
+    const TREND = ["trend", ["arrow", "spark"], "spark"];
     // Sukrara Aura: the seconds sweep at the rim (§6.11)
     const SECONDS = ["seconds", null, true];
     // Sukrara Aura: green in range (value, bead, dial)
     const RANGE_COLOUR = ["rangeColour", null, true];
     // Sukrara Aura: the field under the date (§6.2)
-    const TOP_FIELD = ["topField", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "none"], "weather"];
+    const TOP_FIELD = ["topField", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "none"], "steps"];
     // Sukrara Aura: the first bottom field (§6.10)
-    const FIELD1 = ["field1", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "treatment", "none"], "steps"];
+    const FIELD1 = ["field1", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "treatment", "none"], "tir"];
     // Sukrara Aura: the second bottom field (§6.10)
     const FIELD2 = ["field2", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "treatment", "none"], "treatment"];
     // Sukrara Aura: the battery label, days, percent or both (§6.9)

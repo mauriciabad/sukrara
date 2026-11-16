@@ -59,25 +59,34 @@ as a faint sweep at the rim.
 
 ### Type
 - **Atkinson Hyperlegible Next** for everything (built for telling 1/7, 3/8, 6/9/0 apart; humanist; no thin weights).
-  Weights used: 500, 600, 700. Numeral alternatives exist in the reference (`numerals`: `redhat`, `inter`, `barlow`)
-  for comparison only; they are not a user setting.
+  Weights used: 500, 600, 700.
+- **Sizes are set by cap height**: font px = cap / 0.668.
+- **The big numbers use the font's own figures and kerning**, no hand-made cells: the default (proportional) figures,
+  whose 1 has no foot, and the font's GPOS `kern` pairs. Measured from `apps/garmin/fonts/AtkinsonHyperlegibleNext-wght.ttf`
+  at weight 600 (fontTools + HarfBuzz; `numerals()` in aura.js), per em:
 
-| Font | cap height / em | digit cell / em (= the widest digit) | colon | dot |
-|---|---|---|---|---|
-| Atkinson Hyperlegible Next | 0.668 | 0.656 | 0.253 | 0.253 |
-| Red Hat Display | 0.700 | 0.672 | 0.250 | 0.250 |
-| Inter Tight | 0.728 | 0.630 | 0.282 | 0.282 |
-| Barlow | 0.700 | 0.585 | 0.300 | 0.273 |
+| Glyph | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | : | . | L | O | H | I |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| advance | .656 | .430 | .569 | .592 | .621 | .602 | .617 | .529 | .621 | .578 | .253 | .253 | .548 | .737 | .699 | .415 |
 
-- **Sizes are set by cap height**: font px = cap / 0.668. Digits never move: **every digit sits centred in a fixed cell**
-  of `0.656 · font px`; the colon's cell is `(0.253 + 0.1) · font px`, a decimal point's `(0.253 + 0.06) · font px`.
+  Kern pairs (per em, added between the two glyphs): 23 −.004, 24 −.013, 28 −.01, 41 −.006, 42 −.009, 44 +.01, 49 −.024,
+  51 −.02, 53 −.02, 55 −.006, 56 −.007, 59 −.004, 61 −.026, 67 −.006, 71 +.02, 73 +.01, 74 −.044, 77 +.03, 78 −.02,
+  7. −.03, 81 −.02, 82 −.01, 87 −.01, 89 −.019, 92 −.02, 94 −.004, .1 −.03, .O −.03, LO −.03, O. −.03, OI −.023, IO −.023
+  (none with the colon). The tabular figures (`tnum`) are all **0.632** wide.
+- **A run of glyphs**: the pen starts at 0; before each glyph after the first it moves by the pair's kern; the glyph is
+  centred on its advance (centre = pen + advance/2); the pen moves by the advance. The run's width is the pen's end.
+  Each glyph is drawn centred on its centre (its advance centred there).
+- **Value** (§6.4): one run (it changes only with a reading). **Time** (§6.3): the hour, the colon and the tens of
+  minutes as one run; the **last digit tabular**: centred in a cell 0.632 wide (the font's plain figure, no foot, not
+  its `tnum` glyph), no kerning into it, so the minute that changes every minute never jitters. The time's width
+  changes only at :x0 (and with the hour); its size only with the hour (§4).
 - **Label widths** (pills, fields, the chip) are measured with Atkinson's advance widths (`widths()` in aura.js, per
   em) × size × 1.03; an unknown glyph counts 0.6 em.
 - **Sizes in use** (font px; build each as a Garmin font resource, digits-only where the text is digits):
 
 | Use | Sizes (font px) | Glyphs |
 |---|---|---|
-| Time | 92.8, 95.8, 98.8, 101.8 (caps 62, 64, 66, 68) | `0–9 :` |
+| Time | 92.8, 95.8, 98.8, 101.8, 104.8, 107.8, 110.8, 113.8 (caps 62–76 in steps of 2) | `0–9 :` |
 | Value | 80.8, 83.8, 86.8, 89.8 (caps 54, 56, 58, 60) | `0–9 . L O H I` |
 | "No reading since" time | 53.9, 59.9 (caps 36, 40) | `0–9 :` + weekday and month names |
 | Date | 26 (weight 500, day 700), letter spacing 2 | A–Z incl. Á É Í Ó Ú Ñ |
@@ -159,7 +168,7 @@ default is the reference's (every case starts from it):
 | glucose (mg/dL) | `glucose` | 112 | Sukrara · < 40 = LO, > 400 = HI |
 | rate (mg/dL/min), trend present | `rate`, `trend`: true/false | 0.4, true | Sukrara's trend (docs/34) · no rate → no trend |
 | **age** of the reading (min) | `age` | 0.5 | Sukrara's reading time + the watch clock: age = now − reading time, recomputed at every draw, never from when the watch received it |
-| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 12 readings of the hour before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
+| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 36 readings of the 3 hours before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
 | status | `status`: `auto` (needed when out of range), `quiet`, `muted`, `none`; `left`: minutes, or `"never"` (no end) | auto, 25 | Sukrara ([`contracts/graph/status.json`](../../graph/status.json)) · `quiet` = held after a treatment; `muted` = a side muted (out of range) or Mute all (in range); `none` = no pill: Sukrara says nothing, or a quiet or mute ran out on the watch's clock before the phone said what follows (the face never decides a need itself) |
 | last treatment(s) | `last`: `{items: [{k: rapid/long/carbs, a: amount}], ago: min}`, or `lastKind`, `lastAmount`, `lastAgo` | rapid 2u, 80 min | Sukrara · a meal = insulin + carbs together; `items: []` = none in the last 24 h |
 | sensor | `sensor`: `ok`, `warmup` (+ `warm`: fraction done), `almost`, `ending` (+ `sensorLeft`: hours), `endedSending`, `ended`, `none` | ok, 0.45, 5 | Sukrara · "ending" = the last 8 h; the ready time is Sukrara's (the reference fakes it from `warm`) |
@@ -174,7 +183,7 @@ default is the reference's (every case starts from it):
 | colour check | `filter`: `none`, `redshift`, `grey` | none | reference only (§8) |
 | field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); others fixed in the reference: 14°, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8 | 6420, 82 | watch / Sukrara (time in range, until the end of the phone's day) |
 | settings | §11 | | |
-| mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze`, `numerals` | 584, true, carbon, atkinson | not the face's |
+| mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze` | 584, true, carbon | not the face's |
 
 ## 4. Layout: what goes where
 
@@ -191,9 +200,14 @@ Gaps: top field → time 20, time → value 22, value → chip row 18.
 
 | Chip row | Sets |
 |---|---|
-| pill | (62, 54, 24) |
-| age | (64, 56, 24), (62, 54, 24) |
-| none | (68, 60, 26), (66, 58, 26), (64, 56, 25), (62, 54, 24) |
+| pill | (68, 54, 24), (66, 54, 24), (64, 54, 24), (62, 54, 24) |
+| age | (70, 56, 24), (68, 56, 24), (66, 56, 24), (64, 56, 24), (62, 54, 24) |
+| none | (76, 60, 26), (74, 60, 26), (72, 60, 26), (70, 60, 26), (68, 60, 26), (66, 58, 26), (64, 56, 25), (62, 54, 24) |
+
+**The time grows by its string**: the larger time sizes come first, so a narrower time is drawn bigger, up to about
+1.27 × the value's cap (76 over 60: the value's digits stay 79 % of the time's height, the clear second; a time drawn
+as big as it fits would reach 84–90 over 58–60 and take over). In practice every 2-digit hour fits at 72 or more, so
+the ceiling holds the time at 72–76 (none), 68–70 (age), 66–68 (pill).
 
 **Heights**: value row vb = V; or a message (§6.7): no readings 16.7 + 12 + c₂ (c₂ = 40 when the chip row is empty,
 else 36), warm-up 34, sensor ended 32, not monitoring 20. Chip row height: pill 38, age 17.
@@ -202,7 +216,8 @@ Then: top-field baseline `tfBase = y₀ + TF·0.668`; time top `tTop` and baseli
 `vTop = tBase + 22`, value baseline `vBase = vTop + vb`; chip row centre `chipC = vBase + 18 + chipH/2`.
 
 **Fits** when all hold: `halfAt(y) = √(171² − y²) − 6`;
-- time: tW/2 ≤ halfAt(tTop) (tW = the time's cell width, §6.3);
+- time: tWfit/2 ≤ halfAt(tTop) (tWfit = the time's width with the widest tens-of-minutes digit 0–5 at this hour, §6.3,
+  so the size changes only with the hour);
 - value (when there is one, **even while private hides it**): total/2 ≤ halfAt(vTop) and ≤ halfAt(vBase) (total =
   value + arrow or sparkline, §6.4);
 - battery label (§6.9), unless always-on: its bottom `tBase + 6 + battH ≤ vTop` (it sits in the gap above the row), or
@@ -218,11 +233,11 @@ Examples (from `expect.json`):
 
 | Case | Chip | T / V / TF | tfBase | tBase | vBase | chipC |
 |---|---|---|---|---|---|---|
-| `glucose-in-range` | none | 68 / 60 / 26 | −83.3 | 4.7 | 86.7 | — |
-| `glucose-late` | age | 64 / 56 / 24 | −97.5 | −13.5 | 64.5 | 91 |
-| `alerts-high-insulin-taken` | pill | 62 / 54 / 24 | −106 | −24 | 52 | 89 |
-| `glucose-no-readings` | none | 66 / 58 / 26 | −86.7 | −0.7 | 90 (message) | — |
-| `sensor-warmup` | age | 64 / 56 / 24 | −86.5 | −2.5 | 53.5 (message) | 80 |
+| `glucose-in-range` | none | 76 / 60 / 26 | −87.3 | 8.7 | 90.7 | — |
+| `glucose-late` | age | 70 / 56 / 24 | −100.5 | −10.5 | 67.5 | 94 |
+| `alerts-high-insulin-taken` | pill | 68 / 54 / 24 | −109 | −21 | 55 | 92 |
+| `glucose-no-readings` | none | 74 / 60 / 26 | −90.7 | 3.3 | 94 (message) | — |
+| `sensor-warmup` | age | 70 / 56 / 24 | −89.5 | 0.5 | 56.5 (message) | 83 |
 
 **Z-order** (back to front): black screen · glow dial · dial layers (laser glow, main, second) · seconds sweep · date
 · top field · time · battery rail and label · level rail (hairline, bands, zone, ticks, trail, bead, chevrons) · value
@@ -283,14 +298,17 @@ Hidden in always-on (its row stays). `none` removes the row (and the layout re-c
 
 ### 6.3 Time
 `H:MM`, no leading zero on the hour, 24 h or 12 h as the watch is set (no AM/PM mark). Font px = T / 0.668, weight
-600, ink. Cells: digit 0.656·fs, colon (0.253 + 0.1)·fs; the string's width tW is the sum; it is centred
-(`t0 = −tW/2`), each glyph centred in its cell at baseline tBase. Example `glucose-in-range`: fs 101.8, baseline 4.7,
-glyph centres −118.1 −51.4 0 51.4 118.1. Always-on: no fill, stroke grey 2.2 (an outline).
+600, ink. The hour, the colon and the tens of minutes as one kerned run of the font's figures, then the last digit
+centred in a 0.632·fs cell (§2); tW = the run's width + the cell. The whole is centred (`t0 = −tW/2`), at baseline
+tBase. The time's width changes at :x0 (the tens digit's own advance: at most 0.226 em, from :09 to :10, which moves
+the time ≤ 13 px each side at T 76) and with the hour; its size only with the hour (§4). Example `glucose-in-range`
+(10:09): fs 113.8, baseline 8.7, glyph centres −125 −63.2 −11.5 40.2 113.5. Always-on: no fill, stroke grey 2.2 (an outline).
 
 ### 6.4 Value and arrow
-- **Text**: LO / HI; mmol/L `(g / 18.0182).toFixed(1)`; mg/dL rounded. Font px = V / 0.668, weight 600; digits in
-  0.656·fs cells, a point in (0.253 + 0.06)·fs; letters use the digit cell.
-- **Arrow layout** (default): gap 0.08·fs, box 0.62·fs; total = vW + gap + box; the group is centred: `x0 = −total/2`;
+- **Text**: LO / HI; mmol/L `(g / 18.0182).toFixed(1)`; mg/dL rounded. Font px = V / 0.668, weight 600; one kerned
+  run of the font's figures (§2), letters and the point included: vW = the run's width, which changes with the
+  reading; the arrow or the sparkline follows it.
+- **Arrow layout** (setting: trend = arrow): gap 0.08·fs, box 0.62·fs; total = vW + gap + box; the group is centred: `x0 = −total/2`;
   digits from x0; arrow centre `(x0 + vW + gap + box/2, vBase − V/2)`.
 - **Arrow**: Sukrara's glyph, unit path pointing right, scaled by s = 1.05·box: shaft rectangle (−0.42, −0.07)–(0.25,
   0.07); head (0.46, 0) (0.06, 0.30) (0.16, 0) (0.06, −0.30); a **second head** (0.12, 0) (−0.28, 0.30) (−0.18, 0)
@@ -306,18 +324,29 @@ glyph centres −118.1 −51.4 0 51.4 118.1. Always-on: no fill, stroke grey 2.2
 - **Private, held — reveal line**: neon `#C6F432`, 3 px, round, at y = vBase + 13, centred on the digits, length
   vW × the time left of the 5 s (1 → 0).
 
-### 6.5 Sparkline (setting: trend = sparkline)
-Replaces the arrow. Layout: total = vW + 14 + 100; digits from x0; the box at `sx = x0 + vW + 14`, width SW = 100,
-top `sy = vBase − V − 6`, height SH = V + 14.
-- **Time axis is logarithmic over the last hour**: x(age) = sx + SW·(1 − ln(1 + age/10) / ln 7); the newest 10 min
-  take about a third of the width. Points every 5 min, age of point j = reading age + 5·(n − 1 − j); only ages ≤ 60.
-  **The axis ends at now**, so an old reading stops short of the right edge. A missed reading (`null`) leaves its point
+### 6.5 Sparkline (setting: trend = sparkline, the default)
+Replaces the arrow. **It takes the whole width the fits allow** (the owner: a shorter value leaves room, and the room
+shows more time, never a stretch). The row's edges: right `xr = min(halfAt(vTop), halfAt(vBase))` (§4); left `xl = −xr`,
+or, where the battery label sits beside the row (not always-on, its bottom below vTop), `max(−xr, −166 + battW + 8)`.
+The digits start at `x0 = xl`; the box's right edge, *now*, is at xr whatever the value (it never moves with the
+reading); its width `SW = min(xr − (xl + vW + 14), K·ln 19)` (at least 100: the size sets' fit, §4, asks for
+vW + 14 + 100), so `sx = xr − SW`; total = xr − xl. Top `sy = vBase − V − 6`, height SH = V + 14. Examples: 112 at
+V 60, SW 135.6 (the last 2 h 10 min); 98 or 71, SW 151.3 (3 h); 180, 110.6 (1 h 16 min).
+- **Time axis is logarithmic, the same scale at every width**: x(age) = xr − K·ln(1 + age/10), K = 100 / ln 7 (100 px
+  = the last hour, as the box was); the newest 10 min take about 36 px. A wider box shows older readings: the box
+  reaches back `min(180, 10·(e^(SW/K) − 1))` minutes. **At most 3 hours**: a meal's whole rise and fall and rapid
+  insulin's main action; past that an hour takes under 15 px. Points every 5 min, age of point j = reading age +
+  5·(n − 1 − j); only the ages the box reaches. **The axis ends at now**, so an old reading stops short of the right
+  edge. A missed reading (`null`) leaves its point
   out: the line breaks there, and a lone reading between two gaps is a dot (its zero-length piece with the round cap,
   `fields-spark-gap`).
 - **Height is a fixed scale, 0.6 px per mg/dL, never rescaled**, so a slope always means the same speed (the owner,
   2026-11-16: rescaling makes you lose the notion of whether a slope is steep). The box shows a window of
   span = SH / 0.6 mg/dL (113–123), centred on `mid`: y₀(v) = sy + SH/2 − (v − mid)·0.6.
-- **The window pans** (the owner's "band in view"). With the hour's readings from hLo to hHi, the newest `last`, and the
+- **The window pans** (the owner's "band in view") **on the last hour alone**, whatever the width shows: what you act
+  on is the last hour and your range, an excursion 2 h ago must not drag the window away from now, and the window
+  doesn't move when a reading's width changes the box; older readings outside it fade in the bands (below). With the
+  hour's readings from hLo to hHi, the newest `last`, and the
   person's range from the low limit L to the high limit H:
   - **Framed**: when the hour fits in the window together with the whole range (max(hHi, H) − min(hLo, L) ≤ span),
     mid = (max(hHi, H) + min(hLo, L)) / 2: both limits show and the frame stays still while you stay near range
@@ -416,7 +445,7 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 
 | Field | Pieces |
 |---|---|
-| steps (default 1st) | steps icon (soft), 5, `6,420` (ink) |
+| steps (default top field) | steps icon (soft), 5, `6,420` (ink) |
 | treatment (default 2nd) | per item: its mark (▼ rapid / ▽ long / ● carbs, in its colour), 4, amount in its colour weight 600 (`4.5u`, `45g`); items 8 apart; then 9, time since (soft): `▼ 4.5u ● 45g 35m` |
 | weather | sun, 6, `14°` |
 | sunset | sunset, 6, `17:42` |
@@ -424,7 +453,7 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 | altitude | mountain, 6, `1,240 m` |
 | heart rate | heart, 5, `64` |
 | notifications | bell, 5, `3` |
-| time in range (Sukrara, today) | ring, 5, `82%` (`--` when not known, `fields-tir-unknown`) |
+| time in range (Sukrara, today; default 1st) | ring, 5, `82%` (`--` when not known, `fields-tir-unknown`) |
 | second time zone | globe, 6, the city's code and its time: `NYC 4:09` (the city: §11) |
 | floors | stairs, 5, `8` |
 | sensor ending (automatic) | sensor, 5, hours left (`5h`) |
@@ -435,7 +464,8 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 - **Automatic**: in the sensor's last 8 h the first field becomes *sensor ending*; with the phone out of reach it
   becomes *no phone*.
 - **Too long for the arc** (> 304 px): drop the least important field until it fits (sensor / no phone 3 > treatment 2
-  > others 1). A meal next to steps drops steps (`fields-meal`, `dial-*`).
+  > others 1). A meal next to steps drops steps (`fields-meal-steps`); time in range (the default 1st) is short enough
+  to stay beside a meal.
 - Hidden in always-on.
 
 ### 6.11 Seconds sweep
@@ -546,7 +576,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
 | sensor | warmup, almost, ending, ended-sending, ended, none, none-es, ended-es, phone-lost, battery-low | sensor, phone, battery states; Spanish messages beside the stacked battery label |
 | modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
-| fields | default, meal, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, seconds-off | fields and settings, missing values and readings |
+| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off | fields and settings, missing values and readings |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
 
@@ -600,11 +630,11 @@ All user settings (the Garmin face's own, set on the watch and in the Connect IQ
 |---|---|---|
 | Dial (`dial`) | grain (`halftone`), black (`black`), map (`map`), contours (`topo`), waterline (`water`), lasers (`laser`), glow (`glow`) | grain |
 | Halo (`halo`) | outline, box, none | outline |
-| Trend (`trendStyle`) | arrow (`arrow`), sparkline (`spark`) | arrow |
+| Trend (`trendStyle`) | arrow (`arrow`), sparkline (`spark`) | sparkline |
 | Seconds sweep (`seconds`) | on, off | on |
 | Green in range (`rangeColour`) | on, off | on |
-| Top field (`topField`) | weather, steps, sunset (`sunset`), body battery (`bodyBattery`), altitude, notifications, time in range (`tir`), second time zone (`tz2`), floors, heart rate (`heart`), none | weather |
-| Bottom fields (`fields`: two keys) | the same list + treatment (`treatment`) | steps, treatment |
+| Top field (`topField`) | weather, steps, sunset (`sunset`), body battery (`bodyBattery`), altitude, notifications, time in range (`tir`), second time zone (`tz2`), floors, heart rate (`heart`), none | steps |
+| Bottom fields (`fields`: two keys) | the same list + treatment (`treatment`) | time in range, treatment |
 | Battery label (`battLabel`) | days, percent, both | days |
 | Private (`privacy`) | on (`private`), off (`open`) | off |
 | Second time zone (`tz2`) | a city, by its code: UTC LON LIS MAD PAR BER ATH CAI IST MOW DXB DEL BKK SIN HKG SHA TYO SEL SYD AKL HNL ANC LAX DEN MEX CHI NYC BOG SCL BUE SAO LOS JNB (its daylight saving follows the place) | NYC |

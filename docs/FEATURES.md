@@ -2059,10 +2059,15 @@ current; its dial is the aura of your glucose. The phone's Settings › Share wi
 [`contracts/watchface/aura/SPEC.md`](../contracts/watchface/aura/SPEC.md) (registered surface `garmin-aura`). The phone
 decides the value, the trend, the bands, the pill and the sensor's state; the watch only counts the time, so the reading
 ages by itself from its own time with the phone away.
-- **Rows**, centred and as large as fit: the date along the top, one top field, the time, the value with Sukrara's arrow
-  (or the last hour as a sparkline), and a chip row with the reading's time once it is late (from 90 s) and the pill.
-  The numbers step down a size when the chip row holds something.
-- **Sparkline** (setting *Trend*): the last hour on a fixed scale (0.6 px per mg/dL, never rescaled: a slope always
+- **Rows**, centred and as large as fit: the date along the top, one top field (steps by default), the time, the value
+  with the recent hours as a sparkline (setting *Trend*: or Sukrara's arrow), and a chip row with the reading's time
+  once it is late (from 90 s) and the pill.
+  The numbers step down a size when the chip row holds something. Time and value use the font's own figures and
+  kerning (no fixed cells, no footed 1); only the minutes' last digit is tabular, so the time never jitters by the
+  minute, and its size follows the hour (a narrower time is drawn bigger, up to about 1.27 × the value).
+- **Sparkline** (setting *Trend*, the default): up to the last 3 hours, as far back as the room beside the value
+  allows (a shorter value shows more time on the same time scale, never a stretch; now stays at the right edge), on a
+  fixed scale (0.6 px per mg/dL, never rescaled: a slope always
   means the same speed), the newest minutes widest. It frames the person's range (both dotted limits and a quiet green
   band) whenever the hour fits with it, and otherwise pans to the hour with the newest reading inside; what runs past
   the box fades out above or below it instead of being cut. A missed reading breaks the line.
@@ -2081,7 +2086,8 @@ ages by itself from its own time with the phone away.
 - **Messages** instead of a value: warm-up (a filling disc, "Ready at 10:54" / "Almost ready"), sensor ended (the flag
   + *Ended*, pill *Sensor*), nothing paired ("No readings", no rail).
 - **Fields**: top (weather, steps, sunset, Body Battery, altitude, notifications, time in range, second time zone,
-  floors, heart rate, none) and two along the bottom (the same + last treatment: `▼ 4.5u ● 45g 35m`). Automatic: the
+  floors, heart rate, none) and two along the bottom (the same + last treatment: `▼ 4.5u ● 45g 35m`; by default time in
+  range and the last treatment). Automatic: the
   sensor's last 8 h replace the first bottom field with its hours left; the phone out of reach with "No phone". Too
   long for the arc: the least important field goes. A value the watch doesn't have shows `--` (time in range before a
   quarter of the day, or after the phone's midnight); no treatment in 24 h leaves that field out.
@@ -2114,7 +2120,7 @@ ages by itself from its own time with the phone away.
   notification show: the phone builds one payload from THE glucose state (the hub: THE trend with its doubling, the
   alert runtime's pill, the sensor, the last treatment, today's time in range, the person's unit and limits), with
   absolute times so the watch keeps every age and countdown right between messages (`:integrations`
-  `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 1; tests `AuraPayloadFixtureTest`).
+  `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 2; tests `AuraPayloadFixtureTest`).
 - **Two ways, nothing to set up** (`garmin/AuraLink`, on by default whenever Garmin Connect is installed; schema
   `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face now, its data field and app when they come):
   **pushed** through Garmin Connect's Connect IQ service to every connected watch with the face on

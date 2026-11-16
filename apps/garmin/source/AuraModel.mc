@@ -285,29 +285,62 @@ class AuraModel {
         return t;
     }
 
-    // --- the rows (SPEC.md §4) ---
-    hidden function timeGeom(TT as Number) as Void {
-        tFs = TT / 0.668;
-        tW = 0.0;
-        txs = [];
-        var cs = tStr.toCharArray();
+    // --- the big numbers' type (SPEC.md §2): Atkinson Hyperlegible Next at weight 600, the font's own (proportional)
+    // figures' advances and its kern pairs, per em; the tabular figures' width ---
+    // (per mille of the em; one string of the kern pairs, each " ab" at 3 x its index: cheaper on the heap than arrays)
+    const NUM_GLYPHS = "0123456789:.LOHI";
+    const NUM_ADV = [656, 430, 569, 592, 621, 602, 617, 529, 621, 578, 253, 253, 548, 737, 699, 415];
+    const KERN_PAIRS = " 23 24 28 41 42 44 49 51 53 55 56 59 61 67 71 73 74 77 78 7. 81 82 87 89 92 94 .1 .O LO O. OI IO ";
+    const KERN = [-4, -13, -10, -6, -9, 10, -24, -20, -20, -6, -7, -4, -26, -6, 20, 10,
+        -44, 30, -20, -30, -20, -10, -10, -19, -20, -4, -30, -30, -30, -30, -23, -23];
+    const TNUM = 0.632;
+
+    // a kerned run of the font's figures at fs px: each glyph's centre (its advance centred) into xs; the run's width
+    hidden function glyphRun(str as String, fs as Float, xs as Array?) as Float {
+        var w = 0.0;
+        var cs = str.toCharArray();
         for (var i = 0; i < cs.size(); i++) {
-            var w = (cs[i] == ':' ? 0.253 + 0.1 : 0.656) * tFs;
-            txs.add(tW + w / 2);
-            tW += w;
+            var k = NUM_GLYPHS.find(cs[i].toString());
+            var a = k != null ? NUM_ADV[k] / 1000.0 : 0.6;
+            if (i > 0) {
+                var p = KERN_PAIRS.find(" " + cs[i - 1].toString() + cs[i].toString() + " ");
+                if (p != null) {
+                    w += KERN[p / 3] / 1000.0;
+                }
+            }
+            if (xs != null) {
+                xs.add((w + a / 2) * fs);
+            }
+            w += a;
         }
+        return w * fs;
     }
 
+    // the time: the hour, the colon and the tens of minutes as one kerned run, the last digit tabular (a centred cell,
+    // no kerning into it); tFit: the width with the widest tens digit (0-5) at this hour, so the size changes only with it
+    var tFit as Float = 0.0;
+
+    hidden function timeGeom(TT as Number) as Void {
+        tFs = TT / 0.668;
+        txs = [];
+        var n = tStr.length();
+        var head = glyphRun(tStr.substring(0, n - 1) as String, tFs, txs);
+        var cell = TNUM * tFs;
+        txs.add(head + cell / 2);
+        tW = head + cell;
+        tFit = 0.0;
+        var pre = tStr.substring(0, n - 2) as String;
+        for (var d = 0; d <= 5; d++) {
+            tFit = AuraMath.max(tFit, glyphRun(pre + d.toString(), tFs, null));
+        }
+        tFit += cell;
+    }
+
+    // the value: one kerned run (it changes only with a reading)
     hidden function valueGeom(VV as Number) as Void {
         vFs = VV / 0.668;
-        vW = 0.0;
         vxs = [];
-        var cs = vStr.toCharArray();
-        for (var i = 0; i < cs.size(); i++) {
-            var w = (cs[i] == '.' ? 0.253 + 0.06 : 0.656) * vFs;
-            vxs.add(vW + w / 2);
-            vW += w;
-        }
+        vW = glyphRun(vStr, vFs, vxs);
         gap = 0.08 * vFs;
         box = 0.62 * vFs;
         total = spark ? vW + 14 + 100 : vW + gap + box;
@@ -351,9 +384,12 @@ class AuraModel {
 
     // lay the rows out with the first size set that fits; true when one did
     hidden function fitRows(one as Boolean) as Boolean {
+        // the time grows by its string: the larger time sizes first, up to ~1.27 x the value's cap (SPEC.md §4)
         var sets = "pill".equals(chipKind)
-            ? [[62, 54, 24]]
-            : "age".equals(chipKind) ? [[64, 56, 24], [62, 54, 24]] : [[68, 60, 26], [66, 58, 26], [64, 56, 25], [62, 54, 24]];
+            ? [[68, 54, 24], [66, 54, 24], [64, 54, 24], [62, 54, 24]]
+            : "age".equals(chipKind)
+                ? [[70, 56, 24], [68, 56, 24], [66, 56, 24], [64, 56, 24], [62, 54, 24]]
+                : [[76, 60, 26], [74, 60, 26], [72, 60, 26], [70, 60, 26], [68, 60, 26], [66, 58, 26], [64, 56, 25], [62, 54, 24]];
         var left0 = msgLeft();
         for (var n = 0; n < sets.size(); n++) {
             var set = sets[n] as Array<Number>;
@@ -384,7 +420,7 @@ class AuraModel {
             chipC = chipH > 0 ? y + 18 + chipH / 2.0 : y;
             timeGeom(T);
             valueGeom(V);
-            var okT = tW / 2 <= halfAt(tTop);
+            var okT = tFit / 2 <= halfAt(tTop);
             var okV = !hasValue || (total / 2 <= halfAt(vTop) && total / 2 <= halfAt(vBase));
             var lBot = tBase + 6 + battH(one);
             var left = hasValue ? -total / 2 : left0;
@@ -418,8 +454,27 @@ class AuraModel {
     }
 
     // --- the value with Sukrara's arrow (SPEC.md §6.4) ---
+    // the sparkline's box: its width and how far back it reaches (minutes)
+    var SW as Float = 100.0;
+    var spAge as Float = 60.0;
+    const SPAN_MAX = 180.0; // the sparkline reaches back at most 3 hours (SPEC.md §6.5)
+
     hidden function value() as Void {
         x0 = -total / 2;
+        if (spark) {
+            // the whole width the fits allow: the value from the left edge, now at the right edge (SPEC.md §6.5)
+            var xr = AuraMath.min(halfAt(vTop), halfAt(vBase));
+            var xl = -xr;
+            if (!aod && tBase + 6 + battH(battOne) > vTop) {
+                xl = AuraMath.max(xl, -166 + battW(battOne) + 8);
+            }
+            var kt = 100 / Math.ln(7);
+            SW = AuraMath.min(xr - (xl + vW + 14), kt * Math.ln(1 + SPAN_MAX / 10)).toFloat();
+            spAge = AuraMath.min(SPAN_MAX, 10 * (Math.pow(Math.E, SW / kt) - 1)).toFloat();
+            total = xr - xl;
+            x0 = xl;
+            sx = xr - SW;
+        }
         ax = AuraMath.r1(spark ? 0 : x0 + vW + gap + box / 2);
         ay = AuraMath.r1(vBase - V / 2.0);
         inverted = !struck && bk.equals("veryLow");
@@ -476,7 +531,7 @@ class AuraModel {
         }
     }
 
-    // --- the sparkline: the last hour, log time, a fixed scale (0.6 px per mg/dL) whose window pans (SPEC.md §6.5) ---
+    // --- the sparkline: up to the last 3 hours (100 px = the last hour, at any width), log time, a fixed scale (0.6 px per mg/dL) whose window pans (SPEC.md §6.5) ---
     const SPARK_PX = 0.6;
     const SPARK_FADE = 12.0;
 
@@ -501,8 +556,10 @@ class AuraModel {
     }
 
     hidden function sparkline() as Void {
-        var SW = 100.0;
-        sx = x0 + vW + 14;
+        if (!spark) {
+            SW = 100.0;
+            sx = x0 + vW + 14;
+        }
         SH = V + 14.0;
         sy = vBase - V - 6;
         var g = inp.glucose;
@@ -549,7 +606,7 @@ class AuraModel {
         var last = null;
         for (var j = 0; j < n; j++) {
             var a = inp.age + 5 * (n - 1 - j);
-            if (a > 60) {
+            if (a > spAge + 0.000001) {
                 continue;
             }
             var v = series[j];
@@ -560,7 +617,7 @@ class AuraModel {
                 }
                 continue;
             }
-            last = [AuraMath.r1(sx + SW * (1 - Math.ln(1 + a / 10.0) / ln7)), sparkY(v)];
+            last = [AuraMath.r1(sx + SW - 100 * Math.ln(1 + a / 10.0) / ln7), sparkY(v)];
             run.add(last);
         }
         if (run.size() > 0) {

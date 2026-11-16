@@ -1494,7 +1494,7 @@ again once the face's final look is approved (the digit spacing, defaults and sp
 **Description, en** (3119 characters):
 
 ```text
-Sukrara Aura shows your glucose on your watch face, next to the time: the value in its range colour, the trend arrow or the last hour as a line, and how long ago it was read. It is the watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+Sukrara Aura shows your glucose on your watch face, next to the time: the value in its range colour, the last hours as a line or the trend arrow, and how long ago it was read. It is the watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
 
 What you need
 • The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends every reading to the watch face through Garmin Connect.
@@ -1502,7 +1502,7 @@ What you need
 • Without Sukrara on your phone the face shows the time and your watch's own data, and "No readings".
 
 At a glance
-• Your glucose in your range's colours, with Sukrara's trend arrow, or the last hour as a sparkline on a fixed scale.
+• Your glucose in your range's colours, with up to the last 3 hours as a sparkline on a fixed scale, or Sukrara's trend arrow.
 • A level rail on the right with your own limits marked, and the last 30 minutes as a fading trail.
 • The reading ages on the watch's own clock: its time appears when it is late, then it is struck through and grey, then "No reading since" and the time. An old value never looks current, even with the phone out of reach.
 • The state of Sukrara's alerts on your phone (needs you, handled, muted and for how long) and of your sensor (warming up, ending, ended).
@@ -1535,7 +1535,7 @@ Sukrara is not affiliated with Garmin or with any sensor maker.
 **Description, es** (3307 characters):
 
 ```text
-Sukrara Aura muestra tu glucosa en la esfera del reloj, junto a la hora: el valor en el color de su rango, la flecha de tendencia o la última hora como una línea, y hace cuánto se leyó. Es la esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+Sukrara Aura muestra tu glucosa en la esfera del reloj, junto a la hora: el valor en el color de su rango, las últimas horas como una línea o la flecha de tendencia, y hace cuánto se leyó. Es la esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
 
 Qué necesitas
 • La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura a la esfera a través de Garmin Connect.
@@ -1543,7 +1543,7 @@ Qué necesitas
 • Sin Sukrara en el móvil, la esfera muestra la hora y los datos del propio reloj, y «Sin lecturas».
 
 De un vistazo
-• Tu glucosa en los colores de tu rango, con la flecha de tendencia de Sukrara, o la última hora como un minigráfico a escala fija.
+• Tu glucosa en los colores de tu rango, con hasta las últimas 3 horas como un minigráfico a escala fija, o la flecha de tendencia de Sukrara.
 • Una barra de nivel a la derecha con tus propios límites marcados y los últimos 30 minutos como un rastro que se desvanece.
 • La lectura envejece con la hora del propio reloj: cuando llega tarde aparece su hora, luego se tacha y se vuelve gris, y luego «Sin lectura desde» y la hora. Un valor antiguo nunca parece actual, aunque el móvil esté lejos.
 • El estado de las alertas de Sukrara en tu móvil (te necesita, atendida, silenciada y hasta cuándo) y el de tu sensor (calentando, acabándose, terminado).
