@@ -1,12 +1,11 @@
 ---
 title: Funciones
 description: Todo lo que hace Sukrara, de un vistazo. La glucosa de tu sensor donde mires, alertas discretas, compartida en directo sin nube, registro rápido, informes, los sensores que lee y las apps con las que funciona. Android y Mac, gratis y de código abierto.
-template: splash
 editUrl: false
 lastUpdated: false
 ---
 
-import FeatureGroup from '../../../components/features/FeatureGroup.astro';
+import FeatureGrid from '../../../components/features/FeatureGrid.astro';
 import FeatureLead from '../../../components/features/FeatureLead.astro';
 import FeatureTile from '../../../components/features/FeatureTile.astro';
 
@@ -14,7 +13,9 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
 
 <FeatureLead before="Todo lo que hace Sukrara. Una función con" after="te la enseña en la app." />
 
-<FeatureGroup id="glance" title="La glucosa de un vistazo">
+## La glucosa de un vistazo
+
+<FeatureGrid>
   <FeatureTile icon="status_bar_notification" title="Barra de estado" shot="statusBar" shotWidth={400}>Un chip de actualización en directo o, con root, texto junto al reloj.</FeatureTile>
   <FeatureTile icon="widgets" title="Widgets de inicio" shot="widget">Glucosa, gráfica y tiempo en rango, sin abrir la app.</FeatureTile>
   <FeatureTile icon="screen_lock_portrait" title="Pantalla de bloqueo" shot="lockscreen">Una tarjeta alrededor del sensor de huellas, con root.</FeatureTile>
@@ -23,9 +24,11 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
   <FeatureTile icon="donut_large" title="Junto al valor" shot="card">Tiempo en rango, GMI, media, variabilidad o tu último tratamiento.</FeatureTile>
   <FeatureTile icon="dia_range" title="mg/dL o mmol/L">Tu unidad y tus propios rangos.</FeatureTile>
   <FeatureTile icon="volume_up" title="En voz alta">Tu glucosa leída en voz alta, desde un acceso directo.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="alerts" title="Alertas">
+## Alertas
+
+<FeatureGrid>
   <FeatureTile icon="dia_very_low" title="Todo tipo de alertas" shot="alert">Bajas, altas, cambios rápidos y sin datos, cada una en tus umbrales.</FeatureTile>
   <FeatureTile icon="music_note" title="Paquetes de sonidos discretos">Un sonido y una intensidad distintos para cada alerta.</FeatureTile>
   <FeatureTile icon="check_circle" title="Se callan cuando ya has actuado">Tras la insulina o los hidratos, y mientras la glucosa vuelve al rango.</FeatureTile>
@@ -34,39 +37,49 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
   <FeatureTile icon="notifications_active" title="En No molestar">Si dejas pasar a Sukrara.</FeatureTile>
   <FeatureTile icon="notification_add" title="En tu reloj">Las alertas como notificaciones propias, si quieres.</FeatureTile>
   <FeatureTile icon="group" title="Tus seguidores se enteran">Cuando una muy baja queda sin respuesta.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="sharing" title="Compartir y seguir">
+## Compartir y seguir
+
+<FeatureGrid>
   <FeatureTile icon="share" title="Invita con un enlace o un QR" shot="share" shotWidth={300}>De un solo uso. Apruebas a cada persona.</FeatureTile>
   <FeatureTile icon="key" title="Cifrada de extremo a extremo">Por relés Nostr públicos. Sin cuenta ni servidor que mantener.</FeatureTile>
   <FeatureTile icon="bluetooth" title="Bluetooth de cerca">Sin internet cuando estáis cerca.</FeatureTile>
   <FeatureTile icon="person" title="Sigue a alguien">En Android o en un Mac, con tus propias alertas.</FeatureTile>
   <FeatureTile icon="edit_note" title="Tus seguidores registran">Insulina e hidratos, si les dejas.</FeatureTile>
   <FeatureTile icon="backup" title="Móvil nuevo">Tus seguidores vienen contigo, con un código de recuperación o tu gestor de contraseñas.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="logging" title="Registro">
+## Registro
+
+<FeatureGrid>
   <FeatureTile icon="dia_insulin_rapid" title="Insulina, hidratos y notas" shot="treatments" shotWidth={300}>Insulina rápida y lenta en un solo formulario, ahora o antes.</FeatureTile>
   <FeatureTile icon="lock_open" title="Sin desbloquear" shot="lockTreatment" shotWidth={300}>Desde la notificación, un widget, una alerta o los Ajustes rápidos.</FeatureTile>
   <FeatureTile icon="dia_pen" title="NovoPen Echo® Plus">Apunta sus propias dosis, con el purgado aparte.</FeatureTile>
   <FeatureTile icon="receipt_long" title="Tu registro">31 días con la glucosa de ese momento. Edita, añade una nota o deshaz.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="reports" title="Informes y tus datos">
+## Informes y tus datos
+
+<FeatureGrid>
   <FeatureTile icon="bar_chart" title="Informe de glucosa" shot="macReport" shotWidth={400}>Tiempo en rangos, glucosa media, GMI y variabilidad, de 1 a 30 días.</FeatureTile>
   <FeatureTile icon="crown" title="Premios">Un laurel desde el 90 % en rango, flores desde el 95 %, una corona al 100 %.</FeatureTile>
   <FeatureTile icon="file_upload" title="Importa tu historial">Desde LibreView, Tidepool o un archivo CSV.</FeatureTile>
   <FeatureTile icon="file_export" title="Exporta">Un CSV con el formato de LibreView, sin tu nombre.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="sensors" title="Sensores">
+## Sensores
+
+<FeatureGrid>
   <FeatureTile icon="dia_sensor" title="FreeStyle Libre 3 / 3 Plus">Leído directamente. Inícialo acercando el móvil.</FeatureTile>
   <FeatureTile app="juggluco" title="A través de Juggluco">FreeStyle Libre 2 / 2 Plus, Sibionics GS1, CareSens Air.</FeatureTile>
   <FeatureTile icon="science" title="Directamente, aún sin probar">Dexcom G6 / G7 / ONE+, Accu-Chek SmartGuide, LinX / AiDEX X.</FeatureTile>
   <FeatureTile icon="timer" title="Fin del sensor">Una cuenta atrás, recordatorios y tu calendario si quieres.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="apps" title="Funciona con">
+## Funciona con
+
+<FeatureGrid>
   <FeatureTile app="libreview" title="LibreView">Le envía glucosa y tratamientos, para que tu consulta los siga viendo.</FeatureTile>
   <FeatureTile app="tidepool" title="Tidepool">Le envía glucosa, insulina, hidratos y notas.</FeatureTile>
   <FeatureTile app="nightscout" title="Nightscout">Envía a tu sitio, o actúa como su API.</FeatureTile>
@@ -74,9 +87,11 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
   <FeatureTile app="xdrip" title="xDrip+">Actúa como su API, para esferas de Garmin y más.</FeatureTile>
   <FeatureTile app="aaps" title="AAPS">Recibe tu glucosa en directo.</FeatureTile>
   <FeatureTile app="juggluco" title="Juggluco">Lee la glucosa de ella, en el móvil o en tu red.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="mac" title="En tu Mac">
+## En tu Mac
+
+<FeatureGrid>
   <FeatureTile icon="status_bar_notification" title="Barra de menús" shot="macPanel" shotWidth={300}>Tu glucosa o la de otra persona, con la gráfica a un clic.</FeatureTile>
   <FeatureTile icon="widgets" title="Widgets" shot="macWidget" shotWidth={300}>En el escritorio y en el Centro de notificaciones.</FeatureTile>
   <FeatureTile icon="notifications_active" title="Las mismas alarmas">Sonidos, reglas de silencio y silenciar, como en el móvil.</FeatureTile>
@@ -84,9 +99,11 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
   <FeatureTile icon="edit_note" title="Registro e informe" shot="macTreatment" shotWidth={300}>Tratamientos y el informe de glucosa, con exportación CSV.</FeatureTile>
   <FeatureTile app="juggluco" title="Juggluco en tu red">Lo lee en el wifi de casa, con sus propias alertas.</FeatureTile>
   <FeatureTile icon="volume_up" title="En voz alta">⌃⇧⌘G, desde cualquier app.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>
 
-<FeatureGroup id="private" title="Privada y fiable">
+## Privada y fiable
+
+<FeatureGrid>
   <FeatureTile icon="privacy" title="Sin cuenta ni rastreo">Sin anuncios ni analíticas. Tus datos se quedan en tu móvil.</FeatureTile>
   <FeatureTile icon="code" title="Libre y de código abierto">GPL-3.0, en GitHub.</FeatureTile>
   <FeatureTile icon="restart_alt" title="Sigue funcionando">Se reinicia sola, y vigila incluso antes de desbloquear.</FeatureTile>
@@ -94,4 +111,4 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
   <FeatureTile icon="battery_full" title="Bajo consumo de batería">Hecha para funcionar todo el día en segundo plano.</FeatureTile>
   <FeatureTile icon="settings" title="Ajustes explicados">Ordenados, con búsqueda y buenos valores por defecto.</FeatureTile>
   <FeatureTile icon="public" title="En inglés y español">Con tu formato de hora y de números.</FeatureTile>
-</FeatureGroup>
+</FeatureGrid>

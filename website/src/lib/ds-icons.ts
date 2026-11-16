@@ -4,8 +4,9 @@
 /**
  * The Android app's own icons on the site: core/designsystem's `ds_ic_*.xml` vector drawables (Material Symbols,
  * Apache-2.0, and Sukrara's diabetes icons drawn on the same grid) turned into SVG at build time, so a feature wears
- * the icon the app gives it and a new icon in the app is one name away here. White, the drawables' tint colour,
- * becomes the text's colour (`currentColor`), keeping its alpha.
+ * the icon the app gives it and a new icon in the app is one name away here. The app tints every one of them (Compose
+ * Icon), so whatever colour a drawable is drawn in (white mostly, black in the AOSP ones) the site draws in the text's
+ * colour (`currentColor`), keeping its alpha. The apps' own full-colour icons (`ds_ic_app_*`) are lib/apps.ts's.
  *   dsIcon('notifications_active') → { viewBox: '0 0 960 960', body: '<g …><path …/></g>' }
  */
 const DRAWABLES = import.meta.glob<string>('@repo/apps/android/core/designsystem/src/main/res/drawable/ds_ic_*.xml', {
@@ -23,19 +24,15 @@ export interface DsIcon {
 const attrs = (tag: string) =>
 	Object.fromEntries([...tag.matchAll(/android:(\w+)="([^"]*)"/g)].map(([, k, v]) => [k, v] as const));
 
-/** A drawable colour as SVG paint: white is the text's colour, a transparent one is none. */
+/** A drawable colour as SVG paint, tinted like the app does: the text's colour with the colour's alpha; none if clear. */
 function paint(color: string | undefined): { paint: string; opacity?: string } {
 	if (!color) return { paint: 'none' };
-	if (color === '@android:color/white') return { paint: 'currentColor' };
-	const hex = /^#([0-9a-f]{2})?([0-9a-f]{6})$/i.exec(color);
+	if (color.startsWith('@android:color/')) return { paint: 'currentColor' };
+	const hex = /^#([0-9a-f]{2})?[0-9a-f]{6}$/i.exec(color);
 	if (!hex) throw new Error(`ds-icons: colour ${color} isn't one the site knows`);
-	const [, alpha = 'FF', rgb] = hex;
-	const opacity = parseInt(alpha, 16) / 255;
+	const opacity = parseInt(hex[1] ?? 'FF', 16) / 255;
 	if (opacity === 0) return { paint: 'none' };
-	return {
-		paint: rgb.toUpperCase() === 'FFFFFF' ? 'currentColor' : `#${rgb}`,
-		opacity: opacity < 1 ? opacity.toFixed(2) : undefined,
-	};
+	return { paint: 'currentColor', opacity: opacity < 1 ? opacity.toFixed(2) : undefined };
 }
 
 function convert(file: string, xml: string): DsIcon | undefined {
@@ -78,6 +75,7 @@ function convert(file: string, xml: string): DsIcon | undefined {
 const ICONS = new Map<string, DsIcon>();
 for (const [path, xml] of Object.entries(DRAWABLES)) {
 	const name = /ds_ic_(\w+)\.xml$/.exec(path)![1];
+	if (name.startsWith('app_')) continue;
 	const icon = convert(path, xml);
 	if (icon) ICONS.set(name, icon);
 }

@@ -1,0 +1,45 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * A group's tiles on the features page, in a grid, every one visible. The group's title is the page's own `##`
+ * heading above it (so it's in "On this page", and the home page links it: /features/#alerts).
+ *   ## Alerts
+ *
+ *   <FeatureGrid>
+ *     <FeatureTile … />
+ *   </FeatureGrid>
+ */
+---
+
+<ul class="sk-fgrid not-content">
+	<slot />
+</ul>
+
+<script>
+	// A tile with a picture opens it in its dialog; a click on the dim backdrop closes it, like Escape.
+	for (const tile of document.querySelectorAll<HTMLButtonElement>('button.sk-ftile[data-dialog]')) {
+		const dialog = document.getElementById(tile.dataset.dialog!) as HTMLDialogElement | null;
+		if (!dialog) continue;
+		tile.addEventListener('click', () => dialog.showModal());
+		dialog.addEventListener('click', (event) => {
+			if (event.target === dialog) dialog.close();
+		});
+	}
+</script>
+
+<style>
+	.sk-fgrid {
+		list-style: none;
+		padding: 0;
+		display: grid;
+		gap: 0.75rem;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+	}
+	@media (max-width: 40rem) {
+		.sk-fgrid {
+			gap: 0.5rem;
+		}
+	}
+</style>

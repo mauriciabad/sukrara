@@ -2,7 +2,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The header's links to the features, the apps and the developers' section, before Starlight's GitHub icon (also in the mobile menu).
+// The header's links to the apps and the developers' section, before Starlight's GitHub icon (also in the mobile menu).
 import Default from '@astrojs/starlight/components/SocialIcons.astro';
 import type { LogoName } from '../../lib/logos';
 import Logo from '../Logo.astro';
@@ -10,12 +10,7 @@ import Logo from '../Logo.astro';
 const { locale } = Astro.locals.starlightRoute;
 const t = Astro.locals.t;
 const prefix = locale ? `/${locale}` : '';
-const links: {
-	key: 'site.nav.features' | 'site.nav.android' | 'site.nav.mac' | 'site.nav.developers';
-	href: string;
-	logo?: LogoName;
-}[] = [
-	{ key: 'site.nav.features', href: `${prefix}/features/` },
+const links: { key: 'site.nav.android' | 'site.nav.mac' | 'site.nav.developers'; href: string; logo?: LogoName }[] = [
 	{ key: 'site.nav.android', href: `${prefix}/android/`, logo: 'android' },
 	{ key: 'site.nav.mac', href: `${prefix}/mac/`, logo: 'apple' },
 	{ key: 'site.nav.developers', href: '/developers/' },
