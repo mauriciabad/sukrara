@@ -313,7 +313,7 @@ def run(outdir, core=None):
     shots = {}
     offset = None
     try:
-        deadline = time.time() + 3.2 * len(cases) + 60
+        deadline = time.time() + 2 * 3.1 * len(cases) + 400  # a missed case comes back after the combinations
         while len(shots) < len(cases) and time.time() < deadline:
             time.sleep(0.25)
             if offset is None:
@@ -337,9 +337,11 @@ def run(outdir, core=None):
             moved = ImageChops.difference(Image.open(path), Image.open(path + ".2.png")).getbbox()
             os.remove(path + ".2.png")
             if moved:
-                continue  # caught between two frames: again on the next round
+                os.remove(path)
+                continue  # caught between two frames: again on the next round (or the next cycle)
             again = [l for l in open(log, encoding="utf-8", errors="replace") if l.startswith("CASE ")]
             if again[-1].split()[2] != cid:
+                os.remove(path)
                 continue  # the next case came while capturing: try it on the next round
             if filt != "none":
                 colour_filter(Image.open(path), filt).save(path)

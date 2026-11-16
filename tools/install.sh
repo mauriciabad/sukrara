@@ -77,7 +77,7 @@ elif [ "$TARGET" = watch ]; then
   PRG=apps/garmin/bin/SukraraAura.prg
   run apps/garmin/build.sh release
   run apps/garmin/tools/verify_prg.sh "$PRG"
-  run apps/garmin/tools/sideload.sh "$PRG"
+  run python3 apps/garmin/tools/sideload.py "$PRG"
   GOT="Aura $(sed -n 's/.*iq:application .*version="\([0-9.]*\)".*/\1/p' apps/garmin/manifest.xml)"
 else
   # 2b. Team-signed bundle with the widget, replacing the installed copy wherever it is: /Applications (the notarized

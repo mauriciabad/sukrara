@@ -340,7 +340,7 @@ and, against the dial-less references, `<dir>/diff-core`). The loader is debug o
 `monkey.jungle` builds it, and `verify_prg.sh` refuses a `.prg` that carries it.
 
 **On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to
-`GARMIN/Apps/SUKRARAAURA.PRG` (`apps/garmin/tools/sideload.sh`: only that file is written; an older copy of it is
+`GARMIN/Apps/SUKAURA.PRG` (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only that file is written; an older copy of it is
 replaced; close Garmin Express / OpenMTP first). The watch installs it when unplugged; select it on the watch (hold
 MENU › Watch face). A sideloaded face has no settings page in the Connect IQ phone app (that needs the store package):
 use the watch's Customize menu.

@@ -7,6 +7,7 @@ import Toybox.Lang;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.Time.Gregorian;
+import Toybox.Timer;
 import Toybox.WatchUi;
 
 // THE DEBUG CASE LOADER (SPEC.md §10): the face showing every case of contracts/watchface/aura/cases.json in turn, 3 s
@@ -118,6 +119,16 @@ class AuraCasesView extends AuraView {
     var start as Number = 0;
     var combo as Number = 0;
     var comboBad as Number = 0;
+    var timer as Timer.Timer? = null;
+
+    function combos() as Void {
+        comboBad += AuraCombos.run(combo, combo + 3);
+        combo += 3;
+        if (combo >= AuraCombos.count()) {
+            timer.stop();
+            System.println("COMBOS|" + AuraCombos.count() + "|" + comboBad);
+        }
+    }
 
     function initialize() {
         AuraView.initialize();
@@ -142,15 +153,14 @@ class AuraCasesView extends AuraView {
             return;
         }
         if (k > AuraCaseTable.COUNT && combo < AuraCombos.count()) {
-            // after the cases: the battery label against every row (AuraCombos), a slice per frame
+            // after the cases: the battery label against every row (AuraCombos), a few per timer tick (the watchdog
+            // allows only a handful of layouts per call)
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
             dc.clear();
-            comboBad += AuraCombos.run(combo, combo + 24);
-            combo += 24;
-            if (combo >= AuraCombos.count()) {
-                System.println("COMBOS|" + AuraCombos.count() + "|" + comboBad);
+            if (timer == null) {
+                timer = new Timer.Timer();
+                timer.start(method(:combos), 50, true);
             }
-            WatchUi.requestUpdate();
             return;
         }
         var i = (k - 1) % AuraCaseTable.COUNT;

@@ -287,6 +287,23 @@ jobs:
       - name: Release build (debug code compiled out)
         if: steps.sdk.outputs.ready == 'true'
         run: apps/garmin/build.sh release
+      # SPEC.md §10: the debug case loader in the simulator (Xvfb): every case's numbers against expect.json (fails the
+      # job), the battery label against every row, a screenshot of every case diffed with docs/img/aura/ref (kept as
+      # the artifact; the dials, halo and sweep differ until they are built)
+      - name: The face's tests in the simulator (numbers and pictures of every case)
+        if: steps.sdk.outputs.ready == 'true'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get install -y -qq --no-install-recommends python3-pil >/dev/null
+          xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
+      - name: The face's screenshots and diff images
+        if: always() && steps.sdk.outputs.ready == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: garmin-test
+          path: ${{ runner.temp }}/garmin-test
+          if-no-files-found: ignore
 
   # No PoC build jobs: poc/ is frozen (never edited; untouched since the monorepo began), so jobs that ran only when
   # poc/ changed never ran. Its Python reference still runs in `rules` (sync_crosscheck.py).
