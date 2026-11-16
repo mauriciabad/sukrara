@@ -76,6 +76,25 @@
    }
   },
   {
+   "id": "glucose-another-day",
+   "group": "glucose",
+   "title": "No reading since yesterday",
+   "expect": "Only an hour old but from yesterday: “No reading since Sun 23:40”, the weekday with the time, since a bare clock time would read as today’s (Sukrara’s Freshness.timeText).",
+   "cfg": {
+    "time": "0:40:00",
+    "age": 60
+   }
+  },
+  {
+   "id": "glucose-week-old",
+   "group": "glucose",
+   "title": "No reading for a week",
+   "expect": "Over 6 days: the date instead of a time (“No reading since 9 Nov”).",
+   "cfg": {
+    "age": 10100
+   }
+  },
+  {
    "id": "glucose-lo",
    "group": "glucose",
    "title": "LO",
@@ -176,6 +195,18 @@
    }
   },
   {
+   "id": "alerts-muted-long",
+   "group": "alerts",
+   "title": "Long mute",
+   "expect": "Mute all for over 6 hours: the time left in Sukrara’s compact format, whole hours from 6 h (“6h”, never “6h 40m”).",
+   "cfg": {
+    "glucose": 128,
+    "rate": 0.2,
+    "status": "muted",
+    "left": 400
+   }
+  },
+  {
    "id": "alerts-high",
    "group": "alerts",
    "title": "High",
@@ -197,6 +228,17 @@
     "left": 45,
     "lastAmount": 3,
     "lastAgo": 15
+   }
+  },
+  {
+   "id": "alerts-quiet-ended",
+   "group": "alerts",
+   "title": "Quiet ran out",
+   "expect": "High, and the quiet after the insulin has just run out before the phone said what follows: no pill (the face never decides a need itself) until the next message; value and arrow as usual.",
+   "cfg": {
+    "glucose": 210,
+    "rate": 0.3,
+    "status": "none"
    }
   },
   {
@@ -496,6 +538,17 @@
    }
   },
   {
+   "id": "fields-no-treatment",
+   "group": "fields",
+   "title": "No treatment today",
+   "expect": "Nothing logged in the last 24 h: the treatment field goes and steps sit alone, centred on the arc.",
+   "cfg": {
+    "last": {
+     "items": []
+    }
+   }
+  },
+  {
    "id": "fields-hiking",
    "group": "fields",
    "title": "Hiking",
@@ -523,6 +576,18 @@
      "steps",
      "notifications"
     ]
+   }
+  },
+  {
+   "id": "fields-tir-unknown",
+   "group": "fields",
+   "title": "Time in range not known",
+   "expect": "Under a quarter of the day so far, or the phone’s day over and no new message: the field says “--”.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "tir",
+    "tir": null
    }
   },
   {
@@ -704,6 +769,32 @@
      111,
      112,
      112
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-gap",
+   "group": "fields",
+   "title": "Sparkline with missed readings",
+   "expect": "Missed readings leave gaps: the line breaks there, a lone reading between two gaps is a dot, and the rail’s trail skips the missing dot.",
+   "cfg": {
+    "trendStyle": "spark",
+    "glucose": 118,
+    "rate": 0.5,
+    "spark": [
+     100,
+     104,
+     null,
+     null,
+     110,
+     112,
+     111,
+     113,
+     null,
+     114,
+     116,
+     117,
+     118
     ]
    }
   },

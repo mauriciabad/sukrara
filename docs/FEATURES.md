@@ -2056,7 +2056,7 @@ A Connect IQ watch face, `apps/garmin` (Descent Mk3i 43 mm), drawn to the bindin
 what Sukrara on the phone decides (the value, the trend, the bands, the pill, the sensor's state); the watch only counts
 the time, so the reading ages by itself from its own time with the phone away.
 - **Rows**, centred and as large as fit: the date along the top, one top field, the time, the value with Sukrara's arrow
-  (or the last hour as a sparkline on the rail's scale), and a chip row with the reading's time once it is late
+  (or the last hour as a sparkline on the rail's scale, broken where a reading was missed), and a chip row with the reading's time once it is late
   (from 90 s) and the pill. The numbers step down a size when the chip row holds something.
 - **The value's looks**: in range green (very good / good; *Green in range* off: white); out of range its band's colour;
   very low and LO white on a red block; old (5–20 min) struck through and grey with a hollow ring for the arrow; from
@@ -2067,14 +2067,16 @@ the time, so the reading ages by itself from its own time with the phone away.
   fading trail; LO / HI pinned at the ends with a chevron. **Battery rail** opposite: 10 segments (amber under 2 days,
   red under 1) and its label (days, percent or both).
 - **Pill** (Sukrara's status, only with a current value): *Carbs* / *Insulin* when needed (filled); a quiet after a
-  treatment or a muted side as the side's tonal pill with the time left (*Muted* with no end); Mute all in range as a
-  grey pill; *Ended* (the sensor ended but still sends) and *Sensor* (replace it).
+  treatment or a muted side as the side's tonal pill with the time left in Sukrara's compact format (`1h 20m`, `6h`;
+  *Muted* with no end); Mute all in range as a grey pill; *Ended* (the sensor ended but still sends) and *Sensor*
+  (replace it). A quiet or mute that runs out on the watch's clock leaves no pill until the phone says what follows.
 - **Messages** instead of a value: warm-up (a filling disc, "Ready at 10:54" / "Almost ready"), sensor ended (the flag
   + *Ended*, pill *Sensor*), nothing paired ("No readings", no rail).
 - **Fields**: top (weather, steps, sunset, Body Battery, altitude, notifications, time in range, second time zone,
   floors, heart rate, none) and two along the bottom (the same + last treatment: `▼ 4.5u ● 45g 35m`). Automatic: the
   sensor's last 8 h replace the first bottom field with its hours left; the phone out of reach with "No phone". Too
-  long for the arc: the least important field goes.
+  long for the arc: the least important field goes. A value the watch doesn't have shows `--` (time in range before a
+  quarter of the day, or after the phone's midnight); no treatment in 24 h leaves that field out.
 - **Modes**: *always-on* (the watch's display setting): outlined time, value, pill and messages in a dimmer palette,
   rail without ticks, trail or zone, no fields, no battery; the whole face moves up to 2 px a minute against burn-in.
   A wrist raise or a button always wakes it to the full face, whatever the display mode said before; the face

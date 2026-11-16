@@ -15,7 +15,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -456,7 +460,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -897,7 +905,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -1338,7 +1350,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "halftone",
@@ -1779,7 +1795,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "halftone",
@@ -2220,7 +2240,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -2661,7 +2685,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -3089,6 +3117,896 @@
    }
   },
   {
+   "id": "glucose-another-day",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 0:40. No reading since Sun 23:40."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0,
+     "toward": 0,
+     "I": 1,
+     "spd": 0.1333,
+     "levelY": 60,
+     "idealY": 15.3,
+     "colour": "#8E8E93"
+    },
+    "layout": {
+     "T": 68,
+     "V": 60,
+     "TF": 26,
+     "roomy": true,
+     "chipKind": null,
+     "msgKind": "gap",
+     "tfBase": -87.7,
+     "tTop": -67.7,
+     "tBase": 0.3,
+     "vTop": 22.3,
+     "vBase": 91,
+     "chipC": 91
+    },
+    "dial": {
+     "d1": {
+      "path": "785 subpaths",
+      "chars": 39728
+     },
+     "f1": "#8E8E93",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.3,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "inline",
+     "col": "#8E8E93",
+     "deg": 0,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -128.1,
+     "ty": -77.7,
+     "tw": 256.3,
+     "th": 88,
+     "vx": -120,
+     "vy": 14.3,
+     "vw": 240,
+     "vh": 84.7,
+     "cx": -8,
+     "cy": 68,
+     "cw": 0,
+     "ch": 0,
+     "fx": -43.7,
+     "fy": -113,
+     "fw": 87.4,
+     "fh": 33.4,
+     "sx": 62.9,
+     "sy": 17,
+     "sw": 0,
+     "sh": 90,
+     "mx": -120,
+     "my": 14.3,
+     "mw": 240,
+     "mh": 84.7
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#A3A3A8",
+     "dayFill": "#FFFFFF"
+    },
+    "tf": {
+     "y": -87.7,
+     "fs": 26,
+     "i0": {
+      "key": "sun",
+      "d": "M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0",
+      "tf": "translate(-24.7 -96.3) rotate(0) scale(0.917) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#A3A3A8",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -7.7,
+      "s": "14°",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "0:40",
+     "xs": "-84.7 -33.4 18 84.7",
+     "y": 0.3,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 101.8,
+     "fill": "#FFFFFF",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "col": "#A3A3A8",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": 21,
+     "y2": 44.7,
+     "fs": 22
+    },
+    "rail": {
+     "disp": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M0 0",
+     "zoneCol": "#3DD47A",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "none",
+     "deg": 95,
+     "col": "#3DD47A",
+     "fill": "#3DD47A",
+     "stroke": "none",
+     "r": 7,
+     "glow": "inline",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 95,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "none"
+    },
+    "t1": {
+     "deg": 95,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t2": {
+     "deg": 95,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t3": {
+     "deg": 95,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "none"
+    },
+    "t4": {
+     "deg": 95,
+     "r": 4,
+     "o": 0.4,
+     "d": "none"
+    },
+    "t5": {
+     "deg": 95,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "none"
+    },
+    "val": {
+     "disp": "none",
+     "str": "112",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 89.8,
+     "y": 91,
+     "xs": "-90.4 -31.4 27.5",
+     "fill": "#3DD47A",
+     "blk": "none",
+     "bx": -131.8,
+     "by": 19,
+     "bw": 263.6,
+     "bh": 84,
+     "strike": "none",
+     "sx1": -125.8,
+     "sx2": 62.9,
+     "sy": 62.2,
+     "sw": 6.7,
+     "arrow": "M-24.6 -4.1H14.6V4.1H-24.6ZM26.9 0L3.5 17.5L9.4 0L3.5 -17.5Z",
+     "tf": "translate(92px, 61px) rotate(-12deg)",
+     "arrowD": "none",
+     "ax": 92,
+     "ay": 61,
+     "ringR": 13.4,
+     "ringW": 6.1,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -84.5,
+     "rx2": 21.6,
+     "ry": 104
+    },
+    "sp": {
+     "disp": "none",
+     "limits": "M70.9 44H170.9M70.9 78.8H170.9",
+     "limCol": "#5C5C62",
+     "line": "M70.9 61.6Z",
+     "lineCol": "#A3A3A8",
+     "ray": "M70.9 61.6l21.5 -4.6",
+     "rayD": "inline",
+     "rayCol": "#3DD47A",
+     "ex": 70.9,
+     "ey": 61.6,
+     "endFill": "#000000",
+     "endStroke": "#3DD47A"
+    },
+    "chip": {
+     "disp": "none",
+     "x": 0,
+     "y": 99,
+     "t": "Sun 23:40"
+    },
+    "pill": {
+     "disp": "none",
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "fill": "#000",
+     "fo": 1,
+     "tc": "#000",
+     "tx": 0,
+     "ty": 0,
+     "t": "",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "inline",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 39,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#A3A3A8",
+     "t1": "No reading since",
+     "y2": 91,
+     "fs2": 59.9,
+     "w2": 600,
+     "c2": "#FFFFFF",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": "Sun 23:40"
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-107.6 123.7) rotate(41) scale(0.833) translate(-12 -12)",
+      "fill": "#A3A3A8",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(2.1 164) rotate(-0.7) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 48,
+      "s": "6,420",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 172.3,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 208.2,
+      "s": "1h 20m",
+      "col": "#A3A3A8",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
+   "id": "glucose-week-old",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. No reading since 9 Nov."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0,
+     "toward": 0,
+     "I": 1,
+     "spd": 0.1333,
+     "levelY": 60,
+     "idealY": 15.3,
+     "colour": "#8E8E93"
+    },
+    "layout": {
+     "T": 66,
+     "V": 58,
+     "TF": 26,
+     "roomy": true,
+     "chipKind": null,
+     "msgKind": "gap",
+     "tfBase": -86.7,
+     "tTop": -66.7,
+     "tBase": -0.7,
+     "vTop": 21.3,
+     "vBase": 90,
+     "chipC": 90
+    },
+    "dial": {
+     "d1": {
+      "path": "785 subpaths",
+      "chars": 39728
+     },
+     "f1": "#8E8E93",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.3,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "inline",
+     "col": "#8E8E93",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -157.1,
+     "ty": -76.7,
+     "tw": 314.1,
+     "th": 86,
+     "vx": -120,
+     "vy": 13.3,
+     "vw": 240,
+     "vh": 84.7,
+     "cx": -8,
+     "cy": 67,
+     "cw": 0,
+     "ch": 0,
+     "fx": -43.7,
+     "fy": -112,
+     "fw": 87.4,
+     "fh": 33.4,
+     "sx": 61,
+     "sy": 18,
+     "sw": 0,
+     "sh": 88,
+     "mx": -120,
+     "my": 13.3,
+     "mw": 240,
+     "mh": 84.7
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#A3A3A8",
+     "dayFill": "#FFFFFF"
+    },
+    "tf": {
+     "y": -86.7,
+     "fs": 26,
+     "i0": {
+      "key": "sun",
+      "d": "M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0",
+      "tf": "translate(-24.7 -95.3) rotate(0) scale(0.917) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#A3A3A8",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -7.7,
+      "s": "14°",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-114.7 -49.8 0 49.8 114.7",
+     "y": -0.7,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 98.8,
+     "fill": "#FFFFFF",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "col": "#A3A3A8",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": 20,
+     "y2": 43.7,
+     "fs": 22
+    },
+    "rail": {
+     "disp": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M0 0",
+     "zoneCol": "#3DD47A",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "none",
+     "deg": 95,
+     "col": "#3DD47A",
+     "fill": "#3DD47A",
+     "stroke": "none",
+     "r": 7,
+     "glow": "inline",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 95,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "none"
+    },
+    "t1": {
+     "deg": 95,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t2": {
+     "deg": 95,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t3": {
+     "deg": 95,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "none"
+    },
+    "t4": {
+     "deg": 95,
+     "r": 4,
+     "o": 0.4,
+     "d": "none"
+    },
+    "t5": {
+     "deg": 95,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "none"
+    },
+    "val": {
+     "disp": "none",
+     "str": "112",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 86.8,
+     "y": 90,
+     "xs": "-87.3 -30.4 26.6",
+     "fill": "#3DD47A",
+     "blk": "none",
+     "bx": -127.8,
+     "by": 20,
+     "bw": 255.7,
+     "bh": 82,
+     "strike": "none",
+     "sx1": -121.8,
+     "sx2": 61,
+     "sy": 62.2,
+     "sw": 6.5,
+     "arrow": "M-23.7 -4H14.1V4H-23.7ZM26 0L3.4 17L9 0L3.4 -17Z",
+     "tf": "translate(88.9px, 61px) rotate(-12deg)",
+     "arrowD": "none",
+     "ax": 88.9,
+     "ay": 61,
+     "ringR": 12.9,
+     "ringW": 5.9,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -81.7,
+     "rx2": 20.9,
+     "ry": 103
+    },
+    "sp": {
+     "disp": "none",
+     "limits": "M69 44.5H169M69 78.3H169",
+     "limCol": "#5C5C62",
+     "line": "M0 0",
+     "lineCol": "#A3A3A8",
+     "ray": "M169 61.6l21.5 -4.6",
+     "rayD": "inline",
+     "rayCol": "#3DD47A",
+     "ex": 169,
+     "ey": 61.6,
+     "endFill": "#000000",
+     "endStroke": "#3DD47A"
+    },
+    "chip": {
+     "disp": "none",
+     "x": 0,
+     "y": 98,
+     "t": "9 Nov"
+    },
+    "pill": {
+     "disp": "none",
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "fill": "#000",
+     "fo": 1,
+     "tc": "#000",
+     "tx": 0,
+     "ty": 0,
+     "t": "",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "inline",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 38,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#A3A3A8",
+     "t1": "No reading since",
+     "y2": 90,
+     "fs2": 59.9,
+     "w2": 600,
+     "c2": "#FFFFFF",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": "9 Nov"
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-107.6 123.7) rotate(41) scale(0.833) translate(-12 -12)",
+      "fill": "#A3A3A8",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(2.1 164) rotate(-0.7) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 48,
+      "s": "6,420",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 172.3,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 208.2,
+      "s": "1h 20m",
+      "col": "#A3A3A8",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "glucose-lo",
    "values": {
     "v": {
@@ -3102,7 +4020,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -3544,7 +4466,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -3986,7 +4912,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -4428,7 +5358,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -4870,7 +5804,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -5312,7 +6250,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 837
+     }
     },
     "info": {
      "dial": "halftone",
@@ -5756,7 +6698,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -6200,7 +7146,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -6644,7 +7594,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -7075,6 +8029,454 @@
    }
   },
   {
+   "id": "alerts-muted-long",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. 128 mg/dL, steady, 6h."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.1266,
+     "toward": -0.08020000000000001,
+     "I": 1.0520999999999998,
+     "spd": 0.06670000000000001,
+     "levelY": 0,
+     "idealY": 15.3,
+     "colour": "#3DD47A"
+    },
+    "layout": {
+     "T": 62,
+     "V": 54,
+     "TF": 24,
+     "roomy": false,
+     "chipKind": "pill",
+     "msgKind": null,
+     "tfBase": -106,
+     "tTop": -86,
+     "tBase": -24,
+     "vTop": -2,
+     "vBase": 52,
+     "chipC": 89
+    },
+    "dial": {
+     "d1": {
+      "path": "95 subpaths",
+      "chars": 4311
+     },
+     "f1": "#3DD47A",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.48200000000000004,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "inline",
+     "col": "#3DD47A",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -148.2,
+     "ty": -96,
+     "tw": 296.3,
+     "th": 82,
+     "vx": -119.8,
+     "vy": -14,
+     "vw": 239.7,
+     "vh": 78,
+     "cx": -54.9,
+     "cy": 66,
+     "cw": 109.8,
+     "ch": 46,
+     "fx": -41,
+     "fy": -130,
+     "fw": 82.1,
+     "fh": 32,
+     "sx": 57.3,
+     "sy": -16,
+     "sw": 0,
+     "sh": 84,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#A3A3A8",
+     "dayFill": "#FFFFFF"
+    },
+    "tf": {
+     "y": -106,
+     "fs": 24,
+     "i0": {
+      "key": "sun",
+      "d": "M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0",
+      "tf": "translate(-23 -114) rotate(0) scale(0.833) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#A3A3A8",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -7,
+      "s": "14°",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-107.7 -46.8 0 46.8 107.7",
+     "y": -24,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 92.8,
+     "fill": "#FFFFFF",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "col": "#A3A3A8",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": -3.3,
+     "y2": 20.4,
+     "fs": 22
+    },
+    "rail": {
+     "disp": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M0 0",
+     "zoneCol": "#3DD47A",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "inline",
+     "deg": 90,
+     "col": "#3DD47A",
+     "fill": "#3DD47A",
+     "stroke": "none",
+     "r": 7,
+     "glow": "inline",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 91.8,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "inline"
+    },
+    "t1": {
+     "deg": 91.5,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t2": {
+     "deg": 91.2,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t3": {
+     "deg": 90.9,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "inline"
+    },
+    "t4": {
+     "deg": 90.6,
+     "r": 4,
+     "o": 0.4,
+     "d": "inline"
+    },
+    "t5": {
+     "deg": 90.3,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "inline"
+    },
+    "val": {
+     "disp": "inline",
+     "str": "128",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 80.8,
+     "y": 52,
+     "xs": "-81.3 -28.3 24.7",
+     "fill": "#3DD47A",
+     "blk": "none",
+     "bx": -119.8,
+     "by": -14,
+     "bw": 239.7,
+     "bh": 78,
+     "strike": "none",
+     "sx1": -113.8,
+     "sx2": 57.3,
+     "sy": 26.1,
+     "sw": 6.1,
+     "arrow": "M-22.1 -3.7H13.2V3.7H-22.1ZM24.2 0L3.2 15.8L8.4 0L3.2 -15.8Z",
+     "tf": "translate(82.8px, 25px) rotate(-6deg)",
+     "arrowD": "inline",
+     "ax": 82.8,
+     "ay": 25,
+     "ringR": 12,
+     "ringW": 5.5,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -76,
+     "rx2": 19.4,
+     "ry": 65
+    },
+    "sp": {
+     "disp": "none",
+     "limits": "M65.3 9.5H165.3M65.3 41.4H165.3",
+     "limCol": "#5C5C62",
+     "line": "M68.7 24.1L72.7 23.8L77.2 23.5L82 23.2L87.4 23L93.4 22.7L100.1 22.4L107.9 22.1L117.1 21.9L128.4 21.6L142.7 21.3L162.7 21.1",
+     "lineCol": "#A3A3A8",
+     "ray": "M162.7 21.1l21.9 -2.3",
+     "rayD": "inline",
+     "rayCol": "#3DD47A",
+     "ex": 162.7,
+     "ey": 21.1,
+     "endFill": "#3DD47A",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": -46.9,
+     "y": 97,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "inline",
+     "x": -46.9,
+     "y": 70,
+     "w": 93.8,
+     "fill": "#B4B4B4",
+     "fo": 0.24,
+     "tc": "#B4B4B4",
+     "tx": 1.4,
+     "ty": 97,
+     "t": "6h",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": {
+       "path": "1 subpaths",
+       "chars": 356
+      },
+      "tf": "translate(-31.7 77.2) scale(0.0246) translate(0 960)",
+      "disp": "inline"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#FFFFFF",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#A3A3A8",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-107.6 123.7) rotate(41) scale(0.833) translate(-12 -12)",
+      "fill": "#A3A3A8",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(2.1 164) rotate(-0.7) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 48,
+      "s": "6,420",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 172.3,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 208.2,
+      "s": "1h 20m",
+      "col": "#A3A3A8",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "alerts-high",
    "values": {
     "v": {
@@ -7088,7 +8490,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -7530,7 +8936,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 845
+     }
     },
     "info": {
      "dial": "halftone",
@@ -7961,6 +9371,451 @@
    }
   },
   {
+   "id": "alerts-quiet-ended",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. 210 mg/dL, steady."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.6153,
+     "toward": -0.15,
+     "I": 1.0975,
+     "spd": 0.1,
+     "levelY": -58,
+     "idealY": 15.3,
+     "colour": "#F5A524"
+    },
+    "layout": {
+     "T": 68,
+     "V": 60,
+     "TF": 26,
+     "roomy": true,
+     "chipKind": null,
+     "msgKind": null,
+     "tfBase": -83.3,
+     "tTop": -63.3,
+     "tBase": 4.7,
+     "vTop": 26.7,
+     "vBase": 86.7,
+     "chipC": 86.7
+    },
+    "dial": {
+     "d1": {
+      "path": "564 subpaths",
+      "chars": 28000
+     },
+     "f1": "#F5A524",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.664,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "inline",
+     "col": "#F5A524",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -161.5,
+     "ty": -73.3,
+     "tw": 323,
+     "th": 88,
+     "vx": -131.8,
+     "vy": 14.7,
+     "vw": 263.6,
+     "vh": 84,
+     "cx": -8,
+     "cy": 63.7,
+     "cw": 0,
+     "ch": 0,
+     "fx": -43.7,
+     "fy": -108.7,
+     "fw": 87.4,
+     "fh": 33.4,
+     "sx": 62.9,
+     "sy": 12.7,
+     "sw": 0,
+     "sh": 90,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#A3A3A8",
+     "dayFill": "#FFFFFF"
+    },
+    "tf": {
+     "y": -83.3,
+     "fs": 26,
+     "i0": {
+      "key": "sun",
+      "d": "M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0",
+      "tf": "translate(-24.7 -92) rotate(0) scale(0.917) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#A3A3A8",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -7.7,
+      "s": "14°",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-118.1 -51.4 0 51.4 118.1",
+     "y": 4.7,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 101.8,
+     "fill": "#FFFFFF",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "col": "#A3A3A8",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": 25.4,
+     "y2": 49.1,
+     "fs": 22
+    },
+    "rail": {
+     "disp": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M164.7 -77.4A182 182 0 0 1 177.5 -40.3",
+     "zoneCol": "#F5A524",
+     "zoneDisp": "inline",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "inline",
+     "deg": 71.4,
+     "col": "#F5A524",
+     "fill": "#F5A524",
+     "stroke": "none",
+     "r": 7,
+     "glow": "inline",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 73.1,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "inline"
+    },
+    "t1": {
+     "deg": 72.8,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t2": {
+     "deg": 72.5,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t3": {
+     "deg": 72.2,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "inline"
+    },
+    "t4": {
+     "deg": 71.9,
+     "r": 4,
+     "o": 0.4,
+     "d": "inline"
+    },
+    "t5": {
+     "deg": 71.7,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "inline"
+    },
+    "val": {
+     "disp": "inline",
+     "str": "210",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 89.8,
+     "y": 86.7,
+     "xs": "-90.4 -31.4 27.5",
+     "fill": "#F5A524",
+     "blk": "none",
+     "bx": -131.8,
+     "by": 14.7,
+     "bw": 263.6,
+     "bh": 84,
+     "strike": "none",
+     "sx1": -125.8,
+     "sx2": 62.9,
+     "sy": 57.9,
+     "sw": 6.7,
+     "arrow": "M-24.6 -4.1H14.6V4.1H-24.6ZM26.9 0L3.5 17.5L9.4 0L3.5 -17.5Z",
+     "tf": "translate(92px, 56.7px) rotate(-9deg)",
+     "arrowD": "inline",
+     "ax": 92,
+     "ay": 56.7,
+     "ringR": 13.4,
+     "ringW": 6.1,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -84.5,
+     "rx2": 21.6,
+     "ry": 99.7
+    },
+    "sp": {
+     "disp": "none",
+     "limits": "M70.9 39.7H170.9M70.9 74.4H170.9",
+     "limCol": "#5C5C62",
+     "line": "M74.4 37L78.4 36.7L82.9 36.4L87.7 36.2L93.1 35.9L99.1 35.6L105.8 35.3L113.6 35L122.8 34.8L134.1 34.5L148.4 34.2L168.4 34",
+     "lineCol": "#A3A3A8",
+     "ray": "M168.4 34l21.7 -3.4",
+     "rayD": "inline",
+     "rayCol": "#F5A524",
+     "ex": 168.4,
+     "ey": 34,
+     "endFill": "#F5A524",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": 0,
+     "y": 94.7,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "none",
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "fill": "#000",
+     "fo": 1,
+     "tc": "#000",
+     "tx": 0,
+     "ty": 0,
+     "t": "",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#FFFFFF",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#A3A3A8",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-107.6 123.7) rotate(41) scale(0.833) translate(-12 -12)",
+      "fill": "#A3A3A8",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(2.1 164) rotate(-0.7) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 48,
+      "s": "6,420",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 172.3,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 208.2,
+      "s": "1h 20m",
+      "col": "#A3A3A8",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "alerts-very-high",
    "values": {
     "v": {
@@ -7974,7 +9829,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -8416,7 +10275,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -8858,7 +10721,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -9299,7 +11166,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 850
+     }
     },
     "info": {
      "dial": "halftone",
@@ -9740,7 +11611,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 850
+     }
     },
     "info": {
      "dial": "halftone",
@@ -10181,7 +12056,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 857
+     }
     },
     "info": {
      "dial": "halftone",
@@ -10619,7 +12498,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -11061,7 +12944,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "halftone",
@@ -11503,7 +13390,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -11944,7 +13835,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 850
+     }
     },
     "info": {
      "dial": "halftone",
@@ -12382,7 +14277,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -12823,7 +14722,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -13264,7 +15167,8 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": "M0 0"
     },
     "info": {
      "dial": "halftone",
@@ -13702,7 +15606,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -14140,7 +16048,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -14579,7 +16491,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -15020,7 +16936,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -15461,7 +17381,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -15903,7 +17827,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "halftone",
@@ -16344,7 +18272,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "9 subpaths",
+      "chars": 987
+     }
     },
     "info": {
      "dial": "halftone",
@@ -16785,7 +18717,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "9 subpaths",
+      "chars": 985
+     }
     },
     "info": {
      "dial": "halftone",
@@ -17227,7 +19163,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -17669,7 +19609,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -18111,7 +20055,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 853
+     }
     },
     "info": {
      "dial": "halftone",
@@ -18553,7 +20501,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -18994,7 +20946,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "10 subpaths",
+      "chars": 1040
+     }
     },
     "info": {
      "dial": "halftone",
@@ -19419,6 +21375,452 @@
    }
   },
   {
+   "id": "fields-no-treatment",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. 112 mg/dL, steady."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "5 subpaths",
+      "chars": 546
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.0045,
+     "toward": 0.0057,
+     "I": 0.9969,
+     "spd": 0.1333,
+     "levelY": 15.8,
+     "idealY": 15.3,
+     "colour": "#3DD47A"
+    },
+    "layout": {
+     "T": 68,
+     "V": 60,
+     "TF": 26,
+     "roomy": true,
+     "chipKind": null,
+     "msgKind": null,
+     "tfBase": -83.3,
+     "tTop": -63.3,
+     "tBase": 4.7,
+     "vTop": 26.7,
+     "vBase": 86.7,
+     "chipC": 86.7
+    },
+    "dial": {
+     "d1": {
+      "path": "63 subpaths",
+      "chars": 3146
+     },
+     "f1": "#3DD47A",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.42,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "inline",
+     "col": "#3DD47A",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -161.5,
+     "ty": -73.3,
+     "tw": 323,
+     "th": 88,
+     "vx": -131.8,
+     "vy": 14.7,
+     "vw": 263.6,
+     "vh": 84,
+     "cx": -8,
+     "cy": 63.7,
+     "cw": 0,
+     "ch": 0,
+     "fx": -43.7,
+     "fy": -108.7,
+     "fw": 87.4,
+     "fh": 33.4,
+     "sx": 62.9,
+     "sy": 12.7,
+     "sw": 0,
+     "sh": 90,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#A3A3A8",
+     "dayFill": "#FFFFFF"
+    },
+    "tf": {
+     "y": -83.3,
+     "fs": 26,
+     "i0": {
+      "key": "sun",
+      "d": "M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0",
+      "tf": "translate(-24.7 -92) rotate(0) scale(0.917) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#A3A3A8",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -7.7,
+      "s": "14°",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-118.1 -51.4 0 51.4 118.1",
+     "y": 4.7,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 101.8,
+     "fill": "#FFFFFF",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "col": "#A3A3A8",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": 25.4,
+     "y2": 49.1,
+     "fs": 22
+    },
+    "rail": {
+     "disp": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M0 0",
+     "zoneCol": "#3DD47A",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "inline",
+     "deg": 95,
+     "col": "#3DD47A",
+     "fill": "#3DD47A",
+     "stroke": "none",
+     "r": 7,
+     "glow": "inline",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 99.2,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "inline"
+    },
+    "t1": {
+     "deg": 98.5,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t2": {
+     "deg": 97.7,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t3": {
+     "deg": 97,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "inline"
+    },
+    "t4": {
+     "deg": 96.3,
+     "r": 4,
+     "o": 0.4,
+     "d": "inline"
+    },
+    "t5": {
+     "deg": 95.6,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "inline"
+    },
+    "val": {
+     "disp": "inline",
+     "str": "112",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 89.8,
+     "y": 86.7,
+     "xs": "-90.4 -31.4 27.5",
+     "fill": "#3DD47A",
+     "blk": "none",
+     "bx": -131.8,
+     "by": 14.7,
+     "bw": 263.6,
+     "bh": 84,
+     "strike": "none",
+     "sx1": -125.8,
+     "sx2": 62.9,
+     "sy": 57.9,
+     "sw": 6.7,
+     "arrow": "M-24.6 -4.1H14.6V4.1H-24.6ZM26.9 0L3.5 17.5L9.4 0L3.5 -17.5Z",
+     "tf": "translate(92px, 56.7px) rotate(-12deg)",
+     "arrowD": "inline",
+     "ax": 92,
+     "ay": 56.7,
+     "ringR": 13.4,
+     "ringW": 6.1,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -84.5,
+     "rx2": 21.6,
+     "ry": 99.7
+    },
+    "sp": {
+     "disp": "none",
+     "limits": "M70.9 39.7H170.9M70.9 74.4H170.9",
+     "limCol": "#5C5C62",
+     "line": "M74.4 65.2L78.4 64.4L82.9 63.6L87.7 62.9L93.1 62.1L99.1 61.4L105.8 60.6L113.6 59.9L122.8 59.2L134.1 58.5L148.4 57.9L168.4 57.2",
+     "lineCol": "#A3A3A8",
+     "ray": "M168.4 57.2l21.5 -4.6",
+     "rayD": "inline",
+     "rayCol": "#3DD47A",
+     "ex": 168.4,
+     "ey": 57.2,
+     "endFill": "#3DD47A",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": 0,
+     "y": 94.7,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "none",
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "fill": "#000",
+     "fo": 1,
+     "tc": "#000",
+     "tx": 0,
+     "ty": 0,
+     "t": "",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#FFFFFF",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#A3A3A8",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-37.5 159.7) rotate(13.2) scale(0.833) translate(-12 -12)",
+      "fill": "#A3A3A8",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 131.4,
+      "s": "6,420",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "fields-hiking",
    "values": {
     "v": {
@@ -19432,7 +21834,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "7 subpaths",
+      "chars": 742
+     }
     },
     "info": {
      "dial": "halftone",
@@ -19871,7 +22277,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "7 subpaths",
+      "chars": 734
+     }
     },
     "info": {
      "dial": "halftone",
@@ -20300,6 +22710,451 @@
    }
   },
   {
+   "id": "fields-tir-unknown",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. 118 mg/dL, steady."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.046700000000000005,
+     "toward": -0.0444,
+     "I": 1.0288,
+     "spd": 0.1,
+     "levelY": 9.6,
+     "idealY": 15.3,
+     "colour": "#3DD47A"
+    },
+    "layout": {
+     "T": 68,
+     "V": 60,
+     "TF": 26,
+     "roomy": true,
+     "chipKind": null,
+     "msgKind": null,
+     "tfBase": -83.3,
+     "tTop": -63.3,
+     "tBase": 4.7,
+     "vTop": 26.7,
+     "vBase": 86.7,
+     "chipC": 86.7
+    },
+    "dial": {
+     "d1": {
+      "path": "94 subpaths",
+      "chars": 4663
+     },
+     "f1": "#3DD47A",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.447,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "inline",
+     "col": "#3DD47A",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -161.5,
+     "ty": -73.3,
+     "tw": 323,
+     "th": 88,
+     "vx": -131.8,
+     "vy": 14.7,
+     "vw": 263.6,
+     "vh": 84,
+     "cx": -8,
+     "cy": 63.7,
+     "cw": 0,
+     "ch": 0,
+     "fx": -37.6,
+     "fy": -108.7,
+     "fw": 75.1,
+     "fh": 33.4,
+     "sx": 62.9,
+     "sy": 12.7,
+     "sw": 0,
+     "sh": 90,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#A3A3A8",
+     "dayFill": "#FFFFFF"
+    },
+    "tf": {
+     "y": -83.3,
+     "fs": 26,
+     "i0": {
+      "key": "ring",
+      "d": "M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16M12 4a8 8 0 0 1 7.6 10.5",
+      "tf": "translate(-18.6 -92) rotate(0) scale(0.917) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#A3A3A8",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -2.6,
+      "s": "--",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-118.1 -51.4 0 51.4 118.1",
+     "y": 4.7,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 101.8,
+     "fill": "#FFFFFF",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "col": "#A3A3A8",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": 25.4,
+     "y2": 49.1,
+     "fs": 22
+    },
+    "rail": {
+     "disp": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M0 0",
+     "zoneCol": "#3DD47A",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "inline",
+     "deg": 93,
+     "col": "#3DD47A",
+     "fill": "#3DD47A",
+     "stroke": "none",
+     "r": 7,
+     "glow": "inline",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 96,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "inline"
+    },
+    "t1": {
+     "deg": 95.5,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t2": {
+     "deg": 95,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t3": {
+     "deg": 94.5,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "inline"
+    },
+    "t4": {
+     "deg": 94,
+     "r": 4,
+     "o": 0.4,
+     "d": "inline"
+    },
+    "t5": {
+     "deg": 93.5,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "inline"
+    },
+    "val": {
+     "disp": "inline",
+     "str": "118",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 89.8,
+     "y": 86.7,
+     "xs": "-90.4 -31.4 27.5",
+     "fill": "#3DD47A",
+     "blk": "none",
+     "bx": -131.8,
+     "by": 14.7,
+     "bw": 263.6,
+     "bh": 84,
+     "strike": "none",
+     "sx1": -125.8,
+     "sx2": 62.9,
+     "sy": 57.9,
+     "sw": 6.7,
+     "arrow": "M-24.6 -4.1H14.6V4.1H-24.6ZM26.9 0L3.5 17.5L9.4 0L3.5 -17.5Z",
+     "tf": "translate(92px, 56.7px) rotate(-9deg)",
+     "arrowD": "inline",
+     "ax": 92,
+     "ay": 56.7,
+     "ringR": 13.4,
+     "ringW": 6.1,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -84.5,
+     "rx2": 21.6,
+     "ry": 99.7
+    },
+    "sp": {
+     "disp": "none",
+     "limits": "M70.9 39.7H170.9M70.9 74.4H170.9",
+     "limCol": "#5C5C62",
+     "line": "M74.4 60.8L78.4 60.3L82.9 59.8L87.7 59.2L93.1 58.7L99.1 58.2L105.8 57.7L113.6 57.2L122.8 56.7L134.1 56.2L148.4 55.8L168.4 55.3",
+     "lineCol": "#A3A3A8",
+     "ray": "M168.4 55.3l21.7 -3.4",
+     "rayD": "inline",
+     "rayCol": "#3DD47A",
+     "ex": 168.4,
+     "ey": 55.3,
+     "endFill": "#3DD47A",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": 0,
+     "y": 94.7,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "none",
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "fill": "#000",
+     "fo": 1,
+     "tc": "#000",
+     "tx": 0,
+     "ty": 0,
+     "t": "",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#FFFFFF",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#A3A3A8",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-107.6 123.7) rotate(41) scale(0.833) translate(-12 -12)",
+      "fill": "#A3A3A8",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(2.1 164) rotate(-0.7) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 48,
+      "s": "6,420",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 172.3,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 208.2,
+      "s": "1h 20m",
+      "col": "#A3A3A8",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "fields-long-acting",
    "values": {
     "v": {
@@ -20313,7 +23168,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 841
+     }
     },
     "info": {
      "dial": "halftone",
@@ -20754,7 +23613,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -21195,7 +24058,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -21636,7 +24503,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -22077,7 +24948,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "9 subpaths",
+      "chars": 989
+     }
     },
     "info": {
      "dial": "halftone",
@@ -22518,7 +25393,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -22959,7 +25838,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 851
+     }
     },
     "info": {
      "dial": "halftone",
@@ -23400,7 +26283,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -23841,7 +26728,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -24282,7 +27173,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -24723,7 +27618,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "halftone",
@@ -25151,6 +28050,451 @@
    }
   },
   {
+   "id": "fields-spark-gap",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. 118 mg/dL, steady."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.046700000000000005,
+     "toward": -0.07390000000000001,
+     "I": 1.048,
+     "spd": 0.1667,
+     "levelY": 9.6,
+     "idealY": 15.3,
+     "colour": "#3DD47A"
+    },
+    "layout": {
+     "T": 66,
+     "V": 58,
+     "TF": 26,
+     "roomy": true,
+     "chipKind": null,
+     "msgKind": null,
+     "tfBase": -81.3,
+     "tTop": -61.3,
+     "tBase": 4.7,
+     "vTop": 26.7,
+     "vBase": 84.7,
+     "chipC": 84.7
+    },
+    "dial": {
+     "d1": {
+      "path": "94 subpaths",
+      "chars": 4663
+     },
+     "f1": "#3DD47A",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.455,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "inline",
+     "col": "#3DD47A",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -157.1,
+     "ty": -71.3,
+     "tw": 314.1,
+     "th": 86,
+     "vx": -154.4,
+     "vy": 14.7,
+     "vw": 308.9,
+     "vh": 82,
+     "cx": -8,
+     "cy": 61.7,
+     "cw": 0,
+     "ch": 0,
+     "fx": -43.7,
+     "fy": -106.7,
+     "fw": 87.4,
+     "fh": 33.4,
+     "sx": 34.4,
+     "sy": 12.7,
+     "sw": 116,
+     "sh": 88,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#A3A3A8",
+     "dayFill": "#FFFFFF"
+    },
+    "tf": {
+     "y": -81.3,
+     "fs": 26,
+     "i0": {
+      "key": "sun",
+      "d": "M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0",
+      "tf": "translate(-24.7 -90) rotate(0) scale(0.917) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#A3A3A8",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -7.7,
+      "s": "14°",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-114.7 -49.8 0 49.8 114.7",
+     "y": 4.7,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 98.8,
+     "fill": "#FFFFFF",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "col": "#A3A3A8",
+     "w": 600,
+     "l1": "9d",
+     "l2": "",
+     "l2D": "none",
+     "y1": 25.4,
+     "y2": 49.1,
+     "fs": 22
+    },
+    "rail": {
+     "disp": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M0 0",
+     "zoneCol": "#3DD47A",
+     "zoneDisp": "none",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "inline",
+     "deg": 93,
+     "col": "#3DD47A",
+     "fill": "#3DD47A",
+     "stroke": "none",
+     "r": 7,
+     "glow": "inline",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 95.3,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "inline"
+    },
+    "t1": {
+     "deg": 94.6,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t2": {
+     "deg": 93,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "none"
+    },
+    "t3": {
+     "deg": 94.3,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "inline"
+    },
+    "t4": {
+     "deg": 93.7,
+     "r": 4,
+     "o": 0.4,
+     "d": "inline"
+    },
+    "t5": {
+     "deg": 93.3,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "inline"
+    },
+    "val": {
+     "disp": "inline",
+     "str": "118",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 86.8,
+     "y": 84.7,
+     "xs": "-114 -57 0",
+     "fill": "#3DD47A",
+     "blk": "none",
+     "bx": -154.4,
+     "by": 14.7,
+     "bw": 194.9,
+     "bh": 82,
+     "strike": "none",
+     "sx1": -148.4,
+     "sx2": 34.4,
+     "sy": 56.8,
+     "sw": 6.5,
+     "arrow": "M-23.7 -4H14.1V4H-23.7ZM26 0L3.4 17L9 0L3.4 -17Z",
+     "tf": "translate(0px, 55.7px) rotate(-15deg)",
+     "arrowD": "none",
+     "ax": 0,
+     "ay": 55.7,
+     "ringR": 12.9,
+     "ringW": 5.9,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -108.3,
+     "rx2": -5.7,
+     "ry": 97.7
+    },
+    "sp": {
+     "disp": "inline",
+     "limits": "M42.4 39.2H142.4M42.4 73H142.4",
+     "limCol": "#5C5C62",
+     "line": "M45.9 58.9ZM59.2 56.9L64.6 56.2L70.6 56.5L77.3 55.9M94.3 55.6L105.5 55L119.9 54.7L139.9 54.4",
+     "lineCol": "#A3A3A8",
+     "ray": "M139.9 54.4l21.3 -5.7",
+     "rayD": "inline",
+     "rayCol": "#3DD47A",
+     "ex": 139.9,
+     "ey": 54.4,
+     "endFill": "#3DD47A",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": 0,
+     "y": 92.7,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "none",
+     "x": 0,
+     "y": 0,
+     "w": 0,
+     "fill": "#000",
+     "fo": 1,
+     "tc": "#000",
+     "tx": 0,
+     "ty": 0,
+     "t": "",
+     "mark": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#FFFFFF",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#A3A3A8",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-107.6 123.7) rotate(41) scale(0.833) translate(-12 -12)",
+      "fill": "#A3A3A8",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(2.1 164) rotate(-0.7) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 48,
+      "s": "6,420",
+      "col": "#FFFFFF",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 172.3,
+      "s": "2u",
+      "col": "#8AB4FF",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 208.2,
+      "s": "1h 20m",
+      "col": "#A3A3A8",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "fields-seconds-off",
    "values": {
     "v": {
@@ -25164,7 +28508,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -25605,7 +28953,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -26046,7 +29398,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -26487,7 +29843,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -26929,7 +30289,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 848
+     }
     },
     "info": {
      "dial": "halftone",
@@ -27373,7 +30737,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -27815,7 +31183,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "halftone",
@@ -28257,7 +31629,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 837
+     }
     },
     "info": {
      "dial": "halftone",
@@ -28701,7 +32077,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "halftone",
@@ -29142,7 +32522,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "topo",
@@ -29583,7 +32967,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "topo",
@@ -30024,7 +33412,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "topo",
@@ -30466,7 +33858,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 848
+     }
     },
     "info": {
      "dial": "topo",
@@ -30910,7 +34306,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "topo",
@@ -31352,7 +34752,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "topo",
@@ -31794,7 +35198,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 837
+     }
     },
     "info": {
      "dial": "topo",
@@ -32238,7 +35646,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "topo",
@@ -32679,7 +36091,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "water",
@@ -33123,7 +36539,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "water",
@@ -33567,7 +36987,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "water",
@@ -34012,7 +37436,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 848
+     }
     },
     "info": {
      "dial": "water",
@@ -34459,7 +37887,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "water",
@@ -34904,7 +38336,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "water",
@@ -35349,7 +38785,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 837
+     }
     },
     "info": {
      "dial": "water",
@@ -35796,7 +39236,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "water",
@@ -36237,7 +39681,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "laser",
@@ -36675,7 +40123,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "laser",
@@ -37113,7 +40565,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "laser",
@@ -37558,7 +41014,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 848
+     }
     },
     "info": {
      "dial": "laser",
@@ -38005,7 +41465,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "laser",
@@ -38453,7 +41917,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "laser",
@@ -38898,7 +42366,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 837
+     }
     },
     "info": {
      "dial": "laser",
@@ -39345,7 +42817,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "laser",
@@ -39783,7 +43259,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "glow",
@@ -40221,7 +43701,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "glow",
@@ -40659,7 +44143,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "glow",
@@ -41098,7 +44586,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 848
+     }
     },
     "info": {
      "dial": "glow",
@@ -41539,7 +45031,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "glow",
@@ -41978,7 +45474,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "glow",
@@ -42417,7 +45917,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 837
+     }
     },
     "info": {
      "dial": "glow",
@@ -42858,7 +46362,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 854
+     }
     },
     "info": {
      "dial": "glow",
@@ -43296,7 +46804,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "black",
@@ -43734,7 +47246,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "black",
@@ -44173,7 +47689,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "map",
@@ -44614,7 +48134,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 855
+     }
     },
     "info": {
      "dial": "map",
@@ -45056,7 +48580,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -45497,7 +49025,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",
@@ -45938,7 +49470,11 @@
     },
     "arcs": {
      "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
-     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9"
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 858
+     }
     },
     "info": {
      "dial": "halftone",

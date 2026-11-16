@@ -350,7 +350,10 @@ module AuraDump {
         for (var r = 0; r < m.spPts.size(); r++) {
             var run = m.spPts[r] as Array;
             for (var i = 0; i < run.size(); i++) {
-                line += (line.equals("") ? "M" : "L") + pt(run[i]);
+                line += (i == 0 ? "M" : "L") + pt(run[i]);
+            }
+            if (run.size() == 1) {
+                line += "Z"; // a lone point between gaps: a dot (aura.js)
             }
         }
         out("sp.line", line.equals("") ? "M0 0" : line);

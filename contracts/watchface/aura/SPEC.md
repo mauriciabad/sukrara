@@ -20,7 +20,7 @@ as a faint sweep at the rim.
 | File | What it is | Use it to |
 |---|---|---|
 | [`tools/watchface/aura.js`](../../../tools/watchface/aura.js) | **The reference implementation**: one pure function, `layout(cfg)`, giving every value of the face, and `svg(cfg)` drawing it. Where this text and the code disagree, the code wins (and this text gets fixed). | Read the exact formula of anything; port it |
-| [`cases.json`](cases.json) | 105 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
+| [`cases.json`](cases.json) | 112 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
 | [`expect.json`](expect.json) | Every value `layout()` returns for each case (positions, sizes, colours, texts, angles) | Unit-test the port's numbers (§10) |
 | [`docs/img/aura/ref/<case>.png`](../../../docs/img/aura/ref/) | Each case drawn at **390 × 390, the screen 1:1**, no bezel | Compare with the simulator's screenshot (§10) |
 | [`docs/img/aura/store/*.png`](../../../docs/img/aura/store/) | 10 renders on the Descent, 1168 px, transparent | Connect IQ store, website (§12) |
@@ -79,7 +79,7 @@ as a faint sweep at the rim.
 |---|---|---|
 | Time | 92.8, 95.8, 98.8, 101.8 (caps 62, 64, 66, 68) | `0–9 :` |
 | Value | 80.8, 83.8, 86.8, 89.8 (caps 54, 56, 58, 60) | `0–9 . L O H I` |
-| "No reading since" time | 53.9, 59.9 (caps 36, 40) | `0–9 :` + weekday letters |
+| "No reading since" time | 53.9, 59.9 (caps 36, 40) | `0–9 :` + weekday and month names |
 | Date | 26 (weight 500, day 700), letter spacing 2 | A–Z incl. Á É Í Ó Ú Ñ |
 | Top field | 24, 25, 26 (500) | the field texts |
 | Pill, chip, bottom fields | 24 (pill 600, others 500; treatment amounts 600) | as used |
@@ -158,9 +158,9 @@ default is the reference's (every case starts from it):
 | glucose (mg/dL) | `glucose` | 112 | Sukrara · < 40 = LO, > 400 = HI |
 | rate (mg/dL/min), trend present | `rate`, `trend`: true/false | 0.4, true | Sukrara's trend (docs/34) · no rate → no trend |
 | **age** of the reading (min) | `age` | 0.5 | Sukrara's reading time + the watch clock: age = now − reading time, recomputed at every draw, never from when the watch received it |
-| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara · 5 min apart; a gap leaves points out. Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
-| status | `status`: `auto` (needed when out of range), `quiet`, `muted`; `left`: minutes, or `"never"` (no end) | auto, 25 | Sukrara ([`contracts/graph/status.json`](../../graph/status.json)) · `quiet` = held after a treatment; `muted` = a side muted (out of range) or Mute all (in range) |
-| last treatment(s) | `last`: `{items: [{k: rapid/long/carbs, a: amount}], ago: min}`, or `lastKind`, `lastAmount`, `lastAgo` | rapid 2u, 80 min | Sukrara · a meal = insulin + carbs together |
+| history | `history`: the readings before the current one, oldest first (the rail trail takes the last 6); `spark`: the sparkline's series, current last | from the rate | Sukrara (the payload's `hist`: the 12 readings of the hour before, 5 min apart) · `null` = a missed reading: its point is left out (§6.5, §6.8). Without either, the reference makes 13 points from the rate (`g − 5·rate·k`) |
+| status | `status`: `auto` (needed when out of range), `quiet`, `muted`, `none`; `left`: minutes, or `"never"` (no end) | auto, 25 | Sukrara ([`contracts/graph/status.json`](../../graph/status.json)) · `quiet` = held after a treatment; `muted` = a side muted (out of range) or Mute all (in range); `none` = no pill: Sukrara says nothing, or a quiet or mute ran out on the watch's clock before the phone said what follows (the face never decides a need itself) |
+| last treatment(s) | `last`: `{items: [{k: rapid/long/carbs, a: amount}], ago: min}`, or `lastKind`, `lastAmount`, `lastAgo` | rapid 2u, 80 min | Sukrara · a meal = insulin + carbs together; `items: []` = none in the last 24 h |
 | sensor | `sensor`: `ok`, `warmup` (+ `warm`: fraction done), `almost`, `ending` (+ `sensorLeft`: hours), `endedSending`, `ended`, `none` | ok, 0.45, 5 | Sukrara · "ending" = the last 8 h; the ready time is Sukrara's (the reference fakes it from `warm`) |
 | unit | `unit`: `mgdl`, `mmol` | mgdl | Sukrara · mmol/L = mg/dL ÷ 18.0182, one decimal |
 | band limits | — (the reference uses the defaults) | 55, 70, 140, 180, 250, 300 | Sukrara · the rail's notches and every band move with the person's limits |
@@ -171,7 +171,7 @@ default is the reference's (every case starts from it):
 | privacy | `privacy`: `open`, `private`, `revealed` (held); `reveal`: the fraction of the 5 s left | open, 0.6 | the setting + touch-and-hold (§8) |
 | phone connected | `phone`: true/false | true | watch |
 | colour check | `filter`: `none`, `redshift`, `grey` | none | reference only (§8) |
-| field data | `steps` (others fixed in the reference: 14°, 17:42, 62, 1,240 m, 64, 3, 82%, NYC 4:09, 8) | 6420 | watch / Sukrara (time in range) |
+| field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); others fixed in the reference: 14°, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8 | 6420, 82 | watch / Sukrara (time in range, until the end of the phone's day) |
 | settings | §11 | | |
 | mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze`, `numerals` | 584, true, carbon, atkinson | not the face's |
 
@@ -238,9 +238,10 @@ fields · edge hairline (r 194.5, 1 px `#121214`). The dial layers are masked by
 | ≤ 20 min | stale ("old") | value **struck through and grey**; no trend (hollow ring); bead **hollow**; no trail; sweep and dials grey and still; reading's time shown; no status pill |
 | < 3 h | no readings | **no value at all**: "No reading since" + the time it was (large); no bead; no pill |
 | ≥ 3 h | long gap | as no readings (no history anywhere) |
-| ≥ 12 h | | the reading's time gains the weekday ("Sun 19:09"); follow Sukrara's `Freshness.timeText` for "another day" and the date after 6 days |
+| > 12 h, or another day | | the reading's time gains the weekday ("Sun 19:09", `glucose-long-gap`; "Sun 23:40" an hour old just after midnight, `glucose-another-day`) |
+| > 6 days | | the date instead ("9 Nov", `glucose-week-old`) |
 
-The steps are Sukrara's ([`contracts/graph/freshness/freshness.json`](../../graph/freshness/freshness.json)): take them from there, with its cases as tests.
+The steps and the reading's time are Sukrara's (`Freshness.timeText`, [`contracts/graph/freshness/freshness.json`](../../graph/freshness/freshness.json) `steps` and `times`): take them from there, with its cases as tests.
 
 ### Words (en / es)
 From Sukrara's card words ([`contracts/graph/words/words.json`](../../graph/words/words.json)) unless marked **new** (add them there, in both
@@ -258,10 +259,11 @@ languages, when the face lands):
 | No readings | No reading since | Sin lecturas desde | `card_no_reading_since` |
 | Nothing paired | No readings | Sin lecturas | **new** (`card_no_readings_short`; the card's long form is `card_no_readings_yet`) |
 | Phone out of reach (field) | No phone | Sin móvil | the face's own string (a watch field, not a card word) |
-| Durations | now · 7m · 2h · 1h 20m · 9d | ahora · 7 min · 2 h · 1 h 20 min · 9 d | `duration_*` (Sukrara's `Durations`) |
+| Durations | now · 7m · 2h · 1h 20m · 6h · 2d | ahora · 7 min · 2 h · 1 h 20 min · 6 h · 2 d | `duration_*`: Sukrara's compact format ([`contracts/settings/durations.json`](../../settings/durations.json) `compact`): from 6 h whole hours only, from 48 h whole days; under a minute "now" (`alerts-muted-long`) |
 | Weekdays (date, upper case) | SUN MON TUE WED THU FRI SAT | DOM LUN MAR MIÉ JUE VIE SÁB | — |
 | Months | JAN … DEC | ENE FEB MAR ABR MAY JUN JUL AGO SEP OCT NOV DIC | — |
 | Reading time with day | Sun … Sat | dom … sáb | — |
+| Reading date (after 6 days) | 9 Nov (Jan … Dec) | 9 nov (ene … dic) | — |
 
 Numbers: thousands with `,` (en) / `.` (es); decimals `.` / `,` (4.5u / 4,5u); mmol/L with one decimal in the
 watch's language.
@@ -307,7 +309,9 @@ Replaces the arrow. Layout: total = vW + 14 + 100; digits from x0; the box at `s
 top `sy = vBase − V − 6`, height SH = V + 14.
 - **Time axis is logarithmic over the last hour**: x(age) = sx + SW·(1 − ln(1 + age/10) / ln 7); the newest 10 min
   take about a third of the width. Points every 5 min, age of point j = reading age + 5·(n − 1 − j); only ages ≤ 60.
-  **The axis ends at now**, so an old reading stops short of the right edge.
+  **The axis ends at now**, so an old reading stops short of the right edge. A missed reading (`null`) leaves its point
+  out: the line breaks there, and a lone reading between two gaps is a dot (its zero-length piece with the round cap,
+  `fields-spark-gap`).
 - **Height is the rail's risk scale** (§6.8), clamped to 40–300: y(v) = sy + SH·(1 − (K(v) − K(40)) / (K(300) − K(40))).
 - **Range limits**: two dotted lines at y(180) and y(70) across the box, `#5C5C62` (always-on `#3A3A3E`), 1.4 px,
   dash 1.5 / 4.5, round caps. No filled band.
@@ -335,8 +339,9 @@ Centred group on chipC: the reading's time (only when late or old) then the pill
 | sensor ended but still sending (no other pill) | filled note | sensor | Ended |
 | sensor ended | filled note | sensor | Sensor |
 
-Status pills show only with a current value (not when old). In private, the pill shows; a *needed* pill also unmasks
-the value (§8).
+Status pills show only with a current value (not when old). A quiet or mute whose time has run out shows no pill until
+the phone says what follows (status `none`, `alerts-quiet-ended`). In private, the pill shows; a *needed* pill also
+unmasks the value (§8).
 
 ### 6.7 Messages (no value)
 - **Warm-up / almost ready**: a disc (circle r 17, stroke 2.5 soft) with a pie r 12.5 (soft) filling clockwise from 12
@@ -369,7 +374,7 @@ the value (§8).
   value: no bead. LO pinned at 133°, HI at 47°, with a chevron beyond the end: LO tip P(182, 139.5), base P(176.5,
   135.6) P(187.5, 135.6); HI tip P(182, 40.5), base P(176.5, 44.4) P(187.5, 44.4).
 - **Trail**: the 6 previous readings (5 min apart, oldest first, i = 0…5) at P(182, angle(v)), r 2.2 + 0.45i, opacity
-  0.1 + 0.07i, the bead's colour. Not when old, always-on, LO / HI.
+  0.1 + 0.07i, the bead's colour; a missed reading leaves its dot out. Not when old, always-on, LO / HI.
 - Hidden entirely when not monitoring.
 
 ### 6.9 Reserve rail (left, battery)
@@ -400,12 +405,14 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
 | altitude | mountain, 6, `1,240 m` |
 | heart rate | heart, 5, `64` |
 | notifications | bell, 5, `3` |
-| time in range (Sukrara, today) | ring, 5, `82%` |
-| second time zone | globe, 6, `NYC 4:09` |
+| time in range (Sukrara, today) | ring, 5, `82%` (`--` when not known, `fields-tir-unknown`) |
+| second time zone | globe, 6, the city's code and its time: `NYC 4:09` (the city: §11) |
 | floors | stairs, 5, `8` |
 | sensor ending (automatic) | sensor, 5, hours left (`5h`) |
 | no phone (automatic) | phoneOff, 5, `No phone` |
 
+- **No value**: a field whose value the watch doesn't have (no weather yet, no altitude fix, time in range not known)
+  shows `--`; the treatment field with nothing in the last 24 h is left out (`fields-no-treatment`); `none` shows nothing.
 - **Automatic**: in the sensor's last 8 h the first field becomes *sensor ending*; with the phone out of reach it
   becomes *no phone*.
 - **Too long for the arc** (> 304 px): drop the least important field until it fits (sensor / no phone 3 > treatment 2
@@ -422,7 +429,9 @@ none); its leading edge is the second hand, so where it sits against 12 o'clock 
 - **Leading line**: from r 140 to 196 at 0°, 1.6 px, opacity 0.5.
 - **Only near the rim**: the whole sweep is multiplied by a radial ramp, 0 inside r = 137 (0.7·196), rising to 1 at
   r = 193.
-- Rotation = seconds × 6°; smooth (1 s linear between ticks; never sweeping backwards at :00).
+- Rotation = seconds × 6°, **one step a second** (like a quartz second hand; a smooth sweep would need the screen
+  redrawn many times a second, which a watch face can't afford). The reference animates it 1 s linear for the
+  mock-ups only.
 - **Awake only.** Setting: on (default) / off.
 
 ### 6.12 Dials (the aura)
@@ -450,10 +459,20 @@ Common inputs (awake only; nothing in always-on or at night):
 
 ### 6.13 Halo (setting: outline, box, none)
 The dial stops short of every text, so no dial line reads as a strike-through (which means "old").
-- **Outline** (default): the dial is cut out around each glyph: the time, the value and its arrow by 6.5 px (the glyphs
-  stroked 13 px, round joins), the date, top field, bottom fields (texts and icons; an icon's stroke scales with it),
-  battery label and reading time by 5.5 px (11 px); and rectangles: the sparkline box (sx − 8, sy − 8, 116, SH + 16,
-  rx 8), the chip row (rx0 − 8, chipC − 23, its width + 16, 46, rx 22) and a message (below, rx 14).
+- **Outline** (default): the dial is cut out around each glyph of the time and the value and around the arrow, by
+  6.5 px (the glyphs stroked 13 px, round joins). The smaller texts are cut by their line grown 5.5 px (at 24 px the
+  grown glyphs would merge into it anyway): the line's box is from Atkinson's ascender 0.73 em over the baseline to its
+  descender 0.2 em under it, and the top field's reaches up to its icon (max(0.73·TF, icon/2 + 0.334·TF)):
+  - the top field: (−w/2 − 5.5, tfBase − up − 5.5, w + 11, up + 0.2·TF + 11), rx 5.5;
+  - the battery label, each line: (−171.5, baseline − 0.73·fs − 5.5, its width + 11, 0.93·fs + 11), rx 5.5;
+  - the date: a band along its arc, centre r 169.5, 30 wide, over its width (each glyph + its letter-spacing 2) + 5.5 at
+    each end;
+  - the bottom fields: per piece a band along the arc over its length + 5.5 at each end: texts centre r 172 − 6.4,
+    33.3 wide; icons centre r 164, 29.2 wide.
+
+  And rectangles: the sparkline box (sx − 8, sy − 8, 116, SH + 16, rx 8), the chip row with the reading time and the
+  pill (rx0 − 8, chipC − 23, its width + 16, 46, rx 22) and a message (below, rx 14). In the reference these shapes are
+  `arcs.halo` (not compared: the port draws them from the same rule).
 - **Box**: rounded rectangles: the time (t0 − 10, tBase − T − 10, tW + 20, T + 20, rx 16); the value (x0 − 12,
   vBase − V − 12, total + 24, V + 24, rx 16) or the message's box; the chip row as above (rx 22); the top field
   (−w/2 − 8, tfBase − TF·0.668 − 8, w + 16, TF·0.668 + 16, rx 12).
@@ -466,10 +485,11 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
 ## 7. Motion
 - **A new reading**: the bead and trail glide to their new angles, the arrow turns to its new angle: 0.9 s,
   cubic-bezier(0.25, 0.9, 0.3, 1.1) (a slight overshoot). Digits change in place (no rolling).
-- **Seconds sweep**: continuous, 1 s linear per tick, awake only.
+- **Seconds sweep**: one step a second, awake only (§6.11).
 - **Reveal** (private): the value appears at once; the neon line shrinks from full to nothing in 5 s, then the value
   hides.
-- No other motion; nothing blinks. Reduced motion: drop the glides (jump).
+- No other motion; nothing blinks. Reduced motion: drop the glides (jump) where the platform says so; Connect IQ has
+  no such setting, so on Garmin the glide always runs (it is short, once per reading, and only after a wrist raise).
 
 ## 8. Modes
 - **Awake** (wrist raised, ~10 s, 1 Hz): everything.
@@ -498,11 +518,11 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 
 | Group | Cases | Covers |
 |---|---|---|
-| glucose | in-range, rising, falling-fast, late, old, no-readings, long-gap, lo, hi, mmol-widest | freshness, trend, LO / HI, units |
-| alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, high, high-insulin-taken, very-high, extremely-high, falling-fast-in-range | every band and pill |
+| glucose | in-range, rising, falling-fast, late, old, no-readings, long-gap, another-day, week-old, lo, hi, mmol-widest | freshness and the reading's time, trend, LO / HI, units |
+| alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
 | sensor | warmup, almost, ending, ended-sending, ended, none, none-es, ended-es, phone-lost, battery-low | sensor, phone, battery states; Spanish messages beside the stacked battery label |
 | modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
-| fields | default, meal, hiking, sukrara, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, seconds-off | fields and settings |
+| fields | default, meal, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, seconds-off | fields and settings, missing values and readings |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
 
@@ -563,9 +583,14 @@ All user settings (the Garmin face's own, set on the watch and in the Connect IQ
 | Bottom fields (`fields`: two keys) | the same list + treatment (`treatment`) | steps, treatment |
 | Battery label (`battLabel`) | days, percent, both | days |
 | Private (`privacy`) | on (`private`), off (`open`) | off |
-| Second time zone | a zone | — |
+| Second time zone (`tz2`) | a city, by its code: UTC LON LIS MAD PAR BER ATH CAI IST MOW DXB DEL BKK SIN HKG SHA TYO SEL SYD AKL HNL ANC LAX DEN MEX CHI NYC BOG SCL BUE SAO LOS JNB (its daylight saving follows the place) | NYC |
 
 Units, band limits, language and 12/24 h come from Sukrara / the watch, not from the face.
+
+**Where they are set**: on the watch, hold MENU on the face › Watch face › **Customize** (Garmin's standard menus: the
+face's name as the title, one row per setting above: an on / off one is a switch, the others show their current choice
+and open the list of choices with it marked *Selected*; picking one saves it and goes back, back leaves without a
+change); and in the Connect IQ app on the phone. The face shows the new choice at once.
 
 ## 12. Store and website
 `docs/img/aura/store/` (1168 × 1168, transparent, synthetic data only): `hero` (in range), `grain-high`,
@@ -588,10 +613,12 @@ Not design rules (docs/42 "platform limits are facts"); hints for building it on
   Contours are concentric with their fade, so each ring gets one alpha (the fade at its radius). The waterline's lines
   each get one alpha (the fade at their depth). Split each laser into a few segments with stepped alpha. The glow: a
   handful of concentric filled circles with stepped alpha, or a pre-rendered radial bitmap tinted.
-- **Halo outline**: after the dial, draw each text in black with a thick outline (the text drawn at offsets on a 6 px
-  circle, or an outline variant of the bitmap font), then the content.
-- **Cost**: cache the dial in a bitmap and redraw it only when the reading changes; the seconds sweep redraws only the
-  rim at 1 Hz while awake.
+- **Halo outline**: after the dial, paint the halo in black over it, then the content: the time and the value with
+  grown variants of their glyphs (atlases of each glyph stroked 13 px), the arrow's polygons grown 6.5 px, the small
+  texts' boxes and arc bands as §6.13 says.
+- **Cost**: the dial is painted into a bitmap and painted again only when its inputs change (a new reading, the mode,
+  a setting), a few pieces a frame to stay under the watchdog; every frame copies it. The seconds sweep redraws at 1 Hz
+  while awake, a step a second.
 - **Data**: the 5-min background poll (docs/08) is a limit to solve, not a design input: a phone push or a companion
   app gets readings to the face within seconds.
 - **Touch-and-hold**: the face's delegate receives the press (`WatchFaceDelegate.onPress`, 4.2.0; the Descent has no
@@ -599,10 +626,18 @@ Not design rules (docs/42 "platform limits are facts"); hints for building it on
 - **Rotation**: affine transforms (4.2.0) rotate the arrow, the bottom icons and the bead; or precompute the points.
 - **Motion** runs only in high-power mode (the ~10 s after a wrist raise): a reading that arrives in low power is
   drawn in its place, without the glide.
+- **Awake or always-on**: the last of the watch's callbacks decides: a wrist raise or a button (`onExitSleep`) and
+  `onShow` (back from a menu) → awake; `onEnterSleep` → always-on on an AMOLED; `onDisplayModeChanged` → the display
+  mode. The display mode alone (read in `onShow`) put the face in always-on while the person was looking at it.
+- **Night** is `DeviceSettings.doNotDisturb`: the profile's sleep and wake times aren't the Sleep Mode schedule on the
+  Descent (set per day) and put the face in night in the afternoon; the per-day schedule needs API 6.
+- **Second time zone**: the watch's own Alternate Time Zones aren't open to Connect IQ, so the face keeps its own city
+  list with each city's coordinates and asks `Gregorian.localMoment` for the zone and its daylight saving.
+- **Readings, the report, the screen events**: [docs/43](../../../docs/43-garmin-link.md) and
+  [`contracts/watchface/payload`](../payload/README.md).
 - Garmin facts with sources: [docs/evidence/42-watch-faces/garmin.md](../../../docs/evidence/42-watch-faces/garmin.md).
 
 ## 14. Not designed yet
 - A 12-hour AM/PM mark (none for now).
 - Exercise / sport changing the face (Garmin shows activity screens instead).
-- The watch-side settings menu (Garmin's standard menus).
 - Store icon and listing text.
