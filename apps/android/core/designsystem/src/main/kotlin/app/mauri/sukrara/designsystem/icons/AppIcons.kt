@@ -52,6 +52,9 @@ enum class Service(
     Nightscout(emptyList(), R.drawable.ds_ic_app_nightscout),
     LibreView(emptyList(), R.drawable.ds_ic_app_libreview),
     Tidepool(emptyList(), R.drawable.ds_ic_app_tidepool),
+
+    // Garmin Connect (where Garmin watches connect); without it a neutral watch: Garmin allows its logo only with permission
+    Garmin(listOf("com.garmin.android.apps.connectmobile"), R.drawable.ds_ic_app_garmin),
 }
 
 /** The test tag of a [ServiceIcon] (tests check which row carries which icon). */
@@ -104,11 +107,15 @@ object AppIcons {
         s: Service,
     ): Drawable = s.packages.firstNotNullOfOrNull { forPackage(ctx, it) } ?: forResource(ctx, s.bundled)
 
-    /** An installed app's icon; the system's default app icon when it isn't installed (any more). */
+    /**
+     * An installed app's icon; when it isn't installed (any more), [fallback] (one of Sukrara's icons, loaded as an
+     * app's) or else the system's default app icon.
+     */
     fun forPackageOrDefault(
         ctx: Context,
         pkg: String,
-    ): Drawable = forPackage(ctx, pkg) ?: shadowed(ctx, ctx.packageManager.defaultActivityIcon)
+        @DrawableRes fallback: Int? = null,
+    ): Drawable = forPackage(ctx, pkg) ?: fallback?.let { forResource(ctx, it) } ?: shadowed(ctx, ctx.packageManager.defaultActivityIcon)
 
     /** IconDrawableFactory.getBadgedIcon with embedShadow = true (what newInstance(context) does). */
     private fun badged(
@@ -201,9 +208,13 @@ fun ServiceIcon(
     modifier: Modifier = Modifier,
 ) = AppIconImage(service, serviceIconTag(service), modifier) { AppIcons.forService(it, service) }
 
-/** An installed app's icon; the system's default app icon if it isn't installed (any more). */
+/**
+ * An installed app's icon; if it isn't installed (any more), [fallback] (a known app's kind: [Service.bundled]) or
+ * else the system's default app icon (an app the person allowed and then uninstalled).
+ */
 @Composable
 fun PackageIcon(
     pkg: String,
     modifier: Modifier = Modifier,
-) = AppIconImage(pkg, packageIconTag(pkg), modifier) { AppIcons.forPackageOrDefault(it, pkg) }
+    @DrawableRes fallback: Int? = null,
+) = AppIconImage(pkg, packageIconTag(pkg), modifier) { AppIcons.forPackageOrDefault(it, pkg, fallback) }

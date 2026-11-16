@@ -2636,10 +2636,12 @@ as a button named by its label.
   that stands for another app or service shows that app's own icon, the way AOSP Settings draws app icons (the app's
   unbadged icon with the launcher shadow under the device's icon shape, the work-profile badge, 32 dp in the row's
   icon place, loaded off the main thread; a failed load leaves the place empty): *LibreView*, *Tidepool*, *Nightscout
-  upload*, *Garmin* (Garmin Connect's), *xDrip+ server*, *Health Connect* and *Nightscout API on this phone* here;
+  upload*, *Garmin*, *xDrip+ server*, *Health Connect* and *Nightscout API on this phone* here;
   each app that reads the xDrip+ server on its page; each app on *Send glucose to apps* (an uninstalled one: Android's default app icon); *Tidepool* and *LibreView*
-  on *Import history*; *Juggluco* in Settings › Sensor's *Reading source*; the clinic banner's pills. Juggluco, xDrip+ and Health Connect show the installed app's icon (manifest
-  `<queries>`), else Sukrara's copy of it; Nightscout, LibreView and Tidepool always Sukrara's copy (sources and
+  on *Import history*; *Juggluco* in Settings › Sensor's *Reading source*; the clinic banner's pills. Juggluco, xDrip+, Health Connect and Garmin Connect (*Garmin*, and the apps that read the
+  xDrip+ server) show the installed app's icon (manifest
+  `<queries>`), else Sukrara's copy of it (for Garmin a neutral watch: Garmin allows its logo only with permission);
+  Nightscout, LibreView and Tidepool always Sukrara's copy (sources and
   licences: docs/10-showcase.md "Service and app icons"). The other rows of these groups keep a symbol (*Send glucose to
   apps*, *Import history*, *Export data*), so titles line up. Tests: `AppIconsTest`, `ServiceRowsTest`,
   `ServiceIconRowsTest`.

@@ -12,7 +12,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import app.mauri.sukrara.designsystem.icons.PackageIcon
 import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.rows.NavigationRow
@@ -22,7 +21,6 @@ import app.mauri.sukrara.integrations.broadcasts.BcStatus
 import app.mauri.sukrara.integrations.broadcasts.broadcastStatusText
 import app.mauri.sukrara.integrations.garmin.AuraLinkState
 import app.mauri.sukrara.integrations.garmin.AuraStatus
-import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.garminStatusText
 import app.mauri.sukrara.integrations.garmin.isProblem
 import app.mauri.sukrara.integrations.garmin.ticking
@@ -164,7 +162,7 @@ fun AppsPage(
  * Settings › Share with apps: LibreView and Tidepool, the Nightscout upload (wearer), *Garmin* under *Watches* (its own
  * page), and the apps on this phone (broadcasts, Health Connect, and the two local servers, Nightscout API and xDrip+
  * server, each on its own page). Every row that stands for another app or service shows that app's icon ([ServiceIcon] /
- * [PackageIcon]), as the PoC did. Export data and Import history are on Settings › Import and export ([DataFileRows]).
+ * the app's own icon), as the PoC did. Export data and Import history are on Settings › Import and export ([DataFileRows]).
  */
 @Composable
 fun AppsContent(
@@ -206,7 +204,7 @@ fun AppsContent(
             stringResource(R.string.in_garmin_title),
             actions.openGarmin,
             summary = garminStatusText(garmin, now),
-            leading = { PackageIcon(ConnectIq.GCM) },
+            leading = { ServiceIcon(Service.Garmin) },
             warning = garmin.isProblem(),
         )
     }

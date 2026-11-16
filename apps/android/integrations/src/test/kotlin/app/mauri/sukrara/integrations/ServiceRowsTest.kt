@@ -112,7 +112,7 @@ class ServiceRowsTest {
         assertRowIcon("Tidepool", serviceIconTag(Service.Tidepool))
         assertRowIcon("Nightscout upload", serviceIconTag(Service.Nightscout))
         assertRowIcon("xDrip+ server", serviceIconTag(Service.Xdrip))
-        assertRowIcon("Garmin", packageIconTag("com.garmin.android.apps.connectmobile"))
+        assertRowIcon("Garmin", serviceIconTag(Service.Garmin))
         assertRowIcon("Health Connect", serviceIconTag(Service.HealthConnect))
         assertRowIcon("Nightscout API on this phone", serviceIconTag(Service.Nightscout))
         assertRowSymbol("Send glucose to apps")

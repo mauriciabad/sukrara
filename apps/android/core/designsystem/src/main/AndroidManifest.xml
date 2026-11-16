@@ -5,11 +5,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- the apps whose real icon a row shows when they're installed (icons/AppIcons Service): Juggluco, xDrip+, Health
-         Connect (Google's and AOSP's package) -->
+         Connect (Google's and AOSP's package), Garmin Connect -->
     <queries>
         <package android:name="tk.glucodata" />
         <package android:name="com.eveningoutpost.dexdrip" />
         <package android:name="com.google.android.healthconnect.controller" />
         <package android:name="com.android.healthconnect.controller" />
+        <package android:name="com.garmin.android.apps.connectmobile" />
     </queries>
 </manifest>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Material Symbols Outlined "watch" (Apache 2.0, fonts.google.com/icons), white: ds_ic_app_garmin's foreground. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp"
+    android:viewportWidth="960" android:viewportHeight="960">
+    <path android:fillColor="#FFFFFFFF" android:pathData="M360,880L306,698Q258,660 229,603Q200,546 200,480Q200,414 229,357Q258,300 306,262L360,80L600,80L654,262Q702,300 731,357Q760,414 760,480Q760,546 731,603Q702,660 654,698L600,880L360,880ZM480,680Q563,680 621.5,621.5Q680,563 680,480Q680,397 621.5,338.5Q563,280 480,280Q397,280 338.5,338.5Q280,397 280,480Q280,563 338.5,621.5Q397,680 480,680ZM404,210Q424,205 442.5,202Q461,199 480,199Q499,199 517.5,202Q536,205 556,210L540,160L420,160L404,210ZM420,800L540,800L556,750Q536,755 517.5,757.5Q499,760 480,760Q461,760 442.5,757.5Q424,755 404,750L420,800Z"/>
+</vector>

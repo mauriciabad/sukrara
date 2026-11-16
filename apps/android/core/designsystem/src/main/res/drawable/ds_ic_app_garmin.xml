@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- A neutral watch as an app icon, for when Garmin Connect isn't installed (normally designsystem's AppIcons loads its
+     own icon). Not Garmin's logo or Garmin Connect's icon: Garmin allows its name, logo and other trademarks only with
+     its written permission (Connect IQ SDK licence; developer.garmin.com/brand-guidelines/connect-iq/: "You cannot use
+     any elements of Garmin branding in your icon without express permission"). The glyph (Material Symbols "watch",
+     white) on a neutral grey, inside the 66 dp safe zone of the 108 dp adaptive canvas. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background>
+        <color android:color="#FF5F6368"/>
+    </background>
+    <foreground>
+        <inset android:drawable="@drawable/ds_ic_app_garmin_glyph" android:inset="29%"/>
+    </foreground>
+</adaptive-icon>
