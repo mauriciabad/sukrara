@@ -183,12 +183,59 @@ again: it skips what's already there):
    another is in review, this release stays on TestFlight (the summary says so) and a later release submits the
    newest. Needs the App Store Connect key with **App Manager** access (`~/.apple-dev/release-AuthKey_<id>.p8`; the
    *Developer* notary key is `notary-AuthKey_<id>.p8`, notarization reads it from the keychain profile).
-10. `summary`: every channel's state (`--from summary` alone shows it any time).
+10. `garmin`: the Garmin face, once it is released (`tools/release/garmin-key.sha256` committed: the switch). The
+    gate built its store package and sideload builds with `garmin-release.sh` (signed with the store key after
+    checking it is the pinned one; `apps/garmin/build.sh`'s release and export builds, debug code compiled out) and
+    `github` put them on the release. The Connect IQ store has no upload API, so this step prints the file, the
+    version and the What's New text to upload at https://apps-developer.garmin.com/developer/dashboard; Garmin
+    reviews it before the store shows it ([docs/20](20-publishing.md#garmin)). The `version` step sets the manifest's
+    version to the release's either way.
+11. `summary`: every channel's state (`--from summary` alone shows it any time).
 
 `--dry-run` runs the read-only checks and prints every command, the notes and the Play request bodies; it changes
 nothing, and exits 1 with the list when a check would stop the release. Read-only store checks: `python3
 tools/release/stores.py play-tracks` (opens an edit, lists the tracks, deletes the edit) and `asc-builds`.
 Every release goes to both stores' review: Play production and the App Store. Tests: `python3 tools/release/test_release.py` (CI).
+
+## Garmin face on CI
+
+Checks' `garmin` job (when `apps/garmin`, `contracts/`, `assets/`, `docs/img/aura/ref`, `tools/watchface` or its
+setup change) builds the face and its tests on Linux (`ubuntu:22.04`: the SDK's simulator needs WebKitGTK 4.0) with
+`apps/garmin/build.sh`. `tools/ci/garmin-sdk.sh` gets what it needs, pinned in `tools/ci/garmin.lock`: the Connect IQ
+SDK (public download, sha256 checked) and the manifest's device files with their simulator fonts, which need a Garmin
+sign-in. It signs in only when the Actions cache lacks a device (a new device, or the cache unused for 7 days), with
+the headless SDK Manager [`connect-iq-sdk-manager-cli`](https://github.com/lindell/connect-iq-sdk-manager-cli)
+(version and sha256 pinned), deletes the token right after, and caches `Sdks/`, `Devices/` and `Fonts/` (never the
+token) before any of the project's code runs. Builds are signed with a key made for the run. Without the files and a
+credential (until the owner adds it, forks, pull requests from outside) the job says so in a notice and skips its
+steps: `gate` passes. `tools/ci/test_garmin_sdk.sh` (the rules job) proves that path offline.
+
+**The credential is a Garmin account made for CI only**, never the owner's own (that one holds the watch, health and
+dive data and the store's developer identity, and has two-step verification, which a scripted sign-in can't answer).
+The owner, once:
+
+1. Create a Garmin account at https://connect.garmin.com (Create one) with an address only for this (e.g. a
+   `+garmin-ci` alias), a new password from the password manager (item *Sukrara Garmin CI*), no watch paired, no
+   two-step verification. Confirm the e-mail.
+2. Add two repository secrets (GitHub › the repo › Settings › Secrets and variables › Actions › New repository secret,
+   or `gh secret set GARMIN_CI_USERNAME -R mauriciabad/sukrara`, which asks for the value): `GARMIN_CI_USERNAME`
+   (the e-mail) and `GARMIN_CI_PASSWORD`.
+3. Start a run: `gh workflow run checks.yml --ref next -f full=true`. The `garmin` job signs in once ("device files:
+   descentmk343mm (signing in as the CI account)"), keeps the files and builds.
+
+If that sign-in fails because Garmin refuses scripted sign-ins (it did for Garmin Connect tools in 2026, see
+[docs/20](20-publishing.md#garmin)), use a token from a browser sign-in of the same account instead:
+`brew install lindell/connect-iq-sdk-manager-cli/connect-iq-sdk-manager`, then `connect-iq-sdk-manager agreement
+accept` and `connect-iq-sdk-manager login` (the browser opens; sign in as the CI account), then
+`base64 -i ~/.Garmin/ConnectIQ/token.json | gh secret set GARMIN_CI_TOKEN -R mauriciabad/sukrara` and
+`rm ~/.Garmin/ConnectIQ/token.json`. The token wins over the password; when the job says it expired (Garmin doesn't
+say after how long), do it again.
+
+Rotate: a new password at Garmin (account › security), then `gh secret set GARMIN_CI_PASSWORD`. Revoke: `gh secret
+delete GARMIN_CI_USERNAME` / `GARMIN_CI_PASSWORD` / `GARMIN_CI_TOKEN`, then delete the Garmin account (Garmin account
+› data management). Either way the cached files keep the job working until a device is missing. When Garmin changes
+the SDK agreement the download stops with a message: read it (`connect-iq-sdk-manager agreement view`) and put its
+hash in `tools/ci/garmin.lock`, with the SDK's new version and sha256 when the SDK moves.
 
 ## Strings (Android, English + Spain Spanish)
 

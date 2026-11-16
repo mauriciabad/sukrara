@@ -18,19 +18,25 @@ DIFFS = {
     "android": ["apps/android/app/build.gradle.kts"],
     "contracts": ["contracts/alerts/SPEC.md"],
     "mac": ["apps/macos/Sources/App.swift"],
+    "garmin": ["apps/garmin/source/AuraView.mc"],
 }
 
 
 class Groups(unittest.TestCase):
     def test_groups(self):
-        none = {"android": False, "mac": False}
+        none = {"android": False, "mac": False, "garmin": False}
         self.assertEqual(changes.groups(DIFFS["docs"]), none)
         self.assertEqual(changes.groups(DIFFS["notes"]), none)  # the Play / App Store notes: no build reads them
         self.assertEqual(changes.groups(DIFFS["version"]), dict(none, android=True))  # the release gate bundles the Mac app
         self.assertEqual(changes.groups(["tools/check/check.py"]), dict(none, android=True))
         self.assertEqual(changes.groups(DIFFS["android"]), dict(none, android=True))
-        self.assertEqual(changes.groups(DIFFS["contracts"]), dict(none, android=True, mac=True))
+        self.assertEqual(changes.groups(DIFFS["contracts"]), dict(none, android=True, mac=True, garmin=True))
         self.assertEqual(changes.groups(DIFFS["mac"]), dict(none, mac=True))
+        self.assertEqual(changes.groups(DIFFS["garmin"]), dict(none, garmin=True))
+        # the pictures its screenshots are diffed against, the reference renderer, its CI setup (tools/: android too)
+        self.assertEqual(changes.groups(["docs/img/aura/ref/hero.png"]), dict(none, garmin=True))
+        self.assertEqual(changes.groups(["docs/img/aura/store/hero.png"]), none)
+        self.assertEqual(changes.groups(["tools/ci/garmin.lock"]), dict(none, android=True, garmin=True))
         self.assertEqual(changes.groups(DIFFS["notes"] + DIFFS["android"]), dict(none, android=True))
         self.assertEqual(changes.groups(["VERSIONS.md", ""]), none)  # a file prefix matches only itself
 
