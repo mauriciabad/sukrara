@@ -60,9 +60,9 @@ def r1(x):
 
 # key, font px, weight, glyphs, drawn along an arc (unused: every font is an atlas)
 FONTS = (
-    [("t%d" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68)]
-    + [("t%do" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68)]  # always-on: outlined
-    + [("t%dh" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68)]  # the halo: grown 6.5 px
+    [("t%d" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68, 70, 72, 74, 76)]
+    + [("t%do" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68, 70, 72, 74, 76)]  # always-on: outlined
+    + [("t%dh" % c, r1(c / CAP), 600, DIGITS + ":", False) for c in (62, 64, 66, 68, 70, 72, 74, 76)]  # the halo: grown 6.5 px
     + [("v%d" % c, r1(c / CAP), 600, DIGITS + ".LOHI", False) for c in (54, 56, 58, 60)]
     + [("v%dh" % c, r1(c / CAP), 600, DIGITS + ".LOHI", False) for c in (54, 56, 58, 60)]
     + [("g%d" % c, r1(c / CAP), 600, GAP, False) for c in (36, 40)]

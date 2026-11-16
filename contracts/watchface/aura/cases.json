@@ -9,7 +9,7 @@
    "id": "glucose-in-range",
    "group": "glucose",
    "title": "In range",
-   "expect": "Calm: no colour but the range green, the bead and the faint sweep at the rim; the last hour as a sparkline beside the value (the default trend). Nothing below the value, so time and value centre and grow (time caps 66, value caps 58, top field 26).",
+   "expect": "Calm: no colour but the range green, the bead and the faint sweep at the rim; the last hour as a sparkline beside the value (the default trend). Nothing below the value, so time and value centre and grow (time caps 76, value caps 60, top field 26).",
    "cfg": {
     "glucose": 112,
     "rate": 0.3
@@ -121,7 +121,7 @@
    "id": "glucose-mmol-widest",
    "group": "glucose",
    "title": "mmol/L at its widest",
-   "expect": "22.2 with one decimal; the point takes a narrow cell so the digits stay put.",
+   "expect": "22.2 with one decimal, in the font's own figures and kerning: the point takes its own narrow advance.",
    "cfg": {
     "glucose": 400,
     "unit": "mmol",

@@ -2062,7 +2062,9 @@ ages by itself from its own time with the phone away.
 - **Rows**, centred and as large as fit: the date along the top, one top field (steps by default), the time, the value
   with the last hour as a sparkline (setting *Trend*: or Sukrara's arrow), and a chip row with the reading's time once
   it is late (from 90 s) and the pill.
-  The numbers step down a size when the chip row holds something.
+  The numbers step down a size when the chip row holds something. Time and value use the font's own figures and
+  kerning (no fixed cells, no footed 1); only the minutes' last digit is tabular, so the time never jitters by the
+  minute, and its size follows the hour (a narrower time is drawn bigger, up to about 1.27 × the value).
 - **Sparkline** (setting *Trend*): the last hour on a fixed scale (0.6 px per mg/dL, never rescaled: a slope always
   means the same speed), the newest minutes widest. It frames the person's range (both dotted limits and a quiet green
   band) whenever the hour fits with it, and otherwise pans to the hour with the newest reading inside; what runs past

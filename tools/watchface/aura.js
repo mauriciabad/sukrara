@@ -56,7 +56,6 @@ class AuraFace {
       lastAgo: Number(g('lastAgo', 80)),
       steps: Number(g('steps', 6420)),
       phone: b('phone', true),
-      numerals: String(g('numerals', 'atkinson')),
       dial: String(g('dial', 'halftone')),
       trendStyle: String(g('trendStyle', 'spark')),
       warm: Number(g('warm', 0.45)),
@@ -87,12 +86,18 @@ class AuraFace {
     };
   }
 
-  fonts() {
+  // The big numbers' type: Atkinson Hyperlegible Next at weight 600, measured from the font
+  // (apps/garmin/fonts/AtkinsonHyperlegibleNext-wght.ttf, fontTools + HarfBuzz, per em): the default (proportional)
+  // figures' advances, the GPOS kern pairs among the glyphs the numbers use, and the tabular figures' width (tnum).
+  numerals() {
     return {
-      atkinson: { fam: "'Atkinson Hyperlegible Next', system-ui, sans-serif", cap: 0.668, cell: 0.656, colon: 0.253, dot: 0.253 },
-      redhat: { fam: "'Red Hat Display', system-ui, sans-serif", cap: 0.7, cell: 0.672, colon: 0.25, dot: 0.25 },
-      inter: { fam: "'Inter Tight', system-ui, sans-serif", cap: 0.728, cell: 0.63, colon: 0.282, dot: 0.282 },
-      barlow: { fam: "'Barlow', system-ui, sans-serif", cap: 0.7, cell: 0.585, colon: 0.3, dot: 0.273 },
+      fam: "'Atkinson Hyperlegible Next', system-ui, sans-serif", cap: 0.668, tnum: 0.632,
+      adv: { 0: 0.656, 1: 0.43, 2: 0.569, 3: 0.592, 4: 0.621, 5: 0.602, 6: 0.617, 7: 0.529, 8: 0.621, 9: 0.578, ':': 0.253, '.': 0.253, L: 0.548, O: 0.737, H: 0.699, I: 0.415 },
+      kern: {
+        23: -0.004, 24: -0.013, 28: -0.01, 41: -0.006, 42: -0.009, 44: 0.01, 49: -0.024, 51: -0.02, 53: -0.02, 55: -0.006, 56: -0.007, 59: -0.004,
+        61: -0.026, 67: -0.006, 71: 0.02, 73: 0.01, 74: -0.044, 77: 0.03, 78: -0.02, '7.': -0.03, 81: -0.02, 82: -0.01, 87: -0.01, 89: -0.019,
+        92: -0.02, 94: -0.004, '.1': -0.03, '.O': -0.03, LO: -0.03, 'O.': -0.03, OI: -0.023, IO: -0.023,
+      },
     };
   }
 
@@ -197,8 +202,7 @@ class AuraFace {
     const u = this._uid;
     const ids = { clip: u + 'c', red: u + 'r', grey: u + 'g', metal: u + 'm', sheen: u + 's', btn: u + 'b', glow: u + 'w', cg: u + 'x', wg: u + 'y', rg: u + 'q', rm: u + 'k', halo: u + 'h', top: u + 't', bottom: u + 'o', nofly: u + 'n', sg: u + 'G', sm: u + 'M' };
     const W = this.words(c.lang);
-    const FS = this.fonts();
-    const F = FS[c.numerals] || FS.atkinson;
+    const F = this.numerals();
     const LF = "'Atkinson Hyperlegible Next', system-ui, sans-serif";
     const aod = c.mode === 'aod', night = c.mode === 'night', awake = !aod && !night;
     const pal = this.pal(c.mode);
@@ -288,20 +292,34 @@ class AuraFace {
     const ts = c.trendStyle === 'spark' ? 'spark' : 'arrow';
     const vStr = lo ? 'LO' : hi ? 'HI' : c.unit === 'mmol' ? (g / 18.0182).toFixed(1) : String(Math.round(g));
     const tStr = clock(now);
+    // a run of glyphs in the font's own figures: each glyph's centre (its advance centred) and the run's width, kerned
+    const glyphRun = (str, fs) => {
+      let w = 0, prev = null;
+      const xs = [];
+      for (const ch of str) {
+        const a = F.adv[ch] !== undefined ? F.adv[ch] : 0.6;
+        if (prev !== null) w += F.kern[prev + ch] || 0;
+        xs.push((w + a / 2) * fs);
+        w += a;
+        prev = ch;
+      }
+      return { w: w * fs, xs };
+    };
+    // the time: the hour, the colon and the tens of minutes in the font's own figures and kerning; the last digit, which
+    // changes every minute, tabular (centred in a tnum-wide cell, no kerning into it), so it never jitters. Its size is
+    // chosen for the hour (the widest tens digit, 0-5), so it changes only when the hour does.
     const timeGeom = (T) => {
       const tFs = T / F.cap;
-      const tc = (ch) => (ch === ':' ? F.colon + 0.1 : F.cell) * tFs;
-      let tW = 0;
-      const txs = [];
-      for (const ch of tStr) { const w = tc(ch); txs.push(tW + w / 2); tW += w; }
-      return { tFs, tW, txs };
+      const head = glyphRun(tStr.slice(0, -1), tFs);
+      const cell = F.tnum * tFs;
+      const fitW = Math.max(...['0', '1', '2', '3', '4', '5'].map((d) => glyphRun(tStr.slice(0, -2) + d, tFs).w)) + cell;
+      return { tFs, tW: head.w + cell, fitW, txs: head.xs.concat([head.w + cell / 2]) };
     };
+    // the value: the font's own figures and kerning (it changes only with a reading)
     const valueGeom = (V) => {
       const vFs = V / F.cap;
-      const cw = (ch) => (ch === '.' ? F.dot + 0.06 : F.cell) * vFs;
-      let vW = 0;
-      const vxs = [];
-      for (const ch of vStr) { const w = cw(ch); vxs.push(vW + w / 2); vW += w; }
+      const vr = glyphRun(vStr, vFs);
+      const vW = vr.w, vxs = vr.xs;
       const gap = 0.08 * vFs, box = 0.62 * vFs, SW = 100;
       const total = ts === 'spark' ? vW + 14 + SW : vW + gap + box;
       return { vFs, vW, vxs, gap, box, total, SW };
@@ -318,7 +336,11 @@ class AuraFace {
     const battWOf = (one) => (one ? this.tw(battOneT, battFs) : Math.max(this.tw(battL1, battFs), battBoth ? this.tw(battPctT, battFs) : 0));
     const battHOf = (one) => (battBoth && !one ? battFs * 0.668 * 2 + 9 : battFs * 0.668);
     const halfAt = (yy) => Math.sqrt(Math.max(0, 171 * 171 - yy * yy)) - 6;
-    const sets = chipKind === 'pill' ? [[62, 54, 24]] : chipKind === 'age' ? [[64, 56, 24], [62, 54, 24]] : [[68, 60, 26], [66, 58, 26], [64, 56, 25], [62, 54, 24]];
+    // the time grows by its string: the larger time sizes are tried first, up to about 1.27 × the value's cap (the value
+    // stays the clear second: at 76 / 60 its digits are 79 % of the time's height)
+    const sets = chipKind === 'pill' ? [[68, 54, 24], [66, 54, 24], [64, 54, 24], [62, 54, 24]]
+      : chipKind === 'age' ? [[70, 56, 24], [68, 56, 24], [66, 56, 24], [64, 56, 24], [62, 54, 24]]
+        : [[76, 60, 26], [74, 60, 26], [72, 60, 26], [70, 60, 26], [68, 60, 26], [66, 58, 26], [64, 56, 25], [62, 54, 24]];
     // the left edge of the value's row: the value (laid out even while private hides it, so nothing moves on reveal),
     // or the first line of a message
     const msgLeft = msgKind === 'warm' ? -(46 + this.tw(W.warming, 32)) / 2 : msgKind === 'ended' ? -(38 + this.tw(W.sensorEnded, 32)) / 2
@@ -342,7 +364,7 @@ class AuraFace {
       l.tg = timeGeom(T);
       l.vg = valueGeom(V);
       L = l;
-      const okT = l.tg.tW / 2 <= halfAt(l.tTop);
+      const okT = l.tg.fitW / 2 <= halfAt(l.tTop);
       const okV = !hasValue || (l.vg.total / 2 <= halfAt(l.vTop) && l.vg.total / 2 <= halfAt(l.vBase));
       const lBot = l.tBase + 6 + battHOf(one);
       const left = hasValue ? -l.vg.total / 2 : msgLeft;
@@ -642,7 +664,7 @@ class AuraFace {
       y1: r1(by1), y2: r1(by1 + battFs * 0.668 + 9), fs: battFs,
     };
 
-    // the time: centred, every digit in its own fixed cell
+    // the time: centred as a whole (§6.3)
     const tCap = L.T, tY = L.tBase, tW = L.tg.tW, t0 = -tW / 2;
     const time = {
       str: tStr, xs: L.tg.txs.map((x) => r1(t0 + x)).join(' '), y: r1(tY), fam: F.fam, fs: r1(L.tg.tFs),

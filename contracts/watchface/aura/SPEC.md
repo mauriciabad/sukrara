@@ -59,25 +59,34 @@ as a faint sweep at the rim.
 
 ### Type
 - **Atkinson Hyperlegible Next** for everything (built for telling 1/7, 3/8, 6/9/0 apart; humanist; no thin weights).
-  Weights used: 500, 600, 700. Numeral alternatives exist in the reference (`numerals`: `redhat`, `inter`, `barlow`)
-  for comparison only; they are not a user setting.
+  Weights used: 500, 600, 700.
+- **Sizes are set by cap height**: font px = cap / 0.668.
+- **The big numbers use the font's own figures and kerning**, no hand-made cells: the default (proportional) figures,
+  whose 1 has no foot, and the font's GPOS `kern` pairs. Measured from `apps/garmin/fonts/AtkinsonHyperlegibleNext-wght.ttf`
+  at weight 600 (fontTools + HarfBuzz; `numerals()` in aura.js), per em:
 
-| Font | cap height / em | digit cell / em (= the widest digit) | colon | dot |
-|---|---|---|---|---|
-| Atkinson Hyperlegible Next | 0.668 | 0.656 | 0.253 | 0.253 |
-| Red Hat Display | 0.700 | 0.672 | 0.250 | 0.250 |
-| Inter Tight | 0.728 | 0.630 | 0.282 | 0.282 |
-| Barlow | 0.700 | 0.585 | 0.300 | 0.273 |
+| Glyph | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | : | . | L | O | H | I |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| advance | .656 | .430 | .569 | .592 | .621 | .602 | .617 | .529 | .621 | .578 | .253 | .253 | .548 | .737 | .699 | .415 |
 
-- **Sizes are set by cap height**: font px = cap / 0.668. Digits never move: **every digit sits centred in a fixed cell**
-  of `0.656 · font px`; the colon's cell is `(0.253 + 0.1) · font px`, a decimal point's `(0.253 + 0.06) · font px`.
+  Kern pairs (per em, added between the two glyphs): 23 −.004, 24 −.013, 28 −.01, 41 −.006, 42 −.009, 44 +.01, 49 −.024,
+  51 −.02, 53 −.02, 55 −.006, 56 −.007, 59 −.004, 61 −.026, 67 −.006, 71 +.02, 73 +.01, 74 −.044, 77 +.03, 78 −.02,
+  7. −.03, 81 −.02, 82 −.01, 87 −.01, 89 −.019, 92 −.02, 94 −.004, .1 −.03, .O −.03, LO −.03, O. −.03, OI −.023, IO −.023
+  (none with the colon). The tabular figures (`tnum`) are all **0.632** wide.
+- **A run of glyphs**: the pen starts at 0; before each glyph after the first it moves by the pair's kern; the glyph is
+  centred on its advance (centre = pen + advance/2); the pen moves by the advance. The run's width is the pen's end.
+  Each glyph is drawn centred on its centre (its advance centred there).
+- **Value** (§6.4): one run (it changes only with a reading). **Time** (§6.3): the hour, the colon and the tens of
+  minutes as one run; the **last digit tabular**: centred in a cell 0.632 wide (the font's plain figure, no foot, not
+  its `tnum` glyph), no kerning into it, so the minute that changes every minute never jitters. The time's width
+  changes only at :x0 (and with the hour); its size only with the hour (§4).
 - **Label widths** (pills, fields, the chip) are measured with Atkinson's advance widths (`widths()` in aura.js, per
   em) × size × 1.03; an unknown glyph counts 0.6 em.
 - **Sizes in use** (font px; build each as a Garmin font resource, digits-only where the text is digits):
 
 | Use | Sizes (font px) | Glyphs |
 |---|---|---|
-| Time | 92.8, 95.8, 98.8, 101.8 (caps 62, 64, 66, 68) | `0–9 :` |
+| Time | 92.8, 95.8, 98.8, 101.8, 104.8, 107.8, 110.8, 113.8 (caps 62–76 in steps of 2) | `0–9 :` |
 | Value | 80.8, 83.8, 86.8, 89.8 (caps 54, 56, 58, 60) | `0–9 . L O H I` |
 | "No reading since" time | 53.9, 59.9 (caps 36, 40) | `0–9 :` + weekday and month names |
 | Date | 26 (weight 500, day 700), letter spacing 2 | A–Z incl. Á É Í Ó Ú Ñ |
@@ -174,7 +183,7 @@ default is the reference's (every case starts from it):
 | colour check | `filter`: `none`, `redshift`, `grey` | none | reference only (§8) |
 | field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); others fixed in the reference: 14°, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8 | 6420, 82 | watch / Sukrara (time in range, until the end of the phone's day) |
 | settings | §11 | | |
-| mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze`, `numerals` | 584, true, carbon, atkinson | not the face's |
+| mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze` | 584, true, carbon | not the face's |
 
 ## 4. Layout: what goes where
 
@@ -191,9 +200,14 @@ Gaps: top field → time 20, time → value 22, value → chip row 18.
 
 | Chip row | Sets |
 |---|---|
-| pill | (62, 54, 24) |
-| age | (64, 56, 24), (62, 54, 24) |
-| none | (68, 60, 26), (66, 58, 26), (64, 56, 25), (62, 54, 24) |
+| pill | (68, 54, 24), (66, 54, 24), (64, 54, 24), (62, 54, 24) |
+| age | (70, 56, 24), (68, 56, 24), (66, 56, 24), (64, 56, 24), (62, 54, 24) |
+| none | (76, 60, 26), (74, 60, 26), (72, 60, 26), (70, 60, 26), (68, 60, 26), (66, 58, 26), (64, 56, 25), (62, 54, 24) |
+
+**The time grows by its string**: the larger time sizes come first, so a narrower time is drawn bigger, up to about
+1.27 × the value's cap (76 over 60: the value's digits stay 79 % of the time's height, the clear second; a time drawn
+as big as it fits would reach 84–90 over 58–60 and take over). In practice every 2-digit hour fits at 72 or more, so
+the ceiling holds the time at 72–76 (none), 68–70 (age), 66–68 (pill).
 
 **Heights**: value row vb = V; or a message (§6.7): no readings 16.7 + 12 + c₂ (c₂ = 40 when the chip row is empty,
 else 36), warm-up 34, sensor ended 32, not monitoring 20. Chip row height: pill 38, age 17.
@@ -202,7 +216,8 @@ Then: top-field baseline `tfBase = y₀ + TF·0.668`; time top `tTop` and baseli
 `vTop = tBase + 22`, value baseline `vBase = vTop + vb`; chip row centre `chipC = vBase + 18 + chipH/2`.
 
 **Fits** when all hold: `halfAt(y) = √(171² − y²) − 6`;
-- time: tW/2 ≤ halfAt(tTop) (tW = the time's cell width, §6.3);
+- time: tWfit/2 ≤ halfAt(tTop) (tWfit = the time's width with the widest tens-of-minutes digit 0–5 at this hour, §6.3,
+  so the size changes only with the hour);
 - value (when there is one, **even while private hides it**): total/2 ≤ halfAt(vTop) and ≤ halfAt(vBase) (total =
   value + arrow or sparkline, §6.4);
 - battery label (§6.9), unless always-on: its bottom `tBase + 6 + battH ≤ vTop` (it sits in the gap above the row), or
@@ -218,11 +233,11 @@ Examples (from `expect.json`):
 
 | Case | Chip | T / V / TF | tfBase | tBase | vBase | chipC |
 |---|---|---|---|---|---|---|
-| `glucose-in-range` | none | 66 / 58 / 26 | −81.3 | 4.7 | 84.7 | — |
-| `glucose-late` | age | 64 / 56 / 24 | −97.5 | −13.5 | 64.5 | 91 |
-| `alerts-high-insulin-taken` | pill | 62 / 54 / 24 | −106 | −24 | 52 | 89 |
-| `glucose-no-readings` | none | 66 / 58 / 26 | −86.7 | −0.7 | 90 (message) | — |
-| `sensor-warmup` | age | 64 / 56 / 24 | −86.5 | −2.5 | 53.5 (message) | 80 |
+| `glucose-in-range` | none | 76 / 60 / 26 | −87.3 | 8.7 | 90.7 | — |
+| `glucose-late` | age | 70 / 56 / 24 | −100.5 | −10.5 | 67.5 | 94 |
+| `alerts-high-insulin-taken` | pill | 68 / 54 / 24 | −109 | −21 | 55 | 92 |
+| `glucose-no-readings` | none | 74 / 60 / 26 | −90.7 | 3.3 | 94 (message) | — |
+| `sensor-warmup` | age | 70 / 56 / 24 | −89.5 | 0.5 | 56.5 (message) | 83 |
 
 **Z-order** (back to front): black screen · glow dial · dial layers (laser glow, main, second) · seconds sweep · date
 · top field · time · battery rail and label · level rail (hairline, bands, zone, ticks, trail, bead, chevrons) · value
@@ -283,13 +298,16 @@ Hidden in always-on (its row stays). `none` removes the row (and the layout re-c
 
 ### 6.3 Time
 `H:MM`, no leading zero on the hour, 24 h or 12 h as the watch is set (no AM/PM mark). Font px = T / 0.668, weight
-600, ink. Cells: digit 0.656·fs, colon (0.253 + 0.1)·fs; the string's width tW is the sum; it is centred
-(`t0 = −tW/2`), each glyph centred in its cell at baseline tBase. Example `glucose-in-range`: fs 101.8, baseline 4.7,
-glyph centres −118.1 −51.4 0 51.4 118.1. Always-on: no fill, stroke grey 2.2 (an outline).
+600, ink. The hour, the colon and the tens of minutes as one kerned run of the font's figures, then the last digit
+centred in a 0.632·fs cell (§2); tW = the run's width + the cell. The whole is centred (`t0 = −tW/2`), at baseline
+tBase. The time's width changes at :x0 (the tens digit's own advance: at most 0.226 em, from :09 to :10, which moves
+the time ≤ 13 px each side at T 76) and with the hour; its size only with the hour (§4). Example `glucose-in-range`
+(10:09): fs 113.8, baseline 8.7, glyph centres −125 −63.2 −11.5 40.2 113.5. Always-on: no fill, stroke grey 2.2 (an outline).
 
 ### 6.4 Value and arrow
-- **Text**: LO / HI; mmol/L `(g / 18.0182).toFixed(1)`; mg/dL rounded. Font px = V / 0.668, weight 600; digits in
-  0.656·fs cells, a point in (0.253 + 0.06)·fs; letters use the digit cell.
+- **Text**: LO / HI; mmol/L `(g / 18.0182).toFixed(1)`; mg/dL rounded. Font px = V / 0.668, weight 600; one kerned
+  run of the font's figures (§2), letters and the point included: vW = the run's width, which changes with the
+  reading; the arrow or the sparkline follows it.
 - **Arrow layout** (setting: trend = arrow): gap 0.08·fs, box 0.62·fs; total = vW + gap + box; the group is centred: `x0 = −total/2`;
   digits from x0; arrow centre `(x0 + vW + gap + box/2, vBase − V/2)`.
 - **Arrow**: Sukrara's glyph, unit path pointing right, scaled by s = 1.05·box: shaft rectangle (−0.42, −0.07)–(0.25,

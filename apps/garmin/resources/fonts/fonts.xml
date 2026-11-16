@@ -11,6 +11,14 @@
     <jsonData id="t66_m" filename="t66.json"/>
     <bitmap id="t68" filename="t68.png" dithering="none" packingFormat="png"/>
     <jsonData id="t68_m" filename="t68.json"/>
+    <bitmap id="t70" filename="t70.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t70_m" filename="t70.json"/>
+    <bitmap id="t72" filename="t72.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t72_m" filename="t72.json"/>
+    <bitmap id="t74" filename="t74.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t74_m" filename="t74.json"/>
+    <bitmap id="t76" filename="t76.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t76_m" filename="t76.json"/>
     <bitmap id="t62o" filename="t62o.png" dithering="none" packingFormat="png"/>
     <jsonData id="t62o_m" filename="t62o.json"/>
     <bitmap id="t64o" filename="t64o.png" dithering="none" packingFormat="png"/>
@@ -19,6 +27,14 @@
     <jsonData id="t66o_m" filename="t66o.json"/>
     <bitmap id="t68o" filename="t68o.png" dithering="none" packingFormat="png"/>
     <jsonData id="t68o_m" filename="t68o.json"/>
+    <bitmap id="t70o" filename="t70o.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t70o_m" filename="t70o.json"/>
+    <bitmap id="t72o" filename="t72o.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t72o_m" filename="t72o.json"/>
+    <bitmap id="t74o" filename="t74o.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t74o_m" filename="t74o.json"/>
+    <bitmap id="t76o" filename="t76o.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t76o_m" filename="t76o.json"/>
     <bitmap id="t62h" filename="t62h.png" dithering="none" packingFormat="png"/>
     <jsonData id="t62h_m" filename="t62h.json"/>
     <bitmap id="t64h" filename="t64h.png" dithering="none" packingFormat="png"/>
@@ -27,6 +43,14 @@
     <jsonData id="t66h_m" filename="t66h.json"/>
     <bitmap id="t68h" filename="t68h.png" dithering="none" packingFormat="png"/>
     <jsonData id="t68h_m" filename="t68h.json"/>
+    <bitmap id="t70h" filename="t70h.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t70h_m" filename="t70h.json"/>
+    <bitmap id="t72h" filename="t72h.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t72h_m" filename="t72h.json"/>
+    <bitmap id="t74h" filename="t74h.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t74h_m" filename="t74h.json"/>
+    <bitmap id="t76h" filename="t76h.png" dithering="none" packingFormat="png"/>
+    <jsonData id="t76h_m" filename="t76h.json"/>
     <bitmap id="v54" filename="v54.png" dithering="none" packingFormat="png"/>
     <jsonData id="v54_m" filename="v54.json"/>
     <bitmap id="v56" filename="v56.png" dithering="none" packingFormat="png"/>
