@@ -12,12 +12,14 @@ export type AuraModule = {
 	AuraFace: new (cfg: Record<string, unknown>) => { opt(): Record<string, unknown> };
 	layout(cfg: Record<string, unknown>): Record<string, unknown>;
 	svg(cfg: Record<string, unknown>): string;
+	/** The drawing's template (aura/parts.ts reads which element shows what). */
+	MARKUP: string;
 };
 
 export function evaluateAura(source: string): AuraModule {
 	const module = { exports: {} as Partial<AuraModule> };
 	new Function('module', 'window', source)(module, undefined);
 	const m = module.exports;
-	if (typeof m.svg !== 'function' || typeof m.AuraFace !== 'function') throw new Error('aura.js no longer exports svg and AuraFace');
+	if (typeof m.svg !== 'function' || typeof m.AuraFace !== 'function' || typeof m.MARKUP !== 'string') throw new Error('aura.js no longer exports svg, AuraFace and MARKUP');
 	return m as AuraModule;
 }

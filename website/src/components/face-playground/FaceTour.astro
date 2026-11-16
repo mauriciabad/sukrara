@@ -1,0 +1,302 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * The face tour: the face living through a made-up day at 600×, what each of its parts is (pointing at one fades the
+ * rest), and a live preview of every dial (a click puts it on the face). One clock drives them all (tour.ts). The first
+ * frame is drawn at build time, so the face shows before the script runs.
+ *   <FaceTour />            <FaceTour id="home" start={450} />
+ */
+import { aura } from './aura/index.ts';
+import { DAY } from './day/index.ts';
+import { caption, frame } from './tour-model.ts';
+import { words } from './strings.ts';
+
+type Props = { id?: string; start?: number };
+const { id = 'tour', start = 7 * 60 + 30 } = Astro.props;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+const w = words(lang);
+const look = String(aura.defaults()[aura.looks.key]);
+const first = frame(aura, DAY, { minutes: start, look, seconds: null });
+const svg = aura.render(first.main, lang, { id: `${id}-m` });
+// pointing at a part: every other part of the face, and every other explanation, fades
+const fade = aura.parts
+	.map(
+		(p) =>
+			`.ft[data-focus='${p.id}'] .ft-face [data-part='${p.id}'],.ft[data-focus='${p.id}'] .ft-part[data-part-button='${p.id}']{opacity:1!important}`,
+	)
+	.join('');
+---
+
+<section class="ft not-content" data-uid={id} data-lang={lang} data-start={start} data-look-start={look} aria-label={w.tour}>
+	<div class="ft-stage">
+		<div class="ft-screen">
+			<div class="ft-face" data-face set:html={svg} />
+		</div>
+		<p class="ft-now" data-now aria-live="off">{caption(first, lang)}</p>
+		<div class="ft-time">
+			<button type="button" class="ft-play" data-play aria-pressed="false">{w.playDay}</button>
+			<input type="range" class="ft-scrub" data-scrub min="0" max={DAY.minutes - 1} step="1" value={start} aria-label={w.dayTime} />
+		</div>
+	</div>
+	<div class="ft-explain">
+		<h3 class="ft-title">{w.parts}</h3>
+		<p class="ft-hint">{w.partsHint}</p>
+		<ul class="ft-parts">
+			{
+				aura.parts.map((p) => (
+					<li>
+						<button type="button" class="ft-part" data-part-button={p.id} data-shown="true">
+							<span class="ft-part__name">
+								{p.name[lang]}
+								<span class="ft-part__off">({w.notNow})</span>
+							</span>
+							<span class="ft-part__about">{p.about[lang]}</span>
+						</button>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+	<div class="ft-looks" data-looks role="group" aria-label={w.looks}>
+		<h3 class="ft-title">{aura.looks.label[lang]}</h3>
+		<div class="ft-looks__row">
+			{
+				aura.looks.options.map((o) => (
+					<button type="button" class="ft-look" data-look={o.value} aria-pressed={String(o.value === look)}>
+						<span class="ft-look__face" data-preview aria-hidden="true" />
+						<span class="ft-look__name">{o.label[lang]}</span>
+					</button>
+				))
+			}
+		</div>
+	</div>
+</section>
+
+<style is:inline set:html={fade} />
+
+<script>
+	import { aura } from './aura/index.ts';
+	import { DAY } from './day/index.ts';
+	import { mountTour } from './tour.ts';
+
+	for (const root of document.querySelectorAll<HTMLElement>('.ft')) {
+		mountTour(root, aura, DAY, root.dataset.lang === 'es' ? 'es' : 'en');
+	}
+</script>
+
+<style>
+	/* room for the face beside two columns of parts */
+	:global(:root:has(.ft)) {
+		--sl-content-width: 62rem;
+	}
+	.ft {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.5rem;
+		margin-block: 2rem;
+	}
+	@media (min-width: 56rem) {
+		.ft {
+			grid-template-columns: minmax(0, 24rem) minmax(0, 1fr);
+			grid-template-areas: 'stage explain' 'looks looks';
+			align-items: start;
+		}
+		.ft-stage {
+			grid-area: stage;
+		}
+		.ft-explain {
+			grid-area: explain;
+		}
+		.ft-looks {
+			grid-area: looks;
+		}
+	}
+	.ft-stage {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	.ft-screen {
+		padding: 0.9rem;
+		border-radius: 50%;
+		background: #0a0a0c;
+		box-shadow: var(--sk-glow);
+		width: min(100%, 24rem);
+		margin-inline: auto;
+		aspect-ratio: 1;
+		box-sizing: border-box;
+	}
+	.ft-face,
+	.ft-look__face {
+		display: block;
+		aspect-ratio: 1;
+		width: 100%;
+	}
+	.ft-face :global(svg),
+	.ft-look__face :global(svg) {
+		width: 100%;
+		height: auto;
+	}
+	.ft :global([data-part]),
+	.ft-part {
+		transition: opacity 0.2s ease;
+	}
+	.ft[data-focus] .ft-face :global([data-part]),
+	.ft[data-focus] .ft-part {
+		opacity: 0.12;
+	}
+	.ft[data-focus] .ft-part {
+		opacity: 0.45;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.ft :global(*) {
+			transition: none !important;
+		}
+	}
+	.ft-now {
+		margin: 0;
+		text-align: center;
+		font: 700 var(--sl-text-base) / 1.3 var(--sk-font-display);
+		color: var(--sl-color-white);
+		min-height: 1.3em;
+	}
+	.ft-time {
+		display: flex;
+		gap: 0.75rem;
+		align-items: center;
+	}
+	.ft-scrub {
+		flex: 1;
+		min-width: 0;
+		accent-color: var(--sl-color-accent);
+	}
+	.ft button {
+		font: inherit;
+		color: inherit;
+		cursor: pointer;
+	}
+	.ft-play {
+		font: 700 var(--sl-text-sm) / 1 var(--sk-font-display) !important;
+		color: var(--sl-color-black) !important;
+		background: var(--sl-color-accent);
+		border: 1px solid var(--sl-color-accent);
+		border-radius: 999px;
+		padding: 0.6rem 1rem;
+		min-height: 2.75rem;
+		white-space: nowrap;
+	}
+	.ft-title {
+		margin: 0;
+		font: 700 var(--sl-text-h4) / 1.2 var(--sk-font-display);
+		color: var(--sl-color-white);
+	}
+	.ft-hint {
+		margin: 0.25rem 0 0.75rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.ft-parts {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+		gap: 0.5rem;
+	}
+	/* on a phone, the parts in a row that scrolls sideways, so the face stays in sight */
+	@media (max-width: 56rem) {
+		.ft-parts {
+			grid-template-columns: none;
+			grid-auto-flow: column;
+			grid-auto-columns: min(78%, 16rem);
+			overflow-x: auto;
+			scroll-snap-type: x mandatory;
+			padding-bottom: 0.5rem;
+		}
+		.ft-parts li {
+			scroll-snap-align: start;
+		}
+	}
+	.ft-parts li {
+		margin: 0;
+		display: flex;
+	}
+	.ft-part {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15rem;
+		width: 100%;
+		text-align: start;
+		padding: 0.6rem 0.8rem;
+		border-radius: 0.75rem;
+		border: 1px solid var(--sk-surface-line);
+		background: var(--sk-surface);
+	}
+	.ft-part:hover,
+	.ft-part:focus-visible {
+		border-color: var(--sl-color-accent);
+	}
+	.ft-part:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+	.ft-part__name {
+		font-weight: 700;
+		color: var(--sl-color-white);
+	}
+	.ft-part__off {
+		display: none;
+		font-weight: 400;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		margin-inline-start: 0.35rem;
+	}
+	.ft-part[data-shown='false'] .ft-part__off {
+		display: inline;
+	}
+	.ft-part__about {
+		font-size: var(--sl-text-sm);
+		line-height: 1.4;
+		color: var(--sl-color-gray-2);
+	}
+	.ft-looks__row {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+		gap: 0.75rem;
+		margin-top: 0.75rem;
+	}
+	.ft-look {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.5rem;
+		border-radius: 1rem;
+		border: 2px solid transparent;
+		background: none;
+	}
+	.ft-look .ft-look__face {
+		border-radius: 50%;
+		background: #0a0a0c;
+		padding: 0.3rem;
+		box-sizing: border-box;
+	}
+	.ft-look:hover {
+		border-color: var(--sk-surface-line);
+	}
+	.ft-look[aria-pressed='true'] {
+		border-color: var(--sl-color-accent);
+		background: var(--sl-color-accent-low);
+	}
+	.ft-look:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+	.ft-look__name {
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+</style>

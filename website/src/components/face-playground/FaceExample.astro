@@ -1,0 +1,46 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * One of the face's examples (aura/examples.ts) on its own, in a round screen, drawn by the face's own code when it
+ * comes into view (gallery.ts), moving if the example moves. For a features tile's dialog.
+ *   <FaceExample id="alerts-low" width={300} />
+ */
+import { aura } from './aura/index.ts';
+
+type Props = { id: string; width?: number };
+const { id, width = 300 } = Astro.props;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+const e = aura.examples.flatMap((g) => g.examples).find((x) => x.id === id);
+if (!e) throw new Error(`FaceExample: no example ${id}`);
+---
+
+<div class="fx" style={`max-width: ${width}px`}>
+	<div class="fx-face" data-example={e.id} role="img" aria-label={`${e.title[lang]}. ${e.note[lang]}`}></div>
+</div>
+
+<script>
+	import { aura } from './aura/index.ts';
+	import { mountGalleries } from './gallery.ts';
+
+	mountGalleries(aura, document.documentElement.lang.startsWith('es') ? 'es' : 'en');
+</script>
+
+<style>
+	.fx {
+		margin-inline: auto;
+		border-radius: 50%;
+		background: #0a0a0c;
+		padding: 0.5rem;
+		box-shadow: var(--sk-glow);
+	}
+	.fx-face {
+		aspect-ratio: 1;
+		width: 100%;
+	}
+	.fx-face :global(svg) {
+		width: 100%;
+		height: auto;
+	}
+</style>

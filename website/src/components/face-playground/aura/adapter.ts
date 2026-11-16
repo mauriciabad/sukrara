@@ -9,6 +9,9 @@
  */
 import type { FaceAdapter, InputSpec, Live, Localized, Preset, Values } from '../types.ts';
 import type { AuraModule } from './evaluate.ts';
+import { scopeIds } from '../svg-ids.ts';
+import { examples } from './examples.ts';
+import { markParts, PARTS, partsOfMarkup } from './parts.ts';
 import { GROUPS, PRESETS_ES } from './presets.ts';
 
 export type AuraCase = { id: string; group: string; title: string; cfg: Values };
@@ -67,17 +70,22 @@ const hms = (d: Date) => `${d.getHours()}:${String(d.getMinutes()).padStart(2, '
 /** What a live moment sets on Aura's inputs (SPEC.md §3). */
 export function auraFromLive(live: Live): Values {
 	const v: Values = { time: hms(live.now), phone: live.phone };
-	if (live.dnd) v.mode = 'night';
-	if (live.sensor.state === 'warmup') Object.assign(v, { sensor: 'warmup', warm: live.sensor.done });
-	else if (live.sensor.state === 'almost') v.sensor = 'almost';
+	v.mode = live.dnd ? 'night' : 'awake';
+	const s = live.sensor;
+	if (s.state === 'warmup') Object.assign(v, { sensor: 'warmup', warm: s.done });
+	else if (s.state === 'almost' || s.state === 'ended') v.sensor = s.state;
 	else if (!live.reading) v.sensor = 'none';
+	// "ending" is Sukrara's last 8 h of a sensor (SPEC.md §3); the face counts them down in a field
+	else if (s.leftH !== undefined && s.leftH <= 8) Object.assign(v, { sensor: 'ending', sensorLeft: Math.max(0, s.leftH) });
 	else v.sensor = 'ok';
 	if (live.reading) {
 		const { glucose, rate, ageMin } = live.reading;
 		Object.assign(v, { glucose, rate: rate ?? 0, trend: rate !== null, age: Math.round(ageMin * 10) / 10 });
 		Object.assign(v, { history: live.history, spark: [...live.history, glucose] });
 	}
-	Object.assign(v, live.quiet ? { status: 'quiet', left: live.quiet.leftMin } : { status: 'auto' });
+	Object.assign(v, live.hold ? { status: live.hold.kind, left: live.hold.leftMin } : { status: 'auto' });
+	if (live.watch) Object.assign(v, { battery: live.watch.batteryDays, steps: live.watch.steps });
+	if (live.tir !== undefined) v.tir = live.tir;
 	v.last = live.treatment
 		? { items: live.treatment.items.map((i) => ({ k: i.kind, a: String(i.amount) })), ago: live.treatment.agoMin }
 		: { items: [] };
@@ -94,6 +102,8 @@ export function createAura(aura: AuraModule, cases: AuraCase[], fonts: () => Pro
 			name: L(c.title, PRESETS_ES[c.id]),
 			values: { ...defaults(), ...c.cfg },
 		}));
+	const parts = partsOfMarkup(aura.MARKUP);
+	const dial = INPUTS.find((i) => i.key === 'dial') as Extract<InputSpec, { kind: 'select' }>;
 	const face: FaceAdapter = {
 		id: 'aura',
 		name: L('Sukrara Aura', 'Sukrara Aura'),
@@ -109,7 +119,14 @@ export function createAura(aura: AuraModule, cases: AuraCase[], fonts: () => Pro
 		presetGroups: GROUPS,
 		fromLive: auraFromLive,
 		// the screen alone at 1:1, no bezel (the bezel is a drawing of a branded watch)
-		render: (values, lang) => aura.svg({ ...values, lang, size: 390, bezel: false }),
+		render: (values, lang, o = {}) => {
+			const svg = markParts(aura.svg({ ...values, lang, size: 390, bezel: false }), parts);
+			return o.id ? scopeIds(svg, o.id) : svg;
+		},
+		parts: PARTS,
+		looks: { key: 'dial', label: dial.label, options: dial.options },
+		moving: { seconds: false },
+		examples: examples(defaults(), (id) => cases.find((c) => c.id === id)?.cfg),
 		ready: fonts,
 	};
 	return face;

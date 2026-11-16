@@ -104,15 +104,21 @@ import FeatureTile from '../../../components/features/FeatureTile.astro';
 ## En tu reloj Garmin
 
 <FeatureGrid>
-  <FeatureTile icon="palette" title="El aura de tu glucosa" shot="garminHigh" shotWidth={300}>El fondo se concentra en tu nivel y se extiende cuanto más fuera de rango estás.</FeatureTile>
+  <FeatureTile icon="palette" title="El aura de tu glucosa" face="dial-waterline-high-rising">El fondo se concentra en tu nivel y se extiende cuanto más fuera de rango estás.</FeatureTile>
+  <FeatureTile icon="wallpaper" title="Siete fondos" face="dial-contours-heading-up">Grano, curvas de nivel, línea de agua, láseres, resplandor, un mapa tranquilo o negro.</FeatureTile>
   <FeatureTile icon="speed" title="En segundos">Cada lectura por Garmin Connect, sin configurar nada.</FeatureTile>
-  <FeatureTile icon="trending_up" title="Flecha o la última hora" shot="garminSparkline" shotWidth={300}>La flecha de tendencia de Sukrara, o la última hora como una pequeña línea.</FeatureTile>
-  <FeatureTile icon="dia_carbs" title="Qué hacer ahora" shot="garminLow" shotWidth={300}>Hidratos o Insulina cuando hace falta; alertas en calma o silenciadas con su tiempo restante.</FeatureTile>
-  <FeatureTile icon="history" title="Nunca lo antiguo como actual" shot="garminOld" shotWidth={300}>Tarde, tachado y luego «Sin lecturas desde».</FeatureTile>
-  <FeatureTile icon="visibility_off" title="Privada" shot="garminPrivate" shotWidth={300}>El valor solo mientras mantienes pulsada la pantalla.</FeatureTile>
-  <FeatureTile icon="bedtime" title="Siempre activa y de noche" shot="garminNight" shotWidth={300}>Colores más tenues, la hora siempre legible.</FeatureTile>
-  <FeatureTile icon="tune" title="Tus campos">Tiempo, pasos, último tratamiento, tiempo en rango, otra zona horaria…</FeatureTile>
+  <FeatureTile icon="trending_up" title="Las últimas horas" face="fields-spark-turning">Hasta 3 horas junto al valor, con tu rango a la vista; o la flecha de Sukrara.</FeatureTile>
+  <FeatureTile icon="dia_carbs" title="Qué hacer ahora" face="alerts-low">Hidratos o Insulina cuando Sukrara lo dice, nunca solo con el color.</FeatureTile>
+  <FeatureTile icon="snooze" title="Esperas y silencios, con cuenta atrás" face="alerts-high-insulin-taken">Tras un tratamiento o un silencio, el tiempo que queda.</FeatureTile>
+  <FeatureTile icon="history" title="Nunca lo antiguo como actual" face="glucose-late">Con retraso, tachado y luego «Sin lecturas desde».</FeatureTile>
+  <FeatureTile icon="dia_sensor" title="La vida del sensor" face="sensor-warmup">Sus últimas horas en cuenta atrás y luego el calentamiento del nuevo.</FeatureTile>
+  <FeatureTile icon="visibility_off" title="Privada" face="modes-private">El valor solo mientras mantienes pulsada la pantalla, o cuando tienes que actuar.</FeatureTile>
+  <FeatureTile icon="bedtime" title="Siempre activa y de noche" face="modes-night">La noche sigue al modo No molestar; la hora siempre legible.</FeatureTile>
+  <FeatureTile icon="tune" title="Tus campos" face="fields-meal">Tiempo en rango, último tratamiento, pasos, pulso, otra zona horaria…</FeatureTile>
+  <FeatureTile icon="smartphone" title="Tu móvil lo sabe">Qué lectura tiene cada reloj y qué arreglar cuando no le llega.</FeatureTile>
 </FeatureGrid>
+
+[Mírala en directo durante un día entero](/es/garmin/).
 
 ## Privada y fiable
 

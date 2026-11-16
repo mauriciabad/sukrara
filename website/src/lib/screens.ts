@@ -184,8 +184,8 @@ export const SCREENS = {
 		pictures: { en: { light: garminHero }, es: { light: garminHeroEs } },
 		round: true,
 		alt: {
-			en: 'Sukrara Aura on a round watch screen: Monday 16 November, 14°, 10:09, and 112 in green with a steady arrow, in range; the level rail’s bead in the green band, 9 days of battery, 6,420 steps and 2 units of insulin 1 h 20 min ago.',
-			es: 'Sukrara Aura en una pantalla de reloj redonda: lunes 16 de noviembre, 14°, 10:09 y 112 en verde con una flecha estable, en rango; la bolita del riel de nivel en la franja verde, 9 días de batería, 6.420 pasos y 2 unidades de insulina hace 1 h 20 min.',
+			en: 'Sukrara Aura on a round watch screen: Monday 16 November, 6,420 steps, 10:09, and 112 in green with the last hours as a small flat line beside it, in range; the level rail’s bead in the green band, 9 days of battery, 82 % time in range and 2 units of insulin 1 h 20 min ago.',
+			es: 'Sukrara Aura en una pantalla de reloj redonda: lunes 16 de noviembre, 6.420 pasos, 10:09 y 112 en verde con las últimas horas como una pequeña línea plana al lado, en rango; la bolita del riel de nivel en la franja verde, 9 días de batería, 82 % de tiempo en rango y 2 unidades de insulina hace 1 h 20 min.',
 		},
 	},
 	garminHigh: {

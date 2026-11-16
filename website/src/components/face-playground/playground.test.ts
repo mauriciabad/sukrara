@@ -1,13 +1,16 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
-// The playground's pure parts: the clock, the scenarios, and Aura's adapter over the real aura.js and cases.json.
-// npm test (node --test, Node's own TypeScript).
+// The faces' pure parts: the clock and the shared ticker, the scenarios and the made-up day, and Aura's adapter over
+// the real aura.js and cases.json (its parts, examples and scoped ids). npm test (node --test, Node's own TypeScript).
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { test } from 'node:test';
-import { advance, clampTo, start } from './clock.ts';
-import { liveAt, SCENARIOS } from './scenarios.ts';
+import { advance, clampTo, start, wrap } from './clock.ts';
+import { HISTORY, liveAt, SCENARIOS } from './scenarios.ts';
+import { ticker } from './ticker.ts';
+import { scopeIds } from './svg-ids.ts';
+import { curve, dayScenario, inSpan, keyframes, type DayData } from './day/day.ts';
 import { auraFromLive, createAura, type AuraCase } from './aura/adapter.ts';
 import { evaluateAura } from './aura/evaluate.ts';
 import { PRESETS_ES } from './aura/presets.ts';
@@ -15,14 +18,51 @@ import { PRESETS_ES } from './aura/presets.ts';
 const repo = new URL('../../../../', import.meta.url);
 const aura = evaluateAura(fs.readFileSync(new URL('tools/watchface/aura.js', repo), 'utf8'));
 const { cases } = JSON.parse(fs.readFileSync(new URL('contracts/watchface/aura/cases.json', repo), 'utf8')) as { cases: AuraCase[] };
+const dayData = JSON.parse(fs.readFileSync(new URL('./day/day.json', import.meta.url), 'utf8')) as DayData;
 const face = createAura(aura, cases);
 const scenario = (id: string) => SCENARIOS.find((s) => s.id === id)!;
+const day = dayScenario(dayData);
+const H = (h: number, m = 0) => h * 60 + m;
 
-test('the clock runs at its speed, stands still when paused, stops at the end', () => {
+test('the clock runs at its speed, stands still when paused, stops at the end or loops', () => {
 	const c = advance(start(60), 2000);
 	assert.equal(c.minutes, 2);
 	assert.equal(advance({ ...c, running: false }, 5000).minutes, 2);
 	assert.deepEqual(clampTo(advance(c, 60000), 30), { minutes: 30, speed: 60, running: false });
+	// 600×: ten simulated minutes a second; a day loops after 144 s
+	assert.equal(advance(start(600), 1000).minutes, 10);
+	assert.equal(wrap(advance(start(600), 145_000), 1440).minutes, 10);
+	assert.equal(wrap({ minutes: -5, speed: 1, running: true }, 1440).minutes, 1435);
+});
+
+test('one ticker drives every listener with the same moment', () => {
+	const frames: ((t: number) => void)[] = [];
+	const g = globalThis as unknown as Record<string, unknown>;
+	const saved = { raf: g.requestAnimationFrame, caf: g.cancelAnimationFrame };
+	g.requestAnimationFrame = (f: (t: number) => void) => frames.push(f);
+	g.cancelAnimationFrame = () => void frames.splice(0);
+	try {
+		const t = ticker({ speed: 600, period: 1440, minutes: 1435 });
+		const seen: number[][] = [[], []];
+		t.listen((c) => seen[0].push(c.minutes));
+		const stop = t.listen((c) => seen[1].push(c.minutes));
+		t.play();
+		const now = performance.now();
+		frames.shift()!(now + 1000); // a second at 600×: ten minutes, past midnight
+		assert.ok(Math.abs(t.clock.minutes - 5) < 0.01);
+		assert.deepEqual(seen[0], seen[1]);
+		stop();
+		frames.shift()!(now + 1500);
+		assert.equal(seen[0].length, seen[1].length + 1);
+		t.pause();
+		assert.equal(t.clock.running, false);
+		assert.equal(frames.length, 0);
+		t.seek(-60);
+		assert.equal(t.clock.minutes, 1380);
+	} finally {
+		g.requestAnimationFrame = saved.raf;
+		g.cancelAnimationFrame = saved.caf;
+	}
 });
 
 test('a reading that stops arriving ages with the clock: late, old, then none', () => {
@@ -39,9 +79,9 @@ test('a reading that stops arriving ages with the clock: late, old, then none', 
 
 test('waits count down and treatments age', () => {
 	const s = scenario('meal');
-	assert.deepEqual(liveAt(s, 20).quiet, { leftMin: 55 });
-	assert.equal(liveAt(s, 74.5).quiet!.leftMin, 1);
-	assert.equal(liveAt(s, 80).quiet, null);
+	assert.deepEqual(liveAt(s, 20).hold, { kind: 'quiet', leftMin: 55 });
+	assert.equal(liveAt(s, 74.5).hold!.leftMin, 1);
+	assert.equal(liveAt(s, 80).hold, null);
 	assert.equal(liveAt(s, 100).treatment!.agoMin, 85);
 	assert.equal(liveAt(s, 10).treatment, null);
 });
@@ -49,7 +89,7 @@ test('waits count down and treatments age', () => {
 test('the clock and the history follow the scenario', () => {
 	const l = liveAt(scenario('night-low'), 61.5);
 	assert.equal(`${l.now.getHours()}:${l.now.getMinutes()}:${l.now.getSeconds()}`, '2:31:30');
-	assert.equal(l.history.length, 12);
+	assert.equal(l.history.length, HISTORY);
 	assert.equal(auraFromLive(l).time, '2:31:30');
 	assert.equal(auraFromLive(l).mode, 'night');
 	const warm = liveAt(scenario('new-sensor'), 30);
@@ -63,14 +103,16 @@ test('the adapter maps a moment onto aura.js inputs', () => {
 		reading: { glucose: 150, rate: null, ageMin: 2 },
 		history: [140, null, 145],
 		phone: true,
-		sensor: { state: 'ok' },
-		quiet: { leftMin: 12 },
+		sensor: { state: 'ok', leftH: 5 },
+		hold: { kind: 'muted', leftMin: 12 },
 		treatment: { items: [{ kind: 'carbs', amount: 15 }], agoMin: 4 },
 		dnd: false,
+		watch: { batteryDays: 1.5, steps: 4200 },
+		tir: null,
 	});
 	assert.deepEqual(v, {
-		time: '9:05:07', phone: true, sensor: 'ok', glucose: 150, rate: 0, trend: false, age: 2,
-		history: [140, null, 145], spark: [140, null, 145, 150], status: 'quiet', left: 12,
+		time: '9:05:07', phone: true, mode: 'awake', sensor: 'ending', sensorLeft: 5, glucose: 150, rate: 0, trend: false, age: 2,
+		history: [140, null, 145], spark: [140, null, 145, 150], status: 'muted', left: 12, battery: 1.5, steps: 4200, tir: null,
 		last: { items: [{ k: 'carbs', a: '15' }], ago: 4 },
 	});
 });
@@ -78,10 +120,95 @@ test('the adapter maps a moment onto aura.js inputs', () => {
 test('defaults are aura.js own; every preset is a case of cases.json, drawn as aura.js draws it', () => {
 	assert.equal(face.defaults().glucose, new aura.AuraFace({}).opt().glucose);
 	assert.equal(face.presets.length, Object.keys(PRESETS_ES).length, 'a preset names a case that no longer exists');
+	const bare = (svg: string) => svg.replace(/ data-part="\w+"/g, '');
 	for (const p of face.presets) {
 		const c = cases.find((x) => x.id === p.id)!;
-		assert.equal(face.render(p.values, 'en'), aura.svg({ ...face.defaults(), ...c.cfg, lang: 'en', size: 390, bezel: false }));
+		assert.equal(bare(face.render(p.values, 'en')), aura.svg({ ...face.defaults(), ...c.cfg, lang: 'en', size: 390, bezel: false }));
 	}
 	// the screen alone: no bezel (it carries a watchmaker's print)
 	assert.match(face.render(face.defaults(), 'en'), /viewBox="-195 -195 390 390"/);
+});
+
+test('every part names elements of the drawing, and only the screen’s', () => {
+	const svg = face.render({ ...face.defaults(), status: 'quiet', glucose: 220 }, 'en');
+	const marked = new Set([...svg.matchAll(/data-part="(\w+)"/g)].map((m) => m[1]));
+	for (const p of face.parts) assert.ok(marked.has(p.id), `no element of ${p.id}`);
+	for (const id of marked) assert.ok(face.parts.some((p) => p.id === id), `${id} isn't a part`);
+	// the bezel and the masks belong to no part
+	assert.doesNotMatch(svg.slice(0, svg.indexOf('clip-path="url(')), /data-part/);
+});
+
+test('scoped ids: each drawing refers only to its own', () => {
+	const a = face.render(face.defaults(), 'en', { id: 'f1' });
+	const ids = [...a.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
+	assert.ok(ids.length > 5 && ids.every((id) => id.startsWith('f1-')));
+	const refs = [...a.matchAll(/url\(#([^)]+)\)|href="#([^"]+)"/g)].map((m) => m[1] ?? m[2]);
+	assert.ok(refs.every((r) => ids.includes(r)), 'a reference to an id the drawing lacks');
+	assert.equal(scopeIds('<svg><circle fill="url(#other)"/></svg>', 'x'), '<svg><circle fill="url(#other)"/></svg>');
+});
+
+test('examples: every one a case of cases.json with words in both languages; live ones stay in their loop', () => {
+	const all = face.examples.flatMap((g) => g.examples);
+	assert.ok(all.length >= 50);
+	assert.equal(new Set(all.map((e) => e.id)).size, all.length, 'two examples with one id');
+	for (const e of all) {
+		for (const l of ['en', 'es'] as const) assert.ok(e.title[l] && e.note[l], `${e.id}: no ${l} words`);
+		if (!e.live) continue;
+		for (const m of [0, e.live.loop / 2, e.live.loop - 0.1]) assert.match(face.render({ ...e.values, ...e.live.at(m) }, 'es'), /<svg/);
+	}
+	const dials = face.looks.options.map((o) => o.value);
+	assert.deepEqual(dials, ['halftone', 'topo', 'water', 'laser', 'glow', 'map', 'black']);
+	assert.deepEqual(face.moving, { seconds: false });
+});
+
+test('keyframes and the glucose curve loop through midnight', () => {
+	const k = keyframes([[H(22), 2], [H(2), 6]]);
+	assert.equal(k(H(0)), 4);
+	assert.equal(k(H(12)), 4); // from 2:00 back to 22:00
+	const c = curve([100, 110, 120, 110], 5);
+	assert.equal(c(5), 110);
+	assert.ok(Math.abs(c(20) - 100) < 1e-9, 'the curve goes back to the first sample');
+	assert.ok(inSpan(H(23, 30), [H(23), H(7)]) && inSpan(H(3), [H(23), H(7)]) && !inSpan(H(12), [H(23), H(7)]));
+});
+
+test('the made-up day: a full day that loops without a jump', () => {
+	assert.equal(dayData.glucose.length * dayData.step, 1440);
+	assert.ok(dayData.glucose.every((g) => g >= 40 && g <= 400));
+	const step = (a: number, b: number) => Math.abs(a - b);
+	assert.ok(step(dayData.glucose[0], dayData.glucose.at(-1)!) <= 12, 'the day ends far from where it starts');
+	for (let i = 1; i < dayData.glucose.length; i++) assert.ok(step(dayData.glucose[i], dayData.glucose[i - 1]) <= 35, `a jump at ${i * 5} min`);
+	const a = liveAt(day, H(10));
+	const b = liveAt(day, H(10) + 1440);
+	assert.deepEqual(a, b);
+	// the history before midnight is yesterday's evening
+	assert.equal(liveAt(day, 5).history.filter((x) => x !== null).length, HISTORY);
+});
+
+test('the made-up day shows a bit of everything', () => {
+	const at = (t: number) => auraFromLive(liveAt(day, t)) as Record<string, unknown>;
+	const moments = Array.from({ length: 1440 }, (_, t) => ({ t, v: at(t) }));
+	const some = (f: (v: Record<string, unknown>) => boolean) => moments.some(({ v }) => f(v));
+	const g = (v: Record<string, unknown>) => (v.sensor === 'ok' || v.sensor === 'ending') && Number(v.age) < 1.5 ? Number(v.glucose) : NaN;
+	assert.ok(some((v) => g(v) >= 70 && g(v) <= 180), 'in range');
+	assert.ok(some((v) => g(v) < 70 && v.mode === 'night'), 'a low at night');
+	assert.ok(some((v) => g(v) > 180 && v.status === 'auto'), 'a high that asks for insulin');
+	assert.ok(some((v) => g(v) > 180 && v.status === 'quiet'), 'a high waiting after insulin');
+	assert.ok(some((v) => v.status === 'muted'), 'a mute');
+	assert.ok(some((v) => v.sensor === 'ending'), 'the sensor’s last hours');
+	assert.ok(some((v) => v.sensor === 'ended') && some((v) => v.sensor === 'warmup') && some((v) => v.sensor === 'almost'), 'a sensor change');
+	assert.ok(some((v) => v.phone === false && Number(v.age) > 1.5 && Number(v.age) <= 5), 'a late reading');
+	assert.ok(some((v) => v.phone === false && Number(v.age) > 5 && Number(v.age) <= 20), 'an old reading');
+	assert.ok(some((v) => v.phone === false && Number(v.age) > 20), 'no reading since');
+	assert.ok(some((v) => v.tir === null) && some((v) => typeof v.tir === 'number'), 'time in range, once known');
+	assert.ok(some((v) => Number(v.battery) < 2), 'the watch battery runs low');
+	const kinds = new Set(dayData.treatments.flatMap((t) => t.items.map((i) => i.kind)));
+	assert.deepEqual([...kinds].sort(), ['carbs', 'long', 'rapid']);
+	// the sensor counts down faster than real life, but never backwards while it runs
+	let prev = Infinity;
+	for (let t = dayData.sensor.ready; t < dayData.sensor.ready + 1440; t += 5) {
+		const s = liveAt(day, t).sensor;
+		if (s.state !== 'ok') break;
+		assert.ok(s.leftH! <= prev);
+		prev = s.leftH!;
+	}
 });

@@ -1,0 +1,106 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * One group of the face's examples (aura/examples.ts): its lead, then each example drawn by the face's own code with
+ * its name and one line; the moving ones say so. The heading is the page's (so it's in the page's contents). The faces
+ * are drawn on the page as they come into view (gallery.ts).
+ *   ### What to do now
+ *   <FaceGallery group="act" />
+ */
+import { aura } from './aura/index.ts';
+import { words } from './strings.ts';
+
+type Props = { group: string; lead?: boolean };
+const { group, lead = true } = Astro.props;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+const w = words(lang);
+const g = aura.examples.find((x) => x.id === group);
+if (!g) throw new Error(`FaceGallery: no example group ${group}`);
+---
+
+{lead && <p>{g.lead[lang]}</p>}
+<ul class="fg not-content" data-lang={lang} aria-label={w.examples(g.title[lang])}>
+	{
+		g.examples.map((e) => (
+			<li class="fg-item">
+				<div class="fg-screen">
+					<div class="fg-face" data-example={e.id} role="img" aria-label={`${e.title[lang]}. ${e.note[lang]}`} />
+				</div>
+				<p class="fg-title">
+					{e.title[lang]}
+					{e.live && <span class="fg-live">{w.moving}</span>}
+				</p>
+				<p class="fg-note">{e.note[lang]}</p>
+			</li>
+		))
+	}
+</ul>
+
+<script>
+	import { aura } from './aura/index.ts';
+	import { mountGalleries } from './gallery.ts';
+
+	mountGalleries(aura, document.documentElement.lang.startsWith('es') ? 'es' : 'en');
+</script>
+
+<style>
+	.fg {
+		list-style: none;
+		padding: 0;
+		margin: 1rem 0 2rem;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 10.5rem), 1fr));
+		gap: 1.5rem 1rem;
+	}
+	.fg-item {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+	.fg-screen {
+		border-radius: 50%;
+		background: #0a0a0c;
+		padding: 0.35rem;
+		margin-bottom: 0.35rem;
+		box-shadow: 0 0 0 1px var(--sk-surface-line);
+	}
+	.fg-face {
+		aspect-ratio: 1;
+		width: 100%;
+	}
+	.fg-face :global(svg) {
+		width: 100%;
+		height: auto;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.fg-face :global(*) {
+			transition: none !important;
+		}
+	}
+	.fg-title {
+		margin: 0;
+		font-weight: 700;
+		line-height: 1.3;
+		color: var(--sl-color-white);
+	}
+	.fg-live {
+		display: inline-block;
+		margin-inline-start: 0.4rem;
+		padding: 0.05rem 0.45rem;
+		border-radius: 999px;
+		font-size: var(--sl-text-2xs, 0.75rem);
+		font-weight: 600;
+		vertical-align: 0.1em;
+		color: var(--sl-color-accent-high);
+		background: var(--sl-color-accent-low);
+	}
+	.fg-note {
+		margin: 0;
+		font-size: var(--sl-text-sm);
+		line-height: 1.4;
+		color: var(--sl-color-gray-3);
+	}
+</style>

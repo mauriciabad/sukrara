@@ -27,6 +27,7 @@ import Tile from '../../components/landing/Tile.astro';
 import Tiles from '../../components/landing/Tiles.astro';
 import Works from '../../components/landing/Works.astro';
 import Screenshot from '../../components/Screenshot.astro';
+import FaceTour from '../../components/face-playground/FaceTour.astro';
 
 <Section title="Always at a glance" more="/features/#glucose-at-a-glance" lead="You rarely need to open the app.">
   <Tiles>
@@ -36,6 +37,10 @@ import Screenshot from '../../components/Screenshot.astro';
     <Tile shot="macPanel" title="Mac menu bar" width={230} href="/mac/">With the same alarms, and widgets.</Tile>
     <Tile shot="garmin" title="Garmin watch face" width={230} wide href="/garmin/">The aura of your glucose, each reading within seconds.</Tile>
   </Tiles>
+</Section>
+
+<Section title="On your wrist" more="/features/#on-your-garmin-watch" lead="Sukrara Aura for Garmin, living through a made-up day 600 times faster. Point at a part to see what it is.">
+  <FaceTour id="home" />
 </Section>
 
 <Section title="Alarms without the fatigue" more="/features/#alerts">

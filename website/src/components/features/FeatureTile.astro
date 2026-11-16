@@ -16,24 +16,26 @@ import AppIcon from '../AppIcon.astro';
 import DsIcon from '../DsIcon.astro';
 import Logo from '../Logo.astro';
 import Screenshot from '../Screenshot.astro';
+import FaceExample from '../face-playground/FaceExample.astro';
 
-type Props = { title: string; shot?: ScreenName; shotWidth?: number } & (
+type Props = { title: string; shot?: ScreenName; shotWidth?: number; /** Instead of a picture: one of the watch face's examples, drawn live. */ face?: string } & (
 	| { icon: string }
 	| { app: AppName }
 	| { logo: LogoName }
 );
 const props = Astro.props;
 const t = Astro.locals.t;
-const dialogId = props.shot ? `sk-shot-${props.shot}` : undefined; // each picture once on the page
-const Tag = props.shot ? 'button' : 'div';
+const pic = props.shot ?? (props.face ? `face-${props.face}` : undefined);
+const dialogId = pic ? `sk-shot-${pic}` : undefined; // each picture once on the page
+const Tag = pic ? 'button' : 'div';
 ---
 
 <li class="sk-ftile-cell">
 	<Tag
 		class="sk-ftile"
-		type={props.shot ? 'button' : undefined}
+		type={pic ? 'button' : undefined}
 		data-dialog={dialogId}
-		aria-haspopup={props.shot ? 'dialog' : undefined}
+		aria-haspopup={pic ? 'dialog' : undefined}
 	>
 		<span class:list={['sk-ftile__icon', { 'is-app': 'app' in props }]}>
 			{'app' in props && <AppIcon name={props.app} size={36} />}
@@ -42,10 +44,10 @@ const Tag = props.shot ? 'button' : 'div';
 		</span>
 		<span class="sk-ftile__name">{props.title}</span>
 		<span class="sk-ftile__line"><slot /></span>
-		{props.shot && <DsIcon name="wallpaper" size="1.1rem" class="sk-ftile__more" />}
+		{pic && <DsIcon name="wallpaper" size="1.1rem" class="sk-ftile__more" />}
 	</Tag>
 	{
-		props.shot && (
+		pic && (
 			<dialog id={dialogId} class="sk-fdialog" aria-label={props.title}>
 				<form method="dialog">
 					<button class="sk-fdialog__close" aria-label={t('site.features.close')}>
@@ -57,7 +59,7 @@ const Tag = props.shot ? 'button' : 'div';
 					<slot />
 				</p>
 				<div class="sk-fdialog__shot">
-					<Screenshot name={props.shot} width={props.shotWidth ?? 360} />
+					{props.shot ? <Screenshot name={props.shot} width={props.shotWidth ?? 360} /> : <FaceExample id={props.face!} width={props.shotWidth ?? 300} />}
 				</div>
 			</dialog>
 		)

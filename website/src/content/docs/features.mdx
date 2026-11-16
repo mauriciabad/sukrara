@@ -105,15 +105,21 @@ import FeatureTile from '../../components/features/FeatureTile.astro';
 ## On your Garmin watch
 
 <FeatureGrid>
-  <FeatureTile icon="palette" title="The aura of your glucose" shot="garminHigh" shotWidth={300}>The dial gathers at your level and spreads the further out of range you are.</FeatureTile>
+  <FeatureTile icon="palette" title="The aura of your glucose" face="dial-waterline-high-rising">The dial gathers at your level and spreads the further out of range you are.</FeatureTile>
+  <FeatureTile icon="wallpaper" title="Seven dials" face="dial-contours-heading-up">Grain, contours, waterline, lasers, glow, a calm map, or black.</FeatureTile>
   <FeatureTile icon="speed" title="Within seconds">Each reading through Garmin Connect, nothing to set up.</FeatureTile>
-  <FeatureTile icon="trending_up" title="Arrow or the last hour" shot="garminSparkline" shotWidth={300}>Sukrara's trend arrow, or the last hour as a small line.</FeatureTile>
-  <FeatureTile icon="dia_carbs" title="What to do now" shot="garminLow" shotWidth={300}>Carbs or Insulin when needed; quiet and muted alerts with their time left.</FeatureTile>
-  <FeatureTile icon="history" title="Never old as current" shot="garminOld" shotWidth={300}>Late, struck through, then "No reading since".</FeatureTile>
-  <FeatureTile icon="visibility_off" title="Private" shot="garminPrivate" shotWidth={300}>The value only while you hold the screen.</FeatureTile>
-  <FeatureTile icon="bedtime" title="Always-on and night" shot="garminNight" shotWidth={300}>Dimmer looks, the time always readable.</FeatureTile>
-  <FeatureTile icon="tune" title="Your fields">Weather, steps, last treatment, time in range, a second time zone…</FeatureTile>
+  <FeatureTile icon="trending_up" title="The last hours" face="fields-spark-turning">Up to 3 hours beside the value, your range in view; or Sukrara's arrow.</FeatureTile>
+  <FeatureTile icon="dia_carbs" title="What to do now" face="alerts-low">Carbs or Insulin when Sukrara says so, never by colour alone.</FeatureTile>
+  <FeatureTile icon="snooze" title="Waits and mutes, counting down" face="alerts-high-insulin-taken">After a treatment or a mute, the time left.</FeatureTile>
+  <FeatureTile icon="history" title="Never old as current" face="glucose-late">Late, struck through, then "No reading since".</FeatureTile>
+  <FeatureTile icon="dia_sensor" title="The sensor's life" face="sensor-warmup">Its last hours counted down, then the new one's warm-up.</FeatureTile>
+  <FeatureTile icon="visibility_off" title="Private" face="modes-private">The value only while you hold the screen, or when you need to act.</FeatureTile>
+  <FeatureTile icon="bedtime" title="Always-on and night" face="modes-night">Night follows Do Not Disturb; the time always readable.</FeatureTile>
+  <FeatureTile icon="tune" title="Your fields" face="fields-meal">Time in range, last treatment, steps, heart rate, a second time zone…</FeatureTile>
+  <FeatureTile icon="smartphone" title="Your phone knows">Which reading each watch has, and what to fix when it can't get one.</FeatureTile>
 </FeatureGrid>
+
+[See it live through a whole day](/garmin/).
 
 ## Private and dependable
 

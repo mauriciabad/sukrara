@@ -2,13 +2,13 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * The scenarios "Speed up time" plays: a sensor's glucose over time, which readings reach the watch, treatments and
- * alerts held after them. liveAt() turns a scenario and a simulated minute into a Live moment (types.ts), in no face's
- * terms. Synthetic data only. Pure: no clock, no DOM.
+ * The scenarios the faces play: a sensor's glucose over time, which readings reach the watch, treatments, alerts held
+ * or muted, the sensor's life and the watch's own day. liveAt() turns a scenario and a simulated minute into a Live
+ * moment (types.ts), in no face's terms. Synthetic data only. Pure: no clock, no DOM.
  */
 import type { Live, Localized } from './types.ts';
 
-type Treatment = Exclude<Live['treatment'], null>['items'];
+type Treatment = Exclude<Live['treatment'], null>['items'][number];
 
 export type Scenario = {
 	id: string;
@@ -19,22 +19,29 @@ export type Scenario = {
 	start: [number, number];
 	/** How long it runs, in minutes. */
 	minutes: number;
-	/** The sensor's glucose at minute t (mg/dL), also before minute 0 (the hour of history). */
+	/** A day that starts again where it ended: minute t is minute t mod `minutes`, the history before 0 included. */
+	loop?: boolean;
+	/** The sensor's glucose at minute t (mg/dL), also before minute 0 (the hours of history). */
 	glucose: (t: number) => number;
 	/** Whether the reading taken at minute t reaches the watch (the phone in reach). Default: always. */
 	reaches?: (t: number) => boolean;
-	/** The minute the first reading is taken. Default: an hour before the start. */
+	/** The minute the first reading is taken. Default: three hours before the start (a loop: none). */
 	firstReading?: number;
+	/** The sensor at minute t; it gives readings only while it's running. Default: running. */
 	sensor?: (t: number) => Live['sensor'];
-	treatments?: { at: number; items: Treatment }[];
+	treatments?: { at: number; items: Treatment[] }[];
 	/** Alerts held after a treatment: from, to (minutes). */
 	quiet?: [number, number][];
-	dnd?: boolean;
+	/** Alerts muted: from, to (minutes). */
+	muted?: [number, number][];
+	dnd?: boolean | ((t: number) => boolean);
+	watch?: (t: number) => NonNullable<Live['watch']>;
+	/** Today's time in range at minute t. */
+	tir?: (t: number) => number | null;
 };
 
 // A small, steady wobble so a flat line still looks like a sensor's.
 const wobble = (t: number) => 2 * Math.sin(t / 7) + 1.2 * Math.sin(t / 3.1);
-const smooth = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 
 export const SCENARIOS: Scenario[] = [
 	{
@@ -100,39 +107,58 @@ export const SCENARIOS: Scenario[] = [
 
 const DAY = [2026, 10, 16] as const;
 const round1 = (x: number) => Math.round(x * 10) / 10;
+/** The readings before the newest the watch keeps: 3 h, 5 min apart (the payload's `hist`). */
+export const HISTORY = 36;
 
 /** The world at minute t of a scenario. */
 export function liveAt(s: Scenario, t: number): Live {
+	const wrap = (m: number) => (s.loop ? ((m % s.minutes) + s.minutes) % s.minutes : m);
+	t = wrap(t);
 	const now = new Date(DAY[0], DAY[1], DAY[2], s.start[0], s.start[1], 0, 0);
 	now.setTime(now.getTime() + Math.round(t * 60000));
-	const reaches = s.reaches ?? (() => true);
-	const first = s.firstReading ?? -60;
-	const g = (m: number) => Math.round(s.glucose(m));
-	const got = (m: number) => m >= first && reaches(m);
+	const reaches = (m: number) => (s.reaches ?? (() => true))(wrap(m));
+	const running = (m: number) => (s.sensor?.(wrap(m)).state ?? 'ok') === 'ok';
+	const first = s.firstReading ?? (s.loop ? -Infinity : -HISTORY * 5);
+	const g = (m: number) => Math.round(s.glucose(wrap(m)));
+	const got = (m: number) => m >= first && running(m) && reaches(m);
 
-	// the newest reading taken (one a minute) that reached the watch
+	// the newest reading taken (one a minute) that reached the watch, looked for as far back as a day
 	let at = Math.floor(t);
-	while (at >= first && !reaches(at)) at--;
+	const oldest = Math.max(first, at - 1440);
+	while (at >= oldest && !got(at)) at--;
 	const reading =
-		at >= first
+		at >= oldest
 			? {
 					glucose: g(at),
-					rate: at - 5 >= first ? round1((s.glucose(at) - s.glucose(at - 5)) / 5) : null,
+					rate: at - 5 >= first && running(at - 5) ? round1((s.glucose(wrap(at)) - s.glucose(wrap(at - 5))) / 5) : null,
 					ageMin: t - at,
 				}
 			: null;
-	const history = reading ? Array.from({ length: 12 }, (_, i) => at - 5 * (12 - i)).map((m) => (got(m) ? g(m) : null)) : [];
+	const history = reading ? Array.from({ length: HISTORY }, (_, i) => at - 5 * (HISTORY - i)).map((m) => (got(m) ? g(m) : null)) : [];
 
-	const q = (s.quiet ?? []).find(([a, b]) => t >= a && t < b);
-	const done = (s.treatments ?? []).filter((x) => x.at <= t).at(-1);
-	return {
+	const within = (spans: [number, number][] | undefined) => (spans ?? []).find(([a, b]) => t >= a && t < b);
+	const mute = within(s.muted);
+	const quiet = within(s.quiet);
+	const hold = mute
+		? { kind: 'muted' as const, leftMin: Math.ceil(mute[1] - t) }
+		: quiet
+			? { kind: 'quiet' as const, leftMin: Math.ceil(quiet[1] - t) }
+			: null;
+	// the last treatment: the latest so far, or in a loop yesterday's latest
+	const ts = s.treatments ?? [];
+	const done = ts.filter((x) => x.at <= t).at(-1) ?? (s.loop ? ts.at(-1) : undefined);
+	const ago = done ? (done.at <= t ? t - done.at : t + s.minutes - done.at) : 0;
+	const live: Live = {
 		now,
 		reading,
 		history,
 		phone: reaches(Math.floor(t)),
 		sensor: s.sensor?.(t) ?? { state: 'ok' },
-		quiet: q ? { leftMin: Math.ceil(q[1] - t) } : null,
-		treatment: done ? { items: done.items, agoMin: Math.floor(t - done.at) } : null,
-		dnd: !!s.dnd,
+		hold,
+		treatment: done ? { items: done.items, agoMin: Math.floor(ago) } : null,
+		dnd: typeof s.dnd === 'function' ? s.dnd(t) : !!s.dnd,
 	};
+	if (s.watch) live.watch = s.watch(t);
+	if (s.tir) live.tir = s.tir(t);
+	return live;
 }

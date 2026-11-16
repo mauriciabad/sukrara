@@ -1,17 +1,20 @@
 ---
 title: Sukrara Aura for Garmin
-description: A watch face for Garmin watches whose dial is the aura of your glucose. Each reading from Sukrara for Android within seconds, the trend or the last hour, what to do now, and never an old value as current. Free.
+description: A watch face for Garmin watches whose dial is the aura of your glucose. Each reading from Sukrara for Android within seconds, the last hours beside the value, what to do now, and never an old value as current. Free.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
-import Gallery from '../../components/Gallery.astro';
+import FaceGallery from '../../components/face-playground/FaceGallery.astro';
+import FaceTour from '../../components/face-playground/FaceTour.astro';
 
 A watch face whose dial is the aura of your glucose: it gathers at your level and spreads the further out of range you
 are. Each reading comes from [Sukrara for Android](/android/) within seconds.
 
-<Gallery shots={[['garmin', 150], ['garminLow', 150], ['garminVeryHigh', 150]]} />
+Below, the face lives through a made-up day, 600 times faster: a low at night, meals, a high and its correction, a
+sensor running out and a new one warming up, the phone left behind, a mute. Point at a part to see what it is, and pick
+a dial. Or [try it yourself](/watch-face/): pick any state, change the reading, or speed up time.
 
-[Try it in your browser](/watch-face/): pick a state, change the reading, or speed up time.
+<FaceTour />
 
 ## Get it
 
@@ -27,18 +30,59 @@ Sukrara Aura is on its way to the Connect IQ store.
 
 ## What it does
 
-- The time, and your glucose in its band's colour with Sukrara's trend arrow, or the last hour as a small line.
-- A level rail from 1:30 to 4:30: where you are between your limits, with the last 30 minutes as a fading trail.
-- What to do now: *Carbs* or *Insulin* when needed; alerts held after a treatment or muted, with the time left.
-- An old reading never looks current: late, then struck through in grey, then *No reading since* and its time.
-- The dial reacts to your glucose: grain, contours, waterline, lasers or glow; or a calm map, or black.
-- Fields of your choice: weather, steps, last treatment, time in range, sunset, a second time zone and more.
-- Always-on and night looks that keep the time readable; a private mode shows the value only while you hold the
-  screen.
-- On the phone, **Settings › Share with apps › Garmin** shows which reading each watch has.
-- In English and Spanish, as your watch is.
+Every picture here is the face itself, drawn by its own code from made-up readings. The ones marked *moves* run on a
+clock, so you see a state come and go.
 
-<Gallery shots={[['garminSparkline', 150], ['garminPrivate', 150], ['garminOld', 150], ['garminAlwaysOn', 150], ['garminNight', 150], ['garminHigh', 150]]} />
+### Your glucose, at a glance
+
+<FaceGallery group="glucose" />
+
+### The last hours
+
+<FaceGallery group="trend" />
+
+### What to do now
+
+<FaceGallery group="act" />
+
+### Muted
+
+<FaceGallery group="muted" />
+
+### Never an old value as current
+
+<FaceGallery group="age" />
+
+### Sensor, phone and battery
+
+<FaceGallery group="sensor" />
+
+### Always-on, night and private
+
+<FaceGallery group="screen" />
+
+### Your fields and settings
+
+<FaceGallery group="fields" />
+
+### The dial follows you
+
+<FaceGallery group="dial" />
+
+### On your phone
+
+**Settings › Share with apps › Garmin** shows each watch and what it has, in words:
+
+- *Descent Mk3i has the 10:09 reading*, or *waiting for a reading*.
+- *Descent Mk3i isn't connected* when the watch is away, and *Sukrara Aura isn't on your watch* until you install it.
+- *Needs Garmin Connect on this phone* or *Garmin Connect isn't answering · open it*, with the button that fixes it.
+- *Updates every 5 minutes · Garmin Connect loses messages* when Garmin Connect drops them: the face asks the phone
+  itself.
+- **Send now** sends the current reading at once.
+
+### In your language
+
+English and Spanish, as your watch is: *Carbs* and *Hidratos*, *No reading since* and *Sin lecturas desde*.
 
 ## Requirements
 

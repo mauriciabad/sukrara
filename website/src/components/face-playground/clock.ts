@@ -17,3 +17,6 @@ export const advance = (c: Clock, realMs: number): Clock =>
 /** The clock stopped at its end, or as it was. */
 export const clampTo = (c: Clock, endMin: number): Clock =>
 	c.minutes >= endMin ? { ...c, minutes: endMin, running: false } : c;
+
+/** The clock in a loop of `period` minutes: past the end it starts again (a day that loops). */
+export const wrap = (c: Clock, period: number): Clock => ({ ...c, minutes: ((c.minutes % period) + period) % period });

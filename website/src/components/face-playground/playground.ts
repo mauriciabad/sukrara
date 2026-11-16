@@ -10,9 +10,13 @@
 import { advance, clampTo, SPEEDS, type Clock } from './clock.ts';
 import { controls } from './controls.ts';
 import { faceView } from './face-view.ts';
-import { liveAt, SCENARIOS, type Scenario } from './scenarios.ts';
+import { DAY } from './day/index.ts';
+import { liveAt, SCENARIOS as OWN, type Scenario } from './scenarios.ts';
 import { words } from './strings.ts';
 import type { FaceAdapter, Lang, Values } from './types.ts';
+
+// the short scenarios, then the made-up day the face tour plays
+const SCENARIOS: Scenario[] = [...OWN, DAY];
 
 const $ = <T extends Element>(root: ParentNode, sel: string) => root.querySelector<T>(sel)!;
 
