@@ -4,6 +4,7 @@
 package app.mauri.sukrara.integrations.garmin
 
 import app.mauri.sukrara.core.model.AlertUiState
+import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.Role
@@ -85,13 +86,36 @@ class AuraLinkTest {
             .also { it.start(backgroundScope) }
     }
 
+    /** Past the link's settle time: a changed payload is sent. */
+    private fun TestScope.settle() {
+        advanceTimeBy(AuraLink.SETTLE_MS + 1)
+        runCurrent()
+    }
+
+    @Test
+    fun aReadingThatChangesThePayloadTwiceSendsOneMessage() =
+        runTest {
+            val port = FakePort()
+            val glucose = MutableStateFlow(state(-30L to 112))
+            link(port, glucose)
+            settle()
+            assertEquals(1, port.sent.size)
+            clock.advance(Duration.ofMinutes(1))
+            glucose.value = state(-90L to 112, -30L to 115)
+            advanceTimeBy(1_000)
+            glucose.value = glucose.value.copy(alerts = AlertUiState(status = CardStatus.Needed(false)))
+            settle()
+            assertEquals(2, port.sent.size)
+            assertEquals("needed", (port.sent[1]["st"] as Map<*, *>)["k"])
+        }
+
     @Test
     fun everyNewReadingGoesToTheWatchWithTheFace() =
         runTest {
             val port = FakePort()
             val glucose = MutableStateFlow(state(-30L to 112))
             val link = link(port, glucose)
-            runCurrent()
+            settle()
             assertEquals(1, port.sent.size)
             assertEquals(112, (port.sent[0]["g"] as Map<*, *>)["v"])
             val w =
@@ -102,7 +126,7 @@ class AuraLinkTest {
 
             clock.advance(Duration.ofMinutes(1))
             glucose.value = state(-90L to 112, -30L to 115)
-            runCurrent()
+            settle()
             assertEquals(2, port.sent.size)
             assertEquals(115, (port.sent[1]["g"] as Map<*, *>)["v"])
         }
@@ -114,10 +138,10 @@ class AuraLinkTest {
             val same = state(-30L to 112)
             val glucose = MutableStateFlow(same)
             link(port, glucose)
-            runCurrent()
+            settle()
             clock.advance(Duration.ofSeconds(20))
             glucose.value = same.copy()
-            runCurrent()
+            settle()
             assertEquals(1, port.sent.size)
         }
 
@@ -126,7 +150,7 @@ class AuraLinkTest {
         runTest {
             val port = FakePort().apply { answers.addAll(listOf(IqSend.NoAnswer, IqSend.Failed, IqSend.Delivered)) }
             val link = link(port, MutableStateFlow(state(-30L to 112)))
-            runCurrent()
+            settle()
             assertEquals(1, port.sent.size)
             assertTrue(
                 link.state.value.watches
@@ -156,7 +180,7 @@ class AuraLinkTest {
         runTest {
             val port = FakePort().apply { face = false }
             val link = link(port, MutableStateFlow(state(-30L to 112)))
-            runCurrent()
+            settle()
             assertEquals(0, port.sent.size)
             assertEquals(
                 false,
@@ -172,7 +196,7 @@ class AuraLinkTest {
         runTest {
             val port = FakePort().apply { watches = listOf(IqDevice(7, "Descent", false)) }
             val link = link(port, MutableStateFlow(state(-30L to 112)))
-            runCurrent()
+            settle()
             assertEquals(0, port.sent.size)
             port.watches = listOf(IqDevice(7, "Descent", true))
             advanceTimeBy(60_001)
@@ -191,7 +215,7 @@ class AuraLinkTest {
             settings.set(AuraLink.SETTING, false)
             val port = FakePort()
             val link = link(port, MutableStateFlow(state(-30L to 112)), settings)
-            runCurrent()
+            settle()
             assertEquals(0, port.sent.size)
             assertEquals(AuraStatus.Off, AuraStatus.of(link.state.value, clock.now()))
         }
@@ -201,7 +225,7 @@ class AuraLinkTest {
         runTest {
             val port = FakePort()
             val link = link(port, MutableStateFlow(state(-30L to 112)))
-            runCurrent()
+            settle()
             assertTrue(link.state.value.fetchOpen)
             link.stop()
         }
@@ -211,7 +235,7 @@ class AuraLinkTest {
         runTest {
             val port = FakePort().apply { face = false }
             val link = link(port, MutableStateFlow(state(-30L to 112)))
-            runCurrent()
+            settle()
             assertFalse(link.state.value.fetchOpen)
         }
 
@@ -221,7 +245,7 @@ class AuraLinkTest {
             val port = FakePort().apply { version = ConnectIqPort.NO_ANSWER }
             port.answers.add(IqSend.NoAnswer)
             val link = link(port, MutableStateFlow(state(-30L to 112)))
-            runCurrent()
+            settle()
             assertEquals(1, port.sent.size)
             assertNull(
                 link.state.value.watches
@@ -245,6 +269,31 @@ class AuraLinkTest {
         assertFalse(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", true, false)))))
         // a watch away that has the face keeps it open (the face fetches as soon as it is back)
         assertTrue(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", false, true)))))
+    }
+
+    @Test
+    fun theFacesReport() {
+        val now = clock.now()
+        val r =
+            AuraReport.parse(
+                mapOf(
+                    "r" to "p.1794831700.1794831697.1794831696_fx.1794831720.1794831600.1794831590_e-104.1794831800.0.0_bad",
+                    "d" to "1794831696.1794831701",
+                ),
+                now,
+            )!!
+        assertEquals(
+            listOf(
+                AuraRun("p", 1794831700, 1794831697, 1794831696),
+                AuraRun("fx", 1794831720, 1794831600, 1794831590),
+                AuraRun("e-104", 1794831800, 0, 0),
+            ),
+            r.runs,
+        )
+        assertEquals(Instant.ofEpochSecond(1794831696), r.drawn)
+        assertEquals(Instant.ofEpochSecond(1794831701), r.drawnSince)
+        assertNull(AuraReport.parse(mapOf("x" to "1"), now))
+        assertEquals(null, AuraReport.parse(mapOf("r" to "", "d" to "junk"), now)!!.drawn)
     }
 
     @Test

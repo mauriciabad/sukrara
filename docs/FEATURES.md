@@ -2553,8 +2553,13 @@ digit by digit).
   while a watch is known to have the face** (Garmin Connect says Sukrara Aura is installed on it, or a push reached it;
   checked when the watch connects and every 30 min) and closes when the switch goes off, Garmin Connect goes or the face
   is gone: on a phone without the face nothing listens. A watch Garmin Connect doesn't answer about still gets pushes. Sukrara talks to Garmin
-  Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free software). Tests:
-  `AuraLinkTest`, `AuraStatusTest`.
+  Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free software). One message per
+  change: a reading that changes the payload in steps (the hub, then today's readings) is sent once it settles (3 s).
+  Tests: `AuraLinkTest`, `AuraStatusTest`.
+- **The face reports back** with every fetch: its last 10 deliveries (push or fetch, the watch's time, which payload,
+  which reading) and the reading it draws since when. The page shows *On the watch* "The reading from 14:21 · as of
+  2 minutes ago"; logcat `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer)
+  and each report, times only. So an agent or the person can see what the watch got without looking at it.
 - Settings › Share with apps › *Watches* › **Sukrara Aura** (first in the group, Garmin Connect's icon; settings search
   "Garmin", "watch face"), its line saying what the link does now; it opens the page: *Send to Sukrara Aura* (the
   switch, with the same line), *Watches* (each watch Garmin Connect knows: connected and when the last reading got
@@ -2584,7 +2589,8 @@ ago"); *messages lost, the face fetching* ("Garmin Connect loses messages · the
 ("Messages don't reach Descent · open Garmin Connect or restart the watch"; out: those, *Send now*); *waiting* ("On ·
 waiting for the next reading"). The fetch port's own state is on *The face asking this phone*: *closed* (no watch
 known to have the face; out: install the face, or a push reaching it opens it), *open* ("Last asked …"), *port taken*
-(the footer says only Garmin Connect's messages reach the face; out: stop the other app). On the watch the face never shows an old value as current: every state there ages by
+(the footer says only Garmin Connect's messages reach the face; out: stop the other app); *On the watch* appears with
+the face's first report. On the watch the face never shows an old value as current: every state there ages by
 itself and Garmin's *No phone* shows the link is down. Every row is a plain TalkBack row with its text.
 
 ## Share with apps on this phone (investigation 22)

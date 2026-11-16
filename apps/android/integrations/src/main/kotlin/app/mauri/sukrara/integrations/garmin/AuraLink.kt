@@ -22,6 +22,7 @@ import app.mauri.sukrara.integrations.localserver.LocalHttpServer
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -62,6 +64,48 @@ data class AuraWatch(
 )
 
 /**
+ * One background delivery as the face saw it: [kind] `p` (a push), `f` (its fetch), `e<code>` (a fetch that failed),
+ * with `x` when it kept the older payload; [at] the watch's clock; [sent] when the phone built that payload; [readingAt]
+ * its reading's time (epoch s, 0 = none).
+ */
+data class AuraRun(
+    val kind: String,
+    val at: Long,
+    val sent: Long,
+    val readingAt: Long,
+)
+
+/**
+ * The face's own account, sent with each fetch: its last deliveries ([runs], oldest first) and the reading it draws
+ * ([drawn], its time on the watch clock) since [drawnSince]; [at] = when the phone got it.
+ */
+data class AuraReport(
+    val at: Instant,
+    val runs: List<AuraRun>,
+    val drawn: Instant?,
+    val drawnSince: Instant?,
+) {
+    companion object {
+        /** `r=p.<at>.<sent>.<readingAt>_f.…&d=<readingAt>.<since>` (AuraLink.mc saveReport); null when there is none. */
+        fun parse(
+            query: Map<String, String>,
+            at: Instant,
+        ): AuraReport? {
+            val r = query["r"] ?: return null
+            val runs =
+                r.split('_').mapNotNull { run ->
+                    val f = run.split('.')
+                    if (f.size != 4) return@mapNotNull null
+                    val n = f.drop(1).map { it.toLongOrNull() ?: return@mapNotNull null }
+                    AuraRun(f[0], n[0], n[1], n[2])
+                }
+            val d = query["d"]?.split('.')?.mapNotNull { it.toLongOrNull() }?.takeIf { it.size == 2 }
+            return AuraReport(at, runs, d?.let { Instant.ofEpochSecond(it[0]) }, d?.let { Instant.ofEpochSecond(it[1]) })
+        }
+    }
+}
+
+/**
  * Everything Settings › Share with apps › Sukrara Aura shows: the switch ([on], default on), whether Garmin Connect is
  * there and answers, each watch, and when the face last fetched from this phone ([fetched]: proof it is the watch face
  * and the link works).
@@ -77,6 +121,8 @@ data class AuraLinkState(
     val portBusy: Boolean = false,
     /** The face's fetch port is open (only while a watch is known to have the face). */
     val fetchOpen: Boolean = false,
+    /** What the face said it got and draws, with its last fetch. */
+    val report: AuraReport? = null,
 )
 
 /**
@@ -119,11 +165,22 @@ class AuraLink(
 
     private val server =
         LocalHttpServer(fetchPort, ::answer, onRequest = { req, a ->
-            if (req.path == PATH && a.status.startsWith("200")) _state.update { it.copy(fetched = clock.now()) }
+            if (req.path == PATH && a.status.startsWith("200")) {
+                val report = AuraReport.parse(req.query, clock.now())
+                _state.update { it.copy(fetched = clock.now(), report = report ?: it.report) }
+                // times only (never a value): what the face got and when, for adb logcat -s Sukrara.Aura
+                report?.let { r ->
+                    trace(
+                        "face report: drawn ${r.drawn?.epochSecond} since ${r.drawnSince?.epochSecond}; runs ${r.runs.joinToString(
+                            " ",
+                        ) { "${it.kind}@${it.at}/sent ${it.sent}/reading ${it.readingAt}" }}",
+                    )
+                }
+            }
         })
 
     /** Runs the link for as long as [scope] lives. */
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
     fun start(scope: CoroutineScope) {
         scope.launch { on.collect { o -> _state.update { it.copy(on = o) } } }
         // the payload, rebuilt on every change of what it carries
@@ -156,7 +213,7 @@ class AuraLink(
         }
         // the push: every new payload (or a kick, or a watch coming back) to every watch with the face
         scope.launch {
-            combine(on, payloads, kick, watchTick()) { o, p, k, t -> Triple(o, p, k to t) }
+            combine(on, payloads.debounce(SETTLE_MS), kick, watchTick()) { o, p, k, t -> Triple(o, p, k to t) }
                 .distinctUntilChanged { a, b -> a.first == b.first && same(a.second, b.second) && a.third == b.third }
                 .collectLatest { (o, p, _) -> if (o) withContext(io) { push(p) } }
         }
@@ -229,7 +286,9 @@ class AuraLink(
             val devices = port.devices()
             _state.update { it.copy(garminConnect = port.installed(), answering = devices != null) }
             if (devices == null) return
-            val bytes = MonkeyC.encode(p + ("sent" to clock.now().epochSecond.toInt()))
+            val sent = clock.now().epochSecond.toInt()
+            val bytes = MonkeyC.encode(p + ("sent" to sent))
+            val readingAt = (p["g"] as? Map<*, *>)?.get("t")
             var retry = false
             val watches =
                 devices.map { d ->
@@ -237,8 +296,10 @@ class AuraLink(
                     val installed = installed(d, before)
                     var w = AuraWatch(d.id, d.name, d.connected, installed, before?.delivered, before?.failed, before?.noAnswer ?: false)
                     if (d.connected && installed != false) {
+                        val result = port.send(d, APP_ID, bytes)
+                        trace("push sent $sent reading $readingAt: $result")
                         w =
-                            when (port.send(d, APP_ID, bytes)) {
+                            when (result) {
                                 IqSend.Delivered -> {
                                     w.copy(delivered = clock.now(), failed = null, noAnswer = false, installed = true)
                                 }
@@ -292,6 +353,12 @@ class AuraLink(
         return HttpAnswer("200 OK", json(p + ("sent" to clock.now().epochSecond.toInt())).toString())
     }
 
+    /** A link event in logcat (`Sukrara.Aura`) and the diagnostic log: times and states only, never a value. */
+    private fun trace(line: String) {
+        runCatching { android.util.Log.i(TAG, line) }
+        log(line)
+    }
+
     /** Stops the fetch port (the switch stays as it is). */
     fun stop() = server.stop()
 
@@ -302,10 +369,14 @@ class AuraLink(
         /** The face's fetch: http://127.0.0.1:17582/sukrara/aura (Garmin Connect allows http only to loopback). */
         const val PORT = 17582
         const val PATH = "sukrara/aura"
+        const val TAG = "Sukrara.Aura"
 
         val SETTING = SchemaSettings.bool("apps.garminFace", default = true)
 
         private const val CHECK_MS = 60_000L
+
+        /** A reading changes the payload in steps (the hub, then today's readings): one message once it settles. */
+        const val SETTLE_MS = 3_000L
         private const val RETRY_FIRST_MS = 15_000L
         private const val RETRY_MAX_MS = 120_000L
         private const val RECHECK_MS = 30 * 60_000L

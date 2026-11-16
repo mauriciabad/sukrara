@@ -8,6 +8,8 @@ import android.content.Intent
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
@@ -20,8 +22,10 @@ import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.SwitchRow
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.ui.ago
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -153,8 +157,23 @@ fun AuraPage(
     modifier: Modifier = Modifier,
 ) {
     val s by viewModel.state.collectAsStateWithLifecycle()
-    AuraContent(s, now(), AuraActions(viewModel::setOn, viewModel::sendNow, { viewModel.openGarminConnect() }), modifier)
+    AuraContent(s, ticking(now), AuraActions(viewModel::setOn, viewModel::sendNow, { viewModel.openGarminConnect() }), modifier)
 }
+
+/** [now] again every 30 s, so "2 minutes ago" keeps counting while nothing else changes. */
+@Composable
+fun ticking(now: () -> Instant): Instant {
+    val clock by rememberUpdatedState(now)
+    val t by produceState(now()) {
+        while (true) {
+            delay(TICK_MS)
+            value = clock()
+        }
+    }
+    return t
+}
+
+private const val TICK_MS = 30_000L
 
 /**
  * Settings › Share with apps › *Sukrara Aura*: the switch (on by default), what the link does now, each watch, when the
@@ -190,6 +209,13 @@ fun AuraContent(
                         else -> stringResource(R.string.in_aura_not_fetched)
                     },
             )
+            // the face's own account (sent with its fetch): which reading it draws
+            s.report?.drawn?.let { drawn ->
+                InfoRow(
+                    stringResource(R.string.in_aura_face_shows_title),
+                    summary = stringResource(R.string.in_aura_face_shows, ClockText.time(drawn.epochSecond), ago(s.report.at, now)),
+                )
+            }
         }
         SettingsGroup {
             ActionRow(

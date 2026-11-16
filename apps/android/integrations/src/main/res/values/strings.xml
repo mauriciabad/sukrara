@@ -63,6 +63,8 @@
     <string name="in_aura_fetched">Last asked %1$s</string>
     <string name="in_aura_fetch_closed">Closed until a watch has Sukrara Aura (Garmin Connect says so, or a reading reaches it)</string>
     <string name="in_aura_not_fetched">Not yet · it asks every 5 minutes while it\'s your watch face</string>
+    <string name="in_aura_face_shows_title">On the watch</string>
+    <string name="in_aura_face_shows">The reading from %1$s · as of %2$s</string>
     <string name="in_aura_send_now">Send now</string>
     <string name="in_aura_send_now_summary">Sends the current reading to every watch again</string>
     <string name="in_aura_open_gcm">Open Garmin Connect</string>

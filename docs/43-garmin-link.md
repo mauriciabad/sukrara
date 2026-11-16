@@ -89,7 +89,27 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
   same payload from 127.0.0.1:17582 (HTTP 200); Sukrara Aura itself stored the pushed payload. The simulator's fetch
   needs *Use Device HTTPS Requirements* off (its default mimics a phone that allows only https); Garmin Connect on
   Android allows http to loopback ([08](08-garmin.md)).
-- The owner's phone and watch: pending (the device check).
+- The owner's phone and watch, 2026-11-16 (Garmin Connect 5.31, Android 17):
+  - **Push reaches the watch**: Garmin Connect confirmed every message 1–3 s after its reading (14:18–14:27, one or
+    two a minute), and the face showed a value after each reconnect.
+  - **Disconnections stop everything**, as designed: the watch on the Mac's USB (13:52–14:09, the phone link drops) and
+    a Bluetooth toggle (14:11–14:19: the watch only came back when its Phone control was toggled) left the face aging
+    from 13:52, then 14:19.
+  - **Open: the face applied the readings late.** At 14:21:58 it still showed 14:19 though 14:20 and 14:21 were
+    confirmed delivered; it updated at ~14:23 to a reading ~2 min old. The face's 5-minute fetch ran (14:23:39). The
+    hypothesis, from forum reports ([staff](https://forums.garmin.com/developer/connect-iq/f/discussion/6086/syncing-applications-when-doing-background-service-with-communications),
+    [AAPS push face](https://github.com/Pwb0186/aaps-garmin-push-watchface)): a face's background runs at most about
+    every 5 minutes, phone messages included, and messages in between wait in the watch's queue. Not proven yet: the
+    face's report (below) gives the watch's own times.
+  - So a phone sending one message per minute only queues them; the second message a couple of seconds after each
+    reading (the payload changing in two steps) is gone (one message per reading).
+- **Seeing the watch without looking at it**: Garmin's ways are `System.println` to `GARMIN/APPS/LOGS/<app>.TXT`
+  (when that file exists) and crash reports in `GARMIN/APPS/LOGS/CIQ_LOG.YML`
+  ([FAQ](https://forums.garmin.com/developer/connect-iq/w/wiki/4/new-developer-faq),
+  [logging tips](https://github.com/blackdogit/connectiq-apps/wiki/Tips:-Logging)), both read over USB, which drops
+  the phone link the check is about. Chosen instead: the face reports with its fetch what it got (each push and
+  fetch, the watch's time, which payload) and what it draws; the phone shows it (*On the watch*) and logs it (logcat
+  `Sukrara.Aura`). It costs nothing extra on the watch and is useful to the person too. The USB logs stay for crashes.
 
 ## In Sukrara
 

@@ -27,6 +27,7 @@ import app.mauri.sukrara.integrations.garmin.AuraLinkState
 import app.mauri.sukrara.integrations.garmin.AuraStatus
 import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.auraStatusText
+import app.mauri.sukrara.integrations.garmin.ticking
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.healthStatusText
 import app.mauri.sukrara.integrations.history.ImportState
@@ -179,7 +180,7 @@ fun AppsPage(
     ui?.let {
         AppsContent(
             it,
-            now(),
+            ticking(now),
             AppsActions(
                 viewModel::setXdrip,
                 openNightscout,

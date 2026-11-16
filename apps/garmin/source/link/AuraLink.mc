@@ -39,10 +39,58 @@ module AuraLink {
         if (!(data instanceof Dictionary)) {
             return false;
         }
-        if ("fetch".equals(data.get("k")) && data.get("c") == 200) {
+        var fetch = "fetch".equals(data.get("k"));
+        if (fetch && data.get("c") == 200) {
             _fetchedAt = now;
         }
-        return accept(data.get("d"), now);
+        var d = data.get("d");
+        var kept = accept(d, now);
+        var sent = valid(d) ? (d as Dictionary).get("sent") : 0;
+        var g = valid(d) ? (d as Dictionary).get("g") : null;
+        // what arrived, when (the report the phone shows): p / f, or the fetch's error code
+        note((fetch ? (data.get("c") == 200 ? "f" : "e" + data.get("c")) : "p") + (kept ? "" : "x"), now, sent, g instanceof Dictionary ? g.get("t") : 0);
+        return kept;
+    }
+
+    // The watch's own account of the link, sent to the phone with every fetch (?r=…&d=…): the last background
+    // deliveries (kind, watch time, the payload's sent, its reading's time) and since when the face draws which reading.
+    const REPORT = "auraReport";
+    const RUNS = 10;
+    var _runs as Array<String>? = null;
+    var _drawn as String = "";
+
+    function note(kind as String, at as Number, sent, gt) as Void {
+        if (_runs == null) {
+            var r = Application.Storage.getValue(REPORT + "Runs");
+            _runs = r instanceof Array ? r as Array<String> : [] as Array<String>;
+        }
+        var runs = _runs as Array<String>;
+        runs.add(kind + "." + at + "." + sent + "." + gt);
+        if (runs.size() > RUNS) {
+            runs = runs.slice(runs.size() - RUNS, null);
+            _runs = runs;
+        }
+        Application.Storage.setValue(REPORT + "Runs", runs);
+        saveReport();
+    }
+
+    // The reading the face draws now (its time on the watch clock) and since when: written when it changes.
+    function drawn(readAt as Number, now as Number) as Void {
+        var key = readAt.toString();
+        if (_drawn.find(key + ".") == 0) {
+            return;
+        }
+        _drawn = key + "." + now;
+        saveReport();
+    }
+
+    function saveReport() as Void {
+        var runs = _runs != null ? _runs as Array<String> : [] as Array<String>;
+        var r = "";
+        for (var i = 0; i < runs.size(); i++) {
+            r += (i > 0 ? "_" : "") + runs[i];
+        }
+        Application.Storage.setValue(REPORT, "r=" + r + "&d=" + _drawn);
     }
 
     // Keeps [p] when it is a version-1 payload no older than the stored one (README "Order").
@@ -71,6 +119,8 @@ module AuraLink {
         _fetchedAt = null;
         _cache = null;
         _loaded = true;
+        _runs = null;
+        _drawn = "";
         Application.Storage.deleteValue(STORE);
     }
 
@@ -156,6 +206,9 @@ module AuraLink {
         _cache = r;
         _cacheAt = now;
         _cacheOf = _payload;
+        if (g instanceof Dictionary) {
+            drawn(r.readAt, now);
+        }
         return r;
     }
 

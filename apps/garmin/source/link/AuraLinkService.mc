@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+import Toybox.Application;
 import Toybox.Background;
 import Toybox.Communications;
 import Toybox.Lang;
@@ -44,8 +45,15 @@ class AuraLinkService extends System.ServiceDelegate {
 
     // The fetch, every 5 minutes.
     function onTemporalEvent() as Void {
+        // the face's report of what it got and draws (AuraLink.saveReport), so the phone can show and log it
+        var report = null;
+        try {
+            report = Application.Storage.getValue("auraReport");
+        } catch (e) {
+            report = null;
+        }
         Communications.makeWebRequest(
-            AuraLinkBackground.FETCH_URL,
+            AuraLinkBackground.FETCH_URL + (report instanceof String ? "?" + report : ""),
             null,
             {
                 :method => Communications.HTTP_REQUEST_METHOD_GET,

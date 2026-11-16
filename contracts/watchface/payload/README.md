@@ -24,6 +24,12 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the fa
 2. **Fetch**: the face's background asks `GET http://127.0.0.1:17582/sukrara/aura` every 5 minutes (a temporal
    event; Garmin Connect makes the request, plain http only to loopback). The answer is the same payload as JSON.
 
+The fetch carries the face's own report back as its query (`AuraLink.mc` `saveReport`, Android `AuraReport.parse`):
+`r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `f` a fetch,
+`e<code>` a failed fetch, `x` appended when the face kept the older payload; `at` the watch clock; the last 10, oldest
+first) and `d` the reading the face draws (its time on the watch clock) and since when. Times only, never a value. The
+phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with each push's `sent` and result).
+
 ## The payload
 
 Keys are short (the face has 128 KB, its background 64 KB). Times are **absolute** epoch seconds (32-bit), so the
