@@ -16,8 +16,9 @@ class AuraView extends WatchUi.WatchFace {
 
     function onLayout(dc as Graphics.Dc) as Void {}
 
+    // shown (back from a menu, the face picked): awake; onEnterSleep or a low-power display mode follows if not
     function onShow() as Void {
-        AuraWatch.screen("S", AuraWatch.displayMode() == 1);
+        AuraWatch.screen("S", false);
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {

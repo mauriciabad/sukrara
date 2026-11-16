@@ -127,14 +127,16 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
   deliveries in `r` and in their shape, `<event>.<watch time>.<display mode>.0`: `S` onShow, `X` onExitSleep (wrist
   raise, button), `E` onEnterSleep, `C` onDisplayModeChanged, and `Da` / `Dn` / `Dw` the first draw in always-on /
   night / awake; the display mode is `System.getDisplayMode()` then (0 high power, 1 low power, 2 off). Times and
-  modes only. The face used to leave always-on only when `onDisplayModeChanged` said high power, ignoring
-  `onExitSleep` on API 5 watches (Garmin staff advise the display mode over the sleep callbacks,
-  [forum](https://forums.garmin.com/developer/connect-iq/f/discussion/369120/backlight-detection)): had the Descent
-  not called it on a wrist raise, the face would have stayed in its dimmer always-on look while awake. Now the last
-  callback decides (`X` → awake, `E` → always-on on an AMOLED, `C` / `S` → the display mode). Reading a wake in
-  logcat's runs: `X@<t>/sent 0` then `Dw@<t>/sent 0` (`Dn` in the sleep window, `sent` being the display mode); a
-  `C@<t>/sent 0` after `X` shows the old code would have woken too. The panel's own brightness is the firmware's: the ambient light sensor dims a wrist-raise
-  wake in low light "by design" and a button gives full power
+  modes only. The owner switched to a Garmin face: normal brightness, so the face causes it. The face used to decide
+  always-on from the display mode alone on API 5 watches (Garmin staff advise it over the sleep callbacks,
+  [forum](https://forums.garmin.com/developer/connect-iq/f/discussion/369120/backlight-detection)): `onShow` read
+  it and `onExitSleep` was ignored. Had the Descent said low power on the way back from a menu, or not called
+  `onDisplayModeChanged` on a wrist raise, the face drew its dimmer always-on look (outlined grey time, dimmer
+  palette) while awake: both of the owner's symptoms. Now the last callback decides: `X` and `S` → awake, `E` →
+  always-on on an AMOLED, `C` → the display mode. Reading a wake in logcat's runs: `X@<t>/sent 0` then
+  `Dw@<t>/sent 0` (`Dn` in the sleep window; `sent` is the display mode); `S@<t>/sent 1` or no `C@<t>/sent 0` after
+  `X` confirms the old code's mistake. The panel's own brightness is the firmware's: the ambient light sensor dims a
+  wrist-raise wake in low light "by design" and a button gives full power
   ([Garmin, fēnix 8](https://forums.garmin.com/outdoor-recreation/outdoor-recreation/f/fenix-8-series/406596/fenix-8---51-amoled-screen-too-dim-in-low-light-dark-environments/1927570)),
   and always-on runs the panel dimmed, which a face can't change
   ([garmin-matrix-time #164](https://github.com/wkusnierczyk/garmin-matrix-time/issues/164)).
