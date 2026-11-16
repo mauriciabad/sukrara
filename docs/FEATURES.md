@@ -2579,7 +2579,7 @@ digit by digit).
   reading Garmin Connect delivered and the one the face says it keeps (the fetch doesn't say which watch asked); logcat
   `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer) and each report, times
   only. So an agent or the person can see what the watch got without looking at it.
-- Settings › Share with apps › *Watches* › **Garmin** (a neutral watch icon; settings search "watch", "watch face",
+- Settings › Share with apps › *Watches* › **Garmin** (Garmin Connect's icon; settings search "watch", "watch face",
   "data field", "Connect IQ", "Sukrara Aura"), its line saying what the link does now ("Descent Mk3i 43mm has the 14:21
   reading"; the watch's name is Garmin Connect's, never a fixed model), in the error colour when something outside the
   app stops it. It opens the **Garmin** page (`garmin/GarminPage`), built like a stock device page:
@@ -2636,13 +2636,11 @@ as a button named by its label.
   that stands for another app or service shows that app's own icon, the way AOSP Settings draws app icons (the app's
   unbadged icon with the launcher shadow under the device's icon shape, the work-profile badge, 32 dp in the row's
   icon place, loaded off the main thread; a failed load leaves the place empty): *LibreView*, *Tidepool*, *Nightscout
-  upload*, *Garmin*, *xDrip+ server*, *Health Connect* and *Nightscout API on this phone* here;
+  upload*, *Garmin* (Garmin Connect's), *xDrip+ server*, *Health Connect* and *Nightscout API on this phone* here;
   each app that reads the xDrip+ server on its page; each app on *Send glucose to apps* (an uninstalled one: Android's default app icon); *Tidepool* and *LibreView*
   on *Import history*; *Juggluco* in Settings › Sensor's *Reading source*; the clinic banner's pills. Juggluco, xDrip+ and Health Connect show the installed app's icon (manifest
-  `<queries>`), else Sukrara's copy of it;
-  Nightscout, LibreView and Tidepool always Sukrara's copy; *Garmin* always a neutral watch (not Garmin Connect's icon:
-  the row is about the watches; not Garmin's delta or logo: Garmin allows them only with its written permission), also
-  the fallback of an xDrip+ server reader that is gone (sources and
+  `<queries>`), else Sukrara's copy of it; Nightscout, LibreView and Tidepool always Sukrara's copy; *Garmin* and the xDrip+ server's readers the installed
+  app's icon only (no copy: Garmin allows its marks only with its written permission), Android's default one without it (sources and
   licences: docs/10-showcase.md "Service and app icons"). The other rows of these groups keep a symbol (*Send glucose to
   apps*, *Import history*, *Export data*), so titles line up. Tests: `AppIconsTest`, `ServiceRowsTest`,
   `ServiceIconRowsTest`.

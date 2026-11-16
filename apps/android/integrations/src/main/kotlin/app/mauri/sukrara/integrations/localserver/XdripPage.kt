@@ -14,7 +14,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import app.mauri.sukrara.designsystem.icons.PackageIcon
-import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.MainSwitchRow
@@ -147,8 +146,7 @@ fun XdripContent(
                 icon = DsR.drawable.ds_ic_apps,
             )
         }
-        // only installed readers are listed; the fallback is for a reader that just went (and the screenshot gallery)
-        for (r in ui.readers) InfoRow(r.label, leading = { PackageIcon(r.pkg, fallback = Service.Garmin.bundled) })
+        for (r in ui.readers) InfoRow(r.label, leading = { PackageIcon(r.pkg) })
     }
     FooterText(stringResource(R.string.in_xdrip_footer))
 }
