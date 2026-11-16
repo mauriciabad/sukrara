@@ -35,8 +35,8 @@
 
     <!-- Share with apps -->
     <string name="in_apps_title">Share with apps</string>
-    <string name="in_apps_intro_wearer">Your glucose in other apps: your clinic through LibreView, your own Nightscout site, Garmin watches through the xDrip+ server, apps on this phone, Health Connect, and a file for your clinic.</string>
-    <string name="in_apps_intro_follower">The glucose of the person you follow in other apps: Garmin watches through the xDrip+ server, and a file.</string>
+    <string name="in_apps_intro_wearer">Your glucose in other apps: your clinic through LibreView, your own Nightscout site, your Garmin watch (Sukrara Aura, or other faces through the xDrip+ server), apps on this phone, Health Connect, and a file for your clinic.</string>
+    <string name="in_apps_intro_follower">The glucose of the person you follow in other apps: your Garmin watch (Sukrara Aura, or other faces through the xDrip+ server), and a file.</string>
     <string name="in_apps_nightscout_group" translatable="false">Nightscout</string>
     <string name="in_apps_clinic_group">Your clinic</string>
     <string name="in_apps_watch_group">Watches</string>

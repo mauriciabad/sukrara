@@ -10,7 +10,8 @@ does: [docs/43](../../../docs/43-garmin-link.md).
 | `schema.json` | the payload's JSON Schema |
 
 Run by `AuraPayloadFixtureTest` (Android `:integrations`: phone → payload, through the wire format and back, Garmin's
-bytes) and the face's link test (Garmin, `apps/garmin`: payload → the face's inputs). Parity group `watchface-link`.
+bytes) and `LinkTest` (the face, `apps/garmin/tools/link-test.sh`: payload → the face's inputs; the cases reach Monkey
+C through `apps/garmin/tools/link_cases.py`). Parity group `watchface-link`.
 
 ## How it travels
 

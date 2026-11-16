@@ -2511,8 +2511,13 @@ digit by digit).
   this phone* (when the face last fetched: proof it is the face in use), *Send now*, *Open Garmin Connect*, and a
   footer: Garmin Connect must run in the background; any app on this phone can read what the face reads while this is
   on; other Garmin faces read the xDrip+ server.
-- On the watch, with the phone out of reach the reading ages from its own time (late → struck → *No reading since*);
-  Garmin's own *No phone* field says the phone is away (`contracts/watchface/aura/SPEC.md` §6.10).
+- On the watch (`apps/garmin/source/link`): the face's background wakes on each push and fetches every 5 min; the face
+  keeps the newest payload (by when the phone built it; a burst of queued ones never puts an older one back) in
+  storage, so after a restart it shows the last reading at once, aging. Every draw works the inputs out from the
+  payload and the watch clock: with the phone out of reach the reading ages from its own time (late → struck → *No
+  reading since*), a quiet or mute that ran out shows no pill, the warm-up and the sensor's end count down by
+  themselves; a watch clock behind the phone's never makes a reading look younger. Garmin's own *No phone* field says
+  the phone is away (`contracts/watchface/aura/SPEC.md` §6.10). Tests: `LinkTest` (`apps/garmin/tools/link-test.sh`).
 - Debug builds: `GARMIN_SIM --ez on true` sends to the Connect IQ simulator instead of Garmin Connect (adb forward
   tcp:7381, simulator › Connection › Start; the fetch through adb forward tcp:17582).
 

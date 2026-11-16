@@ -81,7 +81,15 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
 - The Monkey C writer was checked against Garmin's own serializer (the 2.4.0 AAR, in a throwaway test, never
   committed): every value decodes the same; `cases.json` keeps a payload as Garmin's bytes for every reader to decode.
 - Phone → payload: `AuraPayloadFixtureTest` (16 cases). Link behaviour: `AuraLinkTest`, `AuraStatusTest`.
-- End to end on the simulator and the owner's devices: below.
+- The face: `LinkTest` runs every case on the watch side in the simulator (`apps/garmin/tools/link-test.sh`, 3 tests
+  pass).
+- End to end, 2026-11-16: the debug build on an emulator (`GARMIN_SIM`, synthetic readings) → `adb forward` → the
+  Connect IQ simulator (descentmk343mm, *adb Connection › Start*): a throwaway TEST face (its own app id, times and
+  counts only) received each minute's push (version 1, 10 keys, 12 history slots) and, on a temporal event, fetched the
+  same payload from 127.0.0.1:17582 (HTTP 200); Sukrara Aura itself stored the pushed payload. The simulator's fetch
+  needs *Use Device HTTPS Requirements* off (its default mimics a phone that allows only https); Garmin Connect on
+  Android allows http to loopback ([08](08-garmin.md)).
+- The owner's phone and watch: pending (the device check).
 
 ## In Sukrara
 
@@ -90,6 +98,8 @@ Added:
   sensor as the card decides it, the card's last treatment, today's time in range), `MonkeyC` (the wire format),
   `ConnectIq` (Garmin Connect's service, no SDK), `AuraLink` (push, retry, reconnect, the fetch server on
   127.0.0.1:17582), `AuraPage` (Share with apps › Sukrara Aura, en / es); setting `apps.garminFace` (on).
+- `apps/garmin/source/link`: `AuraLinkService` (the face's background: the push, the 5-minute fetch) and `AuraLink`
+  (the newest payload in storage, the inputs at every draw, THE SEAM's `AuraReading`); `LinkTest` runs every case.
 - Debug: `GARMIN_SIM` sends to the Connect IQ simulator (tethered mode).
 - `contracts/watchface/payload` (README, schema, cases, Garmin's bytes); parity group `watchface-link`.
 

@@ -37,6 +37,10 @@ import app.mauri.sukrara.integrations.export.ExportContent
 import app.mauri.sukrara.integrations.export.ExportData
 import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportUi
+import app.mauri.sukrara.integrations.garmin.AuraActions
+import app.mauri.sukrara.integrations.garmin.AuraContent
+import app.mauri.sukrara.integrations.garmin.AuraLinkState
+import app.mauri.sukrara.integrations.garmin.AuraWatch
 import app.mauri.sukrara.integrations.healthconnect.HcActions
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HcUi
@@ -111,11 +115,53 @@ class IntegrationsGallery {
                         broadcastApps = 2,
                         broadcasts = BcStatus(now - Duration.ofMinutes(1), null),
                         healthConnect = HcStatus.Written(now - Duration.ofMinutes(1), 1),
+                        aura =
+                            AuraLinkState(
+                                garminConnect = true,
+                                answering = true,
+                                watches = listOf(AuraWatch(1, "Descent Mk3i 43mm", true, true, now - Duration.ofMinutes(1))),
+                            ),
                     ),
                     now,
                     AppsActions(),
                 )
             },
+            "aura-sent" to {
+                AuraContent(
+                    AuraLinkState(
+                        garminConnect = true,
+                        answering = true,
+                        watches = listOf(AuraWatch(1, "Descent Mk3i 43mm", true, true, now - Duration.ofMinutes(1))),
+                        fetched = now - Duration.ofMinutes(3),
+                    ),
+                    now,
+                    AuraActions(),
+                )
+            },
+            "aura-fetching" to {
+                AuraContent(
+                    AuraLinkState(
+                        garminConnect = true,
+                        answering = true,
+                        watches = listOf(AuraWatch(1, "Descent Mk3i 43mm", true, true, failed = now, noAnswer = true)),
+                        fetched = now - Duration.ofMinutes(2),
+                    ),
+                    now,
+                    AuraActions(),
+                )
+            },
+            "aura-away" to {
+                AuraContent(
+                    AuraLinkState(
+                        garminConnect = true,
+                        answering = true,
+                        watches = listOf(AuraWatch(1, "Descent Mk3i 43mm", false, true, now - Duration.ofMinutes(25))),
+                    ),
+                    now,
+                    AuraActions(),
+                )
+            },
+            "aura-off" to { AuraContent(AuraLinkState(on = false, garminConnect = true), now, AuraActions()) },
             "import-idle" to
                 {
                     ImportContent(

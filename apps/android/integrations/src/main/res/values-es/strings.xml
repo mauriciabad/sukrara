@@ -35,8 +35,8 @@
 
     <!-- Share with apps -->
     <string name="in_apps_title">Compartir con apps</string>
-    <string name="in_apps_intro_wearer">Tu glucosa en otras apps: tu clínica a través de LibreView, tu propio sitio de Nightscout, relojes Garmin a través del servidor xDrip+, apps de este móvil, Health Connect y un archivo para tu clínica.</string>
-    <string name="in_apps_intro_follower">La glucosa de la persona a la que sigues en otras apps: relojes Garmin a través del servidor xDrip+ y un archivo.</string>
+    <string name="in_apps_intro_wearer">Tu glucosa en otras apps: tu clínica a través de LibreView, tu propio sitio de Nightscout, tu reloj Garmin (Sukrara Aura, u otras esferas a través del servidor xDrip+), apps de este móvil, Health Connect y un archivo para tu clínica.</string>
+    <string name="in_apps_intro_follower">La glucosa de la persona a la que sigues en otras apps: tu reloj Garmin (Sukrara Aura, u otras esferas a través del servidor xDrip+) y un archivo.</string>
     <string name="in_apps_clinic_group">Tu clínica</string>
     <string name="in_apps_watch_group">Relojes</string>
     <string name="in_apps_phone_group">Apps de este móvil</string>

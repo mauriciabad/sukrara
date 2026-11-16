@@ -1052,7 +1052,8 @@ watch; the watch shows the real value: check it against the phone, never photogr
 
 - [ ] **Simulator** (debug build on `medium_phone`, `SYNTHETIC --ez on true`, `GARMIN_SIM --ez on true`, open the app):
       `adb forward tcp:7381 tcp:7381` and `adb forward tcp:17582 tcp:17582`; run the face in the Connect IQ simulator
-      (`descentmk343mm`), *Connection › Start*. Within a minute the face shows the emulator's value and trend;
+      (`descentmk343mm`), *adb Connection › Start* (and *Settings › Use Device HTTPS Requirements* off for the fetch; put
+      it back after). Within a minute the face shows the emulator's value and trend;
       *Simulation › Background Events › Temporal* makes it fetch (Share with apps › Sukrara Aura: *The face asking this
       phone* "Last asked now"). Stop the emulator's app: the face's value goes late, struck, then *No reading since*,
       counting from the reading's time.

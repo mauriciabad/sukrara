@@ -41,7 +41,7 @@ module AuraData {
     var stub as AuraReading? = null; // the debug case loader and the tests put a reading here
 
     function current() as AuraReading? {
-        return stub;
+        return stub != null ? stub : AuraLink.reading(Toybox.Time.now().value());
     }
 
     function changed() as Void {
