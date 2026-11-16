@@ -113,7 +113,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -138,7 +138,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -165,7 +165,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -338,7 +338,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -397,7 +397,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -554,7 +554,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -579,7 +579,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -606,7 +606,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -779,7 +779,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -838,7 +838,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -995,7 +995,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -1020,7 +1020,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -1047,7 +1047,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -1220,7 +1220,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -1279,7 +1279,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -1436,7 +1436,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -1461,7 +1461,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -1488,7 +1488,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -1661,7 +1661,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -1720,7 +1720,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -1877,7 +1877,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -1902,7 +1902,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -1929,7 +1929,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -2102,7 +2102,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -2161,7 +2161,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -2318,7 +2318,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -86.7,
@@ -2343,7 +2343,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -2370,7 +2370,7 @@
      "y": -0.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 98.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -2548,7 +2548,7 @@
      "y2": 90,
      "fs2": 59.9,
      "w2": 600,
-     "c2": "#F2F2F2",
+     "c2": "#FFFFFF",
      "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "t2": "9:35"
     },
@@ -2602,7 +2602,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -2759,7 +2759,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -86.7,
@@ -2784,7 +2784,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -2811,7 +2811,7 @@
      "y": -0.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 98.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -2989,7 +2989,7 @@
      "y2": 90,
      "fs2": 59.9,
      "w2": 600,
-     "c2": "#F2F2F2",
+     "c2": "#FFFFFF",
      "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "t2": "Sun 19:09"
     },
@@ -3043,7 +3043,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -3200,7 +3200,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -3225,7 +3225,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -3252,7 +3252,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -3426,7 +3426,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -3485,7 +3485,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -3642,7 +3642,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -3667,7 +3667,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -3694,7 +3694,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -3868,7 +3868,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -3927,7 +3927,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -4084,7 +4084,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -4109,7 +4109,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -4136,7 +4136,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -4310,7 +4310,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -4369,7 +4369,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -4526,7 +4526,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -4551,7 +4551,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -4578,7 +4578,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -4752,7 +4752,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -4811,7 +4811,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -4968,7 +4968,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -4993,7 +4993,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -5020,7 +5020,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -5194,7 +5194,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -5253,7 +5253,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -5410,7 +5410,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -5435,7 +5435,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -5462,7 +5462,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -5638,7 +5638,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -5697,7 +5697,7 @@
      "t0": {
       "off": 65,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -5854,7 +5854,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -5879,7 +5879,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -5906,7 +5906,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -6082,7 +6082,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -6141,7 +6141,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -6298,7 +6298,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -6323,7 +6323,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -6350,7 +6350,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -6526,7 +6526,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -6585,7 +6585,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -6742,7 +6742,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -6767,7 +6767,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -6794,7 +6794,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -6970,7 +6970,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -7029,7 +7029,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -7186,7 +7186,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -7211,7 +7211,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -7238,7 +7238,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -7412,7 +7412,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -7471,7 +7471,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -7628,7 +7628,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -7653,7 +7653,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -7680,7 +7680,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -7856,7 +7856,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -7915,7 +7915,7 @@
      "t0": {
       "off": 65.4,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -8072,7 +8072,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -8097,7 +8097,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -8124,7 +8124,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -8298,7 +8298,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -8357,7 +8357,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -8514,7 +8514,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -8539,7 +8539,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -8566,7 +8566,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -8740,7 +8740,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -8799,7 +8799,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -8956,7 +8956,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -8981,7 +8981,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -9008,7 +9008,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -9181,7 +9181,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -9240,7 +9240,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -9397,7 +9397,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -86.5,
@@ -9422,7 +9422,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -9449,7 +9449,7 @@
      "y": -2.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -9622,7 +9622,7 @@
      "y1": 47.2,
      "a1": "start",
      "fs1": 32,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "Warming up",
      "y2": 88,
      "fs2": 24,
@@ -9681,7 +9681,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -9838,7 +9838,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -86.5,
@@ -9863,7 +9863,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -9890,7 +9890,7 @@
      "y": -2.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -10063,7 +10063,7 @@
      "y1": 47.2,
      "a1": "start",
      "fs1": 32,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "Warming up",
      "y2": 88,
      "fs2": 24,
@@ -10122,7 +10122,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -10279,7 +10279,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -10304,7 +10304,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -10331,7 +10331,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -10504,7 +10504,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -10560,7 +10560,7 @@
      "t0": {
       "off": 71.1,
       "s": "5h",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -10717,7 +10717,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -10742,7 +10742,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -10769,7 +10769,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -10943,7 +10943,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -11002,7 +11002,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -11159,7 +11159,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -95,
@@ -11184,7 +11184,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -11211,7 +11211,7 @@
      "y": -13,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -11385,7 +11385,7 @@
      "y1": 35.7,
      "a1": "start",
      "fs1": 32,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "Ended",
      "y2": 0,
      "fs2": 24,
@@ -11444,7 +11444,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -11601,7 +11601,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -63.3,
@@ -11626,7 +11626,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -11653,7 +11653,7 @@
      "y": 24.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -11885,7 +11885,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -12042,7 +12042,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -12067,7 +12067,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -12094,7 +12094,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -12267,7 +12267,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -12323,7 +12323,7 @@
      "t0": {
       "off": 32.3,
       "s": "No phone",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -12480,7 +12480,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -12505,7 +12505,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -12532,7 +12532,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -12705,7 +12705,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -12764,7 +12764,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -12921,7 +12921,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -12946,7 +12946,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -12973,7 +12973,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -13146,7 +13146,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -13205,7 +13205,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -14677,7 +14677,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -14702,7 +14702,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -14729,7 +14729,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -14902,7 +14902,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -14961,7 +14961,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -15118,7 +15118,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -15143,7 +15143,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -15170,7 +15170,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -15343,7 +15343,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -15402,7 +15402,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -15559,7 +15559,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -15584,7 +15584,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -15611,7 +15611,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -15785,7 +15785,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -15844,7 +15844,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -16001,7 +16001,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -16026,7 +16026,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -16053,7 +16053,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -16226,7 +16226,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -16285,7 +16285,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -16442,7 +16442,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -63.3,
@@ -16467,7 +16467,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -16494,7 +16494,7 @@
      "y": 24.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -16726,7 +16726,7 @@
      "t0": {
       "off": 35.9,
       "s": "6.420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -16883,7 +16883,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -95,
@@ -16908,7 +16908,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -16935,7 +16935,7 @@
      "y": -13,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -17109,7 +17109,7 @@
      "y1": 35.7,
      "a1": "start",
      "fs1": 32,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "Terminado",
      "y2": 0,
      "fs2": 24,
@@ -17168,7 +17168,7 @@
      "t0": {
       "off": 35.9,
       "s": "6.420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -17325,7 +17325,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -17350,7 +17350,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -17377,7 +17377,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -17551,7 +17551,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -17610,7 +17610,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -17767,7 +17767,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -17792,7 +17792,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -17819,7 +17819,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -17993,7 +17993,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -18052,7 +18052,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -18209,7 +18209,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -18234,7 +18234,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -18261,7 +18261,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -18435,7 +18435,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -18494,7 +18494,7 @@
      "t0": {
       "off": 36.7,
       "s": "6.420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -18651,7 +18651,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -18676,7 +18676,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -18703,7 +18703,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -18876,7 +18876,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -18935,7 +18935,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -19092,7 +19092,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -19117,7 +19117,7 @@
      "t0": {
       "x": -16.6,
       "s": "17:42",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -19144,7 +19144,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -19317,7 +19317,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -19374,7 +19374,7 @@
      "t0": {
       "off": 37.7,
       "s": "62",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -19530,7 +19530,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -19555,7 +19555,7 @@
      "t0": {
       "x": -47.3,
       "s": "NYC 4:09",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -19582,7 +19582,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -19755,7 +19755,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -19811,14 +19811,14 @@
      "t0": {
       "off": 83.3,
       "s": "1,240 m",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
      "t1": {
       "off": 239.7,
       "s": "8",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -19969,7 +19969,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -19994,7 +19994,7 @@
      "t0": {
       "x": -10.1,
       "s": "82%",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -20021,7 +20021,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -20194,7 +20194,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -20253,14 +20253,14 @@
      "t0": {
       "off": 98.8,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
      "t1": {
       "off": 224.2,
       "s": "3",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -20411,7 +20411,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -20436,7 +20436,7 @@
      "t0": {
       "x": -2.7,
       "s": "64",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -20463,7 +20463,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -20636,7 +20636,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -20695,7 +20695,7 @@
      "t0": {
       "off": 62.8,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -20852,7 +20852,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -20877,7 +20877,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -20904,7 +20904,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -20995,7 +20995,7 @@
      "fs": 89.8,
      "y": 86.7,
      "xs": "-90.4 -31.4 27.5",
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "blk": "none",
      "bx": -131.8,
      "by": 14.7,
@@ -21027,7 +21027,7 @@
      "lineCol": "#A3A3A8",
      "ray": "M168.4 57.2l21.7 -3.4",
      "rayD": "inline",
-     "rayCol": "#F2F2F2",
+     "rayCol": "#C2413B",
      "ex": 168.4,
      "ey": 57.2,
      "endFill": "#C6F432",
@@ -21077,7 +21077,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -21136,7 +21136,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -21293,7 +21293,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -21318,7 +21318,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -21345,7 +21345,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -21518,7 +21518,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -21577,7 +21577,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -21734,7 +21734,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -21759,7 +21759,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -21786,7 +21786,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -21959,7 +21959,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -22018,7 +22018,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -22175,7 +22175,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -22200,7 +22200,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -22227,7 +22227,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -22400,7 +22400,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -22459,7 +22459,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -22616,7 +22616,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -22641,7 +22641,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -22668,7 +22668,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -22841,7 +22841,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -22900,7 +22900,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -23057,7 +23057,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -81.3,
@@ -23082,7 +23082,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -23109,7 +23109,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 98.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -23282,7 +23282,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -23341,7 +23341,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -23498,7 +23498,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -23523,7 +23523,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -23550,7 +23550,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -23723,7 +23723,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -23782,7 +23782,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -23939,7 +23939,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -81.3,
@@ -23964,7 +23964,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -23991,7 +23991,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 98.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -24164,7 +24164,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -24223,7 +24223,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -24380,7 +24380,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -24405,7 +24405,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -24432,7 +24432,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -24605,7 +24605,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -24664,7 +24664,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -24821,7 +24821,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -24846,7 +24846,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -24873,7 +24873,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -25046,7 +25046,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -25105,7 +25105,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -25262,7 +25262,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -25287,7 +25287,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -25314,7 +25314,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -25487,7 +25487,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -25546,7 +25546,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -25703,7 +25703,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -25728,7 +25728,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -25755,7 +25755,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -25928,7 +25928,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -25987,7 +25987,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -26144,7 +26144,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -26169,7 +26169,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -26196,7 +26196,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -26369,7 +26369,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -26428,7 +26428,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -26585,7 +26585,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -26610,7 +26610,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -26637,7 +26637,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -26811,7 +26811,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -26870,7 +26870,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -27027,7 +27027,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -27052,7 +27052,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -27079,7 +27079,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -27255,7 +27255,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -27314,7 +27314,7 @@
      "t0": {
       "off": 62.6,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -27471,7 +27471,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -27496,7 +27496,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -27523,7 +27523,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -27697,7 +27697,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -27756,7 +27756,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -27913,7 +27913,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -27938,7 +27938,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -27965,7 +27965,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -28139,7 +28139,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -28198,7 +28198,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -28355,7 +28355,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -28380,7 +28380,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -28407,7 +28407,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -28583,7 +28583,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -28642,7 +28642,7 @@
      "t0": {
       "off": 65,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -28799,7 +28799,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -28824,7 +28824,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -28851,7 +28851,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -29024,7 +29024,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -29083,7 +29083,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -29240,7 +29240,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -29265,7 +29265,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -29292,7 +29292,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -29465,7 +29465,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -29524,7 +29524,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -29681,7 +29681,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -29706,7 +29706,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -29733,7 +29733,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -29906,7 +29906,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -29965,7 +29965,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -30122,7 +30122,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -30147,7 +30147,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -30174,7 +30174,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -30348,7 +30348,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -30407,7 +30407,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -30564,7 +30564,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -30589,7 +30589,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -30616,7 +30616,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -30792,7 +30792,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -30851,7 +30851,7 @@
      "t0": {
       "off": 62.6,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -31008,7 +31008,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -31033,7 +31033,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -31060,7 +31060,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -31234,7 +31234,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -31293,7 +31293,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -31450,7 +31450,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -31475,7 +31475,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -31502,7 +31502,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -31676,7 +31676,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -31735,7 +31735,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -31892,7 +31892,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -31917,7 +31917,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -31944,7 +31944,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -32120,7 +32120,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -32179,7 +32179,7 @@
      "t0": {
       "off": 65,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -32336,7 +32336,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -32361,7 +32361,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -32388,7 +32388,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -32561,7 +32561,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -32620,7 +32620,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -32780,7 +32780,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -32805,7 +32805,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -32832,7 +32832,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -33005,7 +33005,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -33064,7 +33064,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -33224,7 +33224,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -33249,7 +33249,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -33276,7 +33276,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -33449,7 +33449,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -33508,7 +33508,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -33668,7 +33668,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -33693,7 +33693,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -33720,7 +33720,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -33894,7 +33894,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -33953,7 +33953,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -34113,7 +34113,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -34138,7 +34138,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -34165,7 +34165,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -34341,7 +34341,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -34400,7 +34400,7 @@
      "t0": {
       "off": 62.6,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -34560,7 +34560,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -34585,7 +34585,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -34612,7 +34612,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -34786,7 +34786,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -34845,7 +34845,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -35005,7 +35005,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -35030,7 +35030,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -35057,7 +35057,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -35231,7 +35231,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -35290,7 +35290,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -35450,7 +35450,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -35475,7 +35475,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -35502,7 +35502,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -35678,7 +35678,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -35737,7 +35737,7 @@
      "t0": {
       "off": 65,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -35894,7 +35894,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -35919,7 +35919,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -35946,7 +35946,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -36119,7 +36119,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -36178,7 +36178,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -36332,7 +36332,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -36357,7 +36357,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -36384,7 +36384,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -36557,7 +36557,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -36616,7 +36616,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -36770,7 +36770,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -36795,7 +36795,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -36822,7 +36822,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -36995,7 +36995,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -37054,7 +37054,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -37214,7 +37214,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -37239,7 +37239,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -37266,7 +37266,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -37440,7 +37440,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -37499,7 +37499,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -37659,7 +37659,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -37684,7 +37684,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -37711,7 +37711,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -37887,7 +37887,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -37946,7 +37946,7 @@
      "t0": {
       "off": 62.6,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -38109,7 +38109,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -38134,7 +38134,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -38161,7 +38161,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -38335,7 +38335,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -38394,7 +38394,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -38554,7 +38554,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -38579,7 +38579,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -38606,7 +38606,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -38780,7 +38780,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -38839,7 +38839,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -38999,7 +38999,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -39024,7 +39024,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -39051,7 +39051,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -39227,7 +39227,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -39286,7 +39286,7 @@
      "t0": {
       "off": 65,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -39440,7 +39440,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -39465,7 +39465,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -39492,7 +39492,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -39665,7 +39665,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -39724,7 +39724,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -39878,7 +39878,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -39903,7 +39903,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -39930,7 +39930,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -40103,7 +40103,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -40162,7 +40162,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -40316,7 +40316,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -40341,7 +40341,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -40368,7 +40368,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -40541,7 +40541,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -40600,7 +40600,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -40754,7 +40754,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -40779,7 +40779,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -40806,7 +40806,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -40980,7 +40980,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -41039,7 +41039,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -41193,7 +41193,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -41218,7 +41218,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -41245,7 +41245,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -41421,7 +41421,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -41480,7 +41480,7 @@
      "t0": {
       "off": 62.6,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -41634,7 +41634,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -41659,7 +41659,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -41686,7 +41686,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -41860,7 +41860,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -41919,7 +41919,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -42073,7 +42073,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -42098,7 +42098,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -42125,7 +42125,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -42299,7 +42299,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -42358,7 +42358,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -42512,7 +42512,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -42537,7 +42537,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -42564,7 +42564,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -42740,7 +42740,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -42799,7 +42799,7 @@
      "t0": {
       "off": 65,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -42953,7 +42953,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -97.5,
@@ -42978,7 +42978,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -43005,7 +43005,7 @@
      "y": -13.5,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 95.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -43178,7 +43178,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -43237,7 +43237,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -43391,7 +43391,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -43416,7 +43416,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -43443,7 +43443,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -43616,7 +43616,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -43675,7 +43675,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -43829,7 +43829,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -43854,7 +43854,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -43881,7 +43881,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -44055,7 +44055,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -44114,7 +44114,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -44271,7 +44271,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -44296,7 +44296,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -44323,7 +44323,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -44496,7 +44496,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -44555,7 +44555,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -44712,7 +44712,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -106,
@@ -44737,7 +44737,7 @@
      "t0": {
       "x": -7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -44764,7 +44764,7 @@
      "y": -24,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 92.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -44938,7 +44938,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -44997,7 +44997,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -45154,7 +45154,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -45179,7 +45179,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -45206,7 +45206,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -45379,7 +45379,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -45438,7 +45438,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -45595,7 +45595,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -45620,7 +45620,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -45647,7 +45647,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -45820,7 +45820,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -45879,7 +45879,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -46036,7 +46036,7 @@
      "day": "16",
      "mo": " NOV",
      "fill": "#A3A3A8",
-     "dayFill": "#F2F2F2"
+     "dayFill": "#FFFFFF"
     },
     "tf": {
      "y": -83.3,
@@ -46061,7 +46061,7 @@
      "t0": {
       "x": -7.7,
       "s": "14°",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
@@ -46088,7 +46088,7 @@
      "y": 4.7,
      "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
      "fs": 101.8,
-     "fill": "#F2F2F2",
+     "fill": "#FFFFFF",
      "stroke": "none",
      "sw": 0
     },
@@ -46261,7 +46261,7 @@
      "y1": 0,
      "a1": "middle",
      "fs1": 25,
-     "c1": "#F2F2F2",
+     "c1": "#FFFFFF",
      "t1": "",
      "y2": 0,
      "fs2": 24,
@@ -46320,7 +46320,7 @@
      "t0": {
       "off": 48,
       "s": "6,420",
-      "col": "#F2F2F2",
+      "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },

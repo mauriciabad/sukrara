@@ -96,7 +96,7 @@ class AuraFace {
 
   pal(mode) {
     const base = {
-      ink: '#F2F2F2', soft: '#A3A3A8', dim: '#6E6E73', faint: '#3A3A3E', grid: '#26262A', band: '#38383E', band2: '#4E4E55', grey: '#8E8E93', texture: '#19191C',
+      ink: '#FFFFFF', soft: '#A3A3A8', dim: '#6E6E73', faint: '#3A3A3E', grid: '#26262A', band: '#38383E', band2: '#4E4E55', grey: '#8E8E93', texture: '#19191C',
       veryLow: '#C2413B', low: '#F0524F', tight: '#3DD47A', target: '#8CC63F', high: '#F5A524', veryHigh: '#FF7A45', extremelyHigh: '#E35BD0',
       now: '#C6F432', rapid: '#8AB4FF', long: '#C9B0FF', carbs: '#FFB74D', note: '#B4B4B4', neutral: '#A3A3A8',
     };

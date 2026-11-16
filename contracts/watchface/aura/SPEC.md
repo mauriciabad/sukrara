@@ -91,7 +91,7 @@ Three palettes (`pal()` in aura.js). **Awake:**
 
 | Token | Hex | Use |
 |---|---|---|
-| ink | `#F2F2F2` | time, value in white, field texts |
+| ink | `#FFFFFF` | time, value in white, field texts (pure white: the brightest the AMOLED shows, as other faces) |
 | soft | `#A3A3A8` | labels, date, sparkline line, reading time |
 | dim | `#6E6E73` | mid ticks |
 | faint | `#3A3A3E` | rail hairline, minor ticks |
