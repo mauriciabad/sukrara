@@ -1,0 +1,25 @@
+<!doctype html>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Sukrara Aura: one face from the reference implementation. render.html#cfg=<url-encoded JSON> (SPEC.md §3 inputs);
+     add size and bezel to the cfg ({"size":390,"bezel":false} is the screen at 1:1). Used by build.mjs for the PNGs. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sukrara Aura · reference render</title>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;600;700&amp;family=Barlow+Semi+Condensed:wght@500;600&amp;family=Barlow:wght@600&amp;family=Inter+Tight:wght@600&amp;family=Red+Hat+Display:wght@600&amp;display=block" rel="stylesheet">
+<style>html,body{margin:0;background:transparent}svg{display:block}</style>
+<script src="aura.js"></script>
+</head>
+<body>
+<div id="out"></div>
+<script>
+  const params = new URLSearchParams(location.hash.slice(1));
+  const cfg = JSON.parse(params.get('cfg') || '{"size":390,"bezel":false}');
+  const draw = () => { document.getElementById('out').innerHTML = Aura.svg(cfg); };
+  draw();
+  document.fonts.ready.then(draw);
+</script>
+</body>
+</html>
