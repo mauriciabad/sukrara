@@ -375,7 +375,9 @@ triangle): the dial draws such dots as single pixels.
 
 **Which watches** (SPEC.md §1): the round 390 × 390 AMOLED products with `enhancedGraphicSupport` in their
 `compiler.json`; the face needs `Dc.setFill` / `setStroke` and PNG-packed atlases (monkeyc warns "Packing format 'png'
-is not supported" on the others, and they crash at the first `setFill`). `build.sh export` builds every product,
+is not supported" on the others, and they crash at the first `setFill`), and a graphics pool of 3 MB or more
+(`graphicsResourcePoolSize` in its `simulator.json`; the font atlases go there: the Forerunner 170 / 170 Music's 2 MB
+runs out at the first draw). `build.sh export` builds every product,
 `CIQ_DEVICE=<product> build.sh` one; the SDK Manager installs a watch's device files.
 
 **On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to

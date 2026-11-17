@@ -1513,7 +1513,7 @@ Settings
 In the Connect IQ app, or on the watch (hold MENU on the face › Watch face › Customize): dial, halo, trend (arrow or sparkline), seconds sweep, green in range, the three fields, battery label, private and second time zone.
 
 Watches
-Round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 170 / 170 Music, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm.
+Round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm.
 
 Privacy
 The face only talks to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes the face asks Sukrara on the same phone for the latest one (that is the Communications permission; nothing goes to the internet). Your watch's data (heart rate, steps, Body Battery, sleep times) stays on the watch. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
@@ -1554,7 +1554,7 @@ Ajustes
 En la app Connect IQ, o en el reloj (mantén MENU en la esfera › Esfera del reloj › Personalizar): esfera, halo, tendencia (flecha o minigráfico), barrido de segundos, verde en rango, los tres datos, texto de batería, privado y segunda zona horaria.
 
 Relojes
-AMOLED redonda de 390 × 390: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 170 / 170 Music, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) y MARQ Aviator, Approach S70 42 mm.
+AMOLED redonda de 390 × 390: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) y MARQ Aviator, Approach S70 42 mm.
 
 Privacidad
 La esfera solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, y cada 5 minutos la esfera pide la última a Sukrara en el mismo móvil (ese es el permiso de Comunicaciones; nada sale a internet). Los datos de tu reloj (frecuencia cardiaca, pasos, Body Battery, horas de sueño) se quedan en el reloj. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/privacy
