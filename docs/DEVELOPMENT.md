@@ -214,6 +214,15 @@ token) before any of the project's code runs. Builds are signed with a key made 
 credential (until the owner adds it, forks, pull requests from outside) the job says so in a notice and skips its
 steps: `gate` passes. `tools/ci/test_garmin_sdk.sh` (the rules job) proves that path offline.
 
+**One `.Garmin` for every tool.** The runner sets `HOME=/github/home` in the container, and the CLI and the cache put
+`~/.Garmin` there. But monkeyc finds the devices under Java's `user.home` + `/.Garmin/ConnectIQ/Devices` (Linux;
+`APPDATA` on Windows, `~/Library/Application Support` on macOS), and the JDK takes `user.home` from `/etc/passwd`
+(`/root`), not `$HOME`. Without a link it fails with `ERROR: Invalid device id specified: 'descentmk343mm'` while
+`compiler.json` is in place (2026-11-17). The job's first step links `/root/.Garmin` → `$HOME/.Garmin`. A local
+`ubuntu:22.04` container doesn't show this: there `$HOME` is `/root`. The CLI's download has the same layout as the
+SDK Manager's. Its "Font is contains spaces and can't be downloaded" lines (three `bitstreamVeraSans` sizes) are
+harmless: the SDK Manager on the Mac doesn't install those fonts either.
+
 **The credential is a Garmin account made for CI only**, never the owner's own (that one holds the watch, health and
 dive data and the store's developer identity, and has two-step verification, which a scripted sign-in can't answer).
 The owner, once:
