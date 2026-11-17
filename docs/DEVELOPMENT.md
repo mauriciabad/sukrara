@@ -432,7 +432,9 @@ runs there under Xvfb (`xvfb-run`, Pillow 9+, ImageMagick's `import` for the scr
   unless Private is on, so the watch's own hold still works
   ([WatchFaceDelegate](https://developer.garmin.com/connect-iq/api-docs/Toybox/WatchUi/WatchFaceDelegate.html)).
 - *Always-on*: `System.getDisplayMode()` / `onDisplayModeChanged` (5.0) with `onEnterSleep` as the fallback; the whole
-  face shifts ±2 px a minute ([System](https://developer.garmin.com/connect-iq/api-docs/Toybox/System.html)).
+  face shifts ±2 px a minute ([System](https://developer.garmin.com/connect-iq/api-docs/Toybox/System.html)). The
+  watch calls `onDisplayModeChanged` in the background process too, where only `(:background)` code is loaded: the app
+  acts on it (and on `onSettingsChanged`) only in the face's process, else "Illegal Access (Out of Bounds)" (#223).
 - *Night*: the sleep window from `UserProfile.getProfile().sleepTime / wakeTime`, wrapping past midnight
   ([Profile](https://developer.garmin.com/connect-iq/api-docs/Toybox/UserProfile/Profile.html)).
 - *Battery*: `Stats.batteryInDays` (3.3.0), percent / 10 when it reads 0

@@ -5,7 +5,8 @@ Sukrara's releases. 0.x versions are previews.
 ## Unreleased
 
 - **Sukrara Aura** no longer crashes and leaves the watch on its default face: its glide could start while the watch
-  was in low power, as when it came back from a notification (#223).
+  was in low power, as when it came back from a notification, and a change of the screen's mode could reach its
+  background link (#223).
 
 ## 0.15.0 — the website, Sukrara Aura for Garmin, one glucose notification, the trend from your readings
 

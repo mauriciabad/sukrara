@@ -11,11 +11,17 @@ import Toybox.WatchUi;
 // source/link), hence (:background).
 (:background)
 class AuraApp extends Application.AppBase {
+    // The face's process (getInitialView ran), not the background's. The watch calls onDisplayModeChanged (and may call
+    // onSettingsChanged) in the background process too, where only (:background) code is loaded: AuraWatch and WatchUi
+    // there crash it ("Illegal Access (Out of Bounds)", "Failed invoking <symbol>", the owner's Descent, #223).
+    var face as Boolean = false;
+
     function initialize() {
         AppBase.initialize();
     }
 
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
+        face = true;
         AuraLinkBackground.register();
         return [new AuraView(), new AuraDelegate()];
     }
@@ -40,13 +46,17 @@ class AuraApp extends Application.AppBase {
 
     // the Connect IQ app changed a setting
     function onSettingsChanged() as Void {
-        WatchUi.requestUpdate();
+        if (face) {
+            WatchUi.requestUpdate();
+        }
     }
 
     // always-on starts or ends (API 5: the display's power mode)
     function onDisplayModeChanged() as Void {
-        AuraWatch.screen("C", AuraWatch.displayMode() == 1);
-        WatchUi.requestUpdate();
+        if (face) {
+            AuraWatch.screen("C", AuraWatch.displayMode() == 1);
+            WatchUi.requestUpdate();
+        }
     }
 }
 
