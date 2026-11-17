@@ -238,6 +238,12 @@ jobs:
           apt-get update -qq
           apt-get install -y -qq --no-install-recommends ca-certificates curl unzip zstd git openssl python3 \
             openjdk-17-jre-headless libwebkit2gtk-4.0-37 libusb-1.0-0 libsm6 xvfb xauth imagemagick >/dev/null
+      # The runner sets HOME=/github/home in the container, where the CLI and the cache put ~/.Garmin; Java takes its
+      # user.home from /etc/passwd (/root), and monkeyc looks for the devices under user.home/.Garmin/ConnectIQ
+      # ("Invalid device id specified" otherwise). One folder for both.
+      - name: Java's home finds ~/.Garmin
+        run: |
+          ln -sfn "$HOME/.Garmin" "$(getent passwd "$(id -u)" | cut -d: -f6)/.Garmin"
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # No SDK needed: runs with or without the CI account
       - name: The face's words are words.json's
