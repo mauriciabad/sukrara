@@ -2,7 +2,9 @@
 
 Sukrara's releases. 0.x versions are previews.
 
-## Unreleased — the website, Sukrara Aura for Garmin, one glucose notification, the trend from your readings
+## Unreleased
+
+## 0.15.0 — the website, Sukrara Aura for Garmin, one glucose notification, the trend from your readings
 
 - **The website, sukrara.mauri.app** (#212, #180): rebuilt with a page for each app (Android, Mac and the Garmin face)
   in English and Spanish: what Sukrara does for you and for the people who look after you, pictures of the apps
