@@ -1,0 +1,8 @@
+• The glucose notification is also the alert, with Treatment, Remind less and Mute.
+• Settings › Status bar & notification: chip, notification icon, root text or nothing.
+• The trend arrow comes from your readings, minutes sooner.
+• Alerts show the newest value; lows rising back into range wait.
+• Metrics: choose what sits beside the value.
+• Treatments: swipe to delete, a 31-day page, a time wheel.
+• Bluetooth sharing asks for its permission.
+• LibreView gets a Libre 2 read through Juggluco.

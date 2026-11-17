@@ -1,0 +1,8 @@
+• La notificación de glucosa es también la alerta: Tratamiento, Avisar menos y Silenciar.
+• Ajustes › Barra de estado y notificación: chip, icono, texto con root o nada.
+• La flecha de tendencia sale de tus lecturas, minutos antes.
+• Alertas con el último valor; las bajas que vuelven al rango esperan.
+• Métricas: elige qué va junto al valor.
+• Tratamientos: desliza para borrar, página de 31 días, rueda de tiempo.
+• Compartir por Bluetooth pide permiso.
+• LibreView recibe la Libre 2 vía Juggluco.

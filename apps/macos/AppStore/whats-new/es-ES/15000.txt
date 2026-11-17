@@ -1,0 +1,14 @@
+• La flecha de tendencia sale de las lecturas: gira unos 4 minutos después de la glucosa en vez de 7, igual en la barra de menús, el panel, los widgets, las alertas y al leer la glucosa en voz alta. Ajustes › Lecturas › Flecha de tendencia: Rápida, Equilibrada (por defecto), Suave o Del sensor, con una vista previa en directo. Las alertas de bajada rápida y subida rápida la siguen.
+• Las alertas muestran lo que pasa ahora: su valor sigue cada lectura, una alerta que cierras no vuelve hasta su siguiente aviso (también tras reiniciar) y, entre avisos, reaparece en silencio cuando la glucosa vuelve a salir del rango.
+• Tratamiento es el primer botón de una alerta (abre Añadir tratamiento en los hidratos si es baja, en la insulina rápida si es alta), luego Avisar menos y Silenciar. Palabras más cortas: Muy baja, Baja, Bajas silenciadas · quedan 12 min.
+• Silenciar glucosa baja que sube hacia el rango (Ajustes › Alertas › Silencios, activado por defecto): una alerta de baja espera mientras las lecturas suben claramente hacia el rango.
+• Métricas, antes Anillos: cada cosa junto al valor tiene su propio interruptor y Detalles…: la métrica principal, la segunda y la tercera, el último tratamiento y lo que se ve sin un tratamiento reciente. El anillo del último tratamiento muestra primero el tiempo desde entonces y la cantidad debajo.
+• Ajustes reorganizados: General, Siguiendo, Alertas, Lecturas, Gráfica y Métricas, como barra de herramientas en el título de la ventana; Juggluco pasa a Siguiendo y cada silencio tiene Detalles… como una alerta. Tiempo mostrado y Tiempo restante del sensor son una fila cada uno: el valor de la barra de menús, y el de los widgets solo donde cambia.
+• Acerca de Sukrara es una ventana propia, desde el menú de la app, el menú del clic derecho y Ajustes › General.
+• El panel: vuelve a funcionar el zoom con los dedos, la gráfica se desplaza con fluidez por un mes entero, las flores y el laurel de la tarjeta ya no se cortan, y la fila de silenciar dice cómo llegan las lecturas: Cerca (Bluetooth), Internet o Sin conexión.
+• Los widgets se leen bien cuando macOS atenúa el escritorio.
+• Añadir tratamiento se abre entero en la pantalla, junto al puntero si lo abres desde un widget; las cantidades y los minutos tienen botones para subir y bajar, y ningún campo tiene texto de ejemplo.
+• La ventana Tratamientos: cada tratamiento con su marca de la gráfica y la glucosa de cuando se registró; Enviando, No enviado y En el móvil solo mientras importan; Editar y Eliminar al pasar el puntero, en el menú contextual y deslizando en el trackpad.
+• El panel avisa cuando macOS bloquea el Bluetooth o Abrir al iniciar sesión espera en Ítems de inicio de sesión, con la forma de arreglarlo.
+• En español, las cantidades llevan coma decimal (4,5u).
+• Un silencio más corto que la repetición de la alerta ahora avisa al terminar, si la glucosa lo sigue pidiendo.

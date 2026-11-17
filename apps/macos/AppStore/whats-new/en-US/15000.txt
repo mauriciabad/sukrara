@@ -1,0 +1,14 @@
+• The trend arrow comes from the readings: it turns about 4 minutes after glucose does instead of 7, the same in the menu bar, the panel, the widgets, the alerts and read aloud. Settings › Readings › Trend arrow: Quick, Balanced (default), Smooth or From the sensor, with a live preview. The Falling fast and Rising fast alerts follow it.
+• Alerts show what is true now: an alert's value follows every reading, an alert you closed stays away until its next ring (also after a restart), and between rings it comes back silently when glucose leaves the range again.
+• Treatment is an alert's first button (it opens Add Treatment on carbs for a low, on rapid insulin for a high), then Remind Less and Mute. Shorter words: Very low, Low, Lows muted · 12 min left.
+• Quiet lows rising back into range (Settings › Alerts › Quiet times, on by default): a low alert waits while the readings clearly rise back into range.
+• Metrics, once Rings: each thing beside the value has its own switch and Details…: the main, second and third metric, the last treatment and what shows without a recent treatment. The last treatment's ring shows the time since it first, the amount under it.
+• Settings reorganised: General, Following, Alerts, Readings, Graph and Metrics, as a toolbar in the window's title bar; Juggluco moved to Following, and each quiet time has Details… like an alert. Time shown and Sensor time left are one row each: the menu bar's value, and the widgets' only where they differ.
+• About Sukrara is its own window, from the app menu, the right-click menu and Settings › General.
+• The panel: pinch to zoom works again, the chart scrolls smoothly over a whole month, the card's flowers and laurel are no longer cut, and the mute row says how readings arrive: Nearby (Bluetooth), Internet or Offline.
+• Widgets stay legible when macOS dims the desktop.
+• Add Treatment opens whole on screen, near the pointer when opened from a widget; amounts and minutes ago have steppers, and no field has a placeholder.
+• The Treatments window: each treatment with its chart marker and the glucose when it was logged; Sending, Not sent and On the phone only while they matter; Edit and Delete on hover, in the context menu and with a trackpad swipe.
+• The panel says when macOS blocks Bluetooth or Open at login is waiting in Login Items, with the way to fix it.
+• In Spanish, amounts take a decimal comma (4,5u).
+• A Mute shorter than the alert's repeat now alerts when it ends, if glucose still calls for it.
