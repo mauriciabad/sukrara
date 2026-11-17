@@ -138,7 +138,7 @@ test('the adapter maps a moment onto aura.js inputs', () => {
 		tir: null,
 	});
 	assert.deepEqual(v, {
-		time: '9:05:07', phone: true, mode: 'awake', sensor: 'ending', sensorLeft: 5, glucose: 150, rate: 0, trend: false, age: 2,
+		time: '9:05:07', phone: true, mode: 'awake', sensor: 'ending', sensorLeft: 5, sensorLife: 15, sensorDates: true, glucose: 150, rate: 0, trend: false, age: 2,
 		history: [140, null, 145], spark: [140, null, 145, 150], status: 'muted', left: 12, battery: 1.5, steps: 4200, tir: null,
 		last: { items: [{ k: 'carbs', a: '15' }], ago: 4 },
 	});
@@ -157,10 +157,13 @@ test('defaults are aura.js own; every preset is a case of cases.json, drawn as a
 });
 
 test('every part names elements of the drawing, and only the screen’s', () => {
-	const svg = face.render({ ...face.defaults(), status: 'quiet', glucose: 220 }, 'en');
+	// with the battery on the left and the sensor rail on the right, every element a part can name is drawn
+	const values = { ...face.defaults(), status: 'quiet', glucose: 220, sideL: 'battery', sideR: 'sensor' };
+	const svg = face.render(values, 'en');
 	const marked = new Set([...svg.matchAll(/data-part="(\w+)"/g)].map((m) => m[1]));
-	for (const p of face.parts) assert.ok(marked.has(p.id), `no element of ${p.id}`);
-	for (const id of marked) assert.ok(face.parts.some((p) => p.id === id), `${id} isn't a part`);
+	const named = new Set([...Object.values(face.places(values)).map((p) => p.part), 'rail']);
+	for (const p of named) assert.ok(marked.has(p), `no element of ${p}`);
+	for (const id of marked) assert.ok(named.has(id), `${id} isn't a part`);
 	// the bezel and the masks belong to no part
 	assert.doesNotMatch(svg.slice(0, svg.indexOf('clip-path="url(')), /data-part/);
 });
@@ -180,7 +183,28 @@ test('places: every part is somewhere on the screen, drawn or where it shows', (
 	assert.equal(face.places({ ...face.defaults(), mode: 'night' }).dial.shown, false);
 	// a warm-up has no reading: the rail, the last hours and the pill keep their usual places, not the centre
 	const warm = face.places({ ...face.defaults(), sensor: 'warmup' });
-	for (const id of ['rail', 'trend', 'pill']) assert.ok(!warm[id].shown && Math.hypot(warm[id].boxes[0].x, warm[id].boxes[0].y) > 40, id);
+	for (const id of ['sideR', 'trend', 'pill']) assert.ok(!warm[id].shown && Math.hypot(warm[id].boxes[0].x, warm[id].boxes[0].y) > 40, id);
+});
+
+test('the sides: each label names the element its setting picks, on its own side of the face', () => {
+	const at = face.places({ ...face.defaults(), sideL: 'sensor', sideR: 'battery' });
+	assert.deepEqual([at.sideL.part, at.sideL.shown, at.sideR.part, at.sideR.shown], ['sensor', true, 'battery', true]);
+	assert.ok(at.sideL.boxes[0].x < 0 && at.sideR.boxes[0].x > 0);
+	// the glucose rail on the left: beside its mirrored bead
+	const rail = face.places({ ...face.defaults(), sideL: 'level', sideR: 'none' });
+	assert.equal(rail.sideL.part, 'rail');
+	assert.ok(rail.sideL.boxes[0].x < -180);
+	// nothing on a side: not shown, pointed at where its element would be
+	assert.equal(rail.sideR.shown, false);
+	assert.ok(rail.sideR.boxes[0].x > 150);
+	// always-on draws no side element
+	assert.equal(face.places({ ...face.defaults(), mode: 'aod' }).sideL.shown, false);
+	// every choice has its words and icon; the made-up day gives the sensor rail its hours left
+	for (const p of face.parts.filter((x) => x.choice))
+		for (const [k, o] of Object.entries(p.choice!.options)) assert.ok(o.icon && o.name.es && o.about.en, `${p.id}: ${k}`);
+	const v = auraFromLive(liveAt(day, H(10)));
+	assert.equal(v.sensorDates, true);
+	assert.ok(Number(v.sensorLeft) > 0);
 });
 
 test('the tour’s settings set inputs the face has; a dial preview is the dial alone, at the reading', () => {

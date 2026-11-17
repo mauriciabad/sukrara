@@ -11,7 +11,7 @@ import type { FaceAdapter, InputSpec, Live, Localized, Preset, Values } from '..
 import type { AuraModule } from './evaluate.ts';
 import { scopeIds } from '../svg-ids.ts';
 import { examples } from './examples.ts';
-import { markParts, PARTS, partsOfMarkup } from './parts.ts';
+import { markParts, PARTS, partsOfMarkup, SIDES } from './parts.ts';
 import { places } from './places.ts';
 import { tourSettings } from './settings.ts';
 import { GROUPS, PRESETS_ES } from './presets.ts';
@@ -20,6 +20,8 @@ export type AuraCase = { id: string; group: string; title: string; cfg: Values }
 
 const L = (en: string, es: string): Localized => ({ en, es });
 const opts = (...o: [string, string, string][]) => o.map(([value, en, es]) => ({ value, label: L(en, es) }));
+
+const SIDE_OPTIONS = Object.entries(SIDES).map(([value, s]) => ({ value, label: s.name }));
 
 const INPUTS: InputSpec[] = [
 	{ key: 'glucose', group: 'reading', kind: 'number', label: L('Glucose', 'Glucosa'), min: 38, max: 420, step: 1, unit: L('mg/dL', 'mg/dL') },
@@ -63,6 +65,8 @@ const INPUTS: InputSpec[] = [
 			['notifications', 'Notifications', 'Notificaciones'], ['tz2', 'Second time zone', 'Segunda zona horaria'], ['floors', 'Floors', 'Pisos'], ['none', 'None', 'Ninguno'],
 		),
 	},
+	{ key: 'sideL', group: 'look', kind: 'select', label: L('Left side', 'Lado izquierdo'), options: SIDE_OPTIONS },
+	{ key: 'sideR', group: 'look', kind: 'select', label: L('Right side', 'Lado derecho'), options: SIDE_OPTIONS },
 	{ key: 'seconds', group: 'look', kind: 'toggle', label: L('Seconds sweep', 'Barrido de segundos') },
 	{ key: 'rangeColour', group: 'look', kind: 'toggle', label: L('Green in range', 'Verde en rango') },
 ];
@@ -78,8 +82,9 @@ export function auraFromLive(live: Live): Values {
 	else if (s.state === 'almost' || s.state === 'ended') v.sensor = s.state;
 	else if (!live.reading) v.sensor = 'none';
 	// "ending" is Sukrara's last 8 h of a sensor (SPEC.md §3); the face counts them down in a field
-	else if (s.leftH !== undefined && s.leftH <= 8) Object.assign(v, { sensor: 'ending', sensorLeft: Math.max(0, s.leftH) });
-	else v.sensor = 'ok';
+	else v.sensor = s.leftH !== undefined && s.leftH <= 8 ? 'ending' : 'ok';
+	// the hours it has left, when the scenario knows them: the sensor rail fills by them (a 15-day life)
+	if (s.state === 'ok' && s.leftH !== undefined) Object.assign(v, { sensorLeft: Math.max(0, s.leftH), sensorLife: 15, sensorDates: true });
 	if (live.reading) {
 		const { glucose, rate, ageMin } = live.reading;
 		Object.assign(v, { glucose, rate: rate ?? 0, trend: rate !== null, age: Math.round(ageMin * 10) / 10 });

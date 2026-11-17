@@ -23,7 +23,25 @@ const PLAIN: Values = { sensor: 'ok', glucose: 112, rate: 0.4, trend: true, age:
 const REFERENCES: Values[] = [
 	{ ...PLAIN, seconds: true },
 	{ ...PLAIN, glucose: 250, rate: 2, status: 'auto' },
+	// a side set to nothing: where the battery (left) and the glucose rail (right) would be
+	{ ...PLAIN, sideL: 'battery', sideR: 'level' },
 ];
+
+/** The element a side shows → the drawing's part (data-part). */
+const SIDE_PART: Record<string, string> = { battery: 'battery', sensor: 'sensor', level: 'rail' };
+
+/** A side's place: on its rail (right 47°–133°, left mirrored), beside the bead for the glucose rail. */
+function side(l: Layout, right: boolean): Box[] | null {
+	const key = (right ? l.sides?.right : l.sides?.left) ?? 'none';
+	const d = right ? 'dR' : 'dL';
+	if (key === 'level') {
+		if (!on(l.rail.disp) || !on(l.rail[d]) || !on(l.bead.disp)) return null;
+		// beside the bead, not on it (the bead is r 7 on r 182)
+		return [at(194, right ? l.bead.deg : 360 - l.bead.deg)];
+	}
+	const el = key === 'battery' ? l.batt : key === 'sensor' ? l.sens : null;
+	return el && on(el.disp) && on(el[d]) ? [at(182, right ? 90 : 270)] : null;
+}
 
 /** Each part's boxes in a layout, or null where it isn't drawn. */
 export function placesIn(l: Layout, values: Values): Record<string, Box[] | null> {
@@ -36,9 +54,8 @@ export function placesIn(l: Layout, values: Values): Record<string, Box[] | null
 		time: [box(h.tx, h.ty, h.tw, h.th)],
 		value: on(l.val.disp) ? [box(l.val.bx, l.val.by, l.val.bw, l.val.bh)] : h.mw > 0 ? [box(h.mx, h.my, h.mw, h.mh)] : null,
 		trend: on(l.sp.disp) ? [box(h.sx, h.sy, h.sw, h.sh)] : on(l.val.disp) && on(l.val.arrowD) ? [box(l.val.ax - 14, l.val.ay - 14, 28, 28)] : null,
-		// beside the bead, not on it (the bead is r 7 on r 182)
-		rail: on(l.rail.disp) && on(l.bead.disp) ? [at(194, l.bead.deg)] : null,
-		battery: on(l.batt.disp) ? [at(182, 270)] : null,
+		sideL: side(l, false),
+		sideR: side(l, true),
 		pill: on(l.pill.disp) || on(l.chip.disp) ? [box(h.cx, h.cy, h.cw, h.ch)] : null,
 		// fixed under the middle of the two (they run along the arc r 172, their glyphs inwards)
 		fields: on(l.b.disp) ? [{ ...at(178, 180), hit: box(-150, 120, 300, 70) }] : null,
@@ -54,15 +71,17 @@ export function placesIn(l: Layout, values: Values): Record<string, Box[] | null
  * (the pill a little lower: its middle would sit on the value's baseline).
  */
 export function places(layout: (cfg: Values) => Layout, values: Values): Record<string, Place> {
-	const now = placesIn(layout(values), values);
+	const l = layout(values);
+	const now = placesIn(l, values);
+	const partOf = (id: string) => (id === 'sideL' || id === 'sideR' ? (SIDE_PART[l.sides?.[id === 'sideL' ? 'left' : 'right']] ?? id) : id);
 	const out: Record<string, Place> = {};
 	for (const [id, boxes] of Object.entries(now)) {
 		if (boxes) {
-			out[id] = { boxes, shown: true, part: id };
+			out[id] = { boxes, shown: true, part: partOf(id) };
 			continue;
 		}
 		const b = REFERENCES.map((r) => placesIn(layout({ ...values, ...r }), { ...values, ...r })[id]).find(Boolean)?.[0] ?? box(0, 0, 0, 0);
-		out[id] = { boxes: [box(b.x + b.w / 2, b.y + b.h / 2 + (id === 'pill' ? 36 : 0), 0, 0)], shown: false, part: id };
+		out[id] = { boxes: [box(b.x + b.w / 2, b.y + b.h / 2 + (id === 'pill' ? 36 : 0), 0, 0)], shown: false, part: partOf(id) };
 	}
 	return out;
 }

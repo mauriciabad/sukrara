@@ -52,7 +52,18 @@ export type Live = {
  * A part of the face a person can point at, as the face tour names it: the side of the face its label goes on, its icon
  * (the Android app's own, lib/ds-icons.ts), its name and a short line on what it tells them.
  */
-export type Part = { id: string; side: 'left' | 'right'; icon: string; name: Localized; about: Localized };
+export type Part = {
+	id: string;
+	side: 'left' | 'right';
+	icon: string;
+	name: Localized;
+	about: Localized;
+	/**
+	 * A place whose element is a setting (Aura's sides): the input that picks it, and each choice's icon, name and line.
+	 * The label shows the picked one, with `name` above it.
+	 */
+	choice?: { key: string; options: Record<string, { icon: string; name: Localized; about: Localized }> };
+};
 
 /** A box on the screen, in the face's own units: (0, 0) its centre, the screen the circle r = `FaceAdapter.radius`, y down. A point has w = h = 0, and may name the box a pointer aims at (`hit`). */
 export type Box = { x: number; y: number; w: number; h: number; hit?: Box };

@@ -28,6 +28,8 @@ const first = frame(aura, DAY, { minutes: start, look, seconds: null });
 const values = { ...first.main, ...aura.settings.apply(aura.settings.defaults) };
 const svg = aura.render(values, lang, { id: `${id}-m` });
 const at = aura.places(values);
+/** The choice a part shows now (a side: the element its setting picks). */
+const picked = (p: (typeof aura.parts)[number]) => String(values[p.choice!.key]);
 const side = (s: 'left' | 'right') => aura.parts.map((p, i) => ({ ...p, n: i + 1 })).filter((p) => p.side === s);
 // a preview shows one part of the face alone (Aura: the dial)
 const only = `.ft-look__face [data-part]:not([data-part='${aura.looks.only}']){display:none}`;
@@ -44,7 +46,15 @@ const only = `.ft-look__face [data-part]:not([data-part='${aura.looks.only}']){d
 						<li>
 							<button type="button" class="ft-part" data-part-button={p.id} data-side={s} data-shown={String(at[p.id]?.shown ?? true)}>
 								<span class="ft-part__icon">
-									<DsIcon name={p.icon} size="1.25rem" />
+									{p.choice ? (
+										Object.entries(p.choice.options).map(([k, o]) => (
+											<span data-choice-icon={k} hidden={k !== picked(p)}>
+												<DsIcon name={o.icon} size="1.25rem" />
+											</span>
+										))
+									) : (
+										<DsIcon name={p.icon} size="1.25rem" />
+									)}
 								</span>
 								<span class="ft-part__hidden" aria-hidden="true">
 									<DsIcon name="visibility_off" size="0.7rem" />
@@ -53,11 +63,14 @@ const only = `.ft-look__face [data-part]:not([data-part='${aura.looks.only}']){d
 									{p.n}
 								</span>
 								<span class="ft-part__text">
+									{p.choice && <span class="ft-part__eyebrow">{p.name[lang]}</span>}
 									<span class="ft-part__name">
-										{p.name[lang]}
+										<span data-choice-name>{p.choice ? p.choice.options[picked(p)].name[lang] : p.name[lang]}</span>
 										<span class="ft-part__off"> ({w.notNow})</span>
 									</span>
-									<span class="ft-part__about">{p.about[lang]}</span>
+									<span class="ft-part__about" data-choice-about>
+										{p.choice ? p.choice.options[picked(p)].about[lang] : p.about[lang]}
+									</span>
 								</span>
 							</button>
 						</li>
@@ -248,6 +261,26 @@ const only = `.ft-look__face [data-part]:not([data-part='${aura.looks.only}']){d
 		gap: 0.1rem;
 		min-width: 0;
 		padding-top: 0.1rem;
+	}
+	.ft-part__eyebrow {
+		font: 700 0.68rem / 1.2 var(--__sl-font);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--sl-color-gray-3);
+	}
+	.ft-sets :global(.ft-sides) {
+		flex-basis: 100%;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.9rem 1.25rem;
+	}
+	.ft-sets :global(.ft-sides .fu-cards) {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+	.ft-sets :global(.ft-sides .fu-card > span) {
+		min-width: 0;
+		padding-inline: 0.25rem;
 	}
 	.ft-part__name {
 		font: 800 var(--sl-text-sm) / 1.25 var(--sk-font-display);
@@ -548,7 +581,8 @@ const only = `.ft-look__face [data-part]:not([data-part='${aura.looks.only}']){d
 			scroll-snap-type: x proximity;
 			padding-bottom: 0.25rem;
 		}
-		.ft-sets :global(.ft-fields .fu-row) {
+		.ft-sets :global(.ft-fields .fu-row),
+		.ft-sets :global(.ft-sides) {
 			grid-template-columns: minmax(0, 1fr);
 		}
 	}

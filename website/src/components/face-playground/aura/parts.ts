@@ -11,6 +11,26 @@ import type { Localized, Part } from '../types.ts';
 
 const L = (en: string, es: string): Localized => ({ en, es });
 
+// short: the settings under the face show every choice
+const EITHER = L;
+
+/** What a side shows (the settings sideL / sideR), by its setting value. */
+export const SIDES: Record<string, { icon: string; name: Localized; about: Localized }> = {
+	battery: {
+		icon: 'battery_full', name: L('Watch battery', 'Batería del reloj'),
+		about: EITHER('A segment per day left; amber under 2 days, red under 1.', 'Un segmento por día restante; ámbar por debajo de 2 días, rojo por debajo de 1.'),
+	},
+	sensor: {
+		icon: 'dia_sensor', name: L('Sensor days', 'Días del sensor'),
+		about: EITHER('A segment per day of the sensor’s life; amber in its last hours.', 'Un segmento por día de vida del sensor; ámbar en sus últimas horas.'),
+	},
+	level: {
+		icon: 'dia_range', name: L('Glucose rail', 'Riel de glucosa'),
+		about: EITHER('Where you are between your limits; up is higher. The trail is the last 30 min.', 'Dónde estás entre tus límites; arriba es más alto. La estela, los últimos 30 min.'),
+	},
+	none: { icon: 'empty', name: L('Nothing', 'Nada'), about: EITHER('This side is left empty.', 'Este lado queda vacío.') },
+};
+
 // Top to bottom on each side of the face, as the parts sit there; the lines from the labels never cross.
 export const PARTS: Part[] = [
 	{ id: 'date', side: 'left', icon: 'calendar_month', name: L('Date', 'Fecha'), about: L('Weekday, day and month.', 'Día de la semana, día y mes.') },
@@ -19,10 +39,7 @@ export const PARTS: Part[] = [
 		about: L('The aura of your glucose: it spreads the further out of range you are. Seven styles.', 'El aura de tu glucosa: se extiende cuanto más fuera de rango estás. Siete estilos.'),
 	},
 	{ id: 'time', side: 'left', icon: 'schedule', name: L('Time', 'Hora'), about: L('Big, and bigger when there’s room.', 'Grande, y más aún cuando hay sitio.') },
-	{
-		id: 'battery', side: 'left', icon: 'battery_full', name: L('Watch battery', 'Batería del reloj'),
-		about: L('A segment per day left; amber under 2 days, red under 1.', 'Un segmento por día restante; ámbar por debajo de 2 días, rojo por debajo de 1.'),
-	},
+	{ id: 'sideL', side: 'left', icon: SIDES.battery.icon, name: L('Left side', 'Lado izquierdo'), about: SIDES.battery.about, choice: { key: 'sideL', options: SIDES } },
 	{
 		id: 'value', side: 'left', icon: 'water_drop', name: L('Glucose', 'Glucosa'),
 		about: L('The newest reading in its range’s colour. Late or old, it says so.', 'La lectura más reciente, en el color de su rango. Si llega tarde o es antigua, lo dice.'),
@@ -42,10 +59,7 @@ export const PARTS: Part[] = [
 		id: 'top', side: 'right', icon: 'metric_main', name: L('Top field', 'Campo de arriba'),
 		about: L('Steps, or weather, sunset, heart rate, a second time zone…', 'Pasos, o tiempo, puesta de sol, pulso, otra zona horaria…'),
 	},
-	{
-		id: 'rail', side: 'right', icon: 'dia_range', name: L('Glucose rail', 'Riel de glucosa'),
-		about: L('Where you are between your limits; up is higher. The trail is the last 30 min.', 'Dónde estás entre tus límites; arriba es más alto. La estela, los últimos 30 min.'),
-	},
+	{ id: 'sideR', side: 'right', icon: SIDES.level.icon, name: L('Right side', 'Lado derecho'), about: SIDES.level.about, choice: { key: 'sideR', options: SIDES } },
 	{
 		id: 'trend', side: 'right', icon: 'monitoring', name: L('The last hours', 'Las últimas horas'),
 		about: L('Up to 3 h of readings and where they’re heading. Or an arrow.', 'Hasta 3 h de lecturas y hacia dónde van. O una flecha.'),
@@ -65,6 +79,7 @@ const SHOWS: [string, string][] = [
 	['pill', 'pill'],
 	['chip', 'pill'],
 	['bead', 'rail'],
+	['sens', 'sensor'],
 	['rail', 'rail'],
 	['batt', 'battery'],
 	['tf', 'top'],

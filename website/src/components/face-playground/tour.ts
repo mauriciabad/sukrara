@@ -130,6 +130,15 @@ export function mountTour(root: HTMLElement, face: FaceAdapter, day: TourScenari
 		for (const b of buttons) {
 			const s = String(at[b.dataset.partButton!]?.shown ?? false);
 			if (b.dataset.shown !== s) b.dataset.shown = s;
+			// a side names the element its setting picks
+			const choice = face.parts.find((p) => p.id === b.dataset.partButton)?.choice;
+			const o = choice?.options[String(values[choice.key])];
+			if (o && b.dataset.choice !== values[choice!.key]) {
+				b.dataset.choice = String(values[choice!.key]);
+				for (const i of $$<HTMLElement>(b, '[data-choice-icon]')) i.hidden = i.dataset.choiceIcon !== b.dataset.choice;
+				$(b, '[data-choice-name]').textContent = o.name[lang];
+				$(b, '[data-choice-about]').textContent = o.about[lang];
+			}
 		}
 		paintFocus();
 		lines();
@@ -212,23 +221,26 @@ export function mountTour(root: HTMLElement, face: FaceAdapter, day: TourScenari
 		draw();
 		requestAnimationFrame(lines);
 	};
-	const made = new Map<string, Choice>();
 	for (const g of face.settings.groups) {
 		const items = g.keys.map((k) => face.settings.list.find((s) => s.key === k)!);
 		const kids = items.map((s) => {
-			const c =
+			const c: Choice =
 				s.kind === 'cards'
 					? cards(s.label, s.options, lang, (v) => changed(s.key, v))
 					: s.kind === 'switch'
 						? switchCard(s.label, s.picture, lang, (on) => changed(s.key, on ? s.on : s.off))
 						: list(s.label, s.options, lang, (v) => changed(s.key, v));
-			made.set(s.key, c);
 			c.show(s.kind === 'switch' ? set[s.key] === s.on : set[s.key]);
 			return c.root;
 		});
-		// a row of cards stands alone, under its own name; switches and lists gather under the group's
-		const one = items.length === 1 && items[0].kind === 'cards';
-		$(root, '[data-sets]').append(one ? kids[0] : group(g.label, lang, kids, `ft-${g.id}`));
+		// rows of cards stand alone, each under its own name; switches and lists gather under the group's
+		const sets = $(root, '[data-sets]');
+		if (items.every((s) => s.kind === 'cards')) {
+			const row = document.createElement('div');
+			row.className = `ft-${g.id}`;
+			row.append(...kids);
+			sets.append(kids.length === 1 ? kids[0] : row);
+		} else sets.append(group(g.label, lang, kids, `ft-${g.id}`));
 	}
 	for (const b of lookButtons)
 		b.addEventListener('click', () => {
