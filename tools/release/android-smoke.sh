@@ -5,7 +5,8 @@
 # The Android release gate, on an emulator only (never a phone):
 #   tools/release/android-smoke.sh [--final] [--no-build] [--keep-emulator] [--wait SECONDS]
 # 1. builds the signed release APK (the Sukrara release key; no key → stop, never the debug key) and runs
-#    verify-apk.sh on it
+#    verify-apk.sh on it: a development build (tools/release/build-info.sh); with --final --no-build (release.py's
+#    gate) the APK android-release.sh just built, so verify-apk.sh --release: a release build
 # 2. fresh install: launches, renders its first screen, survives being recreated from saved state, stays alive
 # 3. before setup nothing starts: no notification at all, and no alert also after the clock jumps 3 h ahead (past
 #    every no-data delay)
@@ -27,7 +28,7 @@ while [ $# -gt 0 ]; do
     --no-build) build=0 ;;
     --keep-emulator) keep=1 ;;
     --wait) wait_s="${2:?--wait SECONDS}"; shift ;;
-    -h | --help) sed -n '5,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h | --help) sed -n '5,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown option $1 (--help)" >&2; exit 2 ;;
   esac
   shift
@@ -156,7 +157,10 @@ $(tail -25 "$out/build-release.log")"
   unset SUKRARA_KEYSTORE_PASSWORD
   ok "assembleFullRelease"
 fi
-"$here/verify-apk.sh" "$apk" "$mapping" || fail=1
+# Its own build is a development build; the gate's (--final --no-build) is android-release.sh's release build
+kind=""
+if [ "$final" = 1 ] && [ "$build" = 0 ]; then kind="--release"; fi
+"$here/verify-apk.sh" $kind "$apk" "$mapping" || fail=1
 
 wait_emulator
 
