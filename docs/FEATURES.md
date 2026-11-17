@@ -2051,7 +2051,7 @@ removed or resized from the desktop's *Edit Widgets* (system). No widget state b
 
 ## Garmin watch face (Sukrara Aura)
 
-Sukrara Aura is a watch face for Garmin watches (the Descent Mk3i 43 mm for now). It shows what Sukrara on the phone
+Sukrara Aura is a watch face for Garmin watches with a round 390 × 390 AMOLED screen (Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 170 / 170 Music, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm). It shows what Sukrara on the phone
 shows, each reading within seconds through Garmin Connect with nothing to set up, and an old value never looks
 current; its dial is the aura of your glucose. The phone's Settings › Share with apps › Garmin says what each watch has.
 

@@ -184,8 +184,9 @@ def github_notes(changelog, version, cert_sha256, garmin_devices=()):
         "Homebrew Mac app updates itself (Sparkle)." % (v, v),
         "- `Sukrara-%s-android-mapping.txt.gz`: the R8 mapping that makes an Android crash trace readable (for bug "
         "reports; not something to install)." % v,
-    ] + ["- `SukraraAura-%s-%s.prg`: the Sukrara Aura watch face for the Garmin `%s`, to copy into the watch's "
-         "`GARMIN/APPS` folder (the Connect IQ store has the same face)." % (v, d, d) for d in garmin_devices] + (
+    ] + (["- `SukraraAura-%s-<watch>.prg`: the Sukrara Aura watch face, one per Garmin watch (%s), to copy into the "
+          "watch's `GARMIN/APPS` folder (the Connect IQ store has the same face)."
+          % (v, ", ".join("`%s`" % d for d in garmin_devices))] if garmin_devices else []) + (
         ["- `SukraraAura-%s.iq`: the Connect IQ store package (every device; the store installs it, not by hand)." % v]
         if garmin_devices else []))
     return head + "\n\n" + absolute_links(unwrap(entry[1]), v).strip() + "\n\n" + files + "\n"

@@ -215,9 +215,11 @@ screen sits at `simulator.json`'s display location plus the 26 px menu bar (`imp
 lose the simulator, and the harness restarts it. So the `garmin` job, which `gate` needs (30-minute timeout), runs a
 fixed set of 21 (`AURA_CASES` in checks.yml; 2026-11-17: 3.5 min in the simulator, 5 min for the job): the safety states (LO, HI, no readings, old, very low, extremely high,
 muted, sensor ended, phone lost), one case per dial, always-on, private and Spanish. It checks their numbers against
-`expect.json`, the battery label against every row, and each case's picture. `garmin-all` runs every case, only on
-`gh workflow run checks.yml --ref next -f full=true`, after `garmin` and outside `gate` (180-minute timeout; artifact
-`garmin-test-all`). Both jobs start from `.github/actions/garmin` (packages, SDK, device files, cache).
+`expect.json`, the battery label against every row, and each case's picture; it also builds the store package, which
+compiles every watch of the manifest. `garmin-all` runs only on `gh workflow run checks.yml --ref next -f full=true`,
+after `garmin` and outside `gate` (180-minute timeout): a matrix with one job per watch of `apps/garmin/manifest.xml`
+(`garmin-sdk.sh plan`'s `devices-json`), every case on the Descent, the fixed set (`AURA_GATE_CASES`) on the others
+(artifacts `garmin-test-all-<watch>`). Both jobs start from `.github/actions/garmin` (packages, SDK, device files, cache).
 
 `tools/ci/garmin-sdk.sh` gets what it needs, pinned in `tools/ci/garmin.lock`: the Connect IQ
 SDK (public download, sha256 checked) and the manifest's device files with their simulator fonts, which need a Garmin
@@ -365,10 +367,16 @@ and, against the dial-less references, `<dir>/diff-core`). The loader is debug o
 The loader is a *watch-app* (its frames from a 1 s timer): the face and the layout dump together don't fit a face's
 128 KB, the face alone does (its memory is in the run's "cost" lines). It also shows always-on variants of the
 brightest states (`aod-*`, `tools/cases.py`), measured against Garmin's 10 % luminance rule. `AURA_CASES=id,id…`
-runs only those cases. monkeydo sometimes loses the simulator mid-run (it exits 0 while the app goes on; a new
+runs only those cases, `CIQ_DEVICE=<product>` another watch of the manifest (their pictures are the
+Descent's: same screen, same references). monkeydo sometimes loses the simulator mid-run (it exits 0 while the app goes on; a new
 monkeydo can't reach that simulator): the run then quits the simulator and goes on with the cases left.
 A filled anti-aliased circle under 1 px drawn into a `BufferedBitmap` crashes the simulated firmware (the blue
 triangle): the dial draws such dots as single pixels.
+
+**Which watches** (SPEC.md §1): the round 390 × 390 AMOLED products with `enhancedGraphicSupport` in their
+`compiler.json`; the face needs `Dc.setFill` / `setStroke` and PNG-packed atlases (monkeyc warns "Packing format 'png'
+is not supported" on the others, and they crash at the first `setFill`). `build.sh export` builds every product,
+`CIQ_DEVICE=<product> build.sh` one; the SDK Manager installs a watch's device files.
 
 **On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to
 `GARMIN/Apps/SUKAURA.PRG` (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only that file is written; an older copy of it is

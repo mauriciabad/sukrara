@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """The Connect IQ simulator's screen as a 390 x 390 PNG.
 
-  uv run apps/garmin/tools/simshot.py out.png [--device descentmk343mm]
+  uv run apps/garmin/tools/simshot.py out.png [--device descentmk343mm]   (default: $CIQ_DEVICE, else descentmk343mm)
 
 The SDK has no command for a screenshot. macOS: the simulator's window (screencapture -l by its window id; the terminal
 needs Screen Recording permission), the display where the device's simulator.json puts it under the title bar, scaled
@@ -113,7 +113,7 @@ def shot(out, device="descentmk343mm", offset=(0.0, 0.0)):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    dev = "descentmk343mm"
+    dev = os.environ.get("CIQ_DEVICE", "descentmk343mm")
     if "--device" in args:
         dev = args[args.index("--device") + 1]
     shot(args[0], dev)

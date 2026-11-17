@@ -21,6 +21,9 @@ outputs:
   project:
     description: true when there is a Garmin project
     value: ${{ steps.plan.outputs.project }}
+  devices-json:
+    description: the manifest's products as a JSON list (garmin-all's matrix)
+    value: ${{ steps.plan.outputs.devices-json }}
   ready:
     description: true when the SDK and every device file are in place (CIQ_SDK, CIQ_KEY in the environment)
     value: ${{ steps.sdk.outputs.ready }}

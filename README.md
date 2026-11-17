@@ -99,7 +99,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Lock screen widget with root. No need to unlock or touch the phone.
 - Persistent notification with the widget.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
-- Watch face for Garmin watches.
+- Watch face for Garmin watches with a round 390 × 390 AMOLED screen (Venu 3S, vívoactive 6, Forerunner 170 / 570,
+  Descent Mk3i 43 mm …).
 - Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
@@ -177,8 +178,9 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
   updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
   works).
-- **Garmin** (Descent Mk3i 43 mm): Sukrara Aura is on its way to the Connect IQ store. It needs Sukrara for Android
-  and Garmin Connect on the phone.
+- **Garmin** (round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 170 /
+  170 Music, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm): Sukrara
+  Aura is on its way to the Connect IQ store. It needs Sukrara for Android and Garmin Connect on the phone.
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
   link handler. Such a build isn't a release and says so: About shows *Development build · 0.14.5 + 23 commits ·

@@ -24,6 +24,16 @@ permissions:
 concurrency:
   group: checks-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+# The Garmin face's fixed set of cases (SPEC.md §10): the safety states, one case per dial, always-on, private,
+# Spanish. `garmin` runs it on the Descent Mk3i 43 mm inside the gate's timeout, `garmin-all` on every other watch of
+# apps/garmin/manifest.xml (the Descent there runs every case).
+env:
+  AURA_GATE_CASES: >-
+    glucose-in-range,glucose-lo,glucose-hi,glucose-no-readings,glucose-old,alerts-very-low,
+    alerts-extremely-high,alerts-muted-low,sensor-ended,sensor-phone-lost,modes-private,modes-spanish,
+    dial-grain-ideal,dial-contours-ideal,dial-waterline-ideal,dial-lasers-ideal,dial-glow-ideal,
+    dial-black-ideal,dial-map-ideal,aod-alerts-very-low,aod-glucose-hi
+
 jobs:
   changes:
     runs-on: ubuntu-latest
@@ -255,6 +265,8 @@ jobs:
     # The SDK's Linux simulator links WebKitGTK 4.0, which Ubuntu ships up to 22.04: that image, on the current runner.
     container: ubuntu:22.04
     timeout-minutes: 30
+    outputs:
+      devices: ${{ steps.sdk.outputs.devices-json }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: The SDK and the device files
@@ -271,17 +283,17 @@ jobs:
       - name: Release build (debug code compiled out)
         if: steps.sdk.outputs.ready == 'true'
         run: apps/garmin/build.sh release
+      # Every watch of the manifest compiles (monkeyc builds each product; the simulator runs only the Descent here)
+      - name: Store package (every watch)
+        if: steps.sdk.outputs.ready == 'true'
+        run: apps/garmin/build.sh export
       # SPEC.md §10 on a fixed set of cases, so the gate stays inside its timeout (the full set takes 1–2 h: garmin-all):
       # the safety states, one case per dial, always-on, private, Spanish. Their numbers against expect.json (fails the
       # job), the battery label against every row, a screenshot of each diffed with docs/img/aura/ref (the artifact).
       - name: The face's tests in the simulator (a fixed set of cases)
         if: steps.sdk.outputs.ready == 'true'
         env:
-          AURA_CASES: >-
-            glucose-in-range,glucose-lo,glucose-hi,glucose-no-readings,glucose-old,alerts-very-low,
-            alerts-extremely-high,alerts-muted-low,sensor-ended,sensor-phone-lost,modes-private,modes-spanish,
-            dial-grain-ideal,dial-contours-ideal,dial-waterline-ideal,dial-lasers-ideal,dial-glow-ideal,
-            dial-black-ideal,dial-map-ideal,aod-alerts-very-low,aod-glucose-hi
+          AURA_CASES: ${{ env.AURA_GATE_CASES }}
         run: |
           AURA_CASES="$(echo "$AURA_CASES" | tr -d ' ')"
           export AURA_CASES
@@ -294,15 +306,20 @@ jobs:
           path: ${{ runner.temp }}/garmin-test
           if-no-files-found: ignore
 
-  # Every case of the face in the simulator (1–2 h: heavy dial cases make monkeydo lose the simulator, and the harness
-  # restarts it). Only on `workflow_dispatch` with full=true, and outside `gate`: its result is the run's, not a
-  # release's. Starts after `garmin`, which keeps the SDK and the device files in the cache.
+  # The face on every watch of apps/garmin/manifest.xml (a matrix, one job per watch): the Descent Mk3i 43 mm every case
+  # (1–2 h: heavy dial cases make monkeydo lose the simulator, and the harness restarts it), the others the gate's fixed
+  # set (same 390 × 390 pictures). Only on `workflow_dispatch` with full=true, and outside `gate`: its result is the
+  # run's, not a release's. Starts after `garmin`, which keeps the SDK and the device files in the cache.
   garmin-all:
     needs: garmin
-    if: github.event_name == 'workflow_dispatch' && inputs.full && needs.garmin.result == 'success'
+    if: github.event_name == 'workflow_dispatch' && inputs.full && needs.garmin.result == 'success' && needs.garmin.outputs.devices != ''
     runs-on: ubuntu-latest
     container: ubuntu:22.04
     timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        device: ${{ fromJSON(needs.garmin.outputs.devices) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: The SDK and the device files
@@ -312,15 +329,20 @@ jobs:
           username: ${{ secrets.GARMIN_CI_USERNAME }}
           password: ${{ secrets.GARMIN_CI_PASSWORD }}
           token: ${{ secrets.GARMIN_CI_TOKEN }}
-      - name: The face's tests in the simulator (every case)
+      - name: The face's tests in the simulator (${{ matrix.device }})
         if: steps.sdk.outputs.ready == 'true'
+        env:
+          CIQ_DEVICE: ${{ matrix.device }}
+          AURA_CASES: ${{ matrix.device != 'descentmk343mm' && env.AURA_GATE_CASES || '' }}
         run: |
+          AURA_CASES="$(echo "$AURA_CASES" | tr -d ' ')"
+          if [ -n "$AURA_CASES" ]; then export AURA_CASES; else unset AURA_CASES; fi
           xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
       - name: The face's screenshots and diff images
         if: always() && steps.sdk.outputs.ready == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: garmin-test-all
+          name: garmin-test-all-${{ matrix.device }}
           path: ${{ runner.temp }}/garmin-test
           if-no-files-found: ignore
 

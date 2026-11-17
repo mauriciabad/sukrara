@@ -2,8 +2,8 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Builds Sukrara Aura (apps/garmin/README.md). Headless: needs only the Connect IQ SDK, its descentmk343mm device files
-# and a JDK 17+.
+# Builds Sukrara Aura (apps/garmin/README.md). Headless: needs only the Connect IQ SDK, the device files of manifest.xml's
+# products (export builds every one; the others one, CIQ_DEVICE) and a JDK 17+.
 #   apps/garmin/build.sh            release .prg (debug code compiled out)  → apps/garmin/bin/SukraraAura.prg
 #   apps/garmin/build.sh debug      the face with debug code                → apps/garmin/bin/SukraraAura-debug.prg
 #   apps/garmin/build.sh cases      the debug case loader (every case of cases.json in turn, printing its layout):

@@ -1,6 +1,7 @@
 # Sukrara Aura — the Garmin watch face
 
-Connect IQ watch face (Monkey C), the Garmin Descent Mk3i 43 mm (`descentmk343mm`) for now. The design is
+Connect IQ watch face (Monkey C) for the round 390 × 390 AMOLED Garmin watches with Connect IQ's enhanced graphics
+(the products in `manifest.xml`; the owner's is the Descent Mk3i 43 mm, `descentmk343mm`). The design is
 [`contracts/watchface/aura/SPEC.md`](../../contracts/watchface/aura/SPEC.md) with its reference implementation
 [`tools/watchface/aura.js`](../../tools/watchface/aura.js) (the code wins). Setup, keys, simulator and sideloading:
 [docs/DEVELOPMENT.md › Garmin](../../docs/DEVELOPMENT.md).

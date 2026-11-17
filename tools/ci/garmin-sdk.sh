@@ -6,7 +6,8 @@
 # tools/ci/garmin.lock. Writes `key=value` lines to $GITHUB_OUTPUT (and stdout).
 #
 #   tools/ci/garmin-sdk.sh plan  [manifest]   project=true|false, sdk=<zip name>, devices=<ids>, devices-key=<hash>:
-#                                             what the cache steps restore; no network
+#                                             what the cache steps restore; devices-json=["id",…] (garmin-all's
+#                                             matrix); no network
 #   tools/ci/garmin-sdk.sh setup [manifest]   ready=true|false: the SDK in ~/.Garmin/ConnectIQ/Sdks (bin on
 #                                             $GITHUB_PATH), every manifest device (+ its simulator fonts) in
 #                                             ~/.Garmin/ConnectIQ/Devices, Fonts; downloaded=true when it signed in;
@@ -54,6 +55,7 @@ plan() {
   out project true
   out sdk "$CIQ_SDK_LINUX_ZIP"
   out devices "$(echo "$ids" | tr '\n' ' ' | sed 's/ $//')"
+  out devices-json "[$(echo "$ids" | sed 's/.*/"&"/' | tr '\n' ',' | sed 's/,$//')]"
   # the device files don't depend on the SDK; a new device (or a new list) is a new cache entry
   out devices-key "$( (echo "$ids"; echo "cli $CIQ_CLI_VERSION") | sha256sum | cut -c1-16)"
 }

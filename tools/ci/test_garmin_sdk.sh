@@ -53,7 +53,8 @@ M1="$(manifest one descentmk343mm fenix847mm)"
 M2="$(manifest two fenix847mm descentmk343mm)"
 M3="$(manifest three descentmk343mm)"
 run plan1 plan "$M1"; run plan2 plan "$M2"; run plan3 plan "$M3"
-expect plan1 0 "project=true" "devices=descentmk343mm fenix847mm"
+expect plan1 0 "project=true" "devices=descentmk343mm fenix847mm" 'devices-json=["descentmk343mm","fenix847mm"]'
+expect plan3 0 'devices-json=["descentmk343mm"]'
 k1="$(grep '^devices-key=' "$T/plan1.out")"; k2="$(grep '^devices-key=' "$T/plan2.out")"; k3="$(grep '^devices-key=' "$T/plan3.out")"
 if [ -n "$k1" ] && [ "$k1" = "$k2" ] && [ "$k1" != "$k3" ]; then echo "ok   devices-key"; else echo "FAIL devices-key: $k1 / $k2 / $k3"; fails=$((fails + 1)); fi
 
@@ -82,6 +83,14 @@ if ! grep -qxF "CIQ_KEY=$T/ci-developer-key.der" "$T/cached.env" ||
   ! openssl pkey -inform DER -in "$T/ci-developer-key.der" -noout -text 2>/dev/null | grep -q '4096 bit'; then
   echo "FAIL cached: no 4096-bit CIQ_KEY"; fails=$((fails + 1))
 fi
+
+# A product added to the manifest that the cache lacks: no credential → a skip naming only that one, no download
+mkdir -p "$T/home-partly/.Garmin/ConnectIQ/Devices/descentmk343mm"
+touch "$T/home-partly/.Garmin/ConnectIQ/Devices/descentmk343mm/compiler.json"
+run partly setup "$M1" GITHUB_ACTIONS=true
+expect partly 0 "ready=false"
+grep -q '^::notice title=Garmin::skipped: the device files (fenix847mm) need a Garmin sign-in' "$T/partly.log" ||
+  { echo "FAIL partly: the notice doesn't name only the missing device"; cat "$T/partly.log"; fails=$((fails + 1)); }
 
 [ ! -e "$T/net.log" ] || { echo "FAIL: a case without a credential used the network:"; cat "$T/net.log"; fails=$((fails + 1)); }
 

@@ -10,6 +10,8 @@
         diffs a screenshot of every case with docs/img/aura/ref/<id>.png and, given, the references without the dial
         (core_refs.mjs) (OUTDIR: sim, diff, diff-core images, report.txt). Exit 1 on a number that differs.
         Linux (CI): python3 with Pillow 9+ and ImageMagick, under Xvfb (xvfb-run); the simulator starts on $DISPLAY.
+        CIQ_DEVICE=<product> runs it on another watch of manifest-cases.xml (default descentmk343mm); AURA_CASES=id,id…
+        only those cases.
 
 Numbers: positions and sizes ±0.5 px, angles ±0.1°, opacities ±0.01, the dial's inputs ±0.01, colours and strings
 exact; an element's numbers only where it is drawn (its disp), its disp always. Paths compare number by number (a
@@ -30,6 +32,8 @@ EXPECT = os.path.join(ROOT, "contracts", "watchface", "aura", "expect.json")
 CASES = os.path.join(ROOT, "contracts", "watchface", "aura", "cases.json")
 REF = os.path.join(ROOT, "docs", "img", "aura", "ref")
 WORDS = os.path.join(ROOT, "contracts", "graph", "words", "words.json")
+# the watch the simulator runs (build.sh's CIQ_DEVICE): every product of manifest.xml draws the same 390 x 390 pictures
+DEVICE = os.environ.get("CIQ_DEVICE", "descentmk343mm")
 
 SKIP_GROUPS = {"v", "ids", "metal", "arcs"}
 SKIP_KEYS = {"fam", "fam2", "labelFam", "d"}  # font families; an icon's path data (the icon key says which)
@@ -381,7 +385,7 @@ def attempt(outdir, cases, todo, shots, log, simshot):
         start_simulator()
     with open(log, "w") as lf:
         proc = subprocess.Popen([os.path.join(sdk(), "bin", "monkeydo"), os.path.join(APP, "bin", "SukraraAura-cases.prg"),
-                                 "descentmk343mm"], stdout=lf, stderr=subprocess.STDOUT, env=env())
+                                 DEVICE], stdout=lf, stderr=subprocess.STDOUT, env=env())
     offset = None
     filt_of = {c["id"]: c["cfg"].get("filter", "none") for c in cases}
     try:
@@ -393,7 +397,7 @@ def attempt(outdir, cases, todo, shots, log, simshot):
                     time.sleep(0.8)
                     for k in range(8):  # the window may still be opening
                         try:
-                            offset = simshot.calibrate()
+                            offset = simshot.calibrate(DEVICE)
                             break
                         except SystemExit:
                             if k == 7:
@@ -409,9 +413,9 @@ def attempt(outdir, cases, todo, shots, log, simshot):
                 continue
             time.sleep(0.8)  # the frame is on screen
             path = os.path.join(outdir, "sim", cid + ".png")
-            simshot.shot(path, offset=offset)
+            simshot.shot(path, DEVICE, offset=offset)
             time.sleep(0.3)
-            simshot.shot(path + ".2.png", offset=offset)
+            simshot.shot(path + ".2.png", DEVICE, offset=offset)
             moved = ImageChops.difference(Image.open(path), Image.open(path + ".2.png")).getbbox()
             os.remove(path + ".2.png")
             if moved:

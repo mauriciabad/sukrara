@@ -7,7 +7,17 @@
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
     <iq:application id="5b0d0e57-7c1e-4c39-9a0e-2a2f3c4f6a11" type="watch-app" name="@Strings.AppName" entry="AuraCasesApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.1.0">
         <iq:products>
+            <iq:product id="approachs7042mm"/>
             <iq:product id="descentmk343mm"/>
+            <iq:product id="epix2pro42mm"/>
+            <iq:product id="fr170"/>
+            <iq:product id="fr170m"/>
+            <iq:product id="fr57042mm"/>
+            <iq:product id="marq2"/>
+            <iq:product id="marq2aviator"/>
+            <iq:product id="venu3s"/>
+            <iq:product id="venu441mm"/>
+            <iq:product id="vivoactive6"/>
         </iq:products>
         <iq:permissions>
             <iq:uses-permission id="Background"/>

@@ -114,9 +114,10 @@ class NotesTest(unittest.TestCase):
     def test_github_notes_with_the_garmin_face(self):
         out = release.changelog_release(CHANGELOG, "0.14.0")
         self.assertNotIn("SukraraAura", release.github_notes(out, "0.14.0", "AB"))  # not released yet
-        notes = release.github_notes(out, "0.14.0", "AB", ["descentmk343mm"])
-        self.assertIn("- `SukraraAura-0.14.0-descentmk343mm.prg`: the Sukrara Aura watch face for the Garmin "
-                      "`descentmk343mm`, to copy into the watch's `GARMIN/APPS` folder", notes)
+        notes = release.github_notes(out, "0.14.0", "AB", ["descentmk343mm", "venu3s"])
+        self.assertIn("- `SukraraAura-0.14.0-<watch>.prg`: the Sukrara Aura watch face, one per Garmin watch "
+                      "(`descentmk343mm`, `venu3s`), to copy into the watch's `GARMIN/APPS` folder", notes)
+        self.assertEqual(notes.count("SukraraAura-0.14.0-"), 1)  # one line, however many watches
         self.assertIn("- `SukraraAura-0.14.0.iq`: the Connect IQ store package", notes)
 
     def test_unwrap_keeps_structure(self):
@@ -466,9 +467,10 @@ class GarminTest(unittest.TestCase):
 
     def test_files(self):
         self.assertEqual(release.manifest_devices(MANIFEST), ["descentmk343mm", "fenix847mm"])
-        self.assertEqual(release.garmin_artifacts("0.15.0", ["descentmk343mm"]), {
+        self.assertEqual(release.garmin_artifacts("0.15.0", ["descentmk343mm", "venu3s"]), {
             "iq": "apps/garmin/bin/dist/SukraraAura-0.15.0.iq",
-            "prg-descentmk343mm": "apps/garmin/bin/dist/SukraraAura-0.15.0-descentmk343mm.prg"})
+            "prg-descentmk343mm": "apps/garmin/bin/dist/SukraraAura-0.15.0-descentmk343mm.prg",
+            "prg-venu3s": "apps/garmin/bin/dist/SukraraAura-0.15.0-venu3s.prg"})
 
     def test_upload_kit(self):
         kit = release.garmin_upload_kit("0.14.0", "/r/SukraraAura-0.14.0.iq", release.changelog_release(CHANGELOG, "0.14.0"))

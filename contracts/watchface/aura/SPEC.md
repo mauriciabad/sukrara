@@ -1,6 +1,6 @@
 # Sukrara Aura — the watch face, to build
 
-*2026-11-16 · design spec for the Garmin face (Descent Mk3i 43 mm first) · four design rounds with the owner on the
+*2026-11-16 · design spec for the Garmin face (390 × 390 AMOLED, the Descent Mk3i 43 mm first) · four design rounds with the owner on the
 design canvases ([round 4, final](https://claude.ai/code/artifact/5566d39a-3822-451a-a956-5b3cbadf8d54); earlier rounds
 [1](https://claude.ai/code/artifact/ec45d2e6-51a8-4489-897f-afa2df1681a2),
 [2](https://claude.ai/code/artifact/c776bd6b-3168-4398-92d8-afa308541260),
@@ -47,6 +47,13 @@ seconds as a faint sweep at the rim.
 - **Garmin Descent Mk3i 43 mm**, Connect IQ id `descentmk343mm`, API 5.1; 1.2″ round AMOLED, **390 × 390 px**, 12.8
   px/mm, 16-bit colour; watch-face memory 128 KB; awake ~10 s at 1 Hz after a wrist raise, otherwise 1/min or
   always-on (≤ 10 % luminance). Details: [docs/evidence/42-watch-faces/garmin.md](../../../docs/evidence/42-watch-faces/garmin.md).
+- **The same pixels on every watch of the same screen**: the round 390 × 390 AMOLED watches with Connect IQ's enhanced
+  graphics (`enhancedGraphicSupport` in the device's `compiler.json`: `Dc.setFill` / `setStroke`, PNG-packed bitmaps
+  for the tinted atlases), API ≥ 5, 128 KB: Approach S70 42 mm, Descent Mk3 / Mk3i 43 mm, epix Pro (Gen 2) 42 mm,
+  Forerunner 170 / 170 Music, Forerunner 570 42 mm, MARQ (Gen 2), MARQ (Gen 2) Aviator, Venu 3S, Venu 4 41 mm,
+  vívoactive 6 (`apps/garmin/manifest.xml`). Every one has a touch screen. The others of that screen lack enhanced
+  graphics and crash at the first `setFill` (simulator, 2026-11-17): Approach S50, Descent G2, Forerunner 70, 165 /
+  165 Music, Instinct 3 AMOLED 45 mm (also no touch), vívoactive 5; they need a dial and atlases drawn without them.
 - **The printed bezel** (24-hour ring, "NO-FLY TIME – ALT TZ", GARMIN, four screws at 1:30 / 4:30 / 7:30 / 10:30) is
   *outside* the pixels. It is drawn in the mockups only (`bezel: true`); the face never draws it. The design aligns to
   it: the rails run screw to screw.
@@ -632,7 +639,7 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
   on either side nothing places the hidden value on a scale, the person's choice: a needed pill still unmasks the
   value, a quiet or mute pill names the side, and the sweep and the dial keep the band's colour
   (`sides-private-no-rail`, `-needed`, `-quiet`). **Press and hold**
-  the face (the Descent gives faces touch-and-hold) shows the value for 5 s with the countdown line. A **needed** pill
+  the face (the Descent gives faces touch-and-hold; every watch of the manifest has touch) shows the value for 5 s with the countdown line. A **needed** pill
   unmasks the value. Everything that isn't the number still shows: the reading's time when late or old, quiet / mute
   pills, messages, the rails (a hollow bead when old), the sweep and dial. The struck value and the trend ring go
   with the value. The rows are laid out as if the value were shown, so nothing moves on reveal.
@@ -756,7 +763,7 @@ Not design rules (docs/42 "platform limits are facts"); hints for building it on
 - **Data**: the 5-min background poll (docs/08) is a limit to solve, not a design input: a phone push or a companion
   app gets readings to the face within seconds.
 - **Touch-and-hold**: the face's delegate receives the press (`WatchFaceDelegate.onPress`, 4.2.0; the Descent has no
-  tap on faces).
+  tap on faces; every watch in the manifest has a touch screen).
 - **Rotation**: affine transforms (4.2.0) rotate the arrow, the bottom icons and the bead; or precompute the points.
 - **Motion** runs only in high-power mode (the ~10 s after a wrist raise): a reading that arrives in low power is
   drawn in its place, without the glide.
