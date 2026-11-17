@@ -1,0 +1,71 @@
+---
+title: Sukrara for Mac
+description: Your glucose in the Mac menu bar, about a second behind the phone, with the same alarms, treatments and glucose report. Follows Sukrara for Android over Bluetooth or the internet. Apple silicon, macOS 15+, free.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Download from '../../components/Download.astro';
+import Gallery from '../../components/Gallery.astro';
+
+Your glucose in the menu bar, about a second behind the phone, with the same alarms. It follows a phone with
+[Sukrara for Android](/android/): yours, or the person you look after.
+
+<Gallery shots={[['macPanel', 300], ['macReport', 380]]} />
+
+## Get it
+
+<Download app="mac" />
+
+<Steps>
+
+1. Open the downloaded file and drag **Sukrara** onto **Applications**.
+2. Open Sukrara. It lives in the menu bar and updates itself.
+3. Follow someone: paste their invite link, scan their QR code, or pair over Bluetooth nearby.
+
+</Steps>
+
+## What it does
+
+- The value and trend in the menu bar; out of range in colour, old readings struck through.
+- The same card, alarms and sounds as the phone.
+- Add insulin, carbs and notes to the wearer's log, if they allow it.
+- A glucose report over 1 to 30 days, with a CSV export.
+- Widgets on the desktop and in Notification Center.
+- Or read Juggluco on your home network instead.
+
+<Gallery shots={[['macTreatment', 340], ['macWidget', 300]]} />
+
+## Requirements
+
+- Apple silicon (M1 or newer), macOS 15 or newer.
+- A phone with [Sukrara for Android](/android/) to follow, or Juggluco on the same network.
+
+## Versions
+
+The GitHub version (the download and Homebrew) updates itself. The Mac App Store version is the same app, updated by
+the App Store. **About Sukrara** says which one you have.
+
+## Questions
+
+<details>
+<summary>Do I need an iPhone, an account or a cloud service?</summary>
+
+No. It follows a phone with Sukrara for Android directly: over Bluetooth nearby, or over Nostr relays from anywhere,
+end-to-end encrypted.
+
+</details>
+
+<details>
+<summary>Does it work on an Intel Mac?</summary>
+
+No, it needs Apple silicon (M1 or newer).
+
+</details>
+
+<details>
+<summary>Do alerts ring during a Focus?</summary>
+
+Only if you let Sukrara through: **Settings › Alerts › Let Sukrara Through**. The panel tells you when notifications or
+sounds are off.
+
+</details>

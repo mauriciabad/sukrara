@@ -1,0 +1,28 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * Play and the timeline, right under a face: a round play / pause button (its words for screen readers), what the
+ * moment is, and the slider. The page's script finds [data-play], [data-now] and [data-scrub] and sets aria-pressed
+ * (the icon follows it). Styles in face-ui.css. Shared by the face tour and the playground.
+ *   <PlayBar label="Play the day" max={1439} value={450} scrubLabel="Time of the day" now="7:30 · …" />
+ */
+import DsIcon from '../DsIcon.astro';
+import './face-ui.css';
+
+type Props = { label: string; scrubLabel: string; max: number; value: number; step?: string; now?: string };
+const { label, scrubLabel, max, value, step = '1', now = '' } = Astro.props;
+---
+
+<div class="fu-play-bar">
+	<button type="button" class="fu-play" data-play aria-pressed="false" aria-label={label}>
+		<DsIcon name="play_arrow" size="1.5rem" class="fu-play__go" />
+		<svg class="fu-play__pause" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M6.5 5h3.5v14H6.5zM14 5h3.5v14H14z"></path></svg>
+	</button>
+	<div class="fu-play-bar__track">
+		<p class="fu-play-bar__now" data-now aria-live="off">{now}</p>
+		<input type="range" class="fu-play-bar__scrub" data-scrub min="0" max={max} step={step} value={value} aria-label={scrubLabel} />
+	</div>
+	<slot />
+</div>

@@ -1,10 +1,10 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Writes one release into Sparkle's appcast (docs/appcast.xml, https://sukrara.mauri.app/appcast.xml; #91).
+"""Writes one release into Sparkle's appcast (website/public/appcast.xml, https://sukrara.mauri.app/appcast.xml; #91).
 
     python3 tools/release/appcast.py --version 0.14.0 --build 14000 \\
-        --signature <sign_update -p of the dmg> --length <bytes of the dmg> [--min-os 15.0] [--feed docs/appcast.xml]
+        --signature <sign_update -p of the dmg> --length <bytes of the dmg> [--min-os 15.0] [--feed website/public/appcast.xml]
 
 The item: the version (sparkle:version = CFBundleVersion, shortVersionString), the minimum macOS (no channel: every
 release is a normal GitHub release, every install takes it), the GitHub release's dmg as the enclosure with its
@@ -101,7 +101,7 @@ def main(argv):
     p.add_argument("--signature", required=True)
     p.add_argument("--length", type=int, required=True)
     p.add_argument("--min-os", default="15.0")
-    p.add_argument("--feed", default=os.path.join(ROOT, "docs/appcast.xml"))
+    p.add_argument("--feed", default=os.path.join(ROOT, "website/public/appcast.xml"))
     p.add_argument("--changelog", default=os.path.join(ROOT, "CHANGELOG.md"))
     p.add_argument("--date", help="RFC 2822 date (default: now)")
     a = p.parse_args(argv)

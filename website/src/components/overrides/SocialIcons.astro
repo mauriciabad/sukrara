@@ -1,0 +1,86 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The header's links, by what a visitor came to do rather than by platform (like Signal's "Get Signal" or Obsidian's
+// "Download"): see what Sukrara does, get it (the home page's Get Sukrara, every app and the Garmin face side by side),
+// and the developers' section; then Starlight's GitHub icon. Starlight shows them in the mobile menu too. The platform
+// pages stay in the sidebar's Apps, the home page's Get Sukrara and the footer.
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+import { Icon } from '@astrojs/starlight/components';
+
+const { locale } = Astro.locals.starlightRoute;
+const t = Astro.locals.t;
+const prefix = locale ? `/${locale}` : '';
+const path = Astro.url.pathname;
+const links: { key: 'site.nav.features' | 'site.nav.get' | 'site.nav.developers'; href: string; current: boolean }[] = [
+	{ key: 'site.nav.features', href: `${prefix}/features/`, current: path.startsWith(`${prefix}/features/`) },
+	{ key: 'site.nav.get', href: `${prefix}/#${locale === 'es' ? 'descarga' : 'get-it'}`, current: false },
+	{ key: 'site.nav.developers', href: '/developers/', current: /^\/(es\/)?(developers|research)\//.test(path) },
+];
+---
+
+<nav aria-label={t('site.nav.label')} class="sk-nav sl-flex">
+	{
+		links.map(({ key, href, current }) => (
+			<a href={href} aria-current={current ? 'page' : undefined} class:list={{ 'is-get': key === 'site.nav.get' }}>
+				{key === 'site.nav.get' && <Icon name="download" size="1rem" />}
+				{t(key)}
+			</a>
+		))
+	}
+</nav>
+<Default />
+
+<style>
+	.sk-nav {
+		gap: 1.25rem;
+		align-items: center;
+		margin-inline-end: 0.5rem;
+		flex-wrap: wrap;
+	}
+	.sk-nav a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+		font-weight: 600;
+		font-size: var(--sl-text-sm);
+		white-space: nowrap;
+	}
+	.sk-nav a:hover,
+	.sk-nav a[aria-current='page'] {
+		color: var(--sl-color-white);
+	}
+	.sk-nav a[aria-current='page'] {
+		text-decoration: underline 2px var(--sl-color-accent);
+		text-underline-offset: 0.4em;
+	}
+	/* Get Sukrara: the one thing most visitors came for, as a small accent pill. */
+	.sk-nav a.is-get {
+		padding: 0.3rem 0.8rem 0.3rem 0.65rem;
+		border-radius: 999px;
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+		transition: transform 0.15s ease;
+	}
+	:root[data-theme='light'] .sk-nav a.is-get {
+		color: #fff;
+	}
+	.sk-nav a.is-get:hover {
+		color: var(--sl-color-black);
+		transform: translateY(-1px);
+	}
+	:root[data-theme='light'] .sk-nav a.is-get:hover {
+		color: #fff;
+	}
+	.sk-nav a.is-get:active {
+		transform: scale(0.97);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.sk-nav a.is-get {
+			transition: none;
+		}
+	}
+</style>

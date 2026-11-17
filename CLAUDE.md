@@ -21,8 +21,17 @@ sections your change touches.
 - **Document what goes in and what stays out.** When results from an investigation or the PoC are brought into
   Sukrara, record both **what was added** and **what was discarded, with the reason**, in the investigation's report
   ("In Sukrara" section). *(not checked: needs judgement)*
-- **The README always stays up to date** with what every Sukrara app does. Update it in the same change as the
-  feature. *(check `features`: a NOTE when app code changes without README.md)*
+- **The README always stays up to date** with what every Sukrara app does, and so does the website's
+  [Features page](website/src/content/docs/features.mdx) (every feature worth asking "does it do X?" about, one tile each, English and Spanish).
+  Update them in the same change as the feature. *(check `features`: a NOTE when app code changes without README.md, or the
+  README without the Features page)*
+- **The website** ([`website/`](website/README.md), sukrara.mauri.app) says what each app does for the person, in
+  English and Spanish (the developers' pages and reports, published from `docs/`: English). A change that makes a page
+  wrong updates it in the same change. It loads nothing from another host (the privacy policy says so), shows only
+  synthetic app pictures, and never drops a URL the apps open. A link to another site opens it in the page's language
+  when that site has one (Spanish page → Spanish Google Play, F-Droid, Homebrew…). *(job `website`: `npm run check`
+  fails on a broken link or anchor, a URL the apps' code opens that the site lacks, an outside link in the wrong
+  language, App Links / universal links / the update feed)*
 - **No backwards compatibility.** Replace formats outright and delete superseded code paths. This covers local
   storage too (settings, files, databases) and anything from the PoC. The **wire formats** in `contracts/protocol`
   (Nostr v2, identity) are versioned: every app speaks the same version. *(not checked)*
@@ -40,8 +49,8 @@ sections your change touches.
 - **Never commit secrets** (`nsec1…`, `secrets/`, keys, keystores, APKs/dmgs, build dirs) **or the owner's health
   screenshots** (synthetic/emulator data, cropped). The Android release key lives outside the repo
   (`~/.android/sukrara-release.jks`, password in the Keychain). *(checks `secrets`, `large`, `images`: images only
-  under `docs/img/`, `assets/brand/`, `res/`, the snapshot goldens or `poc/spikes/*/evidence/`; full-phone captures
-  flagged)*
+  under `docs/img/`, `assets/brand/`, `res/`, the snapshot goldens, `website/src/assets/` or `poc/spikes/*/evidence/`;
+  full-phone captures flagged)*
 - **Whoever creates a leftover removes it.** Every worktree, branch, emulator, background process and temp file is
   removed by the session or agent that made it, as soon as it's no longer needed: it alone knows whether it still is.
   An agent stops its emulators and background processes and deletes its temp files before reporting; it can't remove

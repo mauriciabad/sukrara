@@ -1,0 +1,265 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * A game's sound-test screen for the alert sounds: alerts down the side, packs across the top, three sounds each, and
+ * every alert's vibration drawn to scale (lib/sounds.ts). One sound plays at a time; a number shows its progress.
+ */
+import { KINDS, PACKS } from '../lib/sounds';
+
+const t = Astro.locals.t;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+---
+
+<div class="sk-sounds not-content">
+	<div class="sk-sounds__bar">
+		<button type="button" data-random>{t('site.sounds.random')}</button>
+		<button type="button" data-stop>{t('site.sounds.stop')}</button>
+		<span class="sk-sounds__now" aria-live="polite" data-idle={t('site.sounds.idle')} data-stopped={t('site.sounds.stopped')} data-failed={t('site.sounds.failed')} data-playing={t('site.sounds.playing', { sound: '%s' })}>
+			{t('site.sounds.idle')}
+		</span>
+	</div>
+	<div class="sk-sounds__board">
+		<table>
+			<thead>
+				<tr>
+					<th scope="col"><span class="sk-sounds__pack">{t('site.sounds.alert')}</span><span class="sk-sounds__note">{t('site.sounds.rule')}</span></th>
+					{PACKS.map((p) => <th scope="col"><span class="sk-sounds__pack">{p.name}</span><span class="sk-sounds__note">{p.note[lang]}</span></th>)}
+				</tr>
+			</thead>
+			<tbody>
+				{
+					KINDS.map((k) => (
+						<tr data-kind={k.id}>
+							<th scope="row">
+								<span class:list={['sk-sounds__kind', `is-${k.side}`]}>{k.name[lang]}</span>
+								<span class="sk-sounds__rule">{k.rule(lang)}</span>
+								<span class="sk-sounds__mood">{k.mood[lang]}</span>
+								<svg class="sk-sounds__vibration" viewBox="0 0 720 34" preserveAspectRatio="none" role="img" aria-label={t('site.sounds.vibration', { ms: k.vibration.ms })}>
+									<line x1="0" y1="33" x2="720" y2="33" />
+									{k.vibration.shapes.map(([shape, points, strength]) => (
+										<polygon points={points}><title>{`${k.shapeName(shape, lang)} · ${strength}`}</title></polygon>
+									))}
+								</svg>
+								<span class="sk-sounds__ms">{k.vibration.ms} ms</span>
+							</th>
+							{PACKS.map((p) => (
+								<td>
+									<div class="sk-sounds__variants">
+										{[1, 2, 3].map((n) => (
+											<button type="button" class="sk-sounds__play" data-src={`/sounds/${p.id}_${k.id}_${n}.m4a`} aria-label={t('site.sounds.sound', { pack: p.name, alert: k.name[lang], n })}>
+												{n}
+											</button>
+										))}
+									</div>
+								</td>
+							))}
+						</tr>
+					))
+				}
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<script>
+	for (const board of document.querySelectorAll<HTMLElement>('.sk-sounds')) {
+		const audio = new Audio();
+		const now = board.querySelector<HTMLElement>('.sk-sounds__now')!;
+		let current: HTMLButtonElement | null = null;
+		const stop = () => {
+			audio.pause();
+			current?.classList.remove('is-playing');
+			current?.style.removeProperty('--progress');
+			current = null;
+		};
+		const play = (button: HTMLButtonElement) =>
+			new Promise<void>((done) => {
+				stop();
+				current = button;
+				button.classList.add('is-playing');
+				audio.src = button.dataset.src!;
+				audio.currentTime = 0;
+				audio.onended = () => {
+					stop();
+					done();
+				};
+				audio
+					.play()
+					.then(() => (now.textContent = now.dataset.playing!.replace('%s', button.getAttribute('aria-label')!)))
+					.catch(() => {
+						now.textContent = now.dataset.failed!;
+						stop();
+						done();
+					});
+			});
+		audio.ontimeupdate = () => {
+			if (current && audio.duration) current.style.setProperty('--progress', `${(100 * audio.currentTime) / audio.duration}%`);
+		};
+		board.querySelectorAll<HTMLButtonElement>('.sk-sounds__play').forEach((b) =>
+			b.addEventListener('click', () => (current === b ? stop() : play(b))),
+		);
+		board.querySelector('[data-stop]')!.addEventListener('click', () => {
+			stop();
+			now.textContent = now.dataset.stopped!;
+		});
+		board.querySelector('[data-random]')!.addEventListener('click', async () => {
+			for (const cell of board.querySelectorAll('tr[data-kind="high"] td')) {
+				const options = cell.querySelectorAll<HTMLButtonElement>('.sk-sounds__play');
+				await play(options[Math.floor(Math.random() * options.length)]);
+				await new Promise((r) => setTimeout(r, 350));
+			}
+		});
+	}
+</script>
+
+<style>
+	/* The board needs the room: the page has no table of contents, so its column takes it. */
+	:global(:root:has(.sk-sounds)) {
+		--sl-content-width: 62rem;
+	}
+	.sk-sounds {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+	}
+	.sk-sounds__bar {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.75rem 1.25rem;
+		align-items: center;
+	}
+	.sk-sounds__bar button {
+		font: 700 var(--sl-text-sm) / 1 var(--sk-font-display);
+		color: var(--sl-color-white);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+		border-radius: 999px;
+		padding: 0.65rem 1.1rem;
+		cursor: pointer;
+	}
+	.sk-sounds__bar button:hover {
+		border-color: var(--sl-color-accent);
+	}
+	.sk-sounds__now {
+		font-family: var(--__sl-font-mono);
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-2);
+	}
+	.sk-sounds__board {
+		overflow-x: auto;
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+		border-radius: var(--sk-radius);
+	}
+	table {
+		border-collapse: collapse;
+		width: 100%;
+		min-width: 54rem;
+	}
+	th,
+	td {
+		text-align: start;
+		padding: 0.9rem 0.75rem;
+		border-bottom: 1px solid var(--sk-surface-line);
+		vertical-align: top;
+	}
+	tbody tr:last-child > * {
+		border-bottom: 0;
+	}
+	tbody th {
+		font-weight: 400;
+		width: 40%;
+	}
+	.sk-sounds__pack {
+		display: block;
+		font: 800 var(--sl-text-lg) / 1.1 var(--sk-font-display);
+		color: var(--sl-color-white);
+	}
+	.sk-sounds__note {
+		display: block;
+		font-size: var(--sl-text-xs);
+		font-weight: 400;
+		color: var(--sl-color-gray-3);
+	}
+	.sk-sounds__kind {
+		display: block;
+		font: 800 var(--sl-text-base) / 1.2 var(--sk-font-display);
+		color: var(--sl-color-white);
+	}
+	.sk-sounds__kind.is-low {
+		color: var(--sl-color-red-high);
+	}
+	.sk-sounds__kind.is-high {
+		color: var(--sl-color-orange-high);
+	}
+	.sk-sounds__rule {
+		display: block;
+		font: var(--sl-text-xs) / 1.6 var(--__sl-font-mono);
+		color: var(--sl-color-gray-3);
+	}
+	.sk-sounds__mood {
+		display: block;
+		margin: 0.15rem 0 0.5rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sk-sounds__vibration {
+		width: calc(100% - 4.5rem);
+		height: 2rem;
+		vertical-align: middle;
+	}
+	.sk-sounds__vibration line {
+		stroke: var(--sk-surface-line);
+	}
+	.sk-sounds__vibration polygon {
+		fill: var(--sl-color-accent);
+	}
+	.sk-sounds__ms {
+		margin-inline-start: 0.5rem;
+		font: var(--sl-text-2xs) var(--__sl-font-mono);
+		color: var(--sl-color-gray-3);
+	}
+	.sk-sounds__variants {
+		display: flex;
+		gap: 0.4rem;
+	}
+	.sk-sounds__play {
+		position: relative;
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 50%;
+		border: 1px solid var(--sk-surface-line);
+		background: var(--sl-color-black);
+		color: var(--sl-color-white);
+		font: 700 var(--sl-text-sm) var(--__sl-font-mono);
+		cursor: pointer;
+		transition: transform 0.12s ease;
+	}
+	.sk-sounds__play:hover {
+		border-color: var(--sl-color-accent);
+	}
+	.sk-sounds__play:active {
+		transform: scale(0.92);
+	}
+	.sk-sounds__play.is-playing {
+		background: var(--sk-lime);
+		border-color: var(--sk-lime);
+		color: var(--sk-navy);
+	}
+	/* The playing sound's progress, as a ring filling round the button. */
+	.sk-sounds__play.is-playing::after {
+		content: '';
+		position: absolute;
+		inset: -5px;
+		border-radius: 50%;
+		background: conic-gradient(var(--sl-color-accent) var(--progress, 0%), transparent 0);
+		mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.sk-sounds__play.is-playing::after {
+			display: none;
+		}
+	}
+</style>

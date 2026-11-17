@@ -33,6 +33,7 @@
      "qa": ["Q24 Backup to a password manager"]},
     {"paths": ["apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/*", "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/XdripPage.kt", "contracts/watchface/payload/*", "apps/garmin/source/link/*"],
      "qa": ["Q27 Garmin link (phone → Sukrara Aura) and the xDrip+ server page"]},
-    {"paths": ["apps/android/*/src/main/*", "apps/macos/Sources/*"], "qa": ["Q19 Complete flows (states and exits)", "Q20 The person and the feel"]}
+    {"paths": ["apps/android/*/src/main/*", "apps/macos/Sources/*"], "qa": ["Q19 Complete flows (states and exits)", "Q20 The person and the feel"]},
+    {"paths": ["website/*"], "qa": ["Q29 Website"]}
   ]
 }

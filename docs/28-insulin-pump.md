@@ -363,7 +363,7 @@ followers from bolusing for the same meal.
    **"can bolus"** separately from following, with per-person limits (max per bolus, max per hour), and can revoke it
    at any time.
 2. **The relying party is `sukrara.mauri.app`.**
-   - Android: `docs/.well-known/assetlinks.json` gains the `delegate_permission/common.get_login_creds` relation.
+   - Android: `website/public/.well-known/assetlinks.json` gains the `delegate_permission/common.get_login_creds` relation.
    - Mac: `apple-app-site-association` `webcredentials` plus the Associated Domains entitlement. That likely needs
      the paid Apple Developer account ([20](20-publishing.md)) and won't work with the free certificate (not
      verified).

@@ -1,0 +1,114 @@
+---
+title: Your sugar, now
+description: Your CGM glucose live in the status bar, widgets, lock screen and notifications. Discreet alarms. Shared with family and friends, end-to-end encrypted. Android and Mac, free and open source.
+template: splash
+editUrl: false
+lastUpdated: false
+hero:
+  title: Your sugar, <em>now</em>.
+  tagline: Your CGM glucose live in the status bar, widgets and lock screen. Discreet alarms. Shared with the people you choose.
+  actions:
+    - text: Get it for Android
+      link: /android/#get-it
+      variant: primary
+    - text: Get it for Mac
+      link: /mac/#get-it
+      variant: secondary
+---
+
+import { LinkButton } from '@astrojs/starlight/components';
+import Chips from '../../components/landing/Chips.astro';
+import Get from '../../components/landing/Get.astro';
+import Note from '../../components/landing/Note.astro';
+import Section from '../../components/landing/Section.astro';
+import Sharing from '../../components/landing/Sharing.astro';
+import Split from '../../components/landing/Split.astro';
+import Tile from '../../components/landing/Tile.astro';
+import Tiles from '../../components/landing/Tiles.astro';
+import Works from '../../components/landing/Works.astro';
+import Screenshot from '../../components/Screenshot.astro';
+import FaceTour from '../../components/face-playground/FaceTour.astro';
+
+<Section title="Always at a glance" more="/features/#glucose-at-a-glance" lead="You rarely need to open the app.">
+  <Tiles>
+    <Tile shot="widget" title="Home screen widgets" width={360}>Value, trend, chart and time in range.</Tile>
+    <Tile shot="statusBar" title="Status bar" width={1080} crop>A Live Update chip, or anywhere with advanced setup.</Tile>
+    <Tile shot="lockscreen" title="Lock screen" width={360}>No need to unlock or touch the phone.</Tile>
+    <Tile shot="macPanel" title="Mac menu bar" width={230} href="/mac/">With the same alarms, and widgets.</Tile>
+  </Tiles>
+</Section>
+
+<Section title="Alarms without the fatigue" more="/features/#alerts">
+  <Split>
+    - Every alert has its own sound and vibration.
+    - Discreet [sound packs](/sounds/), or a different one per alert.
+    - Quiet once you've acted.
+    - Loud even in Do Not Disturb, if you want.
+    - A very low nobody answers alerts your followers.
+    <div slot="aside"><Screenshot name="alert" width={400} /></div>
+  </Split>
+</Section>
+
+<Section title="Shared live, without a cloud" more="/features/#sharing-and-following" lead="Invite someone with a link or a QR code. Nearby over Bluetooth, from anywhere over Nostr.">
+  <Sharing />
+</Section>
+
+<Section title="Log in seconds" more="/features/#logging">
+  <Split>
+    - A NovoPen Echo® Plus logs its doses, and tells priming apart.
+    - From the notification, a widget or Quick Settings.
+    - From your Mac, or a follower's phone.
+    <div slot="aside"><Screenshot name="lockTreatment" width={340} /></div>
+  </Split>
+</Section>
+
+<Section title="Reports your clinic knows" more="/features/#reports-and-your-data">
+  <Split>
+    - Time in ranges, average glucose, GMI and variability.
+    - Your clinic still gets your data through LibreView or Tidepool.
+    - Import and export your history.
+    - Cool effects from 90% time in range.
+    <div slot="aside"><Screenshot name="macReport" width={420} /></div>
+  </Split>
+</Section>
+
+<Section title="Works with what you already use" more="/features/#works-with" lead="Everything stays on your phone until you turn something on.">
+  <Works
+    label="Apps and services"
+    items={[
+      { app: 'libreview', note: 'Uploads to it' },
+      { app: 'tidepool', note: 'Uploads to it' },
+      { app: 'nightscout', note: 'Uploads, or acts as its API' },
+      { app: 'healthConnect', note: 'Writes to it' },
+      { app: 'xdrip', note: 'Acts as its API' },
+      { app: 'aaps', note: 'Broadcasts glucose to it' },
+      { app: 'juggluco', note: 'Reads glucose from it' },
+      { logo: 'garmin', name: 'Garmin', note: 'Its own watch face, or xDrip+ ones' },
+    ]}
+  />
+  <Chips
+    sensor
+    label="Sensors"
+    items={['FreeStyle Libre 3 / 3 Plus', 'FreeStyle Libre 2 / 2 Plus', 'Dexcom G6 / G7 / ONE+', 'Accu-Chek SmartGuide', 'Sibionics GS1', 'CareSens Air', 'LinX / AiDEX X']}
+  />
+</Section>
+
+<Section title="On your wrist" more="/features/#on-your-garmin-watch" lead="Sukrara Aura for Garmin, living through a made-up day 600 times faster. Point at a part to see what it is.">
+  <FaceTour id="home" />
+</Section>
+
+<Section title="And more">
+  <Chips
+    label="More"
+    items={['No ads, analytics, tracking or account', 'Free and open source', 'Battery optimized', 'Settings organized and explained', 'Sensor expiry reminders', 'English and Spanish']}
+  />
+  <LinkButton href="/features/" variant="secondary" icon="right-arrow">Every feature</LinkButton>
+</Section>
+
+<Note author="Maurici Abad" title="Why Sukrara">
+  I made Sukrara for myself and share it with everybody. I use it every day, at my own risk, and it works fine, but I
+  can't guarantee it. Anyone else who uses it does so at their own risk too. All the core features are there, and many
+  more improvements are coming.
+</Note>
+
+<Get title="Get Sukrara" id="get-it" />

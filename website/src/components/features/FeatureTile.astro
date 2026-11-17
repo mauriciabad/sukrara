@@ -1,0 +1,203 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * One feature on the features page: the app's icon for it (or the app's / brand's own), its name, one line. With an
+ * app picture (lib/screens.ts) the tile is a button that shows it in a dialog, so nobody leaves the page.
+ *   <FeatureTile icon="music_note" title="Discreet sound packs">A different intensity for each alert.</FeatureTile>
+ *   <FeatureTile icon="widgets" title="Home screen widgets" shot="widget">Glucose, chart and time in range.</FeatureTile>
+ *   <FeatureTile app="tidepool" title="Tidepool">Sends your glucose, insulin, carbs and notes.</FeatureTile>
+ */
+import type { AppName } from '../../lib/apps';
+import type { LogoName } from '../../lib/logos';
+import type { ScreenName } from '../../lib/screens';
+import AppIcon from '../AppIcon.astro';
+import DsIcon from '../DsIcon.astro';
+import Logo from '../Logo.astro';
+import Screenshot from '../Screenshot.astro';
+import FaceExample from '../face-playground/FaceExample.astro';
+
+type Props = { title: string; shot?: ScreenName; shotWidth?: number; /** Instead of a picture: one of the watch face's examples, drawn live. */ face?: string } & (
+	| { icon: string }
+	| { app: AppName }
+	| { logo: LogoName }
+);
+const props = Astro.props;
+const t = Astro.locals.t;
+const pic = props.shot ?? (props.face ? `face-${props.face}` : undefined);
+const dialogId = pic ? `sk-shot-${pic}` : undefined; // each picture once on the page
+const Tag = pic ? 'button' : 'div';
+---
+
+<li class="sk-ftile-cell">
+	<Tag
+		class="sk-ftile"
+		type={pic ? 'button' : undefined}
+		data-dialog={dialogId}
+		aria-haspopup={pic ? 'dialog' : undefined}
+	>
+		<span class:list={['sk-ftile__icon', { 'is-app': 'app' in props }]}>
+			{'app' in props && <AppIcon name={props.app} size={36} />}
+			{'logo' in props && <Logo name={props.logo} size="1.25rem" />}
+			{'icon' in props && <DsIcon name={props.icon} size="1.35rem" />}
+		</span>
+		<span class="sk-ftile__name">{props.title}</span>
+		<span class="sk-ftile__line"><slot /></span>
+		{pic && <DsIcon name="wallpaper" size="1.1rem" class="sk-ftile__more" />}
+	</Tag>
+	{
+		pic && (
+			<dialog id={dialogId} class="sk-fdialog" aria-label={props.title}>
+				<form method="dialog">
+					<button class="sk-fdialog__close" aria-label={t('site.features.close')}>
+						<DsIcon name="close" size="1.25rem" />
+					</button>
+				</form>
+				<p class="sk-fdialog__name">{props.title}</p>
+				<p class="sk-fdialog__line">
+					<slot />
+				</p>
+				<div class="sk-fdialog__shot">
+					{props.shot ? <Screenshot name={props.shot} width={props.shotWidth ?? 360} /> : <FaceExample id={props.face!} width={props.shotWidth ?? 300} />}
+				</div>
+			</dialog>
+		)
+	}
+</li>
+
+<style>
+	.sk-ftile-cell {
+		margin: 0;
+		display: flex;
+	}
+	.sk-ftile {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		width: 100%;
+		margin: 0;
+		padding: 1rem 1.1rem 1.1rem;
+		border-radius: var(--sk-radius);
+		border: 1px solid var(--sk-surface-line);
+		background: var(--sk-surface);
+		color: inherit;
+		font: inherit;
+		text-align: start;
+	}
+	button.sk-ftile {
+		cursor: pointer;
+		transition:
+			border-color 0.15s ease,
+			transform 0.15s ease;
+	}
+	button.sk-ftile:hover {
+		border-color: var(--sl-color-accent);
+		transform: translateY(-1px);
+	}
+	button.sk-ftile:focus-visible {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+	.sk-ftile__icon {
+		display: grid;
+		place-items: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		margin-bottom: 0.55rem;
+		border-radius: 0.65rem;
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	.sk-ftile__icon.is-app {
+		background: none;
+	}
+	.sk-ftile__name {
+		font-weight: 700;
+		color: var(--sl-color-white);
+		line-height: 1.3;
+	}
+	.sk-ftile__line {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+		line-height: 1.4;
+	}
+	.sk-ftile :global(.sk-ftile__more) {
+		position: absolute;
+		top: 1rem;
+		inset-inline-end: 1rem;
+		color: var(--sl-color-gray-4);
+	}
+	button.sk-ftile:hover :global(.sk-ftile__more) {
+		color: var(--sl-color-accent-high);
+	}
+
+	.sk-fdialog {
+		/* Centred, as browsers place a modal dialog (Starlight's reset takes its auto margin away). */
+		margin: auto;
+		width: min(26rem, calc(100vw - 2rem));
+		max-height: calc(100dvh - 2rem);
+		padding: 1.25rem;
+		border-radius: calc(var(--sk-radius) * 1.25);
+		border: 1px solid var(--sk-surface-line);
+		background: var(--sl-color-black);
+		color: var(--sl-color-gray-2);
+		box-shadow: var(--sk-glow);
+	}
+	.sk-fdialog::backdrop {
+		background: hsl(216 68% 6% / 0.6);
+		backdrop-filter: blur(2px);
+	}
+	.sk-fdialog__close {
+		position: absolute;
+		top: 0.75rem;
+		inset-inline-end: 0.75rem;
+		display: grid;
+		place-items: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		border: 0;
+		border-radius: 50%;
+		background: var(--sk-surface);
+		color: var(--sl-color-gray-2);
+		cursor: pointer;
+	}
+	.sk-fdialog__name {
+		margin: 0 2.5rem 0 0;
+		font-family: var(--sk-font-display);
+		font-size: var(--sl-text-xl);
+		font-weight: 800;
+		color: var(--sl-color-white);
+	}
+	.sk-fdialog__line {
+		margin: 0.25rem 0 1rem;
+	}
+	.sk-fdialog__shot {
+		display: flex;
+		justify-content: center;
+	}
+	.sk-fdialog__shot :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+
+	/* On a phone: the icon beside the words, so the page stays short. */
+	@media (max-width: 40rem) {
+		.sk-ftile {
+			display: grid;
+			grid-template-columns: auto minmax(0, 1fr);
+			column-gap: 0.85rem;
+			row-gap: 0.1rem;
+			padding: 0.8rem 2.5rem 0.85rem 0.9rem;
+		}
+		.sk-ftile__icon {
+			grid-row: span 2;
+			margin-bottom: 0;
+		}
+		.sk-ftile :global(.sk-ftile__more) {
+			top: 0.85rem;
+			inset-inline-end: 0.85rem;
+		}
+	}
+</style>

@@ -1,0 +1,37 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// An app's or service's own icon (lib/apps.ts), as a launcher shows it: <AppIcon name="libreview" size={40} />
+import { Picture } from 'astro:assets';
+import { APPS, type AppName } from '../lib/apps';
+
+interface Props {
+	name: AppName;
+	/** CSS pixels. */
+	size?: number;
+	/** Decorative next to the app's name (the default); read out when it stands alone. */
+	alt?: string;
+}
+const { name, size = 40, alt = '' } = Astro.props;
+const { icon } = APPS[name];
+---
+
+{
+	typeof icon === 'string' ? (
+		<img class="sk-app-icon" src={icon} alt={alt} width={size} height={size} loading="lazy" decoding="async" />
+	) : (
+		<Picture
+			class="sk-app-icon"
+			src={icon}
+			alt={alt}
+			width={size}
+			height={size}
+			densities={[1, 2]}
+			formats={['jxl', 'avif']}
+			fallbackFormat="png"
+			loading="lazy"
+			decoding="async"
+		/>
+	)
+}

@@ -1,0 +1,306 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * How a reading travels, as it does: the wearer's phone reads the sensor and sends each reading at once over Bluetooth
+ * to the Mac next to it, and over the internet to Nostr relays, which pass it on, end-to-end encrypted, to every
+ * follower: the same Mac (it listens on both), a partner's phone and a DIY display at home (Open Glucose Stream), far
+ * away. A dot leaves the phone on every route at the same moment; the Bluetooth one arrives first. Drawn twice, wide
+ * (side by side) and narrow (top to bottom), from the same parts; the words are the page language's (site.share.*).
+ */
+import { LOGOS } from '../../lib/logos';
+
+const t = Astro.locals.t;
+
+type Box = { x: number; y: number; w: number; h: number };
+type NodeName = 'phone' | 'mac' | 'relays' | 'partner' | 'display';
+interface Layout {
+	width: number;
+	height: number;
+	/** Icon beside the words (wide) or above them (narrow). */
+	stacked: boolean;
+	nodes: Record<NodeName, Box>;
+	zones: { near: Box; far: Box };
+	edges: { bt: string; up: string; toMac: string; toPartner: string; toDisplay: string };
+	/** Through the relays: the phone's route in, then out to each follower. */
+	via: { mac: string; partner: string; display: string };
+	btLabel: { x: number; y: number; anchor: 'start' | 'middle'; logoX: number; logoY: number };
+}
+
+const wideUp = 'M280 120 C330 120 330 196 380 196';
+const narrowUp = 'M83 156 C83 200 130 196 130 232';
+const layouts: Record<'wide' | 'narrow', Layout> = {
+	wide: {
+		width: 960,
+		height: 392,
+		stacked: false,
+		nodes: {
+			phone: { x: 40, y: 82, w: 240, h: 76 },
+			mac: { x: 40, y: 262, w: 240, h: 76 },
+			relays: { x: 380, y: 166, w: 200, h: 88 },
+			partner: { x: 680, y: 82, w: 240, h: 76 },
+			display: { x: 680, y: 262, w: 240, h: 76 },
+		},
+		zones: { near: { x: 20, y: 54, w: 280, h: 310 }, far: { x: 660, y: 54, w: 280, h: 310 } },
+		edges: {
+			bt: 'M160 158 L160 262',
+			up: wideUp,
+			toMac: 'M380 224 C330 224 330 300 280 300',
+			toPartner: 'M580 196 C630 196 630 120 680 120',
+			toDisplay: 'M580 224 C630 224 630 300 680 300',
+		},
+		via: {
+			mac: `${wideUp} L480 210 L380 224 C330 224 330 300 280 300`,
+			partner: `${wideUp} L580 196 C630 196 630 120 680 120`,
+			display: `${wideUp} L480 210 L580 224 C630 224 630 300 680 300`,
+		},
+		btLabel: { x: 196, y: 215, anchor: 'start', logoX: 170, logoY: 201 },
+	},
+	narrow: {
+		width: 360,
+		height: 520,
+		stacked: true,
+		nodes: {
+			phone: { x: 16, y: 52, w: 134, h: 104 },
+			mac: { x: 210, y: 52, w: 134, h: 104 },
+			relays: { x: 80, y: 232, w: 200, h: 84 },
+			partner: { x: 16, y: 392, w: 134, h: 104 },
+			display: { x: 210, y: 392, w: 134, h: 104 },
+		},
+		zones: { near: { x: 6, y: 36, w: 348, h: 136 }, far: { x: 6, y: 376, w: 348, h: 136 } },
+		edges: {
+			bt: 'M150 104 L210 104',
+			up: narrowUp,
+			toMac: 'M230 232 C230 196 277 200 277 156',
+			toPartner: 'M130 316 C130 352 83 348 83 392',
+			toDisplay: 'M230 316 C230 352 277 348 277 392',
+		},
+		via: {
+			mac: `${narrowUp} L180 274 L230 232 C230 196 277 200 277 156`,
+			partner: `${narrowUp} L130 316 C130 352 83 348 83 392`,
+			display: `${narrowUp} L180 274 L230 316 C230 352 277 348 277 392`,
+		},
+		btLabel: { x: 180, y: 126, anchor: 'middle', logoX: 171, logoY: 80 },
+	},
+};
+
+/** A monitor on a stand: the DIY display (no brand). */
+const DISPLAY = 'M3 5a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 20h6M12 16v4';
+const nodes: { name: NodeName; icon: string; stroke?: boolean; title: string; note: string }[] = [
+	{ name: 'phone', icon: LOGOS.android, title: t('site.share.phone'), note: t('site.share.phoneNote') },
+	{ name: 'mac', icon: LOGOS.apple, title: t('site.share.mac'), note: t('site.share.macNote') },
+	{ name: 'relays', icon: LOGOS.nostr, title: t('site.share.relays'), note: t('site.share.relaysNote') },
+	{ name: 'partner', icon: LOGOS.android, title: t('site.share.partner'), note: t('site.share.partnerNote') },
+	{ name: 'display', icon: DISPLAY, stroke: true, title: t('site.share.display'), note: t('site.share.displayNote') },
+];
+
+/** One reading's trip: it moves for `share` of every 3 s cycle, then waits, hidden, for the next one. */
+const dots = (l: Layout) => [
+	{ path: l.edges.bt, share: 0.3 },
+	{ path: l.via.mac, share: 0.8 },
+	{ path: l.via.partner, share: 0.8 },
+	{ path: l.via.display, share: 0.8 },
+];
+---
+
+<figure class="sk-share not-content">
+	{
+		(['wide', 'narrow'] as const).map((kind) => {
+			const l = layouts[kind];
+			const titleId = `sk-share-${kind}`;
+			return (
+				<svg
+					class={`sk-share__${kind}`}
+					viewBox={`0 0 ${l.width} ${l.height}`}
+					role="img"
+					aria-labelledby={titleId}
+				>
+					<title id={titleId}>{t('site.share.label')}</title>
+					{(['near', 'far'] as const).map((z) => (
+						<g class="sk-share__zone">
+							<rect x={l.zones[z].x} y={l.zones[z].y} width={l.zones[z].w} height={l.zones[z].h} rx="22" />
+							<text x={l.zones[z].x + 4} y={l.zones[z].y - 12}>
+								{t(z === 'near' ? 'site.share.near' : 'site.share.far')}
+							</text>
+						</g>
+					))}
+					<path class="sk-share__edge is-bt" d={l.edges.bt} />
+					{[l.edges.up, l.edges.toMac, l.edges.toPartner, l.edges.toDisplay].map((d) => (
+						<path class="sk-share__edge" d={d} />
+					))}
+					{dots(l).map(({ path, share }) => (
+						<circle class="sk-share__dot" r="6" opacity="0">
+							<animateMotion
+								dur="3s"
+								repeatCount="indefinite"
+								path={path}
+								keyPoints="0;1;1"
+								keyTimes={`0;${share};1`}
+								calcMode="linear"
+							/>
+							<animate
+								attributeName="opacity"
+								dur="3s"
+								repeatCount="indefinite"
+								values="0;1;1;0;0"
+								keyTimes={`0;0.04;${share - 0.04};${share};1`}
+							/>
+						</circle>
+					))}
+					<svg x={l.btLabel.logoX} y={l.btLabel.logoY} width="18" height="18" viewBox="0 0 24 24" class="sk-share__bt">
+						<path d={LOGOS.bluetooth} />
+					</svg>
+					<text class="sk-share__edge-label" x={l.btLabel.x} y={l.btLabel.y} text-anchor={l.btLabel.anchor}>
+						{t('site.share.bluetooth')}
+					</text>
+					{nodes.map(({ name, icon, stroke, title, note }) => {
+						const b = l.nodes[name];
+						const cx = b.x + b.w / 2;
+						const size = l.stacked ? 26 : 28;
+						const iconX = l.stacked ? cx - size / 2 : b.x + 16;
+						const iconY = l.stacked ? b.y + 16 : b.y + (b.h - size) / 2;
+						const textX = l.stacked ? cx : b.x + 56;
+						const anchor = l.stacked ? 'middle' : 'start';
+						const titleY = l.stacked ? b.y + 64 : b.y + b.h / 2 - 3;
+						const noteY = l.stacked ? b.y + 84 : b.y + b.h / 2 + 17;
+						return (
+							<g class={`sk-share__node is-${name}`}>
+								<rect x={b.x} y={b.y} width={b.w} height={b.h} rx="16" />
+								<svg x={iconX} y={iconY} width={size} height={size} viewBox="0 0 24 24" class="sk-share__icon">
+									{stroke ? <path d={icon} class="is-stroke" /> : <path d={icon} />}
+								</svg>
+								<text class="sk-share__title" x={textX} y={titleY} text-anchor={anchor}>
+									{title}
+								</text>
+								<text class="sk-share__note" x={textX} y={noteY} text-anchor={anchor}>
+									{note}
+								</text>
+							</g>
+						);
+					})}
+				</svg>
+			);
+		})
+	}
+</figure>
+
+<style>
+	.sk-share {
+		margin: 0;
+	}
+	.sk-share svg {
+		overflow: visible;
+	}
+	.sk-share__wide,
+	.sk-share__narrow {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.sk-share__narrow {
+		max-width: 26rem;
+		margin-inline: auto;
+	}
+	.sk-share__wide {
+		display: none;
+	}
+	@media (min-width: 46rem) {
+		.sk-share__wide {
+			display: block;
+		}
+		.sk-share__narrow {
+			display: none;
+		}
+	}
+	.sk-share__zone rect {
+		fill: none;
+		stroke: var(--sl-color-gray-5);
+		stroke-width: 1.5;
+		stroke-dasharray: 4 6;
+	}
+	.sk-share__zone text,
+	.sk-share__edge-label {
+		fill: var(--sl-color-gray-3);
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+	.sk-share__edge-label {
+		letter-spacing: 0;
+		text-transform: none;
+	}
+	.sk-share__edge {
+		fill: none;
+		stroke: var(--sl-color-gray-4);
+		stroke-width: 2;
+		stroke-dasharray: 5 6;
+	}
+	.sk-share__edge.is-bt {
+		stroke: #0082fc;
+		stroke-dasharray: none;
+		stroke-width: 3;
+	}
+	.sk-share__bt {
+		fill: #0082fc;
+	}
+	.sk-share__dot {
+		fill: var(--sk-lime);
+		filter: drop-shadow(0 0 6px rgb(198 244 50 / 0.9));
+	}
+	.sk-share__node rect {
+		fill: var(--sk-surface);
+		stroke: var(--sk-surface-line);
+	}
+	.sk-share__node.is-phone rect {
+		fill: #137d93;
+		stroke: none;
+	}
+	.sk-share__icon {
+		fill: var(--sl-color-white);
+	}
+	.sk-share__icon .is-stroke {
+		fill: none;
+		stroke: var(--sl-color-white);
+		stroke-width: 2;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+	}
+	.is-phone .sk-share__icon,
+	.is-partner .sk-share__icon {
+		fill: #3ddc84;
+	}
+	.is-phone .sk-share__icon {
+		fill: #fff;
+	}
+	.is-relays .sk-share__icon {
+		fill: #a35bf0;
+	}
+	.sk-share__title {
+		fill: var(--sl-color-white);
+		font-family: var(--sk-font-display);
+		font-size: 17px;
+		font-weight: 800;
+	}
+	.sk-share__note {
+		fill: var(--sl-color-gray-3);
+		font-size: 13px;
+	}
+	.is-phone .sk-share__title,
+	.is-phone .sk-share__note {
+		fill: #fff;
+	}
+	.sk-share__narrow .sk-share__title {
+		font-size: 14px;
+	}
+	.sk-share__narrow .sk-share__note,
+	.sk-share__narrow .sk-share__edge-label {
+		font-size: 10.5px;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.sk-share__dot {
+			display: none;
+		}
+	}
+</style>

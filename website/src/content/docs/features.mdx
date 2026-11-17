@@ -1,0 +1,134 @@
+---
+title: Features
+description: Everything Sukrara does, at a glance. Your CGM glucose everywhere you look, discreet alerts, live sharing without a cloud, quick logging, reports, the sensors it reads and the apps it works with. Android, Mac and Garmin, free and open source.
+editUrl: false
+lastUpdated: false
+---
+
+import FeatureGrid from '../../components/features/FeatureGrid.astro';
+import FeatureLead from '../../components/features/FeatureLead.astro';
+import FeatureTile from '../../components/features/FeatureTile.astro';
+
+{/* For people deciding to install and for links shared in communities: everything worth asking "does it do X?" about, at
+    once. The home page links its sections to these groups. Not every behaviour: that's docs/FEATURES.md. */}
+
+<FeatureLead before="Everything Sukrara does. A tile with" after="shows it in the app." />
+
+## Glucose at a glance
+
+<FeatureGrid>
+  <FeatureTile icon="status_bar_notification" title="Status bar" shot="statusBar" shotWidth={400}>A Live Update chip, or with root, text next to the clock.</FeatureTile>
+  <FeatureTile icon="widgets" title="Home screen widgets" shot="widget">Glucose, chart and time in range, without opening the app.</FeatureTile>
+  <FeatureTile icon="screen_lock_portrait" title="Lock screen" shot="lockscreen">A card around the fingerprint sensor, with root.</FeatureTile>
+  <FeatureTile icon="notifications" title="Notification">The card with its chart, on the lock screen too. Or none at all.</FeatureTile>
+  <FeatureTile icon="trending_up" title="A trend arrow you can trust">From your readings, minutes sooner than the sensor's.</FeatureTile>
+  <FeatureTile icon="donut_large" title="Beside the value" shot="card">Time in range, GMI, average, variability or your last treatment.</FeatureTile>
+  <FeatureTile icon="dia_range" title="mg/dL or mmol/L">Your unit and your own ranges.</FeatureTile>
+  <FeatureTile icon="volume_up" title="Read aloud">Your glucose spoken, from a home screen shortcut.</FeatureTile>
+</FeatureGrid>
+
+## Alerts
+
+<FeatureGrid>
+  <FeatureTile icon="dia_very_low" title="Every kind of alert" shot="alert">Lows, highs, fast changes and no data, each at your thresholds.</FeatureTile>
+  <FeatureTile icon="music_note" title="Discreet sound packs">A different sound and intensity for each alert.</FeatureTile>
+  <FeatureTile icon="check_circle" title="Quiet once you've acted">After insulin or carbs, and while glucose heads back into range.</FeatureTile>
+  <FeatureTile icon="bedtime" title="Night alerts">Their own thresholds and rules at night.</FeatureTile>
+  <FeatureTile icon="snooze" title="Remind less or mute">Right on the alert. Mute them all for up to 8 hours.</FeatureTile>
+  <FeatureTile icon="notifications_active" title="Through Do Not Disturb">If you let Sukrara through.</FeatureTile>
+  <FeatureTile icon="notification_add" title="On your watch">Alerts as notifications of their own, if you want.</FeatureTile>
+  <FeatureTile icon="group" title="Followers are told">When a very low gets no answer.</FeatureTile>
+</FeatureGrid>
+
+## Sharing and following
+
+<FeatureGrid>
+  <FeatureTile icon="share" title="Invite with a link or QR code" shot="share" shotWidth={300}>Single use. You approve each person.</FeatureTile>
+  <FeatureTile icon="key" title="End-to-end encrypted">Over public Nostr relays. No account, no server to host.</FeatureTile>
+  <FeatureTile icon="bluetooth" title="Bluetooth nearby">No internet needed when you're close.</FeatureTile>
+  <FeatureTile icon="person" title="Follow someone">On Android or a Mac, with alerts of your own.</FeatureTile>
+  <FeatureTile icon="edit_note" title="Followers can log">Insulin and carbs, if you allow them.</FeatureTile>
+  <FeatureTile icon="backup" title="New phone">Your followers come with you, from a recovery code or your password manager.</FeatureTile>
+</FeatureGrid>
+
+## Logging
+
+<FeatureGrid>
+  <FeatureTile icon="dia_insulin_rapid" title="Insulin, carbs and notes" shot="treatments" shotWidth={300}>Rapid and long-acting insulin in one form, now or earlier.</FeatureTile>
+  <FeatureTile icon="lock_open" title="Without unlocking" shot="lockTreatment" shotWidth={300}>From the notification, a widget, an alert or Quick Settings.</FeatureTile>
+  <FeatureTile icon="dia_pen" title="NovoPen Echo® Plus">Logs its own doses, priming apart.</FeatureTile>
+  <FeatureTile icon="receipt_long" title="Your log">31 days with the glucose at the time. Edit, add a note or undo.</FeatureTile>
+</FeatureGrid>
+
+## Reports and your data
+
+<FeatureGrid>
+  <FeatureTile icon="bar_chart" title="Glucose report" shot="macReport" shotWidth={400}>Time in ranges, average, GMI and variability, over 1 to 30 days.</FeatureTile>
+  <FeatureTile icon="crown" title="Rewards">A laurel from 90 % in range, flowers from 95 %, a crown at 100 %.</FeatureTile>
+  <FeatureTile icon="file_upload" title="Import your history">From LibreView, Tidepool or a CSV file.</FeatureTile>
+  <FeatureTile icon="file_export" title="Export">A CSV in LibreView's format, without your name.</FeatureTile>
+</FeatureGrid>
+
+## Sensors
+
+<FeatureGrid>
+  <FeatureTile icon="dia_sensor" title="FreeStyle Libre 3 / 3 Plus">Read directly. Start one with a tap of the phone.</FeatureTile>
+  <FeatureTile app="juggluco" title="Through Juggluco">FreeStyle Libre 2 / 2 Plus, Sibionics GS1, CareSens Air, and Dexcom G7 / ONE+, Accu-Chek SmartGuide, Aidex X.</FeatureTile>
+  <FeatureTile icon="science" title="Directly, not yet tested">Dexcom G6, G7 / ONE+, G7 15 Day / Stelo, Accu-Chek SmartGuide, Aidex X / LinX.</FeatureTile>
+  <FeatureTile icon="timer" title="Sensor end">A countdown, reminders, and your calendar if you want.</FeatureTile>
+</FeatureGrid>
+
+## Works with
+
+<FeatureGrid>
+  <FeatureTile app="libreview" title="LibreView">Sends glucose and treatments, so your clinic keeps seeing them.</FeatureTile>
+  <FeatureTile app="tidepool" title="Tidepool">Sends glucose, insulin, carbs and notes.</FeatureTile>
+  <FeatureTile app="nightscout" title="Nightscout">Sends to your site, or acts as its API.</FeatureTile>
+  <FeatureTile app="healthConnect" title="Health Connect">Writes your glucose.</FeatureTile>
+  <FeatureTile app="xdrip" title="xDrip+">Acts as its API, for Garmin watch faces and more.</FeatureTile>
+  <FeatureTile app="aaps" title="AAPS">Gets your glucose live.</FeatureTile>
+  <FeatureTile app="juggluco" title="Juggluco">Reads glucose from it, on the phone or your network.</FeatureTile>
+</FeatureGrid>
+
+## On your Mac
+
+<FeatureGrid>
+  <FeatureTile icon="status_bar_notification" title="Menu bar" shot="macPanel" shotWidth={300}>Your glucose or someone else's, the chart a click away.</FeatureTile>
+  <FeatureTile icon="widgets" title="Widgets" shot="macWidget" shotWidth={300}>On the desktop and in Notification Center.</FeatureTile>
+  <FeatureTile icon="notifications_active" title="The same alarms">Sounds, quiet rules and mute, like the phone.</FeatureTile>
+  <FeatureTile icon="bluetooth" title="Next to your phone">Gets your glucose over Bluetooth.</FeatureTile>
+  <FeatureTile icon="edit_note" title="Log and report" shot="macTreatment" shotWidth={300}>Treatments and the glucose report, with a CSV export.</FeatureTile>
+  <FeatureTile app="juggluco" title="Juggluco on your network">Reads it on your home Wi-Fi, with alerts of its own.</FeatureTile>
+  <FeatureTile icon="volume_up" title="Read aloud">⌃⇧⌘G, from any app.</FeatureTile>
+</FeatureGrid>
+
+## On your Garmin watch
+
+<FeatureGrid>
+  <FeatureTile icon="palette" title="The aura of your glucose" face="dial-waterline-high-rising">The dial gathers at your level and spreads the further out of range you are.</FeatureTile>
+  <FeatureTile icon="wallpaper" title="Seven dials" face="dial-contours-heading-up">Grain, contours, waterline, lasers, glow, a calm map, or black.</FeatureTile>
+  <FeatureTile icon="speed" title="Within seconds">Each reading through Garmin Connect, nothing to set up.</FeatureTile>
+  <FeatureTile icon="trending_up" title="The last hours" face="fields-spark-turning">Up to 3 hours beside the value, your range in view; or Sukrara's arrow.</FeatureTile>
+  <FeatureTile icon="dia_carbs" title="What to do now" face="alerts-low">Carbs or Insulin when Sukrara says so, never by colour alone.</FeatureTile>
+  <FeatureTile icon="snooze" title="Waits and mutes, counting down" face="alerts-high-insulin-taken">After a treatment or a mute, the time left.</FeatureTile>
+  <FeatureTile icon="history" title="Never old as current" face="glucose-late">Late, struck through, then "No reading since".</FeatureTile>
+  <FeatureTile icon="dia_sensor" title="The sensor's life" face="sensor-warmup">Its last hours counted down, then the new one's warm-up.</FeatureTile>
+  <FeatureTile icon="visibility_off" title="Private" face="modes-private">The value only while you hold the screen, or when you need to act.</FeatureTile>
+  <FeatureTile icon="bedtime" title="Always-on and night" face="modes-night">Night follows Do Not Disturb; the time always readable.</FeatureTile>
+  <FeatureTile icon="tune" title="Your fields" face="fields-meal">Time in range, last treatment, steps, heart rate, a second time zone…</FeatureTile>
+  <FeatureTile icon="smartphone" title="Your phone knows">Which reading each watch has, and what to fix when it can't get one.</FeatureTile>
+</FeatureGrid>
+
+[See it live through a whole day](/garmin/).
+
+## Private and dependable
+
+<FeatureGrid>
+  <FeatureTile icon="privacy" title="No account, no tracking">No ads or analytics. Your data stays on your phone.</FeatureTile>
+  <FeatureTile icon="code" title="Free and open source">GPL-3.0, on GitHub.</FeatureTile>
+  <FeatureTile icon="restart_alt" title="Keeps working">Restarts itself, and monitors even before you unlock.</FeatureTile>
+  <FeatureTile icon="warning" title="Nothing fails silently">A blocked feature says so, with the fix.</FeatureTile>
+  <FeatureTile icon="battery_full" title="Easy on the battery">Made to run all day in the background.</FeatureTile>
+  <FeatureTile icon="settings" title="Settings explained">Organized, searchable, with good defaults.</FeatureTile>
+  <FeatureTile icon="public" title="English and Spanish">With your clock and number format.</FeatureTile>
+</FeatureGrid>

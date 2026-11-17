@@ -1,0 +1,71 @@
+---
+title: Sukrara para Mac
+description: Tu glucosa en la barra de menús del Mac, alrededor de un segundo por detrás del móvil, con las mismas alarmas, tratamientos e informe de glucosa. Sigue a Sukrara para Android por Bluetooth o por internet. Apple silicon, macOS 15+, gratis.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Download from '../../../components/Download.astro';
+import Gallery from '../../../components/Gallery.astro';
+
+Tu glucosa en la barra de menús, alrededor de un segundo por detrás del móvil, con las mismas alarmas. Sigue a un móvil
+con [Sukrara para Android](/es/android/): el tuyo, o el de la persona a la que cuidas.
+
+<Gallery shots={[['macPanel', 300], ['macReport', 380]]} />
+
+## Descarga
+
+<Download app="mac" />
+
+<Steps>
+
+1. Abre el archivo descargado y arrastra **Sukrara** a **Aplicaciones**.
+2. Abre Sukrara. Vive en la barra de menús y se actualiza sola.
+3. Sigue a alguien: pega su enlace de invitación, escanea su código QR o empareja por Bluetooth cerca.
+
+</Steps>
+
+## Qué hace
+
+- El valor y la tendencia en la barra de menús; fuera de rango en color, las lecturas antiguas tachadas.
+- La misma tarjeta, alarmas y sonidos que el móvil.
+- Añade insulina, hidratos y notas al registro de quien lleva el sensor, si lo permite.
+- Un informe de glucosa de 1 a 30 días, con exportación CSV.
+- Widgets en el escritorio y en el Centro de notificaciones.
+- O lee Juggluco en tu red de casa.
+
+<Gallery shots={[['macTreatment', 340], ['macWidget', 300]]} />
+
+## Requisitos
+
+- Apple silicon (M1 o posterior), macOS 15 o posterior.
+- Un móvil con [Sukrara para Android](/es/android/) al que seguir, o Juggluco en la misma red.
+
+## Versiones
+
+La versión de GitHub (la descarga y Homebrew) se actualiza sola. La versión del Mac App Store es la misma app,
+actualizada por la App Store. **Acerca de Sukrara** dice cuál tienes.
+
+## Preguntas
+
+<details>
+<summary>¿Necesito un iPhone, una cuenta o un servicio en la nube?</summary>
+
+No. Sigue directamente a un móvil con Sukrara para Android: por Bluetooth cerca, o por relés de Nostr desde cualquier
+sitio, cifrado de extremo a extremo.
+
+</details>
+
+<details>
+<summary>¿Funciona en un Mac con Intel?</summary>
+
+No, necesita Apple silicon (M1 o posterior).
+
+</details>
+
+<details>
+<summary>¿Suenan las alertas durante un modo de concentración?</summary>
+
+Solo si dejas pasar a Sukrara: **Ajustes › Alertas › Dejar pasar a Sukrara**. El panel te avisa cuando las
+notificaciones o los sonidos están desactivados.
+
+</details>

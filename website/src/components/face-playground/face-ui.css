@@ -1,0 +1,195 @@
+/* Sukrara — https://github.com/mauriciabad/sukrara · Copyright (C) 2026 Maurici Abad · SPDX-License-Identifier: GPL-3.0-or-later */
+/* The face pages' shared controls: the play bar (PlayBar.astro) and the setting cards, switches and lists (choices.ts). */
+
+/* ——— play and the timeline ——— */
+.fu-play-bar {
+	display: flex;
+	gap: 0.75rem;
+	align-items: center;
+	width: 100%;
+}
+.fu-play {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 2.75rem;
+	height: 2.75rem;
+	padding: 0;
+	color: var(--sl-color-black);
+	background: var(--sl-color-accent);
+	border: 0;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: transform 0.15s ease;
+}
+.fu-play:active {
+	transform: scale(0.92);
+}
+.fu-play:focus-visible {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: 2px;
+}
+.fu-play__pause,
+.fu-play[aria-pressed='true'] .fu-play__go {
+	display: none;
+}
+.fu-play[aria-pressed='true'] .fu-play__pause {
+	display: block;
+}
+.fu-play-bar__track {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.15rem;
+}
+.fu-play-bar__now {
+	margin: 0;
+	min-height: 1.25em;
+	font: 800 var(--sl-text-sm) / 1.25 var(--sk-font-display);
+	color: var(--sl-color-white);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.fu-play-bar__scrub {
+	width: 100%;
+	margin: 0;
+	accent-color: var(--sl-color-accent);
+}
+
+/* ——— settings: a named row of cards, switches or lists ——— */
+.fu-set {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	min-width: 0;
+}
+.fu-set > legend {
+	padding: 0;
+	margin-bottom: 0.4rem;
+	font: 600 var(--sl-text-xs) / 1.2 var(--__sl-font);
+	color: var(--sl-color-gray-3);
+}
+.fu-cards,
+.fu-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.4rem;
+}
+.fu-card {
+	position: relative;
+	cursor: pointer;
+}
+.fu-card input {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	margin: 0;
+	cursor: pointer;
+}
+.fu-card > span {
+	--pic-cut: var(--sl-color-bg);
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 0.3rem;
+	box-sizing: border-box;
+	min-width: 5.5rem;
+	height: 100%;
+	padding: 0.5rem 0.7rem 0.45rem;
+	border-radius: 0.85rem;
+	border: 1px solid var(--sk-surface-line);
+	background: var(--sl-color-bg);
+	font: 600 var(--sl-text-xs) / 1.2 var(--__sl-font);
+	color: var(--sl-color-gray-2);
+	text-align: center;
+	transition:
+		background-color 0.15s,
+		color 0.15s,
+		border-color 0.15s,
+		transform 0.15s;
+}
+.fu-card:hover > span {
+	border-color: var(--sl-color-accent);
+}
+.fu-card input:checked + span {
+	--pic-cut: var(--sl-color-accent);
+	background: var(--sl-color-accent);
+	border-color: var(--sl-color-accent);
+	color: var(--sl-color-black);
+}
+.fu-card input:active + span {
+	transform: scale(0.95);
+}
+.fu-card input:focus-visible + span {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: 2px;
+}
+.fu-card__pic {
+	display: block;
+	width: 2.75rem;
+	height: 2.75rem;
+}
+.fu-card--switch > span {
+	min-width: 6.25rem;
+	padding-inline: 1rem 1.9rem;
+}
+.fu-card--switch input:checked + span {
+	--pic-green: #3dd47a;
+	--pic-ink: #0a0a0c;
+}
+.fu-card__dot {
+	position: absolute;
+	top: 0.35rem;
+	right: 0.35rem;
+	width: 0.8rem;
+	height: 0.8rem;
+	border-radius: 50%;
+	box-shadow: inset 0 0 0 1.5px currentColor;
+	opacity: 0.6;
+}
+.fu-card input:checked + span .fu-card__dot {
+	opacity: 1;
+	background: currentColor;
+	box-shadow: none;
+}
+.fu-list {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	min-width: 0;
+}
+.fu-list > label,
+.fu-list > span {
+	font-size: var(--sl-text-xs);
+	color: var(--sl-color-gray-3);
+}
+.fu-list select {
+	font: 600 var(--sl-text-sm) / 1.2 var(--__sl-font);
+	color: var(--sl-color-white);
+	background: var(--sl-color-bg);
+	border: 1px solid var(--sk-surface-line);
+	border-radius: 0.6rem;
+	padding: 0.45rem 0.5rem;
+	min-height: 2.5rem;
+	width: 100%;
+}
+.fu-list select:focus-visible {
+	outline: 2px solid var(--sl-color-accent);
+	outline-offset: 2px;
+}
+.fu-card :disabled + span,
+.fu-list :disabled {
+	opacity: 0.55;
+	cursor: not-allowed;
+}
+@media (prefers-reduced-motion: reduce) {
+	.fu-play,
+	.fu-card > span {
+		transition: none;
+	}
+}

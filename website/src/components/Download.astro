@@ -1,0 +1,519 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * How to get one app: the newest release's file, downloaded straight from GitHub (looked up at build time,
+ * lib/release.ts), the stores (Google Play and F-Droid / the Mac App Store), the other ways in (Obtainium / Homebrew,
+ * GitHub), all in the page's language where they have one, and how to check the file is Sukrara's: the signing
+ * certificate (Android) or the Developer ID and notarization (Mac), the file's SHA-256 as GitHub recorded it, GitHub's
+ * own check of an immutable release, and the same file on GitHub.
+ *   <Download app="android" />
+ * The Garmin face (`app="garmin"`) has no file to download: its button leads to the Garmin page's Get it, and the other
+ * column has Garmin's Connect IQ store badge (its listing, STORES.connectIq) above the steps.
+ */
+import { Picture } from 'astro:assets';
+import { Code, Icon } from '@astrojs/starlight/components';
+import googlePlayEn from '../assets/badges/google-play-en.png';
+import googlePlayEs from '../assets/badges/google-play-es.png';
+import appStoreEn from '../assets/badges/mac-app-store-black-en.svg?url';
+import appStoreEs from '../assets/badges/mac-app-store-black-es.svg?url';
+import { latestRelease, megabytes } from '../lib/release';
+import { APPLICATION_ID, GITHUB, HOMEBREW, HOMEBREW_HOME, OBTAINIUM, REPO, SIGNING, STORES } from '../site';
+import ConnectIqBadge from './ConnectIqBadge.astro';
+import Logo from './Logo.astro';
+
+interface Props {
+	app: 'android' | 'mac' | 'garmin';
+	/** The platform's name and what it needs above the button, and the other ways in beside it on wide screens (the
+	 *  home page). */
+	heading?: boolean;
+}
+
+const { app, heading = false } = Astro.props;
+const t = Astro.locals.t;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+const release = await latestRelease();
+const file = app === 'android' ? release.apk : release.dmg;
+const date = release.date && new Intl.DateTimeFormat(lang, { dateStyle: 'medium' }).format(release.date);
+const meta =
+	release.version && file && date
+		? t('site.download.meta', { version: release.version, size: megabytes(file.size), date })
+		: t('site.download.newest');
+const name = file?.name ?? (app === 'android' ? 'Sukrara.apk' : 'Sukrara.dmg');
+/** The platform's mark. */
+const logo = ({ android: 'android', mac: 'apple', garmin: 'garmin' } as const)[app];
+const prefix = lang === 'es' ? '/es' : '';
+/** The Garmin page's Get it (its anchor in each language). */
+const garminGet = `${prefix}/garmin/#${lang === 'es' ? 'descarga' : 'get-it'}`;
+/** Homebrew's command panel, opened by its badge (one per Mac download on a page). */
+const brewId = `sk-brew-${crypto.randomUUID().slice(0, 8)}`;
+---
+
+<div class:list={['sk-download not-content', { 'is-wide': heading }]}>
+	<div class="sk-download__main">
+		{
+			heading && (
+				<p class="sk-download__heading">
+					<Logo name={logo} size="2rem" />
+					<span>
+						<strong>{t(`site.nav.${app}`)}</strong>
+						<small>{t(`site.req.${app}`)}</small>
+					</span>
+				</p>
+			)
+		}
+		{
+			app === 'garmin' ? (
+				<>
+					<a class="sk-download__button" href={garminGet}>
+						<Logo name={logo} size="1.75rem" />
+						<span>
+							<strong>{t('site.garmin.button')}</strong>
+							<small>{t('site.garmin.store')}</small>
+						</span>
+						<Icon name="right-arrow" size="1.25rem" />
+					</a>
+					<p class="sk-download__links">
+						<a href={`${prefix}/watch-face/`}>{t('site.garmin.try')}</a>
+					</p>
+				</>
+			) : (
+				<>
+					<a class="sk-download__button" href={file?.url ?? release.page}>
+						<Logo name={logo} size="1.75rem" />
+						<span>
+							<strong>{t(app === 'android' ? 'site.download.android' : 'site.download.mac')}</strong>
+							<small>{meta}</small>
+						</span>
+						<Icon name="download" size="1.25rem" />
+					</a>
+					<p class="sk-download__links">
+						<a href={release.page}>{t('site.download.notes')}</a>
+					</p>
+				</>
+			)
+		}
+	</div>
+
+	{
+		app === 'garmin' ? (
+			<div class="sk-download__more">
+				<ul class="sk-badges" role="list">
+					<li>
+						<ConnectIqBadge />
+					</li>
+				</ul>
+				<ol class="sk-download__steps">
+					<li>{t('site.garmin.step1')}</li>
+					<li>{t('site.garmin.step2')}</li>
+					<li>{t('site.garmin.step3')}</li>
+				</ol>
+			</div>
+		) : (
+			<div class="sk-download__more">
+				<ul class="sk-badges" role="list">
+					{
+						app === 'android' ? (
+							<li>
+								<a class="sk-badge is-official" href={STORES.play(lang)}>
+									<Picture
+										src={lang === 'es' ? googlePlayEs : googlePlayEn}
+										alt={t('site.store.play')}
+										height={40}
+										densities={[1, 2]}
+										formats={['jxl', 'avif']}
+										fallbackFormat="png"
+									/>
+								</a>
+							</li>
+						) : (
+							<li>
+								<a class="sk-badge is-official" href={STORES.appStore(lang)}>
+									<img src={lang === 'es' ? appStoreEs : appStoreEn} alt={t('site.store.appStore')} height="40" width="156" />
+								</a>
+							</li>
+						)
+					}
+					{
+						app === 'android' && (
+							<li>
+								<a class="sk-badge" href={STORES.fdroid(lang)}>
+									<Logo name="fdroid" size="1.45rem" />
+									<span>
+										<small>{t('site.badge.fdroid')}</small>
+										<strong>F-Droid</strong>
+									</span>
+								</a>
+							</li>
+						)
+					}
+					{
+						app === 'android' && (
+							<li>
+								<a class="sk-badge" href={OBTAINIUM.add}>
+									<Logo name="obtainium" size="1.45rem" />
+									<span>
+										<small>{t('site.badge.obtainium')}</small>
+										<strong>Obtainium</strong>
+									</span>
+								</a>
+								<a class="sk-badge__note" href={OBTAINIUM.home}>
+									{t('site.obtainium.get')}
+								</a>
+							</li>
+						)
+					}
+					{
+						/* Homebrew has no link that installs: its badge copies the command and shows it, to paste into Terminal. */
+						app === 'mac' && (
+							<li>
+								<button type="button" class="sk-badge sk-brew" data-command={HOMEBREW} aria-controls={brewId} aria-expanded="true">
+									<Logo name="homebrew" size="1.45rem" />
+									<span>
+										<small>{t('site.badge.homebrew')}</small>
+										<strong>Homebrew</strong>
+									</span>
+								</button>
+								<a class="sk-badge__note" href={HOMEBREW_HOME(lang)}>
+									{t('site.brew.get')}
+								</a>
+							</li>
+						)
+					}
+					<li>
+						<a class="sk-badge" href={release.page}>
+							<Logo name="github" size="1.45rem" />
+							<span>
+								<small>{t('site.badge.github')}</small>
+								<strong>GitHub</strong>
+							</span>
+						</a>
+					</li>
+				</ul>
+				{
+					/* Shown as it is without JavaScript; with it, hidden until the Homebrew badge is clicked. */
+					app === 'mac' && (
+						<div class="sk-brew-panel" id={brewId} data-paste={t('site.brew.paste')} data-copied={t('site.brew.copied')}>
+							<p class="sk-brew-panel__status" aria-live="polite">{t('site.brew.paste')}</p>
+							<Code code={HOMEBREW} lang="sh" frame="terminal" title="Terminal" />
+						</div>
+					)
+				}
+
+				<details class="sk-verify">
+					<summary><Icon name="approve-check-circle" size="1.1rem" />{t('site.verify.title')}</summary>
+					{
+						app === 'android' ? (
+							<>
+								<p>{t('site.verify.android.cert')}</p>
+								<Code code={`${APPLICATION_ID}\n${SIGNING.androidCert}`} lang="txt" frame="none" wrap />
+								<p>
+									<a href="https://github.com/soupslurpr/AppVerifier">AppVerifier</a> {t('site.verify.android.phone')}{' '}
+									{t('site.verify.android.computer')}
+								</p>
+								<Code code={`apksigner verify --print-certs ${name}`} lang="sh" frame="none" wrap />
+							</>
+						) : (
+							<>
+								<p>{t('site.verify.mac.signed')}</p>
+								<Code code={`spctl -a -vv /Applications/Sukrara.app`} lang="sh" frame="none" wrap />
+								<p>{t('site.verify.mac.answer')}</p>
+								<Code code={`source=Notarized Developer ID\norigin=${SIGNING.macIdentity}`} lang="txt" frame="none" wrap />
+								<p>{t('site.verify.mac.updates')}</p>
+							</>
+						)
+					}
+					{
+						file?.sha256 && (
+							<>
+								<p>{t('site.verify.hash')}</p>
+								<Code code={file.sha256} lang="txt" frame="none" wrap />
+								<p>{t('site.verify.hashCheck')}</p>
+								<Code code={`shasum -a 256 ${name}\n# Windows: certutil -hashfile ${name} SHA256`} lang="sh" frame="none" wrap />
+								{app === 'mac' && <p>{t('site.verify.homebrew')}</p>}
+							</>
+						)
+					}
+					{
+						release.immutable && release.tag && (
+							<>
+								<p>{t('site.verify.attested')}</p>
+								<Code code={`gh release verify-asset ${release.tag} ${name} -R ${REPO}`} lang="sh" frame="none" wrap />
+							</>
+						)
+					}
+					<p class="sk-download__links">
+						<a href={release.page}>{t('site.verify.github', { file: name })}</a>
+						<span aria-hidden="true">·</span>
+						<a href={release.tag ? `${GITHUB}/tree/${release.tag}` : GITHUB}>{t('site.verify.source')}</a>
+					</p>
+				</details>
+			</div>
+		)
+	}
+</div>
+
+<script>
+	// The Homebrew badge: copy the command, then show it with what to do; a second click copies it again.
+	for (const button of document.querySelectorAll<HTMLButtonElement>('.sk-brew')) {
+		const panel = document.getElementById(button.getAttribute('aria-controls')!)!;
+		const status = panel.querySelector('.sk-brew-panel__status')!;
+		panel.hidden = true;
+		button.setAttribute('aria-expanded', 'false');
+		button.addEventListener('click', async () => {
+			// Shown at once; "Copied" only once the clipboard has it (it can refuse, or never answer).
+			status.textContent = panel.dataset.paste!;
+			panel.hidden = false;
+			button.setAttribute('aria-expanded', 'true');
+			try {
+				await navigator.clipboard.writeText(button.dataset.command!);
+				status.textContent = panel.dataset.copied!;
+			} catch {}
+		});
+	}
+</script>
+
+<style>
+	.sk-download {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+		max-width: 36rem;
+	}
+	.sk-download__main,
+	.sk-download__more {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+	/* The home page: the button on the left, the other ways in on the right, when there's room for both. */
+	@media (min-width: 64rem) {
+		.sk-download.is-wide {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 35rem;
+			gap: 0.75rem 2rem;
+			max-width: none;
+		}
+		.sk-download.is-wide .sk-download__more {
+			padding-top: 3.5rem;
+		}
+	}
+	.sk-download__button {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.9rem 1.25rem;
+		border-radius: var(--sk-radius);
+		background: var(--sl-color-accent);
+		text-decoration: none;
+		box-shadow: var(--sk-glow);
+		transition: transform 0.15s ease;
+	}
+	.sk-download__button:hover {
+		transform: translateY(-2px);
+	}
+	.sk-download__button:active {
+		transform: translateY(0) scale(0.98);
+	}
+	.sk-download__button span {
+		display: flex;
+		flex-direction: column;
+		flex: 1;
+		line-height: 1.3;
+	}
+	.sk-download__button strong {
+		font-family: var(--sk-font-display);
+		font-size: var(--sl-text-lg);
+		font-weight: 800;
+	}
+	.sk-download__button small {
+		font-size: var(--sl-text-sm);
+		opacity: 0.9;
+	}
+	.sk-download__links {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem 1rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-3);
+	}
+	.sk-download a {
+		color: var(--sl-color-text-accent);
+	}
+	.sk-download a.sk-download__button {
+		color: var(--sl-color-black);
+	}
+	:root[data-theme='light'] .sk-download a.sk-download__button {
+		color: #fff;
+	}
+	/* The Garmin face's steps, numbered in small accent circles. */
+	.sk-download__steps {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		counter-reset: sk-step;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-sm);
+	}
+	.sk-download__steps li {
+		counter-increment: sk-step;
+		display: flex;
+		gap: 0.65rem;
+		align-items: baseline;
+		margin: 0;
+	}
+	.sk-download__steps li::before {
+		content: counter(sk-step);
+		flex: none;
+		display: inline-grid;
+		place-items: center;
+		width: 1.5rem;
+		height: 1.5rem;
+		border-radius: 50%;
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-text-accent);
+		font-weight: 700;
+		font-size: var(--sl-text-xs);
+	}
+	.sk-download__heading {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin: 0;
+		color: var(--sl-color-white);
+	}
+	.sk-download__heading span {
+		display: flex;
+		flex-direction: column;
+		line-height: 1.3;
+	}
+	.sk-download__heading strong {
+		font-family: var(--sk-font-display);
+		font-size: var(--sl-text-2xl);
+		font-weight: 800;
+	}
+	.sk-download__heading small {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+	}
+	/* The other ways in, as one row of store-style badges: the stores' own badges unchanged, and Obtainium's and
+	   GitHub's drawn to match them (black, a grey hairline, the mark, a small line over the name). */
+	.sk-badges {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+	.sk-badges li {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.35rem;
+	}
+	.sk-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.55rem;
+		height: 40px;
+		padding: 0 0.8rem 0 0.6rem;
+		border-radius: 8px;
+		background: #000;
+		box-shadow: inset 0 0 0 1px #a6a6a6;
+		color: #fff !important;
+		text-decoration: none;
+		line-height: 1.05;
+		transition: transform 0.15s ease;
+	}
+	.sk-badge:hover {
+		transform: translateY(-2px);
+	}
+	.sk-badge:active {
+		transform: translateY(0) scale(0.97);
+	}
+	.sk-badge span {
+		display: flex;
+		flex-direction: column;
+	}
+	.sk-badge small {
+		font-size: 0.62rem;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+	}
+	.sk-badge strong {
+		font-size: 1.05rem;
+		font-weight: 600;
+		letter-spacing: -0.01em;
+	}
+	button.sk-badge {
+		border: 0;
+		font: inherit;
+		line-height: 1.05;
+		text-align: start;
+		cursor: pointer;
+	}
+	.sk-brew-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+	}
+	.sk-brew-panel[hidden] {
+		display: none;
+	}
+	.sk-brew-panel__status {
+		margin: 0;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sk-brew-panel :global(.expressive-code) {
+		margin: 0;
+	}
+	.sk-badge.is-official {
+		padding: 0;
+		box-shadow: none;
+		background: none;
+	}
+	.sk-badge.is-official :global(img) {
+		display: block;
+		height: 40px;
+		width: auto;
+	}
+	.sk-badge__note {
+		font-size: var(--sl-text-xs);
+	}
+	.sk-verify {
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.sk-verify summary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		cursor: pointer;
+		color: var(--sl-color-text-accent);
+		font-weight: 600;
+	}
+	.sk-verify[open] {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		padding: 1rem;
+		border-radius: var(--sk-radius);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+	}
+	.sk-verify p {
+		margin: 0;
+	}
+	.sk-verify :global(.expressive-code) {
+		margin: 0;
+	}
+</style>

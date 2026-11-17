@@ -1,0 +1,26 @@
+---
+title: Developers and research
+description: "How Sukrara is built and decided: the behaviour catalog, the architecture, the development and QA guides, and every investigation report with its numbers."
+---
+
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+import ResearchIndex from '../../components/ResearchIndex.astro';
+
+Sukrara is built in the open. Every feature starts as an investigation: a standalone proof of concept with a written
+report of what was tried, what worked and what was measured. Then it's built anew in the apps, which are tested against
+the same shared contracts: alert rules and timeline scenarios, the glucose card's layout, the settings schema and the
+sharing protocol. These pages are the repository's own `docs/` folder, published as they are.
+
+<CardGrid>
+  <LinkCard title="Behaviour catalog" href="/developers/features/" description="Every behaviour of every app, with its rules and numbers." />
+  <LinkCard title="Architecture" href="/developers/architecture/" description="How the apps are built and what they share." />
+  <LinkCard title="Development" href="/developers/development/" description="Setup, devices, signing, releases, everyday commands." />
+  <LinkCard title="Manual QA" href="/developers/qa/" description="What automated checks can't see, surface by surface." />
+</CardGrid>
+
+The code, the shared contracts and the issues are on [GitHub](https://github.com/mauriciabad/sukrara) (GPL-3.0). The
+sharing protocol is becoming an open standard: the [Open Glucose Stream](/open-glucose-stream/).
+
+## Investigations
+
+<ResearchIndex />

@@ -1,0 +1,48 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Every investigation report (docs/NN-*.md, lib/repo-docs.ts), numbered, with its goal and when it last changed: made
+// from the reports themselves, so a new one is listed the moment it's in docs/.
+import { getCollection } from 'astro:content';
+
+const lang = Astro.locals.starlightRoute.lang;
+const reports = (await getCollection('docs', ({ id }) => id.startsWith('research/'))).sort((a, b) =>
+	a.id.localeCompare(b.id, 'en', { numeric: true }),
+);
+const date = new Intl.DateTimeFormat(lang, { dateStyle: 'medium' });
+const split = (title: string) => {
+	const [number, ...rest] = title.split(' — ');
+	return rest.length ? { number, topic: rest.join(' — ') } : { number: '', topic: title };
+};
+---
+
+<div class="sk-research">
+	<table>
+		<thead>
+			<tr><th>#</th><th>Report</th><th>Goal</th><th>Updated</th></tr>
+		</thead>
+		<tbody>
+			{
+				reports.map((r) => {
+					const { number, topic } = split(r.data.title);
+					return (
+						<tr>
+							<td>{number}</td>
+							<td><a href={`/${r.id}/`}>{topic}</a></td>
+							<td>{r.data.description}</td>
+							<td class="sk-research__date">{r.data.lastUpdated instanceof Date ? date.format(r.data.lastUpdated) : ''}</td>
+						</tr>
+					);
+				})
+			}
+		</tbody>
+	</table>
+</div>
+
+<style>
+	.sk-research__date {
+		white-space: nowrap;
+		color: var(--sl-color-gray-3);
+	}
+</style>

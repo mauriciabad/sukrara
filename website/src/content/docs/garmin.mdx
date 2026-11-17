@@ -1,0 +1,131 @@
+---
+title: Sukrara Aura for Garmin
+description: A watch face for Garmin watches whose dial is the aura of your glucose. Each reading from Sukrara for Android within seconds, the last hours beside the value, what to do now, and never an old value as current. Free.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import ConnectIqBadge from '../../components/ConnectIqBadge.astro';
+import FaceGallery from '../../components/face-playground/FaceGallery.astro';
+import FaceTour from '../../components/face-playground/FaceTour.astro';
+
+A watch face whose dial is the aura of your glucose: it gathers at your level and spreads the further out of range you
+are. Each reading comes from [Sukrara for Android](/android/) within seconds.
+
+Below, the face lives through a made-up day, 600 times faster: a low at night, meals, a high and its correction, a
+sensor running out and a new one warming up, the phone left behind, a mute. Point at a part to see what it is, and pick
+a dial. Or [try it yourself](/watch-face/): pick any state, change the reading, or speed up time.
+
+<FaceTour />
+
+## Get it
+
+<p><ConnectIqBadge /></p>
+
+<Steps>
+
+1. Install [Sukrara for Android](/android/) and Garmin Connect on your phone.
+2. Install Sukrara Aura from the Connect IQ store (coming soon) and make it your watch face.
+3. That's it: Sukrara sends each reading to the watch by itself.
+
+</Steps>
+
+## What it does
+
+Every picture here is the face itself, drawn by its own code from made-up readings. The ones marked *moves* run on a
+clock, so you see a state come and go.
+
+### Your glucose, at a glance
+
+<FaceGallery group="glucose" />
+
+### The last hours
+
+<FaceGallery group="trend" />
+
+### What to do now
+
+<FaceGallery group="act" />
+
+### Muted
+
+<FaceGallery group="muted" />
+
+### Never an old value as current
+
+<FaceGallery group="age" />
+
+### Sensor, phone and battery
+
+<FaceGallery group="sensor" />
+
+### Always-on, night and private
+
+<FaceGallery group="screen" />
+
+### Your fields and settings
+
+<FaceGallery group="fields" />
+
+### The dial follows you
+
+<FaceGallery group="dial" />
+
+### On your phone
+
+**Settings › Share with apps › Garmin** shows each watch and what it has, in words:
+
+- *Descent Mk3i has the 10:09 reading*, or *waiting for a reading*.
+- *Descent Mk3i isn't connected* when the watch is away, and *Sukrara Aura isn't on your watch* until you install it.
+- *Needs Garmin Connect on this phone* or *Garmin Connect isn't answering · open it*, with the button that fixes it.
+- *Updates every 5 minutes · Garmin Connect loses messages* when Garmin Connect drops them: the face asks the phone
+  itself.
+- **Send now** sends the current reading at once.
+
+### In your language
+
+English and Spanish, as your watch is: *Carbs* and *Hidratos*, *No reading since* and *Sin lecturas desde*.
+
+## Requirements
+
+- A Garmin Descent Mk3i 43 mm, for now. More watches will follow.
+- An Android phone with [Sukrara for Android](/android/) and Garmin Connect, running in the background.
+
+## Questions
+
+<details>
+<summary>Does it need the internet, an account or another app?</summary>
+
+No. Sukrara on your phone sends each reading through Garmin Connect, which your watch already uses. If a message gets
+lost, the face asks the phone again within 5 minutes.
+
+</details>
+
+<details>
+<summary>What happens when my phone is out of reach?</summary>
+
+The reading ages by itself on the watch: late, then struck through, then *No reading since* with its time, and the
+watch shows *No phone*. Back in reach, the current reading arrives within a minute.
+
+</details>
+
+<details>
+<summary>Does it work with an iPhone?</summary>
+
+No. It needs Sukrara for Android on the phone your watch is paired with.
+
+</details>
+
+<details>
+<summary>I use another Garmin watch face or data field. Can it show Sukrara's glucose?</summary>
+
+Faces and data fields made for xDrip+ can read Sukrara's xDrip+ server: **Settings › Share with apps › Garmin › xDrip+
+server**.
+
+</details>
+
+<details>
+<summary>Is it a medical device?</summary>
+
+No, and no regulator has cleared or approved it. Check your sensor's app or a meter before you decide on a treatment.
+
+</details>

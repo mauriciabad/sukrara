@@ -1,0 +1,44 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * The round screen every face on the site sits in: a circle with the watch's dark ground and the site's glow, as wide
+ * as `size` at most. The face goes in the slot; the screen sizes its drawing and, under reduced motion, stops its
+ * transitions.
+ *   <FaceScreen><div data-face /></FaceScreen>       <FaceScreen size="300px" pad="0.5rem">…</FaceScreen>
+ */
+type Props = { size?: string; pad?: string };
+const { size = '24rem', pad = '0.9rem' } = Astro.props;
+---
+
+<div class="face-screen" style={`--face-screen-size: ${size}; --face-screen-pad: ${pad}`}>
+	<slot />
+</div>
+
+<style>
+	.face-screen {
+		width: min(100%, var(--face-screen-size));
+		aspect-ratio: 1;
+		box-sizing: border-box;
+		margin-inline: auto;
+		padding: var(--face-screen-pad);
+		border-radius: 50%;
+		background: #0a0a0c;
+		box-shadow: var(--sk-glow);
+	}
+	.face-screen > :global(*) {
+		display: block;
+		aspect-ratio: 1;
+		width: 100%;
+	}
+	.face-screen :global(svg) {
+		width: 100%;
+		height: auto;
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.face-screen :global(*) {
+			transition: none !important;
+		}
+	}
+</style>

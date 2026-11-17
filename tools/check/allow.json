@@ -39,6 +39,7 @@
     "apps/macos/Tests/*/__Snapshots__/*",
     "apps/macos/Bundle/*.xcassets/*",
     "apps/macos/Bundle/*.icns",
+    "website/src/assets/*",
     "apps/garmin/resources/*"
   ],
   "images_extra": [],

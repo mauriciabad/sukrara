@@ -1,0 +1,133 @@
+---
+title: Sukrara Aura para Garmin
+description: Una esfera para relojes Garmin cuyo fondo es el aura de tu glucosa. Cada lectura de Sukrara para Android en segundos, las últimas horas junto al valor, qué hacer ahora, y nunca un valor antiguo como actual. Gratis.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import ConnectIqBadge from '../../../components/ConnectIqBadge.astro';
+import FaceGallery from '../../../components/face-playground/FaceGallery.astro';
+import FaceTour from '../../../components/face-playground/FaceTour.astro';
+
+Una esfera cuyo fondo es el aura de tu glucosa: se concentra en tu nivel y se extiende cuanto más fuera de rango estás.
+Cada lectura llega de [Sukrara para Android](/es/android/) en segundos.
+
+Aquí abajo, la esfera vive un día inventado, 600 veces más rápido: una baja de noche, comidas, una alta y su corrección,
+un sensor que se acaba y uno nuevo calentando, el móvil olvidado, un silencio. Señala una parte para ver qué es y elige
+un fondo. O [pruébala tú](/es/watch-face/): elige cualquier estado, cambia la lectura o acelera el tiempo.
+
+<FaceTour />
+
+## Descarga
+
+<p><ConnectIqBadge /></p>
+
+<Steps>
+
+1. Instala [Sukrara para Android](/es/android/) y Garmin Connect en tu móvil.
+2. Instala Sukrara Aura desde la tienda Connect IQ (muy pronto) y ponla como esfera.
+3. Listo: Sukrara envía cada lectura al reloj por sí sola.
+
+</Steps>
+
+## Qué hace
+
+Cada imagen de aquí es la propia esfera, dibujada por su código a partir de lecturas inventadas. Las marcadas con *se
+mueve* van con un reloj, para que veas un estado llegar e irse.
+
+### Tu glucosa, de un vistazo
+
+<FaceGallery group="glucose" />
+
+### Las últimas horas
+
+<FaceGallery group="trend" />
+
+### Qué hacer ahora
+
+<FaceGallery group="act" />
+
+### Silenciadas
+
+<FaceGallery group="muted" />
+
+### Nunca un valor antiguo como actual
+
+<FaceGallery group="age" />
+
+### Sensor, móvil y batería
+
+<FaceGallery group="sensor" />
+
+### Siempre activa, noche y privado
+
+<FaceGallery group="screen" />
+
+### Tus campos y ajustes
+
+<FaceGallery group="fields" />
+
+### El fondo te sigue
+
+<FaceGallery group="dial" />
+
+### En tu móvil
+
+**Ajustes › Compartir con apps › Garmin** muestra cada reloj y lo que tiene, con palabras:
+
+- *Descent Mk3i tiene la lectura de las 10:09*, o *esperando una lectura*.
+- *Descent Mk3i no está conectado* cuando el reloj está lejos, y *Sukrara Aura no está en tu reloj* hasta que la
+  instalas.
+- *Necesita Garmin Connect en este móvil* o *Garmin Connect no responde · ábrelo*, con el botón que lo arregla.
+- *Se actualiza cada 5 minutos · Garmin Connect pierde mensajes* cuando Garmin Connect los pierde: la esfera se lo pide
+  al móvil.
+- **Enviar ahora** envía la lectura actual al momento.
+
+### En tu idioma
+
+Español e inglés, según el idioma de tu reloj: *Hidratos* y *Carbs*, *Sin lecturas desde* y *No reading since*.
+
+## Requisitos
+
+- Un Garmin Descent Mk3i 43 mm, de momento. Llegarán más relojes.
+- Un móvil Android con [Sukrara para Android](/es/android/) y Garmin Connect, funcionando en segundo plano.
+
+## Preguntas
+
+<details>
+<summary>¿Necesita internet, una cuenta u otra app?</summary>
+
+No. Sukrara en tu móvil envía cada lectura por Garmin Connect, que tu reloj ya usa. Si un mensaje se pierde, la esfera
+vuelve a pedirlo al móvil en menos de 5 minutos.
+
+</details>
+
+<details>
+<summary>¿Qué pasa cuando el móvil está fuera de alcance?</summary>
+
+La lectura envejece sola en el reloj: tarde, luego tachada, luego *Sin lecturas desde* con su hora, y el reloj muestra
+*Sin móvil*. De vuelta al alcance, la lectura actual llega en menos de un minuto.
+
+</details>
+
+<details>
+<summary>¿Funciona con un iPhone?</summary>
+
+No. Necesita Sukrara para Android en el móvil con el que está emparejado tu reloj.
+
+</details>
+
+<details>
+<summary>Uso otra esfera o campo de datos de Garmin. ¿Puede mostrar la glucosa de Sukrara?</summary>
+
+Las esferas y campos de datos hechos para xDrip+ pueden leer el servidor xDrip+ de Sukrara: **Ajustes › Compartir con
+apps › Garmin › Servidor xDrip+**.
+
+</details>
+
+<details>
+<summary>¿Es un producto sanitario?</summary>
+
+No, y ningún organismo regulador la ha autorizado ni aprobado. Mira la app de tu sensor o un glucómetro antes de
+decidir un tratamiento.
+
+</details>

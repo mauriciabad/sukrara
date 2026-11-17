@@ -1,0 +1,45 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// A few words from the person who makes Sukrara, in their voice: <Note title="Why Sukrara" author="…">…</Note>
+import Section from './Section.astro';
+
+interface Props {
+	title: string;
+	author: string;
+}
+const { title, author } = Astro.props;
+---
+
+<Section title={title}>
+	<figure class="sk-note">
+		<blockquote><slot /></blockquote>
+		<figcaption>{author}</figcaption>
+	</figure>
+</Section>
+
+<style>
+	.sk-note {
+		margin: 0;
+		max-width: 44rem;
+	}
+	.sk-note blockquote {
+		margin: 0;
+		padding: 0 0 0 1.25rem;
+		border-inline-start: 4px solid var(--sk-lime);
+		font-size: var(--sl-text-lg);
+		line-height: 1.6;
+		color: var(--sl-color-gray-1);
+		background: none;
+	}
+	.sk-note figcaption {
+		margin-top: 0.75rem;
+		padding-inline-start: 1.25rem;
+		font-weight: 700;
+		color: var(--sl-color-gray-3);
+	}
+	.sk-note figcaption::before {
+		content: '— ';
+	}
+</style>

@@ -28,13 +28,16 @@ import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** The website (docs/, published by .github/workflows/website.yml). */
+/** The website (website/, published by .github/workflows/website.yml). */
 const val SITE_URL = "https://sukrara.mauri.app"
 
-/** The privacy policy on the site (docs/privacy.md): what Sukrara stores and sends, and where. */
+/** The privacy policy on the site (website/src/content/docs/privacy.md): what Sukrara stores and sends, and where. */
 const val PRIVACY_URL = "$SITE_URL/privacy"
 
-/** The Android page's *Versions* section (docs/android/index.md): Google Play and GitHub, what differs, where to get each. */
+/**
+ * The Android page's *Versions* section (website/src/content/docs/android.mdx): Google Play and GitHub, what differs,
+ * where to get each.
+ */
 const val VERSIONS_URL = "$SITE_URL/android/#versions"
 
 /** The project on GitHub: About's *Source code*, *Report a problem* and the releases page. */
@@ -85,7 +88,7 @@ data class OtherDevice(
 
 /**
  * *Sukrara on other devices* (#179): each opens that app's page on the website (what it does, how to get it), never a
- * download. The Mac page is docs/mac/index.md.
+ * download. The Mac page is website/src/content/docs/mac.mdx.
  */
 val OTHER_DEVICES =
     listOf(

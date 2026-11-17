@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Builds the Mac release for a GitHub release: Bundle/bundle.sh, verify-app.sh, Bundle/dmg.sh, then verifies the dmg.
 # Leaves apps/macos/build/Sukrara-<version>.dmg and Sukrara-mac-<version>.zip, and (notarized only) the release's item
-# in Sparkle's appcast, docs/appcast.xml (#91).
+# in Sparkle's appcast, website/public/appcast.xml (#91).
 #
 # Developer ID and notarization switch on by themselves once the credentials exist (#91, docs/20-publishing.md › Mac
 # release: Developer ID and notarization):
@@ -17,9 +17,9 @@
 #   (System Settings › Privacy & Security › Open Anyway).
 # Sparkle (#91, docs/20-publishing.md › Sparkle: the update feed): a notarized dmg is signed with the EdDSA key in the
 # login keychain (Sparkle's sign_update from the SwiftPM artifact; the keychain may ask once to allow it) and added to
-# docs/appcast.xml by tools/release/appcast.py: the GitHub release's dmg URL, the signature and length, the
+# website/public/appcast.xml by tools/release/appcast.py: the GitHub release's dmg URL, the signature and length, the
 # CHANGELOG.md section as notes (no channel: every release is a normal one). Only the dmg is the update (Sparkle installs
-# from it); the zip stays a plain download. Commit docs/appcast.xml after the GitHub release with the dmg is published.
+# from it); the zip stays a plain download. Commit website/public/appcast.xml after the GitHub release with the dmg is published.
 # An unnotarized build never goes in the appcast.
 # A release build (SUKRARA_RELEASE_BUILD=1, tools/release/build-info.sh): built only from the release commit, About
 # says "GitHub version"; verify-app.sh --release checks it.
@@ -88,7 +88,7 @@ if [ "$notarize" = 1 ]; then
   [ "$have_key" = "$want_key" ] || { echo "the keychain's Sparkle key ($have_key) isn't the app's SUPublicEDKey ($want_key): see $sparkle_doc" >&2; exit 1; }
   python3 "$root/tools/release/appcast.py" --version "$version" --build "$code" --signature "$sig" \
     --length "$(stat -f %z "$dmg")"
-  echo "docs/appcast.xml: commit it once the GitHub release v$version with $(basename "$dmg") is published"
+  echo "website/public/appcast.xml: commit it once the GitHub release v$version with $(basename "$dmg") is published"
 else
   echo "not notarized (no Developer ID identity): Gatekeeper asks once on first open (Open Anyway); not in the appcast"
 fi

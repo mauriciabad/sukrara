@@ -497,9 +497,9 @@ class CheckoutTest(unittest.TestCase):
 
     def test_resume_allows_only_the_appcast(self):
         self.assertEqual(release.resume_problems([]), [])
-        self.assertEqual(release.resume_problems(["docs/appcast.xml"]), [])
-        self.assertEqual(release.resume_problems(["docs/appcast.xml", "VERSION"]),
-                         ["the tree has changes besides docs/appcast.xml: VERSION"])
+        self.assertEqual(release.resume_problems(["website/public/appcast.xml"]), [])
+        self.assertEqual(release.resume_problems(["website/public/appcast.xml", "VERSION"]),
+                         ["the tree has changes besides website/public/appcast.xml: VERSION"])
 
     def test_dry_run_counts_what_would_stop(self):
         r = release.Release("0.14.0", True)
@@ -573,7 +573,7 @@ class WorktreeGitTest(unittest.TestCase):
 @unittest.skipUnless(shutil.which("git"), "needs git")
 class BuildInfoTest(unittest.TestCase):
     """tools/release/build-info.sh: what both apps say they are. A release only from the release scripts
-    (SUKRARA_RELEASE_BUILD=1) at the release commit (docs/appcast.xml aside); every other build a development build."""
+    (SUKRARA_RELEASE_BUILD=1) at the release commit (website/public/appcast.xml aside); every other build a development build."""
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
@@ -587,7 +587,7 @@ class BuildInfoTest(unittest.TestCase):
                     os.path.join(self.tmp, "tools", "release"))
         self.git("init", "-q")
         self.write("VERSION", "0.14.5\n")
-        self.write("docs/appcast.xml", "0.14.4\n")
+        self.write("website/public/appcast.xml", "0.14.4\n")
         self.release = self.commit("Version 0.14.5")
 
     def tearDown(self):
@@ -598,6 +598,7 @@ class BuildInfoTest(unittest.TestCase):
                               env=self.env).stdout.strip()
 
     def write(self, name, text):
+        os.makedirs(os.path.dirname(os.path.join(self.tmp, name)), exist_ok=True)
         with open(os.path.join(self.tmp, name), "w") as f:
             f.write(text)
 
@@ -616,7 +617,7 @@ class BuildInfoTest(unittest.TestCase):
         self.assertEqual(self.info(release=True), (0, "release"))
 
     def test_the_appcast_after_the_gate_is_still_the_release(self):
-        self.write("docs/appcast.xml", "0.14.5\n")  # mac-release.sh writes it in the gate
+        self.write("website/public/appcast.xml", "0.14.5\n")  # mac-release.sh writes it in the gate
         self.assertEqual(self.info(release=True), (0, "release"))
         feed = self.commit("Sparkle feed: Sukrara 0.14.5")  # release.py's sparkle step, before testflight
         self.assertEqual(self.info(release=True), (0, "release"))

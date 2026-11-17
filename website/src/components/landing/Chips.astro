@@ -1,0 +1,53 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// A row of names as pills: the sensors Sukrara reads (with the app's sensor icon), the small things it also does.
+import DsIcon from '../DsIcon.astro';
+
+interface Props {
+	items: string[];
+	label: string;
+	/** Each pill wears the app's sensor icon (ds_ic_dia_sensor: the disc and its signal). */
+	sensor?: boolean;
+}
+const { items, label, sensor = false } = Astro.props;
+---
+
+<ul class="sk-chips not-content" aria-label={label}>
+	{
+		items.map((item) => (
+			<li>
+				{sensor && <DsIcon name="dia_sensor" size="1.1em" />}
+				{item}
+			</li>
+		))
+	}
+</ul>
+
+<style>
+	.sk-chips {
+		list-style: none;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.sk-chips li {
+		margin: 0;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		padding: 0.4rem 0.9rem;
+		border-radius: 999px;
+		border: 1px solid var(--sk-surface-line);
+		background: var(--sk-surface);
+		color: var(--sl-color-gray-1);
+		font-size: var(--sl-text-sm);
+		font-weight: 600;
+	}
+	.sk-chips :global(svg) {
+		color: var(--sl-color-accent-high);
+		flex: none;
+	}
+</style>

@@ -135,8 +135,8 @@ Nothing has been published, and no PR, issue or post has been made. This is the 
    - `poc/spec/` and `test-vectors/` (semver tags: `draft-2`, `1.0.0`), the reference as a package;
    - a **permissive licence** for the text and vectors (CC0 or CC-BY-4.0), so closed apps can implement it too. The
      reference can stay GPL or move to MIT. That's the user's call.
-3. **A page on sukrara.mauri.app**: [`drafts/site-page.md`](../poc/spec/drafts/site-page.md) → `docs/ogs.md`, built by
-   the existing site workflow.
+3. **A page on sukrara.mauri.app**: [`drafts/site-page.md`](../poc/spec/drafts/site-page.md) → the site's
+   [Open Glucose Stream page](https://sukrara.mauri.app/open-glucose-stream/) (`website/src/content/docs/open-glucose-stream.md`).
 4. **A NIP PR to nostr-protocol/nips**: [`drafts/nip-pr.md`](../poc/spec/drafts/nip-pr.md) (the Nostr part only; the
    Bluetooth companion stays in the spec repo). Open questions for reviewers: kind numbers, a generic "private stream"
    NIP, the gift-wrapped invite.

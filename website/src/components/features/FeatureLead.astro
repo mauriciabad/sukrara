@@ -1,0 +1,30 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// The features page's first line, with the picture mark the tiles that show the app wear (FeatureTile), in the text.
+import DsIcon from '../DsIcon.astro';
+
+interface Props {
+	/** The words before and after the mark. */
+	before: string;
+	after: string;
+}
+const { before, after } = Astro.props;
+---
+
+<p class="sk-flead not-content">{before} <DsIcon name="wallpaper" size="1.1em" class="sk-flead__mark" /> {after}</p>
+
+<style>
+	.sk-flead {
+		max-width: 42rem;
+		margin: 0;
+		font-size: var(--sl-text-lg);
+		color: var(--sl-color-gray-2);
+	}
+	.sk-flead :global(.sk-flead__mark) {
+		display: inline;
+		vertical-align: -0.15em;
+		color: var(--sl-color-gray-3);
+	}
+</style>

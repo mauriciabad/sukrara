@@ -201,7 +201,9 @@ contracts/       what every app agrees on: alert rules + scenarios, card fixture
                  treatments, export, sensor traces (every app's tests read it)      → contracts/README.md
 assets/brand/    app icons and brand art
 docs/            FEATURES.md (behaviour catalog), ARCHITECTURE.md, DEVELOPMENT.md, QA.md, the investigation
-                 reports (NN-*.md); also the sukrara.mauri.app site
+                 reports (NN-*.md); published as the website's developers and research pages
+website/         sukrara.mauri.app (Astro + Starlight): the apps' pages in English and Spanish, privacy policy,
+                 invite fallback, sound test, the Mac update feed and App Links files → website/README.md
 tools/           check/ (CLAUDE.md as checks), hooks/, install.sh, release/, settings/gen.py
 poc/             the frozen research PoC: spikes/ and spec/ (Open Glucose Stream); reference only
 third_party/     local only (gitignored): Juggluco, the Libre 3 native core's source
@@ -222,6 +224,7 @@ the rules in [CLAUDE.md](CLAUDE.md); the design in [docs/ARCHITECTURE.md](docs/A
 | Android: debug APK (GitHub build; `assemblePlayDebug` for the Google Play build) | `cd apps/android && ./gradlew :app:assembleFullDebug` |
 | Android: everything CI runs | `cd apps/android && ./gradlew check` |
 | Mac: build + tests | `cd apps/macos && swift build && swift test` |
+| Website: live preview / what CI runs | `cd website && npm run dev` / `npm run build && npm run check` |
 | Mac: app bundle with the widget | `cd apps/macos && Bundle/bundle.sh` (`--unsigned` without the signing identity; the provisioning profiles in `~/.apple-dev/profiles` are used when there, `--no-profile` skips them) |
 | Settings code after a schema change | `python3 tools/settings/gen.py` |
 | A release to every channel (GitHub, Sparkle, Homebrew, Play internal testing, TestFlight) | `tools/release/release.py <version>` ([docs/DEVELOPMENT.md › Release](docs/DEVELOPMENT.md#release)) |

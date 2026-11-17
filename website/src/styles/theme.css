@@ -1,0 +1,109 @@
+/* Sukrara — https://github.com/mauriciabad/sukrara
+ * Copyright (C) 2026 Maurici Abad
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Sukrara's brand on Starlight (assets/brand/sukrara/brand.json, docs/09-brand.md): the icon's cyan-to-navy gradient,
+ * navy greys, and the neon "now" dot as the one highlight. Text colours keep 4.5:1 on their background in both themes.
+ */
+
+:root {
+	/* Brand (brand.json): the icon's gradient and the live dot. Fixed in both themes. */
+	--sk-cyan: #1bb5c9;
+	--sk-navy: #0b2e5e;
+	--sk-lime: #c6f432;
+	--sk-gradient: linear-gradient(160deg, #1bb5c9 0%, #0b2e5e 78%);
+	--sk-font-display: 'Nunito Variable', ui-rounded, 'SF Pro Rounded', var(--sl-font-system);
+
+	/* Dark theme (Starlight's default): a navy night. */
+	--sl-color-white: #ffffff;
+	--sl-color-gray-1: hsl(208, 45%, 94%);
+	--sl-color-gray-2: hsl(208, 28%, 82%);
+	--sl-color-gray-3: hsl(209, 20%, 64%);
+	--sl-color-gray-4: hsl(211, 22%, 42%);
+	--sl-color-gray-5: hsl(213, 36%, 25%);
+	--sl-color-gray-6: hsl(214, 54%, 15%);
+	--sl-color-black: hsl(216, 68%, 9%);
+
+	--sl-color-accent-low: hsl(188, 72%, 15%);
+	--sl-color-accent: hsl(187, 76%, 45%);
+	--sl-color-accent-high: hsl(186, 78%, 78%);
+
+	--sl-color-bg-nav: hsl(216, 62%, 11%);
+	--sl-color-bg-sidebar: hsl(216, 62%, 11%);
+	--sk-surface: hsl(214, 50%, 13%);
+	--sk-surface-line: hsl(213, 40%, 22%);
+	--sk-glow: 0 1.5rem 4rem hsl(190 90% 45% / 0.18);
+}
+
+:root[data-theme='light'] {
+	--sl-color-white: hsl(215, 72%, 13%);
+	--sl-color-gray-1: hsl(214, 50%, 18%);
+	--sl-color-gray-2: hsl(213, 30%, 26%);
+	--sl-color-gray-3: hsl(212, 18%, 38%);
+	--sl-color-gray-4: hsl(211, 14%, 56%);
+	--sl-color-gray-5: hsl(208, 22%, 82%);
+	--sl-color-gray-6: hsl(200, 40%, 94%);
+	--sl-color-gray-7: hsl(195, 45%, 97%);
+	--sl-color-black: #ffffff;
+
+	--sl-color-accent-low: hsl(186, 70%, 90%);
+	--sl-color-accent: hsl(188, 92%, 27%);
+	--sl-color-accent-high: hsl(214, 79%, 21%);
+
+	--sl-color-bg-nav: hsl(195, 45%, 97%);
+	--sl-color-bg-sidebar: #ffffff;
+	--sk-surface: hsl(195, 45%, 97%);
+	--sk-surface-line: hsl(205, 30%, 88%);
+	--sk-glow: 0 1.5rem 4rem hsl(214 79% 21% / 0.14);
+}
+
+/* Headings and the site title in the rounded display face (the glucose number's look); body text stays the system's. */
+.site-title,
+h1,
+.sl-markdown-content :is(h2, h3) {
+	font-family: var(--sk-font-display);
+	letter-spacing: -0.01em;
+}
+h1 {
+	font-weight: 800;
+}
+.sl-markdown-content :is(h2, h3) {
+	font-weight: 750;
+}
+.site-title {
+	font-weight: 800;
+	color: var(--sl-color-white);
+}
+
+/* Pills and cards share one corner radius. */
+:root {
+	--sk-radius: 1rem;
+}
+
+/* Theme-aware screenshots: the light picture in the light theme, the dark one in the dark theme. */
+.sk-shot {
+	border-radius: 0.75rem;
+	box-shadow: var(--sl-shadow-md);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+		transition-duration: 0.01ms !important;
+	}
+}
+
+/* Card grids take three columns when there's room (Starlight's take two). */
+.sk-section .card-grid {
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+
+/* An app's or service's own icon (AppIcon), shaped as a launcher shows it. */
+.sk-app-icon {
+	display: block;
+	flex: none;
+	border-radius: 22%;
+}

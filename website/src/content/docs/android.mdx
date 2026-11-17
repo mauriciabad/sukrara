@@ -1,0 +1,127 @@
+---
+title: Sukrara for Android
+description: Your CGM glucose in the status bar, widgets, lock screen and notifications, with discreet alarms, shared end-to-end encrypted. Or follow someone else, with alarms of your own. Android 16+, free.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+import Download from '../../components/Download.astro';
+import Gallery from '../../components/Gallery.astro';
+
+Sukrara reads your sensor, shows your glucose all over the phone, alerts you and shares it with the people you choose.
+Or follow someone else's.
+
+<Gallery shots={[['card', 340], ['widget', 340]]} />
+
+## Get it
+
+<Download app="android" />
+
+<Steps>
+
+1. On your phone, tap **Download for Android**.
+2. Open the file and tap **Install**. If Android asks, allow installs from your browser first.
+3. Open Sukrara. Setup asks only what alerts need; the rest can wait.
+
+</Steps>
+
+## What it does
+
+### If you wear the sensor
+
+- Reads a FreeStyle Libre 3 directly; other sensors directly or through Juggluco.
+- Your glucose in widgets, the notification, the status bar and the lock screen.
+- Alerts with your thresholds and [sounds](/sounds/), quiet once you've acted.
+- Insulin, carbs and notes in seconds. A NovoPen Echo® Plus logs its own doses.
+- Uploads to LibreView, Tidepool, Nightscout and Health Connect, if you want.
+- A report for your doctor, and a CSV export.
+
+### If you follow someone
+
+- Open their invite link or scan their QR code.
+- Their glucose, widgets and alerts, with your own alert settings if you want.
+- You see when their phone stops sending.
+
+<Gallery shots={[['share', 170], ['treatments', 250], ['lockTreatment', 260]]} />
+
+## Requirements
+
+- Android 16 or newer, 64-bit.
+- To read a sensor: NFC and Bluetooth. Starting a Libre 3 needs a LibreView account.
+- Lock screen card and status bar text: root with LSPosed.
+
+## Versions
+
+The GitHub and the Google Play version are the same app, signed with the same key: either one installs over the other
+and keeps your data. F-Droid and Obtainium install the GitHub version. **Settings › About** shows which one you have.
+
+| | GitHub version | Google Play version |
+|---|---|---|
+| Updates | Sukrara updates itself once you turn it on, or F-Droid or Obtainium does | Google Play |
+| Leaves out | Nothing | Only Sukrara's own updater |
+
+## Questions
+
+<details>
+<summary>Will the alerts wake me, even in Do Not Disturb?</summary>
+
+Very low and extremely high ring like an alarm clock. To ring through Do Not Disturb, choose **Let Sukrara through** in
+**Settings › Alert reliability**; that page also checks everything else alerts need and sends a test alert.
+
+</details>
+
+<details>
+<summary>Why does Android warn me about the download?</summary>
+
+It warns about every app from outside a store. Each release is built from the public source code and signed with
+Sukrara's key; **Check it's the real Sukrara**, under the download button, shows how to verify it.
+
+</details>
+
+<details>
+<summary>How do I move from the GitHub version to Google Play?</summary>
+
+Open Sukrara on Google Play on the phone. If it offers **Update from Play**, tap it: Play installs its version over yours, keeps
+your data and updates it from then on. If it only says **Open**, you already have the newest version: switch with the
+next one (with **Install updates automatically** on, turn it off first in **Settings › About › Updates**). Don't
+uninstall the GitHub version first: that deletes your data.
+
+</details>
+
+<details>
+<summary>Can I keep using Abbott's Libre app?</summary>
+
+A Libre 3 talks to one app at a time. Sukrara starts sensors with your LibreView account, so Abbott's app can take the
+sensor back, and Sukrara can take it over again with one tap.
+
+</details>
+
+<details>
+<summary>How fast do followers see my glucose?</summary>
+
+About a second over the internet, at once over Bluetooth. If your phone stops sending, they see when the last reading
+came and get a no-data alert.
+
+</details>
+
+<details>
+<summary>Which sensors does it read?</summary>
+
+Directly: FreeStyle Libre 3 and 3 Plus. Directly, not yet tested on a real one: Dexcom G6, G7 / ONE+ and G7 15 Day /
+Stelo, Accu-Chek SmartGuide, Aidex X / LinX. Through Juggluco, whatever it reads: FreeStyle Libre 2 and 2 Plus,
+Sibionics GS1, CareSens Air, and Dexcom G7 / ONE+, Accu-Chek SmartGuide and Aidex X.
+
+</details>
+
+<details>
+<summary>Is there an iPhone version?</summary>
+
+No. Followers can use an Android phone or [a Mac](/mac/).
+
+</details>
+
+<details>
+<summary>Is it a medical device?</summary>
+
+No, and no regulator has cleared or approved it. Check your sensor's app or a meter before you decide on a treatment.
+
+</details>

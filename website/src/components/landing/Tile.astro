@@ -1,0 +1,96 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// One surface of the apps: its picture (lib/screens.ts) on a soft panel, a title and a line or two.
+import type { ScreenName } from '../../lib/screens';
+import Screenshot from '../Screenshot.astro';
+
+interface Props {
+	title: string;
+	shot: ScreenName;
+	/** The picture's width inside the tile. */
+	width?: number;
+	/** Spans two columns on wide screens. */
+	wide?: boolean;
+	href?: string;
+	/** A wide strip of a picture (the status bar): its left part, filling the picture's place. */
+	crop?: boolean;
+}
+const { title, shot, width = 300, wide = false, href, crop = false } = Astro.props;
+---
+
+<article class:list={['sk-tile', { 'is-wide': wide, 'is-crop': crop }]}>
+	<div class="sk-tile__picture"><Screenshot name={shot} width={width} /></div>
+	<h3>{href ? <a href={href}>{title}</a> : title}</h3>
+	<div class="sk-tile__text"><slot /></div>
+</article>
+
+<style>
+	.sk-tile {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 1rem 1rem 1.25rem;
+		border-radius: calc(var(--sk-radius) + 0.25rem);
+		background: var(--sk-surface);
+		border: 1px solid var(--sk-surface-line);
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
+	}
+	.sk-tile:hover {
+		transform: translateY(-3px);
+		box-shadow: var(--sk-glow);
+	}
+	@media (min-width: 50rem) {
+		.sk-tile.is-wide {
+			grid-column: span 2;
+		}
+	}
+	.sk-tile__picture {
+		display: grid;
+		place-items: center;
+		min-height: 11rem;
+		padding: 0.75rem;
+		margin-bottom: 0.5rem;
+	}
+	.sk-tile__picture :global(img) {
+		max-width: 100%;
+		height: auto;
+		max-height: 22rem;
+		width: auto;
+	}
+	.sk-tile.is-crop .sk-tile__picture {
+		padding: 0;
+		overflow: hidden;
+		border-radius: var(--sk-radius);
+	}
+	.sk-tile.is-crop .sk-tile__picture :global(img) {
+		width: 100%;
+		height: 11rem;
+		max-height: none;
+		object-fit: cover;
+		object-position: left center;
+		border-radius: 0;
+		box-shadow: none;
+	}
+	.sk-tile h3 {
+		margin: 0;
+		font-family: var(--sk-font-display);
+		font-weight: 800;
+		font-size: var(--sl-text-xl);
+		color: var(--sl-color-white);
+	}
+	.sk-tile h3 a {
+		color: inherit;
+	}
+	.sk-tile__text {
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-sm);
+		line-height: 1.6;
+	}
+	.sk-tile__text :global(p) {
+		margin: 0;
+	}
+</style>
