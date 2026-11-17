@@ -1,0 +1,85 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
+# What both Garmin jobs of checks.yml start with, in the ubuntu:22.04 container after the checkout: the packages the
+# SDK, its simulator and the picture diffs need, the SDK and the device files (tools/ci/garmin-sdk.sh: from the cache,
+# signing in as the CI account only for missing devices), both cached before any of the project's code runs.
+# docs/DEVELOPMENT.md › Garmin face on CI.
+name: Garmin SDK on CI
+description: The Connect IQ SDK and the face's device files, ready=true when the face can be built
+inputs:
+  username:
+    description: GARMIN_CI_USERNAME (the CI account; empty → a clean skip unless the cache has the files)
+    required: false
+  password:
+    description: GARMIN_CI_PASSWORD
+    required: false
+  token:
+    description: GARMIN_CI_TOKEN
+    required: false
+outputs:
+  project:
+    description: true when there is a Garmin project
+    value: ${{ steps.plan.outputs.project }}
+  ready:
+    description: true when the SDK and every device file are in place (CIQ_SDK, CIQ_KEY in the environment)
+    value: ${{ steps.sdk.outputs.ready }}
+runs:
+  using: composite
+  steps:
+    - name: What the SDK, its simulator and the picture diffs need
+      shell: bash
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        apt-get update -qq
+        apt-get install -y -qq --no-install-recommends ca-certificates curl unzip zstd openssl python3 python3-pil \
+          openjdk-17-jre-headless libwebkit2gtk-4.0-37 libusb-1.0-0 libsm6 xvfb xauth imagemagick >/dev/null
+    # The runner sets HOME=/github/home in the container, where the CLI and the cache put ~/.Garmin; Java takes its
+    # user.home from /etc/passwd (/root), and monkeyc looks for the devices under user.home/.Garmin/ConnectIQ
+    # ("Invalid device id specified" otherwise). One folder for both.
+    - name: Java's home finds ~/.Garmin
+      shell: bash
+      run: ln -sfn "$HOME/.Garmin" "$(getent passwd "$(id -u)" | cut -d':' -f6)/.Garmin"
+    - name: The devices the face needs
+      id: plan
+      shell: bash
+      run: tools/ci/garmin-sdk.sh plan
+    - name: The SDK from the cache
+      id: sdk-cache
+      if: steps.plan.outputs.project == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.Garmin/ConnectIQ/Sdks
+        key: garmin-sdk-${{ steps.plan.outputs.sdk }}
+    - name: The device files from the cache
+      if: steps.plan.outputs.project == 'true'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.Garmin/ConnectIQ/Devices
+          ~/.Garmin/ConnectIQ/Fonts
+        key: garmin-devices-${{ steps.plan.outputs.devices-key }}
+    - name: The SDK and the device files (signs in as the CI account only for missing devices)
+      id: sdk
+      shell: bash
+      env:
+        GARMIN_CI_USERNAME: ${{ inputs.username }}
+        GARMIN_CI_PASSWORD: ${{ inputs.password }}
+        GARMIN_CI_TOKEN: ${{ inputs.token }}
+      run: tools/ci/garmin-sdk.sh setup
+    # Saved before any build or test: a red test never costs another sign-in. The token isn't in these folders.
+    - name: Keep the SDK
+      if: steps.sdk.outputs.ready == 'true' && steps.sdk-cache.outputs.cache-hit != 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.Garmin/ConnectIQ/Sdks
+        key: garmin-sdk-${{ steps.plan.outputs.sdk }}
+    - name: Keep the device files
+      if: steps.sdk.outputs.downloaded == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ~/.Garmin/ConnectIQ/Devices
+          ~/.Garmin/ConnectIQ/Fonts
+        key: garmin-devices-${{ steps.plan.outputs.devices-key }}

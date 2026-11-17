@@ -34,14 +34,15 @@ import sys
 #   checks every site URL the apps' code opens and the release key App Links name (tools/release/android-cert.sha256).
 # - garmin: the face (apps/garmin), the contracts its tests read (the watchface spec's cases and expect.json, the
 #   words, settings), the brand assets (its icons), the reference pictures its screenshots are diffed against
-#   (docs/img/aura/ref), the reference renderer (tools/watchface) and the CI setup it runs (tools/ci/garmin*).
+#   (docs/img/aura/ref), the reference renderer (tools/watchface) and the CI setup it runs (tools/ci/garmin*,
+#   .github/actions/garmin).
 GROUPS = {
     "android": (["apps/android/", "contracts/", "tools/", "VERSION", "assets/"], ["apps/android/fastlane/"]),
     "mac": (["apps/macos/", "contracts/", "assets/"], ["apps/macos/AppStore/whats-new/"]),
     "website": (["website/", "docs/", "assets/", "contracts/", "apps/", "tools/release/android-cert.sha256",
                  "tools/watchface/", ".github/workflows/website.yml"], ["apps/android/fastlane/", "apps/macos/AppStore/whats-new/"]),
     "garmin": (["apps/garmin/", "contracts/", "assets/", "docs/img/aura/ref/", "tools/watchface/", "tools/garmin/",
-                "tools/ci/garmin-sdk.sh", "tools/ci/garmin.lock"], []),
+                "tools/ci/garmin-sdk.sh", "tools/ci/garmin.lock", ".github/actions/garmin/"], []),
 }
 DEPTH = 300
 

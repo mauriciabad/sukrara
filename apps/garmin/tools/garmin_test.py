@@ -171,8 +171,11 @@ def parse(log):
     return cases
 
 
-def numbers(log):
-    want = {c["id"]: c["values"] for c in json.load(open(EXPECT, encoding="utf-8"))["cases"]}
+def numbers(log, ids=None):
+    """A log's layouts against expect.json: (cases compared, cases expected, differences). ids: only those cases are
+    expected (a run of AURA_CASES)."""
+    want = {c["id"]: c["values"] for c in json.load(open(EXPECT, encoding="utf-8"))["cases"]
+            if ids is None or c["id"] in ids}
     got = parse(log)
     fails, done = [], 0
     for cid, w in want.items():
@@ -470,7 +473,7 @@ def run(outdir, core=None):
     for line in open(merged, encoding="utf-8", errors="replace"):
         if line.startswith("COMBOS|"):
             combos = line.strip().split("|")
-    done, total, fails = numbers(merged)
+    done, total, fails = numbers(merged, {c["id"] for c in cases})
     report = ["numbers: %d of %d cases, %d differences" % (done, total, len(fails))] + fails
     if combos is None:
         report.append("combinations: no result (the case loader didn't finish them)")
