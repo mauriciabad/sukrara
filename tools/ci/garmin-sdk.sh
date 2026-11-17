@@ -90,8 +90,8 @@ download() {
   echo "$CIQ_CLI_LINUX_SHA256  $tmp/cli.tgz" | sha256sum -c --quiet - || fail "the SDK Manager CLI's sha256 isn't tools/ci/garmin.lock's"
   tar -xzf "$tmp/cli.tgz" -C "$tmp" connect-iq-sdk-manager
   cli="$tmp/connect-iq-sdk-manager"
-  "$cli" agreement accept --acceptance-hash="$CIQ_AGREEMENT_HASH" >/dev/null ||
-    fail "Garmin changed the Connect IQ SDK agreement: read it (connect-iq-sdk-manager agreement view) and put its hash in tools/ci/garmin.lock"
+  "$cli" agreement accept --agreement-hash="$CIQ_AGREEMENT_HASH" >/dev/null ||
+    fail "the SDK Manager CLI refused the Connect IQ SDK agreement (its message is above): if Garmin changed the agreement, read it (connect-iq-sdk-manager agreement view) and put its hash in tools/ci/garmin.lock"
   mkdir -p "$CIQ"
   if [ -n "${GARMIN_CI_TOKEN:-}" ]; then
     (umask 077; echo "$GARMIN_CI_TOKEN" | base64 -d > "$CIQ/token.json") || fail "GARMIN_CI_TOKEN isn't base64 of a token.json"
