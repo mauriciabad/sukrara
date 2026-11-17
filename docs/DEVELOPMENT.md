@@ -209,8 +209,17 @@ setup change) checks the face's words (`garmin_test.py words`, no SDK needed) an
 the SDK's simulator needs WebKitGTK 4.0) with `apps/garmin/build.sh`. The simulator runs there headless under Xvfb
 (`xvfb-run`; tried 2026-11-16 in that image: unit tests `PASSED`, the face drawn), and with no window manager its
 screen sits at `simulator.json`'s display location plus the 26 px menu bar (`import -window root -crop
-390x390+131+237` for the `descentmk343mm`); the tests and picture diffs join the job once `garmin_test.py run` starts
-the simulator and captures it there too (today `open -a` and Quartz, macOS only). `tools/ci/garmin-sdk.sh` gets what it needs, pinned in `tools/ci/garmin.lock`: the Connect IQ
+390x390+131+237` for the `descentmk343mm`).
+
+**Two sets of cases.** `garmin_test.py run` over every case (about 130) takes 1–2 h: heavy dial cases make monkeydo
+lose the simulator, and the harness restarts it. So the `garmin` job, which `gate` needs (30-minute timeout), runs a
+fixed set of 21 (`AURA_CASES` in checks.yml; 2026-11-17: 3.5 min in the simulator, 5 min for the job): the safety states (LO, HI, no readings, old, very low, extremely high,
+muted, sensor ended, phone lost), one case per dial, always-on, private and Spanish. It checks their numbers against
+`expect.json`, the battery label against every row, and each case's picture. `garmin-all` runs every case, only on
+`gh workflow run checks.yml --ref next -f full=true`, after `garmin` and outside `gate` (180-minute timeout; artifact
+`garmin-test-all`). Both jobs start from `.github/actions/garmin` (packages, SDK, device files, cache).
+
+`tools/ci/garmin-sdk.sh` gets what it needs, pinned in `tools/ci/garmin.lock`: the Connect IQ
 SDK (public download, sha256 checked) and the manifest's device files with their simulator fonts, which need a Garmin
 sign-in. It signs in only when the Actions cache lacks a device (a new device, or the cache unused for 7 days), with
 the headless SDK Manager [`connect-iq-sdk-manager-cli`](https://github.com/lindell/connect-iq-sdk-manager-cli)
@@ -223,7 +232,7 @@ steps: `gate` passes. `tools/ci/test_garmin_sdk.sh` (the rules job) proves that 
 `~/.Garmin` there. But monkeyc finds the devices under Java's `user.home` + `/.Garmin/ConnectIQ/Devices` (Linux;
 `APPDATA` on Windows, `~/Library/Application Support` on macOS), and the JDK takes `user.home` from `/etc/passwd`
 (`/root`), not `$HOME`. Without a link it fails with `ERROR: Invalid device id specified: 'descentmk343mm'` while
-`compiler.json` is in place (2026-11-17). The job's first step links `/root/.Garmin` → `$HOME/.Garmin`. A local
+`compiler.json` is in place (2026-11-17). `.github/actions/garmin` links `/root/.Garmin` → `$HOME/.Garmin`. A local
 `ubuntu:22.04` container doesn't show this: there `$HOME` is `/root`. The CLI's download has the same layout as the
 SDK Manager's. Its "Font is contains spaces and can't be downloaded" lines (three `bitstreamVeraSans` sizes) are
 harmless: the SDK Manager on the Mac doesn't install those fonts either.
