@@ -548,7 +548,7 @@ none); its leading edge is the second hand, so where it sits against 12 o'clock 
 - **Awake only.** Setting: on (default) / off.
 
 ### 6.12 Dials (the aura)
-Common inputs (awake only; nothing in always-on or at night):
+Common inputs (awake and at night; nothing in always-on):
 - `kv = K(clamp(g, 40, 400))`; **ext** = clamp(|kv| / 1.9, 0, 1) — how extreme (0 at 112, ~0.46 at the range's edges,
   1 near 45 / 305); 0 without a value.
 - **toward** = clamp(−sign(kv)·rate / 2, −1, 1) × min(1, |kv| / 0.3) when current with a trend, else 0 (+ = heading back
@@ -626,7 +626,7 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
   (3.7 %). Its run measures every always-on variant (`aod-*`) this way and
   fails at 10 %.
 - **Night** (while the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night
-  palette; no sweep, no dial; everything else as awake. Not the profile's sleep and wake times: on the Descent they
+  palette; no sweep; **the dial stays** (the owner, 2026-11-17: "i dont like that on night mode it removes the dial background"), drawn as awake in the night palette and dimmed as a whole to 65 % of its light (`dial.dim` 0.65, awake 1: one opacity over every dial layer; on Garmin each mark's pre-multiplied opacity times 0.65), calm and lighting nothing up (`modes-night`, `modes-night-dial-high`); everything else as awake. Not the profile's sleep and wake times: on the Descent they
   aren't the Sleep Mode schedule (set per day) and put the face in night in the afternoon. A low at night keeps its colour, place and pill.
 - **Private** (setting): the value row is empty (reserved) and the bead alone says where you are. With no glucose rail
   on either side nothing places the hidden value on a scale, the person's choice: a needed pill still unmasks the
@@ -649,7 +649,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 | glucose | in-range, rising, falling-fast, late, old, no-readings, long-gap, another-day, week-old, lo, hi, mmol-widest | freshness and the reading's time, trend, LO / HI, units |
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
 | sensor | warmup, almost, ending, ended-sending, ended, none, phone-lost, battery-low, none-es, ended-es, rail-days, rail-last-day, rail-ending, rail-ending-aod, rail-ending-night, rail-ending-private, rail-both-ending, rail-ended-sending, rail-ended, rail-warmup, rail-almost, rail-ending-no-phone, rail-none, rail-ending-same-fields, rail-ending-meal, rail-no-dates, rail-g7 | sensor, phone, battery states; Spanish messages under the one-line battery label; the sensor rail through its life and every edge case of the automatic *sensor ending* field (§6.10) |
-| modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
+| modes | awake, aod, night, night-low, night-dial-high, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
 | fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off, spark-clear-label, spark-steep-rise, spark-steep-drop, spark-rise-then-fall, spark-centred-pill, spark-centred-mmol-pill, spark-centred-age, spark-centred-late-pill, spark-ray-up-level, spark-ray-down-battery, spark-ray-up-sensor, spark-ray-flat-none | fields and settings, missing values and readings |
 | sides | mirrored, battery-sensor, sensor-battery-high, battery-low-sensor-ending, battery-both-right, level-sensor-warmup, none-level, none-none, battery-twice, level-twice, level-twice-high, level-twice-contours, level-twice-glow, level-left-contours, level-left-lasers, level-left-glow, level-twice-aod-very-low, level-left-aod, level-left-night-low, private-no-rail, private-no-rail-needed, private-no-rail-quiet, mmol-widest-right, lo-es, ended-es, labels-above-pill | the side elements on either side, both, none; marks; the dial's focus; private, always-on and night with them |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
@@ -681,7 +681,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 - The top field set to none; both bottom fields the same kind is allowed.
 
 **Also check against docs/42 §11**: the 2-second glance (time, value, direction, current); nothing moves, flashes or
-turns saturated in range except the slow sweep; night lights nothing up; every state can be left.
+turns saturated in range except the slow sweep; night stays dim and calm (the dial at 65 %, no sweep); every state can be left.
 
 ## 10. Proving the port matches (do this, don't eyeball)
 1. **Numbers.** Make the face's layout code callable from a test (a pure function of the same inputs, Monkey C unit

@@ -2115,8 +2115,8 @@ ages by itself from its own time with the phone away.
   about 7 % of the screen (Garmin blanks a face over 10 %); the whole face moves up to 2 px a minute against burn-in.
   A wrist raise or a button always wakes it to the full face, whatever the display mode said before; the face
   reports its screen events and the mode it drew to the phone (docs/43 "The screen", logcat only). *Night* (while
-  the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night palette,
-  everything else as awake.
+  the watch is in Do Not Disturb, which its Sleep Mode turns on at the scheduled sleep): the night palette and the
+  dial dimmed to 65 % (calm, no seconds sweep), everything else as awake.
 - **Private** (setting): the value row stays empty and the bead alone says where you are (with no glucose rail on
   either side, the pill, the sweep and the dial's colour); touch and hold the face
   shows the value for 5 s with a shrinking neon line under it. A needed pill (*Carbs* / *Insulin*) shows the value
@@ -2125,7 +2125,7 @@ ages by itself from its own time with the phone away.
   is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field, Bottom field 1 and
   2, Left side, Right side, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
 - Words in English and Spanish (the watch's language). Readings come from the phone (below).
-- **The aura** (setting *Dial*, awake only, not at night or always-on): the dial gathers at your level, spreads the
+- **The aura** (setting *Dial*; at night in the night palette at 65 %, none in always-on): the dial gathers at your level, spreads the
   further out of range you are, fades heading back to the ideal and strengthens heading away: *grain* (dots, the
   default), *contours*, *waterline*, *lasers*, *glow*, *map* (decorative, never reacts) or *black*. Grey and still
   (dashed) when the reading is old. *Halo* (outline, the default / box / none) keeps every dial line off the text, so

@@ -387,7 +387,7 @@
    "id": "modes-night",
    "group": "modes",
    "title": "Night",
-   "expect": "Between the sleep and wake times: the night palette, no sweep, no dial; nothing lights a bedroom.",
+   "expect": "While the watch is in Do Not Disturb: the night palette and the dial at 65 % of its light (calm), no sweep; nothing bright lights a bedroom.",
    "cfg": {
     "glucose": 118,
     "rate": -0.2,
@@ -760,6 +760,17 @@
     "rate": -1.2,
     "lang": "es",
     "lastAgo": 85
+   }
+  },
+  {
+   "id": "modes-night-dial-high",
+   "group": "modes",
+   "title": "Night, high, the dial",
+   "expect": "At night the dial stays: in the night palette at 65 % of its light, no sweep (the grain gathers at the high).",
+   "cfg": {
+    "glucose": 212,
+    "rate": 1.2,
+    "mode": "night"
    }
   },
   {

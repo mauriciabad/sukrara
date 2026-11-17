@@ -143,7 +143,8 @@ module AuraDump {
     // the dial (aura.js "the dial"; AuraDial)
     function dial(m as AuraModel) as Void {
         var d = new AuraDial(m);
-        var lasers = d.kind.equals("lasers") && m.awake;
+        var lasers = d.kind.equals("lasers") && !m.aod;
+        out("dial.dim", d.dim);
         out("dial.d1", lasers ? laserPath(d, true) : paths(d.n1));
         out("dial.f1", d.f1 == null ? "none" : col(d.f1));
         out("dial.s1", stroke(d.s1, d.stroke1));

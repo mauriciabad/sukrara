@@ -16,7 +16,8 @@ import Toybox.Math;
 // radius; a wave: at its depth; a laser: per 10 px piece; the glow: 3 px rings) — SPEC.md §13.
 class AuraDial {
     var kind as String = "black"; // grain, contours, waterline, lasers, glow, map, black
-    var drawn as Boolean = false; // something to paint (awake, and a dial that draws)
+    var drawn as Boolean = false; // something to paint (awake or night, and a dial that draws)
+    var dim as Float = 1.0; // the whole dial's opacity: 1 awake, NIGHT_DIM at night (SPEC.md §8)
     var current as Boolean = false;
     var levelY as Float = 60.0;
     var ext as Float = 0.0;
@@ -57,6 +58,7 @@ class AuraDial {
     var lasers as Array = [] as Array;
 
     const TEXTURE = 0x19191C;
+    const NIGHT_DIM = 0.65; // at night the dial stays, at 65 % of its light (calm, no sweep)
 
     function initialize(m as AuraModel) {
         kind = m.inp.dial;
@@ -66,9 +68,10 @@ class AuraDial {
         I = m.I;
         spd = m.spd;
         dashed = !current;
-        if (!m.awake) {
+        if (m.aod) {
             return;
         }
+        dim = m.night ? NIGHT_DIM : 1.0;
         var dcol = m.dialCol;
         if (kind.equals("map")) {
             n1 = 12;
@@ -210,9 +213,10 @@ class AuraDial {
 
     // ---------------------------------------------------------------------------------------------------- painting
 
-    // the colour at an opacity, pre-multiplied over black (opaque): the cache holds the dial alone, over black
+    // the colour at an opacity (times the dial's dim), pre-multiplied over black (opaque): the cache holds the dial
+    // alone, over black
     function pm(c as Number, a as Numeric) as Number {
-        return AuraDials.pm(c, a);
+        return AuraDials.pm(c, a * dim);
     }
 
     // the radial fade of contours and lasers: stops at 0, 0.22, 0.48, 0.76, 1 of gr
@@ -374,7 +378,7 @@ class AuraDial {
         if (a <= 0.004) {
             return;
         }
-        var c = isMap ? 0xFF000000 | stroke1 : pm(col, a);
+        var c = pm(isMap ? stroke1 : col, a);
         dc.setStroke(c);
         dc.setFill(c);
         dc.setPenWidth(w1);
@@ -485,13 +489,14 @@ module AuraDials {
     // what the dial's picture depends on: when it changes the cache is painted again (a new reading, the mode, a
     // setting); otherwise a frame copies the cache
     function key(m as AuraModel) as String {
-        return m.inp.dial + "|" + m.awake + "|" + m.current + "|" + m.hasValue + "|" + m.dialCol + "|" + m.levelY + "|" +
+        return m.inp.dial + "|" + m.awake + "|" + m.night + "|" + m.current + "|" + m.hasValue + "|" + m.dialCol + "|" + m.levelY + "|" +
             m.ext + "|" + m.I + "|" + m.spd + "|" + m.inp.glucose + "|" + m.focusX;
     }
 
-    // the dial, awake only: from the cache (painted again when its key changes); true when something was drawn
+    // the dial, awake and at night (not always-on): from the cache (painted again when its key changes); true when
+    // something was drawn
     function draw(dc as Dc, m as AuraModel) as Boolean {
-        if (!m.awake || m.inp.dial.equals("black")) {
+        if (m.aod || m.inp.dial.equals("black")) {
             return false;
         }
         var k = key(m);

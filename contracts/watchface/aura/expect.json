@@ -51,6 +51,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -591,6 +592,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "307 subpaths",
       "chars": 15272
@@ -1131,6 +1133,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "156 subpaths",
       "chars": 7661
@@ -1671,6 +1674,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "95 subpaths",
       "chars": 4744
@@ -2214,6 +2218,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -2754,6 +2759,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -3294,6 +3300,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -3834,6 +3841,7 @@
      "chipC": 95
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -4374,6 +4382,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -4914,6 +4923,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "775 subpaths",
       "chars": 38555
@@ -5455,6 +5465,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "775 subpaths",
       "chars": 38565
@@ -5996,6 +6007,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 38263
@@ -6537,6 +6549,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "471 subpaths",
       "chars": 22843
@@ -7081,6 +7094,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "648 subpaths",
       "chars": 31461
@@ -7625,6 +7639,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "383 subpaths",
       "chars": 18726
@@ -8171,6 +8186,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "471 subpaths",
       "chars": 23455
@@ -8717,6 +8733,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "95 subpaths",
       "chars": 4311
@@ -9263,6 +9280,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "95 subpaths",
       "chars": 4311
@@ -9809,6 +9827,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "95 subpaths",
       "chars": 4311
@@ -10355,6 +10374,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "564 subpaths",
       "chars": 28108
@@ -10899,6 +10919,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "648 subpaths",
       "chars": 31686
@@ -11445,6 +11466,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "564 subpaths",
       "chars": 28000
@@ -11985,6 +12007,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "742 subpaths",
       "chars": 36265
@@ -12529,6 +12552,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 38629
@@ -13073,6 +13097,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "240 subpaths",
       "chars": 11978
@@ -13613,6 +13638,7 @@
      "chipC": 83
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -14156,6 +14182,7 @@
      "chipC": 83
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -14693,6 +14720,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -15227,6 +15255,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "126 subpaths",
       "chars": 6293
@@ -15765,6 +15794,7 @@
      "chipC": 81
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -16303,6 +16333,7 @@
      "chipC": 70.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -16846,6 +16877,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -17389,6 +17421,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -17929,6 +17962,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -18466,6 +18500,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -19000,12 +19035,16 @@
      "chipC": 90.7
     },
     "dial": {
-     "d1": "M0 0",
-     "f1": "none",
+     "dim": 0.65,
+     "d1": {
+      "path": "94 subpaths",
+      "chars": 4663
+     },
+     "f1": "#2E9C5C",
      "s1": "none",
      "w1": 1,
-     "o1": 1,
-     "d1D": "none",
+     "o1": 0.42700000000000005,
+     "d1D": "inline",
      "d2": "M0 0",
      "s2": "none",
      "w2": 1,
@@ -19537,12 +19576,16 @@
      "chipC": 92
     },
     "dial": {
-     "d1": "M0 0",
-     "f1": "none",
+     "dim": 0.65,
+     "d1": {
+      "path": "503 subpaths",
+      "chars": 24009
+     },
+     "f1": "#B8433F",
      "s1": "none",
      "w1": 1,
-     "o1": 1,
-     "d1D": "none",
+     "o1": 0.743,
+     "d1D": "inline",
      "d2": "M0 0",
      "s2": "none",
      "w2": 1,
@@ -20078,6 +20121,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "220 subpaths",
       "chars": 11081
@@ -20618,6 +20662,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "220 subpaths",
       "chars": 11081
@@ -21158,6 +21203,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "503 subpaths",
       "chars": 24401
@@ -21702,6 +21748,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -22242,6 +22289,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -22773,6 +22821,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -23311,6 +23360,7 @@
      "chipC": 70.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -23854,6 +23904,7 @@
      "chipC": 81
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -24392,6 +24443,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -24932,6 +24984,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -25466,6 +25519,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -25997,6 +26051,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -26525,12 +26580,16 @@
      "chipC": 90.7
     },
     "dial": {
-     "d1": "M0 0",
-     "f1": "none",
+     "dim": 0.65,
+     "d1": {
+      "path": "94 subpaths",
+      "chars": 4663
+     },
+     "f1": "#2E9C5C",
      "s1": "none",
      "w1": 1,
-     "o1": 1,
-     "d1D": "none",
+     "o1": 0.42700000000000005,
+     "d1D": "inline",
      "d2": "M0 0",
      "s2": "none",
      "w2": 1,
@@ -27056,6 +27115,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -27590,6 +27650,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -28124,6 +28185,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -28662,6 +28724,7 @@
      "chipC": 81
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -29200,6 +29263,7 @@
      "chipC": 83
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -29743,6 +29807,7 @@
      "chipC": 83
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -30280,6 +30345,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -30814,6 +30880,7 @@
      "chipC": 70.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -31357,6 +31424,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -31898,6 +31966,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -32432,6 +32501,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -32966,6 +33036,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -33500,6 +33571,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "648 subpaths",
       "chars": 31461
@@ -34044,6 +34116,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "564 subpaths",
       "chars": 28108
@@ -34588,6 +34661,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "471 subpaths",
       "chars": 22843
@@ -35083,6 +35157,551 @@
    }
   },
   {
+   "id": "modes-night-dial-high",
+   "values": {
+    "v": {
+     "size": 390,
+     "viewBox": "-195 -195 390 390",
+     "bezelDisp": "none",
+     "filter": "none",
+     "labelFam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "dash": " - ",
+     "label": "Sukrara Aura watch face. 10:09. 212 mg/dL, rising slowly, Insulin."
+    },
+    "arcs": {
+     "top": "M-138.6 -80A160 160 0 0 1 138.6 -80",
+     "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
+     "halo": {
+      "path": "8 subpaths",
+      "chars": 856
+     }
+    },
+    "info": {
+     "dial": "halftone",
+     "ext": 0.6247,
+     "toward": -0.6,
+     "I": 1.39,
+     "spd": 0.4,
+     "levelY": -59.1,
+     "idealY": 15.3,
+     "colour": "#B57C1E"
+    },
+    "sides": {
+     "left": "battery",
+     "right": "level",
+     "marks": false
+    },
+    "layout": {
+     "T": 68,
+     "V": 54,
+     "TF": 24,
+     "roomy": false,
+     "chipKind": "pill",
+     "msgKind": null,
+     "tfBase": -109,
+     "tTop": -89,
+     "tBase": -21,
+     "vTop": 1,
+     "vBase": 55,
+     "chipC": 92
+    },
+    "dial": {
+     "dim": 0.65,
+     "d1": {
+      "path": "593 subpaths",
+      "chars": 28970
+     },
+     "f1": "#B57C1E",
+     "s1": "none",
+     "w1": 1,
+     "o1": 0.759,
+     "d1D": "inline",
+     "d2": "M0 0",
+     "s2": "none",
+     "w2": 1,
+     "o2": 1,
+     "d2D": "none",
+     "d3": "M0 0",
+     "s3": "none",
+     "w3": 1,
+     "o3": 1,
+     "d3D": "none",
+     "wy1": 0,
+     "wy2": 1,
+     "dash": "none",
+     "glowD": "none",
+     "gx": 0,
+     "gy": 0,
+     "gr": 100,
+     "col": "#000000",
+     "go": 0,
+     "go2": 0,
+     "go3": 0,
+     "go4": 0
+    },
+    "radar": {
+     "disp": "none",
+     "col": "#B57C1E",
+     "deg": 216,
+     "tr": "none"
+    },
+    "halo": {
+     "boxD": "none",
+     "outD": "inline",
+     "tx": -143.7,
+     "ty": -99,
+     "tw": 287.4,
+     "th": 88,
+     "vx": -167.9,
+     "vy": -11,
+     "vw": 311.8,
+     "vh": 78,
+     "cx": -78,
+     "cy": 69,
+     "cw": 156,
+     "ch": 46,
+     "fx": -57.7,
+     "fy": -133,
+     "fw": 115.4,
+     "fh": 32,
+     "sx": -23.2,
+     "sy": -13,
+     "sw": 163.1,
+     "sh": 84,
+     "spD": "inline",
+     "ringD": "none",
+     "ringR": 21.3,
+     "mx": 0,
+     "my": 0,
+     "mw": 0,
+     "mh": 0
+    },
+    "date": {
+     "wd": "MON ",
+     "day": "16",
+     "mo": " NOV",
+     "fill": "#5E5E64",
+     "dayFill": "#8C8C92"
+    },
+    "tf": {
+     "y": -109,
+     "fs": 24,
+     "i0": {
+      "key": "steps",
+      "d": {
+       "path": "4 subpaths",
+       "chars": 201
+      },
+      "tf": "translate(-39.7 -117) rotate(0) scale(0.833) translate(-12 -12)",
+      "fill": "#5E5E64",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "x": -24.7,
+      "s": "6,420",
+      "col": "#8C8C92",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t2": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    },
+    "time": {
+     "str": "10:09",
+     "xs": "-111.8 -56.5 -10.3 36 101.5",
+     "y": -21,
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 101.8,
+     "fill": "#8C8C92",
+     "stroke": "none",
+     "sw": 0
+    },
+    "batt": {
+     "disp": "inline",
+     "dL": "inline",
+     "dR": "none",
+     "on": {
+      "path": "9 subpaths",
+      "chars": 342
+     },
+     "off": "M-147.2 -107A182 182 0 0 1 -133.1 -124.1",
+     "onR": {
+      "path": "9 subpaths",
+      "chars": 324
+     },
+     "offR": "M133.1 -124.1A182 182 0 0 1 147.2 -107",
+     "col": "#5E5E64",
+     "w": 600,
+     "l1": "9d",
+     "y1": -3.3,
+     "fs": 22,
+     "xL": -166,
+     "xR": 166,
+     "mL": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "mR": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     }
+    },
+    "sens": {
+     "disp": "none",
+     "dL": "none",
+     "dR": "none",
+     "n": 15,
+     "on": {
+      "path": "10 subpaths",
+      "chars": 380
+     },
+     "off": {
+      "path": "5 subpaths",
+      "chars": 201
+     },
+     "onR": {
+      "path": "10 subpaths",
+      "chars": 360
+     },
+     "offR": {
+      "path": "5 subpaths",
+      "chars": 191
+     },
+     "col": "#5E5E64",
+     "w": 600,
+     "t": "9d",
+     "tD": "inline",
+     "y": -3.3,
+     "fs": 22,
+     "xL": -166,
+     "xR": 166,
+     "mL": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "mR": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     }
+    },
+    "rail": {
+     "disp": "inline",
+     "dL": "none",
+     "dR": "inline",
+     "base": "M133.1 -124.1A182 182 0 0 1 133.1 124.1",
+     "band": "M177.5 -40.3A182 182 0 0 1 168.2 69.4",
+     "tight": "M181.7 -10.7A182 182 0 0 1 168.2 69.4",
+     "bandW": 6,
+     "zone": "M164.7 -77.4A182 182 0 0 1 177.5 -40.3",
+     "zoneCol": "#B57C1E",
+     "zoneDisp": "inline",
+     "minor": {
+      "path": "16 subpaths",
+      "chars": 346
+     },
+     "minorDisp": "inline",
+     "mid": "M128 119.3L138.2 128.9M174.7 -10.3L188.7 -11.1M148.3 -92.9L160.1 -100.4M128 -119.3L138.2 -128.9",
+     "major": "M146.1 88.9L164 99.8M158.1 65.2L177.5 73.3M166.8 -37.9L187.2 -42.5M154.8 -72.7L173.8 -81.7"
+    },
+    "bead": {
+     "disp": "inline",
+     "deg": 71,
+     "col": "#B57C1E",
+     "fill": "#B57C1E",
+     "stroke": "none",
+     "r": 7,
+     "glow": "none",
+     "chev": "M0 0",
+     "chevDisp": "none"
+    },
+    "t0": {
+     "deg": 78.1,
+     "r": 2.2,
+     "o": 0.1,
+     "d": "inline"
+    },
+    "t1": {
+     "deg": 76.8,
+     "r": 2.7,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t2": {
+     "deg": 75.6,
+     "r": 3.1,
+     "o": 0.2,
+     "d": "inline"
+    },
+    "t3": {
+     "deg": 74.4,
+     "r": 3.6,
+     "o": 0.3,
+     "d": "inline"
+    },
+    "t4": {
+     "deg": 73.2,
+     "r": 4,
+     "o": 0.4,
+     "d": "inline"
+    },
+    "t5": {
+     "deg": 72.1,
+     "r": 4.5,
+     "o": 0.5,
+     "d": "inline"
+    },
+    "val": {
+     "disp": "inline",
+     "str": "212",
+     "fam": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "fs": 80.8,
+     "y": 55,
+     "xs": "-132.9 -92.5 -52.2",
+     "fill": "#B57C1E",
+     "blk": "none",
+     "blkCol": "#A63A35",
+     "bx": -167.9,
+     "by": -11,
+     "bw": 150.8,
+     "bh": 78,
+     "strike": "none",
+     "sx1": -161.9,
+     "sx2": -23.2,
+     "sy": 29.1,
+     "sw": 6.1,
+     "arrow": "M-22.1 -3.7H13.2V3.7H-22.1ZM24.2 0L3.2 15.8L8.4 0L3.2 -15.8Z",
+     "tf": "translate(0px, 28px) rotate(-36deg)",
+     "arrowD": "none",
+     "ax": 0,
+     "ay": 28,
+     "ringR": 12,
+     "ringW": 5.5,
+     "ringD": "none",
+     "revealD": "none",
+     "rx1": -130.6,
+     "rx2": -54.5,
+     "ry": 68
+    },
+    "sp": {
+     "disp": "inline",
+     "framed": false,
+     "mid": 197.4,
+     "x": -15.2,
+     "w": 147.1,
+     "age": 164.9,
+     "fy0": -17,
+     "fy1": -5,
+     "fy2": 63,
+     "fy3": 75,
+     "o1": 0.13040000000000002,
+     "o2": 0.8696,
+     "oh1": 0.06520000000000001,
+     "oh2": 0.9348,
+     "bandY": 39.4,
+     "bandH": 35.3,
+     "bandCol": "#2E9C5C",
+     "limits": "M-15.2 39.4H131.9M-15.2 74.7H131.9",
+     "limCol": "#5C5C62",
+     "line": {
+      "path": "1 subpaths",
+      "chars": 307
+     },
+     "lineCol": "#5E5E64",
+     "ray": "M129.4 20.2l17.8 -12.9",
+     "rayD": "inline",
+     "rayCol": "#B57C1E",
+     "ex": 129.4,
+     "ey": 20.2,
+     "endFill": "#B57C1E",
+     "endStroke": "none"
+    },
+    "chip": {
+     "disp": "none",
+     "x": -70,
+     "y": 100,
+     "t": "10:09"
+    },
+    "pill": {
+     "disp": "inline",
+     "x": -70,
+     "y": 73,
+     "w": 140,
+     "fill": "#5F7EB3",
+     "fo": 1,
+     "tc": "#1C1C1E",
+     "tx": -21.7,
+     "ty": 100,
+     "t": "Insulin",
+     "mark": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(-43 92) rotate(0) scale(0.983) translate(-12 -12)",
+      "fill": "#1C1C1E",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "bell": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "disp": "none"
+     }
+    },
+    "msg": {
+     "disp": "none",
+     "dx": 0,
+     "dy": 0,
+     "discD": "none",
+     "pie": "M0 0",
+     "flag": "M0 0",
+     "pole": "M0 0",
+     "flagD": "none",
+     "x1": 0,
+     "y1": 0,
+     "a1": "middle",
+     "fs1": 25,
+     "c1": "#8C8C92",
+     "t1": "",
+     "y2": 0,
+     "fs2": 24,
+     "w2": 500,
+     "c2": "#5E5E64",
+     "fam2": "'Atkinson Hyperlegible Next', system-ui, sans-serif",
+     "t2": ""
+    },
+    "b": {
+     "disp": "inline",
+     "i0": {
+      "key": "ring",
+      "d": "M12 4a8 8 0 1 1 0 16a8 8 0 1 1 0-16M12 4a8 8 0 0 1 7.6 10.5",
+      "tf": "translate(-96.2 132.9) rotate(35.9) scale(0.833) translate(-12 -12)",
+      "fill": "none",
+      "stroke": "#5E5E64",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i1": {
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(-12.5 163.5) rotate(4.4) scale(0.833) translate(-12 -12)",
+      "fill": "#5F7EB3",
+      "stroke": "none",
+      "sw": 2,
+      "disp": "inline"
+     },
+     "i2": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i3": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "i4": {
+      "d": "M0 0",
+      "tf": "translate(0 0)",
+      "fill": "none",
+      "stroke": "none",
+      "sw": 0,
+      "disp": "none"
+     },
+     "t0": {
+      "off": 63.3,
+      "s": "82%",
+      "col": "#8C8C92",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t1": {
+      "off": 156.9,
+      "s": "2u",
+      "col": "#5F7EB3",
+      "w": 600,
+      "disp": "inline"
+     },
+     "t2": {
+      "off": 192.8,
+      "s": "1h 20m",
+      "col": "#5E5E64",
+      "w": 500,
+      "disp": "inline"
+     },
+     "t3": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t4": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     },
+     "t5": {
+      "x": 0,
+      "off": 0,
+      "s": "",
+      "col": "#000000",
+      "w": 500,
+      "disp": "none"
+     }
+    }
+   }
+  },
+  {
    "id": "fields-default",
    "values": {
     "v": {
@@ -35132,6 +35751,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -35672,6 +36292,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -36209,6 +36830,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -36749,6 +37371,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -37290,6 +37913,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -37828,6 +38452,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -38369,6 +38994,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -38906,6 +39532,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -39446,6 +40073,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -39986,6 +40614,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -40526,6 +41155,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "307 subpaths",
       "chars": 14402
@@ -41066,6 +41696,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -41606,6 +42237,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -42146,6 +42778,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "220 subpaths",
       "chars": 11081
@@ -42686,6 +43319,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "266 subpaths",
       "chars": 12771
@@ -43226,6 +43860,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -43766,6 +44401,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "266 subpaths",
       "chars": 12771
@@ -44306,6 +44942,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -44846,6 +45483,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -45386,6 +46024,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "539 subpaths",
       "chars": 26195
@@ -45927,6 +46566,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "742 subpaths",
       "chars": 35929
@@ -46468,6 +47108,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "219 subpaths",
       "chars": 10612
@@ -47008,6 +47649,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "126 subpaths",
       "chars": 6168
@@ -47551,6 +48193,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "126 subpaths",
       "chars": 6168
@@ -48094,6 +48737,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -48634,6 +49278,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "360 subpaths",
       "chars": 17700
@@ -49180,6 +49825,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "775 subpaths",
       "chars": 37746
@@ -49721,6 +50367,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "534 subpaths",
       "chars": 25952
@@ -50265,6 +50912,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "189 subpaths",
       "chars": 9409
@@ -50805,6 +51453,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "365 subpaths",
       "chars": 17577
@@ -51351,6 +52000,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "461 subpaths",
       "chars": 23012
@@ -51895,6 +52545,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "126 subpaths",
       "chars": 6168
@@ -52438,6 +53089,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "471 subpaths",
       "chars": 22843
@@ -52982,6 +53634,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "448 subpaths",
       "chars": 21935
@@ -53526,6 +54179,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "126 subpaths",
       "chars": 6292
@@ -54069,6 +54723,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "189 subpaths",
       "chars": 9378
@@ -54619,6 +55274,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -55159,6 +55815,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "250 subpaths",
       "chars": 12608
@@ -55699,6 +56356,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -56249,6 +56907,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "564 subpaths",
       "chars": 28108
@@ -56803,6 +57462,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "94 subpaths",
       "chars": 4663
@@ -57347,6 +58007,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -57897,6 +58558,7 @@
      "chipC": 83
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -58440,6 +59102,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -58980,6 +59643,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -59520,6 +60184,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -60060,6 +60725,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -60600,6 +61266,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "478 subpaths",
       "chars": 23232
@@ -61146,6 +61813,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "16 subpaths",
       "chars": 22115
@@ -61690,6 +62358,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -62231,6 +62900,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "16 subpaths",
       "chars": 22405
@@ -62775,6 +63445,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "14 subpaths",
       "chars": 301
@@ -63325,6 +63996,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -63863,6 +64535,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -64398,6 +65071,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -64932,12 +65606,16 @@
      "chipC": 92
     },
     "dial": {
-     "d1": "M0 0",
-     "f1": "none",
+     "dim": 0.65,
+     "d1": {
+      "path": "503 subpaths",
+      "chars": 24009
+     },
+     "f1": "#B8433F",
      "s1": "none",
      "w1": 1,
-     "o1": 1,
-     "d1D": "none",
+     "o1": 0.743,
+     "d1D": "inline",
      "d2": "M0 0",
      "s2": "none",
      "w2": 1,
@@ -65473,6 +66151,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "250 subpaths",
       "chars": 12174
@@ -66023,6 +66702,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "564 subpaths",
       "chars": 28108
@@ -66577,6 +67257,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "564 subpaths",
       "chars": 28108
@@ -67133,6 +67814,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39015
@@ -67684,6 +68366,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "775 subpaths",
       "chars": 38555
@@ -68228,6 +68911,7 @@
      "chipC": 81
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -68766,6 +69450,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "564 subpaths",
       "chars": 28108
@@ -69320,6 +70005,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "63 subpaths",
       "chars": 3146
@@ -69860,6 +70546,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "366 subpaths",
       "chars": 17597
@@ -70400,6 +71087,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "674 subpaths",
       "chars": 33867
@@ -70944,6 +71632,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "593 subpaths",
       "chars": 28607
@@ -71490,6 +72179,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 38633
@@ -72034,6 +72724,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "503 subpaths",
       "chars": 25144
@@ -72578,6 +73269,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "430 subpaths",
       "chars": 19401
@@ -73121,6 +73813,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "785 subpaths",
       "chars": 39728
@@ -73664,6 +74357,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "3 subpaths",
       "chars": 3537
@@ -74204,6 +74898,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "9 subpaths",
       "chars": 11673
@@ -74744,6 +75439,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "16 subpaths",
       "chars": 22003
@@ -75288,6 +75984,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "16 subpaths",
       "chars": 22003
@@ -75834,6 +76531,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "23 subpaths",
       "chars": 32425
@@ -76378,6 +77076,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "13 subpaths",
       "chars": 16972
@@ -76922,6 +77621,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "13 subpaths",
       "chars": 16972
@@ -77465,6 +78165,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "11 subpaths",
       "chars": 14315
@@ -78008,6 +78709,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "6 subpaths",
       "chars": 3476
@@ -78551,6 +79253,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "19 subpaths",
       "chars": 11046
@@ -79094,6 +79797,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "28 subpaths",
       "chars": 16754
@@ -79641,6 +80345,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "18 subpaths",
       "chars": 10723
@@ -80190,6 +80895,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "28 subpaths",
       "chars": 16952
@@ -80737,6 +81443,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "20 subpaths",
       "chars": 12720
@@ -81284,6 +81991,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "13 subpaths",
       "chars": 8261
@@ -81830,6 +82538,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "url(#ay)",
@@ -82373,6 +83082,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M-200 8.8L200 4.2M-200 19.8L200 -0.3M-200 17.1L200 -3.8",
      "f1": "none",
      "s1": "url(#ax)",
@@ -82910,6 +83620,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M-200 -51.9L200 -59.5M-200 -32.6L200 -65.9M-200 -40.2L200 -74.9M-200 -30.9L200 -34M-200 -24.1L200 -57.3M-200 1.6L200 -4.6M-200 -54.6L200 11.2",
      "f1": "none",
      "s1": "url(#ax)",
@@ -83447,6 +84158,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "13 subpaths",
       "chars": 271
@@ -83994,6 +84706,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "13 subpaths",
       "chars": 271
@@ -84543,6 +85256,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "17 subpaths",
       "chars": 375
@@ -85093,6 +85807,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "10 subpaths",
       "chars": 196
@@ -85640,6 +86355,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "10 subpaths",
       "chars": 196
@@ -86186,6 +86902,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "url(#ax)",
@@ -86726,6 +87443,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -87263,6 +87981,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -87800,6 +88519,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -88341,6 +89061,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -88884,6 +89605,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -89425,6 +90147,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -89966,6 +90689,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -90506,6 +91230,7 @@
      "chipC": 94
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -91046,6 +91771,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -91583,6 +92309,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": "M0 0",
      "f1": "none",
      "s1": "none",
@@ -92124,6 +92851,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "12 subpaths",
       "chars": 16937
@@ -92664,6 +93392,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "12 subpaths",
       "chars": 16937
@@ -93208,6 +93937,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "250 subpaths",
       "chars": 12356
@@ -93748,6 +94478,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "250 subpaths",
       "chars": 12356
@@ -94288,6 +95019,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "250 subpaths",
       "chars": 12356
@@ -94828,6 +95560,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "742 subpaths",
       "chars": 35929
@@ -95369,6 +96102,7 @@
      "chipC": 92
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "742 subpaths",
       "chars": 35929
@@ -95910,6 +96644,7 @@
      "chipC": 90.7
     },
     "dial": {
+     "dim": 1,
      "d1": {
       "path": "775 subpaths",
       "chars": 38565
