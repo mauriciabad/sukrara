@@ -3,25 +3,23 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * Where Garmin's Connect IQ store badge goes: "coming soon" until Sukrara Aura's listing is public (its app id in
- * site.ts). Then the badge and its link come back (the revert of this change).
+ * Garmin's "Available on the Connect IQ Store" badge (black, from Garmin's Connect IQ brand assets, unmodified; English
+ * only, as Garmin gives it), linking Sukrara Aura's listing in the page's language. Its SVG keeps a transparent margin
+ * for its shadow, so it's drawn a little taller than the other stores' 40 px badges to look the same size.
  *   <ConnectIqBadge />
  */
+import connectIq from '../assets/badges/connect-iq-black.svg?url';
+import { STORES } from '../site';
 
 const t = Astro.locals.t;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
 ---
 
-<span class="sk-ciq-soon not-content">{t('site.garmin.soon')}</span>
+<a class="sk-ciq not-content" href={STORES.connectIq(lang)}>
+	<img src={connectIq} alt={t('site.store.connectIq')} width="129" height="44" />
+</a>
 
 <style>
-	.sk-ciq-soon {
-		display: inline-block;
-		padding: 0.5rem 1rem;
-		border: 1px solid var(--sl-color-gray-5);
-		border-radius: 999px;
-		color: var(--sl-color-gray-2);
-		font-weight: 600;
-	}
 	.sk-ciq {
 		display: inline-block;
 		margin: -2px;
