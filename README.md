@@ -99,13 +99,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Lock screen widget with root. No need to unlock or touch the phone.
 - Persistent notification with the widget.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
-- **Sukrara Aura**, a watch face for Garmin watches (Descent Mk3i 43 mm for now): the time and your glucose with its
-  recent hours as a sparkline (or its trend arrow), a glucose rail, the sensor's days or the battery on each side (your
-  choice), what Sukrara wants from you (carbs, insulin, muted)
-  and your own fields (steps, time in range, last treatment, weather, a second time zone…). Its dial is the aura of
-  your glucose: it gathers at your level and spreads the further out of range you are. Always-on and night looks; a private mode shows the value only while
-  you hold the screen. Each reading arrives through Garmin Connect within seconds, with nothing to set up, and an old
-  value never looks current. Settings › Share with apps › Garmin shows what each watch has. English and Spanish.
+- Watch face for Garmin watches.
 - Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
