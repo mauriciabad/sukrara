@@ -1095,6 +1095,9 @@ watch; the watch shows the real value: check it against the phone, never photogr
 - [ ] The run's "always-on" lines: every `aod-*` case under 10 % luminance (very low and LO the brightest). Simulator ›
       Settings › Display Mode › Always On on the very low and LO cases: no luminance warning.
 - [ ] On the watch, a new reading while awake: the bead, trail and arrow glide (0.9 s); the sweep steps once a second.
+- [ ] On the watch, always-on on: a notification while the screen is dim, left untouched until the watch goes back to
+      the face; then a menu left the same way. The face stays (#223: no new Sukrara Aura entry in
+      `GARMIN/Apps/LOGS/CIQ_LOG.YML` / `.BAK` over USB).
 - [ ] The sides (`sides-*`, `sensor-rail-*` in `sim/` beside the references): the glucose rail mirrored on the left (up
       still higher, the dial's focus on its side), the battery and sensor labels right-aligned on the right, both marks
       only with both labels, the warm-up bar, `--` without dates; the run's "combinations" line 0 overlapping. On the

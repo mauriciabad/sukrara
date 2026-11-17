@@ -16,8 +16,11 @@ class AuraView extends WatchUi.WatchFace {
     // low power is drawn in its place.
     const GLIDE_MS = 900;
     const FRAME_MS = 40;
-    var high as Boolean = false; // high power: the frame before was drawn awake after a wrist raise
-    var target as Array? = null; // the angles the last frame aimed at: [bead, trail (Array), arrow]
+    // May the glide run its timer: from a wrist raise or a button (onExitSleep) to onEnterSleep, onHide or onShow.
+    // Timer.start crashes a watch face in low power, and a face shown again (back from a notification or a menu) can
+    // already be in low power with no onEnterSleep to follow (#223).
+    var high as Boolean = false;
+    var target as Array? = null; // the angles the last awake frame aimed at: [bead, trail (Array), arrow]
     var shown as Array? = null; // the angles the last frame drew
     var from as Array? = null; // a glide's start, null when none runs
     var glideStart as Number = 0;
@@ -64,19 +67,34 @@ class AuraView extends WatchUi.WatchFace {
         }
     }
 
+    // the glide's frames; null when the watch refuses the timer (the reading is then drawn in place)
+    function glideFrames() as Timer.Timer? {
+        try {
+            var t = new Timer.Timer();
+            t.start(method(:tick), FRAME_MS, true);
+            return t;
+        } catch (e) {
+            return null;
+        }
+    }
+
     // starts a glide when the angles changed during high power, and draws its frame
     function glide(m as AuraModel) as Void {
         var tgt = [m.beadA, trailDegs(m), m.deg];
-        var awake = high && m.awake;
+        var awake = high && m.awake && AuraWatch.highPower();
         if (awake && target != null && shown != null && moved(tgt, target as Array)) {
             from = shown;
             glideStart = System.getTimer();
             if (timer == null) {
-                timer = new Timer.Timer();
-                (timer as Timer.Timer).start(method(:tick), FRAME_MS, true);
+                timer = glideFrames();
+                if (timer == null) {
+                    from = null;
+                }
             }
         }
-        target = tgt;
+        // only an awake frame is a glide's start: always-on and night draw no trail (or another look), and waking from
+        // them is no new reading
+        target = m.awake ? tgt : null;
         if (from != null) {
             var t = (System.getTimer() - glideStart).toFloat() / GLIDE_MS;
             if (t >= 1 || !awake) {
@@ -98,9 +116,10 @@ class AuraView extends WatchUi.WatchFace {
 
     function onLayout(dc as Graphics.Dc) as Void {}
 
-    // shown (back from a menu, the face picked): awake; onEnterSleep or a low-power display mode follows if not
+    // shown (back from a menu or a notification, the face picked): the awake look; onEnterSleep or a low-power display
+    // mode follows if not. No motion until a wrist raise: the watch may already be in low power (#223).
     function onShow() as Void {
-        high = true;
+        high = false;
         AuraWatch.screen("S", false);
     }
 
@@ -141,6 +160,7 @@ class AuraView extends WatchUi.WatchFace {
     }
 
     function onHide() as Void {
+        high = false;
         stopGlide();
         AuraDraw.release();
     }

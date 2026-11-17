@@ -765,11 +765,15 @@ Not design rules (docs/42 "platform limits are facts"); hints for building it on
 - **Touch-and-hold**: the face's delegate receives the press (`WatchFaceDelegate.onPress`, 4.2.0; the Descent has no
   tap on faces; every watch in the manifest has a touch screen).
 - **Rotation**: affine transforms (4.2.0) rotate the arrow, the bottom icons and the bead; or precompute the points.
-- **Motion** runs only in high-power mode (the ~10 s after a wrist raise): a reading that arrives in low power is
-  drawn in its place, without the glide.
+- **Motion** runs only in high-power mode (the ~10 s after a wrist raise): from `onExitSleep` until `onEnterSleep`,
+  `onHide` or `onShow`, while the display mode says high power. `Timer.start` crashes a watch face in low power, and a
+  face shown again (back from a notification or a menu) can already be in low power with no `onEnterSleep` to follow
+  (#223). A reading that arrives in low power is drawn in its place, without the glide; waking from always-on or night
+  is no new reading.
 - **Awake or always-on**: the last of the watch's callbacks decides: a wrist raise or a button (`onExitSleep`) and
-  `onShow` (back from a menu) → awake; `onEnterSleep` → always-on on an AMOLED; `onDisplayModeChanged` → the display
-  mode. The display mode alone (read in `onShow`) put the face in always-on while the person was looking at it.
+  `onShow` (back from a menu) → awake (`onShow`'s without motion); `onEnterSleep` → always-on on an AMOLED;
+  `onDisplayModeChanged` → the display mode. The display mode alone (read in `onShow`) put the face in always-on while
+  the person was looking at it.
 - **Night** is `DeviceSettings.doNotDisturb`: the profile's sleep and wake times aren't the Sleep Mode schedule on the
   Descent (set per day) and put the face in night in the afternoon; the per-day schedule needs API 6.
 - **Second time zone**: the watch's own Alternate Time Zones aren't open to Connect IQ, so the face keeps its own city

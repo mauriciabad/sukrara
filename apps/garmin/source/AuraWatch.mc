@@ -27,6 +27,12 @@ module AuraWatch {
         return System has :getDisplayMode ? System.getDisplayMode() as Number : 9;
     }
 
+    // The display in high power, where the watch says (API 5): the only time a watch face may start a timer
+    function highPower() as Boolean {
+        var d = displayMode();
+        return d == 0 || d == 9;
+    }
+
     // A screen callback ([event]: S onShow, X onExitSleep, E onEnterSleep, C onDisplayModeChanged) sets always-on, and
     // the face reports it with the display mode (docs/43 "The screen").
     function screen(event as String, low as Boolean) as Void {

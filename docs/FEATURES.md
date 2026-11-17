@@ -2132,8 +2132,9 @@ ages by itself from its own time with the phone away.
   no line reads as the strike-through that means "old".
 - **Seconds sweep** (setting, awake only): a faint tail near the rim in the bead's colour, its leading edge the second
   hand; it steps once a second.
-- **Motion**: on a new reading while the watch is awake, the bead and its trail glide to their new places and the arrow
-  turns (0.9 s, a slight overshoot); a reading that comes while the screen is dim is simply drawn in place.
+- **Motion**: on a new reading in the seconds after a wrist raise or a button, the bead and its trail glide to their
+  new places and the arrow turns (0.9 s, a slight overshoot); a reading that comes while the screen is dim, or with the
+  face back from a menu or a notification, is simply drawn in place.
 
 **From the phone** (docs/43).
 - Sukrara Aura (the Garmin watch face, `contracts/watchface/aura`) shows what this phone's card and glucose

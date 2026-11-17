@@ -409,9 +409,12 @@ runs there under Xvfb (`xvfb-run`, Pillow 9+, ImageMagick's `import` for the scr
   10 px pieces of the tail, the leading line through the radial ramp), then the content.
 - *Motion*: watch faces may run a `Timer` only in high power, the ~10 s after a wrist raise
   ([Watch faces](https://developer.garmin.com/connect-iq/user-experience-guidelines/watch-faces/)): the glide on a new
-  reading runs at 25 fps for 0.9 s then; a reading in low power is drawn in place. The sweep steps at the face's 1 Hz
-  (a smooth sweep would redraw the screen 10–25 times a second for the whole wrist raise). Connect IQ exposes no
-  reduced-motion setting (`DeviceSettings` has none), so the glide can't follow one.
+  reading runs at 25 fps for 0.9 s then; a reading in low power is drawn in place. `Timer.start` in low power crashes
+  the face ([Timer](https://developer.garmin.com/connect-iq/api-docs/Toybox/Timer/Timer.html); the watch puts its
+  default face back), and `onShow` can come in low power (back from a notification), so only `onExitSleep` opens the
+  glide, with the display mode high power, and a refused timer draws the reading in place (#223). The sweep steps at
+  the face's 1 Hz (a smooth sweep would redraw the screen 10–25 times a second for the whole wrist raise). Connect IQ
+  exposes no reduced-motion setting (`DeviceSettings` has none), so the glide can't follow one.
 - *Always-on luminance*: Garmin's rule since the Venu 2 is under 10 % of the screen's luminance
   ([AMOLED FAQ](https://developer.garmin.com/connect-iq/connect-iq-faq/how-do-i-make-a-watch-face-for-amoled-products/));
   `garmin_test.py run` measures every always-on screenshot (the `aod-*` variants `cases.py` adds: very low, LO, a

@@ -132,8 +132,9 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
   [forum](https://forums.garmin.com/developer/connect-iq/f/discussion/369120/backlight-detection)): `onShow` read
   it and `onExitSleep` was ignored. Had the Descent said low power on the way back from a menu, or not called
   `onDisplayModeChanged` on a wrist raise, the face drew its dimmer always-on look (outlined grey time, dimmer
-  palette) while awake: both of the owner's symptoms. Now the last callback decides: `X` and `S` → awake, `E` →
-  always-on on an AMOLED, `C` → the display mode. Reading a wake in logcat's runs: `X@<t>/sent 0` then
+  palette) while awake: both of the owner's symptoms. Now the last callback decides: `X` and `S` → awake (motion only
+  after `X`, #223), `E` → always-on on an AMOLED, `C` → the display mode. Reading a wake in logcat's runs:
+  `X@<t>/sent 0` then
   `Dw@<t>/sent 0` (`Dn` in the sleep window; `sent` is the display mode); `S@<t>/sent 1` or no `C@<t>/sent 0` after
   `X` confirms the old code's mistake.
   **What the device showed** (a4962d408, 15:51 EET): `X@1794837086/sent 0 … Dn@1794837086/sent 0 … E@1794837092/sent
