@@ -216,7 +216,8 @@ lose the simulator, and the harness restarts it. So the `garmin` job, which `gat
 fixed set of 21 (`AURA_CASES` in checks.yml; 2026-11-17: 3.5 min in the simulator, 5 min for the job): the safety states (LO, HI, no readings, old, very low, extremely high,
 muted, sensor ended, phone lost), one case per dial, always-on, private and Spanish. It checks their numbers against
 `expect.json`, the battery label against every row, and each case's picture; it also builds the store package, which
-compiles every watch of the manifest. `garmin-all` runs only on `gh workflow run checks.yml --ref next -f full=true`,
+compiles every watch of the manifest, and runs six cases on the fēnix 9 Pro 51 mm (466 px, the largest screen) against
+`docs/img/aura/ref-466`. `garmin-all` runs only on `gh workflow run checks.yml --ref next -f full=true`,
 after `garmin` and outside `gate` (180-minute timeout): a matrix with one job per watch of `apps/garmin/manifest.xml`
 (`garmin-sdk.sh plan`'s `devices-json`), every case on the Descent, the fixed set (`AURA_GATE_CASES`) on the others
 (artifacts `garmin-test-all-<watch>`). Both jobs start from `.github/actions/garmin` (packages, SDK, device files, cache).
@@ -348,7 +349,7 @@ face signed with the same key, and the store app is tied to it. `CIQ_KEY` points
 | Release `.prg` (no debug code) | `apps/garmin/build.sh` → `apps/garmin/bin/SukraraAura.prg` (`debug`, `cases` for the others) |
 | Store packages (`.iq`, signed with the store key, verified) | `tools/release/garmin-release.sh <version>` (public) or `--beta` (the beta app id) → `apps/garmin/bin/dist/`; uploading: [docs/20 › Connect IQ store](20-publishing.md#connect-iq-store-the-owners-steps-beta-first-then-public) |
 | The face's words against `words.json` | `python3 apps/garmin/tools/garmin_test.py words` |
-| Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]` |
+| Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz --with pyobjc-framework-ScreenCaptureKit apps/garmin/tools/garmin_test.py run <dir> [<core refs>]` |
 | References without the dial, halo, sweep | `node apps/garmin/tools/core_refs.mjs <dir>` (Chrome, like `tools/watchface/build.mjs`) |
 | Fonts and icons | `uv run apps/garmin/tools/fonts.py` (`--check`) |
 | One screenshot of the simulator | `uv run apps/garmin/tools/simshot.py out.png` |
@@ -367,16 +368,30 @@ and, against the dial-less references, `<dir>/diff-core`). The loader is debug o
 The loader is a *watch-app* (its frames from a 1 s timer): the face and the layout dump together don't fit a face's
 128 KB, the face alone does (its memory is in the run's "cost" lines). It also shows always-on variants of the
 brightest states (`aod-*`, `tools/cases.py`), measured against Garmin's 10 % luminance rule. `AURA_CASES=id,id…`
-runs only those cases, `CIQ_DEVICE=<product>` another watch of the manifest (their pictures are the
-Descent's: same screen, same references). monkeydo sometimes loses the simulator mid-run (it exits 0 while the app goes on; a new
+runs only those cases, `CIQ_DEVICE=<product>` another watch of the manifest (a 390 px one: the Descent's pictures;
+another size: `docs/img/aura/ref-<N>/`, the cases of `cases.json` `sizes`, and the 390 numbers less the grain's dot
+count). monkeydo sometimes loses the simulator mid-run (it exits 0 while the app goes on; a new
 monkeydo can't reach that simulator): the run then quits the simulator and goes on with the cases left.
 A filled anti-aliased circle under 1 px drawn into a `BufferedBitmap` crashes the simulated firmware (the blue
 triangle): the dial draws such dots as single pixels.
 
-**Which watches** (SPEC.md §1): the round 390 × 390 AMOLED products with `enhancedGraphicSupport` in their
-`compiler.json`; the face needs `Dc.setFill` / `setStroke` and PNG-packed atlases (monkeyc warns "Packing format 'png'
-is not supported" on the others, and they crash at the first `setFill`). `build.sh export` builds every product,
-`CIQ_DEVICE=<product> build.sh` one; the SDK Manager installs a watch's device files.
+**Which watches** (SPEC.md §1): the round AMOLED products (360, 390, 416, 454, 466 px) with `enhancedGraphicSupport`
+in their `compiler.json` and no sub-screen; the face needs `Dc.setFill` / `setStroke` and PNG-packed atlases (monkeyc
+warns "Packing format 'png' is not supported" on the others, and they crash at the first `setFill`). `build.sh export`
+builds every product, `CIQ_DEVICE=<product> build.sh` one; the SDK Manager installs a watch's device files.
+
+**Screen sizes.** The model is in the Descent's reference px at every size; `AuraDraw` scales every length once as it
+draws (`AuraDraw.u`, s = width / 390; at 390 the reference's own numbers, so the Descent's pixels don't change), the
+dial's cache is the screen's size. `fonts.py` renders the fonts and icons at their size × s into
+`resources-round-<N>x<N>/` (the compiler takes the device family's folder; a jungle whose manifest isn't next to it
+names them: `beta.jungle`, `memory.jungle`). A new size: add it to `fonts.py` `SIZES` and `cases.json` `sizes`, run
+`fonts.py` and `tools/watchface/build.mjs` (its references), add the products.
+
+**Memory** (#217; the face's 128 KB): `CIQ_DEVICE=<product> apps/garmin/build.sh memory`, then `monkeydo
+bin/SukraraAura-memory.prg <product>`: the face (a watch face, its own code) with the heaviest state through the phone
+link (high with the pill, 3 h of history and the sparkline, both glucose rails, the last treatment, the sensor's
+dates) prints `MEM|width|after the layout|after the paint|peak|total` each frame (bytes in use; the paint's value
+holds the fonts it loaded). The simulator's File › View Memory shows the same face's peak.
 
 **On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to
 `GARMIN/Apps/SUKAURA.PRG` (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only that file is written; an older copy of it is
@@ -400,7 +415,8 @@ runs there under Xvfb (`xvfb-run`, Pillow 9+, ImageMagick's `import` for the scr
   variant (FreeType's stroker), not drawn twice; the halo has grown variants of the time and value (`t*h`, `v*h`).
 - *Dials and alpha*: API 4's ARGB colours (`Graphics.createColor`, `setFill` / `setStroke`) and anti-aliasing work on
   this AMOLED (`alphaBlendingSupport` in the device's `compiler.json`), but Connect IQ has no gradients and blending is
-  per primitive. So the dial is painted once into a 390 × 390 `BufferedBitmap` (graphics pool) and copied on every
+  per primitive. So the dial is painted once into a screen-sized `BufferedBitmap` (graphics pool; full alpha at 390 px,
+  `ALPHA_BLENDING_PARTIAL` elsewhere: half the pool, which 466 px needs, its pixels a few levels off) and copied on every
   frame; it is painted again only when its inputs change (a new reading, the mode, a setting). In that cache each
   mark is drawn opaque in its colour pre-multiplied by its opacity over black (the cache holds only the dial and no two
   marks overlap), and each gradient becomes one opacity per mark: a contour ring the fade at its radius, a wave at its

@@ -1,0 +1,16 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The face's own memory (build.sh memory, debug only, #217): the face plus source-memory/ (its heaviest state through
+# the phone link, a MEM line a frame), as a watch face (128 KB), entry AuraMemoryApp (the manifest build.sh writes).
+project.manifest = bin/memory/manifest.xml
+project.typecheck = 1
+base.sourcePath = source;source-memory
+base.resourcePath = resources
+base.lang.spa = resources-spa
+# the screen sizes' fonts and icons (tools/fonts.py): the default finds them next to the manifest, which is in bin/
+round-360x360.resourcePath = $(round-360x360.resourcePath);resources-round-360x360
+round-390x390.resourcePath = $(round-390x390.resourcePath);resources-round-390x390
+round-416x416.resourcePath = $(round-416x416.resourcePath);resources-round-416x416
+round-454x454.resourcePath = $(round-454x454.resourcePath);resources-round-454x454
+round-466x466.resourcePath = $(round-466x466.resourcePath);resources-round-466x466

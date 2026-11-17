@@ -53,7 +53,7 @@
   "site.verify.source": "Su código fuente",
   "site.req.android": "Android 16 o posterior · 64 bits",
   "site.req.mac": "Apple silicon · macOS 15 o posterior",
-  "site.req.garmin": "Con Sukrara para Android · relojes Garmin con pantalla AMOLED redonda de 390 × 390",
+  "site.req.garmin": "Con Sukrara para Android · relojes Garmin con pantalla AMOLED redonda",
   "site.badge.obtainium": "Añádela a",
   "site.badge.github": "Disponible en",
   "site.share.label": "El camino de una lectura: mi móvil lee mi sensor y envía cada lectura por Bluetooth a mi Mac, a mi lado, y por internet a relés de Nostr, que la pasan, cifrada de extremo a extremo, a mi Mac, al móvil de mi pareja y a una pantalla en casa.",

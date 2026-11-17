@@ -196,10 +196,25 @@ class AuraCasesView extends AuraView {
                 (t2 - t1) + "|" + st.usedMemory + "|" + st.totalMemory);
         }
         if (i != shown && !AuraDials.painting()) {
-            // the case is on screen: its layout (the dial paints a few units a frame, so this call has room)
+            // the case is on screen: its layout, printed from a timer (a call of its own: the frame's paint and the dump
+            // together can trip the watchdog)
             shown = i;
             System.println("CASE " + i + " " + AuraCases.id(i) + " " + AuraCases.filter(i));
-            AuraDump.dump(AuraCases.id(i), m);
+            dumpId = AuraCases.id(i);
+            dumpModel = m;
+            dumper = new Timer.Timer();
+            dumper.start(method(:dump), 50, false);
+        }
+    }
+
+    var dumper as Timer.Timer? = null;
+    var dumpId as String = "";
+    var dumpModel as AuraModel? = null;
+
+    function dump() as Void {
+        if (dumpModel != null) {
+            AuraDump.dump(dumpId, dumpModel as AuraModel);
+            dumpModel = null;
         }
     }
 }

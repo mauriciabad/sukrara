@@ -14,8 +14,8 @@ fail() {
   exit 1
 }
 [ -s "$PRG" ] || fail "no $PRG"
-# the case loader's names and data (source-cases, build/cases) are never in a release
-for s in AuraCases AuraDump AuraCaseTable glucose-in-range; do
+# the case loader's and the memory build's names and data (source-cases, source-memory, build/cases) are never in a release
+for s in AuraCases AuraDump AuraCaseTable AuraMemory glucose-in-range; do
   if LC_ALL=C grep -a -q "$s" "$PRG"; then fail "$PRG contains '$s': a debug build or the case loader"; fi
 done
 # the face's id (manifest.xml), as bytes in the executable

@@ -44,6 +44,7 @@ class Groups(unittest.TestCase):
         # too), the reference renderer, its CI setup (tools/: android too)
         self.assertEqual(changes.groups(DIFFS["garmin"]), dict(none, website=True, garmin=True))
         self.assertEqual(changes.groups(["docs/img/aura/ref/hero.png"]), dict(none, website=True, garmin=True))
+        self.assertEqual(changes.groups(["docs/img/aura/ref-454/glucose-lo.png"]), dict(none, website=True, garmin=True))
         self.assertEqual(changes.groups(["docs/img/aura/store/hero.png"]), dict(none, website=True))
         self.assertEqual(changes.groups(["tools/ci/garmin.lock"]), dict(none, android=True, garmin=True))
         # the reference renderer: the face's tests and the site's playground draw with it

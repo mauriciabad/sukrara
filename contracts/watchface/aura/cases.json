@@ -1,8 +1,44 @@
 {
- "about": "Sukrara Aura reference cases (SPEC.md §9). Each case: id, group, title, expect (what must be true, in words), cfg (the inputs; anything missing takes the default in SPEC.md §3). Reference renders: docs/img/aura/ref/<id>.png (390×390, the screen 1:1, no bezel). Expected numbers: expect.json. Store/web renders: docs/img/aura/store/<id>.png (1168 px with the bezel, transparent). Regenerate both with node tools/watchface/build.mjs.",
+ "about": "Sukrara Aura reference cases (SPEC.md §9). Each case: id, group, title, expect (what must be true, in words), cfg (the inputs; anything missing takes the default in SPEC.md §3). Reference renders: docs/img/aura/ref/<id>.png (390×390, the screen 1:1, no bezel); the other screen sizes: sizes. Expected numbers: expect.json. Store/web renders: docs/img/aura/store/<id>.png (1168 px with the bezel, transparent). Regenerate both with node tools/watchface/build.mjs.",
  "defaults": {
   "time": "10:09:36",
   "date": "Monday 16 November 2026"
+ },
+ "sizes": {
+  "about": "The other screens (SPEC.md §1): these cases are also drawn at each size, cfg.screen and the picture N px across (docs/img/aura/ref-<N>/<id>.png); their numbers are the 390 ones (expect.json).",
+  "screens": [
+   360,
+   416,
+   454,
+   466
+  ],
+  "cases": [
+   "glucose-in-range",
+   "glucose-lo",
+   "glucose-hi",
+   "glucose-no-readings",
+   "glucose-old",
+   "alerts-very-low",
+   "alerts-extremely-high",
+   "alerts-muted-low",
+   "sensor-ended",
+   "sensor-phone-lost",
+   "modes-private",
+   "modes-spanish",
+   "dial-grain-ideal",
+   "dial-contours-ideal",
+   "dial-waterline-ideal",
+   "dial-lasers-ideal",
+   "dial-glow-ideal",
+   "dial-black-ideal",
+   "dial-map-ideal",
+   "dial-grain-very-high",
+   "fields-meal",
+   "sides-battery-sensor",
+   "fields-trend-arrow",
+   "sensor-warmup",
+   "halo-box"
+  ]
  },
  "cases": [
   {

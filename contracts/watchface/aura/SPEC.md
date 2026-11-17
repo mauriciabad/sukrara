@@ -54,6 +54,20 @@ seconds as a faint sweep at the rim.
   vívoactive 6 (`apps/garmin/manifest.xml`). Every one has a touch screen. The others of that screen lack enhanced
   graphics and crash at the first `setFill` (simulator, 2026-11-17): Approach S50, Descent G2, Forerunner 70, 165 /
   165 Music, Instinct 3 AMOLED 45 mm (also no touch), vívoactive 5; they need a dial and atlases drawn without them.
+- **Other round AMOLED sizes: the same face, scaled.** Everything in this spec is in *reference px*, the Descent's. A
+  screen N px across draws it × **s = N / 390**, once, as it draws (the layout, `expect.json` and every number here
+  stay the 390 ones; the reference does it by drawing its SVG N px wide, `cfg.screen` = N). The fonts and icons are
+  rendered at their size × s (`apps/garmin/tools/fonts.py`, one resource folder per size), so text stays crisp and
+  every proportion is the Descent's; physically the screens are all 12.2–13 px/mm (310–327 ppi), so the face is as big
+  on the wrist as the screen is. Rules per size, the only ones: the grain's pitch is a whole number of device px
+  (§6.12); the always-on shift stays Garmin's ±2 device px (§8); the glow's rings and the sparkline's fade rows step by device
+  px. The watches (enhanced graphics, API ≥ 5, 128 KB, every one with touch):
+  **360**: Forerunner 265S, Venu 2S · **416**: Approach S72 43 mm, D2 Air X10, D2 Mach 1, epix (Gen 2), epix Pro (Gen 2)
+  47 mm, fēnix 8 43 mm, fēnix 9 43 mm, fēnix 9 Pro 43 mm, fēnix E, Forerunner 265, Venu 2, Venu 2 Plus · **454**:
+  Approach S70 47 mm, Approach S72 47 mm, D2 Mach 2, D2 Mach 2 Pro, Descent Mk3 / Mk3i 51 mm, epix Pro (Gen 2) 51 mm,
+  fēnix 8 47 / 51 mm, fēnix 8 Pro, fēnix 9 47 / 51 mm, fēnix 9 Pro 47 mm, Forerunner 570 47 mm, Forerunner 965,
+  Forerunner 970, MARQ (Gen 3), Venu 3, Venu 4 45 mm · **466**: fēnix 9 Pro 51 mm. Left out: the Instinct 3 AMOLED
+  50 mm (a sub-screen window over the top right, where the glucose rail runs; no enhanced graphics, no touch).
 - **The printed bezel** (24-hour ring, "NO-FLY TIME – ALT TZ", GARMIN, four screws at 1:30 / 4:30 / 7:30 / 10:30) is
   *outside* the pixels. It is drawn in the mockups only (`bezel: true`); the face never draws it. The design aligns to
   it: the rails run screw to screw.
@@ -194,6 +208,7 @@ default is the reference's (every case starts from it):
 | field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); others fixed in the reference: 14°, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8 | 6420, 82 | watch / Sukrara (time in range, until the end of the phone's day) |
 | settings | §11 | | |
 | side elements | `sideL`, `sideR`: `battery`, `sensor`, `level`, `none` | battery, level | the settings (§11) |
+| screen | `screen`: px across (§1: the face drawn × screen / 390) | 390 | the watch's display |
 | mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze` | 584, true, carbon | not the face's |
 
 ## 4. Layout: what goes where
@@ -567,7 +582,7 @@ Common inputs (awake and at night; nothing in always-on):
 
 | Dial (setting) | Drawing |
 |---|---|
-| **grain** (default) | Dots on a 12 px grid: rows y = −192, −180, … 192, columns x = −192 … 192, shifted +6 on rows where y/12 is odd; only dots with x² + y² ≤ 190². Each dot a filled circle in the colour. Radius = rmax·exp(−((y − levelY)/σ)²), σ = 16 + 20·ext + 175·ext², rmax = (0.75 + 1.5·ext)·I^0.9, capped 5.4, dots under 0.3 skipped. Layer opacity clamp((0.42 + 0.3·ext)·min(1.25, I), 0.2, 0.9). Not current: every dot 0.6, opacity 0.3. |
+| **grain** (default) | Dots on a 12 px grid: rows y = −192, −180, … 192, columns x = −192 … 192, shifted +6 on rows where y/12 is odd; only dots with x² + y² ≤ 190². On another screen (§1) the pitch is a whole number of device px, p = round(12·s) (13 at 416, 14 at 454 and 466, 11 at 360): dot (i, j), i and j from −16 to 16, at (p·i (+ p/2 on odd rows), p·j) / s, so the dots never beat against the pixels. Each dot a filled circle in the colour. Radius = rmax·exp(−((y − levelY)/σ)²), σ = 16 + 20·ext + 175·ext², rmax = (0.75 + 1.5·ext)·I^0.9, capped 5.4, dots under 0.3 skipped. Layer opacity clamp((0.42 + 0.3·ext)·min(1.25, I), 0.2, 0.9). Not current: every dot 0.6, opacity 0.3. |
 | **focus** | The contours and the lasers centre on (fx, levelY): fx = 30 (the bead on the right), −30 when the glucose rail is only on the left, 0 with it on both sides (`sides-level-left-contours`, `sides-level-twice-contours`). The glow sits on the bead (the left one with the rail only on the left), at (0, its height) with a rail on both sides. |
 | **contours** | Soft round rings that never touch, centred at (fx, levelY): ring k = 1, 2, … while k·spc < Rf, spc = 22 − 7·ext, Rf = 85 + 270·ext (240 not current); r(θ) = k·spc·(1 + 0.05 sin(2θ + 0.9) + 0.035 sin(3θ + 2.1)) + spc·0.14·spd·sin(4θ + 0.5k), point = (fx + r cos θ, levelY + r sin θ), 120 samples. Width 1.3·(0.8 + 0.3·I). Opacity by distance from the centre (radial, radius Rf): 1, 0.72, 0.36, 0.11, 0 × peak at 0, 0.22, 0.48, 0.76, 1; peak = clamp((0.36 + 0.4·ext)·I, 0.1, 0.95) (0.22 not current, dashed 2 / 6). A high paints the top of the dial, a low the bottom. |
 | **waterline** | wave(y₀, a): a polyline, x from −196 to 196 every 6, y = y₀ + a·sin(x/14 + 0.8); a = 2 + 7·spd. The waterline wave(levelY, a): 2 px, the colour, opacity 0.75 (not current: 0.32, grey, dashed 2 / 6; no value: at y = 150). Below it (current only): waves at levelY + k·step, amplitude a·max(0.35, 1 − 0.04k), while k·step < depth and above y 196; step = clamp(9 − 3.4·(I − 0.45), 5, 9), depth = 45 + 150·ext; 1.3 px, opacity fading linearly from peak at levelY to 0 at levelY + max(20, depth); peak = clamp((0.36 + 0.32·ext)·I, 0.12, 0.9). |
@@ -698,7 +713,8 @@ turns saturated in range except the slow sweep; night stays dim and calm (the di
    other numbers are computed even when hidden, so compare them only where it is drawn, and compare `disp` always.
    `layout` holds the row maths (§4), `info` the dial's inputs (ext, toward, I, spd, levelY, idealY, colour).
 2. **Pictures.** Add a debug-only way to load a case into the face (CLAUDE.md: debug code never in release builds),
-   take the simulator's 390 × 390 screenshot, and diff it with `docs/img/aura/ref/<id>.png` (for example ImageMagick
+   take the simulator's 390 × 390 screenshot (another screen: N × N against `docs/img/aura/ref-<N>/<id>.png`, the
+   cases of `cases.json` `sizes`), and diff it with `docs/img/aura/ref/<id>.png` (for example ImageMagick
    `compare -metric AE -fuzz 15% ref.png sim.png diff.png`). Fonts rasterise differently, so expect differences on
    glyph edges only: **any difference that is not a glyph edge is a bug** (an element moved, a colour, a missing
    piece). Keep the diff images for review.

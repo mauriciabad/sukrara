@@ -10,13 +10,28 @@ import Toybox.WatchUi;
 // Draws an AuraModel (SPEC.md §4 z-order). Every position comes from the model; this file only paints.
 module AuraDraw {
     // the screen's centre for shapes (a shape at device x covers x - 0.5 .. x + 0.5: the reference's 0 is the edge between
-    // pixels 194 and 195), plus the always-on shift; bitmaps (text, glyphs, icons) are placed by their pixels' corners,
-    // at cx + 0.5
+    // pixels 194 and 195 on the 390 px screen), plus the always-on shift; bitmaps (text, glyphs, icons) are placed by their
+    // pixels' corners, at cx + 0.5
     var cx as Float = 194.5;
     var cy as Float = 194.5;
+    // device px per reference px (SPEC.md §1): the screen's width / 390. The model is in reference px at every size; every
+    // length is multiplied by it here, once, as it is drawn (1.0 at 390: the reference's own numbers)
+    var k as Float = 1.0;
     var atlases as Dictionary = {};
     var used as Dictionary = {}; // the fonts the frame being drawn uses
     var icons as Graphics.BitmapReference or Graphics.BitmapType or Null = null;
+    var sizeTable as Array? = null; // the screen size's [Connect IQ fonts' baselines, icons' boxes] (tools/fonts.py)
+
+    function table() as Array {
+        if (sizeTable == null) {
+            var t = WatchUi.loadResource(Rez.JsonData.sizeTable) as Array;
+            sizeTable = [t[0], StringUtil.convertEncodedString(t[1], {
+                :fromRepresentation => StringUtil.REPRESENTATION_STRING_BASE64,
+                :toRepresentation => StringUtil.REPRESENTATION_BYTE_ARRAY,
+            })];
+        }
+        return sizeTable as Array;
+    }
 
     // a font: its atlas (8-bit alpha, white), glyphs, boxes and baseline (AuraFontTable, tools/fonts.py); or, for the
     // small straight texts, [the Connect IQ font, baseline]
@@ -26,7 +41,7 @@ module AuraDraw {
         if (a == null) {
             var t = AuraFontTable.atlas(key);
             if (t[1] instanceof Number) {
-                a = [WatchUi.loadResource(t[0]), t[1]];
+                a = [WatchUi.loadResource(t[0]), (table()[0] as Array)[t[1] as Number]];
                 atlases[key] = a;
                 return a;
             }
@@ -57,6 +72,7 @@ module AuraDraw {
     function releaseFonts() as Void {
         atlases = {};
         icons = null;
+        sizeTable = null;
     }
 
     function argb(col as Number, alpha as Float) as Number {
@@ -93,24 +109,24 @@ module AuraDraw {
                 fr = fr.get();
             }
             dc.setColor(col, Graphics.COLOR_TRANSPARENT);
-            var left = cx + 0.5 + x;
+            var left = cx + 0.5 + x * k;
             if (just == Graphics.TEXT_JUSTIFY_CENTER) {
                 left -= dc.getTextWidthInPixels(s, fr) / 2.0;
             } else if (just == Graphics.TEXT_JUSTIFY_RIGHT) {
                 left -= dc.getTextWidthInPixels(s, fr);
             }
-            dc.drawText(Math.floor(left + 0.5), cy + 0.5 + baseline - (a[1] as Number) - 1, fr, s, Graphics.TEXT_JUSTIFY_LEFT);
+            dc.drawText(Math.floor(left + 0.5), cy + 0.5 + baseline * k - (a[1] as Number) - 1, fr, s, Graphics.TEXT_JUSTIFY_LEFT);
             return;
         }
         var chars = a[1] as String;
         var m = a[2] as ByteArray;
-        var pen = cx + 0.5 + x;
+        var pen = cx + 0.5 + x * k;
         if (just == Graphics.TEXT_JUSTIFY_CENTER) {
             pen -= arcWidth(key, s, 0) / 2.0;
         } else if (just == Graphics.TEXT_JUSTIFY_RIGHT) {
             pen -= arcWidth(key, s, 0);
         }
-        var top = cy + 0.5 + baseline - (a[3] as Number);
+        var top = cy + 0.5 + baseline * k - (a[3] as Number);
         var cs = s.toCharArray();
         for (var i = 0; i < cs.size(); i++) {
             var k = chars.find(cs[i].toString());
@@ -134,25 +150,26 @@ module AuraDraw {
         }
     }
 
-    // a line with round caps
+    // a line with round caps (reference px, as every shape below)
     function line(dc as Dc, x1 as Numeric, y1 as Numeric, x2 as Numeric, y2 as Numeric, col as Number, alpha as Float, w as Numeric) as Void {
-        stroke(dc, col, alpha, w);
-        dc.drawLine(cx + x1, cy + y1, cx + x2, cy + y2);
+        var wd = w * k;
+        stroke(dc, col, alpha, wd);
+        dc.drawLine(cx + x1 * k, cy + y1 * k, cx + x2 * k, cy + y2 * k);
         fill(dc, col, alpha);
-        dc.fillCircle(cx + x1, cy + y1, w / 2.0);
-        dc.fillCircle(cx + x2, cy + y2, w / 2.0);
+        dc.fillCircle(cx + x1 * k, cy + y1 * k, wd / 2.0);
+        dc.fillCircle(cx + x2 * k, cy + y2 * k, wd / 2.0);
     }
 
     // an arc from a1 to a2 clockwise (degrees clockwise from 12), butt caps
     function arc(dc as Dc, r as Numeric, a1 as Numeric, a2 as Numeric, col as Number, alpha as Float, w as Numeric) as Void {
-        stroke(dc, col, alpha, w);
-        dc.drawArc(cx, cy, r, Graphics.ARC_CLOCKWISE, 90 - a1, 90 - a2);
+        stroke(dc, col, alpha, w * k);
+        dc.drawArc(cx, cy, r * k, Graphics.ARC_CLOCKWISE, 90 - a1, 90 - a2);
     }
 
     function poly(dc as Dc, pts as Array, col as Number, alpha as Float) as Void {
         var q = [];
         for (var i = 0; i < pts.size(); i++) {
-            q.add([cx + pts[i][0], cy + pts[i][1]]);
+            q.add([cx + pts[i][0] * k, cy + pts[i][1] * k]);
         }
         fill(dc, col, alpha);
         dc.fillPolygon(q);
@@ -160,16 +177,21 @@ module AuraDraw {
 
     // one icon of icons.png centred at (x, y), rotated by rot degrees, tinted
     function icon(dc as Dc, name as String, size as Number, x as Numeric, y as Numeric, rot as Numeric, col as Number) as Void {
-        var b = AuraFontTable.icon(name, size);
-        if (b == null) {
+        var n = AuraFontTable.icon(name, size);
+        if (n == null) {
             return;
         }
-        var box = b[2] as Number;
+        // its box in icons.png: x, y (16 bit), the side
+        var m = table()[1] as ByteArray;
+        var o = (n as Number) * 5;
+        var bx = (m[o] << 8) | m[o + 1];
+        var by = (m[o + 2] << 8) | m[o + 3];
+        var box = m[o + 4];
         var t = new Graphics.AffineTransform();
         t.rotate(rot * Math.PI / 180);
-        t.translate(-box / 2.0 - (b[0] as Number), -box / 2.0 - (b[1] as Number));
-        dc.drawBitmap2(cx + 0.5 + x, cy + 0.5 + y, iconSheet(), {
-            :bitmapX => b[0], :bitmapY => b[1], :bitmapWidth => box, :bitmapHeight => box,
+        t.translate(-box / 2.0 - bx, -box / 2.0 - by);
+        dc.drawBitmap2(cx + 0.5 + x * k, cy + 0.5 + y * k, iconSheet(), {
+            :bitmapX => bx, :bitmapY => by, :bitmapWidth => box, :bitmapHeight => box,
             :tintColor => col, :filterMode => Graphics.FILTER_MODE_BILINEAR, :transform => t,
         });
     }
@@ -193,7 +215,8 @@ module AuraDraw {
     }
 
     // text along a circle of radius r, starting at arc length s0 from the angle a0 (degrees); top = clockwise over the
-    // top (glyph tops outward), else counter-clockwise along the bottom (tops inward); returns the arc length after it
+    // top (glyph tops outward), else counter-clockwise along the bottom (tops inward); returns the arc length after it.
+    // Device px (r, s0, spacing and the result), like the atlas's advances (arcWidth too)
     function arcText(dc as Dc, key as String, s as String, r as Numeric, a0 as Numeric, s0 as Numeric, top as Boolean, spacing as Numeric, col as Number) as Float {
         var a = atlas(key);
         var chars = a[1] as String;
@@ -241,8 +264,10 @@ module AuraDraw {
     // ---------------------------------------------------------------------------------------------------------------
 
     function draw(dc as Dc, m as AuraModel, shiftX as Numeric, shiftY as Numeric) as Void {
-        cx = 194.5 + shiftX;
-        cy = 194.5 + shiftY;
+        var w = dc.getWidth();
+        k = w / 390.0;
+        cx = w / 2.0 - 0.5 + shiftX;
+        cy = w / 2.0 - 0.5 + shiftY;
         dc.setAntiAlias(true);
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
@@ -261,7 +286,7 @@ module AuraDraw {
         message(dc, m);
         bottomFields(dc, m);
         stroke(dc, 0x121214, 1.0, 1);
-        dc.drawCircle(cx, cy, 194.5);
+        dc.drawCircle(cx, cy, w / 2.0 - 0.5);
         // keep only the fonts this frame used (the sizes change with the rows: the others would pile up in the heap)
         var ks = atlases.keys();
         for (var i = 0; i < ks.size(); i++) {
@@ -275,12 +300,14 @@ module AuraDraw {
     function date(dc as Dc, m as AuraModel) as Void {
         var fill1 = m.aod ? m.c("dim") : m.c("soft");
         var fill2 = m.aod ? m.c("soft") : m.c("ink");
-        var w = arcWidth("d26", m.dateWd, 2) + arcWidth("d26b", m.dateDay, 2) + arcWidth("d26", m.dateMo, 2);
-        var L = 160 * 120 * Math.PI / 180;
+        var sp = 2 * k;
+        var r = 160 * k;
+        var w = arcWidth("d26", m.dateWd, sp) + arcWidth("d26b", m.dateDay, sp) + arcWidth("d26", m.dateMo, sp);
+        var L = r * 120 * Math.PI / 180;
         var s = L / 2 - w / 2;
-        s = arcText(dc, "d26", m.dateWd, 160, 300, s, true, 2, fill1);
-        s = arcText(dc, "d26b", m.dateDay, 160, 300, s, true, 2, fill2);
-        arcText(dc, "d26", m.dateMo, 160, 300, s, true, 2, fill1);
+        s = arcText(dc, "d26", m.dateWd, r, 300, s, true, sp, fill1);
+        s = arcText(dc, "d26b", m.dateDay, r, 300, s, true, sp, fill2);
+        arcText(dc, "d26", m.dateMo, r, 300, s, true, sp, fill1);
     }
 
     function topField(dc as Dc, m as AuraModel) as Void {
@@ -387,8 +414,8 @@ module AuraDraw {
         }
         var p1 = AuraMath.P(r1, a);
         var p2 = AuraMath.P(r2, a);
-        stroke(dc, col, 1.0, w);
-        dc.drawLine(cx + p1[0], cy + p1[1], cx + p2[0], cy + p2[1]);
+        stroke(dc, col, 1.0, w * k);
+        dc.drawLine(cx + p1[0] * k, cy + p1[1] * k, cx + p2[0] * k, cy + p2[1] * k);
     }
 
     // an arc of the glucose rail from a1 to a2 (clockwise on the right), mirrored on the left
@@ -435,23 +462,24 @@ module AuraDraw {
             var t = m.trail[i] as Array;
             var p = AuraMath.P(182, t[0]);
             fill(dc, col, t[2] as Float);
-            dc.fillCircle(cx + sg * p[0], cy + p[1], t[1]);
+            dc.fillCircle(cx + (sg * p[0]) * k, cy + p[1] * k, t[1] * k);
         }
         var b = AuraMath.P(182, m.beadDrawA);
-        var bx = cx + sg * b[0];
+        var bx = cx + (sg * b[0]) * k;
+        var by = cy + b[1] * k;
         if (!m.struck && m.awake) {
             fill(dc, col, 0.2);
-            dc.fillCircle(bx, cy + b[1], 13);
+            dc.fillCircle(bx, by, 13 * k);
         }
-        var r = m.aod ? 6 : 7;
+        var r = (m.aod ? 6 : 7) * k;
         if (m.struck) {
             fill(dc, 0x000000, 1.0);
-            dc.fillCircle(bx, cy + b[1], r);
-            stroke(dc, m.c("grey"), 1.0, 2.4);
-            dc.drawCircle(bx, cy + b[1], r);
+            dc.fillCircle(bx, by, r);
+            stroke(dc, m.c("grey"), 1.0, 2.4 * k);
+            dc.drawCircle(bx, by, r);
         } else {
             fill(dc, m.beadCol, 1.0);
-            dc.fillCircle(bx, cy + b[1], r);
+            dc.fillCircle(bx, by, r);
         }
         if (m.lo || m.hi) {
             var t = AuraMath.P(182, m.lo ? 139.5 : 40.5);
@@ -467,7 +495,7 @@ module AuraDraw {
         }
         if (m.inverted) {
             fill(dc, m.blkCol, 1.0);
-            dc.fillRoundedRectangle(cx + m.blk[0], cy + m.blk[1], m.blk[2], m.blk[3], 12);
+            dc.fillRoundedRectangle(cx + m.blk[0] * k, cy + m.blk[1] * k, m.blk[2] * k, m.blk[3] * k, 12 * k);
         }
         var key = "v" + m.V.toString();
         var cs = m.vStr.toCharArray();
@@ -483,8 +511,8 @@ module AuraDraw {
             }
         }
         if (m.ringD) {
-            stroke(dc, m.vFill, 1.0, m.ringW);
-            dc.drawCircle(cx + m.ax, cy + m.ay, m.ringR);
+            stroke(dc, m.vFill, 1.0, m.ringW * k);
+            dc.drawCircle(cx + m.ax * k, cy + m.ay * k, m.ringR * k);
         }
         if (m.revealD && m.reveal[1] > m.reveal[0]) {
             line(dc, m.reveal[0], m.reveal[2], m.reveal[1], m.reveal[2], m.c("now"), 1.0, 3);
@@ -528,17 +556,23 @@ module AuraDraw {
         var tight = m.c("tight");
         var in0 = AuraMath.max(top, m.sy);
         var in1 = AuraMath.min(bot, m.sy + m.SH);
+        var x = cx + m.sx * k;
+        var sw = m.SW * k;
         if (in1 > in0) {
             fill(dc, tight, 0.09);
-            dc.fillRectangle(cx + m.sx, cy + in0, m.SW, in1 - in0);
+            dc.fillRectangle(x, cy + in0 * k, sw, k == 1.0 ? in1 - in0 : in1 * k - in0 * k);
         }
-        for (var y = top; y < bot; y += 1) {
-            if (y >= m.sy && y < m.sy + m.SH) {
-                y = m.sy + m.SH - 1;
+        // the fade bands a device row at a time
+        var b0 = bot * k;
+        var s0 = m.sy * k;
+        var s1 = (m.sy + m.SH) * k;
+        for (var y = top * k; y < b0; y += 1) {
+            if (y >= s0 && y < s1) {
+                y = s1 - 1;
                 continue;
             }
-            fill(dc, tight, 0.09 * m.sparkFade(y + 0.5));
-            dc.fillRectangle(cx + m.sx, cy + y, m.SW, AuraMath.min(1, bot - y));
+            fill(dc, tight, 0.09 * m.sparkFade(k == 1.0 ? y + 0.5 : (y + 0.5) / k));
+            dc.fillRectangle(x, cy + y, sw, AuraMath.min(1, b0 - y));
         }
         var lim = m.aod ? 0x3A3A3E : 0x5C5C62;
         for (var i = 0; i < 2; i++) {
@@ -555,21 +589,23 @@ module AuraDraw {
                     line(dc, q[0], q[1], p[0], p[1], over(m.spLineCol, a), 1.0, 5.4);
                 } else {
                     fill(dc, over(m.spLineCol, m.sparkFade(p[1])), 1.0);
-                    dc.fillCircle(cx + p[0], cy + p[1], 2.7);
+                    dc.fillCircle(cx + p[0] * k, cy + p[1] * k, 2.7 * k);
                 }
             }
         }
         if (m.trendOn) {
             dashed(dc, m.spEnd[0], m.spEnd[1], m.spRay[0], m.spRay[1], 4.5, 4.5, over(m.spRayCol, m.sparkFade(m.spRay[1])), 3.4);
         }
+        var ex = cx + m.spEnd[0] * k;
+        var ey = cy + m.spEnd[1] * k;
         if (m.spEndFill != null) {
             fill(dc, m.spEndFill, 1.0);
-            dc.fillCircle(cx + m.spEnd[0], cy + m.spEnd[1], 7.5);
+            dc.fillCircle(ex, ey, 7.5 * k);
         } else {
             fill(dc, 0x000000, 1.0);
-            dc.fillCircle(cx + m.spEnd[0], cy + m.spEnd[1], 7.5);
-            stroke(dc, m.spEndStroke, 1.0, 3);
-            dc.drawCircle(cx + m.spEnd[0], cy + m.spEnd[1], 7.5);
+            dc.fillCircle(ex, ey, 7.5 * k);
+            stroke(dc, m.spEndStroke, 1.0, 3 * k);
+            dc.drawCircle(ex, ey, 7.5 * k);
         }
     }
 
@@ -582,22 +618,22 @@ module AuraDraw {
         }
         var px = AuraMath.r1(m.pillX);
         fill(dc, m.pillFill, m.pillTonal ? 0.24 : 1.0);
-        dc.fillRoundedRectangle(cx + px, cy + AuraMath.r1(m.chipC - 19), AuraMath.r1(m.pillW), 38, 19);
+        dc.fillRoundedRectangle(cx + px * k, cy + (AuraMath.r1(m.chipC - 19)) * k, (AuraMath.r1(m.pillW)) * k, 38 * k, 19 * k);
         var ic = m.pill[3] as String;
         icon(dc, ic.equals("paused") || ic.equals("off") ? "bell_" + ic : ic, 24, px + 27, m.chipC, 0, m.pillFg);
         text(dc, "l24s", AuraMath.r1(px + 48.3), AuraMath.r1(m.chipC + 8), m.pill[1] as String, m.pillFg, Graphics.TEXT_JUSTIFY_LEFT);
     }
 
     function message(dc as Dc, m as AuraModel) as Void {
-        var k = m.msgKind;
-        if (k == null) {
+        var kind = m.msgKind;
+        if (kind == null) {
             return;
         }
-        if (k.equals("warm")) {
+        if (kind.equals("warm")) {
             var dx = AuraMath.r1(m.msgX + 17);
             var dy = AuraMath.r1(m.vTop + 17);
-            stroke(dc, m.c("soft"), 1.0, 2.5);
-            dc.drawCircle(cx + dx, cy + dy, 17);
+            stroke(dc, m.c("soft"), 1.0, 2.5 * k);
+            dc.drawCircle(cx + dx * k, cy + dy * k, 17 * k);
             // the pie, clockwise from 12 by the warm-up done
             var pts = [[dx, dy]];
             var n = (m.warmFrac * 48).toNumber() + 1;
@@ -608,23 +644,23 @@ module AuraDraw {
             poly(dc, pts, m.c("soft"), 1.0);
             text(dc, "l32s", AuraMath.r1(m.msgX + 46), AuraMath.r1(dy + 32 * 0.668 / 2), m.msgT1, m.c("ink"), Graphics.TEXT_JUSTIFY_LEFT);
             text(dc, "l24m", 0, AuraMath.r1(m.chipC + 8), m.msgT2, m.c("soft"), Graphics.TEXT_JUSTIFY_CENTER);
-        } else if (k.equals("ended")) {
+        } else if (kind.equals("ended")) {
             var mx = m.msgX;
             var fy = AuraMath.r1(m.vTop + 1);
             var ink = m.c("ink");
             fill(dc, ink, 1.0);
             var cells = [[0, 0], [2, 0], [1, 1]];
             for (var i = 0; i < 3; i++) {
-                dc.fillRectangle(cx + AuraMath.r1(mx + 3 + cells[i][0] * 7.5), cy + fy + cells[i][1] * 7.5, 7.5, 7.5);
+                dc.fillRectangle(cx + (AuraMath.r1(mx + 3 + cells[i][0] * 7.5)) * k, cy + (fy + cells[i][1] * 7.5) * k, 7.5 * k, 7.5 * k);
             }
             line(dc, AuraMath.r1(mx + 2), fy - 2, AuraMath.r1(mx + 2), fy + 30, ink, 1.0, 2.4);
             line(dc, AuraMath.r1(mx + 3), fy, AuraMath.r1(mx + 25.5), fy, ink, 1.0, 2.4);
             line(dc, AuraMath.r1(mx + 25.5), fy, AuraMath.r1(mx + 25.5), fy + 15, ink, 1.0, 2.4);
             line(dc, AuraMath.r1(mx + 25.5), fy + 15, AuraMath.r1(mx + 3), fy + 15, ink, 1.0, 2.4);
             text(dc, "l32s", AuraMath.r1(mx + 38), AuraMath.r1(m.vTop + 16 + 32 * 0.668 / 2), m.msgT1, ink, Graphics.TEXT_JUSTIFY_LEFT);
-        } else if (k.equals("none")) {
+        } else if (kind.equals("none")) {
             text(dc, "l30s", 0, AuraMath.r1(m.vTop + 20), m.msgT1, m.c("soft"), Graphics.TEXT_JUSTIFY_CENTER);
-        } else if (k.equals("gap")) {
+        } else if (kind.equals("gap")) {
             text(dc, "l25s", 0, AuraMath.r1(m.vTop + 16.7), m.msgT1, m.c("soft"), Graphics.TEXT_JUSTIFY_CENTER);
             text(dc, m.cap2 == 40 ? "g40" : "g36", 0, AuraMath.r1(m.vTop + 16.7 + 12 + m.cap2), m.msgT2, m.c("ink"), Graphics.TEXT_JUSTIFY_CENTER);
         }
@@ -640,7 +676,7 @@ module AuraDraw {
                 var p = AuraMath.P(164, an);
                 icon(dc, rn[1] as String, 20, p[0], p[1], an - 180, rn[2] as Number);
             } else if (rn[0].equals("s")) {
-                arcText(dc, (rn[3] as Number) >= 600 ? "l24s" : "l24m", rn[1] as String, 172, 232, AuraMath.r1(s), false, 0, rn[2] as Number);
+                arcText(dc, (rn[3] as Number) >= 600 ? "l24s" : "l24m", rn[1] as String, 172 * k, 232, (AuraMath.r1(s)) * k, false, 0, rn[2] as Number);
             }
         }
     }

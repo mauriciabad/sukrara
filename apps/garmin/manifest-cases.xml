@@ -8,15 +8,46 @@
     <iq:application id="5b0d0e57-7c1e-4c39-9a0e-2a2f3c4f6a11" type="watch-app" name="@Strings.AppName" entry="AuraCasesApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="5.0.0" version="0.1.0">
         <iq:products>
             <iq:product id="approachs7042mm"/>
+            <iq:product id="approachs7047mm"/>
+            <iq:product id="approachs7243mm"/>
+            <iq:product id="approachs7247mm"/>
+            <iq:product id="d2airx10"/>
+            <iq:product id="d2mach1"/>
+            <iq:product id="d2mach2"/>
+            <iq:product id="d2mach2pro"/>
             <iq:product id="descentmk343mm"/>
+            <iq:product id="descentmk351mm"/>
+            <iq:product id="epix2"/>
             <iq:product id="epix2pro42mm"/>
+            <iq:product id="epix2pro47mm"/>
+            <iq:product id="epix2pro51mm"/>
+            <iq:product id="fenix843mm"/>
+            <iq:product id="fenix847mm"/>
+            <iq:product id="fenix8pro47mm"/>
+            <iq:product id="fenix943mm"/>
+            <iq:product id="fenix947mm"/>
+            <iq:product id="fenix9pro43mm"/>
+            <iq:product id="fenix9pro47mm"/>
+            <iq:product id="fenix9pro51mm"/>
+            <iq:product id="fenixe"/>
             <iq:product id="fr170"/>
             <iq:product id="fr170m"/>
+            <iq:product id="fr265"/>
+            <iq:product id="fr265s"/>
             <iq:product id="fr57042mm"/>
+            <iq:product id="fr57047mm"/>
+            <iq:product id="fr965"/>
+            <iq:product id="fr970"/>
             <iq:product id="marq2"/>
             <iq:product id="marq2aviator"/>
+            <iq:product id="marq3"/>
+            <iq:product id="venu2"/>
+            <iq:product id="venu2plus"/>
+            <iq:product id="venu2s"/>
+            <iq:product id="venu3"/>
             <iq:product id="venu3s"/>
             <iq:product id="venu441mm"/>
+            <iq:product id="venu445mm"/>
             <iq:product id="vivoactive6"/>
         </iq:products>
         <iq:permissions>

@@ -10,6 +10,8 @@
 // Use: node tools/watchface/build.mjs (writes expect.json and the PNGs), or open tools/watchface/render.html#cfg=<json>.
 // Coordinates: the screen's centre is (0, 0), y grows down, the screen is the circle r = 195 (device pixel = x + 195).
 // Angles: degrees clockwise from 12 o'clock; P(r, a) = (r·sin a, −r·cos a).
+// Other screens (SPEC.md §1): the same face in these reference px, drawn × s = screen / 390 (cfg.screen; the SVG scales
+// it, as a watch scales every length once as it draws); the few per-size rules use s (the grain's pitch).
 
 class AuraFace {
   constructor(cfg) { this.props = { cfg: cfg || {} }; }
@@ -41,6 +43,7 @@ class AuraFace {
       bezel: b('bezel', true),
       metal: String(g('metal', 'carbon')),
       size: Number(g('size', 584)),
+      screen: Number(g('screen', 390)),
       time: String(g('time', '10:09:36')),
       battery: Number(g('battery', 8.6)),
       batteryPct: g('batteryPct', null),
@@ -686,15 +689,19 @@ class AuraFace {
     }
     if (dialOn && c.dial === 'halftone') {
       const sig = 16 + 20 * ext + 175 * ext * ext, rmax = (0.75 + 1.5 * ext) * Math.pow(I, 0.9), yL = levelY;
+      // the grid: a whole number of device px apart on every screen, round(12 s) (12 at 390; SPEC.md §6.12), the odd
+      // rows shifted half of it, 33 × 33 dots around the centre within r 190
+      const sc = c.screen / 390, gp = Math.round(12 * sc) / sc;
       let d = '';
-      for (let y = -192; y <= 192; y += 12) {
-        for (let x = -192; x <= 192; x += 12) {
-          const xx = x + ((y / 12) % 2 ? 6 : 0);
+      for (let j = -16; j <= 16; j++) {
+        const y = gp * j;
+        for (let i = -16; i <= 16; i++) {
+          const xx = gp * i + (j % 2 ? gp / 2 : 0);
           if (xx * xx + y * y > 190 * 190) continue;
           const rr = current ? rmax * Math.exp(-Math.pow((y - yL) / sig, 2)) : 0.6;
           if (rr < 0.3) continue;
           const rq = r1(Math.min(rr, 5.4));
-          d += 'M' + r1(xx - rq) + ' ' + y + 'a' + rq + ' ' + rq + ' 0 1 0 ' + r1(2 * rq) + ' 0a' + rq + ' ' + rq + ' 0 1 0 ' + r1(-2 * rq) + ' 0';
+          d += 'M' + r1(xx - rq) + ' ' + r1(y) + 'a' + rq + ' ' + rq + ' 0 1 0 ' + r1(2 * rq) + ' 0a' + rq + ' ' + rq + ' 0 1 0 ' + r1(-2 * rq) + ' 0';
         }
       }
       Object.assign(dial, { d1: d || 'M0 0', f1: dcol, s1: 'none', o1: current ? r1(clamp((0.42 + 0.3 * ext) * Math.min(1.25, I), 0.2, 0.9) * 100) / 100 : 0.3, d1D: 'inline', dash: 'none' });

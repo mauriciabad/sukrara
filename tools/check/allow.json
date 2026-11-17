@@ -40,7 +40,8 @@
     "apps/macos/Bundle/*.xcassets/*",
     "apps/macos/Bundle/*.icns",
     "website/src/assets/*",
-    "apps/garmin/resources/*"
+    "apps/garmin/resources/*",
+    "apps/garmin/resources-round-*/*"
   ],
   "images_extra": [],
   "large_bytes": 2000000,

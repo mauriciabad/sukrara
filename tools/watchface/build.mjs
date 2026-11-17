@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 //
 // Sukrara Aura: regenerate the expectations and the reference pictures from the reference implementation (aura.js).
-//   node tools/watchface/build.mjs            expect.json + every PNG (needs Google Chrome; set CHROME to its binary)
+//   node tools/watchface/build.mjs            expect.json + every PNG (needs Google Chrome; set CHROME to its binary): the
+//                                             390 refs, the other screens' (cases.json "sizes": docs/img/aura/ref-<N>/),
+//                                             the store's
 //   node tools/watchface/build.mjs --json     expect.json only
 //   node tools/watchface/build.mjs --case <id> [--out <file.png>] [--size 390] [--bezel] [--cfg '{"lang":"es"}']   one
 //     picture; --cfg adds or replaces the case's inputs (SPEC.md §3), e.g. the same state in Spanish
@@ -28,7 +30,7 @@ const chrome = process.env.CHROME || '/Applications/Google Chrome.app/Contents/M
 const args = process.argv.slice(2);
 const flag = (f) => args.includes(f);
 const opt = (f, d) => (args.includes(f) ? args[args.indexOf(f) + 1] : d);
-const { cases, store } = JSON.parse(fs.readFileSync(casesFile, 'utf8'));
+const { cases, store, sizes } = JSON.parse(fs.readFileSync(casesFile, 'utf8'));
 
 // The numbers a port must reproduce: everything layout() returns, minus the long path data (summarised) and the
 // renderer's own ids, palette and bezel metal (SPEC.md §2 and §6 give those).
@@ -42,7 +44,8 @@ function slim(v) {
   }
   return v;
 }
-const screen = (cfg) => Object.assign({ size: 390, bezel: false }, cfg);
+// a case on a screen n px across (SPEC.md §1: the 390 px reference drawn × n / 390, with the per-size rules)
+const screen = (cfg, n = 390) => Object.assign({ size: n, bezel: false, screen: n }, cfg);
 
 function writeExpect() {
   const out = {
@@ -79,7 +82,8 @@ if (flag('--case')) {
   if (!c) throw new Error('no case ' + id);
   const size = Number(opt('--size', flag('--bezel') ? 1168 : 390));
   const file = path.resolve(opt('--out', id + '.png'));
-  await shoot(Object.assign({ size, bezel: flag('--bezel') }, c.cfg, JSON.parse(opt('--cfg', '{}'))), file, size);
+  // without the bezel the picture is a screen that size (its per-size rules too); with it, the Descent's
+  await shoot(Object.assign({ size, bezel: flag('--bezel'), screen: flag('--bezel') ? 390 : size }, c.cfg, JSON.parse(opt('--cfg', '{}'))), file, size);
   console.log('wrote', file);
 } else {
   writeExpect();
@@ -88,8 +92,14 @@ if (flag('--case')) {
     fs.mkdirSync(storeDir, { recursive: true });
     const jobs = cases.map((c) => () => shoot(screen(c.cfg), path.join(refDir, c.id + '.png'), 390))
       .concat(store.map((s) => () => shoot(Object.assign({ size: 1168, bezel: true }, s.cfg), path.join(storeDir, s.id + '.png'), 1168)));
+    for (const n of sizes.screens) {
+      const dir = refDir + '-' + n;
+      fs.mkdirSync(dir, { recursive: true });
+      for (const f of fs.readdirSync(dir)) if (!sizes.cases.includes(f.replace(/\.png$/, ''))) fs.rmSync(path.join(dir, f));
+      for (const id of sizes.cases) jobs.push(() => shoot(screen(cases.find((c) => c.id === id).cfg, n), path.join(dir, id + '.png'), n));
+    }
     await pool(jobs, 4);
-    console.log('wrote', cases.length, 'reference and', store.length, 'store pictures');
+    console.log('wrote', cases.length, 'reference,', sizes.cases.length, 'x', sizes.screens.length, 'other screens\' and', store.length, 'store pictures');
   }
   gallery();
 }

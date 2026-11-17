@@ -7,8 +7,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Sukrara Aura's fonts and icons for Connect IQ, built from the sources in the repo (reproducible, no hand steps).
 
-  uv run apps/garmin/tools/fonts.py          writes apps/garmin/resources/fonts/* and source/AuraFontTable.mc
+  uv run apps/garmin/tools/fonts.py          writes apps/garmin/resources-round-<N>x<N>/{fonts,icons}/* for every screen
+                                             size and source/AuraFontTable.mc
   uv run apps/garmin/tools/fonts.py --check  fails if the committed output differs from a fresh build
+
+Sizes (SPEC.md §1): the design is in reference px (the Descent's 390 x 390); a watch whose screen is N px across draws
+everything x s = N / 390. Each size gets its own fonts and icons, rendered at the reference's size x s, in the resource
+folder the compiler picks by the device's family (resources-round-454x454 for every 454 px watch); the face code and
+the glyph and icon tables' layout are the same for every size.
 
 Fonts: Atkinson Hyperlegible Next (OFL, apps/garmin/fonts/), one atlas per size and weight of SPEC.md §2 (white glyphs
 with 8-bit alpha, a PNG bitmap resource), rendered by FreeType without hinting (the way the reference's browser draws it),
@@ -37,8 +43,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.dirname(HERE)
 ROOT = os.path.dirname(os.path.dirname(APP))
 TTF = os.path.join(APP, "fonts", "AtkinsonHyperlegibleNext-wght.ttf")
-OUT = os.path.join(APP, "resources", "fonts")
-ICONS_OUT = os.path.join(APP, "resources", "icons")
+# the round AMOLED screens the face runs on (SPEC.md §1), px across; 390 is the reference's
+SIZES = (390, 360, 416, 454, 466)
+
+
+def res_dir(n):
+    return os.path.join(APP, "resources-round-%dx%d" % (n, n))
+
+
 TABLE = os.path.join(APP, "source", "AuraFontTable.mc")
 NB = " "
 
@@ -117,16 +129,17 @@ def stroked(f, ch, radius):
     return to_image(bg.bitmap), bg.left, bg.top
 
 
-def render(size, weight, chars, kind=""):
+def render(size, weight, chars, kind="", k=1):
     """Each glyph: (char, alpha image, left, top, advance px float, width, height). kind: "" filled, "o" outlined (the
-    always-on time), "h" the halo (filled and grown by HALO)."""
+    always-on time), "h" the halo (filled and grown by HALO); k: device px per reference px (the size and the strokes
+    are the reference's x k)."""
     f = face(size, weight)
     out = []
     for ch in chars:
         if kind == "o":
-            img, left, top = stroked(f, ch, OUTLINE / 2)
+            img, left, top = stroked(f, ch, OUTLINE * k / 2)
         elif kind == "h":
-            img, left, top = stroked(f, ch, HALO)
+            img, left, top = stroked(f, ch, HALO * k)
             f.load_char(ch, freetype.FT_LOAD_RENDER | freetype.FT_LOAD_NO_HINTING)
             fill = to_image(f.glyph.bitmap)
             layer = Image.new("L", img.size, 0)
@@ -173,12 +186,19 @@ def atlas_font(key, arc):
     return arc or key[0] in "tvg"
 
 
-def build_fonts():
+def scaled(x, n):
+    """A reference length at an N px screen (the reference's own number at 390)."""
+    return x if n == 390 else x * n / 390.0
+
+
+def build_fonts(n):
     files = {}
     table = []
-    for key, size, weight, chars, _arc in FONTS:
+    k = n / 390.0
+    for key, size0, weight, chars, _arc in FONTS:
         kind = key[-1] if key[-1] in "oh" else ""
-        glyphs = render(size, weight, chars, kind)
+        size = scaled(size0, n)
+        glyphs = render(size, weight, chars, kind, k)
         sheet, pos = pack(glyphs)
         base = int(round(size * ASCENT))
         metrics = []
@@ -199,7 +219,7 @@ def build_fonts():
                 lines.append("char id=%d x=%d y=%d width=%d height=%d xoffset=%d yoffset=%d xadvance=%d page=0 chnl=15"
                              % (ord(ch), px, py, w, h, xo, yo, int(round(adv))))
             files[key + ".fnt"] = ("\n".join(lines) + "\n").encode()
-            table.append((key, size, weight, base, chars, None))
+            table.append((key, size0, weight, base, chars, None))
             continue
         bs = []
         for ch, px, py, w, h, xo, yo, adv in metrics:
@@ -207,7 +227,7 @@ def build_fonts():
             assert 0 <= w < 256 and 0 <= h < 256 and -128 <= xo < 128 and -128 <= yo < 128, (key, ch)
             bs += [px >> 8, px & 255, py >> 8, py & 255, w, h, xo & 255, yo & 255, a >> 8, a & 255]
         files[key + ".json"] = (json.dumps([chars, base64.b64encode(bytes(bs)).decode(), base], ensure_ascii=False) + "\n").encode()
-        table.append((key, size, weight, base, chars, metrics))
+        table.append((key, size0, weight, base, chars, metrics))
     xml = ['<!-- Sukrara — https://github.com/mauriciabad/sukrara -->',
            '<!-- Copyright (C) 2026 Maurici Abad -->',
            '<!-- SPDX-License-Identifier: GPL-3.0-or-later -->',
@@ -238,13 +258,14 @@ def build_table(table):
         "// Copyright (C) 2026 Maurici Abad",
         "// SPDX-License-Identifier: GPL-3.0-or-later",
         "// Generated by apps/garmin/tools/fonts.py (do not edit): the fonts of SPEC.md §2 as atlases and their glyph",
-        "// tables (jsonData: [glyphs, metrics in base64, baseline]), and the icons.",
+        "// tables (jsonData: [glyphs, metrics in base64, baseline]), and the icons. The same for every screen size: the",
+        "// resources (resources-round-<N>x<N>/) and the size's table (Rez.JsonData.sizeTable) hold the pixels.",
         "import Toybox.Lang;",
         "import Toybox.WatchUi;",
         "",
         "module AuraFontTable {",
-        "    // key → [atlas bitmap, glyph table], or [font resource, baseline px from the line's top] (the small straight",
-        "    // texts: Connect IQ fonts, in the graphics pool; an atlas's glyph table is in the heap while it's loaded)",
+        "    // key → [atlas bitmap, glyph table], or [font resource, its index in the size table's baselines] (the small",
+        "    // straight texts: Connect IQ fonts, in the graphics pool; an atlas's glyph table is in the heap while it's loaded)",
         "    function atlas(key as String) as Array {",
     ]
     atl = [t for t in table if t[5] is not None]
@@ -259,8 +280,7 @@ def build_table(table):
                                                          ", ".join("Rez.JsonData.%s_m" % t[0] for t in atl)))
     out.append("        }")
     out.append("        i -= %d;" % len(atl))
-    out.append("        return [[%s][i], [%s][i]];" % (", ".join("Rez.Fonts.%s" % t[0] for t in fnt),
-                                                     ", ".join(str(t[3]) for t in fnt)))
+    out.append("        return [[%s][i], i];" % ", ".join("Rez.Fonts.%s" % t[0] for t in fnt))
     out.append("    }")
     out.append("}")
     return ("\n".join(out) + "\n").encode()
@@ -289,7 +309,7 @@ BELLS = {
     "paused": "M370-320h220v-72H480l110-136v-72H370v72h110L370-392v72ZM160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z",
     "off": "M160-200v-80h80v-280q0-33 8.5-65t25.5-61l60 60q-7 16-10.5 32.5T320-560v280h248L56-792l56-56 736 736-56 56-146-144H160Zm560-154-80-80v-126q0-66-47-113t-113-47q-26 0-50 8t-44 24l-58-58q20-16 43-28t49-18v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v206Zm-276-50Zm36 324q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80Zm33-481Z",
 }
-# the icons' sizes: bottom fields and the side labels' marks 20, top field round(TF·0.83) for TF 24 / 25 / 26 = 20 / 21 / 22, pill marks 23.6
+# the icons' sizes (reference px): bottom fields and the side labels' marks 20, top field round(TF·0.83) for TF 24 / 25 / 26 = 20 / 21 / 22, pill marks 23.6
 ICON_SIZES = (20, 21, 22, 24)
 PAD = 2  # transparent margin around each icon so a rotation never clips it
 
@@ -299,27 +319,35 @@ def rsvg(svg, px):
                           capture_output=True, check=True).stdout
 
 
-def build_icons():
-    """One atlas of every icon at every size (white, alpha): icons.png, and its boxes in AuraFontTable.mc."""
+def fmt(x):
+    return "%g" % x
+
+
+def build_icons(n):
+    """One atlas of every icon at every size (white, alpha) for an N px screen: icons.png, and its boxes [x, y, box]
+    in the order of ICON_ORDER (the size table). An icon of the reference's size s is s x k px, centred in its box."""
+    k = n / 390.0
     tiles = []
     for name, (d, sw) in ICONS.items():
         for s in ICON_SIZES:
-            box = s + 2 * PAD
-            scale = s / 24.0
+            px = scaled(s, n)
+            box = int(-(-(px + 2 * PAD) // 1))
+            off = (box - px) / 2
             paint = ('fill="none" stroke="#FFFFFF" stroke-width="%s" stroke-linecap="round" stroke-linejoin="round"' % sw
                      if sw else 'fill="#FFFFFF" fill-rule="evenodd"')
             svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">'
-                   '<g transform="translate(%d %d) scale(%s)"><path d="%s" %s/></g></svg>'
-                   % (box, box, box, box, PAD, PAD, repr(scale), d, paint))
+                   '<g transform="translate(%s %s) scale(%s)"><path d="%s" %s/></g></svg>'
+                   % (box, box, box, box, fmt(off), fmt(off), repr(px / 24.0), d, paint))
             tiles.append((name, s, Image.open(io.BytesIO(rsvg(svg, box))).convert("RGBA")))
     for name, d in BELLS.items():
-        s = 24
-        box = s + 2 * PAD
+        px = scaled(24, n)
+        box = int(-(-(px + 2 * PAD) // 1))
+        off = (box - px) / 2 + 0.2 * k
         # Material symbols: 960 box, y from -960; the reference scales by 0.0246 (23.6 px)
         svg = ('<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">'
-               '<g transform="translate(%s %s) scale(0.0246) translate(0 960)"><path d="%s" fill="#FFFFFF"/></g></svg>'
-               % (box, box, box, box, PAD + 0.2, PAD + 0.2, d))
-        tiles.append(("bell_" + name, s, Image.open(io.BytesIO(rsvg(svg, box))).convert("RGBA")))
+               '<g transform="translate(%s %s) scale(%s) translate(0 960)"><path d="%s" fill="#FFFFFF"/></g></svg>'
+               % (box, box, box, box, fmt(off), fmt(off), fmt(0.0246 * k), d))
+        tiles.append(("bell_" + name, 24, Image.open(io.BytesIO(rsvg(svg, box))).convert("RGBA")))
     x = y = row = 0
     pos = []
     for name, s, img in tiles:
@@ -339,38 +367,55 @@ def build_icons():
     return png_bytes(sheet), boxes
 
 
-def icon_table(boxes):
-    names = []
-    for name, s, px, py, w in boxes:
-        if name not in names:
-            names.append(name)
-    out = ["", "    // icons.png: every icon of SPEC.md §2 at each size, white with alpha, %d px margin; [x, y, box]" % PAD,
-           "    function icon(name as String, size as Number) as Array? {"]
-    first = True
-    for name in names:
-        out.append("        %sif (name.equals(%s)) {" % ("" if first else "} else ", mc_string(name)))
-        sizes = [(s, px, py, w) for n, s, px, py, w in boxes if n == name]
-        for i, (s, px, py, w) in enumerate(sizes):
-            cond = "size <= %d" % s if i < len(sizes) - 1 else "true"
-            out.append("            %sif (%s) { return [%d, %d, %d]; }" % ("" if i == 0 else "else ", cond, px, py, w))
-        first = False
-    out.append("        }")
-    out.append("        return null;")
-    out.append("    }")
-    return out
+ICON_ORDER = list(ICONS) + ["bell_" + b for b in BELLS]
+
+
+def icon_table():
+    """The icons' lookup (the same at every size): an icon's index in the size table's boxes."""
+    return ["", "    // an icon's index in the size table's boxes (Rez.JsonData.sizeTable: icons.png, white with alpha, %d px margin):" % PAD,
+            "    // the icons of SPEC.md §2 at the sizes %s each, then the pill's bells" % "/".join(str(s) for s in ICON_SIZES),
+            "    function icon(name as String, size as Number) as Number? {",
+            "        var n = [%s].indexOf(name);" % ", ".join(mc_string(x) for x in ICON_ORDER),
+            "        if (n < 0) {",
+            "            return null;",
+            "        }",
+            "        if (n >= %d) {" % len(ICONS),
+            "            return %d + n - %d;" % (len(ICONS) * len(ICON_SIZES), len(ICONS)),
+            "        }",
+            "        return n * %d + (%s);" % (len(ICON_SIZES), " : ".join("size <= %d ? %d" % (s, i) for i, s in enumerate(ICON_SIZES[:-1])) + " : %d" % (len(ICON_SIZES) - 1)),
+            "    }"]
+
+
+def size_table(table, boxes):
+    """The size's table (Rez.JsonData.sizeTable): [the Connect IQ fonts' baselines px from the line's top, the icons'
+    boxes in base64: 5 bytes each (x, y as 16 bit, the box's side)]."""
+    order = {(name, s): (px, py, w) for name, s, px, py, w in boxes}
+    bs = []
+    for name in ICON_ORDER:
+        for s in (ICON_SIZES if not name.startswith("bell_") else (24,)):
+            px, py, w = order[(name, s)]
+            bs += [px >> 8, px & 255, py >> 8, py & 255, w]
+    base = [t[3] for t in table if t[5] is None]
+    return (json.dumps([base, base64.b64encode(bytes(bs)).decode()]) + "\n").encode()
 
 
 def outputs():
-    files, table = build_fonts()
-    icons_png, boxes = build_icons()
-    files_icons = {"icons.png": icons_png, "icons.xml": (
-        "<!-- Sukrara — https://github.com/mauriciabad/sukrara -->\n<!-- Copyright (C) 2026 Maurici Abad -->\n"
-        "<!-- SPDX-License-Identifier: GPL-3.0-or-later -->\n<!-- Generated by apps/garmin/tools/fonts.py. -->\n"
-        '<resources>\n    <bitmap id="icons" filename="icons.png" dithering="none" packingFormat="png"/>\n</resources>\n').encode()}
-    src = build_table(table).decode().rstrip("\n").rstrip("}").rstrip("\n").split("\n")
-    src += icon_table(boxes) + ["}", ""]
-    out = {os.path.join(OUT, k): v for k, v in files.items()}
-    out.update({os.path.join(ICONS_OUT, k): v for k, v in files_icons.items()})
+    out = {}
+    src = None
+    for n in SIZES:
+        files, table = build_fonts(n)
+        icons_png, boxes = build_icons(n)
+        files["size.json"] = size_table(table, boxes)
+        files["fonts.xml"] = files["fonts.xml"].replace(b"</resources>", b'    <jsonData id="sizeTable" filename="size.json"/>\n</resources>')
+        files_icons = {"icons.png": icons_png, "icons.xml": (
+            "<!-- Sukrara — https://github.com/mauriciabad/sukrara -->\n<!-- Copyright (C) 2026 Maurici Abad -->\n"
+            "<!-- SPDX-License-Identifier: GPL-3.0-or-later -->\n<!-- Generated by apps/garmin/tools/fonts.py. -->\n"
+            '<resources>\n    <bitmap id="icons" filename="icons.png" dithering="none" packingFormat="png"/>\n</resources>\n').encode()}
+        out.update({os.path.join(res_dir(n), "fonts", k): v for k, v in files.items()})
+        out.update({os.path.join(res_dir(n), "icons", k): v for k, v in files_icons.items()})
+        if src is None:
+            src = build_table(table).decode().rstrip("\n").rstrip("}").rstrip("\n").split("\n")
+            src += icon_table() + ["}", ""]
     out[TABLE] = "\n".join(src).encode()
     return out
 
@@ -384,7 +429,7 @@ def main(argv):
             return 1
         print("fonts.py: up to date")
         return 0
-    for d in (OUT, ICONS_OUT):
+    for d in [os.path.join(res_dir(n), sub) for n in SIZES for sub in ("fonts", "icons")]:
         os.makedirs(d, exist_ok=True)
         for f in os.listdir(d):
             if os.path.join(d, f) not in out:

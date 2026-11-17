@@ -298,6 +298,15 @@ jobs:
           AURA_CASES="$(echo "$AURA_CASES" | tr -d ' ')"
           export AURA_CASES
           xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
+      # The same face scaled (SPEC.md §1) on the largest screen, the fēnix 9 Pro 51 mm (466 px), a few cases against
+      # docs/img/aura/ref-466: in range, very low, no readings, the grain at its densest, the fields, always-on.
+      # Every size and every watch: garmin-all.
+      - name: The face's tests at another screen size (466 px)
+        if: steps.sdk.outputs.ready == 'true'
+        env:
+          CIQ_DEVICE: fenix9pro51mm
+          AURA_CASES: glucose-in-range,alerts-very-low,glucose-no-readings,dial-grain-very-high,fields-meal,aod-alerts-very-low
+        run: xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test/466"
       - name: The face's screenshots and diff images
         if: always() && steps.sdk.outputs.ready == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -308,8 +317,8 @@ jobs:
 
   # The face on every watch of apps/garmin/manifest.xml (a matrix, one job per watch): the Descent Mk3i 43 mm every case
   # (1–2 h: heavy dial cases make monkeydo lose the simulator, and the harness restarts it), the others the gate's fixed
-  # set (same 390 × 390 pictures). Only on `workflow_dispatch` with full=true, and outside `gate`: its result is the
-  # run's, not a release's. Starts after `garmin`, which keeps the SDK and the device files in the cache.
+  # set (the 390 px watches the Descent's pictures, the other sizes docs/img/aura/ref-<N>). Only on `workflow_dispatch`
+  # with full=true, and outside `gate`: its result is the run's, not a release's. Starts after `garmin`, which keeps the SDK and the device files in the cache.
   garmin-all:
     needs: garmin
     if: github.event_name == 'workflow_dispatch' && inputs.full && needs.garmin.result == 'success' && needs.garmin.outputs.devices != ''

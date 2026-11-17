@@ -397,10 +397,11 @@ STRING_KEY = re.compile(r'<(string|plurals)\s+name="([^"]+)"([^>]*)>')
 DEBUG_NAMES = re.compile(r"\b(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\b")
 DEBUG_FILE = re.compile(r"(^|/)(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\.kt$")
 MAC_DEBUG_NAMES = re.compile(r"\b(debugsend|DebugFakes|Synthetic\w*)\b")
-# the Garmin face: the release jungle builds apps/garmin/source; the debug case loader is apps/garmin/source-cases
+# the Garmin face: the release jungle builds apps/garmin/source; the debug case loader is apps/garmin/source-cases, the
+# memory build (#217) apps/garmin/source-memory
 GARMIN_SOURCE = "apps/garmin/source/"
-GARMIN_DEBUG_SOURCE = "apps/garmin/source-cases/"
-GARMIN_DEBUG_NAMES = re.compile(r"\b(AuraCases\w*|AuraDump|AuraCaseTable)\b")
+GARMIN_DEBUG_SOURCE = ("apps/garmin/source-cases/", "apps/garmin/source-memory/")
+GARMIN_DEBUG_NAMES = re.compile(r"\b(AuraCases\w*|AuraDump|AuraCaseTable|AuraMemory\w*)\b")
 ANDROID_DEBUG_DIRS = ("/src/debug/", "/src/test/", "/src/androidTest/", "/src/testDebug/")
 MAC_DEBUG_TARGETS = (MAC + "Tests/", MAC_SOURCES + "sukrara-snap/")
 
@@ -454,19 +455,20 @@ def check_debug(ch, rep):
             for n, l in code_lines(ch.blob(p) or ""):
                 m = GARMIN_DEBUG_NAMES.search(l)
                 if m:
-                    rep.add("FAIL", "debug", "%s:%d names %s: the Garmin face's debug code (the case loader) lives in\n"
-                            "apps/garmin/source-cases/ only, which the release jungle never builds." % (p, n, m.group(1)))
+                    rep.add("FAIL", "debug", "%s:%d names %s: the Garmin face's debug code (the case loader, the memory\n"
+                            "build) lives in apps/garmin/source-cases/ and source-memory/ only, which the release jungle never\n"
+                            "builds." % (p, n, m.group(1)))
         elif p.startswith(GARMIN_DEBUG_SOURCE) and p.endswith(".mc"):
             text = ch.blob(p) or ""
             for m in re.finditer(r"(?m)^((?:\(:\w+\)\s*\n)*)(?:module|class|function)\s+(\w+)", text):
                 if "(:debug)" not in m.group(1):
-                    rep.add("FAIL", "debug", "%s: %s without (:debug): everything in apps/garmin/source-cases/ is debug-only,\n"
-                            "so a release build strips it even if a jungle ever names the folder." % (p, m.group(2)))
+                    rep.add("FAIL", "debug", "%s: %s without (:debug): everything in %s is debug-only,\n"
+                            "so a release build strips it even if a jungle ever names the folder." % (p, m.group(2), p.rsplit("/", 1)[0] + "/"))
         elif p == GARMIN + "monkey.jungle":
             text = ch.blob(p) or ""
-            if re.search(r"source-cases|build/cases", text) or not re.search(r"(?m)^base\.sourcePath = source$", text):
+            if re.search(r"source-cases|source-memory|build/cases", text) or not re.search(r"(?m)^base\.sourcePath = source$", text):
                 rep.add("FAIL", "debug", "%s must build source/ only ('base.sourcePath = source': the default takes every\n"
-                        "folder, the debug case loader's source-cases/ and build/ too)." % p)
+                        "folder, the debug case loader's source-cases/, source-memory/ and build/ too)." % p)
 
 
 # The docs that name debug commands (#111: they listed `cmd sensorEnd`, `--es stage`, … long after the code dropped them).

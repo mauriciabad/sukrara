@@ -182,14 +182,20 @@ class AuraDial {
             go = Math.round(g * 1000) / 1000.0;
             go2 = Math.round(g * 0.4 * 1000) / 1000.0;
         } else if (kind.equals("grain")) {
+            gp = Math.round(12 * AuraDraw.k).toNumber();
+            gr2 = 190 * AuraDraw.k * 190 * AuraDraw.k;
             var sig = 16 + 20 * ext + 175 * ext * ext;
             var rmax = (0.75 + 1.5 * ext) * Math.pow(I, 0.9);
             n1 = 0;
-            for (var y = -192; y <= 192; y += 12) {
-                var row = grainRow(y, rmax, sig);
-                for (var x = -192; x <= 192; x += 12) {
-                    var xx = x + ((y / 12) % 2 != 0 ? 6 : 0);
-                    if (xx * xx + y * y <= 190 * 190 && row >= 0.3) {
+            for (var j = -16; j <= 16; j++) {
+                if (grainRow(grainY(j), rmax, sig) < 0.3) {
+                    continue;
+                }
+                var yy = j * gp * j * gp;
+                var off = j % 2 != 0 ? half() : 0;
+                for (var i = -16; i <= 16; i++) {
+                    var x = i * gp + off;
+                    if (x * x + yy <= gr2) {
                         n1++;
                     }
                 }
@@ -202,8 +208,24 @@ class AuraDial {
         drawn = d1D || d2D || glowD;
     }
 
+    // the grain's grid (SPEC.md §6.12): a whole number of device px apart, round(12 s) (12 at 390), the odd rows shifted
+    // half of it; dot (i, j) at (i·pitch (+ pitch / 2), j·pitch) device px from the centre, i and j from -16 to 16, the
+    // ones within r 190 (reference px)
+    var gp as Number = 12; // the pitch, device px
+    var gr2 as Numeric = 36100; // r 190 in device px, squared
+
+    // the odd rows' shift
+    function half() as Numeric {
+        return gp % 2 == 0 ? gp / 2 : gp / 2.0;
+    }
+
+    // a row's y in reference px (the bell's input)
+    function grainY(j as Number) as Numeric {
+        return AuraDraw.k == 1.0 ? j * gp : j * gp / AuraDraw.k;
+    }
+
     // a grain row's dot radius (every dot of a row is the same: the bell is in y only)
-    function grainRow(y as Number, rmax as Float, sig as Float) as Float {
+    function grainRow(y as Numeric, rmax as Float, sig as Float) as Float {
         if (!current) {
             return 0.6;
         }
@@ -260,7 +282,7 @@ class AuraDial {
         var n = drawn ? units() : 0;
         while (next < n && budget > 0) {
             if (kind.equals("grain")) {
-                grainRow2(dc, ox, oy, -192 + 12 * next);
+                grainRow2(dc, ox, oy, next - 16);
                 budget -= 33;
             } else if (kind.equals("contours")) {
                 var spc = 22 - 7 * ext;
@@ -284,13 +306,14 @@ class AuraDial {
         return next >= n;
     }
 
-    // a grain row: its dots, all of one size (the bell is in y only)
-    hidden function grainRow2(dc as Dc, ox as Float, oy as Float, y as Number) as Void {
-        var rr = grainRow(y, (0.75 + 1.5 * ext) * Math.pow(I, 0.9), 16 + 20 * ext + 175 * ext * ext);
+    // grain row j: its dots, all of one size (the bell is in y only)
+    hidden function grainRow2(dc as Dc, ox as Float, oy as Float, j as Number) as Void {
+        var rr = grainRow(grainY(j), (0.75 + 1.5 * ext) * Math.pow(I, 0.9), 16 + 20 * ext + 175 * ext * ext);
         if (rr < 0.3) {
             return;
         }
-        var rq = AuraMath.r1(rr < 5.4 ? rr : 5.4);
+        // the dot's radius in device px
+        var rq = (AuraMath.r1(rr < 5.4 ? rr : 5.4)) * AuraDraw.k;
         // Connect IQ's filled circle comes out ~0.75 px wider than its radius (measured against the reference's dots),
         // and a small anti-aliased circle drawn into a bitmap crashes the simulator's firmware (the blue triangle):
         // dots up to r 2.25 are a 1 to 4 px square holding the dot's area of colour, the others a circle 0.75 px smaller
@@ -303,9 +326,11 @@ class AuraDial {
             rq -= 0.75;
         }
         dc.setFill(pm(f1 as Number, a));
-        for (var x = -192; x <= 192; x += 12) {
-            var xx = x + ((y / 12) % 2 != 0 ? 6 : 0);
-            if (xx * xx + y * y <= 190 * 190) {
+        var y = j * gp;
+        var off = j % 2 != 0 ? half() : 0;
+        for (var i = -16; i <= 16; i++) {
+            var xx = i * gp + off;
+            if (xx * xx + y * y <= gr2) {
                 if (side > 0) {
                     dc.fillRectangle(Math.floor(ox + xx + 1 - side / 2.0), Math.floor(oy + y + 1 - side / 2.0), side, side);
                 } else {
@@ -327,18 +352,18 @@ class AuraDial {
         phase = 0.0;
     }
 
-    // a line from the pen to (x, y) (screen-centred), only where it is on the screen
+    // a line from the pen to (x, y) (screen-centred, reference px), only where it is on the screen; w in device px
     function lineTo(dc as Dc, ox as Float, oy as Float, x as Float, y as Float, w as Float) as Void {
         if (px * px + py * py < 40000 || x * x + y * y < 40000) {
-            seg(dc, ox + px, oy + py, ox + x, oy + y, w);
+            seg(dc, ox + px * AuraDraw.k, oy + py * AuraDraw.k, ox + x * AuraDraw.k, oy + y * AuraDraw.k, w);
         } else {
-            phase += 8.0;
+            phase += 8.0 * AuraDraw.k;
         }
         px = x;
         py = y;
     }
 
-    // a piece of a line: whole, or its share of the dashes
+    // a piece of a line (device px): whole, or its share of the dashes
     hidden function seg(dc as Dc, x1 as Float, y1 as Float, x2 as Float, y2 as Float, w as Float) as Void {
         if (!dashed) {
             dc.drawLine(x1, y1, x2, y2);
@@ -348,10 +373,12 @@ class AuraDial {
         var dy = y2 - y1;
         var len = Math.sqrt(dx * dx + dy * dy).toFloat();
         var t = 0.0;
+        var on = 2 * AuraDraw.k;
+        var per = 8 * AuraDraw.k;
         while (t < len) {
-            var ph = (phase + t) - Math.floor((phase + t) / 8.0) * 8;
-            if (ph < 2) {
-                var e = AuraMath.min(len, t + 2 - ph);
+            var ph = (phase + t) - Math.floor((phase + t) / (per * 1.0)) * per;
+            if (ph < on) {
+                var e = AuraMath.min(len, t + on - ph);
                 var ax = x1 + dx * t / len;
                 var ay = y1 + dy * t / len;
                 var bx = x1 + dx * e / len;
@@ -364,7 +391,7 @@ class AuraDial {
                 }
                 t = e;
             } else {
-                t += 8 - ph;
+                t += per - ph;
             }
         }
         phase += len;
@@ -379,9 +406,10 @@ class AuraDial {
             return;
         }
         var c = pm(isMap ? stroke1 : col, a);
+        var w = w1 * AuraDraw.k.toFloat();
         dc.setStroke(c);
         dc.setFill(c);
-        dc.setPenWidth(w1);
+        dc.setPenWidth(w);
         for (var i = 0; i <= 120; i++) {
             var t = (i % 120) / 120.0 * Math.PI * 2;
             var f = isMap ? 1 + 0.12 * Math.sin(3 * t + 1.3) + 0.07 * Math.sin(5 * t + 0.4) + 0.05 * Math.sin(2 * t + 2.2)
@@ -392,7 +420,7 @@ class AuraDial {
             if (i == 0) {
                 moveTo(x, y);
             } else {
-                lineTo(dc, ox, oy, x, y, w1);
+                lineTo(dc, ox, oy, x, y, w);
             }
         }
     }
@@ -406,7 +434,7 @@ class AuraDial {
             return;
         }
         var a2 = k == 0 ? amp : amp * AuraMath.max(0.35, 1 - k * 0.04);
-        var w = k == 0 ? 2.0 : 1.3;
+        var w = (k == 0 ? 2.0 : 1.3) * AuraDraw.k.toFloat();
         var c = pm(k == 0 ? stroke1 : col, a);
         dc.setStroke(c);
         dc.setFill(c);
@@ -430,7 +458,7 @@ class AuraDial {
         if ((p != 1) != bright) {
             return;
         }
-        var w = p == 0 ? w3 : bright ? w1 : w2;
+        var w = (p == 0 ? w3 : bright ? w1 : w2) * AuraDraw.k.toFloat();
         var o = p == 0 ? o3 : bright ? o1 : o2;
         var slope = ((l[1] as Float) - (l[0] as Float)) / 400.0;
         dc.setPenWidth(w);
@@ -446,24 +474,25 @@ class AuraDial {
                 var c = pm(col, a);
                 dc.setStroke(c);
                 dc.setFill(c);
-                seg(dc, ox + x, oy + y1, ox + x + 10, oy + y1 + 10 * slope, w);
+                seg(dc, ox + x * AuraDraw.k, oy + y1 * AuraDraw.k, ox + (x + 10) * AuraDraw.k, oy + (y1 + 10 * slope) * AuraDraw.k, w);
             } else {
-                phase += 10;
+                phase += 10 * AuraDraw.k;
             }
         }
     }
 
-    // the glow: 3 px rings around the bead, from the outside in, each at the radial fade of its radius (0 at gr, 0.4
-    // of go at half, go at the centre); only the rings that reach the screen
+    // the glow: 3 device px rings around the bead, from the outside in, each at the radial fade of its radius (0 at gr,
+    // 0.4 of go at half, go at the centre); only the rings that reach the screen
     hidden function glow(dc as Dc, ox as Float, oy as Float) as Void {
         var d = Math.sqrt(gx * gx + gy * gy);
+        var grd = gr * AuraDraw.k;
         dc.setAntiAlias(false);
-        for (var r = AuraMath.min(gr, d + 196); r > 0 && r + 2 > d - 197; r -= 3) {
-            var t = r / gr;
+        for (var r = AuraMath.min(grd, (d + 196) * AuraDraw.k); r > 0 && r + 2 > (d - 197) * AuraDraw.k; r -= 3) {
+            var t = r / grd;
             var a = t < 0.5 ? go + (go2 - go) * t / 0.5 : go2 * (1 - t) / 0.5;
             if (a > 0.004) {
                 dc.setFill(pm(col, a));
-                dc.fillCircle(ox + gx, oy + gy, r);
+                dc.fillCircle(ox + gx * AuraDraw.k, oy + gy * AuraDraw.k, r);
             }
         }
         dc.setAntiAlias(true);
@@ -509,7 +538,12 @@ module AuraDials {
                 return false;
             }
             if (cache == null) {
-                cache = Graphics.createBufferedBitmap({:width => 390, :height => 390});
+                // every pixel of the cache is opaque (marks pre-multiplied over black), so the other screens take a
+                // partial-alpha surface: half the graphics pool of a full-alpha one, which the 454 / 466 px screens and
+                // the 2 MB pools need (466 px: out of pool memory at the first rotated glyph). Its pixels differ from a
+                // full one's by a few levels in 255, so the 390 px screens keep theirs (the Descent's pixels unchanged)
+                cache = Graphics.createBufferedBitmap({:width => dc.getWidth(), :height => dc.getHeight(),
+                    :alphaBlending => AuraDraw.k == 1.0 ? Graphics.ALPHA_BLENDING_FULL : Graphics.ALPHA_BLENDING_PARTIAL});
             }
             var bdc = (cache as Graphics.BufferedBitmapReference).get().getDc();
             bdc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
@@ -522,11 +556,12 @@ module AuraDials {
         if (pending != null) {
             // a few units a frame (the watchdog); the next frame (1 Hz while awake) goes on
             var bdc = (cache as Graphics.BufferedBitmapReference).get().getDc();
-            if ((pending as AuraDial).paintSome(bdc, 194.5, 194.5, BUDGET)) {
+            var c = dc.getWidth() / 2.0 - 0.5;
+            if ((pending as AuraDial).paintSome(bdc, c, c, BUDGET)) {
                 pending = null;
             }
         }
-        dc.drawBitmap(AuraDraw.cx - 194.5, AuraDraw.cy - 194.5, cache);
+        dc.drawBitmap(AuraDraw.cx - (dc.getWidth() / 2.0 - 0.5), AuraDraw.cy - (dc.getHeight() / 2.0 - 0.5), cache);
         return true;
     }
 
@@ -579,8 +614,10 @@ module AuraDials {
         for (var r = 140; r < 196; r += 8) {
             var a = 0.5 * ramp(r + 4.0);
             if (a >= 0.01) {
-                AuraDraw.stroke(dc, col, a, 1.6);
-                dc.drawLine(AuraDraw.cx + r * sx, AuraDraw.cy + r * sy, AuraDraw.cx + (r + 8) * sx, AuraDraw.cy + (r + 8) * sy);
+                var r1 = r * AuraDraw.k;
+                var r2 = (r + 8) * AuraDraw.k;
+                AuraDraw.stroke(dc, col, a, 1.6 * AuraDraw.k);
+                dc.drawLine(AuraDraw.cx + r1 * sx, AuraDraw.cy + r1 * sy, AuraDraw.cx + r2 * sx, AuraDraw.cy + r2 * sy);
             }
         }
     }

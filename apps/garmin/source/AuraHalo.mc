@@ -52,24 +52,28 @@ class AuraHalo {
         var ox = AuraDraw.cx;
         var oy = AuraDraw.cy;
         dc.setStroke(0xFF000000);
-        dc.setPenWidth(18);
+        dc.setPenWidth(18 * AuraDraw.k);
         for (var r = 0; r < m.spPts.size(); r++) {
             var run = m.spPts[r] as Array;
             for (var i = 0; i < run.size(); i++) {
                 var a = run[i] as Array;
-                dc.fillCircle(ox + a[0], oy + a[1], 9.2);
+                dc.fillCircle(ox + a[0] * AuraDraw.k, oy + a[1] * AuraDraw.k, 9.2 * AuraDraw.k);
                 if (i > 0) {
                     var b = run[i - 1] as Array;
-                    dc.drawLine(ox + b[0], oy + b[1], ox + a[0], oy + a[1]);
+                    dc.drawLine(ox + b[0] * AuraDraw.k, oy + b[1] * AuraDraw.k, ox + a[0] * AuraDraw.k, oy + a[1] * AuraDraw.k);
                 }
             }
         }
+        var ex = ox + m.spEnd[0] * AuraDraw.k;
+        var ey = oy + m.spEnd[1] * AuraDraw.k;
         if (m.trendOn) {
-            dc.setPenWidth(16);
-            dc.drawLine(ox + m.spEnd[0], oy + m.spEnd[1], ox + m.spRay[0], oy + m.spRay[1]);
-            dc.fillCircle(ox + m.spRay[0], oy + m.spRay[1], 8.2);
+            var rx = ox + m.spRay[0] * AuraDraw.k;
+            var ry = oy + m.spRay[1] * AuraDraw.k;
+            dc.setPenWidth(16 * AuraDraw.k);
+            dc.drawLine(ex, ey, rx, ry);
+            dc.fillCircle(rx, ry, 8.2 * AuraDraw.k);
         }
-        dc.fillCircle(ox + m.spEnd[0], oy + m.spEnd[1], 14);
+        dc.fillCircle(ex, ey, 14 * AuraDraw.k);
     }
 
     // a message's box (aura.js msgBox)
@@ -98,7 +102,8 @@ class AuraHalo {
 
     function rect(dc as Dc, b as Array, r as Numeric) as Void {
         if ((b[2] as Numeric) > 0 && (b[3] as Numeric) > 0) {
-            dc.fillRoundedRectangle(AuraDraw.cx + b[0], AuraDraw.cy + b[1], b[2], b[3], r);
+            dc.fillRoundedRectangle(AuraDraw.cx + b[0] * AuraDraw.k, AuraDraw.cy + b[1] * AuraDraw.k, b[2] * AuraDraw.k,
+                b[3] * AuraDraw.k, r * AuraDraw.k);
         }
     }
 
@@ -137,16 +142,18 @@ class AuraHalo {
             // the arrow's polygons grown 6.5 px: filled, every edge a 13 px line with round ends
             dc.setFill(0xFF000000);
             dc.setStroke(0xFF000000);
-            dc.setPenWidth(13);
+            dc.setPenWidth(13 * AuraDraw.k);
             for (var i = 0; i < m.arrowPts.size(); i++) {
                 var p = m.arrowPts[i] as Array;
                 var q = [];
                 for (var j = 0; j < p.size(); j++) {
                     var a = p[j] as Array;
                     var b = p[(j + 1) % p.size()] as Array;
-                    q.add([AuraDraw.cx + a[0], AuraDraw.cy + a[1]]);
-                    dc.drawLine(AuraDraw.cx + a[0], AuraDraw.cy + a[1], AuraDraw.cx + b[0], AuraDraw.cy + b[1]);
-                    dc.fillCircle(AuraDraw.cx + a[0], AuraDraw.cy + a[1], 6.5);
+                    var ax = AuraDraw.cx + a[0] * AuraDraw.k;
+                    var ay = AuraDraw.cy + a[1] * AuraDraw.k;
+                    q.add([ax, ay]);
+                    dc.drawLine(ax, ay, AuraDraw.cx + b[0] * AuraDraw.k, AuraDraw.cy + b[1] * AuraDraw.k);
+                    dc.fillCircle(ax, ay, 6.5 * AuraDraw.k);
                 }
                 dc.fillPolygon(q);
             }
@@ -156,7 +163,7 @@ class AuraHalo {
         sparkCut(dc, m);
         if (m.valueOn && m.ringD) {
             // the no-trend ring: a circle 6.5 px past its stroke
-            dc.fillCircle(AuraDraw.cx + m.ax, AuraDraw.cy + m.ay, 0.295 * m.box + 6.5);
+            dc.fillCircle(AuraDraw.cx + m.ax * AuraDraw.k, AuraDraw.cy + m.ay * AuraDraw.k, (0.295 * m.box + 6.5) * AuraDraw.k);
         }
         rect(dc, c, 22);
         rect(dc, mb, 14);
@@ -178,10 +185,11 @@ class AuraHalo {
                 label(dc, side, m.sy1, m.sensFs, AuraMath.tw(m.sensT, m.sensFs) + m.mkW, 0);
             }
         }
-        // the date along its arc (r 160, over the top, glyph tops outward: capitals, accents above)
-        var da = (AuraDraw.arcWidth("d26", m.dateWd, 2) + AuraDraw.arcWidth("d26b", m.dateDay, 2) +
-            AuraDraw.arcWidth("d26", m.dateMo, 2)) / 2 + 5.5;
-        da = da / 160 * 180 / Math.PI;
+        // the date along its arc (r 160, over the top, glyph tops outward: capitals, accents above); its width in device px
+        var sp = 2 * AuraDraw.k;
+        var da = (AuraDraw.arcWidth("d26", m.dateWd, sp) + AuraDraw.arcWidth("d26b", m.dateDay, sp) +
+            AuraDraw.arcWidth("d26", m.dateMo, sp)) / 2 + 5.5 * AuraDraw.k;
+        da = da / 160 * AuraDraw.k * 180 / Math.PI;
         band(dc, 160 + 9.5, 19 + 11, -da, da);
         // the bottom fields along theirs (r 172, counter-clockwise from 232°, tops inward); icons centred on r 164
         for (var i = 0; i < m.bottomRuns.size(); i++) {
@@ -201,7 +209,7 @@ class AuraHalo {
     // a band along a circle: centre radius r, width w, from a1 to a2 (degrees clockwise from 12)
     function band(dc as Dc, r as Numeric, w as Numeric, a1 as Numeric, a2 as Numeric) as Void {
         dc.setStroke(0xFF000000);
-        dc.setPenWidth(w);
-        dc.drawArc(AuraDraw.cx, AuraDraw.cy, r, Graphics.ARC_CLOCKWISE, 90 - a1, 90 - a2);
+        dc.setPenWidth(w * AuraDraw.k);
+        dc.drawArc(AuraDraw.cx, AuraDraw.cy, r * AuraDraw.k, Graphics.ARC_CLOCKWISE, 90 - a1, 90 - a2);
     }
 }

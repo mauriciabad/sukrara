@@ -12,6 +12,8 @@
 #   apps/garmin/build.sh export     the store package (monkeyc -e -r)      → apps/garmin/bin/SukraraAura.iq
 #   apps/garmin/build.sh export-beta  the same face under the beta app id   → apps/garmin/bin/SukraraAura-beta.iq
 #                                   (a Connect IQ *beta app* needs its own id: docs/20-publishing.md › Connect IQ store)
+#   apps/garmin/build.sh memory     the face with its heaviest state, printing its memory (debug, #217; source-memory/)
+#                                   → bin/SukraraAura-memory.prg: monkeydo it, read the MEM| lines
 # Environment: CIQ_SDK (default: the SDK Manager's current SDK), CIQ_KEY (default ~/.connectiq/sukrara-developer-key.der),
 # JAVA_HOME (default: Homebrew's openjdk@17 when present), CIQ_DEVICE (default descentmk343mm).
 set -eu
@@ -38,15 +40,18 @@ case "$MODE" in
   cases | test) JUNGLE=cases.jungle; OUT=bin/SukraraAura-cases.prg; FLAGS=""; python3 tools/cases.py ;;
   export) JUNGLE=monkey.jungle; OUT=bin/SukraraAura.iq; FLAGS="-e -r" ;;
   export-beta)
-    # monkey.jungle with the manifest's app id swapped for the beta's (BETA_ID, fixed so every beta upload updates the
-    # same beta app); paths are relative to the jungle, so it lives in bin/beta/ and points two folders up
+    # the manifest with its app id swapped for the beta's (BETA_ID, fixed so every beta upload updates the same beta
+    # app), built by beta.jungle (monkey.jungle's paths)
     BETA_ID=635140ec-f724-44fb-bc08-976fa9111250
     mkdir -p bin/beta
     sed "s/<iq:application id=\"[^\"]*\"/<iq:application id=\"$BETA_ID\"/" manifest.xml >bin/beta/manifest.xml
-    sed -e 's:^project.manifest = .*:project.manifest = manifest.xml:' -e 's:= source$:= ../../source:' \
-      -e 's:= resources$:= ../../resources:' -e 's:= resources-spa$:= ../../resources-spa:' monkey.jungle >bin/beta/monkey.jungle
-    JUNGLE=bin/beta/monkey.jungle; OUT=bin/SukraraAura-beta.iq; FLAGS="-e -r" ;;
-  *) echo "usage: build.sh [release|debug|cases|test|export|export-beta]" >&2; exit 2 ;;
+    JUNGLE=beta.jungle; OUT=bin/SukraraAura-beta.iq; FLAGS="-e -r" ;;
+  memory)
+    # the manifest with the memory hook's entry (source-memory/AuraMemory.mc), built by memory.jungle; debug only
+    mkdir -p bin/memory
+    sed 's/entry="AuraApp"/entry="AuraMemoryApp"/' manifest.xml >bin/memory/manifest.xml
+    JUNGLE=memory.jungle; OUT=bin/SukraraAura-memory.prg; FLAGS="" ;;
+  *) echo "usage: build.sh [release|debug|cases|test|export|export-beta|memory]" >&2; exit 2 ;;
 esac
 if [ "$MODE" = export ] || [ "$MODE" = export-beta ]; then
   # the store package: every product of the manifest, no -d

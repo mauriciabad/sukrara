@@ -5,13 +5,15 @@
 
   python3 apps/garmin/tools/garmin_test.py words              the face's words against contracts/graph/words/words.json
   python3 apps/garmin/tools/garmin_test.py numbers LOG        a case-loader log (D|case|path|value lines) against expect.json
-  uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run OUTDIR [COREREFS]
+  uv run --with pillow --with pyobjc-framework-Quartz --with pyobjc-framework-ScreenCaptureKit apps/garmin/tools/garmin_test.py run OUTDIR [COREREFS]
         builds the case loader, runs it in the Connect IQ simulator (started if needed), checks every case's numbers and
         diffs a screenshot of every case with docs/img/aura/ref/<id>.png and, given, the references without the dial
         (core_refs.mjs) (OUTDIR: sim, diff, diff-core images, report.txt). Exit 1 on a number that differs.
         Linux (CI): python3 with Pillow 9+ and ImageMagick, under Xvfb (xvfb-run); the simulator starts on $DISPLAY.
         CIQ_DEVICE=<product> runs it on another watch of manifest-cases.xml (default descentmk343mm); AURA_CASES=id,id…
-        only those cases.
+        only those cases. A watch whose screen isn't 390 px across diffs with docs/img/aura/ref-<N>/ (cases.json
+        "sizes": the cases drawn at every size; the others have no picture there) and checks the same 390 numbers (the
+        model is in reference px at every size), less the grain's dot count (its pitch is per size, SPEC.md §6.12).
 
 Numbers: positions and sizes ±0.5 px, angles ±0.1°, opacities ±0.01, the dial's inputs ±0.01, colours and strings
 exact; an element's numbers only where it is drawn (its disp), its disp always. Paths compare number by number (a
@@ -32,8 +34,22 @@ EXPECT = os.path.join(ROOT, "contracts", "watchface", "aura", "expect.json")
 CASES = os.path.join(ROOT, "contracts", "watchface", "aura", "cases.json")
 REF = os.path.join(ROOT, "docs", "img", "aura", "ref")
 WORDS = os.path.join(ROOT, "contracts", "graph", "words", "words.json")
-# the watch the simulator runs (build.sh's CIQ_DEVICE): every product of manifest.xml draws the same 390 x 390 pictures
+# the watch the simulator runs (build.sh's CIQ_DEVICE)
 DEVICE = os.environ.get("CIQ_DEVICE", "descentmk343mm")
+
+
+def screen_size(device):
+    """The device's screen, px across (its compiler.json); 390 when its files aren't here (the words check)."""
+    for d in ("~/Library/Application Support/Garmin/ConnectIQ/Devices", "~/.Garmin/ConnectIQ/Devices"):
+        p = os.path.join(os.path.expanduser(d), device, "compiler.json")
+        if os.path.exists(p):
+            return json.load(open(p, encoding="utf-8"))["resolution"]["width"]
+    return 390
+
+
+def ref_dir(n):
+    """The reference pictures of an N px screen (SPEC.md §1)."""
+    return REF if n == 390 else REF + "-%d" % n
 
 SKIP_GROUPS = {"v", "ids", "metal", "arcs"}
 SKIP_KEYS = {"fam", "fam2", "labelFam", "d"}  # font families; an icon's path data (the icon key says which)
@@ -132,7 +148,7 @@ SUBDISP = {  # flags inside an element that govern some of its fields
 }
 
 
-def compare(case_id, want, got):
+def compare(case_id, want, got, size=390):
     fails = []
     w = flat(want)
     for path, val in w.items():
@@ -156,6 +172,8 @@ def compare(case_id, want, got):
             val = DIALS.get(val, val)
             if path not in got:
                 continue
+        if path == "dial.d1" and size != 390 and w.get("info.dial") == "halftone":
+            continue  # the grain's pitch is a whole number of device px (SPEC.md §6.12): its dot count is per size
         if path not in got:
             fails.append("%s: %s missing" % (case_id, path))
             continue
@@ -175,9 +193,9 @@ def parse(log):
     return cases
 
 
-def numbers(log, ids=None):
+def numbers(log, ids=None, size=390):
     """A log's layouts against expect.json: (cases compared, cases expected, differences). ids: only those cases are
-    expected (a run of AURA_CASES)."""
+    expected (a run of AURA_CASES); size: the screen the log was drawn on."""
     want = {c["id"]: c["values"] for c in json.load(open(EXPECT, encoding="utf-8"))["cases"]
             if ids is None or c["id"] in ids}
     got = parse(log)
@@ -186,7 +204,7 @@ def numbers(log, ids=None):
         if cid not in got:
             continue
         done += 1
-        fails += compare(cid, w, got[cid])
+        fails += compare(cid, w, got[cid], size)
     return done, len(want), fails
 
 
@@ -349,12 +367,15 @@ def pictures(outdir, ids, shots, core=None):
         if cid not in shots:
             rows.append((10 ** 9, 0, cid, "no screenshot"))
             continue
-        n = diff(shots[cid], os.path.join(REF, cid + ".png"), os.path.join(outdir, "diff", cid + ".png"))
+        ref = os.path.join(ref_dir(screen_size(DEVICE)), cid + ".png")
+        if not os.path.exists(ref):
+            continue  # a case drawn only at 390 (cases.json "sizes")
+        n = diff(shots[cid], ref, os.path.join(outdir, "diff", cid + ".png"))
         k = diff(shots[cid], os.path.join(core, cid + ".png"), os.path.join(outdir, "diff-core", cid + ".png")) if core else 0
         rows.append((k if core else n, n, cid, ""))
     rows.sort(reverse=True)
-    out = ["", "pictures: pixels over 15 %% different inside the screen, worst first; 'ref' against docs/img/aura/ref (%s),"
-           % os.path.join(outdir, "diff"), "'core' against the reference without dial, halo and sweep (%s)" % os.path.join(outdir, "diff-core"),
+    out = ["", "pictures (%s, %d px): pixels over 15 %% different inside the screen, worst first; 'ref' against %s (%s),"
+           % (DEVICE, screen_size(DEVICE), os.path.relpath(ref_dir(screen_size(DEVICE)), ROOT), os.path.join(outdir, "diff")), "'core' against the reference without dial, halo and sweep (%s)" % os.path.join(outdir, "diff-core"),
            "   core     ref  case"]
     out += ["%7s %7s  %s %s" % (k if n < 10 ** 9 else "-", n if n < 10 ** 9 else "-", cid, note) for k, n, cid, note in rows]
     return out
@@ -400,9 +421,12 @@ def attempt(outdir, cases, todo, shots, log, simshot):
                             offset = simshot.calibrate(DEVICE)
                             break
                         except SystemExit:
-                            if k == 7:
-                                raise
                             time.sleep(1)
+                    if offset is None:
+                        # a simulator that showed another watch before keeps that one's window: start it afresh
+                        print("calibration marks not found: restarting the simulator")
+                        stop_simulator()
+                        break
                     print("calibration: the screen is %.2f, %.2f pt off simulator.json" % offset)
                 continue
             lines = [l for l in open(log, encoding="utf-8", errors="replace") if l.startswith("CASE ")]
@@ -431,12 +455,12 @@ def attempt(outdir, cases, todo, shots, log, simshot):
             shots[cid] = path
         # then the side labels against every row (AuraCombos), a slice per frame
         deadline = time.time() + 900
-        while time.time() < deadline and proc.poll() is None:
+        while offset is not None and time.time() < deadline and proc.poll() is None:
             if any(l.startswith("COMBOS|") for l in open(log, encoding="utf-8", errors="replace")):
                 break
             time.sleep(1)
     finally:
-        lost = proc.poll() is not None
+        lost = proc.poll() is not None or offset is None
         proc.terminate()
     return lost
 
@@ -477,7 +501,7 @@ def run(outdir, core=None):
     for line in open(merged, encoding="utf-8", errors="replace"):
         if line.startswith("COMBOS|"):
             combos = line.strip().split("|")
-    done, total, fails = numbers(merged, {c["id"] for c in cases})
+    done, total, fails = numbers(merged, {c["id"] for c in cases}, screen_size(DEVICE))
     report = ["numbers: %d of %d cases, %d differences" % (done, total, len(fails))] + fails
     if combos is None:
         report.append("combinations: no result (the case loader didn't finish them)")
