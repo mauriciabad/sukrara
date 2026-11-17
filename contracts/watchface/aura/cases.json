@@ -479,7 +479,7 @@
    "id": "sensor-none-es",
    "group": "sensor",
    "title": "Nothing paired, Spanish, battery days and percent",
-   "expect": "“Sin lecturas” fits, with the battery’s days and percent stacked beside it.",
+   "expect": "“Sin lecturas” fits, with the battery’s days and percent on one line above the row.",
    "cfg": {
     "sensor": "none",
     "lang": "es",
@@ -490,7 +490,7 @@
    "id": "sensor-ended-es",
    "group": "sensor",
    "title": "Sensor ended, Spanish, battery days and percent",
-   "expect": "Flag + “Terminado” and the pill “Sensor” fit, with the battery’s days and percent stacked beside them.",
+   "expect": "Flag + “Terminado” and the pill “Sensor” fit, with the battery’s days and percent on one line above the row.",
    "cfg": {
     "sensor": "ended",
     "lang": "es",
@@ -939,7 +939,7 @@
    "id": "fields-battery-both",
    "group": "fields",
    "title": "Battery: days and percent",
-   "expect": "Both labels at 9 o’clock, one over the other. Amber under 2 days.",
+   "expect": "Days and percent on one line (1d · 16%) above the row, in amber under 2 days.",
    "cfg": {
     "glucose": 118,
     "rate": 0.3,
@@ -965,7 +965,7 @@
    "id": "fields-battery-both-spark",
    "group": "fields",
    "title": "Days and percent beside a sparkline",
-   "expect": "The value and sparkline are too wide for the stacked label: it goes on one line (“9d · 86%”) in the gap above the value, never over it.",
+   "expect": "Days and percent on one line (9d · 86%) above the row; the value and the sparkline keep the row’s full width.",
    "cfg": {
     "glucose": 142,
     "rate": 0.8,
@@ -1179,7 +1179,7 @@
    "id": "fields-spark-short-value",
    "group": "fields",
    "title": "A short value, a longer sparkline",
-   "expect": "98 is narrow, so the sparkline takes the room it leaves: the value at the row's left edge, now at the right edge where it always is, and the box wider to the left, with the time scale unchanged (100 px = the last hour): it reaches back 3 hours, the meal's whole rise and fall.",
+   "expect": "98 is narrow, so the sparkline takes the room it leaves, with the time scale unchanged (100 px = the last hour): it reaches back as far as the row allows, the meal's rise and fall; the value, the box and the ray's 24 px are one group centred on the row.",
    "cfg": {
     "glucose": 98,
     "rate": 0.1,
@@ -1291,12 +1291,247 @@
    "id": "fields-spark-clear-label",
    "group": "fields",
    "title": "The value clear of the battery label",
-   "expect": "With a pill the battery label sits in the gap under the time, just above the row: the value still starts 8 px right of it (it never runs under a label), and the sparkline takes the rest of the width.",
+   "expect": "With a mute pill the battery label sits above the row, 3 px under the time's baseline; the row keeps the circle's full width.",
    "cfg": {
     "time": "9:59:36",
     "glucose": 180,
     "rate": -0.8,
     "status": "muted"
+   }
+  },
+  {
+   "id": "fields-spark-steep-rise",
+   "group": "fields",
+   "title": "A steep rise: the box ends where the line starts",
+   "expect": "Up 3 mg/dL a minute for the last hour, flat before: going back from now the line leaves the box (6 px out) about 40 min ago, so the box shows 45 min (the next step: 20, 30, 45, 60, 90, 120, 180) and the value and the box move together to the row's centre; the flat start, which would only trace the band's faint edge, is left out.",
+   "cfg": {
+    "glucose": 275,
+    "rate": 3,
+    "spark": [
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     95,
+     110,
+     125,
+     140,
+     155,
+     170,
+     185,
+     200,
+     215,
+     230,
+     245,
+     260,
+     275
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-steep-drop",
+   "group": "fields",
+   "title": "A steep drop",
+   "expect": "Down 2 mg/dL a minute from 180 to 60: the flat 180 before the drop leaves the box about an hour ago, so the box shows 90 min (the step past it); the Carbs pill under the row.",
+   "cfg": {
+    "glucose": 60,
+    "rate": -2,
+    "spark": [
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     180,
+     170,
+     160,
+     150,
+     140,
+     130,
+     120,
+     110,
+     100,
+     90,
+     80,
+     70,
+     60
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-rise-then-fall",
+   "group": "fields",
+   "title": "A rise, then a fall",
+   "expect": "The peak 40 min ago stays in the box, the start of the rise leaves it: the span ends at the step past where the visible line starts (60 min), and here the row allows 46.",
+   "cfg": {
+    "glucose": 150,
+    "rate": -1.5,
+    "spark": [
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110,
+     110.0,
+     118.3,
+     126.7,
+     135.0,
+     143.3,
+     151.7,
+     160.0,
+     168.3,
+     176.7,
+     185.0,
+     193.3,
+     201.7,
+     210.0,
+     202.5,
+     195.0,
+     187.5,
+     180.0,
+     172.5,
+     165.0,
+     157.5,
+     150.0
+    ]
+   }
+  },
+  {
+   "id": "fields-spark-centred-pill",
+   "group": "fields",
+   "title": "A 2-digit value with a pill",
+   "expect": "71 with a mute pill: the value, 14 px and the box are one group centred on the row (the room left over goes to the sides, never between the value and the box).",
+   "cfg": {
+    "glucose": 71,
+    "rate": -0.3,
+    "status": "muted",
+    "left": 25
+   }
+  },
+  {
+   "id": "fields-spark-centred-mmol-pill",
+   "group": "fields",
+   "title": "mmol/L, low, with Carbs",
+   "expect": "3.7 mmol/L with the Carbs pill: the group centred, 14 px between the value and the box.",
+   "cfg": {
+    "glucose": 66,
+    "rate": -0.8,
+    "unit": "mmol"
+   }
+  },
+  {
+   "id": "fields-spark-centred-age",
+   "group": "fields",
+   "title": "A 2-digit value, late",
+   "expect": "98 with the reading's time under it: the group centred on the row.",
+   "cfg": {
+    "glucose": 98,
+    "rate": 0.6,
+    "age": 3.2
+   }
+  },
+  {
+   "id": "fields-spark-centred-late-pill",
+   "group": "fields",
+   "title": "Late, with a pill",
+   "expect": "64 late with the Carbs pill: the reading's time and the pill on the chip row, the value and its sparkline centred above.",
+   "cfg": {
+    "glucose": 64,
+    "rate": -1.2,
+    "age": 3.2
+   }
+  },
+  {
+   "id": "fields-spark-ray-up-level",
+   "group": "fields",
+   "title": "Steep up, glucose rail on the right",
+   "expect": "The trend ray and the end dot have 24 px kept past now, so a steep ray never reaches the rail's ticks.",
+   "cfg": {
+    "glucose": 180,
+    "rate": 2.8
+   }
+  },
+  {
+   "id": "fields-spark-ray-down-battery",
+   "group": "fields",
+   "title": "Steep down, battery on the right",
+   "expect": "The ray points down-right within its 24 px, clear of the battery rail; the label above the row.",
+   "cfg": {
+    "glucose": 98,
+    "rate": -2.8,
+    "sideR": "battery"
+   }
+  },
+  {
+   "id": "fields-spark-ray-up-sensor",
+   "group": "fields",
+   "title": "Steep up, sensor rail on the right",
+   "expect": "The ray clears the sensor rail; the sensor label above the row.",
+   "cfg": {
+    "glucose": 140,
+    "rate": 2.6,
+    "sideR": "sensor"
+   }
+  },
+  {
+   "id": "fields-spark-ray-flat-none",
+   "group": "fields",
+   "title": "Flat, nothing on the right",
+   "expect": "The same 24 px past now with no rail: the group stays centred.",
+   "cfg": {
+    "glucose": 112,
+    "rate": 0,
+    "sideR": "none"
    }
   },
   {
@@ -1354,7 +1589,7 @@
    "id": "sides-battery-both-right",
    "group": "sides",
    "title": "Battery days and percent on the right",
-   "expect": "Days and percent don’t stack beside the sparkline with a mark, so the battery label is one line (9d · 86%), right-aligned with its mark; the sensor label on the left with its own.",
+   "expect": "The battery label on one line (9d · 86%), right-aligned with its mark, above the row; the sensor label on the left with its own.",
    "cfg": {
     "sideL": "sensor",
     "sideR": "battery",
@@ -1585,7 +1820,7 @@
    "id": "sides-mmol-widest-right",
    "group": "sides",
    "title": "Widest value, labels both sides",
-   "expect": "mmol/L 22.2 with the sparkline: the sizes step down until both labels clear the row.",
+   "expect": "mmol/L 22.2 with the sparkline and both labels above the row: the row keeps its width.",
    "cfg": {
     "sideL": "battery",
     "sideR": "sensor",
@@ -1598,7 +1833,7 @@
    "id": "sides-lo-es",
    "group": "sides",
    "title": "LO, Spanish, sensor right",
-   "expect": "The LO block clears the right label (9 d) as the left.",
+   "expect": "The right label (9 d) above the row; the LO block under it.",
    "cfg": {
     "sideL": "level",
     "sideR": "sensor",
@@ -1610,12 +1845,24 @@
    "id": "sides-ended-es",
    "group": "sides",
    "title": "Ended, Spanish, battery and sensor",
-   "expect": "“Terminado” clears the battery label; the sensor rail unlit with no label, so no marks (nothing to tell apart).",
+   "expect": "“Terminado” under the battery label; the sensor rail unlit with no label, so no marks (nothing to tell apart).",
    "cfg": {
     "sideL": "battery",
     "sideR": "sensor",
     "sensor": "ended",
     "lang": "es"
+   }
+  },
+  {
+   "id": "sides-labels-above-pill",
+   "group": "sides",
+   "title": "Both labels with a pill",
+   "expect": "Battery and sensor labels above the row (their top 3 px under the time's baseline), each with its mark; the row keeps the circle's full width.",
+   "cfg": {
+    "sideL": "battery",
+    "sideR": "sensor",
+    "glucose": 212,
+    "rate": 0.3
    }
   },
   {

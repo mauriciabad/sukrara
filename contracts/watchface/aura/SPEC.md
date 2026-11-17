@@ -223,17 +223,15 @@ Then: top-field baseline `tfBase = y₀ + TF·0.668`; time top `tTop` and baseli
 - time: tWfit/2 ≤ halfAt(tTop) (tWfit = the time's width with the widest tens-of-minutes digit 0–5 at this hour, §6.3,
   so the size changes only with the hour);
 - value (when there is one, **even while private hides it**): with the arrow, total/2 ≤ halfAt(vTop) and ≤ halfAt(vBase)
-  (total = value + arrow, §6.4); with the sparkline, the row's edges (§6.5: the circle's, each side's label kept 8 px
-  clear) leave at least vW + 14 + 100 (the value and the shortest sparkline), and then the labels need no test of their
-  own;
-- **each side's label** (the battery's §6.9, the sensor rail's §6.9b; the glucose rail has none), unless always-on: its
-  bottom `tBase + 6 + labH ≤ vTop` (it sits in the gap above the row), or the row's left edge ≥ `−166 + labW + 8`.
-  The row is centred, so its right edge is the left one mirrored and the same test holds for the right label. labW =
-  the label's width (its widest line) + 24 when it has a mark (§6.9); labH = its height (one line `fs·0.668`, the
-  stacked battery `fs·0.668·2 + 9`). The row's left edge: the value's `−total/2`; or a message's first line: warm-up
-  `−(46 + w)/2`, sensor ended `−(38 + w)/2`, no readings / nothing paired `−w/2` (w = its text width, §6.7).
-- **Days and percent** (§6.9) are stacked when some size set fits with the stack; otherwise the sizes are chosen with the
-  one-line label, which always sits in the gap.
+  (total = value + arrow, §6.4); with the sparkline, the row's edges (§6.5: the circle's) leave at least
+  vW + 14 + 76 + 24 (the value, the gap, the shortest box, 30 min, and the ray's room).
+
+**The side labels sit above the row** (the battery's §6.9, the sensor rail's §6.9b; the glucose rail has none), in the
+22 px gap between the time and the value, so they need no fit of their own and never narrow the row: their top 3 px
+under the time's baseline (baseline `tBase + 3 + 0.668·fs`), 4.3 px over the value's top at fs 22 (5.6 at 20). The
+coordinator's call on the owner's words "Labels can sit above the row. they look bad side to side" (2026-11-17), not
+the owner's explicit pick between drawn options; a gauge style by the rails' top ends was drawn and dropped (it meets
+the top field).
 
 **Stable on purpose**: always-on keeps the top field's row even though the field is hidden (nothing moves when the
 watch dims); private lays out the value's row as if the value were shown (nothing moves on reveal).
@@ -334,16 +332,26 @@ the time ≤ 13 px each side at T 76) and with the hour; its size only with the 
   vW × the time left of the 5 s (1 → 0).
 
 ### 6.5 Sparkline (setting: trend = sparkline, the default)
-Replaces the arrow. **It takes the whole width the fits allow** (the owner: a shorter value leaves room, and the room
-shows more time, never a stretch). The row's edges, with `xh = min(halfAt(vTop), halfAt(vBase))` (§4): left `xl = −xh`,
-or, with a label on the left side (not always-on), `max(−xh, −166 + labW + 8)`; right `xr = xh`, or with a label on the
-right side `min(xh, 166 − labW − 8)` (labW §4, its mark included). **Wherever the label sits**, in the gap under the
-time too: a label 1–2 px above the row would otherwise sit right on the digits (`fields-spark-clear-label`).
-The digits start at `x0 = xl`; the box's right edge, *now*, is at xr whatever the value (it never moves with the
-reading); its width `SW = min(xr − (xl + vW + 14), K·ln 19)` (at least 100: the size sets' fit, §4, asks for
-vW + 14 + 100), so `sx = xr − SW`; total = xr − xl. Top `sy = vBase − V − 6`, height SH = V + 14. Examples: 112 at
-V 60 beside the battery label, SW 128.4 (the last 1 h 52 min); 98, 149 (2 h 52 min); 71, 151.3 (3 h); 180, 103.4 (1 h 5 min).
-- **Time axis is logarithmic, the same scale at every width**: x(age) = xr − K·ln(1 + age/10), K = 100 / ln 7 (100 px
+Replaces the arrow. **The row** is the value, 14 px, the box and **24 px past now** for the trend ray (22 px at any
+angle) and the end dot, so neither reaches the rail's ticks (`fields-spark-ray-up-level`, `-ray-down-battery`,
+`-ray-up-sensor`, `-ray-flat-none`). The row's edges: the circle's, `xl = −xh`, `xr = xh`, `xh = min(halfAt(vTop),
+halfAt(vBase))` (§4); the side labels sit above it (§4) and never narrow it.
+- **The box's width**: `SW = min(xr − xl − vW − 14 − 24, K·ln(1 + span/10))`, with the span (minutes) from the steep trim
+  below (at most 180, `K·ln 19`): a shorter value leaves room and the room shows more time, never a stretch (the
+  owner). Top `sy = vBase − V − 6`, height SH = V + 14.
+- **The group is centred**: gw = vW + 14 + SW + 24, `x0 = clamp((xl + xr)/2 − gw/2, xl, xr − gw)`, `sx = x0 + vW + 14`,
+  total = vW + 14 + SW. Room left over goes to the sides, never between the value and the box (the owner's "2-digit
+  gap": 71 with a pill had ~30 px; `fields-spark-centred-pill`, `-centred-mmol-pill`, `-centred-age`,
+  `-centred-late-pill`).
+- **The steep trim** (the box ends where the visible line starts): with the window below (mid), going back from now,
+  the first reading whose y₀ is more than 6 px (half the fade band) outside the box is the last one drawn; its age,
+  rounded **up** to a step of 20 / 30 / 45 / 60 / 90 / 120 / 180 min, is the span. The steps make it change only now
+  and then, not with every reading. Nothing leaves the box: 180. The band, the limits, the fade and the halo follow the
+  shorter box; the window still pans on the last hour (`fields-spark-steep-rise`, `-steep-drop`, `-rise-then-fall`).
+- Examples (V 60, no chip): 112 (the made-up 3 h), SW 111.6 (the last 1 h 18 min: the row is the limit); 98 with a meal
+  3 h ago, 132.3 (2 h 1 min). With a pill (V 54): a rise of 3 mg/dL a minute for the last hour, 275, the span 45 min
+  (SW 87.6); 71 muted, 151.3 (3 h), the group centred with x0 −112.8.
+- **Time axis is logarithmic, the same scale at every width**: x(age) = sx + SW − K·ln(1 + age/10), K = 100 / ln 7 (100 px
   = the last hour, as the box was); the newest 10 min take about 36 px. A wider box shows older readings: the box
   reaches back `min(180, 10·(e^(SW/K) − 1))` minutes. **At most 3 hours**: a meal's whole rise and fall and rapid
   insulin's main action; past that an hour takes under 15 px. Points every 5 min, age of point j = reading age +
@@ -451,15 +459,14 @@ gives the right rail's numbers and `rail.dR` / `rail.dL` say which sides draw it
 - **The battery**: 10 segments (step 8.78°, 6.98° each). Lit: the first `ceil(days)` (max 10) in the battery colour; the
   rest grid.
 - **Battery colour**: soft; **amber (high) under 2 days, red (low) under 1 day**.
-- **Label just under the time**: first baseline `tBase + 6 + fs·0.668`; on the left from x = −166 (left-aligned), on the
+- **Label above the row** (§4): baseline `tBase + 3 + fs·0.668`; on the left from x = −166 (left-aligned), on the
   right to x = 166 (right-aligned); font 22 (20 for both), weight 600 (700 under 2 days), the battery colour. Text by
-  setting: days (`9d`; under a day hours, `14h`, at least 1h), percent (`86%`), or both: stacked (days, then percent on a
-  second line 0.668·fs + 9 lower) where the stack fits beside the value or message (§4), else one line, days ␣·␣
-  percent (`9d · 86%`, `fields-battery-both-spark`).
+  setting: days (`9d`; under a day hours, `14h`, at least 1h), percent (`86%`), or both: one line, days ␣·␣ percent
+  (`9d · 86%`, `fields-battery-both-spark`).
 - **Marks** (`sides.marks`): only while a battery label and a sensor label (§6.9b) are both on screen, so two "9d" can be
   told apart: the battery icon (§2) with the battery label and Sukrara's sensor disc with the sensor's, both 20 px,
   filled, in the label's colour, on the rail's side: centred at x = ∓156, y = baseline − fs·0.334; the text moves 24 px
-  inwards (left from −142, right to 142; a stacked second line too). With one segmented rail on screen, or the sensor
+  inwards (left from −142, right to 142). With one segmented rail on screen, or the sensor
   label empty, no mark (`sides-battery-sensor`, `sides-battery-both-right`, `sides-ended-es`).
 - Hidden in always-on.
 
@@ -467,7 +474,7 @@ gives the right rail's numbers and `rail.dR` / `rail.dL` say which sides draw it
 - **Segments**: one per day of the sensor's own life, Sukrara's start to end: n = ceil(life in days), at most 30 (a
   longer life: 30 segments of life/30 days each); a Libre 3 Plus 15, a G7 with its 12 h grace 11 (`sensor-rail-g7`).
   Lit = ceil(hours left / 24 / (life / n)), from the bottom, as the battery (§6.9 geometry).
-- **Label** (font 22, the rail's colour, under the time as the battery's): whole days left, rounded down (`9d`); on the
+- **Label** (font 22, the rail's colour, above the row as the battery's): whole days left, rounded down (`9d`); on the
   last day hours, rounded up, at least 1 (`14h`); weight 600.
 - **Colour**: soft; in Sukrara's countdown (`ending`, *Sensor countdown*, default the last 8 h) **amber, label 700**
   (`sensor-rail-ending`). No red: an ended sensor has its pill.
@@ -571,9 +578,8 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
   grown glyphs would merge into it anyway): the line's box is from Atkinson's ascender 0.73 em over the baseline to its
   descender 0.2 em under it, and the top field's reaches up to its icon (max(0.73·TF, icon/2 + 0.334·TF)):
   - the top field: (−w/2 − 5.5, tfBase − up − 5.5, w + 11, up + 0.2·TF + 11), rx 5.5;
-  - the side labels (battery, sensor), each line with its mark: on the left (−171.5 + inset, baseline − 0.73·fs − 5.5,
-    its width + 11, 0.93·fs + 11), on the right mirrored (ending at 171.5 − inset), rx 5.5 (inset 24 for a battery's
-    second line under a mark, else 0);
+  - the side labels (battery, sensor), each line with its mark: on the left (−171.5, baseline − 0.73·fs − 5.5,
+    its width + 11, 0.93·fs + 11), on the right mirrored (ending at 171.5), rx 5.5;
   - the date: a band along its arc, centre r 169.5, 30 wide, over its width (each glyph + its letter-spacing 2) + 5.5 at
     each end;
   - the bottom fields: per piece a band along the arc over its length + 5.5 at each end: texts centre r 172 − 6.4,
@@ -642,10 +648,10 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 |---|---|---|
 | glucose | in-range, rising, falling-fast, late, old, no-readings, long-gap, another-day, week-old, lo, hi, mmol-widest | freshness and the reading's time, trend, LO / HI, units |
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
-| sensor | warmup, almost, ending, ended-sending, ended, none, phone-lost, battery-low, none-es, ended-es, rail-days, rail-last-day, rail-ending, rail-ending-aod, rail-ending-night, rail-ending-private, rail-both-ending, rail-ended-sending, rail-ended, rail-warmup, rail-almost, rail-ending-no-phone, rail-none, rail-ending-same-fields, rail-ending-meal, rail-no-dates, rail-g7 | sensor, phone, battery states; Spanish messages beside the stacked battery label; the sensor rail through its life and every edge case of the automatic *sensor ending* field (§6.10) |
+| sensor | warmup, almost, ending, ended-sending, ended, none, phone-lost, battery-low, none-es, ended-es, rail-days, rail-last-day, rail-ending, rail-ending-aod, rail-ending-night, rail-ending-private, rail-both-ending, rail-ended-sending, rail-ended, rail-warmup, rail-almost, rail-ending-no-phone, rail-none, rail-ending-same-fields, rail-ending-meal, rail-no-dates, rail-g7 | sensor, phone, battery states; Spanish messages under the one-line battery label; the sensor rail through its life and every edge case of the automatic *sensor ending* field (§6.10) |
 | modes | awake, aod, night, night-low, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
-| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off | fields and settings, missing values and readings |
-| sides | mirrored, battery-sensor, sensor-battery-high, battery-low-sensor-ending, battery-both-right, level-sensor-warmup, none-level, none-none, battery-twice, level-twice, level-twice-high, level-twice-contours, level-twice-glow, level-left-contours, level-left-lasers, level-left-glow, level-twice-aod-very-low, level-left-aod, level-left-night-low, private-no-rail, private-no-rail-needed, private-no-rail-quiet, mmol-widest-right, lo-es, ended-es | the side elements on either side, both, none; marks; the dial's focus; private, always-on and night with them |
+| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, long-acting, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off, spark-clear-label, spark-steep-rise, spark-steep-drop, spark-rise-then-fall, spark-centred-pill, spark-centred-mmol-pill, spark-centred-age, spark-centred-late-pill, spark-ray-up-level, spark-ray-down-battery, spark-ray-up-sensor, spark-ray-flat-none | fields and settings, missing values and readings |
+| sides | mirrored, battery-sensor, sensor-battery-high, battery-low-sensor-ending, battery-both-right, level-sensor-warmup, none-level, none-none, battery-twice, level-twice, level-twice-high, level-twice-contours, level-twice-glow, level-left-contours, level-left-lasers, level-left-glow, level-twice-aod-very-low, level-left-aod, level-left-night-low, private-no-rail, private-no-rail-needed, private-no-rail-quiet, mmol-widest-right, lo-es, ended-es, labels-above-pill | the side elements on either side, both, none; marks; the dial's focus; private, always-on and night with them |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
 
@@ -661,12 +667,14 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 - Battery above 10 days: 10 segments; 0: none lit, label `1h`.
 - Steps ≥ 100,000 and any long field text: the overflow rule (§6.10).
 - Spanish everywhere (`modes-spanish`, `sensor-none-es`, `sensor-ended-es`): longest words fit (pill `Silenciadas`,
-  `Sin lecturas desde`, `Terminado` beside the stacked battery label). Words stay short ("Insulin", "Ended") so the
+  `Sin lecturas desde`, `Terminado` under the one-line battery label). Words stay short ("Insulin", "Ended") so the
   numbers keep their size.
 - Private + old, private + no readings, private + always-on, night + out of range, always-on + old.
-- The side labels never meet the value or a message, whatever the width (sparkline, mmol/L `22.2`, LO / HI), language,
-  battery text (`9d`, `14h`, `86%`, both), sensor text (`9d`, `14h`, `5h`, `42m`, none), marks, the side they're on or
-  the top field: in the reference, all 14,592 combinations of those are clear. Test it the same way in the port.
+- The side labels sit between the time's baseline and the value's top, whatever the width (sparkline, mmol/L `22.2`,
+  LO / HI), language, battery text (`9d`, `14h`, `86%`, both), sensor text (`9d`, `14h`, `5h`, `42m`, none), marks, the
+  side they're on or the top field: in the reference, all 14,592 combinations of those hold. Test it the same way in the
+  port. (The sparkline's box starts 6 px over the value's top, so a label over the box's right end shares its top
+  1.7 px: only the line at the very top of the window can come that close.)
 - A mute with no end (`alerts-muted-forever`), Mute all while out of range (the side's pill with its time).
 - Phone out of reach: the value ages by itself (late → old → no readings) from the reading's own time.
 - A new sensor mid-warm-up after a gap; sensor ended while the phone is away.

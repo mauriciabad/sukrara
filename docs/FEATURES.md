@@ -2066,7 +2066,10 @@ ages by itself from its own time with the phone away.
   kerning (no fixed cells, no footed 1); only the minutes' last digit is tabular, so the time never jitters by the
   minute, and its size follows the hour (a narrower time is drawn bigger, up to about 1.27 × the value).
 - **Sparkline** (setting *Trend*, the default): up to the last 3 hours, as far back as the room beside the value
-  allows (a shorter value shows more time on the same time scale, never a stretch; now stays at the right edge), on a
+  allows (a shorter value shows more time on the same time scale, never a stretch), the value and the box one group
+  centred on the row with 24 px kept past now for the trend ray (it never reaches the rail). After a steep rise or drop
+  the box ends where the visible line starts (in steps of 20, 30, 45, 60, 90, 120, 180 min, so it changes only now and
+  then) instead of tracing the faint edge of the fade band. On a
   fixed scale (0.6 px per mg/dL, never rescaled: a slope always
   means the same speed), the newest minutes widest. It frames the person's range (both dotted limits and a quiet green
   band) whenever the hour fits with it, and otherwise pans to the hour with the newest reading inside; what runs past
@@ -2082,15 +2085,16 @@ ages by itself from its own time with the phone away.
     bead at the value (hollow when old, none without a value) with the last 30 minutes as a fading trail; LO / HI
     pinned at the ends with a chevron. On the left it is the right one mirrored (up is still higher); the aura's focus
     follows the bead to its side (the centre with a rail on both sides).
-  - **Battery**: 10 segments filling from the bottom (amber under 2 days, red under 1) and its label under the time
-    (days, percent or both; right-aligned on the right).
+  - **Battery**: 10 segments filling from the bottom (amber under 2 days, red under 1) and its label above the value's
+    row (days, percent or both on one line, `9d · 86%`; right-aligned on the right).
   - **Sensor days**: a segment per day of the sensor's life, from Sukrara's start and end (15 for a Libre 3 Plus, 11
     for a G7 with its grace), lit for the days left; label `9d`, hours on the last day (`14h`); amber in Sukrara's
     sensor countdown. In the warm-up it is a progress bar (the minutes to ready); ended: unlit, no label (the pill
     says it); no dates from the phone: `--`; not monitoring: none.
   - With a battery and a sensor label both on screen, each gets its mark (a battery icon, the sensor disc) on its
     rail's side, so the two "9d" can't be confused; alone, a label has no mark.
-  - The labels never meet the value or a message: the sizes step down until both sides clear the row.
+  - The labels sit above the value's row, under the time, so they never meet the value or a message and never narrow
+    the row.
 - **Pill** (Sukrara's status, only with a current value): *Carbs* / *Insulin* when needed (filled); a quiet after a
   treatment or a muted side as the side's tonal pill with the time left in Sukrara's compact format (`1h 20m`, `6h`;
   *Muted* with no end); Mute all in range as a grey pill; *Ended* (the sensor ended but still sends) and *Sensor*

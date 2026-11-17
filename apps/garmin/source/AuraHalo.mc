@@ -174,9 +174,6 @@ class AuraHalo {
             if (k.equals("battery")) {
                 var bf = m.battFs;
                 label(dc, side, m.by1, bf, AuraMath.tw(m.battL1, bf) + m.mkW, 0);
-                if (!m.battL2.equals("")) {
-                    label(dc, side, m.by1 + bf * 0.668 + 9, bf, AuraMath.tw(m.battL2, bf), m.mkW);
-                }
             } else if (k.equals("sensor") && m.sensOn && !m.sensT.equals("")) {
                 label(dc, side, m.sy1, m.sensFs, AuraMath.tw(m.sensT, m.sensFs) + m.mkW, 0);
             }

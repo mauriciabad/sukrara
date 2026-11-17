@@ -292,10 +292,7 @@ module AuraDump {
         out("batt.col", col(m.battCol));
         out("batt.w", m.battBold ? 700 : 600);
         out("batt.l1", m.battL1);
-        out("batt.l2", m.battL2);
-        out("batt.l2D", disp(!m.battL2.equals("")));
         out("batt.y1", m.by1);
-        out("batt.y2", AuraMath.r1(m.by1 + m.battFs * 0.668 + 9));
         out("batt.fs", m.battFs);
         out("batt.xL", -166 + m.mkW);
         out("batt.xR", 166 - m.mkW);

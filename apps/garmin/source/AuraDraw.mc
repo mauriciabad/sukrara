@@ -367,9 +367,6 @@ module AuraDraw {
         segments(dc, m, side, 10, false, m.battCol);
         var key = "l" + m.battFs.toString() + (m.battBold ? "b" : "s");
         sideLabel(dc, m, side, key, m.by1, m.battL1, m.battCol, m.battFs, "battery");
-        if (!m.battL2.equals("")) {
-            sideLabel(dc, m, side, key, AuraMath.r1(m.by1 + m.battFs * 0.668 + 9), m.battL2, m.battCol, m.battFs, null);
-        }
     }
 
     function sensorRail(dc as Dc, m as AuraModel, side as Number) as Void {

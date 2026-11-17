@@ -4,12 +4,11 @@
 import Toybox.Lang;
 import Toybox.System;
 
-// SPEC.md §9: "the side labels never meet the value or a message, whatever the width (sparkline, mmol/L 22.2, LO /
-// HI), language, battery text (9d, 14h, 86%, both), sensor text, marks, the side they're on or the top field". Every
-// combination of those, laid out by the port, checked: each label (under the time, on its side) and the value's row
-// (the value with its arrow or sparkline, or a message's first line; centred, so the right side mirrors the left) never
-// overlap (8 px apart, or the label wholly above the row). The case loader runs them after
-// the cases, a few per timer tick; garmin_test.py reads the "COMBOS" line. Debug only.
+// SPEC.md §9: the side labels sit between the time's baseline and the value's top, whatever the width (sparkline,
+// mmol/L 22.2, LO / HI), language, battery text (9d, 14h, 86%, both), sensor text, marks, the side they're on or the top
+// field. Every combination of those, laid out by the port, checked: each label's top at or under the time's baseline
+// and its baseline over the value's (or a message's) top. The case loader runs them after the cases, a few per timer
+// tick; garmin_test.py reads the "COMBOS" line. Debug only.
 (:debug)
 module AuraCombos {
     // the row: [glucose, unit, trend style, sensor, age (min)] (the widest values, LO / HI, every message)
@@ -67,36 +66,18 @@ module AuraCombos {
     }
 
     // null when clear, else what's wrong
-    // (the time is not checked here: with no top field and a pill its last size set is wider than its own fit margin,
-    // halfAt(tTop), in the reference too; it stays inside the screen)
     function check(m as AuraModel) as String? {
         if (m.aod) {
             return null;
         }
-        // the row's edges: a message is centred; the value's row runs from x0 to the sparkline's now (the arrow: centred)
-        var left;
-        if (m.hasValue) {
-            left = m.x0; // the value's left edge (the sparkline's row spans the fits' width, SPEC.md §6.5)
-        } else if ("warm".equals(m.msgKind)) {
-            left = -(46 + AuraMath.tw(m.msgT1, 32)) / 2;
-        } else if ("ended".equals(m.msgKind)) {
-            left = -(38 + AuraMath.tw(m.msgT1, 32)) / 2;
-        } else if ("none".equals(m.msgKind)) {
-            left = -AuraMath.tw(m.msgT1, 30) / 2;
-        } else {
-            left = -AuraMath.tw(m.msgT1, 25) / 2;
-        }
-        var right = m.hasValue && m.spark ? m.sx + m.SW : -left;
         var ks = [m.sideL, m.sideR];
         for (var i = 0; i < 2; i++) {
             var k = ks[i] as String;
             var l1 = "";
-            var l2 = "";
             var fs = 22;
             var y = 0.0;
             if (k.equals("battery")) {
                 l1 = m.battL1;
-                l2 = m.battL2;
                 fs = m.battFs;
                 y = m.by1;
             } else if (k.equals("sensor") && m.sensOn) {
@@ -107,22 +88,11 @@ module AuraCombos {
             if (l1.equals("")) {
                 continue;
             }
-            // the label's box: its widest line and its mark
-            var w = AuraMath.tw(l1, fs);
-            if (!l2.equals("")) {
-                w = AuraMath.max(w, AuraMath.tw(l2, fs));
+            if (y - fs * 0.668 < m.tBase - 0.05) {
+                return (i == 0 ? "left " : "right ") + k + " label " + l1 + " above the time's baseline";
             }
-            w += m.mkW;
-            var top = y - fs * 0.668;
-            var bottom = y + (l2.equals("") ? 0 : fs * 0.668 + 9);
-            var clearBelow = bottom <= m.vTop + 0.05;
-            var clearBeside = i == 0 ? left >= -166 + w + 8 - 0.05 : right <= 166 - w - 8 + 0.05;
-            if (!clearBelow && !clearBeside) {
-                return (i == 0 ? "left " : "right ") + k + " label " + l1 + "/" + l2 + " width " + w.format("%.1f") + " bottom " + bottom.format("%.1f")
-                    + ", row left " + left.format("%.1f") + " top " + m.vTop.format("%.1f");
-            }
-            if (top < m.tBase - 0.05) {
-                return "label above the time's baseline";
+            if (y > m.vTop + 0.05) {
+                return (i == 0 ? "left " : "right ") + k + " label " + l1 + " baseline " + y.format("%.1f") + " under the row's top " + m.vTop.format("%.1f");
             }
         }
         return null;

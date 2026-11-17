@@ -95,6 +95,7 @@ class AuraModel {
     var spPts as Array = [] as Array; // runs of points (a gap breaks the line)
     var spLimits as Array = [] as Array; // y of the high and low limits
     var spMid as Float = 0.0; // the sparkline window's middle, mg/dL
+    var spSeries as Array = [] as Array; // the sparkline's readings, oldest first (5 min apart, null = missed)
     var spFramed as Boolean = false; // the window frames the person's range
     var spEnd as Array = [0.0, 0.0] as Array;
     var spRay as Array = [0.0, 0.0] as Array; // the ray's end
@@ -136,8 +137,6 @@ class AuraModel {
     var battFs as Number = 22;
     var battBold as Boolean = false;
     var battL1 as String = "";
-    var battL2 as String = "";
-    var battOne as Boolean = false;
     var battLit as Number = 0;
     var by1 as Float = 0.0;
 
@@ -369,79 +368,25 @@ class AuraModel {
 
     var battDaysT as String = "";
     var battPctT as String = "";
-    var battOneT as String = "";
     var battBoth as Boolean = false;
 
-    hidden function battW(one as Boolean) as Float {
-        if (one) {
-            return AuraMath.tw(battOneT, battFs);
-        }
-        return AuraMath.max(AuraMath.tw(battL1, battFs), battBoth ? AuraMath.tw(battPctT, battFs) : 0);
-    }
-
-    hidden function battH(one as Boolean) as Float {
-        return battBoth && !one ? battFs * 0.668 * 2 + 9 : battFs * 0.668;
-    }
-
-    // a side's label: its width (the widest line and the mark) and height; 0 wide = no label
-    hidden function labW(k as String, one as Boolean) as Float {
-        if (k.equals("battery")) {
-            return battW(one) + mkW;
-        }
-        if (k.equals("sensor") && sensOn && !sensT.equals("")) {
-            return AuraMath.tw(sensT, sensFs) + mkW;
-        }
-        return 0.0;
-    }
-
-    hidden function labH(k as String, one as Boolean) as Float {
-        return k.equals("battery") ? battH(one) : sensFs * 0.668;
-    }
-
-    // the sparkline row's edges [left, right]: the circle's, each side's label kept 8 px clear wherever it sits (not
-    // always-on, where the labels hide): the value never runs under a label (SPEC.md §6.5)
-    hidden function rowEdges(one as Boolean) as Array<Float> {
-        var xh = AuraMath.min(halfAt(vTop), halfAt(vBase));
-        var wl = aod ? 0.0 : labW(sideL, one);
-        var wr = aod ? 0.0 : labW(sideR, one);
-        return [wl > 0 ? AuraMath.max(-xh, -166 + wl + 8) : -xh, wr > 0 ? AuraMath.min(xh, 166 - wr - 8) : xh];
-    }
-
-    // the side's label is in the gap under the time, or beside the row (centred: the right side mirrors the left)
-    hidden function okSide(k as String, one as Boolean, left as Float) as Boolean {
-        var w = labW(k, one);
-        return aod || w == 0 || (hasValue && spark) || tBase + 6 + labH(k, one) <= vTop || left >= -166 + w + 8;
+    // the sparkline row's half width: the circle's (the side labels sit above the row and never narrow it, SPEC.md §4)
+    hidden function rowHalf() as Float {
+        return AuraMath.min(halfAt(vTop), halfAt(vBase));
     }
 
     function halfAt(y as Float) as Float {
         return Math.sqrt(AuraMath.max(0, 171 * 171 - y * y)).toFloat() - 6;
     }
 
-    hidden function msgLeft() as Float {
-        if ("warm".equals(msgKind)) {
-            return -(46 + AuraMath.tw(AuraWords.warming(lang), 32)) / 2;
-        }
-        if ("ended".equals(msgKind)) {
-            return -(38 + AuraMath.tw(AuraWords.ended(lang), 32)) / 2;
-        }
-        if ("none".equals(msgKind)) {
-            return -AuraMath.tw(AuraWords.noYet(lang), 30) / 2;
-        }
-        if ("gap".equals(msgKind)) {
-            return -AuraMath.tw(AuraWords.noSince(lang), 25) / 2;
-        }
-        return 0.0;
-    }
-
-    // lay the rows out with the first size set that fits; true when one did
-    hidden function fitRows(one as Boolean) as Boolean {
+    // lay the rows out with the first size set that fits
+    hidden function fitRows() as Void {
         // the time grows by its string: the larger time sizes first, up to ~1.27 x the value's cap (SPEC.md §4)
         var sets = "pill".equals(chipKind)
             ? [[68, 54, 24], [66, 54, 24], [64, 54, 24], [62, 54, 24]]
             : "age".equals(chipKind)
                 ? [[70, 56, 24], [68, 56, 24], [66, 56, 24], [64, 56, 24], [62, 54, 24]]
                 : [[76, 60, 26], [74, 60, 26], [72, 60, 26], [70, 60, 26], [68, 60, 26], [66, 58, 26], [64, 56, 25], [62, 54, 24]];
-        var left0 = msgLeft();
         for (var n = 0; n < sets.size(); n++) {
             var set = sets[n] as Array<Number>;
             T = set[0];
@@ -472,15 +417,13 @@ class AuraModel {
             timeGeom(T);
             valueGeom(V);
             var okT = tFit / 2 <= halfAt(tTop);
-            var ed = rowEdges(one);
-            var okV = !hasValue || (spark ? ed[1] - ed[0] >= vW + 114 - 0.000000001
+            // the sparkline: the value, 14 px, the shortest box (76 px, 30 min) and the ray's 24 px
+            var okV = !hasValue || (spark ? 2 * rowHalf() >= vW + 14 + 76 + RAY - 0.000000001
                 : total / 2 <= halfAt(vTop) && total / 2 <= halfAt(vBase));
-            var left = hasValue ? -total / 2 : left0;
-            if (okT && okV && okSide(sideL, one, left) && okSide(sideR, one, left)) {
-                return true;
+            if (okT && okV) {
+                return;
             }
         }
-        return false;
     }
 
     hidden function rows() as Void {
@@ -489,7 +432,7 @@ class AuraModel {
             ? "LO"
             : hi ? "HI" : inp.unit.equals("mmol") ? (g / 18.0182).format("%.1f") : Math.floor(g + 0.5).toNumber().toString();
         tStr = AuraMath.clock(nowInfo, inp.is24);
-        // the battery label: days, percent or both (stacked where it fits beside the row, else one line)
+        // the battery label: days, percent or both on one line (9d · 86%)
         battery = inp.battery;
         battDaysT = battery < 1
             ? AuraWords.h(lang, AuraMath.max(1, Math.floor(battery * 24 + 0.5)).toNumber())
@@ -497,12 +440,12 @@ class AuraModel {
         var pct = inp.batteryPct != null ? inp.batteryPct.toFloat() : Math.floor(battery * 10 + 0.5).toFloat();
         battPctT = AuraMath.clamp(Math.floor(pct + 0.5), 0, 100).toNumber().toString() + "%";
         battBoth = inp.battLabel.equals("both");
-        battL1 = inp.battLabel.equals("percent") ? battPctT : battDaysT;
+        battL1 = battBoth
+            ? battDaysT + AuraMath.NB + "·" + AuraMath.NB + battPctT
+            : inp.battLabel.equals("percent") ? battPctT : battDaysT;
         battFs = battBoth ? 20 : 22;
-        battOneT = battDaysT + AuraMath.NB + "·" + AuraMath.NB + battPctT;
         sides();
-        battOne = battBoth && battOn && !fitRows(false);
-        fitRows(battOne);
+        fitRows();
     }
 
     // --- the sides and the sensor rail's label (SPEC.md §6.8-6.9b) ---
@@ -558,21 +501,23 @@ class AuraModel {
     var SW as Float = 100.0;
     var spAge as Float = 60.0;
     const SPAN_MAX = 180.0; // the sparkline reaches back at most 3 hours (SPEC.md §6.5)
+    const RAY = 24.0; // past now: the trend ray (22 px at any angle) and the end dot, clear of the rail
+    const STEPS = [20, 30, 45, 60, 90, 120, 180]; // the steep trim's spans (minutes)
 
     hidden function value() as Void {
         x0 = -total / 2;
+        sparkWindow();
         if (spark) {
-            // the whole width the fits allow: the value from the left edge, now at the right edge (SPEC.md §6.5)
-            // each side's label: the left one moves the value's edge, the right one now, 8 px clear of it
-            var ed = rowEdges(battOne);
-            var xl = ed[0];
-            var xr = ed[1];
+            // the row: the value, 14 px, the box and RAY, one group centred on the circle's width (SPEC.md §6.5); the box
+            // takes what's left up to the span of the steep trim (never stretched: the time scale is fixed)
+            var xh = rowHalf();
             var kt = 100 / Math.ln(7);
-            SW = AuraMath.min(xr - (xl + vW + 14), kt * Math.ln(1 + SPAN_MAX / 10)).toFloat();
+            var span = steepSpan();
+            SW = AuraMath.min(2 * xh - vW - 14 - RAY, kt * Math.ln(1 + span / 10)).toFloat();
             spAge = AuraMath.min(SPAN_MAX, 10 * (Math.pow(Math.E, SW / kt) - 1)).toFloat();
-            total = xr - xl;
-            x0 = xl;
-            sx = xr - SW;
+            total = vW + 14 + SW;
+            x0 = AuraMath.clamp(-(total + RAY) / 2, -xh, xh - total - RAY).toFloat();
+            sx = x0 + vW + 14;
         }
         ax = AuraMath.r1(spark ? 0 : x0 + vW + gap + box / 2);
         ay = AuraMath.r1(vBase - V / 2.0);
@@ -654,11 +599,8 @@ class AuraModel {
         return d <= SPARK_FADE / 2 ? 1 - 0.55 * d / (SPARK_FADE / 2) : AuraMath.max(0.15, 0.45 - 0.3 * (d - SPARK_FADE / 2) / (SPARK_FADE / 2));
     }
 
-    hidden function sparkline() as Void {
-        if (!spark) {
-            SW = 100.0;
-            sx = x0 + vW + 14;
-        }
+    // the sparkline's series and its window (they decide where the visible line starts, so before the row's width)
+    hidden function sparkWindow() as Void {
         SH = V + 14.0;
         sy = vBase - V - 6;
         var g = inp.glucose;
@@ -705,6 +647,40 @@ class AuraModel {
         var rHi = AuraMath.max(hHi, inp.limits[3]);
         spFramed = rHi - rLo <= span;
         spMid = spFramed ? (rLo + rHi) / 2.0 : AuraMath.clamp((hLo + hHi) / 2.0, newest - 0.4 * span, newest + 0.4 * span);
+        spSeries = series;
+    }
+
+    // the steep trim: going back from now, the first reading more than half the fade band (6 px) out of the box is the
+    // last one drawn; its age rounded up to a step is the span (minutes); nothing leaves the box: 180 (SPEC.md §6.5)
+    hidden function steepSpan() as Float {
+        var n = spSeries.size();
+        for (var j = n - 1; j >= 0; j--) {
+            var v = spSeries[j];
+            if (v == null) {
+                continue;
+            }
+            var y0 = sy + SH / 2 - (v - spMid) * SPARK_PX;
+            if (y0 < sy - SPARK_FADE / 2 || y0 > sy + SH + SPARK_FADE / 2) {
+                var need = inp.age + 5 * (n - 1 - j);
+                for (var i = 0; i < STEPS.size(); i++) {
+                    if (STEPS[i] >= need - 0.000000001) {
+                        return STEPS[i].toFloat();
+                    }
+                }
+                return SPAN_MAX;
+            }
+        }
+        return SPAN_MAX;
+    }
+
+    hidden function sparkline() as Void {
+        if (!spark) {
+            SW = 100.0;
+            sx = x0 + vW + 14;
+        }
+        var g = inp.glucose;
+        var series = spSeries;
+        var n = series.size();
         spPts = [];
         var run = [];
         var ln7 = Math.ln(7);
@@ -844,12 +820,11 @@ class AuraModel {
         battLit = AuraMath.clamp(Math.ceil(battery), 0, 10).toNumber();
         battCol = battery < 1 ? c("low") : battery < 2 ? c("high") : c("soft");
         battBold = battery < 2;
-        by1 = AuraMath.r1(tBase + 6 + battFs * 0.668);
+        // the side labels above the row: their top 3 px under the time's baseline (SPEC.md §4)
+        by1 = AuraMath.r1(tBase + 3 + battFs * 0.668);
         sensCol = inp.sensor.equals("ending") ? c("high") : c("soft");
         sensBold = inp.sensor.equals("ending");
-        sy1 = AuraMath.r1(tBase + 6 + sensFs * 0.668);
-        battL2 = battBoth && !battOne ? battPctT : "";
-        battL1 = battOne ? battOneT : battL1;
+        sy1 = AuraMath.r1(tBase + 3 + sensFs * 0.668);
     }
 
     // --- the time and the date (SPEC.md §6.1, §6.3) ---
