@@ -47,7 +47,7 @@ jobs:
           cache-dependency-path: website/package-lock.json
       - run: npm ci
         working-directory: website
-      - name: Build (the newest release from the GitHub API, required: the buttons download its files)
+      - name: "Build (the newest release from the GitHub API, required: the buttons download its files)"
         run: npm run build
         working-directory: website
         env:
