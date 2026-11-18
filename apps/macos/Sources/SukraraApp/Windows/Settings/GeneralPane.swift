@@ -297,6 +297,8 @@ struct SettingsView: View {
     var updates: Updates?
     var openFollow: () -> Void
     var reconnect: (() -> Void)? = nil
+    /// Settings › Source's *Answer…* (an unanswered Mac): setup's Whose glucose step.
+    var answerSource: (() -> Void)? = nil
     /// The running alert rules (Send Test Alert, Active now); nil in an offline run.
     var alerts: AlertController? = nil
     /// Opens the About window (nil when this run has none: renders).
@@ -309,7 +311,8 @@ struct SettingsView: View {
                 GeneralPane(
                     model: model, loginItem: loginItem, updates: updates, openFollow: openFollow,
                     openAbout: openAbout)
-            case .source: SourcePane(model: model, openFollow: openFollow, reconnect: reconnect)
+            case .source:
+                SourcePane(model: model, openFollow: openFollow, reconnect: reconnect, answer: answerSource)
             case .alerts: AlertsRangesPane(model: model, controller: alerts)
             case .readings: ReadingsPane(model: model)
             case .graph: GraphPane(model: model)

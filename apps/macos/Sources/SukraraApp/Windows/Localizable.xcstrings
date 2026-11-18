@@ -643,6 +643,22 @@
         }
       }
     },
+    "Answer…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Answer…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Responder…"
+          }
+        }
+      }
+    },
     "App Store version" : {
       "localizations" : {
         "en" : {

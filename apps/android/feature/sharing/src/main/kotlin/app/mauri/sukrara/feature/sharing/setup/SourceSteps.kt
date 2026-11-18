@@ -28,7 +28,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.source.PersonChoiceCard
 import app.mauri.sukrara.designsystem.source.SourceIcon
 import app.mauri.sukrara.designsystem.source.labelRes
-import app.mauri.sukrara.designsystem.source.meansRes
+import app.mauri.sukrara.designsystem.source.sourceMeans
 import app.mauri.sukrara.designsystem.source.titleRes
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -66,11 +66,14 @@ internal fun ColumnScope.PersonStep(
             )
         }
     }
-    Text(
-        stringResource(R.string.sh_setup_person_later),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+    // opened from Settings › Source it is no news that it can be changed there
+    if (!u.visit) {
+        Text(
+            stringResource(R.string.sh_setup_person_later),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
     StepButtons(
         stringResource(R.string.sh_setup_continue),
         onPrimary = { Person.of(selected)?.let(actions.choosePerson) },
@@ -122,7 +125,7 @@ internal fun ColumnScope.SourceStep(
                     selected = selected == kind.id,
                     onSelect = { selected = kind.id },
                     summary =
-                        stringResource(spec.meansRes()).let { means ->
+                        sourceMeans(spec, grouped = true).let { means ->
                             if (spec.readsSensor) stringResource(R.string.sh_setup_source_recommended, means) else means
                         },
                     leading = { SourceIcon(kind) },
@@ -151,9 +154,22 @@ internal fun ColumnScope.SourceStep(
             text =
                 stringResource(
                     when (change.spec.kind) {
-                        SourceKind.Sensor -> R.string.sh_setup_source_change_sensor
-                        SourceKind.PhoneApp -> R.string.sh_setup_source_change_phone_app
-                        SourceKind.Sukrara -> R.string.sh_setup_source_change_sukrara
+                        SourceKind.Sensor -> {
+                            R.string.sh_setup_source_change_sensor
+                        }
+
+                        // only a sensor Sukrara read has a connection to stop and a pairing that stays
+                        SourceKind.PhoneApp -> {
+                            if (change.replaces?.kind == SourceKind.Sensor) {
+                                R.string.sh_setup_source_change_phone_app_from_sensor
+                            } else {
+                                R.string.sh_setup_source_change_phone_app
+                            }
+                        }
+
+                        SourceKind.Sukrara -> {
+                            R.string.sh_setup_source_change_sukrara
+                        }
                     },
                 ),
             confirm = stringResource(R.string.sh_setup_source_change_confirm),
@@ -164,8 +180,9 @@ internal fun ColumnScope.SourceStep(
 }
 
 /**
- * The connect step for Juggluco on this phone: what to turn on in Juggluco, *Open Juggluco*, then *Reading received*
- * once the first reading arrives (the same notice as the sensor's). *Later* keeps it on home's *Finish setup*.
+ * The connect step for Juggluco on this phone: what to turn on in Juggluco, *Open Juggluco* (or, Juggluco not
+ * installed, that it is missing), then *Reading received* once the first reading arrives (the same notice as the
+ * sensor's). *Later* keeps it on home's *Finish setup*.
  */
 @Composable
 internal fun ColumnScope.JugglucoStep(
@@ -178,8 +195,9 @@ internal fun ColumnScope.JugglucoStep(
         NoticeCard(stringResource(R.string.sh_setup_sensor_live), icon = DsR.drawable.ds_ic_check_circle)
         StepButtons(stringResource(R.string.sh_setup_continue), actions.completeSensor)
     } else {
-        NoticeCard(stringResource(R.string.sh_setup_juggluco_waiting))
         val open = context.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE)
+        // not installed: waiting would never end, so say what is missing
+        NoticeCard(stringResource(if (open == null) R.string.sh_setup_juggluco_missing else R.string.sh_setup_juggluco_waiting))
         StepButtons(
             stringResource(R.string.sh_setup_juggluco_open).takeIf { open != null },
             { open?.let { context.startSafely(it) } },

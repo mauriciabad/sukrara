@@ -463,6 +463,18 @@ Added:
 - **Updates from before the question**: the device keeps reading what it's set up for (`inferSource`: follow → their
   Sukrara, a sensor pairing → your sensor, Juggluco installed after setup began → Juggluco; Mac: following → their
   Sukrara) and setup asks once more, preselected.
+- **The review's fixes** (product / UX / QA pass, same day): with nothing else to go by, the history says whose it is
+  (`historyOwner`: a reading taken or imported → yours; only another Sukrara's → theirs), so the first answer never
+  adopts one person's readings for the other (found on an update with history but no pairing: *Someone else's* kept
+  the wearer's readings as the child's, and answering *Yours* then asked to delete them). *Now · Live* → *Last
+  reading* (*Just now* / *2 minutes ago* / *None yet*: Live claimed a working source from any old reading); *works
+  offline* said once (the group title); the Switch dialog mentions the sensor only when leaving it; *Connect
+  Juggluco* says when Juggluco isn't installed; no step counter on steps opened from Settings, and Back from the
+  source returns to the cards; the welcome speaks of yours or someone else's glucose; the card's press ripple inside
+  its corners; Source's own icon (*input*, the drop is Readings'). Mac: someone else's art in purple (it was pink-red,
+  a low's colour), no *Skip* on the two questions (Android has none; skipping left the Mac reading nothing), the
+  person asked again after a relaunch half-way, *Answer…* on the unanswered banner, the follow footer only while
+  following.
 
 Discarded or deferred, with reasons:
 - *Your sensor beside the official app*, official app, LibreLinkUp, Dexcom Share, Nightscout as kinds: no data path in

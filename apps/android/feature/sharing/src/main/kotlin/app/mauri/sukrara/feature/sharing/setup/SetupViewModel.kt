@@ -112,6 +112,8 @@ data class SetupUi(
     val single: Boolean,
     /** Back shows the previous step ([SetupMachine.previous]); false = Back leaves setup. */
     val canBack: Boolean,
+    /** Opened from Settings on one step (Whose glucose, Where it comes from…): no walk, no step counter. */
+    val visit: Boolean = false,
     /** Whose glucose picked on the person step (null = not picked in this visit: what the phone runs on). */
     val person: Person? = null,
     /** The source step's open confirmation (null = none). */
@@ -245,8 +247,9 @@ class SetupViewModel(
                 } else {
                     backTo?.let(SetupStep::valueOf)?.takeIf { it in steps } ?: SetupMachine.next(i.record, facts)
                 }
-            // "Step 2 of 5" within its part (the essentials or the optional steps); Ready: none
-            val place = step?.let { SetupMachine.place(it, facts) }
+            // "Step 2 of 5" within its part (the essentials or the optional steps); Ready: none. A step opened from
+            // Settings (Whose glucose, Where it comes from…) is no walk: no counter
+            val place = step?.takeIf { mode != Mode.Visit }?.let { SetupMachine.place(it, facts) }
             SetupUi(
                 step = step,
                 index = place?.first ?: 0,
@@ -265,6 +268,7 @@ class SetupViewModel(
                 busy = l.busy,
                 single = single,
                 canBack = !single && step != null && SetupMachine.previous(step, facts) != null,
+                visit = mode == Mode.Visit,
                 person = picked?.let(Person::of),
                 sourceChange = change.takeIf { step == SetupStep.Source },
                 root = root,
@@ -304,6 +308,11 @@ class SetupViewModel(
         val u = ui.value ?: return onLeave()
         val step = u.step ?: return onLeave()
         if (u.single) {
+            // Settings › Source's *Whose glucose* goes on to the source: Back there returns to the cards (the pick kept)
+            if (step == SetupStep.Source && openedOn == SetupStep.Person && mode.value == Mode.Visit.name) {
+                alone.value = SetupStep.Person.name
+                return
+            }
             if (step != SetupStep.History) return onLeave()
             // leaving clears this view model and its scope: the answer is written before the screen leaves
             viewModelScope.launch {

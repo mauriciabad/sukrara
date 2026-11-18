@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import java.time.Instant
 
-/** Where the wearer's glucose comes from (schema `source.source`). */
+/** Where the wearer's glucose comes from (schema `source.kind`). */
 enum class SourceChoice {
     /** Sukrara reads the Libre 3 / 3 Plus itself (NFC + Bluetooth). */
     Libre3Direct,

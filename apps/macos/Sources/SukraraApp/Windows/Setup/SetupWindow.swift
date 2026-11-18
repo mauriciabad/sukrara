@@ -42,10 +42,13 @@ public final class SetupModel {
         complete(.person)
     }
 
+    /// Whose glucose the source step is for: the pick, else what the Mac runs on; nil after a relaunch half-way (the pick
+    /// isn't stored before the source): the source step asks it again.
+    var sourcePerson: Person? { pickedPerson ?? settings.source.running?.person }
+
     /// The source step's Continue: whose glucose and the source are stored together.
     func chooseSource() {
-        let person = pickedPerson ?? settings.source.running?.person ?? .theirs
-        guard let spec = SourceSpec(person: person, kind: pickedKind) else { return }
+        guard let person = sourcePerson, let spec = SourceSpec(person: person, kind: pickedKind) else { return }
         settings.source.choose(spec)
         complete(.source)
     }
@@ -101,7 +104,7 @@ public final class SetupModel {
 
 /// First-run setup: Welcome → Follow → Alerts (thresholds checked, changed, confirmed) → Notifications → Open at
 /// login → Done.
-/// Every step has Skip and Back; closing the window leaves "Finish setup" in the panel.
+/// Every step has Back and, but Whose glucose and Source, Skip; closing the window leaves "Finish setup" in the panel.
 public struct SetupView: View {
     @Bindable var model: SetupModel
     var close: () -> Void
@@ -117,23 +120,19 @@ public struct SetupView: View {
             Group {
                 switch model.flow.current {
                 case .welcome: welcome
-                case .person:
-                    page(.person, L10n.t("Whose glucose will Sukrara show?")) {
-                        PersonChoice(
-                            selected: Binding(
-                                get: { model.pickedPerson ?? model.settings.source.running?.person },
-                                set: { model.pickedPerson = $0 }))
-                        Text(L10n.t("You can change it any time in Settings › Source.")).font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
+                case .person: personPage
                 case .source:
-                    page(
-                        .source,
-                        (model.pickedPerson ?? .theirs) == .yours
-                            ? L10n.t("Where does your glucose come from?")
-                            : L10n.t("Where does their glucose come from?")
-                    ) {
-                        SourceKindChoice(person: model.pickedPerson ?? .theirs, selected: $model.pickedKind)
+                    if let person = model.sourcePerson {
+                        page(
+                            .source,
+                            person == .yours
+                                ? L10n.t("Where does your glucose come from?")
+                                : L10n.t("Where does their glucose come from?")
+                        ) {
+                            SourceKindChoice(person: person, selected: $model.pickedKind)
+                        }
+                    } else {
+                        personPage
                     }
                 case .follow:
                     if model.runningKind == .lanJuggluco {
@@ -169,6 +168,18 @@ public struct SetupView: View {
         .animation(reduceMotion ? nil : .spring(duration: 0.35), value: model.flow.current)
         .padding(24)
         .frame(width: 520, alignment: .topLeading)
+    }
+
+    /// *Whose glucose will Sukrara show?*: the two cards, preselected with what the Mac runs on.
+    private var personPage: some View {
+        page(.person, L10n.t("Whose glucose will Sukrara show?")) {
+            PersonChoice(
+                selected: Binding(
+                    get: { model.pickedPerson ?? model.settings.source.running?.person },
+                    set: { model.pickedPerson = $0 }))
+            Text(L10n.t("You can change it any time in Settings › Source.")).font(.callout)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var welcome: some View {
@@ -264,7 +275,11 @@ public struct SetupView: View {
             HStack {
                 Button(L10n.t("Back")) { model.flow.back() }
                 Spacer()
-                Button(L10n.t("Skip")) { model.skip(step) }
+                // whose glucose and its source can't be skipped (Android's rule too): without them Sukrara reads
+                // nothing; closing the window leaves them on Finish Setup…
+                if step != .person && step != .source {
+                    Button(L10n.t("Skip")) { model.skip(step) }
+                }
                 // one default button per window: on Follow someone, Return belongs to the invite link's Continue until
                 // the follow is done
                 Button(primaryTitle(step)) { Task { await primary(step) } }

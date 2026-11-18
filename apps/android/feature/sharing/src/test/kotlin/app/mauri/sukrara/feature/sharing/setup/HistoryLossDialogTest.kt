@@ -89,7 +89,7 @@ class HistoryLossDialogTest {
         compose
             .onNodeWithText(
                 "You chose “Yours”. This deletes what this phone kept from before: 1,204 glucose readings and " +
-                    "12 treatments, from Oct 3, 2026 to Nov 10, 2026. It can’t be undone. To keep a copy, export a CSV file first.",
+                    "12 treatments, from Oct 3, 2026 to Nov 10, 2026. It can’t be undone.",
             ).assertExists()
     }
 

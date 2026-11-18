@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.first
 import okhttp3.OkHttpClient
 
 /**
- * The sensor's object graph (DI: AppGraph composes this; nothing here edits it). [sourceKind] is the `source.source`
+ * The sensor's object graph (DI: AppGraph composes this; nothing here edits it). [sourceKind] is the `source.kind`
  * setting; [receiverIds] is a typed DataStore (`receiver-ids.json`); [secure] holds the pairing (`sensor`).
  * The wearer role starts [source] (`SourceManager.start`); the hub reads it as its one [app.mauri.sukrara.core.model.ReadingSource].
  */

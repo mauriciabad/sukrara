@@ -107,6 +107,7 @@ final class WindowCoordinator {
         ) {
             SettingsWindowContent(
                 model: settings, app: model, openFollow: { [weak self] in self?.openFollow() },
+                answerSource: { [weak self] in self?.openSetup(at: .person) },
                 openAbout: { [weak self] in self?.openAbout() })
         }
     }
@@ -262,6 +263,7 @@ private struct SettingsWindowContent: View {
     let model: SettingsModel
     let app: AppModel
     let openFollow: () -> Void
+    let answerSource: () -> Void
     let openAbout: () -> Void
 
     var body: some View {
@@ -271,6 +273,7 @@ private struct SettingsWindowContent: View {
             updates: app.updates,
             openFollow: openFollow,
             reconnect: app.follower == nil ? nil : { [weak app] in app?.networkCameBack() },
+            answerSource: answerSource,
             alerts: app.alerts,
             openAbout: openAbout)
     }

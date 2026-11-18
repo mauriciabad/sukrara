@@ -28,7 +28,7 @@ fun SourceSpec.titleRes(): Int =
         SourceKind.Sukrara -> if (person == Person.Yours) R.string.ds_source_sukrara_yours else R.string.ds_source_sukrara_theirs
     }
 
-/** What the source brings and how: its delay, whether it works offline, what it needs. */
+/** What the source brings and how: its delay, what it needs (with whether it works offline: [sourceMeans]). */
 @StringRes
 fun SourceSpec.meansRes(): Int =
     when (kind) {
@@ -50,6 +50,19 @@ fun SourceSpec.meansRes(): Int =
             }
         }
     }
+
+/**
+ * What [spec] brings, in words: [meansRes], plus *works offline* when it does and no group title above it says so
+ * ([grouped]: setup's picker groups the offline sources under *On this phone · works offline*).
+ */
+@Composable
+fun sourceMeans(
+    spec: SourceSpec,
+    grouped: Boolean = false,
+): String {
+    val means = stringResource(spec.meansRes())
+    return if (spec.kind.offline && !grouped) stringResource(R.string.ds_source_means_offline, means) else means
+}
 
 /** *Yours* / *Someone else's*. */
 @StringRes

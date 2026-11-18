@@ -241,14 +241,16 @@
     <string name="ds_person_yours">Yours</string>
     <string name="ds_person_theirs">Someone else\'s</string>
     <string name="ds_source_sensor">Sukrara reads your sensor</string>
-    <string name="ds_source_sensor_means">Live every minute · works offline · no other app</string>
+    <string name="ds_source_sensor_means">Live every minute · no other app</string>
     <string name="ds_source_phone_app">Juggluco on this phone</string>
-    <string name="ds_source_phone_app_means">Juggluco reads the sensor, Sukrara reads Juggluco · works offline</string>
-    <string name="ds_source_phone_app_means_theirs">Juggluco gets their glucose, Sukrara reads Juggluco · works offline</string>
+    <string name="ds_source_phone_app_means">Juggluco reads the sensor, Sukrara reads Juggluco</string>
+    <string name="ds_source_phone_app_means_theirs">Juggluco gets their glucose, Sukrara reads Juggluco</string>
     <string name="ds_source_sukrara_yours">Sukrara on your other phone</string>
     <string name="ds_source_sukrara_yours_means">That phone reads your sensor and shares it here · internet or Bluetooth nearby</string>
     <string name="ds_source_sukrara_theirs">Their Sukrara</string>
     <string name="ds_source_sukrara_theirs_means">Their phone shares it with yours after an invite · internet or Bluetooth nearby</string>
+    <!-- a source that works without internet, where no group title says so (Settings › Source); %1$s = what it brings -->
+    <string name="ds_source_means_offline">%1$s · works offline</string>
     <!-- the Source row's summary on the Settings overview: whose · where from -->
     <string name="ds_source_summary">%1$s · %2$s</string>
     <string name="ds_source_short_sensor">sensor</string>

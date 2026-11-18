@@ -125,7 +125,8 @@ struct PersonArt: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let tone: Color = person == .yours ? .accentColor : .pink
+        // someone else's in purple (Android's tertiary): never a red or pink, the colours of a low
+        let tone: Color = person == .yours ? .accentColor : .purple
         Canvas { ctx, size in
             let c = CGPoint(x: size.width / 2, y: size.height / 2)
             let r = size.height * 0.46
@@ -256,6 +257,8 @@ struct SourcePane: View {
     @Bindable var model: SettingsModel
     var openFollow: () -> Void
     var reconnect: (() -> Void)?
+    /// An unanswered Mac's *Answer…*: setup's two steps, preselected (nil in renders).
+    var answer: (() -> Void)? = nil
 
     var body: some View {
         let choice = model.source
@@ -263,11 +266,15 @@ struct SourcePane: View {
         Form {
             if choice.stored == nil {
                 Section {
-                    Label(
-                        L10n.t(
-                            "Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer."
-                        ),
-                        systemImage: "info.circle")
+                    HStack(alignment: .firstTextBaseline) {
+                        Label(
+                            L10n.t(
+                                "Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer."
+                            ),
+                            systemImage: "info.circle")
+                        Spacer()
+                        if let answer { Button(L10n.t("Answer…"), action: answer) }
+                    }
                 }
             }
             Section(L10n.t("Whose glucose")) {
@@ -295,12 +302,15 @@ struct SourcePane: View {
                 } header: {
                     Text(L10n.t("Where it comes from"))
                 } footer: {
-                    Text(
-                        L10n.t(
-                            "Changing the source keeps the person this Mac follows, so switching back needs no new invite."
+                    // only true while this Mac follows someone (said to no one else)
+                    if model.follow.status.hasFollow {
+                        Text(
+                            L10n.t(
+                                "Changing the source keeps the person this Mac follows, so switching back needs no new invite."
+                            )
                         )
-                    )
-                    .formFooter()
+                        .formFooter()
+                    }
                 }
                 switch running.kind {
                 case .sukrara:

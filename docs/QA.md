@@ -1132,14 +1132,23 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       lifts its card, the ring breathes once, a tick; with *Remove animations* it snaps. TalkBack reads "radio button".
 - [ ] *Yours* → Source shows the sensor (*Recommended* line), Juggluco and *Sukrara on your other phone*; *Someone
       else's* → Juggluco and *Their Sukrara*. Back from Source returns to the cards, nothing stored.
-- [ ] Settings › Source: *Whose glucose* and *Where it comes from* open the steps alone; a change says what changes
-      (*Switch to …?*), a change of person with history asks *Delete the earlier history?* (*Export CSV first*, *Cancel*).
+- [ ] Settings › Source: *Whose glucose* and *Where it comes from* open the steps alone (no *Step N of M*); *Whose
+      glucose* → *Continue* → the source, Back → the cards again (the pick kept), Back → Settings › Source unchanged; a
+      change says what changes (*Switch to …?*; from their Sukrara to Juggluco nothing about a sensor), a change of
+      person with history asks *Delete the earlier history?* (*Export CSV first*, *Cancel*). *Last reading* reads *Just
+      now* / *2 minutes ago* / *None yet*. Juggluco not installed: *Connect Juggluco* says so. Press a person card: the
+      ripple stays inside its rounded corners.
 - [ ] Their Sukrara: the follow rows and *Settings from* are on Settings › Source; Settings › Sharing says sharing is for
       your own glucose and leads there. *Stop following* → setup.
 - [ ] An install updated from a version before #213 (wearer, Juggluco, follower): monitoring and alerts keep running;
-      setup opens on *Whose glucose* preselected; answering the same deletes nothing; Back → home's *Finish setup*.
-- [ ] Mac: setup's *Whose glucose* (two cards side by side) and *Source* (radio rows); Settings › Source pane; Juggluco on
-      the network chosen while following someone shows Juggluco only; back to *Their Sukrara* shows the wearer at once.
+      setup opens on *Whose glucose* preselected; answering the same deletes nothing; Back → home's *Finish setup*. A
+      wearer with history but no pairing (emulator: `run-as app.mauri.sukrara rm files/state/source*.json` under
+      `/data/user_de/0/app.mauri.sukrara` after `SYNTHETIC`): *Yours* preselected, *Someone else's* asks *Delete the
+      earlier history?* (never keeps your readings as theirs).
+- [ ] Mac: setup's *Whose glucose* (two cards side by side, someone else's in purple) and *Source* (radio rows), neither
+      with *Skip*; Settings › Source pane; Juggluco on the network chosen while following someone shows Juggluco only;
+      back to *Their Sukrara* shows the wearer at once; *Changing the source keeps the person…* only while following; an
+      unanswered Mac's banner has *Answer…* (setup's two steps).
 
 ## Q29 Website
 

@@ -93,7 +93,7 @@ enum class Section(
 ) {
     Alerts(DsR.drawable.ds_ic_notifications, Category.Red),
     Reliability(DsR.drawable.ds_ic_check_circle, Category.Red),
-    Source(DsR.drawable.ds_ic_water_drop, Category.Green),
+    Source(DsR.drawable.ds_ic_input, Category.Green),
     SettingsFrom(DsR.drawable.ds_ic_tune, Category.Blue),
     Readings(DsR.drawable.ds_ic_water_drop, Category.Purple),
     Graph(DsR.drawable.ds_ic_monitoring, Category.Purple),

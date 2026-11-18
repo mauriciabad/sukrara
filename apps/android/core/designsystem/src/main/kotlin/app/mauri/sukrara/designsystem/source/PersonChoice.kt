@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -39,6 +38,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
@@ -87,16 +88,19 @@ fun PersonChoiceCard(
             breath.animateTo(1f, tween(BREATH_MS, easing = FastOutSlowInEasing))
         }
     }
+    // the selectable Surface clips its press ripple to the card's corners (a selectable on the outer modifier drew a
+    // square ripple past them); TalkBack still hears a radio button
     Surface(
+        selected = selected,
+        onClick = {
+            if (!selected) haptics.tick()
+            onSelect()
+        },
         shape = RoundedCornerShape(24.dp),
         color = container,
         border = BorderStroke(border, outline),
         shadowElevation = lift,
-        modifier =
-            modifier.fillMaxWidth().selectable(selected, role = Role.RadioButton) {
-                if (!selected) haptics.tick()
-                onSelect()
-            },
+        modifier = modifier.fillMaxWidth().semantics { role = Role.RadioButton },
     ) {
         Column(Modifier.padding(16.dp)) {
             PersonArt(person, selected, breath.value, Modifier.fillMaxWidth().height(ArtHeight))

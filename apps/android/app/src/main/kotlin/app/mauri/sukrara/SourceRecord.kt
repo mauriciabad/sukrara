@@ -4,8 +4,10 @@
 package app.mauri.sukrara
 
 import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
+import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -61,5 +63,26 @@ class SourceStore(
             p.spec != null && p != b -> backup.update { p }
             p.spec == null && b.spec != null -> primary.update { b }
         }
+    }
+}
+
+/**
+ * Whose the history on this phone is when nothing else says what it reads (`AppGraph.inferSource`: a wearer without a
+ * pairing, a follow that ended, both from before the question): any reading not relayed by another Sukrara (taken on
+ * this phone or imported) makes it your own (your sensor), readings only from another Sukrara someone else's (their
+ * Sukrara); none = a new install. Without it the
+ * first answer adopted that history for the other person (your own readings shown as a child's) and answering the truth
+ * later deleted it.
+ */
+suspend fun historyOwner(readings: ReadingsRepository): SourceSpec? {
+    val all = readings.span().count
+    val relayed = readings.spanOf(SourceId.Relayed).count
+    return when {
+        // a reading this phone took itself or imported: before the question only a wearer had those
+        all > relayed -> SourceSpec.YourSensor
+
+        relayed > 0 -> SourceSpec.TheirSukrara
+
+        else -> null
     }
 }

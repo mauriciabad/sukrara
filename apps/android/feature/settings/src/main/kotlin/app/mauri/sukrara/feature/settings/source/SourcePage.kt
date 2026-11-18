@@ -14,9 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
@@ -28,7 +25,7 @@ import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.source.SourceIcon
 import app.mauri.sukrara.designsystem.source.labelRes
-import app.mauri.sukrara.designsystem.source.meansRes
+import app.mauri.sukrara.designsystem.source.sourceMeans
 import app.mauri.sukrara.designsystem.source.titleRes
 import app.mauri.sukrara.feature.settings.R
 import app.mauri.sukrara.feature.settings.SeeAlso
@@ -40,6 +37,7 @@ import app.mauri.sukrara.feature.settings.sensor.JugglucoSecretDialog
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsState
 import app.mauri.sukrara.feature.settings.sensor.SourceLink
+import java.time.Duration
 import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
 
@@ -67,7 +65,7 @@ class SourceActions(
 
 /**
  * Settings › Source (docs/44 "Settings"): *Whose glucose* and *Where it comes from* (each opens setup's step in place:
- * one pattern for the choice, and Back changes nothing), the state now, then the source's own rows: the sensor's page,
+ * one pattern for the choice, and Back changes nothing), the last reading's age, then the source's own rows: the sensor's page,
  * Juggluco's API secret and *Open Juggluco*, or another Sukrara's follow ([streamRows]: who, the request, the
  * relays, Bluetooth, *Stop following*). An unanswered install says Sukrara asks once more, with *Answer*. The foot says
  * what each change keeps; *See also* the sensor and Import history where they apply.
@@ -108,30 +106,37 @@ fun SourcePageContent(
             stringResource(R.string.st_source_from),
             actions.changeSource,
             summary =
-                spec?.let { "${stringResource(it.titleRes())}\n${stringResource(it.meansRes())}" }
+                spec?.let { "${stringResource(it.titleRes())}\n${sourceMeans(it)}" }
                     ?: stringResource(R.string.st_source_not_chosen),
             leading = spec?.let { s -> { SourceIcon(s.kind) } },
             icon = DsR.drawable.ds_ic_water_drop.takeIf { spec == null },
         )
         if (spec != null) {
             val reduced = LocalReducedMotion.current
-            val live =
-                state.latest?.let {
-                    DateUtils.getRelativeTimeSpanString(
-                        it.toEpochMilli(),
-                        now.toEpochMilli(),
-                        DateUtils.MINUTE_IN_MILLIS,
-                    )
+            val latest = state.latest
+            val ago =
+                when {
+                    latest == null -> {
+                        stringResource(R.string.st_source_none_yet)
+                    }
+
+                    Duration.between(latest, now) < Duration.ofMinutes(1) -> {
+                        stringResource(R.string.st_source_just_now)
+                    }
+
+                    else -> {
+                        DateUtils
+                            .getRelativeTimeSpanString(
+                                latest.toEpochMilli(),
+                                now.toEpochMilli(),
+                                DateUtils.MINUTE_IN_MILLIS,
+                            ).toString()
+                    }
                 }
-            // the line changes by itself as readings come: cross-fades, and TalkBack hears it once
-            AnimatedContent(live?.toString(), transitionSpec = { Motion.fadeThrough(reduced) }, label = "source-live") { ago ->
-                Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
-                    InfoRow(
-                        stringResource(R.string.st_source_status),
-                        summary = ago?.let { stringResource(R.string.st_source_live, it) } ?: stringResource(R.string.st_source_waiting),
-                        icon = DsR.drawable.ds_ic_schedule,
-                    )
-                }
+            // the line changes by itself as readings come and minutes pass: it cross-fades; no live region (TalkBack
+            // would speak every minute while the page is open), the row reads it when focused
+            AnimatedContent(ago, transitionSpec = { Motion.fadeThrough(reduced) }, label = "source-last") { text ->
+                InfoRow(stringResource(R.string.st_source_last), summary = text, icon = DsR.drawable.ds_ic_schedule)
             }
         }
     }
@@ -148,10 +153,12 @@ fun SourcePageContent(
         }
 
         SourceKind.PhoneApp -> {
+            val open = context.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE)
+            // on this page the ways out are right here (Open Juggluco, Where it comes from): the strip only says why
             if (sensor?.link == SourceLink.JugglucoUnreachable) {
                 StateStrip(
                     DsR.drawable.ds_ic_link_off,
-                    stringResource(R.string.st_sensor_juggluco_unreachable_text),
+                    stringResource(if (open == null) R.string.st_source_juggluco_missing else R.string.st_source_juggluco_unreachable),
                     emptyList(),
                     warning = true,
                 )
@@ -163,7 +170,6 @@ fun SourcePageContent(
                     listOf(stringResource(R.string.st_sensor_juggluco_secret_change) to { editingSecret = true }),
                 )
             }
-            val open = context.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE)
             if (open != null) {
                 SettingsGroup {
                     NavigationRow(

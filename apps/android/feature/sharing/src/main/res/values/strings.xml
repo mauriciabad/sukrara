@@ -30,7 +30,7 @@
     <!-- Setup welcome: title -->
     <string name="sh_setup_welcome_title">Welcome to Sukrara</string>
     <!-- Setup welcome: what the app does -->
-    <string name="sh_setup_welcome_body">Sukrara reads your glucose sensor, alerts you when you need it and shares your glucose with the people you choose.</string>
+    <string name="sh_setup_welcome_body">Sukrara shows your glucose or someone else\'s, alerts you when you need it and shares yours with the people you choose.</string>
     <!-- Setup welcome: what setup will do -->
     <string name="sh_setup_welcome_steps">Choose whose glucose and where it comes from, allow what alerts need, connect it and check your alerts: that is all Sukrara needs. Followers, insulin pens and your history are optional. You can leave any step for later.</string>
     <!-- Setup welcome: the reminder that Sukrara is not a medical device (the same sentence as Settings › About) -->
@@ -57,8 +57,10 @@
     <string name="sh_setup_source_change_title">Switch to “%1$s”?</string>
     <!-- Setup source step: switching to the sensor Sukrara reads -->
     <string name="sh_setup_source_change_sensor">Sukrara connects to the sensor itself, so no other app may hold it. The history on this phone stays.</string>
-    <!-- Setup source step: switching to Juggluco -->
-    <string name="sh_setup_source_change_phone_app">Sukrara stops connecting to the sensor and reads Juggluco on this phone, which must run with its web server on (Settings › Web server). The sensor’s pairing and the history stay.</string>
+    <!-- Setup source step: switching from the sensor Sukrara reads to Juggluco -->
+    <string name="sh_setup_source_change_phone_app_from_sensor">Sukrara stops connecting to the sensor and reads Juggluco on this phone, which must run with its web server on (Settings › Web server). The sensor’s pairing and the history stay.</string>
+    <!-- Setup source step: switching to Juggluco from another source (no sensor to stop) -->
+    <string name="sh_setup_source_change_phone_app">Sukrara reads Juggluco on this phone, which must run with its web server on (Settings › Web server). The history on this phone stays.</string>
     <!-- Setup source step: switching to another Sukrara -->
     <string name="sh_setup_source_change_sukrara">Sukrara shows what another Sukrara shares, once it accepts your request. The history on this phone stays.</string>
     <!-- Setup source step: confirms the switch -->
@@ -69,12 +71,14 @@
     <string name="sh_setup_juggluco_body">In Juggluco, turn on its web server (Settings › Web server). Sukrara reads it on this phone; nothing leaves it.</string>
     <!-- Setup connect step for Juggluco: no reading yet -->
     <string name="sh_setup_juggluco_waiting">Waiting for the first reading from Juggluco. No alert can ring until one arrives.</string>
+    <!-- Setup connect step for Juggluco: Juggluco isn't installed (nothing can arrive until it is) -->
+    <string name="sh_setup_juggluco_missing">Juggluco isn\'t installed on this phone.</string>
     <!-- Setup connect step for Juggluco: opens Juggluco -->
     <string name="sh_setup_juggluco_open">Open Juggluco</string>
     <!-- Setup person change that deletes history: dialog title -->
     <string name="sh_setup_person_delete_title">Delete the earlier history?</string>
     <!-- Setup person change that deletes history: %1$s = whose glucose was chosen, %2$s = what is deleted ("1,204 glucose readings and 12 treatments"), %3$s = when ("from 3 Oct 2026 to 10 Nov 2026") -->
-    <string name="sh_setup_person_delete_text">You chose “%1$s”. This deletes what this phone kept from before: %2$s, %3$s. It can’t be undone. To keep a copy, export a CSV file first.</string>
+    <string name="sh_setup_person_delete_text">You chose “%1$s”. This deletes what this phone kept from before: %2$s, %3$s. It can’t be undone.</string>
     <!-- Setup person change: how many glucose readings are deleted; %1$s = the number -->
     <plurals name="sh_setup_person_delete_readings">
         <item quantity="one">%1$s glucose reading</item>

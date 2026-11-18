@@ -953,14 +953,17 @@
     <string name="st_source_summary">Whose glucose and where it comes from</string>
     <string name="st_source_whose">Whose glucose</string>
     <string name="st_source_from">Where it comes from</string>
-    <string name="st_source_status">Now</string>
-    <!-- %1$s = when the newest reading arrived ("2 minutes ago") -->
-    <string name="st_source_live">Live · last reading %1$s</string>
-    <string name="st_source_waiting">Waiting for the first reading</string>
+    <!-- the newest reading's age as the row's summary ("2 minutes ago", "Just now", "None yet") -->
+    <string name="st_source_last">Last reading</string>
+    <string name="st_source_just_now">Just now</string>
+    <string name="st_source_none_yet">None yet</string>
     <string name="st_source_not_chosen">Not chosen yet</string>
     <string name="st_source_ask">Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer.</string>
     <string name="st_source_answer">Answer</string>
     <string name="st_source_sensor_summary">Pair a new sensor, its life, LibreView</string>
+    <!-- Settings › Source with Juggluco not answering: the rows under it (Open Juggluco) and Where it comes from are the ways out -->
+    <string name="st_source_juggluco_unreachable">Juggluco doesn’t answer, so Sukrara gets no readings.</string>
+    <string name="st_source_juggluco_missing">Juggluco isn’t installed on this phone, so Sukrara gets no readings.</string>
     <string name="st_source_open_juggluco_summary">Turn on its web server there (Settings › Web server)</string>
     <string name="st_source_footer">Changing whose glucose deletes the history on this phone (Sukrara asks first). Changing the source keeps it.</string>
     <string name="st_source_import">Import history</string>

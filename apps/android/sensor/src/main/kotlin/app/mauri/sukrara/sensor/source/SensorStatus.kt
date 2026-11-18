@@ -11,7 +11,7 @@ import app.mauri.sukrara.sensor.juggluco.JugglucoStatus
 import app.mauri.sukrara.sensor.pairing.Pairing
 import kotlinx.serialization.Serializable
 
-/** The wearer's glucose source (setting `source.source`). */
+/** The wearer's glucose source (setting `source.kind`). */
 @Serializable
 enum class SensorSourceKind(val id: String) {
     /** Sukrara reads the paired sensor itself (a Libre 3 by NFC + Bluetooth, the other families by Bluetooth). The default. */

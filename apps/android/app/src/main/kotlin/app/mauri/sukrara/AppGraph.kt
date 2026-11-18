@@ -274,8 +274,8 @@ class AppGraph(
 
     /**
      * What this phone reads when no answer is stored: following another Sukrara (once unlocked: the follow is
-     * credential-encrypted), a sensor pairing (only setup's sensor step makes one), or Juggluco on this phone after
-     * setup began (its welcome answered). Not a migration: today's facts of the modules that hold them, read again at
+     * credential-encrypted), a sensor pairing (only setup's sensor step makes one), Juggluco on this phone after
+     * setup began (its welcome answered), else whose the history is ([historyOwner]). Not a migration: today's facts of the modules that hold them, read again at
      * every start, so a damaged source file never stops monitoring either. Nothing found = a new install (setup asks).
      */
     private suspend fun inferSource() {
@@ -296,6 +296,10 @@ class AppGraph(
                         .completed
                         .isNotEmpty() && jugglucoInstalled() -> {
                     SourceSpec(Person.Yours, SourceKind.PhoneApp)
+                }
+
+                unlocked.value -> {
+                    historyOwner(data.readings)
                 }
 
                 else -> {

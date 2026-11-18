@@ -100,6 +100,16 @@ class AppSourcesTest {
             assertEquals(1, all().size)
         }
 
+    @Test fun historyFromBeforeTheQuestionSaysWhoseItIs() =
+        runTest {
+            assertNull(historyOwner(readings))
+            readings.upsert(listOf(reading(0, SourceId.Relay), reading(5, SourceId.Nearby)))
+            assertEquals(SourceSpec.TheirSukrara, historyOwner(readings))
+            // any first-hand or imported reading is the person's own (a follow can't bring those)
+            readings.upsert(listOf(reading(10, SourceId("import-libreview"))))
+            assertEquals(SourceSpec.YourSensor, historyOwner(readings))
+        }
+
     @Test fun anUpdatedInstallComparesWithWhatItReads() =
         runTest {
             inferred.value = SourceSpec.YourSensor

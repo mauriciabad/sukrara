@@ -505,6 +505,29 @@ class SetupViewModelTest {
         }
 
     @Test
+    fun `Settings › Source's Whose glucose goes on to the source, Back returns to the cards, no counter`() =
+        runTest {
+            roles.role.value = SourceSpec.YourSensor
+            record.update { SetupRecord(completed = SetupStep.entries.toSet()) }
+            val vm = vm(startAt = SetupStep.Person)
+            vm.ui.launchIn(backgroundScope)
+            val person = vm.ui.first { it?.step == SetupStep.Person }!!
+            assertTrue(person.single && person.visit)
+            // a step opened from Settings is no walk: no "Step 2 of 6"
+            assertEquals(0, person.count)
+            vm.choosePerson(Person.Theirs)
+            assertEquals(Person.Theirs, vm.ui.first { it?.step == SetupStep.Source }!!.person)
+            var left = false
+            vm.back { left = true }
+            assertFalse(left)
+            // the cards again, the pick kept; nothing stored
+            assertEquals(Person.Theirs, vm.ui.first { it?.step == SetupStep.Person }!!.person)
+            assertEquals(SourceSpec.YourSensor, roles.role.value)
+            vm.back { left = true }
+            assertTrue(left)
+        }
+
+    @Test
     fun `Settings' Set up sharing shows the identity step alone, and Back changes nothing`() =
         runTest {
             roles.role.value = SourceSpec.YourSensor

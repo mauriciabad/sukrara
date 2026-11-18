@@ -42,6 +42,14 @@ public enum FollowStatus: Equatable, Sendable {
     case following(wearer: String?, lastReading: Date?, canWrite: Bool)
     case declined, inviteUsed, inviteExpired, revoked
     case broken(LinkProblem)
+
+    /// A follow exists (waiting for the wearer or following): switching back to it needs no new invite.
+    var hasFollow: Bool {
+        switch self {
+        case .waiting, .following: true
+        default: false
+        }
+    }
 }
 
 extension LinkProblem {

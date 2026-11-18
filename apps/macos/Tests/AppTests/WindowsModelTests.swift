@@ -214,6 +214,22 @@ func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
         #expect(fake.calls == ["register", "register"])  // found on: not registered again
     }
 
+    /// Whose glucose isn't stored before the source: a Mac relaunched on the source step asks it again (the step shows
+    /// the cards) instead of guessing someone else's, and stores nothing until it is answered.
+    @Test func aRelaunchOnTheSourceStepAsksWhoseGlucoseAgain() {
+        let model = SetupModel(settings: scratchSettings())
+        model.flow.open(.source)
+        #expect(model.sourcePerson == nil)
+        model.chooseSource()
+        #expect(model.settings.source.stored == nil && model.flow.states[.source] == nil)
+        model.pickedPerson = .yours
+        model.choosePerson()
+        #expect(model.flow.current == .source && model.sourcePerson == .yours)
+        model.pickedKind = .lanJuggluco
+        model.chooseSource()
+        #expect(model.settings.source.stored == SourceSpec(person: .yours, kind: .lanJuggluco))
+    }
+
     @Test func withoutALoginItemTheSetupStepDoesNothing() {
         let model = SetupModel(settings: scratchSettings())
         model.flow.open(.openAtLogin)

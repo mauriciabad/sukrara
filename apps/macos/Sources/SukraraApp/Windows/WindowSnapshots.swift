@@ -399,7 +399,8 @@
                         name,
                         AnyView(
                             SettingsView(
-                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, answerSource: {},
+                                openAbout: {}
                             ).settingsWindow(m, width: 600, height: height))
                     ))
             }
