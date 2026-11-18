@@ -128,6 +128,32 @@ public enum LibreLinkUp {
 
     public static func graphPath(_ patientId: String) -> String { "/llu/connections/\(patientId)/graph" }
 
+    /// Whether `text` is a version LibreLinkUp may ask for: it goes into a header as it is, so nothing else may.
+    public static func isVersion(_ text: String) -> Bool { text.wholeMatch(of: /\d{1,3}(\.\d{1,4}){1,3}/) != nil }
+
+    /// Whether version `a` is newer than `b`, parts compared as numbers (4.17.0 > 4.9.9).
+    public static func newer(_ a: String, than b: String) -> Bool {
+        let x = a.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) ?? 0 }
+        let y = b.split(separator: ".", omittingEmptySubsequences: false).map { Int($0) ?? 0 }
+        for i in 0..<max(x.count, y.count) {
+            let d = (i < x.count ? x[i] : 0) - (i < y.count ? y[i] : 0)
+            if d != 0 { return d > 0 }
+        }
+        return false
+    }
+
+    /// The version every call sends: one LibreLinkUp asked for (kept with the account), unless this build's is newer
+    /// (poll.json `versions`).
+    public static func send(asked: String?) -> String {
+        guard let asked, newer(asked, than: version) else { return version }
+        return asked
+    }
+
+    /// A 403's minimum version, when it is one.
+    static func minimumVersion(_ data: [String: Any]?) -> String? {
+        text(data?["minimumVersion"]).flatMap { isVersion($0) ? $0 : nil }
+    }
+
     /// The host of `region` (nil = the global one).
     public static func host(region: String?) -> String { region.map { "api-\($0).libreview.io" } ?? host }
 
@@ -152,7 +178,7 @@ public enum LibreLinkUp {
             let lockout = number((data?["data"] as? [String: Any])?["lockout"])
             return .rateLimited(retryAfter: retryAfter ?? lockout)
         }
-        if code == 403, let minimum = text(data?["minimumVersion"]) { return .version(minimum: minimum) }
+        if code == 403, let minimum = minimumVersion(data) { return .version(minimum: minimum) }
         if code == 401 { return .badCredentials }
         if code == 404 { return .retired }
         guard code == 200, o != nil else { return .failed("HTTP \(code)") }
@@ -184,7 +210,7 @@ public enum LibreLinkUp {
         let status = int(o?["status"])
         if code == 429 || status == 429 { return LluCall(.rateLimited, retryAfter: retryAfter) }
         if code == 401 { return LluCall(.expired) }
-        if code == 403, let minimum = text(data?["minimumVersion"]) {
+        if code == 403, let minimum = minimumVersion(data) {
             return LluCall(.version, minimumVersion: minimum)
         }
         if code == 403 || code == 404 || code == 410 { return LluCall(.retired) }
@@ -328,5 +354,21 @@ public enum LluPoll {
         if let rateLimited { return max(rateLimitedMin, rateLimited) }
         if failures == 0 { return every }
         return backoff[min(failures - 1, backoff.count - 1)]
+    }
+
+    /// Seconds to the next call after a round that ended in `outcome` (nil = not set up), the failures in a row and a
+    /// 429's wait; nil = only when the person acts (poll.json `after`). Asked to wait without a time: `rateLimitedMin`.
+    public static func next(
+        outcome: SourceHealth.Outcome?, failures: Int, retryAfter: TimeInterval? = nil
+    ) -> TimeInterval? {
+        switch outcome {
+        case nil: nil
+        case .terms: terms
+        case .retired: retired
+        case .notShared: connectionsEvery
+        case .rateLimited: wait(failures: failures, rateLimited: retryAfter ?? 0)
+        case .refused: wait(failures: failures, refused: true)
+        default: wait(failures: failures)
+        }
     }
 }

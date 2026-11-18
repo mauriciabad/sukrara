@@ -26,6 +26,10 @@ import Testing
         /// Overrides: the login's status / body, the graph's status (nil = answer normally).
         let login = Mutex<(Int, String)?>(nil)
         let graphStatus = Mutex<Int?>(nil)
+        /// The next graph answers, in order (status, body), before the normal one.
+        let graphNext = Mutex<[(Int, String)]>([])
+        /// The connections' status (nil = answer normally).
+        let connectionsStatus = Mutex<Int?>(nil)
         /// 401 for the next graph calls (a token that stopped working early).
         let refuseGraphs = Mutex(0)
         let logins = Mutex(0)
@@ -67,6 +71,7 @@ import Testing
                 r.headers["Account-Id"] == LibreLinkUp.sha256(LibreLinkUpSourceTests.account)
             else { return (401, Data(), [:]) }
             if r.path == "/llu/connections" {
+                if let status = connectionsStatus.withLock({ $0 }) { return (status, Data("{}".utf8), [:]) }
                 let list = people.withLock { $0 }.map {
                     #"{"patientId":"\#($0.0)","firstName":"\#($0.1)","lastName":""}"#
                 }
@@ -78,6 +83,9 @@ import Testing
                     return n > 0
                 }) {
                     return (401, Data(), [:])
+                }
+                if let (code, body) = graphNext.withLock({ $0.isEmpty ? nil : $0.removeFirst() }) {
+                    return FakeLibreLinkUpHTTP.json(body, status: code)
                 }
                 if let status = graphStatus.withLock({ $0 }) { return (status, Data("{}".utf8), [:]) }
                 let id = r.path.split(separator: "/")[2]
@@ -303,6 +311,169 @@ import Testing
         s.login.withLock { $0 = (403, #"{"status":920,"data":{"minimumVersion":"4.18.0"}}"#) }
         #expect(await r.source.connect(email: Self.email, password: Self.password, yours: false) == .stopped)
         #expect(r.http.requests.map { $0.headers["version"] } == ["4.17.0", "4.18.0"])
+    }
+
+    static let tooOld = #"{"status":920,"data":{"minimumVersion":"4.18.0"}}"#
+
+    func graphs(_ r: Rig) -> [FakeLibreLinkUpHTTP.Request] { r.http.requests.filter { $0.path.hasSuffix("/graph") } }
+
+    @Test func aVersionAskedForOnACallIsSentFromThenOnThroughASignInAndARestart() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        s.graphNext.withLock { $0 = [(403, Self.tooOld)] }
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        // not "stopped": the version asked for, the same call once more, the readings in
+        let snap = try #require(await wait(r.source) { $0.monitoring })
+        #expect(snap.health(at: clock.now) == .live)
+        #expect(graphs(r).map { $0.headers["version"] } == ["4.17.0", "4.18.0"])
+        #expect(s.logins.withLock { $0 } == 2)  // the token still works: no sign-in for a version
+        // kept with the account in the Keychain
+        let item = try #require(r.secrets.read(account: MacSettings.libreLinkUpSecretAccount))
+        let saved = try JSONSerialization.jsonObject(with: item) as? [String: Any]
+        #expect(saved?["version"] as? String == "4.18.0")
+        await r.source.set(nil)
+        // a restart (a new source over the same Keychain) sends it from its first call
+        let restarted = LibreLinkUpSource(
+            http: r.http, live: InMemoryReadingsStore(), graph: InMemoryReadingsStore(),
+            state: JSONFileStore(url: r.dir.appending(path: "state.json")), secrets: r.secrets, clock: clock,
+            sleep: { _ in try await Task.sleep(for: .seconds(3600)) })
+        let before = r.http.requests.count
+        await restarted.set(LibreLinkUpConfig(patient: Self.ana))
+        _ = try #require(await wait(restarted) { $0.monitoring })
+        #expect(r.http.requests.dropFirst(before).allSatisfy { $0.headers["version"] == "4.18.0" })
+        // the token ends: the new sign-in sends it, and keeps it
+        clock.advance(by: 3600)
+        await restarted.retry()
+        #expect(await eventually { s.logins.withLock { $0 } == 3 })
+        #expect(r.http.requests.last { $0.path == "/llu/auth/login" }?.headers["version"] == "4.18.0")
+        #expect(await wait(restarted) { $0.lastAnswer == clock.now } != nil)
+        let again = try #require(r.secrets.read(account: MacSettings.libreLinkUpSecretAccount))
+        #expect((try JSONSerialization.jsonObject(with: again) as? [String: Any])?["version"] as? String == "4.18.0")
+        await restarted.set(nil)
+    }
+
+    @Test func aVersionRefusedAgainStopsAndIsAskedOnlyOnce() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        s.graphNext.withLock { $0 = [(403, Self.tooOld), (403, Self.tooOld)] }
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        let stopped = try #require(await wait(r.source) { $0.outcome != nil })
+        #expect(stopped.health(at: clock.now) == .stopped)
+        #expect(graphs(r).count == 2)
+        #expect(await eventually { r.waits.list.withLock { $0.last } == LluPoll.retired })
+        await r.source.set(nil)
+    }
+
+    @Test func aMinimumThatIsntAVersionNeverReachesAHeader() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        s.graphNext.withLock { $0 = [(403, #"{"status":920,"data":{"minimumVersion":"4.18.0\r\nX-Injected: 1"}}"#)] }
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        _ = try #require(await wait(r.source) { $0.outcome != nil })
+        #expect(r.http.requests.allSatisfy { $0.headers["version"] == "4.17.0" })
+        await r.source.set(nil)
+    }
+
+    @Test func thePersonPickedStopsSharingAndItSaysSoAtOnce() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.leo, "Leo")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        _ = try #require(await wait(r.source) { $0.monitoring })
+        // Ana's invite was removed in the Libre app: LibreLinkUp refuses her graph; Leo still shares
+        s.people.withLock { $0 = [(Self.leo, "Leo")] }
+        await r.source.retry()
+        // whom the account follows is read at once: not "stopped" for an hour
+        let gone = try #require(await wait(r.source) { $0.outcome != .ok })
+        #expect(gone.health(at: clock.now) == .notShared)
+        #expect(gone.people == [LluPerson(id: Self.leo, name: "Leo")])
+        await r.source.set(nil)
+    }
+
+    @Test func askedToWaitNothingCallsBeforeTheTimeButASignInDoes() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        _ = try #require(await wait(r.source) { $0.monitoring })
+        s.graphStatus.withLock { $0 = 429 }
+        await r.source.retry()
+        _ = try #require(await wait(r.source) { $0.outcome == .rateLimited })
+        let calls = r.http.requests.count
+        // Try Again, the network back, Try Again on the people, the person picked again: none calls LibreLinkUp
+        await r.source.retry()
+        await r.source.network(online: false)
+        await r.source.network(online: true)
+        #expect(await r.source.recheck(yours: false, saved: Self.ana) == .rateLimited)
+        await r.source.set(nil)
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        #expect(await wait(r.source) { $0.running }?.health(at: clock.now) == .rateLimited)
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(r.http.requests.count == calls)
+        // the time LibreLinkUp gave is up: Try Again asks
+        clock.advance(by: 601)
+        s.graphStatus.withLock { $0 = nil }
+        await r.source.retry()
+        #expect(await wait(r.source) { $0.outcome == .ok } != nil)
+        // asked to wait again: a sign-in the person makes ends the wait
+        s.graphStatus.withLock { $0 = 429 }
+        await r.source.retry()
+        _ = try #require(await wait(r.source) { $0.outcome == .rateLimited })
+        s.graphStatus.withLock { $0 = nil }
+        let graphsBefore = graphs(r).count
+        #expect(
+            await r.source.connect(email: Self.email, password: Self.password, yours: false)
+                == .connected(people: [.init(id: Self.ana, name: "Ana")], picked: Self.ana))
+        #expect(await eventually { graphs(r).count == graphsBefore + 1 })
+        await r.source.set(nil)
+    }
+
+    @Test func aSignInOrAPickAsksForTheGraphOnce() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.account, "Alex")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        _ = try #require(await wait(r.source) { $0.monitoring })
+        // signing in again to read the same person: one graph call, no connections call (the sign-in read them)
+        var before = r.http.requests.count
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        #expect(await eventually { graphs(r).count == 2 })
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(graphs(r).count == 2)
+        #expect(r.http.requests.dropFirst(before).filter { $0.path == "/llu/connections" }.count == 1)
+        // a sign-in that picks another person (yours: the account itself): nothing for Ana, the new pick's one call
+        before = graphs(r).count
+        #expect(
+            await r.source.connect(email: Self.email, password: Self.password, yours: true)
+                == .connected(
+                    people: [.init(id: Self.ana, name: "Ana"), .init(id: Self.account, name: "Alex")],
+                    picked: Self.account))
+        await r.source.set(LibreLinkUpConfig(patient: Self.account))
+        _ = try #require(await wait(r.source) { $0.patient == Self.account && $0.monitoring })
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(graphs(r).dropFirst(before).map { $0.path } == [LibreLinkUp.graphPath(Self.account)])
+        // Try Again whose people call fails: no graph call after it
+        s.connectionsStatus.withLock { $0 = 503 }
+        before = graphs(r).count
+        #expect(await r.source.recheck(yours: true, saved: Self.account) == .unreachable)
+        try await Task.sleep(for: .milliseconds(200))
+        #expect(graphs(r).count == before)
+        await r.source.set(nil)
     }
 
     @Test func anotherPersonStartsAgainAndSigningOutKeepsTheReadings() async throws {

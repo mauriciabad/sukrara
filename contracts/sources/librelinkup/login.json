@@ -7,7 +7,8 @@
   "region's host; a region that isn't 2-3 lower-case letters is refused), 'badCredentials' (never retried by itself:",
   "retries lock the account), 'terms' (status 4: the person accepts in LibreLinkUp; Sukrara never accepts for them),",
   "'rateLimited' (wait at least poll.json 'rateLimited_min_s', longer when Retry-After or the lockout says so),",
-  "'version' (send that version once; still refused = 'retired'), 'retired' (the API is gone), 'failed'."
+  "'version' (sent from then on, the request made once more, poll.json 'versions'; still refused = 'retired'; a",
+  "minimum that isn't a version is none and never goes into a header), 'retired' (the API is gone), 'failed'."
  ],
  "now": 1795003200,
  "cases": [
@@ -196,6 +197,19 @@
    "expect": {
     "answer": "version",
     "minimumVersion": "4.18.0"
+   }
+  },
+  {
+   "name": "a minimum that isn't a version is never sent: no sign-in",
+   "code": 403,
+   "body": {
+    "status": 920,
+    "data": {
+     "minimumVersion": "4.18.0\r\nX-Injected: 1"
+    }
+   },
+   "expect": {
+    "answer": "failed"
    }
   },
   {

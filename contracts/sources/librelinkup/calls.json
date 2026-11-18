@@ -2,7 +2,8 @@
  "_about": [
   "An authenticated call's answer (GET /llu/connections, /llu/connections/<patientId>/graph, with",
   "'Authorization: Bearer <token>' and 'Account-Id: sha256hex(account id)') -> the outcome the source acts on:",
-  "'ok'; 'expired' (sign in again with the saved password, once); 'rateLimited'; 'terms'; 'version' (as login.json);",
+  "'ok'; 'expired' (sign in again with the saved password, once); 'rateLimited'; 'terms'; 'version' (as login.json:",
+  "sent from then on, the call made once more);",
   "'retired' (refused or gone: health 'stopped'); 'server' (health 'unreachable')."
  ],
  "cases": [
@@ -64,6 +65,19 @@
    "expect": {
     "outcome": "version",
     "minimumVersion": "4.18.0"
+   }
+  },
+  {
+   "name": "a minimum that isn't a version is never sent: refused",
+   "code": 403,
+   "body": {
+    "status": 920,
+    "data": {
+     "minimumVersion": "latest"
+    }
+   },
+   "expect": {
+    "outcome": "retired"
    }
   },
   {

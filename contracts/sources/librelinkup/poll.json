@@ -4,8 +4,13 @@
   "row 'backoff_s'; asked to wait (429) at least 'rateLimited_min_s', or Retry-After / the lockout when longer;",
   "a refused password never by itself (the person signs in again: retries lock the account). A token is renewed",
   "'renewBefore_s' before it expires; the connections are read again every 'connectionsEvery_s' (and when the",
-  "graph call fails for the person). 'headers': what every call sends ('version' may be raised once by a 403 that",
-  "names a minimum, login.json)."
+  "graph call is refused: the person may have stopped sharing). 'headers': what every call sends.",
+  "'after': the wait after a round that ended in 'outcome' (contracts/sources/health.json's outcomes; null = only",
+  "when the person acts). Asked to wait, nothing calls LibreLinkUp before that time, whatever asks for it (the",
+  "network back, Try Again, another person picked: each call may lengthen the lockout); a sign-in the person makes",
+  "ends the wait. 'versions': a 403 on the login or a call naming a minimum version (login.json, calls.json) has",
+  "that version sent from then on and the same request made once more; it stays with the account (a new sign-in,",
+  "a restart), unless this build's own version is newer ('send', parts compared as numbers)."
  ],
  "every_s": 60,
  "backoff_s": [
@@ -17,6 +22,8 @@
  "rateLimited_min_s": 600,
  "renewBefore_s": 300,
  "connectionsEvery_s": 1800,
+ "terms_s": 600,
+ "retired_s": 3600,
  "headers": {
   "product": "llu.android",
   "version": "4.17.0",
@@ -67,6 +74,113 @@
    "failures": 1,
    "refused": true,
    "wait_s": null
+  }
+ ],
+ "after": [
+  {
+   "name": "not set up: only when the person signs in",
+   "outcome": null,
+   "failures": 0,
+   "wait_s": null
+  },
+  {
+   "name": "an answer",
+   "outcome": "ok",
+   "failures": 0,
+   "wait_s": 60
+  },
+  {
+   "name": "no answer, twice",
+   "outcome": "network",
+   "failures": 2,
+   "wait_s": 120
+  },
+  {
+   "name": "the server failed three times",
+   "outcome": "server",
+   "failures": 3,
+   "wait_s": 300
+  },
+  {
+   "name": "the password was refused",
+   "outcome": "refused",
+   "failures": 1,
+   "wait_s": null
+  },
+  {
+   "name": "new terms: the person accepts them in LibreLinkUp",
+   "outcome": "terms",
+   "failures": 1,
+   "wait_s": 600
+  },
+  {
+   "name": "Abbott refuses this client",
+   "outcome": "retired",
+   "failures": 1,
+   "wait_s": 3600
+  },
+  {
+   "name": "the person picked no longer shares",
+   "outcome": "notShared",
+   "failures": 1,
+   "wait_s": 1800
+  },
+  {
+   "name": "asked to wait without a time",
+   "outcome": "rateLimited",
+   "failures": 1,
+   "wait_s": 600
+  },
+  {
+   "name": "asked to wait 2 min: the minimum",
+   "outcome": "rateLimited",
+   "failures": 1,
+   "retryAfter_s": 120,
+   "wait_s": 600
+  },
+  {
+   "name": "asked to wait 15 min",
+   "outcome": "rateLimited",
+   "failures": 1,
+   "retryAfter_s": 900,
+   "wait_s": 900
+  }
+ ],
+ "versions": [
+  {
+   "name": "none asked: this build's",
+   "asked": null,
+   "send": "4.17.0"
+  },
+  {
+   "name": "a newer one asked: sent from then on",
+   "asked": "4.18.0",
+   "send": "4.18.0"
+  },
+  {
+   "name": "a patch asked",
+   "asked": "4.17.1",
+   "send": "4.17.1"
+  },
+  {
+   "name": "the same as this build's",
+   "asked": "4.17.0",
+   "send": "4.17.0"
+  },
+  {
+   "name": "an update brought a newer one: never back to an older one asked",
+   "asked": "4.16.2",
+   "send": "4.17.0"
+  },
+  {
+   "name": "parts compared as numbers",
+   "asked": "4.9.9",
+   "send": "4.17.0"
+  },
+  {
+   "name": "a longer version",
+   "asked": "4.17.0.1",
+   "send": "4.17.0.1"
   }
  ]
 }

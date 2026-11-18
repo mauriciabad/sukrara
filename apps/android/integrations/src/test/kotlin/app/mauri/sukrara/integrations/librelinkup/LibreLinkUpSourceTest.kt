@@ -410,5 +410,24 @@ class LibreLinkUpSourceTest {
                 }
             assertEquals(name, want, LluPoll.next(outcome, failures, rate?.takeIf { it > 0 }))
         }
+        assertEquals(poll.getValue("terms_s").jsonPrimitive.long, LluPoll.TERMS_S)
+        assertEquals(poll.getValue("retired_s").jsonPrimitive.long, LluPoll.RETIRED_S)
+        // the wait after a round, by its outcome (the Mac's LluPoll.next passes the same cases)
+        for (c in poll.getValue("after").jsonArray.map { it.jsonObject }) {
+            val outcome =
+                c
+                    .getValue("outcome")
+                    .takeIf { it != JsonNull }
+                    ?.jsonPrimitive
+                    ?.content
+                    ?.let { o -> CallOutcome.entries.first { it.name.equals(o, ignoreCase = true) } }
+            val retryAfter = c["retryAfter_s"]?.takeIf { it != JsonNull }?.jsonPrimitive?.long
+            val want = c.getValue("wait_s").takeIf { it != JsonNull }?.jsonPrimitive?.long
+            assertEquals(
+                c.getValue("name").jsonPrimitive.content,
+                want,
+                LluPoll.next(outcome, c.getValue("failures").jsonPrimitive.int, retryAfter),
+            )
+        }
     }
 }

@@ -146,8 +146,18 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     private var loaded = false
     /// When whom the account follows was last read (nil = not yet in this run).
     private var peopleChecked: Date?
-    /// The version header sent; raised once by a 403 that names a minimum (kept with the account).
+    /// The version header sent; raised by a 403 that names a minimum (kept with the account, poll.json `versions`).
     private var version = LibreLinkUp.version
+    /// LibreLinkUp asked to wait (429): nothing calls it before then, whatever asks (the network back, Try Again,
+    /// another person picked: each call may lengthen the lockout); a sign-in the person makes ends it.
+    private var holdUntil: Date?
+
+    private var holding: Bool { holdUntil.map { clock.now < $0 } ?? false }
+
+    /// Asked to wait `wait` (nil = no time given: the contract's minimum).
+    private func hold(_ wait: TimeInterval?) {
+        holdUntil = clock.now.addingTimeInterval(LluPoll.wait(failures: 1, rateLimited: wait ?? 0) ?? 0)
+    }
 
     public init(
         http: any LibreLinkUpHTTP, live: any ReadingsStoring, graph: any ReadingsStoring,
@@ -208,6 +218,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
 
     public func connect(email: String, password: String, yours: Bool) async -> LluConnectResult {
         stop()
+        // a sign-in the person makes ends a wait LibreLinkUp asked for
+        holdUntil = nil
         let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let saved = try? account()
         let region = saved?.email.caseInsensitiveCompare(email) == .orderedSame ? saved?.region : nil
@@ -217,11 +229,13 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         case let other: result = Self.result(other)
         }
         publishAccount()
-        restart()
+        resume(after: result)
         return result
     }
 
     public func recheck(yours: Bool, saved: String?) async -> LluConnectResult {
+        // asked to wait: not even Try Again calls before then
+        if holding { return .rateLimited }
         stop()
         let result: LluConnectResult
         switch await session(gen: generation) {
@@ -229,8 +243,26 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         case let other: result = Self.result(other)
         }
         publishAccount()
-        restart()
+        resume(after: result)
         return result
+    }
+
+    /// The loop again after a sign-in or Try Again, which already read whom the account follows: the graph at once
+    /// only when the same person is read on (another person picked starts through `set`, so one graph call either
+    /// way), else after the wait the answer calls for.
+    private func resume(after result: LluConnectResult) {
+        let outcome: SourceHealth.Outcome? =
+            switch result {
+            case .connected(_, let picked): picked != nil && picked == config?.patient ? nil : .ok
+            case .badCredentials: .refused
+            case .terms: .terms
+            case .rateLimited: .rateLimited
+            case .noOne: .notShared
+            case .unreachable: .server
+            case .offline: .network
+            case .stopped: .retired
+            }
+        restart(after: outcome.flatMap { LluPoll.next(outcome: $0, failures: 1) } ?? 0)
     }
 
     public func signOut() async {
@@ -252,7 +284,11 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         publishAccount()
     }
 
-    public func retry() async { restart() }
+    public func retry() async {
+        // asked to wait: the loop asks by itself when the time LibreLinkUp gave is up
+        guard !holding else { return }
+        restart()
+    }
 
     public func network(online: Bool) async {
         let back = online && !self.online
@@ -263,7 +299,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
             s.online = online
             publish(s)
         }
-        if back { restart() }
+        if back && !holding { restart() }
     }
 
     public func readings(since: Date) async -> [Reading] {
@@ -294,14 +330,16 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         generation += 1
     }
 
-    private func restart() {
+    private func restart(after delay: TimeInterval = 0) {
         stop()
-        if let config { start(config) }
+        if let config { start(config, after: delay) }
     }
 
-    private func start(_ config: LibreLinkUpConfig) {
+    /// The loop for `config`, its first call after `delay` and never before a wait LibreLinkUp asked for.
+    private func start(_ config: LibreLinkUpConfig, after delay: TimeInterval = 0) {
         let gen = generation
-        task = Task { [weak self] in await self?.run(config, gen: gen) }
+        let first = max(delay, holdUntil.map { $0.timeIntervalSince(clock.now) } ?? 0)
+        task = Task { [weak self] in await self?.run(config, gen: gen, after: first) }
     }
 
     /// The account and the log, read once.
@@ -338,7 +376,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         snap.sensor = s.sensor
         snap.treatments = s.live
         snap.running = true
-        snap.outcome = nil
+        // asked to wait: it still is (no call before then), not "connecting"
+        snap.outcome = holding ? .rateLimited : nil
         snap.monitoring = false
         snap.online = online
         snap.readings = await day()
@@ -347,7 +386,10 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
 
     private func log() async -> LibreLinkUpState { await state.load() ?? LibreLinkUpState() }
 
-    private func run(_ config: LibreLinkUpConfig, gen: Int) async {
+    private func run(_ config: LibreLinkUpConfig, gen: Int, after first: TimeInterval) async {
+        if first > 0 {
+            do { try await sleep(first) } catch { return }
+        }
         var failures = 0
         while !Task.isCancelled && gen == generation {
             let c = await cycle(config.patient, gen: gen)
@@ -361,16 +403,9 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
                 publish(s)
             }
             publishAccount()
-            let wait: TimeInterval? =
-                switch c.outcome {
-                case nil: nil
-                case .terms: LluPoll.terms
-                case .retired: LluPoll.retired
-                case .notShared: LluPoll.connectionsEvery
-                case .rateLimited: LluPoll.wait(failures: failures, rateLimited: c.retryAfter ?? 0)
-                case .refused: LluPoll.wait(failures: failures, refused: true)
-                default: LluPoll.wait(failures: failures)
-                }
+            let wait = LluPoll.next(outcome: c.outcome, failures: failures, retryAfter: c.retryAfter)
+            // asked to wait: nothing calls LibreLinkUp before then (each call may lengthen the lockout)
+            holdUntil = c.outcome == .rateLimited ? wait.map { clock.now.addingTimeInterval($0) } : nil
             // nil: only the person acts (a refused password: Sign In Again; retries lock the account)
             guard let wait else { return }
             do { try await sleep(wait) } catch { return }
@@ -399,41 +434,19 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         let first = await session(gen: gen)
         guard case .ready(var ready) = first else { return Self.failed(first) }
         let now = clock.now
-        if peopleChecked.map({ now.timeIntervalSince($0) >= LluPoll.connectionsEvery }) ?? true {
-            var r = await get(LibreLinkUp.connectionsPath, ready)
-            if r.outcome == .expired {
-                // the token ended before its time: one new sign-in with the saved password, then the same call
-                expire()
-                guard case .ready(let again) = await session(gen: gen) else { return Cycle(outcome: .refused) }
-                ready = again
-                r = await get(LibreLinkUp.connectionsPath, ready)
-            }
-            guard r.outcome == .ok, let body = r.body else {
-                return Cycle(outcome: Self.outcome(r.outcome), retryAfter: r.retryAfter)
-            }
-            guard gen == generation else { return Cycle(outcome: nil) }
-            let people = LibreLinkUp.people(body)
-            peopleChecked = now
-            var s = await log()
-            s.people = people
-            try? await state.save(s)
-            if current.people != people {
-                var snap = current
-                snap.people = people
-                publish(snap)
-            }
-            if !people.contains(where: { $0.id == patient }) { return Cycle(outcome: .notShared) }
-        }
-        var r = await get(LibreLinkUp.graphPath(patient), ready)
-        if r.outcome == .expired {
-            expire()
-            guard case .ready(let again) = await session(gen: gen) else { return Cycle(outcome: .refused) }
+        let checked = peopleChecked.map { now.timeIntervalSince($0) < LluPoll.connectionsEvery } ?? false
+        if !checked {
+            let (end, again) = await shared(patient, ready, gen: gen, now: now)
+            if let end { return end }
             ready = again
-            r = await get(LibreLinkUp.graphPath(patient), ready)
         }
+        let (r, again) = await call(LibreLinkUp.graphPath(patient), ready, gen: gen)
         guard r.outcome == .ok, let body = r.body else {
-            // the person may have stopped sharing: the connections say so at the next round
-            if r.outcome == .retired { peopleChecked = nil }
+            // LibreLinkUp refuses this person's graph: they may have stopped sharing (Pick Again), said now, not in an
+            // hour as "stopped"
+            if r.outcome == .retired, checked, let end = await shared(patient, again, gen: gen, now: now).0 {
+                return end
+            }
             return Cycle(outcome: Self.outcome(r.outcome), retryAfter: r.retryAfter)
         }
         guard gen == generation else { return Cycle(outcome: nil) }
@@ -466,6 +479,27 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         return Cycle(outcome: .ok)
     }
 
+    /// Whom the account follows, read again: nil while `patient` is still shared, else the round's end (not shared, or
+    /// the call's failure); the session the call ended with.
+    private func shared(_ patient: String, _ ready: Ready, gen: Int, now: Date) async -> (Cycle?, Ready) {
+        let (r, ready) = await call(LibreLinkUp.connectionsPath, ready, gen: gen)
+        guard r.outcome == .ok, let body = r.body else {
+            return (Cycle(outcome: Self.outcome(r.outcome), retryAfter: r.retryAfter), ready)
+        }
+        guard gen == generation else { return (Cycle(outcome: nil), ready) }
+        let people = LibreLinkUp.people(body)
+        peopleChecked = now
+        var s = await log()
+        s.people = people
+        try? await state.save(s)
+        if current.people != people {
+            var snap = current
+            snap.people = people
+            publish(snap)
+        }
+        return (people.contains { $0.id == patient } ? nil : Cycle(outcome: .notShared), ready)
+    }
+
     /// A session that isn't ready, as the health reads it.
     static func failed(_ s: Session) -> Cycle {
         switch s {
@@ -491,16 +525,21 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
 
     /// Whom the account follows after a sign-in, and whom to read (connections.json); a pick that's gone picks again.
     private func pick(_ session: Ready, yours: Bool, saved: String?) async -> LluConnectResult {
-        let r = await get(LibreLinkUp.connectionsPath, session)
+        let (r, _) = await call(LibreLinkUp.connectionsPath, session, gen: generation)
         guard r.outcome == .ok, let body = r.body else {
             switch r.outcome {
             case .terms: return .terms
-            case .rateLimited: return .rateLimited
+            case .rateLimited:
+                hold(r.retryAfter)
+                return .rateLimited
+            case .expired: return .badCredentials
             case .retired, .version: return .stopped
             case .network: return online ? .unreachable : .offline
             default: return .unreachable
             }
         }
+        // LibreLinkUp answered: no longer asked to wait
+        holdUntil = nil
         let people = LibreLinkUp.people(body)
         var p = LibreLinkUp.pick(people, accountId: session.accountId, yours: yours, saved: saved)
         if p.state == .gone { p = LibreLinkUp.pick(people, accountId: session.accountId, yours: yours, saved: nil) }
@@ -552,7 +591,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     private func account() throws -> Account? {
         guard let data = try secrets.read(account: MacSettings.libreLinkUpSecretAccount) else { return nil }
         let a = try JSONDecoder().decode(Account.self, from: data)
-        if let v = a.version { version = v }
+        // a version LibreLinkUp asked for, unless this build (or this run) already sends a newer one
+        if let v = a.version, LibreLinkUp.newer(v, than: version) { version = v }
         return a
     }
 
@@ -623,11 +663,12 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
                 save(
                     Account(
                         email: email, password: password, accountId: id, region: region, token: token,
-                        expires: expires, version: raised ? version : nil))
+                        expires: expires, version: version == LibreLinkUp.version ? nil : version))
                 return .ready(Ready(accountId: id, token: token, region: region))
             case .redirect(let r): region = r
             case .version(let minimum):
-                if raised { return .retired }
+                // asked once per sign-in; the same version refused again: Abbott changed more than the version
+                if raised || minimum == version { return .retired }
                 raised = true
                 version = minimum
             case .badCredentials:
@@ -646,6 +687,47 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
             }
         }
         return .failed(offline: false)
+    }
+
+    /// One authenticated call (calls.json): a version LibreLinkUp asks for is sent from then on and the call made again
+    /// once; a token that stopped working before its time signs in again once with the saved password and the call is
+    /// made again. A sign-in that fails then answers as the call's outcome. The session the call ended with.
+    private func call(_ path: String, _ first: Ready, gen: Int) async -> (LluCall, Ready) {
+        var ready = first
+        var r = await get(path, ready)
+        if r.outcome == .version, raise(r.minimumVersion) { r = await get(path, ready) }
+        guard r.outcome == .expired else { return (r, ready) }
+        expire()
+        let again = await session(gen: gen)
+        guard case .ready(let s) = again else { return (Self.call(again), ready) }
+        ready = s
+        r = await get(path, ready)
+        if r.outcome == .version, raise(r.minimumVersion) { r = await get(path, ready) }
+        return (r, ready)
+    }
+
+    /// A sign-in that failed in the middle of a call, as the call's answer.
+    static func call(_ s: Session) -> LluCall {
+        switch s {
+        case .ready: LluCall(.server)
+        case .signedOut: LluCall(.expired)
+        case .terms: LluCall(.terms)
+        case .rateLimited(let wait): LluCall(.rateLimited, retryAfter: wait)
+        case .retired: LluCall(.retired)
+        case .failed: LluCall(.network)
+        }
+    }
+
+    /// A call refused this client's version: `minimum` is sent from now on and kept with the account (a restart and a
+    /// new sign-in send it too). False when it is sent already (refused as well: Abbott changed more than the version).
+    private func raise(_ minimum: String?) -> Bool {
+        guard let minimum, minimum != version, LibreLinkUp.isVersion(minimum) else { return false }
+        version = minimum
+        if var a = try? account() {
+            a.version = minimum
+            save(a)
+        }
+        return true
     }
 
     /// One authenticated GET.

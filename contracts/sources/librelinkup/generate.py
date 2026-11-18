@@ -21,12 +21,18 @@ TOKEN = "eyJ.synthetic.token"
 
 ARROW_RATE = {1: -2.5, 2: -1.5, 3: 0.0, 4: 1.5, 5: 2.5}
 
+VERSION = "4.17.0"  # the LibreLinkUp version this build sends (poll.json 'headers')
+# a version LibreLinkUp may ask for: it goes into a header as it is, so anything else is no version
+VERSION_FORMAT = re.compile(r"\d{1,3}(\.\d{1,4}){1,3}")
+
 POLL = {
     "every_s": 60,
     "backoff_s": [60, 120, 300, 600],
     "rateLimited_min_s": 600,
     "renewBefore_s": 300,
     "connectionsEvery_s": 1800,
+    "terms_s": 600,
+    "retired_s": 3600,
 }
 
 
@@ -61,6 +67,25 @@ def parse_time(text):
         return None
 
 
+def minimum_version(data):
+    """A 403's minimumVersion, when it is a version (never a header's line break or anything else)."""
+    v = data.get("minimumVersion") if isinstance(data, dict) else None
+    return isinstance(v, str) and VERSION_FORMAT.fullmatch(v) is not None
+
+
+def newer(a, b):
+    """Whether version a is newer than b, parts compared as numbers (4.17.0 > 4.9.9)."""
+    x = [int(p) if p.isdigit() else 0 for p in a.split(".")]
+    y = [int(p) if p.isdigit() else 0 for p in b.split(".")]
+    n = max(len(x), len(y))
+    return (x + [0] * (n - len(x))) > (y + [0] * (n - len(y)))
+
+
+def send(asked):
+    """The version every call sends: one LibreLinkUp asked for (kept with the account), unless this build's is newer."""
+    return asked if asked is not None and newer(asked, VERSION) else VERSION
+
+
 def login(code, body, retry_after=None):
     """One answer of POST /llu/auth/login."""
     data = body.get("data") if isinstance(body, dict) else None
@@ -70,7 +95,7 @@ def login(code, body, retry_after=None):
         if isinstance(data, dict) and isinstance(data.get("data"), dict):
             lockout = data["data"].get("lockout")
         return {"answer": "rateLimited", "retryAfter_s": retry_after if retry_after is not None else lockout}
-    if code == 403 and isinstance(data, dict) and data.get("minimumVersion"):
+    if code == 403 and minimum_version(data):
         return {"answer": "version", "minimumVersion": data["minimumVersion"]}
     if code == 401:
         return {"answer": "badCredentials"}
@@ -107,7 +132,7 @@ def call(code, body, retry_after=None):
         return {"outcome": "rateLimited", "retryAfter_s": retry_after}
     if code == 401:
         return {"outcome": "expired"}
-    if code == 403 and isinstance(data, dict) and data.get("minimumVersion"):
+    if code == 403 and minimum_version(data):
         return {"outcome": "version", "minimumVersion": data["minimumVersion"]}
     if code in (403, 404, 410):
         return {"outcome": "retired"}
@@ -186,6 +211,22 @@ def wait(failures, rate_limited=None, refused=False):
     return b[min(failures - 1, len(b) - 1)]
 
 
+def after(outcome, failures, retry_after=None):
+    """Seconds to the next call after a round that ended in outcome (None = not set up): None = only when the person
+    acts. Asked to wait (429) without a time: the minimum."""
+    if outcome is None:
+        return None
+    if outcome == "terms":
+        return POLL["terms_s"]
+    if outcome == "retired":
+        return POLL["retired_s"]
+    if outcome == "notShared":
+        return POLL["connectionsEvery_s"]
+    if outcome == "rateLimited":
+        return wait(failures, retry_after or 0)
+    return wait(failures, refused=outcome == "refused")
+
+
 # ------------------------------------------------------------------ login.json
 
 def ok_login(uid=ACCOUNT, expires=NOW + 3600):
@@ -216,6 +257,8 @@ L({"name": "too many attempts: locked for a while, the lockout from the answer",
 L({"name": "too many attempts, with Retry-After", "code": 429, "retryAfter": 900, "body": {}})
 L({"name": "this version is too old: the minimum it asks for", "code": 403,
    "body": {"status": 920, "data": {"minimumVersion": "4.18.0"}}})
+L({"name": "a minimum that isn't a version is never sent: no sign-in", "code": 403,
+   "body": {"status": 920, "data": {"minimumVersion": "4.18.0\r\nX-Injected: 1"}}})
 L({"name": "the login is gone (Abbott retired the API)", "code": 404, "body": {}})
 L({"name": "the server failed", "code": 502, "body": {}})
 L({"name": "an answer without a token is no sign-in", "code": 200,
@@ -232,6 +275,8 @@ C({"name": "the token expired: sign in again with the saved password", "code": 4
 C({"name": "asked to wait", "code": 429, "retryAfter": 120, "body": {}})
 C({"name": "new terms mid-session", "code": 200, "body": {"status": 4, "data": {"step": {"type": "tou"}}}})
 C({"name": "this version is too old", "code": 403, "body": {"status": 920, "data": {"minimumVersion": "4.18.0"}}})
+C({"name": "a minimum that isn't a version is never sent: refused", "code": 403,
+   "body": {"status": 920, "data": {"minimumVersion": "latest"}}})
 C({"name": "refused for another reason: the API no longer serves this client", "code": 403,
    "body": {"status": 403, "message": "Forbidden"}})
 C({"name": "the endpoint is gone", "code": 404, "body": {}})
@@ -337,6 +382,34 @@ W({"name": "the password was refused: never again by itself", "failures": 1, "re
 for c in waits:
     c["wait_s"] = wait(c["failures"], c.get("rateLimited"), c.get("refused", False))
 
+afters = []
+A = afters.append
+A({"name": "not set up: only when the person signs in", "outcome": None, "failures": 0})
+A({"name": "an answer", "outcome": "ok", "failures": 0})
+A({"name": "no answer, twice", "outcome": "network", "failures": 2})
+A({"name": "the server failed three times", "outcome": "server", "failures": 3})
+A({"name": "the password was refused", "outcome": "refused", "failures": 1})
+A({"name": "new terms: the person accepts them in LibreLinkUp", "outcome": "terms", "failures": 1})
+A({"name": "Abbott refuses this client", "outcome": "retired", "failures": 1})
+A({"name": "the person picked no longer shares", "outcome": "notShared", "failures": 1})
+A({"name": "asked to wait without a time", "outcome": "rateLimited", "failures": 1})
+A({"name": "asked to wait 2 min: the minimum", "outcome": "rateLimited", "failures": 1, "retryAfter_s": 120})
+A({"name": "asked to wait 15 min", "outcome": "rateLimited", "failures": 1, "retryAfter_s": 900})
+for c in afters:
+    c["wait_s"] = after(c["outcome"], c["failures"], c.get("retryAfter_s"))
+
+versions = []
+V = versions.append
+V({"name": "none asked: this build's", "asked": None})
+V({"name": "a newer one asked: sent from then on", "asked": "4.18.0"})
+V({"name": "a patch asked", "asked": "4.17.1"})
+V({"name": "the same as this build's", "asked": "4.17.0"})
+V({"name": "an update brought a newer one: never back to an older one asked", "asked": "4.16.2"})
+V({"name": "parts compared as numbers", "asked": "4.9.9"})
+V({"name": "a longer version", "asked": "4.17.0.1"})
+for c in versions:
+    c["send"] = send(c["asked"])
+
 ABOUT_LOGIN = [
     "LibreLinkUp's login answers -> what Sukrara does (docs/44 step 2; the LibreView sign-in uses the same login).",
     "POST https://api.libreview.io/llu/auth/login (then api-<region>.libreview.io after a redirect) with",
@@ -345,13 +418,15 @@ ABOUT_LOGIN = [
     "region's host; a region that isn't 2-3 lower-case letters is refused), 'badCredentials' (never retried by itself:",
     "retries lock the account), 'terms' (status 4: the person accepts in LibreLinkUp; Sukrara never accepts for them),",
     "'rateLimited' (wait at least poll.json 'rateLimited_min_s', longer when Retry-After or the lockout says so),",
-    "'version' (send that version once; still refused = 'retired'), 'retired' (the API is gone), 'failed'.",
+    "'version' (sent from then on, the request made once more, poll.json 'versions'; still refused = 'retired'; a",
+    "minimum that isn't a version is none and never goes into a header), 'retired' (the API is gone), 'failed'.",
 ]
 dump("login.json", {"_about": ABOUT_LOGIN, "now": NOW, "cases": logins})
 dump("calls.json", {"_about": [
     "An authenticated call's answer (GET /llu/connections, /llu/connections/<patientId>/graph, with",
     "'Authorization: Bearer <token>' and 'Account-Id: sha256hex(account id)') -> the outcome the source acts on:",
-    "'ok'; 'expired' (sign in again with the saved password, once); 'rateLimited'; 'terms'; 'version' (as login.json);",
+    "'ok'; 'expired' (sign in again with the saved password, once); 'rateLimited'; 'terms'; 'version' (as login.json:",
+    "sent from then on, the call made once more);",
     "'retired' (refused or gone: health 'stopped'); 'server' (health 'unreachable').",
 ], "cases": calls})
 dump("connections.json", {"_about": [
@@ -378,9 +453,14 @@ dump("poll.json", {"_about": [
     "row 'backoff_s'; asked to wait (429) at least 'rateLimited_min_s', or Retry-After / the lockout when longer;",
     "a refused password never by itself (the person signs in again: retries lock the account). A token is renewed",
     "'renewBefore_s' before it expires; the connections are read again every 'connectionsEvery_s' (and when the",
-    "graph call fails for the person). 'headers': what every call sends ('version' may be raised once by a 403 that",
-    "names a minimum, login.json).",
+    "graph call is refused: the person may have stopped sharing). 'headers': what every call sends.",
+    "'after': the wait after a round that ended in 'outcome' (contracts/sources/health.json's outcomes; null = only",
+    "when the person acts). Asked to wait, nothing calls LibreLinkUp before that time, whatever asks for it (the",
+    "network back, Try Again, another person picked: each call may lengthen the lockout); a sign-in the person makes",
+    "ends the wait. 'versions': a 403 on the login or a call naming a minimum version (login.json, calls.json) has",
+    "that version sent from then on and the same request made once more; it stays with the account (a new sign-in,",
+    "a restart), unless this build's own version is newer ('send', parts compared as numbers).",
 ], **POLL,
-    "headers": {"product": "llu.android", "version": "4.17.0", "Accept": "application/json",
+    "headers": {"product": "llu.android", "version": VERSION, "Accept": "application/json",
                 "Content-Type": "application/json", "cache-control": "no-cache"},
-    "cases": waits})
+    "cases": waits, "after": afters, "versions": versions})

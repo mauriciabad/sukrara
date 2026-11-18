@@ -169,4 +169,13 @@ class LibreLinkUpContractTest {
         assertEquals(h.str("product"), LibreLinkUp.PRODUCT)
         assertEquals(h.str("version"), LibreLinkUp.VERSION)
     }
+
+    @Test
+    fun `the version sent is the one asked for unless this build's is newer`() {
+        for (c in file("poll.json").getValue("versions").jsonArray.map { it.jsonObject }) {
+            val asked = c.str("asked")
+            val send = asked?.takeIf { LibreLinkUp.newer(it, LibreLinkUp.VERSION) } ?: LibreLinkUp.VERSION
+            assertEquals(c.str("name"), c.str("send"), send)
+        }
+    }
 }

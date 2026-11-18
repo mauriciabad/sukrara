@@ -121,6 +121,21 @@ import Testing
                 refused: c["refused"] as? Bool ?? false)
             #expect(wait == Self.double(c["wait_s"]), "\(c["name"] ?? "")")
         }
+        #expect(Self.double(poll["terms_s"]) == LluPoll.terms)
+        #expect(Self.double(poll["retired_s"]) == LluPoll.retired)
+        // the wait after a round, by its outcome (Android's LluPoll.next passes the same cases)
+        for c in try #require(poll["after"] as? [[String: Any]]) {
+            let outcome = try (c["outcome"] as? String).map { try #require(SourceHealth.Outcome(rawValue: $0)) }
+            let wait = LluPoll.next(
+                outcome: outcome, failures: c["failures"] as? Int ?? 0, retryAfter: Self.double(c["retryAfter_s"]))
+            #expect(wait == Self.double(c["wait_s"]), "\(c["name"] ?? "")")
+        }
+    }
+
+    @Test func theVersionSentIsTheOneAskedForUnlessThisBuildsIsNewer() throws {
+        for c in try #require(try file("poll.json")["versions"] as? [[String: Any]]) {
+            #expect(LibreLinkUp.send(asked: c["asked"] as? String) == c["send"] as? String, "\(c["name"] ?? "")")
+        }
     }
 
     /// The fast merge of the two ids keeps exactly what THE rank rule keeps.
