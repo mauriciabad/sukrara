@@ -20,6 +20,8 @@
                                                             again (docs/45 test F)
   python3 -I lv45.py ll-treatment DEVICE_ID NOTE [--take-over] --really
                                                             one test treatment as the LibreLink app (docs/45 test G)
+  python3 -I lv45.py ll-tokens DEVICE_ID --really           test D on the LibreLink identity: two sign-ins, an
+                                                            upload of nothing on each token (docs/45b)
 
 WARNING: every app-API sign-in that gets a token ends that identity's current session, SetDevice:false and the same
 DeviceId included (docs/45 test D). Signing in on the identity the official app uses stops its upload silently until it
@@ -338,9 +340,35 @@ def cmd_ll_treatment(device_id, note, take_over, really):
           "result", json.dumps((o or {}).get("result"))[:200])
 
 
+def ll_empty_upload(session, device_id, label):
+    base, _, token = session
+    body = librelink_payload(device_id, token, dt.datetime.now().astimezone(), "unused", "")
+    body = re.sub(r'"genericEntries":\[.*?\],"insulinEntries":\[.*?\]', '"genericEntries":[],"insulinEntries":[]', body)
+    code, o = http("POST", base + "/api/measurements", body, {"Content-Type": "application/json"})
+    print(stamp(), "LibreLink empty upload,", label + ": HTTP", code, "status", (o or {}).get("status"), "reason",
+          (o or {}).get("reason"))
+    return (o or {}).get("status")
+
+
+def cmd_ll_tokens(device_id, really):
+    """Test D on the LibreLink identity (docs/45b): two sign-ins with the same DeviceId, then an upload of nothing on
+    each token. Only while no real app holds that identity."""
+    if not really:
+        raise SystemExit("needs --really")
+    a = signin(device_id, "librelink")
+    b = signin(device_id, "librelink")
+    if not a or not b:
+        return
+    ll_empty_upload(a, device_id, "FIRST token")
+    ll_empty_upload(b, device_id, "SECOND token")
+    ll_empty_upload(a, device_id, "FIRST token again")
+
+
 def main(a):
     if not a:
         print(__doc__)
+    elif a[0] == "ll-tokens":
+        cmd_ll_tokens(a[1], "--really" in a)
     elif a[0] == "llu":
         cmd_llu("--devices" in a)
     elif a[0] == "signin":

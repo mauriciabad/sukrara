@@ -171,6 +171,7 @@ history back from LibreView with the existing sign-in. Researched what a client 
 | `api.libreview.io/glucoseHistory?numPeriods=&period=` (the web app, `Authorization: Bearer` from `/auth/login`) | report summaries per period (AGP percentiles, average, days of data), not readings | not history |
 | LibreLinkUp `/llu/connections/{patientId}/graph` and `/logbook` (`product: llu.android`, `version` ≥ 4.16, `Account-Id`: SHA-256 of the user id) | a *follower's* view: the last ~12 h of readings and ~2 weeks of alarms, only for patients the account follows | not the wearer's 90 days |
 | LibreView web *Glucose History › Download glucose data* (`POST /export` with `captchaResponse`) | every reading and entry, as the "Glucose Data" CSV (the layout of [22](22-ecosystem-outputs.md#in-sukrara-csv-export)) | behind a captcha: the person downloads it |
+| *(2026-11-18, [45](45-libreview-two-uploaders.md) 45b)* the web *Daily Log* report (`POST /reports`, client report 5, `window.report.Data.Days[]`) | per chosen device: the 5-minute history, the time of every rapid dose and carbs entry, insulin and carbs as hourly sums (long-acting without its minute), notes with their minute; 14 days tried (libre-desktop asks 90) | no captcha, but the website's own login, which asks for an SMS / email code (then a trusted-device token) |
 
 Sources: [YtoTech/libreview-data-export](https://github.com/YtoTech/libreview-data-export), the LibreLinkUp HTTP dumps
 ([gist](https://gist.github.com/khskekec/6c13ba01b10d3018d816706a32ae8ab2), its comments on `glucoseHistory` and the

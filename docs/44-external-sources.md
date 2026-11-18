@@ -81,7 +81,7 @@ Full catalogue with every link: Appendix A.
 | **DIY broadcasts** (xDrip+, Juggluco, AAPS) | ✓ | — | live | yes | rate, sensor start | none |
 | **Nightscout** (+ Gluroo, xDrip+ / Juggluco servers) | ✓ | ✓ | push or poll | LAN only | **treatments both ways**, IOB, sensor start | none: open API |
 | **Dexcom Share** (not Stelo) | ✓ | ✓ | 5 min; 24 h back | no | trend | unofficial; failed logins lock the account |
-| **LibreLinkUp** | ✓ | ✓ | 1 min (Libre 3); 12 h back | no | trend, sensor start | unofficial; Abbott moving to an encrypted API |
+| **LibreLinkUp** | ✓ | ✓ | 1 min (Libre 3); 12 h back | no | trend, sensor start | unofficial; Abbott moving to an encrypted API; down with LibreView's maintenance (an hour per region, announced; [45](45-libreview-two-uploaders.md)) |
 | Dexcom public API, Health Connect, Tidepool | | | 1–3 h late | | | not live |
 
 Unverified and worth a sensor: Aidex X advertising while its app is connected (offline, and direct on a Mac); a Dexcom
@@ -135,6 +135,13 @@ built first on the API that won't move.
 - **Stores**: [GlucoDataHandler](https://play.google.com/store/apps/details?id=de.michelinside.glucodatahandler&hl=en)
   ships LibreLinkUp and Share on Google Play, GlucoseBar ships Share on the Mac App Store; no action against a client
   found.
+- **LibreView's maintenance stops it**: LibreLinkUp runs on LibreView's regional servers, so a LibreView window stops
+  every reading, the official app's uploads and Sukrara's source together. 2026-11-18, EMEA and UK: 22:05 → 22:38
+  (the owner's phone, [45](45-libreview-two-uploaders.md) 45b). The region answers HTTP `911` `{"status": 911}` to every
+  call, before authentication. The LibreLinkUp app shows *Down for maintenance · Please try again later*; Sukrara showed
+  *No answer from LibreLinkUp* and its no-data alert rang after 20 min. Abbott announces each window on
+  [status.freestyle.abbott](https://status.freestyle.abbott/) (public JSON: region, start, end) days ahead, about one per
+  region every month or two.
 - **Lockouts**: retries lock the person's own account (Dexcom failed logins; LibreLinkUp 429 "locked",
   [#218](https://github.com/timoschlueter/nightscout-librelink-up/issues/218)): back off, never retry a refused password.
 - **Two apps ring**: Sukrara can't silence the official app, whose urgent low (≤ 55 mg/dL) can't be turned off
@@ -991,14 +998,18 @@ Fixed:
   Tidepool's LibreView driver skips them
   ([libreViewDriver.js](https://github.com/tidepool-org/uploader/blob/cad13ded996051d216d364430024de0b63d87c9b/lib/drivers/abbott/libreViewDriver.js#L88-L96)).
   Whether the Daily Log's `Days[]` holds insulin, food and notes is unverified (the report shows them; no parser reads
-  them).
+  them). *It does ([45](45-libreview-two-uploaders.md), 45b, the owner's account): the time of every rapid dose and
+  carbs entry, insulin and carbs as hourly sums, long-acting only by the hour, notes with their minute; for the devices
+  asked, so the Libre app's alone. The website's login asks for an SMS code first.*
 
 Discarded or deferred, with reasons:
 - **Reading the official app's treatments from LibreView's Daily Log report** by itself: the only automatic path, but
   it needs the website's own login (a second sign-in, `Account-Id`; the extra steps docs/41 found for the device
   nickname), a report format nobody parses for treatments, and it would ask LibreView every few minutes for a few
   days' use. The two-app period is meant to be short: log in Sukrara, and *Import history* brings what the Libre app
-  logged, once. Worth a probe if people stay in the two-app setup for long.
+  logged, once. Worth a probe if people stay in the two-app setup for long. *Probed in 45b: the format carries them
+  (hour sums, long-acting without its minute); the extra step is an SMS or email code, then a trusted-device token; about
+  400 requests a day at a 15-minute pace. Still deferred: the owner decides.*
 - **Taking over LibreView for treatments only**: decision 4 (it stops the Libre app's glucose, so the source).
 - **Joining the Libre app's dose and its same-minute note into one treatment on import**: closer to what was logged,
   but a person's separate note of that minute would fold into the dose; two rows lose nothing. Later if asked.
