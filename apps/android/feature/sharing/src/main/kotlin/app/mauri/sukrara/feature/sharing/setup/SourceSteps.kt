@@ -23,6 +23,7 @@ import app.mauri.sukrara.core.model.SourceGroup
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.banner.NoticeCard
+import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.rows.RadioRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.source.PersonChoiceCard
@@ -201,7 +202,7 @@ internal fun ColumnScope.JugglucoStep(
     actions: SetupActions,
 ) {
     val context = LocalContext.current
-    StepHeader(stringResource(R.string.sh_setup_juggluco_title), stringResource(R.string.sh_setup_juggluco_body))
+    StepHeader(stringResource(R.string.sh_setup_juggluco_title), stringResource(R.string.sh_setup_juggluco_body), Service.Juggluco)
     if (u.facts.ownSensorLive) {
         NoticeCard(stringResource(R.string.sh_setup_sensor_live), icon = DsR.drawable.ds_ic_check_circle)
         StepButtons(stringResource(R.string.sh_setup_continue), actions.completeSensor)

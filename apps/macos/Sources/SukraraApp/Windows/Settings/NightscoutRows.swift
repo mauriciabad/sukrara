@@ -241,15 +241,17 @@ struct NightscoutFields: View {
     @FocusState private var tokenFocused: Bool
 
     var body: some View {
-        LabeledContent(L10n.t("Site address")) {
+        LabeledContent {
             VStack(alignment: .leading, spacing: 4) {
                 TextInput(label: L10n.t("Site address"), text: $model.siteDraft)
                     .onChange(of: model.siteDraft) { _, new in model.typed(new) }
                     .onSubmit { if submits { model.connect() } }
                 if let p = model.problem { Notice(NightscoutModel.problemText(p), tone: .error) }
             }
+        } label: {
+            ServiceLabel(L10n.t("Site address"), service: .nightscout)
         }
-        LabeledContent(L10n.t("Access token or API secret")) {
+        LabeledContent {
             VStack(alignment: .leading, spacing: 4) {
                 TextInput(label: L10n.t("Access token or API secret"), text: $model.secretDraft, secure: true)
                     .focused($tokenFocused)
@@ -258,6 +260,8 @@ struct NightscoutFields: View {
                     Text(L10n.t("Saved. Leave it empty to keep it.")).font(.caption).foregroundStyle(.secondary)
                 }
             }
+        } label: {
+            ServiceLabel(L10n.t("Access token or API secret"), symbol: "key")
         }
         .onChange(of: model.signInRequests) { _, _ in tokenFocused = true }
         Text(

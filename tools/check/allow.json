@@ -37,7 +37,7 @@
     "apps/android/*/src/main/res/*",
     "apps/android/*/src/test/snapshots/*",
     "apps/macos/Tests/*/__Snapshots__/*",
-    "apps/macos/Bundle/*.xcassets/*",
+    "apps/macos/Bundle/*.xcassets/*", "apps/macos/Sources/*/Resources/*",
     "apps/macos/Bundle/*.icns",
     "website/src/assets/*",
     "apps/garmin/resources/*"
@@ -288,6 +288,7 @@
     "package:com.eveningoutpost.dexdrip": "xDrip+'s own icon on the xDrip+ server row when it is installed (:core:designsystem AppIcons)",
     "package:com.google.android.healthconnect.controller": "Health Connect's own icon on its row (Google's builds; :core:designsystem AppIcons)",
     "package:com.android.healthconnect.controller": "Health Connect's own icon on its row (AOSP builds; :core:designsystem AppIcons)",
+    "package:org.nativescript.LibreLinkUp": "LibreLinkUp's own icon on the LibreLinkUp source's rows when the app is installed (:core:designsystem AppIcons)",
     "package:com.garmin.android.apps.connectmobile": "Sukrara Aura: binding Garmin Connect's Connect IQ service to push to the face; Share with apps: Garmin Connect reads the xDrip+ server (:integrations)",
     "package:com.garmin.connectiq": "Share with apps: Connect IQ reads the xDrip+ server (:integrations)",
     "package:com.google.android.wearable.app": "Settings › Alerts suggests Alerts on my watch when the Wear OS app is on the phone (docs/36; :feature:settings)",

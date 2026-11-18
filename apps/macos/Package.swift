@@ -49,7 +49,8 @@ let package = Package(
         .target(
             name: "SukraraApp",
             dependencies: ["SukraraCore", "SukraraGraph", "SukraraAlerts", "SukraraShare"],
-            resources: [.process("Windows/Localizable.xcstrings")],
+            // the String Catalog; other apps' and services' icons (ServiceIcon; docs/10 "Service and app icons")
+            resources: [.process("Windows/Localizable.xcstrings"), .copy("Resources/ServiceIcons")],
             swiftSettings: mainActorByDefault
         ),
         // Sparkle behind SukraraApp's `UpdaterEngine` (only the GitHub executable links it).

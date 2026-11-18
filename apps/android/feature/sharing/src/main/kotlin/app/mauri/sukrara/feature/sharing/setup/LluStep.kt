@@ -38,6 +38,7 @@ import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.rows.RadioRow
@@ -126,6 +127,7 @@ internal fun ColumnScope.LluStep(
                 else -> R.string.sh_setup_llu_body_theirs
             },
         ),
+        Service.LibreLinkUp,
     )
     val reduced = LocalReducedMotion.current
     AnimatedContent(mode, transitionSpec = { Motion.fadeThrough(reduced) }, label = "llu-step") { m ->

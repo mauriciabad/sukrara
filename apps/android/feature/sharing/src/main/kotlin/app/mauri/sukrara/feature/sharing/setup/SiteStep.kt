@@ -36,6 +36,7 @@ import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.source.iconRes
@@ -86,6 +87,7 @@ internal fun ColumnScope.SiteStep(
     StepHeader(
         stringResource(R.string.sh_setup_site_title),
         stringResource(if (person == Person.Yours) R.string.sh_setup_site_body else R.string.sh_setup_site_body_theirs),
+        Service.Nightscout,
     )
     val reduced = LocalReducedMotion.current
     AnimatedContent(editing, transitionSpec = { Motion.fadeThrough(reduced) }, label = "site-step") { form ->

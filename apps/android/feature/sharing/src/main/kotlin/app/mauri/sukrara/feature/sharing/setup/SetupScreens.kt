@@ -70,6 +70,8 @@ import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.motion.PageBackHandler
@@ -394,13 +396,24 @@ fun SetupContent(
     }
 }
 
-/** A step's title (a heading for TalkBack) and its plain-words explanation. */
+/**
+ * A step's title (a heading for TalkBack) and its plain-words explanation. A step that connects another app or service
+ * (Juggluco, a Nightscout site, LibreLinkUp) puts its [service]'s icon before the title, as the Mac's setup does.
+ */
 @Composable
 internal fun ColumnScope.StepHeader(
     title: String,
     body: String?,
+    service: Service? = null,
 ) {
-    Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+    if (service == null) {
+        Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+    } else {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ServiceIcon(service)
+            Text(title, style = MaterialTheme.typography.headlineSmall, modifier = Modifier.semantics { heading() })
+        }
+    }
     if (body != null) Text(body, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 

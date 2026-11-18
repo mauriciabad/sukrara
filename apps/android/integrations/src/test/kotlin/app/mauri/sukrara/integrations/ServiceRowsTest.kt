@@ -16,6 +16,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.icons.packageIconTag
 import app.mauri.sukrara.designsystem.icons.serviceIconTag
@@ -33,6 +34,9 @@ import app.mauri.sukrara.integrations.history.ImportActions
 import app.mauri.sukrara.integrations.history.ImportContent
 import app.mauri.sukrara.integrations.history.ImportState
 import app.mauri.sukrara.integrations.history.ImportUi
+import app.mauri.sukrara.integrations.librelinkup.LibreLinkUpSourceActions
+import app.mauri.sukrara.integrations.librelinkup.LibreLinkUpSourceRows
+import app.mauri.sukrara.integrations.librelinkup.LluSourceView
 import app.mauri.sukrara.integrations.localserver.ServerReader
 import app.mauri.sukrara.integrations.localserver.XdripContent
 import app.mauri.sukrara.integrations.localserver.XdripState
@@ -198,5 +202,19 @@ class ServiceRowsTest {
         show { ImportContent(ImportUi(true, ImportState.Idle, tidepoolSignedIn = false), ImportActions()) }
         assertRowIcon("Tidepool", serviceIconTag(Service.Tidepool))
         assertRowIcon("LibreView", serviceIconTag(Service.LibreView))
+    }
+
+    /** The LibreLinkUp source's account is LibreLinkUp's: its own app icon, not LibreView's (the clinic's site). */
+    @Test
+    fun libreLinkUpAccountShowsItsIcon() {
+        show {
+            LibreLinkUpSourceRows(
+                LluSourceView(signedIn = true, email = "alex@example.com"),
+                Person.Yours,
+                now,
+                LibreLinkUpSourceActions(),
+            )
+        }
+        assertRowIcon("Account", serviceIconTag(Service.LibreLinkUp))
     }
 }

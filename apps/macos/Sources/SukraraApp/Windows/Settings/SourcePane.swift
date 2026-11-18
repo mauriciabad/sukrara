@@ -266,10 +266,14 @@ struct SourceKindChoice: View {
                     Picker(selection: $selected) {
                         ForEach(kinds.filter { $0.group == group }, id: \.self) { kind in
                             if let spec = SourceSpec(person: person, kind: kind) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(SourceChoiceModel.title(spec))
-                                    Text(SourceChoiceModel.means(spec)).font(.caption).foregroundStyle(.secondary)
-                                        .fixedSize(horizontal: false, vertical: true)
+                                // the app's or service's own icon, as Android's source rows (SourceIcon)
+                                HStack(spacing: 10) {
+                                    SourceIcon(kind: kind)
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(SourceChoiceModel.title(spec))
+                                        Text(SourceChoiceModel.means(spec)).font(.caption).foregroundStyle(.secondary)
+                                            .fixedSize(horizontal: false, vertical: true)
+                                    }
                                 }
                                 .padding(.vertical, 3)
                                 .tag(kind)

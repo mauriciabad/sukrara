@@ -305,12 +305,14 @@ struct LibreLinkUpForm: View {
     @FocusState private var passwordFocused: Bool
 
     var body: some View {
-        LabeledContent(L10n.t("Email")) {
+        LabeledContent {
             TextInput(label: L10n.t("Email"), text: $model.emailDraft, content: .username)
                 .onChange(of: model.emailDraft) { _, _ in model.edited() }
                 .onSubmit { passwordFocused = true }
+        } label: {
+            ServiceLabel(L10n.t("Email"), service: .libreLinkUp)
         }
-        LabeledContent(L10n.t("Password")) {
+        LabeledContent {
             VStack(alignment: .leading, spacing: 4) {
                 TextInput(label: L10n.t("Password"), text: $model.passwordDraft, secure: true, content: .password)
                     .focused($passwordFocused)
@@ -320,6 +322,8 @@ struct LibreLinkUpForm: View {
                     Notice(p, tone: .error)
                 }
             }
+        } label: {
+            ServiceLabel(L10n.t("Password"), symbol: "key")
         }
         .onChange(of: model.signInRequests) { _, _ in passwordFocused = true }
         LabeledContent {
@@ -371,14 +375,13 @@ struct LibreLinkUpPeople: View {
     var body: some View {
         let people = model.snapshot().people
         if menu {
-            Picker(
-                L10n.t("Person"),
-                selection: Binding(get: { model.patient }, set: { model.choose($0) })
-            ) {
+            Picker(selection: Binding(get: { model.patient }, set: { model.choose($0) })) {
                 if !people.contains(where: { $0.id == model.patient }) {
                     Text(L10n.t("Pick someone")).tag(model.patient)
                 }
                 ForEach(people, id: \.id) { p in Text(LibreLinkUpModel.name(p)).tag(p.id) }
+            } label: {
+                ServiceLabel(L10n.t("Person"), symbol: "person.crop.circle")
             }
         } else {
             Picker(selection: $model.picked) {
@@ -444,7 +447,7 @@ struct LibreLinkUpRows: View {
                         .disabled(model.busy)
                     }
                 }
-                LabeledContent(L10n.t("Account")) {
+                LabeledContent {
                     HStack {
                         Text(snap.email).textSelection(.enabled)
                         Button(L10n.t("Change Account…")) {
@@ -452,14 +455,24 @@ struct LibreLinkUpRows: View {
                             model.changing = true
                         }
                     }
+                } label: {
+                    ServiceLabel(L10n.t("Account"), service: .libreLinkUp)
                 }
                 if snap.people.count > 1 || (!snap.people.isEmpty && mode == .choose) {
                     LibreLinkUpPeople(model: model, menu: true)
                 } else if let only = snap.people.first(where: { $0.id == model.patient }) {
-                    LabeledContent(L10n.t("Person"), value: LibreLinkUpModel.name(only))
+                    LabeledContent {
+                        Text(LibreLinkUpModel.name(only))
+                    } label: {
+                        ServiceLabel(L10n.t("Person"), symbol: "person.crop.circle")
+                    }
                 }
                 if let sensor = snap.sensor, !model.patient.isEmpty {
-                    LabeledContent(L10n.t("Sensor"), value: LibreLinkUpModel.sensorLine(sensor))
+                    LabeledContent {
+                        Text(LibreLinkUpModel.sensorLine(sensor))
+                    } label: {
+                        ServiceLabel(L10n.t("Sensor"), symbol: "calendar")
+                    }
                 }
             }
         } header: {

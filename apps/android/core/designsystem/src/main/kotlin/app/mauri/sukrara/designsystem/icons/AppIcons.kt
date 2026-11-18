@@ -51,6 +51,9 @@ enum class Service(
     ),
     Nightscout(emptyList(), R.drawable.ds_ic_app_nightscout),
     LibreView(emptyList(), R.drawable.ds_ic_app_libreview),
+
+    // the follower app whose account the LibreLinkUp source signs in with (not LibreView, the clinic's site)
+    LibreLinkUp(listOf("org.nativescript.LibreLinkUp"), R.drawable.ds_ic_app_librelinkup),
     Tidepool(emptyList(), R.drawable.ds_ic_app_tidepool),
 }
 

@@ -185,15 +185,15 @@ public struct SetupView: View {
                     }
                 case .follow:
                     if model.runningKind == .nightscout {
-                        page(.follow, L10n.t("Connect Nightscout")) {
+                        page(.follow, L10n.t("Connect Nightscout"), service: .nightscout) {
                             NightscoutConnect(model: model.settings.nightscout)
                         }
                     } else if model.runningKind == .libreLinkUp {
-                        page(.follow, L10n.t("Sign in to LibreLinkUp")) {
+                        page(.follow, L10n.t("Sign in to LibreLinkUp"), service: .libreLinkUp) {
                             LibreLinkUpConnect(model: model.settings.libreLinkUp)
                         }
                     } else if model.runningKind == .lanJuggluco {
-                        page(.follow, L10n.t("Connect Juggluco")) {
+                        page(.follow, L10n.t("Connect Juggluco"), service: .juggluco) {
                             Form { JugglucoRows(model: model.settings.juggluco) }.formStyle(.grouped)
                                 .onAppear(perform: model.settings.juggluco.load)
                                 .onDisappear {
@@ -325,10 +325,17 @@ public struct SetupView: View {
         )
     }
 
-    private func page(_ step: SetupFlow.Step, _ title: String, @ViewBuilder content: () -> some View) -> some View {
+    /// A step: its title (with the service's icon on a connect step, as macOS's account sign-in sheets show the
+    /// provider's), what it asks, then Back, Skip and its primary button.
+    private func page(
+        _ step: SetupFlow.Step, _ title: String, service: AppService? = nil, @ViewBuilder content: () -> some View
+    ) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title).font(.title.bold())
-            content()
+            HStack(spacing: 10) {
+                if let service { ServiceIcon(service: service, size: .twoLines) }
+                Text(title).font(.title.bold())
+            }
+            content().environment(\.serviceRowIcons, service == nil)
             HStack {
                 Button(L10n.t("Back")) { model.back() }
                 Spacer()

@@ -131,12 +131,16 @@ struct JugglucoRows: View {
                     Button(L10n.t("Open System Settings…"), action: JugglucoModel.openLocalNetworkSettings)
                 }
             }
-            LabeledContent(L10n.t("Address")) {
+            LabeledContent {
                 TextInput(label: L10n.t("Address"), text: $model.addressDraft).onSubmit(model.saveAddress)
+            } label: {
+                ServiceLabel(L10n.t("Address"), service: .juggluco)
             }
-            LabeledContent(L10n.t("API secret")) {
+            LabeledContent {
                 TextInput(label: L10n.t("API secret"), text: $model.secretDraft, secure: true)
                     .onSubmit(model.saveSecret)
+            } label: {
+                ServiceLabel(L10n.t("API secret"), symbol: "key")
             }
             Text(L10n.t("Blank address: Sukrara finds Juggluco by itself. Blank secret: Juggluco asks for none."))
                 .font(.caption)

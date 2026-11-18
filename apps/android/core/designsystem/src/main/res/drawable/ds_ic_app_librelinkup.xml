@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- LibreLinkUp's app icon (Abbott; the yellow mark and Abbott's "a" on navy), for when the LibreLinkUp app isn't
+     installed (otherwise designsystem's AppIcons loads the app's own). ds_ic_app_librelinkup_art is the square icon its
+     App Store listing (apps.apple.com/app/id1234323923, the same picture as Google Play's) publishes, unchanged, scaled
+     to 288 px; it fills the 72 dp visible area of the 108 dp adaptive canvas, over its own navy. Abbott's terms allow its
+     marks "to identify the product or services of the company", which is the only place Sukrara shows it
+     (docs/10-showcase.md "Service and app icons"). -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background>
+        <color android:color="#222731"/>
+    </background>
+    <foreground>
+        <inset android:drawable="@drawable/ds_ic_app_librelinkup_art" android:inset="16.667%"/>
+    </foreground>
+</adaptive-icon>

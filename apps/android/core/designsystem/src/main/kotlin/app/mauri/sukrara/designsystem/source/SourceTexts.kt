@@ -118,7 +118,7 @@ fun SourceIcon(
     when (kind) {
         SourceKind.PhoneApp -> ServiceIcon(Service.Juggluco, modifier)
         SourceKind.Nightscout -> ServiceIcon(Service.Nightscout, modifier)
-        SourceKind.LibreLinkUp -> ServiceIcon(Service.LibreView, modifier)
+        SourceKind.LibreLinkUp -> ServiceIcon(Service.LibreLinkUp, modifier)
         else -> RowIcon(kind.iconRes())
     }
 }

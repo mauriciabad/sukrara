@@ -1247,6 +1247,75 @@ PoC had those switches on the Share with apps list, where the icon now is on the
 service page of the PoC repeated it. Discarded: `ds_ic_service_libreview` / `_tidepool` (the hand-cropped pictures,
 superseded by `ServiceIcon`).
 
+#### On the Mac, and LibreLinkUp's own icon (#213, 2026-11-18)
+
+The owner, on the Mac after the #213 source work: "on the mac app you're not using brand icons/images". The Mac drew
+nothing (or an SF Symbol) where Android draws the service's icon.
+
+**Where the person sees another app or service**, Mac against Android:
+
+| Place | Android | Mac before | Mac now |
+|---|---|---|---|
+| *Where it comes from* (setup's source step, Settings › Source) | `SourceIcon`: Juggluco, Nightscout, LibreLinkUp (LibreView's until now) icons; sensor / Sukrara symbols | text only | `SourceIcon` 32 pt: Juggluco, Nightscout, LibreLinkUp; Sukrara's drop |
+| Setup's connect steps (*Connect Juggluco*, *Connect Nightscout*, *Sign in to LibreLinkUp*) | nothing | nothing | the service's icon before the title (32 pt); Android got the same (`StepHeader(service)`) |
+| Settings › Source, Nightscout | *Site* row: the owl | nothing | *Site address* row: the owl (20 pt), the token row a key |
+| Settings › Source, LibreLinkUp | *Account* row: LibreView's icon | nothing | *Account* (signed in) / *Email* (signed out): LibreLinkUp's icon; *Password* a key, *Person*, *Sensor* symbols; Android's *Account* row now LibreLinkUp's |
+| Settings › Source, Juggluco on this network / on this phone | *Open Juggluco* row: Juggluco's icon | nothing | *Address* row: Juggluco's icon, *API secret* a key (the Mac has no Open Juggluco: Juggluco runs on the phone) |
+| Panel: *Nightscout* / *LibreLinkUp* path badge | the path's mark (globe) | globe | unchanged: it says how readings come, a status mark in the text's colour, not whose they are |
+| Panel / widget no-data reasons (*Juggluco wasn't found…*, *Nightscout refused the token*…) | no icon (the card above already draws its state) | the no-readings symbol + gearshape button | unchanged (the reason's symbol, never a brand) |
+| Treatments *From Nightscout · change it there* | text | text | unchanged (a line under an entry, not a row) |
+| Import / history (Tidepool, LibreView), clinic banner, Share with apps (xDrip+, Health Connect, Garmin, broadcasts) | service icons | not on the Mac | not on the Mac |
+
+**LibreLinkUp's own icon (both apps).** Android showed LibreView's favicon on the LibreLinkUp source. LibreLinkUp is
+a separate Abbott app with its own icon (the yellow mark and Abbott's "a" on navy; version 5, 2026); the person signs in
+with their LibreLinkUp account and knows that icon from their phone, while LibreView is the clinic's site (Sukrara's
+LibreView upload and import rows). One icon for both said they were the same account. Now `Service.LibreLinkUp`: the
+installed app's icon (`org.nativescript.LibreLinkUp`, the package of
+[Google Play's listing](https://play.google.com/store/apps/details?id=org.nativescript.LibreLinkUp); `<queries>` +
+allow.json), else Sukrara's copy, `ds_ic_app_librelinkup` (adaptive: the art fills the 72 dp visible area over its own
+navy `#222731`). The art is the square icon the
+[App Store listing](https://apps.apple.com/us/app/librelinkup/id1234323923) publishes (1024 px, the same picture as
+Google Play's), unchanged, scaled to 288 px (Android) and 256 px (Mac). librelinkup.com's favicon is the older orange
+share mark, no longer the app's. Basis: as LibreView's, Abbott's terms allow its marks "to identify the product or
+services of the company" ([abbott.com terms](https://www.abbott.com/en-us/online-terms-and-conditions)); shown only on
+rows that name LibreLinkUp, unaltered (Abbott's "a" kept).
+
+**How macOS shows other apps' icons** (the choice). [HIG › App icons](https://developer.apple.com/design/human-interface-guidelines/app-icons):
+"In iOS, iPadOS, and macOS, icons are square, and the system applies masking to produce rounded corners"; macOS 26
+enforces that shape on every app icon (a non-conforming one sits in a gray rounded square:
+[Lapcat](https://lapcatsoftware.com/articles/2025/6/2.html), [9to5Mac](https://9to5mac.com/2025/08/07/macos-26-icon-changes/)).
+System Settings draws other apps with their full-colour icons in that shape: 20 pt in one-line rows (Login Items &
+Extensions, Privacy & Security's app lists), 32 pt in rows with a second line (Notifications' app list); Internet
+Accounts shows each provider's mark in a rounded square, and its sign-in sheet puts the provider's logo above the
+fields. [HIG › Images](https://developer.apple.com/design/human-interface-guidelines/images): PDF or SVG for flat
+artwork that scales, PNG for raster work. [HIG › SF Symbols](https://developer.apple.com/design/human-interface-guidelines/sf-symbols)
+forbids symbols in "app icons, logos, or any other trademarked use", and there are none for these services, so a
+symbol could only stand in for the service, never be it. Options compared: (a) SF Symbols (what the Mac had: generic,
+the owner's complaint); (b) the bare marks with no shape (inconsistent: Nightscout's owl on white would float, the
+others are full-bleed squares); (c) each icon's square layer masked by Sukrara as macOS masks app icons (chosen: a
+service reads as the app the person knows, next to System Settings' own lists, one size rule for every service, art
+shared with Android); (d) the installed Mac app's icon via `NSWorkspace` (Android's runtime icon; none of the three has
+a Mac app, so nothing to read).
+
+**Added (Mac).** `Windows/ServiceIcon.swift`: `AppService` (Juggluco, Nightscout, LibreLinkUp; `Service` is LaunchMode's
+there), `ServiceIcon` (the art clipped to the macOS icon grid's rounded square, 824/1024 of the box with 185.4/824
+continuous corners, a soft shadow; 20 or 32 pt by row, scaled with the text size; decorative for VoiceOver),
+`ServiceLabel` (a row's label with the icon, or a symbol in the same slot) and `SourceIcon` (Android's). The art, in
+`Resources/ServiceIcons` (SwiftPM `.copy`, inside `Sukrara_SukraraApp.bundle`; tools/check `images_ok` allows
+`apps/macos/Sources/*/Resources/*`):
+
+| File | From | Licence / basis |
+|---|---|---|
+| `juggluco.png` (256 px) | Android's `ds_ic_app_juggluco` = Juggluco's launcher layers (background vector + `ic_launcher_foreground`), the 72-unit visible part | [Juggluco](https://github.com/j-kaltes/Juggluco), GPL-3.0 (Sukrara's licence) |
+| `nightscout.svg` | Android's `ds_ic_app_nightscout` vector (the owl from [NS-logo.svg](https://github.com/nightscout/HackDiabetes/tree/main/videos/logo-animation), black on white), the visible part; NSImage draws SVG (macOS 14+) | the mark the AGPL-3.0 [cgm-remote-monitor](https://github.com/nightscout/cgm-remote-monitor) ships; unchanged |
+| `librelinkup.png` (256 px) | the App Store listing's 1024 px icon | Abbott's terms, as above |
+
+Discarded: LibreView, Tidepool, xDrip+ and Health Connect on the Mac (it has none of those rows); an asset catalog
+(plain files load the same through `Bundle.module`, the SVG stays a vector, and `bundle.sh` needs no asset step); a
+title icon *and* row icons in setup's connect steps (the same icon twice; the columns form's right-aligned labels take
+none: `serviceRowIcons` off there). Test `ServiceIconTests` (every file loads, square, ≥ 128 px; every source's service).
+Screenshots: `sukrara-snap windows` → `settings-source-*`, `setup-source-*`, `setup-connect-*` (light, dark, large text).
+
 ## Insulin pens (investigation 29)
 
 Tap a NovoPen Echo Plus (NovoPen 6 untested) on the wearer's unlocked phone, from any app: its injections are logged at

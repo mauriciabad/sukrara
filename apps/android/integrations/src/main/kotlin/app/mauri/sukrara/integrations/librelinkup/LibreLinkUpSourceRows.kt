@@ -73,7 +73,7 @@ fun LibreLinkUpSourceRows(
             stringResource(R.string.in_llu_account),
             actions.editAccount,
             summary = view.email.ifEmpty { stringResource(R.string.in_llu_account_none) },
-            leading = { ServiceIcon(Service.LibreView) },
+            leading = { ServiceIcon(Service.LibreLinkUp) },
         )
         // the person LibreLinkUp reads: not *Whose glucose* (the page's first row, yours or someone else's) said twice
         if (view.people.size > 1) {
