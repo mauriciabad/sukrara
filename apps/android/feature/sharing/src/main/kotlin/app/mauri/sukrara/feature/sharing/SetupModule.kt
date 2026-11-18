@@ -18,6 +18,7 @@ import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
+import app.mauri.sukrara.feature.sharing.setup.LluSourcePort
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.SetupCard
 import app.mauri.sukrara.feature.sharing.setup.SetupFacts
@@ -147,6 +148,8 @@ class SetupModule(
     val systemAccess: SystemAccessPort,
     /** The online source's site (Connect, *Bring back 90 days*); none in a build or test without one. */
     val site: SiteSourcePort = SiteSourcePort.None,
+    /** The LibreLinkUp source (sign in, whose glucose); none in a build or test without one. */
+    val llu: LluSourcePort = LluSourcePort.None,
 ) {
     /** Root as setup's facts see it ([SetupFacts.root]): Sukrara has root. */
     val rootGranted: Flow<Boolean> by lazy { systemAccess.state.map { it.granted }.distinctUntilChanged() }

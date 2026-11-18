@@ -26,6 +26,7 @@ fun SourceSpec.titleRes(): Int =
         SourceKind.Sensor -> R.string.ds_source_sensor
         SourceKind.PhoneApp -> R.string.ds_source_phone_app
         SourceKind.Nightscout -> R.string.ds_source_nightscout
+        SourceKind.LibreLinkUp -> R.string.ds_source_librelinkup
         SourceKind.Sukrara -> if (person == Person.Yours) R.string.ds_source_sukrara_yours else R.string.ds_source_sukrara_theirs
     }
 
@@ -43,6 +44,10 @@ fun SourceSpec.meansRes(): Int =
 
         SourceKind.Nightscout -> {
             if (person == Person.Yours) R.string.ds_source_nightscout_means else R.string.ds_source_nightscout_means_theirs
+        }
+
+        SourceKind.LibreLinkUp -> {
+            if (person == Person.Yours) R.string.ds_source_librelinkup_means else R.string.ds_source_librelinkup_means_theirs
         }
 
         SourceKind.Sukrara -> {
@@ -80,6 +85,7 @@ fun SourceKind.shortRes(): Int =
         SourceKind.Sensor -> R.string.ds_source_short_sensor
         SourceKind.PhoneApp -> R.string.ds_source_short_phone_app
         SourceKind.Nightscout -> R.string.ds_source_nightscout
+        SourceKind.LibreLinkUp -> R.string.ds_source_librelinkup
         SourceKind.Sukrara -> R.string.ds_source_short_sukrara
     }
 
@@ -99,7 +105,7 @@ fun SourceKind.iconRes(): Int =
     when (this) {
         SourceKind.Sensor -> R.drawable.ds_ic_dia_sensor
         SourceKind.PhoneApp -> R.drawable.ds_ic_smartphone
-        SourceKind.Nightscout -> R.drawable.ds_ic_public
+        SourceKind.Nightscout, SourceKind.LibreLinkUp -> R.drawable.ds_ic_public
         SourceKind.Sukrara -> R.drawable.ds_ic_status_sukrara
     }
 
@@ -112,6 +118,7 @@ fun SourceIcon(
     when (kind) {
         SourceKind.PhoneApp -> ServiceIcon(Service.Juggluco, modifier)
         SourceKind.Nightscout -> ServiceIcon(Service.Nightscout, modifier)
+        SourceKind.LibreLinkUp -> ServiceIcon(Service.LibreView, modifier)
         else -> RowIcon(kind.iconRes())
     }
 }

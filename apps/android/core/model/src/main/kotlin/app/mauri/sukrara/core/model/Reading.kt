@@ -100,14 +100,21 @@ value class SourceId(val id: String) {
         /** A Nightscout site read as the source (source `nightscout`): first-hand, online, never uploaded back to it. */
         val Nightscout = SourceId("nightscout")
 
+        /** LibreLinkUp's live reading (source `libreLinkUp`): first-hand, online, never uploaded back to LibreView. */
+        val LibreLinkUp = SourceId("librelinkup")
+
+        /** LibreLinkUp's graph points (about every 5 min, 12 h back): ranked below its live readings, they only fill gaps. */
+        val LibreLinkUpGraph = SourceId("librelinkup-graph")
+
         /** What reaches this phone over the internet from a service (contracts/sources/outputs.json): no sensor label. */
-        val Online: Set<SourceId> = setOf(Nightscout)
+        val Online: Set<SourceId> = setOf(Nightscout, LibreLinkUp, LibreLinkUpGraph)
 
         /**
          * What this phone gets first-hand: its own sensor, an app on it that reads one, or an online source (never
          * relayed by another Sukrara).
          */
-        val FirstHand: Set<SourceId> = setOf(Libre3, Juggluco, DexcomG7, DexcomG6, SmartGuide, AidexX, Nightscout)
+        val FirstHand: Set<SourceId> =
+            setOf(Libre3, Juggluco, DexcomG7, DexcomG6, SmartGuide, AidexX, Nightscout, LibreLinkUp, LibreLinkUpGraph)
 
         /** Another Sukrara's readings over Nostr relays (source `sukrara`). */
         val Relay = SourceId("relay")

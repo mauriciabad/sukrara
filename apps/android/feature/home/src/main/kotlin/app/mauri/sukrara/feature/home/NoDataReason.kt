@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
@@ -114,6 +115,8 @@ sealed interface NoDataReason {
     data class SourceTrouble(
         val problem: SourceProblem,
         val since: Instant?,
+        /** Which online source (its words: a site's uploader, or the Libre app behind LibreLinkUp). */
+        val kind: SourceKind = SourceKind.Nightscout,
     ) : NoDataReason {
         override val action = HomeAction.OpenSource
     }
@@ -203,12 +206,12 @@ sealed interface NoDataReason {
                 // an online source knows why nothing comes: say it, with the way to fix it
                 (state.source as? SourceStatus.Interrupted)?.problem != null -> {
                     val s = state.source as SourceStatus.Interrupted
-                    SourceTrouble(s.problem!!, latest?.t)
+                    SourceTrouble(s.problem!!, latest?.t, state.spec?.kind ?: SourceKind.Nightscout)
                 }
 
                 // an online source without a known problem: its page, not the sensor's
                 state.spec?.online == true -> {
-                    SourceTrouble(SourceProblem.NoNewReadings, latest?.t)
+                    SourceTrouble(SourceProblem.NoNewReadings, latest?.t, state.spec?.kind ?: SourceKind.Nightscout)
                 }
 
                 else -> {

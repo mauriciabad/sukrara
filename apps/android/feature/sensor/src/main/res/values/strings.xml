@@ -18,6 +18,11 @@
     <string name="newsensor_signin_text">Sukrara starts the sensor with your LibreView account, like the Libre app does. Then the Libre app can take it back later. You sign in once, and nothing goes to LibreView unless you turn its upload on.</string>
     <string name="newsensor_official_title">Stop the Libre app first</string>
     <string name="newsensor_official_text">If the Libre app and Sukrara both read the sensor, it can stop working. Swiping it away isn\'t enough: force-stop it (App info › Force stop) or uninstall it before you go on.</string>
+    <string name="newsensor_takeover_libre_title">Take the sensor from the Libre app</string>
+    <string name="newsensor_takeover_libre_text">From the tap on, Sukrara reads your sensor: the Libre app gets no readings and rings no alarms, and LibreLinkUp gets nothing until Sukrara uploads to LibreView. Force-stop the Libre app first, so it doesn’t ring about a lost signal.</string>
+    <string name="newsensor_takeover_libre_back">To go back, scan the sensor with the Libre app, any day of its life.</string>
+    <string name="newsensor_action_libre_app_info">Open the Libre app’s info</string>
+    <string name="newsensor_action_take_over">Take over</string>
     <string name="newsensor_bt_permission_title">Allow nearby devices</string>
     <string name="newsensor_bt_permission_text">Sukrara reads the sensor over Bluetooth. It needs the Nearby devices permission for that.</string>
     <string name="newsensor_bt_off_title">Turn on Bluetooth</string>

@@ -57,6 +57,11 @@ data class TpSettings(
      * (contracts/sources/outputs.json "off"), as the site's own uploader may send them to Tidepool already.
      */
     val fromSource: Boolean = false,
+    /**
+     * Glucose from LibreLinkUp: on unless turned off (contracts/sources/outputs.json "on"); Tidepool can link LibreView
+     * itself (US only), and then it would count twice.
+     */
+    val fromLibreLinkUp: Boolean = true,
 )
 
 /** What the Tidepool page shows. */
@@ -318,7 +323,12 @@ class TidepoolUploader(
         val rd =
             if (s.glucose) {
                 readings.range(start, clock.now() + Duration.ofMinutes(1)).filter {
-                    !it.imported && (s.fromSource || it.source !in SourceId.Online)
+                    !it.imported &&
+                        when (it.source) {
+                            SourceId.LibreLinkUp, SourceId.LibreLinkUpGraph -> s.fromLibreLinkUp
+                            in SourceId.Online -> s.fromSource
+                            else -> true
+                        }
                 }
             } else {
                 emptyList()

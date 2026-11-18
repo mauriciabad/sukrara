@@ -52,6 +52,7 @@
     <string name="reason_wearer_silent_body">Last heard %1$s. Their phone may be off, offline or out of battery.</string>
     <string name="reason_wearer_silent_never">Nothing heard yet. Their phone may be off, offline or out of battery.</string>
     <string name="reason_site_title">No readings from Nightscout</string>
+    <string name="reason_llu_title">No readings from LibreLinkUp</string>
     <string name="reason_site_unreachable">Your Nightscout site doesn’t answer. Sukrara keeps trying; check the address in Settings › Source.</string>
     <string name="reason_site_action">Source</string>
     <string name="reason_site_not_connected">Connect your Nightscout site in Settings › Source, or wait a moment while Sukrara reaches it.</string>

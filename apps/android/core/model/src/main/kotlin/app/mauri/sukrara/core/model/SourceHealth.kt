@@ -24,12 +24,21 @@ enum class CallOutcome {
 
     /** 429: the site asked to wait. */
     RateLimited,
+
+    /** LibreLinkUp asks the person to accept new terms or a new privacy policy (login status 4). */
+    Terms,
+
+    /** LibreLinkUp: the account follows no one, or no longer the person picked. */
+    NotShared,
+
+    /** LibreLinkUp refuses this client (a version Sukrara can't send, an endpoint gone): Abbott changed the API. */
+    Retired,
 }
 
 /**
  * How an online source is doing, as the person sees it on home, Settings › Source and setup's Connect step
  * (contracts/sources/health.json, docs/44 Appendix C "States and exits"): one state from the last call, whether the
- * phone has a network, and the newest reading's age.
+ * phone has a network, and the newest reading's age. The last three are LibreLinkUp's.
  */
 enum class OnlineHealth {
     /** The first call is on its way. */
@@ -55,6 +64,15 @@ enum class OnlineHealth {
 
     /** The site asked to wait; Sukrara tries again by itself. */
     RateLimited,
+
+    /** LibreLinkUp needs the person: new terms to accept in its app. */
+    ActionNeeded,
+
+    /** LibreLinkUp: no one shares with the account (any more): invite it from the Libre app, or pick again. */
+    NotShared,
+
+    /** LibreLinkUp stopped answering Sukrara (Abbott changed it): said plainly; an update of Sukrara may fix it. */
+    Stopped,
     ;
 
     /** Readings may still come by themselves: nothing for the person to do. */
@@ -70,6 +88,9 @@ enum class OnlineHealth {
                 Unreachable -> SourceProblem.Unreachable
                 SignedOut -> SourceProblem.SignedOut
                 RateLimited -> SourceProblem.RateLimited
+                ActionNeeded -> SourceProblem.ActionNeeded
+                NotShared -> SourceProblem.NotShared
+                Stopped -> SourceProblem.Stopped
             }
 
     companion object {
@@ -99,6 +120,18 @@ enum class OnlineHealth {
                     RateLimited
                 }
 
+                CallOutcome.Terms -> {
+                    ActionNeeded
+                }
+
+                CallOutcome.NotShared -> {
+                    NotShared
+                }
+
+                CallOutcome.Retired -> {
+                    Stopped
+                }
+
                 CallOutcome.Network, CallOutcome.Server, CallOutcome.NotFound -> {
                     if (online) Unreachable else Offline
                 }
@@ -115,4 +148,4 @@ enum class OnlineHealth {
 }
 
 /** Why an online source brings nothing now ([SourceStatus.Interrupted.problem]): home and Settings › Source say it. */
-enum class SourceProblem { NoNewReadings, Offline, Unreachable, SignedOut, RateLimited }
+enum class SourceProblem { NoNewReadings, Offline, Unreachable, SignedOut, RateLimited, ActionNeeded, NotShared, Stopped }

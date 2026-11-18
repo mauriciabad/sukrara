@@ -72,8 +72,11 @@ class SettingsSchemaTest {
             assertTrue(info.id, name in app.mauri.sukrara.core.data.secure.SecretName.ALL)
         }
         assertEquals(
-            setOf(app.mauri.sukrara.core.data.secure.SecretName.JUGGLUCO, app.mauri.sukrara.core.data.secure.SecretName.NIGHTSCOUT_SOURCE)
-                .map { "secure:$it" }
+            setOf(
+                app.mauri.sukrara.core.data.secure.SecretName.JUGGLUCO,
+                app.mauri.sukrara.core.data.secure.SecretName.NIGHTSCOUT_SOURCE,
+                app.mauri.sukrara.core.data.secure.SecretName.LIBRE_LINK_UP_SOURCE,
+            ).map { "secure:$it" }
                 .toSet(),
             secrets.map { it.android }.toSet(),
         )

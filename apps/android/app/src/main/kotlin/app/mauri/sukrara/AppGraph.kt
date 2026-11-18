@@ -64,6 +64,9 @@ import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
 import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.healthconnect.HcState
+import app.mauri.sukrara.integrations.librelinkup.LluSourceConfig
+import app.mauri.sukrara.integrations.librelinkup.LluSourceSettings
+import app.mauri.sukrara.integrations.librelinkup.LluSourceState
 import app.mauri.sukrara.integrations.libreview.LvGlucose
 import app.mauri.sukrara.integrations.libreview.LvReadings
 import app.mauri.sukrara.integrations.libreview.LvState
@@ -323,9 +326,20 @@ class AppGraph(
                 source.update { it.copy(nightscoutUrl = settings.url, nightscoutTreatments = settings.treatments) }
         }
 
+    /** Whom the LibreLinkUp source reads, kept in [source] next to the answer. */
+    val libreLinkUpConfig: LluSourceConfig =
+        object : LluSourceConfig {
+            override val data: Flow<LluSourceSettings> =
+                source.data.map { LluSourceSettings(it.libreLinkUpPatient) }.distinctUntilChanged()
+
+            override val person: Flow<Person?> = source.data.map { it.spec?.person }.distinctUntilChanged()
+
+            override suspend fun set(settings: LluSourceSettings) = source.update { it.copy(libreLinkUpPatient = settings.patient) }
+        }
+
     private fun jugglucoInstalled(): Boolean = app.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE) != null
 
-    val sensor by lazy {
+    val sensor: SensorModule by lazy {
         SensorModule(
             context = app,
             secure = data.secureStore,
@@ -337,6 +351,17 @@ class AppGraph(
             http = data.http,
             clock = clock,
             dispatchers = dispatchers,
+            // a takeover from the Libre app: LibreLinkUp's sensor start, should the sensor's answer lack one
+            knownStart = {
+                if (spec.first()?.kind == SourceKind.LibreLinkUp) {
+                    integrations.libreLinkUpSource.sensorLife
+                        .first()
+                        ?.start
+                        ?.epochSecond
+                } else {
+                    null
+                }
+            },
         )
     }
 
@@ -612,6 +637,10 @@ class AppGraph(
             nightscoutSourceState =
                 data.typedStore("nightscout-source", NsSourceState.serializer(), NsSourceState(), whenCorrupt = NsSourceState()),
             nightscoutSourceConfig = nightscoutSourceConfig,
+            // a lost state forgets the person's name and the sensor LibreLinkUp said: both come back with the next call
+            libreLinkUpState =
+                data.typedStore("librelinkup-source", LluSourceState.serializer(), LluSourceState(), whenCorrupt = LluSourceState()),
+            libreLinkUpConfig = libreLinkUpConfig,
             appVersion = appVersion,
             readings = readings,
             treatments = data.treatments,
@@ -677,6 +706,7 @@ class AppGraph(
             glucose = monitor.hub.state,
             graphConfig = graphConfig,
             startMonitoring = { startMonitoring(StartReason.App) },
+            takeoverFromLibreApp = { spec.first()?.officialAppUploads == true },
         )
     }
 
@@ -716,6 +746,8 @@ class AppGraph(
             systemAccess = monitor.root.access,
             // the Nightscout source's Connect step and *Bring back 90 days*
             site = AppSiteSource(integrations.nightscoutAccount, integrations.nightscoutSource, nightscoutSourceConfig, clock),
+            // LibreLinkUp's Connect step (its own account; *Sign in as …* with THE LibreView account)
+            llu = AppLluSource(integrations.libreLinkUpSource, data.libreViewLogin),
         )
     }
 
@@ -761,16 +793,18 @@ class AppGraph(
      */
     private val currentSensorInfo: Flow<SensorInfo?> by lazy {
         spec
-            .map { it?.kind == SourceKind.Nightscout }
+            .map { it?.kind }
             .distinctUntilChanged()
-            .flatMapLatest { site ->
-                if (site) {
-                    integrations.nightscoutSource.sensorLife.map { life ->
-                        life?.let { SensorInfo(it.id, it.start.epochSecond, it.end.epochSecond, it.warmupEnd.epochSecond) }
+            .flatMapLatest { kind ->
+                val online =
+                    when (kind) {
+                        SourceKind.Nightscout -> integrations.nightscoutSource.sensorLife
+                        SourceKind.LibreLinkUp -> integrations.libreLinkUpSource.sensorLife
+                        else -> null
                     }
-                } else {
-                    sensor.source.sensorInfo
-                }
+                online?.map { life ->
+                    life?.let { SensorInfo(it.id, it.start.epochSecond, it.end.epochSecond, it.warmupEnd.epochSecond) }
+                } ?: sensor.source.sensorInfo
             }
     }
 
@@ -1184,6 +1218,9 @@ class AppGraph(
             // its token is credential-encrypted: nothing to ask the site before the unlock
             SourceKind.Nightscout -> if (unlocked.value) integrations.nightscoutSource else null
 
+            // its account is credential-encrypted: nothing to ask LibreLinkUp before the unlock
+            SourceKind.LibreLinkUp -> if (unlocked.value) integrations.libreLinkUpSource else null
+
             // the follower engine's identity and state are credential-encrypted: nothing to follow before the unlock
             SourceKind.Sukrara -> if (unlocked.value) follower.engine.takeIf { it.isFollowing() } else null
         }
@@ -1215,6 +1252,15 @@ class AppGraph(
 
                     else -> Readiness.Nothing
                 }
+            }
+
+            // someone picked after a sign-in (the Connect step); a refused password later is the source's own state
+            SourceKind.LibreLinkUp -> {
+                unlocked.value &&
+                    libreLinkUpConfig.data
+                        .first()
+                        .patient
+                        .isNotEmpty()
             }
 
             SourceKind.Sukrara -> {

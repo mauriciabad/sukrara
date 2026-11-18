@@ -169,6 +169,15 @@ internal fun ColumnScope.SourceStep(
                             R.string.sh_setup_source_change_nightscout
                         }
 
+                        // from the sensor Sukrara reads: the way back to the Libre app (it scans the sensor again)
+                        SourceKind.LibreLinkUp -> {
+                            if (change.replaces?.kind == SourceKind.Sensor) {
+                                R.string.sh_setup_source_change_llu_from_sensor
+                            } else {
+                                R.string.sh_setup_source_change_llu
+                            }
+                        }
+
                         SourceKind.Sukrara -> {
                             R.string.sh_setup_source_change_sukrara
                         }

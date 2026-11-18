@@ -30,6 +30,13 @@ data class SensorEnv(
     val notificationsAllowed: Boolean,
     /** Nearby devices also covers scanning (BLUETOOTH_SCAN): the families found by a scan need it. */
     val scanPermission: Boolean = bluetoothPermission,
+    /**
+     * Your glucose comes from LibreLinkUp: the Libre app (on this phone or another) holds the running sensor, and the
+     * tap takes it over (docs/44 "The move"): the person is told first that the Libre app stops getting readings.
+     */
+    val takeoverFromLibreApp: Boolean = false,
+    /** The Libre app installed here (its App info, to force-stop it), null = none. */
+    val officialAppPackage: String? = null,
 )
 
 enum class NfcFailure {
@@ -101,6 +108,13 @@ sealed interface NewSensorStep {
     data object NeedsLibreViewSignIn : NewSensorStep
 
     data object OfficialAppWarning : NewSensorStep
+
+    /**
+     * LibreLinkUp is the source, so the Libre app holds the running sensor: from the tap on it gets no readings and
+     * rings no alarms, LibreLinkUp gets nothing until Sukrara uploads to LibreView, and the way back is scanning the
+     * sensor with the Libre app. Shown instead of [OfficialAppWarning]; *Take over* goes on.
+     */
+    data object TakeoverFromLibreApp : NewSensorStep
 
     data object NeedsBluetoothPermission : NewSensorStep
 
@@ -233,6 +247,7 @@ object NewSensorMachine {
             NewSensorStep.CoreMissing,
             NewSensorStep.NeedsLibreViewSignIn,
             NewSensorStep.OfficialAppWarning,
+            NewSensorStep.TakeoverFromLibreApp,
             NewSensorStep.NoNfc,
             NewSensorStep.NfcOff,
             NewSensorStep.NeedsBluetoothPermission,
@@ -327,7 +342,7 @@ object NewSensorMachine {
                         if (now.isBefore(step.since.plus(UNTESTED_WAIT))) state else gate(state.copy(profile = step.profile))
                     }
 
-                    NewSensorStep.OfficialAppWarning -> {
+                    NewSensorStep.OfficialAppWarning, NewSensorStep.TakeoverFromLibreApp -> {
                         gate(state.copy(officialAcknowledged = true))
                     }
 
@@ -377,6 +392,7 @@ object NewSensorMachine {
                 !env.nfcAvailable -> NewSensorStep.NoNfc
                 !env.nfcOn -> NewSensorStep.NfcOff
                 !env.signedIn -> NewSensorStep.NeedsLibreViewSignIn
+                env.takeoverFromLibreApp && !state.officialAcknowledged -> NewSensorStep.TakeoverFromLibreApp
                 env.officialAppInstalled && !state.officialAcknowledged -> NewSensorStep.OfficialAppWarning
                 !env.bluetoothPermission -> NewSensorStep.NeedsBluetoothPermission
                 !env.bluetoothOn -> NewSensorStep.BluetoothOff

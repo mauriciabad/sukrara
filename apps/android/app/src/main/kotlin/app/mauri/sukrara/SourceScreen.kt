@@ -12,6 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.settings.SettingsPage
@@ -25,6 +26,8 @@ import app.mauri.sukrara.feature.settings.source.SourcePageContent
 import app.mauri.sukrara.feature.settings.source.SourcePageState
 import app.mauri.sukrara.feature.sharing.follower.FollowingPage
 import app.mauri.sukrara.feature.sharing.follower.FollowingViewModel
+import app.mauri.sukrara.integrations.librelinkup.LibreLinkUpSourceActions
+import app.mauri.sukrara.integrations.librelinkup.LibreLinkUpSourceRows
 import app.mauri.sukrara.integrations.nightscout.site.NightscoutSourceActions
 import app.mauri.sukrara.integrations.nightscout.site.NightscoutSourceRows
 import kotlinx.coroutines.delay
@@ -44,6 +47,8 @@ internal fun SourceScreen(
     graph: AppGraph,
     openStep: (app.mauri.sukrara.feature.sharing.setup.SetupStep) -> Unit,
     openSensor: () -> Unit,
+    /** The new-sensor flow (LibreLinkUp's *Read the sensor in Sukrara*: the takeover). */
+    openNewSensor: () -> Unit,
     openImport: () -> Unit,
     openSettingsFrom: () -> Unit,
     onLeftStream: () -> Unit,
@@ -76,9 +81,34 @@ internal fun SourceScreen(
             ),
             SensorSettingsActions(setJugglucoSecret = sensorVm::setJugglucoSecret),
             siteRows = {
+                val scope = rememberCoroutineScope()
+                if (spec?.kind == SourceKind.LibreLinkUp) {
+                    val llu by graph.integrations.libreLinkUpSource.view
+                        .collectAsStateWithLifecycle(null)
+                    llu?.let { v ->
+                        LibreLinkUpSourceRows(
+                            v,
+                            spec.person,
+                            now,
+                            LibreLinkUpSourceActions(
+                                editAccount = { openStep(app.mauri.sukrara.feature.sharing.setup.SetupStep.Sensor) },
+                                retry = {
+                                    scope.launch {
+                                        // the person accepted the terms or invited the account: whom it follows, read again
+                                        graph.integrations.libreLinkUpSource.recheck()
+                                        graph.integrations.libreLinkUpSource.kick()
+                                    }
+                                },
+                                choose = { id -> scope.launch { graph.integrations.libreLinkUpSource.choose(id) } },
+                                takeOver = openNewSensor,
+                                signOut = { scope.launch { graph.integrations.libreLinkUpSource.signOut() } },
+                            ),
+                        )
+                    }
+                    return@SourcePageContent
+                }
                 val site by graph.integrations.nightscoutSource.view
                     .collectAsStateWithLifecycle(null)
-                val scope = rememberCoroutineScope()
                 site?.let { v ->
                     NightscoutSourceRows(
                         v,

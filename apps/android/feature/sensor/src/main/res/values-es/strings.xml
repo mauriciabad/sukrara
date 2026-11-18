@@ -17,6 +17,11 @@
     <string name="newsensor_signin_text">Sukrara inicia el sensor con tu cuenta de LibreView, como la app Libre. Así la app Libre puede recuperarlo más tarde. Inicias sesión una vez, y no se envía nada a LibreView salvo que actives su subida.</string>
     <string name="newsensor_official_title">Primero detén la app Libre</string>
     <string name="newsensor_official_text">Si la app Libre y Sukrara leen el sensor a la vez, puede dejar de funcionar. Deslizarla para cerrarla no basta: fuerza su detención (Información de la app › Forzar detención) o desinstálala antes de seguir.</string>
+    <string name="newsensor_takeover_libre_title">Toma el sensor de la app Libre</string>
+    <string name="newsensor_takeover_libre_text">Desde el toque, Sukrara lee tu sensor: la app Libre no recibe lecturas ni suena ninguna alarma, y LibreLinkUp no recibe nada hasta que Sukrara suba a LibreView. Fuerza antes la detención de la app Libre, para que no avise de señal perdida.</string>
+    <string name="newsensor_takeover_libre_back">Para volver, escanea el sensor con la app Libre, cualquier día de su vida.</string>
+    <string name="newsensor_action_libre_app_info">Abrir la información de la app Libre</string>
+    <string name="newsensor_action_take_over">Tomar el sensor</string>
     <string name="newsensor_bt_permission_title">Permite dispositivos cercanos</string>
     <string name="newsensor_bt_permission_text">Sukrara lee el sensor por Bluetooth. Para eso necesita el permiso de dispositivos cercanos.</string>
     <string name="newsensor_bt_off_title">Activa el Bluetooth</string>

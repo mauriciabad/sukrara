@@ -58,6 +58,8 @@ class SensorUiModule(
     private val graphConfig: Flow<GraphConfig>,
     /** Starts the monitoring service (the app's start path); called in the foreground, right after a tap. */
     private val startMonitoring: suspend () -> Unit,
+    /** Your glucose comes from LibreLinkUp: a tap takes the sensor from the Libre app (the move, docs/44). */
+    private val takeoverFromLibreApp: suspend () -> Boolean = { false },
 ) {
     private val app = context.applicationContext
 
@@ -71,6 +73,8 @@ class SensorUiModule(
                     nfcOn = nfc?.isEnabled == true,
                     signedIn = sensors.libreView.hasReceiverId(),
                     officialAppInstalled = OfficialApps.anyInstalled(app.packageManager),
+                    takeoverFromLibreApp = takeoverFromLibreApp(),
+                    officialAppPackage = OfficialApps.installed(app.packageManager),
                     bluetoothPermission = granted(Manifest.permission.BLUETOOTH_CONNECT),
                     bluetoothOn = app.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled == true,
                     notificationsAllowed = NotificationManagerCompat.from(app).areNotificationsEnabled(),

@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.sensor.libreview
 
+import app.mauri.sukrara.core.data.libreview.LibreLinkUp
 import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
+import app.mauri.sukrara.core.data.libreview.LluLogin
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
 import app.mauri.sukrara.sensor.pairing.ReceiverIds
@@ -13,20 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 
 /** What one LibreLinkUp login answer means. */
 sealed interface LoginAnswer {
@@ -77,29 +66,26 @@ class LibreViewAccount internal constructor(
         this(state, login, http, io, HOST, "https")
 
     companion object {
-        const val HOST = "api.libreview.io"
-        private val JSON = "application/json".toMediaType()
+        const val HOST = LibreLinkUp.HOST
 
-        /** Pure: one login answer (status 0 + 36-char user id, redirect, 2 = credentials, 4 = terms). */
-        fun parse(body: String): LoginAnswer {
-            val o =
-                runCatching { Json.parseToJsonElement(body).jsonObject }.getOrNull()
-                    ?: return LoginAnswer.Failed("answer is not JSON")
-            val status = o["status"]?.jsonPrimitive?.intOrNull
-            val data = o["data"] as? JsonObject
-            val region = data?.get("region")?.jsonPrimitive?.contentOrNull
-            if (status == 0 && data?.get("redirect")?.jsonPrimitive?.contentOrNull == "true" && region != null) {
-                return if (region.matches(Regex("[a-z]{2,3}"))) LoginAnswer.Redirect(region) else LoginAnswer.Failed("bad region")
+        /** Pure: one login answer (contracts/sensor/libreview-auth.json), read by THE LibreLinkUp client's rules. */
+        fun parse(body: String): LoginAnswer = answerOf(LibreLinkUp.parseLogin(200, body))
+
+        private fun answerOf(l: LluLogin): LoginAnswer =
+            when (l) {
+                is LluLogin.Account -> LoginAnswer.Account(l.accountId)
+                is LluLogin.Redirect -> LoginAnswer.Redirect(l.region)
+                LluLogin.BadCredentials -> LoginAnswer.BadCredentials
+                is LluLogin.Terms -> LoginAnswer.AcceptTerms
+                is LluLogin.RateLimited -> LoginAnswer.Failed("too many attempts: try again later")
+                is LluLogin.Version -> LoginAnswer.Failed("version ${l.minimumVersion} needed")
+                LluLogin.Retired -> LoginAnswer.Failed("the login is gone")
+                is LluLogin.Failed -> LoginAnswer.Failed(l.why)
             }
-            val id = (data?.get("user") as? JsonObject)?.get("id")?.jsonPrimitive?.contentOrNull
-            return when {
-                status == 0 && id != null && id.length == 36 -> LoginAnswer.Account(id)
-                status == 2 -> LoginAnswer.BadCredentials
-                status == 4 -> LoginAnswer.AcceptTerms
-                else -> LoginAnswer.Failed("status $status")
-            }
-        }
     }
+
+    /** THE LibreLinkUp client: the same login, headers and version as the LibreLinkUp source. */
+    private val llu = LibreLinkUp(http, scheme, baseHost) { if (baseHost == HOST) "api-$it.libreview.io" else baseHost }
 
     /** The app's LibreView account. */
     val account: Flow<LibreViewAccountState> = login.account
@@ -115,22 +101,19 @@ class LibreViewAccount internal constructor(
 
     suspend fun signIn(email: String, password: String): SignInResult =
         withContext(io) {
-            val body =
-                buildJsonObject {
-                    put("email", email.trim())
-                    put("password", password)
-                }.toString()
-            var host = baseHost
-            repeat(2) {
-                val answer =
-                    try {
-                        post("$scheme://$host/llu/auth/login", body)
-                    } catch (e: IOException) {
-                        return@withContext SignInResult.Failed("${e.javaClass.simpleName}")
-                    }
-                when (answer) {
+            var region: String? = null
+            var raised = false
+            repeat(3) {
+                val l = llu.login(email, password, region)
+                // a 403 naming a newer version: that version once (LibreLinkUp raises its minimum now and then)
+                if (l is LluLogin.Version && !raised) {
+                    raised = true
+                    llu.version = l.minimumVersion
+                    return@repeat
+                }
+                when (val answer = answerOf(l)) {
                     is LoginAnswer.Redirect -> {
-                        host = "api-${answer.region}.libreview.io"
+                        region = answer.region
                     }
 
                     is LoginAnswer.Account -> {
@@ -163,29 +146,5 @@ class LibreViewAccount internal constructor(
     suspend fun signOut() {
         login.signOut()
         state.update { it.copy(account = null) }
-    }
-
-    private fun post(url: String, body: String): LoginAnswer {
-        val request =
-            Request
-                .Builder()
-                .url(url)
-                .header("Accept", "application/json")
-                .header("product", "llu.android")
-                .header("version", "4.16.0")
-                .post(body.toRequestBody(JSON))
-                .build()
-        http
-            .newBuilder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .build()
-            .newCall(request)
-            .execute()
-            .use { resp ->
-                if (resp.code == 401) return LoginAnswer.BadCredentials
-                if (resp.code != 200) return LoginAnswer.Failed("HTTP ${resp.code}")
-                return parse(resp.body?.string().orEmpty())
-            }
     }
 }

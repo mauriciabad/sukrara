@@ -52,4 +52,5 @@ fun uploadStatusText(
         is UploadStatus.Failing -> stringResource(R.string.in_status_failing, stringResource(status.why.text))
         is UploadStatus.Behind -> stringResource(R.string.in_status_behind, since(status.since, now), behindWhy(status))
         UploadStatus.SameAsSource -> stringResource(R.string.in_status_same_as_source)
+        UploadStatus.OfficialAppUploads -> stringResource(R.string.in_status_official_app_uploads)
     }

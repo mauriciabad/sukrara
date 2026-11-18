@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
@@ -205,8 +206,20 @@ fun TidepoolContent(
         SwitchRow(stringResource(R.string.in_ns_entries), s.treatments, { v ->
             actions.change { it.copy(treatments = v) }
         }, enabled = on, summary = off ?: stringResource(R.string.in_ns_entries_summary))
+        // LibreLinkUp's glucose (contracts/sources/outputs.json "on"): Tidepool may link LibreView itself (US)
+        if (state.role?.kind == SourceKind.LibreLinkUp) {
+            SwitchRow(
+                stringResource(R.string.in_tp_from_llu),
+                s.fromLibreLinkUp,
+                { v ->
+                    actions.change { it.copy(fromLibreLinkUp = v) }
+                },
+                enabled = on,
+                summary = off ?: stringResource(if (s.fromLibreLinkUp) R.string.in_tp_from_llu_on else R.string.in_tp_from_llu_off),
+            )
+        }
         // an online source's data (contracts/sources/outputs.json "off"): its site may already send it to Tidepool
-        if (state.role?.online == true || s.fromSource) {
+        if (state.role?.kind == SourceKind.Nightscout || s.fromSource) {
             SwitchRow(
                 stringResource(R.string.in_tp_from_source),
                 s.fromSource,

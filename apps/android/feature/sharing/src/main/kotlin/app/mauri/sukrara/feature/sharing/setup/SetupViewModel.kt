@@ -122,6 +122,8 @@ data class SetupUi(
     val root: RootUi = RootUi(),
     /** The online source's Connect step (docs/44 step 1). */
     val site: SiteUi = SiteUi(),
+    /** LibreLinkUp's Connect step (docs/44 step 2). */
+    val llu: LluUi = LluUi(),
 )
 
 /** The root step's and the glucose notification step's state. */
@@ -529,6 +531,57 @@ class SetupViewModel(
     /** Typing again clears the last answer. */
     fun clearSiteResult() {
         if (siteAttempt.value.result != null) siteAttempt.value = siteAttempt.value.copy(result = null)
+    }
+
+    private val lluAttempt = MutableStateFlow(LluUi())
+
+    /** LibreLinkUp's Connect step: the saved account, whom it reads, its health, the last attempt. */
+    val llu: StateFlow<LluUi> =
+        combine(m.llu.connection, lluAttempt) { c, a -> a.copy(connection = c) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LluUi())
+
+    /** *Sign in* on LibreLinkUp's step: one try; a refused password is never retried by itself. */
+    fun connectLlu(
+        email: String,
+        password: String,
+    ) = lluAttempt { m.llu.connect(email, password) }
+
+    /** *Sign in as …*: THE LibreView account's saved sign-in (your own glucose, the same account). */
+    fun connectLluLibreView() = lluAttempt { m.llu.connectWithLibreView() }
+
+    /** *Try again* once the Libre app shares with the account (or the new terms are accepted). */
+    fun recheckLlu() = lluAttempt { m.llu.recheck() }
+
+    /** The person picked among several: the source reads them from now. */
+    fun chooseLlu(patient: String) {
+        viewModelScope.launch {
+            m.llu.choose(patient)
+            lluAttempt.value = LluUi(result = LluConnectOutcome.Connected)
+            m.startMonitoring()
+        }
+    }
+
+    fun clearLluResult() {
+        if (lluAttempt.value.result != null) lluAttempt.value = lluAttempt.value.copy(result = null)
+    }
+
+    private fun lluAttempt(call: suspend () -> LluConnectOutcome) {
+        if (lluAttempt.value.connecting) return
+        lluAttempt.value = lluAttempt.value.copy(connecting = true, result = null)
+        viewModelScope.launch {
+            val r =
+                try {
+                    call()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.w("Sukrara.setup", "librelinkup connect failed: ${e.javaClass.simpleName}")
+                    LluConnectOutcome.Unreachable
+                }
+            lluAttempt.value = LluUi(connecting = false, result = r)
+            // someone to read: monitoring starts reading LibreLinkUp now (the step waits for its first reading)
+            if (r == LluConnectOutcome.Connected) m.startMonitoring()
+        }
     }
 
     /** *Bring back 90 days from Nightscout* on the history step: the source reads back; the step is done. */

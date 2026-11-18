@@ -50,6 +50,7 @@
     <string name="reason_wearer_silent_body">Última señal %1$s. Puede que su móvil esté apagado, sin conexión o sin batería.</string>
     <string name="reason_wearer_silent_never">Aún no ha llegado nada. Puede que su móvil esté apagado, sin conexión o sin batería.</string>
     <string name="reason_site_title">No hay lecturas de Nightscout</string>
+    <string name="reason_llu_title">No hay lecturas de LibreLinkUp</string>
     <string name="reason_site_unreachable">Tu sitio de Nightscout no responde. Sukrara sigue intentándolo; revisa la dirección en Ajustes › Origen.</string>
     <string name="reason_site_action">Origen</string>
     <string name="reason_site_not_connected">Conecta tu sitio de Nightscout en Ajustes › Origen, o espera un momento mientras Sukrara llega a él.</string>

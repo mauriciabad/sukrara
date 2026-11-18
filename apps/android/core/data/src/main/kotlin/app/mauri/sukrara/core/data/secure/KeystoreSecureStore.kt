@@ -45,6 +45,9 @@ object SecretName {
     /** The Nightscout source's access token or API secret (schema `source.nightscoutSecret`), apart from the upload's. */
     const val NIGHTSCOUT_SOURCE = "nightscoutSource"
 
+    /** The LibreLinkUp source's email, password and token (schema `source.libreLinkUpSecret`), apart from LibreView's. */
+    const val LIBRE_LINK_UP_SOURCE = "libreLinkUpSource"
+
     val ALL =
         setOf(
             IDENTITY_OWNER,
@@ -53,6 +56,7 @@ object SecretName {
             NIGHTSCOUT_API,
             NIGHTSCOUT_API_LAN,
             NIGHTSCOUT_SOURCE,
+            LIBRE_LINK_UP_SOURCE,
             TIDEPOOL,
             TIDEPOOL_EMAIL,
             LIBREVIEW,

@@ -205,8 +205,14 @@ fun NewSensorRoute(
                 context.open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
             }
 
-            NewSensorAction.Continue, NewSensorAction.NotNow -> {
+            NewSensorAction.Continue, NewSensorAction.NotNow, NewSensorAction.TakeOver -> {
                 viewModel.onContinue()
+            }
+
+            NewSensorAction.LibreAppInfo -> {
+                state.env?.officialAppPackage?.let { p ->
+                    context.open(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", p, null)))
+                }
             }
 
             NewSensorAction.UseJuggluco -> {

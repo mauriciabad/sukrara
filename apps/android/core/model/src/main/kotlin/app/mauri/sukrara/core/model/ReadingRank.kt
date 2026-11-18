@@ -18,7 +18,7 @@ object ReadingRank {
     val WINDOW: Duration = Duration.ofMinutes(2)
 
     /** Highest first (dedup.json `rank`). */
-    enum class Rank { Sensor, PhoneApp, Network, Online, Sukrara, Imported }
+    enum class Rank { Sensor, PhoneApp, Network, Online, OnlineHistory, Sukrara, Imported }
 
     private val RANKS: Map<String, Rank> =
         buildMap {
@@ -27,6 +27,8 @@ object ReadingRank {
             // the Mac's Juggluco on the network: never stored here, ranked as the contract says
             put("juggluco-lan", Rank.Network)
             for (s in SourceId.Online) put(s.id, Rank.Online)
+            // an online source's graph points only fill gaps between its live readings
+            put(SourceId.LibreLinkUpGraph.id, Rank.OnlineHistory)
             for (s in SourceId.Relayed) put(s.id, Rank.Sukrara)
             for (s in SourceId.Imported) put(s.id, Rank.Imported)
         }

@@ -118,7 +118,8 @@ fun SetupScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val search by viewModel.nearbySearch.collectAsStateWithLifecycle()
     val site by viewModel.site.collectAsStateWithLifecycle()
-    val u = ui?.copy(nearby = search, site = site) ?: return
+    val llu by viewModel.llu.collectAsStateWithLifecycle()
+    val u = ui?.copy(nearby = search, site = site, llu = llu) ?: return
     val haptics = rememberHaptics()
     // nothing left to show (the view model decides: the walk's end, the last Finish-setup step, the one step answered)
     if (u.step == null) {
@@ -188,6 +189,12 @@ data class SetupActions(
     val clearSiteResult: () -> Unit = {},
     /** *Bring back 90 days from Nightscout* on the history step. */
     val pullSiteHistory: () -> Unit = {},
+    /** LibreLinkUp's step: *Sign in*, *Sign in as …* (LibreView's account), *Try again*, whose glucose. */
+    val connectLlu: (email: String, password: String) -> Unit = { _, _ -> },
+    val connectLluLibreView: () -> Unit = {},
+    val recheckLlu: () -> Unit = {},
+    val chooseLlu: (String) -> Unit = {},
+    val clearLluResult: () -> Unit = {},
     val thresholdRows: ThresholdRows = { _, _ -> },
     val editThreshold: (AlertKind, Double) -> Unit = { _, _ -> },
     val confirmAlerts: () -> Unit = {},
@@ -256,6 +263,11 @@ private fun SetupViewModel.actions(
             connectSite = ::connectSite,
             clearSiteResult = ::clearSiteResult,
             pullSiteHistory = ::pullSiteHistory,
+            connectLlu = ::connectLlu,
+            connectLluLibreView = ::connectLluLibreView,
+            recheckLlu = ::recheckLlu,
+            chooseLlu = ::chooseLlu,
+            clearLluResult = ::clearLluResult,
             thresholdRows = thresholdRows,
             editThreshold = ::editThreshold,
             confirmAlerts = ::confirmAlerts,
@@ -350,6 +362,7 @@ fun SetupContent(
                             when ((u.facts.spec ?: u.facts.running)?.kind) {
                                 SourceKind.PhoneApp -> JugglucoStep(u, actions)
                                 SourceKind.Nightscout -> SiteStep(u, actions)
+                                SourceKind.LibreLinkUp -> LluStep(u, actions)
                                 else -> SensorStep(u, actions)
                             }
                         }
@@ -709,7 +722,18 @@ private fun ColumnScope.HistoryStep(
     u: SetupUi,
     actions: SetupActions,
 ) {
-    // source-aware (docs/44): a site that keeps the history brings it back in one tap, the other ways stay
+    // source-aware (docs/44): LibreLinkUp brought the last 12 h; LibreView (where the Libre app uploads) has the rest
+    if ((u.facts.spec ?: u.facts.running)?.kind == SourceKind.LibreLinkUp) {
+        StepHeader(stringResource(R.string.sh_setup_history_title), stringResource(R.string.sh_setup_history_llu_body))
+        NoticeCard(stringResource(R.string.sh_setup_history_note))
+        StepButtons(
+            stringResource(R.string.sh_setup_history_llu_open),
+            actions.openHistoryImport,
+            secondary = listOf(stringResource(R.string.sh_setup_history_skip) to { actions.skip(SetupStep.History) }),
+        )
+        return
+    }
+    // a site that keeps the history brings it back in one tap, the other ways stay
     if ((u.facts.spec ?: u.facts.running)?.online == true) {
         StepHeader(stringResource(R.string.sh_setup_history_title), stringResource(R.string.sh_setup_history_site_body))
         NoticeCard(stringResource(R.string.sh_setup_history_note))

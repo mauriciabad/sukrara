@@ -49,6 +49,7 @@ internal object Steps {
             "nfc-off" to NewSensorStep.NfcOff,
             "needs-libreview" to NewSensorStep.NeedsLibreViewSignIn,
             "official-app-warning" to NewSensorStep.OfficialAppWarning,
+            "takeover-from-libre-app" to NewSensorStep.TakeoverFromLibreApp,
             "needs-bt-permission" to NewSensorStep.NeedsBluetoothPermission,
             "bluetooth-off" to NewSensorStep.BluetoothOff,
             "needs-notifications" to NewSensorStep.NeedsNotifications,

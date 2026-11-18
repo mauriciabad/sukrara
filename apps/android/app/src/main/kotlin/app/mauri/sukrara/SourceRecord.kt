@@ -16,8 +16,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * The typed state file `source.json` (schema `source.person`, `source.kind`, `source.nightscoutUrl`,
- * `source.nightscoutTreatments`): whose glucose this phone shows, where it comes from (by their contract ids) and the
- * Nightscout source's site and treatments switch. Empty person / kind = setup has no answer yet; an id this version
+ * `source.nightscoutTreatments`, `source.libreLinkUpPatient`): whose glucose this phone shows, where it comes from (by
+ * their contract ids), the Nightscout source's site and treatments switch, and whom LibreLinkUp reads. Empty person / kind = setup has no answer yet; an id this version
  * doesn't know, or a pair no source offers, reads as no answer ([spec]). The site stays when the source changes, so
  * going back to Nightscout needs no new address (its token stays in the secure store).
  */
@@ -27,6 +27,8 @@ data class SourceRecord(
     val kind: String? = null,
     val nightscoutUrl: String = "",
     val nightscoutTreatments: Boolean = true,
+    /** Whom the LibreLinkUp source reads (schema `source.libreLinkUpPatient`): kept when the source changes (the way back). */
+    val libreLinkUpPatient: String = "",
 ) {
     val spec: SourceSpec? get() = SourceSpec.of(Person.of(person), SourceKind.of(kind))
 

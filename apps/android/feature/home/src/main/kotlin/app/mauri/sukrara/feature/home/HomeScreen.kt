@@ -89,6 +89,7 @@ import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -908,10 +909,11 @@ private fun reasonText(
         }
 
         is NoDataReason.SourceTrouble -> {
-            stringResource(R.string.reason_site_title) to
+            val llu = reason.kind == SourceKind.LibreLinkUp
+            stringResource(if (llu) R.string.reason_llu_title else R.string.reason_site_title) to
                 when (reason.problem) {
                     SourceProblem.SignedOut -> {
-                        stringResource(DsR.string.ds_online_signed_out)
+                        stringResource(if (llu) DsR.string.ds_online_llu_signed_out else DsR.string.ds_online_signed_out)
                     }
 
                     SourceProblem.Offline -> {
@@ -919,16 +921,29 @@ private fun reasonText(
                     }
 
                     SourceProblem.Unreachable -> {
-                        stringResource(R.string.reason_site_unreachable)
+                        stringResource(if (llu) DsR.string.ds_online_llu_unreachable else R.string.reason_site_unreachable)
                     }
 
                     SourceProblem.RateLimited -> {
-                        stringResource(DsR.string.ds_online_rate_limited)
+                        stringResource(if (llu) DsR.string.ds_online_llu_rate_limited else DsR.string.ds_online_rate_limited)
                     }
 
                     SourceProblem.NoNewReadings -> {
-                        reason.since?.let { stringResource(DsR.string.ds_online_no_new, relative(it, now)) }
-                            ?: stringResource(DsR.string.ds_online_no_glucose)
+                        reason.since?.let {
+                            stringResource(if (llu) DsR.string.ds_online_llu_no_new else DsR.string.ds_online_no_new, relative(it, now))
+                        } ?: stringResource(if (llu) DsR.string.ds_online_llu_no_glucose else DsR.string.ds_online_no_glucose)
+                    }
+
+                    SourceProblem.ActionNeeded -> {
+                        stringResource(DsR.string.ds_online_llu_terms)
+                    }
+
+                    SourceProblem.NotShared -> {
+                        stringResource(DsR.string.ds_online_llu_not_shared)
+                    }
+
+                    SourceProblem.Stopped -> {
+                        stringResource(DsR.string.ds_online_llu_stopped)
                     }
                 }
         }

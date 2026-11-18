@@ -37,6 +37,9 @@ object OfficialApps {
 
     fun anyInstalled(pm: PackageManager): Boolean = PACKAGES.any { pm.isInstalled(it) }
 
+    /** The first one installed (its App info: Force stop before a takeover), null = none. */
+    fun installed(pm: PackageManager): String? = PACKAGES.firstOrNull { pm.isInstalled(it) }
+
     private fun PackageManager.isInstalled(name: String): Boolean =
         try {
             getPackageInfo(name, 0)

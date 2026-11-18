@@ -9,11 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import app.mauri.sukrara.core.designsystem.R
 import app.mauri.sukrara.core.model.OnlineHealth
+import app.mauri.sukrara.core.model.SourceKind
 import java.time.Instant
 
 /**
  * THE words of an online source's health (contracts/sources/health.json), the same on home, Settings › Source and
- * setup's Connect step: what is happening and, when the person can do something, what. [host] names the site.
+ * setup's Connect step: what is happening and, when the person can do something, what. [host] names the site;
+ * [kind] the source (a Nightscout site's uploader, or the Libre app behind LibreLinkUp, is where to look).
  */
 @Composable
 fun onlineHealthText(
@@ -21,7 +23,9 @@ fun onlineHealthText(
     newest: Instant?,
     now: Instant,
     host: String,
+    kind: SourceKind = SourceKind.Nightscout,
 ): String {
+    val llu = kind == SourceKind.LibreLinkUp
     val ago =
         newest?.let {
             DateUtils
@@ -45,8 +49,8 @@ fun onlineHealthText(
         }
 
         OnlineHealth.NoNewReadings -> {
-            ago?.let { stringResource(R.string.ds_online_no_new, it) }
-                ?: stringResource(R.string.ds_online_no_glucose)
+            ago?.let { stringResource(if (llu) R.string.ds_online_llu_no_new else R.string.ds_online_no_new, it) }
+                ?: stringResource(if (llu) R.string.ds_online_llu_no_glucose else R.string.ds_online_no_glucose)
         }
 
         OnlineHealth.Offline -> {
@@ -54,15 +58,27 @@ fun onlineHealthText(
         }
 
         OnlineHealth.Unreachable -> {
-            stringResource(R.string.ds_online_unreachable, host)
+            if (llu) stringResource(R.string.ds_online_llu_unreachable) else stringResource(R.string.ds_online_unreachable, host)
         }
 
         OnlineHealth.SignedOut -> {
-            stringResource(R.string.ds_online_signed_out)
+            stringResource(if (llu) R.string.ds_online_llu_signed_out else R.string.ds_online_signed_out)
         }
 
         OnlineHealth.RateLimited -> {
-            stringResource(R.string.ds_online_rate_limited)
+            stringResource(if (llu) R.string.ds_online_llu_rate_limited else R.string.ds_online_rate_limited)
+        }
+
+        OnlineHealth.ActionNeeded -> {
+            stringResource(R.string.ds_online_llu_terms)
+        }
+
+        OnlineHealth.NotShared -> {
+            stringResource(R.string.ds_online_llu_not_shared)
+        }
+
+        OnlineHealth.Stopped -> {
+            stringResource(R.string.ds_online_llu_stopped)
         }
     }
 }
@@ -72,7 +88,12 @@ fun onlineHealthText(
 fun OnlineHealth.iconRes(): Int =
     when (this) {
         OnlineHealth.Connecting, OnlineHealth.Live, OnlineHealth.Late -> R.drawable.ds_ic_public
-        OnlineHealth.SignedOut -> R.drawable.ds_ic_key
+
+        OnlineHealth.SignedOut, OnlineHealth.ActionNeeded -> R.drawable.ds_ic_key
+
         OnlineHealth.Offline -> R.drawable.ds_ic_public_off
-        OnlineHealth.NoNewReadings, OnlineHealth.Unreachable, OnlineHealth.RateLimited -> R.drawable.ds_ic_link_off
+
+        OnlineHealth.NoNewReadings, OnlineHealth.Unreachable, OnlineHealth.RateLimited, OnlineHealth.NotShared,
+        OnlineHealth.Stopped,
+        -> R.drawable.ds_ic_link_off
     }

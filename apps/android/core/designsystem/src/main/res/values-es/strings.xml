@@ -243,6 +243,17 @@
     <string name="ds_source_nightscout">Nightscout</string>
     <string name="ds_source_nightscout_means">Glucosa y tratamientos de tu sitio · unos 2 min de retraso</string>
     <string name="ds_source_nightscout_means_theirs">Glucosa y tratamientos de su sitio · unos 2 min de retraso</string>
+    <string name="ds_source_librelinkup">LibreLinkUp</string>
+    <string name="ds_source_librelinkup_means">La app Libre comparte aquí tu glucosa · aprox. 1 min de retraso · puede dejar de funcionar cualquier día</string>
+    <string name="ds_source_librelinkup_means_theirs">Su app Libre la comparte con tu cuenta de LibreLinkUp · aprox. 1 min de retraso · puede dejar de funcionar cualquier día</string>
+    <string name="ds_online_llu_no_new">Nada nuevo de LibreLinkUp: su última lectura fue %1$s. Abre la app Libre: puede que haya dejado de subir.</string>
+    <string name="ds_online_llu_no_glucose">LibreLinkUp aún no tiene glucosa. La app Libre la envía cuando su sensor funciona.</string>
+    <string name="ds_online_llu_signed_out">LibreLinkUp rechazó la contraseña. Vuelve a iniciar sesión.</string>
+    <string name="ds_online_llu_unreachable">LibreLinkUp no responde. Sukrara lo vuelve a intentar solo.</string>
+    <string name="ds_online_llu_rate_limited">LibreLinkUp pidió a Sukrara que espere. Lo vuelve a intentar solo.</string>
+    <string name="ds_online_llu_terms">LibreLinkUp te necesita: abre la app LibreLinkUp, inicia sesión y acepta las nuevas condiciones.</string>
+    <string name="ds_online_llu_not_shared">Ahora nadie comparte glucosa con esta cuenta. En la app Libre: Menú › Aplicaciones conectadas › LibreLinkUp, invita a este correo.</string>
+    <string name="ds_online_llu_stopped">LibreLinkUp dejó de responder a Sukrara: Abbott lo cambió. Una actualización de Sukrara puede devolverlo.</string>
     <string name="ds_source_sukrara_yours">Sukrara en tu otro móvil</string>
     <string name="ds_source_sukrara_yours_means">Ese móvil lee tu sensor y la comparte aquí · por internet o por Bluetooth cerca</string>
     <string name="ds_source_sukrara_theirs">Su Sukrara</string>

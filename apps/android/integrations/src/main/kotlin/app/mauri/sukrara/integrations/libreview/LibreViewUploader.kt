@@ -247,7 +247,7 @@ class LibreViewUploader(
     val entryMarks: Flow<LvEntryMarks?> =
         combine(settingsFlow, login.account, store.data, role) { s, a, st, r ->
             if (s.on && a != LibreViewAccountState.SignedOut && r?.owner == true) {
-                val stopped = st.otherDevice || st.refused || a is LibreViewAccountState.SignInAgain
+                val stopped = st.otherDevice || st.refused || a is LibreViewAccountState.SignInAgain || r.officialAppUploads
                 LvEntryMarks(st.ledger, if (s.treatments) st.entriesFrom else 0L, stopped)
             } else {
                 null
@@ -513,7 +513,11 @@ class LibreViewUploader(
 
     private suspend fun cycleLocked() {
         val s = settingsFlow.first()
-        if (!s.on || role.first()?.owner != true) return
+        val r = role.first()
+        if (!s.on || r?.owner != true) return
+        // LibreView takes one uploading device per account and the Libre app is it (LibreLinkUp is the source): nothing
+        // goes, treatments neither, until Sukrara reads the sensor (docs/44 "Data" rule 6)
+        if (r.officialAppUploads) return
         // no usable account: the page asks to sign in (again)
         if (login.current() !is LibreViewAccountState.SignedIn) return
         var state = ensureDevice()
@@ -793,6 +797,11 @@ class LibreViewUploader(
         when {
             !s.on || r?.owner != true -> {
                 UploadStatus.Off
+            }
+
+            // the Libre app uploads (LibreLinkUp is the source): nothing goes, not even a sign-in that could take over
+            r.officialAppUploads -> {
+                UploadStatus.OfficialAppUploads
             }
 
             account !is LibreViewAccountState.SignedIn -> {

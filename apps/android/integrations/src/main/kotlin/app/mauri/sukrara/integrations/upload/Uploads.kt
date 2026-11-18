@@ -62,6 +62,12 @@ sealed interface UploadStatus {
      */
     data object SameAsSource : UploadStatus
 
+    /**
+     * LibreLinkUp is the source: the Libre app uploads the glucose to LibreView, which takes one uploading device per
+     * account, so this upload sends nothing at all (docs/44 "Data" rule 6) until Sukrara reads the sensor itself.
+     */
+    data object OfficialAppUploads : UploadStatus
+
     /** The last cycle failed; it is tried again by itself ([why] in plain words; the detail is in the log). */
     data class Failing(val why: Trouble, val lastOk: Instant?) : UploadStatus
 }

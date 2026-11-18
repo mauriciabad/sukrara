@@ -5,6 +5,7 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.secure.SecretName
+import app.mauri.sukrara.integrations.librelinkup.LluAccount
 import app.mauri.sukrara.integrations.libreview.LibreViewUploader
 import app.mauri.sukrara.integrations.localserver.NightscoutApiServer
 import app.mauri.sukrara.integrations.nightscout.NightscoutUploader
@@ -30,6 +31,7 @@ class SecretNamesTest {
                 NightscoutApiServer.SECRET,
                 NightscoutApiServer.LAN_SECRET,
                 NightscoutAccount.NAME,
+                LluAccount.NAME,
                 TidepoolUploader.NAME,
                 TidepoolUploader.EMAIL,
                 LibreViewUploader.NAME,

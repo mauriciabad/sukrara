@@ -100,6 +100,18 @@ class NewSensorMachineTest {
         assertEquals(NewSensorStep.WaitingForTap, step(Start(env), Continue, Start(env)))
     }
 
+    @Test fun `LibreLinkUp as the source, the takeover says what the Libre app loses, once, before the tap`() {
+        // the Libre app may hold the sensor from another phone: the warning shows whether or not it is installed here
+        for (env in listOf(ok.copy(takeoverFromLibreApp = true), ok.copy(takeoverFromLibreApp = true, officialAppInstalled = true))) {
+            assertEquals(NewSensorStep.TakeoverFromLibreApp, step(Start(env)))
+            assertEquals(NewSensorStep.WaitingForTap, step(Start(env), Continue))
+            assertEquals(NewSensorStep.WaitingForTap, step(Start(env), Continue, Start(env)))
+        }
+        // no LibreView account: signing in comes first (the takeover needs the account's receiver ID)
+        assertEquals(NewSensorStep.NeedsLibreViewSignIn, step(Start(ok.copy(takeoverFromLibreApp = true, signedIn = false))))
+        assertEquals(NewSensorStep.Cancelled, step(Start(ok.copy(takeoverFromLibreApp = true)), Cancel))
+    }
+
     @Test fun `notifications can be skipped`() =
         assertEquals(NewSensorStep.WaitingForTap, step(Start(ok.copy(notificationsAllowed = false)), Continue))
 

@@ -79,7 +79,7 @@ fun SourcePageContent(
     sensorActions: SensorSettingsActions,
     modifier: Modifier = Modifier,
     streamRows: @Composable () -> Unit = {},
-    /** An online source's rows (a Nightscout site: its site, health, treatments both ways), from `:integrations`. */
+    /** An online source's rows (a Nightscout site, LibreLinkUp: account, health, …), from `:integrations`. */
     siteRows: @Composable () -> Unit = {},
 ) = Column(modifier) {
     val spec = state.spec
@@ -192,7 +192,7 @@ fun SourcePageContent(
             }
         }
 
-        SourceKind.Nightscout -> {
+        SourceKind.Nightscout, SourceKind.LibreLinkUp -> {
             siteRows()
         }
 

@@ -5,8 +5,10 @@ package app.mauri.sukrara.integrations.libreview
 
 import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -495,6 +497,23 @@ class LibreViewUploaderTest {
             uploader.cycle()
             assertEquals(0, uploads().size)
             assertEquals(UploadStatus.Off, uploader.page.first().status)
+        }
+
+    @Test
+    fun `while the Libre app uploads (LibreLinkUp is the source) nothing goes, not even a sign-in, and the page says why`() =
+        runBlocking {
+            signedInAndOn()
+            requests.clear()
+            role.value = SourceSpec(Person.Yours, SourceKind.LibreLinkUp)
+            otherDevice = true
+            treatments.upsertIfNewer(treatment("a", 5, modified = clock.now() + Duration.ofSeconds(1)))
+            uploader.cycle()
+            assertTrue(requests.isEmpty())
+            assertEquals(UploadStatus.OfficialAppUploads, uploader.page.first().status)
+            // after the takeover the sensor is the source: the upload finds the Libre app uploading and offers Take over
+            role.value = SourceSpec.YourSensor
+            uploader.cycle()
+            assertEquals(UploadStatus.AuthFailed, uploader.page.first().status)
         }
 
     @Test

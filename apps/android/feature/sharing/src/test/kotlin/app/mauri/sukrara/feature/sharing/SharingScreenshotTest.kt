@@ -47,6 +47,10 @@ import app.mauri.sukrara.feature.sharing.profile.ProfileSave
 import app.mauri.sukrara.feature.sharing.profile.ProfileScreen
 import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
 import app.mauri.sukrara.feature.sharing.setup.JoinUi
+import app.mauri.sukrara.feature.sharing.setup.LluChoice
+import app.mauri.sukrara.feature.sharing.setup.LluConnectOutcome
+import app.mauri.sukrara.feature.sharing.setup.LluConnection
+import app.mauri.sukrara.feature.sharing.setup.LluUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.feature.sharing.setup.RootUi
@@ -145,6 +149,18 @@ class SharingScreenshotTest {
     )
 
     private val live = facts.copy(ownSensorLive = true)
+
+    /** Your glucose from LibreLinkUp (docs/44 step 2). */
+    private val llu = facts.copy(spec = SourceSpec(Person.Yours, SourceKind.LibreLinkUp))
+    private val lluSignedIn =
+        LluConnection(
+            email = "alex@example.com",
+            signedIn = true,
+            patient = "p1",
+            name = "Alex Example",
+            people = listOf(LluChoice("p1", "Alex Example")),
+            health = OnlineHealth.Connecting,
+        )
 
     /** Your glucose from a Nightscout site (docs/44 step 1). */
     private val nightscout = facts.copy(spec = SourceSpec(Person.Yours, SourceKind.Nightscout))
@@ -295,6 +311,47 @@ class SharingScreenshotTest {
             "setup-5-nightscout-silent" to {
                 SetupContent(ui(SetupStep.Sensor, 5, nightscout).copy(site = SiteUi(site(OnlineHealth.NoNewReadings, 7200))), a)
             },
+            // docs/44 step 2: LibreLinkUp's Connect step in each state
+            "setup-5-llu-libreview" to {
+                SetupContent(ui(SetupStep.Sensor, 5, llu).copy(llu = LluUi(LluConnection(libreViewEmail = "alex@example.com"))), a)
+            },
+            "setup-5-llu-form" to { SetupContent(ui(SetupStep.Sensor, 5, llu), a) },
+            "setup-5-llu-theirs" to {
+                SetupContent(ui(SetupStep.Sensor, 5, llu.copy(spec = SourceSpec(Person.Theirs, SourceKind.LibreLinkUp))), a)
+            },
+            "setup-5-llu-refused" to {
+                SetupContent(ui(SetupStep.Sensor, 5, llu).copy(llu = LluUi(result = LluConnectOutcome.BadCredentials)), a)
+            },
+            "setup-5-llu-rate-limited" to {
+                SetupContent(ui(SetupStep.Sensor, 5, llu).copy(llu = LluUi(result = LluConnectOutcome.RateLimited)), a)
+            },
+            "setup-5-llu-choose" to {
+                SetupContent(
+                    ui(SetupStep.Sensor, 5, llu.copy(spec = SourceSpec(Person.Theirs, SourceKind.LibreLinkUp))).copy(
+                        llu =
+                            LluUi(
+                                lluSignedIn.copy(
+                                    patient = "",
+                                    people = listOf(LluChoice("p2", "Ana Example"), LluChoice("p3", "Leo")),
+                                ),
+                            ),
+                    ),
+                    a,
+                )
+            },
+            "setup-5-llu-no-one" to {
+                SetupContent(ui(SetupStep.Sensor, 5, llu).copy(llu = LluUi(lluSignedIn.copy(patient = "", people = emptyList()))), a)
+            },
+            "setup-5-llu-waiting" to { SetupContent(ui(SetupStep.Sensor, 5, llu).copy(llu = LluUi(lluSignedIn)), a) },
+            "setup-5-llu-received" to {
+                SetupContent(
+                    ui(SetupStep.Sensor, 5, llu.copy(ownSensorLive = true)).copy(
+                        llu = LluUi(lluSignedIn.copy(health = OnlineHealth.Live, newest = Instant.now().minusSeconds(70))),
+                    ),
+                    a,
+                )
+            },
+            "setup-7-history-llu" to { SetupContent(ui(SetupStep.History, 7, llu.copy(ownSensorLive = true)), a) },
             "setup-7-history-nightscout" to { SetupContent(ui(SetupStep.History, 7, nightscout.copy(ownSensorLive = true)), a) },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },
             "setup-4-sensor-live" to { SetupContent(ui(SetupStep.Sensor, 4, live), a) },

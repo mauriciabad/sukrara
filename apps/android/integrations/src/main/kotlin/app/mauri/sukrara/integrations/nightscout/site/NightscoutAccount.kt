@@ -116,7 +116,8 @@ class NightscoutAccount(
                     return null to if (online()) NsConnectResult.Unreachable else NsConnectResult.Offline
                 }
 
-                CallOutcome.Server, CallOutcome.RateLimited -> {
+                // LibreLinkUp's own outcomes: a site never answers with them
+                CallOutcome.Server, CallOutcome.RateLimited, CallOutcome.Terms, CallOutcome.NotShared, CallOutcome.Retired -> {
                     return null to NsConnectResult.Unreachable
                 }
             }

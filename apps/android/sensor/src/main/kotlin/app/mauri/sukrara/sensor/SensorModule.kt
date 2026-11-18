@@ -41,6 +41,8 @@ class SensorModule(
     http: OkHttpClient,
     clock: Clock,
     dispatchers: DispatcherProvider,
+    /** The sensor's start where it is known before a takeover (LibreLinkUp's, epoch s), null = nowhere. */
+    knownStart: suspend () -> Long? = { null },
 ) {
     companion object {
         private const val TAG = "Sukrara.sensor"
@@ -85,5 +87,6 @@ class SensorModule(
             io = dispatchers.io,
             log = log,
             account = { libreView.receiverId.first() },
+            knownStart = knownStart,
         )
 }

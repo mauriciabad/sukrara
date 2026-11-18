@@ -80,6 +80,23 @@ enum class SourceKind(
         readings = setOf(SourceId.Nightscout),
     ),
 
+    /**
+     * LibreLinkUp (docs/44 step 2): Abbott's follower service, which the Libre app uploads to each minute. The person's
+     * own (an account that follows itself) or someone else's (a parent's account following a child). Online, a minute or
+     * two late, backfills about 12 h (the graph's points only fill gaps: [SourceId.LibreLinkUpGraph]); brings the sensor's
+     * start, no treatments. Its data never goes back to LibreView (the Libre app uploads there).
+     */
+    LibreLinkUp(
+        "libreLinkUp",
+        setOf(Person.Yours, Person.Theirs),
+        firstHand = true,
+        offline = false,
+        group = SourceGroup.Online,
+        delaySeconds = 90,
+        backfill = true,
+        readings = setOf(SourceId.LibreLinkUp, SourceId.LibreLinkUpGraph),
+    ),
+
     /** Sukrara on another phone or Mac shares it (over the internet, or Bluetooth nearby): a Sukrara stream. */
     Sukrara(
         "sukrara",
@@ -130,7 +147,13 @@ data class SourceSpec(
     /** Someone else's glucose: the card names them, nothing of it is shared or uploaded. */
     val theirs: Boolean get() = person == Person.Theirs
 
-    /** An online source (a Nightscout site): needs internet, readings a few minutes late, no Bluetooth of its own. */
+    /**
+     * Your glucose that the official Libre app uploads to LibreView (LibreLinkUp as the source): LibreView takes one
+     * uploading device per account, so Sukrara sends it nothing (docs/44 "Data" rule 6) until it reads the sensor.
+     */
+    val officialAppUploads: Boolean get() = person == Person.Yours && kind == SourceKind.LibreLinkUp
+
+    /** An online source (a Nightscout site, LibreLinkUp): needs internet, readings a few minutes late, no Bluetooth of its own. */
     val online: Boolean get() = kind.group == SourceGroup.Online
 
     /** This phone talks to the sensor itself (Bluetooth, NFC). */

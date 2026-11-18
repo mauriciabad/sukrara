@@ -822,6 +822,7 @@ fun SukraraNavigation(
                             graph,
                             openStep = { backStack.push(SetupStepRoute(it)) },
                             openSensor = { backStack.push(SensorSettingsKey) },
+                            openNewSensor = { backStack.add(NewSensorKey) },
                             openImport = { backStack.push(ImportRoute) },
                             openSettingsFrom = { backStack.push(SettingsKey.of(SettingsRoute.SettingsFrom)) },
                             // the source is cleared: setup again, on top of home

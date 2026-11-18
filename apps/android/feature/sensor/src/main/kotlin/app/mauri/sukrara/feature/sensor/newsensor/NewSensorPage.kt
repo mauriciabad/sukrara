@@ -27,6 +27,12 @@ enum class NewSensorAction(
     NotNow(R.string.newsensor_action_not_now),
     UseJuggluco(R.string.newsensor_action_use_juggluco),
 
+    /** The Libre app's App info (Force stop), before the takeover. */
+    LibreAppInfo(R.string.newsensor_action_libre_app_info),
+
+    /** Goes on past the takeover warning. */
+    TakeOver(R.string.newsensor_action_take_over),
+
     /** The sensor the scan found is the one the person wears (#133). */
     UseIt(R.string.newsensor_action_use_it),
 
@@ -145,6 +151,15 @@ fun NewSensorStep.page(): NewSensorPage =
                 R.string.newsensor_official_title,
                 R.string.newsensor_official_text,
                 listOf(NewSensorAction.Continue, NewSensorAction.Cancel),
+            )
+        }
+
+        NewSensorStep.TakeoverFromLibreApp -> {
+            NewSensorPage(
+                R.string.newsensor_takeover_libre_title,
+                R.string.newsensor_takeover_libre_text,
+                listOf(NewSensorAction.TakeOver, NewSensorAction.LibreAppInfo, NewSensorAction.Cancel),
+                note = R.string.newsensor_takeover_libre_back,
             )
         }
 

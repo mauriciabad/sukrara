@@ -136,6 +136,7 @@
     <string name="in_status_auth">The site refused the token or secret: change it</string>
     <string name="in_status_unreadable">The saved token can\'t be read: enter it again</string>
     <string name="in_status_paused">Paused: another app (%1$s) uploads to this site</string>
+    <string name="in_status_official_app_uploads">Paused: the Libre app uploads your glucose while LibreLinkUp is your source, and LibreView takes one uploading device. Sukrara takes over once it reads your sensor.</string>
     <string name="in_status_same_as_source">Your source: glucose never goes back to it; treatments go both ways in Settings › Source</string>
     <string name="in_status_waiting">On · nothing sent yet</string>
     <plurals name="in_status_ok">
@@ -394,6 +395,25 @@
     <string name="in_import_report">Report the problem</string>
     <string name="in_import_err_unreadable">Couldn\'t open the file. Choose it again.</string>
     <string name="in_import_err_signed_out">Not signed in to Tidepool. Sign in, then import again.</string>
+    <string name="in_llu_title">LibreLinkUp</string>
+    <string name="in_llu_account">Account</string>
+    <string name="in_llu_account_none">Not signed in</string>
+    <string name="in_llu_whose">Whose glucose</string>
+    <string name="in_llu_whose_none">Pick someone</string>
+    <string name="in_llu_unnamed">Someone without a name</string>
+    <string name="in_llu_pick_again">Pick again</string>
+    <string name="in_llu_sensor">Sensor</string>
+    <!-- %1$s = when it started (a time, or a date and time), %2$s = its serial. -->
+    <string name="in_llu_sensor_summary">Started %1$s · %2$s</string>
+    <string name="in_llu_libre_app">The Libre app has the sensor</string>
+    <string name="in_llu_upload">LibreView</string>
+    <string name="in_llu_upload_summary">The Libre app uploads your glucose there. Sukrara sends nothing to LibreView until it reads the sensor itself: LibreView takes one uploading device per account.</string>
+    <string name="in_llu_take_over">Read the sensor in Sukrara</string>
+    <string name="in_llu_take_over_summary">Take over the running Libre 3 with an NFC tap, any day of its life. From then on the Libre app gets no readings and rings no alarms.</string>
+    <string name="in_llu_sign_out">Sign out of LibreLinkUp</string>
+    <string name="in_llu_sign_out_summary">The readings already here stay</string>
+    <string name="in_llu_sign_out_title">Sign out of LibreLinkUp?</string>
+    <string name="in_llu_sign_out_text">Sukrara gets no glucose until you sign in again or choose another source. The readings already here stay.</string>
     <string name="in_nss_title">Nightscout</string>
     <string name="in_nss_site">Site</string>
     <string name="in_nss_site_none">Not connected</string>
@@ -407,6 +427,9 @@
     <string name="in_nss_history">Bring back 90 days</string>
     <string name="in_nss_history_summary">Readings of the last 90 days from your site, never twice</string>
     <string name="in_nss_history_pulling">Bringing back readings since %1$s…</string>
+    <string name="in_tp_from_llu">Glucose from LibreLinkUp</string>
+    <string name="in_tp_from_llu_on">Sent to Tidepool. If your Tidepool account links LibreView (US), turn this off: it would count twice</string>
+    <string name="in_tp_from_llu_off">Off: Tidepool gets your glucose from LibreView itself</string>
     <string name="in_tp_from_source">Glucose and treatments from Nightscout</string>
     <string name="in_tp_from_source_summary">Off: your site may send them to Tidepool itself, and twice would count double</string>
     <string name="in_tp_from_source_on">Sent to Tidepool. If your site sends them too, they count twice there</string>

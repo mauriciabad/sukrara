@@ -10,6 +10,7 @@ import android.os.BatteryManager
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import app.mauri.sukrara.core.data.libreview.LibreLinkUp
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.model.Clock
@@ -45,6 +46,10 @@ import app.mauri.sukrara.integrations.healthconnect.HealthConnectViewModel
 import app.mauri.sukrara.integrations.healthconnect.PlatformHealth
 import app.mauri.sukrara.integrations.history.HistoryImporter
 import app.mauri.sukrara.integrations.history.ImportViewModel
+import app.mauri.sukrara.integrations.librelinkup.LibreLinkUpSource
+import app.mauri.sukrara.integrations.librelinkup.LluAccount
+import app.mauri.sukrara.integrations.librelinkup.LluSourceConfig
+import app.mauri.sukrara.integrations.librelinkup.LluSourceState
 import app.mauri.sukrara.integrations.libreview.LibreViewClient
 import app.mauri.sukrara.integrations.libreview.LibreViewUploader
 import app.mauri.sukrara.integrations.libreview.LibreViewViewModel
@@ -113,6 +118,10 @@ class IntegrationsModule(
     nightscoutSourceState: StateStore<NsSourceState>,
     /** The Nightscout source's site and treatments switch (kept with whose glucose and where from). */
     nightscoutSourceConfig: NsSourceConfig,
+    /** The LibreLinkUp source's person's name and the sensor it said. */
+    libreLinkUpState: StateStore<LluSourceState>,
+    /** Whom the LibreLinkUp source reads (kept with whose glucose and where from). */
+    libreLinkUpConfig: LluSourceConfig,
     appVersion: String,
     readings: ReadingsRepository,
     treatments: TreatmentsRepository,
@@ -187,6 +196,13 @@ class IntegrationsModule(
             dispatchers.io,
             log,
         )
+
+    /** The LibreLinkUp source's account (apart from THE LibreView account) and *Connect*. */
+    val libreLinkUpAccount = LluAccount(secure, LibreLinkUp(http), clock)
+
+    /** Glucose from LibreLinkUp, when it is the source (docs/44 step 2). */
+    val libreLinkUpSource =
+        LibreLinkUpSource(libreLinkUpConfig, libreLinkUpAccount, libreLinkUpState, network, clock, dispatchers.io, log)
 
     val libreView =
         LibreViewUploader(
@@ -288,6 +304,7 @@ class IntegrationsModule(
     suspend fun load() {
         nightscout.load()
         nightscoutAccount.load()
+        libreLinkUpAccount.load()
         libreView.load()
         tidepool.load()
         // a shared export never lingers in the cache

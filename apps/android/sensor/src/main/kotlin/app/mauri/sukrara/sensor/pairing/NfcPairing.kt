@@ -52,6 +52,12 @@ class NfcPairing internal constructor(
     private val log: (String) -> Unit = {},
     /** The LibreView account's receiver ID, null without an account (`LibreViewAccount.receiverId`). */
     private val account: suspend () -> Long? = { ids.data.first().account },
+    /**
+     * Where the sensor's start is known before the tap (LibreLinkUp's, epoch s; null = nowhere): a takeover whose answer
+     * carries no activation time keeps that start instead of now, so the sensor's life carries over (docs/44 "The move").
+     */
+    private val knownStart: suspend () -> Long? = { null },
+    private val nowS: () -> Long = { System.currentTimeMillis() / 1000 },
 ) {
     suspend fun pair(tag: Tag): PairOutcome =
         withContext(io) {
@@ -68,7 +74,14 @@ class NfcPairing internal constructor(
     internal suspend fun handle(result: Libre3Nfc.Result): PairOutcome =
         when (result) {
             is Libre3Nfc.Result.Paired -> {
-                pairings.save(result.pairing.copy(kAuth = null, ended = false))
+                // the answer had no activation time (it reads as now): the start LibreLinkUp said, when it fits the sensor
+                val start =
+                    if (!result.activated && kotlin.math.abs(result.pairing.startEpoch - nowS()) <= NO_START_S) {
+                        knownStart()?.takeIf { it in (nowS() - result.pairing.wearMin * 60L)..nowS() }
+                    } else {
+                        null
+                    }
+                pairings.save(result.pairing.copy(kAuth = null, ended = false, startEpoch = start ?: result.pairing.startEpoch))
                 onPaired()
                 PairOutcome.Paired(result.pairing.serial, result.activated)
             }
@@ -101,4 +114,9 @@ class NfcPairing internal constructor(
                 PairOutcome.Failed(result.why)
             }
         }
+
+    private companion object {
+        /** A start this close to now came from no activation time in the answer. */
+        const val NO_START_S = 120L
+    }
 }

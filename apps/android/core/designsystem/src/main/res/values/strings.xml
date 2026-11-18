@@ -248,6 +248,17 @@
     <string name="ds_source_nightscout">Nightscout</string>
     <string name="ds_source_nightscout_means">Glucose and treatments from your site · about 2 min late</string>
     <string name="ds_source_nightscout_means_theirs">Glucose and treatments from their site · about 2 min late</string>
+    <string name="ds_source_librelinkup">LibreLinkUp</string>
+    <string name="ds_source_librelinkup_means">The Libre app shares your glucose here · about 1 min late · may stop working any day</string>
+    <string name="ds_source_librelinkup_means_theirs">Their Libre app shares with your LibreLinkUp account · about 1 min late · may stop working any day</string>
+    <string name="ds_online_llu_no_new">Nothing new from LibreLinkUp: its last reading was %1$s. Open the Libre app: it may have stopped uploading.</string>
+    <string name="ds_online_llu_no_glucose">LibreLinkUp has no glucose yet. The Libre app sends it once its sensor runs.</string>
+    <string name="ds_online_llu_signed_out">LibreLinkUp refused the password. Sign in again.</string>
+    <string name="ds_online_llu_unreachable">No answer from LibreLinkUp. Sukrara tries again by itself.</string>
+    <string name="ds_online_llu_rate_limited">LibreLinkUp asked Sukrara to wait. It tries again by itself.</string>
+    <string name="ds_online_llu_terms">LibreLinkUp needs you: open the LibreLinkUp app, sign in and accept the new terms.</string>
+    <string name="ds_online_llu_not_shared">No one shares glucose with this account now. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email.</string>
+    <string name="ds_online_llu_stopped">LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it back.</string>
     <string name="ds_source_sukrara_yours">Sukrara on your other phone</string>
     <string name="ds_source_sukrara_yours_means">That phone reads your sensor and shares it here · internet or Bluetooth nearby</string>
     <string name="ds_source_sukrara_theirs">Their Sukrara</string>
