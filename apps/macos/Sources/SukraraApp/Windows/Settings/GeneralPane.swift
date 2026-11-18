@@ -29,7 +29,7 @@ struct GeneralPane: View {
             } footer: {
                 Text(
                     L10n.t(
-                        "Wearer and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+                        "Their settings and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
                     )
                 )
                 .formFooter()
@@ -135,7 +135,7 @@ struct SettingsFromPicker: View {
         if model.editable {
             HStack {
                 Spacer()
-                Button(L10n.t("Copy the Wearer's Settings…")) { model.confirmingCopy = true }
+                Button(L10n.t("Copy Their Settings…")) { model.confirmingCopy = true }
                     .disabled(model.wearer == nil)
                     .confirmationDialog(
                         L10n.t("Copy \(Self.who(model))'s settings?"), isPresented: $model.confirmingCopy
@@ -162,12 +162,12 @@ struct SettingsFromPicker: View {
         }
     }
 
-    static func who(_ model: SettingsModel) -> String { model.wearer?.wearer ?? L10n.t("the wearer") }
+    static func who(_ model: SettingsModel) -> String { model.wearer?.wearer ?? L10n.t("this person") }
 
     static func name(_ f: SettingsFrom, _ model: SettingsModel) -> String {
         switch f {
         case .wearer:
-            model.wearer?.wearer.map { L10n.t("\($0) (wearer)") } ?? L10n.t("Wearer")
+            model.wearer?.wearer.map { L10n.t("\($0)'s settings") } ?? L10n.t("Their settings")
         case .default: L10n.t("Default")
         case .custom: L10n.t("Custom")
         }
@@ -222,12 +222,12 @@ struct FollowingRows: View {
             row(L10n.t("Looking up the invite…"), "arrow.triangle.2.circlepath")
             Button(L10n.t("Cancel")) { Task { await follow.cancel() } }
         case .waiting(let wearer, let pairing?):
-            PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
+            PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("this person"), check: pairing)
         case .waiting(let wearer, nil):
-            WaitingForWearer(follow: follow, wearer: wearer ?? L10n.t("the wearer"))
+            WaitingForWearer(follow: follow, wearer: wearer ?? L10n.t("this person"))
         case .following(let wearer, let last, let canWrite):
             Label {
-                Text(L10n.t("Following \(wearer ?? L10n.t("the wearer"))"))
+                Text(L10n.t("Following \(wearer ?? L10n.t("this person"))"))
             } icon: {
                 AvatarView(avatar: follow.wearer?.avatar, name: wearer ?? "", size: 24)
             }
@@ -238,7 +238,7 @@ struct FollowingRows: View {
             )
             .foregroundStyle(.secondary)
             if let source = follow.source { Text(source).foregroundStyle(.secondary) }
-            Text(canWrite ? L10n.t("Can add treatments") : L10n.t("Can't add treatments (the wearer decides)"))
+            Text(canWrite ? L10n.t("Can add treatments") : L10n.t("Can't add treatments (they decide)"))
                 .foregroundStyle(.secondary)
             if let problem = follow.problem {
                 Notice(problem) {
@@ -254,7 +254,8 @@ struct FollowingRows: View {
             }
             Button(L10n.t("Stop following…"), role: .destructive) { follow.confirmingUnfollow = true }
                 .confirmationDialog(
-                    L10n.t("Stop following \(wearer ?? L10n.t("the wearer"))?"), isPresented: $follow.confirmingUnfollow
+                    L10n.t("Stop following \(wearer ?? L10n.t("this person"))?"),
+                    isPresented: $follow.confirmingUnfollow
                 ) {
                     Button(L10n.t("Stop following"), role: .destructive) { Task { await follow.unfollow() } }
                     Button(L10n.t("Cancel"), role: .cancel) {}
@@ -277,10 +278,10 @@ struct FollowingRows: View {
 
     static func endText(_ s: FollowStatus) -> String {
         switch s {
-        case .declined: L10n.t("The wearer declined. Ask them for a new invite.")
+        case .declined: L10n.t("They declined. Ask them for a new invite.")
         case .inviteUsed: L10n.t("Another device used this invite. Ask for a new one.")
-        case .inviteExpired: L10n.t("The invite expired before the wearer answered. Ask them for a new one.")
-        case .revoked: L10n.t("The wearer stopped sharing with this Mac.")
+        case .inviteExpired: L10n.t("The invite expired before they answered. Ask them for a new one.")
+        case .revoked: L10n.t("They stopped sharing with this Mac.")
         case .broken(let why): L10n.t("Following stopped: \(why.text)")
         default: ""
         }

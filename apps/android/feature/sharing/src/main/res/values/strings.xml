@@ -50,7 +50,7 @@
     <!-- Setup source step: the group of sources on this phone that work without internet -->
     <string name="sh_setup_source_group_offline">On this phone · works offline</string>
     <!-- Setup source step: the group of Sukrara streams -->
-    <string name="sh_setup_source_group_sukrara">From another Sukrara</string>
+    <string name="sh_setup_source_group_sukrara">From another Sukrara · internet or Bluetooth nearby</string>
     <!-- Setup source step: the most direct source's line; %1$s = what it brings -->
     <string name="sh_setup_source_recommended">Recommended · %1$s</string>
     <!-- Setup source step: changing a stored source, dialog title; %1$s = the source ("Juggluco on this phone") -->
@@ -77,13 +77,8 @@
     <string name="sh_setup_juggluco_open">Open Juggluco</string>
     <!-- Setup person change that deletes history: dialog title -->
     <string name="sh_setup_person_delete_title">Delete the earlier history?</string>
-    <!-- Setup person change that deletes history: %1$s = whose glucose was chosen, %2$s = what is deleted ("1,204 glucose readings and 12 treatments"), %3$s = when ("from 3 Oct 2026 to 10 Nov 2026") -->
+    <!-- Setup person change that deletes history: %1$s = whose glucose was chosen, %2$s = what is deleted ("4 days of glucose and 12 treatments"), %3$s = when ("from 3 Oct 2026 to 10 Nov 2026") -->
     <string name="sh_setup_person_delete_text">You chose “%1$s”. This deletes what this phone kept from before: %2$s, %3$s. It can’t be undone.</string>
-    <!-- Setup person change: how many glucose readings are deleted; %1$s = the number -->
-    <plurals name="sh_setup_person_delete_readings">
-        <item quantity="one">%1$s glucose reading</item>
-        <item quantity="other">%1$s glucose readings</item>
-    </plurals>
     <!-- Setup person change: how many treatments (insulin, carbs) are deleted; %1$s = the number -->
     <plurals name="sh_setup_person_delete_treatments">
         <item quantity="one">%1$s treatment</item>
@@ -134,12 +129,16 @@
     <!-- Restore section title -->
     <string name="sh_restore_title">Restore from your recovery code</string>
     <!-- Restore warning (always shown) -->
-    <string name="sh_restore_warning">Your followers move to this phone: the phone that shared until now stops reaching them. Do this once this phone has your sensor.</string>
+    <string name="sh_restore_warning">Your followers move to this phone: the phone that shared until now stops reaching them. Do this once your glucose arrives on this phone.</string>
     <!-- Where the recovery code is -->
     <string name="sh_restore_where">An ncryptsec… code with its password, or an nsec… code</string>
     <!-- Restore blocked: no reading yet -->
     <string name="sh_restore_block_no_reading">Connect your sensor first: restore becomes available once this app receives a reading.</string>
     <string name="sh_restore_step_sensor">Sensor running in Sukrara</string>
+    <!-- Restore checklist, step 1 when the source isn't a sensor Sukrara reads: %1$s = the source (Juggluco, Nightscout, LibreLinkUp) -->
+    <string name="sh_restore_step_source">Readings arriving from %1$s</string>
+    <!-- Restore checklist, step 1 not done yet: %1$s = the source (Juggluco, Nightscout, LibreLinkUp) -->
+    <string name="sh_restore_block_no_reading_source">Restore becomes available once a reading from %1$s arrives here.</string>
     <string name="sh_restore_step_code">Paste your recovery code</string>
     <!-- Field: recovery code -->
     <string name="sh_restore_code">Recovery code</string>
@@ -525,7 +524,7 @@
     <!-- The password manager returned something else -->
     <string name="sh_restore_manager_not_identity">That saved password isn\'t a Sukrara identity. Pick the entry named \"Sukrara · npub…\", or paste the recovery code.</string>
     <string name="sh_join_title">Follow someone</string>
-    <string name="sh_join_body">Ask the person who wears the sensor to open Sukrara, tap Share and send you the invite link. Paste it here or scan the QR code on their phone.</string>
+    <string name="sh_join_body">Ask them to open Sukrara, tap Share and send you the invite link. Paste it here or scan the QR code on their phone.</string>
     <string name="sh_join_link">Invite link</string>
     <string name="sh_join_name">Your name</string>
     <string name="sh_join_name_hint">So they know who is asking. Optional.</string>
@@ -567,8 +566,8 @@
     <string name="sh_following_stop_title">Stop following %1$s?</string>
     <string name="sh_following_stop_text">Their readings, treatments and alerts leave this phone. To follow again you need a new invite link.</string>
     <string name="sh_following_stop_failed">Couldn\'t remove the key from this phone. Try again.</string>
-    <string name="sh_following_unreadable">This phone can\'t open the follower key right now. Sukrara keeps trying; their stored readings and alerts stay. If it doesn\'t recover, stop following and join again.</string>
-    <string name="sh_following_damaged">The follower key on this phone is damaged. Stop following, then join again with a new link.</string>
+    <string name="sh_following_unreadable">This phone can\'t open the key to follow them right now. Sukrara keeps trying; their stored readings and alerts stay. If it doesn\'t recover, stop following and join again.</string>
+    <string name="sh_following_damaged">The key to follow them is damaged on this phone. Stop following, then join again with a new link.</string>
     <string name="sh_following_join_again">Join with a new link</string>
     <!-- Bluetooth nearby (wearer: Settings › Sharing; follower: Following page) -->
     <string name="sh_nearby_group">How readings travel</string>
@@ -591,7 +590,7 @@
         <item quantity="other">%d devices connected nearby</item>
     </plurals>
     <string name="sh_nearby_connected_phone">connected to their phone</string>
-    <string name="sh_nearby_waiting">On · no follower device nearby</string>
+    <string name="sh_nearby_waiting">On · none of your followers nearby</string>
     <string name="sh_nearby_searching">looking for their phone</string>
     <string name="sh_nearby_no_followers">On once someone follows you</string>
     <string name="sh_nearby_idle">not connected</string>

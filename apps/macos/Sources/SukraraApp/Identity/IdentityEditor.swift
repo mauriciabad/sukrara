@@ -154,7 +154,7 @@ struct IdentityRow: View {
                 AvatarView(avatar: me.avatar, name: me.name, size: 32)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(me.name)
-                    Text(wearer.map { L10n.t("How you appear to \($0)") } ?? L10n.t("How you appear to the wearer"))
+                    Text(wearer.map { L10n.t("How you appear to \($0)") } ?? L10n.t("How they see you"))
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }

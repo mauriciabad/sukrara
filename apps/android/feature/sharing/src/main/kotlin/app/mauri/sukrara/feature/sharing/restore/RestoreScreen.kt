@@ -36,10 +36,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.findActivity
 import app.mauri.sukrara.designsystem.motion.Reveal
+import app.mauri.sukrara.designsystem.source.shortRes
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.backup.PasswordManager
 import app.mauri.sukrara.feature.sharing.conflict.ConflictContent
@@ -119,10 +121,26 @@ internal fun ColumnScope.RestoreForm(
     var password by remember { mutableStateOf("") }
     Text(stringResource(R.string.sh_restore_title), style = MaterialTheme.typography.titleMedium)
     NoticeCard(stringResource(R.string.sh_restore_warning))
-    // the gate as a numbered checklist that ticks itself: 1 sensor live here, 2 the code
-    val sensorLive = RestoreBlock.NoLiveReading !in gate.blocks
-    NumberedItem(1, stringResource(R.string.sh_restore_step_sensor), done = sensorLive) {
-        if (!sensorLive) Text(stringResource(R.string.sh_restore_block_no_reading), style = MaterialTheme.typography.bodyMedium)
+    // the gate as a numbered checklist that ticks itself: 1 your glucose live here (in the source's words: the sensor
+    // only when Sukrara reads it), 2 the code
+    val live = RestoreBlock.NoLiveReading !in gate.blocks
+    val sensor = gate.source == null || gate.source == SourceKind.Sensor
+    val from = stringResource((gate.source ?: SourceKind.Sensor).shortRes())
+    NumberedItem(
+        1,
+        if (sensor) stringResource(R.string.sh_restore_step_sensor) else stringResource(R.string.sh_restore_step_source, from),
+        done = live,
+    ) {
+        if (!live) {
+            Text(
+                if (sensor) {
+                    stringResource(R.string.sh_restore_block_no_reading)
+                } else {
+                    stringResource(R.string.sh_restore_block_no_reading_source, from)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
     NumberedItem(2, stringResource(R.string.sh_restore_step_code)) {
         Text(

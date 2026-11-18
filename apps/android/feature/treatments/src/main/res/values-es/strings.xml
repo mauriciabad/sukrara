@@ -36,7 +36,7 @@
     <string name="treatment_lock_draft_kept">Aún sin guardar: desbloquea y toca la notificación para terminar</string>
     <!-- La confirmación tras Guardar; %1$s = los tratamientos en palabras, p. ej. "4.5u de insulina rápida · 30g de hidratos" -->
     <string name="treatment_saved_snack">Guardado: %1$s</string>
-    <string name="treatment_sent_snack">Se enviará a quien lleva el sensor: %1$s</string>
+    <string name="treatment_sent_snack">Se enviará a su móvil: %1$s</string>
     <string name="treatment_changed_snack">Cambiado: %1$s</string>
     <!-- #207: Borrar en la hoja de edición, y su snackbar; %1$s = "4,5u de insulina rápida" -->
     <string name="treatment_delete">Borrar</string>

@@ -30,9 +30,11 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -64,11 +66,15 @@ class HomeGallery {
 
     private val surface = CardSurface.APP_PANEL
 
+    private val juggluco = SourceSpec(Person.Yours, SourceKind.PhoneApp)
+    private val libreLinkUp = SourceSpec(Person.Yours, SourceKind.LibreLinkUp)
+
     private fun ui(
         glucose: GlucoseState,
         banner: BannerKind? = null,
         withTreatments: Boolean = false,
         problems: Int = 0,
+        phoneApp: PhoneAppProblem? = null,
     ): HomeUiState {
         val look = homeLook(glucose, NOW, GlucoseUnit.MGDL)
         val treatments =
@@ -81,7 +87,7 @@ class HomeGallery {
             glucose = glucose,
             now = NOW,
             look = look,
-            reason = NoDataReason.of(glucose, look),
+            reason = NoDataReason.of(glucose, look, phoneApp),
             banner = banner,
             firstProblem = AlertReadiness(setOf(AlertRequirement.ExactAlarm)).firstProblem,
             nextSetupStep = "Alert thresholds",
@@ -120,6 +126,11 @@ class HomeGallery {
             // past its end but still sending (#3): the value with the Ended · Replace sensor pill
             "sensor-ended-sending" to ui(Samples.wearer(sensor = SensorState.Ended)),
             "bluetooth-off" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.BluetoothOff)),
+            // Juggluco as the source: its own reasons, never the sensor's
+            "juggluco-missing" to ui(Samples.wearer(ageMin = 25).copy(spec = juggluco), phoneApp = PhoneAppProblem.Missing),
+            "juggluco-silent" to ui(Samples.wearer(ageMin = 25).copy(spec = juggluco)),
+            // LibreLinkUp's sensor ended: replaced in the Libre app
+            "sensor-ended-librelinkup" to ui(Samples.wearer(ageMin = 25, sensor = SensorState.Ended).copy(spec = libreLinkUp)),
             "core-missing" to ui(Samples.wearer(sensor = SensorState.CoreMissing)),
             "clock-behind" to
                 ui(Samples.wearer(ageMin = 8).copy(clockBehind = ClockBehind(NOW.plus(Duration.ofMinutes(12)), Duration.ofMinutes(12)))),

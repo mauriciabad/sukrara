@@ -851,34 +851,34 @@
         }
       }
     },
-    "Can't add treatments (the wearer decides)" : {
+    "Can't add treatments (they decide)" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can't add treatments (the wearer decides)"
+            "value" : "Can't add treatments (they decide)"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No puede añadir tratamientos (lo decide quien lleva el sensor)"
+            "value" : "No puede añadir tratamientos (lo decide la otra persona)"
           }
         }
       }
     },
-    "Can't add treatments until the follower key can be read" : {
+    "Can't add treatments until the key to follow them can be read" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can't add treatments until the follower key can be read"
+            "value" : "Can't add treatments until the key to follow them can be read"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pueden añadir tratamientos hasta poder leer la clave de seguimiento"
+            "value" : "No se pueden añadir tratamientos hasta poder leer la clave para seguirle"
           }
         }
       }
@@ -899,50 +899,50 @@
         }
       }
     },
-    "Can't read the follower key from the Keychain" : {
+    "Can't read the key to follow them from the Keychain" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can't read the follower key from the Keychain"
+            "value" : "Can't read the key to follow them from the Keychain"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede leer la clave para seguir en el Llavero"
+            "value" : "No se puede leer del Llavero la clave para seguirle"
           }
         }
       }
     },
-    "Can't remove the follower key from the Keychain" : {
+    "Can't remove the key to follow them from the Keychain" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can't remove the follower key from the Keychain"
+            "value" : "Can't remove the key to follow them from the Keychain"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede borrar la clave para seguir del Llavero"
+            "value" : "No se puede borrar del Llavero la clave para seguirle"
           }
         }
       }
     },
-    "Can't read the follower key from the Keychain. Retrying; alerting on the last data." : {
+    "Can't read the key to follow them from the Keychain. Retrying; alerting on the last data." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can't read the follower key from the Keychain. Retrying; alerting on the last data."
+            "value" : "Can't read the key to follow them from the Keychain. Retrying; alerting on the last data."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se puede leer la clave de seguimiento del Llavero. Reintentando; las alertas siguen con los últimos datos."
+            "value" : "No se puede leer del Llavero la clave para seguirle. Reintentando; las alertas siguen con los últimos datos."
           }
         }
       }
@@ -1363,34 +1363,34 @@
         }
       }
     },
-    "Each invite works for 24 hours. Ask the wearer for a new one." : {
+    "Each invite works for 24 hours. Ask them for a new one." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each invite works for 24 hours. Ask the wearer for a new one."
+            "value" : "Each invite works for 24 hours. Ask them for a new one."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada invitación sirve 24 horas. Pide una nueva a quien lleva el sensor."
+            "value" : "Cada invitación sirve 24 horas. Pídele una nueva."
           }
         }
       }
     },
-    "Each invite works once. Ask the wearer for a new one." : {
+    "Each invite works once. Ask them for a new one." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Each invite works once. Ask the wearer for a new one."
+            "value" : "Each invite works once. Ask them for a new one."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cada invitación sirve una vez. Pide una nueva a quien lleva el sensor."
+            "value" : "Cada invitación sirve una vez. Pídele una nueva."
           }
         }
       }
@@ -1891,18 +1891,18 @@
         }
       }
     },
-    "From another Sukrara" : {
+    "From another Sukrara · internet or Bluetooth nearby" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From another Sukrara"
+            "value" : "From another Sukrara · internet or Bluetooth nearby"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Desde otro Sukrara"
+            "value" : "Desde otro Sukrara · por internet o Bluetooth cerca"
           }
         }
       }
@@ -2179,18 +2179,18 @@
         }
       }
     },
-    "Hold the wearer's phone up to the camera with their invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent." : {
+    "Hold their phone up to the camera with its invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hold the wearer's phone up to the camera with their invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent."
+            "value" : "Hold their phone up to the camera with its invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pon delante de la cámara el móvil de quien lleva el sensor con su código QR de invitación a la vista (Sukrara › Compartir › Invitar). Se lee en este Mac: no se graba ni se envía nada."
+            "value" : "Pon su móvil delante de la cámara con su código QR de invitación a la vista (Sukrara › Compartir › Invitar). Se lee en este Mac: no se graba ni se envía nada."
           }
         }
       }
@@ -3701,18 +3701,18 @@
         }
       }
     },
-    "Not monitoring: the invite expired before the wearer answered" : {
+    "Not monitoring: the invite expired before they answered" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not monitoring: the invite expired before the wearer answered"
+            "value" : "Not monitoring: the invite expired before they answered"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin monitorizar: la invitación caducó antes de que respondiera quien lleva el sensor"
+            "value" : "Sin vigilancia: la invitación caducó antes de que respondiera"
           }
         }
       }
@@ -3813,18 +3813,18 @@
         }
       }
     },
-    "Read the invite QR code on the wearer's phone with this Mac's camera" : {
+    "Read the invite QR code on their phone with this Mac's camera" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Read the invite QR code on the wearer's phone with this Mac's camera"
+            "value" : "Read the invite QR code on their phone with this Mac's camera"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lee el código QR de invitación del móvil de quien lleva el sensor con la cámara de este Mac"
+            "value" : "Lee el código QR de invitación de su móvil con la cámara de este Mac"
           }
         }
       }
@@ -3989,18 +3989,18 @@
         }
       }
     },
-    "The invite expired before the wearer answered. Ask them for a new one." : {
+    "The invite expired before they answered. Ask them for a new one." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The invite expired before the wearer answered. Ask them for a new one."
+            "value" : "The invite expired before they answered. Ask them for a new one."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La invitación caducó antes de que respondiera quien lleva el sensor. Pídele una nueva."
+            "value" : "La invitación caducó antes de que respondiera. Pídele una nueva."
           }
         }
       }
@@ -4213,18 +4213,18 @@
         }
       }
     },
-    "Sukrara uses the camera to read the invite QR code on the wearer's phone. It's read on this Mac: nothing is recorded or sent." : {
+    "Sukrara uses the camera to read the invite QR code on their phone. It's read on this Mac: nothing is recorded or sent." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sukrara uses the camera to read the invite QR code on the wearer's phone. It's read on this Mac: nothing is recorded or sent."
+            "value" : "Sukrara uses the camera to read the invite QR code on their phone. It's read on this Mac: nothing is recorded or sent."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sukrara usa la cámara para leer el código QR de invitación en el móvil de quien lleva el sensor. Se lee en este Mac: no se graba ni se envía nada."
+            "value" : "Sukrara usa la cámara para leer el código QR de invitación de su móvil. Se lee en este Mac: no se graba ni se envía nada."
           }
         }
       }
@@ -4277,18 +4277,18 @@
         }
       }
     },
-    "Wearer and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's." : {
+    "Their settings and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wearer and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+            "value" : "Their settings and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor y Predeterminados deciden los rangos, la flecha de tendencia, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y cuándo avisar; Personalizados te deja ajustarlos en este Mac. Los sonidos, la alerta de sin datos, los botones de la notificación y el tiempo mostrado y el tiempo del sensor de cada lugar son siempre de este Mac."
+            "value" : "Sus ajustes y Predeterminados deciden los rangos, la flecha de tendencia, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y cuándo avisar; Personalizados te deja ajustarlos en este Mac. Los sonidos, la alerta de sin datos, los botones de la notificación y el tiempo mostrado y el tiempo del sensor de cada lugar son siempre de este Mac."
           }
         }
       }
@@ -4437,18 +4437,18 @@
         }
       }
     },
-    "No readings from the wearer's phone" : {
+    "No readings from their phone" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No readings from the wearer's phone"
+            "value" : "No readings from their phone"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No hay lecturas del móvil de quien lleva el sensor"
+            "value" : "No llegan lecturas de su móvil"
           }
         }
       }
@@ -4549,18 +4549,18 @@
         }
       }
     },
-    "Not monitoring: can't read the follower key from the Keychain. Retrying…" : {
+    "Not monitoring: can't read the key to follow them from the Keychain. Retrying…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not monitoring: can't read the follower key from the Keychain. Retrying…"
+            "value" : "Not monitoring: can't read the key to follow them from the Keychain. Retrying…"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin vigilancia: no se puede leer la clave de seguimiento del Llavero. Reintentando…"
+            "value" : "Sin vigilancia: no se puede leer del Llavero la clave para seguirle. Reintentando…"
           }
         }
       }
@@ -4629,50 +4629,50 @@
         }
       }
     },
-    "Not monitoring: the wearer declined" : {
+    "Not monitoring: they declined" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not monitoring: the wearer declined"
+            "value" : "Not monitoring: they declined"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin vigilancia: quien lleva el sensor lo ha rechazado"
+            "value" : "Sin vigilancia: lo ha rechazado"
           }
         }
       }
     },
-    "Not monitoring: the wearer stopped sharing" : {
+    "Not monitoring: they stopped sharing" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not monitoring: the wearer stopped sharing"
+            "value" : "Not monitoring: they stopped sharing"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin vigilancia: quien lleva el sensor ha dejado de compartir"
+            "value" : "Sin vigilancia: ha dejado de compartir"
           }
         }
       }
     },
-    "Not monitoring: waiting for the wearer to allow this Mac" : {
+    "Not monitoring: waiting for them to allow this Mac" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not monitoring: waiting for the wearer to allow this Mac"
+            "value" : "Not monitoring: waiting for them to allow this Mac"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sin vigilancia: esperando a que quien lleva el sensor permita este Mac"
+            "value" : "Sin vigilancia: esperando a que permita este Mac"
           }
         }
       }
@@ -4901,18 +4901,18 @@
         }
       }
     },
-    "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#" : {
+    "Paste or drop the invite link from their phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
+            "value" : "Paste or drop the invite link from their phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pega o arrastra aquí el enlace de invitación del móvil de quien lleva el sensor (Sukrara › Compartir › Invitar). Empieza por https://sukrara.mauri.app/join#"
+            "value" : "Pega o arrastra aquí el enlace de invitación de su móvil (Sukrara › Compartir › Invitar). Empieza por https://sukrara.mauri.app/join#"
           }
         }
       }
@@ -5621,34 +5621,34 @@
         }
       }
     },
-    "The codes didn't match, so nothing was shared. Try again next to the wearer's phone." : {
+    "The codes didn't match, so nothing was shared. Try again next to their phone." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The codes didn't match, so nothing was shared. Try again next to the wearer's phone."
+            "value" : "The codes didn't match, so nothing was shared. Try again next to their phone."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los códigos no coincidían, así que no se ha compartido nada. Vuelve a probar junto al móvil de la persona a la que sigues."
+            "value" : "Los códigos no coincidían, así que no se ha compartido nada. Vuelve a probar junto a su móvil."
           }
         }
       }
     },
-    "The follower state is damaged; stop following and join again" : {
+    "The data to follow them is damaged; stop following and join again" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The follower state is damaged; stop following and join again"
+            "value" : "The data to follow them is damaged; stop following and join again"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los datos para seguir están dañados; deja de seguir y vuelve a unirte"
+            "value" : "Los datos para seguirle están dañados; deja de seguir y vuelve a unirte"
           }
         }
       }
@@ -5685,50 +5685,50 @@
         }
       }
     },
-    "The wearer declined. Ask them for a new invite." : {
+    "They declined. Ask them for a new invite." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The wearer declined. Ask them for a new invite."
+            "value" : "They declined. Ask them for a new invite."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor lo ha rechazado. Pídele una invitación nueva."
+            "value" : "Lo ha rechazado. Pídele una invitación nueva."
           }
         }
       }
     },
-    "The wearer hasn't allowed this Mac to add treatments" : {
+    "They haven't allowed this Mac to add treatments" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The wearer hasn't allowed this Mac to add treatments"
+            "value" : "They haven't allowed this Mac to add treatments"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor no ha permitido que este Mac añada tratamientos"
+            "value" : "No ha permitido que este Mac añada tratamientos"
           }
         }
       }
     },
-    "The wearer stopped sharing with this Mac." : {
+    "They stopped sharing with this Mac." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The wearer stopped sharing with this Mac."
+            "value" : "They stopped sharing with this Mac."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor ha dejado de compartir con este Mac."
+            "value" : "Ha dejado de compartir con este Mac."
           }
         }
       }
@@ -6213,18 +6213,18 @@
         }
       }
     },
-    "Waiting for the first reading from the wearer" : {
+    "Waiting for their first reading" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Waiting for the first reading from the wearer"
+            "value" : "Waiting for their first reading"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esperando la primera lectura de quien lleva el sensor"
+            "value" : "Esperando su primera lectura"
           }
         }
       }
@@ -6309,34 +6309,34 @@
         }
       }
     },
-    "the wearer" : {
+    "this person" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "the wearer"
+            "value" : "this person"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "quien lleva el sensor"
+            "value" : "esta persona"
           }
         }
       }
     },
-    "%@ (wearer)" : {
+    "%@'s settings" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ (wearer)"
+            "value" : "%@'s settings"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ (quien lleva el sensor)"
+            "value" : "Los ajustes de %@"
           }
         }
       }
@@ -6549,18 +6549,18 @@
         }
       }
     },
-    "Copy the Wearer's Settings…" : {
+    "Copy Their Settings…" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copy the Wearer's Settings…"
+            "value" : "Copy Their Settings…"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Copiar los ajustes de quien lleva el sensor…"
+            "value" : "Copiar sus ajustes…"
           }
         }
       }
@@ -7349,18 +7349,18 @@
         }
       }
     },
-    "Wearer" : {
+    "Their settings" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wearer"
+            "value" : "Their settings"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor"
+            "value" : "Sus ajustes"
           }
         }
       }
@@ -8229,18 +8229,18 @@
         }
       }
     },
-    "Logged by a follower" : {
+    "Logged by someone who follows you" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Logged by a follower"
+            "value" : "Logged by someone who follows you"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registrado por un seguidor"
+            "value" : "Registrado por alguien que te sigue"
           }
         }
       }
@@ -8277,18 +8277,18 @@
         }
       }
     },
-    "Logged on the wearer's phone" : {
+    "Logged on their phone" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Logged on the wearer's phone"
+            "value" : "Logged on their phone"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registrado en el móvil de quien lleva el sensor"
+            "value" : "Registrado en su móvil"
           }
         }
       }
@@ -8469,34 +8469,34 @@
         }
       }
     },
-    "The wearer hasn't turned on “Can add treatments” for this Mac" : {
+    "They haven't turned on “Can add treatments” for this Mac" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The wearer hasn't turned on “Can add treatments” for this Mac"
+            "value" : "They haven't turned on “Can add treatments” for this Mac"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor no ha activado «Puede añadir tratamientos» para este Mac"
+            "value" : "No ha activado «Puede añadir tratamientos» para este Mac"
           }
         }
       }
     },
-    "The wearer stopped sharing with this Mac" : {
+    "They stopped sharing with this Mac" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The wearer stopped sharing with this Mac"
+            "value" : "They stopped sharing with this Mac"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quien lleva el sensor dejó de compartir con este Mac"
+            "value" : "Ha dejado de compartir con este Mac"
           }
         }
       }
@@ -8549,18 +8549,18 @@
         }
       }
     },
-    "Waiting for the wearer to approve this Mac" : {
+    "Waiting for them to approve this Mac" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Waiting for the wearer to approve this Mac"
+            "value" : "Waiting for them to approve this Mac"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esperando a que quien lleva el sensor apruebe este Mac"
+            "value" : "Esperando a que apruebe este Mac"
           }
         }
       }
@@ -9045,18 +9045,18 @@
         }
       }
     },
-    "When it alerts follows the wearer's rules. Choose Custom to change it on this Mac." : {
+    "When it alerts follows their rules. Choose Custom to change it on this Mac." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "When it alerts follows the wearer's rules. Choose Custom to change it on this Mac."
+            "value" : "When it alerts follows their rules. Choose Custom to change it on this Mac."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cuándo avisa sigue las reglas de quien lleva el sensor. Elige Personalizado para cambiarlo en este Mac."
+            "value" : "Cuándo avisa sigue sus reglas. Elige Personalizado para cambiarlo en este Mac."
           }
         }
       }
@@ -9589,18 +9589,18 @@
         }
       }
     },
-    "Read from the pen on the wearer's phone" : {
+    "Read from the pen on their phone" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Read from the pen on the wearer's phone"
+            "value" : "Read from the pen on their phone"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leído de la pluma en el móvil de quien lleva el sensor"
+            "value" : "Leído de la pluma en su móvil"
           }
         }
       }
@@ -9765,18 +9765,18 @@
         }
       }
     },
-    "How you appear to the wearer" : {
+    "How they see you" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "How you appear to the wearer"
+            "value" : "How they see you"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cómo te ve la persona que lleva el sensor"
+            "value" : "Cómo te ve"
           }
         }
       }
@@ -9861,18 +9861,18 @@
         }
       }
     },
-    "The wearer sees this name in their list of people who follow them" : {
+    "They see this name in their list of people who follow them" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The wearer sees this name in their list of people who follow them"
+            "value" : "They see this name in their list of people who follow them"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La persona que lleva el sensor ve este nombre en su lista de personas que la siguen"
+            "value" : "Ve este nombre en su lista de personas que le siguen"
           }
         }
       }
@@ -10597,18 +10597,18 @@
         }
       }
     },
-    "Carbs you log keep low and falling fast alerts quiet while they work, and very low on the wearer's phone. Followers and the Mac still alert on a very low." : {
+    "Carbs you log keep low and falling fast alerts quiet while they work, and very low too on the phone that gets your glucose. A phone or Mac that follows you still alerts on a very low." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Carbs you log keep low and falling fast alerts quiet while they work, and very low on the wearer's phone. Followers and the Mac still alert on a very low."
+            "value" : "Carbs you log keep low and falling fast alerts quiet while they work, and very low too on the phone that gets your glucose. A phone or Mac that follows you still alerts on a very low."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los hidratos que registras silencian las alertas de glucosa baja y bajada rápida mientras actúan, y la muy baja en el teléfono de quien lleva el sensor. Quien le sigue y el Mac siguen avisando de una muy baja."
+            "value" : "Los hidratos que registras silencian las alertas de baja y bajada rápida mientras actúan, y también la muy baja en el móvil que recibe tu glucosa. Un móvil o Mac que te sigue avisa igualmente de una muy baja."
           }
         }
       }
@@ -10629,18 +10629,18 @@
         }
       }
     },
-    "While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the wearer's phone, never its first alert." : {
+    "While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the phone that gets your glucose, never its first alert." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the wearer's phone, never its first alert."
+            "value" : "While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the phone that gets your glucose, never its first alert."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mientras las últimas lecturas muestran que la glucosa sube claramente hacia el rango a tiempo, las alertas de baja esperan. Llegan enseguida si se estanca o dejan de llegar lecturas. Una muy baja solo espera en el teléfono de quien lleva el sensor, nunca su primera alerta."
+            "value" : "Mientras las últimas lecturas muestran que la glucosa sube claramente hacia el rango a tiempo, las alertas de baja esperan. Llegan enseguida si se estanca o dejan de llegar lecturas. Una muy baja solo espera en el móvil que recibe tu glucosa, nunca su primera alerta."
           }
         }
       }
@@ -11557,34 +11557,34 @@
         }
       }
     },
-    "Your phone reads your sensor and shares it with this Mac · internet or Bluetooth nearby" : {
+    "Your phone reads your sensor and shares it with this Mac" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your phone reads your sensor and shares it with this Mac · internet or Bluetooth nearby"
+            "value" : "Your phone reads your sensor and shares it with this Mac"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu móvil lee tu sensor y la comparte con este Mac · por internet o por Bluetooth cerca"
+            "value" : "Tu móvil lee tu sensor y la comparte con este Mac"
           }
         }
       }
     },
-    "Their phone shares it with this Mac after an invite · internet or Bluetooth nearby" : {
+    "Their phone shares it with this Mac after an invite" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Their phone shares it with this Mac after an invite · internet or Bluetooth nearby"
+            "value" : "Their phone shares it with this Mac after an invite"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Su móvil la comparte con este Mac tras una invitación · por internet o por Bluetooth cerca"
+            "value" : "Su móvil la comparte con este Mac tras una invitación"
           }
         }
       }

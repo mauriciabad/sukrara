@@ -28,7 +28,7 @@
     <string name="sh_setup_source_title">¿De dónde viene tu glucosa?</string>
     <string name="sh_setup_source_title_theirs">¿De dónde viene su glucosa?</string>
     <string name="sh_setup_source_group_offline">En este móvil · sin internet</string>
-    <string name="sh_setup_source_group_sukrara">Desde otro Sukrara</string>
+    <string name="sh_setup_source_group_sukrara">Desde otro Sukrara · por internet o Bluetooth cerca</string>
     <string name="sh_setup_source_recommended">Recomendado · %1$s</string>
     <string name="sh_setup_source_change_title">¿Cambiar a «%1$s»?</string>
     <string name="sh_setup_source_change_sensor">Sukrara se conecta al sensor por sí mismo, así que ninguna otra app puede tenerlo. El historial de este móvil se queda.</string>
@@ -43,11 +43,6 @@
     <string name="sh_setup_juggluco_open">Abrir Juggluco</string>
     <string name="sh_setup_person_delete_title">¿Borrar el historial anterior?</string>
     <string name="sh_setup_person_delete_text">Has elegido «%1$s». Esto borra lo que este móvil guardaba de antes: %2$s, %3$s. No se puede deshacer.</string>
-    <plurals name="sh_setup_person_delete_readings">
-        <item quantity="one">%1$s lectura de glucosa</item>
-        <item quantity="many">%1$s lecturas de glucosa</item>
-        <item quantity="other">%1$s lecturas de glucosa</item>
-    </plurals>
     <plurals name="sh_setup_person_delete_treatments">
         <item quantity="one">%1$s tratamiento</item>
         <item quantity="many">%1$s tratamientos</item>
@@ -75,10 +70,12 @@
     <string name="sh_identity_sharing">Compartir está configurado. Seguidores: %1$d.</string>
     <string name="sh_identity_unreadable">No se puede leer tu identidad para compartir en este móvil. Restáurala con tu código de recuperación; no se ha sustituido nada.</string>
     <string name="sh_restore_title">Restaurar con tu código de recuperación</string>
-    <string name="sh_restore_warning">Tus seguidores pasan a este móvil: el móvil que compartía hasta ahora deja de llegarles. Hazlo cuando este móvil tenga tu sensor.</string>
+    <string name="sh_restore_warning">Tus seguidores pasan a este móvil: el móvil que compartía hasta ahora deja de llegarles. Hazlo cuando tu glucosa llegue a este móvil.</string>
     <string name="sh_restore_where">Un código ncryptsec… con su contraseña, o un código nsec…</string>
     <string name="sh_restore_block_no_reading">Conecta antes tu sensor: podrás restaurar cuando esta app reciba una lectura.</string>
     <string name="sh_restore_step_sensor">Sensor funcionando en Sukrara</string>
+    <string name="sh_restore_step_source">Llegan lecturas de %1$s</string>
+    <string name="sh_restore_block_no_reading_source">Podrás restaurar cuando llegue aquí una lectura de %1$s.</string>
     <string name="sh_restore_step_code">Pega tu código de recuperación</string>
     <string name="sh_restore_code">Código de recuperación</string>
     <string name="sh_restore_password">Contraseña</string>
@@ -389,7 +386,7 @@
     <!-- The password manager returned something else -->
     <string name="sh_restore_manager_not_identity">Esa contraseña guardada no es una identidad de Sukrara. Elige la entrada «Sukrara · npub…» o pega el código de recuperación.</string>
     <string name="sh_join_title">Seguir a alguien</string>
-    <string name="sh_join_body">Pide a la persona que lleva el sensor que abra Sukrara, toque Compartir y te envíe el enlace de invitación. Pégalo aquí o escanea el código QR de su teléfono.</string>
+    <string name="sh_join_body">Pídele que abra Sukrara, toque Compartir y te envíe el enlace de invitación. Pégalo aquí o escanea el código QR de su teléfono.</string>
     <string name="sh_join_link">Enlace de invitación</string>
     <string name="sh_join_name">Tu nombre</string>
     <string name="sh_join_name_hint">Para que sepa quién lo pide. Opcional.</string>
@@ -430,8 +427,8 @@
     <string name="sh_following_stop_title">¿Dejar de seguir a %1$s?</string>
     <string name="sh_following_stop_text">Sus lecturas, tratamientos y alertas se borran de este teléfono. Para volver a seguirle necesitas un enlace de invitación nuevo.</string>
     <string name="sh_following_stop_failed">No se ha podido borrar la clave de este teléfono. Vuelve a intentarlo.</string>
-    <string name="sh_following_unreadable">Este teléfono no puede abrir ahora la clave de seguidor. Sukrara sigue intentándolo; sus lecturas guardadas y las alertas se mantienen. Si no se recupera, deja de seguir y vuelve a unirte.</string>
-    <string name="sh_following_damaged">La clave de seguidor de este teléfono está dañada. Deja de seguir y vuelve a unirte con un enlace nuevo.</string>
+    <string name="sh_following_unreadable">Este teléfono no puede abrir ahora la clave para seguirle. Sukrara sigue intentándolo; sus lecturas guardadas y las alertas se mantienen. Si no se recupera, deja de seguir y vuelve a unirte.</string>
+    <string name="sh_following_damaged">La clave para seguirle está dañada en este teléfono. Deja de seguir y vuelve a unirte con un enlace nuevo.</string>
     <string name="sh_following_join_again">Unirme con un enlace nuevo</string>
     <!-- Bluetooth cercano (portador: Ajustes › Compartir; seguidor: página Siguiendo) -->
     <string name="sh_nearby_group">Cómo llegan las lecturas</string>
@@ -454,7 +451,7 @@
         <item quantity="other">%d dispositivos conectados cerca</item>
     </plurals>
     <string name="sh_nearby_connected_phone">conectado a su teléfono</string>
-    <string name="sh_nearby_waiting">Activado · ningún dispositivo seguidor cerca</string>
+    <string name="sh_nearby_waiting">Activado · ninguno de tus seguidores cerca</string>
     <string name="sh_nearby_searching">buscando su teléfono</string>
     <string name="sh_nearby_no_followers">Se activa cuando alguien te sigue</string>
     <string name="sh_nearby_idle">sin conexión</string>

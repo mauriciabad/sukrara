@@ -388,7 +388,7 @@ public struct TreatmentsView: View {
             if !model.canWrite {
                 Label(
                     model.isFollowing
-                        ? L10n.t("The wearer hasn't allowed this Mac to add treatments")
+                        ? L10n.t("They haven't allowed this Mac to add treatments")
                         : L10n.t("Follow someone to see and add their treatments"),
                     systemImage: model.isFollowing ? "lock" : "person.badge.plus"
                 )
@@ -430,7 +430,7 @@ public struct TreatmentsView: View {
                 .disabled(!model.canWrite)
                 .help(
                     model.canWrite
-                        ? L10n.t("Add treatment") : L10n.t("The wearer hasn't allowed this Mac to add treatments"))
+                        ? L10n.t("Add treatment") : L10n.t("They haven't allowed this Mac to add treatments"))
         }
         .frame(minWidth: 460, minHeight: 380)
     }
@@ -482,19 +482,19 @@ public struct TreatmentsView: View {
     /// "4.5" (Spanish "4,5"), "12": `AmountText` in the windows' language.
     static func amount(_ a: Double) -> String { AmountText.of(a, locale: AppLanguage.current.locale) }
 
-    /// "Logged on Ana's phone", "Logged on this Mac", "Logged by a follower", "Read from the pen on Ana's phone";
+    /// "Logged on Ana's phone", "Logged on this Mac", "Logged by someone who follows you", "Read from the pen on Ana's phone";
     /// `mine` = this Mac wrote it, `wearer` = the followed person's name (nil: "the wearer's phone").
     static func loggedBy(_ t: Treatment, mine: Bool = false, wearer: String? = nil) -> String {
         if t.fromPen {
             return wearer.map { L10n.t("Read from the pen on \($0)'s phone") }
-                ?? L10n.t("Read from the pen on the wearer's phone")
+                ?? L10n.t("Read from the pen on their phone")
         }
         if mine { return L10n.t("Logged on this Mac") }
         switch t.o {
         case .phone:
-            return wearer.map { L10n.t("Logged on \($0)'s phone") } ?? L10n.t("Logged on the wearer's phone")
+            return wearer.map { L10n.t("Logged on \($0)'s phone") } ?? L10n.t("Logged on their phone")
         case .mac: return L10n.t("Logged on a Mac")
-        case .follower: return L10n.t("Logged by a follower")
+        case .follower: return L10n.t("Logged by someone who follows you")
         }
     }
 

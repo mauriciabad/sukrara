@@ -29,29 +29,30 @@ struct NoDataText: Equatable {
                 action: follow)
         case .waitingApproval:
             return NoDataText(
-                title: L10n.t("Not monitoring: waiting for the wearer to allow this Mac"),
+                title: L10n.t("Not monitoring: waiting for them to allow this Mac"),
                 body: L10n.t("They allow it on their phone. No alerts ring until their first reading arrives."),
                 action: L10n.t("Following Settings…"))
         case .declined:
-            return NoDataText(title: L10n.t("Not monitoring: the wearer declined"), body: ask, action: follow)
+            return NoDataText(title: L10n.t("Not monitoring: they declined"), body: ask, action: follow)
         case .inviteExpired:
             return NoDataText(
-                title: L10n.t("Not monitoring: the invite expired before the wearer answered"),
-                body: L10n.t("Each invite works for 24 hours. Ask the wearer for a new one."), action: follow)
+                title: L10n.t("Not monitoring: the invite expired before they answered"),
+                body: L10n.t("Each invite works for 24 hours. Ask them for a new one."), action: follow)
         case .inviteUsed:
             return NoDataText(
                 title: L10n.t("Not monitoring: the invite was used by another device"),
-                body: L10n.t("Each invite works once. Ask the wearer for a new one."), action: follow)
+                body: L10n.t("Each invite works once. Ask them for a new one."), action: follow)
         case .revoked:
             return NoDataText(
-                title: L10n.t("Not monitoring: the wearer stopped sharing"),
+                title: L10n.t("Not monitoring: they stopped sharing"),
                 body: L10n.t("They removed this Mac from their followers. \(ask)"), action: follow)
         case .broken(.keyUnreadable):
             // #109: retrying, and with stored readings still alerting on them (the card stays)
             return NoDataText(
                 title: lastData
-                    ? L10n.t("Can't read the follower key from the Keychain. Retrying; alerting on the last data.")
-                    : L10n.t("Not monitoring: can't read the follower key from the Keychain. Retrying…"),
+                    ? L10n.t(
+                        "Can't read the key to follow them from the Keychain. Retrying; alerting on the last data.")
+                    : L10n.t("Not monitoring: can't read the key to follow them from the Keychain. Retrying…"),
                 body: L10n.t("Sukrara keeps trying while the Mac is unlocked."),
                 action: L10n.t("Following Settings…"))
         case .broken(let problem):
@@ -61,11 +62,11 @@ struct NoDataText: Equatable {
             let why = L10n.t("Their phone may be off, offline or out of battery.")
             guard let since else {
                 return NoDataText(
-                    title: L10n.t("Waiting for the first reading from the wearer"),
+                    title: L10n.t("Waiting for their first reading"),
                     body: L10n.t("Nothing heard yet. \(why)"))
             }
             return NoDataText(
-                title: L10n.t("No readings from the wearer's phone"),
+                title: L10n.t("No readings from their phone"),
                 body: L10n.t("Last reading \(Freshness.timeText(since, now: now)). \(why)"))
         case .juggluco(let wait):
             let settings = L10n.t("Juggluco Settings…")

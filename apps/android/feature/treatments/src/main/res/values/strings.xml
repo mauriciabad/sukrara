@@ -38,7 +38,7 @@
     <string name="treatment_lock_draft_kept">Not saved yet: unlock and tap the notification to finish</string>
     <!-- The confirmation after Save; %1$s = the treatments in words, e.g. "4.5u rapid insulin · 30g carbs" -->
     <string name="treatment_saved_snack">Saved: %1$s</string>
-    <string name="treatment_sent_snack">Will be sent to the wearer: %1$s</string>
+    <string name="treatment_sent_snack">Will be sent to their phone: %1$s</string>
     <string name="treatment_changed_snack">Changed: %1$s</string>
     <!-- #207: Delete in the edit sheet, and its snackbar; %1$s = "4.5u rapid insulin" -->
     <string name="treatment_delete">Delete</string>

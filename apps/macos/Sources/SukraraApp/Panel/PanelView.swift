@@ -474,12 +474,12 @@ enum AddTreatmentAvailability: Equatable {
         case .available: nil
         case .notFollowing: L10n.t("Follow someone to add treatments.")
         case .waiting(let w?): L10n.t("Waiting for \(w) to approve this Mac")
-        case .waiting(nil): L10n.t("Waiting for the wearer to approve this Mac")
+        case .waiting(nil): L10n.t("Waiting for them to approve this Mac")
         case .notWriter(let w?): L10n.t("\(w) hasn't turned on “Can add treatments” for this Mac")
-        case .notWriter(nil): L10n.t("The wearer hasn't turned on “Can add treatments” for this Mac")
-        case .revoked: L10n.t("The wearer stopped sharing with this Mac")
+        case .notWriter(nil): L10n.t("They haven't turned on “Can add treatments” for this Mac")
+        case .revoked: L10n.t("They stopped sharing with this Mac")
         case .ended: L10n.t("Not following anyone: ask for a new invite")
-        case .keyUnreadable: L10n.t("Can't add treatments until the follower key can be read")
+        case .keyUnreadable: L10n.t("Can't add treatments until the key to follow them can be read")
         }
     }
 }

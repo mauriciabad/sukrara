@@ -34,9 +34,9 @@
 	<!-- github: GitHub releases, the dmg, the cask; appStore: the Mac App Store and TestFlight (no update check) -->
 	<key>SukraraDistribution</key><string>@DISTRIBUTION@</string>
 	<key>SukraraBuild</key><string>@SUKRARA_BUILD@</string>
-	<key>NSBluetoothAlwaysUsageDescription</key><string>Follow a nearby wearer's glucose over Bluetooth.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key><string>Follow someone's glucose from their phone nearby, over Bluetooth.</string>
 	<key>NSLocalNetworkUsageDescription</key><string>Read glucose from Juggluco on your home network, when you turn it on in Settings.</string>
-	<key>NSCameraUsageDescription</key><string>Read the invite QR code on the wearer's phone, to follow them. Nothing is recorded or sent.</string>
+	<key>NSCameraUsageDescription</key><string>Read the invite QR code on their phone, to follow them. Nothing is recorded or sent.</string>
 	<!-- an iPhone as Continuity Camera is listed as such (AVCaptureDevice.DeviceType.continuityCamera), not as a built-in camera -->
 	<key>NSCameraUseContinuityCameraDeviceType</key><true/>
 </dict>

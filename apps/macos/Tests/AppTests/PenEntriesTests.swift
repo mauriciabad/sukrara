@@ -45,7 +45,7 @@ import Testing
         #expect(TreatmentsView.penLine(typed(.rapid, at: t0)) == nil)
         #expect(TreatmentsView.doseText(.init(t: t0, a: 1, p: true)) == "1u primed")
         #expect(TreatmentsView.doseText(.init(t: t0, a: 8.5)) == "8.5u")
-        #expect(TreatmentsView.loggedBy(p) == "Read from the pen on the wearer's phone")
+        #expect(TreatmentsView.loggedBy(p) == "Read from the pen on their phone")
         #expect(AddTreatmentView.penLine(p).hasPrefix("8.5u rapid at "))
     }
 }

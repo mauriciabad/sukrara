@@ -60,7 +60,7 @@ public final class SourceChoiceModel {
         case .offline: L10n.t("On this Mac · works offline")
         case .network: L10n.t("On this network · works offline")
         case .online: L10n.t("Online · needs internet")
-        case .sukrara: L10n.t("From another Sukrara")
+        case .sukrara: L10n.t("From another Sukrara · internet or Bluetooth nearby")
         }
     }
 
@@ -68,8 +68,8 @@ public final class SourceChoiceModel {
         switch s.kind {
         case .sukrara:
             s.person == .yours
-                ? L10n.t("Your phone reads your sensor and shares it with this Mac · internet or Bluetooth nearby")
-                : L10n.t("Their phone shares it with this Mac after an invite · internet or Bluetooth nearby")
+                ? L10n.t("Your phone reads your sensor and shares it with this Mac")
+                : L10n.t("Their phone shares it with this Mac after an invite")
         case .lanJuggluco:
             L10n.t("Juggluco on a phone on this Wi-Fi reads the sensor; Sukrara reads Juggluco")
         case .nightscout:
@@ -265,7 +265,7 @@ struct PersonArt: View {
 }
 
 /// The sources for `person`, one radio choice each with what it brings, grouped by what the person feels (*On this
-/// network · works offline*, *Online · needs internet*, *From another Sukrara*): setup's source step (without another
+/// network · works offline*, *Online · needs internet*, *From another Sukrara · internet or Bluetooth nearby*): setup's source step (without another
 /// Sukrara when the Mac reads it online) and Settings › Source.
 struct SourceKindChoice: View {
     let person: Person

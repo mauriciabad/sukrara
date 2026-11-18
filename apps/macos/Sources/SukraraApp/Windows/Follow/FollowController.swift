@@ -28,7 +28,7 @@ public enum FollowFailure: Error, Equatable, Sendable {
         case .keychain: L10n.t("Sukrara couldn't save the follow key in the Keychain. Try again.")
         case .noQRCode: L10n.t("No Sukrara invite QR code found in that image.")
         case .codesDiffered:
-            L10n.t("The codes didn't match, so nothing was shared. Try again next to the wearer's phone.")
+            L10n.t("The codes didn't match, so nothing was shared. Try again next to their phone.")
         }
     }
 }
@@ -56,9 +56,9 @@ extension LinkProblem {
     /// Why following stopped, in words (Settings › Following, the panel).
     var text: String {
         switch self {
-        case .keyUnreadable: L10n.t("Can't read the follower key from the Keychain")
-        case .stateDamaged: L10n.t("The follower state is damaged; stop following and join again")
-        case .keyNotRemoved: L10n.t("Can't remove the follower key from the Keychain")
+        case .keyUnreadable: L10n.t("Can't read the key to follow them from the Keychain")
+        case .stateDamaged: L10n.t("The data to follow them is damaged; stop following and join again")
+        case .keyNotRemoved: L10n.t("Can't remove the key to follow them from the Keychain")
         }
     }
 }

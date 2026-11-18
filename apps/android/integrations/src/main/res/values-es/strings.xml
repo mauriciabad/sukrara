@@ -18,10 +18,6 @@
     </plurals>
     <string name="in_export_contents">En el archivo</string>
     <string name="in_export_counting">Contando…</string>
-    <plurals name="in_export_readings">
-        <item quantity="one">%d lectura</item>
-        <item quantity="other">%d lecturas</item>
-    </plurals>
     <plurals name="in_export_treatments">
         <item quantity="one">%d tratamiento</item>
         <item quantity="other">%d tratamientos</item>
@@ -135,7 +131,7 @@
     <string name="in_status_auth">El sitio ha rechazado el token o el secreto: cámbialo</string>
     <string name="in_status_unreadable">No se puede leer el token guardado: vuelve a introducirlo</string>
     <string name="in_status_paused">En pausa: otra app (%1$s) sube datos a este sitio</string>
-    <string name="in_status_official_app_uploads">En pausa: la app Libre sube tu glucosa mientras LibreLinkUp es tu origen, y LibreView admite un solo dispositivo que sube. Sukrara toma el relevo cuando lea tu sensor.</string>
+    <string name="in_status_official_app_uploads">En pausa: la app Libre sube tu glucosa mientras LibreLinkUp es tu origen, y LibreView admite un solo dispositivo que sube. Cuando Sukrara lea tu sensor, toca Tomar el relevo para subirla desde aquí.</string>
     <string name="in_status_same_as_source">Es tu origen: la glucosa nunca vuelve a él; los tratamientos van en ambos sentidos en Ajustes › Origen</string>
     <string name="in_status_waiting">Activado · aún no se ha enviado nada</string>
     <plurals name="in_status_ok">
@@ -145,7 +141,7 @@
     <string name="in_status_failing">%1$s Se reintentará pronto.</string>
     <string name="in_status_behind">No se ha enviado nada desde %1$s. %2$s</string>
     <string name="in_status_retrying">Se reintenta solo.</string>
-    <string name="in_status_follower">Solo sube datos el móvil que lleva el sensor</string>
+    <string name="in_status_follower">Las subidas son para tu propia glucosa</string>
 
     <!-- Nightscout upload -->
     <string name="in_ns_title">Subir a Nightscout</string>
@@ -261,7 +257,7 @@
     <string name="in_bc_hold_future">la hora de la última lectura está en el futuro (revisa la hora del móvil)</string>
     <string name="in_bc_hold_lohi">las lecturas LO y HI no se envían</string>
     <string name="in_bc_hold_no_app">ninguna app permitida escucha ahora</string>
-    <string name="in_bc_follower">Desde el móvil de alguien que sigue no se envía nada: las apps que dosifican o avisan deben recibir la glucosa del sensor de quien lo lleva.</string>
+    <string name="in_bc_follower">No se envía nada con la glucosa de otra persona: las apps que dosifican o avisan deben leerla de su propio sensor.</string>
     <string name="in_bc_apps_group">Apps que escuchan</string>
     <string name="in_bc_none">Ninguna app de este móvil escucha</string>
     <string name="in_bc_none_summary">Instala la app (por ejemplo AndroidAPS o GlucoDataHandler) y vuelve</string>
@@ -284,8 +280,8 @@
     <string name="in_hc_open_summary">Ver, compartir o borrar lo escrito</string>
     <string name="in_hc_open_off">Los registros ya escritos se quedan allí hasta que los borres</string>
     <string name="in_hc_open_allow">Permitir que Sukrara escriba la glucosa en sangre</string>
-    <string name="in_hc_follower">En el móvil de alguien que sigue no se escribe nada: Health Connect guarda los datos de salud de quien usa el móvil, y la glucosa de aquí es de la persona que sigues.</string>
-    <string name="in_hc_follower_short">No en el móvil de quien sigue</string>
+    <string name="in_hc_follower">No se escribe nada con la glucosa de otra persona: Health Connect guarda tus propios datos de salud.</string>
+    <string name="in_hc_follower_short">No con la glucosa de otra persona</string>
     <string name="in_hc_unavailable">Health Connect no está disponible en este móvil (puede que esté desactivado en los ajustes de Android).</string>
     <string name="in_hc_unavailable_short">No disponible en este móvil</string>
     <string name="in_hc_footer">Al activarlo, primero entran los últimos 30 días. Cada minuto es un registro, así que nada se escribe dos veces. Las lecturas LO y HI no tienen número y se omiten. Al desactivarlo se deja de escribir; lo escrito se borra en Health Connect.</string>

@@ -263,7 +263,7 @@ class SetupViewModel(
                 readiness = readiness,
                 alerts = AlertThresholds(l.editing ?: i.answers.alerts),
                 extras = if (step == SetupStep.Ready) SetupMachine.extrasLeft(i.record, facts) else emptyList(),
-                gate = RestoreGate.evaluate(facts.ownSensorLive),
+                gate = RestoreGate.evaluate(facts.ownSensorLive, (facts.spec ?: facts.running)?.kind),
                 share = i.share,
                 restore = l.restore,
                 follow = i.follow,

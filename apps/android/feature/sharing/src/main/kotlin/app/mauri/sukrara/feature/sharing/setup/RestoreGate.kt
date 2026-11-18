@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.sharing.setup
 
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceStatus
 import java.time.Duration
 import java.time.Instant
@@ -17,9 +18,14 @@ enum class RestoreBlock {
 
 /**
  * The restore gate. Restoring moves the stream to this phone, so the phone that shared until now stops
- * reaching the followers: allowed only once this phone has the sensor. The screen always shows the warning sentence.
+ * reaching the followers: allowed only once your glucose arrives here first-hand. The screen always shows the warning
+ * sentence. [source]: where it comes from, so the checklist's first line says what is true (*Sensor running in
+ * Sukrara* only for the sensor Sukrara reads; *Readings arriving from Nightscout* for a site).
  */
-data class RestoreGate(val blocks: Set<RestoreBlock>) {
+data class RestoreGate(
+    val blocks: Set<RestoreBlock>,
+    val source: SourceKind? = null,
+) {
     val open: Boolean get() = blocks.isEmpty()
 
     companion object {
@@ -28,9 +34,13 @@ data class RestoreGate(val blocks: Set<RestoreBlock>) {
 
         private val OWN_SOURCES = SourceId.FirstHand
 
-        fun evaluate(ownSensorLive: Boolean): RestoreGate =
+        fun evaluate(
+            ownSensorLive: Boolean,
+            source: SourceKind? = null,
+        ): RestoreGate =
             RestoreGate(
                 if (ownSensorLive) emptySet() else setOf(RestoreBlock.NoLiveReading),
+                source,
             )
 
         /** Readings are arriving live from this phone's own sensor (not a follower feed), the newest ≤ 15 min old. */

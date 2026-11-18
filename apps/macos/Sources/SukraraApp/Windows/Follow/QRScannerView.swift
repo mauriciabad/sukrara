@@ -24,7 +24,7 @@ struct QRScannerView: View {
                     Viewfinder(scanner: scanner)
                     Text(
                         L10n.t(
-                            "Hold the wearer's phone up to the camera with their invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent."
+                            "Hold their phone up to the camera with its invite QR code showing (Sukrara › Share › Invite). It's read on this Mac: nothing is recorded or sent."
                         )
                     )
                     .foregroundStyle(.secondary)
@@ -33,7 +33,7 @@ struct QRScannerView: View {
                     note(
                         "camera",
                         L10n.t(
-                            "Sukrara uses the camera to read the invite QR code on the wearer's phone. It's read on this Mac: nothing is recorded or sent."
+                            "Sukrara uses the camera to read the invite QR code on their phone. It's read on this Mac: nothing is recorded or sent."
                         ))
                 case .denied:
                     note(

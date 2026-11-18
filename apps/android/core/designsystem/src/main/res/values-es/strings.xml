@@ -255,10 +255,11 @@
     <string name="ds_online_llu_not_shared">Ahora nadie comparte glucosa con esta cuenta. En la app Libre: Menú › Aplicaciones conectadas › LibreLinkUp, invita a este correo.</string>
     <string name="ds_online_llu_stopped">LibreLinkUp dejó de responder a Sukrara: Abbott lo cambió. Una actualización de Sukrara puede devolverlo.</string>
     <string name="ds_source_sukrara_yours">Sukrara en tu otro móvil</string>
-    <string name="ds_source_sukrara_yours_means">Ese móvil lee tu sensor y la comparte aquí · por internet o por Bluetooth cerca</string>
+    <string name="ds_source_sukrara_yours_means">Ese móvil lee tu sensor y la comparte aquí</string>
     <string name="ds_source_sukrara_theirs">Su Sukrara</string>
-    <string name="ds_source_sukrara_theirs_means">Su móvil la comparte con el tuyo tras una invitación · por internet o por Bluetooth cerca</string>
+    <string name="ds_source_sukrara_theirs_means">Su móvil la comparte con el tuyo tras una invitación</string>
     <string name="ds_source_means_offline">%1$s · sin internet</string>
+    <string name="ds_source_means_sukrara">%1$s · por internet o Bluetooth cerca</string>
     <string name="ds_online_connecting">Conectando…</string>
     <string name="ds_online_live">En directo · última lectura %1$s</string>
     <string name="ds_online_just_now">ahora mismo</string>

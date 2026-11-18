@@ -18,10 +18,6 @@
     </plurals>
     <string name="in_export_contents">In the file</string>
     <string name="in_export_counting">Counting…</string>
-    <plurals name="in_export_readings">
-        <item quantity="one">%d reading</item>
-        <item quantity="other">%d readings</item>
-    </plurals>
     <plurals name="in_export_treatments">
         <item quantity="one">%d treatment</item>
         <item quantity="other">%d treatments</item>
@@ -136,7 +132,7 @@
     <string name="in_status_auth">The site refused the token or secret: change it</string>
     <string name="in_status_unreadable">The saved token can\'t be read: enter it again</string>
     <string name="in_status_paused">Paused: another app (%1$s) uploads to this site</string>
-    <string name="in_status_official_app_uploads">Paused: the Libre app uploads your glucose while LibreLinkUp is your source, and LibreView takes one uploading device. Sukrara takes over once it reads your sensor.</string>
+    <string name="in_status_official_app_uploads">Paused: the Libre app uploads your glucose while LibreLinkUp is your source, and LibreView takes one uploading device. Once Sukrara reads your sensor, tap Take over to upload from here.</string>
     <string name="in_status_same_as_source">Your source: glucose never goes back to it; treatments go both ways in Settings › Source</string>
     <string name="in_status_waiting">On · nothing sent yet</string>
     <plurals name="in_status_ok">
@@ -146,7 +142,7 @@
     <string name="in_status_failing">%1$s Trying again soon.</string>
     <string name="in_status_behind">Nothing sent since %1$s. %2$s</string>
     <string name="in_status_retrying">Trying again by itself.</string>
-    <string name="in_status_follower">Only the phone that wears the sensor uploads</string>
+    <string name="in_status_follower">Uploads are for your own glucose</string>
 
     <!-- Nightscout upload -->
     <string name="in_ns_title">Nightscout upload</string>
@@ -264,7 +260,7 @@
     <string name="in_bc_hold_future">the newest reading\'s time is in the future (check the phone\'s clock)</string>
     <string name="in_bc_hold_lohi">LO and HI readings aren\'t sent</string>
     <string name="in_bc_hold_no_app">no allowed app listens right now</string>
-    <string name="in_bc_follower">Nothing is sent from a follower\'s phone: apps that dose or alert must get glucose from the wearer\'s own sensor.</string>
+    <string name="in_bc_follower">Nothing is sent for someone else\'s glucose: apps that dose or alert must read it from their own sensor.</string>
     <string name="in_bc_apps_group">Apps that listen</string>
     <string name="in_bc_none">No app on this phone listens</string>
     <string name="in_bc_none_summary">Install the app (for example AndroidAPS or GlucoDataHandler) and come back</string>
@@ -288,8 +284,8 @@
     <string name="in_hc_open_summary">See, share or delete what was written</string>
     <string name="in_hc_open_off">Records already written stay there until you delete them</string>
     <string name="in_hc_open_allow">Allow Sukrara to write blood glucose</string>
-    <string name="in_hc_follower">Nothing is written on a follower\'s phone: Health Connect holds this phone owner\'s own health records, and the glucose here is the person you follow.</string>
-    <string name="in_hc_follower_short">Not on a follower\'s phone</string>
+    <string name="in_hc_follower">Nothing is written for someone else\'s glucose: Health Connect holds your own health records.</string>
+    <string name="in_hc_follower_short">Not for someone else\'s glucose</string>
     <string name="in_hc_unavailable">Health Connect isn\'t available on this phone (it may be turned off in Android settings).</string>
     <string name="in_hc_unavailable_short">Not available on this phone</string>
     <string name="in_hc_footer">When you turn it on, the last 30 days go in first. Each minute is one record, so nothing is written twice. LO and HI readings have no number and are left out. Turning it off stops writing; delete what was written in Health Connect.</string>

@@ -260,11 +260,13 @@
     <string name="ds_online_llu_not_shared">No one shares glucose with this account now. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email.</string>
     <string name="ds_online_llu_stopped">LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it back.</string>
     <string name="ds_source_sukrara_yours">Sukrara on your other phone</string>
-    <string name="ds_source_sukrara_yours_means">That phone reads your sensor and shares it here · internet or Bluetooth nearby</string>
+    <string name="ds_source_sukrara_yours_means">That phone reads your sensor and shares it here</string>
     <string name="ds_source_sukrara_theirs">Their Sukrara</string>
-    <string name="ds_source_sukrara_theirs_means">Their phone shares it with yours after an invite · internet or Bluetooth nearby</string>
+    <string name="ds_source_sukrara_theirs_means">Their phone shares it with yours after an invite</string>
     <!-- a source that works without internet, where no group title says so (Settings › Source); %1$s = what it brings -->
     <string name="ds_source_means_offline">%1$s · works offline</string>
+    <!-- Another Sukrara's summary outside setup's group (whose title says it): %1$s = what it brings -->
+    <string name="ds_source_means_sukrara">%1$s · internet or Bluetooth nearby</string>
     <!-- the Source row's summary on the Settings overview: whose · where from -->
     <string name="ds_online_connecting">Connecting…</string>
     <string name="ds_online_live">Live · last reading %1$s</string>

@@ -138,7 +138,7 @@ public final class SettingsModel {
         case .custom: return L10n.t("This Mac's own settings, in the Alerts, Readings, Graph and Metrics panes.")
         case .default: return L10n.t("Sukrara's defaults.")
         case .wearer:
-            let who = wearer?.wearer ?? L10n.t("the wearer")
+            let who = wearer?.wearer ?? L10n.t("this person")
             if wearer != nil { return L10n.t("\(who)'s settings from their phone.") }
             guard case .following = follow.status else {
                 return L10n.t("Not following anyone, so Sukrara's defaults are used.")
@@ -152,7 +152,7 @@ public final class SettingsModel {
     public var mirrorSource: String {
         switch settingsFrom {
         case .custom: return ""
-        case .wearer where wearer != nil: return L10n.t("from \(wearer?.wearer ?? L10n.t("the wearer"))")
+        case .wearer where wearer != nil: return L10n.t("from \(wearer?.wearer ?? L10n.t("this person"))")
         case .wearer, .default: return L10n.t("Sukrara's default")
         }
     }

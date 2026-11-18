@@ -21,7 +21,7 @@ struct FollowStep: View {
                 InviteConfirmDialog(follow: follow, invite: invite)
             } else if case .following(let wearer, _, _) = follow.status {
                 // the wearer's Allow arrived by itself: the step moves on (setup's Continue goes on)
-                FollowingNow(follow: follow, wearer: wearer ?? L10n.t("the wearer"))
+                FollowingNow(follow: follow, wearer: wearer ?? L10n.t("this person"))
                     .transition(reduceMotion ? .opacity : .scale(scale: 0.9).combined(with: .opacity))
             } else if let scanner = follow.scanner, follow.canFollow {
                 QRScannerView(scanner: scanner) { follow.stopScanning() }
@@ -70,15 +70,15 @@ struct FollowStep: View {
             status: follow.status,
             wearer: Profile.shownName(follow.wearer?.name) ?? L10n.t("the person who invited you"))
         if case .waiting(let wearer, let pairing?) = follow.status {
-            PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("the wearer"), check: pairing)
+            PairingCodeView(follow: follow, wearer: wearer ?? L10n.t("this person"), check: pairing)
         } else if case .waiting(let wearer, nil) = follow.status {
-            WaitingForWearer(follow: follow, wearer: wearer ?? L10n.t("the wearer"))
+            WaitingForWearer(follow: follow, wearer: wearer ?? L10n.t("this person"))
         } else if let phone = follow.nearby {
             NearbyPairingDialog(follow: follow, phone: phone)
         }
         Text(
             L10n.t(
-                "Paste or drop the invite link from the wearer's phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
+                "Paste or drop the invite link from their phone (Sukrara › Share › Invite). It starts with https://sukrara.mauri.app/join#"
             )
         )
         .fixedSize(horizontal: false, vertical: true)
@@ -96,7 +96,7 @@ struct FollowStep: View {
                 Label(L10n.t("Scan QR Code…"), systemImage: "qrcode.viewfinder")
             }
             .disabled(!follow.canFollow)
-            .help(L10n.t("Read the invite QR code on the wearer's phone with this Mac's camera"))
+            .help(L10n.t("Read the invite QR code on their phone with this Mac's camera"))
             Button(L10n.t("Import a QR code image…")) { importing = true }
         }
         if follow.canFollow, follow.nearby == nil { MacNameField(follow: follow) }
@@ -165,7 +165,7 @@ struct MacNameField: View {
                     }
                 }
         }
-        .help(L10n.t("The wearer sees this name in their list of people who follow them"))
+        .help(L10n.t("They see this name in their list of people who follow them"))
     }
 }
 

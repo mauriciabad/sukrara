@@ -5,10 +5,10 @@
 /* this folder into Contents/Resources. LocalizationTests checks every *UsageDescription of Info.plist.in is here. */
 
 /* Asked before Bluetooth is first used: following a nearby wearer's phone */
-"NSBluetoothAlwaysUsageDescription" = "Seguir por Bluetooth la glucosa de quien lleva el sensor cerca.";
+"NSBluetoothAlwaysUsageDescription" = "Seguir por Bluetooth la glucosa de alguien desde su móvil cercano.";
 
 /* Asked before the local network is first used: Juggluco on the home network */
 "NSLocalNetworkUsageDescription" = "Leer la glucosa de Juggluco en tu red doméstica, cuando lo activas en Ajustes.";
 
 /* Asked before the camera is first used: the follow step's QR scanner */
-"NSCameraUsageDescription" = "Leer el código QR de invitación en el móvil de quien lleva el sensor, para seguirle. No se graba ni se envía nada.";
+"NSCameraUsageDescription" = "Leer el código QR de invitación de su móvil, para seguirle. No se graba ni se envía nada.";

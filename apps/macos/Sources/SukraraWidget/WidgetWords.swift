@@ -28,13 +28,13 @@ struct WidgetWords: Sendable {
             switch r {
             case .offlineBuild: return ("Not monitoring", "Development build")
             case .notFollowing: return ("Not following anyone yet", follow)
-            case .waitingApproval: return ("Waiting for the wearer to allow this Mac", "They allow it on their phone")
-            case .declined: return ("The wearer declined", follow)
+            case .waitingApproval: return ("Waiting for them to allow this Mac", "They allow it on their phone")
+            case .declined: return ("They declined", follow)
             case .inviteUsed: return ("The invite was used by another device", follow)
-            case .inviteExpired: return ("The invite expired before the wearer answered", follow)
-            case .revoked: return ("The wearer stopped sharing", follow)
+            case .inviteExpired: return ("The invite expired before they answered", follow)
+            case .revoked: return ("They stopped sharing", follow)
             case .broken: return ("Following stopped", why)
-            case .wearerSilent: return ("No readings from the wearer yet", "Their phone may be off or offline")
+            case .wearerSilent: return ("No readings from their phone yet", "Their phone may be off or offline")
             case .juggluco(.looking): return ("Looking for Juggluco", "On this network")
             case .juggluco(.firstReading): return ("Waiting for Juggluco's first reading", "On this network")
             case .juggluco: return ("No reading from Juggluco", why)
@@ -60,17 +60,17 @@ struct WidgetWords: Sendable {
             let follow = "Abre Sukrara para seguir con una invitación"
             let why = "Abre Sukrara para ver por qué"
             switch r {
-            case .offlineBuild: return ("Sin monitorizar", "Versión de desarrollo")
+            case .offlineBuild: return ("Sin vigilancia", "Versión de desarrollo")
             case .notFollowing: return ("Aún no sigues a nadie", follow)
             case .waitingApproval:
-                return ("Esperando a que quien lleva el sensor permita este Mac", "Lo permite en su móvil")
-            case .declined: return ("Quien lleva el sensor lo rechazó", follow)
+                return ("Esperando a que permita este Mac", "Lo permite en su móvil")
+            case .declined: return ("Lo ha rechazado", follow)
             case .inviteUsed: return ("Otro dispositivo usó la invitación", follow)
             case .inviteExpired: return ("La invitación caducó sin respuesta", follow)
-            case .revoked: return ("Quien lleva el sensor dejó de compartir", follow)
+            case .revoked: return ("Ha dejado de compartir", follow)
             case .broken: return ("Se dejó de seguir", why)
             case .wearerSilent:
-                return ("Aún no hay lecturas de quien lleva el sensor", "Su móvil puede estar apagado o sin conexión")
+                return ("Aún no llegan lecturas de su móvil", "Su móvil puede estar apagado o sin conexión")
             case .juggluco(.looking): return ("Buscando Juggluco", "En esta red")
             case .juggluco(.firstReading): return ("Esperando la primera lectura de Juggluco", "En esta red")
             case .juggluco: return ("Sin lecturas de Juggluco", why)

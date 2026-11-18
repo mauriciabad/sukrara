@@ -122,7 +122,10 @@ class ReplaceIdentityViewModel(
 
     val ui: StateFlow<ReplaceUi> =
         combine(local, hub.state, sharing.telling) { u, glucose, telling ->
-            u.copy(gate = RestoreGate.evaluate(RestoreGate.ownSensorLive(glucose, clock.now())), telling = telling)
+            u.copy(
+                gate = RestoreGate.evaluate(RestoreGate.ownSensorLive(glucose, clock.now()), glucose.spec?.kind),
+                telling = telling,
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), local.value)
 
     /** Cancel was tapped while the followers were told: a replace that then reports nothing done was cancelled. */

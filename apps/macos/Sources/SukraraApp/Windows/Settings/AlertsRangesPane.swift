@@ -348,7 +348,7 @@ enum QuietRuleKind: String, CaseIterable, Identifiable {
             )
         case .afterCarbs:
             L10n.t(
-                "Carbs you log keep low and falling fast alerts quiet while they work, and very low on the wearer's phone. Followers and the Mac still alert on a very low."
+                "Carbs you log keep low and falling fast alerts quiet while they work, and very low too on the phone that gets your glucose. A phone or Mac that follows you still alerts on a very low."
             )
         case .fallingHigh:
             L10n.t(
@@ -356,7 +356,7 @@ enum QuietRuleKind: String, CaseIterable, Identifiable {
             )
         case .risingLow:
             L10n.t(
-                "While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the wearer's phone, never its first alert."
+                "While the last readings show glucose clearly rising back into range in time, low alerts wait. They come at once if it stalls or the readings stop. A very low waits only on the phone that gets your glucose, never its first alert."
             )
         }
     }
@@ -469,7 +469,7 @@ struct AlertDetails: View {
                 } footer: {
                     if readOnly {
                         Text(
-                            L10n.t("When it alerts follows the wearer's rules. Choose Custom to change it on this Mac.")
+                            L10n.t("When it alerts follows their rules. Choose Custom to change it on this Mac.")
                         )
                         .formFooter()
                     }

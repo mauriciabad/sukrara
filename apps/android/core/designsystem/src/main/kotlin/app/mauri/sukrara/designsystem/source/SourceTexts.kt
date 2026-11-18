@@ -62,8 +62,9 @@ fun SourceSpec.meansRes(): Int =
     }
 
 /**
- * What [spec] brings, in words: [meansRes], plus *works offline* when it does and no group title above it says so
- * ([grouped]: setup's picker groups the offline sources under *On this phone · works offline*).
+ * What [spec] brings, in words: [meansRes], plus what it needs when no group title above it says so ([grouped]:
+ * setup's picker groups the sources under *On this phone · works offline* and *From another Sukrara · internet or
+ * Bluetooth nearby*, so the rows don't say it twice): *works offline*, *internet or Bluetooth nearby*.
  */
 @Composable
 fun sourceMeans(
@@ -71,7 +72,12 @@ fun sourceMeans(
     grouped: Boolean = false,
 ): String {
     val means = stringResource(spec.meansRes())
-    return if (spec.kind.offline && !grouped) stringResource(R.string.ds_source_means_offline, means) else means
+    return when {
+        grouped -> means
+        spec.kind.offline -> stringResource(R.string.ds_source_means_offline, means)
+        spec.kind == SourceKind.Sukrara -> stringResource(R.string.ds_source_means_sukrara, means)
+        else -> means
+    }
 }
 
 /** *Yours* / *Someone else's*. */

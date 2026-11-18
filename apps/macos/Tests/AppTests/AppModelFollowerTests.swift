@@ -26,7 +26,7 @@ import Testing
         snapshot.link = .following(wearer: "Ana", canWrite: false)
         model.apply(snapshot)
         // #40: the follow is the source's start: no data rings 20 min later if no reading ever comes
-        #expect(model.notMonitoringReason == "Waiting for the first reading from the wearer")
+        #expect(model.notMonitoringReason == "Waiting for their first reading")
         #expect(wake.at == clock.now.addingTimeInterval(20 * 60))
         snapshot.readings = [Reading(t: clock.now, mgdl: 112, sensorRate: 0)]
         model.apply(snapshot)
@@ -87,11 +87,12 @@ import Testing
         // #109: the panel says what is going on, not "Not monitoring"
         #expect(
             model.notMonitoringReason
-                == "Can't read the follower key from the Keychain. Retrying; alerting on the last data.")
+                == "Can't read the key to follow them from the Keychain. Retrying; alerting on the last data.")
         #expect(notifier.monitoring == [nil])  // still monitoring: no "stopped" note
         #expect(model.alertingOnLastData)  // the card stays under the line
         #expect(AddTreatmentAvailability(model) == .keyUnreadable)
-        #expect(AddTreatmentAvailability(model).reason == "Can't add treatments until the follower key can be read")
+        #expect(
+            AddTreatmentAvailability(model).reason == "Can't add treatments until the key to follow them can be read")
     }
 
     @Test func anUnreadableKeychainWithNothingStoredIsNotMonitoringAndRetrying() {
@@ -102,7 +103,8 @@ import Testing
         snapshot.keychainUnreadable = true
         model.apply(snapshot)
         #expect(
-            model.notMonitoringReason == "Not monitoring: can't read the follower key from the Keychain. Retrying…")
+            model.notMonitoringReason
+                == "Not monitoring: can't read the key to follow them from the Keychain. Retrying…")
     }
 
     /// #161: a wearer who replaces their identity tells this Mac first (the revoked notice): the panel says the wearer
@@ -121,7 +123,7 @@ import Testing
         model.apply(snapshot)
         #expect(alerts.nextWake == nil && !alerts.mirroring)
         #expect(model.noDataReason == .revoked && NoDataReason.revoked.action == .follow)
-        #expect(notifier.monitoring.last == .some("Not monitoring: the wearer stopped sharing"))
+        #expect(notifier.monitoring.last == .some("Not monitoring: they stopped sharing"))
         clock.advance(by: 3 * 3600)
         alerts.tick()
         model.apply(snapshot)
@@ -142,7 +144,7 @@ import Testing
         #expect(notifier.monitoring == [nil])  // monitoring started: nothing to show (a stale note goes)
         snapshot.link = .revoked
         model.apply(snapshot)
-        #expect(notifier.monitoring == [nil, "Not monitoring: the wearer stopped sharing"])
+        #expect(notifier.monitoring == [nil, "Not monitoring: they stopped sharing"])
         model.apply(snapshot)  // the same state again: no second note
         #expect(notifier.monitoring.count == 2)
         snapshot.link = .following(wearer: "Ana", canWrite: false)
