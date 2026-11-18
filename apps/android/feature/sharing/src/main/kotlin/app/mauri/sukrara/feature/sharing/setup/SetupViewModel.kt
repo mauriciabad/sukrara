@@ -155,6 +155,11 @@ class SetupViewModel(
     private val m: SetupModule,
     private val openedOn: SetupStep? = null,
     private val saved: SavedStateHandle = SavedStateHandle(),
+    /**
+     * Opened on the source step to confirm this source at once (the new-sensor flow while someone else's glucose
+     * shows: your own sensor is a change of whose glucose, asked with its history first). Once per opening.
+     */
+    review: SourceSpec? = null,
 ) : ViewModel() {
     /** Walk, Finish or Visit ([Mode]); null until setup opened from home has read what is left. */
     private val mode = saved.getMutableStateFlow(MODE, if (openedOn != null) Mode.Visit.name else null)
@@ -281,6 +286,11 @@ class SetupViewModel(
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     init {
+        if (review != null && saved.get<Boolean>(REVIEWED) != true) {
+            saved[REVIEWED] = true
+            person.value = review.person.id
+            reviewSource(review)
+        }
         // opened from home: the walk where it stopped, or (the walk is over) the first skipped step that still matters
         if (mode.value == null) {
             viewModelScope.launch {
@@ -925,10 +935,12 @@ class SetupViewModel(
         private const val ROOTED = "setup.rooted"
         private const val PICKED = "setup.rootPicked"
         private const val PERSON = "setup.person"
+        private const val REVIEWED = "setup.reviewed"
 
         fun factory(
             module: SetupModule,
             startAt: SetupStep? = null,
-        ) = viewModelFactory { initializer { SetupViewModel(module, startAt, createSavedStateHandle()) } }
+            review: SourceSpec? = null,
+        ) = viewModelFactory { initializer { SetupViewModel(module, startAt, createSavedStateHandle(), review) } }
     }
 }

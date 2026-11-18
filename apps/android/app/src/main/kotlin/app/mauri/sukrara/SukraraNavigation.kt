@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -41,6 +42,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.model.NavTargets
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.findActivity
 import app.mauri.sukrara.designsystem.motion.ScreenHost
@@ -155,6 +157,11 @@ data object ReplaceIdentityRoute : NavKey
 @Serializable
 data class SetupStepRoute(
     val step: SetupStep,
+    /**
+     * The source step confirming your own sensor at once: the new-sensor flow opened while someone else's glucose
+     * shows (a change of whose glucose, asked with its history first: docs/44 Appendix G finding 11).
+     */
+    val yourSensor: Boolean = false,
 ) : NavKey
 
 @Serializable
@@ -651,7 +658,15 @@ fun SukraraNavigation(
                     }
                     entry<SetupStepRoute> { key ->
                         SetupScreen(
-                            viewModel = viewModel(factory = SetupViewModel.factory(graph.setup, startAt = key.step)),
+                            viewModel =
+                                viewModel(
+                                    factory =
+                                        SetupViewModel.factory(
+                                            graph.setup,
+                                            startAt = key.step,
+                                            review = SourceSpec.YourSensor.takeIf { key.yourSensor },
+                                        ),
+                                ),
                             onOpenSensorSetup = { backStack.add(NewSensorKey) },
                             thresholdRows = { settings, onThreshold -> AlertThresholdRows(settings, onThreshold) },
                             onExportHistory = { backStack.push(ExportAllRoute) },
@@ -664,12 +679,30 @@ fun SukraraNavigation(
                         )
                     }
                     entry<NewSensorKey> {
-                        BareScreen {
-                            NewSensorRoute(
-                                viewModel = viewModel(factory = graph.sensorUi.newSensorViewModels),
-                                onSignIn = { backStack.add(LibreViewSignInKey) },
-                                onDone = { backStack.remove(NewSensorKey) },
-                            )
+                        // a sensor paired here is your glucose: while someone else's shows, that change of whose glucose
+                        // is asked first with what it deletes (setup's source step), never made by the pairing itself
+                        val theirs by produceState<Boolean?>(null) { value = graph.spec.first()?.person == Person.Theirs }
+                        when (theirs) {
+                            true -> {
+                                LaunchedEffect(Unit) {
+                                    backStack.remove(NewSensorKey)
+                                    backStack.push(SetupStepRoute(SetupStep.Source, yourSensor = true))
+                                }
+                            }
+
+                            false -> {
+                                BareScreen {
+                                    NewSensorRoute(
+                                        viewModel = viewModel(factory = graph.sensorUi.newSensorViewModels),
+                                        onSignIn = { backStack.add(LibreViewSignInKey) },
+                                        onDone = { backStack.remove(NewSensorKey) },
+                                    )
+                                }
+                            }
+
+                            null -> {
+                                Unit
+                            }
                         }
                     }
                     entry<LibreViewSignInKey> {

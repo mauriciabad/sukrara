@@ -128,7 +128,8 @@ class SetupViewModelTest {
     private fun vm(
         startAt: SetupStep? = null,
         saved: SavedStateHandle = SavedStateHandle(),
-    ) = SetupViewModel(module, startAt, saved)
+        review: SourceSpec? = null,
+    ) = SetupViewModel(module, startAt, saved, review)
 
     /** The same screen after a process death: a new view model over what the old one saved. */
     private fun SavedStateHandle.restored() = SavedStateHandle(keys().associateWith { get<Any?>(it) })
@@ -597,6 +598,36 @@ class SetupViewModelTest {
             // never Ana's live reading taken as yours: the Connect step shows, and LibreLinkUp picks again
             assertEquals(SetupStep.Sensor, vm.ui.first { it?.step != SetupStep.Source }!!.step)
             assertEquals(listOf("reset", "source:yours:libreLinkUp", "start", "llu:recheck"), events.take(4))
+        }
+
+    @Test
+    fun `pairing a sensor while someone else's glucose shows asks to delete their history first, Appendix G finding 11`() =
+        runTest {
+            val theirs = SourceSpec(Person.Theirs, SourceKind.PhoneApp)
+            roles.role.value = theirs
+            record.update { SetupRecord(completed = SetupStep.entries.toSet()) }
+            val loss = HistoryLoss(1440, 4, Instant.parse("2026-11-17T08:00:00Z"), Instant.parse("2026-11-18T07:00:00Z"))
+            roles.loss = loss
+            val saved = SavedStateHandle()
+            val vm = vm(startAt = SetupStep.Source, saved = saved, review = SourceSpec.YourSensor)
+            vm.ui.launchIn(backgroundScope)
+            val asked = vm.ui.first { it?.sourceChange != null }!!
+            assertEquals(SourceChange(SourceSpec.YourSensor, loss, replaces = theirs), asked.sourceChange)
+            assertEquals(Person.Yours, asked.person)
+            // Cancel: still theirs, nothing deleted; a rotation doesn't ask again by itself
+            vm.cancelSource()
+            vm.ui.first { it?.sourceChange == null }
+            assertEquals(theirs, roles.role.value)
+            assertTrue(events.isEmpty())
+            val again = vm(startAt = SetupStep.Source, saved = saved.restored(), review = SourceSpec.YourSensor)
+            again.ui.launchIn(backgroundScope)
+            assertNull(again.ui.first { it != null }!!.sourceChange)
+            // Delete and continue: yours, then the sensor step (the pairing)
+            vm.reviewSource(SourceSpec.YourSensor)
+            vm.ui.first { it?.sourceChange != null }
+            vm.chooseSource(SourceSpec.YourSensor)
+            assertEquals(SourceSpec.YourSensor, roles.role.value)
+            assertEquals(SetupStep.Sensor, vm.ui.first { it?.step == SetupStep.Sensor }!!.step)
         }
 
     @Test

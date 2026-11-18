@@ -322,12 +322,18 @@ class AppGraph(
     }
 
     /**
-     * The sensor screens chose another source (pairing a sensor, *Use Juggluco*): stored for the same person when it can
-     * bring that person's glucose, else as yours (setup's rules: a change of whose glucose deletes the other's history).
+     * The sensor screens chose another source (pairing a sensor, *Use Juggluco*), stored for the same person. A kind that
+     * can't bring that person's glucose would change whose glucose and delete their history: never done here, unasked
+     * (the new-sensor flow opens setup's source step for that, with *Delete the earlier history?*: Appendix G finding 11).
      */
     private suspend fun setSourceKind(kind: SourceKind) {
         val person = spec.first()?.person ?: Person.Yours
-        setup.sources.set(SourceSpec.of(person, kind) ?: SourceSpec(Person.Yours, kind))
+        val next = SourceSpec.of(person, kind)
+        if (next == null) {
+            data.diagLog.log("source", "kept: ${kind.id} can't bring ${person.id} glucose")
+            return
+        }
+        setup.sources.set(next)
     }
 
     /** The Nightscout source's site and treatments switch, kept in [source] next to the answer. */
