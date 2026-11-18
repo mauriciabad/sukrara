@@ -189,8 +189,9 @@ data class GlucoseMetrics(
 
     companion object {
         /**
-         * A metric beside the value is drawn only when its window has at least this much data (the card's rule; Settings
-         * › Metrics says why a metric under it isn't on the card).
+         * A metric beside the value is drawn only when its window has at least this much data: the card's
+         * `GlucoseCard.MIN_COVERAGE` (kept apart so System UI's hooked code stays the same; `MetricNeedTest` pins them
+         * equal). Settings › Metrics says why a metric under it isn't on the card.
          */
         const val SLOT_MIN_COVERAGE = 0.25
 

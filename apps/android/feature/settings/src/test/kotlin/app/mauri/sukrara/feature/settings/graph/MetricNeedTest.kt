@@ -39,6 +39,8 @@ class MetricNeedTest {
         assertEquals(12.0, need.haveS / 3600.0, 0.5)
         assertEquals(42 * 3600L, need.needS)
         assertNull(MetricNeed.of(0.25, week))
+        // the card's own rule
+        assertEquals(app.mauri.sukrara.graph.GlucoseCard.MIN_COVERAGE, app.mauri.sukrara.graph.stats.GlucoseMetrics.SLOT_MIN_COVERAGE, 0.0)
         assertNull(MetricNeed.of(null, week))
     }
 
