@@ -35,7 +35,7 @@ class SourceStoreTest {
     }
 
     @Test fun anUnknownIdOrAPairNoSourceOffersIsNoAnswer() {
-        assertNull(SourceRecord("yours", "libreLinkUp").spec)
+        assertNull(SourceRecord("yours", "dexcomShare").spec)
         assertNull(SourceRecord("theirs", "sensor").spec)
         assertNull(SourceRecord("someone", "sensor").spec)
     }

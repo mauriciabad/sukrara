@@ -517,7 +517,15 @@ class LibreViewUploader(
         if (!s.on || r?.owner != true) return
         // LibreView takes one uploading device per account and the Libre app is it (LibreLinkUp is the source): nothing
         // goes, treatments neither, until Sukrara reads the sensor (docs/44 "Data" rule 6)
-        if (r.officialAppUploads) return
+        if (r.officialAppUploads) {
+            if (!store.data.first().pausedForLibreApp) store.update { it.copy(pausedForLibreApp = true) }
+            return
+        }
+        if (store.data.first().pausedForLibreApp) {
+            // back from LibreLinkUp (the sensor taken over): a fresh sign-in finds whether the Libre app still uploads
+            dropToken()
+            store.update { it.copy(pausedForLibreApp = false) }
+        }
         // no usable account: the page asks to sign in (again)
         if (login.current() !is LibreViewAccountState.SignedIn) return
         var state = ensureDevice()

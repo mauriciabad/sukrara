@@ -70,6 +70,11 @@ data class LvState(
     val glucoseUpToS: Long = 0,
     /** Why glucose isn't going up now (a sensor registration LibreView didn't accept); only glucose going up clears it. */
     val glucoseError: Trouble? = null,
+    /**
+     * The upload paused while the Libre app uploaded (LibreLinkUp was the source): the next cycle signs in afresh, so
+     * the Libre app as the account's uploading device shows as *Take over* instead of uploads LibreView would ignore.
+     */
+    val pausedForLibreApp: Boolean = false,
 )
 
 /**
