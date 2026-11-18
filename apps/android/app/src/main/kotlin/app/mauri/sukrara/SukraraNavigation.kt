@@ -461,7 +461,10 @@ fun SukraraNavigation(
     val newSensorShown by rememberUpdatedState(onNewSensorShow)
     LaunchedEffect(openNewSensor) {
         if (openNewSensor) {
-            if (backStack.last() != NewSensorKey) backStack.add(NewSensorKey)
+            // an online source's sensor is started elsewhere: Settings › Sensor says where, or takes its start
+            // (*Sensor ended*'s *Replace sensor*, docs/44 decision 10)
+            val key = if (graph.spec.first()?.online == true) SensorSettingsKey else NewSensorKey
+            if (backStack.last() != key) backStack.add(key)
             newSensorShown()
         }
     }

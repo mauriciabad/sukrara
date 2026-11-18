@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -49,6 +50,8 @@ class LibreLinkUpSourceActions(
     /** *Read the sensor in Sukrara*: the new-sensor flow, which takes the running Libre 3 over with a tap. */
     val takeOver: () -> Unit = {},
     val signOut: () -> Unit = {},
+    /** Settings › Sensor: the sensor's start, how long it lasts (LibreLinkUp doesn't say: 14 or 15 days) and its end. */
+    val openSensor: () -> Unit = {},
 )
 
 /**
@@ -158,9 +161,18 @@ fun LibreLinkUpSourceRows(
             }
         }
         view.sensor?.let { s ->
-            InfoRow(
+            // how long it lasts is the person's choice (LibreLinkUp doesn't say): the Sensor page has it
+            val days = s.wearMin / (24 * 60)
+            NavigationRow(
                 stringResource(R.string.in_llu_sensor),
-                summary = stringResource(R.string.in_llu_sensor_summary, since(s.start, now), s.id),
+                actions.openSensor,
+                summary =
+                    stringResource(
+                        R.string.in_llu_sensor_summary,
+                        since(s.start, now),
+                        pluralStringResource(DsR.plurals.ds_days, days, days),
+                        s.id,
+                    ),
                 icon = DsR.drawable.ds_ic_calendar_month,
             )
         }

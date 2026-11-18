@@ -45,6 +45,8 @@ class SensorModule(
     knownStart: suspend () -> Long? = { null },
     /** A debug build's fake LibreLinkUp for the LibreView sign-in (scheme to host:port), null = Abbott's (release). */
     libreViewServer: Pair<String, String>? = null,
+    /** How long a sensor read through Juggluco lasts (the person's `source.jugglucoWear`, minutes; 0 = the default). */
+    jugglucoWearMin: () -> Int = { 0 },
 ) {
     companion object {
         private const val TAG = "Sukrara.sensor"
@@ -69,7 +71,7 @@ class SensorModule(
             security = Libre3Crypto.takeIf { it.isAvailable },
             connector = AndroidGatt(app),
             scanner = AndroidScanner(app),
-            juggluco = { JugglucoSource(http, secret = jugglucoSecret::read, zone = { clock.zone }) },
+            juggluco = { JugglucoSource(http, secret = jugglucoSecret::read, wearMin = jugglucoWearMin, zone = { clock.zone }) },
             clock = clock,
             dispatcher = dispatchers.default.limitedParallelism(1),
             io = dispatchers.io,

@@ -10,6 +10,7 @@ import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
+import app.mauri.sukrara.feature.settings.sensor.LifeRows
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
 import app.mauri.sukrara.feature.settings.sensor.SensorFamily
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsPort
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.update
@@ -131,6 +133,14 @@ class SensorSettingsBridge(
     private val resetMonitoring: suspend () -> Unit,
     /** The reading source may have changed: the monitoring service picks it again (nothing to read stops it). */
     private val sourceChanged: () -> Unit,
+    /** THE sensor state (the hub's): an online source's sensor, which the sensor module doesn't read. */
+    private val hubSensor: Flow<SensorState> = flowOf(SensorState.None),
+    /** The sensor's life where the source doesn't say all of it (docs/44 decision 10); null = it says it. */
+    private val life: Flow<LifeRows?> = flowOf(null),
+    /** Stores THE source's wear length (minutes). */
+    private val saveWear: suspend (Int) -> Unit = {},
+    /** Stores your sensor's start set by hand (null = none). */
+    private val saveStart: suspend (Instant?) -> Unit = {},
 ) : SensorSettingsPort {
     /** Bumped when the page comes back (Android's app page may have allowed or blocked tag intents meanwhile). */
     private val recheck = MutableStateFlow(0)
@@ -149,11 +159,12 @@ class SensorSettingsBridge(
                 Triple(info, OpenOnScan(tapOn, tapOn && sensors.tapBlocked()).takeIf { sensors.tapAvailable }, paired)
             },
             combine(sensors.account, sensors.receiverId, sensors.jugglucoSecretSet.onStart { sensors.refreshJugglucoSecret() }, ::Triple),
-            service,
-        ) { (juggluco, sensor, detail), (info, openOnScan, paired), (account, receiverId, secretSet), service ->
+            combine(service, spec, hubSensor, life, ::Quad),
+        ) { (juggluco, sensor, detail), (info, openOnScan, paired), (account, receiverId, secretSet), (service, running, hub, life) ->
             SensorSettingsState(
                 source = if (juggluco) SourceChoice.Juggluco else SourceChoice.Libre3Direct,
-                state = sensor,
+                // an online source's sensor is the hub's: the sensor module reads nothing then
+                state = if (running?.online == true) hub else sensor,
                 sensor = info?.let { SensorSummary(it.serial, Instant.ofEpochSecond(it.startEpoch), Instant.ofEpochSecond(it.endEpoch)) },
                 account = account.email?.let { LibreViewSummary(it, receiverId, account is LibreViewAccountState.SignInAgain) },
                 link = linkOf(detail),
@@ -162,6 +173,8 @@ class SensorSettingsBridge(
                 openOnScan = openOnScan,
                 stopped = stopped(detail, service, somethingToRead = paired || juggluco),
                 jugglucoSecret = secretSet,
+                spec = running,
+                life = life,
             )
         }
 
@@ -242,6 +255,14 @@ class SensorSettingsBridge(
 
     override fun setOpenOnScan(on: Boolean) = sensors.setTap(on)
 
+    override fun setWear(minutes: Int) {
+        scope.launch { saveWear(minutes) }
+    }
+
+    override fun setStart(start: Instant?) {
+        scope.launch { saveStart(start) }
+    }
+
     override fun recheck() {
         recheck.update { it + 1 }
     }
@@ -273,3 +294,11 @@ class SensorSettingsBridge(
         }
     }
 }
+
+/** Four values at once (Kotlin has no Quadruple). */
+private data class Quad<A, B, C, D>(
+    val a: A,
+    val b: B,
+    val c: C,
+    val d: D,
+)

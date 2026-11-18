@@ -976,4 +976,35 @@
     <string name="st_source_llu">LibreLinkUp</string>
     <string name="st_source_llu_account">LibreLinkUp account</string>
     <string name="st_source_llu_whose">LibreLinkUp person</string>
+    <string name="st_sensor_status_running">Running</string>
+    <string name="st_sensor_status_unknown">Start not known</string>
+    <string name="st_sensor_start_set">Set start</string>
+    <string name="st_sensor_ended_manual">This sensor has ended. Applied a new one? Set when it started.</string>
+    <string name="st_sensor_ended_elsewhere">This sensor has ended. Start a new one in its app: Sukrara gets it from %1$s.</string>
+    <string name="st_sensor_start_unknown_text">%1$s doesn\'t say when this sensor started. Set it to get reminders before it ends.</string>
+    <string name="st_sensor_start_none">Not known</string>
+    <string name="st_sensor_start_by_you">%1$s · set by you</string>
+    <string name="st_sensor_start_from">%1$s · from %2$s</string>
+    <string name="st_sensor_lasts">Lasts</string>
+    <string name="st_sensor_lasts_title">How long a sensor lasts</string>
+    <string name="st_sensor_lasts_live">Each sensor lasts %1$s</string>
+    <string name="st_sensor_lasts_10">Dexcom G7, G6</string>
+    <string name="st_sensor_lasts_14">FreeStyle Libre 3, Libre 2</string>
+    <string name="st_sensor_lasts_15">Libre 3 Plus, Libre 2 Plus, Dexcom G7 15 Day</string>
+    <string name="st_sensor_lasts_14_libre">FreeStyle Libre 3 or Libre 2</string>
+    <string name="st_sensor_lasts_15_libre">Libre 3 Plus or Libre 2 Plus</string>
+    <string name="st_sensor_life_footer">%1$s doesn\'t say how long a sensor lasts. Too short a length ends it early, and then a gap in readings doesn\'t ring.</string>
+    <string name="st_sensor_start_title">When did this sensor start?</string>
+    <string name="st_sensor_start_time">Time</string>
+    <string name="st_sensor_start_today">Today</string>
+    <string name="st_sensor_start_yesterday">Yesterday</string>
+    <string name="st_sensor_start_future">Later than now</string>
+    <string name="st_sensor_start_ended">A sensor started then ended on %1$s</string>
+    <string name="st_sensor_start_ends">Ends %1$s</string>
+    <string name="st_sensor_start_save">Save</string>
+    <string name="st_sensor_start_remove">Remove</string>
+    <plurals name="st_sensor_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
 </resources>

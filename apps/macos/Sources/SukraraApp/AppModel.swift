@@ -124,6 +124,15 @@ public final class AppModel {
             onLibreLinkUp?(libreLinkUpSnapshot)
         }
     }
+    /// Whose glucose, each source's wear length and the manual start (Settings › Source's *Sensor*): the sensor life
+    /// of a source that doesn't say all of it (`SensorLives`). A change re-applies the sensor at once.
+    var sensorLifeSettings = SensorLifeSettings() {
+        didSet {
+            guard sensorLifeSettings != oldValue else { return }
+            applySensor()
+            feedWidget()
+        }
+    }
     /// The last follower snapshot, applied again when the source changes.
     @ObservationIgnored private var lastSnapshot: FollowerSnapshot?
     @ObservationIgnored private var lanTask: Task<Void, Never>?
@@ -374,10 +383,28 @@ public final class AppModel {
     /// the alert rules' sensor window (no data stays quiet once it ended). Your glucose or someone else's alike.
     private var monitoredSensor: WearerSensor? {
         if followMonitoring { return followSensor }
-        if lanMonitoring { return lanSnapshot.sensor }
-        if nightscoutMonitoring { return nightscoutSnapshot.sensor }
-        // LibreLinkUp's serial and start, with the default warm-up and wear (it doesn't say the length)
-        return libreLinkUpMonitoring ? libreLinkUpSnapshot.sensor?.sensor : nil
+        return sourceSensor?.wearer
+    }
+
+    /// The sensor of an online or network source by THE rule (contracts/sources/sensor-life.json): the start it said
+    /// (Juggluco's, the site's Sensor Start, LibreLinkUp's serial and start) or, for a Nightscout site of your glucose,
+    /// the manual start, the newer; with the source's wear length. Nil = unknown, or not one of those sources.
+    var sourceSensor: SensorLives.Sensor? {
+        let kind: SourceKind
+        let said: SensorLives.Said?
+        if lanMonitoring {
+            kind = .lanJuggluco
+            said = lanSnapshot.sensor.map { SensorLives.Said(id: "\($0.start)", start: $0.start) }
+        } else if nightscoutMonitoring {
+            kind = .nightscout
+            said = nightscoutSnapshot.sensor.map { SensorLives.Said(id: "\($0.start)", start: $0.start) }
+        } else if libreLinkUpMonitoring {
+            kind = .libreLinkUp
+            said = libreLinkUpSnapshot.sensor.map { SensorLives.Said(id: $0.serial, start: $0.start) }
+        } else {
+            return nil
+        }
+        return sensorLifeSettings.life(kind, said: said, now: clock.now.timeIntervalSince1970)
     }
 
     /// The treatments of the source: the followed wearer's log, or this Mac's own with Nightscout (the site's

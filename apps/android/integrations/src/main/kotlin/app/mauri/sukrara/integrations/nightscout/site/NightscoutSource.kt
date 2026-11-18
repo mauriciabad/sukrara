@@ -5,10 +5,12 @@ package app.mauri.sukrara.integrations.nightscout.site
 
 import app.mauri.sukrara.core.model.CallOutcome
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.LifeSettings
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -36,6 +38,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -165,6 +168,8 @@ class NightscoutSource(
     private val http: OkHttpClient,
     private val clock: Clock,
     private val io: CoroutineDispatcher,
+    /** The person's side of the sensor's life: the wear length, the manual start, whose glucose ([NsSensorLife.effective]). */
+    private val life: Flow<LifeSettings> = flowOf(LifeSettings()),
     private val log: (String) -> Unit = {},
 ) : ReadingSource {
     private val statusFlow = MutableStateFlow<SourceStatus>(SourceStatus.NotStarted)
@@ -178,10 +183,23 @@ class NightscoutSource(
     private val sensorFlow = MutableStateFlow<SensorState>(SensorState.Active(endsAt = null))
     override val sensor: StateFlow<SensorState> = sensorFlow.asStateFlow()
 
-    /** The sensor the site says started (Sensor end in calendar, followers' sensor life), null = none known. */
-    val sensorLife: Flow<NsSensor?> = store.data.map { it.sensorLife }.distinctUntilChanged()
+    /**
+     * The sensor's life (Sensor end in calendar, followers' sensor life, Settings › Sensor): the site's *Sensor Start* or
+     * the manual start, with the wear length ([NsSensorLife.effective]); null = none known.
+     */
+    val sensorLife: Flow<NsSensor?> =
+        combine(store.data, life) { st, lf -> effective(st.sensorLife, lf, clock.now()) }.distinctUntilChanged()
 
+    /** The sensor the site itself last said (its *Sensor Start*), null = none. */
     @Volatile private var knownSensor: NsSensor? = null
+
+    @Volatile private var lifeNow = LifeSettings()
+
+    private fun effective(
+        said: NsSensor?,
+        lf: LifeSettings = lifeNow,
+        now: Instant = clock.now(),
+    ) = NsSensorLife.effective(SourceKind.Nightscout, said, lf, now)
 
     private val live = MutableStateFlow(Live())
 
@@ -199,16 +217,17 @@ class NightscoutSource(
 
     /** What the pages show: the settings, the saved credential, the last call and the treatments' state. */
     val view: Flow<NsSourceView> =
-        combine(config.data, store.data, live, account.saved, ticker()) { s, st, l, saved, now ->
+        combine(config.data, combine(store.data, life, ::Pair), live, account.saved, ticker()) { s, (st, lf), l, saved, now ->
             val site = NightscoutSite.parse(s.url)
+            val sensor = effective(st.sensorLife, lf, now)
             NsSourceView(
                 root = site.root,
                 host = site.host,
                 configured = s.url.isNotEmpty() && saved != NightscoutAccount.Saved.None,
                 credentialUnreadable = saved == NightscoutAccount.Saved.Unreadable,
-                health = health(l, now, st.sensorLife),
+                health = health(l, now, sensor),
                 newest = l.newest,
-                readyAt = st.sensorLife?.warmupEnd,
+                readyAt = sensor?.warmupEnd,
                 treatments =
                     when {
                         !s.treatments -> NsTreatments.Off
@@ -238,7 +257,15 @@ class NightscoutSource(
         channelFlow {
             live.value = Live(running = true, online = network.online())
             knownSensor = store.data.first().sensorLife
+            lifeNow = life.first()
             statusFlow.value = SourceStatus.Connecting
+            // a wear length or a start set on the Sensor page applies at once
+            launch {
+                life.collect {
+                    lifeNow = it
+                    publish()
+                }
+            }
             launch { network.back.collect { kick() } }
             // a treatment logged here goes up within seconds, not at the next reading
             launch { treatments.since(clock.now().minus(SYNC_WINDOW)).drop(1).collect { kick() } }
@@ -302,8 +329,9 @@ class NightscoutSource(
     private fun publish() {
         val l = live.value.copy(online = network.online())
         live.value = l
-        sensorFlow.value = knownSensor?.state(l.newest, clock.now()) ?: SensorState.Active(endsAt = null)
-        val h = health(l, clock.now(), knownSensor)
+        val sensor = effective(knownSensor)
+        sensorFlow.value = sensor?.state(l.newest, clock.now()) ?: SensorState.Active(endsAt = null)
+        val h = health(l, clock.now(), sensor)
         val since = l.newest ?: clock.now()
         statusFlow.value =
             when {

@@ -5,8 +5,10 @@ package app.mauri.sukrara.integrations.librelinkup
 
 import app.mauri.sukrara.core.data.libreview.LibreLinkUp
 import app.mauri.sukrara.core.model.CallOutcome
+import app.mauri.sukrara.core.model.LifeSettings
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.SourceStatus
@@ -124,9 +126,12 @@ class LibreLinkUpSourceTest {
 
     private val host get() = "127.0.0.1:${server.port}"
 
+    /** The person's side of the sensor's life (the app's source file): LibreLinkUp says the start, not the length. */
+    private val life = MutableStateFlow(LifeSettings(Person.Yours))
+
     private fun source(): LibreLinkUpSource {
         val api = LibreLinkUp(OkHttpClient(), "http", host) { host }
-        return LibreLinkUpSource(config, LluAccount(secure, api, clock), state, NetworkState.Always, clock, Dispatchers.IO)
+        return LibreLinkUpSource(config, LluAccount(secure, api, clock), state, NetworkState.Always, clock, Dispatchers.IO, life)
     }
 
     private fun logins() = requests.count { it.path == LibreLinkUp.LOGIN }
@@ -368,6 +373,26 @@ class LibreLinkUpSourceTest {
             val life = withTimeout(10_000) { s.sensorLife.first { it != null } }!!
             assertEquals("0D00ABC123", life.id)
             assertEquals(now.minusSeconds(3 * 86400), life.start)
+            // the default length: 15 days (a wrong 14 would end a working 3 Plus a day early)
+            assertEquals(life.start.plusSeconds(15 * 86400L), life.end)
+        }
+
+    @Test
+    fun `the wear length chosen applies to LibreLinkUp's sensor at once, a manual start never`() =
+        runBlocking {
+            source().connect("owner@example.com", "pw")
+            val s = source()
+            val job = launch(Dispatchers.IO) { s.readings.collect { } }
+            val start = withTimeout(10_000) { s.sensorLife.first { it != null } }!!.start
+            // 14 days (a Libre 3): the end and the hub's state move at once
+            life.value = LifeSettings(Person.Yours, 14 * 1440)
+            assertEquals(start.plusSeconds(14 * 86400L), withTimeout(10_000) { s.sensorLife.first { it?.wearMin == 14 * 1440 } }!!.end)
+            val active = withTimeout(10_000) { s.sensor.first { (it as? SensorState.Active)?.endsAt == start.plusSeconds(14 * 86400L) } }
+            assertEquals("0D00ABC123", (active as SensorState.Active).id)
+            // LibreLinkUp always says the start: a manual one (it can't be set here) is never used
+            life.value = LifeSettings(Person.Yours, 14 * 1440, now.minusSeconds(60).epochSecond)
+            assertEquals(start, s.sensorLife.first()!!.start)
+            job.cancel()
         }
 
     @Test

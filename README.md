@@ -49,7 +49,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Can read glucose data from Juggluco.
 - Can read your (or someone else's) Nightscout site as the source, on the phone and on a Mac without Sukrara on the
   phone: glucose a few minutes late, treatments both ways (the site's read-only), the sensor's life from its Sensor
-  Start, and never uploaded back to the same site.
+  Start (or the start you set when it has none), and never uploaded back to the same site.
 - Can read LibreLinkUp as the source while the Libre app keeps the sensor (your own glucose, or someone else's with
   your LibreLinkUp account), on the phone and on a Mac without Sukrara on the phone: about a minute late, 12 hours
   back, the sensor's life; nothing goes back to LibreView while the Libre app uploads there; on the phone, take the
@@ -140,7 +140,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   sits beside the value: time in range, GMI, average, variability, the last treatment, each on or off), Sensor end, your data; rare ones in Alerts › Fine-tuning; search finds every one, old names included. Trust the defaults.
   A setting that can differ in the notification or the widgets (time shown, the sensor's time left) is one row that
   says the app's value and only the places that differ; its page sets each place or keeps it the same as the app.
-- A nice sensor expiry flow with a Live Update and subtle reminders.
+- A nice sensor expiry flow with a Live Update and subtle reminders, whatever the source: where it doesn't say how
+  long a sensor lasts (LibreLinkUp's Libre 3 or 3 Plus, Nightscout, Juggluco) you pick the length, and where it doesn't
+  say when it started you set the start.
 - Real-time readings from almost any CGM.
 - Multilingual, but English is the main language.
 - No ads, no analytics, no tracking, no account.

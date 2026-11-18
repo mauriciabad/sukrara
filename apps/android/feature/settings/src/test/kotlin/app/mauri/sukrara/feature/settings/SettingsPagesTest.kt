@@ -151,6 +151,11 @@ class SettingsPagesTest {
             "sharing.nostrInterval",
             "sharing.bleFollowers",
             "widget.overrides",
+            // Settings › Sensor (the app joins the source file to it): a source's sensor length and your start
+            "source.libreLinkUpWear",
+            "source.nightscoutWear",
+            "source.jugglucoWear",
+            "sensor.manualStart",
         ) + SettingsSpec.SETTINGS.map { it.id }.filter { it.startsWith("pens.") || it.startsWith("apps.") } +
             setOf("healthConnect.on")
 

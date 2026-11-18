@@ -819,12 +819,12 @@ min late, backfills; `contracts/sources/sources.json`); its readings are `nights
 - **Sensor life from the site** (`contracts/sources/nightscout/sensor-life.json`): the site's newest *Sensor Start* or
   *Sensor Change* (asked at the first call and every 30 min, whatever *Treatments both ways* says; a deleted one or one
   ahead of now doesn't count) starts the sensor; the site doesn't say how long it lasts, so the defaults apply (1 h
-  warm-up, 15 days: `contracts/sensor/life.json`, as for Juggluco). From it, for your glucose, everything a sensor
+  warm-up; the length is the person's *Lasts*, 15 days unless changed: [Sensor start and length](#sensor-start-and-length-when-the-source-doesnt-say-both-apps)). From it, for your glucose, everything a sensor
   Sukrara reads has: the card's warm-up and time left, *Sensor ended* (no data stays quiet once it ends; readings that
   still come alert as usual), the sensor reminders and countdown, the glucose notification's Live Update, *Sensor end
   in calendar*, and followers see its life; someone else's site shows it on their card only (reminders are the
-  wearer's). No sensor event on the site: the life isn't known (no countdown, no reminders, never *Sensor ended*). A
-  manual start with its length for sources that don't say (docs/44 decision 10) comes with step 2.
+  wearer's). No sensor event on the site: the life isn't known (no countdown, no reminders, never *Sensor ended*)
+  until you set its start on Settings › Sensor (a manual start; the site's newer *Sensor Start* wins).
 - **Nothing goes back where it came from** (`contracts/sources/outputs.json`): the Nightscout upload to the same site
   pauses (*Your source: glucose never goes back to it; treatments go both ways in Settings › Source*), to another site
   it sends the readings and treatments; LibreView gets nothing from the site (it takes the sensor Sukrara reads);
@@ -911,9 +911,10 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
 - **Bring your history back, source-aware**: *Your last 12 hours came with LibreLinkUp. For more, bring back 90 days
   from LibreView, where the Libre app uploads.* → Import history (its LibreView download); *Start empty*.
 - **Sensor life from LibreLinkUp**: the sensor's serial and start (`sn`, `a`; a new serial is a new sensor) with the
-  default warm-up and wear (`contracts/sensor/life.json`: LibreLinkUp doesn't say the length): the card's warm-up and
-  time left, *Sensor ended*, reminders, *Sensor end in calendar*, followers. Settings › Source shows *Sensor · Started …
-  · serial*.
+  default warm-up and the person's *Lasts* (LibreLinkUp doesn't say the length: 14 days for a Libre 3 / 2, 15 for a 3
+  Plus / 2 Plus, 15 unless changed; [Sensor start and length](#sensor-start-and-length-when-the-source-doesnt-say-both-apps)):
+  the card's warm-up and time left, *Sensor ended*, reminders, *Sensor end in calendar*, followers. Settings › Source
+  shows *Sensor · Started … · lasts 15 days · serial*, a row that opens Settings › Sensor.
 - **Nothing duplicated or looped** (`contracts/sources/outputs.json` row `librelinkup`, docs/44 "Data" rules 2, 3, 6):
   LibreView takes one uploading device per account and the Libre app is it, so **the LibreView upload sends nothing at
   all** while LibreLinkUp is your source, treatments neither, not even a sign-in that could take over (*Paused: the
@@ -1318,7 +1319,7 @@ buttons.
 - NFC commands to the Libre 3 (`sensor/libre3/Libre3Nfc`) are retried up to 10 times within 5 s on a transient error or an answer with the error flag (Juggluco's `wholenfccmd`); a lost tag (phone moved away) aborts at once and the scan screen asks to try again.
 - The owner knows the current sensor's start, end and warm-up end (`core/SensorLife`, persisted): the direct source gives serial, start, end = start + the wear length from the NFC patch info (LE16 at +6, minutes; Libre 3 Plus 21600 = 15 d; the profile's 15 d when unknown or for a pairing saved before this field) and warm-up end = start + the patch info's warm-up (byte 13 × 5 min; the profile's 60 min default).
 - Juggluco source, API secret (optional; schema `source.jugglucoSecret`, the Keystore SecureStore `juggluco`, never in a settings file): when set, every request (history, `sgv.json`, the `/x/live` stream) carries `api-secret: sha1hex(secret)` as Juggluco and Nightscout clients expect (the Mac sends the same); it is read again at every connection. Juggluco answering 401 / 403 is `JugglucoStatus.Refused`: no readings, retried with the usual backoff, and Settings › Sensor says Juggluco refuses the secret. The secret authenticates Sukrara to Juggluco, not Juggluco to Sukrara: another app holding the port can still answer.
-- Juggluco source: the start comes from Juggluco's `sgv.json?count=1&sensor=Y` (`sensor_status` `"dd-mm-yy HH:MM (…)"`, the phone's local time; serial = the entry's `_id` before `#`), read with every history fetch and again when the SSE `sensorId` changes; end = start + 15 d, warm-up 60 min (Juggluco publishes neither length). A new sensor started in Juggluco shows no warm-up countdown here: Juggluco's web server names a sensor only with its first reading (`sensor_status` rides on the newest `sgv.json` entry, `/x/live` sends only `glucose` events), so Sukrara learns of it once its warm-up is over (#140).
+- Juggluco source: the start comes from Juggluco's `sgv.json?count=1&sensor=Y` (`sensor_status` `"dd-mm-yy HH:MM (…)"`, the phone's local time; serial = the entry's `_id` before `#`), read with every history fetch and again when the SSE `sensorId` changes; end = start + the person's *Lasts* (`source.jugglucoWear`, 15 d unless changed on Settings › Sensor; a change reconnects so the end moves at once), warm-up 60 min (Juggluco publishes neither length). A new sensor started in Juggluco shows no warm-up countdown here: Juggluco's web server names a sensor only with its first reading (`sensor_status` rides on the newest `sgv.json` entry, `/x/live` sends only `glucose` events), so Sukrara learns of it once its warm-up is over (#140).
 - Sensor badge (the time left) on every card: Android app panel, every widget kind and size, lock screen, the glucose notification's chart; Mac dropdown and every widget. **One decision for all of them** (the user, 2026-10-21: the move had reached only some surfaces): `GlucoseCard.sensorSpot` (Android) / `GlucoseCard.sensorSpot` (Mac), from the whole card's style, also where a surface draws the value and the chart in boxes of their own (`CardPart`: the app panel, the lock screen). **In the chart** whenever the card shows a chart with hour labels (with or without the % column: narrow charts, side off, graph-only widgets, the notification): at the start of the hour labels' row, at the chart's left edge under the % column and the distribution (10 dp tall, centred on the labels' x-height, `GlucoseGraph.sensorTop`); it is drawn last, over the time row, with its outline erased 2 dp around it (`DST_OUT` / `.destinationOut`) from whatever passes under it: hour and treatment labels are laid out as if it weren't there, so it never pushes a label to the second row, drops its time or makes the chart jump while scrolling (the user, 2026-10-22; `layout/rules.json` `badge`: every render with and without the badge has the same labels, second row, plot and hour labels; scene `live` has a labelled treatment right under it). An hour label the badge's erased outline would cut into is left out, as a treatment label leaves one out (#71: `8d` covered `9 AM` and left a stray `M` on the small graph widget); the others stay where they are. **Nowhere else**: a card without such a chart (value widgets; a chart with the time labels off) shows just the number and its trend (the user, 2026-10-21: "It should not be there at all if we just show the number"; beside the arrow, top right, it turned `120 ○` into `120°`). Also nowhere when the place's setting hides it, nothing is known, or the sensor warms up / has ended (the value's place shows those states). Fixtures: `contracts/graph/place` (Android `GraphFixtureTest.place`, Mac `PlaceFixtureTests`); every surface draws it through the one card renderer and the cross-surface tests check it lands in the same place on all of them (below, *One card on every surface*). The badge: a small Libre sensor disc (circle + centre dot) whose outline is an arc depleting clockwise from 12 o'clock with the share of the sensor's life left (faint full track under it), then the time left: ≥ 24 h → whole days `13d`, ≥ 1 h → hours `20h`, else minutes `45m` (floor), in the secondary text colour. Ended: the header turns into the ended text instead (below); `0m` in the very-low colour is the label's rule (fixtures). Screen readers (app): `Sensor: 13d left` / `Sensor ended`.
 - Setting *Sensor time left* (#209, docs/38): **the app's** (`graph.sensorTime`, on; Mac: the menu bar panel's), and the places that can differ (`graph.sensorTime.place`: *Same as the app* / *On* / *Off*; Android Notification and Widgets = home widgets and lock screen, keys `placeSensorTimeNotification`, `placeSensorTimeWidgets`; Mac widgets, `placeSensorTimeWidget`), each device's own whatever Settings from says. Android: Sensor end (its home, in its own *On the graph* group: the page is about the sensor's end, so the group says where the time left shows) and Graph show the same two-part row (the switch = the app's; the text opens the Sensor time left page; summary *Off on widgets*); a home widget's own settings add one more level (`sensor`, *Same as in Settings*). Mac: Settings › Graph › *Sensor time left* opens its page. es *Tiempo restante del sensor*. Off leaves the badge out of that place's cards; the warm-up, *Sensor ended* and the countdown ring stay.
 
@@ -1338,6 +1339,57 @@ buttons.
 - Libre 3, ended sensor (`sensor/libre3/PatchState`; seen on the owner's Libre 3 Plus: `state=5 currentLifeCount=21635`, then no glucose and a reconnect every 2 min for ever): the BLE patch state ≥ 5 (5 expired, 6 terminated, 7 error, 8 error terminated) or a life count ≥ the wear length marks the sensor ended (its end moves to now if earlier). States 6–8 stop at once; an expired sensor (5, or past its wear length) keeps the session for one glucose wait (120 s, a possible grace period) and then stops for good: no reconnects (the saved pairing's `ended` flag) until a new sensor is scanned. Out-of-range values (outside 39–501 mg/dL) are dropped and never stop the 120 s glucose wait, so a stream of them ends in a reconnect, never in silence.
 
 **States and exits** (sensor source, `SensorStatus` / hub `SensorState`): *No sensor yet* (not monitoring, no data alarm) → scan a sensor. *Libre 3 core missing* (a debug build without Juggluco only; release builds can't be made without it) → install a release build or use Juggluco. *Pairing unreadable* (secure storage lost, e.g. after a restore) and *Unsupported sensor* → scan the sensor again (a takeover gives a fresh pairing). *Connecting / waiting for the sensor / reconnecting* → leaves by itself (backoff, watchdog); the no-data alert covers a long gap. *Bluetooth is off* → turn Bluetooth on (reconnects at once). *Nearby devices permission missing* → grant it, then *Try again*. *Warming up* → leaves with the first reading. *Ended, still sending* (past its end, readings arriving) → its value with *Ended · Replace sensor*; scan a new sensor (the pill, the notification's action) or wait for it to stop. *Ended* → scan a new sensor. *Another app has the sensor* → *Try again*, or stop it in the other app and scan the sensor (take over). *Juggluco unreachable* → open Juggluco and turn its web server on, or switch the source back to the Libre 3. *Juggluco refuses the API secret* → type the secret set in Juggluco (Settings › Sensor › *Change API secret*), or remove it there and here.
+
+## Sensor start and length when the source doesn't say (both apps)
+
+docs/44 decision 10. Some sources say a sensor's start but not how long it lasts (LibreLinkUp, Juggluco), or say the
+start only when one is logged (a Nightscout site's *Sensor Start*); later Dexcom Share and an official app's
+notification say neither. **THE rule** (`contracts/sources/sensor-life.json`, run by `SensorLivesContractTest` and
+the Mac's `SensorLivesTests`; `sources.json` `life` / `wear` per source; Android `:core:model` `SensorLives`): the
+source's start unless it's ahead of now; a **manual start** only where the source may not say one (`life`
+`maybeStart` / `none`), for your glucose, never ahead of now; the newer of the two wins, the source's on a tie (a new
+sensor from the source replaces yours; a start you set after the site's last *Sensor Start* is a sensor the site
+doesn't know yet); the length is the source's **wear setting** (`source.libreLinkUpWear`: 14 / 15 days, default 15;
+`source.nightscoutWear`, `source.jugglucoWear`: 10 / 14 / 15 days or 1–30, default 15; one per source, remembered
+across sensors and source changes); the warm-up is the default 60 min (the first reading ends it). From that life:
+the card's warm-up and time left, *Sensor ended* (no data stays quiet; readings that still come alert), the sensor
+reminders and countdowns, *Sensor end in calendar* and followers (Android), the card and the alert rules' sensor
+window (Mac). A new manual start is a new sensor (`manual-<start>`: its reminders start again). Default 15 days for
+LibreLinkUp (the QA review): a wrong 14 marks a working Libre 3 Plus ended on its last day and keeps no data quiet
+then; a wrong 15 shows a Libre 3 a day too long.
+
+- **Android, Settings › Sensor** for these sources (also opened by Settings › Source's LibreLinkUp *Sensor* row, its
+  *See also*, home's *Sensor ended* reason with a site's sensor, and *Sensor ended*'s *Replace sensor* / the ended
+  widget's tap while the source is online): *Glucose from* names the source; *Status* from THE sensor state (*Warming
+  up · first reading at …*, *Running*, *Ended*, *Start not known*); *Started* (*Mon 16 Nov, 09:12 · from Nightscout*,
+  *… · set by you*, *Not known*: a row that opens the start dialog where you may set it, else plain); *Lasts* (THE
+  number input: LibreLinkUp's two choices with *FreeStyle Libre 3 or Libre 2* / *Libre 3 Plus or Libre 2 Plus* under
+  them, the others 10 / 14 / 15 days with the sensors that last that long, or *Custom* 1–30 days); *Ends* with the
+  time left; the footer *Nightscout doesn't say how long a sensor lasts. Too short a length ends it early, and then a
+  gap in readings doesn't ring.* A Nightscout site has no *Pair new sensor*, *This phone* or LibreView rows.
+  **Start dialog** (*When did this sensor start?*, the reminder dialog's pattern): the day as radio rows (*Today*,
+  *Yesterday*, then dates back to the first day a sensor of this length could still be running), *Time* (THE time
+  picker), then live: *Ends Thu 26 Nov, 09:12*, or in the error colour *Later than now* / *A sensor started then ended
+  on 3 Nov* (*Save* disabled: a start that has already ended would keep no data quiet); *Remove* (a start you set),
+  *Cancel*, *Save* (confirm haptic). Notices: *Nightscout doesn't say when this sensor started. Set it to get reminders
+  before it ends.* · *Set start*; ended: *This sensor has ended. Applied a new one? Set when it started.* · *Set start*,
+  or for a source that says the start *Start a new one in its app: Sukrara gets it from LibreLinkUp.* Stored in the
+  source file (store `state`: `libreLinkUpWear`, `nightscoutWear`, `jugglucoWear`, `manualStart`), not in the
+  settings export; a source or person change clears the manual start (`SourceRecord.with`). Juggluco's length is read
+  at each connection (a change reconnects). Tests: `SourceRecordLifeTest`, `StartPickTest`, `NightscoutSourceTest`,
+  `LibreLinkUpSourceTest`, `SensorSettingsBridgeTest`.
+- **Mac**: Settings › Source › *Sensor* after the source's rows (Juggluco on the network, Nightscout, LibreLinkUp; `SensorLifeRows`): *Started* (*· from Nightscout* / *· set by you* / *Not known*; for a Nightscout site *Set Start…*, then *Change…* and *Remove Start*: an inline compact date-and-time picker bounded from the earliest start still running to now, with the end live under it, *Later than now* / *This sensor would have ended on …* in red and *Save* off until it's valid, Cancel on Escape, Save on Return), *Lasts* (`NumberSettingRow`: LibreLinkUp's 14 / 15-day pop-up, the others 10 / 14 / 15 days or Custom), *Ends* (or *Ended*), the footer *Nightscout doesn't say how long a sensor lasts.* It replaces LibreLinkUp's *Sensor* row. The rule (`SukraraCore` `SensorLives`, AppModel `sourceSensor`) applies to whatever the Mac reads (the Mac doesn't ask whose glucose; it rings no sensor reminders): the card's warm-up, time left and *Sensor ended*, and the alert rules' sensor window; a change applies at once. UserDefaults `libreLinkUpWear`, `nightscoutWear`, `jugglucoWear` (minutes), `sensorManualStart` (epoch s, 0 = none); another source (`SourceSpec.store`) or another Nightscout site clears the manual start. Tests: `SensorLivesTests`, `AppModelSensorLifeTests`, `SourcesTests`, `SettingsSchemaTests`.
+
+**States and exits**: *Start not known* (a site without a *Sensor Start*, your glucose) → *Set start* (notice or
+*Started*) → the dialog → *Save* (*Warming up* / *Running*) or *Cancel* (unchanged). *Set by you* → *Started* → the
+dialog → change and *Save*, *Remove* (*Start not known* again) or *Cancel*; the site's newer *Sensor Start* replaces
+it by itself; a source or person change clears it. *From the source* (LibreLinkUp, Juggluco, a site's *Sensor Start*)
+→ read only (a new sensor comes from the source). *Lasts* → the number dialog → a choice (applies at once) or
+*Cancel*. *Ended* (manual) → *Set start* for the new one, or *Remove*; ended (from the source) → start a new one in
+its app. Someone else's glucose (Android): *Started* read only, *Lasts* editable (their card's end). Mac: the same
+section on Settings › Source (*Set Start…* → the picker → *Save* / *Cancel*; *Change…*; *Remove Start*; *Lasts*'s
+pop-up), whatever the Mac reads. Back leaves the page; TalkBack and VoiceOver read each row and the picker's line
+once when it changes.
 
 ## New sensor (pairing flow)
 

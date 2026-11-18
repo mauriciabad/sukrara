@@ -25,6 +25,8 @@ public final class SettingsModel {
     public let libreLinkUp: LibreLinkUpModel
     /// Whose glucose and where it comes from (Settings › Source, setup's two steps).
     public let source: SourceChoiceModel
+    /// The sensor's start and wear length of a source that doesn't say them (Settings › Source › *Sensor*).
+    public let sensorLife: SensorLifeModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
     /// Whether macOS lets Sukrara post Time Sensitive (Settings › Alerts, the setup's notification step); nil: this run
@@ -65,6 +67,7 @@ public final class SettingsModel {
         self.nightscout = NightscoutModel(store: store)
         self.libreLinkUp = LibreLinkUpModel(store: store)
         self.source = SourceChoiceModel(store: store)
+        self.sensorLife = SensorLifeModel(store: store)
         self.wearer = wearer
         self.version = version
         self.distribution = distribution

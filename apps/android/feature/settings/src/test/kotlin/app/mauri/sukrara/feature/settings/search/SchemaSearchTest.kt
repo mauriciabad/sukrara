@@ -75,6 +75,10 @@ class SchemaSearchTest {
             put("source.nightscoutTreatments", R.string.st_source_ns_treatments to source)
             put("source.libreLinkUpPatient", R.string.st_source_llu_whose to source)
             put("source.libreLinkUpSecret", R.string.st_source_llu_account to source)
+            put("source.libreLinkUpWear", R.string.st_sensor_lasts to sensor)
+            put("source.nightscoutWear", R.string.st_sensor_lasts to sensor)
+            put("source.jugglucoWear", R.string.st_sensor_lasts to sensor)
+            put("sensor.manualStart", R.string.st_sensor_started to sensor)
             put("alerts.on", R.string.st_alerts_main to page(SettingsRoute.Alerts))
             put("alerts.kind.on", R.string.st_kind_low to page(SettingsRoute.Alerts))
             for (k in listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast", "no_data")) {
@@ -166,7 +170,7 @@ class SchemaSearchTest {
             "readings" to setOf(Section.Readings),
             "graph" to setOf(Section.Graph),
             "metrics" to setOf(Section.Metrics),
-            "sensor" to setOf(Section.SensorEnd),
+            "sensor" to setOf(Section.SensorEnd, Section.Sensor),
             "source" to setOf(Section.Source),
             "alerts" to setOf(Section.Alerts, Section.Reliability),
             "statusbar" to setOf(Section.StatusBar),

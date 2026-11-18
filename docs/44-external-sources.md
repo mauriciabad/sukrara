@@ -799,6 +799,87 @@ Answered:
 - **The widgets don't redraw during a warm-up** (any source: the redraw follows the newest reading's freshness steps
   only). The cause and a repro are in #226's comment.
 
+**Decision 10, sensor start and length (2026-11-18, both apps), with the QA review's wear length and the LibreView fix.**
+
+Added:
+- **THE rule** (`contracts/sources/sensor-life.json`, 19 cases run by both apps; `sources.json` gains `life`: `full`
+  / `start` / `maybeStart` / `none`, and `wear`: the setting with the length): the source's start unless it's ahead of
+  now; a manual start only for `maybeStart` / `none` sources (a Nightscout site now; Dexcom Share and an official
+  app's notification later), your glucose, never ahead of now; the newer wins, the source's on a tie; the length is the
+  source's wear setting; the default warm-up. A new manual start is a new sensor (`manual-<start>`).
+- **One wear length per source** (schema `source.libreLinkUpWear`: the number format `wearLibre`, 14 / 15 days, no
+  custom, default 15; `source.nightscoutWear`, `source.jugglucoWear`: `wear`, 10 / 14 / 15 days or 1–30, default
+  15), remembered across sensors and source changes, through THE number input (on Android its choice dialog when the
+  format takes no custom value). The default stays 15 for LibreLinkUp (the QA review: a wrong 14 marks a working 3 Plus
+  ended on its last day and keeps no data quiet; a wrong 15 only shows one day too many). Juggluco's length came along:
+  its web server says the start, never the length (a G7 read by Juggluco showed 15 days).
+- **Manual start** (schema `sensor.manualStart`, the source file on Android): cleared by a source or person change
+  (an old start coming back would say *Sensor ended* and keep no data quiet).
+- **Android**: the sources apply the rule (`NsSensorLife.effective`; a change applies at once); Settings › Sensor
+  shows an online source's sensor from THE sensor state (it showed the sensor module's: *The sensor, read by this
+  phone* for a Nightscout site), with *Started*, *Lasts*, *Ends*, the start dialog and the notices; LibreLinkUp's
+  Source row *Sensor · Started … · lasts 15 days · serial* opens it; home's *Sensor ended* for a site's sensor and the
+  *Sensor ended* notification's *Replace sensor* (and the ended widget's tap) open it while the source is online (they
+  opened the new-sensor flow, decision 10's deferred "words and action" of the polish round).
+- **Mac** (the Mac doesn't ask whose glucose any more, owner 2026-11-18): the rule applies to whatever it reads
+  (Juggluco on the network, Nightscout, LibreLinkUp: AppModel `sourceSensor`, the card and the alert rules' sensor
+  window; no sensor reminders on a Mac); Settings › Source › *Sensor* (*Started*, *Lasts*, *Ends*) replaces
+  LibreLinkUp's *Sensor* row; a manual start for a Nightscout site with an inline compact date-and-time picker bounded
+  to starts still running ([HIG date pickers](https://developer.apple.com/design/human-interface-guidelines/date-pickers):
+  a compact field in a form, invalid dates out of reach), cleared by another source or site.
+- **The LibreView upload** sends the length the sensor reports in its `sensorstart` record (`LvSensor.reportedWearMin`
+  from the Libre 3's patch info, kept when the end moves earlier): a Libre 3 went up as 15 days. None reported (read
+  through Juggluco): the family's as before.
+
+The UI's choices:
+- **The length through THE number input**: a setting with a few usual values and a range is what it's for (the
+  owner's rule); LibreLinkUp's two values show as its choice dialog with the sensors under each (*FreeStyle Libre 3 or
+  Libre 2* / *Libre 3 Plus or Libre 2 Plus*), so nobody needs to know the number. Not a switch *Is a Libre Plus?*
+  (xDrip4iOS) that only fits LibreLinkUp.
+- **The start: the reminder dialog's pattern** (days as radio rows, the time as a row opening THE time picker,
+  *Remove* / *Cancel* / *Save*), not M3's date picker then time picker: M3 shows date and time as separate pickers
+  ([date pickers](https://m3.material.io/components/date-pickers/guidelines), [time
+  pickers](https://m3.material.io/components/time-pickers/guidelines)), and a calendar month is the wrong shape for
+  *the last 15 days*, mostly today or yesterday. Only days whose sensor could still be running are offered; the line
+  under it says the end live and refuses *later than now* and *already ended* (a start that ends it would keep no data
+  quiet) before *Save*, as M3's text fields show errors in place.
+- **One place**: Settings › Sensor (docs/44 "Settings": *Sensor: current sensor (from the source or a manual start)*);
+  Settings › Source's LibreLinkUp *Sensor* row leads there instead of a second copy of the choice.
+
+How other apps handle the length (checked in their code):
+- **xDrip4iOS**: a LibreLinkUp follower switch *Is a Libre Plus?*, off = 14 days, kept for the next sensors
+  ([LibreLinkUpFollowerSettings.swift](https://github.com/JohanDegraeve/xdripswift/blob/c268542e64626c564e626658fa9a6b90a059ada4/xdrip/SwiftUIViews/Settings/Followers/LibreLinkUpFollowerSettings.swift#L145-L156),
+  [ConstantsLibreLinkUp.swift](https://github.com/JohanDegraeve/xdripswift/blob/c268542e64626c564e626658fa9a6b90a059ada4/xdrip/Constants/ConstantsLibreLinkUp.swift#L20-L24));
+  a G7 15-day switch the same way ([releases](https://github.com/JohanDegraeve/xdripswift/releases)). Good: remembered
+  across sensors. Bad for the person: a default of 14 ends a 3 Plus a day early.
+- **GlucoDataHandler**: one app-wide *Sensor wear-time* text field, default 14, for every source
+  ([pref_general.xml](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/mobile/src/main/res/xml/pref_general.xml#L16-L21)),
+  expired 2 h after it ([GlucoDataUtils.kt](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/common/src/main/java/de/michelinside/glucodatahandler/common/utils/GlucoDataUtils.kt#L248-L262));
+  a list 10 / 14 / 15 / 24 days elsewhere ([arrays.xml](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/common/src/main/res/values/arrays.xml#L146-L159)).
+  Bad: a typed number with no hint, and one value for every source.
+- **Juggluco** reads the sensor, so it knows the length per family
+  ([SensorGlucoseData.hpp](https://github.com/j-kaltes/Juggluco/blob/a983788a17a35f8e76d9da5c125996b648b4f27a/Common/src/main/cpp/SensorGlucoseData.hpp#L78-L90));
+  its web server's `sensor_status` says only the start, which is why Sukrara asks for Juggluco too.
+- **Nightscout** itself: the *SAGE* plugin counts from the newest *Sensor Start* with thresholds in hours set by the
+  site's owner, no length ([README](https://github.com/nightscout/cgm-remote-monitor/blob/92d0834219aa771b5837dbcbf1baeb839a200cf6/README.md#L456-L459)).
+
+Safety, covered by tests: a start ahead of now (ignored: life unknown, no data alerts as usual; the dialog refuses
+it), a length that makes the sensor already ended (ended: no data quiet; the dialog refuses such a start), the
+source's newer start winning over a manual one (and an older one losing), a source switch and a person change clearing
+the manual start, someone else's glucose never using one, a stored length that isn't valid reading as the default or
+nearest. No alert rule changed (the engines get the same sensor window), so no scenario was added or changed.
+
+Discarded or deferred, with reasons:
+- **Writing the manual start to the Nightscout site** as a *Sensor Start* (with *Treatments both ways*): it would make
+  every reader of the site agree, but writes the person's guess into their site's record; later, if asked.
+- **A manual warm-up length** (G7 30 min, G6 2 h): the first reading ends the warm-up anyway.
+- **The source's health line** (*Sensor warming up · ready at …*) during a manual start's warm-up: Android says it
+  (the sources use the same life); on the Mac the health line keeps the source's own start (the card shows the manual warm-up).
+- **A manual start for LibreLinkUp or Juggluco**: they always say the start; a new sensor shows when the Libre app or
+  Juggluco starts it.
+- **Dexcom Share and the official app's notification**: their sources come later; their `life` will be `none`, so the
+  manual start works for them without UI changes.
+
 ## Decisions for the owner
 
 **Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes
@@ -843,7 +924,7 @@ Ordered by how much they block.
    Mac with their own LibreLinkUp (or Dexcom Share, Nightscout) account: *Someone else's · LibreLinkUp* (decision 7);
    phone and Mac each read the account. Their treatments stay on the device they were logged on. To verify in step 2:
    whether one LibreLinkUp account can stay signed in on two devices at once.
-10. **Manual sensor start** for sources without sensor life? *Recommend yes*: small, and reminders work for every source.
+10. **Manual sensor start** for sources without sensor life? *Recommend yes*: small, and reminders work for every source. *Built*: "In Sukrara", decision 10.
 11. **Dexcom / Abbott partner APIs**? *Recommend don't apply; send a Data Act request instead* (Appendix E): real time
     is Dexcom's invitation-only API for companies with a server holding the secrets, and Abbott has no program; the EU
     Data Act gives the person their data "continuously and in real-time" where feasible, so one email per maker opens

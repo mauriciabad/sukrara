@@ -404,7 +404,7 @@
     <string name="in_llu_picked_gone">The person picked stopped sharing glucose with this account.</string>
     <string name="in_llu_sensor">Sensor</string>
     <!-- %1$s = when it started (a time, or a date and time), %2$s = its serial. -->
-    <string name="in_llu_sensor_summary">Started %1$s · %2$s</string>
+    <string name="in_llu_sensor_summary">Started %1$s · lasts %2$s · %3$s</string>
     <string name="in_llu_libre_app">The Libre app has the sensor</string>
     <string name="in_llu_upload">LibreView</string>
     <string name="in_llu_upload_summary">The Libre app uploads your glucose there. Sukrara sends nothing to LibreView until it reads the sensor itself: LibreView takes one uploading device per account.</string>

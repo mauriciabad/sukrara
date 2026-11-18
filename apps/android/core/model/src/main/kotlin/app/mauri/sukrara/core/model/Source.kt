@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.core.model
 
+import app.mauri.sukrara.settings.SettingsSpec
+
 /**
  * Whose glucose this phone shows (schema `source.person`, docs/44 "Person × Source"): the person's own, or someone
  * else's (a child, a partner, a friend). It decides the words (*Your glucose* / *Ana's glucose*) and what a change
@@ -21,6 +23,25 @@ enum class Person(
     }
 }
 
+/**
+ * What a source says of the sensor's life (contracts/sources/sources.json `life`, docs/44 decision 10): [Full] = its
+ * start and length; [Start] = the start, not the length (the source's wear setting gives it); [MaybeStart] = a start
+ * only when one is logged (a Nightscout site's *Sensor Start*); [None] = nothing. A manual start (your glucose) is
+ * offered where the start may be missing ([manualStart]).
+ */
+enum class SourceLife {
+    Full,
+    Start,
+    MaybeStart,
+    None,
+    ;
+
+    val id: String get() = name.replaceFirstChar(Char::lowercase)
+
+    /** The person may set when the sensor started (the Sensor page): the source may not say it. */
+    val manualStart: Boolean get() = this == MaybeStart || this == None
+}
+
 /** How the source picker groups a source: by what the person feels (contracts/sources/sources.json `group`). */
 enum class SourceGroup { Offline, Network, Online, Sukrara }
 
@@ -28,7 +49,8 @@ enum class SourceGroup { Offline, Network, Online, Sukrara }
  * Where the glucose comes from (schema `source.kind`), with what it declares in contracts/sources/sources.json: the
  * persons it can bring ([persons]), whether this phone gets the data itself ([firstHand]) or another Sukrara relays it,
  * whether it works offline ([offline]), the picker's [group], the usual delay from the sensor ([delaySeconds]), whether
- * it fills gaps ([backfill]) and the reading ids it stores ([readings]). Rules and screens read these, never the id
+ * it fills gaps ([backfill]), the reading ids it stores ([readings]) and what it says of the sensor's life ([life], with
+ * the setting that holds its wear length when it doesn't say it: [wear]). Rules and screens read these, never the id
  * (`SourcesContractTest`). The Android sources only: the Mac's Juggluco on the network is the Mac's.
  */
 enum class SourceKind(
@@ -40,6 +62,13 @@ enum class SourceKind(
     val delaySeconds: Int,
     val backfill: Boolean,
     val readings: Set<SourceId>,
+    /** What it says of the sensor's life (sources.json `life`): the start, the length, both or neither. */
+    val life: SourceLife,
+    /**
+     * The stored key (in the source file, `SettingsSpec.Keys`) of this source's wear length, for a source that doesn't
+     * say it (sources.json `wear`); null = the source says it.
+     */
+    val wear: String?,
 ) {
     /** Sukrara reads the sensor itself (a Libre 3 by NFC + Bluetooth, the other families by Bluetooth). */
     Sensor(
@@ -51,6 +80,8 @@ enum class SourceKind(
         delaySeconds = 60,
         backfill = true,
         readings = setOf(SourceId.Libre3, SourceId.DexcomG7, SourceId.DexcomG6, SourceId.SmartGuide, SourceId.AidexX),
+        life = SourceLife.Full,
+        wear = null,
     ),
 
     /** An app on this phone that reads the sensor and serves its readings: Juggluco's local web server. */
@@ -63,6 +94,8 @@ enum class SourceKind(
         delaySeconds = 60,
         backfill = true,
         readings = setOf(SourceId.Juggluco),
+        life = SourceLife.Start,
+        wear = SettingsSpec.Keys.JUGGLUCO_WEAR,
     ),
 
     /**
@@ -78,6 +111,8 @@ enum class SourceKind(
         delaySeconds = 120,
         backfill = true,
         readings = setOf(SourceId.Nightscout),
+        life = SourceLife.MaybeStart,
+        wear = SettingsSpec.Keys.NIGHTSCOUT_WEAR,
     ),
 
     /**
@@ -95,6 +130,8 @@ enum class SourceKind(
         delaySeconds = 90,
         backfill = true,
         readings = setOf(SourceId.LibreLinkUp, SourceId.LibreLinkUpGraph),
+        life = SourceLife.Start,
+        wear = SettingsSpec.Keys.LIBRE_LINK_UP_WEAR,
     ),
 
     /** Sukrara on another phone or Mac shares it (over the internet, or Bluetooth nearby): a Sukrara stream. */
@@ -107,6 +144,8 @@ enum class SourceKind(
         delaySeconds = 60,
         backfill = true,
         readings = setOf(SourceId.Relay, SourceId.Nearby),
+        life = SourceLife.Full,
+        wear = null,
     ),
     ;
 

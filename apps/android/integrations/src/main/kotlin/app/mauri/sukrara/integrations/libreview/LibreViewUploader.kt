@@ -763,13 +763,18 @@ class LibreViewUploader(
         val (serial, cur, hist) =
             synchronized(history) { Triple(bufferSerial, current, history.values.toList()) }
         if (serial == null) return null
-        val start =
-            sensor
-                .first()
-                ?.takeIf { it.serial == serial }
-                ?.start
-                ?.epochSecond
-        return LibreViewQueue.sensor(serial, start, cur, hist, state.sensors.firstOrNull { it.serial == serial }, state.glucoseFrom, nowS)
+        val current = sensor.first()?.takeIf { it.serial == serial }
+        return LibreViewQueue.sensor(
+            serial,
+            current?.start?.epochSecond,
+            cur,
+            hist,
+            state.sensors.firstOrNull { it.serial == serial },
+            state.glucoseFrom,
+            nowS,
+            // the length the sensor reports (a Libre 3's 14 days, a 3 Plus's 15), never one size for all
+            current?.wearMin ?: 0,
+        )
     }
 
     private suspend fun ensureDevice(): LvState {

@@ -79,6 +79,17 @@ public enum MacSettings {
     public static let libreLinkUpPatient = SettingSpec(key: SettingsSpec.Keys.libreLinkUpPatient, defaultValue: "")
     /// The Keychain account of the LibreLinkUp source's email, password and token (schema `source.libreLinkUpSecret`).
     public static let libreLinkUpSecretAccount = "libreLinkUpSourceSecret"
+    /// How long a sensor read through LibreLinkUp lasts (minutes: 14 or 15 days; it says the start, not the length).
+    public static let libreLinkUpWear = number(
+        "source.libreLinkUpWear", SettingsSpec.Keys.libreLinkUpWear, SettingsSpec.wearLibre)
+    /// How long a sensor read through the Nightscout source lasts (minutes), also a manual start's length.
+    public static let nightscoutWear = number(
+        "source.nightscoutWear", SettingsSpec.Keys.nightscoutWear, SettingsSpec.wear)
+    /// How long a sensor read through Juggluco on the network lasts (minutes).
+    public static let jugglucoWear = number("source.jugglucoWear", SettingsSpec.Keys.jugglucoWear, SettingsSpec.wear)
+    /// When your sensor started, set in Settings › Source for a source that doesn't say it (epoch s, 0 = none; schema
+    /// `sensor.manualStart`, state): a source or person change clears it (`SourceSpec.store`).
+    public static let manualStart = SettingSpec(key: SettingsSpec.Keys.sensorManualStart, defaultValue: 0.0)
     /// The alert settings: ONE JSON value (contracts/alerts/SPEC.md §3), owned by the alert settings store.
     public static let alerts = SettingSpec(key: SettingsSpec.Keys.alerts, defaultValue: Data())
     /// The first-run walk's step states (JSON), owned by `SetupFlow`.

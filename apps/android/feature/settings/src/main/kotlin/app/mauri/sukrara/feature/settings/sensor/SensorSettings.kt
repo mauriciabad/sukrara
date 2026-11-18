@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +24,21 @@ enum class SourceChoice {
     /** Juggluco on this phone owns the sensor; Sukrara reads its local web server. */
     Juggluco,
 }
+
+/**
+ * The sensor's life of a source that doesn't say all of it (docs/44 decision 10, contracts/sources/sensor-life.json):
+ * the start ([start], null = not known; [manual] = the person set it), whether the person may set it ([canSetStart]:
+ * your glucose, a source that may not say it), the wear length ([wearMin], minutes) and its setting ([wearSetting],
+ * the schema id) and the end ([end]).
+ */
+data class LifeRows(
+    val start: Instant?,
+    val end: Instant?,
+    val manual: Boolean,
+    val canSetStart: Boolean,
+    val wearMin: Int,
+    val wearSetting: String,
+)
 
 /** The current sensor as the page shows it. */
 data class SensorSummary(val serial: String, val startedAt: Instant, val endsAt: Instant)
@@ -94,7 +110,14 @@ data class SensorSettingsState(
     val stopped: Boolean = false,
     /** Juggluco's API secret is saved (never shown; null = not read yet). */
     val jugglucoSecret: Boolean? = null,
-)
+    /** THE source (whose glucose, where from): an online source's sensor is shown from it, not from a sensor read here. */
+    val spec: SourceSpec? = null,
+    /** The sensor's life where the source doesn't say all of it; null = the source says it (the sensor read here). */
+    val life: LifeRows? = null,
+) {
+    /** The glucose comes from an online source (a Nightscout site, LibreLinkUp): no sensor is read on this phone. */
+    val online: Boolean get() = spec?.online == true
+}
 
 /** The tap switch: [on], and [blocked] = Android stops Sukrara's tag intents (Settings › Apps › Sukrara). */
 data class OpenOnScan(val on: Boolean, val blocked: Boolean = false)
@@ -135,6 +158,12 @@ interface SensorSettingsPort {
      * the app's scope.
      */
     fun setJugglucoSecret(secret: String) = Unit
+
+    /** The source's wear length (minutes; its schema setting, [LifeRows.wearSetting]). */
+    fun setWear(minutes: Int) = Unit
+
+    /** When your sensor started (a manual start, [LifeRows.canSetStart]); null removes it. */
+    fun setStart(start: Instant?) = Unit
 }
 
 class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel() {
@@ -156,6 +185,10 @@ class SensorSettingsViewModel(private val port: SensorSettingsPort) : ViewModel(
     fun resume() = port.resume()
 
     fun setJugglucoSecret(secret: String) = port.setJugglucoSecret(secret)
+
+    fun setWear(minutes: Int) = port.setWear(minutes)
+
+    fun setStart(start: Instant?) = port.setStart(start)
 
     companion object {
         fun factory(

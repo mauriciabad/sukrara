@@ -60,12 +60,17 @@ data class LvSensor(
     val history: List<LvGlucose> = emptyList(),
     /** Include the one-off `sensorstart` record. */
     val sendStart: Boolean = false,
+    /** The wear length the sensor reports (minutes: a Libre 3's patch info, 20160 or 21600); 0 = it said none. */
+    val reportedWearMin: Int = 0,
 ) {
     /** The `sensorstart` record's family: a Libre 1 / 2 as LibreLink names it, else a Libre 3. */
     val productType: Int get() = if (LibreSerial.libre12(serial)) 3 else 4
 
-    /** The `sensorstart` record's wear, minutes: a Libre 2's 14 days as LibreLink sends it, a Libre 3's 15. */
-    val wearMin: Int get() = if (LibreSerial.libre12(serial)) 20160 else 21600
+    /**
+     * The `sensorstart` record's wear, minutes: what the sensor reports (a Libre 3's 14 days, a 3 Plus's 15); when it
+     * reports none, a Libre 2's 14 days as LibreLink sends it, a Libre 3's 15.
+     */
+    val wearMin: Int get() = reportedWearMin.takeIf { it > 0 } ?: if (LibreSerial.libre12(serial)) 20160 else 21600
 }
 
 /** What a FreeStyle Libre serial says. */

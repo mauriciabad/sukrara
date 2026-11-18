@@ -491,8 +491,8 @@ struct SourceKindChoice: View {
 /// Settings › Source: whose glucose (two cards), where it comes from (radio rows), then that source's own rows: the
 /// person this Mac follows (Follow…, the waiting code, Stop following…, Reconnect Now), Juggluco on this network
 /// (its state, address and secret), a Nightscout site (how it's going, site, token, treatments both ways) or LibreLinkUp
-/// (how it's going, account, whose glucose, sensor, sign out). A change applies at once (nothing to delete on the Mac:
-/// the readings are each
+/// (how it's going, account, whose glucose, sign out), then *Sensor*: the start and length where the source doesn't
+/// say them (`SensorLifeRows`). A change applies at once (nothing to delete on the Mac: the readings are each
 /// source's own store); Back is just another pick.
 struct SourcePane: View {
     @Bindable var model: SettingsModel
@@ -588,6 +588,10 @@ struct SourcePane: View {
                         .onAppear(perform: model.nightscout.load)
                 case .libreLinkUp:
                     LibreLinkUpRows(model: model.libreLinkUp)
+                }
+                // the sensor's start and length where the source doesn't say them (docs/44 decision 10)
+                if running.kind.wear != nil {
+                    SensorLifeRows(model: model.sensorLife, kind: running.kind)
                 }
             }
         }

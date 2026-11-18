@@ -189,13 +189,6 @@ public final class LibreLinkUpModel {
         case .connected, nil: nil
         }
     }
-
-    /// The sensor LibreLinkUp says is running, in words: "Started 17 Nov, 09:00 · 0D00ABC123".
-    static func sensorLine(_ s: LluSensor) -> String {
-        let start = Date(timeIntervalSince1970: TimeInterval(s.start))
-        let day = start.formatted(.dateTime.day().month(.abbreviated).locale(L10n.locale))
-        return L10n.t("Started \(day), \(Clock.time(start)) · \(s.serial)")
-    }
 }
 
 /// How LibreLinkUp is doing in words (contracts/sources/health.json with its own states; Android `onlineHealthText`
@@ -422,7 +415,7 @@ struct LibreLinkUpConfirm: ViewModifier {
 }
 
 /// Settings › Source with LibreLinkUp: how it's going, the account (*Change Account…*, the form while signed out),
-/// whose glucose, the sensor it says is running, *Sign Out of LibreLinkUp…* (confirmed). The password is never shown.
+/// whose glucose, *Sign Out of LibreLinkUp…* (confirmed). The password is never shown.
 struct LibreLinkUpRows: View {
     @Bindable var model: LibreLinkUpModel
 
@@ -467,13 +460,6 @@ struct LibreLinkUpRows: View {
                         Text(LibreLinkUpModel.name(only))
                     } label: {
                         ServiceLabel(L10n.t("Person"), symbol: "person.crop.circle")
-                    }
-                }
-                if let sensor = snap.sensor, !model.patient.isEmpty {
-                    LabeledContent {
-                        Text(LibreLinkUpModel.sensorLine(sensor))
-                    } label: {
-                        ServiceLabel(L10n.t("Sensor"), symbol: "calendar")
                     }
                 }
             }

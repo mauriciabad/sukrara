@@ -56,6 +56,26 @@ public enum SourceKind: String, CaseIterable, Sendable, Codable {
         }
     }
 
+    /// What it says of the sensor's life (sources.json `life`): its start and length, the start only, a start only
+    /// when one is logged (a Nightscout site's Sensor Start), or nothing.
+    public var life: SensorLives.Life {
+        switch self {
+        case .sukrara: .full
+        case .lanJuggluco, .libreLinkUp: .start
+        case .nightscout: .maybeStart
+        }
+    }
+
+    /// The setting holding the wear length of a source that doesn't say it (sources.json `wear`; nil = it says it).
+    public var wear: MacSettings.Number? {
+        switch self {
+        case .sukrara: nil
+        case .lanJuggluco: MacSettings.jugglucoWear
+        case .nightscout: MacSettings.nightscoutWear
+        case .libreLinkUp: MacSettings.libreLinkUpWear
+        }
+    }
+
     /// The sources the picker offers for `person`, in the picker's order.
     public static func forPerson(_ person: Person) -> [SourceKind] { allCases.filter { $0.persons.contains(person) } }
 }
@@ -103,7 +123,9 @@ public struct SourceSpec: Equatable, Sendable {
             kind: SourceKind(rawValue: store.value(MacSettings.sourceKind)))
     }
 
+    /// Stores the answer; another source clears the manual sensor start (it was set for that source's sensor).
     public func store(in store: some SettingsStoring) {
+        if Self.stored(in: store)?.kind != kind { store.set(0.0, for: MacSettings.manualStart) }
         store.set(person.rawValue, for: MacSettings.sourcePerson)
         store.set(kind.rawValue, for: MacSettings.sourceKind)
     }

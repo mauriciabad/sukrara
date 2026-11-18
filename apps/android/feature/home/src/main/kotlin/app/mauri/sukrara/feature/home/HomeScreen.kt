@@ -1047,7 +1047,11 @@ private fun actionLabel(reason: NoDataReason): String =
             }
 
             is NoDataReason.SensorEnded -> {
-                if (reason.renew == SensorRenew.HERE) R.string.reason_ended_action else R.string.reason_site_action
+                when (reason.renew) {
+                    SensorRenew.HERE -> R.string.reason_ended_action
+                    SensorRenew.ITS_APP -> R.string.reason_sensor_action
+                    else -> R.string.reason_site_action
+                }
             }
 
             NoDataReason.LinkRevoked -> {

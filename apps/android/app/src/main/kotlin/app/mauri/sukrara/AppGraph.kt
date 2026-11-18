@@ -19,10 +19,12 @@ import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
+import app.mauri.sukrara.core.model.LifeSettings
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.ReadingSource
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
@@ -42,6 +44,7 @@ import app.mauri.sukrara.feature.settings.AppOutput
 import app.mauri.sukrara.feature.settings.BackupState
 import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.SettingsModule
+import app.mauri.sukrara.feature.settings.sensor.LifeRows
 import app.mauri.sukrara.feature.sharing.EngineOwnerSharing
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.SetupPens
@@ -106,6 +109,7 @@ import app.mauri.sukrara.sensor.juggluco.JugglucoStatus
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
 import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
+import app.mauri.sukrara.settings.SettingsSpec
 import app.mauri.sukrara.share.FollowerModule
 import app.mauri.sukrara.share.ShareOwnerModule
 import app.mauri.sukrara.share.ble.NearbyStatus
@@ -144,6 +148,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -266,6 +271,13 @@ class AppGraph(
 
     private data class Inferred(val spec: SourceSpec?)
 
+    /**
+     * The person's side of [kind]'s sensor life (docs/44 decision 10, the source file): whose glucose THE source is, the
+     * source's wear length and the manual start (only while [kind] is THE source).
+     */
+    fun lifeSettings(kind: SourceKind): Flow<LifeSettings> =
+        combine(spec, source.data) { running, record -> record.lifeOf(kind, running) }.distinctUntilChanged()
+
     /** [spec] once read ([SpecLoad.spec] null = no source): screens that wait for it before drawing. */
     val specLoaded: Flow<SpecLoad> by lazy { spec.map(::SpecLoad) }
 
@@ -365,7 +377,24 @@ class AppGraph(
                 }
             },
             libreViewServer = BuildVariant.libreLinkUpServer(app),
+            jugglucoWearMin = { jugglucoWear.value },
         )
+    }
+
+    /**
+     * How long a sensor read through Juggluco lasts (Settings › Sensor › *Lasts*): read at each connection; a change
+     * while Juggluco is the source reconnects, so the end moves at once.
+     */
+    private val jugglucoWear: StateFlow<Int> by lazy {
+        var read = false
+        lifeSettings(SourceKind.PhoneApp)
+            .map { it.wearMin }
+            .distinctUntilChanged()
+            .onEach {
+                // a change, not the first read at start
+                if (read && spec.first()?.kind == SourceKind.PhoneApp) sensor.source.retry()
+                read = true
+            }.stateIn(scope, SharingStarted.Eagerly, SensorTiming.DEFAULT_WEAR_MIN)
     }
 
     val monitor: MonitorModule by lazy {
@@ -644,6 +673,7 @@ class AppGraph(
             libreLinkUpState =
                 data.typedStore("librelinkup-source", LluSourceState.serializer(), LluSourceState(), whenCorrupt = LluSourceState()),
             libreLinkUpConfig = libreLinkUpConfig,
+            sensorLife = ::lifeSettings,
             appVersion = appVersion,
             readings = readings,
             treatments = data.treatments,
@@ -666,6 +696,8 @@ class AppGraph(
                             Instant.ofEpochSecond(it.startEpoch),
                             Instant.ofEpochSecond(it.endEpoch),
                             source ?: SourceId.Libre3,
+                            // the length the sensor itself reports; Juggluco reports none (its is the person's setting)
+                            if (source != null) it.wearMin else 0,
                         )
                     }
                 },
@@ -841,7 +873,39 @@ class AppGraph(
             startMonitoring = { startMonitoring(StartReason.App) },
             resetMonitoring = { monitor.hubImpl.resetMonitoring(fence = true) },
             sourceChanged = { sourceChanges.tryEmit(Unit) },
+            hubSensor =
+                monitor.hub.state
+                    .map { it.sensor }
+                    .distinctUntilChanged(),
+            life = lifeRows,
+            saveWear = { minutes -> spec.first()?.kind?.let { kind -> source.update { it.withWear(kind, minutes) } } },
+            saveStart = { start -> source.update { it.copy(manualStart = start?.epochSecond ?: 0) } },
         )
+    }
+
+    /**
+     * Settings › Sensor's *Started*, *Lasts* and *Ends* for THE source when it doesn't say all of its sensor's life
+     * (docs/44 decision 10): an online source's sensor (its start or yours), Juggluco's, with the source's wear length.
+     */
+    private val lifeRows: Flow<LifeRows?> by lazy {
+        spec.distinctUntilChanged().flatMapLatest { running ->
+            val kind = running?.kind
+            val wearKey = kind?.wear
+            if (running == null || kind == null || wearKey == null) return@flatMapLatest flowOf(null)
+            val said: Flow<Triple<Instant?, Instant?, Boolean>> =
+                when (kind) {
+                    SourceKind.Nightscout -> integrations.nightscoutSource.sensorLife
+                    SourceKind.LibreLinkUp -> integrations.libreLinkUpSource.sensorLife
+                    else -> null
+                }?.map { Triple(it?.start, it?.end, it?.manual == true) }
+                    ?: sensor.source.sensorInfo.map { i ->
+                        Triple(i?.startEpoch?.let(Instant::ofEpochSecond), i?.endEpoch?.let(Instant::ofEpochSecond), false)
+                    }
+            val wearId = SettingsSpec.SETTINGS.first { it.android == "state:$wearKey" }.id
+            combine(said, lifeSettings(kind)) { (start, end, manual), lf ->
+                LifeRows(start, end, manual, kind.life.manualStart && running.person == Person.Yours, lf.wearMin, wearId)
+            }
+        }
     }
 
     /** The person's graph settings: THE [GraphConfig] every card surface draws with (home, widgets). */

@@ -120,6 +120,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         libreLinkUp.signOutSource = { [weak model] in model?.signOutLibreLinkUp() }
         model.onLibreLinkUp = { [weak windows] snapshot in windows?.apply(libreLinkUp: snapshot) }
+        windows.settings.sensorLife.sensor = { [weak model] in model?.sourceSensor }
         model.onSnapshot = { [weak self, weak windows] snapshot in
             windows?.apply(snapshot)
             self?.wearerChanged(WindowCoordinator.wearerSettings(snapshot))
@@ -171,6 +172,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         model.lanConfig = lanConfig
         model.nightscoutConfig = nightscoutConfig
         model.libreLinkUpConfig = libreLinkUpConfig
+        model.sensorLifeSettings = SensorLifeSettings(store: store)
         model.run()
         if case .snapshot = model.plan.mode {} else { windows.showSetupIfFirstRun() }
         // after the first-run setup window: an invite link that launched the app opens its Follow step
@@ -340,6 +342,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         model.lanConfig = lanConfig
         model.nightscoutConfig = nightscoutConfig
         model.libreLinkUpConfig = libreLinkUpConfig
+        model.sensorLifeSettings = SensorLifeSettings(store: store)
         shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
     }
 

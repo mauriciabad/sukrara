@@ -444,6 +444,7 @@ object SettingsIndex {
                 R.string.st_sensor_status to null,
                 R.string.st_sensor_serial to null,
                 R.string.st_sensor_started to null,
+                R.string.st_sensor_lasts to R.string.st_sensor_lasts_title,
                 R.string.st_sensor_ends to null,
                 R.string.st_sensor_pair_new to R.string.st_sensor_pair_new_summary,
             )

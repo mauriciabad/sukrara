@@ -3,12 +3,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
+import app.mauri.sukrara.core.model.LifeSettings
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.settings.NumberSpec
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -29,14 +32,75 @@ data class SourceRecord(
     val nightscoutTreatments: Boolean = true,
     /** Whom the LibreLinkUp source reads (schema `source.libreLinkUpPatient`): kept when the source changes (the way back). */
     val libreLinkUpPatient: String = "",
+    /**
+     * Each source's wear length in minutes (schema `source.libreLinkUpWear`, `source.nightscoutWear`,
+     * `source.jugglucoWear`; 0 = the format's default), for sources that don't say it: remembered across sensors and
+     * source changes.
+     */
+    val libreLinkUpWear: Int = 0,
+    val nightscoutWear: Int = 0,
+    val jugglucoWear: Int = 0,
+    /**
+     * When your sensor started, set on the Sensor page (schema `sensor.manualStart`, epoch s; 0 = none): only for the
+     * source and person it was set for, so a source or person change clears it ([with]).
+     */
+    val manualStart: Long = 0,
 ) {
     val spec: SourceSpec? get() = SourceSpec.of(Person.of(person), SourceKind.of(kind))
 
-    /** This record with [spec] as the answer, the source's own settings kept. */
-    fun with(spec: SourceSpec?) = copy(person = spec?.person?.id, kind = spec?.kind?.id)
+    /**
+     * This record with [spec] as the answer, the source's own settings kept; another source or person clears the manual
+     * start (it was that source's sensor: an old one coming back later would say *Sensor ended* and keep no data quiet).
+     */
+    fun with(spec: SourceSpec?): SourceRecord {
+        val same = spec?.person?.id == person && spec?.kind?.id == kind
+        return copy(person = spec?.person?.id, kind = spec?.kind?.id, manualStart = if (same) manualStart else 0)
+    }
+
+    /** The stored wear length of [kind] (minutes, 0 = the default; a source that says it has none). */
+    fun wearOf(kind: SourceKind): Int =
+        when (kind.wear) {
+            SettingsSpec.Keys.LIBRE_LINK_UP_WEAR -> libreLinkUpWear
+            SettingsSpec.Keys.NIGHTSCOUT_WEAR -> nightscoutWear
+            SettingsSpec.Keys.JUGGLUCO_WEAR -> jugglucoWear
+            else -> 0
+        }
+
+    /** This record with [kind]'s wear length set to [minutes]. */
+    fun withWear(
+        kind: SourceKind,
+        minutes: Int,
+    ): SourceRecord =
+        when (kind.wear) {
+            SettingsSpec.Keys.LIBRE_LINK_UP_WEAR -> copy(libreLinkUpWear = minutes)
+            SettingsSpec.Keys.NIGHTSCOUT_WEAR -> copy(nightscoutWear = minutes)
+            SettingsSpec.Keys.JUGGLUCO_WEAR -> copy(jugglucoWear = minutes)
+            else -> this
+        }
+
+    /**
+     * What [kind]'s sensor life needs from the person while [running] is THE source (the answer, or what an unanswered
+     * phone reads): whose glucose, the valid wear length, the manual start (only [kind]'s own).
+     */
+    fun lifeOf(
+        kind: SourceKind,
+        running: SourceSpec?,
+    ): LifeSettings {
+        val wear = wearSpec(kind)?.let { f -> f.coerce(wearOf(kind).takeIf { it > 0 }?.toDouble() ?: f.default).toInt() } ?: 0
+        // only the source it was set for (an unanswered record has no kind: what the phone reads then)
+        val own = running?.kind == kind && (this.kind == null || this.kind == kind.id)
+        return LifeSettings(running?.person, wear, manualStart.takeIf { own } ?: 0)
+    }
 
     companion object {
         fun of(spec: SourceSpec?) = SourceRecord().with(spec)
+
+        /** [kind]'s wear length format (schema `wear` / `wearLibre`); null = the source says the length. */
+        fun wearSpec(kind: SourceKind): NumberSpec? =
+            kind.wear
+                ?.let { key -> SettingsSpec.SETTINGS.first { it.android == "state:$key" } }
+                ?.number
+                ?.let(SettingsSpec.NUMBERS::get)
     }
 }
 

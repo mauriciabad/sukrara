@@ -55,6 +55,8 @@ import Testing
             t("source.nightscoutUrl", MacSettings.nightscoutURL),
             t("source.nightscoutTreatments", MacSettings.nightscoutTreatments),
             t("source.libreLinkUpPatient", MacSettings.libreLinkUpPatient),
+            n(MacSettings.libreLinkUpWear), n(MacSettings.nightscoutWear), n(MacSettings.jugglucoWear),
+            t("sensor.manualStart", MacSettings.manualStart),
             t("report.days", MacSettings.reportDays),
             t("general.readAloudShortcut", MacSettings.readAloudShortcut), t(json, MacSettings.alerts),
             t("alerts.throughFocus", MacSettings.throughFocus),

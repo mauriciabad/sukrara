@@ -1161,6 +1161,12 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       read-only token says so on Settings › Source. Upload to the same site says *Your source…*; Tidepool shows its
       *Glucose and treatments from Nightscout* switch off.
 - [ ] Sensor life: a *Sensor Start* on the site 30 min ago → warming up; 16 days ago → *Sensor ended*, no no-data alarm.
+- [ ] Sensor start and length (decision 10): a site without a *Sensor Start* → Settings › Sensor says *Start not known*
+  with *Set start*; the dialog refuses a time later than now and a start whose length is over; *Save* → warming up /
+  running, the reminders follow; a *Sensor Start* posted on the site later replaces it; *Remove* → not known again;
+  switching the source and back → gone. LibreLinkUp: *Lasts* 14 → the card's time left and the end move a day at once;
+  Mac: the same in Settings › Source › *Sensor*. *Sensor ended* notification's *Replace sensor* with an online source
+  opens Settings › Sensor.
 - [ ] Mac: *Do you have Sukrara on your phone?* → *No · Read it online* → Nightscout → Connect; the panel's states;
       Add Treatment works on this Mac's log, the site's entries are read-only.
 - [ ] LibreLinkUp (FEATURES.md *LibreLinkUp as a source*), on the emulator against the fake only (never a real account:

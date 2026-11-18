@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.nightscout.site
 
+import app.mauri.sukrara.core.model.LifeSettings
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceProblem
@@ -107,8 +109,11 @@ class NightscoutSourceTest {
 
     private fun account() = NightscoutAccount(secure, http, clock, Dispatchers.IO)
 
+    /** The person's side of the sensor's life (the app's source file): whose glucose, the wear length, the manual start. */
+    private val life = MutableStateFlow(LifeSettings(Person.Yours))
+
     private fun source(account: NightscoutAccount = account()) =
-        NightscoutSource(config, account, state, treatments, { "Sukrara-aaaaaa" }, NetworkState.Always, http, clock, Dispatchers.IO)
+        NightscoutSource(config, account, state, treatments, { "Sukrara-aaaaaa" }, NetworkState.Always, http, clock, Dispatchers.IO, life)
 
     private fun entry(
         at: Instant,
@@ -202,6 +207,51 @@ class NightscoutSourceTest {
             val again = launch(Dispatchers.IO) { s.readings.collect { } }
             withTimeout(10_000) { s.sensor.first { it == SensorState.Ended } }
             again.cancel()
+        }
+
+    @Test
+    fun `no Sensor Start on the site, a manual start gives the life at once, its length the wear setting`() =
+        runBlocking {
+            entries = "[${entry(now.minusSeconds(60), 120)}]"
+            val s = source(connect())
+            val job = launch(Dispatchers.IO) { s.readings.collect { } }
+            // nothing known: an active sensor whose end isn't known (never Sensor ended, no reminders)
+            assertEquals(SensorState.Active(null), withTimeout(10_000) { s.sensor.first { it is SensorState.Active } })
+            assertEquals(null, s.sensorLife.first())
+            // set 3 days ago with 10 days (a Dexcom G7): it ends in 7 days
+            val start = now.minus(Duration.ofDays(3))
+            life.value = LifeSettings(Person.Yours, 10 * 1440, start.epochSecond)
+            val active = withTimeout(10_000) { s.sensor.first { it is SensorState.Active && it.endsAt != null } } as SensorState.Active
+            assertEquals(start.plus(Duration.ofDays(10)), active.endsAt)
+            assertEquals(true, s.sensorLife.first()!!.manual)
+            // a start whose length is over: ended (no data stays quiet)
+            life.value = LifeSettings(Person.Yours, 2 * 1440, start.epochSecond)
+            withTimeout(10_000) { s.sensor.first { it == SensorState.Ended } }
+            // a start ahead of now (the clock moved back): not used, nothing claims the sensor ended
+            life.value = LifeSettings(Person.Yours, 10 * 1440, now.plusSeconds(600).epochSecond)
+            assertEquals(SensorState.Active(null), withTimeout(10_000) { s.sensor.first { it == SensorState.Active(null) } })
+            job.cancel()
+        }
+
+    @Test
+    fun `the site's newer Sensor Start wins over a manual start, someone else's glucose never takes one`() =
+        runBlocking {
+            entries = "[${entry(now.minusSeconds(60), 120)}]"
+            siteTreatments = """[{"_id":"s2","created_at":"2026-11-17T12:00:00.000Z","eventType":"Sensor Start"}]"""
+            life.value = LifeSettings(Person.Yours, 0, now.minus(Duration.ofDays(3)).epochSecond)
+            val s = source(connect())
+            val job = launch(Dispatchers.IO) { s.readings.collect { } }
+            // the site's Sensor Start (yesterday) is newer than the manual one (3 days ago): a new sensor from the source
+            val site = withTimeout(10_000) { s.sensorLife.first { it?.id == "s2" } }!!
+            assertEquals(false, site.manual)
+            assertEquals(Instant.parse("2026-11-17T12:00:00Z").plus(Duration.ofDays(15)), site.end)
+            // a manual start after the site's: yours wins (a sensor the site doesn't know yet)
+            life.value = LifeSettings(Person.Yours, 0, now.minusSeconds(3600).epochSecond)
+            assertEquals(true, withTimeout(10_000) { s.sensorLife.first { it?.manual == true } }!!.manual)
+            // someone else's glucose: their reminders are theirs, a manual start is never used
+            life.value = LifeSettings(Person.Theirs, 0, now.minusSeconds(3600).epochSecond)
+            assertEquals("s2", withTimeout(10_000) { s.sensorLife.first { it?.manual == false } }!!.id)
+            job.cancel()
         }
 
     @Test

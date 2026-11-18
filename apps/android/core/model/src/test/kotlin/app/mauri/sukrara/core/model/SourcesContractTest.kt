@@ -4,10 +4,12 @@
 package app.mauri.sukrara.core.model
 
 import app.mauri.sukrara.core.testing.Contracts
+import app.mauri.sukrara.settings.SettingsSpec
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -44,6 +46,11 @@ class SourcesContractTest {
             assertEquals(kind.id, s.getValue("delay_s").jsonPrimitive.int, kind.delaySeconds)
             assertEquals(kind.id, s.getValue("backfill").jsonPrimitive.boolean, kind.backfill)
             assertEquals(kind.id, s.strings("readings").toSet(), kind.readings.map { it.id }.toSet())
+            assertEquals(kind.id, s.str("life"), kind.life.id)
+            // the wear setting: its schema id, stored in the source file under the key the source names
+            val wear = (s.getValue("wear") as? kotlinx.serialization.json.JsonPrimitive)?.contentOrNull
+            val stored = wear?.let { id -> SettingsSpec.SETTINGS.first { it.id == id }.android }
+            assertEquals(kind.id, stored, kind.wear?.let { "state:$it" })
         }
         assertEquals(sources.strings("persons"), Person.entries.map { it.id })
     }

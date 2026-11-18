@@ -43,7 +43,8 @@
     <string name="reason_ended_body_libre">This sensor has reached its end. Apply a new one and start it in the Libre app.</string>
     <string name="reason_ended_body_juggluco">This sensor has reached its end. Apply a new one and start it in Juggluco.</string>
     <!-- The sensor ended, with a Nightscout site as the source: the new one starts in the app that uploads to it -->
-    <string name="reason_ended_body_uploader">This sensor has reached its end. Apply a new one and start it in the app that uploads to Nightscout.</string>
+    <string name="reason_ended_body_uploader">This sensor has reached its end. Apply a new one and start it in the app that uploads to Nightscout. If Nightscout doesn\'t say when, set the start in Sensor.</string>
+    <string name="reason_sensor_action">Sensor</string>
     <string name="reason_ended_action">Pair new sensor</string>
     <string name="reason_clock_title">Phone clock is behind</string>
     <string name="reason_clock_body">Readings arrive %1$s ahead of this phone\'s time, so Sukrara can\'t show them and alerts may say there is no data. Set the date and time to automatic.</string>

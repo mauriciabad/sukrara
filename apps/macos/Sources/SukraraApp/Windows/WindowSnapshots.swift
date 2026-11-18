@@ -606,11 +606,20 @@
                 ("signedout", "", .off),
             ]
             for (name, patient, snapshot) in states {
-                let m = SettingsModel(store: scratch(.theirs, patient: patient), follow: follow, version: "0.15.0")
+                let store = scratch(.theirs, patient: patient)
+                let m = SettingsModel(store: store, follow: follow, version: "0.15.0")
                 m.libreLinkUp.snapshot = { snapshot }
                 m.libreLinkUp.available = { true }
                 m.libreLinkUp.person = { .theirs }
                 m.libreLinkUp.now = { now }
+                m.sensorLife.now = { now }
+                m.sensorLife.sensor = {
+                    snapshot.sensor.flatMap {
+                        SensorLifeSettings(store: store).life(
+                            .libreLinkUp, said: SensorLives.Said(id: $0.serial, start: $0.start),
+                            now: now.timeIntervalSince1970)
+                    }
+                }
                 if snapshot.signInAgain { m.libreLinkUp.emailDraft = snapshot.email }
                 m.pane = .source
                 out.append(
@@ -619,7 +628,7 @@
                         AnyView(
                             SettingsView(
                                 model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                            ).settingsWindow(m, width: 560, height: 980))
+                            ).settingsWindow(m, width: 560, height: 1120))
                     ))
             }
             return out
@@ -700,7 +709,31 @@
                         AnyView(
                             SettingsView(
                                 model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
-                            ).settingsWindow(m, width: 560, height: 980))
+                            ).settingsWindow(m, width: 560, height: 1180))
+                    ))
+            }
+            // the sensor's start set by the person (a site without a Sensor Start), and the picker open on it
+            for name in ["manual", "picking"] {
+                let store = scratch(.nightscout)
+                store.set("https://ns.example.org", for: MacSettings.nightscoutURL)
+                store.set(
+                    (now.timeIntervalSince1970 - 2 * 86_400 - 3 * 3600).rounded(.down), for: MacSettings.manualStart)
+                store.setNumber(14_400, for: MacSettings.nightscoutWear)
+                let m = SettingsModel(store: store, follow: follow, version: "0.15.0")
+                let snapshot = snap(.ok, [120, 420])
+                m.nightscout.snapshot = { snapshot }
+                m.nightscout.available = { true }
+                m.nightscout.hasSecret = true
+                m.sensorLife.now = { now }
+                if name == "picking" { m.sensorLife.pick() }
+                m.pane = .source
+                out.append(
+                    (
+                        "settings-source-nightscout-\(name)",
+                        AnyView(
+                            SettingsView(
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                            ).settingsWindow(m, width: 560, height: 1240))
                     ))
             }
             // the treatment log: this Mac's own and the site's, read-only

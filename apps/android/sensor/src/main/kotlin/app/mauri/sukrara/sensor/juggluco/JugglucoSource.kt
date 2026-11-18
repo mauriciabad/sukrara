@@ -89,6 +89,8 @@ internal class JugglucoSource(
     private val baseUrl: String = LOCAL_URL,
     private val secret: suspend () -> String? = { null },
     private val now: () -> Long = { System.currentTimeMillis() / 1000 },
+    /** The person's wear length for a sensor read through Juggluco (schema `source.jugglucoWear`, minutes; 0 = the default). */
+    private val wearMin: () -> Int = { 0 },
     private val zone: () -> ZoneId,
 ) {
     companion object {
@@ -165,9 +167,10 @@ internal class JugglucoSource(
 
         /**
          * Juggluco's `sensor_status` (watchserver.cpp `firstdata`): `"dd-mm-yy HH:MM (3d 5h)"`, the start in the phone's
-         * local time; the serial is the entry's `_id` before `#`. No wear length published → the Libre 3 Plus default.
+         * local time; the serial is the entry's `_id` before `#`. No wear length published → the person's [wearMin]
+         * (Settings › Sensor › *Lasts*), else the Libre 3 Plus default.
          */
-        fun parseSensorStatus(body: String, zone: ZoneId): SensorInfo? =
+        fun parseSensorStatus(body: String, zone: ZoneId, wearMin: Int = 0): SensorInfo? =
             runCatching {
                 val e = (json.parseToJsonElement(body) as JsonArray).first().jsonObject
                 val st = e.str("sensor_status")?.takeIf { it.length >= 14 } ?: return null
@@ -176,7 +179,7 @@ internal class JugglucoSource(
                         .parse(st.substring(0, 14), DateTimeFormatter.ofPattern("dd-MM-yy HH:mm"))
                         .atZone(zone)
                         .toEpochSecond()
-                SensorLife.fromStart(e.str("_id").orEmpty().substringBefore('#'), start, 0)
+                SensorLife.fromStart(e.str("_id").orEmpty().substringBefore('#'), start, wearMin)
             }.getOrNull()
 
         private fun JsonObject.str(key: String) = this[key]?.takeIf { it !is JsonNull }?.jsonPrimitive?.contentOrNull
@@ -256,7 +259,7 @@ internal class JugglucoSource(
     /** The current sensor; a refusal (the API secret) is the source's, anything else just leaves it unknown. */
     private fun sensor(): SensorInfo? =
         try {
-            get("/sgv.json?count=1&sensor=Y") { parseSensorStatus(it, zone()) }
+            get("/sgv.json?count=1&sensor=Y") { parseSensorStatus(it, zone(), wearMin()) }
         } catch (e: JugglucoRefusedException) {
             throw e
         } catch (e: Exception) {

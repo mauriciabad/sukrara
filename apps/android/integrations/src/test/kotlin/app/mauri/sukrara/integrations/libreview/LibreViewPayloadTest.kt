@@ -96,6 +96,22 @@ class LibreViewPayloadTest {
     }
 
     @Test
+    fun `the sensor start record sends the wear length the sensor reports`() {
+        fun wear(sensor: LvSensor) =
+            Regex("\"wearDuration\":(\\d+)")
+                .find(LibreViewPayload.payload(emptyList(), "d", "t", 1_792_083_600, ZoneId.of("UTC"), sensor))
+                ?.groupValues
+                ?.get(1)
+                ?.toInt()
+        val current = LvGlucose(1400, 123, 1_792_083_600)
+        // a Libre 3 (14 days) and a 3 Plus (15) say their own; one that says none: the family's (Libre 3: 15)
+        assertEquals(20160, wear(LvSensor("0D0H000ABCDE", 1_792_000_000, current, sendStart = true, reportedWearMin = 20160)))
+        assertEquals(21600, wear(LvSensor("0D0H000ABCDE", 1_792_000_000, current, sendStart = true, reportedWearMin = 21600)))
+        assertEquals(21600, wear(LvSensor("0D0H000ABCDE", 1_792_000_000, current, sendStart = true)))
+        assertEquals(20160, wear(LvSensor("3MH000ABCDE", 1_792_000_000, current, sendStart = true)))
+    }
+
+    @Test
     fun `glucose record numbers come from the serial and the life count`() {
         val h = LibreViewPayload.histor("3MH000ABCD")
         val body =

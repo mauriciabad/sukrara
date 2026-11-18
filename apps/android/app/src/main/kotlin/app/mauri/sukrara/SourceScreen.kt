@@ -102,6 +102,7 @@ internal fun SourceScreen(
                                 choose = { id -> scope.launch { graph.integrations.libreLinkUpSource.choose(id) } },
                                 takeOver = openNewSensor,
                                 signOut = { scope.launch { graph.integrations.libreLinkUpSource.signOut() } },
+                                openSensor = openSensor,
                             ),
                         )
                     }

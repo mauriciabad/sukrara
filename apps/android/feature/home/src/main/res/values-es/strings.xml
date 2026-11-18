@@ -39,7 +39,8 @@
     <string name="reason_ended_body">Este sensor ha llegado a su fin. Ponte uno nuevo y emparéjalo.</string>
     <string name="reason_ended_body_libre">Este sensor ha llegado a su fin. Ponte uno nuevo e inícialo en la app Libre.</string>
     <string name="reason_ended_body_juggluco">Este sensor ha llegado a su fin. Ponte uno nuevo e inícialo en Juggluco.</string>
-    <string name="reason_ended_body_uploader">Este sensor ha llegado a su fin. Ponte uno nuevo e inícialo en la app que sube a Nightscout.</string>
+    <string name="reason_ended_body_uploader">Este sensor ha llegado a su fin. Ponte uno nuevo e inícialo en la app que sube a Nightscout. Si Nightscout no dice cuándo, indica el inicio en Sensor.</string>
+    <string name="reason_sensor_action">Sensor</string>
     <string name="reason_ended_action">Emparejar sensor nuevo</string>
     <string name="reason_clock_title">El reloj del móvil va atrasado</string>
     <string name="reason_clock_body">Las lecturas llegan %1$s por delante de la hora de este móvil, así que Sukrara no puede mostrarlas y las alertas pueden decir que no hay datos. Pon la fecha y la hora en automático.</string>

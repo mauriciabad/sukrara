@@ -7,8 +7,17 @@ import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SensorTiming
 import java.time.Instant
 
-/** What is known about the current sensor (unix seconds): its start, end and when the first reading is due. */
-data class SensorInfo(val serial: String, val startEpoch: Long, val endEpoch: Long, val warmupEndEpoch: Long)
+/**
+ * What is known about the current sensor (unix seconds): its start, end and when the first reading is due, and the
+ * wear length it was given ([wearMin], minutes; kept when the end moves earlier: a sensor that ended early).
+ */
+data class SensorInfo(
+    val serial: String,
+    val startEpoch: Long,
+    val endEpoch: Long,
+    val warmupEndEpoch: Long,
+    val wearMin: Int = ((endEpoch - startEpoch) / 60).toInt(),
+)
 
 /**
  * The sensor's life from its start, wear length and warm-up. The card's badge, ring and label helpers are drawn by the

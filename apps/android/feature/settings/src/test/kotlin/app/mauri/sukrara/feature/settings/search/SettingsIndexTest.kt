@@ -31,9 +31,12 @@ import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.NotificationStyle
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.TrendSetting
 import app.mauri.sukrara.core.model.UnlockedSound
@@ -103,6 +106,7 @@ import app.mauri.sukrara.feature.settings.pens.PensContent
 import app.mauri.sukrara.feature.settings.pens.PensViewModel
 import app.mauri.sukrara.feature.settings.repeatedRowIcons
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
+import app.mauri.sukrara.feature.settings.sensor.LifeRows
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsContent
@@ -442,6 +446,18 @@ class SettingsIndexTest {
             Scene("sensor", sensorPage) { SensorSettingsContent(sensor, now, zone, SensorSettingsActions()) {} },
             Scene("sensor, juggluco", sensorPage) {
                 SensorSettingsContent(sensor.copy(source = SourceChoice.Juggluco), now, zone, SensorSettingsActions()) {}
+            },
+            // a Nightscout site's sensor (docs/44 decision 10): its start set by you, the length
+            Scene("sensor, nightscout", sensorPage) {
+                SensorSettingsContent(
+                    sensor.copy(
+                        spec = SourceSpec(Person.Yours, SourceKind.Nightscout),
+                        life = LifeRows(now.minusSeconds(86_400), now.plusSeconds(9 * 86_400), true, true, 14400, "source.nightscoutWear"),
+                    ),
+                    now,
+                    zone,
+                    SensorSettingsActions(),
+                ) {}
             },
         )
 

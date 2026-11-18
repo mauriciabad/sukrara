@@ -34,11 +34,14 @@ import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.NotificationStyle
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorReminder
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SoundTest
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.model.UpdateFailure
@@ -72,6 +75,7 @@ import app.mauri.sukrara.feature.settings.graph.TirRingsContent
 import app.mauri.sukrara.feature.settings.lock.LockScreenContent
 import app.mauri.sukrara.feature.settings.lock.LockWidgetUi
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
+import app.mauri.sukrara.feature.settings.sensor.LifeRows
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
 import app.mauri.sukrara.feature.settings.sensor.SensorFamily
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
@@ -159,6 +163,49 @@ class SettingsGallery {
             LibreViewSummary("wearer@example.invalid", 2_864_434_397),
             // read directly, the family is named (the Sensor row: its icon is the page's sensor icon)
             family = SensorFamily("Libre 3", untested = false),
+        )
+
+    /** Your glucose from a Nightscout site without a *Sensor Start* (docs/44 decision 10): its start not known. */
+    private val nightscout = SourceSpec(Person.Yours, SourceKind.Nightscout)
+    private val sensorSiteUnknown =
+        SensorSettingsState(
+            SourceChoice.Libre3Direct,
+            SensorState.Active(null),
+            null,
+            null,
+            spec = nightscout,
+            life = LifeRows(null, null, manual = false, canSetStart = true, wearMin = 10 * 1440, wearSetting = "source.nightscoutWear"),
+        )
+
+    /** The same site with the start you set 2 days ago, a Dexcom G7's 10 days. */
+    private val sensorSiteManual =
+        sensorSiteUnknown.copy(
+            state = SensorState.Active(now.plusSeconds(8 * 86_400 - 3 * 3600)),
+            life =
+                sensorSiteUnknown.life!!.copy(
+                    start = now.minusSeconds(2 * 86_400 + 3 * 3600),
+                    end = now.plusSeconds(8 * 86_400 - 3 * 3600),
+                    manual = true,
+                ),
+        )
+
+    /** LibreLinkUp's sensor, the length its two choices (15 days). */
+    private val sensorLibreLinkUp =
+        SensorSettingsState(
+            SourceChoice.Libre3Direct,
+            SensorState.Active(now.plusSeconds(11 * 86_400)),
+            null,
+            LibreViewSummary("wearer@example.invalid", 2_864_434_397),
+            spec = SourceSpec(Person.Yours, SourceKind.LibreLinkUp),
+            life =
+                LifeRows(
+                    now.minusSeconds(4 * 86_400),
+                    now.plusSeconds(11 * 86_400),
+                    manual = false,
+                    canSetStart = false,
+                    wearMin = 15 * 1440,
+                    wearSetting = "source.libreLinkUpWear",
+                ),
         )
 
     /** A follower of a made-up wearer whose settings arrived yesterday. */
@@ -573,6 +620,20 @@ class SettingsGallery {
                     onBack = {},
                 )
             },
+            "sensor-site-unknown" to { SensorSettingsContent(sensorSiteUnknown, now, zone, SensorSettingsActions()) {} },
+            "sensor-site-manual" to { SensorSettingsContent(sensorSiteManual, now, zone, SensorSettingsActions()) {} },
+            "sensor-site-ended" to {
+                SensorSettingsContent(
+                    sensorSiteManual.copy(
+                        state = SensorState.Ended,
+                        life = sensorSiteManual.life!!.copy(start = now.minusSeconds(11 * 86_400), end = now.minusSeconds(86_400)),
+                    ),
+                    now,
+                    zone,
+                    SensorSettingsActions(),
+                ) {}
+            },
+            "sensor-librelinkup" to { SensorSettingsContent(sensorLibreLinkUp, now, zone, SensorSettingsActions()) {} },
             "sensor-none" to {
                 SensorSettingsContent(
                     SensorSettingsState(SourceChoice.Libre3Direct, SensorState.None, null, null),
@@ -699,6 +760,9 @@ class SettingsGallery {
                     "sensor",
                     "sensor-juggluco-signed-out",
                     "sensor-juggluco-unreachable",
+                    "sensor-site-unknown",
+                    "sensor-site-manual",
+                    "sensor-librelinkup",
                     "from-wearer",
                     "from-custom",
                     "overview-search",
@@ -754,6 +818,27 @@ class SettingsGallery {
         compose.waitForIdle()
         captureScreenRoboImage("build/outputs/roborazzi/settings-$name-${if (dark) "dark" else "light"}-font1x.png")
     }
+
+    /** The start dialog and the length's two dialogs (docs/44 decision 10), light and dark: one window each. */
+    @Test fun sensorStartDialogLight() = sensorStart(dark = false)
+
+    @Test fun sensorStartDialogDark() = sensorStart(dark = true)
+
+    @Test fun sensorLastsDialogLight() = placeDialog("sensor-lasts-dialog", false, "Lasts") { sensorSite() }
+
+    @Test fun sensorLastsDialogDark() = placeDialog("sensor-lasts-dialog", true, "Lasts") { sensorSite() }
+
+    @Test fun sensorLastsLibreDialogLight() = placeDialog("sensor-lasts-libre-dialog", false, "Lasts") { sensorLlu() }
+
+    @Test fun sensorLastsLibreDialogDark() = placeDialog("sensor-lasts-libre-dialog", true, "Lasts") { sensorLlu() }
+
+    private fun sensorStart(dark: Boolean) = placeDialog("sensor-start-dialog", dark, "Started") { sensorSite() }
+
+    @Composable
+    private fun sensorSite() = SensorSettingsContent(sensorSiteManual, now, zone, SensorSettingsActions()) {}
+
+    @Composable
+    private fun sensorLlu() = SensorSettingsContent(sensorLibreLinkUp, now, zone, SensorSettingsActions()) {}
 
     /** Graph scrolled to the sensor time's row: the Time shown and Sensor time left rows together (docs/38). */
     @Test fun graphPlaceRows() {

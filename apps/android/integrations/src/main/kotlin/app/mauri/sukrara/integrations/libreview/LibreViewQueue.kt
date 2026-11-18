@@ -210,7 +210,8 @@ object LibreViewQueue {
 
     /**
      * The sensor part of the next upload, or null. Only [serial]'s own readings (the source tags each batch with its
-     * sensor), only from [from], only when the sensor's start is known ([start] for this serial).
+     * sensor), only from [from], only when the sensor's start is known ([start] for this serial), with the wear length
+     * the sensor reports ([wearMin], 0 = none).
      */
     fun sensor(
         serial: String,
@@ -220,6 +221,7 @@ object LibreViewQueue {
         state: LvSensorState?,
         from: Long,
         nowS: Long,
+        wearMin: Int = 0,
     ): LvSensor? {
         if (start == null || from <= 0) return null
         val sent = SentRanges.expand(state?.sent.orEmpty())
@@ -233,7 +235,7 @@ object LibreViewQueue {
                 .sortedBy { it.lifeCount }
                 .take(MAX_HISTORY)
         if (cur == null && hist.isEmpty()) return null
-        return LvSensor(serial, start, cur, hist, sendStart = state?.startSent != true)
+        return LvSensor(serial, start, cur, hist, sendStart = state?.startSent != true, reportedWearMin = wearMin)
     }
 
     /** What of [serial]'s [history] LibreView lacks and would get (from [from]; nothing while glucose is off). */

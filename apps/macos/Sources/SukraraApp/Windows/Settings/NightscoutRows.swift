@@ -110,6 +110,8 @@ public final class NightscoutModel {
         }
         secretDraft = ""
         let changed = root != site
+        // another site is another source: the manual sensor start was set for the old one's sensor
+        if !site.isEmpty, !NightscoutSite.same(site, root) { store.set(0.0, for: MacSettings.manualStart) }
         store.set(root, for: MacSettings.nightscoutURL)
         revision += 1
         if !token.isEmpty || changed { secretChanged(Self.secret(secrets)) } else { retry() }

@@ -36,6 +36,9 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.designsystem.dialog.NumberDialog
+import app.mauri.sukrara.designsystem.dialog.NumberInput
 import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.rows.DangerRow
@@ -46,9 +49,11 @@ import app.mauri.sukrara.designsystem.rows.RadioRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SplitSwitchRow
 import app.mauri.sukrara.designsystem.rows.SwitchRow
+import app.mauri.sukrara.designsystem.source.titleRes
 import app.mauri.sukrara.feature.settings.BlockedTapsKind
 import app.mauri.sukrara.feature.settings.ConfirmDialog
 import app.mauri.sukrara.feature.settings.R
+import app.mauri.sukrara.feature.settings.SchemaPrefs
 import app.mauri.sukrara.feature.settings.SeeAlso
 import app.mauri.sukrara.feature.settings.SeeAlsoLink
 import app.mauri.sukrara.feature.settings.SettingsPage
@@ -78,6 +83,10 @@ class SensorSettingsActions(
     val openSensorEnd: () -> Unit = {},
     /** Settings › Source: where the glucose comes from (the sensor read here, or Juggluco) is chosen there. */
     val openSource: () -> Unit = {},
+    /** The source's wear length (minutes). */
+    val setWear: (Int) -> Unit = {},
+    /** Your sensor's start set by hand; null removes it. */
+    val setStart: (Instant?) -> Unit = {},
 )
 
 /** Settings › Sensor with its ViewModel; the "ends in" time moves every minute. */
@@ -118,6 +127,8 @@ fun SensorSettingsScreen(
             viewModel::setJugglucoSecret,
             onSensorEnd,
             onSource,
+            viewModel::setWear,
+            viewModel::setStart,
         ),
         onBack,
     )
@@ -140,14 +151,47 @@ fun SensorSettingsContent(
         if (state == null) return@SettingsPage
         var confirming by rememberSaveable { mutableStateOf<SourceChoice?>(null) }
         var editingSecret by rememberSaveable { mutableStateOf(false) }
-        StateNotice(state, actions, editSecret = { editingSecret = true }) { confirming = SourceChoice.Juggluco }
+        var editingStart by rememberSaveable { mutableStateOf(false) }
+        var editingWear by rememberSaveable { mutableStateOf(false) }
+        val life = state.life
+        if (state.online) {
+            OnlineNotice(state) { editingStart = true }
+        } else {
+            StateNotice(state, actions, editSecret = { editingSecret = true }) { confirming = SourceChoice.Juggluco }
+        }
         // Android blocks the sensor taps while *Open Sukrara when you scan a sensor* is on: the pens page's card
         if (state.source == SourceChoice.Libre3Direct && state.openOnScan?.let { it.on && it.blocked } == true) {
             TapsBlockedCard(BlockedTapsKind.Sensor, actions.allowTaps)
         }
-        SensorGroup(state, now, zone, actions)
-        if (state.source == SourceChoice.Libre3Direct) ThisPhoneGroup(state, actions)
-        AccountGroup(state.account, actions)
+        SensorGroup(state, now, zone, actions, editStart = { editingStart = true }, editWear = { editingWear = true })
+        // a Nightscout site: no sensor is paired or started on this phone, no LibreView account is needed
+        val nightscout = state.spec?.kind == SourceKind.Nightscout
+        if (state.source == SourceChoice.Libre3Direct && !nightscout) ThisPhoneGroup(state, actions)
+        if (!nightscout) AccountGroup(state.account, actions)
+        if (life != null && editingStart && life.canSetStart) {
+            SensorStartDialog(
+                current = life.start.takeIf { life.manual },
+                wearMin = life.wearMin,
+                now = now,
+                zone = zone,
+                onClose = { editingStart = false },
+                onRemove = { actions.setStart(null) }.takeIf { life.manual },
+            ) { actions.setStart(it) }
+        }
+        if (life != null && editingWear) {
+            val spec = SchemaPrefs.spec(life.wearSetting)
+            val libre = spec.presets.size == 2 && !spec.custom
+            val res = LocalContext.current.resources
+            NumberDialog(
+                stringResource(R.string.st_sensor_lasts_title),
+                NumberInput(spec),
+                life.wearMin.toDouble(),
+                { days(res, it) },
+                { editingWear = false },
+                sub = { wearHint(res, it, libre) },
+                live = { res.getString(R.string.st_sensor_lasts_live, days(res, it)) },
+            ) { actions.setWear(it.toInt()) }
+        }
         if (editingSecret) {
             JugglucoSecretDialog(
                 isSet = state.jugglucoSecret == true,
@@ -155,7 +199,9 @@ fun SensorSettingsContent(
                 onClose = { editingSecret = false },
             )
         }
-        FooterText(stringResource(R.string.st_sensor_footer))
+        // what the source doesn't say, said once
+        if (life != null) state.spec?.let { FooterText(stringResource(R.string.st_sensor_life_footer, serviceName(it.kind))) }
+        if (!nightscout) FooterText(stringResource(R.string.st_sensor_footer))
         SeeAlso(
             listOf(
                 SeeAlsoLink(
@@ -319,12 +365,117 @@ private fun StateNotice(
 /** Juggluco's package (its launcher opens it so the person can turn its web server on). */
 private const val JUGGLUCO_PACKAGE = "tk.glucodata"
 
+/**
+ * An online source's sensor that needs the person: its start isn't known (*Set start*, where they may set it: a
+ * Nightscout site without a *Sensor Start*), or it ended (a new one's start, or where it's started: its app).
+ */
+@Composable
+private fun OnlineNotice(
+    state: SensorSettingsState,
+    setStart: () -> Unit,
+) {
+    val life = state.life ?: return
+    val name = state.spec?.let { serviceName(it.kind) }.orEmpty()
+    val set = stringResource(R.string.st_sensor_start_set) to setStart
+    when {
+        state.state == SensorState.Ended && life.canSetStart -> {
+            StateStrip(DsR.drawable.ds_ic_dia_sensor, stringResource(R.string.st_sensor_ended_manual), listOf(set))
+        }
+
+        state.state == SensorState.Ended -> {
+            StateStrip(DsR.drawable.ds_ic_dia_sensor, stringResource(R.string.st_sensor_ended_elsewhere, name), emptyList())
+        }
+
+        life.start == null && life.canSetStart -> {
+            StateStrip(DsR.drawable.ds_ic_calendar_month, stringResource(R.string.st_sensor_start_unknown_text, name), listOf(set))
+        }
+    }
+}
+
+/**
+ * The sensor's life where the source doesn't say all of it (docs/44 decision 10): *Started* (from the source, or set
+ * by you; a row that opens the start dialog where you may set it), *Lasts* (the source's wear length: THE number
+ * input) and *Ends*.
+ */
+@Composable
+private fun LifeRowsGroup(
+    state: SensorSettingsState,
+    life: LifeRows,
+    now: Instant,
+    zone: ZoneId,
+    editStart: () -> Unit,
+    editWear: () -> Unit,
+) {
+    val res = LocalContext.current.resources
+    val name = state.spec?.let { serviceName(it.kind) }.orEmpty()
+    val started =
+        when {
+            life.start == null -> stringResource(R.string.st_sensor_start_none)
+            life.manual -> stringResource(R.string.st_sensor_start_by_you, ClockText.dateTime(life.start.epochSecond, zone = zone))
+            else -> stringResource(R.string.st_sensor_start_from, ClockText.dateTime(life.start.epochSecond, zone = zone), name)
+        }
+    if (life.canSetStart) {
+        NavigationRow(stringResource(R.string.st_sensor_started), editStart, summary = started, icon = DsR.drawable.ds_ic_calendar_month)
+    } else {
+        InfoRow(stringResource(R.string.st_sensor_started), summary = started, icon = DsR.drawable.ds_ic_calendar_month)
+    }
+    NavigationRow(
+        stringResource(R.string.st_sensor_lasts),
+        editWear,
+        summary = days(res, life.wearMin.toDouble()),
+        icon = DsR.drawable.ds_ic_timelapse,
+    )
+    life.end?.let { end ->
+        val endsAt = ClockText.dateTime(end.epochSecond, zone = zone)
+        val left = Duration.between(now, end).toMinutes()
+        val running = state.state is SensorState.Active || state.state is SensorState.WarmingUp
+        val words = CardWords.of(res).durations
+        InfoRow(
+            stringResource(R.string.st_sensor_ends),
+            icon = DsR.drawable.ds_ic_hourglass_top,
+            summary = if (running && left > 0) stringResource(R.string.st_sensor_ends_in, endsAt, Durations.whole(left, words)) else endsAt,
+        )
+    }
+}
+
+/** A wear length in days (minutes stored): *15 days*. */
+internal fun days(
+    res: android.content.res.Resources,
+    minutes: Double,
+): String = (minutes / MIN_PER_DAY).toInt().let { res.getQuantityString(R.plurals.st_sensor_days, it, it) }
+
+/** Which sensors last that long, under an option: helps pick without knowing the number. */
+internal fun wearHint(
+    res: android.content.res.Resources,
+    minutes: Double,
+    libre: Boolean,
+): String? =
+    when ((minutes / MIN_PER_DAY).toInt()) {
+        10 -> res.getString(R.string.st_sensor_lasts_10)
+        14 -> res.getString(if (libre) R.string.st_sensor_lasts_14_libre else R.string.st_sensor_lasts_14)
+        15 -> res.getString(if (libre) R.string.st_sensor_lasts_15_libre else R.string.st_sensor_lasts_15)
+        else -> null
+    }
+
+private const val MIN_PER_DAY = 1440.0
+
+/** The service a source's sensor life comes from, by its own name (not translated). */
+private fun serviceName(kind: SourceKind): String =
+    when (kind) {
+        SourceKind.Nightscout -> "Nightscout"
+        SourceKind.LibreLinkUp -> "LibreLinkUp"
+        SourceKind.PhoneApp -> "Juggluco"
+        else -> "Sukrara"
+    }
+
 @Composable
 private fun SensorGroup(
     state: SensorSettingsState,
     now: Instant,
     zone: ZoneId,
     actions: SensorSettingsActions,
+    editStart: () -> Unit,
+    editWear: () -> Unit,
 ) {
     SettingsGroup(title = stringResource(R.string.st_sensor_current)) {
         // the active source, plainly: what Sukrara reads glucose from right now (Settings › Source changes it)
@@ -332,7 +483,7 @@ private fun SensorGroup(
             stringResource(R.string.st_sensor_reading_from),
             actions.openSource,
             summary =
-                stringResource(
+                state.spec?.takeIf { state.online }?.let { stringResource(it.titleRes()) } ?: stringResource(
                     if (state.source ==
                         SourceChoice.Juggluco
                     ) {
@@ -352,7 +503,11 @@ private fun SensorGroup(
             )
         }
         InfoRow(stringResource(R.string.st_sensor_status), summary = statusText(state, zone), icon = DsR.drawable.ds_ic_info)
-        state.sensor?.let { sensor ->
+        val life = state.life
+        if (life != null) {
+            LifeRowsGroup(state, life, now, zone, editStart, editWear)
+        }
+        state.sensor?.takeIf { life == null }?.let { sensor ->
             InfoRow(stringResource(R.string.st_sensor_serial), summary = sensor.serial, icon = DsR.drawable.ds_ic_edit_note)
             InfoRow(
                 stringResource(R.string.st_sensor_started),
@@ -377,22 +532,34 @@ private fun SensorGroup(
                     },
             )
         }
-        NavigationRow(
-            stringResource(R.string.st_sensor_pair_new),
-            actions.pairNewSensor,
-            icon = DsR.drawable.ds_ic_add,
-            summary =
-                stringResource(
-                    if (state.source ==
-                        SourceChoice.Juggluco
-                    ) {
-                        R.string.st_sensor_pair_new_juggluco
-                    } else {
-                        R.string.st_sensor_pair_new_summary
-                    },
-                ),
-        )
+        // a Nightscout site's sensor is started in its own app (its start: the Started row)
+        if (state.spec?.kind != SourceKind.Nightscout) {
+            PairRow(state, actions)
+        }
     }
+}
+
+/** *Pair new sensor* (LibreLinkUp: the takeover, from the Libre app to Sukrara). */
+@Composable
+private fun PairRow(
+    state: SensorSettingsState,
+    actions: SensorSettingsActions,
+) {
+    NavigationRow(
+        stringResource(R.string.st_sensor_pair_new),
+        actions.pairNewSensor,
+        icon = DsR.drawable.ds_ic_add,
+        summary =
+            stringResource(
+                if (state.source ==
+                    SourceChoice.Juggluco
+                ) {
+                    R.string.st_sensor_pair_new_juggluco
+                } else {
+                    R.string.st_sensor_pair_new_summary
+                },
+            ),
+    )
 }
 
 /**
@@ -451,6 +618,34 @@ private fun statusText(
     zone: ZoneId,
 ): String {
     if (state.stopped) return stringResource(R.string.st_sensor_status_stopped)
+    if (state.online) {
+        // the source's sensor (the hub's state): no link of this phone's own to speak of
+        return when (val s = state.state) {
+            is SensorState.WarmingUp -> {
+                stringResource(R.string.st_sensor_status_warming, ClockText.time(s.readyAt.epochSecond, zone = zone))
+            }
+
+            SensorState.Ended -> {
+                stringResource(R.string.st_sensor_status_ended)
+            }
+
+            is SensorState.Active -> {
+                stringResource(
+                    if (s.endsAt ==
+                        null
+                    ) {
+                        R.string.st_sensor_status_unknown
+                    } else {
+                        R.string.st_sensor_status_running
+                    },
+                )
+            }
+
+            else -> {
+                stringResource(R.string.st_sensor_status_unknown)
+            }
+        }
+    }
     return when (val s = state.state) {
         SensorState.None -> {
             stringResource(

@@ -85,12 +85,18 @@ sealed interface NoDataReason {
 
     /**
      * The sensor ended: a new one is paired here, or ([renew]) started in the app that reads it for this source (the
-     * Libre app, Juggluco, a site's uploader), so the way out is Settings › Source, not *Pair new sensor*.
+     * Libre app, Juggluco, a site's uploader), so the way out is Settings › Source, not *Pair new sensor*; a site's
+     * sensor opens Settings › Sensor, where its new start is set when the site doesn't say it (docs/44 decision 10).
      */
     data class SensorEnded(
         val renew: SensorRenew = SensorRenew.HERE,
     ) : NoDataReason {
-        override val action = if (renew == SensorRenew.HERE) HomeAction.PairSensor else HomeAction.OpenSource
+        override val action =
+            when (renew) {
+                SensorRenew.HERE -> HomeAction.PairSensor
+                SensorRenew.ITS_APP -> HomeAction.OpenSensor
+                else -> HomeAction.OpenSource
+            }
     }
 
     /**

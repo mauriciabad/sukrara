@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
+import app.mauri.sukrara.feature.settings.sensor.LifeRows
 import app.mauri.sukrara.feature.settings.sensor.SourceChoice
 import app.mauri.sukrara.feature.settings.sensor.SourceLink
 import app.mauri.sukrara.sensor.SensorInfo
@@ -95,7 +96,32 @@ class SensorSettingsBridgeTest {
             startMonitoring = { events += "start" },
             resetMonitoring = { events += "reset" },
             sourceChanged = { events += "source changed" },
+            hubSensor = hubSensor,
+            life = life,
+            saveWear = { events += "wear $it" },
+            saveStart = { events += "start ${it?.epochSecond}" },
         )
+
+    private val hubSensor = MutableStateFlow<SensorState>(SensorState.None)
+    private val life = MutableStateFlow<LifeRows?>(null)
+
+    @Test fun `an online source's sensor is the hub's, with its life, and the page's choices are stored`() =
+        runTest {
+            val b = bridge()
+            spec.value = SourceSpec(Person.Yours, SourceKind.Nightscout)
+            // the sensor module reads nothing then (it would say no sensor): the hub's state is the source's
+            sensors.sensor.value = SensorState.None
+            hubSensor.value = SensorState.Active(java.time.Instant.ofEpochSecond(2_000_000_000), "manual-1792000000")
+            life.value = LifeRows(null, null, manual = false, canSetStart = true, wearMin = 21600, wearSetting = "source.nightscoutWear")
+            val st = b.state.first { it.spec?.kind == SourceKind.Nightscout && it.life != null }
+            assertEquals(hubSensor.value, st.state)
+            assertEquals(true, st.online)
+            b.setWear(14400)
+            b.setStart(java.time.Instant.ofEpochSecond(1_792_000_000))
+            b.setStart(null)
+            runCurrent()
+            assertEquals(listOf("wear 14400", "start 1792000000", "start null"), events)
+        }
 
     @Test fun `the link says whether readings really arrive`() =
         runTest {

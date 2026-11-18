@@ -17,6 +17,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.LifeSettings
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.HistoryImportStore
@@ -122,6 +123,8 @@ class IntegrationsModule(
     libreLinkUpState: StateStore<LluSourceState>,
     /** Whom the LibreLinkUp source reads (kept with whose glucose and where from). */
     libreLinkUpConfig: LluSourceConfig,
+    /** The person's side of each source's sensor life: its wear length, the manual start (the app's source file). */
+    sensorLife: (SourceKind) -> Flow<LifeSettings>,
     appVersion: String,
     readings: ReadingsRepository,
     treatments: TreatmentsRepository,
@@ -196,6 +199,7 @@ class IntegrationsModule(
             http,
             clock,
             dispatchers.io,
+            sensorLife(SourceKind.Nightscout),
             log,
         )
 
@@ -209,7 +213,16 @@ class IntegrationsModule(
 
     /** Glucose from LibreLinkUp, when it is the source (docs/44 step 2). */
     val libreLinkUpSource =
-        LibreLinkUpSource(libreLinkUpConfig, libreLinkUpAccount, libreLinkUpState, network, clock, dispatchers.io, log)
+        LibreLinkUpSource(
+            libreLinkUpConfig,
+            libreLinkUpAccount,
+            libreLinkUpState,
+            network,
+            clock,
+            dispatchers.io,
+            sensorLife(SourceKind.LibreLinkUp),
+            log,
+        )
 
     val libreView =
         LibreViewUploader(

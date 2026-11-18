@@ -9,16 +9,19 @@ import app.mauri.sukrara.core.data.libreview.LluPerson
 import app.mauri.sukrara.core.data.libreview.LluPick
 import app.mauri.sukrara.core.model.CallOutcome
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.LifeSettings
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.integrations.nightscout.site.NetworkState
 import app.mauri.sukrara.integrations.nightscout.site.NsSensor
+import app.mauri.sukrara.integrations.nightscout.site.NsSensorLife
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
@@ -32,6 +35,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -185,6 +189,8 @@ class LibreLinkUpSource(
     private val network: NetworkState,
     private val clock: Clock,
     private val io: CoroutineDispatcher,
+    /** The person's side of the sensor's life: its wear length (LibreLinkUp says the start, not the length). */
+    private val life: Flow<LifeSettings> = flowOf(LifeSettings()),
     private val log: (String) -> Unit = {},
 ) : ReadingSource {
     private val statusFlow = MutableStateFlow<SourceStatus>(SourceStatus.NotStarted)
@@ -193,8 +199,18 @@ class LibreLinkUpSource(
     private val sensorFlow = MutableStateFlow<SensorState>(SensorState.Active(endsAt = null))
     override val sensor: StateFlow<SensorState> = sensorFlow.asStateFlow()
 
-    /** The sensor LibreLinkUp says is running (Sensor end in calendar, the takeover's sensor life), null = none known. */
-    val sensorLife: Flow<NsSensor?> = store.data.map { it.sensorLife }.distinctUntilChanged()
+    /**
+     * The sensor LibreLinkUp says is running, with the wear length (Sensor end in calendar, the takeover's start,
+     * Settings › Sensor), null = none known.
+     */
+    val sensorLife: Flow<NsSensor?> =
+        combine(store.data, life) { st, lf -> effective(st.sensorLife, lf, clock.now()) }.distinctUntilChanged()
+
+    private fun effective(
+        said: NsSensor?,
+        lf: LifeSettings,
+        now: Instant,
+    ) = NsSensorLife.effective(SourceKind.LibreLinkUp, said, lf, now)
 
     private val live = MutableStateFlow(Live())
 
@@ -216,8 +232,9 @@ class LibreLinkUpSource(
 
     /** What the pages show. */
     val view: Flow<LluSourceView> =
-        combine(config.data, store.data, live, account.saved, ticker()) { s, st, l, saved, now ->
+        combine(config.data, combine(store.data, life, ::Pair), live, account.saved, ticker()) { s, (st, lf), l, saved, now ->
             val readable = saved as? LluAccount.Saved.Readable
+            val sensor = effective(st.sensorLife, lf, now)
             LluSourceView(
                 signedIn = readable != null && !readable.signedOut,
                 email = readable?.email.orEmpty(),
@@ -225,9 +242,9 @@ class LibreLinkUpSource(
                 patient = s.patient,
                 name = st.name,
                 people = st.people.map { LluPerson(it.id, it.name) },
-                health = health(l, now, st.sensorLife),
+                health = health(l, now, sensor),
                 newest = l.newest,
-                sensor = st.sensorLife,
+                sensor = sensor,
             )
         }.distinctUntilChanged()
 
@@ -375,6 +392,8 @@ class LibreLinkUpSource(
             statusFlow.value = SourceStatus.Connecting
             launch { network.back.collect { kick() } }
             launch { config.data.drop(1).collect { kick() } }
+            // a wear length chosen on the Sensor page applies at once
+            launch { life.drop(1).collect { publish() } }
             try {
                 run(this)
             } finally {
@@ -422,9 +441,9 @@ class LibreLinkUpSource(
         val l = live.value.copy(online = network.online())
         live.value = l
         val now = clock.now()
-        val life = store.data.first().sensorLife
-        sensorFlow.value = life?.state(l.newest, now) ?: SensorState.Active(endsAt = null)
-        val h = health(l, now, life)
+        val sensor = effective(store.data.first().sensorLife, life.first(), now)
+        sensorFlow.value = sensor?.state(l.newest, now) ?: SensorState.Active(endsAt = null)
+        val h = health(l, now, sensor)
         statusFlow.value =
             when {
                 // warming up: the newest reading is the old sensor's, so not live (and no problem: the card says it)

@@ -27,6 +27,8 @@ import Testing
             #expect(s["delay_s"] as? Int == kind.delaySeconds)
             #expect(s["backfill"] as? Bool == kind.backfill)
             #expect(Set(s["readings"] as? [String] ?? []) == kind.readings)
+            #expect(s["life"] as? String == kind.life.rawValue)
+            #expect((s["wear"] as? String) == kind.wear?.id)
         }
         #expect(try json("sources/sources.json")["persons"] as? [String] == Person.allCases.map(\.rawValue))
     }
