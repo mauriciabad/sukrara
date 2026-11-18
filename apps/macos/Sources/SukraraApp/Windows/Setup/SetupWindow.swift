@@ -157,7 +157,8 @@ public struct SetupView: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        // one step at a time in a ZStack: the step left fades out in place while the next one comes in
+        ZStack(alignment: .topLeading) {
             Group {
                 switch model.flow.current {
                 case .welcome: welcome
@@ -220,12 +221,31 @@ public struct SetupView: View {
                 case nil: done
                 }
             }
-            .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+            .id(model.flow.current)
+            .transition(Self.step(back: model.flow.wentBack, reduceMotion: reduceMotion))
         }
-        .animation(reduceMotion ? nil : .spring(duration: 0.35), value: model.flow.current)
+        .animation(Self.stepAnimation(reduceMotion: reduceMotion), value: model.flow.current)
         .padding(24)
         .frame(width: 520, alignment: .topLeading)
     }
+
+    /// A step's way in, as a stepped flow moves on the Mac (a navigation push, Setup Assistant's panes): forward it
+    /// comes in from the trailing edge, Back from the leading one, fading in; the step left fades out in place (its
+    /// removal keeps the transition it was drawn with, so it carries no direction). Reduce Motion: a cross-fade only.
+    static func step(back: Bool, reduceMotion: Bool) -> AnyTransition {
+        if reduceMotion { return .opacity }
+        return .asymmetric(
+            insertion: .offset(x: back ? -stepSlide : stepSlide).combined(with: .opacity),
+            removal: .opacity)
+    }
+
+    /// The spring the steps move on; Reduce Motion: a short fade (nothing moves).
+    static func stepAnimation(reduceMotion: Bool) -> Animation {
+        reduceMotion ? .easeInOut(duration: 0.2) : .spring(duration: 0.35)
+    }
+
+    /// How far a step slides in (points): enough to read the direction, short enough to stay quick.
+    static let stepSlide: CGFloat = 40
 
     /// *Whose glucose will Sukrara show?*: the two cards, preselected with what the Mac runs on.
     private var personPage: some View {
@@ -416,6 +436,8 @@ public struct SetupView: View {
 struct PhoneChoice: View {
     @Binding var selected: Bool?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// Each card's picks: its symbol bounces only when that card is picked (a shared value bounced the card left too).
+    @State private var picks: [Bool: Int] = [:]
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -427,13 +449,15 @@ struct PhoneChoice: View {
                 false, symbol: "globe", title: L10n.t("No · Read it online"),
                 means: L10n.t("LibreLinkUp or Nightscout on this Mac, and your treatments here: no phone app needed"))
         }
-        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.25), value: selected)
     }
 
     private func card(_ value: Bool, symbol: String, title: String, means: String) -> some View {
         let on = selected == value
         return Button {
-            if !on { NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now) }
+            if !on {
+                NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now)
+                if !reduceMotion { picks[value, default: 0] += 1 }
+            }
             selected = value
         } label: {
             VStack(alignment: .leading, spacing: 10) {
@@ -441,7 +465,7 @@ struct PhoneChoice: View {
                     Image(systemName: symbol)
                         .font(.system(size: 30, weight: .regular))
                         .foregroundStyle(on ? Color.accentColor : .secondary)
-                        .symbolEffect(.bounce, value: on && !reduceMotion)
+                        .symbolEffect(.bounce, value: picks[value, default: 0])
                         .frame(height: 40)
                     Spacer()
                     Image(systemName: on ? "checkmark.circle.fill" : "circle")
@@ -464,7 +488,7 @@ struct PhoneChoice: View {
                     .strokeBorder(on ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: on ? 2 : 1)
             )
             .shadow(color: .black.opacity(on ? 0.12 : 0), radius: on ? 6 : 0, y: on ? 2 : 0)
-            .scaleEffect(on && !reduceMotion ? 1.01 : 1)
+            .modifier(ChoiceCardMotion(on: on))
             .contentShape(RoundedRectangle(cornerRadius: 16))
         }
         .buttonStyle(.plain)

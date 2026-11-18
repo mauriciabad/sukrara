@@ -438,6 +438,31 @@ private extension DateComponents {
         #expect(f.current == .welcome)
     }
 
+    /// The setup window slides a step in from the side it came from: Back from the leading edge, any other move from
+    /// the trailing one; Reduce Motion only fades.
+    @Test func backSlidesFromTheLeadingEdgeEverythingElseFromTheTrailing() {
+        var f = SetupFlow()
+        f.complete(.welcome)
+        #expect(!f.wentBack)
+        f.back()
+        #expect(f.wentBack)
+        f.complete(.welcome)
+        #expect(!f.wentBack)
+        f.back()
+        f.open(.alerts)
+        #expect(!f.wentBack)
+        #expect(SetupView.stepSlide > 0)
+    }
+
+    /// The owner, 2026-11-18: picking a big choice card played the pick on both cards. Only the card being picked
+    /// springs; the one left eases back without bounce; Reduce Motion animates neither.
+    @Test func onlyTheCardBeingPickedSprings() {
+        #expect(ChoiceCardMotion.animation(picked: true, reduceMotion: false) == .spring(duration: 0.35, bounce: 0.25))
+        #expect(ChoiceCardMotion.animation(picked: false, reduceMotion: false) == .easeOut(duration: 0.15))
+        #expect(ChoiceCardMotion.animation(picked: true, reduceMotion: true) == nil)
+        #expect(ChoiceCardMotion.animation(picked: false, reduceMotion: true) == nil)
+    }
+
     @Test func persistsUnderTheSchemaKey() {
         let store = scratchStore()
         var f = SetupFlow(store: store)

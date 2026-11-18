@@ -91,7 +91,6 @@ public final class SourceChoiceModel {
 /// trackpad tap; Reduce Motion: it changes at once. VoiceOver: two buttons with the selected trait.
 struct PersonChoice: View {
     @Binding var selected: Person?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 12) {
@@ -125,7 +124,7 @@ struct PersonChoice: View {
                             .strokeBorder(on ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: on ? 2 : 1)
                     )
                     .shadow(color: .black.opacity(on ? 0.12 : 0), radius: on ? 6 : 0, y: on ? 2 : 0)
-                    .scaleEffect(on && !reduceMotion ? 1.01 : 1)
+                    .modifier(ChoiceCardMotion(on: on))
                     .contentShape(RoundedRectangle(cornerRadius: 16))
                 }
                 .buttonStyle(.plain)
@@ -133,7 +132,27 @@ struct PersonChoice: View {
                 .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
             }
         }
-        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.25), value: selected)
+    }
+}
+
+/// A big choice card's pick (Whose glucose, *Do you have Sukrara on your phone?*; Android's `PersonChoiceCard`): only
+/// the card being picked lifts on a spring; the one left goes back to plain at once-ish, without the pick's spring or
+/// lift (it moved both: one `.animation` over the pair sprang the card being left too). Reduce Motion: no lift, no
+/// animation.
+struct ChoiceCardMotion: ViewModifier {
+    let on: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(on && !reduceMotion ? 1.01 : 1)
+            .animation(Self.animation(picked: on, reduceMotion: reduceMotion), value: on)
+    }
+
+    /// The card being picked: the spring; the card being left: a short ease without bounce; Reduce Motion: none.
+    static func animation(picked: Bool, reduceMotion: Bool) -> Animation? {
+        if reduceMotion { return nil }
+        return picked ? .spring(duration: 0.35, bounce: 0.25) : .easeOut(duration: 0.15)
     }
 }
 

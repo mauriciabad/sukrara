@@ -18,6 +18,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -27,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 
 /**
  * M3 Expressive motion springs (androidx material3 `ExpressiveMotionTokens` values): spatial springs (position, size,
@@ -63,6 +67,34 @@ object Motion {
         return (fadeIn(enter) + scaleIn(enter, initialScale = FADE_IN_SCALE)) togetherWith
             fadeOut(tween(FADE_OUT_MS, easing = LinearEasing))
     }
+
+    /**
+     * M3 shared axis X (material.io "Material motion": steps of one flow, such as setup's): the new step slides in
+     * [SHARED_AXIS_SLIDE] from the end and the old one out towards the start ([forward]), or the other way round on the
+     * way back, both over [SHARED_AXIS_MS]; the old fades out in the first [FADE_OUT_MS], the new fades in after it (the
+     * fade-through's numbers, as MaterialSharedAxis pairs the slide with FadeThroughProvider). [slidePx] is
+     * [SHARED_AXIS_SLIDE] in pixels. With [reduced] motion nothing moves: the same fade through, without the slide.
+     */
+    fun sharedAxisX(
+        forward: Boolean,
+        slidePx: Int,
+        reduced: Boolean = false,
+    ): ContentTransform {
+        val fadeOut = fadeOut(tween(FADE_OUT_MS, easing = LinearEasing))
+        val fadeIn = fadeIn(tween(FADE_IN_MS, delayMillis = FADE_OUT_MS, easing = LinearEasing))
+        if (reduced) return fadeIn togetherWith fadeOut
+        val sign = if (forward) 1 else -1
+        val move = tween<IntOffset>(SHARED_AXIS_MS, easing = Standard)
+        return (slideInHorizontally(move) { sign * slidePx } + fadeIn) togetherWith
+            (slideOutHorizontally(move) { -sign * slidePx } + fadeOut)
+    }
+
+    /** How far shared axis X moves the steps (M3: 30 dp). */
+    val SHARED_AXIS_SLIDE = 30.dp
+    internal const val SHARED_AXIS_MS = 300
+
+    /** M3 standard easing, the curve the shared axis moves on. */
+    internal val Standard = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
     /** M3 emphasized decelerate, the fade-through's way in. */
     internal val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)

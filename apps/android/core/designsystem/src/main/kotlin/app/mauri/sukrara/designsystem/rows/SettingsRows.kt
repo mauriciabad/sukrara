@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
@@ -61,6 +63,7 @@ import com.android.settingslib.spa.framework.compose.HighlightSurface
 import com.android.settingslib.spa.framework.theme.SettingsDimension
 import com.android.settingslib.spa.framework.theme.SettingsShape
 import com.android.settingslib.spa.framework.theme.SettingsSpace
+import com.android.settingslib.spa.framework.theme.settingsBackground
 import com.android.settingslib.spa.widget.button.ActionButton
 import com.android.settingslib.spa.widget.button.ActionButtons
 import com.android.settingslib.spa.widget.button.CategoryButton
@@ -106,6 +109,16 @@ const val ROW_ICON_TAG = "settings-row-icon"
  * repeats on a page.
  */
 val RowIconRes = SemanticsPropertyKey<Int>("RowIconRes")
+
+/**
+ * The background a page of [SettingsGroup]s sits on (SPA's `settingsBackground`, as its scaffolds and its setup-wizard
+ * `GlifScaffold` use): the groups' rows ([groupCard]) read as cards on it in both themes. On `surface` they didn't in
+ * light (`surfaceBright` and `surface` are almost the same white), so setup's steps use this too.
+ */
+val ColorScheme.groupsBackground: Color get() = settingsBackground
+
+/** A card of its own on [groupsBackground], in the colour of a group's rows (setup's choice and checklist cards). */
+val ColorScheme.groupCard: Color get() = surfaceBright
 
 /**
  * The title of a [SettingsGroup], on the semantics around its rows (no TalkBack effect): the settings search index test

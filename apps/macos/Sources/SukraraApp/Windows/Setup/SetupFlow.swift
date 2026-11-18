@@ -20,7 +20,11 @@ public struct SetupFlow: Equatable, Sendable {
 
     public private(set) var states: [Step: StepState]
     /// The step on screen; nil = the walk is over (Done page or closed).
-    public private(set) var current: Step?
+    public private(set) var current: Step? {
+        didSet { wentBack = false }
+    }
+    /// The last move was Back: the setup window slides the step in from the leading edge (forward: the trailing one).
+    public private(set) var wentBack = false
 
     public init(states: [Step: StepState] = [:]) {
         self.states = states
@@ -43,6 +47,7 @@ public struct SetupFlow: Equatable, Sendable {
         guard let c = current, let i = Step.allCases.firstIndex(of: c) else { return }
         guard let previous = Step.allCases[..<i].last(where: { !over.contains($0) }) else { return }
         current = previous
+        wentBack = true
     }
 
     /// "Finish now" (the Done page): the first unfinished step.

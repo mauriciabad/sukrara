@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -80,6 +81,8 @@ import app.mauri.sukrara.designsystem.root.AccessStepBanner
 import app.mauri.sukrara.designsystem.root.accessStep
 import app.mauri.sukrara.designsystem.rows.DndChoice
 import app.mauri.sukrara.designsystem.rows.UnlockedSoundAnswer
+import app.mauri.sukrara.designsystem.rows.groupCard
+import app.mauri.sukrara.designsystem.rows.groupsBackground
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
 import app.mauri.sukrara.feature.sharing.R
@@ -303,7 +306,7 @@ fun SetupContent(
 ) {
     val step = u.step ?: return
     val reduced = LocalReducedMotion.current
-    Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.surface) {
+    Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.groupsBackground) {
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
             Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 if (u.canBack || u.single) {
@@ -322,7 +325,16 @@ fun SetupContent(
                     )
                 }
             }
-            AnimatedContent(step, transitionSpec = { Motion.fadeThrough(reduced) }, label = "setup-step") { s ->
+            // shared axis X: forward slides in from the end, Back from the start (reduced motion: a fade)
+            val slide = with(LocalDensity.current) { Motion.SHARED_AXIS_SLIDE.roundToPx() }
+            val finishing = u.single && !u.visit
+            AnimatedContent(
+                step,
+                transitionSpec = {
+                    Motion.sharedAxisX(!SetupMachine.goesBack(initialState, targetState, finishing), slide, reduced)
+                },
+                label = "setup-step",
+            ) { s ->
                 Column(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -619,7 +631,7 @@ private fun ChecklistRow(
     below: @Composable () -> Unit = {},
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.groupCard),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -662,7 +674,7 @@ private fun TestAlertCard(send: () -> Unit) {
     val reduced = LocalReducedMotion.current
     var sent by rememberSaveable { mutableStateOf(false) }
     Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.groupCard),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {

@@ -283,6 +283,18 @@ object SetupMachine {
     }
 
     /**
+     * Whether showing [to] after [from] goes back (setup's steps then slide in from the start, `Motion.sharedAxisX`): an
+     * earlier step of the walk (the walk is in [SetupStep] order), as Back shows, or the source's Back to whose glucose
+     * from Settings. The steps shown one by one after the walk ([finishing]: home's *Finish setup*) only go forward,
+     * whatever their order.
+     */
+    fun goesBack(
+        from: SetupStep,
+        to: SetupStep,
+        finishing: Boolean,
+    ): Boolean = !finishing && to.ordinal < from.ordinal
+
+    /**
      * Back in the walk from [step]: the step before it (its answer is kept), or null = Back leaves setup (home's banner
      * resumes the walk at the step left). From the source back to whose glucose, and from the join step back to the
      * source (another source after all); otherwise never back into them once answered: Settings › Source changes them.

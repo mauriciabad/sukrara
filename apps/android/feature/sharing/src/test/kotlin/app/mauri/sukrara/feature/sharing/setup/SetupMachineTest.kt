@@ -456,4 +456,14 @@ class SetupMachineTest {
         assertNull(m.next(before, shared))
         assertTrue(m.extrasLeft(before, shared).isEmpty())
     }
+
+    @Test
+    fun `steps slide back only on the way back in the walk, never while finishing`() {
+        assertTrue(m.goesBack(SetupStep.Source, SetupStep.Person, finishing = false))
+        assertTrue(m.goesBack(Alerts, Sensor, finishing = false))
+        assertEquals(false, m.goesBack(SetupStep.Person, SetupStep.Source, finishing = false))
+        assertEquals(false, m.goesBack(Welcome, Welcome, finishing = false))
+        // home's Finish setup shows Permissions, Alerts, then Sensor: each one comes next, never back
+        assertEquals(false, m.goesBack(Alerts, Sensor, finishing = true))
+    }
 }

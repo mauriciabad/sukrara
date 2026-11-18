@@ -40,11 +40,13 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.rows.groupCard
 
 /** The illustration's height in a [PersonChoiceCard]. */
 private val ArtHeight = 132.dp
@@ -69,7 +71,7 @@ fun PersonChoiceCard(
     val reduced = LocalReducedMotion.current
     val haptics = rememberHaptics()
     val container by animateColorAsState(
-        if (selected) cs.secondaryContainer else cs.surfaceContainerLow,
+        if (selected) cs.secondaryContainer else cs.groupCard,
         Motion.defaultEffects(reduced),
         label = "person-card",
     )
@@ -78,8 +80,10 @@ fun PersonChoiceCard(
         Motion.defaultEffects(reduced),
         label = "person-line",
     )
-    val lift by animateDpAsState(if (selected) 6.dp else 0.dp, Motion.defaultSpatial(reduced), label = "person-lift")
-    val border by animateDpAsState(if (selected) 2.dp else 1.dp, Motion.defaultSpatial(reduced), label = "person-border")
+    // only the card being picked lifts on the spatial spring; the one left settles back quickly, without the pick's spring
+    val move = if (selected) Motion.defaultSpatial<Dp>(reduced) else Motion.fastEffects(reduced)
+    val lift by animateDpAsState(if (selected) 6.dp else 0.dp, move, label = "person-lift")
+    val border by animateDpAsState(if (selected) 2.dp else 1.dp, move, label = "person-border")
     // the ring breathes out once when the card is picked (never on the first draw of an already picked card)
     val breath = remember { Animatable(1f) }
     LaunchedEffect(selected) {
