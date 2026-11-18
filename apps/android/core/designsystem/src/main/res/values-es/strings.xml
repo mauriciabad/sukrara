@@ -261,6 +261,7 @@
     <string name="ds_source_means_offline">%1$s · sin internet</string>
     <string name="ds_online_connecting">Conectando…</string>
     <string name="ds_online_live">En directo · última lectura %1$s</string>
+    <string name="ds_online_just_now">ahora mismo</string>
     <string name="ds_online_late">Con retraso · última lectura %1$s</string>
     <string name="ds_online_no_new">Nada nuevo de Nightscout: su última lectura fue %1$s. Revisa la app que sube a él.</string>
     <string name="ds_online_no_glucose">Nightscout aún no tiene glucosa. Revisa la app que sube a él.</string>

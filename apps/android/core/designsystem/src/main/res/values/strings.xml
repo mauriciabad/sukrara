@@ -268,6 +268,8 @@
     <!-- the Source row's summary on the Settings overview: whose · where from -->
     <string name="ds_online_connecting">Connecting…</string>
     <string name="ds_online_live">Live · last reading %1$s</string>
+    <!-- an online source's newest reading is under a minute old, in "Live · last reading %1$s" -->
+    <string name="ds_online_just_now">just now</string>
     <string name="ds_online_late">Late · last reading %1$s</string>
     <string name="ds_online_no_new">Nothing new from Nightscout: its last reading was %1$s. Check the app that uploads to it.</string>
     <string name="ds_online_no_glucose">Nightscout has no glucose yet. Check the app that uploads to it.</string>

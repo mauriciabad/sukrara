@@ -399,9 +399,13 @@
     <string name="in_llu_account">Account</string>
     <string name="in_llu_account_none">Not signed in</string>
     <string name="in_llu_whose">Whose glucose</string>
+    <!-- Settings › Source › LibreLinkUp: the person whose glucose the account reads (their name below) [CHAR LIMIT=30] -->
+    <string name="in_llu_person">Person</string>
     <string name="in_llu_whose_none">Pick someone</string>
     <string name="in_llu_unnamed">Someone without a name</string>
     <string name="in_llu_pick_again">Pick again</string>
+    <!-- Settings › Source › LibreLinkUp: the person picked no longer shares with the account, others still do -->
+    <string name="in_llu_picked_gone">The person picked stopped sharing glucose with this account.</string>
     <string name="in_llu_sensor">Sensor</string>
     <!-- %1$s = when it started (a time, or a date and time), %2$s = its serial. -->
     <string name="in_llu_sensor_summary">Started %1$s · %2$s</string>

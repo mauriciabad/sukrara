@@ -395,9 +395,11 @@
     <string name="in_llu_account">Cuenta</string>
     <string name="in_llu_account_none">Sin iniciar sesión</string>
     <string name="in_llu_whose">La glucosa de quién</string>
+    <string name="in_llu_person">Persona</string>
     <string name="in_llu_whose_none">Elige a alguien</string>
     <string name="in_llu_unnamed">Alguien sin nombre</string>
     <string name="in_llu_pick_again">Elegir de nuevo</string>
+    <string name="in_llu_picked_gone">La persona elegida dejó de compartir su glucosa con esta cuenta.</string>
     <string name="in_llu_sensor">Sensor</string>
     <!-- %1$s = when it started (a time, or a date and time), %2$s = its serial. -->
     <string name="in_llu_sensor_summary">Empezó %1$s · %2$s</string>

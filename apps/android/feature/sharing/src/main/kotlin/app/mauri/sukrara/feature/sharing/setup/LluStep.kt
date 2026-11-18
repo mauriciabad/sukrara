@@ -89,6 +89,13 @@ internal fun ColumnScope.LluStep(
 
             else -> {
                 haptics.reject()
+                // *Sign in as …* refused (the LibreView password changed, or none is saved): the form, its email filled
+                // in, says so under the password
+                val libreView = c.libreViewEmail
+                if (llu.result == LluConnectOutcome.BadCredentials && libreView != null && !other) {
+                    other = true
+                    email = libreView
+                }
             }
         }
     }

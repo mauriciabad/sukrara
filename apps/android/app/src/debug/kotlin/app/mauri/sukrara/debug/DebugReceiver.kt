@@ -59,6 +59,7 @@ object DebugFakes {
             PREFIX + "RELAYS" to ::relays,
             PREFIX + "UPDATES" to ::updates,
             PREFIX + "GARMIN_SIM" to ::garminSim,
+            PREFIX + "LIBRELINKUP" to ::libreLinkUp,
         )
 
     /** Runs [action] when it is a known fake; false otherwise. */
@@ -156,6 +157,42 @@ object DebugFakes {
         Log.i("SukraraDebug", "GARMIN_SIM: $on from the next start; ending the app process now")
         android.os.Process.killProcess(android.os.Process.myPid())
     }
+
+    /**
+     * `LIBRELINKUP --es server http://127.0.0.1:8766|off`: LibreLinkUp's login and calls (the LibreLinkUp source and the
+     * LibreView sign-in) go to a local fake LibreLinkUp (`tools/librelinkup-probe/fake.py`, synthetic data; `adb reverse
+     * tcp:8766 tcp:8766`, or 10.0.2.2) for every region, instead of Abbott's `api(-<region>).libreview.io`. Saved, then
+     * the app process ends: open the app. `off` = Abbott's hosts again. Release builds have no such choice.
+     */
+    private fun libreLinkUp(
+        context: Context,
+        intent: Intent,
+    ) {
+        val server = intent.getStringExtra("server")?.trim().orEmpty()
+        val prefs = context.getSharedPreferences(LIBRELINKUP_PREFS, Context.MODE_PRIVATE)
+        if (server == "off") {
+            prefs.edit(commit = true) { clear() }
+        } else {
+            // cleartext reaches 10.0.2.2 / loopback only (the debug network security config)
+            val url = server.toHttpUrlOrNull()
+            if (url == null || url.encodedPath != "/" || url.query != null) {
+                Log.w("SukraraDebug", "LIBRELINKUP: '$server' isn't off or a server URL such as http://127.0.0.1:8766; nothing changed")
+                return
+            }
+            prefs.edit(commit = true) { putString("server", server) }
+        }
+        Log.i("SukraraDebug", "LIBRELINKUP: $server from the next start; ending the app process now")
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
+
+    /** The `LIBRELINKUP` command's fake (scheme to host:port, BuildVariant), or null: Abbott's hosts. */
+    fun libreLinkUpServer(context: Context): Pair<String, String>? {
+        val server = context.getSharedPreferences(LIBRELINKUP_PREFS, Context.MODE_PRIVATE).getString("server", null)
+        val url = server?.toHttpUrlOrNull() ?: return null
+        return url.scheme to "${url.host}:${url.port}"
+    }
+
+    private const val LIBRELINKUP_PREFS = "debug_librelinkup"
 
     /** The `UPDATES` command's test server and certificate (BuildVariant), or null: GitHub and the release key. */
     fun updateServer(context: Context): Pair<String, String>? {

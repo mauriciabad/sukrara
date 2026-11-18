@@ -28,12 +28,17 @@ fun onlineHealthText(
     val llu = kind == SourceKind.LibreLinkUp
     val ago =
         newest?.let {
-            DateUtils
-                .getRelativeTimeSpanString(
-                    it.toEpochMilli(),
-                    now.toEpochMilli(),
-                    DateUtils.MINUTE_IN_MILLIS,
-                ).toString()
+            // under a minute old: *just now*, never "0 minutes ago" (Android's minute resolution says that)
+            if (now.toEpochMilli() - it.toEpochMilli() < DateUtils.MINUTE_IN_MILLIS) {
+                stringResource(R.string.ds_online_just_now)
+            } else {
+                DateUtils
+                    .getRelativeTimeSpanString(
+                        it.toEpochMilli(),
+                        now.toEpochMilli(),
+                        DateUtils.MINUTE_IN_MILLIS,
+                    ).toString()
+            }
         }
     return when (health) {
         OnlineHealth.Connecting -> {

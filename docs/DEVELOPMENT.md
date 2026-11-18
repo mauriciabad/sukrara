@@ -287,7 +287,7 @@ Debug commands that replace the sensor or make up data live only in `src/debug` 
 `verify-app.sh`). Test with synthetic data on the emulator, never the owner's devices or real relays.
 
 The Android commands are `DebugFakes`' actions, `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
-app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS`, `UPDATES` and `GARMIN_SIM` (their
+app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS`, `UPDATES`, `GARMIN_SIM` and `LIBRELINKUP` (their
 extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens", "Sukrara Aura"; docs/QA.md "Emulator", Q27). The Mac's:
 `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` (a debug dev run's
 QR scanner reads the made-up `SyntheticCamera` feed, never the Mac's camera). The `debug-docs` check fails when
@@ -326,6 +326,22 @@ adb -s emulator-5584 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceive
 
 `--es server off` goes back to GitHub; `--es cert <sha256>` trusts another certificate. Android 17 treats 10.0.2.2 as
 the local network, hence the grant.
+
+**LibreLinkUp in debug builds.** A debug build signs in to Abbott's LibreLinkUp like a release build. To test the
+LibreLinkUp source and the LibreView sign-in on an emulator, run the fake (`tools/librelinkup-probe/fake.py`,
+standard-library Python, loopback only, synthetic people and the `SYNTHETIC` curve) and point the app at it; every
+region goes there (docs/QA.md Q30):
+
+```sh
+python3 tools/librelinkup-probe/fake.py --port 8766
+adb -s emulator-5554 reverse tcp:8766 tcp:8766
+adb -s emulator-5554 shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver \
+    -a app.mauri.sukrara.debug.LIBRELINKUP --es server http://127.0.0.1:8766
+curl 'http://127.0.0.1:8766/_fake?login=terms'      # what it answers: login, calls, people, lag, stopped, sensor…
+```
+
+The command saves the choice and ends the app process (open the app); `--es server off` goes back to Abbott's hosts.
+The LibreView upload (`fsll3.freestyleserver.com`) isn't faked: keep it off on the emulator, or its network off.
 
 ## Garmin (Sukrara Aura)
 

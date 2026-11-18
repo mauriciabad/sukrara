@@ -139,6 +139,24 @@ object LluPoll {
     /** Abbott refused this client: asked again rarely. */
     const val RETIRED_S = 3600L
 
+    /**
+     * Seconds to the next call after a cycle that ended in [outcome] (null = not set up), the [failures] in a row and a
+     * 429's [retryAfterS]; null = only when the person acts. Asked to wait without a time: [RATE_LIMITED_MIN_S].
+     */
+    fun next(
+        outcome: CallOutcome?,
+        failures: Int,
+        retryAfterS: Long?,
+    ): Long? =
+        when (outcome) {
+            null -> null
+            CallOutcome.Terms -> TERMS_S
+            CallOutcome.Retired -> RETIRED_S
+            CallOutcome.NotShared -> CONNECTIONS_EVERY_S
+            CallOutcome.RateLimited -> waitS(failures, rateLimitedS = retryAfterS ?: 0L)
+            else -> waitS(failures, refused = outcome == CallOutcome.Refused)
+        }
+
     /** Seconds to the next call, null = only when the person acts (a refused password: retries lock the account). */
     fun waitS(
         failures: Int,
@@ -192,6 +210,9 @@ class LibreLinkUpSource(
     @Volatile private var lastPatient: String? = null
 
     @Volatile private var peopleCheckedS = 0L
+
+    /** LibreLinkUp asked to wait (429): no call before this (epoch s), whatever kicks the loop; a new sign-in ends it. */
+    @Volatile private var holdUntilS = 0L
 
     /** What the pages show. */
     val view: Flow<LluSourceView> =
@@ -303,13 +324,21 @@ class LibreLinkUpSource(
             )
         }
         peopleCheckedS = clock.now().epochSecond
+        // a sign-in LibreLinkUp accepted: no longer asked to wait
+        holdUntilS = 0L
         if (p.state == LluPick.State.None) {
             config.set(LluSourceSettings(patient = ""))
             return LluConnectResult.NoOne
         }
-        config.set(LluSourceSettings(patient = p.pick.orEmpty()))
-        kick()
+        read(p.pick.orEmpty())
         return LluConnectResult.Connected(people, p.pick)
+    }
+
+    /** Reads [patient] from now on, asked at once: a change kicks through the config, the same person here (once). */
+    private suspend fun read(patient: String) {
+        val same = config.data.first().patient == patient
+        config.set(LluSourceSettings(patient = patient))
+        if (same) kick()
     }
 
     /** The person picked among the account's (several, or the one picked before stopped sharing). */
@@ -324,8 +353,7 @@ class LibreLinkUpSource(
                         .orEmpty(),
             )
         }
-        config.set(LluSourceSettings(patient = patient))
-        kick()
+        read(patient)
     }
 
     /** Signs out of the source's account (Settings › Source): the readings stay, the source waits for a new sign-in. */
@@ -370,32 +398,9 @@ class LibreLinkUpSource(
             val l = live.value
             live.value = l.copy(outcome = c.outcome ?: l.outcome, online = network.online(), newest = c.newest ?: l.newest)
             publish()
-            val wait =
-                when (c.outcome) {
-                    null -> {
-                        null
-                    }
-
-                    CallOutcome.Terms -> {
-                        LluPoll.TERMS_S
-                    }
-
-                    CallOutcome.Retired -> {
-                        LluPoll.RETIRED_S
-                    }
-
-                    CallOutcome.NotShared -> {
-                        LluPoll.CONNECTIONS_EVERY_S
-                    }
-
-                    else -> {
-                        LluPoll.waitS(
-                            failures,
-                            c.retryAfterS.takeIf { c.outcome == CallOutcome.RateLimited },
-                            c.outcome == CallOutcome.Refused,
-                        )
-                    }
-                }
+            val wait = LluPoll.next(c.outcome, failures, c.retryAfterS)
+            // asked to wait: nothing calls LibreLinkUp before then (each call may lengthen the lockout); a sign-in does
+            holdUntilS = if (c.outcome == CallOutcome.RateLimited && wait != null) clock.now().epochSecond + wait else 0L
             waitFor(wait)
         }
     }
@@ -405,8 +410,10 @@ class LibreLinkUpSource(
         var left = (seconds ?: Long.MAX_VALUE / 1000) * 1000
         while (left > 0) {
             val step = minOf(left, TICK_MS)
-            if (withTimeoutOrNull(step) { kicks.receive() } != null) return
-            left -= step
+            val kicked = withTimeoutOrNull(step) { kicks.receive() } != null
+            // a kick (the network back, *Try again*, a pick) asks now, unless LibreLinkUp asked to wait longer
+            if (kicked && clock.now().epochSecond >= holdUntilS) return
+            if (!kicked) left -= step
             publish()
         }
     }
@@ -462,7 +469,7 @@ class LibreLinkUpSource(
     /** One call: the session, whom to read (now and then), then the graph. */
     private suspend fun cycle(out: ProducerScope<List<Reading>>): Cycle {
         val patient = config.data.first().patient
-        var session =
+        val session =
             when (val s = account.session()) {
                 is LluSession.Ready -> s
                 else -> return failed(s)
@@ -474,30 +481,13 @@ class LibreLinkUpSource(
             live.value = live.value.copy(newest = null)
         }
         val now = clock.now()
-        if (now.epochSecond - peopleCheckedS >= LluPoll.CONNECTIONS_EVERY_S) {
-            var (people, r) = account.people(session)
-            if (r.outcome == LluCallOutcome.Expired) {
-                // the token ended before its time: one new sign-in with the saved password, then the same call
-                account.expire()
-                session = account.session().let { it as? LluSession.Ready ?: return failed(it) }
-                val again = account.people(session)
-                people = again.first
-                r = again.second
-            }
-            if (people == null) return Cycle(outcomeOf(r.outcome), retryAfterS = r.retryAfterS)
-            peopleCheckedS = now.epochSecond
-            store.update { it.copy(people = people.map { p -> LluPersonState(p.id, p.name) }) }
-            if (people.none { it.id == patient }) return Cycle(CallOutcome.NotShared)
-        }
-        var r = account.api.get(LibreLinkUp.graph(patient), session.region, session.token, session.accountId)
-        if (r.outcome == LluCallOutcome.Expired) {
-            account.expire()
-            session = account.session().let { it as? LluSession.Ready ?: return failed(it) }
-            r = account.api.get(LibreLinkUp.graph(patient), session.region, session.token, session.accountId)
-        }
+        val checked = now.epochSecond - peopleCheckedS < LluPoll.CONNECTIONS_EVERY_S
+        if (!checked) shared(session, patient, now)?.let { return it }
+        val r = account.call(session) { account.api.get(LibreLinkUp.graph(patient), it.region, it.token, it.accountId) }
         if (r.outcome != LluCallOutcome.Ok) {
-            // the person may have stopped sharing: the connections say so at the next call
-            if (r.outcome == LluCallOutcome.Retired) peopleCheckedS = 0
+            // LibreLinkUp refuses this person's graph: they may have stopped sharing (*Pick again*), said now, not in an
+            // hour as *stopped*
+            if (r.outcome == LluCallOutcome.Retired && checked) shared(session, patient, now)?.let { return it }
             return Cycle(outcomeOf(r.outcome), retryAfterS = r.retryAfterS)
         }
         val g = LibreLinkUp.graph(r.body ?: return Cycle(CallOutcome.Server))
@@ -516,6 +506,23 @@ class LibreLinkUpSource(
             )
         }
         return Cycle(CallOutcome.Ok, newest)
+    }
+
+    /**
+     * Whom the account follows, read again (a token that ended before its time signs in again once, a version LibreLinkUp
+     * asks for is sent once): null while [patient] is still shared, else the cycle's end (not shared, or the call's
+     * failure).
+     */
+    private suspend fun shared(
+        session: LluSession.Ready,
+        patient: String,
+        now: Instant,
+    ): Cycle? {
+        val (people, r) = account.people(session)
+        if (people == null) return Cycle(outcomeOf(r.outcome), retryAfterS = r.retryAfterS)
+        peopleCheckedS = now.epochSecond
+        store.update { it.copy(people = people.map { p -> LluPersonState(p.id, p.name) }) }
+        return if (people.none { it.id == patient }) Cycle(CallOutcome.NotShared) else null
     }
 
     /** A session that isn't ready, as the health reads it (no account at all = not set up). */

@@ -206,11 +206,28 @@ class LibreLinkUp(
         private val json = Json { ignoreUnknownKeys = true }
         private val REGION = Regex("[a-z]{2,3}")
 
+        /** A version LibreLinkUp may ask for (it goes into a header as it is). */
+        private val VERSION_FORMAT = Regex("\\d{1,3}(\\.\\d{1,4}){1,3}")
+
         /** TrendArrow 1..5 (falling quickly .. rising quickly) as mg/dL/min; any other: none. */
         private val ARROW_RATE = mapOf(1 to -2.5, 2 to -1.5, 3 to 0.0, 4 to 1.5, 5 to 2.5)
 
         /** FactoryTimestamp: UTC, `M/d/yyyy h:mm:ss AM`. */
         private val TIME = DateTimeFormatter.ofPattern("M/d/yyyy h:mm:ss a", Locale.US)
+
+        /** Whether version [a] is newer than [b] (`4.18.0` > `4.17.0`; parts compared as numbers). */
+        fun newer(
+            a: String,
+            b: String,
+        ): Boolean {
+            val x = a.split('.').map { it.toIntOrNull() ?: 0 }
+            val y = b.split('.').map { it.toIntOrNull() ?: 0 }
+            for (i in 0 until maxOf(x.size, y.size)) {
+                val d = x.getOrElse(i) { 0 } - y.getOrElse(i) { 0 }
+                if (d != 0) return d > 0
+            }
+            return false
+        }
 
         fun sha256(text: String): String =
             MessageDigest
@@ -233,7 +250,7 @@ class LibreLinkUp(
                 val lockout = (data?.get("data") as? JsonObject)?.long("lockout")
                 return LluLogin.RateLimited(retryAfterS ?: lockout)
             }
-            if (code == 403) data?.text("minimumVersion")?.let { return LluLogin.Version(it) }
+            if (code == 403) data?.text("minimumVersion")?.takeIf(VERSION_FORMAT::matches)?.let { return LluLogin.Version(it) }
             if (code == 401) return LluLogin.BadCredentials
             if (code == 404) return LluLogin.Retired
             if (code != 200 || o == null) return LluLogin.Failed("HTTP $code")
@@ -267,23 +284,37 @@ class LibreLinkUp(
             val data = o?.get("data") as? JsonObject
             val status = o?.int("status")
             return when {
-                code == 429 || status == 429 -> LluCall(LluCallOutcome.RateLimited, retryAfterS = retryAfterS)
+                code == 429 || status == 429 -> {
+                    LluCall(LluCallOutcome.RateLimited, retryAfterS = retryAfterS)
+                }
 
-                code == 401 -> LluCall(LluCallOutcome.Expired)
+                code == 401 -> {
+                    LluCall(LluCallOutcome.Expired)
+                }
 
-                code == 403 && data?.text(
-                    "minimumVersion",
-                ) != null -> LluCall(LluCallOutcome.Version, minimumVersion = data.text("minimumVersion"))
+                code == 403 && data?.text("minimumVersion")?.matches(VERSION_FORMAT) == true -> {
+                    LluCall(LluCallOutcome.Version, minimumVersion = data.text("minimumVersion"))
+                }
 
-                code == 403 || code == 404 || code == 410 -> LluCall(LluCallOutcome.Retired)
+                code == 403 || code == 404 || code == 410 -> {
+                    LluCall(LluCallOutcome.Retired)
+                }
 
-                code != 200 || o == null -> LluCall(LluCallOutcome.Server)
+                code != 200 || o == null -> {
+                    LluCall(LluCallOutcome.Server)
+                }
 
-                status == 4 -> LluCall(LluCallOutcome.Terms)
+                status == 4 -> {
+                    LluCall(LluCallOutcome.Terms)
+                }
 
-                status != 0 || "data" !in o -> LluCall(LluCallOutcome.Server)
+                status != 0 || "data" !in o -> {
+                    LluCall(LluCallOutcome.Server)
+                }
 
-                else -> LluCall(LluCallOutcome.Ok, o)
+                else -> {
+                    LluCall(LluCallOutcome.Ok, o)
+                }
             }
         }
 

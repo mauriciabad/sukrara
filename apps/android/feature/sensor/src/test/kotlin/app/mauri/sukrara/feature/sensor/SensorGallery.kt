@@ -115,6 +115,15 @@ class SensorGallery {
             dark = true,
             fontScale = 1f,
             prefix = "es-",
-            only = setOf("needs-libreview", "takeover-failed", "warming-up", "accept-terms", "again", "signed-in"),
+            only =
+                setOf(
+                    "needs-libreview",
+                    "takeover-from-libre-app",
+                    "takeover-failed",
+                    "warming-up",
+                    "accept-terms",
+                    "again",
+                    "signed-in",
+                ),
         )
 }

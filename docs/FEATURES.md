@@ -855,12 +855,14 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
 - **Reading LibreLinkUp** (Android `:core:data` `LibreLinkUp` + `:integrations` `librelinkup/`; Mac
   `SukraraCore/LibreLinkUp` + `SukraraShare/LibreLinkUp`; `contracts/sources/librelinkup`): the login the LibreView sign-in uses too (`POST /llu/auth/login`, headers
   `product: llu.android`, `version: 4.17.0`; the region's host after a redirect; a 403 naming a newer version sends that
-  one once; status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` each
+  one from then on (kept with the account) and asks once more, never in a loop (Android at the login and on a call; the
+  Mac at the login); status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` each
   minute with the token and the account's id (SHA-256): the live reading with its arrow as the sensor's rate, the
   graph's points the first time and after a gap. Times from `FactoryTimestamp` (UTC). The token is kept with the
   account and reused until 5 min before it expires (a restart signs in again only then: each login counts towards
   LibreLinkUp's lockout); a token that stops working early signs in again once. Failures back off 1 → 10 min; a 429
-  waits at least 10 min (or its Retry-After / lockout); a refused password is never retried by itself. Whom the account
+  waits at least 10 min (or its Retry-After / lockout) and nothing (the network back, *Try again*) calls before then;
+  a refused password is never retried by itself. Whom the account
   follows is read again every 30 min. https only, redirects never followed; the password and token live only in the
   Keystore (`source.libreLinkUpSecret`), apart from THE LibreView account.
 - **Its health, in words** (`contracts/sources/health.json`, with LibreLinkUp's own states; home's no-data reason
@@ -874,7 +876,8 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   a reading 9 min late, readings out of order).
 - **Connect** (setup's step after the source; Settings › Source's *Account* / *Sign in again* open it alone): for your
   glucose with a LibreView account already in Sukrara, *Your LibreView account* + *Sign in as alex@example.com* (one tap,
-  its saved password copied into the source's own account) and *Use another account*; else *Email* and *Password*
+  its saved password copied into the source's own account; refused, the form with that email filled in and the refusal
+  under the password) and *Use another account*; else *Email* and *Password*
   (*Sign in*, a progress bar, *Signing in…*). Nothing is saved unless LibreLinkUp accepts it. Problems: *LibreLinkUp
   refused this email or password* (under the field), new terms, too many attempts (*Sukrara doesn't retry by itself, so
   your account isn't locked longer*), no answer, no internet, stopped, each with a reject haptic. Signed in: the account
@@ -897,15 +900,16 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   upload, Health Connect, Sukrara followers (your glucose) and Sukrara Aura get it; app broadcasts don't (no sensor
   label for internet readings). LibreLinkUp brings no treatments: those logged in Sukrara stay on the phone and go
   where they always went. Someone else's glucose: nothing shared or uploaded.
-- **Settings › Source › LibreLinkUp** (`LibreLinkUpSourceRows`): *Account* (the email; Connect), *Whose glucose* (a
-  pick when the account follows several people), the status with its one exit (*Sign in again*, *Try again*, *Pick
-  again*), *Sensor*; for your glucose *The Libre app has the sensor*: *LibreView* (why nothing goes there) and **Read
+- **Settings › Source › LibreLinkUp** (`LibreLinkUpSourceRows`): *Account* (the email; Connect), *Person* (their name;
+  a pick, *Whose glucose?*, when the account follows several people), the status with its one exit (*Sign in again*, *Try again*, *Pick
+  again*; asked to wait: the line alone), *Sensor*; for your glucose *The Libre app has the sensor*: *LibreView* (why nothing goes there) and **Read
   the sensor in Sukrara** (the takeover); *Sign out of LibreLinkUp* (confirmed: *Sukrara gets no glucose until you sign
   in again or choose another source. The readings already here stay.*).
 - **The move: taking the sensor over** (docs/44 "The move", at any point of a sensor's life): *Read the sensor in
   Sukrara* opens the new-sensor flow; with LibreLinkUp as your source its gate *Take the sensor from the Libre app*
   says, before the tap, that from then on the Libre app gets no readings and rings no alarms and LibreLinkUp gets
-  nothing until Sukrara uploads to LibreView, to force-stop the Libre app first (*Open the Libre app's info*), and the
+  nothing until Sukrara uploads to LibreView, to force-stop the Libre app first (*Open the Libre app's info*, where the
+  Libre app is installed on this phone), and the
   way back (*scan the sensor with the Libre app, any day of its life*); *Take over* / *Cancel*. The tap takes the
   running Libre 3 over with the LibreView account's receiver ID (`ReceiverIds.forTakeover`; no account → *Sign in to
   LibreView* first; another account's sensor → *Another app has this sensor*, the source stays LibreLinkUp). Once
@@ -947,8 +951,10 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
 fix and sign in again; *Later* → home's *Finish setup*) → several people → pick → *Continue* · no one shares → *Try
 again* / *Change account* / *Later* → connected → *Continue* (or *Change account* → the form; *Keep this account* back).
 Live / Late: nothing to do. Nothing new: the Libre app is the place to look; clears with the next reading. No internet /
-no answer / asked to wait: clear by themselves; *Try again*. Signed out: *Sign in again*. New terms: accept in
-LibreLinkUp, *Try again*. Not shared: *Pick again* or invite and *Try again*. Stopped: *Try again*; *Where it comes
+no answer: clear by themselves; *Try again*. Asked to wait: clears by itself, no *Try again* (nothing calls LibreLinkUp
+before the time it gave; a sign-in does). Signed out: *Sign in again*. New terms: accept in
+LibreLinkUp, *Try again*. Not shared: *Pick again* (*The person picked stopped sharing…*, at once when LibreLinkUp refuses their graph) or invite
+and *Try again*. Stopped: *Try again*; *Where it comes
 from* to leave. Sign out: confirmed; *Account* signs in again. LibreView upload: paused with its reason while
 LibreLinkUp is the source; after the takeover *Take over*. Takeover: *Read the sensor in Sukrara* → *Take the sensor
 from the Libre app* → *Take over* / *Open the Libre app's info* / *Cancel* → the tap (the usual new-sensor states) →
@@ -2561,7 +2567,7 @@ Wearer only (`sensorend/`; rules in `SensorEndPlan`, tests `SensorEndPlanTest`);
   *Start fresh* or leaving the role forgets it). Tests `SensorEndNotifierTest` (a restart, a swipe through a restart,
   a post killed half way).
 - Settings export / import / reset include the reminders, the first-unlock and evening switches, the night window, both countdown switches, the countdown hours and *Remind again*.
-- Debug commands (Android debug builds only, `app/src/debug` `DebugReceiver` / `DebugFakes` / `DebugRelays`, adb only: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a app.mauri.sukrara.debug.<NAME> …`): `SYNTHETIC --ez on true|false [--ez frozen true] [--ei cycle M] [--ei endsInMin N] [--ei warmupMin W]` (the synthetic source replaces the sensor: a 3-hour curve between 45 and 215 mg/dL, `cycle` puts now at minute M of it, 135 = the lowest point; a sensor ending in N minutes; a new sensor warming up for W minutes), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder true]` (made-up alerts through the real notifier, outside the alert runtime), `PEN_READ`, `PEN_TAGS` and `PEN_JUGGLUCO` ([Insulin pens](#insulin-pens-docs29)), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen = no relay: docs/DEVELOPMENT.md), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local test release, `tools/updates/serve.py`, and trusts the debug key: [Updates (Android, GitHub version)](#updates-android-github-version)). Nothing else: the reminders, the end countdown and *Sensor ended* follow the synthetic sensor's end. `tools/check` rule `debug-docs` fails on a command or extra in docs/FEATURES.md, docs/QA.md or docs/DEVELOPMENT.md that `DebugFakes` doesn't have. The release app never shows a glucose value, an alert, a treatment or a sensor state that isn't real: the `src/debug` source set isn't in a release build (`tools/check` rule `debug`; `verify-apk.sh` fails an APK whose manifest or R8 mapping names `DebugReceiver`, `DebugFakes`, `DebugRelays` or `Synthetic*`). The Mac's: `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` ([Mac menu and windows](#mac-menu-and-windows)).
+- Debug commands (Android debug builds only, `app/src/debug` `DebugReceiver` / `DebugFakes` / `DebugRelays`, adb only: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a app.mauri.sukrara.debug.<NAME> …`): `SYNTHETIC --ez on true|false [--ez frozen true] [--ei cycle M] [--ei endsInMin N] [--ei warmupMin W]` (the synthetic source replaces the sensor: a 3-hour curve between 45 and 215 mg/dL, `cycle` puts now at minute M of it, 135 = the lowest point; a sensor ending in N minutes; a new sensor warming up for W minutes), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder true]` (made-up alerts through the real notifier, outside the alert runtime), `PEN_READ`, `PEN_TAGS` and `PEN_JUGGLUCO` ([Insulin pens](#insulin-pens-docs29)), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen = no relay: docs/DEVELOPMENT.md), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local test release, `tools/updates/serve.py`, and trusts the debug key: [Updates (Android, GitHub version)](#updates-android-github-version)), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp and the LibreView sign-in go to the local fake `tools/librelinkup-probe/fake.py`, synthetic: [LibreLinkUp as a source](#librelinkup-as-a-source-android)). Nothing else: the reminders, the end countdown and *Sensor ended* follow the synthetic sensor's end. `tools/check` rule `debug-docs` fails on a command or extra in docs/FEATURES.md, docs/QA.md or docs/DEVELOPMENT.md that `DebugFakes` doesn't have. The release app never shows a glucose value, an alert, a treatment or a sensor state that isn't real: the `src/debug` source set isn't in a release build (`tools/check` rule `debug`; `verify-apk.sh` fails an APK whose manifest or R8 mapping names `DebugReceiver`, `DebugFakes`, `DebugRelays` or `Synthetic*`). The Mac's: `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` ([Mac menu and windows](#mac-menu-and-windows)).
 
 **States and exits** (wearer; followers get none of these): *Reminder shown* (days before, the evening before a
 night-time end, the last day) → tap opens the app, swipe removes it; the next one replaces it; turning its switch off

@@ -95,8 +95,8 @@ internal fun SourceScreen(
                                 retry = {
                                     scope.launch {
                                         // the person accepted the terms or invited the account: whom it follows, read again
+                                        // (an answer asks for the graph at once; a refusal isn't followed by more calls)
                                         graph.integrations.libreLinkUpSource.recheck()
-                                        graph.integrations.libreLinkUpSource.kick()
                                     }
                                 },
                                 choose = { id -> scope.launch { graph.integrations.libreLinkUpSource.choose(id) } },

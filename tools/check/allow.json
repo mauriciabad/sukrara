@@ -130,6 +130,10 @@
       "reason": "local Juggluco on this phone: the fixed loopback base URL (LOCAL_URL); no user-entered host"
     },
     {
+      "path": "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/libreview/LibreLinkUp.kt",
+      "reason": "THE LibreLinkUp client (the LibreLinkUp source and the LibreView sign-in): https only to api.libreview.io or api-<region>.libreview.io (region validated as 2-3 lower-case letters), redirects never followed; another scheme or host only from tests (loopback) or a debug build's LIBRELINKUP command (src/debug, loopback / 10.0.2.2)"
+    },
+    {
       "path": "apps/android/sensor/src/main/kotlin/app/mauri/sukrara/sensor/libreview/LibreViewAccount.kt",
       "reason": "LibreView receiver-ID sign-in: https only, fixed host api.libreview.io or api-<region>.libreview.io (region validated as 2-3 lower-case letters)"
     },

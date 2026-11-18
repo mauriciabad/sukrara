@@ -102,8 +102,18 @@ class NewSensorMachineTest {
 
     @Test fun `LibreLinkUp as the source, the takeover says what the Libre app loses, once, before the tap`() {
         // the Libre app may hold the sensor from another phone: the warning shows whether or not it is installed here
-        for (env in listOf(ok.copy(takeoverFromLibreApp = true), ok.copy(takeoverFromLibreApp = true, officialAppInstalled = true))) {
-            assertEquals(NewSensorStep.TakeoverFromLibreApp, step(Start(env)))
+        val here = ok.copy(takeoverFromLibreApp = true, officialAppInstalled = true, officialAppPackage = "com.freestylelibre3.app")
+        for (env in listOf(ok.copy(takeoverFromLibreApp = true), here)) {
+            val appHere = env.officialAppPackage != null
+            assertEquals(NewSensorStep.TakeoverFromLibreApp(appHere), step(Start(env)))
+            // its App info (Force stop) only where the Libre app is installed: never a button that does nothing
+            assertEquals(
+                appHere,
+                NewSensorAction.LibreAppInfo in
+                    step(Start(env))
+                        .page()
+                        .actions,
+            )
             assertEquals(NewSensorStep.WaitingForTap, step(Start(env), Continue))
             assertEquals(NewSensorStep.WaitingForTap, step(Start(env), Continue, Start(env)))
         }

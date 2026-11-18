@@ -75,18 +75,19 @@ fun LibreLinkUpSourceRows(
             summary = view.email.ifEmpty { stringResource(R.string.in_llu_account_none) },
             leading = { ServiceIcon(Service.LibreView) },
         )
+        // the person LibreLinkUp reads: not *Whose glucose* (the page's first row, yours or someone else's) said twice
         if (view.people.size > 1) {
             NavigationRow(
-                stringResource(R.string.in_llu_whose),
+                stringResource(R.string.in_llu_person),
                 { choosing = true },
                 summary = view.name.ifEmpty { stringResource(R.string.in_llu_whose_none) },
-                icon = if (person == Person.Theirs) DsR.drawable.ds_ic_group else DsR.drawable.ds_ic_person,
+                icon = DsR.drawable.ds_ic_account_circle,
             )
         } else if (view.name.isNotEmpty()) {
             InfoRow(
-                stringResource(R.string.in_llu_whose),
+                stringResource(R.string.in_llu_person),
                 summary = view.name,
-                icon = if (person == Person.Theirs) DsR.drawable.ds_ic_group else DsR.drawable.ds_ic_person,
+                icon = DsR.drawable.ds_ic_account_circle,
             )
         }
         val health = if (view.signInAgain) OnlineHealth.SignedOut else view.health
@@ -112,15 +113,14 @@ fun LibreLinkUpSourceRows(
                         NavigationRow(
                             stringResource(if (view.people.isNotEmpty()) R.string.in_llu_pick_again else DsR.string.ds_online_try_again),
                             if (view.people.isNotEmpty()) ({ choosing = true }) else actions.retry,
-                            summary = text,
+                            // others still share with the account: only the one picked stopped (not "no one")
+                            summary = if (view.people.isNotEmpty()) stringResource(R.string.in_llu_picked_gone) else text,
                             icon = h.iconRes(),
                             warning = true,
                         )
                     }
 
-                    OnlineHealth.Unreachable, OnlineHealth.Offline, OnlineHealth.RateLimited, OnlineHealth.ActionNeeded,
-                    OnlineHealth.Stopped,
-                    -> {
+                    OnlineHealth.Unreachable, OnlineHealth.Offline, OnlineHealth.ActionNeeded, OnlineHealth.Stopped -> {
                         NavigationRow(
                             stringResource(DsR.string.ds_online_try_again),
                             actions.retry,
@@ -130,8 +130,9 @@ fun LibreLinkUpSourceRows(
                         )
                     }
 
-                    // nothing new: the line, no action here (the Libre app is the place to look)
-                    OnlineHealth.NoNewReadings -> {
+                    // nothing new: the line, no action here (the Libre app is the place to look); asked to wait: no
+                    // *Try again* (a call before the time LibreLinkUp gave may lengthen the lockout), it asks by itself
+                    OnlineHealth.NoNewReadings, OnlineHealth.RateLimited -> {
                         InfoRow(stringResource(R.string.in_nss_status), summary = text, icon = h.iconRes())
                     }
 

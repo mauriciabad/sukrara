@@ -43,6 +43,8 @@ class SensorModule(
     dispatchers: DispatcherProvider,
     /** The sensor's start where it is known before a takeover (LibreLinkUp's, epoch s), null = nowhere. */
     knownStart: suspend () -> Long? = { null },
+    /** A debug build's fake LibreLinkUp for the LibreView sign-in (scheme to host:port), null = Abbott's (release). */
+    libreViewServer: Pair<String, String>? = null,
 ) {
     companion object {
         private const val TAG = "Sukrara.sensor"
@@ -74,7 +76,9 @@ class SensorModule(
             log = log,
         )
 
-    val libreView = LibreViewAccount(receiverIds, libreViewLogin, http, dispatchers.io)
+    val libreView =
+        libreViewServer?.let { (scheme, host) -> LibreViewAccount(receiverIds, libreViewLogin, http, dispatchers.io, host, scheme) }
+            ?: LibreViewAccount(receiverIds, libreViewLogin, http, dispatchers.io)
 
     /** *Open Sukrara when you scan a sensor* (the tap activity's enabled state). */
     val tapLaunch = SensorTapLaunch(app)

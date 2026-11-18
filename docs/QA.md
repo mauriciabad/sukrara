@@ -22,7 +22,8 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
   = no relay: Q22), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local
   test release and trusts the debug key: Q25), `GARMIN_SIM --ez on true|false` (Sukrara Aura's push goes to the
-  Connect IQ simulator instead of Garmin Connect: Q27). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
+  Connect IQ simulator instead of Garmin Connect: Q27), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp and
+  the LibreView sign-in go to the local fake `tools/librelinkup-probe/fake.py`: Q30). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
   stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
@@ -1162,11 +1163,21 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
 - [ ] Sensor life: a *Sensor Start* on the site 30 min ago → warming up; 16 days ago → *Sensor ended*, no no-data alarm.
 - [ ] Mac: *Do you have Sukrara on your phone?* → *No · Read it online* → Nightscout → Connect; the panel's states;
       Add Treatment works on this Mac's log, the site's entries are read-only.
-- [ ] LibreLinkUp (FEATURES.md *LibreLinkUp as a source*), on the emulator against a fake LibreLinkUp only (never a
-      real account): Source → *LibreLinkUp* → Connect: with a LibreView account signed in, *Sign in as …* in one tap;
-      *Use another account* → the form; a wrong password says so under the field; several people → *Whose glucose?*;
-      no one → the invite instructions and *Try again*; connected → *Reading received*. History step: *Your last 12
-      hours came with LibreLinkUp* → Import history.
+- [ ] LibreLinkUp (FEATURES.md *LibreLinkUp as a source*), on the emulator against the fake only (never a real account:
+      `tools/librelinkup-probe/fake.py` + the `LIBRELINKUP` debug command, docs/DEVELOPMENT.md): Source → *LibreLinkUp*
+      → Connect: with a LibreView account signed in, *Sign in as …* in one tap (refused, `wrong` as the LibreView
+      password: the form with the email filled in, the refusal under the password); *Use another account* → the form; a
+      wrong password says so under the field; `login=terms`, `login=ratelimit`, `login=redirect`, `login=version` (signs
+      in, every call names 4.18.0); several people → *Whose glucose?*; no one → the invite instructions and *Try
+      again*; connected → *Reading received*. History step: *Your last 12 hours came with LibreLinkUp* → Import history;
+      a LibreView file over the same hours adds only the older readings (`run-as … sqlite3`: no two readings of two
+      sources within 2 min).
+- [ ] LibreLinkUp's states (the fake's `_fake` switches): `stopped=1` → home *Late* (the age), after 15 min *No readings
+      from LibreLinkUp* with the Libre app as the place to look; `stopped=0` → back by itself, the gap filled with the
+      graph's points; `calls=expired` → one new login, no state shown; `calls=version` → the next call names the version
+      asked for, no *Stopped*; `calls=terms` / `ratelimit` / `retired` / `down` → their words and exit on home and
+      Settings › Source; `people=none` → *Pick again*; the fake stopped with the network off → *No internet*;
+      `sensor=new` → a new sensor on the card (warm-up while it has no readings).
 - [ ] Settings › Source › LibreLinkUp: account, whose glucose, sensor, status with its exit (*Sign in again*, *Try
       again*, *Pick again*); *Sign out* is confirmed. Share with apps › LibreView says *Paused: the Libre app uploads…*
       and offers no *Take over*; Tidepool shows *Glucose from LibreLinkUp* (on).

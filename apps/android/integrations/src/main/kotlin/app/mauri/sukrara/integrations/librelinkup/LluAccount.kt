@@ -96,7 +96,10 @@ class LluAccount(
     private suspend fun read(): Stored? {
         val bytes = secure.read(NAME) ?: return null
         return try {
-            json.decodeFromString(Stored.serializer(), bytes.decodeToString()).also { s -> s.version?.let { api.version = it } }
+            json.decodeFromString(Stored.serializer(), bytes.decodeToString()).also { s ->
+                // a version LibreLinkUp asked for, unless this build already sends a newer one
+                s.version?.takeIf { LibreLinkUp.newer(it, LibreLinkUp.VERSION) }?.let { api.version = it }
+            }
         } catch (e: IllegalArgumentException) {
             throw SecretUnreadableException(NAME, transient = false, cause = e)
         }
@@ -164,7 +167,9 @@ class LluAccount(
         repeat(3) {
             when (val l = api.login(email, password, region)) {
                 is LluLogin.Account -> {
-                    write(Stored(email, password, l.accountId, region, l.token, l.expires.epochSecond, api.version.takeIf { raised }))
+                    // the version in use stays with the account (raised now or by an earlier call)
+                    val version = api.version.takeIf { it != LibreLinkUp.VERSION }
+                    write(Stored(email, password, l.accountId, region, l.token, l.expires.epochSecond, version))
                     return LluSession.Ready(l.accountId, l.token, region) to true
                 }
 
@@ -206,10 +211,52 @@ class LluAccount(
     }
 
     /** The people the account follows (GET /llu/connections), or the call's outcome when it failed. */
-    fun people(session: LluSession.Ready): Pair<List<LluPerson>?, LluCall> {
-        val r = api.get(LibreLinkUp.CONNECTIONS, session.region, session.token, session.accountId)
+    suspend fun people(session: LluSession.Ready): Pair<List<LluPerson>?, LluCall> {
+        val r = call(session) { api.get(LibreLinkUp.CONNECTIONS, it.region, it.token, it.accountId) }
         return (if (r.outcome == LluCallOutcome.Ok) r.body?.let(LibreLinkUp::people) else null) to r
     }
+
+    /**
+     * One authenticated call ([get], with [first]'s token, calls.json): a version LibreLinkUp asks for is sent from then
+     * on and the call made again, once per version (as the login does: a 403 naming a minimum); a token that stopped
+     * working before its time signs in again once with the saved password and the call is made again. A sign-in that
+     * fails then answers as the call's outcome ([LluCallOutcome.Expired] for a refused password).
+     */
+    suspend fun call(
+        first: LluSession.Ready,
+        get: (LluSession.Ready) -> LluCall,
+    ): LluCall {
+        var session = first
+        var r = get(session)
+        if (r.outcome == LluCallOutcome.Version && raiseVersion(r.minimumVersion)) r = get(session)
+        if (r.outcome == LluCallOutcome.Expired) {
+            expire()
+            session =
+                when (val s = session()) {
+                    is LluSession.Ready -> s
+                    LluSession.SignedOut -> return LluCall(LluCallOutcome.Expired)
+                    is LluSession.Terms -> return LluCall(LluCallOutcome.Terms)
+                    is LluSession.RateLimited -> return LluCall(LluCallOutcome.RateLimited, retryAfterS = s.retryAfterS)
+                    LluSession.Retired -> return LluCall(LluCallOutcome.Retired)
+                    LluSession.Failed -> return LluCall(LluCallOutcome.Network)
+                }
+            r = get(session)
+            if (r.outcome == LluCallOutcome.Version && raiseVersion(r.minimumVersion)) r = get(session)
+        }
+        return r
+    }
+
+    /**
+     * A call refused this client's version: [minimum] is sent from now on and kept with the account (a restart sends it
+     * too). False when it is sent already (LibreLinkUp refuses it as well: Abbott changed more than the version).
+     */
+    private suspend fun raiseVersion(minimum: String?): Boolean =
+        mutex.withLock {
+            if (minimum == null || minimum == api.version) return@withLock false
+            api.version = minimum
+            runCatching { read() }.getOrNull()?.let { write(it.copy(version = minimum)) }
+            true
+        }
 
     companion object {
         /** The secure store's name (schema `source.libreLinkUpSecret`). */

@@ -585,7 +585,13 @@ Discarded or deferred, with reasons:
 - **Card words with the person's name** (*Ana's glucose*) for someone else's LibreLinkUp: the name shows on Settings ›
   Source and Connect; the card's name comes from a Sukrara stream today (a later change of the hub's link).
 - **The wear length** LibreLinkUp doesn't say: the default 15 days (a Libre 3's 14 shows a day long until the takeover,
-  when the sensor says its own); the manual start with its length (decision 10) stays to do.
+  when the sensor says its own); the manual start with its length (decision 10) stays to do. LibreLinkUp can't tell
+  it either (checked in the QA review): no expiry field; `sensor.pt` is 4 for a Libre 3 **and** a 3 Plus (3 for a
+  Libre 2 and 2 Plus), `dtid` 40068 names the Libre 3 app, `w` (60) is the warm-up
+  ([dodog/librelink #13](https://github.com/dodog/librelink/issues/13#issuecomment-6400299627),
+  [xDrip4iOS #567](https://github.com/JohanDegraeve/xdripswift/issues/567)); the clients that show 14 or 15 days ask the
+  person ([xDrip4iOS](https://github.com/JohanDegraeve/xdripswift/blob/f7447f1c70a194cee1c9c8eea96ebbadf62027b8/xDrip/Managers/LibreLinkUp/LibreLinkUpFollowManager.swift#L344-L355),
+  [GlucoDataHandler](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/common/src/main/java/de/michelinside/glucodatahandler/common/utils/GlucoDataUtils.kt#L248-L262)).
 - **The full *Move to Sukrara* page and suggestion** (step 4): *Read the sensor in Sukrara* is the page's step 4; the
   checklist, *How it's going* and `MoveSuggestion` need the arrival times step 4 records. Nothing here conflicts with
   them (the page's steps reuse this gate, the switch and *Take over*).
@@ -625,7 +631,52 @@ Discarded or deferred on the Mac, with reasons:
   gives are the backfill.
 - **Card words with the person's name**: as on Android (Settings and Connect name them).
 - **Android's 429 without Retry-After**: Android's source passes no wait to `LluPoll` then and backs off from 1 min;
-  the Mac waits the contract's 10 min (`poll.json` *asked to wait without a time*). Reported for the Android QA pass.
+  the Mac waits the contract's 10 min (`poll.json` *asked to wait without a time*). Reported for the Android QA pass,
+  fixed there (below).
+
+**Step 2's QA review (2026-11-18, Android emulator against a fake LibreLinkUp).** The builder had checked the screens
+only in Robolectric renders, so the whole journey was walked on an emulator against `tools/librelinkup-probe/fake.py`
+(synthetic, loopback; the debug `LIBRELINKUP` command points the client there): setup, *Sign in as …*, the form, terms,
+the redirect, 429, a version asked for, one person / several / none, a reading each minute, late, stopped 20 min and
+back, the token ending early, a restart, offline, history import over the same hours, Settings › Source, Share with
+apps, the takeover gate. The numbers on home matched the fake's, and no two readings of two sources were ever within
+2 min of each other (`sqlite3` on the emulator). Fixed:
+- **A 429 without a time** (`Retry-After` or lockout; the Mac's build found it) was retried after a minute, and a kick (the network back, *Try
+  again*) called at once during any wait: each call may lengthen the account's lockout. Now at least 10 min
+  (`LluPoll.next`, poll.json), no kick calls before the time LibreLinkUp gave, the status has no *Try again* (it asks by
+  itself); a sign-in the person makes ends the wait.
+- **A version asked for on a call** (403 with `minimumVersion` on the graph or connections call, not the login) read as
+  *stopped* for an hour, and stayed so while the token lived (180 days): now sent from then on and asked once more, as
+  at the login; it stays with the account through a new sign-in and a restart (it was dropped at the next sign-in), a
+  newer built-in version wins; a minimum that isn't a version is never put in a header.
+- **Someone who stops sharing** (LibreLinkUp refuses their graph) showed *LibreLinkUp stopped answering Sukrara* for an
+  hour: whom the account follows is read at once, *Pick again* / the invite words show.
+- ***Sign in as …* refused** (the LibreView password changed, or none saved) showed nothing but a haptic: now the form,
+  with that email filled in and the refusal under the password.
+- ***Open the Libre app's info*** on the takeover gate did nothing when the Libre app isn't on this phone: shown only
+  where it is installed.
+- **Settings › Source said *Whose glucose* twice** (the person, then whom LibreLinkUp reads), with the same icon: the
+  second is *Person* (its search entry *LibreLinkUp person*); a person who stopped sharing while others still do reads
+  *The person picked stopped sharing…*, not *No one shares…*.
+- **Fewer calls**: a pick or a sign-in asked for the graph twice in a row (an explicit kick and the config's), *Try
+  again* called the connections and then the graph even when the first was refused: one call each now.
+- **"Live · last reading 0 minutes ago"** on the Connect step (Android's minute resolution): *just now* under a minute
+  (Nightscout's step too).
+- **QA tooling**: Q30 asked for a fake LibreLinkUp nothing could point at; the `LIBRELINKUP` command and the fake now
+  exist (docs/DEVELOPMENT.md), and `LibreLinkUp.kt` is on the cleartext check's `network_ok` list (its multi-line
+  `Request.Builder()` slipped past the check).
+
+Seen and left, with the reason:
+- **The takeover's tap and the LibreView upload's *Take over*** can't run on an emulator (no NFC; the upload's server
+  isn't faked): the gate's pages were checked in the gallery (light, dark, largest font, Spanish) and the switch to the
+  sensor with its backfill was simulated with `SYNTHETIC` over the fake's identical curve (the backfill replaced every
+  LibreLinkUp reading within 2 min); the owner's test covers the rest.
+- **The upload status says *Sukrara takes over once it reads your sensor***: after the tap it *offers* *Take over*
+  (FEATURES); a copy change for when the upload page is next touched.
+- **Restore your followers** says *Sensor running in Sukrara* ✓ for any source with readings (Nightscout too): its words
+  are the sensor's; to reword with the other sources' setup copy.
+- **Home says nothing between 7 and 20 min** of a late or stopped LibreLinkUp (the stale value and its time show; the
+  reason comes with the no-data alert at 20 min): the card's rule for every source, kept.
 
 ## Decisions for the owner
 

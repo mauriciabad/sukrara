@@ -114,7 +114,10 @@ sealed interface NewSensorStep {
      * rings no alarms, LibreLinkUp gets nothing until Sukrara uploads to LibreView, and the way back is scanning the
      * sensor with the Libre app. Shown instead of [OfficialAppWarning]; *Take over* goes on.
      */
-    data object TakeoverFromLibreApp : NewSensorStep
+    data class TakeoverFromLibreApp(
+        /** The Libre app is installed on this phone: its App info (Force stop) is offered. */
+        val appHere: Boolean,
+    ) : NewSensorStep
 
     data object NeedsBluetoothPermission : NewSensorStep
 
@@ -247,7 +250,6 @@ object NewSensorMachine {
             NewSensorStep.CoreMissing,
             NewSensorStep.NeedsLibreViewSignIn,
             NewSensorStep.OfficialAppWarning,
-            NewSensorStep.TakeoverFromLibreApp,
             NewSensorStep.NoNfc,
             NewSensorStep.NfcOff,
             NewSensorStep.NeedsBluetoothPermission,
@@ -255,7 +257,8 @@ object NewSensorMachine {
             NewSensorStep.NeedsNotifications,
         )
 
-    private fun NewSensorStep.isGate() = this in GATES || this is NewSensorStep.SensorSetupStep
+    private fun NewSensorStep.isGate() =
+        this in GATES || this is NewSensorStep.SensorSetupStep || this is NewSensorStep.TakeoverFromLibreApp
 
     fun reduce(state: NewSensorState, event: NewSensorEvent, now: Instant): NewSensorState {
         val step = state.step
@@ -342,7 +345,7 @@ object NewSensorMachine {
                         if (now.isBefore(step.since.plus(UNTESTED_WAIT))) state else gate(state.copy(profile = step.profile))
                     }
 
-                    NewSensorStep.OfficialAppWarning, NewSensorStep.TakeoverFromLibreApp -> {
+                    NewSensorStep.OfficialAppWarning, is NewSensorStep.TakeoverFromLibreApp -> {
                         gate(state.copy(officialAcknowledged = true))
                     }
 
@@ -388,16 +391,47 @@ object NewSensorMachine {
         if (profile.needsScan) return state.copy(step = scannedGate(state, env, profile))
         val next =
             when {
-                !env.coreAvailable -> NewSensorStep.CoreMissing
-                !env.nfcAvailable -> NewSensorStep.NoNfc
-                !env.nfcOn -> NewSensorStep.NfcOff
-                !env.signedIn -> NewSensorStep.NeedsLibreViewSignIn
-                env.takeoverFromLibreApp && !state.officialAcknowledged -> NewSensorStep.TakeoverFromLibreApp
-                env.officialAppInstalled && !state.officialAcknowledged -> NewSensorStep.OfficialAppWarning
-                !env.bluetoothPermission -> NewSensorStep.NeedsBluetoothPermission
-                !env.bluetoothOn -> NewSensorStep.BluetoothOff
-                !env.notificationsAllowed && !state.notificationsSkipped -> NewSensorStep.NeedsNotifications
-                else -> NewSensorStep.WaitingForTap
+                !env.coreAvailable -> {
+                    NewSensorStep.CoreMissing
+                }
+
+                !env.nfcAvailable -> {
+                    NewSensorStep.NoNfc
+                }
+
+                !env.nfcOn -> {
+                    NewSensorStep.NfcOff
+                }
+
+                !env.signedIn -> {
+                    NewSensorStep.NeedsLibreViewSignIn
+                }
+
+                env.takeoverFromLibreApp && !state.officialAcknowledged -> {
+                    NewSensorStep.TakeoverFromLibreApp(
+                        env.officialAppPackage != null,
+                    )
+                }
+
+                env.officialAppInstalled && !state.officialAcknowledged -> {
+                    NewSensorStep.OfficialAppWarning
+                }
+
+                !env.bluetoothPermission -> {
+                    NewSensorStep.NeedsBluetoothPermission
+                }
+
+                !env.bluetoothOn -> {
+                    NewSensorStep.BluetoothOff
+                }
+
+                !env.notificationsAllowed && !state.notificationsSkipped -> {
+                    NewSensorStep.NeedsNotifications
+                }
+
+                else -> {
+                    NewSensorStep.WaitingForTap
+                }
             }
         return state.copy(step = next)
     }

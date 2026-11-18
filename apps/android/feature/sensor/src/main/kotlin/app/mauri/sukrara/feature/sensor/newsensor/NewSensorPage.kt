@@ -154,11 +154,12 @@ fun NewSensorStep.page(): NewSensorPage =
             )
         }
 
-        NewSensorStep.TakeoverFromLibreApp -> {
+        is NewSensorStep.TakeoverFromLibreApp -> {
             NewSensorPage(
                 R.string.newsensor_takeover_libre_title,
                 R.string.newsensor_takeover_libre_text,
-                listOf(NewSensorAction.TakeOver, NewSensorAction.LibreAppInfo, NewSensorAction.Cancel),
+                // the Libre app's info only where it is installed (it may hold the sensor from another phone)
+                listOfNotNull(NewSensorAction.TakeOver, NewSensorAction.LibreAppInfo.takeIf { appHere }, NewSensorAction.Cancel),
                 note = R.string.newsensor_takeover_libre_back,
             )
         }

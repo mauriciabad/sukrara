@@ -4,6 +4,7 @@
 package app.mauri.sukrara.integrations.librelinkup
 
 import app.mauri.sukrara.core.data.libreview.LibreLinkUp
+import app.mauri.sukrara.core.model.CallOutcome
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceId
@@ -182,6 +183,65 @@ class LibreLinkUpSourceTest {
         }
 
     @Test
+    fun `a call refused for its version sends the version asked for, reads again and keeps it through a restart`() =
+        runBlocking {
+            source().connect("owner@example.com", "pw")
+            graphFailsOnce = MockResponse().setResponseCode(403).setBody("""{"status":920,"data":{"minimumVersion":"4.18.0"}}""")
+            val batch = withTimeout(10_000) { source().readings.first() }
+            assertTrue(batch.isNotEmpty())
+            val graphs = requests.filter { it.path.orEmpty().endsWith("/graph") }
+            assertEquals(listOf(LibreLinkUp.VERSION, "4.18.0"), graphs.map { it.getHeader("version") })
+            // the token still works: no login for a version
+            assertEquals(1, logins())
+            // a new start (a new client) sends the raised version from its first call
+            requests.clear()
+            withTimeout(10_000) { source().readings.first() }
+            assertEquals("4.18.0", requests.last { it.path.orEmpty().endsWith("/graph") }.getHeader("version"))
+        }
+
+    @Test
+    fun `the version asked for stays through a new sign-in and a restart`() =
+        runBlocking {
+            source().connect("owner@example.com", "pw")
+            graphFailsOnce = MockResponse().setResponseCode(403).setBody("""{"status":920,"data":{"minimumVersion":"4.18.0"}}""")
+            withTimeout(10_000) { source().readings.first() }
+            // the token stops working early: a new sign-in, which must keep the version
+            graphFailsOnce = MockResponse().setResponseCode(401)
+            withTimeout(10_000) { source().readings.first() }
+            assertEquals(2, logins())
+            assertEquals("4.18.0", requests.last { it.path == LibreLinkUp.LOGIN }.getHeader("version"))
+            requests.clear()
+            withTimeout(10_000) { source().readings.first() }
+            assertEquals("4.18.0", requests.first().getHeader("version"))
+            // a build that sends a newer version itself never goes back to an older one it was asked for
+            assertTrue(LibreLinkUp.newer("4.18.0", "4.17.0"))
+            assertFalse(LibreLinkUp.newer("4.17.0", "4.17.0"))
+            assertFalse(LibreLinkUp.newer("4.9.9", "4.17.0"))
+        }
+
+    @Test
+    fun `a version refused again says LibreLinkUp stopped answering Sukrara`() =
+        runBlocking {
+            source().connect("owner@example.com", "pw")
+            graph = MockResponse().setResponseCode(403).setBody("""{"status":920,"data":{"minimumVersion":"4.18.0"}}""")
+            val s = source()
+            val job = launch(Dispatchers.IO) { s.readings.collect { } }
+            val st = withTimeout(10_000) { s.status.first { it is SourceStatus.Interrupted } }
+            assertEquals(SourceProblem.Stopped, (st as SourceStatus.Interrupted).problem)
+            // asked once with the version it named, never in a loop
+            assertEquals(2, requests.count { it.path.orEmpty().endsWith("/graph") })
+            job.cancel()
+        }
+
+    @Test
+    fun `a minimum version that isn't one is never sent`() {
+        assertEquals(
+            app.mauri.sukrara.core.data.libreview.LluCallOutcome.Retired,
+            LibreLinkUp.parseCall(403, """{"status":920,"data":{"minimumVersion":"4.18.0\r\nX-Evil: 1"}}""").outcome,
+        )
+    }
+
+    @Test
     fun `a refused password is never saved nor retried`() =
         runBlocking {
             login = ok("""{"status":2,"error":{"message":"notAuthenticated"}}""")
@@ -245,6 +305,29 @@ class LibreLinkUpSourceTest {
         }
 
     @Test
+    fun `the person stops sharing mid-session, LibreLinkUp refuses their graph, Pick again shows at once`() =
+        runBlocking {
+            val s = source()
+            s.connect("owner@example.com", "pw")
+            withTimeout(10_000) { s.readings.first() }
+            // the invite was removed in the Libre app: the graph is refused, whom the account follows no longer has them
+            people = """[{"patientId":"$ana","firstName":"Ana","lastName":"Example"}]"""
+            graph = MockResponse().setResponseCode(403).setBody("""{"status":403,"message":"Forbidden"}""")
+            val job = launch(Dispatchers.IO) { s.readings.collect { } }
+            val st = withTimeout(10_000) { s.status.first { it is SourceStatus.Interrupted } }
+            // not *LibreLinkUp stopped answering Sukrara* for an hour
+            assertEquals(SourceProblem.NotShared, (st as SourceStatus.Interrupted).problem)
+            assertEquals(
+                listOf(ana),
+                s.view
+                    .first()
+                    .people
+                    .map { it.id },
+            )
+            job.cancel()
+        }
+
+    @Test
     fun `asked to wait, the source says so and the person is told it tries again by itself`() =
         runBlocking {
             source().connect("owner@example.com", "pw")
@@ -254,6 +337,25 @@ class LibreLinkUpSourceTest {
             val st = withTimeout(10_000) { s.status.first { it is SourceStatus.Interrupted } }
             assertEquals(SourceProblem.RateLimited, (st as SourceStatus.Interrupted).problem)
             assertEquals(OnlineHealth.RateLimited, withTimeout(10_000) { s.view.first { it.health == OnlineHealth.RateLimited } }.health)
+            job.cancel()
+        }
+
+    @Test
+    fun `asked to wait without a time, nothing calls LibreLinkUp again before 10 min, not even a kick`() =
+        runBlocking {
+            source().connect("owner@example.com", "pw")
+            graph = MockResponse().setResponseCode(429)
+            val s = source()
+            val job = launch(Dispatchers.IO) { s.readings.collect { } }
+            withTimeout(10_000) { s.status.first { it is SourceStatus.Interrupted } }
+            val graphs = requests.count { it.path.orEmpty().endsWith("/graph") }
+            // the network coming back or *Try again* kick the loop: under a 429 they wait (each call may lengthen the lockout)
+            s.kick()
+            kotlinx.coroutines.delay(1_500)
+            s.kick()
+            kotlinx.coroutines.delay(1_500)
+            assertEquals(graphs, requests.count { it.path.orEmpty().endsWith("/graph") })
+            assertEquals(0, logins() - 1)
             job.cancel()
         }
 
@@ -295,11 +397,18 @@ class LibreLinkUpSourceTest {
                     .takeIf { it != JsonNull }
                     ?.jsonPrimitive
                     ?.long
-            assertEquals(
-                c.getValue("name").jsonPrimitive.content,
-                want,
-                LluPoll.waitS(c.getValue("failures").jsonPrimitive.int, rate, refused),
-            )
+            val failures = c.getValue("failures").jsonPrimitive.int
+            val name = c.getValue("name").jsonPrimitive.content
+            assertEquals(name, want, LluPoll.waitS(failures, rate, refused))
+            // the source's own decision after a cycle: a 429 without a time (no Retry-After, no lockout) is the minimum
+            val outcome =
+                when {
+                    refused -> CallOutcome.Refused
+                    rate != null -> CallOutcome.RateLimited
+                    failures == 0 -> CallOutcome.Ok
+                    else -> CallOutcome.Server
+                }
+            assertEquals(name, want, LluPoll.next(outcome, failures, rate?.takeIf { it > 0 }))
         }
     }
 }

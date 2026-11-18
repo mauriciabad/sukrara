@@ -14,8 +14,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * Debug builds: the DebugFakes `SYNTHETIC` source replaces the sensor while it's switched on, the relays are the
- * `RELAYS` command's choice and the updater's server the `UPDATES` command's (release: never; the real sensor, the
- * public relays, the GitHub releases and the release key).
+ * `RELAYS` command's choice, the updater's server the `UPDATES` command's and LibreLinkUp's the `LIBRELINKUP` command's
+ * (release: never; the real sensor, the public relays, the GitHub releases and the release key, Abbott's hosts).
  */
 internal object BuildVariant {
     /** What the `RELAYS` command saved (null = nothing: `LaunchPlan` connects to no relay). */
@@ -26,6 +26,12 @@ internal object BuildVariant {
      * the release key, as in a release build.
      */
     fun updateServer(context: Context): Pair<String, String>? = DebugFakes.updateServer(context)
+
+    /**
+     * The `LIBRELINKUP` command's local fake LibreLinkUp (scheme to host:port) for every region, or null: Abbott's hosts,
+     * as in a release build.
+     */
+    fun libreLinkUpServer(context: Context): Pair<String, String>? = DebugFakes.libreLinkUpServer(context)
 
     /** The `GARMIN_SIM` command's Connect IQ simulator instead of Garmin Connect, or null (release: always null). */
     fun connectIq(

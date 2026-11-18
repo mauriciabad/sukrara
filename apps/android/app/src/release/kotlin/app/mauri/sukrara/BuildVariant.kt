@@ -27,6 +27,10 @@ internal object BuildVariant {
     @Suppress("UNUSED_PARAMETER")
     fun updateServer(context: Context): Pair<String, String>? = null
 
+    /** LibreLinkUp and the LibreView sign-in always reach Abbott's hosts (`api(-<region>).libreview.io`, https). */
+    @Suppress("UNUSED_PARAMETER")
+    fun libreLinkUpServer(context: Context): Pair<String, String>? = null
+
     @Suppress("UNUSED_PARAMETER", "RedundantSuspendModifier")
     suspend fun hasWearerSource(graph: AppGraph): Boolean = false
 

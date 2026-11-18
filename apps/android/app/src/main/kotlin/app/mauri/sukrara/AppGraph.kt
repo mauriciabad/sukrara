@@ -362,6 +362,7 @@ class AppGraph(
                     null
                 }
             },
+            libreViewServer = BuildVariant.libreLinkUpServer(app),
         )
     }
 
@@ -693,6 +694,7 @@ class AppGraph(
             connectIq =
                 BuildVariant.connectIq(app) { data.diagLog.log("integrations", it) }
                     ?: ConnectIq(app) { data.diagLog.log("integrations", it) },
+            libreLinkUpServer = BuildVariant.libreLinkUpServer(app),
         )
     }
 

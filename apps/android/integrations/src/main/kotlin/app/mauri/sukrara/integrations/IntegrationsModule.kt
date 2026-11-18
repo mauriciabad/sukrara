@@ -146,6 +146,8 @@ class IntegrationsModule(
     glucose: Flow<GlucoseState> = emptyFlow(),
     /** How the face is reached: Garmin Connect, or a debug build's Connect IQ simulator. */
     connectIq: ConnectIqPort = ConnectIq(context, log),
+    /** A debug build's fake LibreLinkUp (scheme to host:port, every region), null = Abbott's hosts (release: always). */
+    libreLinkUpServer: Pair<String, String>? = null,
 ) {
     /** Your glucose read first-hand here: what uploads and outputs may send (docs/44 keying). */
     val wearer: Flow<Boolean> = role.map { it?.owner == true }
@@ -198,7 +200,12 @@ class IntegrationsModule(
         )
 
     /** The LibreLinkUp source's account (apart from THE LibreView account) and *Connect*. */
-    val libreLinkUpAccount = LluAccount(secure, LibreLinkUp(http), clock)
+    val libreLinkUpAccount =
+        LluAccount(
+            secure,
+            libreLinkUpServer?.let { (scheme, host) -> LibreLinkUp(http, scheme, host) { host } } ?: LibreLinkUp(http),
+            clock,
+        )
 
     /** Glucose from LibreLinkUp, when it is the source (docs/44 step 2). */
     val libreLinkUpSource =

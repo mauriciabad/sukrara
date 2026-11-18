@@ -983,5 +983,5 @@
     <string name="st_source_ns_treatments">Tratamientos en ambos sentidos</string>
     <string name="st_source_llu">LibreLinkUp</string>
     <string name="st_source_llu_account">Cuenta de LibreLinkUp</string>
-    <string name="st_source_llu_whose">La glucosa de quién trae LibreLinkUp</string>
+    <string name="st_source_llu_whose">Persona de LibreLinkUp</string>
 </resources>
