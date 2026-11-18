@@ -719,11 +719,22 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   `SourceIcon`) and what it brings (*Live every minute · no other app*: the group's title
   says *works offline*, the rows don't repeat it), the sensor marked *Recommended*. Preselected with what the device
   reads, else the usual one (your sensor; their Sukrara). *Continue* stores both at once the first time; a change says
-  what changes first (*Switch to “Juggluco on this phone”?* with what happens, from the sensor also that Sukrara stops
-  connecting to it and its pairing stays, and *The history on this phone stays.*, *Switch* / *Cancel*); a change of
-  whose glucose with history on the device asks *Delete the earlier history?* (Readings and backfill). Then: another
-  Sukrara not joined yet → *Follow someone*; a sensor or Juggluco with no reading yet → its connect step (*Connect
-  Juggluco* says *Juggluco isn't installed on this phone.* until it is); else done.
+  what changes first (*Switch to “Juggluco on this phone”?* with what happens, in the words of whose glucose it is
+  (*their Nightscout site*, *their glucose from LibreLinkUp*); from a paired sensor also that Sukrara stops connecting
+  to it and its pairing stays (Android: only when a sensor is paired); to your sensor from LibreLinkUp that Sukrara
+  takes it from the Libre app, whose alarms and LibreLinkUp sharing stop; to a follow already allowed that it shows
+  *again* (no request to accept); and *The history on this phone stays.*, *Switch* / *Cancel*; `SourceChangeTextTest`);
+  a change of whose glucose with history on the device asks *Delete the earlier history?* (Readings and backfill).
+  Android: a change of whose glucose also lets go of what was the other person's (#213, docs/44 Appendix G finding 4,
+  `SourceRecord.forAnotherPerson`): LibreLinkUp's pick (picked again by the rule for the new person: the account
+  itself for yours, else the only one; several → the list) and the Nightscout site, which the Connect step only offers
+  (*The site read before: check it's yours / theirs*, its saved token kept for it; nothing is read until *Connect*).
+  Then: another Sukrara not joined yet → *Follow someone*; a change of whose glucose, or a sensor, Juggluco or site
+  with no reading of its own yet (another source's last reading proves nothing: Nightscout → Juggluco asks to connect
+  Juggluco) → its connect step (*Connect Juggluco* says *Juggluco isn't installed on this phone.* until it is); else
+  done. Android: the new-sensor flow opened while someone else's glucose shows (Settings › Sensor's *Pair new sensor*,
+  home, a notification) opens this step confirming your own sensor first (*Delete the earlier history?* when there is
+  history), then the sensor step; a pairing never changes whose glucose by itself (Appendix G finding 11).
 - **Settings › Source** (Android: the overview's row right after Alerts, its summary *Yours · sensor* / *Ana ·
   Sukrara*, its icon the *input* arrow, the drop being Readings'; the Mac: Settings › Source pane): *Whose glucose* and
   *Where it comes from* (each opens the step above on its own, without the walk's step counter; *Whose glucose* goes on
@@ -734,7 +745,12 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   the last reading, adding treatments, the relays, Bluetooth, *Stop following*) and *Settings from*. The foot: *Changing
   whose glucose deletes the history on this phone (Sukrara asks first). Changing the source keeps it.*; *See also* the
   sensor and Import history for your own glucose. Settings › Sharing on any other source says sharing is for your own
-  glucose read on this device, with a row to Source. Mac: the cards and the radio rows are on the pane itself (a pick
+  glucose read on this device, with a row to Source. **The name** of whose glucose (*Someone else's · Leo Example*, the
+  overview's summary, alerts, the glucose notification, widgets' descriptions) comes from the source in use only: the
+  stream's wearer, LibreLinkUp's person; none from a source that gives none (Android `GlucoseState.name`; a follow
+  kept behind another source lends it neither its name nor its *You no longer follow this person*: Appendix G findings
+  3 and 15). An invite opened on a phone that can't follow says what that phone does (*This phone shares its own
+  readings* / *shows someone else's glucose* / *follows your other Sukrara*). Mac: the cards and the radio rows are on the pane itself (a pick
   applies at once), the follow's rows or Juggluco's under them; *Changing the source keeps the person this Mac
   follows…* only while it follows someone.
 - **An install from before the question** (an update; also a damaged `source.json` with its backup): the device keeps
@@ -937,7 +953,13 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   never sent back to LibreView). Someone else's glucose: nothing shared or uploaded.
 - **Settings › Source › LibreLinkUp** (`LibreLinkUpSourceRows`): *Account* (the email; Connect), *Person* (their name;
   a pick, *Whose glucose?*, when the account follows several people), the status with its one exit (*Sign in again*, *Try again*, *Pick
-  again*; asked to wait: the line alone), *Sensor*; for your glucose *The Libre app has the sensor*: *LibreView* (why nothing goes there) and **Read
+  again*; asked to wait: the line alone), *Sensor*; **another person than the one whose readings this phone holds**
+  (Android, Appendix G finding 6; the Mac's confirmation) is read only after *Read Leo Example's glucose?* (*Ana
+  Example's readings on this phone and the treatments logged here are deleted: two people's glucose never mix.*, *Read
+  Leo Example's glucose* / *Cancel*; `ReadAnotherPersonDialog`), on the Person row, setup's list and when a sign-in or
+  *Try again* would read someone else (*Cancel* keeps the person read). Reading another person deletes the earlier
+  one's readings and treatments first and starts monitoring over (`LluSourceState.held`; an answer for the earlier
+  person still on its way is dropped); for your glucose *The Libre app has the sensor*: *LibreView* (why nothing goes there) and **Read
   the sensor in Sukrara** (the takeover); *Sign out of LibreLinkUp* (confirmed: *Sukrara gets no glucose until you sign
   in again or choose another source. The readings already here stay.*).
 - **The move: taking the sensor over** (docs/44 "The move", at any point of a sensor's life): *Read the sensor in

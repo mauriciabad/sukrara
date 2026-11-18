@@ -1760,13 +1760,16 @@ Platform; journey and repro; what's left behind or broken; fix.
    - Fix: D (the Mac follows the phone).
 3. **HIGH, Android: the old follow's name on another source's alerts, notification, widgets and Source page** (`android/25`–`27`).
    - Fix: hub link null unless `spec.stream`; take the name from the current source.
+   - **Fixed** (2c1a4863d): the hub shows the follower engine's link only while the stream is the source; `GlucoseState.name` is whose glucose by name as the current source gives it (the stream's wearer, LibreLinkUp's person, none otherwise). `GlucoseHubTest`; emulator: Settings and Source name LibreLinkUp's Ana, then Leo once picked.
 4. **HIGH, Android: a change of *Whose glucose* keeps the LibreLinkUp pick, and Ana's glucose became "yours"** (`android/20`, `21`).
    - It then offered *Share with your clinic* and *Set up sharing*, and alerted as the wearer. Cause: `LibreLinkUpSource.kt:312-350`.
    - Fix: a person change clears `source.libreLinkUpPatient` and picks again by the rule; it also confirms the stored Nightscout site.
+   - **Fixed** (cc0cc830d): `SourceRecord.forAnotherPerson` clears the pick and the site with the history; LibreLinkUp picks again by the rule (a lone connection that isn't the account is still picked for *Yours*: the contract's rule); the Connect step only offers the earlier site (*The site read before: check it's yours*, its token kept for it) and always shows after a person change. `AppSourcesTest`, `SetupViewModelTest`; emulator: Theirs · Leo → Yours asked *Delete the earlier history?*, then LibreLinkUp's list instead of Leo.
 5. **HIGH, Android: history overwritten across sources and people; "The history on this phone stays" is false** (`android/14`).
    - Fix: key someone else's readings by source identity; within one person, fence backfill at the previous source's last reading; correct the dialog copy.
 6. **HIGH, Android: another LibreLinkUp person is read without asking, and readings mix.**
    - Fix: port the Mac's confirmation (`M/Windows/Settings/LibreLinkUpRows.swift:129-140`).
+   - **Fixed** (bd07a8cf6): *Read Leo Example's glucose?* (`ReadAnotherPersonDialog`) on the Person row, setup's list and a sign-in or *Try again* that would read someone else (*Cancel* keeps the person read); the source remembers whose readings the phone holds (`LluSourceState.held`) and deletes them and the treatments before another person's arrive, dropping an answer for the earlier person still on its way. `LibreLinkUpSourceTest`, `LibreLinkUpPersonConfirmTest`; emulator: Ana → Leo asked first, and the next person change counted only Leo's 12 h.
 7. **HIGH, both: the wearer is never told a follower stopped or switched.** It stays listed with no last-seen; escalations fan out to devices that aren't listening (`android/22`, `15`).
    - Fix: `leave` event (PROTOCOL-v2 addition, both apps) and last-seen (decision 3).
 8. **HIGH, Mac: Juggluco source plus a kept follow writes treatments into the followed phone's log** (`mac-11`).
@@ -1785,6 +1788,7 @@ Platform; journey and repro; what's left behind or broken; fix.
     - Fix: per-log ownership; never upload another log's entries; reset the follow's treatment cursor when the history is wiped.
 11. **MEDIUM, Android: pairing a sensor while showing someone else's glucose forces *Yours* and deletes all readings and treatments without *Delete the earlier history?*** (`A/app/.../AppGraph.kt:316-319` → `SetupPorts.kt:40-46`). Code-read, not walked.
     - Fix: go through `loss()` and the dialog.
+    - **Fixed** (1f97a2dba): the new-sensor flow opened while someone else's glucose shows opens setup's source step confirming your own sensor (`SetupStepRoute.yourSensor`: *Delete the earlier history?* when there is history), then the sensor step; `setSourceKind` never changes the person by itself. `SetupViewModelTest`; emulator: Theirs · Juggluco → Settings › Sensor › *Pair new sensor* asked first, then *Connect your sensor*.
 12. **MEDIUM, both: accounts of sources not in use can't be seen or removed** (follow key, LibreLinkUp account and pick, Nightscout site and token; Nightscout can't be forgotten at all).
     - Fix: an "Also on this device" group with *Sign out*, *Forget*, *Stop following*, without reconnecting.
 13. **MEDIUM, Mac: a standalone Mac runs *Settings from: Their settings*** (schema default `wearer`).
@@ -1794,6 +1798,7 @@ Platform; journey and repro; what's left behind or broken; fix.
     - Fix: a reason per source (e.g. Nightscout: no site yet); the link's reason only when the follow is the source.
 15. **MEDIUM, Android: home keeps "You no longer follow this person · Join with a new invite"** while another source shows values.
     - Fix: gate on stream.
+    - **Fixed** (c2645aa55): `NoDataReason` gives *LinkRevoked* only while the stream is the source (the hub's link is too, 2c1a4863d). `NoDataReasonTest`; not walked (needs an ended follow behind another source).
 16. **MEDIUM, Mac: rings counted over LibreLinkUp's 12 h** while the follow holds 8.7 days of the same person.
     - Fix: §4 point 5.
 17. **MEDIUM, Mac (QA tooling): dev and fixture runs have no LibreLinkUp, Nightscout or Juggluco source**, so the Mac's online journeys can't be walked on the app, only in unit tests.
@@ -1805,8 +1810,10 @@ Platform; journey and repro; what's left behind or broken; fix.
     - Mac: the Source toolbar help names only the follow and Juggluco.
     - Android switch dialogs: "your glucose" for someone else's (`android/03`, `09`); "once it accepts your request" when an approved follow resumes (`android/13`); "the pairing stays" with nothing paired (`android/19`); LibreLinkUp → sensor says nothing about the Libre app holding the sensor (`android/24`).
     - Android: "0 minutes ago"; Sharing "(your sensor or Juggluco)"; InviteHere "shares its own readings" for someone else's.
+    - **Android fixed** (3900580b6): the dialogs per person, follow, pairing and the Libre app's sensor (`sourceChangeText`, `SourceChangeTextTest`); *just now* under a minute in uploads, broadcasts, Health Connect and the Following page (`AgoTest`); Sharing's note without the parenthesis; InviteHere *shows someone else's glucose* / *follows your other Sukrara*. "The history on this phone stays" is left to finding 5.
 19. **LOW:**
     - Android: Nightscout → Juggluco (not installed) skips *Connect Juggluco*, because the old Nightscout reading satisfies `facts.ownSensorLive`.
+    - **Android fixed** (17e3be0d6): live means a fresh reading from the source in use (`RestoreGate.ownSensorLive` with the kind's readings; the source step checks the source just chosen). `SetupViewModelTest`, `RestoreGateTest`; emulator: LibreLinkUp → Juggluco (not installed) showed *Connect Juggluco*.
     - Mac: *Skip* on *Do you have Sukrara on your phone?* jumps to a source list without *Their Sukrara*.
 
 ### 7. Questions and settings: what they change, and what to remove
