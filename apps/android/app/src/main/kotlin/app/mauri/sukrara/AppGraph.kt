@@ -849,8 +849,35 @@ class AppGraph(
             // what a source change says stays: a sensor's pairing only when one is paired
             sensorPaired = { sensor.pairings.exists() },
             link = link,
+            untoldLeave = untoldLeave,
         )
     }
+
+    /**
+     * The wearer of a follow this phone left while its `leave` waits for a relay or their phone (offline: PROTOCOL-v2
+     * "Leave"), once the first attempt is over (never a flash); null = none. Setup and Settings › Source say it, as the
+     * notification does, until it goes.
+     */
+    val untoldLeave: Flow<String?> =
+        flow {
+            val sender = follower.leaves
+            if (sender == null) {
+                emit(null)
+            } else {
+                emitAll(
+                    sender.outbox
+                        .map { it.untold?.wearer }
+                        .distinctUntilChanged()
+                        .flatMapLatest { w ->
+                            flow {
+                                // after the first attempt only: never a flash while a relay is about to answer
+                                if (w != null) delay(LeaveSender.WAIT_MS)
+                                emit(w)
+                            }
+                        },
+                )
+            }
+        }
 
     /**
      * Leaving the Sukrara link (one person, one link: contracts/sources/link.json): *Stop following*, another source

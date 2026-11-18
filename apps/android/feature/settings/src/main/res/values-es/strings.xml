@@ -1026,4 +1026,6 @@
     <string name="st_source_saved_ns_text">Sukrara olvida la dirección del sitio y su token en este móvil. El sitio en sí se queda como está.</string>
     <string name="st_source_saved_ns_action">Olvidar</string>
     <string name="st_metric_needs">Faltan lecturas: %1$s de los últimos %2$s, se necesitan %3$s</string>
+    <string name="st_source_untold">%1$s aún no sabe que has dejado de seguirle. Sukrara se lo dirá en cuanto este móvil tenga internet.</string>
+    <string name="st_source_untold_unnamed">La persona a la que seguías aún no sabe que lo has dejado. Sukrara se lo dirá en cuanto este móvil tenga internet.</string>
 </resources>

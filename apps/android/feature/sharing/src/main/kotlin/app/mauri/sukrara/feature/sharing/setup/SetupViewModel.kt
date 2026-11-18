@@ -142,6 +142,8 @@ data class SetupUi(
     val site: SiteUi = SiteUi(),
     /** LibreLinkUp's Connect step (docs/44 step 2). */
     val llu: LluUi = LluUi(),
+    /** A follow this phone left whose wearer hasn't been told yet (their name, "" = unknown); null = none. */
+    val untold: String? = null,
 )
 
 /** The root step's and the glucose notification step's state. */
@@ -248,8 +250,9 @@ class SetupViewModel(
             m.readiness.readiness,
             combine(mode, alone, shown, ::Triple),
             combine(restore, busy, editing, ::Locals),
-            combine(joining, m.pendingInvite, combine(sourceChange, person, ::Pair), rootUi, ::Others),
-        ) { i, readiness, (modeName, aloneName, backTo), l, (join, invite, pending, root) ->
+            combine(joining, m.pendingInvite, combine(sourceChange, person, ::Pair), combine(rootUi, m.untoldLeave, ::Pair), ::Others),
+        ) { i, readiness, (modeName, aloneName, backTo), l, (join, invite, pending, rootAndUntold) ->
+            val (root, untold) = rootAndUntold
             val (change, picked) = pending
             // opened from home: nothing until the walk-or-finish decision is made (no step flashes, no early "over")
             val mode = modeName?.let(Mode::valueOf) ?: return@combine null
@@ -299,6 +302,7 @@ class SetupViewModel(
                 person = picked?.let(Person::of),
                 sourceChange = change.takeIf { step == SetupStep.Source },
                 root = root,
+                untold = untold,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -976,7 +980,7 @@ class SetupViewModel(
         val join: JoinUi,
         val invite: String?,
         val change: Pair<SourceChange?, String?>,
-        val root: RootUi,
+        val root: Pair<RootUi, String?>,
     )
 
     private data class Locals(

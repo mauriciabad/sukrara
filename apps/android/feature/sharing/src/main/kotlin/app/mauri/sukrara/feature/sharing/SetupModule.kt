@@ -155,6 +155,11 @@ class SetupModule(
     val sensorPaired: suspend () -> Boolean = { false },
     /** Leaving the Sukrara link (one person, one link): what it asks and the leave itself. */
     val link: LinkPort = LinkPort.None,
+    /**
+     * A follow this phone left whose `leave` no relay or wearer's phone took yet (offline): the wearer's name ("" =
+     * unknown), null = none; setup says so until it goes (PROTOCOL-v2 "Leave").
+     */
+    val untoldLeave: Flow<String?> = flowOf(null),
 ) {
     /** Root as setup's facts see it ([SetupFacts.root]): Sukrara has root. */
     val rootGranted: Flow<Boolean> by lazy { systemAccess.state.map { it.granted }.distinctUntilChanged() }

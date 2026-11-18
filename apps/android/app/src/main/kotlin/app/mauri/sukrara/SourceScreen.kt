@@ -73,6 +73,7 @@ internal fun SourceScreen(
     val siteView by graph.integrations.nightscoutSource.view
         .collectAsStateWithLifecycle(null)
     val pageScope = rememberCoroutineScope()
+    val untold by graph.untoldLeave.collectAsStateWithLifecycle(null)
     SettingsPage(stringResource(SettingsR.string.st_source_title), onBack) {
         val spec = loaded?.spec
         // what this phone keeps for a source it doesn't read now (Appendix G finding 12)
@@ -90,7 +91,14 @@ internal fun SourceScreen(
                         ?.ifEmpty { stringResource(SettingsR.string.st_source_saved_ns) },
             )
         SourcePageContent(
-            SourcePageState(spec, answered = stored != null, name = glucose.name, latest = glucose.latest?.t, saved = saved),
+            SourcePageState(
+                spec,
+                answered = stored != null,
+                name = glucose.name,
+                latest = glucose.latest?.t,
+                saved = saved,
+                untold = untold,
+            ),
             sensor,
             now,
             SourceActions(

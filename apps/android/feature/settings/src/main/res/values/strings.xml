@@ -1020,4 +1020,7 @@
     <string name="st_source_saved_ns_action">Forget</string>
     <!-- Settings › Metrics: a metric the card doesn't draw for want of readings; %1$s = "12 h", %2$s = "7 days" (its window), %3$s = "42 h" (25 % of it) -->
     <string name="st_metric_needs">Needs more readings: %1$s of the last %2$s, %3$s needed</string>
+    <!-- Settings › Source: a follow left offline, the wearer isn't told yet (the Mac's words); %1$s = their name -->
+    <string name="st_source_untold">%1$s hasn’t been told yet that you stopped following. Sukrara tells them once this phone is online.</string>
+    <string name="st_source_untold_unnamed">The person you followed hasn’t been told yet that you stopped. Sukrara tells them once this phone is online.</string>
 </resources>

@@ -1191,7 +1191,9 @@ when it changes.
   job that waits for a network (also with the app closed, after a restart), until two relays keep it or a year passed.
   If no relay or the wearer's phone took it within the first attempt (offline), the notification *Ana hasn't been told
   yet* · *Sukrara tells them you stopped following once this phone is online. Keep Sukrara installed until then.* shows
-  until one does (it goes by itself). Nothing is sent for a follow that already ended or for *Different code*. To
+  until one does (it goes by itself), and the app says it where the person lands: every setup step and Settings ›
+  Source show *Ana hasn't been told yet that you stopped following. Sukrara tells them once this phone is online.* (the
+  Mac's words under *Not following anyone*) until then. Nothing is sent for a follow that already ended or for *Different code*. To
   follow again: a new invite or *Pair nearby*, as the first time (a new follower key; the wearer allows it again).
 - **Invite links** opened on a phone with no source or a stream that follows no one open setup's join step with the link
   and its confirmation (who is inviting, *Follow* / *Cancel*; never a join by itself);
@@ -1209,8 +1211,9 @@ looking up (spinner, the fields locked), who is inviting (*Follow* / *Cancel* / 
 *Continue*; Allow / Deny / a used invite arrive by themselves; the invite's expiry ends it by itself). Following page: waiting (code, *Stop following*), following (*Stop following*), ended — declined / invite
 used / expired unanswered / removed (*Join with a new link* → join step, *Stop following*), key unreadable (*Stop following*), damaged (*Stop
 following*). Stop following → the leave questions (*Cancel* / *Stop following*) → setup's first question (Back → home's
-*Finish setup*); the wearer is told by itself (*Ana hasn't been told yet* while offline: tap opens the app, it goes once a
-relay takes the leave; nothing to do or undo). Notifications → tap opens
+*Finish setup*); the wearer is told by itself (*Ana hasn't been told yet* while offline: the notification, tap opens the
+app, and the same line on every setup step and Settings › Source; it goes once a relay takes the leave; nothing to do
+or undo). Notifications → tap opens
 the app (Settings › Source shows the same state). Invite link on another source → *Copy link* or Back.
 
 ## Readings and backfill

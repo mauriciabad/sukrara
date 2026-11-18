@@ -54,6 +54,8 @@ data class SourcePageState(
     val latest: Instant? = null,
     /** What this phone holds for sources not in use ([AlsoSaved]), each with its removal. */
     val saved: AlsoSaved = AlsoSaved(),
+    /** A follow this phone left whose wearer isn't told yet (their name, "" = unknown; null = none: PROTOCOL-v2 "Leave"). */
+    val untold: String? = null,
 )
 
 /**
@@ -103,6 +105,14 @@ fun SourcePageContent(
     val spec = state.spec
     val context = LocalContext.current
     var editingSecret by rememberSaveable { mutableStateOf(false) }
+    // the follow this phone left hasn't reached the wearer yet (offline): it goes by itself once online (the Mac's words)
+    state.untold?.let { wearer ->
+        StateStrip(
+            DsR.drawable.ds_ic_schedule,
+            if (wearer.isEmpty()) stringResource(R.string.st_source_untold_unnamed) else stringResource(R.string.st_source_untold, wearer),
+            emptyList(),
+        )
+    }
     if (!state.answered && spec != null) {
         StateStrip(
             DsR.drawable.ds_ic_info,

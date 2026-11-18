@@ -102,8 +102,12 @@ class SetupViewModelTest {
             systemAccess = FakeSystemAccess(),
             llu = llu,
             link = link,
+            untoldLeave = untold,
         )
     }
+
+    /** A follow left offline whose wearer isn't told yet. */
+    private val untold = MutableStateFlow<String?>(null)
 
     /** The link's leave: records what was left, with which answers, for which next source. */
     private val link =
@@ -241,6 +245,18 @@ class SetupViewModelTest {
             vm.leaveAndChoose(LeaveAnswers(keepSettings = false, keepHistory = true))
             vm.ui.first { it?.sourceChange == null }
             assertEquals(listOf("leave:false:true:libreLinkUp", "reset", "source:theirs:libreLinkUp", "start"), events)
+        }
+
+    @Test
+    fun `a follow left offline says the wearer isn't told yet, until it goes`() =
+        runTest {
+            val vm = vm(startAt = SetupStep.Person)
+            vm.ui.launchIn(backgroundScope)
+            assertNull(vm.ui.first { it != null }!!.untold)
+            untold.value = "Ana"
+            assertEquals("Ana", vm.ui.first { it?.untold != null }!!.untold)
+            untold.value = null
+            vm.ui.first { it?.untold == null }
         }
 
     @Test

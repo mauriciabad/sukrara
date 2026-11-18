@@ -87,6 +87,7 @@ import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
 import app.mauri.sukrara.feature.sharing.LeaveAnswers
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.feature.sharing.UntoldLeaveNotice
 import app.mauri.sukrara.feature.sharing.restore.IdentityStep
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
@@ -352,6 +353,9 @@ fun SetupContent(
                     Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 24.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
+                    // PROTOCOL-v2 "Leave": the follow this phone left hasn't reached the wearer yet (offline); it goes by
+                    // itself once a relay or their phone takes it
+                    u.untold?.let { UntoldLeaveNotice(it) }
                     when (s) {
                         SetupStep.Welcome -> {
                             WelcomeStep(actions)

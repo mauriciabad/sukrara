@@ -777,4 +777,7 @@
     <string name="sh_link_leave_delete_text">Someone else’s glucose shows from now, so what this phone kept goes: %1$s, %2$s. It can’t be undone.</string>
     <!-- The follow's rows: the relays and Bluetooth try again now [CHAR LIMIT=24] -->
     <string name="sh_following_reconnect">Reconnect</string>
+    <!-- A follow left offline: the wearer isn't told yet (the Mac's words); %1$s = their name -->
+    <string name="sh_link_untold">%1$s hasn’t been told yet that you stopped following. Sukrara tells them once this phone is online.</string>
+    <string name="sh_link_untold_unnamed">The person you followed hasn’t been told yet that you stopped. Sukrara tells them once this phone is online.</string>
 </resources>

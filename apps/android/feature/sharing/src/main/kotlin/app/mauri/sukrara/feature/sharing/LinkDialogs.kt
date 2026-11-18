@@ -30,6 +30,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.Link
 import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.dialog.DialogRadio
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.source.shortRes
@@ -213,6 +214,21 @@ internal fun LeaveLinkDialog(
         }
     }
 }
+
+/**
+ * *Ana hasn't been told yet that you stopped following. Sukrara tells them once this phone is online.* (the Mac's words
+ * under *Not following anyone*): a follow this phone left whose `leave` no relay or their phone took yet. It goes by
+ * itself once one does; nothing to do but stay online with Sukrara installed.
+ */
+@Composable
+fun UntoldLeaveNotice(
+    wearer: String,
+    modifier: Modifier = Modifier,
+) = NoticeCard(
+    if (wearer.isEmpty()) stringResource(R.string.sh_link_untold_unnamed) else stringResource(R.string.sh_link_untold, wearer),
+    modifier = modifier,
+    icon = app.mauri.sukrara.core.designsystem.R.drawable.ds_ic_schedule,
+)
 
 /** One question of the leave: its title, then its choices (one radio group). */
 @Composable
