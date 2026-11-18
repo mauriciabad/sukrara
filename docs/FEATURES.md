@@ -731,11 +731,14 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   applies at once), the follow's rows or Juggluco's under them; *Changing the source keeps the person this Mac
   follows…* only while it follows someone.
 - **An install from before the question** (an update; also a damaged `source.json` with its backup): the device keeps
-  reading what it is set up to read (`AppGraph.inferSource`: following another Sukrara → their Sukrara; a sensor paired →
-  your sensor; Juggluco installed after setup began → Juggluco; else whose its history is, `historyOwner`: any reading
-  this phone took or imported → your sensor, only another Sukrara's → their Sukrara, so the first answer never adopts
-  one person's history for the other; Mac: following → their Sukrara), so monitoring and alerts never stop for the
-  answer. Setup opens once more on *Whose
+  reading what it is set up to read (`inferredSource`: following another Sukrara → their Sukrara; else what this phone
+  read itself last, the newer of its sensor's and Juggluco's readings (a Juggluco reader keeps the pairing from before
+  its switch, maybe ended: the pairing alone would leave its live readings unread; a sensor reader whose ended sensor
+  was forgotten isn't a Juggluco reader because Juggluco is installed); else a sensor paired → your sensor (also before
+  the first unlock, when the history can't be read); Juggluco installed after setup began → Juggluco; else whose its
+  history is, `historyOwner`: any reading this phone took or imported → your sensor, only another Sukrara's → their
+  Sukrara, so the first answer never adopts one person's history for the other; Mac: following → their Sukrara), so
+  monitoring and alerts never stop for the answer. Setup opens once more on *Whose
   glucose*, preselected; Back leaves it and home's *Finish setup* banner (*Next: Whose glucose will Sukrara show?*) and
   Settings › Source's *Sukrara asks once more…* with *Answer* (Mac: *Answer…*, setup's two steps) bring it back.
   Answering the same deletes nothing; answering the other person asks *Delete the earlier history?* first.

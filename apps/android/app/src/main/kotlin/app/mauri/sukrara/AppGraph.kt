@@ -277,39 +277,29 @@ class AppGraph(
     }
 
     /**
-     * What this phone reads when no answer is stored: following another Sukrara (once unlocked: the follow is
-     * credential-encrypted), a sensor pairing (only setup's sensor step makes one), Juggluco on this phone after
-     * setup began (its welcome answered), else whose the history is ([historyOwner]). Not a migration: today's facts of the modules that hold them, read again at
-     * every start, so a damaged source file never stops monitoring either. Nothing found = a new install (setup asks).
+     * What this phone reads when no answer is stored ([inferredSource]): following another Sukrara (once unlocked: the
+     * follow is credential-encrypted), what it read itself last (once unlocked: the history), a sensor pairing,
+     * Juggluco on this phone after setup began (its welcome answered), else whose the history is. Not a migration:
+     * today's facts of the modules that hold them, read again at every start, so a damaged source file never stops
+     * monitoring either. Nothing found = a new install (setup asks).
      */
     private suspend fun inferSource() {
         if (source.data.first().spec != null) return run { inferred.value = Inferred(null) }
+        val open = unlocked.value
         val found =
-            when {
-                unlocked.value && follower.engine.isFollowing() -> {
-                    SourceSpec.TheirSukrara
-                }
-
-                sensor.pairings.exists() -> {
-                    SourceSpec.YourSensor
-                }
-
-                unlocked.value &&
-                    setup.setupStore.data
-                        .first()
-                        .completed
-                        .isNotEmpty() && jugglucoInstalled() -> {
-                    SourceSpec(Person.Yours, SourceKind.PhoneApp)
-                }
-
-                unlocked.value -> {
-                    historyOwner(data.readings)
-                }
-
-                else -> {
-                    null
-                }
-            }
+            inferredSource(
+                following = { open && follower.engine.isFollowing() },
+                readings = if (open) data.readings else null,
+                paired = { sensor.pairings.exists() },
+                jugglucoAfterSetup = {
+                    open &&
+                        setup.setupStore.data
+                            .first()
+                            .completed
+                            .isNotEmpty() &&
+                        jugglucoInstalled()
+                },
+            )
         inferred.value = Inferred(found)
     }
 

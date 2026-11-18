@@ -460,9 +460,12 @@ Added:
 - **Settings › Source** (Android overview row after Alerts; Mac pane replacing *Following*): whose glucose, where from
   (each opens the step on its own), *Now*, the source's rows (Sensor link; Juggluco state and secret; the follow and
   *Settings from*); Settings › Sharing elsewhere says sharing is for your own glucose.
-- **Updates from before the question**: the device keeps reading what it's set up for (`inferSource`: follow → their
-  Sukrara, a sensor pairing → your sensor, Juggluco installed after setup began → Juggluco; Mac: following → their
-  Sukrara) and setup asks once more, preselected.
+- **Updates from before the question**: the device keeps reading what it's set up for (`inferredSource`: follow → their
+  Sukrara, what this phone read itself last (its sensor's or Juggluco's newest reading), a sensor pairing → your
+  sensor, Juggluco installed after setup began → Juggluco; Mac: following → their Sukrara) and setup asks once more,
+  preselected. The readings came in after the owner's update (2026-11-18): the pairing first took a Juggluco reader
+  with an old pairing for a sensor reader (its live readings unread), and Juggluco merely installed turned the owner's
+  phone, whose ended sensor had no pairing any more, into a Juggluco reader.
 - **The review's fixes** (product / UX / QA pass, same day): with nothing else to go by, the history says whose it is
   (`historyOwner`: a reading taken or imported → yours; only another Sukrara's → theirs), so the first answer never
   adopts one person's readings for the other (found on an update with history but no pairing: *Someone else's* kept

@@ -110,6 +110,45 @@ class AppSourcesTest {
             assertEquals(SourceSpec.YourSensor, historyOwner(readings))
         }
 
+    private suspend fun infer(
+        following: Boolean = false,
+        unlocked: Boolean = true,
+        paired: Boolean = false,
+        juggluco: Boolean = false,
+    ) = inferredSource({ following }, readings.takeIf { unlocked }, { paired }, { juggluco })
+
+    private val yourJuggluco = SourceSpec(Person.Yours, SourceKind.PhoneApp)
+
+    @Test fun anUpdateKeepsReadingTheSourceThisPhoneReadLast() =
+        runTest {
+            // a Juggluco reader keeps the sensor's pairing from before it switched (maybe ended): Juggluco stays the
+            // source, or its live readings would go unread after the update
+            readings.upsert(listOf(reading(0, SourceId.Libre3), reading(10, SourceId.Juggluco)))
+            assertEquals(yourJuggluco, infer(paired = true))
+            // a sensor reader whose pairing was forgotten (an ended sensor) with Juggluco merely installed: the sensor
+            readings.upsert(listOf(reading(20, SourceId.Libre3)))
+            assertEquals(SourceSpec.YourSensor, infer(paired = false, juggluco = true))
+            // a follow wins over everything (a follower never read anything itself)
+            assertEquals(SourceSpec.TheirSukrara, infer(following = true, paired = true))
+        }
+
+    @Test fun withoutOwnReadingsThePairingThenJugglucoThenTheHistoryDecide() =
+        runTest {
+            assertNull(infer())
+            assertEquals(SourceSpec.YourSensor, infer(paired = true, juggluco = true))
+            assertEquals(yourJuggluco, infer(juggluco = true))
+            // imports and relayed readings say whose, not where from
+            readings.upsert(listOf(reading(0, SourceId("import-libreview"))))
+            assertEquals(SourceSpec.YourSensor, infer())
+        }
+
+    @Test fun beforeTheFirstUnlockThePairingDecides() =
+        runTest {
+            readings.upsert(listOf(reading(0, SourceId.Juggluco)))
+            assertEquals(SourceSpec.YourSensor, infer(unlocked = false, paired = true))
+            assertNull(infer(unlocked = false))
+        }
+
     @Test fun anUpdatedInstallComparesWithWhatItReads() =
         runTest {
             inferred.value = SourceSpec.YourSensor

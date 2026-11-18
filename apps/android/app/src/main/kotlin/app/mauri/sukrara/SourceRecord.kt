@@ -74,7 +74,48 @@ class SourceStore(
 }
 
 /**
- * Whose the history on this phone is when nothing else says what it reads (`AppGraph.inferSource`: a wearer without a
+ * What a phone with no answer reads (`AppGraph.inferSource`: an install updated from before the question, a damaged
+ * source file), in this order: following another Sukrara → their Sukrara; else what this phone read itself last
+ * ([lastReadHere]: the sensor or Juggluco); else a sensor pairing → your sensor; else Juggluco installed after setup
+ * began → Juggluco; else whose the history is ([historyOwner]). [readings] null = not readable yet (before the first
+ * unlock): the pairing decides until the next start after the unlock. The readings come before the pairing: switching
+ * to Juggluco kept the pairing, so a Juggluco reader with an old (or ended) pairing was taken for a sensor reader and
+ * its live readings went unread; and a sensor reader whose pairing was forgotten was taken for a Juggluco reader only
+ * because Juggluco is installed. The lambdas are asked only when their turn comes (the follow and the setup record
+ * are loaded then).
+ */
+suspend fun inferredSource(
+    following: suspend () -> Boolean,
+    readings: ReadingsRepository?,
+    paired: suspend () -> Boolean,
+    jugglucoAfterSetup: suspend () -> Boolean,
+): SourceSpec? {
+    if (following()) return SourceSpec.TheirSukrara
+    readings?.let { lastReadHere(it) }?.let { return it }
+    return when {
+        paired() -> SourceSpec.YourSensor
+        jugglucoAfterSetup() -> SourceSpec(Person.Yours, SourceKind.PhoneApp)
+        readings != null -> historyOwner(readings)
+        else -> null
+    }
+}
+
+/**
+ * The source this phone read itself last: the newer of its sensor's readings and Juggluco's (a source change keeps the
+ * history, so both can be there); null = it read neither (a new install, a follower, imports only).
+ */
+suspend fun lastReadHere(readings: ReadingsRepository): SourceSpec? {
+    val sensor = readings.spanOf(SourceKind.Sensor.readings).last
+    val app = readings.spanOf(SourceKind.PhoneApp.readings).last
+    return when {
+        app != null && (sensor == null || app > sensor) -> SourceSpec(Person.Yours, SourceKind.PhoneApp)
+        sensor != null -> SourceSpec.YourSensor
+        else -> null
+    }
+}
+
+/**
+ * Whose the history on this phone is when nothing else says what it reads ([inferredSource]: a wearer without a
  * pairing, a follow that ended, both from before the question): any reading not relayed by another Sukrara (taken on
  * this phone or imported) makes it your own (your sensor), readings only from another Sukrara someone else's (their
  * Sukrara); none = a new install. Without it the
