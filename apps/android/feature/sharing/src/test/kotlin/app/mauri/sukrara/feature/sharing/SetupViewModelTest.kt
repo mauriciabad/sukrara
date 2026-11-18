@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.Link
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
@@ -100,8 +101,30 @@ class SetupViewModelTest {
             follower = follower,
             systemAccess = FakeSystemAccess(),
             llu = llu,
+            link = link,
         )
     }
+
+    /** The link's leave: records what was left, with which answers, for which next source. */
+    private val link =
+        object : LinkPort {
+            override suspend fun facts(next: SourceSpec?) =
+                LeaveFacts(
+                    "Ana",
+                    yours = false,
+                    told = true,
+                    Link.leave(true, Link.Theirs.Differ, true, next?.person == Person.Yours),
+                    null,
+                )
+
+            override suspend fun leave(
+                answers: LeaveAnswers,
+                next: SourceSpec?,
+            ): Boolean {
+                events += "leave:${answers.keepSettings}:${answers.keepHistory}:${next?.kind?.id}"
+                return true
+            }
+        }
 
     /** LibreLinkUp's Connect step: records each *Try again* (whom the account follows, read again). */
     private val llu =
@@ -154,8 +177,6 @@ class SetupViewModelTest {
                 state.value = FollowState.Following(FollowStatus.Requested, Profile("Ana", null), "0420", false, null, emptyMap())
                 return JoinResult.Joined
             }
-
-            override suspend fun stopFollowing() = true
         }
 
     @Before
@@ -178,6 +199,76 @@ class SetupViewModelTest {
             assertEquals(SetupStep.Permissions, vm.ui.first { it?.step == SetupStep.Permissions }!!.step)
             assertEquals(listOf("reset", "source:yours:sensor", "start"), events)
             assertEquals(null, vm.ui.value!!.sourceChange)
+        }
+
+    /**
+     * One person, one link (link.json `pick`): another source picked while following asks *Keep following?* first;
+     * *Keep following* changes nothing; *Stop following* shows the leave questions, and their *Stop following* leaves
+     * the link, then stores the source picked.
+     */
+    @Test
+    fun `another source picked while following asks to keep following, then the leave questions`() =
+        runTest {
+            roles.role.value = SourceSpec.TheirSukrara
+            follower.state.value = FollowState.Following(FollowStatus.Active, Profile("Ana", null), "0420", false, null, emptyMap())
+            val vm = vm(startAt = SetupStep.Source)
+            vm.ui.launchIn(backgroundScope)
+            vm.ui.first { it?.step == SetupStep.Source }
+            val llu = SourceSpec(Person.Theirs, SourceKind.LibreLinkUp)
+
+            vm.reviewSource(llu)
+            val asked = vm.ui.first { it?.sourceChange != null }!!.sourceChange!!
+            assertTrue(asked.link!!.keep)
+            assertEquals("Ana", asked.link.facts.name)
+            vm.cancelSource()
+            vm.ui.first { it?.sourceChange == null }
+            assertEquals(SourceSpec.TheirSukrara, roles.role.value)
+            assertTrue(events.isEmpty())
+
+            vm.reviewSource(llu)
+            vm.ui.first { it?.sourceChange?.link?.keep == true }
+            vm.stopFollowingFirst()
+            assertEquals(
+                listOf(Link.Question.Settings, Link.Question.History),
+                vm.ui
+                    .first {
+                        it?.sourceChange?.link?.keep == false
+                    }!!
+                    .sourceChange!!
+                    .link!!
+                    .facts.plan.questions,
+            )
+            vm.leaveAndChoose(LeaveAnswers(keepSettings = false, keepHistory = true))
+            vm.ui.first { it?.sourceChange == null }
+            assertEquals(listOf("leave:false:true:libreLinkUp", "reset", "source:theirs:libreLinkUp", "start"), events)
+        }
+
+    @Test
+    fun `a follow that ended goes straight to the leave questions, and the link again asks nothing`() =
+        runTest {
+            roles.role.value = SourceSpec.TheirSukrara
+            follower.state.value = FollowState.Following(FollowStatus.Revoked, Profile("Ana", null), "0420", false, null, emptyMap())
+            val vm = vm(startAt = SetupStep.Source)
+            vm.ui.launchIn(backgroundScope)
+            vm.ui.first { it?.step == SetupStep.Source }
+            vm.reviewSource(SourceSpec(Person.Theirs, SourceKind.Nightscout))
+            assertEquals(
+                false,
+                vm.ui
+                    .first { it?.sourceChange != null }!!
+                    .sourceChange!!
+                    .link!!
+                    .keep,
+            )
+            vm.cancelSource()
+            vm.ui.first { it?.sourceChange == null }
+            vm.reviewSource(SourceSpec.TheirSukrara)
+            assertNull(
+                vm.ui
+                    .first { it != null }!!
+                    .sourceChange
+                    ?.link,
+            )
         }
 
     @Test

@@ -476,7 +476,7 @@ class NightscoutSource(
         // a full read only: a capped answer could make an entry look deleted there
         if (site.size >= TREATMENTS_MAX) return
         val local =
-            treatments.changedSince(from.minus(LOCAL_SLACK)).map { it.treatment }.filter {
+            treatments.changedSince(from.minus(LOCAL_SLACK)).filterNot { it.fromLink }.map { it.treatment }.filter {
                 !it.at.isBefore(from) &&
                     !it.at.isAfter(to)
             }

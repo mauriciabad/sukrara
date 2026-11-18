@@ -4,6 +4,7 @@
 package app.mauri.sukrara
 
 import app.mauri.sukrara.alerts.AlertSettings
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
@@ -42,15 +43,22 @@ class AppSources(
 ) : SourcePort {
     override val stored: Flow<SourceSpec?> = store.data.map { it.spec }
 
+    /**
+     * Whose the history is: what the phone runs on, else the person a left link kept it for (*Stop following* alone
+     * keeps whose glucose in the record, with no source).
+     */
+    private suspend fun personBefore(): Person? = running.first()?.person ?: Person.of(store.data.first().person)
+
     override suspend fun loss(spec: SourceSpec): HistoryLoss? {
-        val before = running.first() ?: return null
-        if (before.person == spec.person) return null
+        val before = personBefore() ?: return null
+        if (before == spec.person) return null
         return HistoryLoss.of(readings.span(), treatments.span())
     }
 
     override suspend fun set(spec: SourceSpec) {
         val before = running.first()
-        val another = before != null && before.person != spec.person
+        val person = personBefore()
+        val another = person != null && person != spec.person
         val was = store.data.first()
         store.update { r -> r.with(spec).let { if (another) it.forAnotherPerson() else it } }
         if (another) {

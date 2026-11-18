@@ -525,14 +525,15 @@ class FollowerEngine(
     /**
      * Stop following: the connection closes, the record (F, the read keys) and the wearer's readings and treatments go.
      * Nothing is sent: the wearer's next rotation leaves this key out. False when the Keystore refused the delete
-     * (the person can try again).
+     * (the person can try again). [keepHistory]: the readings and treatments stay (one person, one link: the person
+     * kept the history; the wearer's settings go either way).
      */
-    suspend fun unfollow(): Boolean =
+    suspend fun unfollow(keepHistory: Boolean = false): Boolean =
         locked {
             val out = sink
             disconnect()
             // the data first: a crash before the key delete is healed by the next unfollow / join
-            wipeData()
+            wipeData(history = !keepHistory)
             val deleted = store.delete()
             if (deleted) {
                 record = null
@@ -549,9 +550,21 @@ class FollowerEngine(
             deleted
         }
 
-    private suspend fun wipeData() {
-        readingsRepo.deleteBefore(Instant.ofEpochSecond(Long.MAX_VALUE / 1000))
-        treatments.deleteAll()
+    /**
+     * This phone deleted the stored history while it follows (a change of whose glucose on the link): the relays are
+     * asked for the wearer's readings and treatments again (docs/44 Appendix G finding 10).
+     */
+    suspend fun refetch() =
+        locked {
+            subscribed = emptyMap()
+            resubscribe()
+        }
+
+    private suspend fun wipeData(history: Boolean = true) {
+        if (history) {
+            readingsRepo.deleteBefore(Instant.ofEpochSecond(Long.MAX_VALUE / 1000))
+            treatments.deleteAll()
+        }
         // the previous wearer's settings too, and a failed write fails like the deletes above: a record that later
         // can't be opened must never run the previous person's thresholds from the plain copy
         latestSettings.value = null

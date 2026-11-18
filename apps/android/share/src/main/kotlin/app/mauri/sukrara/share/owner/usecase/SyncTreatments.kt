@@ -47,7 +47,13 @@ class SyncTreatments(private val ctx: OwnerContext, private val repository: Trea
     /** The whole log of the last 30 days, tombstones included, under the current epoch; stamps [OwnerState.treatmentsPublishedAt]. */
     suspend fun republish(s: OwnerState, now: Long): Step {
         val since = Instant.ofEpochSecond(now - REPUBLISH_WINDOW)
-        val events = repository.changedSince(since).sortedBy { it.treatment.at }.map { event(s, TreatmentWire.toPayload(it), now) }
+        val events =
+            repository
+                .changedSince(since)
+                .filterNot {
+                    it.fromLink
+                }.sortedBy { it.treatment.at }
+                .map { event(s, TreatmentWire.toPayload(it), now) }
         return Step(s.copy(treatmentsPublishedAt = now), events)
     }
 

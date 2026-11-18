@@ -12,6 +12,7 @@ import app.mauri.sukrara.core.data.settings.MirroredGraph
 import app.mauri.sukrara.core.data.settings.Setting
 import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
+import app.mauri.sukrara.core.model.Link
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.settings.follower.SettingsFromPort
@@ -107,6 +108,19 @@ class FollowerSettingsBridge(
         MirroredGraph.copyInto(own, MIRRORED_GRAPH, SettingsFrom.Wearer, p.graph)
         alerts.update { AlertMirror.effective(it, mirroredAlerts(SettingsFrom.Wearer, p)) }
         return true
+    }
+
+    /**
+     * Leaving the link (link.json `leave`): whether *Their settings* is in use, and what the wearer's mirrored settings
+     * are here ([Link.Theirs]: none received, every row at its default, or different).
+     */
+    suspend fun leaveSettings(): Pair<Boolean, Link.Theirs> {
+        val wearerInUse = stored.first() == SettingsFrom.Wearer
+        val p = wearer.first() ?: return wearerInUse to Link.Theirs.None
+        val defaults =
+            MirroredGraph.atDefaults(MIRRORED_GRAPH, p.graph) &&
+                AlertMirror.effective(AlertSettings(), mirroredAlerts(SettingsFrom.Wearer, p)) == AlertSettings()
+        return wearerInUse to if (defaults) Link.Theirs.Defaults else Link.Theirs.Differ
     }
 
     override suspend fun resetToDefault() {

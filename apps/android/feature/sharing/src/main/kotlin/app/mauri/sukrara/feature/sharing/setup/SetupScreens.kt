@@ -85,6 +85,7 @@ import app.mauri.sukrara.designsystem.rows.groupCard
 import app.mauri.sukrara.designsystem.rows.groupsBackground
 import app.mauri.sukrara.designsystem.rows.nameRes
 import app.mauri.sukrara.designsystem.rows.whyRes
+import app.mauri.sukrara.feature.sharing.LeaveAnswers
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.feature.sharing.restore.IdentityStep
 import app.mauri.sukrara.protocol.event.Profile
@@ -159,6 +160,10 @@ data class SetupActions(
     /** *Export CSV first* in the delete-history dialog: the CSV export on everything, the dialog stays. */
     val exportHistory: () -> Unit = {},
     val chooseSource: (SourceSpec) -> Unit = {},
+    /** *Stop following* on *Keep following?*: the leave questions show (one person, one link). */
+    val stopFollowingFirst: () -> Unit = {},
+    /** *Stop following* on the leave questions: the link is left with these answers, then the picked source is stored. */
+    val leaveAndChoose: (LeaveAnswers) -> Unit = {},
     /** *Join*: look up the invite ([opened] = a link opened on this phone, looked up by itself). */
     val lookUp: (link: String, opened: Boolean) -> Unit = { _, _ -> },
     /** *Follow* on the invite shown, as the typed name. */
@@ -251,6 +256,8 @@ private fun SetupViewModel.actions(
             cancelSource = ::cancelSource,
             exportHistory = onExportHistory,
             chooseSource = ::chooseSource,
+            stopFollowingFirst = ::stopFollowingFirst,
+            leaveAndChoose = ::leaveAndChoose,
             lookUp = ::lookUp,
             join = ::join,
             cancelInvite = ::cancelInvite,

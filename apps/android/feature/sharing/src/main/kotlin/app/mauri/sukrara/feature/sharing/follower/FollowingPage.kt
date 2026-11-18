@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -37,12 +38,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import app.mauri.sukrara.core.model.Link
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.feature.sharing.ConfirmWhenAllowed
 import app.mauri.sukrara.feature.sharing.FollowerSharing
+import app.mauri.sukrara.feature.sharing.LeaveAnswers
+import app.mauri.sukrara.feature.sharing.LeaveFacts
+import app.mauri.sukrara.feature.sharing.LeaveLinkDialog
+import app.mauri.sukrara.feature.sharing.LinkPort
 import app.mauri.sukrara.feature.sharing.MatchCodeLine
 import app.mauri.sukrara.feature.sharing.NearbyFixRow
 import app.mauri.sukrara.feature.sharing.PairingCodeCard
@@ -56,29 +62,38 @@ import app.mauri.sukrara.share.follower.FollowState
 import kotlinx.coroutines.launch
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** The Following page's view model: the follower state and Stop following. */
+/** The Following page's view model: the follower state and Stop following (the leave questions, then the leave). */
 class FollowingViewModel(
     private val follower: FollowerSharing,
+    private val link: LinkPort = LinkPort.None,
 ) : ViewModel() {
     val state = follower.state
     val nearby = follower.nearby
 
-    suspend fun stop(): Boolean = follower.stopFollowing()
+    /** What *Stop following* asks now (null = nothing to leave). */
+    suspend fun leaveFacts(): LeaveFacts? = link.facts(null)
+
+    /** Leaves the link with [answers]; this phone then has no source (setup asks). False when the key store refused. */
+    suspend fun stop(answers: LeaveAnswers): Boolean = link.leave(answers, null)
 
     fun refreshNearby() = follower.refreshNearby()
 
     suspend fun confirmNearby(same: Boolean): Boolean = follower.confirmNearby(same)
 
     companion object {
-        fun factory(follower: FollowerSharing) = viewModelFactory { initializer { FollowingViewModel(follower) } }
+        fun factory(
+            follower: FollowerSharing,
+            link: LinkPort = LinkPort.None,
+        ) = viewModelFactory { initializer { FollowingViewModel(follower, link) } }
     }
 }
 
 /**
  * Settings › Source's rows for a Sukrara stream: who this phone follows (picture and name from the wearer's roster), whether
  * the request still waits (with the code the wearer may ask for), when the last reading arrived, whether this phone may
- * add entries, the relay connection, and the way out: Stop following (confirmed). A follow that ended says why and
- * offers Join with a new link (setup's join step). [onLeft] runs after Stop following worked (the app reopens setup).
+ * add entries, the relay connection, and the way out: Stop following, through the leave questions ([LeaveLinkDialog]:
+ * the settings and the history this phone keeps). A follow that ended says why and offers Join with a new link
+ * (setup's join step). [onLeft] runs after Stop following worked (the app reopens setup: no source until one is picked).
  */
 @Composable
 fun FollowingPage(
@@ -97,6 +112,8 @@ fun FollowingPage(
     val haptics = rememberHaptics()
     var failed by rememberSaveable { mutableStateOf(false) }
     var mismatch by rememberSaveable { mutableStateOf(false) }
+    // the leave questions while open (asked again after a rotation: they depend on what this phone holds now)
+    var leaving by remember { mutableStateOf<LeaveFacts?>(null) }
     FollowingContent(
         state = state,
         failed = failed,
@@ -106,12 +123,8 @@ fun FollowingPage(
         },
         onStop = {
             scope.launch {
-                val ok = viewModel.stop()
-                failed = !ok
-                if (ok) {
-                    haptics.confirm()
-                    onLeft()
-                }
+                leaving =
+                    viewModel.leaveFacts() ?: LeaveFacts(null, false, false, Link.leave(false, Link.Theirs.None, false, false), null)
             }
         },
         onJoinAgain = onJoinAgain,
@@ -121,6 +134,23 @@ fun FollowingPage(
         links = links,
         embedded = embedded,
     )
+    leaving?.let { facts ->
+        LeaveLinkDialog(
+            facts,
+            onCancel = { leaving = null },
+            onLeave = { answers ->
+                leaving = null
+                scope.launch {
+                    val ok = viewModel.stop(answers)
+                    failed = !ok
+                    if (ok) {
+                        haptics.confirm()
+                        onLeft()
+                    }
+                }
+            },
+        )
+    }
 }
 
 /** The page for [state] (also what the screenshot tests render). */
@@ -141,7 +171,6 @@ fun FollowingContent(
     /** Inside a scrolling page (Settings › Source): no scroll of its own. */
     embedded: Boolean = false,
 ) {
-    var confirming by rememberSaveable { mutableStateOf(false) }
     val someone = stringResource(R.string.sh_join_someone)
     val name = Profile.shownName((state as? FollowState.Following)?.wearer?.name.orEmpty()).ifEmpty { someone }
     Column(if (embedded) modifier.fillMaxWidth() else modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
@@ -261,29 +290,12 @@ fun FollowingContent(
             if (failed) NoticeCard(stringResource(R.string.sh_following_stop_failed), tone = NoticeTone.Error)
             if (state !is FollowState.Loading && state != FollowState.NotFollowing) {
                 OutlinedButton(
-                    onClick = { confirming = true },
+                    onClick = onStop,
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(stringResource(R.string.sh_following_stop)) }
             }
         }
         links()
-    }
-    if (confirming) {
-        AlertDialog(
-            onDismissRequest = { confirming = false },
-            title = { Text(stringResource(R.string.sh_following_stop_title, name)) },
-            text = { Text(stringResource(R.string.sh_following_stop_text)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirming = false
-                        onStop()
-                    },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text(stringResource(R.string.sh_following_stop)) }
-            },
-            dismissButton = { TextButton(onClick = { confirming = false }) { Text(stringResource(android.R.string.cancel)) } },
-        )
     }
 }

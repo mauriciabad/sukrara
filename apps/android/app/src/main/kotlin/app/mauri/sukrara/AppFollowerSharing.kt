@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 /**
  * The follower role for setup and the Following page, with what the rest of the app does around it: a join starts
  * monitoring afresh (no alarm armed from a previous role: the alert state and "monitoring since" are reset, then the
- * service connects and sends the request); Stop following resets them the same way and clears the role (setup again).
+ * service connects and sends the request). Leaving is [AppLink]'s (one person, one link).
  */
 class AppFollowerSharing(
     private val engine: FollowerEngine,
@@ -29,7 +29,6 @@ class AppFollowerSharing(
      */
     private val resetMonitoring: suspend (fence: Boolean) -> Unit,
     private val startMonitoring: suspend () -> Unit,
-    private val clearRole: suspend () -> Unit,
 ) : FollowerSharing {
     override val state: StateFlow<FollowState> = engine.state
 
@@ -64,12 +63,5 @@ class AppFollowerSharing(
         // the codes differed: the join is gone, nothing was ever trusted; the role stays (setup's join step again)
         if (done && !same) resetMonitoring(true)
         return done
-    }
-
-    override suspend fun stopFollowing(): Boolean {
-        if (!engine.unfollow()) return false
-        resetMonitoring(true)
-        clearRole()
-        return true
     }
 }

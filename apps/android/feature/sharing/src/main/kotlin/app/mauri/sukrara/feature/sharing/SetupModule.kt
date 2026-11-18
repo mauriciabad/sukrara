@@ -153,6 +153,8 @@ class SetupModule(
     val llu: LluSourcePort = LluSourcePort.None,
     /** A sensor is paired on this phone (what a source change says stays). */
     val sensorPaired: suspend () -> Boolean = { false },
+    /** Leaving the Sukrara link (one person, one link): what it asks and the leave itself. */
+    val link: LinkPort = LinkPort.None,
 ) {
     /** Root as setup's facts see it ([SetupFacts.root]): Sukrara has root. */
     val rootGranted: Flow<Boolean> by lazy { systemAccess.state.map { it.granted }.distinctUntilChanged() }

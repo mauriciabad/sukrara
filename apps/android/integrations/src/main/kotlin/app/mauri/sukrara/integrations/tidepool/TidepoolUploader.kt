@@ -336,7 +336,10 @@ class TidepoolUploader(
         if (full) fullScanMs = nowMs
         val records =
             if (s.treatments) {
-                treatments.changedSince(windowStart - Duration.ofDays(1)).filterNot { it.imported || (it.fromSite && !s.fromSource) }
+                treatments.changedSince(windowStart - Duration.ofDays(1)).filterNot {
+                    it.imported || it.fromLink ||
+                        (it.fromSite && !s.fromSource)
+                }
             } else {
                 emptyList()
             }

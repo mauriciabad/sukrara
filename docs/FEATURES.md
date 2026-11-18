@@ -723,7 +723,11 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   (*their Nightscout site*, *their glucose from LibreLinkUp*); from a paired sensor also that Sukrara stops connecting
   to it and its pairing stays (Android: only when a sensor is paired); to your sensor from LibreLinkUp that Sukrara
   takes it from the Libre app, whose alarms and LibreLinkUp sharing stop; to a follow already allowed that it shows
-  *again* (no request to accept); and *The history on this phone stays.*, *Switch* / *Cancel*; `SourceChangeTextTest`);
+  *again* (no request to accept); and *The history on this phone stays.*, *Switch* / *Cancel*; `SourceChangeTextTest`).
+  Android: that history is one history the new source continues: a source change for the same person fences it at its
+  last reading (`history.json`), so the new source's backfill fills gaps but never replaces what the previous one read
+  (`ReadingRank.plan` with the fence, contracts/sources/link.json `fence`, `LinkContractTest`, `AppSourcesTest`; Appendix G
+  finding 5);
   a change of whose glucose with history on the device asks *Delete the earlier history?* (Readings and backfill).
   Android: a change of whose glucose also lets go of what was the other person's (#213, docs/44 Appendix G finding 4,
   `SourceRecord.forAnotherPerson`): LibreLinkUp's pick (picked again by the rule for the new person: the account
@@ -735,6 +739,30 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   done. Android: the new-sensor flow opened while someone else's glucose shows (Settings › Sensor's *Pair new sensor*,
   home, a notification) opens this step confirming your own sensor first (*Delete the earlier history?* when there is
   history), then the sensor step; a pairing never changes whose glucose by itself (Appendix G finding 11).
+- **One person, one link** (Android; contracts/sources/link.json, docs/44 Appendix G, the owner 2026-11-18): the phone
+  either follows a Sukrara (*Their Sukrara* / *Sukrara on your other phone*) or reads one other source, never both.
+  Every path that picks another source while it follows (Settings › Source's *Where it comes from*, *Whose glucose* →
+  its source, setup's source step, *Pair new sensor* while following) asks first, **Keep following Ana?** (*your other
+  phone* / *this Sukrara* with no name yet): *Ana's Sukrara already sends this phone the glucose it reads, from whichever
+  source it uses, with treatments, pen doses, alerts and settings. Reading LibreLinkUp here instead means this phone
+  stops following it.* (the picked source's name: *LibreLinkUp*, *Nightscout*, *Juggluco*, *your sensor*), *Keep
+  following* (filled, the default; Back and a tap outside too: nothing changes) / *Stop following* → **the leave
+  questions** (a follow that ended goes straight to them). They are one SPA dialog, never a chain: *Stop following Ana?*,
+  *Ana's phone is told. To follow again you need a new invite link or Pair nearby.* (an ended follow: only how to follow
+  again), then only what `Link.leave` asks: **Settings on this phone** (only while *Their settings* was in use and theirs
+  aren't the defaults: both answers would give the same settings) *Keep Ana's settings* (*Alerts, ranges and the graph
+  stay as they are now, as this phone's own.*, preselected) / *Sukrara's defaults*; **The history this phone received**
+  (only when it received some) *Keep it* (*The next source continues it: for when it reads the same person.*,
+  preselected) / *Delete it* (*Deletes 4 days of glucose and 12 treatments, from 3 Oct 2026 to 10 Nov 2026.*); or, when
+  whose glucose changes with it, *Delete the earlier history?* with *Export CSV first*. *Cancel* / *Stop following* (in
+  the error colour, a confirm haptic). Leaving (`AppLink.leave`, `AppLinkTest`): the settings (theirs copied as this
+  phone's own, or the mirrored rows at their defaults; *Settings from* back to *Their settings* for a future link), the
+  link left through one call (the engine's `unfollow`, which tells the wearer's phone), then the history: kept (the fence
+  at its last reading; the wearer's entries stay read-only and are never uploaded or shared by the next source; this
+  phone's own entries that never reached the wearer, *Sending…* / *Not sent*, become its own) or deleted; then the
+  picked source's own step (sign in, site, *Connect Juggluco*, the sensor). A follow kept behind another source by an
+  earlier version is left at start with no question: the source in use stays, the wearer's phone is told, the history
+  and the settings stay as they are.
 - **Settings › Source** (Android: the overview's row right after Alerts, its summary *Yours · sensor* / *Ana ·
   Sukrara*, its icon the *input* arrow, the drop being Readings'; the Mac: Settings › Source pane): *Whose glucose* and
   *Where it comes from* (each opens the step above on its own, without the walk's step counter; *Whose glucose* goes on
@@ -784,7 +812,10 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
 **States and exits**: *Whose glucose* → pick (either card, any time) → *Continue* → Source; Back → Welcome (setup) or
 Settings › Source unchanged. Source → pick → *Continue* → stored (first time) / *Switch to …?* → *Switch* / *Cancel* /
 *Delete the earlier history?* → *Export CSV first* (back to the dialog) / *Delete and continue* / *Cancel* (nothing
-changes); Back → *Whose glucose* (also when opened from Settings › Source's *Whose glucose*). After it: *Follow someone* (Back → Source), *Connect Juggluco* / *Set up sensor*
+changes); Back → *Whose glucose* (also when opened from Settings › Source's *Whose glucose*). Android, following: another
+source picked → *Keep following Ana?* → *Keep following* / Back / outside (nothing changes) or *Stop following* → the
+leave questions (an ended follow: at once) → *Cancel* (nothing changes) / *Export CSV first* (back to them) / *Stop
+following* → the picked source stored → its own step. After it: *Follow someone* (Back → Source), *Connect Juggluco* / *Set up sensor*
 (*Later* → home's *Finish setup*), or home / Settings › Source. Unanswered (an update) → setup at *Whose glucose* /
 home's banner / Settings › Source's *Answer* (Mac *Answer…* / *Finish Setup…*; neither question has *Skip* on either
 app); monitoring runs meanwhile. Juggluco not installed → its connect step says so, *Later* / Back. Stream ended → *Join with a new link* / *Stop
@@ -1106,8 +1137,10 @@ when it changes.
 - **Following rows** (Settings › Source with another Sukrara as the source; Settings › Sharing then says sharing is
   for your own glucose and leads to Source): picture and name, *Waiting for Ana to allow you* with *If Ana
   asks for a code: 4821*, *You follow Ana* or, once it ended, *Not following Ana* (changes by itself, read by TalkBack, a confirm haptic on Allow), when the last reading arrived, whether this phone may add treatments, the relay connection, and
-  *Stop following* (confirmed: the key, readings and treatments leave the phone, the alert state resets, the source is
-  cleared and setup opens). A follow that ended says why with *Join with a new link*. A *Settings from* row under them.
+  *Stop following* (the leave questions above, in Source: the settings and the history this phone keeps; then the key
+  goes, the wearer's phone is told, the alert state resets and the phone has no source: setup opens on *Whose glucose*,
+  which it keeps, so a history kept for one person is never adopted for the other; *Their Sukrara* on the source step is
+  the way back). A follow that ended says why with *Join with a new link*. A *Settings from* row under them.
 - **Invite links** opened on a phone with no source or a stream that follows no one open setup's join step with the link
   and its confirmation (who is inviting, *Follow* / *Cancel*; never a join by itself);
   on any other source (or one already following) they open *This phone shares its own readings* with *Copy link*.
@@ -1123,7 +1156,8 @@ looking up (spinner, the fields locked), who is inviting (*Follow* / *Cancel* / 
 (the reason; edit the link to clear it, Join again), waiting (the match code line,
 *Continue*; Allow / Deny / a used invite arrive by themselves; the invite's expiry ends it by itself). Following page: waiting (code, *Stop following*), following (*Stop following*), ended — declined / invite
 used / expired unanswered / removed (*Join with a new link* → join step, *Stop following*), key unreadable (*Stop following*), damaged (*Stop
-following*). Stop following → confirm dialog (Cancel / *Stop following*) → setup's first question. Notifications → tap opens
+following*). Stop following → the leave questions (*Cancel* / *Stop following*) → setup's first question (Back → home's
+*Finish setup*). Notifications → tap opens
 the app (Settings › Source shows the same state). Invite link on another source → *Copy link* or Back.
 
 ## Readings and backfill

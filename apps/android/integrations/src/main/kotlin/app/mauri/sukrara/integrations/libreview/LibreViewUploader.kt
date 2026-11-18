@@ -562,7 +562,11 @@ class LibreViewUploader(
             if (!state.refused && (s.treatments || state.ledger.isNotEmpty())) {
                 // a switched-off part still corrects what LibreView already has; imported history never goes up (LibreView
                 // has it already or got it from the same place: it would count twice)
-                val records = treatments.changedSince(clock.now() - Duration.ofDays(31)).filterNot { it.imported || it.fromSite }
+                val records =
+                    treatments.changedSince(clock.now() - Duration.ofDays(31)).filterNot {
+                        it.imported || it.fromSite ||
+                            it.fromLink
+                    }
                 LibreViewQueue
                     .entries(records, state.ledger, if (s.treatments) state.entriesFrom else Long.MAX_VALUE, nowS, hold)
             } else {

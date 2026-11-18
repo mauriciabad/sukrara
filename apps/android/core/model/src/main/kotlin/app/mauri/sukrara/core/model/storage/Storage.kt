@@ -178,9 +178,18 @@ data class TreatmentRecord(
      */
     val fromSite: Boolean get() = via == FROM_NIGHTSCOUT
 
+    /**
+     * Kept from a Sukrara link this phone left with its history (one person, one link): the wearer's log, shown and
+     * exported, read-only here and never sent anywhere by the next source (docs/44 Appendix G finding 10).
+     */
+    val fromLink: Boolean get() = via == FROM_LINK
+
     companion object {
         /** [via] of an entry the Nightscout source took from its site. */
         const val FROM_NIGHTSCOUT = "nightscout"
+
+        /** [via] of an entry kept from a Sukrara link this phone left ([fromLink]). */
+        const val FROM_LINK = "link"
     }
 }
 

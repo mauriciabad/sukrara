@@ -12,6 +12,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
+import app.mauri.sukrara.core.model.Link
 import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceKind
@@ -20,7 +21,10 @@ import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.designsystem.root.AccessProblem
 import app.mauri.sukrara.designsystem.root.AccessRunner
 import app.mauri.sukrara.feature.sharing.HistoryLoss
+import app.mauri.sukrara.feature.sharing.LeaveAnswers
+import app.mauri.sukrara.feature.sharing.LeaveFacts
 import app.mauri.sukrara.feature.sharing.SetupModule
+import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.following
 import app.mauri.sukrara.protocol.event.Avatar
 import app.mauri.sukrara.protocol.event.Profile
@@ -87,6 +91,17 @@ data class SourceChange(
     val replaces: SourceSpec? = null,
     /** A sensor is paired on this phone (its pairing is what stays when another source replaces it). */
     val paired: Boolean = false,
+    /** The Sukrara link this change leaves (one person, one link); null = none. */
+    val link: LinkChange? = null,
+)
+
+/**
+ * The link a picked source leaves (contracts/sources/link.json `pick`): [keep] = *Keep following?* shows first (the link
+ * is live), else the leave questions ([facts]) at once (it ended: nothing to keep following).
+ */
+data class LinkChange(
+    val facts: LeaveFacts,
+    val keep: Boolean,
 )
 
 /** Everything one setup screen shows. [step] null = setup is over: go home. */
@@ -379,7 +394,13 @@ class SetupViewModel(
             busy.value = true
             val change =
                 try {
-                    SourceChange(spec, m.sources.loss(spec), replaces = m.sources.stored.first(), paired = m.sensorPaired())
+                    SourceChange(
+                        spec,
+                        m.sources.loss(spec),
+                        replaces = m.sources.stored.first(),
+                        paired = m.sensorPaired(),
+                        link = linkChange(spec),
+                    )
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
@@ -390,12 +411,49 @@ class SetupViewModel(
                 }
             when {
                 change == null -> Unit
-                change.loss == null && change.replaces == spec -> afterSource(spec)
-                change.loss == null && change.replaces == null -> chooseSource(spec)
+                change.link == null && change.loss == null && change.replaces == spec -> afterSource(spec)
+                change.link == null && change.loss == null && change.replaces == null -> chooseSource(spec)
                 else -> sourceChange.value = change
             }
         }
     }
+
+    /**
+     * What picking [spec] asks of the Sukrara link this phone runs on (link.json `pick`, [Link.pick]): *Keep following?*
+     * while it is live, the leave questions at once when it ended, nothing without one (or for the link again).
+     */
+    private suspend fun linkChange(spec: SourceSpec): LinkChange? {
+        val running = m.sources.running.first()
+        val follow = m.follower.state.value
+        val linked =
+            when {
+                running?.stream != true -> Link.Linked.None
+                follow.ended -> Link.Linked.Ended
+                follow.following -> Link.Linked.Active
+                else -> Link.Linked.None
+            }
+        val ask = Link.pick(linked, spec.kind) ?: return null
+        val facts = m.link.facts(spec) ?: return null
+        return LinkChange(facts, keep = ask == Link.Ask.KeepFollowing)
+    }
+
+    /** *Stop following* on *Keep following?*: the leave questions show in its place. */
+    fun stopFollowingFirst() {
+        val change = sourceChange.value ?: return
+        val link = change.link ?: return
+        sourceChange.value = change.copy(link = link.copy(keep = false))
+    }
+
+    /**
+     * *Stop following* on the leave questions: the link is left with [answers] (settings, history, the wearer told),
+     * then the picked source is stored and its own step follows. The key store refusing leaves everything as it was.
+     */
+    fun leaveAndChoose(answers: LeaveAnswers) =
+        act {
+            val change = sourceChange.value ?: return@act
+            if (!m.link.leave(answers, change.spec)) return@act
+            storeSource(change.spec)
+        }
 
     /** Cancel on the source confirmation: the source stays as it was and nothing is deleted. */
     fun cancelSource() {
@@ -407,24 +465,25 @@ class SetupViewModel(
      * whose glucose, or of how it alerts (the wearer's own alerts ↔ a stream's), resets the alert runtime first; a source
      * change for the same person keeps the episodes.
      */
-    fun chooseSource(spec: SourceSpec) =
-        act {
-            sourceChange.value = null
-            searching.value = null
-            val before = m.sources.running.first()
-            if (before == null || before.person != spec.person || before.owner != spec.owner ||
-                before.stream != spec.stream
-            ) {
-                m.resetAlerts()
-            }
-            m.sources.set(spec)
-            person.value = null
-            m.startMonitoring()
-            // another person: LibreLinkUp's pick (cleared with the other person's history) is made again by the rule
-            val another = before != null && before.person != spec.person
-            if (another && spec.kind == SourceKind.LibreLinkUp) recheckLlu()
-            afterSource(spec, another)
+    fun chooseSource(spec: SourceSpec) = act { storeSource(spec) }
+
+    private suspend fun storeSource(spec: SourceSpec) {
+        sourceChange.value = null
+        searching.value = null
+        val before = m.sources.running.first()
+        if (before == null || before.person != spec.person || before.owner != spec.owner ||
+            before.stream != spec.stream
+        ) {
+            m.resetAlerts()
         }
+        m.sources.set(spec)
+        person.value = null
+        m.startMonitoring()
+        // another person: LibreLinkUp's pick (cleared with the other person's history) is made again by the rule
+        val another = before != null && before.person != spec.person
+        if (another && spec.kind == SourceKind.LibreLinkUp) recheckLlu()
+        afterSource(spec, another)
+    }
 
     /**
      * After the source is stored: in the walk, the next unanswered step follows by itself; on its own (Settings ›

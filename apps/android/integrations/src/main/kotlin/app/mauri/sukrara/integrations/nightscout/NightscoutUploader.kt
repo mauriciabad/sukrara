@@ -315,7 +315,7 @@ class NightscoutUploader(
             // imported history never goes up: Nightscout has it already or got it from the same place (counted twice)
             val rs = readings.range(start - Duration.ofMinutes(15), clock.now() + Duration.ofMinutes(1)).filterNot { it.imported }
             if (full) fullScanMs = nowMs
-            val ts = treatments.changedSince(since - Duration.ofDays(1)).filterNot { it.imported }
+            val ts = treatments.changedSince(since - Duration.ofDays(1)).filterNot { it.imported || it.fromLink }
             state = NightscoutQueue.prune(state, ts.map { it.treatment.id }.toSet())
             val plan = NightscoutQueue.plan(rs, ts, sensor.first(), state, s.options, nowS, hold)
             var sent = 0

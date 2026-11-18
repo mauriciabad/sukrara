@@ -566,7 +566,6 @@
     <string name="sh_following_relays_off">Not connected (monitoring isn\'t running)</string>
     <string name="sh_following_stop">Stop following</string>
     <string name="sh_following_stop_title">Stop following %1$s?</string>
-    <string name="sh_following_stop_text">Their readings, treatments and alerts leave this phone. To follow again you need a new invite link.</string>
     <string name="sh_following_stop_failed">Couldn\'t remove the key from this phone. Try again.</string>
     <string name="sh_following_unreadable">This phone can\'t open the key to follow them right now. Sukrara keeps trying; their stored readings and alerts stay. If it doesn\'t recover, stop following and join again.</string>
     <string name="sh_following_damaged">The key to follow them is damaged on this phone. Stop following, then join again with a new link.</string>
@@ -736,4 +735,42 @@
     <string name="sh_setup_history_site_body">Your site keeps your history. Bring back its last 90 days, so your graph, reports and last doses are here.</string>
     <string name="sh_setup_history_site_open">Bring back 90 days from Nightscout</string>
     <string name="sh_setup_history_site_other">From a file or Tidepool instead</string>
+    <!-- One person, one link (docs/44 Appendix G): another source picked on a phone that follows a Sukrara [CHAR LIMIT=60] -->
+    <string name="sh_link_keep_title">Keep following %1$s?</string>
+    <string name="sh_link_keep_title_yours">Keep following your other phone?</string>
+    <string name="sh_link_keep_title_unnamed">Keep following this Sukrara?</string>
+    <!-- What the link already brings; %1$s = the wearer's name, %2$s = the source picked ("LibreLinkUp", "your sensor") -->
+    <string name="sh_link_keep_text">%1$s’s Sukrara already sends this phone the glucose it reads, from whichever source it uses, with treatments, pen doses, alerts and settings. Reading %2$s here instead means this phone stops following it.</string>
+    <string name="sh_link_keep_text_yours">Your other phone’s Sukrara already sends this phone your glucose, from whichever source it uses, with your treatments, pen doses, alerts and settings. Reading %1$s here instead means this phone stops following it.</string>
+    <string name="sh_link_keep_text_unnamed">This Sukrara already sends this phone the glucose it reads, from whichever source it uses, with treatments, pen doses, alerts and settings. Reading %1$s here instead means this phone stops following it.</string>
+    <!-- The safe answer: nothing changes [CHAR LIMIT=24] -->
+    <string name="sh_link_keep">Keep following</string>
+    <!-- The sensor Sukrara reads, inside a sentence ("Reading your sensor here instead…") -->
+    <string name="sh_link_source_sensor">your sensor</string>
+    <!-- The leave questions' title for your other phone / a follow with no name yet [CHAR LIMIT=60] -->
+    <string name="sh_link_leave_title_yours">Stop following your other phone?</string>
+    <string name="sh_link_leave_title_unnamed">Stop following this Sukrara?</string>
+    <!-- What the wearer's phone learns and how to come back; %1$s = the wearer's name -->
+    <string name="sh_link_leave_told">%1$s’s phone is told. To follow again you need a new invite link or Pair nearby.</string>
+    <string name="sh_link_leave_told_yours">Your other phone is told. To follow it again you need a new invite link or Pair nearby.</string>
+    <string name="sh_link_leave_told_unnamed">Their phone is told. To follow again you need a new invite link or Pair nearby.</string>
+    <!-- A follow that ended or never started: nobody to tell -->
+    <string name="sh_link_leave_again">To follow again you need a new invite link or Pair nearby.</string>
+    <!-- The settings question [CHAR LIMIT=40] -->
+    <string name="sh_link_leave_settings">Settings on this phone</string>
+    <string name="sh_link_leave_settings_theirs">Keep %1$s’s settings</string>
+    <string name="sh_link_leave_settings_theirs_yours">Keep your other phone’s settings</string>
+    <string name="sh_link_leave_settings_theirs_unnamed">Keep their settings</string>
+    <string name="sh_link_leave_settings_theirs_sub">Alerts, ranges and the graph stay as they are now, as this phone’s own.</string>
+    <string name="sh_link_leave_settings_defaults">Sukrara’s defaults</string>
+    <string name="sh_link_leave_settings_defaults_sub">Alerts, ranges and the graph go back to how Sukrara starts.</string>
+    <!-- The history question [CHAR LIMIT=40] -->
+    <string name="sh_link_leave_history">The history this phone received</string>
+    <string name="sh_link_leave_history_keep">Keep it</string>
+    <string name="sh_link_leave_history_keep_sub">The next source continues it: for when it reads the same person.</string>
+    <string name="sh_link_leave_history_delete">Delete it</string>
+    <!-- %1$s = "4 days of glucose and 12 treatments", %2$s = "from 3 Oct 2026 to 10 Nov 2026" -->
+    <string name="sh_link_leave_history_delete_sub">Deletes %1$s, %2$s.</string>
+    <!-- Whose glucose changes with the leave: the history goes; %1$s / %2$s as above -->
+    <string name="sh_link_leave_delete_text">Someone else’s glucose shows from now, so what this phone kept goes: %1$s, %2$s. It can’t be undone.</string>
 </resources>

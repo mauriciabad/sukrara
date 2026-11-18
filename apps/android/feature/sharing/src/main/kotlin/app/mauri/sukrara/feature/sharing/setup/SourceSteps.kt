@@ -31,6 +31,8 @@ import app.mauri.sukrara.designsystem.source.SourceIcon
 import app.mauri.sukrara.designsystem.source.labelRes
 import app.mauri.sukrara.designsystem.source.sourceMeans
 import app.mauri.sukrara.designsystem.source.titleRes
+import app.mauri.sukrara.feature.sharing.KeepFollowingDialog
+import app.mauri.sukrara.feature.sharing.LeaveLinkDialog
 import app.mauri.sukrara.feature.sharing.R
 import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.share.follower.FollowState
@@ -140,6 +142,21 @@ internal fun ColumnScope.SourceStep(
         enabled = SourceSpec.of(person, SourceKind.of(selected)) != null && !u.busy,
     )
     val change = u.sourceChange ?: return
+    // one person, one link: another source picked on a phone that follows a Sukrara asks first
+    change.link?.let { link ->
+        if (link.keep) {
+            KeepFollowingDialog(
+                link.facts.name,
+                link.facts.yours,
+                change.spec.kind,
+                onKeep = actions.cancelSource,
+                onStop = actions.stopFollowingFirst,
+            )
+        } else {
+            LeaveLinkDialog(link.facts, onCancel = actions.cancelSource, onLeave = actions.leaveAndChoose, onExport = actions.exportHistory)
+        }
+        return
+    }
     val loss = change.loss
     if (loss != null) {
         HistoryLossDialog(

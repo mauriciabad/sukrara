@@ -140,7 +140,7 @@ internal fun SourceScreen(
             },
             streamRows = {
                 FollowingPage(
-                    viewModel = viewModel(factory = FollowingViewModel.factory(graph.setup.follower)),
+                    viewModel = viewModel(factory = FollowingViewModel.factory(graph.setup.follower, graph.link)),
                     onJoinAgain = { openStep(app.mauri.sukrara.feature.sharing.setup.SetupStep.Join) },
                     onLeft = onLeftStream,
                     embedded = true,

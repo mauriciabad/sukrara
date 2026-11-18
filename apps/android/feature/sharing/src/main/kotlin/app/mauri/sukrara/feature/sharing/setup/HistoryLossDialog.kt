@@ -71,7 +71,7 @@ internal fun HistoryLossDialog(
 
 /** *4 days of glucose and 12 treatments* (either alone when the other is none; the export's words, [glucoseTime]). */
 @Composable
-private fun lossWhat(loss: HistoryLoss): String {
+internal fun lossWhat(loss: HistoryLoss): String {
     val numbers = NumberFormat.getIntegerInstance(locale())
     val readings = loss.glucoseMinutes.takeIf { it > 0 }?.let { glucoseTime(it) }
     val treatments =
@@ -87,7 +87,7 @@ private fun lossWhat(loss: HistoryLoss): String {
 
 /** *from 3 Oct 2026 to 10 Nov 2026*, or *from 10 Nov 2026* when it is all one day. */
 @Composable
-private fun lossWhen(
+internal fun lossWhen(
     loss: HistoryLoss,
     zone: ZoneId,
 ): String {

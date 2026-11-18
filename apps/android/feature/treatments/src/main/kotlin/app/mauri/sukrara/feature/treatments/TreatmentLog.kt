@@ -66,7 +66,8 @@ class TreatmentLog(
         val writer = sync.writer.value ?: return false
         val stored = repository.get(id) ?: return false
         // taken from the Nightscout source's site: changed there, never here (docs/44)
-        return !stored.fromSite && WriterScope.mayChange(writer, stored.creator)
+        // kept from a Sukrara link this phone left: the wearer's log, read-only (Appendix G finding 10)
+        return !stored.fromSite && !stored.fromLink && WriterScope.mayChange(writer, stored.creator)
     }
 
     /** Brings [previous] (what [edit] or [delete] returned) back as the newest version. */
@@ -90,7 +91,7 @@ class TreatmentLog(
     ): Treatment? {
         val writer = sync.writer.value ?: return null
         val stored = repository.get(id) ?: return null
-        if (stored.fromSite || !WriterScope.mayChange(writer, stored.creator)) return null
+        if (stored.fromSite || stored.fromLink || !WriterScope.mayChange(writer, stored.creator)) return null
         val modifiedAt = maxOf(clock.now(), stored.treatment.modifiedAt.plusMillis(1))
         val next = change(stored.treatment).copy(id = id, modifiedAt = modifiedAt)
         write(stored.copy(treatment = next, author = writer.key, delivery = writer.delivery))

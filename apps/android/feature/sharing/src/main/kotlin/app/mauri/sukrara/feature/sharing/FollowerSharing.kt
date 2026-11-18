@@ -19,8 +19,8 @@ import kotlinx.coroutines.flow.flowOf
 
 /**
  * What setup and the Following page do with the follower role (the `FollowerEngine`); a port so screens and view
- * models are tested without relays. The app adds what follows a join and a stop around the engine (monitoring starts,
- * the alert state and the role are reset).
+ * models are tested without relays. The app adds what follows a join around the engine (monitoring starts, the alert
+ * state is reset). Leaving is the [LinkPort]'s (one person, one link).
  */
 interface FollowerSharing {
     val state: StateFlow<FollowState>
@@ -33,9 +33,6 @@ interface FollowerSharing {
         invite: Invite,
         me: Profile?,
     ): JoinResult
-
-    /** Stop following (confirmed first): the key and the wearer's data go, the role is cleared. False when the key store refused. */
-    suspend fun stopFollowing(): Boolean
 
     /** The Bluetooth link to the wearer's phone (following goes on over the internet in every state). */
     val nearby: StateFlow<NearbyStatus> get() = MutableStateFlow(NearbyStatus.Stopped)
@@ -70,8 +67,6 @@ interface FollowerSharing {
                     invite: Invite,
                     me: Profile?,
                 ) = JoinResult.NotFound
-
-                override suspend fun stopFollowing() = true
             }
     }
 }

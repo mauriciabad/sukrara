@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.data.DataModule
 import app.mauri.sukrara.core.data.readings.HistoryFence
 import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.data.settings.SchemaSettings
+import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.data.userUnlocked
 import app.mauri.sukrara.core.model.AppUpdates
@@ -790,6 +791,8 @@ class AppGraph(
                         // the other person's site is only offered to confirm; LibreLinkUp's pick (cleared) loses its name
                         if (now.kind == SourceKind.Nightscout && was.nightscoutUrl.isNotEmpty()) siteSource.confirm(was.nightscoutUrl)
                         integrations.libreLinkUpSource.forgetPick()
+                        // still the same link (yours ↔ someone else's): the wearer's history comes again
+                        if (now.stream) follower.engine.refetch()
                     },
                     setFence = ::setFence,
                 ),
@@ -810,10 +813,6 @@ class AppGraph(
                     follower.engine,
                     resetMonitoring = ::resetMonitoring,
                     startMonitoring = { startMonitoring(StartReason.App) },
-                    clearRole = {
-                        inferred.value = Inferred(null)
-                        source.update { it.with(null) }
-                    },
                 ),
             // the updates step (the GitHub version only)
             updates = updateSuggestion?.setup(),
@@ -827,7 +826,69 @@ class AppGraph(
             llu = AppLluSource(integrations.libreLinkUpSource, data.libreViewLogin),
             // what a source change says stays: a sensor's pairing only when one is paired
             sensorPaired = { sensor.pairings.exists() },
+            link = link,
         )
+    }
+
+    /**
+     * Leaving the Sukrara link (one person, one link: contracts/sources/link.json): *Stop following*, another source
+     * picked while linked, a follow kept behind another source by an earlier version ([leaveLeftBehindLink]).
+     */
+    val link: AppLink by lazy {
+        AppLink(
+            follow = follower.engine.state,
+            running = spec,
+            readings = hubReadings,
+            treatments = data.treatments,
+            settings =
+                object : LeaveSettings {
+                    override suspend fun state() = followerSettings.leaveSettings()
+
+                    override suspend fun keepTheirs() {
+                        followerSettings.copyWearer()
+                    }
+
+                    override suspend fun defaults() = followerSettings.resetToDefault()
+
+                    override suspend fun forNextLink() = followerSettings.choose(SettingsFrom.Wearer)
+                },
+            setFence = ::setFence,
+            leaveLink = ::leaveLink,
+            afterLeave = { next ->
+                resetMonitoring(fence = true)
+                if (next == null) clearSource()
+            },
+        )
+    }
+
+    /**
+     * Leaves the Sukrara link: the one call of the follower engine's leave (the record and key go; the PROTOCOL-v2
+     * `leave` that tells the wearer's phone lands in the engine's `unfollow` with #213's leave agent). [keepHistory]:
+     * the readings and treatments stay.
+     */
+    private suspend fun leaveLink(keepHistory: Boolean): Boolean = follower.engine.unfollow(keepHistory = keepHistory)
+
+    /**
+     * No source (*Stop following* alone): setup asks again, from the person step. Whose glucose is kept in the record,
+     * so the history kept is compared with the next answer (another person's asks to delete it).
+     */
+    private suspend fun clearSource() {
+        inferred.value = Inferred(null)
+        source.update { r -> r.with(null).copy(person = r.person) }
+    }
+
+    /**
+     * A follow kept behind another source by an earlier version (one person, one link can't have it): left at start,
+     * with no question. The source in use stays (the person chose it; going back could show the wrong person), the
+     * wearer's phone is told, the history stays, the settings are untouched (they weren't in use).
+     */
+    private suspend fun leaveLeftBehindLink() {
+        val stored = source.data.first().spec ?: return
+        if (stored.stream || !follower.engine.isFollowing()) return
+        if (leaveLink(keepHistory = true)) {
+            AppLink.keepHistory(data.treatments)
+            data.diagLog.log("source", "left the follow kept behind ${stored.kind.id}")
+        }
     }
 
     /** The Nightscout source's Connect step and *Bring back 90 days* (setup), and the site to confirm after a person change. */
@@ -1336,6 +1397,7 @@ class AppGraph(
             step("share") { scope.launch { shareOwner.ownerEngine.followSource(spec, scope) } }
             step("follower") {
                 follower.engine.load()
+                leaveLeftBehindLink()
                 // a follow that ended (declined, invite used, removed) arms no "no data" alarm for a stream that won't come
                 scope.launch {
                     follower.engine.state.map { it.ended }.distinctUntilChanged().collect { ended ->

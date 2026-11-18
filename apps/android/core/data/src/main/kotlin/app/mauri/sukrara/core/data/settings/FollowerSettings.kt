@@ -127,6 +127,20 @@ object MirroredGraph {
         for (spec in specs) write(own, spec, from, graph)
     }
 
+    /** Whether the wearer's [graph] gives every one of [specs] its default (null = none received: the defaults). */
+    fun atDefaults(
+        specs: List<Setting<*>>,
+        graph: JsonObject?,
+    ): Boolean = specs.all { spec -> isDefault(spec, graph) }
+
+    private fun <T : Any> isDefault(
+        spec: Setting<T>,
+        graph: JsonObject?,
+    ): Boolean {
+        val wire = wireKey(spec.id) ?: return true
+        return value(spec, wire, SettingsFrom.Wearer, graph, spec.default) == spec.default
+    }
+
     private suspend fun <T : Any> write(
         own: SettingsRepository,
         spec: Setting<T>,
