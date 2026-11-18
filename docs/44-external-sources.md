@@ -537,6 +537,63 @@ Discarded or deferred, with reasons:
   doubles; it comes with fallback between sources.
 - **Two apps, one low**: it's for an official app ringing beside Sukrara (step 3); a Nightscout site rings nothing.
 
+**Step 2, LibreLinkUp as a source (2026-11-18, Android).**
+
+Added:
+- **Contracts** (`contracts/sources`): `libreLinkUp` in `sources.json` (both persons, group `online`, 90 s, keyed WEARER
+  / own rules); two reading ids, `librelinkup` (the live reading, ranked `online`) and `librelinkup-graph` (the graph's
+  5-minute points, a new rank `onlineHistory` below it: they only fill gaps, Appendix D 4) with dedup cases (the
+  takeover's backfill over both); `health.json` gains `terms` → `actionNeeded`, `notShared`, `retired` → `stopped`;
+  `outputs.json` row `librelinkup` (LibreView `no`, Tidepool `on` with its switch, broadcasts `no`);
+  `librelinkup/` fixtures with a generator (`login.json`, `calls.json`, `connections.json`, `graph.json`, `poll.json`:
+  synthetic bodies shaped like GlucoDataHandler's and xDrip4iOS's); schema `source.libreLinkUpPatient`,
+  `source.libreLinkUpSecret`. Alert scenarios `librelinkup.txt` (a minute cadence 1 and 3 min late: the rising-low quiet
+  holds at 1, not at 3; a reading 9 min late; out-of-order readings): no rule changed, the Android engine passes them.
+- **One LibreLinkUp client** (Android `:core:data` `LibreLinkUp`): the LibreView sign-in (`LibreViewAccount`) and the
+  source share its login, headers, version (4.16.0 → 4.17.0, as GlucoDataHandler and xDrip4iOS), region redirect, a
+  403's minimum version sent once, terms (never accepted for the person), 429 with Retry-After or the lockout.
+- **The source** (`:integrations` `librelinkup/`): its own account in the Keystore (apart from THE LibreView account, so
+  a parent's account never becomes the app's LibreView account and signing out of one never stops the other), the
+  token reused until 5 min before it expires (a restart doesn't log in: logins count towards the lockout), a graph call
+  each minute, the whole 12 h only at the first call and after a gap, whom the account follows every 30 min; the pick
+  (`connections.json`: the account itself for your glucose, the only other person for someone else's, several = pick);
+  its health on home, Settings › Source and Connect; the sensor's serial and start as its life.
+- **Setup's Connect step** (*Sign in as …* with the LibreView account Sukrara has, for your own glucose; the form;
+  *Whose glucose?*; no one shared → the Libre app's menu path and *Try again* without the password) and the history step
+  (*Your last 12 hours came with LibreLinkUp* + 90 days from LibreView). **Settings › Source** rows (account, whose
+  glucose, status with its exit, sensor, *The Libre app has the sensor*: LibreView and *Read the sensor in Sukrara*,
+  *Sign out* confirmed).
+- **The data rules**: the LibreView upload sends nothing at all while LibreLinkUp is your source (not even its sign-in,
+  which could take over), its status says why and offers no *Take over*; Tidepool's *Glucose from LibreLinkUp* (on);
+  Nightscout upload and Health Connect take it; no broadcasts.
+- **The takeover path** (the move, mid-sensor): with LibreLinkUp as your source the new-sensor flow's gate *Take the
+  sensor from the Libre app* says, before the tap, what the Libre app and LibreLinkUp lose, offers *Open the Libre app's
+  info* (force-stop) and the way back; it shows whether or not the Libre app is installed on this phone. The tap uses
+  the existing takeover (`ReceiverIds.forTakeover`); the pairing switches the source to the sensor by itself (as
+  pairing always did); the rank rule puts the sensor's backfill over LibreLinkUp's readings; the sensor's start is the
+  sensor's own, LibreLinkUp's when the answer lacks one (`NfcPairing.knownStart`); the LibreView upload then finds the
+  Libre app uploading and offers *Take over*. The way back: *Where it comes from* → *LibreLinkUp* (the account stays),
+  then scan the sensor with the Libre app (said in the switch dialog).
+- **A read-only probe** (`tools/librelinkup-probe/probe.py`) for the owner's account: login, connections, graph, the
+  answers to a local file without the password or token; `--sanitise` turns it into fixture-ready bodies.
+
+Discarded or deferred, with reasons:
+- **Auto-accepting the terms step** (GlucoDataHandler does, `/auth/continue/tou`): accepting Abbott's terms is the
+  person's act; Sukrara says where and waits.
+- **The connections call each minute** (it carries the current reading too): the graph call brings the live reading and
+  the backfill in one answer; connections are read every 30 min and when the graph refuses.
+- **Card words with the person's name** (*Ana's glucose*) for someone else's LibreLinkUp: the name shows on Settings ›
+  Source and Connect; the card's name comes from a Sukrara stream today (a later change of the hub's link).
+- **The wear length** LibreLinkUp doesn't say: the default 15 days (a Libre 3's 14 shows a day long until the takeover,
+  when the sensor says its own); the manual start with its length (decision 10) stays to do.
+- **The full *Move to Sukrara* page and suggestion** (step 4): *Read the sensor in Sukrara* is the page's step 4; the
+  checklist, *How it's going* and `MoveSuggestion` need the arrival times step 4 records. Nothing here conflicts with
+  them (the page's steps reuse this gate, the switch and *Take over*).
+- **The Mac**: next in this step (standalone, someone else's glucose included).
+- **One LibreLinkUp account signed in on phone and Mac at once** (decision 9's question): unverified; the probe and the
+  owner's test will tell. Each device keeps its own token.
+- **Battery of a call each minute**: not measured yet (the owner's day with both apps).
+
 ## Decisions for the owner
 
 **Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes

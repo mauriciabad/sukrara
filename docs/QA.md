@@ -1162,6 +1162,19 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
 - [ ] Sensor life: a *Sensor Start* on the site 30 min ago → warming up; 16 days ago → *Sensor ended*, no no-data alarm.
 - [ ] Mac: *Do you have Sukrara on your phone?* → *No · Read it online* → Nightscout → Connect; the panel's states;
       Add Treatment works on this Mac's log, the site's entries are read-only.
+- [ ] LibreLinkUp (FEATURES.md *LibreLinkUp as a source*), on the emulator against a fake LibreLinkUp only (never a
+      real account): Source → *LibreLinkUp* → Connect: with a LibreView account signed in, *Sign in as …* in one tap;
+      *Use another account* → the form; a wrong password says so under the field; several people → *Whose glucose?*;
+      no one → the invite instructions and *Try again*; connected → *Reading received*. History step: *Your last 12
+      hours came with LibreLinkUp* → Import history.
+- [ ] Settings › Source › LibreLinkUp: account, whose glucose, sensor, status with its exit (*Sign in again*, *Try
+      again*, *Pick again*); *Sign out* is confirmed. Share with apps › LibreView says *Paused: the Libre app uploads…*
+      and offers no *Take over*; Tidepool shows *Glucose from LibreLinkUp* (on).
+- [ ] The move (the owner's phone, with the Libre app holding a running Libre 3 and LibreLinkUp as the source): *Read the
+      sensor in Sukrara* → *Take the sensor from the Libre app* (what the Libre app loses, *Open the Libre app's info*)
+      → force-stop the Libre app → *Take over* → tap: the source becomes *Sukrara reads your sensor* by itself, the
+      graph keeps one line through the switch (no doubles), the sensor's start is unchanged, LibreView offers *Take
+      over*. Way back: *Where it comes from* → *LibreLinkUp*, scan the sensor with the Libre app.
 
 ## Q29 Website
 

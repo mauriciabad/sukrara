@@ -842,6 +842,93 @@ Nightscout: Settings › Source › *Where it comes from* (the site and token st
 Sukrara on your phone?* → either card → Back → Welcome; Settings › Source changes it later. TalkBack / VoiceOver read
 every field, problem and state; the status lines are live regions.
 
+## LibreLinkUp as a source (Android)
+
+docs/44 step 2 (#213): LibreLinkUp, Abbott's follower service that the Libre app uploads to each minute, as the
+**Source**: your own glucose (a LibreLinkUp account that follows yourself: in the Libre app, *Menu › Connected apps ›
+LibreLinkUp*, invite your own email) while the Libre app keeps the sensor, or someone else's (a parent's own account
+following a child). `source.kind` `libreLinkUp` (group *Online · needs internet*, about a minute late, backfills about
+12 h); its live readings are `librelinkup` (ranked *online*), the graph's 5-minute points `librelinkup-graph` (ranked
+*onlineHistory*: they only fill gaps between live readings, `contracts/sources/dedup.json`). Its description says it
+*may stop working any day* (Abbott can change or end the API; decision 3).
+
+- **Reading LibreLinkUp** (Android `:core:data` `LibreLinkUp` + `:integrations` `librelinkup/`;
+  `contracts/sources/librelinkup`): the login the LibreView sign-in uses too (`POST /llu/auth/login`, headers
+  `product: llu.android`, `version: 4.17.0`; the region's host after a redirect; a 403 naming a newer version sends that
+  one once; status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` each
+  minute with the token and the account's id (SHA-256): the live reading with its arrow as the sensor's rate, the
+  graph's points the first time and after a gap. Times from `FactoryTimestamp` (UTC). The token is kept with the
+  account and reused until 5 min before it expires (a restart signs in again only then: each login counts towards
+  LibreLinkUp's lockout); a token that stops working early signs in again once. Failures back off 1 → 10 min; a 429
+  waits at least 10 min (or its Retry-After / lockout); a refused password is never retried by itself. Whom the account
+  follows is read again every 30 min. https only, redirects never followed; the password and token live only in the
+  Keystore (`source.libreLinkUpSecret`), apart from THE LibreView account.
+- **Its health, in words** (`contracts/sources/health.json`, with LibreLinkUp's own states; home's no-data reason
+  *No readings from LibreLinkUp*, Settings › Source, the Connect step): *Live · last reading 1 min ago*, *Late*,
+  *Nothing new from LibreLinkUp: its last reading was 40 min ago. Open the Libre app: it may have stopped uploading.*,
+  *No internet…*, *No answer from LibreLinkUp. Sukrara tries again by itself.*, *LibreLinkUp refused the password. Sign
+  in again.*, *LibreLinkUp asked Sukrara to wait…*, *LibreLinkUp needs you: open the LibreLinkUp app, sign in and accept
+  the new terms.*, *No one shares glucose with this account now. In the Libre app: Menu › Connected apps › LibreLinkUp,
+  invite this email.*, *LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it
+  back.* The no-data alert counts from the reading's time (scenarios `librelinkup.txt`: a minute cadence 1–3 min late,
+  a reading 9 min late, readings out of order).
+- **Connect** (setup's step after the source; Settings › Source's *Account* / *Sign in again* open it alone): for your
+  glucose with a LibreView account already in Sukrara, *Your LibreView account* + *Sign in as alex@example.com* (one tap,
+  its saved password copied into the source's own account) and *Use another account*; else *Email* and *Password*
+  (*Sign in*, a progress bar, *Signing in…*). Nothing is saved unless LibreLinkUp accepts it. Problems: *LibreLinkUp
+  refused this email or password* (under the field), new terms, too many attempts (*Sukrara doesn't retry by itself, so
+  your account isn't locked longer*), no answer, no internet, stopped, each with a reject haptic. Signed in: the account
+  that follows itself is picked for your glucose (else the only person); for someone else's, the only person besides
+  the account; several → *Whose glucose?* (radio rows, *Continue*); no one → *Signed in as …* with the invite
+  instructions, *Try again* (no password), *Change account*. Connected → *Signed in as …*, *Reading Alex Example's
+  glucose.* and the health (*Waiting for the first reading from LibreLinkUp…* → *Reading received*, confirm haptic),
+  *Continue*, *Change account*. A note says LibreLinkUp is Abbott's and may change or stop.
+- **Bring your history back, source-aware**: *Your last 12 hours came with LibreLinkUp. For more, bring back 90 days
+  from LibreView, where the Libre app uploads.* → Import history (its LibreView download); *Start empty*.
+- **Sensor life from LibreLinkUp**: the sensor's serial and start (`sn`, `a`; a new serial is a new sensor) with the
+  default warm-up and wear (`contracts/sensor/life.json`: LibreLinkUp doesn't say the length): the card's warm-up and
+  time left, *Sensor ended*, reminders, *Sensor end in calendar*, followers. Settings › Source shows *Sensor · Started …
+  · serial*.
+- **Nothing duplicated or looped** (`contracts/sources/outputs.json` row `librelinkup`, docs/44 "Data" rules 2, 3, 6):
+  LibreView takes one uploading device per account and the Libre app is it, so **the LibreView upload sends nothing at
+  all** while LibreLinkUp is your source, treatments neither, not even a sign-in that could take over (*Paused: the
+  Libre app uploads your glucose while LibreLinkUp is your source…*; no *Take over* offered). Tidepool's *Glucose from
+  LibreLinkUp* is on (*If your Tidepool account links LibreView (US), turn this off: it would count twice*). Nightscout
+  upload, Health Connect, Sukrara followers (your glucose) and Sukrara Aura get it; app broadcasts don't (no sensor
+  label for internet readings). LibreLinkUp brings no treatments: those logged in Sukrara stay on the phone and go
+  where they always went. Someone else's glucose: nothing shared or uploaded.
+- **Settings › Source › LibreLinkUp** (`LibreLinkUpSourceRows`): *Account* (the email; Connect), *Whose glucose* (a
+  pick when the account follows several people), the status with its one exit (*Sign in again*, *Try again*, *Pick
+  again*), *Sensor*; for your glucose *The Libre app has the sensor*: *LibreView* (why nothing goes there) and **Read
+  the sensor in Sukrara** (the takeover); *Sign out of LibreLinkUp* (confirmed: *Sukrara gets no glucose until you sign
+  in again or choose another source. The readings already here stay.*).
+- **The move: taking the sensor over** (docs/44 "The move", at any point of a sensor's life): *Read the sensor in
+  Sukrara* opens the new-sensor flow; with LibreLinkUp as your source its gate *Take the sensor from the Libre app*
+  says, before the tap, that from then on the Libre app gets no readings and rings no alarms and LibreLinkUp gets
+  nothing until Sukrara uploads to LibreView, to force-stop the Libre app first (*Open the Libre app's info*), and the
+  way back (*scan the sensor with the Libre app, any day of its life*); *Take over* / *Cancel*. The tap takes the
+  running Libre 3 over with the LibreView account's receiver ID (`ReceiverIds.forTakeover`; no account → *Sign in to
+  LibreView* first; another account's sensor → *Another app has this sensor*, the source stays LibreLinkUp). Once
+  paired, **the source becomes your sensor by itself**; its backfill replaces LibreLinkUp's readings of the same
+  measurements (the rank rule: one reading per measurement, no jump in the graph); the sensor's life is the sensor's own
+  (its activation time in the takeover answer; LibreLinkUp's start if the answer lacks one). LibreView's upload then
+  finds the Libre app uploading and offers *Take over* (the person chooses). **The way back**: Settings › Source ›
+  *Where it comes from* → *LibreLinkUp* (*Sukrara stops reading the sensor and reads LibreLinkUp. To give the sensor
+  back to the Libre app, scan it there…*); the account stays saved.
+
+**States and exits**: Source → *LibreLinkUp* → *Continue* → Connect. Connect: *Sign in as …* / the form → signing in
+(Back leaves, nothing saved) → refused / new terms / too many attempts / no answer / no internet / stopped (the reason;
+fix and sign in again; *Later* → home's *Finish setup*) → several people → pick → *Continue* · no one shares → *Try
+again* / *Change account* / *Later* → connected → *Continue* (or *Change account* → the form; *Keep this account* back).
+Live / Late: nothing to do. Nothing new: the Libre app is the place to look; clears with the next reading. No internet /
+no answer / asked to wait: clear by themselves; *Try again*. Signed out: *Sign in again*. New terms: accept in
+LibreLinkUp, *Try again*. Not shared: *Pick again* or invite and *Try again*. Stopped: *Try again*; *Where it comes
+from* to leave. Sign out: confirmed; *Account* signs in again. LibreView upload: paused with its reason while
+LibreLinkUp is the source; after the takeover *Take over*. Takeover: *Read the sensor in Sukrara* → *Take the sensor
+from the Libre app* → *Take over* / *Open the Libre app's info* / *Cancel* → the tap (the usual new-sensor states) →
+the source switches by itself; back: *Where it comes from* → *LibreLinkUp*, then scan the sensor with the Libre app.
+TalkBack reads every field, problem and state; the status lines are live regions.
+
 ## Following (Android)
 
 - **Join** (setup, after choosing another Sukrara as the source): the *Follow someone* step takes the wearer's invite link (pasted, or filled
