@@ -166,6 +166,14 @@ class NoDataReasonTest {
         assertEquals(NoDataReason.LinkRevoked, reason(state))
     }
 
+    @Test fun `an ended follow never speaks over another source's values (Appendix G finding 15)`() {
+        val ended = LinkState("Ana", NOW, revoked = true)
+        val llu = Samples.wearer().copy(spec = SourceSpec(Person.Theirs, SourceKind.LibreLinkUp), link = ended)
+        assertNull(reason(llu))
+        val nightscout = Samples.wearer(ageMin = 25).copy(spec = SourceSpec(Person.Yours, SourceKind.Nightscout), link = ended)
+        assertFalse(reason(nightscout) == NoDataReason.LinkRevoked)
+    }
+
     @Test fun `only nothing-to-draw reasons take the card's place, the rest sit under the card and its chart`() {
         assertTrue(reason(GlucoseState.Initial)!!.fullPage)
         assertTrue(reason(Samples.noSensorYet())!!.fullPage)

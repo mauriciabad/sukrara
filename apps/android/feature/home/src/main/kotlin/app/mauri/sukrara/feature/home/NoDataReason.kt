@@ -180,7 +180,8 @@ sealed interface NoDataReason {
                     SetupIncomplete
                 }
 
-                state.link?.revoked == true -> {
+                // only while the stream is the source: another source's values never hide behind an ended follow
+                follower && state.link?.revoked == true -> {
                     LinkRevoked
                 }
 
