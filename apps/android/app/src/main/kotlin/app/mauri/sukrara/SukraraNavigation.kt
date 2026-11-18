@@ -584,7 +584,8 @@ fun SukraraNavigation(
                     }
                     entry<InviteHereRoute> { key ->
                         SettingsPage(stringResource(SharingR.string.sh_invite_here_page), { backStack.pop(key) }, scroll = false) {
-                            InviteHereScreen(key.link)
+                            val spec by graph.spec.collectAsStateWithLifecycle(null)
+                            InviteHereScreen(key.link, spec)
                         }
                     }
                     entry<ProfileRoute> {

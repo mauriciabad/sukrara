@@ -13,12 +13,19 @@ import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import java.time.Duration
 import java.time.Instant
+import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** "5 min ago" in the phone's language. */
+/** "5 min ago" in the phone's language; under a minute *just now*, never "0 minutes ago". */
+@Composable
 fun ago(
     at: Instant,
     now: Instant,
-): String = DateUtils.getRelativeTimeSpanString(at.toEpochMilli(), now.toEpochMilli(), DateUtils.MINUTE_IN_MILLIS).toString()
+): String =
+    if (Duration.between(at, now) < Duration.ofMinutes(1)) {
+        stringResource(DsR.string.ds_online_just_now)
+    } else {
+        DateUtils.getRelativeTimeSpanString(at.toEpochMilli(), now.toEpochMilli(), DateUtils.MINUTE_IN_MILLIS).toString()
+    }
 
 /** "14:05" within the last 12 hours, else the date and time ("Nov 12, 14:05"), as home says when a silence began. */
 @Composable

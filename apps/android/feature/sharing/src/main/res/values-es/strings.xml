@@ -375,6 +375,8 @@
     <string name="sh_invite_here_page">Invitación</string>
     <!-- Invite opened on an Android phone -->
     <string name="sh_invite_here_title">Este teléfono comparte sus propias lecturas</string>
+    <string name="sh_invite_here_title_theirs">Este teléfono muestra la glucosa de otra persona</string>
+    <string name="sh_invite_here_title_follows">Este teléfono sigue a tu otro Sukrara</string>
     <!-- Why it can not be used here -->
     <string name="sh_invite_here_body">Esta invitación es para el teléfono o Mac que va a seguir. Envía el enlace a ese dispositivo; la invitación sigue sin usar hasta entonces.</string>
     <!-- Button: copy the invite link -->
@@ -533,6 +535,10 @@
     <string name="sh_setup_source_group_online">En línea · necesita internet</string>
     <string name="sh_setup_source_change_nightscout">Sukrara lee tu sitio de Nightscout en su lugar: la glucosa con unos minutos de retraso y los tratamientos en ambos sentidos. El historial del móvil se queda.</string>
     <string name="sh_setup_source_change_llu">Sukrara lee tu glucosa de LibreLinkUp, con unos 10 segundos de retraso: la app Libre se queda el sensor y sus alarmas. El historial de este móvil se queda.</string>
+    <string name="sh_setup_source_change_nightscout_theirs">Sukrara lee su sitio de Nightscout en su lugar: la glucosa con unos minutos de retraso y los tratamientos en ambos sentidos. El historial del móvil se queda.</string>
+    <string name="sh_setup_source_change_llu_theirs">Sukrara lee su glucosa de LibreLinkUp, con unos 10 segundos de retraso: su app Libre se queda el sensor y sus alarmas. El historial de este móvil se queda.</string>
+    <string name="sh_setup_source_change_sensor_from_llu">Sukrara se conecta al sensor por sí mismo y se lo quita a la app Libre: sus alarmas y lo que comparte con LibreLinkUp se paran. El historial de este móvil se queda.</string>
+    <string name="sh_setup_source_change_sukrara_again">Sukrara vuelve a mostrar lo que comparte el otro Sukrara. El historial de este móvil se queda.</string>
     <string name="sh_setup_source_change_llu_from_sensor">Sukrara deja de leer el sensor y lee LibreLinkUp. Para devolver el sensor a la app Libre, escanéalo con ella: cualquier día de su vida. El emparejamiento y el historial de este móvil se quedan.</string>
     <string name="sh_setup_llu_title">Inicia sesión en LibreLinkUp</string>
     <string name="sh_setup_llu_body">Usa la cuenta de LibreLinkUp con la que la app Libre comparte tu glucosa. Para compartirla contigo: en la app Libre, Menú › Aplicaciones conectadas › LibreLinkUp, invita a tu propio correo y acepta la invitación en LibreLinkUp una vez.</string>

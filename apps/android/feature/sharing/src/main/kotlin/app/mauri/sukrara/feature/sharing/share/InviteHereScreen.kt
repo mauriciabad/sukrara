@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.res.stringResource
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
@@ -20,13 +21,15 @@ import app.mauri.sukrara.feature.sharing.R
 import kotlinx.coroutines.launch
 
 /**
- * An invite link opened on a phone that can't use it to follow (it wears the sensor, or already follows someone): says
- * the link is for the device that will follow and offers Copy link; Back leaves. Nothing is sent and the invite stays
- * unused. A phone that can follow opens setup's join step with the link instead.
+ * An invite link opened on a phone that can't use it to follow (it wears the sensor, shows someone else's glucose, or
+ * already follows someone): says what this phone does ([spec]) and that the link is for the device that will follow,
+ * and offers Copy link; Back leaves. Nothing is sent and the invite stays unused. A phone that can follow opens setup's
+ * join step with the link instead.
  */
 @Composable
 fun InviteHereScreen(
     link: String,
+    spec: SourceSpec?,
     modifier: Modifier = Modifier,
 ) {
     val clipboard = LocalClipboard.current
@@ -35,7 +38,14 @@ fun InviteHereScreen(
     val label = stringResource(R.string.sh_invite_here_title)
     StateScreen(
         kind = StateKind.Empty,
-        title = label,
+        title =
+            stringResource(
+                when {
+                    spec?.theirs == true -> R.string.sh_invite_here_title_theirs
+                    spec?.stream == true -> R.string.sh_invite_here_title_follows
+                    else -> R.string.sh_invite_here_title
+                },
+            ),
         reason = stringResource(R.string.sh_invite_here_body),
         action = stringResource(R.string.sh_invite_here_copy),
         onAction = {

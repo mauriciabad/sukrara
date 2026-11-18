@@ -977,7 +977,7 @@
     <string name="st_source_footer">Cambiar de quién es la glucosa borra el historial de este móvil (Sukrara pregunta antes). Cambiar el origen lo conserva.</string>
     <string name="st_source_import">Importar historial</string>
     <string name="st_source_import_summary">Recupera tus últimos 90 días desde LibreView, Tidepool o un archivo</string>
-    <string name="st_sharing_not_here">Compartir con seguidores de Sukrara es para tu propia glucosa, leída en este móvil (tu sensor o Juggluco). Cámbialo en Origen.</string>
+    <string name="st_sharing_not_here">Compartir con seguidores de Sukrara es para tu propia glucosa, leída en este móvil. Cámbialo en Origen.</string>
     <string name="st_source_ns">Nightscout</string>
     <string name="st_source_ns_site">Sitio</string>
     <string name="st_source_ns_treatments">Tratamientos en ambos sentidos</string>

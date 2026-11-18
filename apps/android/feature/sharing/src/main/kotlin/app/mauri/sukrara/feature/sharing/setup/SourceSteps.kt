@@ -32,6 +32,8 @@ import app.mauri.sukrara.designsystem.source.labelRes
 import app.mauri.sukrara.designsystem.source.sourceMeans
 import app.mauri.sukrara.designsystem.source.titleRes
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.share.follower.FollowState
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
@@ -152,37 +154,7 @@ internal fun ColumnScope.SourceStep(
             title = stringResource(R.string.sh_setup_source_change_title, stringResource(change.spec.titleRes())),
             text =
                 stringResource(
-                    when (change.spec.kind) {
-                        SourceKind.Sensor -> {
-                            R.string.sh_setup_source_change_sensor
-                        }
-
-                        // only a sensor Sukrara read has a connection to stop and a pairing that stays
-                        SourceKind.PhoneApp -> {
-                            if (change.replaces?.kind == SourceKind.Sensor) {
-                                R.string.sh_setup_source_change_phone_app_from_sensor
-                            } else {
-                                R.string.sh_setup_source_change_phone_app
-                            }
-                        }
-
-                        SourceKind.Nightscout -> {
-                            R.string.sh_setup_source_change_nightscout
-                        }
-
-                        // from the sensor Sukrara reads: the way back to the Libre app (it scans the sensor again)
-                        SourceKind.LibreLinkUp -> {
-                            if (change.replaces?.kind == SourceKind.Sensor) {
-                                R.string.sh_setup_source_change_llu_from_sensor
-                            } else {
-                                R.string.sh_setup_source_change_llu
-                            }
-                        }
-
-                        SourceKind.Sukrara -> {
-                            R.string.sh_setup_source_change_sukrara
-                        }
-                    },
+                    sourceChangeText(change, following = (u.follow as? FollowState.Following)?.status == FollowStatus.Active),
                 ),
             confirm = stringResource(R.string.sh_setup_source_change_confirm),
             onConfirm = { actions.chooseSource(change.spec) },
@@ -220,3 +192,46 @@ internal fun ColumnScope.JugglucoStep(
 
 /** Juggluco's package (its launcher opens it so the person can turn its web server on). */
 private const val JUGGLUCO_PACKAGE = "tk.glucodata"
+
+/**
+ * What a source change (same person) says it does, in the words of whose glucose it is and of what is really there:
+ * only a sensor Sukrara read and paired has a connection to stop and a pairing that stays; taking the sensor from
+ * LibreLinkUp's Libre app stops that app's alarms and sharing; a follow already allowed shows again without a request.
+ */
+internal fun sourceChangeText(
+    change: SourceChange,
+    following: Boolean,
+): Int {
+    val theirs = change.spec.person == Person.Theirs
+    val fromSensor = change.replaces?.kind == SourceKind.Sensor && change.paired
+    return when (change.spec.kind) {
+        SourceKind.Sensor -> {
+            if (change.replaces?.kind == SourceKind.LibreLinkUp) {
+                R.string.sh_setup_source_change_sensor_from_llu
+            } else {
+                R.string.sh_setup_source_change_sensor
+            }
+        }
+
+        SourceKind.PhoneApp -> {
+            if (fromSensor) R.string.sh_setup_source_change_phone_app_from_sensor else R.string.sh_setup_source_change_phone_app
+        }
+
+        SourceKind.Nightscout -> {
+            if (theirs) R.string.sh_setup_source_change_nightscout_theirs else R.string.sh_setup_source_change_nightscout
+        }
+
+        // from the sensor Sukrara reads: the way back to the Libre app (it scans the sensor again)
+        SourceKind.LibreLinkUp -> {
+            when {
+                fromSensor -> R.string.sh_setup_source_change_llu_from_sensor
+                theirs -> R.string.sh_setup_source_change_llu_theirs
+                else -> R.string.sh_setup_source_change_llu
+            }
+        }
+
+        SourceKind.Sukrara -> {
+            if (following) R.string.sh_setup_source_change_sukrara_again else R.string.sh_setup_source_change_sukrara
+        }
+    }
+}

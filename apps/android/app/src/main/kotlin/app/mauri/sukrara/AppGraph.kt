@@ -800,6 +800,8 @@ class AppGraph(
             site = siteSource,
             // LibreLinkUp's Connect step (its own account; *Sign in as …* with THE LibreView account)
             llu = AppLluSource(integrations.libreLinkUpSource, data.libreViewLogin),
+            // what a source change says stays: a sensor's pairing only when one is paired
+            sensorPaired = { sensor.pairings.exists() },
         )
     }
 

@@ -85,6 +85,8 @@ data class SourceChange(
     val loss: HistoryLoss?,
     /** Something is stored already (Settings › Source, or Back in setup): say what changes before it does. */
     val replaces: SourceSpec? = null,
+    /** A sensor is paired on this phone (its pairing is what stays when another source replaces it). */
+    val paired: Boolean = false,
 )
 
 /** Everything one setup screen shows. [step] null = setup is over: go home. */
@@ -377,7 +379,7 @@ class SetupViewModel(
             busy.value = true
             val change =
                 try {
-                    SourceChange(spec, m.sources.loss(spec), replaces = m.sources.stored.first())
+                    SourceChange(spec, m.sources.loss(spec), replaces = m.sources.stored.first(), paired = m.sensorPaired())
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {

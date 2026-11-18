@@ -54,6 +54,7 @@ import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.follower.FollowState
 import kotlinx.coroutines.launch
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** The Following page's view model: the follower state and Stop following. */
 class FollowingViewModel(
@@ -222,7 +223,12 @@ fun FollowingContent(
                                 } else {
                                     stringResource(
                                         R.string.sh_following_last_heard,
-                                        DateUtils.getRelativeTimeSpanString(heard.toEpochMilli()).toString(),
+                                        // under a minute: *just now*, never "0 minutes ago"
+                                        if (System.currentTimeMillis() - heard.toEpochMilli() < DateUtils.MINUTE_IN_MILLIS) {
+                                            stringResource(DsR.string.ds_online_just_now)
+                                        } else {
+                                            DateUtils.getRelativeTimeSpanString(heard.toEpochMilli()).toString()
+                                        },
                                     )
                                 },
                                 style = MaterialTheme.typography.bodyLarge,

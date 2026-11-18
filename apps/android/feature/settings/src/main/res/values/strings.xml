@@ -969,7 +969,7 @@
     <string name="st_source_import">Import history</string>
     <string name="st_source_import_summary">Bring back your last 90 days from LibreView, Tidepool or a file</string>
     <!-- Settings › Sharing when this phone doesn't read your glucose first-hand -->
-    <string name="st_sharing_not_here">Sharing with Sukrara followers is for your own glucose, read on this phone (your sensor or Juggluco). Change it in Source.</string>
+    <string name="st_sharing_not_here">Sharing with Sukrara followers is for your own glucose, read on this phone. Change it in Source.</string>
     <string name="st_source_ns">Nightscout</string>
     <string name="st_source_ns_site">Site</string>
     <string name="st_source_ns_treatments">Treatments both ways</string>
