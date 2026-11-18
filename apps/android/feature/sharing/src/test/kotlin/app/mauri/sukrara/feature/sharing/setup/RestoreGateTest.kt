@@ -4,8 +4,11 @@
 package app.mauri.sukrara.feature.sharing.setup
 
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -42,5 +45,13 @@ class RestoreGateTest {
         assertFalse(RestoreGate.ownSensorLive(state(SourceId.Relay, 1), now))
         assertFalse(RestoreGate.ownSensorLive(state(SourceId.Libre3, 1, SourceStatus.Interrupted(now)), now))
         assertFalse(RestoreGate.ownSensorLive(GlucoseState.Initial, now))
+    }
+
+    @Test
+    fun `live only from the source in use, another source's reading proves nothing about it`() {
+        val site = state(SourceId.Nightscout, 1).copy(spec = SourceSpec(Person.Yours, SourceKind.Nightscout))
+        assertTrue(RestoreGate.ownSensorLive(site, now))
+        assertFalse(RestoreGate.ownSensorLive(site, now, SourceKind.PhoneApp))
+        assertFalse(RestoreGate.ownSensorLive(site.copy(spec = SourceSpec(Person.Yours, SourceKind.PhoneApp)), now))
     }
 }

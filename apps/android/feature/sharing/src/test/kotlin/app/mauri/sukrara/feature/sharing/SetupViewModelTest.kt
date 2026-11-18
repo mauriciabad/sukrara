@@ -19,6 +19,7 @@ import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.testing.FakeClock
@@ -525,6 +526,26 @@ class SetupViewModelTest {
             assertEquals(SourceSpec.YourSensor, roles.role.value)
             vm.back { left = true }
             assertTrue(left)
+        }
+
+    @Test
+    fun `Nightscout to Juggluco goes on to Connect Juggluco, the site's last reading proves nothing, Appendix G finding 19`() =
+        runTest {
+            val site = SourceSpec(Person.Yours, SourceKind.Nightscout)
+            roles.role.value = site
+            record.update { SetupRecord(completed = SetupStep.entries.toSet()) }
+            hub.state.value =
+                hub.state.value.copy(
+                    spec = site,
+                    latest = Reading(clock.now(), 120, null, SourceId.Nightscout),
+                    source = SourceStatus.Live(clock.now()),
+                )
+            val vm = vm(startAt = SetupStep.Source)
+            vm.ui.launchIn(backgroundScope)
+            vm.ui.first { it?.step == SetupStep.Source }
+            val juggluco = SourceSpec(Person.Yours, SourceKind.PhoneApp)
+            vm.chooseSource(juggluco)
+            assertEquals(SetupStep.Sensor, vm.ui.first { it?.step != SetupStep.Source }!!.step)
         }
 
     @Test

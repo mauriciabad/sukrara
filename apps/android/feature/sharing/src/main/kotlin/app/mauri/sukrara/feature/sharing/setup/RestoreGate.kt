@@ -43,14 +43,20 @@ data class RestoreGate(
                 source,
             )
 
-        /** Readings are arriving live from this phone's own sensor (not a follower feed), the newest ≤ 15 min old. */
+        /**
+         * Readings are arriving live from this phone's own sensor (not a follower feed), the newest ≤ 15 min old, from
+         * [kind] (the source in use): another source's reading still in the window proves nothing about this one (a
+         * site's reading never stands for Juggluco).
+         */
         fun ownSensorLive(
             state: GlucoseState,
             now: Instant,
+            kind: SourceKind? = state.spec?.kind,
         ): Boolean {
             val latest = state.latest ?: return false
             return state.source is SourceStatus.Live &&
                 latest.source in OWN_SOURCES &&
+                (kind == null || latest.source in kind.readings) &&
                 !latest.t.isAfter(now.plusSeconds(60)) &&
                 Duration.between(latest.t, now) <= LIVE_WINDOW
         }

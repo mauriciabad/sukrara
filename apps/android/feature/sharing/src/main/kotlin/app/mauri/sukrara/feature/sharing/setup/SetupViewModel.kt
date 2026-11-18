@@ -422,10 +422,13 @@ class SetupViewModel(
             return
         }
         val facts = m.progress.first().facts
+        // live from the source just chosen: the hub may not have its answer yet, and the last source's reading
+        // proves nothing about this one
+        val live = RestoreGate.ownSensorLive(m.hub.state.value, m.clock.now(), spec.kind)
         alone.value =
             when {
                 spec.stream && !facts.following -> SetupStep.Join.name
-                !spec.stream && !facts.ownSensorLive -> SetupStep.Sensor.name
+                !spec.stream && !live -> SetupStep.Sensor.name
                 else -> null
             }
     }
