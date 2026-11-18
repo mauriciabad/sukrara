@@ -277,7 +277,7 @@ import Testing
         #expect(inUse.night[.noData] == own.night[.noData])
         var custom = own
         custom.persistence.lowMin = 15
-        #expect(custom.inUse(from: .default, wearer: w).persistence == PersistenceSettings())
+        #expect(custom.inUse(from: .wearer, wearer: nil).persistence == PersistenceSettings())
     }
 }
 

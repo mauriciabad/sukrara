@@ -40,7 +40,6 @@
     {"person": "yours", "source": "libreLinkUp", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
     {"person": "theirs", "source": "libreLinkUp", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
     {"person": "theirs", "source": "sukrara", "settingsFrom": "wearer", "owner": false, "stream": true, "alertRole": "FOLLOWER_MIRROR"},
-    {"person": "theirs", "source": "sukrara", "settingsFrom": "default", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"},
     {"person": "theirs", "source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"},
     {"person": "yours", "source": "sukrara", "settingsFrom": "wearer", "owner": false, "stream": true, "alertRole": "FOLLOWER_MIRROR"},
     {"person": "yours", "source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"}

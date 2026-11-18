@@ -14,7 +14,7 @@ public enum GraphPlace: String, CaseIterable, Sendable {
 }
 
 /// Where the mirrored card settings come from now (Settings from): this Mac's own values (Custom), Sukrara's defaults
-/// (Default, and Wearer before the wearer's settings arrive), or the wearer's values (a key they didn't send = its
+/// (Wearer before the wearer's settings arrive), or the wearer's values (a key they didn't send = its
 /// default, PROTOCOL-v2 "Settings").
 struct GraphSource {
     let store: any SettingsStoring

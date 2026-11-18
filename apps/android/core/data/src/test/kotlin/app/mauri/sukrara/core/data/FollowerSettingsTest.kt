@@ -57,16 +57,6 @@ class FollowerSettingsTest {
         }
 
     @Test
-    fun `default reads the defaults whatever this phone or the wearer has`() =
-        runTest {
-            val r = FollowerSettingsRepository(own(), MutableStateFlow(SettingsFrom.Default), MutableStateFlow(wearer))
-            assertEquals(70.0, r.flow(low).first(), 0.0)
-            assertTrue(r.flow(side).first())
-            assertEquals("100", r.flow(lines).first())
-            assertEquals(8.0, r.flow(countdown).first(), 0.0)
-        }
-
-    @Test
     fun `wearer reads the wearer's values, the defaults until they arrive`() =
         runTest {
             val graph = MutableStateFlow<JsonObject?>(null)
@@ -93,7 +83,7 @@ class FollowerSettingsTest {
     fun `settings that aren't mirrored are always this phone's`() =
         runTest {
             val mine = own()
-            val r = FollowerSettingsRepository(mine, MutableStateFlow(SettingsFrom.Default), MutableStateFlow(wearer))
+            val r = FollowerSettingsRepository(mine, MutableStateFlow(SettingsFrom.Wearer), MutableStateFlow(wearer))
             assertEquals(3.0, r.flow(placeHours).first(), 0.0)
             assertNull(MirroredGraph.wireKey("graph.hours.place"))
             r.set(nostr, false)
@@ -109,7 +99,7 @@ class FollowerSettingsTest {
             assertEquals(80.0, mine.flow(low).first(), 0.0)
             assertEquals("90,150", mine.flow(lines).first())
             assertEquals(4.0, mine.flow(countdown).first(), 0.0)
-            MirroredGraph.copyInto(mine, specs, SettingsFrom.Default, wearer)
+            MirroredGraph.copyInto(mine, specs, SettingsFrom.Wearer, null)
             assertEquals(70.0, mine.flow(low).first(), 0.0)
             assertTrue(mine.flow(side).first())
             assertEquals(8.0, mine.flow(countdown).first(), 0.0)

@@ -29,7 +29,7 @@ struct GeneralPane: View {
             } footer: {
                 Text(
                     L10n.t(
-                        "Their settings and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+                        "Their settings decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; This Mac's own lets you set them here. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
                     )
                 )
                 .formFooter()
@@ -120,7 +120,7 @@ struct UpdateRows: View {
     }
 }
 
-/// Settings from: Wearer, Default or Custom, the sentence saying what's in use, and in Custom the copy of the wearer's
+/// Settings from: Their settings or This Mac's own, the sentence saying what's in use, and in Custom the copy of the wearer's
 /// settings and the reset to Sukrara's defaults (each asked first).
 struct SettingsFromPicker: View {
     @Bindable var model: SettingsModel
@@ -168,8 +168,7 @@ struct SettingsFromPicker: View {
         switch f {
         case .wearer:
             model.wearer?.wearer.map { L10n.t("\($0)'s settings") } ?? L10n.t("Their settings")
-        case .default: L10n.t("Default")
-        case .custom: L10n.t("Custom")
+        case .custom: L10n.t("This Mac's own")
         }
     }
 }

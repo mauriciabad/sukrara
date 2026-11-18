@@ -88,15 +88,13 @@ extension AlertSettings {
         return s
     }
 
-    /// The rules in use for "Settings from" `from`: Custom = this Mac's own; Default = the defaults; Wearer = the
-    /// wearer's mirrored values, the defaults until they arrive. What isn't mirrored is always this Mac's own.
+    /// The rules in use for "Settings from" `from`: Custom = this Mac's own; Wearer = the wearer's mirrored values, the defaults until they arrive. What isn't mirrored is always this Mac's own.
     /// A key the wearer didn't send is its default (PROTOCOL-v2 "Settings"), as for the card. `source` follows `from`,
     /// so whether this Mac mirrors the wearer's alerts has one source of truth.
     func inUse(from: SettingsFrom, wearer: WearerSettings?) -> AlertSettings {
         var s: AlertSettings
         switch from {
         case .custom: s = self
-        case .default: s = withMirroredDefaults()
         case .wearer: s = wearer.map { withMirroredDefaults().mirroring($0) } ?? withMirroredDefaults()
         }
         s.source = from == .wearer ? .wearer : .own

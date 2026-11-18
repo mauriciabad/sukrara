@@ -68,7 +68,7 @@ class SourcesContractTest {
             assertEquals(name, c.str("alertRole"), ROLES.getValue(role))
             checked++
         }
-        assertEquals("every Android pair is keyed", 12, checked)
+        assertEquals("every Android pair is keyed", 11, checked)
         for (c in sources.getValue("invalid").jsonArray.map { it.jsonObject }) {
             assertNull(SourceSpec.of(Person.of(c.str("person")), SourceKind.of(c.str("source"))))
         }

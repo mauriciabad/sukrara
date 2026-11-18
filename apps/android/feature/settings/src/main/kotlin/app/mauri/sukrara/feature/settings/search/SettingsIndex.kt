@@ -938,7 +938,6 @@ object SettingsIndex {
                 from,
                 R.string.st_from_header,
                 R.string.st_from_wearer to R.string.st_from_wearer_summary,
-                R.string.st_from_default to R.string.st_from_default_summary,
                 R.string.st_from_custom to R.string.st_from_custom_summary,
                 seen = Seen.Follower,
             )

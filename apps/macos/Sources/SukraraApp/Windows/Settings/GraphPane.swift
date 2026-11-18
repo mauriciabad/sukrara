@@ -321,7 +321,7 @@ struct SettingsFromSection: View {
                 }
             } footer: {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(model.inUse + " " + L10n.t("To change these on this Mac, choose Custom."))
+                    Text(model.inUse + " " + L10n.t("To change these on this Mac, choose This Mac's own."))
                         .formFooter()
                     Spacer()
                     Button(L10n.t("Use my own settings")) { model.useOwn() }

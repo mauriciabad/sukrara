@@ -28,12 +28,6 @@ import Testing
         #expect(m.alerts.settings.source == .wearer)
     }
 
-    @Test func defaultsKeepsTheOwnSource() {
-        let m = model()
-        m.useDefaults()
-        #expect(m.settingsFrom == .default && m.alerts.settings.source == .own)
-    }
-
     @Test func mirroredAlertRowsReadTheWearersValues() {
         let m = model()
         #expect(m.shownAlerts[.low].repeatMin == 30 && m.alertsMirrored)
@@ -46,20 +40,18 @@ import Testing
     @Test func readOnlyRowsNameTheirSource() {
         let m = model()
         #expect(m.mirrorSource == "from Ana")
-        m.useDefaults()
-        #expect(m.mirrorSource == "Sukrara's default")
         m.useOwn()
         #expect(m.mirrorSource.isEmpty && !m.alertsMirrored)
         #expect(ReadOnlyValue.onOff(true) == "On" && ReadOnlyValue.onOff(false) == "Off")
     }
 
-    @Test func defaultsNeverOverwriteThisMacsOwnValues() {
+    @Test func theirSettingsNeverOverwriteThisMacsOwnValues() {
         let m = model()
         m.useOwn()
         m.alerts.update { $0[.low].threshold = 80 }
         m.setNumber(150, MacSettings.bandTight)
-        m.useDefaults()
-        #expect(m.shownAlerts[.low].threshold == 70 && m.graph.bands.tight == 140)
+        m.settingsFrom = .wearer
+        #expect(m.alertsMirrored && m.graph.bands.tight != 150)
         m.useOwn()
         #expect(m.shownAlerts[.low].threshold == 80 && m.graph.bands.tight == 150)
     }

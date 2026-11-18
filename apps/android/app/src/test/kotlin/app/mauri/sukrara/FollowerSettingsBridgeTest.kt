@@ -93,11 +93,7 @@ class FollowerSettingsBridgeTest {
     }
 
     @Test
-    fun `default mode runs the defaults, custom this phone's own`() {
-        val default = AlertMirror.effective(mine, FollowerSettingsBridge.mirroredAlerts(SettingsFrom.Default, payload))
-        assertEquals(AlertSettings().rule(AlertKind.LOW).threshold, default.rule(AlertKind.LOW).threshold, 0.0)
-        assertEquals(AlertSettings().afterCarbs, default.afterCarbs)
-        assertTrue(default.rule(AlertKind.LOW).alarm)
+    fun `this phone's own runs this phone's own`() {
         assertNull(FollowerSettingsBridge.mirroredAlerts(SettingsFrom.Custom, payload))
         assertEquals(mine, AlertMirror.effective(mine, null))
     }
@@ -117,8 +113,6 @@ class FollowerSettingsBridgeTest {
                     .threshold,
                 0.0,
             )
-            b.choose(SettingsFrom.Default)
-            assertEquals(70.0, b.settings.flow(GraphSettings.Bands[1]).first(), 0.0)
             b.choose(SettingsFrom.Custom)
             assertEquals(65.0, b.settings.flow(GraphSettings.Bands[1]).first(), 0.0)
             assertNull(b.alertMirror.first())
@@ -132,7 +126,7 @@ class FollowerSettingsBridgeTest {
             val own =
                 InMemorySettingsRepository().apply {
                     set(GraphSettings.Bands[1], 65.0)
-                    set(SettingsFrom.Stored, SettingsFrom.Default.wire)
+                    set(SettingsFrom.Stored, SettingsFrom.Wearer.wire)
                 }
             val b = bridge(own, Alerts(mine), role = SourceSpec.YourSensor)
             assertEquals(65.0, b.settings.flow(GraphSettings.Bands[1]).first(), 0.0)

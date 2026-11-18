@@ -241,8 +241,6 @@ class SettingsGallery {
             "from-wearer" to { SettingsFromContent(fromWearer, clock, SettingsFromActions(), onBack = {}) },
             "from-wearer-waiting" to
                 { SettingsFromContent(fromWearer.copy(wearerChangedAt = null), clock, SettingsFromActions(), onBack = {}) },
-            "from-default" to
-                { SettingsFromContent(fromWearer.copy(from = SettingsFrom.Default), clock, SettingsFromActions(), onBack = {}) },
             "from-custom" to {
                 SettingsFromContent(
                     fromWearer.copy(from = SettingsFrom.Custom),

@@ -142,7 +142,6 @@ import Testing
         let wearer = try #require(WearerSettings(json: #"{"alerts":{"alerts":{"high":{"mgdl":200}}}}"#, wearer: "Ana"))
         let w = own.inUse(from: .wearer, wearer: wearer)
         #expect(w[.high].threshold == 200 && w[.low].threshold == 70 && w.source == .wearer)  // not sent: default
-        #expect(own.inUse(from: .default, wearer: wearer)[.low].threshold == 70)
         let c = own.inUse(from: .custom, wearer: wearer)
         #expect(c[.low].threshold == 80 && c.source == .own)
     }
@@ -276,11 +275,8 @@ import Testing
         #expect(c.bands.high == 180 && c.hours == 6)  // not sent: the default; the place's own hours stay
         c = GraphConfig.load(from: s, wearer: nil)  // nothing received yet: the defaults
         #expect(c.bands.tight == 140 && c.lastPlace == .nearValue)
-        s.set(SettingsFrom.default.rawValue, for: MacSettings.settingsFrom)
-        c = GraphConfig.load(from: s, wearer: wearer)
-        #expect(c.bands.tight == 140 && c.lastPlace == .nearValue)  // Default never reads this Mac's own values…
         s.set(SettingsFrom.custom.rawValue, for: MacSettings.settingsFrom)
         c = GraphConfig.load(from: s, wearer: wearer)
-        #expect(c.bands.tight == 160 && c.lastPlace == .end)  // …and never overwrote them
+        #expect(c.bands.tight == 160 && c.lastPlace == .end)  // their settings never overwrote this Mac's own
     }
 }

@@ -337,11 +337,11 @@ public struct SetupView: View {
     private var mirroredNote: String {
         if model.settings.settingsFrom == .wearer, let who = model.settings.wearer?.wearer {
             return L10n.t(
-                "These are \(who)'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+                "These are \(who)'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: This Mac's own)."
             )
         }
         return L10n.t(
-            "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+            "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: This Mac's own)."
         )
     }
 

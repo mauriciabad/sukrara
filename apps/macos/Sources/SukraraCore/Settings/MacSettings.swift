@@ -110,9 +110,10 @@ public enum MacSettings {
     }
 }
 
-/// Where a follower's mirrored settings come from (schema option list `settingsFrom`).
+/// Where a follower's mirrored settings come from while it follows a Sukrara (schema option list `settingsFrom`):
+/// *Their settings* or *This Mac's own* (#213 decision 7: no Default).
 public enum SettingsFrom: String, Sendable, CaseIterable {
-    case wearer, `default`, custom
+    case wearer, custom
 }
 
 extension SettingsStoring {

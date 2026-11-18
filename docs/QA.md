@@ -253,8 +253,8 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] Settings (round f28): `sukrara-snap windows <dir>` renders the panes with synthetic data
       (`settings-*.png`: General with Custom and the login states, Alerts own and mirrored, Graph and Metrics own and
       from the wearer, Following); check the toolbar (five
-      panes, title = pane), Settings from in General (Wearer / Default / Custom, *In use* line; Custom: *Copy the
-      Wearer's Settings…* disabled until an event arrived, *Reset to Defaults…* asks first), Default / Wearer show the
+      panes, title = pane), Settings from in General (Their settings / This Mac's own, *In use* line; This Mac's own: *Copy the
+      Wearer's Settings…* disabled until an event arrived, *Reset to Defaults…* asks first), Their settings shows the
       read-only summary and *Change…* opens General; every number: presets + *Custom…*, the field takes a value in range
       on Return / leaving it, out-of-range text turns the range note red and changes nothing, the stepper and
       Shift-click stay in range; a custom value (7 h, 45 days, 183 mg/dL) survives a relaunch and shows in the panel /

@@ -96,9 +96,6 @@ public final class SettingsModel {
     /// "Use my own settings": this Mac's values, editable.
     public func useOwn() { settingsFrom = .custom }
 
-    /// "Use the defaults": Sukrara's defaults apply; this Mac's own values stay stored for Custom.
-    public func useDefaults() { settingsFrom = .default }
-
     /// "Copy the wearer's settings" (after the confirmation): this Mac's own card settings and alert rules become the
     /// wearer's mirrored ones, as a starting point, and Custom applies them. Sounds and what isn't mirrored stay.
     public func copyWearer() {
@@ -117,7 +114,7 @@ public final class SettingsModel {
         switch settingsFrom {
         case .custom: return
         case .wearer where wearer != nil: copyWearer()
-        case .wearer, .default:
+        case .wearer:
             writeGraph(GraphConfig())
             let defaults = alerts.settings.withMirroredDefaults()
             alerts.update { $0 = defaults }
@@ -139,7 +136,6 @@ public final class SettingsModel {
     public var inUse: String {
         switch settingsFrom {
         case .custom: return L10n.t("This Mac's own settings, in the Alerts, Readings, Graph and Metrics panes.")
-        case .default: return L10n.t("Sukrara's defaults.")
         case .wearer:
             let who = wearer?.wearer ?? L10n.t("this person")
             if wearer != nil { return L10n.t("\(who)'s settings from their phone.") }
@@ -151,12 +147,12 @@ public final class SettingsModel {
     }
 
     /// Where a read-only (mirrored) value comes from, said after it: "from Marta" while the wearer's settings apply,
-    /// "Sukrara's default" otherwise (Default, or Wearer before their settings arrived). Empty in Custom (editable).
+    /// "Sukrara's default" before their settings arrived. Empty in This Mac's own (editable).
     public var mirrorSource: String {
         switch settingsFrom {
         case .custom: return ""
         case .wearer where wearer != nil: return L10n.t("from \(wearer?.wearer ?? L10n.t("this person"))")
-        case .wearer, .default: return L10n.t("Sukrara's default")
+        case .wearer: return L10n.t("Sukrara's default")
         }
     }
 

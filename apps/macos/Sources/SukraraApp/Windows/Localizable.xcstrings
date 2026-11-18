@@ -3445,6 +3445,22 @@
         }
       }
     },
+    "This Mac's own" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac's own"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los de este Mac"
+          }
+        }
+      }
+    },
     "This Mac's own: every value, range and alert level on this Mac shows in it." : {
       "localizations" : {
         "en" : {
@@ -4309,18 +4325,18 @@
         }
       }
     },
-    "Their settings and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's." : {
+    "Their settings decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; This Mac's own lets you set them here. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Their settings and Default decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; Custom lets you set them on this Mac. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+            "value" : "Their settings decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; This Mac's own lets you set them here. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sus ajustes y Predeterminados deciden los rangos, la flecha de tendencia, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y cuándo avisar; Personalizados te deja ajustarlos en este Mac. Los sonidos, la alerta de sin datos, los botones de la notificación y el tiempo mostrado y el tiempo del sensor de cada lugar son siempre de este Mac."
+            "value" : "Sus ajustes deciden los rangos, la flecha de tendencia, el tiempo mostrado, los anillos, las líneas, el último tratamiento, la cuenta atrás del sensor y cuándo avisar; Los de este Mac te deja ajustarlos aquí. Los sonidos, la alerta de sin datos, los botones de la notificación y el tiempo mostrado y el tiempo del sensor de cada sitio son siempre de este Mac."
           }
         }
       }
@@ -5829,34 +5845,34 @@
         }
       }
     },
-    "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+    "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: This Mac's own)." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+            "value" : "These are %@'s alerts, from their phone. Changing a level makes them this Mac's own settings (Settings from: This Mac's own)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Son las alertas de %@, desde su móvil. Cambiar un nivel las convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
+            "value" : "Son las alertas de %@, desde su móvil. Cambiar un nivel las convierte en ajustes propios de este Mac (Ajustes de: Los de este Mac)."
           }
         }
       }
     },
-    "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)." : {
+    "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: This Mac's own)." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: Custom)."
+            "value" : "These are Sukrara's defaults. Changing a level makes them this Mac's own settings (Settings from: This Mac's own)."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Son los valores predeterminados de Sukrara. Cambiar un nivel los convierte en ajustes propios de este Mac (Ajustes de: Personalizados)."
+            "value" : "Son los valores predeterminados de Sukrara. Cambiar un nivel los convierte en ajustes propios de este Mac (Ajustes de: Los de este Mac)."
           }
         }
       }
@@ -6645,22 +6661,6 @@
         }
       }
     },
-    "Default" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Default"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Predeterminados"
-          }
-        }
-      }
-    },
     "GMI" : {
       "localizations" : {
         "en" : {
@@ -7205,22 +7205,6 @@
         }
       }
     },
-    "Sukrara's defaults." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara's defaults."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Los ajustes predeterminados de Sukrara."
-          }
-        }
-      }
-    },
     "Time" : {
       "localizations" : {
         "en" : {
@@ -7285,18 +7269,18 @@
         }
       }
     },
-    "To change these on this Mac, choose Custom." : {
+    "To change these on this Mac, choose This Mac's own." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "To change these on this Mac, choose Custom."
+            "value" : "To change these on this Mac, choose This Mac's own."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Para cambiarlos en este Mac, elige Personalizados."
+            "value" : "Para cambiarlos en este Mac, elige Los de este Mac."
           }
         }
       }

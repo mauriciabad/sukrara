@@ -110,13 +110,13 @@ class FollowerSettingsBridge(
     }
 
     override suspend fun resetToDefault() {
-        MirroredGraph.copyInto(own, MIRRORED_GRAPH, SettingsFrom.Default, null)
+        MirroredGraph.copyInto(own, MIRRORED_GRAPH, SettingsFrom.Wearer, null)
         alerts.update { AlertMirror.effective(it, AlertSettings()) }
     }
 
     /**
      * Keeps the alerts' `source` (schema `alerts.source`, derived from `follower.settingsFrom`) on the stored choice:
-     * *Wearer* mirrors the wearer's `alert` events, *Default* / *Custom* run the rules here. Runs for the app's life.
+     * *Their settings* mirrors the wearer's `alert` events, *This phone's own* runs the rules here. Runs for the app's life.
      */
     suspend fun keepAlertSource() {
         stored.collect { f ->
@@ -151,7 +151,7 @@ class FollowerSettingsBridge(
 
         /**
          * The values the mirrored alert rows take ([AlertMirror.effective]): Custom = this phone's own (null);
-         * Default = the defaults; Wearer = the wearer's, a missing key at its default, all defaults until they arrive.
+         * Wearer = the wearer's, a missing key at its default, all defaults until they arrive.
          */
         fun mirroredAlerts(
             from: SettingsFrom,
@@ -159,7 +159,6 @@ class FollowerSettingsBridge(
         ): AlertSettings? =
             when (from) {
                 SettingsFrom.Custom -> null
-                SettingsFrom.Default -> AlertSettings()
                 SettingsFrom.Wearer -> wearer?.let { AlertSettingsCodec.decode(it.alerts.toString()) } ?: AlertSettings()
             }
     }

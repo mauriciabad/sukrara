@@ -110,17 +110,13 @@ class SettingsFromActions(
     val resetToDefault: (() -> Unit) -> Unit = {},
 )
 
-/** "Ana's settings" / "Default" / "Custom" (the overview row's summary and the other pages' note). */
+/** "Ana's settings" / "This phone's own" (the overview row's summary and the other pages' note). */
 @Composable
 fun settingsFromLabel(s: SettingsFromState): String =
     when (s.from) {
         SettingsFrom.Wearer -> {
             s.wearerName?.let { stringResource(R.string.st_from_wearer_named, it) }
                 ?: stringResource(R.string.st_from_wearer)
-        }
-
-        SettingsFrom.Default -> {
-            stringResource(R.string.st_from_default)
         }
 
         SettingsFrom.Custom -> {
@@ -130,7 +126,7 @@ fun settingsFromLabel(s: SettingsFromState): String =
 
 /**
  * Settings › Settings from (followers): where the ranges, the graph, the sensor countdown and the alert rules come
- * from. Every choice is one tap away from the others; in Custom, *Copy the wearer's settings* and *Reset to default*
+ * from. Every choice is one tap away from the other; in *This phone's own*, *Copy the wearer's settings* and *Reset to default*
  * (each after a confirmation: they replace this phone's own values) start the own values from somewhere.
  */
 @Composable
@@ -144,7 +140,8 @@ fun SettingsFromContent(
     val haptics = rememberHaptics()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    var confirm by rememberSaveable { mutableStateOf<SettingsFrom?>(null) }
+    // which replacement the dialog confirms: true = copy the wearer's, false = reset to the defaults
+    var confirm by rememberSaveable { mutableStateOf<Boolean?>(null) }
     val name = state.wearerName
     val copiedText = stringResource(R.string.st_from_copied)
     val resetText = stringResource(R.string.st_from_reset_done)
@@ -160,7 +157,6 @@ fun SettingsFromContent(
                     summary =
                         when (from) {
                             SettingsFrom.Wearer -> stringResource(R.string.st_from_wearer_summary)
-                            SettingsFrom.Default -> stringResource(R.string.st_from_default_summary)
                             SettingsFrom.Custom -> stringResource(R.string.st_from_custom_summary)
                         },
                 )
@@ -185,11 +181,11 @@ fun SettingsFromContent(
                 ValueRow(
                     name?.let { stringResource(R.string.st_from_copy_named, it) } ?: stringResource(R.string.st_from_copy),
                     if (state.wearerChangedAt == null) nothingText else stringResource(R.string.st_from_copy_summary),
-                    { confirm = SettingsFrom.Wearer },
+                    { confirm = true },
                     enabled = state.wearerChangedAt != null,
                 )
                 ValueRow(stringResource(R.string.st_from_reset), stringResource(R.string.st_from_reset_summary), {
-                    confirm = SettingsFrom.Default
+                    confirm = false
                 })
             }
         }
@@ -200,7 +196,7 @@ fun SettingsFromContent(
             onDismissRequest = { confirm = null },
             title = {
                 Text(
-                    if (what == SettingsFrom.Wearer) {
+                    if (what) {
                         name?.let { stringResource(R.string.st_from_copy_named, it) } ?: stringResource(R.string.st_from_copy)
                     } else {
                         stringResource(R.string.st_from_reset)
@@ -215,7 +211,7 @@ fun SettingsFromContent(
                     val show: (String) -> Unit = { text ->
                         scope.launch { snackbar.showSnackbar(text, withDismissAction = true, duration = SnackbarDuration.Short) }
                     }
-                    if (what == SettingsFrom.Wearer) {
+                    if (what) {
                         actions.copyWearer { ok -> show(if (ok) copiedText else nothingText) }
                     } else {
                         actions.resetToDefault { show(resetText) }

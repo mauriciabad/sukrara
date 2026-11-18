@@ -844,10 +844,8 @@
     <string name="st_from_header">Rangos, gráfico y reglas de alerta</string>
     <string name="st_from_wearer">Sus ajustes</string>
     <string name="st_from_wearer_named">Los ajustes de %1$s</string>
-    <string name="st_from_default">Predeterminados</string>
-    <string name="st_from_custom">Personalizados</string>
+    <string name="st_from_custom">Los de este móvil</string>
     <string name="st_from_wearer_summary">Los mismos que en su móvil, se actualizan cuando los cambia</string>
-    <string name="st_from_default_summary">Los valores recomendados de Sukrara</string>
     <string name="st_from_custom_summary">Los tuyos, se cambian en Alertas, Rangos y Gráfico</string>
     <string name="st_from_updated">Sus ajustes del %1$s</string>
     <string name="st_from_waiting">Esperando sus ajustes</string>
@@ -865,7 +863,7 @@
     <string name="st_from_reset_done">Predeterminados restablecidos</string>
     <string name="st_from_footer">Los sonidos, el volumen de alarma, las alertas sin datos, los botones de la notificación y el tiempo mostrado en cada sitio son siempre de este móvil.</string>
     <string name="st_from_note">En uso: %1$s</string>
-    <string name="st_from_note_summary">Solo lectura aquí. Para cambiarlos, elige Personalizados</string>
+    <string name="st_from_note_summary">Solo lectura aquí. Para cambiarlos, elige Los de este móvil</string>
     <string name="st_calendar_group">Calendario</string>
     <string name="st_calendar_title">Fin del sensor en el calendario</string>
     <string name="st_calendar_on">Activado · %1$s</string>

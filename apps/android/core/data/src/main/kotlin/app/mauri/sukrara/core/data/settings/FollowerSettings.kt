@@ -18,12 +18,11 @@ import kotlinx.serialization.json.doubleOrNull
 
 /**
  * A follower's *Settings from* (schema `follower.settingsFrom`): where the settings it can mirror (the schema rows with
- * `"mirror": true`) come from. [Wearer]: the wearer's own, from their settings event (the defaults until it arrives);
- * [Default]: Sukrara's defaults; [Custom]: this phone's own. Everything else is always this phone's.
+ * `"mirror": true`) come from while it follows a Sukrara. [Wearer] (*Their settings*): the wearer's own, from their
+ * settings event (the defaults until it arrives); [Custom] (*This phone's own*). Everything else is always this phone's.
  */
 enum class SettingsFrom(val wire: String) {
     Wearer("wearer"),
-    Default("default"),
     Custom("custom"),
     ;
 
@@ -37,8 +36,7 @@ enum class SettingsFrom(val wire: String) {
 /**
  * The settings as a follower uses them: a [SettingsRepository] over this phone's own ([own]) whose mirrored graph rows
  * (schema `"mirror": true` with a `graph.*` wire key: ranges, time shown, rings, slots, lines, treatments on the graph,
- * the sensor countdown) read per [from] — [SettingsFrom.Custom] this phone's value, [SettingsFrom.Default] the
- * setting's default, [SettingsFrom.Wearer] the wearer's value at its wire key ([graph] = the settings event's
+ * the sensor countdown) read per [from] — [SettingsFrom.Custom] this phone's value, [SettingsFrom.Wearer] the wearer's value at its wire key ([graph] = the settings event's
  * `graph` object, null = none received), the default when missing or of the wrong type, coerced like a stored value.
  * Every other setting, and every write, goes to [own] (the pages edit this phone's values). The wearer's phone passes
  * [SettingsFrom.Custom].
@@ -103,7 +101,7 @@ object MirroredGraph {
             else -> null
         }
 
-    /** The value [spec] has for [from]: [mine] (Custom), its default (Default) or the wearer's at [wire] (Wearer). */
+    /** The value [spec] has for [from]: [mine] (Custom) or the wearer's at [wire] (Wearer; its default when [graph] has none). */
     fun <T> value(
         spec: SettingSpec<T>,
         wire: String,
@@ -113,13 +111,12 @@ object MirroredGraph {
     ): T =
         when (from) {
             SettingsFrom.Custom -> mine
-            SettingsFrom.Default -> spec.default
             SettingsFrom.Wearer -> graph?.get(wire)?.let { decode(spec, it) } ?: spec.default
         }
 
     /**
-     * Writes [from]'s values into this phone's own settings ("Copy the wearer's settings" with [SettingsFrom.Wearer],
-     * "Reset to default" with [SettingsFrom.Default]); [specs] = the mirrored settings to write.
+     * Writes [from]'s values into this phone's own settings ("Copy the wearer's settings": [SettingsFrom.Wearer] with
+     * their [graph]; "Reset to default": [SettingsFrom.Wearer] with no graph); [specs] = the mirrored settings to write.
      */
     suspend fun copyInto(
         own: SettingsRepository,

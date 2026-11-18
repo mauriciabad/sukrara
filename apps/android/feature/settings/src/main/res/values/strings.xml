@@ -831,10 +831,8 @@
     <string name="st_from_header">Ranges, graph and alert rules</string>
     <string name="st_from_wearer">Their settings</string>
     <string name="st_from_wearer_named">%1$s\'s settings</string>
-    <string name="st_from_default">Default</string>
-    <string name="st_from_custom">Custom</string>
+    <string name="st_from_custom">This phone\'s own</string>
     <string name="st_from_wearer_summary">The same as on their phone, updated when they change them</string>
-    <string name="st_from_default_summary">Sukrara\'s recommended values</string>
     <string name="st_from_custom_summary">Your own, changed in Alerts, Ranges and Graph</string>
     <string name="st_from_updated">Their settings from %1$s</string>
     <string name="st_from_waiting">Waiting for their settings</string>
@@ -852,7 +850,7 @@
     <string name="st_from_reset_done">Reset to default</string>
     <string name="st_from_footer">Sounds, alarm volume, no-data alerts, the notification\'s buttons and the time shown per place are always this phone\'s own.</string>
     <string name="st_from_note">In use: %1$s</string>
-    <string name="st_from_note_summary">Read only here. To change them, choose Custom</string>
+    <string name="st_from_note_summary">Read only here. To change them, choose This phone\'s own</string>
     <string name="st_calendar_group">Calendar</string>
     <string name="st_calendar_title">Sensor end in calendar</string>
     <string name="st_calendar_on">On · %1$s</string>
