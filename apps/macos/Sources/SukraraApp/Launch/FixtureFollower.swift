@@ -11,7 +11,8 @@
     /// a sensor mid-life and two treatments. No socket, no Keychain, no file: the snapshot is built in memory, so the
     /// bundle smoke test can check with `lsof` that nothing opens a connection.
     actor FixtureFollower: FollowerService {
-        private let snapshot: FollowerSnapshot
+        private var snapshot: FollowerSnapshot
+        private var subscribers: [AsyncStream<FollowerSnapshot>.Continuation] = []
         /// A synthetic week: the panel's chart scrolls and zooms past the snapshot's 24 hours.
         private let history: [Reading]
 
@@ -39,6 +40,7 @@
         func snapshots() async -> AsyncStream<FollowerSnapshot> {
             let (stream, continuation) = AsyncStream.makeStream(of: FollowerSnapshot.self)
             continuation.yield(snapshot)
+            subscribers.append(continuation)
             return stream
         }
 
@@ -53,8 +55,14 @@
         func confirmNearby(same: Bool) async -> Bool { false }
         func searchNearby(_ on: Bool) async {}
         func setProfile(name: String, avatar: Avatar?) async {}
-        func readings(since: Date) async -> [Reading] { history.filter { $0.t >= since } }
-        func unfollow(keepHistory: Bool) async {}
+        func readings(since: Date) async -> [Reading] {
+            snapshot.link == .notFollowing ? [] : history.filter { $0.t >= since }
+        }
+        /// Stop following ends the made-up follow (the walk of one person, one link: its leave sheet and no source).
+        func unfollow(keepHistory: Bool) async {
+            snapshot = FollowerSnapshot.empty
+            for c in subscribers { c.yield(snapshot) }
+        }
         func send(_ treatment: Treatment) async -> TreatmentSendResult { .notAllowed }
     }
 #endif

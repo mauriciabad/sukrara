@@ -285,6 +285,7 @@ import Testing
         #expect(SourceChoiceModel.title(.libreLinkUp) == "LibreLinkUp")
         #expect(
             SourceChoiceModel.means(.libreLinkUp)
-                == "The Libre app shares with a LibreLinkUp account · about 1 min late · may stop working any day")
+                == "The Libre app shares with a LibreLinkUp account · about 1 min late · nothing arrives while Abbott's LibreView is down, maintenance included · may stop working any day"
+        )
     }
 }

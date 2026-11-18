@@ -60,6 +60,8 @@ public final class SetupModel {
             pickedKind = settings.source.running.map(\.kind).flatMap { $0 == .sukrara ? nil : $0 } ?? .nightscout
         }
         complete(.phone)
+        // no: the sources this Mac reads itself, also when an earlier yes completed the source step
+        flow.open(.source)
     }
 
     /// Back, over the source step when the phone is followed (it was answered by the first question).

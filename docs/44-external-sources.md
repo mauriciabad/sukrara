@@ -1876,6 +1876,7 @@ Platform; journey and repro; what's left behind or broken; fix.
    - Left behind: relays and Bluetooth (owner's Mac), the follow store, the phone's settings and thresholds applied to LibreLinkUp, *Their settings* in General and Alerts, the panel badge naming the follow's path, the Bluetooth-blocked warning.
    - Fix: D. Until then, gate wearer settings, path badge and blocked features on `followMonitoring`; keep the follow's rows and *Stop following* on the Source pane for every source.
    - **Android fixed** (705ca9364): D. Every path that picks another source while linked asks *Keep following Ana?*, then the leave questions; *Stop following* asks them too (`AppLink`, `SetupViewModelTest`, `AppLinkTest`); a follow an earlier version kept behind another source is left at start (`AppLink.leaveLeftBehind`). `NonLinkSourceTest` checks link.json's `after` list.
+   - **Mac fixed** (752c15701): D. Another source picked while following asks *Keep following?*, then the leave sheet; a follow left behind another source by an earlier version is left at start (`AppModel.leaveLink`, history kept, settings untouched); for any other source the path badge, Bluetooth warning, wearer name, settings, mirrored alerts and escalation are the link's only while it is the source. `AppModelLinkTests` (link.json `after`); walked on a fixture dev run (Accessibility; synthetic screenshots in the session scratch, `one-link/mac/`).
 2. **HIGH, both: the same person loses the phone's treatments and pen doses** on a Mac reading LibreLinkUp, and Mac entries never reach the phone, Tidepool or Nightscout.
    - Fix: D (the Mac follows the phone).
 3. **HIGH, Android: the old follow's name on another source's alerts, notification, widgets and Source page** (`android/25`–`27`).
@@ -1895,12 +1896,14 @@ Platform; journey and repro; what's left behind or broken; fix.
    - Fix: `leave` event (PROTOCOL-v2 addition, both apps) and last-seen (decision 3).
 8. **HIGH, Mac: Juggluco source plus a kept follow writes treatments into the followed phone's log** (`mac-11`).
    - Fix: D; meanwhile the treatment log and Add Treatment follow the source only.
+   - **Mac fixed** (752c15701): Juggluco on the network has its own log on this Mac (`juggluco/treatments.json`, `LanSourcing.write`), the treatment windows and Add Treatment use it; the wearer's log never counts for another source. `AppModelLinkTests` (`treatments`).
 9. **HIGH, both: escalation switch on where it does nothing.**
    - Mac: Default, Custom, any non-stream source.
    - Android: wearer rows for someone else's non-stream source (`AlertsSettingsPage.kt:223-249`, `AlertsViewModel.kt:148`).
    - Risk: a parent who mutes the Mac and relies on "also when muted here" gets nothing.
    - Fix: show it only while linked with *Their settings*, or decide escalation works with own rules.
    - **Android fixed** (61c758651): the wearer's rows only where this phone owns your glucose (`spec.owner`), the follower's switch only while linked with *Their settings*, the search likewise (`EscalationRowsTest`, `SettingsSearchTest.linkRowsOnlyWhileLinked`).
+   - **Mac fixed** (752c15701): Settings › Alerts shows the switch only while another Sukrara is the source with *Their settings*; the wearer's alert events are taken only then. `AppModelLinkTests` (`escalation`); walked on a fixture dev run (Accessibility; synthetic screenshots in the session scratch, `one-link/mac/`).
 10. **MEDIUM-HIGH, Android: treatments cross logs.**
     - Nightscout uploaded the 25 g from Ana's log to the site.
     - The site's entries show on Ana's card after return.
@@ -1918,8 +1921,10 @@ Platform; journey and repro; what's left behind or broken; fix.
 13. **MEDIUM, Mac: a standalone Mac runs *Settings from: Their settings*** (schema default `wearer`).
     - Alerts, Readings, Graph and Metrics stay read-only with "Waiting for this person's settings" forever.
     - Fix: *Settings from* only while linked.
+    - **Fixed** (752c15701): *Settings from* applies and shows only while the source is another Sukrara (`SettingsStoring.settingsFrom`, `SettingsModel.linkSource`); every other source, and no source, runs and edits this Mac's own. `AppModelLinkTests` (`settings`); walked on a fixture dev run (Accessibility; synthetic screenshots in the session scratch, `one-link/mac/`).
 14. **MEDIUM, Mac: the no-data reason falls through to the follow.** *Nightscout* chosen without a site says "Not following anyone · Follow Someone…" or "Their phone may be off" (`AppModel.swift:779-801`; reproduced in a dev run, `mac-10`).
     - Fix: a reason per source (e.g. Nightscout: no site yet); the link's reason only when the follow is the source.
+    - **Fixed** (752c15701): the link's reasons only while it is the source; *Not monitoring: no Nightscout site yet* · *Connect Nightscout…*, LibreLinkUp's *Not signed in*, Juggluco's own, and *Not monitoring: no source* · *Pick a Source…* after *Stop following* alone. `AppModelLinkTests` (`noData`), `AppModelFollowerTests`.
 15. **MEDIUM, Android: home keeps "You no longer follow this person · Join with a new invite"** while another source shows values.
     - Fix: gate on stream.
     - **Fixed** (c2645aa55): `NoDataReason` gives *LinkRevoked* only while the stream is the source (the hub's link is too, 2c1a4863d). `NoDataReasonTest`; not walked (needs an ended follow behind another source).
@@ -1935,11 +1940,13 @@ Platform; journey and repro; what's left behind or broken; fix.
     - Mac: the Source toolbar help names only the follow and Juggluco.
     - Android switch dialogs: "your glucose" for someone else's (`android/03`, `09`); "once it accepts your request" when an approved follow resumes (`android/13`); "the pairing stays" with nothing paired (`android/19`); LibreLinkUp → sensor says nothing about the Libre app holding the sensor (`android/24`).
     - Android: "0 minutes ago"; Sharing "(your sensor or Juggluco)"; InviteHere "shares its own readings" for someone else's.
+    - **Mac fixed** (a003c5ba8): no *Whose glucose*; *Yes · Follow it* (preselected, *Recommended*) *Follow the phone that reads the sensor, yours or your child's…*; the follow step *The glucose shows in the menu bar now.*; Welcome without "yours or someone else's", its lines no longer cut; the Source help names every source. walked on a fixture dev run (Accessibility; synthetic screenshots in the session scratch, `one-link/mac/`).
     - **Android fixed** (3900580b6): the dialogs per person, follow, pairing and the Libre app's sensor (`sourceChangeText`, `SourceChangeTextTest`); *just now* under a minute in uploads, broadcasts, Health Connect and the Following page (`AgoTest`); Sharing's note without the parenthesis; InviteHere *shows someone else's glucose* / *follows your other Sukrara*. "The history on this phone stays" is left to finding 5.
 19. **LOW:**
     - Android: Nightscout → Juggluco (not installed) skips *Connect Juggluco*, because the old Nightscout reading satisfies `facts.ownSensorLive`.
     - **Android fixed** (17e3be0d6): live means a fresh reading from the source in use (`RestoreGate.ownSensorLive` with the kind's readings; the source step checks the source just chosen). `SetupViewModelTest`, `RestoreGateTest`; emulator: LibreLinkUp → Juggluco (not installed) showed *Connect Juggluco*.
     - Mac: *Skip* on *Do you have Sukrara on your phone?* jumps to a source list without *Their Sukrara*.
+    - **Mac fixed** (a003c5ba8): neither source question has *Skip*; *No* after an earlier *Yes* asks the source again (752c15701's follow-up). `SetupFlowTests`, `AppModelNightscoutTests`; walked on a fixture dev run (Accessibility; synthetic screenshots in the session scratch, `one-link/mac/`).
 
 ### 7. Questions and settings: what they change, and what to remove
 - **Mac *Whose glucose*** changes only words, LibreLinkUp's pick (yourself or the other connection) and the per-person log question. Its removal (decided) must:

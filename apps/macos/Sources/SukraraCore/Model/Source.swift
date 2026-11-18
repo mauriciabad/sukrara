@@ -115,15 +115,9 @@ public struct SourceSpec: Equatable, Sendable {
         SourceSpec(kind: SourceKind(rawValue: store.value(MacSettings.sourceKind)))
     }
 
-    /// Stores the answer; another source clears the manual sensor start (it was set for that source's sensor), and
-    /// another Sukrara picked after another source starts with *Their settings* again (a new link; leaving one made the
-    /// settings this Mac's own).
+    /// Stores the answer; another source clears the manual sensor start (it was set for that source's sensor).
     public func store(in store: some SettingsStoring) {
-        let before = Self.stored(in: store)?.kind
-        if before != kind { store.set(0.0, for: MacSettings.manualStart) }
-        if stream, let before, before != .sukrara {
-            store.set(SettingsFrom.wearer.rawValue, for: MacSettings.settingsFrom)
-        }
+        if Self.stored(in: store)?.kind != kind { store.set(0.0, for: MacSettings.manualStart) }
         store.set(kind.rawValue, for: MacSettings.sourceKind)
     }
 

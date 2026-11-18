@@ -31,6 +31,11 @@ public final class SourceChoiceModel {
     var running: SourceSpec? { stored ?? SourceSpec.running(in: store, following: following()) }
 
     func choose(_ spec: SourceSpec) {
+        // another Sukrara picked while nothing is followed starts a new link with *Their settings* (leaving one made
+        // the settings this Mac's own); an unanswered Mac that follows keeps its answer
+        if spec.stream, stored?.kind != .sukrara, !following() {
+            store.set(SettingsFrom.wearer.rawValue, for: MacSettings.settingsFrom)
+        }
         spec.store(in: store)
         revision += 1
         NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
@@ -70,10 +75,11 @@ public final class SourceChoiceModel {
         case .lanJuggluco:
             L10n.t("Juggluco on a phone on this Wi-Fi reads the sensor; Sukrara reads Juggluco")
         case .nightscout:
-            L10n.t("Glucose and treatments from a site · about 2 min late")
+            L10n.t("Glucose and treatments from a site · about 2 min late · nothing arrives while the site is down")
         case .libreLinkUp:
             L10n.t(
-                "The Libre app shares with a LibreLinkUp account · about 1 min late · may stop working any day")
+                "The Libre app shares with a LibreLinkUp account · about 1 min late · nothing arrives while Abbott's LibreView is down, maintenance included · may stop working any day"
+            )
         }
     }
 }

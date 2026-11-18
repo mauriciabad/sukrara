@@ -171,7 +171,7 @@ actor LinkLeftovers: FollowerService {
         #expect(left == [true] && settings.source.stored == SourceSpec(kind: .libreLinkUp))
         #expect(store.storedSettingsFrom == .custom && settings.alerts.settings[.low].threshold == 80)
         // Stop following alone: no source; another Sukrara later starts with their settings again
-        SourceSpec.sukrara.store(in: store)
+        settings.source.choose(.sukrara)
         #expect(store.storedSettingsFrom == .wearer)
         settings.wearer = nil
         linked = .ended

@@ -841,7 +841,9 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   card says *glucose*; a name comes from the source (the stream's wearer, LibreLinkUp's connection). Setup's
   *Whose glucose* step and Settings › Source's cards are gone; the source rows speak of the glucose (*Sukrara on a
   phone*: *The phone that reads the sensor shares it here, with alerts, treatments and settings*; *Nightscout*:
-  *Glucose and treatments from a site*; *LibreLinkUp*: *The Libre app shares with a LibreLinkUp account*).
+  *Glucose and treatments from a site · about 2 min late · nothing arrives while the site is down*; *LibreLinkUp*: *The
+  Libre app shares with a LibreLinkUp account · about 1 min late · nothing arrives while Abbott's LibreView is down,
+  maintenance included · may stop working any day*: each says what it depends on).
   LibreLinkUp reads every connection, the account's own included: one → it; several → the person picks
   (`connections.json` `mac`; a sign-in of the same account keeps the person it reads while still shared).
 

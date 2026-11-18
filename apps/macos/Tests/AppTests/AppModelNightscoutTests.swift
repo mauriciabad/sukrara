@@ -263,6 +263,10 @@ import Testing
         #expect(yes.flow.current == .follow && settings.source.stored == .sukrara)
         yes.back()
         #expect(yes.flow.current == .phone)
+        // changing the answer to no asks the source, though yes had completed its step
+        yes.pickedPhone = false
+        yes.choosePhone()
+        #expect(yes.flow.current == .source)
 
         let settings2 = SettingsModel(
             store: scratchStore(), follow: FollowModel(status: .notFollowing, actions: nil), version: "t")

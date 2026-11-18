@@ -81,9 +81,9 @@ public final class SettingsModel {
 
     // MARK: Settings from
 
-    /// The source is another Sukrara (or not answered yet): *Settings from* and the escalation switch exist only then
+    /// The source is another Sukrara (an unanswered Mac that follows someone included): *Settings from* and the escalation switch exist only then
     /// (one person, one link; Appendix G findings 9 and 13).
-    public var linkSource: Bool { _ = revision; return source.running.map(\.stream) ?? true }
+    public var linkSource: Bool { _ = revision; return source.running.map(\.stream) ?? false }
 
     /// Rows mirror the wearer (read-only) while following in "Settings from: Wearer".
     public var mirrors: Bool { settingsFrom == .wearer && wearer != nil }
