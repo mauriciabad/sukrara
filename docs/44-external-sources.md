@@ -288,20 +288,24 @@ The Source page's *How it's going* card is the evidence (one new field: the arri
 | your glucose, from the official app, the sensor beside it, or your own online account | the Mac (no Sukrara on the phone is the point) |
 | a family Sukrara **has tested** directly (today Libre 3 / 3 Plus) | a loop or pump app holds the CGM (AAPS, CamAPS FX, Omnipod, Tandem, CareLink) |
 | ≥ 7 days at ≥ 95 % coverage | someone else's glucose |
-| a sensor moment (last 24 h of one, or a new one warming up), daytime, no alert showing | *Don't suggest again*, or 2 *Not now* |
+| daytime, no alert showing (any day: the move works mid-sensor; a sensor change is the natural moment) | *Don't suggest again*, or 2 *Not now* |
 
 Home's banner slot (*Show me how* / *Not now*) and always *Move to Sukrara* on the Source page; never a notification:
-*Start your next sensor in Sukrara · Live every minute, works offline, one app instead of two.* At a sensor change
-because a new Libre 3 starts in Sukrara with the account's receiver ID, and a running one can't be read by two apps
-([Juggluco FAQ](https://www.juggluco.nl/Juggluco/faq.html)).
+*Read your sensor in Sukrara · Live every minute, works offline, one app instead of two.* **The move works at any
+point of a sensor's life** (owner, 2026-11-18: "i expected a user could move to sukrara at any point"): Sukrara
+already takes over a running Libre 3 that the Libre app started with the same LibreView account, with an NFC tap
+(`ReceiverIds.forTakeover`, docs/02). Only one app holds the sensor ([Juggluco FAQ](https://www.juggluco.nl/Juggluco/faq.html)),
+so from that tap the Libre app gets no readings and rings no alarms; the Move page says so before the tap, and the
+person confirms. Not yet tried from the Libre app on a real sensor (Sukrara's takeovers so far were from other apps).
 
 ```
   Move to Sukrara                                              Back
   1 ✓ Your history is here since Oct 3 (LibreLinkUp)
   2 ○ Your LibreLinkUp followers see you only while LibreView gets your glucose;
        Sukrara uploads to LibreView once it reads your sensor.       [Invite them to Sukrara]
-  3 ○ Stop the Libre app (Force stop) so it lets go of the sensor     [Open app info]
-  4 ○ Start the sensor in Sukrara                                     [Set up sensor]
+  3 ○ From the tap on, the Libre app gets no readings and no alarms;
+       stop it so it doesn't ring "signal loss"                      [Open app info]
+  4 ○ Take over the sensor in Sukrara (any day of its life)          [Set up sensor]
   5 ○ First reading from your sensor → the source switches by itself (confirm haptic)
   6 ○ LibreView: take over the upload                                 [Take over]
   ──────────────────────────────────────────────────────
@@ -506,7 +510,8 @@ Ordered by how much they block.
    *Recommend yes*: never fewer alarms than the official app alone.
 7. **Mac standalone**: online sources, treatments on the Mac (two-way with Nightscout), no uploads, *Do you have Sukrara
    on your phone?* first? *Recommend yes*: the menu-bar case without a second treatment log.
-8. **Move suggestion** only at a sensor change, tested families, ≥ 7 days at ≥ 95 %, twice at most, never on the Mac,
+8. **Move suggestion** (*since corrected: the move works mid-sensor, so the suggestion comes on any calm day; see The
+   move*) only at a sensor change, tested families, ≥ 7 days at ≥ 95 %, twice at most, never on the Mac,
    for a loop or someone else's? *Recommend yes*; say if you want it sooner or never.
 9. **Re-sharing someone else's glucose** to Sukrara followers (grandparents via a parent)? *Recommend not now*: nobody
    asked; consent and loops. *Owner: OK.* A parent who wants the child's glucose on their own Mac too signs in to the
