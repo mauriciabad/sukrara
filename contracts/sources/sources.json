@@ -13,16 +13,21 @@
     "pens, sensor reminders, Import history); 'stream' = a Sukrara stream (Settings from, escalation, writer scope, the",
     "Following rows); 'alertRole' = the alert engine's role (WEARER / FOLLOWER_MIRROR / FOLLOWER_OWN, unchanged from the",
     "roles it replaces). 'invalid' = pairs no app offers. A person change deletes this device's readings and treatments",
-    "(confirmed first); a source change keeps them."
+    "(confirmed first); a source change keeps them. 'life' = what it says of the sensor's life (docs/44 decision 10,",
+    "contracts/sources/sensor-life.json): 'full' = its start and length (the sensor itself; another Sukrara relays",
+    "its wearer's), 'start' = the start but not the length, 'maybeStart' = a start only when one is logged (a Nightscout",
+    "site's Sensor Start), 'none' = nothing (later: Dexcom Share, an official app's notification). 'wear' = the schema",
+    "setting holding the wear length of a source that doesn't say it (null for 'full'): one per source, remembered",
+    "across sensors. A manual start (schema sensor.manualStart) is offered for 'maybeStart' and 'none', your glucose only."
   ],
   "persons": ["yours", "theirs"],
   "sources": [
-    {"id": "sensor", "persons": ["yours"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["libre3", "dexcom-g7", "dexcom-g6", "accu-chek-smartguide", "aidex-x"]},
-    {"id": "phoneApp", "persons": ["yours", "theirs"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco"]},
-    {"id": "lanJuggluco", "persons": ["yours", "theirs"], "platforms": ["mac"], "firstHand": true, "offline": true, "group": "network", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco-lan"]},
-    {"id": "nightscout", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": true, "offline": false, "group": "online", "delay_s": 120, "backfill": true, "brings": ["treatments"], "readings": ["nightscout"]},
-    {"id": "libreLinkUp", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": true, "offline": false, "group": "online", "delay_s": 90, "backfill": true, "brings": ["sensorLife"], "readings": ["librelinkup", "librelinkup-graph"]},
-    {"id": "sukrara", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": false, "offline": false, "group": "sukrara", "delay_s": 60, "backfill": true, "brings": ["sensorLife", "treatments", "alerts", "settings"], "readings": ["relay", "nearby"]}
+    {"id": "sensor", "persons": ["yours"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "life": "full", "wear": null, "readings": ["libre3", "dexcom-g7", "dexcom-g6", "accu-chek-smartguide", "aidex-x"]},
+    {"id": "phoneApp", "persons": ["yours", "theirs"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "life": "start", "wear": "source.jugglucoWear", "readings": ["juggluco"]},
+    {"id": "lanJuggluco", "persons": ["yours", "theirs"], "platforms": ["mac"], "firstHand": true, "offline": true, "group": "network", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "life": "start", "wear": "source.jugglucoWear", "readings": ["juggluco-lan"]},
+    {"id": "nightscout", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": true, "offline": false, "group": "online", "delay_s": 120, "backfill": true, "brings": ["treatments"], "life": "maybeStart", "wear": "source.nightscoutWear", "readings": ["nightscout"]},
+    {"id": "libreLinkUp", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": true, "offline": false, "group": "online", "delay_s": 90, "backfill": true, "brings": ["sensorLife"], "life": "start", "wear": "source.libreLinkUpWear", "readings": ["librelinkup", "librelinkup-graph"]},
+    {"id": "sukrara", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": false, "offline": false, "group": "sukrara", "delay_s": 60, "backfill": true, "brings": ["sensorLife", "treatments", "alerts", "settings"], "life": "full", "wear": null, "readings": ["relay", "nearby"]}
   ],
   "keying": [
     {"person": "yours", "source": "sensor", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},

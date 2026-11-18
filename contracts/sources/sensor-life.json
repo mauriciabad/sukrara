@@ -1,0 +1,360 @@
+{
+ "_about": [
+  "THE sensor life of a source that doesn't say all of it (docs/44 decision 10; sources.json 'life' and 'wear'):",
+  "what the card's warm-up and time left, Sensor ended (no data quiet), the sensor reminders, the countdown and the",
+  "calendar use. Inputs: the source ('life' from sources.json), whose glucose ('person'), the sensor the source said",
+  "('said': its id and start, null = none), the source's wear length setting ('wearMin', minutes; 0 or less = the",
+  "default, contracts/sensor/life.json defaultWearMin), the manual start (schema sensor.manualStart, null = none) and",
+  "the newest reading ('latest', null = none). Times relative to 'now' (s). Rule: the source's start counts unless it",
+  "is ahead of now; a manual start counts only for life 'maybeStart' / 'none', your glucose, and not ahead of now;",
+  "the newer of the two wins, the source's on a tie ('from'). id = the source's, or 'manual-<start epoch s>' (a new",
+  "manual start is a new sensor). warmupEnd = start + defaultWarmupMin, end = start + the wear length. 'state' =",
+  "warming / active / ended by life.json's rule. expect null = life unknown (no reminders, no countdown, never Sensor",
+  "ended). A source or person change clears the manual start (each app's source store, not here). Run by",
+  "SensorLivesContractTest (Android :core:model) and SensorLivesTests (Mac CoreTests)."
+ ],
+ "now": 1792000000,
+ "cases": [
+  {
+   "name": "LibreLinkUp's start with the default wear: 15 days",
+   "source": "libreLinkUp",
+   "person": "yours",
+   "said": {
+    "id": "3MH00ABCDE",
+    "start": -172800
+   },
+   "wearMin": 21600,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "3MH00ABCDE",
+    "start": -172800,
+    "warmupEnd": -169200,
+    "end": 1123200,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "LibreLinkUp's start with 14 days chosen (a Libre 3): one day less",
+   "source": "libreLinkUp",
+   "person": "yours",
+   "said": {
+    "id": "3MH00ABCDE",
+    "start": -172800
+   },
+   "wearMin": 20160,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "3MH00ABCDE",
+    "start": -172800,
+    "warmupEnd": -169200,
+    "end": 1036800,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "a wrong 14 for a Libre 3 Plus on its 15th day: ended, its readings still come",
+   "source": "libreLinkUp",
+   "person": "yours",
+   "said": {
+    "id": "3MH00ABCDE",
+    "start": -1220400
+   },
+   "wearMin": 20160,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "3MH00ABCDE",
+    "start": -1220400,
+    "warmupEnd": -1216800,
+    "end": -10800,
+    "from": "source",
+    "state": "ended"
+   }
+  },
+  {
+   "name": "someone else's LibreLinkUp: the wear length applies too",
+   "source": "libreLinkUp",
+   "person": "theirs",
+   "said": {
+    "id": "3MH00ABCDE",
+    "start": -86400
+   },
+   "wearMin": 20160,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "3MH00ABCDE",
+    "start": -86400,
+    "warmupEnd": -82800,
+    "end": 1123200,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "LibreLinkUp always says the start: a manual start is never used",
+   "source": "libreLinkUp",
+   "person": "yours",
+   "said": {
+    "id": "3MH00ABCDE",
+    "start": -432000
+   },
+   "wearMin": 21600,
+   "manualStart": -3600,
+   "latest": -60,
+   "expect": {
+    "id": "3MH00ABCDE",
+    "start": -432000,
+    "warmupEnd": -428400,
+    "end": 864000,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "a stored wear length of 0 (none valid): the default",
+   "source": "libreLinkUp",
+   "person": "yours",
+   "said": {
+    "id": "3MH00ABCDE",
+    "start": -86400
+   },
+   "wearMin": 0,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "3MH00ABCDE",
+    "start": -86400,
+    "warmupEnd": -82800,
+    "end": 1209600,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "Juggluco's start with 10 days (a Dexcom G7 in Juggluco)",
+   "source": "phoneApp",
+   "person": "yours",
+   "said": {
+    "id": "DX01",
+    "start": -259200
+   },
+   "wearMin": 14400,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "DX01",
+    "start": -259200,
+    "warmupEnd": -255600,
+    "end": 604800,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "Juggluco on the network: the same",
+   "source": "lanJuggluco",
+   "person": "theirs",
+   "said": {
+    "id": "DX01",
+    "start": -950400
+   },
+   "wearMin": 14400,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "DX01",
+    "start": -950400,
+    "warmupEnd": -946800,
+    "end": -86400,
+    "from": "source",
+    "state": "ended"
+   }
+  },
+  {
+   "name": "a Nightscout site without a Sensor Start and no manual start: life unknown",
+   "source": "nightscout",
+   "person": "yours",
+   "said": null,
+   "wearMin": 21600,
+   "manualStart": null,
+   "latest": -60,
+   "expect": null
+  },
+  {
+   "name": "no Sensor Start, a manual start 2 days ago with 10 days: the manual sensor",
+   "source": "nightscout",
+   "person": "yours",
+   "said": null,
+   "wearMin": 14400,
+   "manualStart": -172800,
+   "latest": -60,
+   "expect": {
+    "id": "manual-1791827200",
+    "start": -172800,
+    "warmupEnd": -169200,
+    "end": 691200,
+    "from": "manual",
+    "state": "active"
+   }
+  },
+  {
+   "name": "a manual start just now, no reading since: warming up",
+   "source": "nightscout",
+   "person": "yours",
+   "said": null,
+   "wearMin": 21600,
+   "manualStart": -60,
+   "latest": -600,
+   "expect": {
+    "id": "manual-1791999940",
+    "start": -60,
+    "warmupEnd": 3540,
+    "end": 1295940,
+    "from": "manual",
+    "state": "warming"
+   }
+  },
+  {
+   "name": "a manual start in the future: not used (life unknown, no data alerts as usual)",
+   "source": "nightscout",
+   "person": "yours",
+   "said": null,
+   "wearMin": 21600,
+   "manualStart": 600,
+   "latest": -60,
+   "expect": null
+  },
+  {
+   "name": "a manual start whose length is over: ended (no data stays quiet)",
+   "source": "nightscout",
+   "person": "yours",
+   "said": null,
+   "wearMin": 21600,
+   "manualStart": -1382400,
+   "latest": -60,
+   "expect": {
+    "id": "manual-1790617600",
+    "start": -1382400,
+    "warmupEnd": -1378800,
+    "end": -86400,
+    "from": "manual",
+    "state": "ended"
+   }
+  },
+  {
+   "name": "the site's Sensor Start newer than the manual start: the site's (a new sensor from the source wins)",
+   "source": "nightscout",
+   "person": "yours",
+   "said": {
+    "id": "s2",
+    "start": -3600
+   },
+   "wearMin": 21600,
+   "manualStart": -259200,
+   "latest": -60,
+   "expect": {
+    "id": "s2",
+    "start": -3600,
+    "warmupEnd": 0,
+    "end": 1292400,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "the site's Sensor Start older than the manual start: the manual one (a new sensor the site doesn't know)",
+   "source": "nightscout",
+   "person": "yours",
+   "said": {
+    "id": "s1",
+    "start": -1728000
+   },
+   "wearMin": 21600,
+   "manualStart": -86400,
+   "latest": -60,
+   "expect": {
+    "id": "manual-1791913600",
+    "start": -86400,
+    "warmupEnd": -82800,
+    "end": 1209600,
+    "from": "manual",
+    "state": "active"
+   }
+  },
+  {
+   "name": "the site's and the manual start at the same time: the site's",
+   "source": "nightscout",
+   "person": "yours",
+   "said": {
+    "id": "s1",
+    "start": -86400
+   },
+   "wearMin": 21600,
+   "manualStart": -86400,
+   "latest": -60,
+   "expect": {
+    "id": "s1",
+    "start": -86400,
+    "warmupEnd": -82800,
+    "end": 1209600,
+    "from": "source",
+    "state": "active"
+   }
+  },
+  {
+   "name": "the site's Sensor Start ahead of now: not used, the manual one is",
+   "source": "nightscout",
+   "person": "yours",
+   "said": {
+    "id": "s3",
+    "start": 300
+   },
+   "wearMin": 21600,
+   "manualStart": -86400,
+   "latest": -60,
+   "expect": {
+    "id": "manual-1791913600",
+    "start": -86400,
+    "warmupEnd": -82800,
+    "end": 1209600,
+    "from": "manual",
+    "state": "active"
+   }
+  },
+  {
+   "name": "someone else's site: a manual start is never used (their sensor reminders are theirs)",
+   "source": "nightscout",
+   "person": "theirs",
+   "said": null,
+   "wearMin": 21600,
+   "manualStart": -86400,
+   "latest": -60,
+   "expect": null
+  },
+  {
+   "name": "someone else's site with a Sensor Start: the site's with the wear length",
+   "source": "nightscout",
+   "person": "theirs",
+   "said": {
+    "id": "s1",
+    "start": -86400
+   },
+   "wearMin": 20160,
+   "manualStart": null,
+   "latest": -60,
+   "expect": {
+    "id": "s1",
+    "start": -86400,
+    "warmupEnd": -82800,
+    "end": 1123200,
+    "from": "source",
+    "state": "active"
+   }
+  }
+ ]
+}
