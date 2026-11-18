@@ -806,7 +806,14 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   behind *Keep following?*. Android **Also saved on this phone** (Appendix G finding 12): what the phone keeps for a
   source it doesn't read now, each removable without reconnecting it: *Sign out of LibreLinkUp* (the account's email;
   *Sign out of LibreLinkUp?* · the account and whom it follows stay in LibreLinkUp) and *Forget Nightscout site* (its
-  address; the address and token go, the site stays); hidden when there is none; the settings search finds both. The foot: *Changing
+  address; the address and token go, the site stays); hidden when there is none; the settings search finds both. Mac
+  **Also saved on this Mac** (Settings › Source's last group, `AlsoSavedRows`): the LibreLinkUp account (its email,
+  *Sign Out…*: *Sukrara forgets this account's sign-in on this Mac…*), the Nightscout site (its host, *Forget…*: the
+  address and token go, the site's glucose and treatments stay as a kept history, `NightscoutSource.forget`), Juggluco's
+  address and API secret (*Forget…*), each only while that source isn't the one in use, then every kept history not
+  shown (the person's name or the source's, *Sukrara on a phone · kept 18 Nov 2026*, *Delete…*: *Delete Ana's
+  history?* · *This can't be undone.*); one pattern for all: a button with an ellipsis, a confirmation (*Sign Out*;
+  *Forget* and *Delete* destructive; *Cancel*), a tap of haptic when done; hidden when empty. The foot: *Changing
   whose glucose deletes the history on this phone (Sukrara asks first). Changing the source keeps it.*; *See also* the
   sensor and Import history for your own glucose. Settings › Sharing on any other source says sharing is for your own
   glucose read on this device, with a row to Source. **The name** of whose glucose (*Someone else's · Leo Example*, the
@@ -876,7 +883,10 @@ app); monitoring runs meanwhile. Juggluco not installed → its connect step say
 following* → setup's first question. Juggluco unreachable → *Open Juggluco*; refused → *Change API secret*. Android
 *Also saved on this phone*: *Sign out of LibreLinkUp* / *Forget Nightscout site* → their confirmation (*Cancel* /
 *Sign out* / *Forget*) → the row goes (the group with its last row); picking that source again asks to sign in or
-connect. Everything
+connect. Mac *Also saved on this Mac*: *Sign Out…* / *Forget…* / *Delete…* → the confirmation (*Cancel* / Escape:
+nothing changes; *Sign Out* / *Forget* / *Delete*) → the row goes (the group with its last row); the source picked again
+asks to sign in or connect; a forgotten site's history is listed until deleted, and comes back if that site is
+connected again. Everything
 reachable from Settings › Source without a notification; TalkBack / VoiceOver read every card, row and state.
 
 ## Nightscout as a source (both apps)

@@ -29,6 +29,8 @@ public final class SettingsModel {
     public let sensorLife: SensorLifeModel
     /// *Keep following?* and the leave questions (one person, one link).
     public let leave: LeaveLinkModel
+    /// Settings › Source's *Also saved on this Mac*.
+    public let alsoSaved: AlsoSavedModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
     /// Whether macOS lets Sukrara post Time Sensitive (Settings › Alerts, the setup's notification step); nil: this run
@@ -71,12 +73,14 @@ public final class SettingsModel {
         self.source = SourceChoiceModel(store: store)
         self.sensorLife = SensorLifeModel(store: store)
         self.leave = LeaveLinkModel()
+        self.alsoSaved = AlsoSavedModel()
         self.wearer = wearer
         self.version = version
         self.distribution = distribution
         self.appBuild = appBuild
         pane = Pane(rawValue: store.value(MacSettings.settingsPane)) ?? .general
         leave.settings = self
+        alsoSaved.settings = self
     }
 
     // MARK: Settings from

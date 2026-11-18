@@ -115,6 +115,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         libreLinkUp.recheckSource = { [weak model] saved in await model?.recheckLibreLinkUp(saved: saved) }
         libreLinkUp.signOutSource = { [weak model] in model?.signOutLibreLinkUp() }
+        let alsoSaved = windows.settings.alsoSaved
+        alsoSaved.keptNotShown = { [weak model] in model?.keptNotShown() ?? [] }
+        alsoSaved.deleteKept = { [weak model] id in model?.deleteKept(id) }
+        alsoSaved.forgetNightscoutSource = { [weak model] in await model?.forgetNightscout() }
         model.onLibreLinkUp = { [weak windows] snapshot in windows?.apply(libreLinkUp: snapshot) }
         model.onLan = { [weak windows] snapshot in windows?.apply(lan: snapshot) }
         windows.settings.sensorLife.sensor = { [weak model] in model?.sourceSensor }

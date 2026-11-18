@@ -117,6 +117,18 @@ public final class NightscoutModel {
         if !token.isEmpty || changed { secretChanged(Self.secret(secrets)) } else { retry() }
     }
 
+    /// *Also saved on this Mac*'s *Forget* (Nightscout not the source): the address and the token go; the source keeps
+    /// the site's readings and log apart (`NightscoutSource.forget`).
+    func forget() {
+        try? secrets?.delete(account: MacSettings.nightscoutSecretAccount)
+        store.set("", for: MacSettings.nightscoutURL)
+        siteDraft = ""
+        secretDraft = ""
+        hasSecret = false
+        revision += 1
+        secretChanged("")
+    }
+
     /// The status card's *Sign In Again*: the token field, empty and focused, under the same site.
     func signIn() {
         siteDraft = site

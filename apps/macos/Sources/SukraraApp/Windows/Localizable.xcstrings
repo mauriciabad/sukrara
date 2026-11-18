@@ -114,6 +114,22 @@
         }
       }
     },
+    "%@ · kept %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · kept %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ · guardado el %2$@"
+          }
+        }
+      }
+    },
     "%@'s phone is nearby" : {
       "localizations" : {
         "en" : {
@@ -655,6 +671,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Casi listo"
+          }
+        }
+      }
+    },
+    "Also saved on this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Also saved on this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "También guardado en este Mac"
           }
         }
       }
@@ -1363,6 +1395,22 @@
         }
       }
     },
+    "Delete %@'s history?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete %@'s history?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Eliminar el historial de %@?"
+          }
+        }
+      }
+    },
     "Delete it" : {
       "localizations" : {
         "en" : {
@@ -1423,6 +1471,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Borra los tratamientos recibidos."
+          }
+        }
+      }
+    },
+    "Delete…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar…"
           }
         }
       }
@@ -2015,6 +2079,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seguir…"
+          }
+        }
+      }
+    },
+    "Forget" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forget"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Olvidar"
+          }
+        }
+      }
+    },
+    "Forget Juggluco on this network?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forget Juggluco on this network?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Olvidar Juggluco en esta red?"
+          }
+        }
+      }
+    },
+    "Forget this Nightscout site?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forget this Nightscout site?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Olvidar este sitio de Nightscout?"
+          }
+        }
+      }
+    },
+    "Forget…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forget…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Olvidar…"
           }
         }
       }
@@ -2639,6 +2767,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Quedarse con sus ajustes"
+          }
+        }
+      }
+    },
+    "Kept %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado el %@"
+          }
+        }
+      }
+    },
+    "Kept for a source this Mac doesn't read now. Removing one changes nothing in use." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept for a source this Mac doesn't read now. Removing one changes nothing in use."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guardado para una fuente que este Mac no lee ahora. Quitarlo no cambia nada de lo que está en uso."
+          }
+        }
+      }
+    },
+    "Kept history" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kept history"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Historial guardado"
           }
         }
       }
@@ -3653,6 +3829,22 @@
         }
       }
     },
+    "Sign Out…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar sesión…"
+          }
+        }
+      }
+    },
     "Site address" : {
       "localizations" : {
         "en" : {
@@ -3733,6 +3925,54 @@
         }
       }
     },
+    "Sukrara forgets the phone's address and Juggluco's API secret on this Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara forgets the phone's address and Juggluco's API secret on this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara olvida la dirección del móvil y el secreto de la API de Juggluco en este Mac."
+          }
+        }
+      }
+    },
+    "Sukrara forgets the site's address and token on this Mac. The site itself stays as it is, and the glucose and treatments it brought stay here as a kept history." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara forgets the site's address and token on this Mac. The site itself stays as it is, and the glucose and treatments it brought stay here as a kept history."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara olvida la dirección del sitio y su token en este Mac. El sitio en sí se queda como está, y la glucosa y los tratamientos que trajo se quedan aquí como historial guardado."
+          }
+        }
+      }
+    },
+    "Sukrara forgets this account's sign-in on this Mac. The account and whom it follows stay as they are in LibreLinkUp." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara forgets this account's sign-in on this Mac. The account and whom it follows stay as they are in LibreLinkUp."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara olvida el inicio de sesión de esta cuenta en este Mac. La cuenta y a quién sigue se quedan como están en LibreLinkUp."
+          }
+        }
+      }
+    },
     "Sukrara on a phone" : {
       "localizations" : {
         "en" : {
@@ -3777,6 +4017,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Los de Sukrara por defecto"
+          }
+        }
+      }
+    },
+    "The glucose and treatments kept on this Mac are deleted. This can't be undone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The glucose and treatments kept on this Mac are deleted. This can't be undone."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se eliminan la glucosa y los tratamientos guardados en este Mac. No se puede deshacer."
           }
         }
       }

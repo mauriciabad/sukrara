@@ -243,8 +243,12 @@ struct SourcePane: View {
                     SensorLifeRows(model: model.sensorLife, kind: running.kind)
                 }
             }
+            // what this Mac holds for sources it doesn't read now, each removable (Appendix G finding 12)
+            AlsoSavedRows(model: model.alsoSaved)
         }
         .formStyle(.grouped)
+        .onAppear(perform: model.alsoSaved.load)
+        .onChange(of: running?.kind) { model.alsoSaved.load() }
         .modifier(LeaveLinkPresenter(model: model.leave, origin: .settings))
     }
 }

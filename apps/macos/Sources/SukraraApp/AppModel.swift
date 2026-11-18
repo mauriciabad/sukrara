@@ -633,6 +633,12 @@ public final class AppModel {
         toNightscout { await $0.retry() }
     }
 
+    /// *Also saved on this Mac*'s *Forget* (Nightscout not the source): the site's readings and log kept apart.
+    func forgetNightscout() async {
+        toNightscout { await $0.forget() }
+        await nightscoutTask?.value
+    }
+
     /// Writes one of this Mac's treatments into Nightscout's log (the Treatments window and Add Treatment).
     func writeNightscout(_ treatment: Treatment) async -> Bool {
         guard nightscoutActive, let nightscout else { return false }

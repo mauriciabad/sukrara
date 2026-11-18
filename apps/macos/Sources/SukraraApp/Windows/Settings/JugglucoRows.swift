@@ -56,6 +56,16 @@ public final class JugglucoModel {
         secretChanged(secretDraft)
     }
 
+    /// *Also saved on this Mac*'s *Forget* (Juggluco not the source): the phone's address and the API secret go.
+    func forget() {
+        try? secrets?.delete(account: MacSettings.jugglucoSecretAccount)
+        store.set("", for: MacSettings.jugglucoAddress)
+        addressDraft = ""
+        secretDraft = ""
+        revision += 1
+        secretChanged("")
+    }
+
     static func secret(_ secrets: (any SecretStoring)?) -> String {
         guard let data = try? secrets?.read(account: MacSettings.jugglucoSecretAccount) else { return "" }
         return String(decoding: data, as: UTF8.self)

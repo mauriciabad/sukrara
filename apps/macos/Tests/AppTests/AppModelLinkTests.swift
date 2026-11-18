@@ -185,6 +185,49 @@ actor LinkLeftovers: FollowerService {
         #expect(leave.pick(.nightscout, from: .setup) && settings.source.stored == SourceSpec(kind: .nightscout))
     }
 
+    /// Appendix G finding 12: *Also saved on this Mac* lists what isn't in use (another source's site and secret, a kept
+    /// history), never the source in use, and each removal does only its own part.
+    @MainActor @Test func alsoSavedListsWhatIsNotInUseAndRemovesIt() async throws {
+        final class Calls {
+            var forgot = 0
+            var deleted: [String] = []
+        }
+        let calls = Calls()
+        let store = InMemorySettingsStore()
+        SourceSpec(kind: .lanJuggluco).store(in: store)
+        store.set("https://ns.example.org", for: MacSettings.nightscoutURL)
+        store.set(Self.phone, for: MacSettings.jugglucoAddress)
+        let secrets = InMemorySecretStore()
+        try secrets.write(Data("token".utf8), account: MacSettings.nightscoutSecretAccount)
+        let settings = SettingsModel(
+            store: store, follow: FollowModel(status: .notFollowing, actions: nil), version: "t")
+        settings.nightscout.secrets = secrets
+        settings.juggluco.secrets = secrets
+        let also = settings.alsoSaved
+        let ana = KeptHistory.Info(id: KeptHistory.id(.sukrara, "ana"), name: "Ana", keptAt: 1_790_000_000)
+        also.keptNotShown = { calls.deleted.isEmpty ? [ana] : [] }
+        also.deleteKept = { calls.deleted.append($0) }
+        also.forgetNightscoutSource = { calls.forgot += 1 }
+        also.load()
+        // Juggluco is the source: not listed
+        #expect(also.items == [.nightscout(host: "ns.example.org"), .kept(ana)])
+        #expect(AlsoSavedModel.name(ana) == "Ana" && AlsoSavedModel.detail(ana).hasPrefix("Sukrara on a phone · kept"))
+        #expect(AlsoSavedModel.confirmation(.kept(ana)).destructive)
+        await also.remove(.nightscout(host: "ns.example.org"))
+        #expect(store.value(MacSettings.nightscoutURL).isEmpty && calls.forgot == 1)
+        #expect(try secrets.read(account: MacSettings.nightscoutSecretAccount) == nil)
+        #expect(store.value(MacSettings.jugglucoAddress) == Self.phone)  // the source in use is untouched
+        await also.remove(.kept(ana))
+        #expect(calls.deleted == [ana.id] && also.items.isEmpty)
+        // another source: Juggluco's address is listed, Forget clears it
+        SourceSpec(kind: .nightscout).store(in: store)
+        settings.source.choose(SourceSpec(kind: .nightscout))
+        also.load()
+        #expect(also.items == [.juggluco(address: Self.phone)])
+        await also.remove(.juggluco(address: Self.phone))
+        #expect(store.value(MacSettings.jugglucoAddress).isEmpty && also.items.isEmpty)
+    }
+
     /// Appendix G findings 5 and 16: Ana's follow left with *Keep it*, then Juggluco read: Juggluco continues it. The
     /// shown history, the rings, the report and the export count over both (Ana's readings where she has one, the fence),
     /// her treatments are marks and export lines but never quiets, and the kept history is no longer listed apart.
