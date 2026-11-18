@@ -35,6 +35,11 @@ The owner's words (the issue and its three comments), condensed:
 - **The sensor alongside the official app** exists only for the Dexcom G7 family (the observer, built, waiting for a
   tester). Libre 3 can't share its one Bluetooth link; whether the Libre app's notification shows the value decides if
   Libre has any offline path (owner test).
+- **Root** (Appendix F) rarely works "beside the official app": Abbott, Medtronic and Roche say their apps don't run on
+  a rooted phone (Abbott: the Libre app "stops without notification", without alarms), Dexcom says not to. For Libre 3
+  it opens nothing acceptable anyway (encrypted store and link, LSPosed refused). Where an official app still runs and
+  keeps its readings unencrypted (Eversense did; unverified today), reading them read-only adds exact times and backfill
+  to the notification source: later, per app, once a rooted tester checks. Hooks, lifted keys and interception: never.
 - **The Mac gets sources of its own** (Nightscout, LibreLinkUp, Dexcom Share); treatments stay on the Mac (two-way with
   Nightscout).
 - **Name**: *Source* (es *Origen*).
@@ -70,7 +75,8 @@ Full catalogue with every link: Appendix A.
 | **Dexcom G7 family observer** | ✓ built | — | 5 min + backfill | yes | sensor state | untested |
 | Libre 3 / 3 Plus / 2 US alongside | ✗ | ✗ | | | | one Bluetooth link ([Juggluco](https://github.com/j-kaltes/Juggluco/)) |
 | **Official app's notification** (Dexcom, Medtronic, Eversense, Aidex, Sibionics, Medtrum, CamAPS FX, Omnipod 5…) | ✓ | — | 5 min | yes | arrow; IOB from loop apps | no time, no backfill, breaks on wording changes |
-| Libre app's notification | ? | — | | | | in no reader's list (owner test) |
+| Libre app's notification | ? | — | | | | in no reader's list (owner test); a 2022 hook added the value to it (Appendix F) |
+| Official app's stored readings, **root** | later | — | as the app writes (Eversense 5 min) | yes | exact times, backfill | only apps that run on root with an unencrypted store (the Libre, Medtronic and Roche apps refuse root); app updates, root lost at an OTA |
 | **DIY broadcasts** (xDrip+, Juggluco, AAPS) | ✓ | — | live | yes | rate, sensor start | none |
 | **Nightscout** (+ Gluroo, xDrip+ / Juggluco servers) | ✓ | ✓ | push or poll | LAN only | **treatments both ways**, IOB, sensor start | none: open API |
 | **Dexcom Share** (not Stelo) | ✓ | ✓ | 5 min; 24 h back | no | trend | unofficial; failed logins lock the account |
@@ -84,7 +90,9 @@ G6 in the receiver slot beside the Dexcom app. Out: Libre 2 EU beside LibreLink 
 move; Libre 2 EU none acceptable; Dexcom G7 family **the observer**, notification as fallback; Dexcom G6 notification
 (receiver slot unverified); Medtronic Guardian notification (Simplera's lacks the value); Eversense, Aidex, Sibionics,
 Medtrum, Ottai, iCan, CareSens Air notification; any CGM inside a loop app notification (value + IOB); SmartGuide none
-reliable. Per family with the online fallback: Appendix A.
+reliable. Per family with the online fallback: Appendix A. **With root** (Appendix F): the Libre, LibreLink, Medtronic
+and SmartGuide apps refuse to run, so nothing beside them; Eversense exact times and backfill, if its store is still
+unencrypted (unverified); Dexcom needs none.
 
 **What people ask for** (Reddit is unreachable from the research tools; demand comes from what people build and file):
 (1) Libre on a Mac without a phone app: ≥ 10 independent LibreLinkUp menu-bar apps ([LibreBar](https://librebar.app/),
@@ -112,7 +120,8 @@ built first on the API that won't move.
 | — | G7 observer out of *Untested* | Android | a tester, not code |
 | 4 | Trust and the move | Android | needs the arrival times steps 1–3 record |
 | Later | Medtrum EasyFollow, Aidex X advert, Eversense DMS, Glooko, Tandem, CareLink (#216) | | small base, batch, or unproven |
-| Never | Dexcom's API or Health Connect as live; patched vendor apps; lifting LibreLinkUp 5's crypto; borrowed Dexcom certificates | | 1–3 h late, or circumvention ([23](23-sensors.md) rule 2) |
+| Later | **Root**: the official app's unencrypted stored readings, per app that runs on a rooted phone (Eversense first); taking over a Libre 3 the Libre app started without LibreView | Android | each app needs a rooted tester's check first; adds exact times and backfill to step 3, or moves a sensor (Appendix F) |
+| Never | Dexcom's API or Health Connect as live; patched vendor apps; lifting LibreLinkUp 5's crypto; borrowed Dexcom certificates; **hooks into an official app (LSPosed), keys lifted from it, Bluetooth or internet interception** | | 1–3 h late, or circumvention ([23](23-sensors.md) rule 2; Data Act 4(11), 11(1)) |
 
 ### Risks
 
@@ -131,6 +140,11 @@ built first on the API that won't move.
   ([Dexcom G7](https://www.dexcom.com/en-au/dexcom-g7/how-it-works), [Libre 3 Plus](https://www.adces.org/education/danatech/home/freestyle-libre-3-plus---dexcom-g7-15-day-comparison)).
 - **Late readings, battery**: clouds come 1–5 min late, in gaps; notifications carry no time or backfill. No battery
   measurement of two apps plus a poll each minute found.
+- **Rooted phones**: the Libre, MiniMed, Simplera, Guardian Connect and SmartGuide apps refuse them; on one, Abbott says
+  the Libre app "stops without notification", so its alarms too (Appendix F.4). Updates added these checks (LibreLink
+  2020, Libre 3 3.4.0 in 2022). Where Sukrara sees root and the source is such an app, it says so once and keeps its own
+  alerts on; it never suggests hiding root. A root reader of an app's store also breaks on that app's updates and on
+  root lost at a system update (F.6).
 
 ## Person × Source
 
@@ -157,7 +171,7 @@ engine already speaks "own vs mirror", so only its mapping changes):
 |---|---|---|---|---|---|
 | Sukrara reads your sensor | yours | ✓ | — | this device | full |
 | Your sensor beside the official app (G7) | yours | ✓ | — | this device | full |
-| The official app on this phone | yours | ✓ | — | this device | manual start |
+| The official app on this phone (+ its stored readings with root, later) | yours | ✓ | — | this device | manual start |
 | Juggluco · xDrip+ · AAPS on this phone | either | ✓ | — | this device | Juggluco: start |
 | Juggluco on the network | either | — | ✓ | this device | start |
 | LibreLinkUp | either | ✓ | ✓ | this device | start |
@@ -165,8 +179,11 @@ engine already speaks "own vs mirror", so only its mapping changes):
 | Nightscout | either | ✓ | ✓ | two-way with the site | its *Sensor Start* |
 | Sukrara on another device | either | ✓ | ✓ | writer scope | relayed |
 
-Each source declares its capabilities (also offline, delay, backfill) in `contracts/sources/sources.json`; UI and rules
-read those, never the id. **Who signs in where** (checked): Dexcom Share takes **the sharing account's** login, not a
+Each source declares its capabilities (also offline, delay, backfill, needs root) in `contracts/sources/sources.json`;
+UI and rules read those, never the id. Root isn't a source of its own: it's how *The official app on this phone* reads
+more for an app that allows it (Appendix F).
+
+**Who signs in where** (checked): Dexcom Share takes **the sharing account's** login, not a
 Dexcom Follow one ("your (or the dependent's) credentials, not the follower's", [pydexcom](https://gagebenne.github.io/pydexcom/pydexcom.html)):
 a parent who manages a child's account has it, a partner usually not. For your own LibreLinkUp, invite your own email
 from the Libre app: Abbott says the same email works for both apps ([FAQ](https://www.support.freestyle.abbott/hc/en-us/articles/36336824870545-As-a-parent-guardian-I-used-my-own-email-address-to-create-an-account-for-a-minor-to-use-a-FreeStyle-Libre-systems-Libre-app-Can-I-use-my-same-email-address-to-create-a-LibreLinkUp-app-account-so-we-can-connect)).
@@ -380,7 +397,8 @@ Source · Alerts · Glucose · Graph · Rings`, Juggluco one of the sources. Sch
 Each step ships alone; tests only against fakes; a new parity group `sources`; FEATURES.md, README, the Features page
 and the privacy policy (new hosts) in the same change. Deferred: several sources at once with automatic fallback
 (doubles every state), Tidepool as a live source (≥ 1 h late), uploads from a standalone Mac (doubles the matrix),
-re-sharing someone else's glucose (decision 9), a Clarity file import.
+re-sharing someone else's glucose (decision 9), a Clarity file import, root reading of official apps' stores (decision
+12; Sukrara's `RootAccess` states and root prompt already exist for the status bar).
 
 ## Checked against the code and the web
 
@@ -408,6 +426,8 @@ re-sharing someone else's glucose (decision 9), a Clarity file import.
 - **Sukrara's own LibreView sign-in** rides on the LibreLinkUp 4.x login: when Abbott ends it, new sign-ins (a new Libre
   3's receiver ID) stop too. Outside #213; worth its own issue.
 - **Real people's words**: Reddit unreachable; demand from GitHub, forums and what people build.
+- **Which official apps keep readings unencrypted today**: unverified for every app; the last reports are 2019
+  (Eversense) and 2022 (LibreLink). Decides decision 12's first targets (Appendix F, test R2).
 
 ## In Sukrara
 
@@ -416,11 +436,16 @@ section with what was added and what was discarded, with the reasons.
 
 ## Decisions for the owner
 
+**Root channel researched (Appendix F): one new decision, 12; nothing else changes.** The owner's idea (with root,
+read the official app's data or sit in the middle of its Bluetooth link) doesn't work "probably always": the Libre,
+Medtronic and Roche apps refuse rooted phones (Abbott: the Libre app stops "without notification", alarms included),
+Dexcom says not to; Libre 3's store and link are encrypted and its app aborts on LSPosed. What's left is reading an
+app's unencrypted store where the app still runs on root (Eversense, unverified), and taking over a Libre 3 started
+without LibreView. The test of the Libre app's notification needs an unrooted phone.
+
 **Owner, 2026-11-18: all as recommended**, 9 too once explained. 11 was researched further ("we didn't truly research
-this enough": Appendix E) and needs the owner's answer again. The owner also raised a channel neither note covered:
-**with root**, reading the official app's data or sitting in the middle of its Bluetooth link, which could work for
-nearly every sensor (not required, a good option when the phone has root); not researched yet (open). The owner uses
-only Sukrara with Libre 3 sensors (no Libre app, no LibreLinkUp). For testing they're fine installing apps on the phone
+this enough": Appendix E) and needs the owner's answer again. The owner uses only Sukrara with Libre 3 sensors (no
+Libre app, no LibreLinkUp). For testing they're fine installing apps on the phone
 or emulators and making accounts, as long as their normal setup ends up Sukrara alone.
 
 Ordered by how much they block.
@@ -451,11 +476,19 @@ Ordered by how much they block.
     is Dexcom's invitation-only API for companies with a server holding the secrets, and Abbott has no program; the EU
     Data Act gives the person their data "continuously and in real-time" where feasible, so one email per maker opens
     a serverless path or puts a refusal on record.
+12. **Root**: only read what an official app keeps unencrypted, read-only, for apps that run on a rooted phone, beside
+    their notification (Later, each app after a rooted tester's check), plus the Libre 3 takeover without LibreView;
+    never hooks, lifted keys or interception; on a rooted phone with an app that refuses root, say so and keep
+    Sukrara's alerts on? *Recommend yes*: the only root doors that break no maker protection (Data Act 4(11), 11(1))
+    and change no medical app; Libre 3, your case, isn't one of them; decision 11's request is the lawful way to the
+    rest.
 
 **What you could test for us**
 
 - **The Libre app's notification**: does it show the number (and arrow)? Tell us, or send a crop without values.
-  Decides decision 2.
+  Decides decision 2. On an unrooted phone: Abbott says the app stops on a rooted one (Appendix F, R3).
+- **Root, 15 min on your phone** (Appendix F, R1 + R2): does the Libre app start here, and is its store still
+  encrypted? No sensor touched. And **a rooted Eversense user** for the same check on their app (decision 12).
 - **A LibreLinkUp connection to yourself** (invite your own email from the Libre app), to check the client read-only
   against a real account.
 - **Someone with Dexcom** (Share on, one follower), and a **G7 wearer** to take the observer out of *Untested*.
@@ -630,6 +663,9 @@ Each one on home's source line, the Source page and the no-data alert, with Talk
 - **Notification source**: access off → *Allow notification access* (a sideloaded APK first needs Android's *Allow
   restricted settings*, explained) / app not found → *Change source* / notification hidden → *Open its settings* / unit
   differs → *Use mmol/L like the Libre app?* (*Switch* / *Keep*).
+- **Its stored readings (root, later)**: *Read its stored readings* on the source's page, off by default → root
+  prompt (today's `AccessStepBanner` states) → on; *Root is off* / *The app changed* / *Its readings disagree* →
+  notification only, said on the source line, with *Allow root* / *Check again*; turning it off is the exit.
 - **Live · Late** (by itself; *Open the Libre app*) · **No internet** (by itself) · **Sign in again** (pre-filled) ·
   **Rate-limited** (by itself, said once) · **Locked boot** (unlock).
 - **Two apps, one low** → any choice any time; *Only the Libre app* = alerts off with the existing *Turn alerts on*.
@@ -648,6 +684,7 @@ Each one on home's source line, the Source page and the no-data alert, with Talk
 | `source.dexcomShare.server` | enum `us / ous / jp` | both | login in the secure store |
 | `source.nightscout.url`, `.treatments` | string, bool | both | token apart from the upload's |
 | `source.officialApp.package` | string | android `only` | |
+| `source.officialApp.storedReadings` | bool | android `only` (root) | later (decision 12) |
 | `source.twoApps` | enum `both / sukrara / official` | android `only` (no official app on a Mac) | |
 | `source.moveSuggestion` | state | android `only` | the Mac never suggests |
 | `sensor.manualStart` | state | both | |
@@ -741,6 +778,15 @@ Platform and privacy
 38. Cleartext: every source https except loopback and Juggluco on the network; `allow.json` entries per source.
 39. Secrets never in the settings export or logs (`Redact` gains the new keys).
 40. Website and privacy policy list the new hosts; Features tiles en + es.
+
+Root (later, decision 12)
+41. Root lost after an OTA: the source keeps the notification, says *Root is off*, `no_data` only if both stop.
+42. The official app updates: a version not checked yet reads the notification only until its store check passes.
+43. A stored value disagrees with the notification (±1 mg/dL, ±2 min): the store is dropped for that version, never
+    alerted from.
+44. Reading never stops, locks or backs up the official app (a backup once lost LibreLink data unless restarted).
+45. A rooted phone with the Libre (or MiniMed, Simplera, SmartGuide) app as the source: the setup's warning shows once,
+    *Only the Libre app* isn't offered, and the app's silent stop reaches `no_data`.
 
 ## Appendix E: partner and official access (decision 11)
 
@@ -849,3 +895,126 @@ with "G7", "Dexcom app" and "Share").
 > ground in writing (articles 4(2), 4(7)–(8)).
 >
 > [name]
+
+## Appendix F: root (decision 12)
+
+*2026-11-18, for the owner's "root must be explored … i have the right to get my glucose data". Desk research and open
+code only: no vendor app downloaded, decompiled or run, no device touched. Described as features; no key-extraction or
+interception procedure is written here.*
+
+**In short.** The premise, checked: root lets one app read another's files and change how it runs, but it doesn't make
+"beside the official app" work almost always. **The official apps of Abbott, Medtronic and Roche refuse rooted
+phones** (Abbott: the Libre app "stops without notification", so no alarms); Dexcom says not to (F.4). The official app
+then runs beside root only where the person hides root from it, which Sukrara won't advise and an update can end any
+day. Open-source projects tried four of the six doors below, and **none ships a live root source beside an official app
+today**: the DIY world moved to notification reading and the sensor itself. **Libre 3 gets nothing acceptable**: the
+Libre app's store is encrypted with a key only it unwraps, its Bluetooth link is encrypted with fresh keys each
+connection, and since 3.4.0 it won't start beside LSPosed. What root does give: (1) where an official app still runs
+and keeps its readings **unencrypted**, reading them read-only adds what notifications lack (each reading's time,
+backfill); Eversense did in 2019, nothing is known for today; (2) a **takeover without LibreView** of a Libre 3 the
+Libre app started offline, which is the move, not "beside". Law: your own unencrypted file on your own phone is
+grey-low; lifting keys, hooking or intercepting is out.
+
+### F.1 The doors
+
+| Door | Gives | Open prior art | Verdict |
+|---|---|---|---|
+| **The official app's stored readings, read-only**, where kept unencrypted | each reading with its own time, backfill after a gap, sometimes trend and sensor | ESEL (Eversense, 2017–19), Libre2Link-Nightscout (LibreLink, 2020–22, batch) | **later, per app** that runs on a rooted phone, after a rooted tester's check (R2) |
+| **The official app's own ID**, kept in plain settings | the receiver ID of a Libre 3 the Libre app started without LibreView → Sukrara's takeover | Juggluco ([FAQ-022](https://www.juggluco.nl/Juggluco/faq.html#faq-022), [convertUUID](https://www.juggluco.nl/Juggluco/libre3/convertUUID.html)) | **later**, part of the move; small group |
+| The official app's **encrypted** store | as the first row | none live; a 2023 write-up opened the Libre 3 app's store once by lifting its per-install key with instrumentation ([frdmtoplay](https://www.frdmtoplay.com/freeing-glucose-data-from-the-freestyle-libre-3/)) | **never**: removes the maker's protection (Data Act 11(1), 4(11); [23](23-sensors.md) rule 2) |
+| **Hooks** into the running official app (Xposed / LSPosed) | the value in its notification, a broadcast, a database copy | Free Three (closed source, 2022–23) | **never**: a patched medical app in all but name; the Libre app aborts on LSPosed since 3.4.0 |
+| **The Bluetooth link** (HCI log, man in the middle) | the packets the official app gets | none as a source; Juggluco uses official apps' HCI logs only to diagnose sensors ([FAQ](https://www.juggluco.nl/Juggluco/faq.html)) | **never or not needed**: Libre 3 packets are encrypted with keys from an exchange made each connection (Sukrara's client does it, `A/sensor/…/libre3/Libre3Security.kt:21`), so a reader sees ciphertext and a man in the middle must pose as the sensor or the app (rule 2); the G7 gives its packets to the observer without root |
+| The official app's internet traffic | its uploads | none; LibreLink 5 encrypts its payload ([#228](https://github.com/timoschlueter/nightscout-librelink-up/discussions/228)) | **never**: online anyway, and needs the app's certificate checks defeated |
+
+### F.2 Per family
+
+| Family | Official app's store (known) | What root adds | Best path |
+|---|---|---|---|
+| **Libre 3 / 3 Plus** (Libre 3 app, Libre app) | encrypted Realm, one key per install, kept wrapped in the app's settings and unwrapped by its native library (v3.4.2, [frdmtoplay 2023](https://www.frdmtoplay.com/freeing-glucose-data-from-the-freestyle-libre-3/)) | nothing beside it: the app stops on a rooted phone (F.4); only the takeover without LibreView | LibreLinkUp; the notification if it carries the value (Free Three's first feature was adding it, 2022, so it likely didn't; today unverified), on an unrooted phone; the move |
+| **Libre 2 / 2 Plus EU** (LibreLink) | plain SQLite `sas.db`: `realTimeReadings` each minute while Bluetooth is on, `historicReadings` every 15 min, UTC ms ([Libre2Link-Nightscout](https://github.com/steve8x8/Libre2Link-Nightscout), [insulinclub 2020](https://insulinclub.de/index.php?thread/32170-howto-daten-aus-libre2-auslesen/)); unverified since 2022 | LibreLink's own calibrated values (Abbott's algorithm already ran, so rule 1 wouldn't bite), but LibreLink crashes on root since 2.5.2 (F.4): only with root hidden from it | LibreLinkUp |
+| **Dexcom G6 / G7 / ONE+ / Stelo** | no open project reads it | nothing needed (and the apps warn on root) | G7 family: the observer; G6: notification |
+| **Medtronic Guardian / Simplera** | no open project | nothing: both apps refuse rooted phones (F.4), though Simplera's notification lacks the value ([xDrip #3025](https://github.com/NightscoutFoundation/xDrip/discussions/3025)) | Guardian: notification; Simplera: CareLink (#216) |
+| **Eversense E3 / 365** | plain SQLite, table `glucosereadings` ([ESEL `Datareader.java#L19-L28`](https://github.com/AdrianLxM/Esel/blob/7d4f1e18078fb753e99730245dd71fcc7fc0dce7/app/src/main/java/esel/esel/esel/datareader/Datareader.java#L19-L28)); unverified since 2019 | the times and backfill notifications lack (notification readers report uneven and 13-min-old readings, [2026](https://gardinerbryant.com/how-i-got-eversense-365-readings-into-home-assistant/)) | notification (ESEL companion, xDrip+); the store later, if plain |
+| Sibionics, Medtrum, CareSens Air, Sinocare iCan | no open project | unknown | notification |
+| Aidex / LinX, Ottai, Syai | — | nothing needed | their apps send readings themselves ([AAPS](https://androidaps.readthedocs.io/en/latest/Getting-Started/CompatiblesCgms.html)) |
+| Accu-Chek SmartGuide (mySugr) | no open project (Free Three changed only mySugr's screens) | nothing: the app blocks rooted phones | none reliable |
+
+### F.3 Projects with a root mode
+
+| Project | Root mode, as a feature | Sensors | Life | What broke it | Code |
+|---|---|---|---|---|---|
+| **ESEL** (AdrianLxM, then BernhardRo) | reads the newest two readings from the Eversense app's database through `su` and `sqlite3`, sends them to xDrip+ / AAPS; "very experimental" ([README](https://github.com/AdrianLxM/Esel)) | Eversense | 2017-08 → 2019-10 | users didn't want root ([xDrip #616](https://github.com/NightscoutFoundation/xDrip/issues/616), 2018); the fork moved to a patched app with a content provider, then to the notification ([README](https://github.com/BernhardRo/Esel)) | `Datareader.java#L19-L28` |
+| **Libre2Link-Nightscout** | copies LibreLink's database to a computer (backup, or root "faster") and uploads it to Nightscout | Libre 2 | 2020-05 → 2022-08; by hand, not live | "RESTART THE LIBRELINK APP TO AVOID DATA LOSS" after a backup | [`db-from-app-root#L24`](https://github.com/steve8x8/Libre2Link-Nightscout/blob/89df5a143f8b1252d75b233850431971602061fa/db-from-app-root#L24) |
+| **Juggluco** | recovers the Libre 3 app's own generated ID from its settings, for a takeover | Libre 3 | current | — | receiver ID = FNV-32 of the account ID: Sukrara `ReceiverIds.kt:32-37`, [DiaBLE `LibreLink.swift#L764`](https://github.com/gui-dos/DiaBLE/blob/e6a909c88faeada49f461d30834174cd95db4042/DiaBLE/LibreLink.swift#L764) |
+| **Free Three** ([insulinclub](https://insulinclub.de/index.php?thread/33795-free-three-ein-xposed-lsposed-modul-mit-erweiterungen-f%C3%BCr-abbott-libre-3-dexcom/)) | LSPosed module: the value in the Libre 3 app's notification, broadcasts to xDrip+ / Tasker / watches, a database copy; for Dexcom only the device check | Libre 3 (German app, ≤ 3.3.1 per [maheini](https://github.com/maheini/FreeStyle-Libre-3-patch)), Dexcom G6 / G7 | 2022-02 → 2023-08 (v1.19), last post 2024-04; source not published | Libre 3 3.4.0+ "erkennt das geladene LSPosed Modul und bricht den Start ab" (2023-04-17); a mySugr update loaded the wrong hooks (2023-08) ([page 7](https://insulinclub.de/index.php?postID=688775&thread%2F33795-free-three-ein-xposed-lsposed-modul-mit-erweiterungen-f%C3%BCr-abbott-libre-3-dexcom%2F=)) | not published |
+| xDrip+, AAPS, GlucoDataHandler, Diabox | **none** beside an official app: xDrip+ uses `su` only on its Raspberry Pi WholeHouse ([`Root.java#L22`](https://github.com/NightscoutFoundation/xDrip/blob/8532095b9333ae9939a95e0d116a198f20392617/app/src/main/java/com/eveningoutpost/dexdrip/utils/Root.java#L22)); AAPS lists no root route ([CGMs](https://androidaps.readthedocs.io/en/latest/Getting-Started/CompatiblesCgms.html)) and only reports root ([`PhoneCheckerPlugin.kt#L45`](https://github.com/nightscout/AndroidAPS/blob/aa16db64196e570b15bf41e85422fc159c058308/plugins/constraints/src/main/kotlin/app/aaps/plugins/constraints/phoneChecker/PhoneCheckerPlugin.kt#L45)); GDH reads broadcasts, notifications and clouds ([README](https://github.com/pachi81/GlucoDataHandler)); Diabox reads the Libre 3 itself, root not mentioned ([channel](https://t.me/s/DiaboxApp)) | | | | |
+
+### F.4 Official apps on rooted phones
+
+Makers' own statements first; Reddit unreachable, XDA only as search snippets (unverified).
+
+| App | Maker says | Users report | For the person |
+|---|---|---|---|
+| **Libre app / Libre 3 app** (also Libre 2, Libre Duo) | "Don't use the App on a jailbroken or rooted device"; there it stops "without notification", so "you won't receive alarms" ([Abbott](https://freestyle.abbott/us-en/safety-information.html), [Libre app manual 2026 p. 12](https://freestyleserver.com/Payloads/IFU/2026/q2/ART48742-103_rev-A.pdf)) | 3.4.0 "crashes only on rooted systems" ([maheini #13](https://github.com/maheini/FreeStyle-Libre-3-patch/discussions/13), 2022-09) | silent stop, **no alarms** |
+| **FreeStyle LibreLink** | "not supported on rooted Android phones" ([UK FAQ](https://www.freestyle.abbott/uk-en/support/faq/question-answer.html?q=UKFaqquestion-21)) | 2.5.2 and later "crash themselves if they detect root" ([Juggluco help](https://www.juggluco.nl/Jugglucohelp/settinghelp.html)); "just crashing" ([Fairphone forum](https://forum.fairphone.com/t/fp3-nfc-freestyle-libre-root/67239), 2020-11) | crash, no message |
+| **Dexcom G7 / G7 15 Day / ONE+ / Stelo / G6** | "Don't install G7 app on a … rooted (Android) smart device. It won't work correctly." ([G7 guide p. 27](https://www.manualslib.com/manual/2576156/Dexcom-G7.html?page=27)); it "will notify the user when a security issue is detected, such as … rooted" ([G7 15 Day p. 150](https://dexcompdf.s3.us-west-2.amazonaws.com/en-us/G7-15-CGM-Users-Guide.pdf)); same in the [ONE+](https://dexcompdf.s3.us-west-2.amazonaws.com/OUS+Specific+PDFs/AW-1000027-06_REV004_UG_D1Plus_OUS_en_MGDL_r6_WEB.pdf) and [Stelo](https://dexcompdf.s3.us-west-2.amazonaws.com/Stelo/AW-1000421-10+Stelo+User+Guide.pdf) guides | none from rooted phones; G6 users rooted around 2019 to pass the phone list (XDA, unverified) | a warning; whether it blocks: unverified |
+| **MiniMed Mobile** (770G / 780G) | "we do not allow the app to run on a device with modified operating system (rooted device)"; Developer Options on blocks it too ([Medtronic](https://www.minimed.com/en-us/support/product-support/780g/troubleshooting-minimed-mobile-app)) | stricter since 1.2.0 (XDA, unverified) | *App Cannot Be Used* |
+| **Simplera, Guardian Connect** | Simplera "will display an error message when launched and will not continue to operate" ([IFU p. 14](https://www.accessdata.fda.gov/cdrh_docs/pdf16/P160007S047c.pdf)); Guardian Connect "cannot be used with a rooted device" ([guide p. 11](https://www.minimed.com/content/dam/documents/en-us/Guardian-Connect-System-User-Guide.pdf)) | — | refuses to run |
+| **Accu-Chek SmartGuide**, mySugr | "Your device is rooted. … you can't use the app on this phone." ([manual 2025-08 p. 40](https://tools.accu-chek.com/documents/dms/en/smartguide_app_manual/smartguide_app_manual_en_2025-08.pdf)); mySugr: don't use one ([manual 3.150.0](https://assets.mysugr.com/app_logbook/android/3.150.0/manual/us/logbook-android-User_Manual-en_dmi.pdf)) | — | SmartGuide blocks; mySugr warns |
+| CareSens Air | "Do not install the app on a smart device that has been tampered with through hacking" ([manual p. 24](https://abmedical.ee/content/uploads/2024/12/CareSens-Air-Manual-CE-EN_240415.pdf)) | — | unknown |
+| Eversense, Sibionics, Aidex / LinX, Medtrum, Ottai | nothing for rooted Android (Eversense warns about jailbroken iPhones, [365 guide](https://www.manualslib.com/manual/3652467/Senseonics-Eversense-365.html?page=147); a LinX distributor: "not supported", [sus-wel](https://sus-wel.com/pages/linx-cgm-faq)) | — | unknown |
+
+No maker names Play Integrity; the checks seen are the apps' own (a sideloaded Libre 3 3.4.2 stopped at *Please install
+this App from Google Play*, [frdmtoplay](https://www.frdmtoplay.com/freeing-glucose-data-from-the-freestyle-libre-3/)).
+Makers also retire old versions (Dexcom: G7 app ≤ 2.8 unusable after 2025-08-20, [FDA](https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfres/res.cfm?id=215005),
+seen as a summary only), so nobody stays on a version that tolerates root. MiniMed Mobile is blocked by Developer
+Options alone: a root reader must not need them (an HCI log does).
+
+### F.5 Law
+
+| Act | Verdict | Why |
+|---|---|---|
+| Your own readings, on your own phone, in an app with no server | **fine** | GDPR doesn't apply to "a purely personal or household activity" ([art. 2(2)(c)](https://eur-lex.europa.eu/eli/reg/2016/679/oj)); Sukrara never holds the data |
+| Reading an official app's **unencrypted** readings or its own ID, read-only, with the owner's root | **grey, low** | no protection of the maker's is removed and no code copied or changed (copyright protects a program's code, not the data it handles: [C-159/23](https://curia.europa.eu/juris/liste.jsf?num=C-159/23), 2024). The Data Act bars "abuse [of] gaps in the technical infrastructure of a data holder which is designed to protect the data" ([4(11)](https://data-act-law.eu/article/4/)): Android's sandbox belongs to the phone, opened by its owner, but no authority or court has said so. The app's terms may forbid it: a contract matter (the account) |
+| Opening an **encrypted** store with a key lifted from the app | **not** | users "shall not alter or remove such technical protection measures without the agreement of the data holder" ([11(1)](https://data-act-law.eu/article/11/)); 4(11); rule 2 |
+| **Hooking or patching** the official app | **not** (for Sukrara) | whoever "modifies a device already placed on the market … in such a way that compliance with the applicable requirements may be affected" takes on a manufacturer's duties ([MDR art. 16(1)(c)](https://eur-lex.europa.eu/eli/reg/2017/745/2023-03-20)); terms; already *never* |
+| **Intercepting** the Bluetooth or internet link | **not** | needs the official app's keys or posing as the sensor or the app (11(1), rule 2) |
+| Learning how an app stores readings | **fine within limits** | a lawful user may "observe, study or test the functioning of the program" ([Software Directive 5(3)](https://www.legislation.gov.uk/eudr/2009/24/article/5)); decompiling only where indispensable, when the information "has not previously been readily available", for interoperability only ([6](https://www.legislation.gov.uk/eudr/2009/24/article/6)); terms against these are "null and void" ([8](https://www.legislation.gov.uk/eudr/2009/24/article/8)). Sukrara learns formats from open projects and testers' own files, never by decompiling |
+| Data Act 4(1) | **the right, not self-help** | protections "shall not … hinder a user's right to … access data" (11(1)): a refusal goes to the authority (decision 11's request), it isn't a licence to break them |
+
+### F.6 Safety: what a root reader must catch
+
+| State | Cause | Detect | Sukrara does |
+|---|---|---|---|
+| Root gone | an OTA without reinstalling root ([Magisk](https://topjohnwu.github.io/Magisk/ota.html)), the root manager denies | each read: today's `RootAccess` (`Missing` / `Refused` / `NoAnswer`) | keeps the notification (same source); *Root is off* + *Allow root*; `no_data` only if both stop |
+| App updated | a new version | `versionCode` before each read | a version whose store check (tables, columns, value range) hasn't passed reads the notification only: *The Eversense app changed* |
+| Format or values changed | new schema, units, time base | each stored value against the notification's (±1 mg/dL, ±2 min) | first disagreement drops the store for that version; never alerts from a value the official app doesn't show |
+| Store encrypted | the maker adds encryption | the file's header | the option disappears for that app, with the reason |
+| Stale | the app stopped writing or was killed | newest row older than the notification or than two cadences | *Late*, as any source |
+| The official app refuses root | an update adds root detection (F.4) | app not running, no notification | *The Libre app stopped on this phone* + *Change source*; `no_data` |
+| The reader disturbs the official app | a long lock, a copy mid-write, a backup that stops it | — | read-only, never stop the app, no backup, no lock held |
+
+Freshness: as fast as the app writes (each reading where it writes each reading), with a file watch and a one-minute
+poll as the floor. With each reading's time, the SPEC's trend quiets can hold, unlike the notification alone.
+
+### F.7 Fit, and tests
+
+- **Person × Source**: not a new source. *The official app on this phone* (yours) gains *Read its stored readings*
+  (root), per app in `sources.json` (`needsRoot`, `exactTime`, `backfill`); the picker shows *Eversense app · Found ·
+  exact times with root*.
+- **Build order**: steps 0–4 unchanged; root stored readings and the takeover without LibreView under *Later*; hooks,
+  lifted keys and interception under *Never*. The first app is the one a rooted tester shows unencrypted (R2).
+- **The move**: unchanged for a Libre 3 started with LibreView (Sukrara already takes over a running one,
+  `ReceiverIds.forTakeover`); with root also one the Libre app started without it.
+- **On a rooted phone with an app that refuses root** (Libre, MiniMed, Simplera, Guardian Connect, SmartGuide): the
+  source's setup says once *The Libre app may stop on a rooted phone without warning, and its alarms with it (Abbott)*,
+  Sukrara's alerts stay on (*Only the Libre app* isn't offered), and `no_data` covers the stop. Never a hint to hide
+  root.
+- **The owner's phone** (rooted, Libre 3, Sukrara alone): no root path exists to test beside the Libre app, and Abbott
+  says the app stops there. Two short tests confirm it; the notification test (R3) needs an unrooted phone:
+
+| Test | Steps | Proves | Risk to live monitoring |
+|---|---|---|---|
+| **R1** Does the Libre app run here? (10 min) | install the Libre app from Google Play, open it to its first screens; **don't sign in to a sensor, don't tap the sensor** while it's installed; uninstall | whether today's app stops on root as Abbott says (expected yes), and how: a message or a silent stop | none expected: Sukrara keeps the sensor's one link; not tapping keeps the Libre app from claiming it |
+| **R2** Is its store still encrypted? (5 min, before uninstalling, if R1 got past the first screen) | a root shell lists the Libre app's data file names and sizes and tries to open its database read-only as plain SQLite or Realm; nothing copied off the phone, no settings value read | whether the 2023 finding holds (expected yes). Run by a rooted Eversense user on their app, it decides decision 12's first app | none: read-only |
+| R3 The Libre app's notification (already asked) | **on an unrooted phone** (a spare, or a tester's): at a sensor change start the new sensor in the Libre app signed in to your LibreView, a day, then take it over in Sukrara on your phone by tap | whether the notification carries the value (decision 2) | medium: a day on the Libre app's alarms on the other phone; a failed takeover leaves the sensor there, still alarming |
