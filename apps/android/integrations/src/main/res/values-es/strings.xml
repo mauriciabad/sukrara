@@ -135,6 +135,7 @@
     <string name="in_status_auth">El sitio ha rechazado el token o el secreto: cámbialo</string>
     <string name="in_status_unreadable">No se puede leer el token guardado: vuelve a introducirlo</string>
     <string name="in_status_paused">En pausa: otra app (%1$s) sube datos a este sitio</string>
+    <string name="in_status_same_as_source">Es tu origen: la glucosa nunca vuelve a él; los tratamientos van en ambos sentidos en Ajustes › Origen</string>
     <string name="in_status_waiting">Activado · aún no se ha enviado nada</string>
     <plurals name="in_status_ok">
         <item quantity="one">Última subida %1$s · %2$d elemento</item>
@@ -389,4 +390,20 @@
     <string name="in_import_report">Informar del problema</string>
     <string name="in_import_err_unreadable">No se pudo abrir el archivo. Elígelo otra vez.</string>
     <string name="in_import_err_signed_out">No has iniciado sesión en Tidepool. Inicia sesión e importa otra vez.</string>
+    <string name="in_nss_title">Nightscout</string>
+    <string name="in_nss_site">Sitio</string>
+    <string name="in_nss_site_none">Sin conectar</string>
+    <string name="in_nss_status">Estado</string>
+    <string name="in_nss_treatments">Tratamientos en ambos sentidos</string>
+    <string name="in_nss_treatments_on">Los de Nightscout llegan aquí; los tuyos van allí</string>
+    <string name="in_nss_treatments_read_only">Este token solo puede leer: tus tratamientos se quedan en este móvil. Un token con el rol careportal los envía.</string>
+    <string name="in_nss_treatments_off">Del sitio solo llega la glucosa</string>
+    <string name="in_nss_open">Abrir Nightscout</string>
+    <string name="in_nss_open_summary">Tu sitio en el navegador</string>
+    <string name="in_nss_history">Recuperar 90 días</string>
+    <string name="in_nss_history_summary">Las lecturas de los últimos 90 días de tu sitio, nunca dos veces</string>
+    <string name="in_nss_history_pulling">Recuperando lecturas desde %1$s…</string>
+    <string name="in_tp_from_source">Glucosa y tratamientos de Nightscout</string>
+    <string name="in_tp_from_source_summary">Desactivado: tu sitio puede enviarlos a Tidepool por sí mismo, y dos veces contarían doble</string>
+    <string name="in_tp_from_source_on">Se envían a Tidepool. Si tu sitio también los envía, allí cuentan dos veces</string>
 </resources>

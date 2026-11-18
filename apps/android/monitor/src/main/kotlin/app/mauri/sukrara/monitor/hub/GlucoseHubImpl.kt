@@ -110,8 +110,9 @@ class GlucoseHubImpl(
             }
             launch { windowStarts().flatMapLatest { from -> readings.window(from) }.collect(::applyWindow) }
             launch {
-                // your glucose read here: its sensor needs Bluetooth (a stream has its own Bluetooth state)
-                val wearer = state.map { it.spec?.owner == true }.distinctUntilChanged()
+                // your glucose read here: its sensor needs Bluetooth (a stream has its own Bluetooth state; an online source
+                // needs none)
+                val wearer = state.map { s -> s.spec?.let { it.owner && it.kind.offline } == true }.distinctUntilChanged()
                 combine(sourceSensor, bluetoothOn, wearer) { sensor, on, isWearer ->
                     if (isWearer && !on) SensorState.BluetoothOff else sensor
                 }.collect { shown -> mutableState.update { it.copy(sensor = shown) } }

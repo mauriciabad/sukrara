@@ -5,6 +5,7 @@ package app.mauri.sukrara.integrations.tidepool
 
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
@@ -51,6 +52,11 @@ data class TpSettings(
     val treatments: Boolean = true,
     /** A follower's own, separate choice to upload the person they follow (off: a follower uploads nothing). */
     val uploadFollowed: Boolean = false,
+    /**
+     * Glucose and treatments that came from an online source (a Nightscout site): off unless turned on
+     * (contracts/sources/outputs.json "off"), as the site's own uploader may send them to Tidepool already.
+     */
+    val fromSource: Boolean = false,
 )
 
 /** What the Tidepool page shows. */
@@ -311,12 +317,19 @@ class TidepoolUploader(
         // already or got it from the same place: it would count twice)
         val rd =
             if (s.glucose) {
-                readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { !it.imported }
+                readings.range(start, clock.now() + Duration.ofMinutes(1)).filter {
+                    !it.imported && (s.fromSource || it.source !in SourceId.Online)
+                }
             } else {
                 emptyList()
             }
         if (full) fullScanMs = nowMs
-        val records = if (s.treatments) treatments.changedSince(windowStart - Duration.ofDays(1)).filterNot { it.imported } else emptyList()
+        val records =
+            if (s.treatments) {
+                treatments.changedSince(windowStart - Duration.ofDays(1)).filterNot { it.imported || (it.fromSite && !s.fromSource) }
+            } else {
+                emptyList()
+            }
         val plan = TidepoolQueue.plan(rd, records, rs, s.glucose, s.treatments, notes = true, nowS = nowS, hold = hold)
         if (plan.count == 0) {
             if (!plan.isEmpty) rs = TidepoolQueue.applied(rs, plan, emptyMap(), nowS)

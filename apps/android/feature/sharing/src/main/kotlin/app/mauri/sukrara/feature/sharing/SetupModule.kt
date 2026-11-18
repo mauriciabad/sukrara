@@ -24,6 +24,7 @@ import app.mauri.sukrara.feature.sharing.setup.SetupFacts
 import app.mauri.sukrara.feature.sharing.setup.SetupMachine
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
+import app.mauri.sukrara.feature.sharing.setup.SiteSourcePort
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
 import app.mauri.sukrara.feature.sharing.setup.UpdateChoice
 import app.mauri.sukrara.feature.sharing.share.LaterRequests
@@ -144,6 +145,8 @@ class SetupModule(
     val pens: SetupPens? = null,
     /** Root and the LSPosed module (the root step, the status bar text). */
     val systemAccess: SystemAccessPort,
+    /** The online source's site (Connect, *Bring back 90 days*); none in a build or test without one. */
+    val site: SiteSourcePort = SiteSourcePort.None,
 ) {
     /** Root as setup's facts see it ([SetupFacts.root]): Sukrara has root. */
     val rootGranted: Flow<Boolean> by lazy { systemAccess.state.map { it.granted }.distinctUntilChanged() }

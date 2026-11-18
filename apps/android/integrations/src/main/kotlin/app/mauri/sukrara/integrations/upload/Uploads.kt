@@ -56,6 +56,12 @@ sealed interface UploadStatus {
      */
     data class Behind(val since: Instant, val why: Trouble?, val source: SourceId? = null) : UploadStatus
 
+    /**
+     * The site is the Nightscout source: nothing of its glucose goes back to it (docs/44 "Data" rule 2), and treatments
+     * already go both ways through Settings › Source.
+     */
+    data object SameAsSource : UploadStatus
+
     /** The last cycle failed; it is tried again by itself ([why] in plain words; the detail is in the log). */
     data class Failing(val why: Trouble, val lastOk: Instant?) : UploadStatus
 }

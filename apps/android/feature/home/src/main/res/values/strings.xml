@@ -51,6 +51,9 @@
     <string name="reason_wearer_silent_title">No readings from the wearer\'s phone</string>
     <string name="reason_wearer_silent_body">Last heard %1$s. Their phone may be off, offline or out of battery.</string>
     <string name="reason_wearer_silent_never">Nothing heard yet. Their phone may be off, offline or out of battery.</string>
+    <string name="reason_site_title">No readings from Nightscout</string>
+    <string name="reason_site_unreachable">Your Nightscout site doesn’t answer. Sukrara keeps trying; check the address in Settings › Source.</string>
+    <string name="reason_site_action">Source</string>
     <string name="reason_no_readings_title">No readings from the sensor</string>
     <string name="reason_no_readings_body">Last reading %1$s. Keep the phone near the sensor; it reconnects on its own.</string>
     <string name="reason_no_readings_never">No reading yet. Keep the phone near the sensor; it reconnects on its own.</string>
@@ -126,6 +129,7 @@
     <string name="home_treatment_note">Note</string>
     <!-- TalkBack: a treatment an insulin pen logged (its row's pen icon) -->
     <string name="home_treatment_pen_source">from the pen</string>
+    <string name="home_treatment_from_site">from Nightscout, change it there</string>
     <!-- TalkBack: what tapping a pen treatment's row does -->
     <string name="home_pen_open">show its doses</string>
     <string name="home_pen_changed">Treatment changed</string>

@@ -89,6 +89,7 @@ import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.SensorState
+import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
@@ -902,6 +903,32 @@ private fun reasonText(
                 )
         }
 
+        is NoDataReason.SourceTrouble -> {
+            stringResource(R.string.reason_site_title) to
+                when (reason.problem) {
+                    SourceProblem.SignedOut -> {
+                        stringResource(DsR.string.ds_online_signed_out)
+                    }
+
+                    SourceProblem.Offline -> {
+                        stringResource(DsR.string.ds_online_offline)
+                    }
+
+                    SourceProblem.Unreachable -> {
+                        stringResource(R.string.reason_site_unreachable)
+                    }
+
+                    SourceProblem.RateLimited -> {
+                        stringResource(DsR.string.ds_online_rate_limited)
+                    }
+
+                    SourceProblem.NoNewReadings -> {
+                        reason.since?.let { stringResource(DsR.string.ds_online_no_new, relative(it, now)) }
+                            ?: stringResource(DsR.string.ds_online_no_glucose)
+                    }
+                }
+        }
+
         is NoDataReason.NoReadings -> {
             stringResource(R.string.reason_no_readings_title) to
                 (
@@ -915,17 +942,53 @@ private fun reasonText(
 private fun actionLabel(reason: NoDataReason): String =
     stringResource(
         when (reason) {
-            NoDataReason.SetupIncomplete -> R.string.reason_setup_action
-            is NoDataReason.NoSensorYet -> if (reason.follower) R.string.reason_no_wearer_action else R.string.reason_no_sensor_action
-            NoDataReason.BluetoothOff -> R.string.reason_bluetooth_action
-            NoDataReason.MonitoringStopped -> R.string.reason_stopped_action
-            NoDataReason.UsedByAnotherApp -> R.string.reason_taken_over_action
-            NoDataReason.ScanNeeded -> R.string.reason_scan_action
-            NoDataReason.PairAgain -> R.string.reason_pair_again_action
-            is NoDataReason.ClockBehind -> R.string.reason_clock_action
-            NoDataReason.SensorEnded -> R.string.reason_ended_action
-            NoDataReason.LinkRevoked -> R.string.reason_revoked_action
-            else -> R.string.reason_no_readings_action
+            NoDataReason.SetupIncomplete -> {
+                R.string.reason_setup_action
+            }
+
+            is NoDataReason.NoSensorYet -> {
+                if (reason.follower) R.string.reason_no_wearer_action else R.string.reason_no_sensor_action
+            }
+
+            NoDataReason.BluetoothOff -> {
+                R.string.reason_bluetooth_action
+            }
+
+            NoDataReason.MonitoringStopped -> {
+                R.string.reason_stopped_action
+            }
+
+            NoDataReason.UsedByAnotherApp -> {
+                R.string.reason_taken_over_action
+            }
+
+            NoDataReason.ScanNeeded -> {
+                R.string.reason_scan_action
+            }
+
+            NoDataReason.PairAgain -> {
+                R.string.reason_pair_again_action
+            }
+
+            is NoDataReason.ClockBehind -> {
+                R.string.reason_clock_action
+            }
+
+            NoDataReason.SensorEnded -> {
+                R.string.reason_ended_action
+            }
+
+            NoDataReason.LinkRevoked -> {
+                R.string.reason_revoked_action
+            }
+
+            is NoDataReason.SourceTrouble -> {
+                if (reason.problem == SourceProblem.SignedOut) DsR.string.ds_online_sign_in else R.string.reason_site_action
+            }
+
+            else -> {
+                R.string.reason_no_readings_action
+            }
         },
     )
 

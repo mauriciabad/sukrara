@@ -949,6 +949,11 @@ private fun route(
             backStack.add(SensorSettingsKey)
         }
 
+        // an online source's state, site and sign-in
+        HomeAction.OpenSource -> {
+            backStack.push(SourceKey)
+        }
+
         HomeAction.AddTreatment -> {
             open(context, Intent(NavTargets.ACTION_QUICK_TREATMENT).putExtra(NavTargets.EXTRA_FROM_APP, true))
         }

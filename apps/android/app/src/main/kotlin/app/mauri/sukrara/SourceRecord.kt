@@ -15,19 +15,26 @@ import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 
 /**
- * The typed state file `source.json` (schema `source.person`, `source.kind`): whose glucose this phone shows and where
- * it comes from, by their contract ids. Empty = setup has no answer yet; an id this version doesn't know, or a pair no
- * source offers, reads as no answer ([spec]).
+ * The typed state file `source.json` (schema `source.person`, `source.kind`, `source.nightscoutUrl`,
+ * `source.nightscoutTreatments`): whose glucose this phone shows, where it comes from (by their contract ids) and the
+ * Nightscout source's site and treatments switch. Empty person / kind = setup has no answer yet; an id this version
+ * doesn't know, or a pair no source offers, reads as no answer ([spec]). The site stays when the source changes, so
+ * going back to Nightscout needs no new address (its token stays in the secure store).
  */
 @Serializable
 data class SourceRecord(
     val person: String? = null,
     val kind: String? = null,
+    val nightscoutUrl: String = "",
+    val nightscoutTreatments: Boolean = true,
 ) {
     val spec: SourceSpec? get() = SourceSpec.of(Person.of(person), SourceKind.of(kind))
 
+    /** This record with [spec] as the answer, the source's own settings kept. */
+    fun with(spec: SourceSpec?) = copy(person = spec?.person?.id, kind = spec?.kind?.id)
+
     companion object {
-        fun of(spec: SourceSpec?) = SourceRecord(spec?.person?.id, spec?.kind?.id)
+        fun of(spec: SourceSpec?) = SourceRecord().with(spec)
     }
 }
 

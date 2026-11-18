@@ -118,6 +118,9 @@ class HomeModule(
 
     override suspend fun penEntry(id: String): PenEntryInfo? = penEntryOf(id)
 
+    override suspend fun siteEntries(ids: Collection<String>): Set<String> =
+        ids.filterTo(HashSet()) { id -> data.treatments.get(id)?.fromSite == true }
+
     override fun pensEditable(): Boolean = penPort() != null
 
     override suspend fun correctPen(

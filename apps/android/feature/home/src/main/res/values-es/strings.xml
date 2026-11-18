@@ -49,6 +49,9 @@
     <string name="reason_wearer_silent_title">No llegan lecturas del móvil de la persona</string>
     <string name="reason_wearer_silent_body">Última señal %1$s. Puede que su móvil esté apagado, sin conexión o sin batería.</string>
     <string name="reason_wearer_silent_never">Aún no ha llegado nada. Puede que su móvil esté apagado, sin conexión o sin batería.</string>
+    <string name="reason_site_title">No hay lecturas de Nightscout</string>
+    <string name="reason_site_unreachable">Tu sitio de Nightscout no responde. Sukrara sigue intentándolo; revisa la dirección en Ajustes › Origen.</string>
+    <string name="reason_site_action">Origen</string>
     <string name="reason_no_readings_title">No llegan lecturas del sensor</string>
     <string name="reason_no_readings_body">Última lectura %1$s. Mantén el móvil cerca del sensor; se reconecta solo.</string>
     <string name="reason_no_readings_never">Aún no hay lecturas. Mantén el móvil cerca del sensor; se reconecta solo.</string>
@@ -120,6 +123,7 @@
     <string name="home_treatment_note">Nota</string>
     <!-- TalkBack: un tratamiento que registró una pluma (el icono de pluma de su fila) -->
     <string name="home_treatment_pen_source">de la pluma</string>
+    <string name="home_treatment_from_site">de Nightscout, cámbialo allí</string>
     <!-- TalkBack: what tapping a pen treatment's row does -->
     <string name="home_pen_open">ver sus dosis</string>
     <string name="home_pen_changed">Tratamiento cambiado</string>

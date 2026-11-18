@@ -16,6 +16,7 @@ import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.CurrentSensor
+import app.mauri.sukrara.integrations.nightscout.site.NightscoutSite
 import app.mauri.sukrara.integrations.upload.UploadLoop
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,6 +29,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -115,6 +117,8 @@ class NightscoutUploader(
     private val log: (String) -> Unit = {},
     /** Holds back an entry whose pen session is still open (it goes up once the session closes). */
     private val hold: UploadHold = UploadHold.NONE,
+    /** The Nightscout source's site while it is the source (null otherwise): this upload never writes to it. */
+    private val sourceSite: Flow<String?> = flowOf(null),
 ) {
     private val credential = MutableStateFlow<NsCredentialKind?>(null)
     private val saved = MutableStateFlow(NsSaved.None)
@@ -130,8 +134,9 @@ class NightscoutUploader(
     val settingsFlow: Flow<NsSettings> = settings.flow(SETTING).map(::decode)
 
     val page: Flow<NsPageState> =
-        combine(settingsFlow, credential, saved, store.data, role) { s, c, sv, st, r ->
-            NsPageState(s, c, status(s, sv, st, r), sv)
+        combine(settingsFlow, credential, saved, store.data, combine(role, sourceSite, ::Pair)) { s, c, sv, st, (r, src) ->
+            val same = src != null && s.url.isNotEmpty() && NightscoutSite.same(src, s.url)
+            NsPageState(s, c, if (same && s.on && r?.owner == true) UploadStatus.SameAsSource else status(s, sv, st, r), sv)
         }
 
     /**
@@ -217,6 +222,13 @@ class NightscoutUploader(
         loop.kick()
     }
 
+    /** This install's name on the upload's site (the Nightscout source never reads its own entries back), null before one. */
+    suspend fun device(): String? =
+        store.data
+            .first()
+            .device
+            .ifEmpty { null }
+
     /** *Upload anyway*: the person confirmed this phone uploads next to the other device. */
     suspend fun acceptConflict() {
         mutex.withLock { store.update { it.copy(conflictAccepted = true) } }
@@ -267,6 +279,8 @@ class NightscoutUploader(
     private suspend fun cycleLocked() {
         val s = settingsFlow.first()
         if (!s.on || role.first()?.owner != true) return
+        // the source's own site: nothing goes back to it (its treatments go both ways through the source)
+        if (sourceSite.first()?.let { NightscoutSite.same(it, s.url) } == true) return
         val auth =
             try {
                 readAuth()?.also { if (saved.value != NsSaved.Readable) remember(it) }

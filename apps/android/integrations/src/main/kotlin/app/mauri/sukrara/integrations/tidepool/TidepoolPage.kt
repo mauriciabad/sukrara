@@ -205,6 +205,19 @@ fun TidepoolContent(
         SwitchRow(stringResource(R.string.in_ns_entries), s.treatments, { v ->
             actions.change { it.copy(treatments = v) }
         }, enabled = on, summary = off ?: stringResource(R.string.in_ns_entries_summary))
+        // an online source's data (contracts/sources/outputs.json "off"): its site may already send it to Tidepool
+        if (state.role?.online == true || s.fromSource) {
+            SwitchRow(
+                stringResource(R.string.in_tp_from_source),
+                s.fromSource,
+                { v ->
+                    actions.change { it.copy(fromSource = v) }
+                },
+                enabled = on || s.fromSource,
+                summary =
+                    off ?: stringResource(if (s.fromSource) R.string.in_tp_from_source_on else R.string.in_tp_from_source_summary),
+            )
+        }
     }
     if (state.signedIn) {
         SettingsGroup {

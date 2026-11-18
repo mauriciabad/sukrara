@@ -25,6 +25,7 @@ fun SourceSpec.titleRes(): Int =
     when (kind) {
         SourceKind.Sensor -> R.string.ds_source_sensor
         SourceKind.PhoneApp -> R.string.ds_source_phone_app
+        SourceKind.Nightscout -> R.string.ds_source_nightscout
         SourceKind.Sukrara -> if (person == Person.Yours) R.string.ds_source_sukrara_yours else R.string.ds_source_sukrara_theirs
     }
 
@@ -38,6 +39,10 @@ fun SourceSpec.meansRes(): Int =
 
         SourceKind.PhoneApp -> {
             if (person == Person.Yours) R.string.ds_source_phone_app_means else R.string.ds_source_phone_app_means_theirs
+        }
+
+        SourceKind.Nightscout -> {
+            if (person == Person.Yours) R.string.ds_source_nightscout_means else R.string.ds_source_nightscout_means_theirs
         }
 
         SourceKind.Sukrara -> {
@@ -74,6 +79,7 @@ fun SourceKind.shortRes(): Int =
     when (this) {
         SourceKind.Sensor -> R.string.ds_source_short_sensor
         SourceKind.PhoneApp -> R.string.ds_source_short_phone_app
+        SourceKind.Nightscout -> R.string.ds_source_nightscout
         SourceKind.Sukrara -> R.string.ds_source_short_sukrara
     }
 
@@ -93,14 +99,19 @@ fun SourceKind.iconRes(): Int =
     when (this) {
         SourceKind.Sensor -> R.drawable.ds_ic_dia_sensor
         SourceKind.PhoneApp -> R.drawable.ds_ic_smartphone
+        SourceKind.Nightscout -> R.drawable.ds_ic_public
         SourceKind.Sukrara -> R.drawable.ds_ic_status_sukrara
     }
 
-/** The source's icon at a row's start: an app source shows the app's own icon, the others the tinted glyph. */
+/** The source's icon at a row's start: an app or a service shows its own icon, the others the tinted glyph. */
 @Composable
 fun SourceIcon(
     kind: SourceKind,
     modifier: Modifier = Modifier,
 ) {
-    if (kind == SourceKind.PhoneApp) ServiceIcon(Service.Juggluco, modifier) else RowIcon(kind.iconRes())
+    when (kind) {
+        SourceKind.PhoneApp -> ServiceIcon(Service.Juggluco, modifier)
+        SourceKind.Nightscout -> ServiceIcon(Service.Nightscout, modifier)
+        else -> RowIcon(kind.iconRes())
+    }
 }

@@ -98,6 +98,8 @@ data class TreatmentRowModel(
     val fromPen: Boolean,
     /** This phone may not change it (a follower and the wearer's entry): no edit, no delete. */
     val readOnly: Boolean,
+    /** Taken from the Nightscout source's site: read-only here, changed there (*From Nightscout*). */
+    val fromSite: Boolean = false,
     /** The clinic upload's mark (null = none: the upload is off, or it never takes this entry). */
     val mark: UploadMark?,
     /** A writer's entry on its way ([TreatmentDelivery]); null once taken. */
@@ -113,6 +115,7 @@ fun HomeUiState.rows(treatments: List<Treatment> = this.treatments): List<Treatm
             treatment = t,
             fromPen = t.id in fromPen,
             readOnly = t.id in readOnly,
+            fromSite = t.id in fromSite,
             mark = marks[t.id],
             delivery = delivery[t.id],
             glucose = GlucoseAt.of(t.at, history),
@@ -204,8 +207,9 @@ private fun RowContent(
             val time = ClockText.time(t.at.epochSecond)
             val ago = TreatmentMarks.duration(now.epochSecond - t.at.epochSecond, words).takeIf { showAgo }
             val note = t.note.trim().takeIf { it.isNotEmpty() && t.kind != TreatmentKind.Note }
+            val site = stringResource(R.string.home_treatment_from_site).takeIf { row.fromSite }
             Text(
-                listOfNotNull(time, ago, note).joinToString(" · "),
+                listOfNotNull(time, ago, note, site).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,

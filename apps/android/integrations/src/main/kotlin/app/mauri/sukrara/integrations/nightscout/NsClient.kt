@@ -56,6 +56,18 @@ class NsClient(
     private var jwt: String? = null
     private var jwtExpMs = 0L
 
+    /** The token exchange's answer when it failed (what [read] reports: a refused token is a 401 there). */
+    private var exchangeFailed: Read? = null
+
+    /** One read's answer for the Nightscout source: [code] 0 = no answer at all, [retryAfterS] from `Retry-After`. */
+    class Read(
+        val code: Int,
+        val body: String,
+        val retryAfterS: Long? = null,
+    ) {
+        override fun toString() = "Read($code)"
+    }
+
     private class Answer(val code: Int, val body: String, val retryAfter: String?, val trouble: Trouble?, val error: String?)
 
     private fun send(
@@ -89,6 +101,7 @@ class NsClient(
                 if (forceRefresh || jwt == null || nowMs() > jwtExpMs - JWT_MARGIN_MS) {
                     val r = send("GET", "/api/v2/authorization/request/${enc(a.value)}", emptyMap(), null)
                     jwt = null
+                    exchangeFailed = null
                     if (r.code == 200) {
                         runCatching {
                             val o = Json.parseToJsonElement(r.body).jsonObject
@@ -99,6 +112,7 @@ class NsClient(
                     if (jwt ==
                         null
                     ) {
+                        exchangeFailed = Read(if (r.code in 200..299) BAD_ANSWER else r.code, "", r.retryAfter?.trim()?.toLongOrNull())
                         return emptyMap<String, String>() to classify(r, "token exchange", treatOkAs = "unreadable token answer")
                     }
                 }
@@ -124,6 +138,22 @@ class NsClient(
     }
 
     // MARK: operations
+
+    /**
+     * A GET for the Nightscout source, unclassified: the source decides what each code means for its health
+     * (contracts/sources/health.json). A refused token exchange is that exchange's answer.
+     */
+    fun read(path: String): Read {
+        val (h, err) = authHeaders()
+        if (err != null) return exchangeFailed ?: Read(0, "")
+        var r = send("GET", path, h, null)
+        if (r.code == 401 && cfg.auth is NsAuth.AccessToken) {
+            val (fresh, e) = authHeaders(forceRefresh = true)
+            if (e != null) return exchangeFailed ?: Read(0, "")
+            r = send("GET", path, fresh, null)
+        }
+        return Read(r.code, r.body, r.retryAfter?.trim()?.toLongOrNull())
+    }
 
     /** The site's version, or the failure (Test: read-only, nothing is written). */
     fun status(): Pair<String?, Outcome> {
@@ -289,17 +319,20 @@ class NsClient(
         return out to Outcome.Ok()
     }
 
-    private companion object {
-        val JSON = "application/json; charset=utf-8".toMediaType()
-        const val JWT_MARGIN_MS = 5 * 60_000L
+    companion object {
+        /** What [read] reports for an answer that isn't the site's (a 200 the token exchange can't read). */
+        const val BAD_ANSWER = 502
 
-        fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")
+        private val JSON = "application/json; charset=utf-8".toMediaType()
+        private const val JWT_MARGIN_MS = 5 * 60_000L
 
-        fun JsonObject.long(k: String) = this[k]?.jsonPrimitive?.longOrNull ?: 0L
+        private fun enc(s: String): String = URLEncoder.encode(s, "UTF-8")
 
-        fun JsonObject.str(k: String) = this[k]?.jsonPrimitive?.contentOrNull.orEmpty()
+        private fun JsonObject.long(k: String) = this[k]?.jsonPrimitive?.longOrNull ?: 0L
 
-        fun classify(
+        private fun JsonObject.str(k: String) = this[k]?.jsonPrimitive?.contentOrNull.orEmpty()
+
+        private fun classify(
             r: Answer,
             what: String,
             treatOkAs: String? = null,

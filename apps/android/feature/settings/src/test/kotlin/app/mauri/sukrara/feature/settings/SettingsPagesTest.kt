@@ -114,6 +114,10 @@ class SettingsPagesTest {
             "source.kind",
             // Settings › Source › Juggluco's web server (the SecureStore, through the sensor module)
             "source.jugglucoSecret",
+            // Settings › Source › Nightscout (`:integrations`' rows, joined by the app; the token through setup's Connect)
+            "source.nightscoutUrl",
+            "source.nightscoutTreatments",
+            "source.nightscoutSecret",
             // Settings › Status bar & notification and Settings › Sensor end
             "statusbar.show",
             "statusbar.colorize",

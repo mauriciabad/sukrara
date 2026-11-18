@@ -26,6 +26,7 @@ object ReadingRank {
             put(SourceId.Juggluco.id, Rank.PhoneApp)
             // the Mac's Juggluco on the network: never stored here, ranked as the contract says
             put("juggluco-lan", Rank.Network)
+            for (s in SourceId.Online) put(s.id, Rank.Online)
             for (s in SourceId.Relayed) put(s.id, Rank.Sukrara)
             for (s in SourceId.Imported) put(s.id, Rank.Imported)
         }

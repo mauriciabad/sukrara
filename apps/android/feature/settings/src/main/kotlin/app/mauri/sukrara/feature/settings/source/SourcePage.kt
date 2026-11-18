@@ -65,9 +65,9 @@ class SourceActions(
 
 /**
  * Settings › Source (docs/44 "Settings"): *Whose glucose* and *Where it comes from* (each opens setup's step in place:
- * one pattern for the choice, and Back changes nothing), the last reading's age, then the source's own rows: the sensor's page,
- * Juggluco's API secret and *Open Juggluco*, or another Sukrara's follow ([streamRows]: who, the request, the
- * relays, Bluetooth, *Stop following*). An unanswered install says Sukrara asks once more, with *Answer*. The foot says
+ * one pattern for the choice, and Back changes nothing), the state now, then the source's own rows: the sensor's page,
+ * Juggluco's API secret and *Open Juggluco*, a Nightscout site's ([siteRows]: the site, its health, treatments both
+ * ways), or another Sukrara's follow ([streamRows]: who, the request, the relays, Bluetooth, *Stop following*). An unanswered install says Sukrara asks once more, with *Answer*. The foot says
  * what each change keeps; *See also* the sensor and Import history where they apply.
  */
 @Composable
@@ -79,6 +79,8 @@ fun SourcePageContent(
     sensorActions: SensorSettingsActions,
     modifier: Modifier = Modifier,
     streamRows: @Composable () -> Unit = {},
+    /** An online source's rows (a Nightscout site: its site, health, treatments both ways), from `:integrations`. */
+    siteRows: @Composable () -> Unit = {},
 ) = Column(modifier) {
     val spec = state.spec
     val context = LocalContext.current
@@ -188,6 +190,10 @@ fun SourcePageContent(
                     onClose = { editingSecret = false },
                 )
             }
+        }
+
+        SourceKind.Nightscout -> {
+            siteRows()
         }
 
         SourceKind.Sukrara -> {

@@ -148,6 +148,9 @@ interface HomeDeps {
     /** Which of [ids] came from an insulin pen (their rows say *from the pen* and open the pen entry sheet). */
     suspend fun penEntries(ids: Collection<String>): Set<String> = emptySet()
 
+    /** Which of [ids] were taken from the Nightscout source's site (read-only here: *From Nightscout*). */
+    suspend fun siteEntries(ids: Collection<String>): Set<String> = emptySet()
+
     /** Pen entry [id] with its doses (any role: it is read from the synced log), or null when it isn't one. */
     suspend fun penEntry(id: String): PenEntryInfo? = null
 
@@ -238,6 +241,8 @@ data class HomeUiState(
     val readOnly: Set<String> = emptySet(),
     /** Ids of [treatments] that came from an insulin pen (*8.5u rapid insulin · from the pen*; a tap opens its sheet). */
     val fromPen: Set<String> = emptySet(),
+    /** Ids of [treatments] taken from the Nightscout source's site: read-only, *From Nightscout* (docs/44). */
+    val fromSite: Set<String> = emptySet(),
     /** This phone's entries on their way to the wearer: *Sending…*, or *Not sent* with *Retry* ([TreatmentDelivery.Failed]). */
     val delivery: Map<String, TreatmentDelivery> = emptyMap(),
     /** The wearer's profile while sharing (the top bar shows it, with Share). */
@@ -297,6 +302,7 @@ class HomeViewModel(
                     listed.filterNot { deps.mayChangeTreatment(it.id) }.mapTo(HashSet()) { it.id },
                     deps.penEntries(listed.filter { it.isInsulin }.map { it.id }),
                     deps.deliveries(listed.map { it.id }),
+                    deps.siteEntries(listed.map { it.id }),
                 )
             }
 
@@ -343,6 +349,7 @@ class HomeViewModel(
                 config = config,
                 readOnly = recent.readOnly,
                 fromPen = recent.fromPen,
+                fromSite = recent.fromSite,
                 delivery = recent.delivery,
                 profile = profile?.takeIf { glucose.spec?.owner != false },
                 marks = marks?.let { m -> listed.mapNotNull { t -> m.mark(t, now)?.let { t.id to it } }.toMap() }.orEmpty(),
@@ -538,6 +545,7 @@ class HomeViewModel(
         val readOnly: Set<String>,
         val fromPen: Set<String>,
         val delivery: Map<String, TreatmentDelivery>,
+        val fromSite: Set<String>,
     )
 
     private data class Extras(

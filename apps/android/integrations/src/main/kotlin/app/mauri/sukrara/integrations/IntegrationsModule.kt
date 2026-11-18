@@ -16,6 +16,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
@@ -60,6 +61,12 @@ import app.mauri.sukrara.integrations.localserver.XdripViewModel
 import app.mauri.sukrara.integrations.nightscout.NightscoutUploader
 import app.mauri.sukrara.integrations.nightscout.NightscoutViewModel
 import app.mauri.sukrara.integrations.nightscout.NsState
+import app.mauri.sukrara.integrations.nightscout.site.AndroidNetworkState
+import app.mauri.sukrara.integrations.nightscout.site.NightscoutAccount
+import app.mauri.sukrara.integrations.nightscout.site.NightscoutSite
+import app.mauri.sukrara.integrations.nightscout.site.NightscoutSource
+import app.mauri.sukrara.integrations.nightscout.site.NsSourceConfig
+import app.mauri.sukrara.integrations.nightscout.site.NsSourceState
 import app.mauri.sukrara.integrations.tidepool.TidepoolUploader
 import app.mauri.sukrara.integrations.tidepool.TidepoolViewModel
 import app.mauri.sukrara.integrations.tidepool.TpState
@@ -102,6 +109,10 @@ class IntegrationsModule(
     healthState: StateStore<HcState>,
     /** The Wi-Fi the Nightscout API's home-network option was turned on in. */
     nightscoutLan: StateStore<LanPin>,
+    /** The Nightscout source's ledger and this install's name on its site. */
+    nightscoutSourceState: StateStore<NsSourceState>,
+    /** The Nightscout source's site and treatments switch (kept with whose glucose and where from). */
+    nightscoutSourceConfig: NsSourceConfig,
     appVersion: String,
     readings: ReadingsRepository,
     treatments: TreatmentsRepository,
@@ -133,6 +144,17 @@ class IntegrationsModule(
     val exporter =
         Exporter(readings, treatments, sensor, clock, settings.flow(GraphSettings.GlucoseUnitSetting).map(GlucoseUnit::of))
 
+    private val network = AndroidNetworkState(context)
+
+    /** The Nightscout source's token or API secret, and *Connect*. */
+    val nightscoutAccount = NightscoutAccount(secure, http, clock, dispatchers.io, network::online)
+
+    /** The Nightscout source's site while it is the source: the upload never writes to it. */
+    private val sourceSite: Flow<String?> =
+        combine(role, nightscoutSourceConfig.data) { r, c ->
+            if (r?.kind == SourceKind.Nightscout && c.url.isNotEmpty()) NightscoutSite.parse(c.url).root else null
+        }.distinctUntilChanged()
+
     val nightscout =
         NightscoutUploader(
             settings,
@@ -148,6 +170,22 @@ class IntegrationsModule(
             dispatchers.io,
             log,
             uploadHold,
+            sourceSite,
+        )
+
+    /** Glucose and treatments from a Nightscout site, when it is the source (docs/44 step 1). */
+    val nightscoutSource =
+        NightscoutSource(
+            nightscoutSourceConfig,
+            nightscoutAccount,
+            nightscoutSourceState,
+            treatments,
+            { nightscout.device() },
+            network,
+            http,
+            clock,
+            dispatchers.io,
+            log,
         )
 
     val libreView =
@@ -249,6 +287,7 @@ class IntegrationsModule(
 
     suspend fun load() {
         nightscout.load()
+        nightscoutAccount.load()
         libreView.load()
         tidepool.load()
         // a shared export never lingers in the cache

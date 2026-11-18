@@ -108,12 +108,10 @@ internal fun ColumnScope.SourceStep(
         SettingsGroup(
             title =
                 stringResource(
-                    if (group ==
-                        SourceGroup.Sukrara
-                    ) {
-                        R.string.sh_setup_source_group_sukrara
-                    } else {
-                        R.string.sh_setup_source_group_offline
+                    when (group) {
+                        SourceGroup.Sukrara -> R.string.sh_setup_source_group_sukrara
+                        SourceGroup.Online -> R.string.sh_setup_source_group_online
+                        SourceGroup.Offline, SourceGroup.Network -> R.string.sh_setup_source_group_offline
                     },
                 ),
             modifier = Modifier.selectableGroup(),
@@ -165,6 +163,10 @@ internal fun ColumnScope.SourceStep(
                             } else {
                                 R.string.sh_setup_source_change_phone_app
                             }
+                        }
+
+                        SourceKind.Nightscout -> {
+                            R.string.sh_setup_source_change_nightscout
                         }
 
                         SourceKind.Sukrara -> {

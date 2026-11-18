@@ -59,6 +59,16 @@
   "strings_warn_only": [],
   "cleartext_ok": [
     {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/site/NightscoutSite.kt",
+      "contains": "(scheme == \"http\" && u.port == 80)",
+      "reason": "Nightscout source address parsing (contracts/sources/nightscout/sites.json): an http address is recognised only to write its root without the default port, then refused with 'Use https://' unless it is this phone's loopback"
+    },
+    {
+      "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/site/NightscoutSite.kt",
+      "contains": "\"http\" -> if (NsSite.isLoopback(",
+      "reason": "Nightscout source is https only, the home network too (#93): a typed http:// address is accepted only for this phone's loopback (localhost / 127.0.0.1, a local test site through adb reverse), all network_security_config allows; any other http:// is refused with 'Use https://'"
+    },
+    {
       "path": "apps/android/sensor/src/main/kotlin/app/mauri/sukrara/sensor/juggluco/JugglucoSource.kt",
       "contains": "http://127.0.0.1:17580",
       "reason": "local Juggluco on this phone: its web server listens on loopback only (127.0.0.1:17580); nothing leaves the device"

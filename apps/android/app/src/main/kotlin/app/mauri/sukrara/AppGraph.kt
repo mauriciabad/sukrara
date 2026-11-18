@@ -71,6 +71,9 @@ import app.mauri.sukrara.integrations.libreview.LvUnsent
 import app.mauri.sukrara.integrations.localserver.LanPin
 import app.mauri.sukrara.integrations.localserver.LanState
 import app.mauri.sukrara.integrations.nightscout.NsState
+import app.mauri.sukrara.integrations.nightscout.site.NsSourceConfig
+import app.mauri.sukrara.integrations.nightscout.site.NsSourceSettings
+import app.mauri.sukrara.integrations.nightscout.site.NsSourceState
 import app.mauri.sukrara.integrations.tidepool.TpState
 import app.mauri.sukrara.monitor.MonitorModule
 import app.mauri.sukrara.monitor.alerts.AlertRecord
@@ -317,6 +320,16 @@ class AppGraph(
         val person = spec.first()?.person ?: Person.Yours
         setup.sources.set(SourceSpec.of(person, kind) ?: SourceSpec(Person.Yours, kind))
     }
+
+    /** The Nightscout source's site and treatments switch, kept in [source] next to the answer. */
+    val nightscoutSourceConfig: NsSourceConfig =
+        object : NsSourceConfig {
+            override val data: Flow<NsSourceSettings> =
+                source.data.map { NsSourceSettings(it.nightscoutUrl, it.nightscoutTreatments) }.distinctUntilChanged()
+
+            override suspend fun set(settings: NsSourceSettings) =
+                source.update { it.copy(nightscoutUrl = settings.url, nightscoutTreatments = settings.treatments) }
+        }
 
     private fun jugglucoInstalled(): Boolean = app.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE) != null
 
@@ -602,6 +615,11 @@ class AppGraph(
             healthState = data.typedStore("health-connect", HcState.serializer(), HcState(), whenCorrupt = HcState()),
             // a lost pin pauses the home-network option ("another Wi-Fi") until Allow on this Wi-Fi: never a silent move
             nightscoutLan = data.typedStore("nightscout-lan", LanPin.serializer(), LanPin(), whenCorrupt = LanPin()),
+            // a lost state forgets which site entries were taken (read again: same ids, no copies) and which of this
+            // phone's went up (sent again: replaced by identifier)
+            nightscoutSourceState =
+                data.typedStore("nightscout-source", NsSourceState.serializer(), NsSourceState(), whenCorrupt = NsSourceState()),
+            nightscoutSourceConfig = nightscoutSourceConfig,
             appVersion = appVersion,
             readings = readings,
             treatments = data.treatments,
@@ -695,7 +713,7 @@ class AppGraph(
                     startMonitoring = { startMonitoring(StartReason.App) },
                     clearRole = {
                         inferred.value = Inferred(null)
-                        source.update { SourceRecord() }
+                        source.update { it.with(null) }
                     },
                 ),
             // the updates step (the GitHub version only)
@@ -704,6 +722,8 @@ class AppGraph(
             pens = SetupPens(pens.setupAnswer, pens::turnOnReading),
             // the root step and the status bar text
             systemAccess = monitor.root.access,
+            // the Nightscout source's Connect step and *Bring back 90 days*
+            site = AppSiteSource(integrations.nightscoutAccount, integrations.nightscoutSource, nightscoutSourceConfig, clock),
         )
     }
 
@@ -1150,6 +1170,9 @@ class AppGraph(
         when (spec.kind) {
             SourceKind.Sensor, SourceKind.PhoneApp -> BuildVariant.wearerSource(this) ?: sensorSource(spec)
 
+            // its token is credential-encrypted: nothing to ask the site before the unlock
+            SourceKind.Nightscout -> if (unlocked.value) integrations.nightscoutSource else null
+
             // the follower engine's identity and state are credential-encrypted: nothing to follow before the unlock
             SourceKind.Sukrara -> if (unlocked.value) follower.engine.takeIf { it.isFollowing() } else null
         }
@@ -1160,8 +1183,21 @@ class AppGraph(
      */
     private suspend fun canMonitor(spec: SourceSpec): Boolean =
         when (spec.kind) {
-            SourceKind.Sensor, SourceKind.PhoneApp -> BuildVariant.hasWearerSource(this) || readsSensor(spec)
-            SourceKind.Sukrara -> unlocked.value && follower.engine.isFollowing()
+            SourceKind.Sensor, SourceKind.PhoneApp -> {
+                BuildVariant.hasWearerSource(this) || readsSensor(spec)
+            }
+
+            SourceKind.Nightscout -> {
+                unlocked.value &&
+                    nightscoutSourceConfig.data
+                        .first()
+                        .url
+                        .isNotEmpty()
+            }
+
+            SourceKind.Sukrara -> {
+                unlocked.value && follower.engine.isFollowing()
+            }
         }
 
     /** Whether the source talks to the sensor over Bluetooth: the sensor Sukrara reads (not Juggluco, not a stream). */

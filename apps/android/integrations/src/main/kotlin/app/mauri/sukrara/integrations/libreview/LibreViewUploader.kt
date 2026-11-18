@@ -170,7 +170,11 @@ class LibreViewUploader(
     val intervalFlow: Flow<Double> = settings.flow(INTERVAL)
 
     /** The wearer's newest reading from this phone's own sensor (any source: what LibreView should get). */
-    private val newest: Flow<Reading?> = latest.map { r -> r?.takeIf { it.source in SourceId.FirstHand } }.distinctUntilChanged()
+    private val newest: Flow<Reading?> =
+        latest
+            .map { r ->
+                r?.takeIf { it.source in SourceId.FirstHand && it.source !in SourceId.Online }
+            }.distinctUntilChanged()
 
     /**
      * Since when LibreView lacks the glucose the phone has (epoch s) once uploading it has stalled
@@ -534,7 +538,7 @@ class LibreViewUploader(
             if (!state.refused && (s.treatments || state.ledger.isNotEmpty())) {
                 // a switched-off part still corrects what LibreView already has; imported history never goes up (LibreView
                 // has it already or got it from the same place: it would count twice)
-                val records = treatments.changedSince(clock.now() - Duration.ofDays(31)).filterNot { it.imported }
+                val records = treatments.changedSince(clock.now() - Duration.ofDays(31)).filterNot { it.imported || it.fromSite }
                 LibreViewQueue
                     .entries(records, state.ledger, if (s.treatments) state.entriesFrom else Long.MAX_VALUE, nowS, hold)
             } else {

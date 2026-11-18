@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.graph.GlucoseLook
@@ -106,6 +107,17 @@ sealed interface NoDataReason {
         override val action: HomeAction? = null
     }
 
+    /**
+     * An online source brings nothing and says why ([problem]: signed out, unreachable, offline, nothing new, asked to
+     * wait): Settings › Source has the site, its state and the way out (docs/44 "Living with two apps").
+     */
+    data class SourceTrouble(
+        val problem: SourceProblem,
+        val since: Instant?,
+    ) : NoDataReason {
+        override val action = HomeAction.OpenSource
+    }
+
     /** Wearer: monitoring runs but the sensor sent nothing for 20 min (the card's "no readings" step). */
     data class NoReadings(val since: Instant?) : NoDataReason {
         override val action = HomeAction.OpenSensor
@@ -128,36 +140,75 @@ sealed interface NoDataReason {
             val needed = (sensor as? SensorState.ActionNeeded)?.action?.reason()
             val clock = state.clockBehind
             return when {
-                state.notMonitoring == NotMonitoringReason.SetupIncomplete -> SetupIncomplete
+                state.notMonitoring == NotMonitoringReason.SetupIncomplete -> {
+                    SetupIncomplete
+                }
 
-                state.link?.revoked == true -> LinkRevoked
+                state.link?.revoked == true -> {
+                    LinkRevoked
+                }
 
-                state.sensor == SensorState.CoreMissing -> CoreMissing
+                state.sensor == SensorState.CoreMissing -> {
+                    CoreMissing
+                }
 
-                state.sensor == SensorState.Ended -> SensorEnded
+                state.sensor == SensorState.Ended -> {
+                    SensorEnded
+                }
 
                 // even while the last value shows: every new reading is being dropped, and its age reads wrong
-                clock != null -> ClockBehind(clock.ahead)
+                clock != null -> {
+                    ClockBehind(clock.ahead)
+                }
 
-                sensor is SensorState.WarmingUp && look.state == GlucoseLook.State.WARMING_UP -> WarmingUp(sensor.readyAt)
+                sensor is SensorState.WarmingUp && look.state == GlucoseLook.State.WARMING_UP -> {
+                    WarmingUp(sensor.readyAt)
+                }
 
-                valueShown -> null
+                valueShown -> {
+                    null
+                }
 
                 // the sensor was forgotten: nothing reconnects, so never "it reconnects on its own"
-                latest != null && !follower && state.notMonitoring == NotMonitoringReason.NoSensorYet -> NoSensorYet(false, history = true)
+                latest != null && !follower && state.notMonitoring == NotMonitoringReason.NoSensorYet -> {
+                    NoSensorYet(false, history = true)
+                }
 
-                state.service is ServiceState.Stopped -> MonitoringStopped
+                state.service is ServiceState.Stopped -> {
+                    MonitoringStopped
+                }
 
-                state.sensor == SensorState.BluetoothOff && !follower -> BluetoothOff
+                state.sensor == SensorState.BluetoothOff && !follower -> {
+                    BluetoothOff
+                }
 
-                latest == null && state.notMonitoring == NotMonitoringReason.NoSensorYet -> NoSensorYet(follower)
+                latest == null && state.notMonitoring == NotMonitoringReason.NoSensorYet -> {
+                    NoSensorYet(follower)
+                }
 
                 // nothing comes until the person acts: say what to do, never "it reconnects on its own"
-                !follower && needed != null -> needed
+                !follower && needed != null -> {
+                    needed
+                }
 
-                follower -> WearerSilent(state.link?.lastHeardAt ?: latest?.t)
+                follower -> {
+                    WearerSilent(state.link?.lastHeardAt ?: latest?.t)
+                }
 
-                else -> NoReadings((state.source as? SourceStatus.Interrupted)?.since ?: latest?.t)
+                // an online source knows why nothing comes: say it, with the way to fix it
+                (state.source as? SourceStatus.Interrupted)?.problem != null -> {
+                    val s = state.source as SourceStatus.Interrupted
+                    SourceTrouble(s.problem!!, latest?.t)
+                }
+
+                // an online source without a known problem: its page, not the sensor's
+                state.spec?.online == true -> {
+                    SourceTrouble(SourceProblem.NoNewReadings, latest?.t)
+                }
+
+                else -> {
+                    NoReadings((state.source as? SourceStatus.Interrupted)?.since ?: latest?.t)
+                }
             }
         }
     }
@@ -181,6 +232,9 @@ sealed interface HomeAction {
     data object PairSensor : HomeAction
 
     data object OpenSensor : HomeAction
+
+    /** Settings › Source (an online source's site, state and sign-in). */
+    data object OpenSource : HomeAction
 
     data object EnableBluetooth : HomeAction
 

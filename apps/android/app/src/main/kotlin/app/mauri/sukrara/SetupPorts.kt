@@ -39,7 +39,7 @@ class AppSources(
 
     override suspend fun set(spec: SourceSpec) {
         val before = running.first()
-        store.update { SourceRecord.of(spec) }
+        store.update { it.with(spec) }
         if (before != null && before.person != spec.person) {
             readings.deleteAll()
             treatments.deleteAll()

@@ -22,7 +22,7 @@ enum class Person(
 }
 
 /** How the source picker groups a source: by what the person feels (contracts/sources/sources.json `group`). */
-enum class SourceGroup { Offline, Network, Sukrara }
+enum class SourceGroup { Offline, Network, Online, Sukrara }
 
 /**
  * Where the glucose comes from (schema `source.kind`), with what it declares in contracts/sources/sources.json: the
@@ -63,6 +63,21 @@ enum class SourceKind(
         delaySeconds = 60,
         backfill = true,
         readings = setOf(SourceId.Juggluco),
+    ),
+
+    /**
+     * A Nightscout site (docs/44 step 1): the person's own, or someone else's (a parent reading a child's site). Online,
+     * a few minutes late (as fresh as what uploads to it), backfills, and treatments go both ways with the site.
+     */
+    Nightscout(
+        "nightscout",
+        setOf(Person.Yours, Person.Theirs),
+        firstHand = true,
+        offline = false,
+        group = SourceGroup.Online,
+        delaySeconds = 120,
+        backfill = true,
+        readings = setOf(SourceId.Nightscout),
     ),
 
     /** Sukrara on another phone or Mac shares it (over the internet, or Bluetooth nearby): a Sukrara stream. */
@@ -114,6 +129,9 @@ data class SourceSpec(
 
     /** Someone else's glucose: the card names them, nothing of it is shared or uploaded. */
     val theirs: Boolean get() = person == Person.Theirs
+
+    /** An online source (a Nightscout site): needs internet, readings a few minutes late, no Bluetooth of its own. */
+    val online: Boolean get() = kind.group == SourceGroup.Online
 
     /** This phone talks to the sensor itself (Bluetooth, NFC). */
     val readsSensor: Boolean get() = kind == SourceKind.Sensor

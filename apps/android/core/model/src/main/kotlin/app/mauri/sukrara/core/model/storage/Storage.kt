@@ -152,6 +152,17 @@ data class TreatmentRecord(
 ) {
     /** Imported history: shown, exported and shared with followers, never uploaded to a service ([ImportSource]). */
     val imported: Boolean get() = importedFrom != null
+
+    /**
+     * Taken from the Nightscout source's site (another app logged it there): read-only here (*From Nightscout*), never
+     * sent back to that site, and not to Tidepool (contracts/sources/outputs.json `nightscout-treatments`).
+     */
+    val fromSite: Boolean get() = via == FROM_NIGHTSCOUT
+
+    companion object {
+        /** [via] of an entry the Nightscout source took from its site. */
+        const val FROM_NIGHTSCOUT = "nightscout"
+    }
 }
 
 /**

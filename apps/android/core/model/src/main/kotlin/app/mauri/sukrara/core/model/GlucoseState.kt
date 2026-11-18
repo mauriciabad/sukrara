@@ -145,7 +145,11 @@ sealed interface SourceStatus {
 
     data class Live(val lastReadingAt: Instant) : SourceStatus
 
-    data class Interrupted(val since: Instant) : SourceStatus
+    /** No readings since [since]; [problem]: why, when the source knows (an online source's health, docs/44). */
+    data class Interrupted(
+        val since: Instant,
+        val problem: SourceProblem? = null,
+    ) : SourceStatus
 }
 
 /**

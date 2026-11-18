@@ -81,8 +81,11 @@ object NightscoutQueue {
     private const val BASE_BACKOFF_MS = 30_000L
     const val MAX_BACKOFF_MS = 15 * 60_000L
 
-    /** Only readings this phone took from its own sensor go up (never a followed person's, never test data). */
-    val UPLOADED_SOURCES = setOf(SourceId.Libre3, SourceId.Juggluco)
+    /**
+     * Only readings this phone got first-hand go up (never a followed person's, never test data): its sensor, Juggluco,
+     * or another Nightscout site read as the source (never the same site: the upload pauses then).
+     */
+    val UPLOADED_SOURCES = setOf(SourceId.Libre3, SourceId.Juggluco, SourceId.Nightscout)
 
     data class Plan(
         /** Oldest first. */

@@ -245,6 +245,9 @@
     <string name="ds_source_phone_app">Juggluco on this phone</string>
     <string name="ds_source_phone_app_means">Juggluco reads the sensor, Sukrara reads Juggluco</string>
     <string name="ds_source_phone_app_means_theirs">Juggluco gets their glucose, Sukrara reads Juggluco</string>
+    <string name="ds_source_nightscout">Nightscout</string>
+    <string name="ds_source_nightscout_means">Glucose and treatments from your site · about 2 min late</string>
+    <string name="ds_source_nightscout_means_theirs">Glucose and treatments from their site · about 2 min late</string>
     <string name="ds_source_sukrara_yours">Sukrara on your other phone</string>
     <string name="ds_source_sukrara_yours_means">That phone reads your sensor and shares it here · internet or Bluetooth nearby</string>
     <string name="ds_source_sukrara_theirs">Their Sukrara</string>
@@ -252,6 +255,17 @@
     <!-- a source that works without internet, where no group title says so (Settings › Source); %1$s = what it brings -->
     <string name="ds_source_means_offline">%1$s · works offline</string>
     <!-- the Source row's summary on the Settings overview: whose · where from -->
+    <string name="ds_online_connecting">Connecting…</string>
+    <string name="ds_online_live">Live · last reading %1$s</string>
+    <string name="ds_online_late">Late · last reading %1$s</string>
+    <string name="ds_online_no_new">Nothing new from Nightscout: its last reading was %1$s. Check the app that uploads to it.</string>
+    <string name="ds_online_no_glucose">Nightscout has no glucose yet. Check the app that uploads to it.</string>
+    <string name="ds_online_offline">No internet. Sukrara catches up when you’re back.</string>
+    <string name="ds_online_unreachable">No answer from %1$s. Check the address.</string>
+    <string name="ds_online_signed_out">Nightscout refused the token. Sign in again.</string>
+    <string name="ds_online_rate_limited">Nightscout asked Sukrara to wait. It tries again by itself.</string>
+    <string name="ds_online_sign_in">Sign in again</string>
+    <string name="ds_online_try_again">Try again</string>
     <string name="ds_source_summary">%1$s · %2$s</string>
     <string name="ds_source_short_sensor">sensor</string>
     <string name="ds_source_short_phone_app">Juggluco</string>

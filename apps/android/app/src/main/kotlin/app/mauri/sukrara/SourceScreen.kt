@@ -7,9 +7,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.feature.settings.SettingsPage
@@ -23,8 +25,12 @@ import app.mauri.sukrara.feature.settings.source.SourcePageContent
 import app.mauri.sukrara.feature.settings.source.SourcePageState
 import app.mauri.sukrara.feature.sharing.follower.FollowingPage
 import app.mauri.sukrara.feature.sharing.follower.FollowingViewModel
+import app.mauri.sukrara.integrations.nightscout.site.NightscoutSourceActions
+import app.mauri.sukrara.integrations.nightscout.site.NightscoutSourceRows
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import app.mauri.sukrara.feature.settings.R as SettingsR
 
 /**
@@ -69,6 +75,37 @@ internal fun SourceScreen(
                 openImport = openImport,
             ),
             SensorSettingsActions(setJugglucoSecret = sensorVm::setJugglucoSecret),
+            siteRows = {
+                val site by graph.integrations.nightscoutSource.view
+                    .collectAsStateWithLifecycle(null)
+                val scope = rememberCoroutineScope()
+                site?.let { v ->
+                    NightscoutSourceRows(
+                        v,
+                        spec?.person ?: Person.Yours,
+                        now,
+                        NightscoutSourceActions(
+                            editSite = { openStep(app.mauri.sukrara.feature.sharing.setup.SetupStep.Sensor) },
+                            retry = graph.integrations.nightscoutSource::kick,
+                            setTreatments = { on ->
+                                scope.launch {
+                                    graph.nightscoutSourceConfig.set(
+                                        graph.nightscoutSourceConfig.data
+                                            .first()
+                                            .copy(treatments = on),
+                                    )
+                                    if (on) graph.integrations.nightscoutSource.retryWrites()
+                                }
+                            },
+                            pullHistory = {
+                                scope.launch {
+                                    graph.integrations.nightscoutSource.pullHistory(graph.clock.now().minus(java.time.Duration.ofDays(90)))
+                                }
+                            },
+                        ),
+                    )
+                }
+            },
             streamRows = {
                 FollowingPage(
                     viewModel = viewModel(factory = FollowingViewModel.factory(graph.setup.follower)),

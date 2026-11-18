@@ -120,6 +120,8 @@ data class SetupUi(
     val sourceChange: SourceChange? = null,
     /** The root step and the glucose notification step. */
     val root: RootUi = RootUi(),
+    /** The online source's Connect step (docs/44 step 1). */
+    val site: SiteUi = SiteUi(),
 )
 
 /** The root step's and the glucose notification step's state. */
@@ -492,6 +494,48 @@ class SetupViewModel(
         joining.value = JoinUi.Idle
         m.pendingInvite.value = null
         openedLookedUp = null
+    }
+
+    private val siteAttempt = MutableStateFlow(SiteUi())
+
+    /** The online source's Connect step: the saved site, its health, the last *Connect*. */
+    val site: StateFlow<SiteUi> =
+        combine(m.site.connection, siteAttempt) { c, a -> a.copy(connection = c) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SiteUi())
+
+    /** *Connect* on the online source's step: one try; the answer shows on the field it is about. */
+    fun connectSite(
+        address: String,
+        credential: String,
+    ) {
+        if (siteAttempt.value.connecting) return
+        siteAttempt.value = siteAttempt.value.copy(connecting = true, result = null)
+        viewModelScope.launch {
+            val r =
+                try {
+                    m.site.connect(address, credential)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    SiteConnectResult.Unreachable
+                }
+            siteAttempt.value = SiteUi(connecting = false, result = r)
+            // connected: monitoring starts reading the site now (the step waits for its first reading)
+            if (r == SiteConnectResult.Connected) m.startMonitoring()
+        }
+    }
+
+    /** Typing again clears the last answer. */
+    fun clearSiteResult() {
+        if (siteAttempt.value.result != null) siteAttempt.value = siteAttempt.value.copy(result = null)
+    }
+
+    /** *Bring back 90 days from Nightscout* on the history step: the source reads back; the step is done. */
+    fun pullSiteHistory() {
+        viewModelScope.launch {
+            m.site.pullHistory()
+            record { SetupMachine.completeHistory(it) }
+        }
     }
 
     /** null = not looking; each new number starts a fresh search (after Bluetooth or the permission came back). */

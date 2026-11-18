@@ -136,6 +136,7 @@
     <string name="in_status_auth">The site refused the token or secret: change it</string>
     <string name="in_status_unreadable">The saved token can\'t be read: enter it again</string>
     <string name="in_status_paused">Paused: another app (%1$s) uploads to this site</string>
+    <string name="in_status_same_as_source">Your source: glucose never goes back to it; treatments go both ways in Settings › Source</string>
     <string name="in_status_waiting">On · nothing sent yet</string>
     <plurals name="in_status_ok">
         <item quantity="one">Last upload %1$s · %2$d item</item>
@@ -393,4 +394,20 @@
     <string name="in_import_report">Report the problem</string>
     <string name="in_import_err_unreadable">Couldn\'t open the file. Choose it again.</string>
     <string name="in_import_err_signed_out">Not signed in to Tidepool. Sign in, then import again.</string>
+    <string name="in_nss_title">Nightscout</string>
+    <string name="in_nss_site">Site</string>
+    <string name="in_nss_site_none">Not connected</string>
+    <string name="in_nss_status">Status</string>
+    <string name="in_nss_treatments">Treatments both ways</string>
+    <string name="in_nss_treatments_on">Nightscout’s arrive here; yours go there</string>
+    <string name="in_nss_treatments_read_only">This token can only read: your treatments stay on this phone. A token with the careportal role sends them.</string>
+    <string name="in_nss_treatments_off">Only glucose comes from the site</string>
+    <string name="in_nss_open">Open Nightscout</string>
+    <string name="in_nss_open_summary">Your site in the browser</string>
+    <string name="in_nss_history">Bring back 90 days</string>
+    <string name="in_nss_history_summary">Readings of the last 90 days from your site, never twice</string>
+    <string name="in_nss_history_pulling">Bringing back readings since %1$s…</string>
+    <string name="in_tp_from_source">Glucose and treatments from Nightscout</string>
+    <string name="in_tp_from_source_summary">Off: your site may send them to Tidepool itself, and twice would count double</string>
+    <string name="in_tp_from_source_on">Sent to Tidepool. If your site sends them too, they count twice there</string>
 </resources>

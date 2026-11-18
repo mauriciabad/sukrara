@@ -65,7 +65,8 @@ class TreatmentLog(
     suspend fun mayChange(id: String): Boolean {
         val writer = sync.writer.value ?: return false
         val stored = repository.get(id) ?: return false
-        return WriterScope.mayChange(writer, stored.creator)
+        // taken from the Nightscout source's site: changed there, never here (docs/44)
+        return !stored.fromSite && WriterScope.mayChange(writer, stored.creator)
     }
 
     /** Brings [previous] (what [edit] or [delete] returned) back as the newest version. */
@@ -89,7 +90,7 @@ class TreatmentLog(
     ): Treatment? {
         val writer = sync.writer.value ?: return null
         val stored = repository.get(id) ?: return null
-        if (!WriterScope.mayChange(writer, stored.creator)) return null
+        if (stored.fromSite || !WriterScope.mayChange(writer, stored.creator)) return null
         val modifiedAt = maxOf(clock.now(), stored.treatment.modifiedAt.plusMillis(1))
         val next = change(stored.treatment).copy(id = id, modifiedAt = modifiedAt)
         write(stored.copy(treatment = next, author = writer.key, delivery = writer.delivery))

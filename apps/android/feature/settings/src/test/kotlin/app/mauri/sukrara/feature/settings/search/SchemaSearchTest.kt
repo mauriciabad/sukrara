@@ -70,6 +70,9 @@ class SchemaSearchTest {
             put("source.person", R.string.st_source_whose to source)
             put("source.kind", R.string.st_source_from to source)
             put("source.jugglucoSecret", R.string.st_sensor_juggluco_secret to source)
+            put("source.nightscoutUrl", R.string.st_source_ns_site to source)
+            put("source.nightscoutSecret", R.string.st_source_ns_site to source)
+            put("source.nightscoutTreatments", R.string.st_source_ns_treatments to source)
             put("alerts.on", R.string.st_alerts_main to page(SettingsRoute.Alerts))
             put("alerts.kind.on", R.string.st_kind_low to page(SettingsRoute.Alerts))
             for (k in listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast", "no_data")) {

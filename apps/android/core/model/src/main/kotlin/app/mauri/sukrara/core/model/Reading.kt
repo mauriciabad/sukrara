@@ -97,8 +97,17 @@ value class SourceId(val id: String) {
         val SmartGuide = SourceId("accu-chek-smartguide")
         val AidexX = SourceId("aidex-x")
 
-        /** What this phone gets first-hand: its own sensor, or an app on it that reads one (never relayed). */
-        val FirstHand: Set<SourceId> = setOf(Libre3, Juggluco, DexcomG7, DexcomG6, SmartGuide, AidexX)
+        /** A Nightscout site read as the source (source `nightscout`): first-hand, online, never uploaded back to it. */
+        val Nightscout = SourceId("nightscout")
+
+        /** What reaches this phone over the internet from a service (contracts/sources/outputs.json): no sensor label. */
+        val Online: Set<SourceId> = setOf(Nightscout)
+
+        /**
+         * What this phone gets first-hand: its own sensor, an app on it that reads one, or an online source (never
+         * relayed by another Sukrara).
+         */
+        val FirstHand: Set<SourceId> = setOf(Libre3, Juggluco, DexcomG7, DexcomG6, SmartGuide, AidexX, Nightscout)
 
         /** Another Sukrara's readings over Nostr relays (source `sukrara`). */
         val Relay = SourceId("relay")

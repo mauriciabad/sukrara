@@ -51,4 +51,5 @@ fun uploadStatusText(
         is UploadStatus.Ok -> pluralStringResource(R.plurals.in_status_ok, status.count, ago(status.at, now), status.count)
         is UploadStatus.Failing -> stringResource(R.string.in_status_failing, stringResource(status.why.text))
         is UploadStatus.Behind -> stringResource(R.string.in_status_behind, since(status.since, now), behindWhy(status))
+        UploadStatus.SameAsSource -> stringResource(R.string.in_status_same_as_source)
     }

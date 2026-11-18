@@ -117,7 +117,8 @@ fun SetupScreen(
     }
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val search by viewModel.nearbySearch.collectAsStateWithLifecycle()
-    val u = ui?.copy(nearby = search) ?: return
+    val site by viewModel.site.collectAsStateWithLifecycle()
+    val u = ui?.copy(nearby = search, site = site) ?: return
     val haptics = rememberHaptics()
     // nothing left to show (the view model decides: the walk's end, the last Finish-setup step, the one step answered)
     if (u.step == null) {
@@ -182,6 +183,11 @@ data class SetupActions(
     val sendTestAlert: (() -> Unit)? = null,
     val openSensorSetup: () -> Unit = {},
     val completeSensor: () -> Unit = {},
+    /** *Connect* on the online source's step (address, token or API secret). */
+    val connectSite: (address: String, credential: String) -> Unit = { _, _ -> },
+    val clearSiteResult: () -> Unit = {},
+    /** *Bring back 90 days from Nightscout* on the history step. */
+    val pullSiteHistory: () -> Unit = {},
     val thresholdRows: ThresholdRows = { _, _ -> },
     val editThreshold: (AlertKind, Double) -> Unit = { _, _ -> },
     val confirmAlerts: () -> Unit = {},
@@ -247,6 +253,9 @@ private fun SetupViewModel.actions(
             letThroughDnd = ::readinessLetThroughDnd,
             openSensorSetup = onOpenSensorSetup,
             completeSensor = ::completeSensor,
+            connectSite = ::connectSite,
+            clearSiteResult = ::clearSiteResult,
+            pullSiteHistory = ::pullSiteHistory,
             thresholdRows = thresholdRows,
             editThreshold = ::editThreshold,
             confirmAlerts = ::confirmAlerts,
@@ -338,12 +347,10 @@ fun SetupContent(
                         }
 
                         SetupStep.Sensor -> {
-                            if ((u.facts.spec ?: u.facts.running)?.kind ==
-                                SourceKind.PhoneApp
-                            ) {
-                                JugglucoStep(u, actions)
-                            } else {
-                                SensorStep(u, actions)
+                            when ((u.facts.spec ?: u.facts.running)?.kind) {
+                                SourceKind.PhoneApp -> JugglucoStep(u, actions)
+                                SourceKind.Nightscout -> SiteStep(u, actions)
+                                else -> SensorStep(u, actions)
                             }
                         }
 
@@ -364,7 +371,7 @@ fun SetupContent(
                         }
 
                         SetupStep.History -> {
-                            HistoryStep(actions)
+                            HistoryStep(u, actions)
                         }
                     }
                     Spacer(Modifier.size(24.dp))
@@ -698,7 +705,25 @@ private fun ColumnScope.SensorStep(
  * already are, never twice. Offered once: *Bring it back* (done) or *Start empty* (skipped); both are final.
  */
 @Composable
-private fun ColumnScope.HistoryStep(actions: SetupActions) {
+private fun ColumnScope.HistoryStep(
+    u: SetupUi,
+    actions: SetupActions,
+) {
+    // source-aware (docs/44): a site that keeps the history brings it back in one tap, the other ways stay
+    if ((u.facts.spec ?: u.facts.running)?.online == true) {
+        StepHeader(stringResource(R.string.sh_setup_history_title), stringResource(R.string.sh_setup_history_site_body))
+        NoticeCard(stringResource(R.string.sh_setup_history_note))
+        StepButtons(
+            stringResource(R.string.sh_setup_history_site_open),
+            actions.pullSiteHistory,
+            secondary =
+                listOf(
+                    stringResource(R.string.sh_setup_history_site_other) to actions.openHistoryImport,
+                    stringResource(R.string.sh_setup_history_skip) to { actions.skip(SetupStep.History) },
+                ),
+        )
+        return
+    }
     StepHeader(stringResource(R.string.sh_setup_history_title), stringResource(R.string.sh_setup_history_body))
     NoticeCard(stringResource(R.string.sh_setup_history_note))
     StepButtons(

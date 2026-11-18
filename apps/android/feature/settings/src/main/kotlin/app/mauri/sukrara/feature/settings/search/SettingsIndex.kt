@@ -459,6 +459,9 @@ object SettingsIndex {
                     group = R.string.st_sensor_juggluco,
                 ),
             )
+            // a Nightscout site's rows (`:integrations`' NightscoutSourceRows): the site (its token with it), both ways
+            add(SearchEntry(R.string.st_source_ns_site, source, listOf(R.string.st_source_title), group = R.string.st_source_ns))
+            add(SearchEntry(R.string.st_source_ns_treatments, source, listOf(R.string.st_source_title), group = R.string.st_source_ns))
             // Sensor → Source: where the glucose comes from is chosen there
             add(
                 SearchEntry(
