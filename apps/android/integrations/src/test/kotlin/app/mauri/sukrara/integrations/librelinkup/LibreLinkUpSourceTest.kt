@@ -422,7 +422,12 @@ class LibreLinkUpSourceTest {
                     ?.content
                     ?.let { o -> CallOutcome.entries.first { it.name.equals(o, ignoreCase = true) } }
             val retryAfter = c["retryAfter_s"]?.takeIf { it != JsonNull }?.jsonPrimitive?.long
-            val want = c.getValue("wait_s").takeIf { it != JsonNull }?.jsonPrimitive?.long
+            val want =
+                c
+                    .getValue("wait_s")
+                    .takeIf { it != JsonNull }
+                    ?.jsonPrimitive
+                    ?.long
             assertEquals(
                 c.getValue("name").jsonPrimitive.content,
                 want,
