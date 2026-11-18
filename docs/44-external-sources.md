@@ -1008,10 +1008,10 @@ Discarded or deferred, with reasons:
 
 ## Decisions for the owner
 
-**Waiting on the owner (2026-11-18): switching sources with a Sukrara link.** The journey review in Appendix G
-recommends *one person, one link* and lists 8 decisions (its §5): D vs A / B / C, other sources on a linked device,
-the `leave` event and last-seen, settings and history when leaving a link, C as a later backup path, *Default* in
-*Settings from*, the cost to testing.
+**Owner, 2026-11-18: switching sources with a Sukrara link, decided.** The journey review in Appendix G recommended
+*one person, one link* (D); the owner's answers are at its top: D yes, other sources stay visible behind *Keep
+following?*, leaving asks which settings and whether to keep the history, *Settings from* loses *Default*, the `leave`
+message, no backup source (decision 6 declined). The rules both apps pass: `contracts/sources/link.json`.
 
 **Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes
 with every root setup and isn't an issue (the Libre app ran on their rooted phone with it, so a test R1 is
