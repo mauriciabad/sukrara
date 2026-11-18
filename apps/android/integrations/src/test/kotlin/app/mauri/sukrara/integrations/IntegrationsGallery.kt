@@ -57,6 +57,7 @@ import app.mauri.sukrara.integrations.history.ImportTally
 import app.mauri.sukrara.integrations.history.ImportUi
 import app.mauri.sukrara.integrations.libreview.LibreViewActions
 import app.mauri.sukrara.integrations.libreview.LibreViewContent
+import app.mauri.sukrara.integrations.libreview.LvIdentity
 import app.mauri.sukrara.integrations.libreview.LvPageState
 import app.mauri.sukrara.integrations.libreview.LvSettings
 import app.mauri.sukrara.integrations.libreview.LvTakeOverUi
@@ -415,6 +416,44 @@ class IntegrationsGallery {
             "libreview-auth-failed" to {
                 LibreViewContent(
                     LvPageState(LvSettings(on = true), true, "person@example.com", UploadStatus.AuthFailed, lvFrom),
+                    true,
+                    LvTakeOverUi.Idle,
+                    now,
+                    LibreViewActions(),
+                    false,
+                    {},
+                )
+            },
+            // beside the Libre 3 app (LibreLinkUp is the source): treatments as FreeStyle LibreLink, log in one app only
+            "libreview-beside" to {
+                LibreViewContent(
+                    LvPageState(
+                        LvSettings(on = true),
+                        true,
+                        "person@example.com",
+                        UploadStatus.Ok(now - Duration.ofMinutes(3), 2),
+                        lvFrom,
+                        besideAs = LvIdentity.LibreLink,
+                    ),
+                    true,
+                    LvTakeOverUi.Idle,
+                    now,
+                    LibreViewActions(),
+                    false,
+                    {},
+                )
+            },
+            // the watchdog stopped it: the Libre app stopped uploading right after Sukrara's sign-in
+            "libreview-libre-app-stopped" to {
+                LibreViewContent(
+                    LvPageState(
+                        LvSettings(on = true),
+                        true,
+                        "person@example.com",
+                        UploadStatus.LibreAppStopped(now - Duration.ofMinutes(14)),
+                        lvFrom,
+                        besideAs = LvIdentity.LibreLink,
+                    ),
                     true,
                     LvTakeOverUi.Idle,
                     now,

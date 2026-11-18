@@ -135,6 +135,18 @@ class BannerSlotTest {
         assertEquals(BannerKind.NotBackedUp, pick(env = env.copy(clinicBehind = null)))
     }
 
+    @Test fun `the Libre app stopped after a LibreView sign-in shows above a stalled upload, until closed, for that stop only`() {
+        val stop = NOW.minus(Duration.ofMinutes(12))
+        val env = HomeEnvironment(backedUp = false, clinicBehind = NOW.minus(Duration.ofHours(3)), libreAppStopped = stop)
+        assertEquals(BannerKind.LibreAppStopped, pick(env = env))
+        assertEquals(BannerKind.FeatureBlocked, pick(env = env.copy(blocked = listOf(BlockedFeature.HealthConnect))))
+        val memory = BannerMemory().dismissKey(env.stoppedKey!!, NOW)
+        assertEquals(BannerKind.ClinicUploadBehind, pick(env = env, memory = memory))
+        // another stop shows again; sent again (no stop): gone
+        assertEquals(BannerKind.LibreAppStopped, pick(env = env.copy(libreAppStopped = NOW), memory = memory))
+        assertEquals(BannerKind.ClinicUploadBehind, pick(env = env.copy(libreAppStopped = null)))
+    }
+
     @Test fun `Undo and Show closed tips bring closed tips back`() {
         val env = HomeEnvironment(backedUp = false, widgetPlaced = false)
         val two = BannerMemory().dismiss(BannerKind.NotBackedUp, NOW).dismiss(BannerKind.AddWidget, NOW)

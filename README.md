@@ -54,8 +54,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   Start (or the start you set when it has none), and never uploaded back to the same site.
 - Can read LibreLinkUp as the source while the Libre app keeps the sensor (your own glucose, or someone else's with
   your LibreLinkUp account), on the phone and on a Mac without Sukrara on the phone: about 10 seconds late, 12
-  hours back, the sensor's life; nothing goes back to LibreView while the Libre app uploads there; on the phone, take the
-  sensor over in Sukrara with an NFC tap whenever you're ready; on the Mac, your treatments stay on the Mac. Abbott may
+  hours back, the sensor's life; while the Libre app uploads your glucose to LibreView, Sukrara sends your treatments
+  there beside it, as a second device (*FreeStyle LibreLink*), without touching the Libre app's upload (log each
+  treatment in one app only); on the phone, take the sensor over in Sukrara with an NFC tap whenever you're ready; on the Mac, your treatments stay on the Mac. Abbott may
   change or end LibreLinkUp any day: Sukrara says so when it stops.
 - Everything stays on your phone by default.
 - [Planned]: Define a formal open standard for sharing glucose over Nostr.

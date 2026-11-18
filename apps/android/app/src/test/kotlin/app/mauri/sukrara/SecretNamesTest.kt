@@ -35,6 +35,7 @@ class SecretNamesTest {
                 TidepoolUploader.NAME,
                 TidepoolUploader.EMAIL,
                 LibreViewUploader.NAME,
+                LibreViewUploader.LINK_NAME,
                 LibreViewLogin.NAME,
                 PairingStore.NAME,
                 SecretName.JUGGLUCO, // JugglucoSecret writes it by this name

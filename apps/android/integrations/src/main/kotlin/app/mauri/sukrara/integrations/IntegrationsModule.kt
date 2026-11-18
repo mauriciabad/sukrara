@@ -241,12 +241,14 @@ class IntegrationsModule(
             sensor,
             libreViewLogin,
             role,
-            LibreViewClient(http),
+            // a debug build's fake LibreLinkUp serves LibreView's app API too (tools/librelinkup-probe/fake.py)
+            libreLinkUpServer?.let { (scheme, host) -> LibreViewClient.fake(http, scheme, host) } ?: LibreViewClient(http),
             clock,
             dispatchers.io,
             log,
             uploadHold,
             readings.latest(),
+            libreLinkUpSource.uploader,
         )
 
     val xdrip = XdripServer(settings, readings, sensor, jugglucoIsSource, clock, dispatchers.io)

@@ -187,6 +187,9 @@ class HomeGallery {
             // #213: LibreLinkUp is the source and the Libre app uploads: the entry waits, nothing is wrong
             "libreview-waits-libre-app" to
                 ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.WaitsForLibreApp)),
+            // docs/45: the Libre app stopped uploading right after Sukrara's LibreView sign-in beside it
+            "libreview-libre-app-stopped" to
+                ui(Samples.wearer(), banner = BannerKind.LibreAppStopped).copy(libreAppStopped = NOW.minus(Duration.ofMinutes(12))),
         )
     }
 

@@ -290,20 +290,31 @@ The owner: "while libreview is under maintenance librelinkup doesn't work either
 
 ## In Sukrara
 
-*Not built yet.* What building it would take:
-- **`LibreViewClient` gains the identity.**
-  - LibreLink's config by the account's `Country` (GB as fallback).
-  - Its headers (`Android/…/FSLL/2.10.1.10406`, token in the body only).
-  - The LibreLink body: Juggluco's `libreview.cpp` template, as `lv45.py librelink_payload`, plus a fixture in
-    `contracts/treatments` and SPEC §3.
-- **`LibreViewUploader`.**
-  - Where `officialAppUploads` pauses today, send treatments only, as the other identity, with its own DeviceId (`LvState`
-    keeps one per identity).
-  - The take-over on that identity is a tap.
-  - Add the LibreLinkUp watchdog.
-  - The pick comes from the source's `dtid`.
-- **Words.** The page, *Take over* and the status say which app keeps the glucose. FEATURES "LibreView upload".
-- **The Mac:** nothing; it doesn't upload.
+*2026-11-18, the owner: "yes, build this so sukrara can also upload treatments. 'a dose logged in both apps shows
+twice' it is fine. just let the user know he has to log only in one app."* Android (the Mac doesn't upload). Offline
+only: tests against MockWebServer and the contract, an emulator against the fake; the live round on the owner's phone
+comes after LibreView's downtime.
+
+| Added | Where |
+|---|---|
+| The identity: the Libre 3 app's and LibreLink's config, headers (LibreLink: `FSLL` on the sign-in only, the token in the body only, no API key) and body (Juggluco's template, Sukrara's device names, the Libre 3 body's settings and entries byte for byte); a token per identity, the identity in it | `:integrations` `LvIdentity`, `LibreViewClient`, `LibreViewPayload.linkPayload`; SecureStore `libreview-librelink`; contracts/treatments/SPEC.md §3 "LibreLink", `libreview-librelink-fixture.json` (`lv45.py fixture`); `LibreViewPayloadTest` |
+| The pick from LibreLinkUp's `dtid` (`connection.patientDevice`, else `activeSensors[0].device`; kept in `librelinkup-source`): 40068 → send as LibreLink; 40066 / 40067 → as the Libre 3 app; else nothing | `LibreLinkUp.deviceType`, `LluSourceState.deviceType`, `LibreLinkUpSource.uploader`, `LvIdentity.ofDeviceType`; the fixture's `identities` / `deviceType`; `LibreLinkUpSourceTest` |
+| Beside the official app: treatments only, under the other identity, its own DeviceId (`LvState.linkDeviceId`); no glucose, registration or `sensorstart`; a sign-in at once on that identity (another device there shows *Take over* before anything is logged) | `LibreViewUploader` (`LvMode`, `uploadOn`); `LibreViewUploaderTest` *issue 213 - beside …* |
+| **The guard**: every sign-in and take-over goes through one function that refuses the official app's identity, and every identity while it's unknown, read at that moment | `LibreViewUploader.signInOn`, `LvIdentity.mayUse`; *THE guard* test (cycles, refused tokens, another device, *Take over*, the `dtid` changing between them: no request under the official identity) |
+| An entry stays under the identity it first went up under: its edits and deletes go there, they wait while it is the official app's; back as the uploader, a LibreLink entry is corrected as LibreLink, new ones go as the Libre 3 app; glucose from the takeover on (39ea0076e) | `LvSent.via`, `LibreViewQueue.home`, `LvEntryMarks.waits`; *back as the uploader …* test |
+| The watchdog: each sign-in beside the official app watched; LibreLinkUp answering for 10 min with no reading newer than it (the app had uploaded in the 5 min before) → stopped, says why and how to fix (sign the Libre app out and in), *Send again*; home's banner | `LvWatchdog`, `LvState.watch` / `libreAppStopped`, `UploadStatus.LibreAppStopped`, `BannerKind.LibreAppStopped`; watchdog tests, `BannerSlotTest` |
+| The person's view: *Beside the Libre app* (who sends what, the device *FreeStyle LibreLink*, **log each treatment in one app only**), *Glucose* "The Libre app sends it", the take-over dialog naming the identity and that the Libre app isn't affected; home's marks go up now | `LibreViewPage`, `in_lv_*` strings (en, es), `LibreViewMarks`; `IntegrationsGallery` / `HomeGallery` |
+| A fake LibreView for the emulator: the LibreLinkUp fake serves the app API too, keeps one session per identity, and stops its readings on a sign-in under the official app's identity (`lvmerge`: under either) | `tools/librelinkup-probe/fake.py`, `LibreViewClient.fake`, the `LIBRELINKUP` debug command; docs/QA.md Q30 |
+
+| Discarded | Why |
+|---|---|
+| LibreLink's config by the account's country | the GB config's server took the EU account's sign-in and upload (G, H); the Libre 3 identity already uses one config (DE) for everyone. One URL, the same for all; a country that fails says so in the status |
+| The LibreLink body's target range 70–180 (lv45's, Juggluco's) | 70–140, the Libre 3 body's: the two identities never send the account two different ranges |
+| Reading the official app's treatments to avoid doubles | LibreLinkUp carries none; the owner accepts the double and asked for the one-app rule instead |
+| A sign-in only when there is something to send (beside the official app) | fewer sign-ins near the Libre app, but another device on that identity would show only after the first dose waits; the sign-in is on the identity the official app doesn't use, and the watchdog watches it |
+| Resuming by itself once LibreLinkUp's readings come back after a stop | if LibreView merged the sessions, the next sign-in stops the Libre app again: a loop the person sees as glucose that keeps stopping. *Send again* is one tap after the fix the person makes anyway |
+| A separate *Take over* for corrections of LibreLink entries while Sukrara is the uploader | only an older LibreLink install would block them; they stay *Updating* in the list until then. Rare, and the page's *Take over* is for the identity Sukrara sends new entries under |
+| The Mac | it doesn't upload |
 
 **Reading the Libre app's treatments (45b), if the owner wants it:** a separate decision, also not built.
 - **The sign-in.** The website's own sign-in, a second one beside the LibreLinkUp login. Its SMS or email code is typed

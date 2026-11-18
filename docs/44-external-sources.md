@@ -45,8 +45,7 @@ The owner's words (the issue and its three comments), condensed:
 - **Name**: *Source* (es *Origen*).
 - **No duplicates or loops**: only the first Sukrara that gets your glucose shares and uploads it, never back to where it
   came from. LibreView takes one uploader per *app identity* ([45](45-libreview-two-uploaders.md)). While the official
-  app uploads, Sukrara sends it nothing today. Treatments as the other identity are proven possible; that is decision 4,
-  back with the owner.
+  app uploads, Sukrara sends only its treatments, as the other identity (decision 4, decided).
 - **The move is earned**: evidence on the Source page, a suggestion only at a sensor change for a tested family, a
   self-ticking checklist and a way back.
 - **Cost**: the Person × Source change is the large part and ships first, with no new data path.
@@ -349,8 +348,8 @@ glucose** keeps today's *Delete the earlier history?* dialog, then the source pi
 5. **One reading per measurement** (rank rule); **one treatment per id** (`merge.json`), then same kind ±2 min and amount.
 6. **LibreView takes one uploader per app identity** ([45](45-libreview-two-uploaders.md)). Taking over, or even signing
    in with the official app's own DeviceId, stops the official app's glucose silently, and so the LibreLinkUp source.
-   **Nothing to LibreView under the official app's identity while it uploads.** Treatments as the *other* identity leave
-   it alone (45, proven live). Until the owner decides decision 4 again, nothing goes up; glucose resumes at the move
+   **Nothing to LibreView under the official app's identity while it uploads.** Treatments go up as the *other*
+   identity, which leaves it alone (45, proven live; decision 4, built); no glucose until the move: glucose resumes there
    ([Juggluco agrees](https://www.juggluco.nl/Jugglucohelp/libreview.html)).
 7. **A sensor label only from a sensor Sukrara reads** ([22](22-ecosystem-outputs.md)): `SourceInfo=Libre3` turns on
    AAPS's *SMB always*; app, network and cloud readings go out as `Sukrara`, so no loop trusts internet readings as a
@@ -359,7 +358,7 @@ glucose** keeps today's *Delete the earlier history?* dialog, then the source pi
 | Source ↓ · target → | LibreView | Tidepool | Nightscout Y | Health Connect | Sukrara followers | Broadcasts, Garmin |
 |---|---|---|---|---|---|---|
 | Sukrara reads your sensor | ✓ | ✓ (3) | ✓ | ✓ | ✓ | ✓ labelled |
-| Sensor beside / the official app | ✗ (6) | ✓ (3) | ✓ | ✓ | ✓ | ✓ (7) |
+| Sensor beside / the official app | treatments only, as the other identity (6) | ✓ (3) | ✓ | ✓ | ✓ | ✓ (7) |
 | Juggluco / xDrip+ / AAPS on the phone | as today | ✓ | ✓, off if that app uploads itself | ✓ | ✓ | ✓, never back to it |
 | LibreLinkUp · Dexcom Share | ✗ (2) | ✓ (3) | ✓ | ✓ | ✓ | ✓ (7) |
 | Nightscout site X | ✗ | off by default | X: treatments both ways; Y ✓ | ✓ | ✓ | ✓ (7) |
@@ -435,9 +434,8 @@ re-sharing someone else's glucose (decision 9), a Clarity file import, root read
 
 ## Gaps (asked, not answered by either note)
 
-- **Treatments to LibreView while the official app uploads**: *answered by [45](45-libreview-two-uploaders.md)*. They
-  are possible as the other app identity (LibreLink beside the Libre 3 app) without touching its glucose; decision 4. They wait and go up at *Take over* ("In Sukrara",
-  treatments while the Libre app holds the sensor).
+- **Treatments to LibreView while the official app uploads**: *answered by [45](45-libreview-two-uploaders.md) and
+  built* (decision 4): as the other app identity (LibreLink beside the Libre 3 app), without touching its glucose.
 - **The Libre app's notification**: unverified; decides Libre's only offline path and the order of steps 2 and 3.
 - **Battery** of two apps plus a poll each minute: no numbers; measure in step 2.
 - **Sukrara's own LibreView sign-in** rides on the LibreLinkUp 4.x login: when Abbott ends it, new sign-ins (a new Libre
@@ -1010,7 +1008,8 @@ Discarded or deferred, with reasons:
   logged, once. Worth a probe if people stay in the two-app setup for long. *Probed in 45b: the format carries them
   (hour sums, long-acting without its minute); the extra step is an SMS or email code, then a trusted-device token; about
   400 requests a day at a 15-minute pace. Still deferred: the owner decides.*
-- **Taking over LibreView for treatments only**: decision 4 (it stops the Libre app's glucose, so the source).
+- **Taking over LibreView for treatments only**: it stops the Libre app's glucose, so the source. *Decision 4 sends
+  them as the other identity instead ("In Sukrara", treatments beside the Libre app).*
 - **Joining the Libre app's dose and its same-minute note into one treatment on import**: closer to what was logged,
   but a person's separate note of that minute would fold into the dose; two rows lose nothing. Later if asked.
 - **An insulin's or carbs' note to LibreView**: the Libre app sends it as a second record (a custom note of the same
@@ -1040,6 +1039,13 @@ Discarded:
 - *Read another way…* as a separate row while linked: *Where it comes from* already lists every source and asks
   *Keep following?* first, one pattern instead of two.
 - A follow row in *Also saved on this phone*: under D a follow is never kept behind another source.
+
+**Treatments beside the Libre app (2026-11-18, decision 4 decided, Android).** The waiting above becomes the exception:
+while LibreLinkUp is your source, the LibreView upload sends the treatments as the app identity the Libre app doesn't
+use (from LibreLinkUp's `dtid`), never glucose, never a sign-in on the Libre app's identity, with a watchdog on
+LibreLinkUp; the page says to log each treatment in one app only. Entries wait (the mark above) only when LibreLinkUp
+doesn't say which app uploads, or when LibreView has the entry under the Libre app's identity. What was built and left
+out: [45 "In Sukrara"](45-libreview-two-uploaders.md#in-sukrara).
 
 ## Decisions for the owner
 
@@ -1083,7 +1089,10 @@ Ordered by how much they block.
    ***Reopened (2026-11-18, [45](45-libreview-two-uploaders.md)):*** *the premise "one uploader per account" was wrong. It
    is one per app identity, so Sukrara can send its treatments as LibreLink while the Libre 3 app keeps the glucose
    (proven live, the Libre app's upload untouched). New recommendation: **treatments as the other identity**, a second
-   device "FreeStyle LibreLink" for the clinic, a watchdog on LibreLinkUp, no glucose. Waiting on the owner.*
+   device "FreeStyle LibreLink" for the clinic, a watchdog on LibreLinkUp, no glucose.*
+   ***Decided (owner, 2026-11-18):*** *"yes, build this so sukrara can also upload treatments. 'a dose logged in both
+   apps shows twice' it is fine. just let the user know he has to log only in one app." Built: "In Sukrara",
+   treatments beside the Libre app.*
 5. **Name *Source*** (es *Origen*)? *Recommend yes*: one word, the in/out pair with *Share with apps*.
 6. **Online sources alert**, late as they are, with *Both ring* as the default and no *Sukrara rings* for them?
    *Recommend yes*: never fewer alarms than the official app alone.

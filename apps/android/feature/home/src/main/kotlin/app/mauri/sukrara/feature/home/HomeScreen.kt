@@ -1097,7 +1097,12 @@ private fun banner(
     // lacks glucose); the rest are tips
     val severity =
         when (kind) {
-            BannerKind.TapsBlocked, BannerKind.FeatureBlocked, BannerKind.ClinicUploadBehind -> NoticeTone.Warning
+            BannerKind.TapsBlocked,
+            BannerKind.FeatureBlocked,
+            BannerKind.LibreAppStopped,
+            BannerKind.ClinicUploadBehind,
+            -> NoticeTone.Warning
+
             else -> if (kind.safety) NoticeTone.Error else NoticeTone.Info
         }
     return when (kind) {
@@ -1201,6 +1206,21 @@ private fun banner(
                     } else {
                         null
                     },
+            )
+        }
+
+        // Sukrara's LibreView sign-in beside the Libre app stopped its upload: Fix opens the LibreView page (what to do)
+        BannerKind.LibreAppStopped -> {
+            val at = state.libreAppStopped ?: return null
+            Banner(
+                "${kind.name}:${at.epochSecond}",
+                R.drawable.home_ic_cloud_off,
+                stringResource(R.string.banner_libre_app_stopped_title),
+                stringResource(R.string.banner_libre_app_stopped_text),
+                stringResource(R.string.banner_alerts_action),
+                open(HomeAction.OpenClinicUpload),
+                dismiss,
+                severity,
             )
         }
 

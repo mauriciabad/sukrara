@@ -304,4 +304,56 @@ object LibreViewPayload {
             "\"scheduledContinuousGlucoseEntries\":[${hist.joinToString(",")}],\"unscheduledContinuousGlucoseEntries\":[]}}," +
             "\"UserToken\":${jstr(token)},\"Domain\":\"Libreview\",\"GatewayType\":\"$GATEWAY\"}"
     }
+
+    /** What LibreLink declares it sends (Juggluco `libreview.cpp`'s template, docs/45 `lv45.py librelink_payload`). */
+    private val LINK_CAPS =
+        listOf("scheduledContinuousGlucose", "unscheduledContinuousGlucose", "currentGlucose", "bloodGlucose", "insulin", "food") +
+            listOf(
+                "exercise",
+                "customnote",
+                "ondemandalarm.low",
+                "ondemandalarm.high",
+                "ondemandalarm.projectedlow",
+                "ondemandalarm.projectedhigh",
+                "sensorstart",
+                "error",
+                "isfGlucoseAlarm",
+                "alarmSetting",
+                "sensorend",
+                "bleDisconnect",
+                "bleReconnect",
+            ).map { "generic-com.abbottdiabetescare.informatics.$it" }
+
+    /**
+     * The `/api/measurements` body as the LibreLink app sends it (contracts/treatments/SPEC.md §3 "LibreLink",
+     * `libreview-librelink-fixture.json`): treatments only, beside the official Libre 3 app (docs/45). The entries are
+     * byte for byte the Libre 3 identity's (the same record numbers); never glucose, never a `sensorstart`: the official
+     * app sends those. The clinic sees it as the device *FreeStyle LibreLink*.
+     */
+    fun linkPayload(
+        entries: List<LvEntry>,
+        deviceId: String,
+        token: String,
+        now: Long,
+        zone: ZoneId,
+    ): String {
+        val trs = entries.sortedWith(compareBy({ it.t }, { it.id }))
+
+        fun of(vararg kinds: String) = trs.filter { it.k in kinds }.flatMap { entries(it, zone) }.joinToString(",")
+        val device =
+            "\"device\":{\"hardwareDescriptor\":\"Sukrara\",\"hardwareName\":\"Sukrara\",\"modelName\":\"com.freestylelibre.app.gb\"," +
+                "\"osType\":\"Android\",\"osVersion\":\"36\",\"uniqueIdentifier\":${jstr(deviceId)}}"
+        return "{\"DeviceData\":{\"connectedDevices\":{\"insulinDevices\":[]},\"deviceSettings\":{\"factoryConfig\":{\"UOM\":\"mg/dL\"}," +
+            "\"firmwareVersion\":\"2.12.0\",\"miscellaneous\":{\"isStreaming\":false,\"selectedLanguage\":\"$CULTURE\"," +
+            "\"valueGlucoseTargetRangeLowInMgPerDl\":70,\"valueGlucoseTargetRangeHighInMgPerDl\":140,\"selectedTimeFormat\":\"24hr\"," +
+            "\"selectedCarbType\":\"grams of carbs\"},\"timestamp\":\"${localMs(
+                now,
+                zone,
+            )}\"},\"forceUpload\":false,\"header\":{$device}," +
+            "\"measurementLog\":{\"bloodGlucoseEntries\":[],\"capabilities\":[${LINK_CAPS.joinToString(",") { jstr(it) }}]," +
+            "\"currentGlucoseEntries\":[],$device,\"foodEntries\":[${of("carbs")}],\"genericEntries\":[${of("note")}]," +
+            "\"insulinEntries\":[${of("rapid", "long")}],\"ketoneEntries\":[],\"scheduledContinuousGlucoseEntries\":[]," +
+            "\"unscheduledContinuousGlucoseEntries\":[]}},\"UserToken\":${jstr(token)},\"Domain\":\"Libreview\"," +
+            "\"GatewayType\":\"${LvIdentity.LibreLink.gateway}\"}"
+    }
 }

@@ -264,4 +264,6 @@
     <string name="report_footer">Datos del sensor durante el %1$s %% del periodo. Rangos y objetivos del consenso internacional.</string>
     <string name="home_pen_read_ago">Pluma leída hace %1$s</string>
     <string name="home_pen_hint_carbs">¿Te has inyectado? Acerca la pluma al móvil.</string>
+    <string name="banner_libre_app_stopped_title">La app Libre dejó de subir</string>
+    <string name="banner_libre_app_stopped_text">LibreLinkUp no recibió glucosa después de que Sukrara iniciara sesión en LibreView. En la app Libre, cierra sesión y vuelve a iniciarla.</string>
 </resources>

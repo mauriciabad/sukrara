@@ -100,6 +100,8 @@ class HomeModule(
     private val clinicUploadSet: () -> Flow<Boolean?> = { emptyFlow() },
     /** Since when LibreView lacks the wearer's glucose while its upload has stalled (null: it hasn't, or a follower). */
     private val clinicBehind: () -> Flow<Instant?> = { emptyFlow() },
+    /** The sign-in after which the Libre app stopped uploading, so the LibreView upload stopped (null: it didn't). */
+    private val libreAppStopped: () -> Flow<Instant?> = { emptyFlow() },
     /** The daily update check is off (the GitHub version's suggestion banner); null = no updater in this build. */
     private val updateChecksOff: () -> Flow<Boolean?> = { emptyFlow() },
     /** What the clinic upload has of the entries (the list's cloud marks); a function: integrations start later. */
@@ -166,6 +168,7 @@ class HomeModule(
         }
         scope.launch { clinicUploadSet().collect { set -> env.update { it.copy(clinicUploadSet = set) } } }
         scope.launch { clinicBehind().collect { at -> env.update { it.copy(clinicBehind = at) } } }
+        scope.launch { libreAppStopped().collect { at -> env.update { it.copy(libreAppStopped = at) } } }
         scope.launch { updateChecksOff().collect { off -> env.update { it.copy(updateChecksOff = off) } } }
         scope.launch { featureChecks.blocked.collect { b -> env.update { it.copy(blocked = b) } } }
         scope.launch { followPath().collect { p -> env.update { it.copy(followPath = p) } } }

@@ -92,11 +92,16 @@ data class LluSensor(
     val start: Instant,
 )
 
-/** One graph answer: the readings (the live one and the graph's points), the sensor, the person's name. */
+/**
+ * One graph answer: the readings (the live one and the graph's points), the sensor, the person's name, and the device
+ * type of the app that uploads them ([deviceType], `dtid`: 40068 = the FreeStyle Libre 3 app, 40066 / 40067 = LibreLink;
+ * null = not said), which decides the identity Sukrara may send to LibreView under (docs/45).
+ */
 data class LluGraph(
     val readings: List<Reading>,
     val sensor: LluSensor?,
     val name: String,
+    val deviceType: Int? = null,
 )
 
 /**
@@ -394,7 +399,17 @@ class LibreLinkUp(
                     val a = s.double("a")?.takeIf { it > 0 }
                     if (sn != null && a != null) LluSensor(sn, Instant.ofEpochSecond(a.toLong())) else null
                 }
-            return LluGraph(out, sensor, nameOf(conn))
+            return LluGraph(out, sensor, nameOf(conn), deviceType(data))
+        }
+
+        /**
+         * The uploading app's device type in a graph answer's `data` (contracts/treatments/libreview-librelink-fixture.json
+         * `deviceType`): the connection's patient device, else the first active sensor's device; null when neither says.
+         */
+        fun deviceType(data: JsonObject): Int? {
+            val conn = (data["connection"] as? JsonObject)?.get("patientDevice") as? JsonObject
+            val active = ((data["activeSensors"] as? JsonArray)?.firstOrNull() as? JsonObject)?.get("device") as? JsonObject
+            return listOfNotNull(conn, active).firstNotNullOfOrNull { it.int("dtid") }
         }
 
         private fun JsonObject.prim(k: String): JsonPrimitive? = (this[k] as? JsonPrimitive)?.takeIf { it != JsonNull }

@@ -21,6 +21,7 @@ import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.designsystem.errors.Trouble
 import app.mauri.sukrara.integrations.CurrentSensor
+import app.mauri.sukrara.integrations.librelinkup.LluUploader
 import app.mauri.sukrara.integrations.upload.UploadStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,6 +66,12 @@ class LibreViewUploaderTest {
     /** The account uploads from another device: sign-in without take-over is refused. */
     private var otherDevice = false
 
+    /** Another device uploads under the LibreLink identity (an older install, Juggluco). */
+    private var linkOtherDevice = false
+
+    /** What LibreLinkUp shows of the official app (its device type, its newest reading). */
+    private val officialApp = MutableStateFlow<LluUploader?>(null)
+
     /** `/api/measurements` answers: null = ok. */
     private var measurements: MockResponse? = null
     private var redirectConfig = false
@@ -101,15 +108,21 @@ class LibreViewUploaderTest {
                             MockResponse().setBody("""{"newYuUrl":"${server.url("/").toString().trimEnd('/')}","newYuApiKey":"KEY"}""")
                         }
 
+                        "/librelink-config" -> {
+                            MockResponse().setBody("""{"newYuUrl":"${server.url("/").toString().trimEnd('/')}"}""")
+                        }
+
                         "/api/nisperson/getauthentication" -> {
-                            if (otherDevice && "\"SetDevice\":false" in body) {
+                            val link = "\"GatewayType\":\"FSLibreLink.Android\"" in body
+                            if ((if (link) linkOtherDevice else otherDevice) && "\"SetDevice\":false" in body) {
                                 MockResponse().setBody("""{"status":20,"reason":"wrongDeviceForUser"}""")
                             } else if ("\"Password\":\"secret-pw\"" !in body) {
                                 MockResponse().setBody("""{"status":2}""")
                             } else {
                                 val user = Regex("\"UserName\":\"([^\"]*)\"").find(body)!!.groupValues[1]
+                                val token = if (link) "ll-1" else "tok-1"
                                 MockResponse().setBody(
-                                    """{"status":0,"result":{"UserToken":"tok-1","AccountId":"${accountOf(user)}",""" +
+                                    """{"status":0,"result":{"UserToken":"$token","AccountId":"${accountOf(user)}",""" +
                                         """"DateOfBirth":"1990-01-01","FirstName":"A","LastName":"B"}}""",
                                 )
                             }
@@ -153,10 +166,16 @@ class LibreViewUploaderTest {
             sensor,
             login,
             role,
-            LibreViewClient(OkHttpClient(), server.url("/assets").toString(), allowLoopbackHttp = true),
+            LibreViewClient(
+                OkHttpClient(),
+                server.url("/assets").toString(),
+                server.url("/librelink-config").toString(),
+                allowLoopbackHttp = true,
+            ),
             clock,
             Dispatchers.Unconfined,
             latest = latest,
+            officialApp = officialApp,
         )
 
     /** The fake's accounts: an alias of "me" is the same account. */
@@ -500,7 +519,7 @@ class LibreViewUploaderTest {
         }
 
     @Test
-    fun `while the Libre app uploads (LibreLinkUp is the source) nothing goes, not even a sign-in, and the page says why`() =
+    fun `while the Libre app uploads and LibreLinkUp doesn't say which, nothing goes, not even a sign-in, and the page says why`() =
         runBlocking {
             signedInAndOn()
             requests.clear()
@@ -517,7 +536,7 @@ class LibreViewUploaderTest {
         }
 
     @Test
-    fun `issue 213 - entries logged while the Libre app uploads wait days, marked as waiting, and all go up after Take over`() =
+    fun `issue 213 - entries logged beside an unnamed Libre app wait days, marked as waiting, and all go up after Take over`() =
         runBlocking {
             signedInAndOn()
             // LibreView already has one entry from before the pause
@@ -987,4 +1006,353 @@ class LibreViewUploaderTest {
             assertTrue("\"recordNumber\":${h or 2875L}," in body)
             assertEquals("sent: nothing kept", LvUnsent(), unsent.data.first())
         }
+
+    // MARK: beside the official app (docs/45, issue #213)
+
+    private val libreLinkUp = SourceSpec(Person.Yours, SourceKind.LibreLinkUp)
+
+    /** LibreLinkUp says the official app ([dtid]) uploaded a reading a minute ago and answered just now. */
+    private fun officialAppSays(dtid: Int?) {
+        officialApp.value = LluUploader(dtid, clock.now() - Duration.ofMinutes(1), clock.now())
+    }
+
+    private fun gateway(body: String) = Regex("\"GatewayType\":\"([^\"]*)\"").find(body)?.groupValues?.get(1)
+
+    /** Every request to LibreView's app API since [from] (sign-ins, uploads, registrations) and its identity. */
+    private fun gateways(from: Int = 0) =
+        requests.drop(from).filter { it.path?.startsWith("/api/") == true }.map { gateway(it.body.clone().readUtf8()) }
+
+    @Test
+    fun `issue 213 - beside the Libre 3 app the treatments go up as LibreLink, never a sign-in as the Libre 3 app`() =
+        runBlocking {
+            signedInAndOn()
+            // LibreView has one entry from before, under the Libre 3 identity
+            treatments.upsertIfNewer(treatment("before", 5, modified = clock.now()))
+            uploader.cycle()
+            assertEquals(1, uploads().size)
+
+            // LibreLinkUp becomes the source: the Libre 3 app uploads the glucose (its own device on the Libre 3 identity)
+            role.value = libreLinkUp
+            officialAppSays(40068)
+            otherDevice = true
+            val from = requests.size
+            clock.advance(Duration.ofMinutes(1))
+            treatments.upsertIfNewer(treatment("a", 0, amount = 4.5, modified = clock.now()))
+            // the entry LibreView has under the Libre 3 identity is deleted meanwhile: its retraction waits
+            treatments.upsertIfNewer(TreatmentRecord(treatments.get("before")!!.treatment.copy(deleted = true, modifiedAt = clock.now())))
+            uploader.cycle()
+
+            // nothing ever went to the Libre 3 identity: one LibreLink sign-in (no take-over) and one upload
+            assertEquals(listOf("FSLibreLink.Android", "FSLibreLink.Android"), gateways(from))
+            val signIn = logins().last()
+            assertTrue("\"SetDevice\":false" in signIn)
+            val signInRequest = requests.last { it.path == "/api/nisperson/getauthentication" }
+            assertEquals("Android/16/FSLL/2.10.1.10406", signInRequest.getHeader("Abbott-ADC-App-Platform"))
+            assertEquals(null, signInRequest.getHeader("x-api-key"))
+            val upload = requests.last { it.path == "/api/measurements" }
+            assertEquals("the token only in the body", null, upload.getHeader("x-newyu-token"))
+            val body = upload.body.clone().readUtf8()
+            val st = store.data.first()
+            // its own device there, never the Libre 3 identity's
+            assertTrue(st.linkDeviceId.isNotEmpty() && st.linkDeviceId != st.deviceId)
+            assertTrue("\"uniqueIdentifier\":\"${st.linkDeviceId}\"" in body)
+            assertTrue("\"UserToken\":\"ll-1\"" in body)
+            val a = treatments.get("a")!!.treatment
+            assertTrue(LibreViewPayload.recordNumber("a", "rapid", a.modifiedAt.toEpochMilli()).toString() in body)
+            assertFalse("the retraction of the Libre 3 identity's entry waits", "\"action\":\"deleted\"" in body)
+            // treatments only: no glucose, no registration, no sensor start
+            assertFalse("sensorstart\",\"extendedProperties" in body)
+            assertEquals(0, requests.count { it.path == "/api/nisperson" })
+            assertEquals("librelink", st.ledger.getValue("a").via)
+
+            // the person's view: it goes up now, the one under the Libre app's identity waits, the page says beside whom
+            val marks = uploader.entryMarks.first()!!
+            assertEquals(LvMark.Uploaded, marks.mark(a, clock.now()))
+            assertFalse(marks.waits(a))
+            assertTrue(marks.waits(treatments.get("before")!!.treatment.copy(deleted = false)))
+            assertFalse(marks.stopped)
+            val page = uploader.page.first()
+            assertEquals(LvIdentity.LibreLink, page.besideAs)
+            assertTrue(page.status is UploadStatus.Ok)
+
+            // LibreView refuses the LibreLink token later: a new sign-in, still as LibreLink
+            refuseTokenOnce = true
+            treatments.upsertIfNewer(treatment("b", 0, modified = clock.now() + Duration.ofSeconds(1)))
+            uploader.cycle()
+            uploader.cycle()
+            assertTrue(gateways(from).all { it == "FSLibreLink.Android" })
+        }
+
+    @Test
+    fun `issue 213 - beside LibreLink (a Libre 1 or 2) the treatments go up as the Libre 3 app, never as LibreLink`() =
+        runBlocking {
+            for (dtid in listOf(40066, 40067)) {
+                role.value = libreLinkUp
+                officialAppSays(dtid)
+                login.save("me@example.com", "secret-pw")
+                uploader.change { it.copy(on = true) }
+                val from = requests.size
+                treatments.upsertIfNewer(treatment("x$dtid", 0, modified = clock.now() + Duration.ofSeconds(1)))
+                uploader.cycle()
+                assertTrue(gateways(from).isNotEmpty())
+                assertTrue("$dtid", gateways(from).all { it == "FSLibreLink3.Android" })
+                assertEquals(LvIdentity.Libre3, uploader.page.first().besideAs)
+                assertEquals(
+                    "libre3",
+                    store.data
+                        .first()
+                        .ledger
+                        .getValue("x$dtid")
+                        .via,
+                )
+            }
+        }
+
+    @Test
+    fun `issue 213 - beside an app LibreLinkUp doesn't name (or not yet) nothing goes, not even a sign-in`() =
+        runBlocking {
+            login.save("me@example.com", "secret-pw")
+            uploader.change { it.copy(on = true) }
+            role.value = libreLinkUp
+            for (dtid in listOf(null, 0, 40069, 40070)) {
+                officialAppSays(dtid)
+                treatments.upsertIfNewer(treatment("t$dtid", 0, modified = clock.now() + Duration.ofSeconds(1)))
+                uploader.cycle()
+                assertEquals("$dtid", 0, gateways().size)
+                assertEquals(UploadStatus.OfficialAppUploads, uploader.page.first().status)
+                assertEquals(LvTakeOver.Failed(Trouble.Other), uploader.takeOver())
+                val marks = uploader.entryMarks.first()!!
+                assertTrue(marks.waitsForLibreApp)
+                assertTrue(marks.waits(treatments.get("t$dtid")!!.treatment))
+            }
+            assertTrue(requests.isEmpty())
+        }
+
+    @Test
+    fun `issue 213 - THE guard - no sign-in or take-over ever reaches the official app's identity`() {
+        // the rule itself
+        for (official in LvIdentity.entries) {
+            assertFalse(LvIdentity.mayUse(official, besideOfficialApp = true, official = official))
+            assertTrue(LvIdentity.mayUse(official.other, besideOfficialApp = true, official = official))
+        }
+        for (id in LvIdentity.entries) {
+            assertFalse(LvIdentity.mayUse(id, besideOfficialApp = true, official = null))
+            assertTrue(LvIdentity.mayUse(id, besideOfficialApp = false, official = null))
+        }
+        assertEquals(LvIdentity.Libre3, LvIdentity.ofDeviceType(40068))
+        assertEquals(LvIdentity.LibreLink, LvIdentity.ofDeviceType(40066))
+        assertEquals(LvIdentity.LibreLink, LvIdentity.ofDeviceType(40067))
+        assertEquals(null, LvIdentity.ofDeviceType(40069))
+
+        // and the uploader: every path that signs in (a cycle, a token refused, another device, *Take over*), with the
+        // Libre app's identity changing under it, never sends a sign-in under the identity LibreLinkUp says it uses
+        runBlocking {
+            signedInAndOn()
+            role.value = libreLinkUp
+            for (dtid in listOf(40068, 40066, 40068, 40067)) {
+                officialAppSays(dtid)
+                val official = LvIdentity.ofDeviceType(dtid)!!
+                val from = requests.size
+                treatments.upsertIfNewer(treatment("g$dtid${requests.size}", 0, modified = clock.now() + Duration.ofSeconds(1)))
+                uploader.cycle()
+                refuseTokenOnce = true
+                treatments.upsertIfNewer(treatment("h$dtid${requests.size}", 0, modified = clock.now() + Duration.ofSeconds(2)))
+                uploader.cycle()
+                uploader.cycle()
+                linkOtherDevice = true
+                otherDevice = true
+                secure.delete(LibreViewUploader.NAME)
+                secure.delete(LibreViewUploader.LINK_NAME)
+                uploader.cycle()
+                assertEquals(LvTakeOver.Done, uploader.takeOver())
+                uploader.cycle()
+                linkOtherDevice = false
+                otherDevice = false
+                val sent = logins().drop(requests.take(from).count { it.path == "/api/nisperson/getauthentication" })
+                assertTrue("$dtid", sent.isNotEmpty())
+                assertTrue("$dtid: $sent", sent.none { gateway(it) == official.gateway })
+                assertTrue("$dtid", gateways(from).none { it == official.gateway })
+                clock.advance(Duration.ofMinutes(1))
+            }
+        }
+    }
+
+    @Test
+    fun `issue 213 - back as the uploader, an entry sent as LibreLink is corrected there and never sent twice`() =
+        runBlocking {
+            signedInAndOn()
+            role.value = libreLinkUp
+            officialAppSays(40068)
+            otherDevice = true
+            clock.advance(Duration.ofMinutes(1))
+            treatments.upsertIfNewer(treatment("a", 0, amount = 3.0, modified = clock.now()))
+            uploader.cycle()
+            assertEquals(
+                "librelink",
+                store.data
+                    .first()
+                    .ledger
+                    .getValue("a")
+                    .via,
+            )
+            val firstVersion =
+                treatments
+                    .get("a")!!
+                    .treatment.modifiedAt
+                    .toEpochMilli()
+
+            // the sensor taken over: Sukrara reads it, the Libre 3 identity is taken over by the person's tap
+            role.value = SourceSpec.YourSensor
+            officialApp.value = null
+            uploader.cycle()
+            assertEquals(UploadStatus.AuthFailed, uploader.page.first().status)
+            assertEquals(LvTakeOver.Done, uploader.takeOver())
+            otherDevice = false
+            val from = requests.size
+            // an edit of the LibreLink entry and a new one
+            clock.advance(Duration.ofMinutes(1))
+            treatments.upsertIfNewer(TreatmentRecord(treatments.get("a")!!.treatment.copy(amount = 3.5, modifiedAt = clock.now())))
+            treatments.upsertIfNewer(treatment("b", 0, modified = clock.now()))
+            uploader.cycle()
+            val bodies =
+                requests.drop(from).filter { it.path == "/api/measurements" }.map { it.body.clone().readUtf8() }
+            val l3 = bodies.filter { gateway(it) == "FSLibreLink3.Android" }
+            val ll = bodies.filter { gateway(it) == "FSLibreLink.Android" }
+            assertEquals(1, l3.size)
+            assertEquals(1, ll.size)
+            val a = treatments.get("a")!!.treatment
+            val b = treatments.get("b")!!.treatment
+            // "a" lives under LibreLink: its old version retracted and the new one sent there, nothing of it as Libre 3
+            assertTrue(LibreViewPayload.recordNumber("a", "rapid", firstVersion).toString() in ll.single())
+            assertTrue(LibreViewPayload.recordNumber("a", "rapid", a.modifiedAt.toEpochMilli()).toString() in ll.single())
+            assertTrue("\"action\":\"deleted\"" in ll.single())
+            assertFalse(LibreViewPayload.recordNumber("a", "rapid", a.modifiedAt.toEpochMilli()).toString() in l3.single())
+            assertFalse(LibreViewPayload.recordNumber("a", "rapid", firstVersion).toString() in l3.single())
+            // the new entry goes up as the uploader does, once
+            assertTrue(LibreViewPayload.recordNumber("b", "rapid", b.modifiedAt.toEpochMilli()).toString() in l3.single())
+            assertFalse(LibreViewPayload.recordNumber("b", "rapid", b.modifiedAt.toEpochMilli()).toString() in ll.single())
+            assertEquals(
+                "librelink",
+                store.data
+                    .first()
+                    .ledger
+                    .getValue("a")
+                    .via,
+            )
+            assertEquals(
+                "libre3",
+                store.data
+                    .first()
+                    .ledger
+                    .getValue("b")
+                    .via,
+            )
+            assertEquals(null, uploader.page.first().besideAs)
+        }
+
+    @Test
+    fun `issue 213 - another device as LibreLink waits for the person's Take over, there only`() =
+        runBlocking {
+            signedInAndOn()
+            role.value = libreLinkUp
+            officialAppSays(40068)
+            otherDevice = true
+            linkOtherDevice = true
+            treatments.upsertIfNewer(treatment("a", 0, modified = clock.now() + Duration.ofSeconds(1)))
+            uploader.cycle()
+            assertEquals(UploadStatus.AuthFailed, uploader.page.first().status)
+            assertTrue(uploader.entryMarks.first()!!.stopped)
+            assertEquals(0, uploads().size)
+            val from = requests.size
+            assertEquals(LvTakeOver.Done, uploader.takeOver())
+            val takeOver = logins().last()
+            assertTrue("\"SetDevice\":true" in takeOver)
+            assertEquals("FSLibreLink.Android", gateway(takeOver))
+            assertFalse(store.data.first().linkOtherDevice)
+            uploader.cycle()
+            assertTrue(gateways(from).all { it == "FSLibreLink.Android" })
+            assertEquals(LvMark.Uploaded, uploader.entryMarks.first()!!.mark(treatments.get("a")!!.treatment, clock.now()))
+        }
+
+    @Test
+    fun `issue 213 - the watchdog stops the upload when the Libre app's readings stop after a sign-in, and says why`() =
+        runBlocking {
+            login.save("me@example.com", "secret-pw")
+            uploader.change { it.copy(on = true) }
+            role.value = libreLinkUp
+            officialAppSays(40068)
+            uploader.cycle()
+            val signedInAt = clock.now()
+            assertEquals(
+                signedInAt.epochSecond,
+                store.data
+                    .first()
+                    .watch
+                    ?.atS,
+            )
+
+            // LibreLinkUp answers for 10 minutes and none of the Libre app's readings is newer than the sign-in
+            val lastReading = officialApp.value!!.newest
+            clock.advance(Duration.ofMinutes(10))
+            officialApp.value = LluUploader(40068, lastReading, clock.now())
+            uploader.cycle()
+            assertEquals(signedInAt.epochSecond, store.data.first().libreAppStopped)
+            assertEquals(UploadStatus.LibreAppStopped(Instant.ofEpochSecond(signedInAt.epochSecond)), uploader.page.first().status)
+            assertEquals(Instant.ofEpochSecond(signedInAt.epochSecond), uploader.libreAppStopped.first())
+            assertTrue(uploader.entryMarks.first()!!.stopped)
+
+            // nothing goes up, nothing signs in, until the person signed the Libre app out and in and taps Send again
+            val from = requests.size
+            treatments.upsertIfNewer(treatment("a", 0, modified = clock.now() + Duration.ofSeconds(1)))
+            uploader.cycle()
+            assertEquals(from, requests.size)
+            officialApp.value = LluUploader(40068, clock.now(), clock.now())
+            uploader.cycle()
+            assertEquals(from, requests.size)
+            uploader.sendAgain()
+            uploader.cycle()
+            assertEquals(1, uploads().size)
+            assertEquals(null, uploader.libreAppStopped.first())
+
+            // switching the upload off ends a stop too
+            store.update { it.copy(libreAppStopped = 1) }
+            uploader.change { it.copy(on = false) }
+            assertEquals(0L, store.data.first().libreAppStopped)
+        }
+
+    @Test
+    fun `issue 213 - the watchdog lets a sign-in go when the Libre app's readings go on`() =
+        runBlocking {
+            login.save("me@example.com", "secret-pw")
+            uploader.change { it.copy(on = true) }
+            role.value = libreLinkUp
+            officialAppSays(40068)
+            uploader.cycle()
+            assertTrue(store.data.first().watch != null)
+            clock.advance(Duration.ofMinutes(2))
+            officialApp.value = LluUploader(40068, clock.now() - Duration.ofSeconds(30), clock.now())
+            uploader.cycle()
+            assertEquals(null, store.data.first().watch)
+            assertEquals(0L, store.data.first().libreAppStopped)
+            // as the uploader there is nothing to watch: Sukrara's own sign-ins are never watched
+            role.value = SourceSpec.YourSensor
+            officialApp.value = null
+            secure.delete(LibreViewUploader.NAME)
+            uploader.cycle()
+            assertEquals(null, store.data.first().watch)
+        }
+
+    @Test
+    fun `the watchdog's rule`() {
+        val w = LvWatch(atS = 1_000, lastBeforeS = 940)
+        assertEquals(LvWatchdog.Verdict.Watching, LvWatchdog.check(w, 940, 1_300, 1_300))
+        assertEquals(LvWatchdog.Verdict.Fine, LvWatchdog.check(w, 1_060, 1_100, 1_100))
+        assertEquals(LvWatchdog.Verdict.Stopped, LvWatchdog.check(w, 940, 1_600, 1_600))
+        // LibreLinkUp not answering: nothing to judge, the watch ends after its window
+        assertEquals(LvWatchdog.Verdict.Watching, LvWatchdog.check(w, 940, 990, 2_000))
+        assertEquals(LvWatchdog.Verdict.Fine, LvWatchdog.check(w, 940, 990, 2_900))
+        // the Libre app wasn't uploading right before the sign-in: its silence isn't the sign-in's doing
+        assertEquals(LvWatchdog.Verdict.Fine, LvWatchdog.check(LvWatch(1_000, 600), 600, 1_600, 1_600))
+        assertEquals(LvWatchdog.Verdict.Fine, LvWatchdog.check(LvWatch(1_000, null), null, 1_600, 1_600))
+    }
 }

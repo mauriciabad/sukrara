@@ -88,6 +88,7 @@ class LibreViewViewModel(
             resetTakeOver = { _takeOver.value = LvTakeOverUi.Idle },
             setInterval = { min -> viewModelScope.launch { uploader.setInterval(min) } },
             sendEarlier = { viewModelScope.launch { runCatching { uploader.sendEarlier() } } },
+            sendAgain = { viewModelScope.launch { runCatching { uploader.sendAgain() } } },
         )
 
     fun nowInstant() = now()
@@ -105,6 +106,8 @@ class LibreViewActions(
     val setInterval: (Double) -> Unit = {},
     /** *Send earlier glucose*: the current sensor's glucose from before the switch-on goes up too. */
     val sendEarlier: () -> Unit = {},
+    /** *Send again* once the Libre app was signed out and in, after the watchdog stopped the upload. */
+    val sendAgain: () -> Unit = {},
 )
 
 @Composable
@@ -173,8 +176,10 @@ fun LibreViewContent(
 ) = Column(modifier) {
     val s = state.settings
     val on = s.on && wearer && state.signedIn
+    val beside = state.besideAs?.takeIf { wearer }
     var choosingInterval by rememberSaveable { mutableStateOf(false) }
     var sendingEarlier by rememberSaveable { mutableStateOf(false) }
+    var sendingAgain by rememberSaveable { mutableStateOf(false) }
     SettingsIntro(stringResource(R.string.in_lv_intro))
     SettingsGroup {
         ValueRow(
@@ -218,6 +223,11 @@ fun LibreViewContent(
                         stringResource(R.string.in_lv_status_behind_only, since(status.since, now))
                     }
 
+                    // beside the Libre app: another device sends under the identity Sukrara would send under
+                    status == UploadStatus.AuthFailed && beside != null -> {
+                        stringResource(R.string.in_lv_status_auth_beside, beside.device)
+                    }
+
                     else -> {
                         libreViewStatusText(status, now)
                     }
@@ -231,6 +241,11 @@ fun LibreViewContent(
                     })
                 }
 
+                // the watchdog stopped it: what to do in the Libre app, then *Send again*
+                is UploadStatus.LibreAppStopped -> {
+                    ValueRow(stringResource(R.string.in_ns_status), text, { sendingAgain = true })
+                }
+
                 // no usable account: the account screen
                 UploadStatus.Setup -> {
                     ValueRow(stringResource(R.string.in_ns_status), text, actions.openAccount)
@@ -242,13 +257,23 @@ fun LibreViewContent(
             }
         }
     }
+    // beside the Libre app, said once and here: who sends what, the device the clinic sees, log in one app only
+    if (beside != null) {
+        SettingsGroup {
+            InfoRow(
+                stringResource(R.string.in_lv_beside_title),
+                summary = stringResource(R.string.in_lv_beside_text, beside.device),
+                icon = DsR.drawable.ds_ic_info,
+            )
+        }
+    }
     SettingsGroup(title = stringResource(R.string.in_ns_what)) {
         val off = if (on) null else stringResource(R.string.in_ns_unavailable)
         SwitchRow(stringResource(R.string.in_lv_glucose), s.glucose, { v ->
             actions.change { it.copy(glucose = v) }
-        }, enabled = on, summary = off ?: glucoseSummary(state))
+        }, enabled = on, summary = off ?: if (beside != null) stringResource(R.string.in_lv_glucose_beside) else glucoseSummary(state))
         // the phone holds the current sensor's glucose from before the switch-on: offered, never sent by itself
-        val earlier = state.earlierFrom?.takeIf { on && s.glucose && state.otherSource == null }
+        val earlier = state.earlierFrom?.takeIf { on && s.glucose && state.otherSource == null && beside == null }
         if (earlier != null) {
             ValueRow(
                 stringResource(R.string.in_lv_earlier),
@@ -270,7 +295,10 @@ fun LibreViewContent(
     }
     FooterText(stringResource(R.string.in_lv_footer))
     if (taking) {
-        TakeOverDialog(takeOver, actions) { setTaking(false) }
+        TakeOverDialog(takeOver, actions, beside) { setTaking(false) }
+    }
+    if (sendingAgain) {
+        SendAgainDialog(actions.sendAgain) { sendingAgain = false }
     }
     val earlierFrom = state.earlierFrom
     if (sendingEarlier && earlierFrom != null) {
@@ -337,13 +365,40 @@ private fun SendEarlierDialog(
 }
 
 /**
+ * The watchdog stopped the upload (the Libre app stopped uploading right after Sukrara's sign-in): what to do in the
+ * Libre app first, then *Send again* or *Cancel*.
+ */
+@Composable
+private fun SendAgainDialog(
+    send: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val haptics = rememberHaptics()
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.in_lv_send_again_title)) },
+        text = { Text(stringResource(R.string.in_lv_send_again_text), style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            TextButton(onClick = {
+                haptics.confirm()
+                send()
+                onClose()
+            }) { Text(stringResource(R.string.in_lv_send_again)) }
+        },
+        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.in_cancel)) } },
+    )
+}
+
+/**
  * Another device uploads for the account: what *Take over* does, *Take over* or *Cancel*. No password: the account is
- * the app's; if LibreView no longer accepts it, the dialog closes onto the account screen.
+ * the app's; if LibreView no longer accepts it, the dialog closes onto the account screen. Beside the Libre app
+ * ([beside], the identity Sukrara sends under) it says that the Libre app that sends the glucose isn't affected.
  */
 @Composable
 private fun TakeOverDialog(
     ui: LvTakeOverUi,
     actions: LibreViewActions,
+    beside: LvIdentity?,
     onClose: () -> Unit,
 ) {
     val haptics = rememberHaptics()
@@ -370,10 +425,25 @@ private fun TakeOverDialog(
     val busy = ui == LvTakeOverUi.Busy
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.in_lv_take_over_title)) },
+        title = {
+            Text(
+                if (beside != null) {
+                    stringResource(R.string.in_lv_take_over_beside_title, beside.device)
+                } else {
+                    stringResource(R.string.in_lv_take_over_title)
+                },
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.in_lv_take_over_text), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    if (beside != null) {
+                        stringResource(R.string.in_lv_take_over_beside_text, beside.device)
+                    } else {
+                        stringResource(R.string.in_lv_take_over_text)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                )
                 val result =
                     when {
                         busy -> {

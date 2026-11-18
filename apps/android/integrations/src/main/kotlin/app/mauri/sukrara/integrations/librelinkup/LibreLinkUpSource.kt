@@ -75,6 +75,11 @@ data class LluSourceState(
      * glucose (which deletes the history) clears it.
      */
     val held: String = "",
+    /**
+     * The device type of the app that uploads the person's glucose, as the last graph answer said it (`dtid`; 0 = not
+     * said): which LibreView identity Sukrara may send treatments under (docs/45).
+     */
+    val deviceType: Int = 0,
 ) {
     val sensorLife: NsSensor? get() =
         if (sensorSerial.isNotEmpty() && sensorStartS > 0) NsSensor(sensorSerial, Instant.ofEpochSecond(sensorStartS)) else null
@@ -116,6 +121,16 @@ data class LluSourceView(
     /** Signed in and someone picked: the source can read. */
     val configured: Boolean get() = signedIn && patient.isNotEmpty()
 }
+
+/** What LibreLinkUp shows of the app that uploads the person's glucose ([LibreLinkUpSource.uploader]). */
+data class LluUploader(
+    /** Its device type (`dtid`, the graph's patient device); null = not said yet. */
+    val deviceType: Int?,
+    /** The newest reading LibreLinkUp had (null = none yet). */
+    val newest: Instant?,
+    /** The last time LibreLinkUp answered (null = not since the source started): whether [newest] is news. */
+    val answeredAt: Instant?,
+)
 
 /** The answer of the Connect step's *Connect* (or of picking a person). */
 sealed interface LluConnectResult {
@@ -290,6 +305,8 @@ class LibreLinkUpSource(
         val outcome: CallOutcome? = null,
         val online: Boolean = true,
         val newest: Instant? = null,
+        /** The last time LibreLinkUp answered a graph call (null = not since the source started). */
+        val answeredAt: Instant? = null,
     )
 
     private val kicks = Channel<Unit>(Channel.CONFLATED)
@@ -343,6 +360,15 @@ class LibreLinkUpSource(
     val personName: Flow<String?> =
         combine(config.data, store.data) { s, st -> st.name.takeIf { s.patient.isNotEmpty() && it.isNotEmpty() } }
             .distinctUntilChanged()
+
+    /**
+     * The app that uploads the person's glucose, as LibreLinkUp shows it (the LibreView upload while LibreLinkUp is the
+     * source: which identity it may send treatments under, and its watchdog): null while no one is picked.
+     */
+    val uploader: Flow<LluUploader?> =
+        combine(config.data, store.data, live) { s, st, l ->
+            if (s.patient.isEmpty()) null else LluUploader(st.deviceType.takeIf { it != 0 }, l.newest, l.answeredAt)
+        }.distinctUntilChanged()
 
     /** Ask now (a new sign-in, a person picked, *Try again*). */
     fun kick() {
@@ -490,7 +516,7 @@ class LibreLinkUpSource(
      */
     suspend fun forgetPick() {
         pending.value = null
-        store.update { it.copy(name = "", held = "") }
+        store.update { it.copy(name = "", held = "", deviceType = 0) }
     }
 
     /** *Cancel* on the person a sign-in or *Try again* found ([LluSourceView.pending]): the one read stays. */
@@ -521,8 +547,8 @@ class LibreLinkUpSource(
             statusFlow.value = SourceStatus.Connecting
             launch { network.back.collect { kick() } }
             launch { config.data.drop(1).collect { kick() } }
-            // a wear length chosen on the Sensor page applies at once
-            launch { life.drop(1).collect { publish() } }
+            // a wear length chosen on the Sensor page applies at once (also one chosen before this subscribed: no drop)
+            launch { life.distinctUntilChanged().collect { publish() } }
             try {
                 run(this)
             } finally {
@@ -544,7 +570,13 @@ class LibreLinkUpSource(
                 }
             if (c.outcome == CallOutcome.Ok) failures = 0 else failures++
             val l = live.value
-            live.value = l.copy(outcome = c.outcome ?: l.outcome, online = network.online(), newest = c.newest ?: l.newest)
+            live.value =
+                l.copy(
+                    outcome = c.outcome ?: l.outcome,
+                    online = network.online(),
+                    newest = c.newest ?: l.newest,
+                    answeredAt = if (c.outcome == CallOutcome.Ok) clock.now() else l.answeredAt,
+                )
             publish()
             val nowS = clock.now().epochSecond
             if (c.outcome == CallOutcome.Ok) {
@@ -680,6 +712,7 @@ class LibreLinkUpSource(
                 name = g.name.ifEmpty { st.name },
                 sensorSerial = g.sensor?.serial ?: st.sensorSerial,
                 sensorStartS = g.sensor?.start?.epochSecond ?: st.sensorStartS,
+                deviceType = g.deviceType ?: st.deviceType,
             )
         }
         return Cycle(CallOutcome.Ok, newest, live = newestLive)

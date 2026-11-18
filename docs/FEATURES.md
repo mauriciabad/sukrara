@@ -1022,13 +1022,15 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   the card's warm-up and time left, *Sensor ended*, reminders, *Sensor end in calendar*, followers. Settings › Source
   shows *Sensor · Started … · lasts 15 days · serial*, a row that opens Settings › Sensor.
 - **Nothing duplicated or looped** (`contracts/sources/outputs.json` row `librelinkup`, docs/44 "Data" rules 2, 3, 6):
-  LibreView takes one uploading device per account and the Libre app is it, so **the LibreView upload sends nothing at
-  all** while LibreLinkUp is your source, treatments neither, not even a sign-in that could take over (*Paused: the
-  Libre app uploads your glucose while LibreLinkUp is your source… What you log here waits: once Sukrara reads your
-  sensor, tap Take over and it goes up from here.*; no *Take over* offered until then; home's treatment rows say
-  *Waiting for LibreView…*, not the error mark). At *Take over* every treatment logged meanwhile goes up (its own time
-  and kind, a pen dose's injected units; edits and deletes as usual; the last 30 days, 100 per upload, the rest at once
-  after), while glucose goes up from the takeover on: the Libre app sent what came before, so the sensor's backfill
+  LibreView takes one uploading device and one session **per Libre app identity** ([docs/45](45-libreview-two-uploaders.md)),
+  so while LibreLinkUp is your source the LibreView upload sends **your treatments only, as the identity the Libre app
+  doesn't use** (beside the Libre 3 app: as *FreeStyle LibreLink*), never glucose and never a sign-in on the Libre
+  app's identity ([LibreView upload](#libreview-upload) "Beside the Libre app"). When LibreLinkUp doesn't say which
+  Libre app uploads (or it's one not tested), nothing goes at all (*Paused: LibreLinkUp doesn't say which Libre app
+  uploads your glucose… What you log here waits: once Sukrara reads your sensor, tap Take over and it goes up from
+  here.*; home's rows *Waiting for LibreView…*, not the error mark), and at *Take over* every treatment logged meanwhile
+  goes up (its own time and kind, a pen dose's injected units; edits and deletes as usual; the last 30 days, 100 per
+  upload, the rest at once after). Glucose goes up from the takeover on: the Libre app sent what came before, so the sensor's backfill
   would count twice (*Send earlier glucose* offers it, with that warning). Tidepool's *Glucose from
   LibreLinkUp* is on (*If your Tidepool account links LibreView (US), turn this off: it would count twice*). Nightscout
   upload, Health Connect, Sukrara followers (your glucose) and Sukrara Aura get it; app broadcasts don't (no sensor
@@ -1044,7 +1046,7 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   Leo Example's glucose* / *Cancel*; `ReadAnotherPersonDialog`), on the Person row, setup's list and when a sign-in or
   *Try again* would read someone else (*Cancel* keeps the person read). Reading another person deletes the earlier
   one's readings and treatments first and starts monitoring over (`LluSourceState.held`; an answer for the earlier
-  person still on its way is dropped); for your glucose *The Libre app has the sensor*: *LibreView* (why nothing goes there) and **Read
+  person still on its way is dropped); for your glucose *The Libre app has the sensor*: *LibreView* (*The Libre app uploads your glucose there. With Share with apps › LibreView on, Sukrara sends only your treatments, as a second device.*) and **Read
   the sensor in Sukrara** (the takeover); *Sign out of LibreLinkUp* (confirmed: *Sukrara gets no glucose until you sign
   in again or choose another source. The readings already here stay.*).
 - **The move: taking the sensor over** (docs/44 "The move", at any point of a sensor's life): *Read the sensor in
@@ -1103,8 +1105,9 @@ no answer: clear by themselves; *Try again*. Asked to wait: clears by itself, no
 before the time it gave; a sign-in does). Signed out: *Sign in again*. New terms: accept in
 LibreLinkUp, *Try again*. Not shared: *Pick again* (*The person picked stopped sharing…*, at once when LibreLinkUp refuses their graph) or invite
 and *Try again*. Stopped: *Try again*; *Where it comes
-from* to leave. Sign out: confirmed; *Account* signs in again. LibreView upload: paused with its reason while
-LibreLinkUp is the source; after the takeover *Take over*. Takeover: *Read the sensor in Sukrara* → *Take the sensor
+from* to leave. Sign out: confirmed; *Account* signs in again. LibreView upload: treatments only, beside the Libre app,
+while LibreLinkUp is the source (paused with its reason when LibreLinkUp doesn't say which app); after the takeover
+*Take over*. Takeover: *Read the sensor in Sukrara* → *Take the sensor
 from the Libre app* → *Take over* / *Open the Libre app's info* / *Cancel* → the tap (the usual new-sensor states) →
 the source switches by itself; back: *Where it comes from* → *LibreLinkUp*, then scan the sensor with the Libre app.
 TalkBack reads every field, problem and state; the status lines are live regions. Mac: *No · Read it online* → whose
@@ -2795,7 +2798,7 @@ Wearer only (`sensorend/`; rules in `SensorEndPlan`, tests `SensorEndPlanTest`);
   *Start fresh* or leaving the role forgets it). Tests `SensorEndNotifierTest` (a restart, a swipe through a restart,
   a post killed half way).
 - Settings export / import / reset include the reminders, the first-unlock and evening switches, the night window, both countdown switches, the countdown hours and *Remind again*.
-- Debug commands (Android debug builds only, `app/src/debug` `DebugReceiver` / `DebugFakes` / `DebugRelays`, adb only: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a app.mauri.sukrara.debug.<NAME> …`): `SYNTHETIC --ez on true|false [--ez frozen true] [--ei cycle M] [--ei endsInMin N] [--ei warmupMin W]` (the synthetic source replaces the sensor: a 3-hour curve between 45 and 215 mg/dL, `cycle` puts now at minute M of it, 135 = the lowest point; a sensor ending in N minutes; a new sensor warming up for W minutes), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder true]` (made-up alerts through the real notifier, outside the alert runtime), `PEN_READ`, `PEN_TAGS` and `PEN_JUGGLUCO` ([Insulin pens](#insulin-pens-docs29)), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen = no relay: docs/DEVELOPMENT.md), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local test release, `tools/updates/serve.py`, and trusts the debug key: [Updates (Android, GitHub version)](#updates-android-github-version)), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp and the LibreView sign-in go to the local fake `tools/librelinkup-probe/fake.py`, synthetic: [LibreLinkUp as a source](#librelinkup-as-a-source-both-apps)). Nothing else: the reminders, the end countdown and *Sensor ended* follow the synthetic sensor's end. `tools/check` rule `debug-docs` fails on a command or extra in docs/FEATURES.md, docs/QA.md or docs/DEVELOPMENT.md that `DebugFakes` doesn't have. The release app never shows a glucose value, an alert, a treatment or a sensor state that isn't real: the `src/debug` source set isn't in a release build (`tools/check` rule `debug`; `verify-apk.sh` fails an APK whose manifest or R8 mapping names `DebugReceiver`, `DebugFakes`, `DebugRelays` or `Synthetic*`). The Mac's: `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` ([Mac menu and windows](#mac-menu-and-windows)).
+- Debug commands (Android debug builds only, `app/src/debug` `DebugReceiver` / `DebugFakes` / `DebugRelays`, adb only: `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a app.mauri.sukrara.debug.<NAME> …`): `SYNTHETIC --ez on true|false [--ez frozen true] [--ei cycle M] [--ei endsInMin N] [--ei warmupMin W]` (the synthetic source replaces the sensor: a 3-hour curve between 45 and 215 mg/dL, `cycle` puts now at minute M of it, 135 = the lowest point; a sensor ending in N minutes; a new sensor warming up for W minutes), `ALERTS [--es kinds low,falling_fast] [--el gapMs 0] [--ez reminder true]` (made-up alerts through the real notifier, outside the alert runtime), `PEN_READ`, `PEN_TAGS` and `PEN_JUGGLUCO` ([Insulin pens](#insulin-pens-docs29)), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen = no relay: docs/DEVELOPMENT.md), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local test release, `tools/updates/serve.py`, and trusts the debug key: [Updates (Android, GitHub version)](#updates-android-github-version)), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp, the LibreView sign-in and the LibreView upload go to the local fake `tools/librelinkup-probe/fake.py`, synthetic: [LibreLinkUp as a source](#librelinkup-as-a-source-both-apps)). Nothing else: the reminders, the end countdown and *Sensor ended* follow the synthetic sensor's end. `tools/check` rule `debug-docs` fails on a command or extra in docs/FEATURES.md, docs/QA.md or docs/DEVELOPMENT.md that `DebugFakes` doesn't have. The release app never shows a glucose value, an alert, a treatment or a sensor state that isn't real: the `src/debug` source set isn't in a release build (`tools/check` rule `debug`; `verify-apk.sh` fails an APK whose manifest or R8 mapping names `DebugReceiver`, `DebugFakes`, `DebugRelays` or `Synthetic*`). The Mac's: `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` ([Mac menu and windows](#mac-menu-and-windows)).
 
 **States and exits** (wearer; followers get none of these): *Reminder shown* (days before, the evening before a
 night-time end, the last day) → tap opens the app, swipe removes it; the next one replaces it; turning its switch off
@@ -3553,12 +3556,44 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
   the reason is in the status, and a treatments-only upload never clears glucose's (`LvState.glucoseError`). An
   treatment whose kind changed is retracted under the kind LibreView has. Redirects are never followed.
 
+- **Beside the Libre app** (#213, [docs/45](45-libreview-two-uploaders.md); LibreLinkUp is your source, so the Libre app
+  uploads your glucose): LibreView keeps one active device and one session **per app identity** (the Libre 3 app,
+  LibreLink), and a sign-in on the Libre app's identity silently stops its upload (35 min on 2026-11-18). So the upload
+  sends **treatments only, under the identity the Libre app doesn't use**, from LibreLinkUp's device type
+  (`patientDevice.dtid`, kept in `librelinkup-source`; `LvIdentity.ofDeviceType`): 40068 (the Libre 3 app) → as LibreLink
+  (`FSLibreLink.Android`, its GB config, its headers and body: contracts/treatments/SPEC.md §3 "LibreLink",
+  `libreview-librelink-fixture.json`), 40066 / 40067 (LibreLink) → as the Libre 3 app; anything else or none → nothing
+  (*Paused: LibreLinkUp doesn't say which Libre app uploads your glucose…*). Its own DeviceId per identity
+  (`LvState.linkDeviceId`), its own token (`libreview-librelink`); no glucose, no sensor registration, no `sensorstart`.
+  **The guard**: one way in, `LibreViewUploader.signInOn`, refuses any sign-in or take-over on the Libre app's identity
+  (`LvIdentity.mayUse`, read at that moment; `LibreViewUploaderTest` *THE guard*). The page: *Beside the Libre app* "The
+  Libre app sends your glucose to LibreView. Sukrara sends your insulin, carbs and notes, which your clinic sees under
+  the device FreeStyle LibreLink. Log each treatment in one app only: one logged in both shows twice." (said once,
+  here); *Glucose* "The Libre app sends it"; the status as usual (*Last upload…*). Another device under that identity
+  (an older install, Juggluco): "Another device sends to LibreView as FreeStyle LibreLink. Tap to take over." → *Another
+  device sends as FreeStyle LibreLink* ("…If Sukrara takes over, that device stops uploading. The Libre app that sends
+  your glucose isn't affected.") *Take over* / *Cancel*. **An entry stays under the identity it went up under**
+  (`LvSent.via`, `LibreViewQueue.home`): one LibreView already had from Sukrara as the Libre 3 app waits for its edits
+  and deletes while the Libre 3 app uploads (home: *Waiting for LibreView…*); after the sensor takeover (Sukrara the
+  uploader again, *Take over* on the Libre 3 identity) an entry sent as LibreLink is corrected as LibreLink and new ones
+  go as the Libre 3 app: never one treatment under two devices, and glucose from the takeover on (above).
+  **Watchdog** (`LvWatchdog`): each sign-in beside the Libre app is watched; if LibreLinkUp, answering, gets none of the
+  Libre app's readings for 10 min after it (and the app had uploaded in the 5 min before), the upload stops: status
+  "Stopped since 21:14: the Libre app stopped sending your glucose to LibreLinkUp right after Sukrara signed in to
+  LibreView. In the Libre app, sign out and sign in again, then tap here." → *Send to LibreView again?* ("First, in the
+  Libre app, sign out and sign in again with the same account. Once LibreLinkUp gets your glucose again, Sukrara sends
+  your treatments again, and stops again if the Libre app does.") *Send again* / *Cancel*; home's rows show the
+  crossed-out cloud; home's banner *The Libre app stopped uploading* · "LibreLinkUp got no glucose after Sukrara signed
+  in to LibreView. In the Libre app, sign out and sign in again." *Fix* (the page) / close (this stop only;
+  `BannerKind.LibreAppStopped`, above *LibreView isn't getting your glucose*). Duplicates: Sukrara can't see the Libre
+  app's treatments (LibreLinkUp carries none), so a dose logged in both apps shows twice; the page says to log in one.
 - Home's treatment list (wearer, while the upload is signed in and on with *Insulin, carbs and notes*): a small grey
   cloud after each treatment the upload covers, by the uploader's own rules (`LibreViewQueue.mark`): cloud with a tick =
   "In LibreView" (the version LibreView has), cloud with an arrow = "Not in LibreView yet" (a new treatment) or "LibreView
   has an older version: updating" (edited), crossed-out cloud = "LibreView upload stopped" (sign in again, another
-  device uploads, or LibreView refused the last upload); while LibreLinkUp is your source and the Libre app uploads
-  (#213), cloud with an arrow in the same grey = "Waiting for LibreView: the Libre app uploads now. It goes up once
+  device uploads, LibreView refused the last upload, or the watchdog stopped it); while LibreLinkUp is your source and
+  the treatment can't go up beside the Libre app (it doesn't say which app, or LibreView has the treatment under the Libre
+  app's identity; #213), cloud with an arrow in the same grey = "Waiting for LibreView: the Libre app uploads now. It goes up once
   Sukrara reads your sensor and you take over." (nothing is wrong: no error colour; the delete snackbar doesn't promise
   a removal meanwhile, the retraction goes at *Take over*). Every mark is a button to the LibreView page (TalkBack reads its words, then *button*;
   `UploadMarkTest`). Treatments changed before the upload was switched on, or
@@ -3567,9 +3602,13 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
 
 **States and exits**: *No LibreView account* → *Account* or the status row → the account screen (sign in once; Back
 returns and nothing changes). *Another device uploads* → the status row → *Take over* (a failure says why and stays
-open) or *Cancel*. *Paused: the Libre app uploads* (LibreLinkUp is your source; home's rows say *Waiting for
-LibreView…*) → Settings › Source › *Read the sensor in Sukrara* (the takeover) → *Another device uploads* → *Take over*
-(everything logged meanwhile goes up); or the main switch off. *LibreView refused the saved password* → *Account* / the status row → the account screen, the
+open) or *Cancel*. *Beside the Libre app* (LibreLinkUp is your source and says which app) → treatments go up as the
+other identity by themselves; *Another device sends as …* → the status row → *Take over* (the Libre app isn't
+affected) or *Cancel*; *Stopped: the Libre app stopped…* (the watchdog; also home's banner, *Fix* → this page) → sign
+the Libre app out and in → the status row → *Send again* or *Cancel*, or the main switch off; Settings › Source › *Read
+the sensor in Sukrara* → *Another device uploads* → *Take over* (Sukrara the uploader again). *Paused: LibreLinkUp
+doesn't say which Libre app…* (home's rows say *Waiting for LibreView…*) → the takeover → *Take over* (everything
+logged meanwhile goes up); or the main switch off. *LibreView refused the saved password* → *Account* / the status row → the account screen, the
 email filled in (sign in again, or *Sign out*). *Off* (default) → main switch. *On · nothing sent yet / last upload* →
 main switch off; signing out is the account screen's. *Trying again* → retries by itself; switch off to stop. *Refused*
 → change or switch off. *No glucose sent since …* (also home's banner) → retries by itself; *Glucose* or the main switch

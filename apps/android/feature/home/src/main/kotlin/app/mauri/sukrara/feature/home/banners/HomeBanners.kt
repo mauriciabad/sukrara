@@ -42,6 +42,13 @@ enum class BannerKind(val safety: Boolean) {
     FeatureBlocked(safety = false),
 
     /**
+     * The Libre app stopped sending the glucose to LibreLinkUp (the source) right after one of Sukrara's LibreView
+     * sign-ins beside it ([HomeEnvironment.libreAppStopped], docs/45): Sukrara stopped sending to LibreView. *Fix* opens
+     * the LibreView page (what to do in the Libre app, then *Send again*); closing it hides this stop only.
+     */
+    LibreAppStopped(safety = false),
+
+    /**
      * The LibreView upload is on but the wearer's glucose hasn't reached LibreView for hours ([HomeEnvironment.clinicBehind]):
      * their clinic sees a gap. *Fix* opens the LibreView page (it says why and has the way out); closing it hides this
      * stall only (a new one shows again). It goes by itself once glucose goes up.
@@ -92,7 +99,12 @@ data class HomeEnvironment(
     val clinicBehind: Instant? = null,
     /** A follower's phone: how the wearer's readings come now (Bluetooth nearby, the internet, neither). */
     val followPath: LinkPath? = null,
+    /** When the sign-in was after which the Libre app stopped uploading (the LibreView upload stopped); null = it didn't. */
+    val libreAppStopped: Instant? = null,
 ) {
+    /** What a closed Libre-app-stopped banner is remembered under: that stop (its sign-in). */
+    val stoppedKey: String? get() = libreAppStopped?.let { "${BannerKind.LibreAppStopped.name}:${it.epochSecond}" }
+
     /** What a closed stalled-upload banner is remembered under: that stall (its start). */
     val behindKey: String? get() = clinicBehind?.let { "${BannerKind.ClinicUploadBehind.name}:${it.epochSecond}" }
 
@@ -172,7 +184,14 @@ data class BannerMemory(
 }
 
 /** Banners whose closing (if any) is remembered by their own key, never by the kind ([HomeEnvironment]). */
-private val KEYED = setOf(BannerKind.TapsBlocked, BannerKind.FeatureBlocked, BannerKind.ClinicUploadBehind, BannerKind.RestartSystemUi)
+private val KEYED =
+    setOf(
+        BannerKind.TapsBlocked,
+        BannerKind.FeatureBlocked,
+        BannerKind.LibreAppStopped,
+        BannerKind.ClinicUploadBehind,
+        BannerKind.RestartSystemUi,
+    )
 
 /** "Later" on Finish setup: it comes back after a day until setup is done. */
 val SETUP_LATER: Duration = Duration.ofHours(24)
@@ -198,6 +217,7 @@ object HomeBanners {
                     BannerKind.DataProblem -> dataProblems > 0
                     BannerKind.TapsBlocked -> env.tapsBlocked.any
                     BannerKind.FeatureBlocked -> env.blockedShown(memory) != null
+                    BannerKind.LibreAppStopped -> env.stoppedKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.ClinicUploadBehind -> env.behindKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.FinishSetup -> env.nextSetupStep != null

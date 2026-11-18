@@ -437,6 +437,8 @@ class LibreLinkUpSourceTest {
             assertEquals(now.minusSeconds(3 * 86400), life.start)
             // the default length: 15 days (a wrong 14 would end a working 3 Plus a day early)
             assertEquals(life.start.plusSeconds(15 * 86400L), life.end)
+            // the app that uploads (the graph's device type, the Libre 3 app's): the LibreView upload's identity (docs/45)
+            assertEquals(40068, withTimeout(10_000) { s.uploader.first { it?.deviceType != null } }!!.deviceType)
         }
 
     @Test

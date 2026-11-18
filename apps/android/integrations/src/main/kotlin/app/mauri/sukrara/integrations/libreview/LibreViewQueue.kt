@@ -19,6 +19,21 @@ data class LvSent(
     val t: Long,
     /** The kind LibreView has it as (its record number and list depend on it). */
     val k: String = "",
+    /**
+     * The app identity it went up under ([LvIdentity.id]): an entry lives under one LibreView device for good, so its
+     * edits and deletes go there too, never a second copy under the other identity.
+     */
+    val via: String = "libre3",
+)
+
+/**
+ * A LibreView sign-in Sukrara made while the official app uploads, watched (docs/45): [atS] when (epoch s),
+ * [lastBeforeS] the newest reading LibreLinkUp had then (null = none).
+ */
+@Serializable
+data class LvWatch(
+    val atS: Long,
+    val lastBeforeS: Long?,
 )
 
 /** What one sensor already sent: life counts of its 5-minute history, the last current reading, the one-off records. */
@@ -75,7 +90,29 @@ data class LvState(
      * the Libre app as the account's uploading device shows as *Take over* instead of uploads LibreView would ignore.
      */
     val pausedForLibreApp: Boolean = false,
-)
+    /** This install's device id under the LibreLink identity (a random UUID, made the first time it is needed). */
+    val linkDeviceId: String = "",
+    /** Another device uploads under the LibreLink identity: what goes up there waits for *Take over*. */
+    val linkOtherDevice: Boolean = false,
+    /** A sign-in Sukrara made while the official app uploads, being watched ([LvWatchdog]); null = none. */
+    val watch: LvWatch? = null,
+    /**
+     * LibreLinkUp stopped getting the official app's readings right after Sukrara's sign-in at this moment (epoch s;
+     * 0 = it didn't): nothing goes up until the person, having signed the Libre app out and in, taps *Send again*.
+     */
+    val libreAppStopped: Long = 0,
+) {
+    /** This install's device id under [identity] ("" = not made yet). */
+    fun deviceOf(identity: LvIdentity): String = if (identity == LvIdentity.Libre3) deviceId else linkDeviceId
+
+    /** Another device uploads under [identity]: only the person's *Take over* gets past it. */
+    fun otherOn(identity: LvIdentity): Boolean = if (identity == LvIdentity.Libre3) otherDevice else linkOtherDevice
+
+    fun withOther(
+        identity: LvIdentity,
+        other: Boolean,
+    ): LvState = if (identity == LvIdentity.Libre3) copy(otherDevice = other) else copy(linkOtherDevice = other)
+}
 
 /**
  * The history LibreView hasn't got yet (typed store `libreview-unsent`), so a restart or a process death
@@ -191,11 +228,22 @@ object LibreViewQueue {
         }
     }
 
-    /** The ledger after LibreView accepted [sent], trimmed to the window. */
+    /**
+     * The identity entry [id] lives under: the one LibreView has its live version under, else [send] (where new entries
+     * go up now). An entry never gets a second copy under the other identity.
+     */
+    fun home(
+        ledger: Map<String, LvSent>,
+        id: String,
+        send: LvIdentity,
+    ): LvIdentity = ledger[id]?.takeIf { it.v != 0L }?.let { LvIdentity.of(it.via) } ?: send
+
+    /** The ledger after LibreView accepted [sent] under [via], trimmed to the window. */
     fun sent(
         ledger: Map<String, LvSent>,
         sent: List<LvEntry>,
         nowS: Long,
+        via: LvIdentity = LvIdentity.Libre3,
     ): Map<String, LvSent> =
         (
             ledger +
@@ -204,7 +252,7 @@ object LibreViewQueue {
                     val e = es.firstOrNull { !it.del } ?: es.first()
                     // a retracted entry has no live record: an Undo goes up as new, never retracting a record that
                     // never existed (v = 0 = nothing live; it stays in the ledger so it is still followed)
-                    LvSent(if (e.del) 0L else e.u, e.t, e.k)
+                    LvSent(if (e.del) 0L else e.u, e.t, e.k, via.id)
                 }
         ).filterValues { it.t >= nowS - LEDGER_S }
 

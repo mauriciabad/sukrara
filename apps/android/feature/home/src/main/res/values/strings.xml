@@ -280,4 +280,6 @@
     <string name="home_pen_read_ago">Pen read %1$s ago</string>
     <!-- Under the treatments: carbs logged without rapid insulin near them, while a pen is read -->
     <string name="home_pen_hint_carbs">Injected? Hold your pen to the phone.</string>
+    <string name="banner_libre_app_stopped_title">The Libre app stopped uploading</string>
+    <string name="banner_libre_app_stopped_text">LibreLinkUp got no glucose after Sukrara signed in to LibreView. In the Libre app, sign out and sign in again.</string>
 </resources>

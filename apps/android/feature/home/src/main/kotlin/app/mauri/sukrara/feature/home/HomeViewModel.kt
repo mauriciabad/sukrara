@@ -265,6 +265,8 @@ data class HomeUiState(
     val blockedFeature: BlockedFeature? = null,
     /** Since when LibreView lacks the glucose ([BannerKind.ClinicUploadBehind]). */
     val clinicBehind: Instant? = null,
+    /** The sign-in after which the Libre app stopped uploading ([BannerKind.LibreAppStopped]). */
+    val libreAppStopped: Instant? = null,
 ) {
     val mutedUntil: Instant? get() = glucose.alerts.mutedUntil?.takeIf { it > now }
 }
@@ -341,6 +343,7 @@ class HomeViewModel(
                 blockedTaps = env.tapsBlocked,
                 blockedFeature = env.blockedShown(memory),
                 clinicBehind = env.clinicBehind,
+                libreAppStopped = env.libreAppStopped,
                 dataProblems = problems,
                 treatments = listed,
                 history = history,
@@ -382,6 +385,11 @@ class HomeViewModel(
         if (kind.safety) return
         if (kind == BannerKind.RestartSystemUi) {
             val key = deps.environment.value.restartKey ?: return
+            viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(key, deps.clock.now()) } }
+            return
+        }
+        if (kind == BannerKind.LibreAppStopped) {
+            val key = deps.environment.value.stoppedKey ?: return
             viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(key, deps.clock.now()) } }
             return
         }

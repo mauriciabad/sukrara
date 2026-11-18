@@ -63,10 +63,17 @@ sealed interface UploadStatus {
     data object SameAsSource : UploadStatus
 
     /**
-     * LibreLinkUp is the source: the Libre app uploads the glucose to LibreView, which takes one uploading device per
-     * account, so this upload sends nothing at all (docs/44 "Data" rule 6) until Sukrara reads the sensor itself.
+     * LibreLinkUp is the source and doesn't say which Libre app uploads the glucose (or it is one Sukrara can't send
+     * beside yet): a sign-in on that app's identity would stop its upload (docs/45), so this upload sends nothing at all
+     * until LibreLinkUp says or Sukrara reads the sensor itself.
      */
     data object OfficialAppUploads : UploadStatus
+
+    /**
+     * LibreLinkUp stopped getting the official app's readings right after Sukrara signed in to LibreView at [since]
+     * (docs/45): nothing goes up until the person signs that app out and in and taps *Send again*.
+     */
+    data class LibreAppStopped(val since: Instant) : UploadStatus
 
     /** The last cycle failed; it is tried again by itself ([why] in plain words; the detail is in the log). */
     data class Failing(val why: Trouble, val lastOk: Instant?) : UploadStatus

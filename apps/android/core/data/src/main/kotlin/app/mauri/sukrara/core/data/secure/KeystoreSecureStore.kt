@@ -35,6 +35,9 @@ object SecretName {
     /** The LibreView upload's session token (from its own login with [LIBREVIEW_ACCOUNT]). */
     const val LIBREVIEW = "libreview"
 
+    /** The LibreView upload's LibreLink-identity token (treatments beside the official Libre 3 app, docs/45). */
+    const val LIBREVIEW_LIBRELINK = "libreview-librelink"
+
     /** THE LibreView account: email and password, signed in once and used by the sensor, the upload and the import. */
     const val LIBREVIEW_ACCOUNT = "libreview-account"
     const val SENSOR = "sensor"
@@ -60,6 +63,7 @@ object SecretName {
             TIDEPOOL,
             TIDEPOOL_EMAIL,
             LIBREVIEW,
+            LIBREVIEW_LIBRELINK,
             LIBREVIEW_ACCOUNT,
             SENSOR,
             JUGGLUCO,

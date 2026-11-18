@@ -161,9 +161,10 @@ object DebugFakes {
 
     /**
      * `LIBRELINKUP --es server http://127.0.0.1:8766|off`: LibreLinkUp's login and calls (the LibreLinkUp source and the
-     * LibreView sign-in) go to a local fake LibreLinkUp (`tools/librelinkup-probe/fake.py`, synthetic data; `adb reverse
-     * tcp:8766 tcp:8766`, or 10.0.2.2) for every region, instead of Abbott's `api(-<region>).libreview.io`. Saved, then
-     * the app process ends: open the app. `off` = Abbott's hosts again. Release builds have no such choice.
+     * LibreView sign-in) and LibreView's app API (the LibreView upload, on loopback only) go to a local fake
+     * (`tools/librelinkup-probe/fake.py`, synthetic data; `adb reverse tcp:8766 tcp:8766`, or 10.0.2.2) for every region,
+     * instead of Abbott's `api(-<region>).libreview.io` and `fsll*.freestyleserver.com`. Saved, then the app process
+     * ends: open the app. `off` = Abbott's hosts again. Release builds have no such choice.
      */
     private fun libreLinkUp(
         context: Context,

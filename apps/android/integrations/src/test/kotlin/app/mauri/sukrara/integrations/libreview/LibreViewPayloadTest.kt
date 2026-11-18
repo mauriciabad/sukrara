@@ -3,10 +3,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.libreview
 
+import app.mauri.sukrara.core.data.libreview.LibreLinkUp
 import app.mauri.sukrara.core.testing.Contracts
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.double
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -131,5 +134,35 @@ class LibreViewPayloadTest {
         assertEquals(true, "\"recordNumber\":${h or 1400L}," in body)
         assertEquals(true, "\"recordNumber\":${h or 1395L}," in body)
         assertEquals(true, "\"trendArrow\":\"Stable\"" in body)
+    }
+
+    /**
+     * `contracts/treatments/libreview-librelink-fixture.json` (investigation 45's lv45.py): the treatments as LibreLink,
+     * beside the official Libre 3 app; the official app's identity from LibreLinkUp's device type, and where it is said.
+     */
+    @Test
+    fun `the LibreLink body, the identity rule and the device type match the contract`() {
+        val l = Json.parseToJsonElement(Contracts.file("treatments/libreview-librelink-fixture.json").readText()).jsonObject
+        val body =
+            LibreViewPayload.linkPayload(
+                entries,
+                l["deviceId"]!!.jsonPrimitive.content,
+                l["token"]!!.jsonPrimitive.content,
+                l["now"]!!.jsonPrimitive.long,
+                ZoneId.of(l["zone"]!!.jsonPrimitive.content),
+            )
+        assertEquals(l["expectedPayload"]!!.jsonPrimitive.content, body)
+        for (row in l["identities"]!!.jsonArray) {
+            val (dtid, official, send) = row.jsonArray.map { it.jsonPrimitive.contentOrNull }
+            val identity = LvIdentity.ofDeviceType(dtid?.toInt())
+            assertEquals("$dtid", official, identity?.id)
+            assertEquals("$dtid", send, identity?.other?.id)
+        }
+        for (case in l["deviceType"]!!.jsonArray) {
+            val c = case.jsonObject
+            val data = c["body"]!!.jsonObject["data"]!!.jsonObject
+            assertEquals(c["name"].toString(), c["dtid"]!!.jsonPrimitive.intOrNull, LibreLinkUp.deviceType(data))
+            assertEquals(c["name"].toString(), c["dtid"]!!.jsonPrimitive.intOrNull, LibreLinkUp.graph(c["body"]!!.jsonObject).deviceType)
+        }
     }
 }

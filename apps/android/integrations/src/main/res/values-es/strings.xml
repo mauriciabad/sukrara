@@ -131,7 +131,7 @@
     <string name="in_status_auth">El sitio ha rechazado el token o el secreto: cámbialo</string>
     <string name="in_status_unreadable">No se puede leer el token guardado: vuelve a introducirlo</string>
     <string name="in_status_paused">En pausa: otra app (%1$s) sube datos a este sitio</string>
-    <string name="in_status_official_app_uploads">En pausa: la app Libre sube tu glucosa mientras LibreLinkUp es tu origen, y LibreView admite un solo dispositivo que sube. Lo que anotes aquí espera: cuando Sukrara lea tu sensor, toca Tomar el relevo y se sube desde aquí.</string>
+    <string name="in_status_official_app_uploads">En pausa: LibreLinkUp no dice qué app Libre sube tu glucosa, e iniciar sesión junto a una app que Sukrara no conoce podría parar su subida. Lo que anotes aquí espera: cuando Sukrara lea tu sensor, toca Tomar el relevo y se sube desde aquí.</string>
     <string name="in_status_same_as_source">Es tu origen: la glucosa nunca vuelve a él; los tratamientos van en ambos sentidos en Ajustes › Origen</string>
     <string name="in_status_waiting">Activado · aún no se ha enviado nada</string>
     <plurals name="in_status_ok">
@@ -213,9 +213,9 @@
     <string name="in_lv_earlier_text">También sube la glucosa de este sensor desde el %1$s. Si otra app ya la envió, LibreView la cuenta dos veces.</string>
     <string name="in_lv_earlier_send">Enviar</string>
     <string name="in_lv_entries_summary">Los tratamientos que añadas o cambies a partir de ahora; editar o borrar corrige lo que tiene LibreView</string>
-    <string name="in_lv_footer">Sukrara usa la cuenta de LibreView con la que iniciaste sesión una vez (la de LibreLink o la app Libre 3): su email y contraseña se guardan cifrados en este teléfono, y la subida inicia sesión con ellos por sí sola. LibreView acepta datos de un solo dispositivo por cuenta: si ya sube LibreLink, la app Libre 3 o Juggluco, Sukrara pregunta antes de tomar el relevo. La glucosa sube de un Libre 3 conectado a este teléfono o de un Libre 1 o 2 leído con Juggluco.</string>
+    <string name="in_lv_footer">Sukrara usa la cuenta de LibreView con la que iniciaste sesión una vez (la de LibreLink o la app Libre 3): su email y contraseña se guardan cifrados en este teléfono, y la subida inicia sesión con ellos por sí sola. LibreView acepta un dispositivo que sube por cada app Libre: si otro dispositivo sube como la que usa Sukrara, Sukrara pregunta antes de tomar el relevo. Mientras la app Libre sube tu glucosa (LibreLinkUp es tu origen), Sukrara envía solo tus tratamientos, como la otra app Libre, así que la subida de la app Libre sigue. La glucosa sube de un Libre 3 conectado a este teléfono o de un Libre 1 o 2 leído con Juggluco.</string>
     <string name="in_lv_take_over_title">Otro dispositivo sube datos a esta cuenta</string>
-    <string name="in_lv_take_over_text">LibreView acepta datos de un dispositivo por cuenta, ahora otro (LibreLink, la app Libre 3 o Juggluco). Si Sukrara toma el relevo, ese dispositivo deja de subir a LibreView. Hazlo solo si Sukrara debe ser quien sube.</string>
+    <string name="in_lv_take_over_text">LibreView acepta datos de un dispositivo por app Libre, y ahora otro dispositivo sube como la app Libre 3 (la propia app Libre 3 o Juggluco). Si Sukrara toma el relevo, ese dispositivo deja de subir a LibreView. Hazlo solo si Sukrara debe ser quien sube.</string>
     <string name="in_lv_take_over">Tomar el relevo</string>
     <string name="in_lv_taking_over">Tomando el relevo…</string>
     <string name="in_lv_take_over_failed">No se pudo tomar el relevo. %1$s</string>
@@ -401,7 +401,7 @@
     <string name="in_llu_sensor_summary">Empezó %1$s · dura %2$s · %3$s</string>
     <string name="in_llu_libre_app">La app Libre tiene el sensor</string>
     <string name="in_llu_upload">LibreView</string>
-    <string name="in_llu_upload_summary">La app Libre sube allí tu glucosa. Sukrara no envía nada a LibreView hasta que lea el sensor él mismo: LibreView admite un solo dispositivo que sube por cuenta.</string>
+    <string name="in_llu_upload_summary">La app Libre sube allí tu glucosa. Con Compartir con apps › LibreView activado, Sukrara envía solo tus tratamientos, como un segundo dispositivo.</string>
     <string name="in_llu_take_over">Leer el sensor en Sukrara</string>
     <string name="in_llu_take_over_summary">Toma el Libre 3 en marcha con un toque NFC, cualquier día de su vida. Desde entonces la app Libre no recibe lecturas ni suena ninguna alarma.</string>
     <string name="in_llu_sign_out">Cerrar sesión en LibreLinkUp</string>
@@ -427,4 +427,14 @@
     <string name="in_tp_from_source">Glucosa y tratamientos de Nightscout</string>
     <string name="in_tp_from_source_summary">Desactivado: tu sitio puede enviarlos a Tidepool por sí mismo, y dos veces contarían doble</string>
     <string name="in_tp_from_source_on">Se envían a Tidepool. Si tu sitio también los envía, allí cuentan dos veces</string>
+    <string name="in_status_libre_app_stopped">Parado desde %1$s: la app Libre dejó de enviar tu glucosa a LibreLinkUp justo después de que Sukrara iniciara sesión en LibreView. En la app Libre, cierra sesión y vuelve a iniciarla; luego toca aquí.</string>
+    <string name="in_lv_beside_title">Junto a la app Libre</string>
+    <string name="in_lv_beside_text">La app Libre envía tu glucosa a LibreView. Sukrara envía tu insulina, carbohidratos y notas, que tu clínica ve en el dispositivo %1$s. Anota cada tratamiento en una sola app: si lo anotas en las dos, sale dos veces.</string>
+    <string name="in_lv_glucose_beside">La envía la app Libre</string>
+    <string name="in_lv_status_auth_beside">Otro dispositivo envía a LibreView como %1$s. Toca para tomar el relevo.</string>
+    <string name="in_lv_take_over_beside_title">Otro dispositivo envía como %1$s</string>
+    <string name="in_lv_take_over_beside_text">LibreView acepta datos de un dispositivo por app Libre, y ahora otro dispositivo envía como %1$s (una instalación anterior o Juggluco). Si Sukrara toma el relevo, ese dispositivo deja de subir. La app Libre que envía tu glucosa no se ve afectada.</string>
+    <string name="in_lv_send_again_title">¿Enviar de nuevo a LibreView?</string>
+    <string name="in_lv_send_again_text">Primero, en la app Libre, cierra sesión y vuelve a iniciarla con la misma cuenta. Cuando LibreLinkUp vuelva a recibir tu glucosa, Sukrara volverá a enviar tus tratamientos, y parará otra vez si la app Libre para.</string>
+    <string name="in_lv_send_again">Enviar de nuevo</string>
 </resources>

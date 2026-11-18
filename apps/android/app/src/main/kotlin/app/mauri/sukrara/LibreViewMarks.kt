@@ -12,7 +12,7 @@ import java.time.Instant
 
 /**
  * Home's cloud marks from the LibreView upload's ledger (its own rules); anything not there waits while it's stopped,
- * or while the Libre app uploads (its own mark: nothing is wrong).
+ * or while the Libre app uploads and the entry can't go up beside it (its own mark: nothing is wrong).
  */
 class LibreViewMarks(
     private val marks: LvEntryMarks,
@@ -24,13 +24,13 @@ class LibreViewMarks(
         when (marks.mark(t, now)) {
             null -> null
             LvMark.Uploaded -> UploadMark.Uploaded
-            LvMark.Updating -> waiting() ?: UploadMark.Updating
-            LvMark.Pending -> waiting() ?: UploadMark.Pending
+            LvMark.Updating -> waiting(t) ?: UploadMark.Updating
+            LvMark.Pending -> waiting(t) ?: UploadMark.Pending
         }
 
-    private fun waiting(): UploadMark? =
+    private fun waiting(t: Treatment): UploadMark? =
         when {
-            marks.waitsForLibreApp -> UploadMark.WaitsForLibreApp
+            marks.waits(t) -> UploadMark.WaitsForLibreApp
             marks.stopped -> UploadMark.Stopped
             else -> null
         }
