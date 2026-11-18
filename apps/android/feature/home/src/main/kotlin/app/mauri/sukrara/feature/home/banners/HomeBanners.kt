@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.ModuleState
+import app.mauri.sukrara.feature.home.PhoneAppProblem
 import kotlinx.serialization.Serializable
 import java.time.Duration
 import java.time.Instant
@@ -70,6 +71,8 @@ enum class BannerKind(val safety: Boolean) {
 data class HomeEnvironment(
     /** The next unfinished first-run setup step's name, or null when setup is done. */
     val nextSetupStep: String? = null,
+    /** Why Juggluco on this phone sends nothing (not installed: re-read on every resume); null = nothing known. */
+    val phoneApp: PhoneAppProblem? = null,
     val backedUp: Boolean? = null,
     val widgetPlaced: Boolean? = null,
     /** The launcher can place the widget from the app; false = the banner says how to add it by hand (no button). */

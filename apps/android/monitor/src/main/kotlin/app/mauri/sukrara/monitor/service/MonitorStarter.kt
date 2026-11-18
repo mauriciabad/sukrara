@@ -60,6 +60,12 @@ class MonitorStarter(
     private val launcher: ServiceLauncher,
     private val notice: StoppedNotice,
     private val log: (String) -> Unit = {},
+    /**
+     * THE source now (the graph's `spec`, read at each start), not the hub's copy of it: the hub collects the source on
+     * its own dispatcher, so right after the first unlock (a source only known then: a follow, an install with no
+     * answer) its copy could still be the one from before and the boot's start found nothing to monitor.
+     */
+    private val spec: suspend () -> SourceSpec? = { hub.state.value.spec },
 ) {
     suspend fun start(reason: StartReason): StartResult {
         val now = readinessNow()
@@ -86,9 +92,7 @@ class MonitorStarter(
      */
     suspend fun nothingToRead() = settle(readinessNow())
 
-    private suspend fun readinessNow(): Readiness? =
-        hub.state.value.spec
-            ?.let { readiness(it) }
+    private suspend fun readinessNow(): Readiness? = spec()?.let { readiness(it) }
 
     /**
      * Nothing set up to read (the sensor forgotten, the sensor chosen before one is paired) is not monitoring, as after

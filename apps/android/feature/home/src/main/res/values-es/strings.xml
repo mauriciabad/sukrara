@@ -10,7 +10,7 @@
     <string name="home_a11y_just_now">ahora mismo</string>
 
     <string name="reason_setup_title">Sukrara aún no está configurada</string>
-    <string name="reason_setup_body">Elige si este móvil lleva el sensor o sigue a alguien que lo lleva.</string>
+    <string name="reason_setup_body">Elige de quién es la glucosa que muestra este móvil y de dónde viene.</string>
     <string name="reason_setup_action">Configurar</string>
     <string name="reason_no_sensor_title">Sin monitorizar: aún no hay sensor</string>
     <string name="reason_no_sensor_body">Empareja un sensor para ver tu glucosa aquí. Ninguna alerta suena hasta que esté emparejado.</string>
@@ -37,6 +37,9 @@
     <string name="reason_pair_again_action">Emparejar de nuevo</string>
     <string name="reason_ended_title">El sensor ha terminado</string>
     <string name="reason_ended_body">Este sensor ha llegado a su fin. Ponte uno nuevo y emparéjalo.</string>
+    <string name="reason_ended_body_libre">Este sensor ha llegado a su fin. Ponte uno nuevo e inícialo en la app Libre.</string>
+    <string name="reason_ended_body_juggluco">Este sensor ha llegado a su fin. Ponte uno nuevo e inícialo en Juggluco.</string>
+    <string name="reason_ended_body_uploader">Este sensor ha llegado a su fin. Ponte uno nuevo e inícialo en la app que sube a Nightscout.</string>
     <string name="reason_ended_action">Emparejar sensor nuevo</string>
     <string name="reason_clock_title">El reloj del móvil va atrasado</string>
     <string name="reason_clock_body">Las lecturas llegan %1$s por delante de la hora de este móvil, así que Sukrara no puede mostrarlas y las alertas pueden decir que no hay datos. Pon la fecha y la hora en automático.</string>
@@ -46,7 +49,7 @@
     <string name="reason_revoked_title">Ya no sigues a esta persona</string>
     <string name="reason_revoked_body">Ha quitado este móvil de sus seguidores. Pídele una invitación nueva para volver a seguirla.</string>
     <string name="reason_revoked_action">Unirse con una invitación nueva</string>
-    <string name="reason_wearer_silent_title">No llegan lecturas del móvil de la persona</string>
+    <string name="reason_wearer_silent_title">No llegan lecturas de su móvil</string>
     <string name="reason_wearer_silent_body">Última señal %1$s. Puede que su móvil esté apagado, sin conexión o sin batería.</string>
     <string name="reason_wearer_silent_never">Aún no ha llegado nada. Puede que su móvil esté apagado, sin conexión o sin batería.</string>
     <string name="reason_site_title">No hay lecturas de Nightscout</string>
@@ -58,6 +61,13 @@
     <string name="reason_no_readings_body">Última lectura %1$s. Mantén el móvil cerca del sensor; se reconecta solo.</string>
     <string name="reason_no_readings_never">Aún no hay lecturas. Mantén el móvil cerca del sensor; se reconecta solo.</string>
     <string name="reason_no_readings_action">Detalles del sensor</string>
+    <string name="reason_juggluco_missing_title">Juggluco no está instalado</string>
+    <string name="reason_juggluco_missing_body">Sukrara lee la glucosa de Juggluco en este móvil. Instala Juggluco o elige otro origen.</string>
+    <string name="reason_juggluco_title">No llegan lecturas de Juggluco</string>
+    <string name="reason_juggluco_unreachable">Juggluco no responde. Ábrelo y activa su servidor web (Ajustes › Servidor web).</string>
+    <string name="reason_juggluco_refused">Juggluco rechaza a Sukrara: el secreto de API de su servidor web y el de Origen no coinciden.</string>
+    <string name="reason_juggluco_silent_body">Última lectura %1$s. Comprueba que Juggluco esté leyendo el sensor.</string>
+    <string name="reason_juggluco_silent_never">Aún no hay lecturas. Comprueba que Juggluco esté leyendo el sensor con su servidor web activado.</string>
 
     <string name="banner_alerts_title">Puede que las alertas no suenen</string>
     <string name="banner_alerts_action">Arreglar</string>

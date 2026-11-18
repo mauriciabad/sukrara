@@ -32,6 +32,7 @@ import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.version.AppBuildInfo
 import app.mauri.sukrara.feature.home.PenRead
+import app.mauri.sukrara.feature.home.PhoneAppProblem
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.feature.sensor.SensorUiModule
@@ -101,6 +102,7 @@ import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.sensor.SensorInfo
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
+import app.mauri.sukrara.sensor.juggluco.JugglucoStatus
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
 import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
@@ -920,6 +922,17 @@ class AppGraph(
                     .distinctUntilChanged(),
             systemAccess = monitor.root.access.state,
             build = BuildConfig.VERSION_CODE.toLong(),
+            phoneAppLink = {
+                sensor.source.detail
+                    .map { d ->
+                        when ((d as? SensorStatus.Juggluco)?.status) {
+                            is JugglucoStatus.Unreachable -> PhoneAppProblem.Unreachable
+                            JugglucoStatus.Refused -> PhoneAppProblem.Refused
+                            else -> null
+                        }
+                    }.distinctUntilChanged()
+            },
+            phoneAppInstalled = ::jugglucoInstalled,
         )
     }
 
@@ -951,8 +964,14 @@ class AppGraph(
         monitor.starter.start(reason)
     }
 
-    /** [ready] on an unlocked phone; before the first unlock, [monitorReady] (all that runs then). */
-    suspend fun awaitMonitor() = if (unlocked.value) ready.await() else monitorReady.await()
+    /**
+     * [ready] on an unlocked phone; before the first unlock, [monitorReady] (all that runs then). Android's unlock
+     * decides, not [unlocked] (which opens only once the readings taken before it are moved): the boot broadcast right
+     * after the first unlock took [monitorReady] while that move ran, so it started monitoring with the source as known
+     * while locked, and a source only known after the unlock (a follow, an install with no answer) started nothing until
+     * the app was opened or the 15-minute health check. [ready] waits for that move, then decides the source again.
+     */
+    suspend fun awaitMonitor() = if (userUnlocked()) ready.await() else monitorReady.await()
 
     /**
      * The wearer's sharing (relays, followers, treatments and settings to them): runs while the phone is the wearer

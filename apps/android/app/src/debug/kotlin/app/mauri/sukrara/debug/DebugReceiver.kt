@@ -14,6 +14,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertReading
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
+import app.mauri.sukrara.core.data.userUnlocked
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.graph
 import app.mauri.sukrara.monitor.MonitoringService
@@ -187,6 +188,8 @@ object DebugFakes {
 
     /** The `LIBRELINKUP` command's fake (scheme to host:port, BuildVariant), or null: Abbott's hosts. */
     fun libreLinkUpServer(context: Context): Pair<String, String>? {
+        // its preferences are credential-encrypted: none before the first unlock (the app starts then too)
+        if (!context.userUnlocked) return null
         val server = context.getSharedPreferences(LIBRELINKUP_PREFS, Context.MODE_PRIVATE).getString("server", null)
         val url = server?.toHttpUrlOrNull() ?: return null
         return url.scheme to "${url.host}:${url.port}"
@@ -196,6 +199,8 @@ object DebugFakes {
 
     /** The `UPDATES` command's test server and certificate (BuildVariant), or null: GitHub and the release key. */
     fun updateServer(context: Context): Pair<String, String>? {
+        // read at the app's start, which may be before the first unlock: reading these preferences then crashed it
+        if (!context.userUnlocked) return null
         val prefs = context.getSharedPreferences(UPDATES_PREFS, Context.MODE_PRIVATE)
         val server = prefs.getString("server", null) ?: return null
         val cert = prefs.getString("cert", null) ?: return null

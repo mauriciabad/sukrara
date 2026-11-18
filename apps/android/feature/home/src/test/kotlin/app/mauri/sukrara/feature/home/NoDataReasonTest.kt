@@ -8,9 +8,11 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.NotMonitoringReason
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.feature.home.Samples.NOW
@@ -54,6 +56,28 @@ class NoDataReasonTest {
     @Test fun `25 min without readings names the last one`() {
         val state = Samples.wearer(ageMin = 25)
         assertEquals(NoDataReason.NoReadings(state.latest!!.t), reason(state))
+    }
+
+    @Test fun `Juggluco as the source says Juggluco's reason and opens Source, never the sensor's`() {
+        val juggluco = SourceSpec(Person.Yours, SourceKind.PhoneApp)
+        val state = Samples.wearer(ageMin = 25).copy(spec = juggluco)
+        val look = homeLook(state, NOW, GlucoseUnit.MGDL)
+        // not installed: says so, with Source (choose another, or install it)
+        val missing = NoDataReason.of(state, look, PhoneAppProblem.Missing)
+        assertEquals(NoDataReason.PhoneAppSilent(PhoneAppProblem.Missing, state.latest!!.t), missing)
+        assertEquals(HomeAction.OpenSource, missing?.action)
+        assertEquals(
+            NoDataReason.PhoneAppSilent(PhoneAppProblem.Unreachable, state.latest!!.t),
+            NoDataReason.of(state, look, PhoneAppProblem.Unreachable),
+        )
+        // nothing known: Juggluco sent nothing new
+        assertEquals(NoDataReason.PhoneAppSilent(null, state.latest!!.t), reason(state))
+        // never a reading yet, Juggluco missing: not "no sensor yet · Pair sensor"
+        val never = Samples.noSensorYet(juggluco)
+        assertEquals(
+            NoDataReason.PhoneAppSilent(PhoneAppProblem.Missing, null),
+            NoDataReason.of(never, homeLook(never, NOW, GlucoseUnit.MGDL), PhoneAppProblem.Missing),
+        )
     }
 
     @Test fun `follower silence names when the wearer was last heard`() {
@@ -117,11 +141,11 @@ class NoDataReasonTest {
 
     @Test fun `an ended sensor comes before the clock`() {
         val state = Samples.wearer(sensor = SensorState.Ended).copy(clockBehind = ClockBehind(NOW, Duration.ofMinutes(9)))
-        assertEquals(NoDataReason.SensorEnded, reason(state))
+        assertEquals(NoDataReason.SensorEnded(), reason(state))
     }
 
     @Test fun `ended and warming up replace any number`() {
-        assertEquals(NoDataReason.SensorEnded, reason(Samples.wearer(sensor = SensorState.Ended)))
+        assertEquals(NoDataReason.SensorEnded(), reason(Samples.wearer(sensor = SensorState.Ended)))
         val ready = NOW.plus(Duration.ofMinutes(40))
         assertEquals(NoDataReason.WarmingUp(ready), reason(Samples.wearer(ageMin = 25, sensor = SensorState.WarmingUp(ready))))
     }

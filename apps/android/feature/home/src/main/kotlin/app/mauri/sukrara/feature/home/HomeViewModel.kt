@@ -331,7 +331,7 @@ class HomeViewModel(
                 glucose = glucose,
                 now = now,
                 look = look,
-                reason = NoDataReason.of(glucose, look),
+                reason = NoDataReason.of(glucose, look, env.phoneApp),
                 banner = HomeBanners.pick(readiness, env, glucose.service is ServiceState.Stopped, problems.size, memory, now),
                 firstProblem = readiness?.firstProblem,
                 readiness = readiness,

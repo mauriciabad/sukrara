@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -104,6 +105,7 @@ class MonitorModule(
             launcher = AndroidServiceLauncher(context),
             notice = AndroidStoppedNotice(context),
             log = { android.util.Log.i("Sukrara.monitor", it) },
+            spec = { spec.first() },
         )
 
     val healthCheck = HealthCheck(alarms, starter)

@@ -118,21 +118,24 @@ suspend fun lastReadHere(readings: ReadingsRepository): SourceSpec? {
 
 /**
  * Whose the history on this phone is when nothing else says what it reads ([inferredSource]: a wearer without a
- * pairing, a follow that ended, both from before the question): any reading not relayed by another Sukrara (taken on
- * this phone or imported) makes it your own (your sensor), readings only from another Sukrara someone else's (their
- * Sukrara); none = a new install. Without it the
- * first answer adopted that history for the other person (your own readings shown as a child's) and answering the truth
- * later deleted it.
+ * pairing, a follow that ended, both from before the question, a damaged source file): a reading this phone took from a
+ * sensor or imported makes it your own (your sensor); one relayed by another Sukrara someone else's (their Sukrara: a
+ * person change deletes the other's readings, so the two never mix); readings only from an online source (a
+ * Nightscout site, LibreLinkUp) say nothing, since either person's glucose comes that way, so nothing is guessed and
+ * setup asks; none = a new install. Without it the first answer adopted that history for the other person (your own
+ * readings shown as a child's, or a child's Nightscout readings taken as yours) and answering the truth later deleted it.
  */
 suspend fun historyOwner(readings: ReadingsRepository): SourceSpec? {
     val all = readings.span().count
     val relayed = readings.spanOf(SourceId.Relayed).count
+    val online = readings.spanOf(SourceId.Online).count
     return when {
-        // a reading this phone took itself or imported: before the question only a wearer had those
-        all > relayed -> SourceSpec.YourSensor
+        // a reading this phone took from a sensor or imported: only your own glucose comes that way
+        all > relayed + online -> SourceSpec.YourSensor
 
         relayed > 0 -> SourceSpec.TheirSukrara
 
+        // an online source's readings are either person's: ask
         else -> null
     }
 }

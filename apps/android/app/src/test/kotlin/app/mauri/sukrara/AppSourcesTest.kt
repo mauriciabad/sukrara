@@ -86,7 +86,8 @@ class AppSourcesTest {
             readings.upsert(listOf(reading(0, SourceId.Relay), reading(30, SourceId.Nearby)))
             addTreatment()
 
-            assertEquals(HistoryLoss(2, 1, t0, t0.plusSeconds(30 * 60)), sources.loss(SourceSpec.YourSensor))
+            // two readings 30 min apart: two 5-minute stretches, 10 minutes of glucose
+            assertEquals(HistoryLoss(10, 1, t0, t0.plusSeconds(30 * 60)), sources.loss(SourceSpec.YourSensor))
             assertNull(sources.loss(SourceSpec(Person.Theirs, SourceKind.PhoneApp)))
             // asking deletes nothing
             assertEquals(2, all().size)
@@ -107,6 +108,24 @@ class AppSourcesTest {
             assertEquals(SourceSpec.TheirSukrara, historyOwner(readings))
             // any first-hand or imported reading is the person's own (a follow can't bring those)
             readings.upsert(listOf(reading(10, SourceId("import-libreview"))))
+            assertEquals(SourceSpec.YourSensor, historyOwner(readings))
+        }
+
+    /**
+     * Someone else's Nightscout (or LibreLinkUp) whose source file is damaged: its readings were taken for the phone's
+     * own (they aren't relayed) and the next answer of *Someone else's* asked to delete them. Online readings belong to
+     * either person, so nothing is guessed: setup asks.
+     */
+    @Test fun onlineReadingsAloneDontSayWhoseTheyAre() =
+        runTest {
+            readings.upsert(listOf(reading(0, SourceId.Nightscout), reading(5, SourceId.LibreLinkUp)))
+            assertNull(historyOwner(readings))
+            assertNull(infer())
+            // relayed before (a person change deletes the other's): someone else's
+            readings.upsert(listOf(reading(10, SourceId.Relay)))
+            assertEquals(SourceSpec.TheirSukrara, historyOwner(readings))
+            // an import is only ever your own
+            readings.upsert(listOf(reading(15, SourceId("import-file"))))
             assertEquals(SourceSpec.YourSensor, historyOwner(readings))
         }
 
@@ -157,7 +176,7 @@ class AppSourcesTest {
             // the same person: its history stays
             assertNull(sources.loss(SourceSpec.YourSensor))
             // someone else's: what it read was the person's own history
-            assertEquals(HistoryLoss(1, 1, t0, t0), sources.loss(SourceSpec.TheirSukrara))
+            assertEquals(HistoryLoss(5, 1, t0, t0), sources.loss(SourceSpec.TheirSukrara))
             sources.set(SourceSpec.YourSensor)
             assertEquals(1, all().size)
         }

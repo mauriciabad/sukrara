@@ -130,6 +130,7 @@ import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.SensorRenew
 import app.mauri.sukrara.graph.StatusBadge
 import app.mauri.sukrara.graph.TreatmentKindMark
 import app.mauri.sukrara.graph.TreatmentMarks
@@ -662,10 +663,30 @@ private fun GlucoseSection(
                     pillWords = pillWords(state, resources),
                     onPill = { action ->
                         when (action) {
-                            is PillAction.Treat -> callbacks.onAction(HomeAction.Treat(carbs = action.carbs))
-                            PillAction.ReplaceSensor -> callbacks.onAction(HomeAction.PairSensor)
-                            is PillAction.Quiet, PillAction.MuteAll -> sheet = QuietTarget.of(action)
-                            PillAction.None -> Unit
+                            is PillAction.Treat -> {
+                                callbacks.onAction(HomeAction.Treat(carbs = action.carbs))
+                            }
+
+                            // a new sensor paired here, or started in the source's app: Settings › Source says how
+                            PillAction.ReplaceSensor -> {
+                                callbacks.onAction(
+                                    if (SensorRenew.of(state.glucose.spec) ==
+                                        SensorRenew.HERE
+                                    ) {
+                                        HomeAction.PairSensor
+                                    } else {
+                                        HomeAction.OpenSource
+                                    },
+                                )
+                            }
+
+                            is PillAction.Quiet, PillAction.MuteAll -> {
+                                sheet = QuietTarget.of(action)
+                            }
+
+                            PillAction.None -> {
+                                Unit
+                            }
                         }
                     },
                     height = cardHeight,
@@ -880,8 +901,16 @@ private fun reasonText(
             stringResource(R.string.reason_pair_again_title) to stringResource(R.string.reason_pair_again_body)
         }
 
-        NoDataReason.SensorEnded -> {
-            stringResource(R.string.reason_ended_title) to stringResource(R.string.reason_ended_body)
+        is NoDataReason.SensorEnded -> {
+            stringResource(R.string.reason_ended_title) to
+                stringResource(
+                    when (reason.renew) {
+                        SensorRenew.HERE -> R.string.reason_ended_body
+                        SensorRenew.LIBRE_APP -> R.string.reason_ended_body_libre
+                        SensorRenew.JUGGLUCO -> R.string.reason_ended_body_juggluco
+                        SensorRenew.ITS_APP -> R.string.reason_ended_body_uploader
+                    },
+                )
         }
 
         is NoDataReason.ClockBehind -> {
@@ -948,6 +977,30 @@ private fun reasonText(
                 }
         }
 
+        is NoDataReason.PhoneAppSilent -> {
+            when (reason.problem) {
+                PhoneAppProblem.Missing -> {
+                    stringResource(R.string.reason_juggluco_missing_title) to stringResource(R.string.reason_juggluco_missing_body)
+                }
+
+                PhoneAppProblem.Unreachable -> {
+                    stringResource(R.string.reason_juggluco_title) to stringResource(R.string.reason_juggluco_unreachable)
+                }
+
+                PhoneAppProblem.Refused -> {
+                    stringResource(R.string.reason_juggluco_title) to stringResource(R.string.reason_juggluco_refused)
+                }
+
+                null -> {
+                    stringResource(R.string.reason_juggluco_title) to
+                        (
+                            reason.since?.let { stringResource(R.string.reason_juggluco_silent_body, relative(it, now)) }
+                                ?: stringResource(R.string.reason_juggluco_silent_never)
+                        )
+                }
+            }
+        }
+
         is NoDataReason.NoReadings -> {
             stringResource(R.string.reason_no_readings_title) to
                 (
@@ -993,15 +1046,15 @@ private fun actionLabel(reason: NoDataReason): String =
                 R.string.reason_clock_action
             }
 
-            NoDataReason.SensorEnded -> {
-                R.string.reason_ended_action
+            is NoDataReason.SensorEnded -> {
+                if (reason.renew == SensorRenew.HERE) R.string.reason_ended_action else R.string.reason_site_action
             }
 
             NoDataReason.LinkRevoked -> {
                 R.string.reason_revoked_action
             }
 
-            NoDataReason.SiteNotConnected -> {
+            NoDataReason.SiteNotConnected, is NoDataReason.PhoneAppSilent -> {
                 R.string.reason_site_action
             }
 

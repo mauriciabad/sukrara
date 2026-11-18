@@ -13,6 +13,7 @@ import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
 import app.mauri.sukrara.graph.GlucoseLook
+import app.mauri.sukrara.graph.SensorRenew
 import java.time.Duration
 import java.time.Instant
 
@@ -82,8 +83,14 @@ sealed interface NoDataReason {
         override val action = HomeAction.ResumeMonitoring
     }
 
-    data object SensorEnded : NoDataReason {
-        override val action = HomeAction.PairSensor
+    /**
+     * The sensor ended: a new one is paired here, or ([renew]) started in the app that reads it for this source (the
+     * Libre app, Juggluco, a site's uploader), so the way out is Settings › Source, not *Pair new sensor*.
+     */
+    data class SensorEnded(
+        val renew: SensorRenew = SensorRenew.HERE,
+    ) : NoDataReason {
+        override val action = if (renew == SensorRenew.HERE) HomeAction.PairSensor else HomeAction.OpenSource
     }
 
     /**
@@ -126,6 +133,19 @@ sealed interface NoDataReason {
         override val action = HomeAction.OpenSource
     }
 
+    /**
+     * Juggluco on this phone is the source and nothing comes from it: [problem] says why when it is known (not
+     * installed, its web server doesn't answer, it refuses the API secret), else it has simply sent nothing new since
+     * [since]. Never the sensor's "keep the phone near the sensor": Sukrara doesn't talk to the sensor here. Settings ›
+     * Source has *Open Juggluco*, the secret and the way to another source.
+     */
+    data class PhoneAppSilent(
+        val problem: PhoneAppProblem?,
+        val since: Instant?,
+    ) : NoDataReason {
+        override val action = HomeAction.OpenSource
+    }
+
     /** Wearer: monitoring runs but the sensor sent nothing for 20 min (the card's "no readings" step). */
     data class NoReadings(val since: Instant?) : NoDataReason {
         override val action = HomeAction.OpenSensor
@@ -140,6 +160,8 @@ sealed interface NoDataReason {
         fun of(
             state: GlucoseState,
             look: GlucoseLook,
+            /** Why Juggluco on this phone sends nothing, when it is the source and that is known. */
+            phoneApp: PhoneAppProblem? = null,
         ): NoDataReason? {
             val follower = state.spec?.stream == true
             val latest = state.latest
@@ -161,7 +183,7 @@ sealed interface NoDataReason {
                 }
 
                 state.sensor == SensorState.Ended -> {
-                    SensorEnded
+                    SensorEnded(SensorRenew.of(state.spec))
                 }
 
                 // even while the last value shows: every new reading is being dropped, and its age reads wrong
@@ -175,6 +197,11 @@ sealed interface NoDataReason {
 
                 valueShown -> {
                     null
+                }
+
+                // Juggluco on this phone: its reason and way out, never the sensor's (Sukrara doesn't read one here)
+                state.spec?.kind == SourceKind.PhoneApp && state.service !is ServiceState.Stopped -> {
+                    PhoneAppSilent(phoneApp, latest?.t)
                 }
 
                 // the sensor was forgotten: nothing reconnects, so never "it reconnects on its own"
@@ -220,6 +247,18 @@ sealed interface NoDataReason {
             }
         }
     }
+}
+
+/** Why Juggluco on this phone sends nothing (home's no-data reason). */
+enum class PhoneAppProblem {
+    /** Not installed on this phone (any more). */
+    Missing,
+
+    /** Its web server doesn't answer: Juggluco isn't running or the server is off. */
+    Unreachable,
+
+    /** It refuses Sukrara: the API secrets differ. */
+    Refused,
 }
 
 /** The no-data reason for what the sensor needs, or null: the others have their own place (permission, sign-in). */

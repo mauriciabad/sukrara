@@ -12,7 +12,7 @@
 
     <!-- No-data reasons: title, why, action -->
     <string name="reason_setup_title">Sukrara isn\'t set up yet</string>
-    <string name="reason_setup_body">Choose whether this phone wears the sensor or follows someone who does.</string>
+    <string name="reason_setup_body">Choose whose glucose this phone shows and where it comes from.</string>
     <string name="reason_setup_action">Set up</string>
     <string name="reason_no_sensor_title">Not monitoring: no sensor yet</string>
     <string name="reason_no_sensor_body">Pair a sensor to see your glucose here. No alerts ring until it is paired.</string>
@@ -39,6 +39,11 @@
     <string name="reason_pair_again_action">Pair sensor again</string>
     <string name="reason_ended_title">Sensor ended</string>
     <string name="reason_ended_body">This sensor has reached its end. Apply a new one and pair it.</string>
+    <!-- The sensor ended, with LibreLinkUp as the source: the new one starts in the Libre app -->
+    <string name="reason_ended_body_libre">This sensor has reached its end. Apply a new one and start it in the Libre app.</string>
+    <string name="reason_ended_body_juggluco">This sensor has reached its end. Apply a new one and start it in Juggluco.</string>
+    <!-- The sensor ended, with a Nightscout site as the source: the new one starts in the app that uploads to it -->
+    <string name="reason_ended_body_uploader">This sensor has reached its end. Apply a new one and start it in the app that uploads to Nightscout.</string>
     <string name="reason_ended_action">Pair new sensor</string>
     <string name="reason_clock_title">Phone clock is behind</string>
     <string name="reason_clock_body">Readings arrive %1$s ahead of this phone\'s time, so Sukrara can\'t show them and alerts may say there is no data. Set the date and time to automatic.</string>
@@ -48,7 +53,7 @@
     <string name="reason_revoked_title">You no longer follow this person</string>
     <string name="reason_revoked_body">They removed this phone from their followers. Ask them for a new invite to follow again.</string>
     <string name="reason_revoked_action">Join with a new invite</string>
-    <string name="reason_wearer_silent_title">No readings from the wearer\'s phone</string>
+    <string name="reason_wearer_silent_title">No readings from their phone</string>
     <string name="reason_wearer_silent_body">Last heard %1$s. Their phone may be off, offline or out of battery.</string>
     <string name="reason_wearer_silent_never">Nothing heard yet. Their phone may be off, offline or out of battery.</string>
     <string name="reason_site_title">No readings from Nightscout</string>
@@ -60,6 +65,16 @@
     <string name="reason_no_readings_body">Last reading %1$s. Keep the phone near the sensor; it reconnects on its own.</string>
     <string name="reason_no_readings_never">No reading yet. Keep the phone near the sensor; it reconnects on its own.</string>
     <string name="reason_no_readings_action">Sensor details</string>
+    <!-- Home, Juggluco on this phone is the source but it isn't installed -->
+    <string name="reason_juggluco_missing_title">Juggluco isn\'t installed</string>
+    <string name="reason_juggluco_missing_body">Sukrara reads the glucose from Juggluco on this phone. Install Juggluco, or choose another source.</string>
+    <!-- Home, Juggluco on this phone is the source and sends nothing -->
+    <string name="reason_juggluco_title">No readings from Juggluco</string>
+    <string name="reason_juggluco_unreachable">Juggluco doesn\'t answer. Open it and turn on its web server (Settings › Web server).</string>
+    <string name="reason_juggluco_refused">Juggluco refuses Sukrara: its web server\'s API secret and the one in Source differ.</string>
+    <!-- %1$s = how long ago ("12 minutes ago") -->
+    <string name="reason_juggluco_silent_body">Last reading %1$s. Check that Juggluco is reading the sensor.</string>
+    <string name="reason_juggluco_silent_never">No reading yet. Check that Juggluco is reading the sensor with its web server on.</string>
 
     <!-- Banners -->
     <string name="banner_alerts_title">Alerts may not ring</string>

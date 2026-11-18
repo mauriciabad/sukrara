@@ -30,6 +30,7 @@ import app.mauri.sukrara.feature.home.HomeAlertAction
 import app.mauri.sukrara.feature.home.HomeDeps
 import app.mauri.sukrara.feature.home.HomeProfile
 import app.mauri.sukrara.feature.home.PenRead
+import app.mauri.sukrara.feature.home.PhoneAppProblem
 import app.mauri.sukrara.feature.home.UploadMarks
 import app.mauri.sukrara.feature.home.banners.BannerMemory
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
@@ -109,6 +110,10 @@ class HomeModule(
     private val systemAccess: Flow<SystemAccessState> = emptyFlow(),
     /** This build's version code: a closed restart card comes back with a new build. */
     private val build: Long = 0,
+    /** Why Juggluco on this phone answers nothing while it is the source (its web server's state), else null. */
+    private val phoneAppLink: () -> Flow<PhoneAppProblem?> = { flowOf(null) },
+    /** Whether Juggluco is installed, checked now (re-read on every resume: the person may install it meanwhile). */
+    private val phoneAppInstalled: () -> Boolean = { true },
 ) : HomeDeps {
     override val treatments: TreatmentsRepository get() = data.treatments
 
@@ -144,6 +149,8 @@ class HomeModule(
     private val env = MutableStateFlow(HomeEnvironment())
     override val environment: StateFlow<HomeEnvironment> = env
 
+    private val appInstalled = MutableStateFlow(true)
+
     init {
         scope.launch { nextSetupStep.collect { step -> env.update { it.copy(nextSetupStep = step) } } }
         scope.launch {
@@ -162,6 +169,11 @@ class HomeModule(
         scope.launch { updateChecksOff().collect { off -> env.update { it.copy(updateChecksOff = off) } } }
         scope.launch { featureChecks.blocked.collect { b -> env.update { it.copy(blocked = b) } } }
         scope.launch { followPath().collect { p -> env.update { it.copy(followPath = p) } } }
+        // Juggluco missing says so (not "no readings from the sensor"); else what its web server answers
+        scope.launch {
+            combine(appInstalled, phoneAppLink()) { installed, link -> if (installed) link else PhoneAppProblem.Missing }
+                .collect { p -> env.update { it.copy(phoneApp = p) } }
+        }
     }
 
     override val profile: Flow<HomeProfile?> by lazy {
@@ -190,6 +202,7 @@ class HomeModule(
         refreshSetup()
         featureChecks.refresh()
         env.update { it.copy(widgetPlaced = widgetPlaced(), widgetPinnable = widgetPinnable()) }
+        appInstalled.value = phoneAppInstalled()
         scope.launch { runCatching { tapsBlocked() }.getOrNull()?.let { b -> env.update { it.copy(tapsBlocked = b) } } }
     }
 

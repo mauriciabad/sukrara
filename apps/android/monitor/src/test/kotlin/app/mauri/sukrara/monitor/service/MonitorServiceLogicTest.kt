@@ -115,6 +115,35 @@ class MonitorServiceLogicTest {
             assertEquals("asked for the hub's role, never without one", listOf(SourceSpec.YourSensor), asked)
         }
 
+    /**
+     * The first unlock after a restart: a source only known then (a follow, an install with no answer) reaches the hub
+     * a moment later, and the boot's start right after the unlock found the hub's old copy (no source) and started
+     * nothing until the app was opened or the health check ran. The starter reads THE source itself.
+     */
+    @Test
+    fun `the start reads the source itself, never the hub's copy that may lag behind the unlock`() =
+        runTest {
+            val (hub, _) = setUp()
+            role.value = null
+            runCurrent()
+            val now = MutableStateFlow<SourceSpec?>(null)
+            val starter =
+                MonitorStarter(hub, { r ->
+                    asked += r
+                    Readiness.Ready
+                }, {
+                    launches++
+                    true
+                }, notice, spec = { now.value })
+            assertEquals(StartResult.NotNeeded, starter.start(StartReason.LockedBoot))
+            // unlocked: the source is decided again (their Sukrara); the hub hasn't seen it yet
+            now.value = SourceSpec.TheirSukrara
+            assertNull(hub.state.value.spec)
+            assertEquals(StartResult.Started, starter.start(StartReason.Boot))
+            assertEquals(1, launches)
+            assertEquals(listOf(SourceSpec.TheirSukrara), asked)
+        }
+
     @Test
     fun `nothing set up to read is not monitoring, so no no-data alarm stays armed`() =
         runTest {
