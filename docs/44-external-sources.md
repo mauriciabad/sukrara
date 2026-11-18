@@ -419,7 +419,7 @@ section with what was added and what was discarded, with the reasons.
 **Owner, 2026-11-18: all as recommended**, 9 too once explained. 11 was researched further ("we didn't truly research
 this enough": Appendix E) and needs the owner's answer again. The owner also raised a channel neither note covered:
 **with root**, reading the official app's data or sitting in the middle of its Bluetooth link, which could work for
-nearly every sensor (not required, a good option when the phone has root); being researched. The owner uses
+nearly every sensor (not required, a good option when the phone has root); not researched yet (open). The owner uses
 only Sukrara with Libre 3 sensors (no Libre app, no LibreLinkUp). For testing they're fine installing apps on the phone
 or emulators and making accounts, as long as their normal setup ends up Sukrara alone.
 
