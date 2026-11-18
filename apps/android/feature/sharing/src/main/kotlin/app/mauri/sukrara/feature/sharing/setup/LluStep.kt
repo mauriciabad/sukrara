@@ -132,7 +132,18 @@ internal fun ColumnScope.LluStep(
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             when (m) {
                 LluMode.Form -> {
-                    val libreView = c.libreViewEmail?.takeIf { person == Person.Yours && !other && !signedOut }
+                    // changing an account that works: *Keep this account* goes back to it, and *Sign in as …* is offered
+                    // only for another account than this one
+                    val keeping = c.signedIn && !signedOut
+                    val keep =
+                        stringResource(R.string.sh_setup_llu_keep) to {
+                            changing = false
+                            other = false
+                        }
+                    val libreView =
+                        c.libreViewEmail?.takeIf {
+                            person == Person.Yours && !other && !signedOut && !(keeping && it.equals(c.email, ignoreCase = true))
+                        }
                     if (libreView != null) {
                         NoticeCard(
                             stringResource(R.string.sh_setup_llu_libreview_body),
@@ -145,7 +156,11 @@ internal fun ColumnScope.LluStep(
                             stringResource(R.string.sh_setup_llu_libreview_use, libreView),
                             actions.connectLluLibreView,
                             enabled = !llu.connecting,
-                            secondary = listOf(stringResource(R.string.sh_setup_llu_other) to { other = true }),
+                            secondary =
+                                listOfNotNull(
+                                    stringResource(R.string.sh_setup_llu_other) to { other = true },
+                                    keep.takeIf { keeping },
+                                ),
                         )
                     } else {
                         LluForm(email, {
@@ -161,8 +176,8 @@ internal fun ColumnScope.LluStep(
                             { actions.connectLlu(email, password) },
                             enabled = email.isNotBlank() && password.isNotEmpty() && !llu.connecting,
                             secondary =
-                                if (c.signedIn && !signedOut) {
-                                    listOf(stringResource(R.string.sh_setup_llu_keep) to { changing = false })
+                                if (keeping) {
+                                    listOf(keep)
                                 } else {
                                     listOf(stringResource(R.string.sh_setup_later) to { actions.skip(SetupStep.Sensor) })
                                 },

@@ -949,7 +949,8 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
 **States and exits**: Source → *LibreLinkUp* → *Continue* → Connect. Connect: *Sign in as …* / the form → signing in
 (Back leaves, nothing saved) → refused / new terms / too many attempts / no answer / no internet / stopped (the reason;
 fix and sign in again; *Later* → home's *Finish setup*) → several people → pick → *Continue* · no one shares → *Try
-again* / *Change account* / *Later* → connected → *Continue* (or *Change account* → the form; *Keep this account* back).
+again* / *Change account* / *Later* → connected → *Continue* (or *Change account* → the form, *Sign in as …* only for another LibreView account; *Keep this
+account* back).
 Live / Late: nothing to do. Nothing new: the Libre app is the place to look; clears with the next reading. No internet /
 no answer: clear by themselves; *Try again*. Asked to wait: clears by itself, no *Try again* (nothing calls LibreLinkUp
 before the time it gave; a sign-in does). Signed out: *Sign in again*. New terms: accept in

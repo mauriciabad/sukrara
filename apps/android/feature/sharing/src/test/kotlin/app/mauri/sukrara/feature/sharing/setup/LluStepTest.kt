@@ -7,11 +7,14 @@ import androidx.activity.ComponentActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import app.mauri.sukrara.core.model.AlertReadiness
+import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
@@ -21,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.Instant
 
 /**
  * The LibreLinkUp Connect step as the person meets it (docs/44 step 2): *Sign in as …* that LibreLinkUp refuses turns
@@ -68,5 +72,29 @@ class LluStepTest {
         compose.onNodeWithText("LibreLinkUp refused this email or password").assertIsDisplayed()
         compose.onNodeWithText("alex@example.com").assertIsDisplayed()
         compose.onNodeWithText("Password").assertIsDisplayed()
+    }
+
+    @Test
+    fun `Change account from the LibreView account itself is the form, and Keep this account goes back`() {
+        val connected =
+            LluConnection(
+                email = "alex@example.com",
+                signedIn = true,
+                patient = "p1",
+                name = "Alex Example",
+                people = listOf(LluChoice("p1", "Alex Example")),
+                health = OnlineHealth.Live,
+                newest = Instant.now(),
+                libreViewEmail = "alex@example.com",
+            )
+        compose.setContent { SetupContent(ui(LluUi(connected)), SetupActions()) }
+        compose.onNodeWithText("Change account").performClick()
+        compose.waitForIdle()
+        // not *Sign in as alex@example.com* again: the account in use
+        compose.onAllNodesWithText("Sign in as alex@example.com").assertCountEquals(0)
+        compose.onNodeWithText("Password").assertIsDisplayed()
+        compose.onNodeWithText("Keep this account").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Signed in as alex@example.com").assertIsDisplayed()
     }
 }

@@ -652,7 +652,9 @@ apps, the takeover gate. The numbers on home matched the fake's, and no two read
 - **Someone who stops sharing** (LibreLinkUp refuses their graph) showed *LibreLinkUp stopped answering Sukrara* for an
   hour: whom the account follows is read at once, *Pick again* / the invite words show.
 - ***Sign in as …* refused** (the LibreView password changed, or none saved) showed nothing but a haptic: now the form,
-  with that email filled in and the refusal under the password.
+  with that email filled in and the refusal under the password. *Change account* from a working account offered *Sign
+  in as* the same account and no way back but leaving the step: the form, *Sign in as …* only for another account,
+  and *Keep this account*.
 - ***Open the Libre app's info*** on the takeover gate did nothing when the Libre app isn't on this phone: shown only
   where it is installed.
 - **Settings › Source said *Whose glucose* twice** (the person, then whom LibreLinkUp reads), with the same icon: the
