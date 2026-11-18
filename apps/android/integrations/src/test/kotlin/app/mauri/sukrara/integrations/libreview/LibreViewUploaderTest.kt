@@ -517,6 +517,92 @@ class LibreViewUploaderTest {
         }
 
     @Test
+    fun `issue 213 - entries logged while the Libre app uploads wait days, marked as waiting, and all go up after Take over`() =
+        runBlocking {
+            signedInAndOn()
+            // LibreView already has one entry from before the pause
+            treatments.upsertIfNewer(treatment("before", 5, modified = clock.now()))
+            uploader.cycle()
+            assertEquals(1, uploads().size)
+            val glucoseFrom = store.data.first().glucoseFrom
+
+            // LibreLinkUp becomes the source: the Libre app uploads
+            role.value = SourceSpec(Person.Yours, SourceKind.LibreLinkUp)
+            otherDevice = true
+            requests.clear()
+            uploader.cycle()
+            val start = clock.now()
+            // a pen dose with 1.5u priming (only the 8.5u injected count), the Libre app's days, an edit and a delete
+            treatments.upsertIfNewer(
+                TreatmentRecord(
+                    Treatment(
+                        "pen",
+                        TreatmentKind.RapidInsulin,
+                        8.5,
+                        start - Duration.ofMinutes(3),
+                        "",
+                        start,
+                        false,
+                        TreatmentOrigin.Phone,
+                    ),
+                    penJson = """{"pr":1.5,"pen":"AB12","pd":[{"t":1000,"a":1.5,"p":true},{"t":1060,"a":8.5}]}""",
+                ),
+            )
+            for (day in 1L..6L) {
+                clock.advance(Duration.ofDays(1))
+                treatments.upsertIfNewer(
+                    TreatmentRecord(
+                        Treatment("long$day", TreatmentKind.LongInsulin, 15.0, clock.now(), "", clock.now(), false, TreatmentOrigin.Phone),
+                    ),
+                )
+                uploader.cycle()
+            }
+            treatments.upsertIfNewer(TreatmentRecord(treatments.get("long2")!!.treatment.copy(amount = 14.0, modifiedAt = clock.now())))
+            treatments.upsertIfNewer(TreatmentRecord(treatments.get("long3")!!.treatment.copy(deleted = true, modifiedAt = clock.now())))
+            treatments.upsertIfNewer(TreatmentRecord(treatments.get("before")!!.treatment.copy(deleted = true, modifiedAt = clock.now())))
+            uploader.cycle()
+            // nothing reached LibreView, not even a sign-in; the marks say the entries wait for the Libre app, not an error
+            assertTrue(requests.isEmpty())
+            assertEquals(UploadStatus.OfficialAppUploads, uploader.page.first().status)
+            val waiting = uploader.entryMarks.first()!!
+            assertTrue(waiting.waitsForLibreApp)
+            assertFalse(waiting.stopped)
+            assertEquals(LvMark.Pending, waiting.mark(treatments.get("pen")!!.treatment, clock.now()))
+            assertEquals(LvMark.Pending, waiting.mark(treatments.get("long1")!!.treatment, clock.now()))
+
+            // the sensor taken over: the upload finds the Libre app uploading, the person chooses Take over
+            role.value = SourceSpec.YourSensor
+            uploader.cycle()
+            assertEquals(UploadStatus.AuthFailed, uploader.page.first().status)
+            assertEquals(LvTakeOver.Done, uploader.takeOver())
+            uploader.cycle()
+            val sent = uploads().single()
+            // every entry of the days went up, at its own time and kind; the deleted one never did, the one LibreView had
+            // is retracted
+            assertTrue(
+                "\"insulinType\":\"RapidActing\",\"units\":8.5,\"extendedProperties\":{\"factoryTimestamp\":\"2026-10-28T11:57:00Z\"" in
+                    sent,
+            )
+            assertFalse("\"units\":10.0" in sent)
+            for (id in listOf("long1", "long2", "long4", "long5", "long6")) {
+                val t = treatments.get(id)!!.treatment
+                assertTrue(id, LibreViewPayload.recordNumber(id, "long", t.modifiedAt.toEpochMilli()).toString() in sent)
+            }
+            assertTrue("\"units\":14.0" in sent)
+            val gone = treatments.get("long3")!!.treatment
+            assertFalse(LibreViewPayload.recordNumber("long3", "long", gone.modifiedAt.toEpochMilli()).toString() in sent)
+            assertTrue(
+                "\"action\":\"deleted\",\"linkedGlucoseRecordNumber\":\"0\"},\"recordNumber\":${
+                    LibreViewPayload.recordNumber("before", "rapid", now.toEpochMilli())
+                }" in sent,
+            )
+            assertEquals(LvMark.Uploaded, uploader.entryMarks.first()!!.mark(treatments.get("pen")!!.treatment, clock.now()))
+            // glucose goes up from the takeover: the Libre app sent what came before (its backfill would count twice)
+            assertTrue(store.data.first().glucoseFrom > glucoseFrom)
+            assertEquals(start.epochSecond + 6 * 86400, store.data.first().glucoseFrom)
+        }
+
+    @Test
     fun `signing out anywhere drops the token, and a token without an account goes at the next start`() =
         runBlocking {
             signedInAndOn()

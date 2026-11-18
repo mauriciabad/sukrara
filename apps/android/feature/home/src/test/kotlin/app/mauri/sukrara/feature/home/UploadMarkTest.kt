@@ -71,6 +71,18 @@ class UploadMarkTest {
         assertEquals(listOf(HomeAction.OpenClinicUpload, HomeAction.OpenClinicUpload), asked)
     }
 
+    @Test fun `while the Libre app uploads an entry says it waits and why, and opens the LibreView page`() {
+        val asked = mutableListOf<HomeAction>()
+        val state = state(mapOf("b" to UploadMark.WaitsForLibreApp))
+        compose.setContent { SukraraTheme(dark = false, dynamic = false) { HomeContent(state, HomeCallbacks(onAction = { asked += it })) } }
+        compose.onNodeWithContentDescription(context.getString(R.string.home_treatment_clinic_stopped)).assertDoesNotExist()
+        compose
+            .onNodeWithContentDescription(context.getString(R.string.home_treatment_clinic_waits_libre_app))
+            .performScrollTo()
+            .performClick()
+        assertEquals(listOf(HomeAction.OpenClinicUpload), asked)
+    }
+
     @Test fun `an entry that just got to LibreView shows the check for 3 seconds`() {
         var marks by mutableStateOf(mapOf("a" to UploadMark.Pending))
         compose.mainClock.autoAdvance = false

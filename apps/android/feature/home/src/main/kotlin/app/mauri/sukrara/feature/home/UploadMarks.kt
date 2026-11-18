@@ -8,9 +8,10 @@ import java.time.Instant
 
 /**
  * Where a listed entry stands with the clinic upload (LibreView): its current version is there, an older version is
- * (the correction is on its way), it is still to go up, or it waits because the upload stopped (sign in again).
+ * (the correction is on its way), it is still to go up, it waits because the upload stopped (sign in again), or it waits
+ * while the Libre app uploads (LibreLinkUp is the source: it goes up once Sukrara reads the sensor; nothing is wrong).
  */
-enum class UploadMark { Uploaded, Updating, Pending, Stopped }
+enum class UploadMark { Uploaded, Updating, Pending, Stopped, WaitsForLibreApp }
 
 /** The clinic upload's view of the entries, by its own rules (the app adapts the uploader's ledger). */
 interface UploadMarks {

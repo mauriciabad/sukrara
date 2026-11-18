@@ -249,8 +249,9 @@ private fun GlucoseThen(
 }
 
 /**
- * The LibreView mark while it says something (#207): the entry still to go up or updating, the upload stopped (in the
- * error colour), or the check that pops in for a moment once it got there. Every mark opens the LibreView page.
+ * The LibreView mark while it says something (#207): the entry still to go up or updating, waiting while the Libre app
+ * uploads (#213), the upload stopped (in the error colour), or the check that pops in for a moment once it got there.
+ * Every mark opens the LibreView page.
  */
 @Composable
 private fun UploadMarkButton(
@@ -273,6 +274,7 @@ private fun UploadMarkButton(
                     UploadMark.Updating -> R.drawable.home_ic_cloud_upload to R.string.home_treatment_clinic_updating
                     UploadMark.Pending -> R.drawable.home_ic_cloud_upload to R.string.home_treatment_not_in_clinic
                     UploadMark.Stopped -> R.drawable.home_ic_cloud_off to R.string.home_treatment_clinic_stopped
+                    UploadMark.WaitsForLibreApp -> R.drawable.home_ic_cloud_upload to R.string.home_treatment_clinic_waits_libre_app
                 }
             Icon(
                 painterResource(icon),

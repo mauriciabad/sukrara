@@ -184,6 +184,9 @@ class HomeGallery {
             "libreview-behind" to
                 ui(Samples.wearer(), banner = BannerKind.ClinicUploadBehind).copy(clinicBehind = NOW.minus(Duration.ofHours(3))),
             "libreview-stopped" to ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.Stopped)),
+            // #213: LibreLinkUp is the source and the Libre app uploads: the entry waits, nothing is wrong
+            "libreview-waits-libre-app" to
+                ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.WaitsForLibreApp)),
         )
     }
 

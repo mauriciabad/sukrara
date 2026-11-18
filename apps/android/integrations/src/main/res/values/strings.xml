@@ -132,7 +132,7 @@
     <string name="in_status_auth">The site refused the token or secret: change it</string>
     <string name="in_status_unreadable">The saved token can\'t be read: enter it again</string>
     <string name="in_status_paused">Paused: another app (%1$s) uploads to this site</string>
-    <string name="in_status_official_app_uploads">Paused: the Libre app uploads your glucose while LibreLinkUp is your source, and LibreView takes one uploading device. Once Sukrara reads your sensor, tap Take over to upload from here.</string>
+    <string name="in_status_official_app_uploads">Paused: the Libre app uploads your glucose while LibreLinkUp is your source, and LibreView takes one uploading device. What you log here waits: once Sukrara reads your sensor, tap Take over and it goes up from here.</string>
     <string name="in_status_same_as_source">Your source: glucose never goes back to it; treatments go both ways in Settings › Source</string>
     <string name="in_status_waiting">On · nothing sent yet</string>
     <plurals name="in_status_ok">

@@ -93,20 +93,26 @@ data class LvPageState(
 /**
  * What LibreView has of the entries while the upload runs (the wearer, signed in, switch on), for home's list: [from] =
  * new entries go up when changed after it (epoch s; 0 = the entries switch is off: no marks); [stopped] = nothing goes
- * up until the person acts (sign in again, take over from another device, or LibreView refused the last upload).
+ * up until the person acts (sign in again, take over from another device, or LibreView refused the last upload);
+ * [waitsForLibreApp] = the Libre app uploads (LibreLinkUp is the source, docs/44 decision 4): entries wait, nothing is
+ * wrong, and they go up once Sukrara reads the sensor and the person takes over.
  */
 data class LvEntryMarks(
     val ledger: Map<String, LvSent>,
     val from: Long,
     val stopped: Boolean,
+    val waitsForLibreApp: Boolean = false,
 ) {
     fun mark(
         t: Treatment,
         now: Instant,
     ): LvMark? = if (from == 0L) null else LibreViewQueue.mark(t, ledger, from, now.epochSecond)
 
-    /** Deleting [t] takes it out of LibreView on the next upload (it has a live version and the upload isn't stopped). */
-    fun removesOnDelete(t: Treatment): Boolean = !stopped && (ledger[t.id]?.v ?: 0L) != 0L
+    /**
+     * Deleting [t] takes it out of LibreView on the next upload (it has a live version and the upload isn't stopped or
+     * waiting for the Libre app).
+     */
+    fun removesOnDelete(t: Treatment): Boolean = !stopped && !waitsForLibreApp && (ledger[t.id]?.v ?: 0L) != 0L
 }
 
 /** The result of *Take over*. */
@@ -247,8 +253,8 @@ class LibreViewUploader(
     val entryMarks: Flow<LvEntryMarks?> =
         combine(settingsFlow, login.account, store.data, role) { s, a, st, r ->
             if (s.on && a != LibreViewAccountState.SignedOut && r?.owner == true) {
-                val stopped = st.otherDevice || st.refused || a is LibreViewAccountState.SignInAgain || r.officialAppUploads
-                LvEntryMarks(st.ledger, if (s.treatments) st.entriesFrom else 0L, stopped)
+                val stopped = st.otherDevice || st.refused || a is LibreViewAccountState.SignInAgain
+                LvEntryMarks(st.ledger, if (s.treatments) st.entriesFrom else 0L, stopped, waitsForLibreApp = r.officialAppUploads)
             } else {
                 null
             }
@@ -522,9 +528,15 @@ class LibreViewUploader(
             return
         }
         if (store.data.first().pausedForLibreApp) {
-            // back from LibreLinkUp (the sensor taken over): a fresh sign-in finds whether the Libre app still uploads
+            // back from LibreLinkUp (the sensor taken over): a fresh sign-in finds whether the Libre app still uploads.
+            // The Libre app sent the glucose until now, so glucose goes up from here (the sensor's backfill would count
+            // twice; *Send earlier glucose* is the person's choice); entries logged meanwhile reached nobody: they go up.
             dropToken()
-            store.update { it.copy(pausedForLibreApp = false) }
+            val nowS = clock.now().epochSecond
+            store.update {
+                it.copy(pausedForLibreApp = false, glucoseFrom = if (it.glucoseFrom > 0) maxOf(it.glucoseFrom, nowS) else 0)
+            }
+            keepUnsent()
         }
         // no usable account: the page asks to sign in (again)
         if (login.current() !is LibreViewAccountState.SignedIn) return

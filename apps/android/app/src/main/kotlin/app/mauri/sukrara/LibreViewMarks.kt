@@ -10,7 +10,10 @@ import app.mauri.sukrara.integrations.libreview.LvEntryMarks
 import app.mauri.sukrara.integrations.libreview.LvMark
 import java.time.Instant
 
-/** Home's cloud marks from the LibreView upload's ledger (its own rules); anything not there waits while it's stopped. */
+/**
+ * Home's cloud marks from the LibreView upload's ledger (its own rules); anything not there waits while it's stopped,
+ * or while the Libre app uploads (its own mark: nothing is wrong).
+ */
 class LibreViewMarks(
     private val marks: LvEntryMarks,
 ) : UploadMarks {
@@ -21,8 +24,15 @@ class LibreViewMarks(
         when (marks.mark(t, now)) {
             null -> null
             LvMark.Uploaded -> UploadMark.Uploaded
-            LvMark.Updating -> if (marks.stopped) UploadMark.Stopped else UploadMark.Updating
-            LvMark.Pending -> if (marks.stopped) UploadMark.Stopped else UploadMark.Pending
+            LvMark.Updating -> waiting() ?: UploadMark.Updating
+            LvMark.Pending -> waiting() ?: UploadMark.Pending
+        }
+
+    private fun waiting(): UploadMark? =
+        when {
+            marks.waitsForLibreApp -> UploadMark.WaitsForLibreApp
+            marks.stopped -> UploadMark.Stopped
+            else -> null
         }
 
     override fun removesOnDelete(t: Treatment) = marks.removesOnDelete(t)

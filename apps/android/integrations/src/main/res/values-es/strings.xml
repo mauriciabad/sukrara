@@ -131,7 +131,7 @@
     <string name="in_status_auth">El sitio ha rechazado el token o el secreto: cámbialo</string>
     <string name="in_status_unreadable">No se puede leer el token guardado: vuelve a introducirlo</string>
     <string name="in_status_paused">En pausa: otra app (%1$s) sube datos a este sitio</string>
-    <string name="in_status_official_app_uploads">En pausa: la app Libre sube tu glucosa mientras LibreLinkUp es tu origen, y LibreView admite un solo dispositivo que sube. Cuando Sukrara lea tu sensor, toca Tomar el relevo para subirla desde aquí.</string>
+    <string name="in_status_official_app_uploads">En pausa: la app Libre sube tu glucosa mientras LibreLinkUp es tu origen, y LibreView admite un solo dispositivo que sube. Lo que anotes aquí espera: cuando Sukrara lea tu sensor, toca Tomar el relevo y se sube desde aquí.</string>
     <string name="in_status_same_as_source">Es tu origen: la glucosa nunca vuelve a él; los tratamientos van en ambos sentidos en Ajustes › Origen</string>
     <string name="in_status_waiting">Activado · aún no se ha enviado nada</string>
     <plurals name="in_status_ok">
