@@ -1613,8 +1613,14 @@ poll as the floor. With each reading's time, the SPEC's trend quiets can hold, u
   it serves the same edge case.
 - **Decision 8: acceptable.** Idea to consider: rejoining with the same invite or identity after leaving, instead of a
   new profile; open to either.
-- Decisions 2, 4, 5 and 7 are **being discussed with the owner**: not settled, nothing built on them yet. Last-seen
-  per follower (3) comes later.
+- **2: (a)** other sources stay visible on a linked device; picking one asks first, explaining what the link already
+  brings, with *Keep following* (default) and stop-following-and-read-it-here. The copy names whichever source was
+  picked or speaks of any source: "not the only service, watch out what copywriting you end up using".
+- **4: ask** when leaving which settings this device keeps (theirs as its own, or Sukrara's defaults); **skip the
+  question when both answers would give the same settings** (they're the defaults already).
+- **5: ask** when leaving whether to keep or delete the history this device received.
+- **7: yes**, *Settings from* becomes *Their settings* / *This device's own*.
+- Last-seen per follower (3) comes later.
 
 *Product / UX / QA journey review of #213 (Person × Source, Nightscout, LibreLinkUp, the polish round), Mac first and
 switching between sources on both apps, after the owner found the Mac on LibreLinkUp still linked to their phone with
