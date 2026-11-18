@@ -42,6 +42,9 @@ object SecretName {
     /** Juggluco's web-server API secret (schema `source.jugglucoSecret`, store `secure`). */
     const val JUGGLUCO = "juggluco"
 
+    /** The Nightscout source's access token or API secret (schema `source.nightscoutSecret`), apart from the upload's. */
+    const val NIGHTSCOUT_SOURCE = "nightscoutSource"
+
     val ALL =
         setOf(
             IDENTITY_OWNER,
@@ -49,6 +52,7 @@ object SecretName {
             NIGHTSCOUT,
             NIGHTSCOUT_API,
             NIGHTSCOUT_API_LAN,
+            NIGHTSCOUT_SOURCE,
             TIDEPOOL,
             TIDEPOOL_EMAIL,
             LIBREVIEW,

@@ -903,6 +903,10 @@ private fun reasonText(
                 )
         }
 
+        NoDataReason.SiteNotConnected -> {
+            stringResource(R.string.reason_site_title) to stringResource(R.string.reason_site_not_connected)
+        }
+
         is NoDataReason.SourceTrouble -> {
             stringResource(R.string.reason_site_title) to
                 when (reason.problem) {
@@ -980,6 +984,10 @@ private fun actionLabel(reason: NoDataReason): String =
 
             NoDataReason.LinkRevoked -> {
                 R.string.reason_revoked_action
+            }
+
+            NoDataReason.SiteNotConnected -> {
+                R.string.reason_site_action
             }
 
             is NoDataReason.SourceTrouble -> {

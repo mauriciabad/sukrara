@@ -52,6 +52,7 @@
     <string name="reason_site_title">No hay lecturas de Nightscout</string>
     <string name="reason_site_unreachable">Tu sitio de Nightscout no responde. Sukrara sigue intentándolo; revisa la dirección en Ajustes › Origen.</string>
     <string name="reason_site_action">Origen</string>
+    <string name="reason_site_not_connected">Conecta tu sitio de Nightscout en Ajustes › Origen, o espera un momento mientras Sukrara llega a él.</string>
     <string name="reason_no_readings_title">No llegan lecturas del sensor</string>
     <string name="reason_no_readings_body">Última lectura %1$s. Mantén el móvil cerca del sensor; se reconecta solo.</string>
     <string name="reason_no_readings_never">Aún no hay lecturas. Mantén el móvil cerca del sensor; se reconecta solo.</string>

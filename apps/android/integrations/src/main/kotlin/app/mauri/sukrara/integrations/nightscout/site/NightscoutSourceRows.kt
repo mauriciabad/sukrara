@@ -16,6 +16,8 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.designsystem.icons.Service
+import app.mauri.sukrara.designsystem.icons.ServiceIcon
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.rows.InfoRow
@@ -61,7 +63,7 @@ fun NightscoutSourceRows(
             stringResource(R.string.in_nss_site),
             actions.editSite,
             summary = view.host.ifEmpty { stringResource(R.string.in_nss_site_none) },
-            icon = DsR.drawable.ds_ic_public,
+            leading = { ServiceIcon(Service.Nightscout) },
         )
         val health = if (view.credentialUnreadable) OnlineHealth.SignedOut else view.health
         // the state changes by itself as calls come back: cross-fades, and TalkBack hears it once
@@ -90,8 +92,14 @@ fun NightscoutSourceRows(
                         )
                     }
 
-                    else -> {
+                    // nothing new reaching the site: the line, no action here (the uploader is the place to look)
+                    OnlineHealth.NoNewReadings -> {
                         InfoRow(stringResource(R.string.in_nss_status), summary = text, icon = h.iconRes())
+                    }
+
+                    // live, late, connecting: the page's *Now* says it already
+                    else -> {
+                        Unit
                     }
                 }
             }

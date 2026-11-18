@@ -21,6 +21,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.NotificationStyle
+import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SourceKind
@@ -57,6 +58,9 @@ import app.mauri.sukrara.feature.sharing.setup.SetupFacts
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupUi
+import app.mauri.sukrara.feature.sharing.setup.SiteConnectResult
+import app.mauri.sukrara.feature.sharing.setup.SiteConnection
+import app.mauri.sukrara.feature.sharing.setup.SiteUi
 import app.mauri.sukrara.feature.sharing.setup.SourceChange
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
 import app.mauri.sukrara.feature.sharing.setup.UpdateChoice
@@ -141,6 +145,22 @@ class SharingScreenshotTest {
     )
 
     private val live = facts.copy(ownSensorLive = true)
+
+    /** Your glucose from a Nightscout site (docs/44 step 1). */
+    private val nightscout = facts.copy(spec = SourceSpec(Person.Yours, SourceKind.Nightscout))
+
+    /** A connected site in [health], its newest reading [agoS] seconds old (null = none). */
+    private fun site(
+        health: OnlineHealth,
+        agoS: Long?,
+    ) = SiteConnection(
+        "https://ns.example.org",
+        "ns.example.org",
+        saved = true,
+        health = health,
+        newest = agoS?.let { Instant.now().minusSeconds(it) },
+    )
+
     private val conflict =
         OwnerShareState.AnotherAppSharingAsYou(
             IdentityCheck.Reason.entries.first(),
@@ -247,6 +267,35 @@ class SharingScreenshotTest {
             },
             "setup-3b-updates" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.Open)), a) },
             "setup-3b-updates-on" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.On)), a) },
+            // docs/44 step 1: a Nightscout site's Connect step in each state
+            "setup-5-nightscout" to { SetupContent(ui(SetupStep.Sensor, 5, nightscout), a) },
+            "setup-5-nightscout-theirs" to {
+                SetupContent(ui(SetupStep.Sensor, 5, nightscout.copy(spec = SourceSpec(Person.Theirs, SourceKind.Nightscout))), a)
+            },
+            "setup-5-nightscout-connecting" to
+                { SetupContent(ui(SetupStep.Sensor, 5, nightscout).copy(site = SiteUi(connecting = true)), a) },
+            "setup-5-nightscout-https" to {
+                SetupContent(ui(SetupStep.Sensor, 5, nightscout).copy(site = SiteUi(result = SiteConnectResult.NeedsHttps)), a)
+            },
+            "setup-5-nightscout-refused" to {
+                SetupContent(ui(SetupStep.Sensor, 5, nightscout).copy(site = SiteUi(result = SiteConnectResult.Refused)), a)
+            },
+            "setup-5-nightscout-unreachable" to {
+                SetupContent(ui(SetupStep.Sensor, 5, nightscout).copy(site = SiteUi(result = SiteConnectResult.Unreachable)), a)
+            },
+            "setup-5-nightscout-waiting" to {
+                SetupContent(ui(SetupStep.Sensor, 5, nightscout).copy(site = SiteUi(site(OnlineHealth.Connecting, null))), a)
+            },
+            "setup-5-nightscout-received" to {
+                SetupContent(
+                    ui(SetupStep.Sensor, 5, nightscout.copy(ownSensorLive = true)).copy(site = SiteUi(site(OnlineHealth.Live, 90))),
+                    a,
+                )
+            },
+            "setup-5-nightscout-silent" to {
+                SetupContent(ui(SetupStep.Sensor, 5, nightscout).copy(site = SiteUi(site(OnlineHealth.NoNewReadings, 7200))), a)
+            },
+            "setup-7-history-nightscout" to { SetupContent(ui(SetupStep.History, 7, nightscout.copy(ownSensorLive = true)), a) },
             "setup-4-sensor-waiting" to { SetupContent(ui(SetupStep.Sensor, 4), a) },
             "setup-4-sensor-live" to { SetupContent(ui(SetupStep.Sensor, 4, live), a) },
             "setup-5-alerts" to { SetupContent(ui(SetupStep.Alerts, 5, live), a) },

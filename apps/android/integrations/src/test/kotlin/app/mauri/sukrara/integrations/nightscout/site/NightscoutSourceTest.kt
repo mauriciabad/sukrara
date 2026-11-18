@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.nightscout.site
 
+import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.SourceStatus
@@ -181,6 +182,26 @@ class NightscoutSourceTest {
                     .substringBefore('&')
                     .toLong()
             assertEquals(now.minus(Duration.ofHours(24)).toEpochMilli(), from)
+        }
+
+    @Test
+    fun `the site's Sensor Start gives the sensor's life, warming up and then ended`() =
+        runBlocking {
+            // started 30 min ago, the newest reading is older: warming up (the reminders, the card, no data read it)
+            entries = "[${entry(now.minusSeconds(2400), 120)}]"
+            siteTreatments = """[{"_id":"s1","created_at":"2026-11-18T11:30:00.000Z","eventType":"Sensor Start"}]"""
+            val s = source(connect())
+            val job = launch(Dispatchers.IO) { s.readings.collect { } }
+            val warming = withTimeout(10_000) { s.sensor.first { it is SensorState.WarmingUp } }
+            assertEquals(Instant.parse("2026-11-18T12:30:00Z"), (warming as SensorState.WarmingUp).readyAt)
+            assertEquals("s1", withTimeout(10_000) { s.sensorLife.first { it != null } }!!.id)
+            job.cancel()
+            // 16 days later the default wear is over: ended, so no data stays quiet
+            clock.advance(Duration.ofDays(16))
+            entries = "[${entry(clock.now().minusSeconds(60), 110)}]"
+            val again = launch(Dispatchers.IO) { s.readings.collect { } }
+            withTimeout(10_000) { s.sensor.first { it == SensorState.Ended } }
+            again.cancel()
         }
 
     @Test

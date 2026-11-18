@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.nightscout.site
 
+import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -43,6 +44,41 @@ class NightscoutSourceContractTest {
                     Triple(a[0].jsonPrimitive.long, a[1].jsonPrimitive.int, a[2].jsonPrimitive.doubleOrNull)
                 }
             assertEquals(c.getValue("name").jsonPrimitive.content, want, got.map { Triple(it.t.epochSecond, it.mgdl, it.sensorRate) })
+        }
+    }
+
+    @Test
+    fun `the sensor's life comes from the site's newest Sensor Start or Change, as the contract says`() {
+        val life = load("sensor-life.json")
+        val now = Instant.ofEpochSecond(life.getValue("now").jsonPrimitive.long)
+        for (c in life.getValue("cases").jsonArray.map { it.jsonObject }) {
+            val name = c.getValue("name").jsonPrimitive.content
+            val sensor = NsSensorLife.of(c.getValue("site").jsonArray.map { it.jsonObject }, now)
+            val expect = c.getValue("expect").takeIf { it != JsonNull }?.jsonObject
+            if (expect == null) {
+                assertEquals(name, null, sensor)
+                continue
+            }
+            requireNotNull(sensor) { name }
+            assertEquals(name, expect.getValue("id").jsonPrimitive.content, sensor.id)
+            assertEquals(name, expect.getValue("start").jsonPrimitive.long, sensor.start.epochSecond)
+            assertEquals(name, expect.getValue("warmupEnd").jsonPrimitive.long, sensor.warmupEnd.epochSecond)
+            assertEquals(name, expect.getValue("end").jsonPrimitive.long, sensor.end.epochSecond)
+            val latest =
+                c
+                    .getValue("latest")
+                    .takeIf { it != JsonNull }
+                    ?.jsonPrimitive
+                    ?.long
+                    ?.let(Instant::ofEpochSecond)
+            val state =
+                when (sensor.state(latest, now)) {
+                    is SensorState.WarmingUp -> "warming"
+                    is SensorState.Active -> "active"
+                    SensorState.Ended -> "ended"
+                    else -> "other"
+                }
+            assertEquals(name, expect.getValue("state").jsonPrimitive.content, state)
         }
     }
 

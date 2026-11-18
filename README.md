@@ -47,6 +47,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   - End-to-end encrypted, no server to host.
   - Choose who can add treatments to your log when you invite them; change it any time from their sheet.
 - Can read glucose data from Juggluco.
+- Can read your (or someone else's) Nightscout site as the source, on the phone and on a Mac without Sukrara on the
+  phone: glucose a few minutes late, treatments both ways (the site's read-only), the sensor's life from its Sensor
+  Start, and never uploaded back to the same site.
 - Everything stays on your phone by default.
 - [Planned]: Define a formal open standard for sharing glucose over Nostr.
 
@@ -71,7 +74,7 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 ### Ready in a few steps
 
 - Setup asks only what alerts and monitoring need: whose glucose (yours or someone else's, two illustrated choices) and
-  where it comes from (your sensor, Juggluco, or another Sukrara), then permissions, the sensor and alert levels;
+  where it comes from (your sensor, Juggluco, a Nightscout site, or another Sukrara), then permissions, the sensor and alert levels;
   followers, insulin pens, updates and your old history come after, right away or later from Settings › Finish setup.
 - Change whose glucose and its source any time in Settings › Source, on the phone and the Mac: the same app wears or
   follows, no reinstall.

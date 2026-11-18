@@ -1149,6 +1149,19 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       with *Skip*; Settings › Source pane; Juggluco on the network chosen while following someone shows Juggluco only;
       back to *Their Sukrara* shows the wearer at once; *Changing the source keeps the person…* only while following; an
       unanswered Mac's banner has *Answer…* (setup's two steps).
+- [ ] Nightscout (FEATURES.md *Nightscout as a source*): against a local fake site with synthetic data (`adb reverse`
+      to `http://127.0.0.1:<port>` on the emulator; never a real site). Source → *Nightscout* (Online group) → Connect:
+      a wrong token says so under its field, plain `http://` to another host says *Use https://*, a pasted
+      `…/?token=…` connects without typing; connected → *Reading received*; *Later* → home's *Finish setup*.
+- [ ] Stop the fake site: home (once the value hides) and Settings › Source say *No answer from …* with *Try again*;
+      airplane mode: *No internet*; a refused token: *Sign in again* opens Connect with the address filled in.
+- [ ] Treatments both ways: an entry logged in Sukrara appears on the site; one added on the site appears read-only
+      (*from Nightscout, change it there*, no edit or swipe); deleted on either side, it goes on the other. A
+      read-only token says so on Settings › Source. Upload to the same site says *Your source…*; Tidepool shows its
+      *Glucose and treatments from Nightscout* switch off.
+- [ ] Sensor life: a *Sensor Start* on the site 30 min ago → warming up; 16 days ago → *Sensor ended*, no no-data alarm.
+- [ ] Mac: *Do you have Sukrara on your phone?* → *No · Read it online* → Nightscout → Connect; the panel's states;
+      Add Treatment works on this Mac's log, the site's entries are read-only.
 
 ## Q29 Website
 

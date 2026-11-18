@@ -517,6 +517,7 @@ class SetupViewModel(
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
+                    android.util.Log.w("Sukrara.setup", "site connect failed: ${e.javaClass.simpleName}")
                     SiteConnectResult.Unreachable
                 }
             siteAttempt.value = SiteUi(connecting = false, result = r)

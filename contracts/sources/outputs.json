@@ -1,20 +1,22 @@
 {
  "_about": [
   "Where data that came from an online source goes (docs/44 'Data: nothing duplicated, lost or looped', the table's",
-  "Nightscout row): per origin, per target, 'yes' (sent as from any first-hand source), 'no' (never: back to where it",
-  "came from, or a service with one uploader per account), 'off' (off unless the person turns it on, a switch that says",
-  "why) or 'unlabelled' (sent without a sensor label, rule 7: no loop trusts internet readings as a sensor's). Rows:",
-  "'nightscout' = glucose read from the source site; 'nightscout-treatments' = treatments pulled from it (read-only",
-  "here). Targets: libreView (the LibreView upload), tidepool (the Tidepool upload), nightscoutSame (Nightscout upload",
-  "to the source's own site: the upload pauses while that site is the source, its treatments go both ways through the",
-  "source), nightscoutOther (upload to another site), healthConnect, followers (Sukrara's own sharing, your glucose",
-  "only), broadcasts (apps on the phone, Garmin). Someone else's glucose is never shared or uploaded whatever its source",
-  "(sources.json keying 'owner'); a Mac on its own uploads nothing. The treatments Sukrara logs itself keep today's",
-  "rules, plus both ways with the source site."
+  "Nightscout row): per origin, per target, 'yes' (sent as from any first-hand source), 'no' (never) or 'off' (off unless",
+  "the person turns it on, a switch that says why). Rows: 'nightscout' = glucose read from the source site;",
+  "'nightscout-treatments' = treatments pulled from it (read-only here). Targets: libreView (the LibreView upload: it",
+  "sends the sensor Sukrara reads, one uploader per account), tidepool (the Tidepool upload: the site's own uploader",
+  "may send there already, twice would count double), nightscoutSame (Nightscout upload to the source's own site:",
+  "nothing goes back to where it came from, the upload pauses while that site is the source and treatments go both ways",
+  "through the source), nightscoutOther (upload to another site), healthConnect, followers (Sukrara's own sharing, your",
+  "glucose only), garmin (Sukrara Aura shows the card's glucose, whatever the source), broadcasts (apps on the phone:",
+  "they carry a Libre 3's live reading, its serial and life count; rule 7 adds that no loop should take internet",
+  "readings for a sensor's, and apps that want a site's glucose read the site themselves). Someone else's glucose is",
+  "never shared or uploaded whatever its source (sources.json keying 'owner'); a Mac on its own uploads nothing. The",
+  "treatments Sukrara logs itself keep today's rules, plus both ways with the source site."
  ],
- "targets": ["libreView", "tidepool", "nightscoutSame", "nightscoutOther", "healthConnect", "followers", "broadcasts"],
+ "targets": ["libreView", "tidepool", "nightscoutSame", "nightscoutOther", "healthConnect", "followers", "garmin", "broadcasts"],
  "rows": {
-  "nightscout": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "broadcasts": "unlabelled"},
-  "nightscout-treatments": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "broadcasts": "no"}
+  "nightscout": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "garmin": "yes", "broadcasts": "no"},
+  "nightscout-treatments": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "garmin": "yes", "broadcasts": "no"}
  }
 }

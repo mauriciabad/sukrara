@@ -492,6 +492,48 @@ Discarded or deferred, with reasons:
 - Juggluco users on the Mac who updated: their old switch isn't read (no back-compat); the Mac asks the source on
   *Finish Setup…* and doesn't read Juggluco until answered.
 
+**Step 1, Nightscout as a source (2026-11-18, both apps).**
+
+Added:
+- **Contracts** (`contracts/sources`): `nightscout` in `sources.json` (both persons, group `online`, keyed WEARER /
+  own rules), ranked `online` in `dedup.json`; `health.json` (connecting, live, late, no new readings, offline,
+  unreachable, signed out, rate-limited); `outputs.json` (where the site's glucose and treatments go);
+  `nightscout/` fixtures with a generator: `entries.json` (own-loop guard by device), `treatments.json` (THE two-way
+  planner), `sites.json` (`?token=` split, https except loopback, same site), `sensor-life.json`, `poll.json`. Schema
+  `source.nightscoutUrl` / `Treatments` / `Secret`. Alert scenarios `online.txt` (5-min cadence, late readings): no
+  rule changed, both engines pass them.
+- **Android** (`:integrations` `nightscout/site`, not a new `:sources` module: the Nightscout client, documents and
+  upload already live there, so one client serves both directions): `NightscoutSource` (a `ReadingSource`), the account
+  (token or API secret told apart by trying, saved only after the site answers), the health on home's no-data reason,
+  Settings › Source rows and setup's Connect step, treatments both ways (the site's entries read-only via
+  `TreatmentRecord.via`), sensor life, the data rules (same-site upload paused, LibreView none, Tidepool switch off,
+  no Bluetooth state for an online source), *Bring back 90 days from Nightscout* (history step and Source page).
+- **Mac**: the same model and fixtures (`SukraraCore/Nightscout`), an actor source (`SukraraShare/Nightscout`), its
+  own store and **its own treatment log** for a non-stream source (add, edit, delete, undo; the site's read-only),
+  the first question *Do you have Sukrara on your phone?*, Connect, Settings › Source rows, the panel's states.
+- **Sensor life from the site's newest Sensor Start / Change** with the contract's default warm-up and wear (1 h, 15
+  days, as Juggluco): warm-up, *Sensor ended* (no data quiet), reminders, countdown, calendar, followers.
+
+Discarded or deferred, with reasons:
+- **socket.io push**: polling timed to the next expected reading (`poll.json`) gets within ~45 s of the uploader with
+  plain HTTP on both apps; a socket.io client per app for seconds isn't worth it now.
+- **API v3 history for deletions**: v1 works with an API secret and every Nightscout; deletions are found by reading
+  the 24 h window again in full (a capped read never deletes). Edits and deletions older than 24 h aren't seen.
+- **The loop's insulin** (SMB, temp basals) isn't imported: it would quiet high alerts all day while a loop runs;
+  boluses the person gives are.
+- **The wear length the site doesn't say** (a G7's 10 days shows as 15): the manual start with its length (decision
+  10) comes with step 2, for every source without one.
+- **App broadcasts of a site's glucose**: the broadcast plan carries a Libre 3's serial and life count; apps that want
+  a site's glucose read it themselves (`outputs.json`). Uploads to another site don't get the source site's Sensor
+  Start yet.
+- **The no-data alert's text naming the cause** (*Nightscout refused the token*): a `contracts/alerts/copy.json`
+  change on both notifiers; home and Settings say it.
+- **The first reading's value counting in on Connect**: a value there is a new card surface (`surfaces.json`); it says
+  *Reading received* with a haptic and an announcement instead.
+- **The Mac's one merged readings store**: the Mac still reads one source at a time, each its own store, so nothing
+  doubles; it comes with fallback between sources.
+- **Two apps, one low**: it's for an official app ringing beside Sukrara (step 3); a Nightscout site rings nothing.
+
 ## Decisions for the owner
 
 **Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes

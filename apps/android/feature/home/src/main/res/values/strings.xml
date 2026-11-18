@@ -54,6 +54,7 @@
     <string name="reason_site_title">No readings from Nightscout</string>
     <string name="reason_site_unreachable">Your Nightscout site doesn’t answer. Sukrara keeps trying; check the address in Settings › Source.</string>
     <string name="reason_site_action">Source</string>
+    <string name="reason_site_not_connected">Connect your Nightscout site in Settings › Source, or wait a moment while Sukrara reaches it.</string>
     <string name="reason_no_readings_title">No readings from the sensor</string>
     <string name="reason_no_readings_body">Last reading %1$s. Keep the phone near the sensor; it reconnects on its own.</string>
     <string name="reason_no_readings_never">No reading yet. Keep the phone near the sensor; it reconnects on its own.</string>

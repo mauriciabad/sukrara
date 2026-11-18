@@ -91,7 +91,21 @@ data class NsSourceState(
     val readOnly: Boolean = false,
     /** A history pull the person asked for (*Bring back 90 days*), epoch s; 0 = none. */
     val pullFromS: Long = 0,
-)
+    /** The sensor the site last said started (its *Sensor Start* / *Sensor Change*); empty = none known. */
+    val sensorId: String = "",
+    val sensorStartS: Long = 0,
+    /** When the sensor events were last asked for (epoch s). */
+    val sensorCheckedS: Long = 0,
+) {
+    val sensorLife: NsSensor? get() =
+        if (sensorId.isNotEmpty() &&
+            sensorStartS > 0
+        ) {
+            NsSensor(sensorId, Instant.ofEpochSecond(sensorStartS))
+        } else {
+            null
+        }
+}
 
 /** How treatments go with the site now. */
 enum class NsTreatments { Off, BothWays, ReadOnly }
@@ -154,8 +168,18 @@ class NightscoutSource(
     private val statusFlow = MutableStateFlow<SourceStatus>(SourceStatus.NotStarted)
     override val status: StateFlow<SourceStatus> = statusFlow.asStateFlow()
 
-    /** The site doesn't say when the sensor started or ends (step 2's manual start): an active sensor, end unknown. */
-    override val sensor: StateFlow<SensorState> = MutableStateFlow(SensorState.Active(endsAt = null)).asStateFlow()
+    /**
+     * The sensor's life from the site's newest *Sensor Start* / *Sensor Change* ([NsSensorLife], the default warm-up and
+     * wear): warming, active or ended, as the sensor reminders, the card and the no-data rule read it; none on the
+     * site = an active sensor whose end isn't known.
+     */
+    private val sensorFlow = MutableStateFlow<SensorState>(SensorState.Active(endsAt = null))
+    override val sensor: StateFlow<SensorState> = sensorFlow.asStateFlow()
+
+    /** The sensor the site says started (Sensor end in calendar, followers' sensor life), null = none known. */
+    val sensorLife: Flow<NsSensor?> = store.data.map { it.sensorLife }.distinctUntilChanged()
+
+    @Volatile private var knownSensor: NsSensor? = null
 
     private val live = MutableStateFlow(Live())
 
@@ -210,6 +234,7 @@ class NightscoutSource(
     override val readings: Flow<List<Reading>> =
         channelFlow {
             live.value = Live(running = true, online = network.online())
+            knownSensor = store.data.first().sensorLife
             statusFlow.value = SourceStatus.Connecting
             launch { network.back.collect { kick() } }
             // a treatment logged here goes up within seconds, not at the next reading
@@ -274,6 +299,7 @@ class NightscoutSource(
     private fun publish() {
         val l = live.value.copy(online = network.online())
         live.value = l
+        sensorFlow.value = knownSensor?.state(l.newest, clock.now()) ?: SensorState.Active(endsAt = null)
         val h = health(l, clock.now())
         val since = l.newest ?: clock.now()
         statusFlow.value =
@@ -314,6 +340,7 @@ class NightscoutSource(
             // another site: what the last one had says nothing about this one
             lastRoot = site.root
             live.value = live.value.copy(newest = null)
+            knownSensor = store.data.first().sensorLife
         }
         val client = NsClient(NsConfig(site.site, auth, NsApi.V1, st.device), http) { clock.now().toEpochMilli() }
         val now = clock.now()
@@ -356,8 +383,32 @@ class NightscoutSource(
             upper = page.first().t.toEpochMilli()
         }
         if (pullFrom != null) store.update { it.copy(pullFromS = 0) }
+        checkSensor(client, now)
         if (s.treatments) syncTreatments(client, st, now)
         return Cycle(CallOutcome.Ok, newest ?: known, previous)
+    }
+
+    /**
+     * The site's newest *Sensor Start* / *Sensor Change* (at the first call, then every [SENSOR_EVERY]), whatever
+     * *Treatments both ways* says: the sensor's life comes from it ([NsSensorLife]).
+     */
+    private suspend fun checkSensor(
+        client: NsClient,
+        now: Instant,
+    ) {
+        if (now.epochSecond - store.data.first().sensorCheckedS < SENSOR_EVERY.seconds) return
+        val docs = ArrayList<JsonObject>()
+        for (event in listOf("Sensor+Start", "Sensor+Change")) {
+            val r = client.read("/api/v1/treatments.json?count=1&find[eventType]=$event")
+            if (outcomeOf(r.code) != CallOutcome.Ok) return
+            runCatching { (Json.parseToJsonElement(r.body) as JsonArray).mapNotNullTo(docs) { it as? JsonObject } }
+        }
+        val found = NsSensorLife.of(docs, now)
+        knownSensor = found ?: knownSensor
+        store.update { st ->
+            val keep = found ?: st.sensorLife
+            st.copy(sensorId = keep?.id.orEmpty(), sensorStartS = keep?.start?.epochSecond ?: 0, sensorCheckedS = now.epochSecond)
+        }
     }
 
     /** The source's state for [root]: a new site (or a first call) gets a fresh ledger and this install's name. */
@@ -461,6 +512,9 @@ class NightscoutSource(
         private val AHEAD: Duration = Duration.ofMinutes(10)
         private val LOCAL_SLACK: Duration = Duration.ofDays(7)
         private val LEDGER_KEEP: Duration = Duration.ofDays(31)
+
+        /** How often the site's sensor events are asked for (a new sensor shows within this). */
+        private val SENSOR_EVERY: Duration = Duration.ofMinutes(30)
         private const val PAGE = 1000
         private const val TREATMENTS_MAX = 2000
         private const val TICK_MS = 30_000L

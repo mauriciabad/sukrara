@@ -188,6 +188,8 @@ class SettingsTransfer(
             mapOf(
                 "source.person" to "whose glucose this phone shows: changed only in Settings › Source, where it says what it deletes",
                 "source.kind" to "where glucose comes from: changed only in Settings › Source, switching it would drop the sensor",
+                "source.nightscoutUrl" to "the Nightscout source's site: set with its token in setup's Connect step",
+                "source.nightscoutTreatments" to "goes with the Nightscout source's site: set on Settings › Source",
                 CONFIRMED_ID to "a record of the person's review, not an option (cleared when the alert settings change)",
                 "sharing.nostr" to "who receives the data: changed only on the Sharing page, with the followers in view",
                 "sharing.bleFollowers" to "who receives the data: changed only on the Sharing page, with the followers in view",

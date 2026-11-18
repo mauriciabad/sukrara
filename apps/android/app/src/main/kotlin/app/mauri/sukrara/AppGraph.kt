@@ -94,6 +94,7 @@ import app.mauri.sukrara.pen.PenTapHint
 import app.mauri.sukrara.pen.PensModule
 import app.mauri.sukrara.protocol.event.AlertCodec
 import app.mauri.sukrara.protocol.event.SensorLife
+import app.mauri.sukrara.sensor.SensorInfo
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
 import app.mauri.sukrara.sensor.pairing.ReceiverIdState
@@ -763,6 +764,25 @@ class AppGraph(
         monitor.hubImpl.resetMonitoring(fence)
     }
 
+    /**
+     * THE sensor's life where it is read beside the hub (*Sensor end in calendar*, followers' sensor life): the sensor
+     * module's (a sensor Sukrara reads, Juggluco), or a Nightscout site's *Sensor Start* (docs/44 step 1).
+     */
+    private val currentSensorInfo: Flow<SensorInfo?> by lazy {
+        spec
+            .map { it?.kind == SourceKind.Nightscout }
+            .distinctUntilChanged()
+            .flatMapLatest { site ->
+                if (site) {
+                    integrations.nightscoutSource.sensorLife.map { life ->
+                        life?.let { SensorInfo(it.id, it.start.epochSecond, it.end.epochSecond, it.warmupEnd.epochSecond) }
+                    }
+                } else {
+                    sensor.source.sensorInfo
+                }
+            }
+    }
+
     /** *Sensor end in calendar*: the wearer's events and the settings rows. */
     val sensorCalendar by lazy {
         val record = data.typedStore("sensor-calendar", CalendarRecord.serializer(), CalendarRecord(), whenCorrupt = CalendarRecord())
@@ -772,7 +792,7 @@ class AppGraph(
             record,
             data.settings,
             spec,
-            sensor.source.sensorInfo,
+            currentSensorInfo,
             clock,
             scope,
             dispatchers.io,
@@ -943,7 +963,7 @@ class AppGraph(
             mirrored = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
             relays = launch.relays,
             // the live events' ss / se / sw (PROTOCOL-v2 "Sensor life"): followers see a warm-up and an end with no reading
-            sensor = sensor.source.sensorInfo.map { it?.let { i -> SensorLife(i.startEpoch, i.endEpoch, i.warmupEndEpoch) } },
+            sensor = currentSensorInfo.map { it?.let { i -> SensorLife(i.startEpoch, i.endEpoch, i.warmupEndEpoch) } },
         )
     }
 

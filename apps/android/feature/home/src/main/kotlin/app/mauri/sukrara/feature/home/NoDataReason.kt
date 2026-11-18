@@ -118,6 +118,11 @@ sealed interface NoDataReason {
         override val action = HomeAction.OpenSource
     }
 
+    /** An online source that isn't reading: no site connected yet, or its first call is on its way (Settings › Source). */
+    data object SiteNotConnected : NoDataReason {
+        override val action = HomeAction.OpenSource
+    }
+
     /** Wearer: monitoring runs but the sensor sent nothing for 20 min (the card's "no readings" step). */
     data class NoReadings(val since: Instant?) : NoDataReason {
         override val action = HomeAction.OpenSensor

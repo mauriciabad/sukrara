@@ -71,7 +71,12 @@ class SettingsSchemaTest {
             assertEquals(info.id, SECURE_STORE, store)
             assertTrue(info.id, name in app.mauri.sukrara.core.data.secure.SecretName.ALL)
         }
-        assertEquals("secure:${app.mauri.sukrara.core.data.secure.SecretName.JUGGLUCO}", secrets.single().android)
+        assertEquals(
+            setOf(app.mauri.sukrara.core.data.secure.SecretName.JUGGLUCO, app.mauri.sukrara.core.data.secure.SecretName.NIGHTSCOUT_SOURCE)
+                .map { "secure:$it" }
+                .toSet(),
+            secrets.map { it.android }.toSet(),
+        )
         assertTrue(SECURE_STORE !in schemaStores())
         assertTrue(
             app.mauri.sukrara.core.data.settings.SettingsTransfer

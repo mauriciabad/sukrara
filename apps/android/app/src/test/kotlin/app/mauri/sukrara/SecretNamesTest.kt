@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.data.secure.SecretName
 import app.mauri.sukrara.integrations.libreview.LibreViewUploader
 import app.mauri.sukrara.integrations.localserver.NightscoutApiServer
 import app.mauri.sukrara.integrations.nightscout.NightscoutUploader
+import app.mauri.sukrara.integrations.nightscout.site.NightscoutAccount
 import app.mauri.sukrara.integrations.tidepool.TidepoolUploader
 import app.mauri.sukrara.sensor.pairing.PairingStore
 import app.mauri.sukrara.share.follower.FollowerStore
@@ -28,6 +29,7 @@ class SecretNamesTest {
                 NightscoutUploader.NAME,
                 NightscoutApiServer.SECRET,
                 NightscoutApiServer.LAN_SECRET,
+                NightscoutAccount.NAME,
                 TidepoolUploader.NAME,
                 TidepoolUploader.EMAIL,
                 LibreViewUploader.NAME,
