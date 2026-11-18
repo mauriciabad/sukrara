@@ -2023,6 +2023,11 @@ Platform; journey and repro; what's left behind or broken; fix.
     - **Android fixed** (17e3be0d6): live means a fresh reading from the source in use (`RestoreGate.ownSensorLive` with the kind's readings; the source step checks the source just chosen). `SetupViewModelTest`, `RestoreGateTest`; emulator: LibreLinkUp → Juggluco (not installed) showed *Connect Juggluco*.
     - Mac: *Skip* on *Do you have Sukrara on your phone?* jumps to a source list without *Their Sukrara*.
     - **Mac fixed** (a003c5ba8): neither source question has *Skip*; *No* after an earlier *Yes* asks the source again (752c15701's follow-up). `SetupFlowTests`, `AppModelNightscoutTests`; walked on a fixture dev run (Accessibility; synthetic screenshots in the session scratch, `one-link/mac/`).
+20. **MEDIUM, Android (the walk on two emulators, a local relay): the wearer's open *Share with someone* said *You
+    didn't allow Ana* after Ana, allowed, stopped following** (`InviteWatch` read a follower record that is no longer
+    active as a denial).
+    - **Android fixed** (`InviteProgress.Ended`): allowed and then left says *Ana stopped following you*, removed in
+      Settings › Sharing *You removed Ana*, also once the invite record is pruned; never a denial. `InviteProgressTest`.
 
 ### 7. Questions and settings: what they change, and what to remove
 - **Mac *Whose glucose*** changes only words, LibreLinkUp's pick (yourself or the other connection) and the per-person log question. Its removal (decided) must:

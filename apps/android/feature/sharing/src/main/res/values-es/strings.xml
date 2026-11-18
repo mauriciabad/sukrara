@@ -131,6 +131,8 @@
     <string name="sh_share_following_body">Ve tu glucosa en su teléfono o Mac. Puedes quitarle el acceso cuando quieras en Ajustes › Compartir.</string>
     <string name="sh_share_done">Hecho</string>
     <string name="sh_share_denied_title">No diste acceso a %1$s</string>
+    <string name="sh_share_left_title">%1$s dejó de seguirte</string>
+    <string name="sh_share_removed_title">Has quitado a %1$s</string>
     <string name="sh_share_denied_body">Nadie puede usar ya esta invitación. Crea otra para invitar a alguien.</string>
     <string name="sh_share_expired_title">Esta invitación caducó</string>
     <string name="sh_share_expired_body">Nadie la usó. Crea otra para invitar a alguien.</string>

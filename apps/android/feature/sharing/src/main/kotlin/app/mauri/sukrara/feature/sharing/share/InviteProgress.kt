@@ -21,6 +21,12 @@ sealed interface InviteProgress {
     /** Allowed: [follower] follows now (also listed in Settings › Sharing). */
     data class Following(val follower: FollowerRecord) : InviteProgress
 
+    /**
+     * Allowed, then [follower] stopped following ([FollowerRecord.left]) or was removed: what happened, never a
+     * denial. The invite stays used up.
+     */
+    data class Ended(val follower: FollowerRecord) : InviteProgress
+
     /** Denied: the invite is used up. [name] = who asked, when this screen saw the request (null otherwise). */
     data class Denied(val name: String?) : InviteProgress
 
@@ -52,6 +58,8 @@ class InviteWatch(
         val claimer = record?.claimedBy ?: asked?.follower
         if (claimer != null) {
             s.followers.lastOrNull { it.key == claimer && it.active }?.let { return InviteProgress.Following(it) }
+            // allowed (only an Allow makes a follower record), then left or removed
+            s.followers.lastOrNull { it.key == claimer }?.let { return InviteProgress.Ended(it) }
             // answered without a new follower: denied (an Allow refused because the invite expired isn't `done`)
             if (record?.done == true) return InviteProgress.Denied(asked?.name)
         }

@@ -3111,7 +3111,9 @@ The wearer's phone shares readings, alerts and the stream's roster with approved
   TalkBack live region): *Dad asked to follow you* with their picture and *Review request* (the approve dialog shows
   over it; Review brings back one put off with Later), *Dad follows you now* (their picture springs in with a check
   and a confirm haptic; *Done* → Settings › Sharing, where they're listed, and *Invite someone else*), *You didn't
-  allow Dad* or *This invite expired* (nobody used it by its expiry; each with *Invite someone else* and *Done*));
+  allow Dad*, *Dad stopped following you* / *You removed Dad* (allowed, then they left or were removed while the
+  screen is open: what happened, never a denial) or *This invite expired* (nobody used it by its expiry; each with
+  *Invite someone else* and *Done*));
   *Settings › Sharing* (your row → How you
   appear, *Backup*, *Share with someone*, *Waiting for you* requests → the approve dialog, followers with their
   pictures and *Following since <date>*; one who can add treatments carries the *Can add treatments* mark (edit note)
@@ -3150,8 +3152,8 @@ or Back (leaves; the replace goes on and the page shows it again when reopened);
 finishes; done → *Invite someone* / *Done*). Followers of a replaced identity: the same as a removed follower (*Ana stopped sharing
 with you* → follow again with a new invite; no No data alarm). *Not backed up* → *Backup*
 or dismiss. *Share with someone* with an invite shown → *Send link* / *Copy* / *Invite someone else* / Back; it moves
-on by itself: asked (*Review request*), allowed (*Done* → Settings › Sharing / *Invite someone else*), denied or
-expired (*Invite someone else* / *Done*); Back leaves at any step (the invite stays valid until used or expired).
+on by itself: asked (*Review request*), allowed (*Done* → Settings › Sharing / *Invite someone else*), denied, allowed
+and then left or removed, or expired (*Invite someone else* / *Done*); Back leaves at any step (the invite stays valid until used or expired).
 *Request waiting* → the approve dialog over the app (*Later* or Back hides that request until the app
 process restarts; Settings › Sharing's request row and the share screen's *Review request* show it again),
 notification *Allow* (needs unlock) / *Deny*; both leave once answered, also when the tap started the app, and the

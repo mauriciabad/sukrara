@@ -63,6 +63,26 @@ class InviteProgressTest {
     }
 
     @Test
+    fun `a follower allowed who then leaves or is removed is said as that, never as denied`() {
+        val watch = InviteWatch(token, expiry)
+        val claimed = InviteRecord(token, expiry, sentAt = 50, claimedBy = "bea")
+        watch.progress(sharing(claimed, pending = listOf(request)), 100)
+        val bea = FollowerRecord("bea", "Bea", since = 110)
+        assertEquals(InviteProgress.Following(bea), watch.progress(sharing(claimed.copy(done = true), followers = listOf(bea)), 110))
+        // Bea's leave (PROTOCOL-v2 "Leave"): the record stays, revoked and left
+        val left = bea.copy(revoked = 200, left = true)
+        assertEquals(InviteProgress.Ended(left), watch.progress(sharing(claimed.copy(done = true), followers = listOf(left)), 200))
+        // removed in Settings › Sharing; and a screen that never saw the request says the same
+        val removed = bea.copy(revoked = 200)
+        assertEquals(
+            InviteProgress.Ended(removed),
+            InviteWatch(token, expiry).progress(sharing(claimed.copy(done = true), followers = listOf(removed)), 200),
+        )
+        // the invite record pruned after its expiry: still what happened to Bea
+        assertEquals(InviteProgress.Ended(left), watch.progress(sharing(invite = null, followers = listOf(left)), expiry + 1))
+    }
+
+    @Test
     fun `expired unused, or an Allow that came after the expiry`() {
         assertEquals(InviteProgress.Expired, InviteWatch(token, expiry).progress(sharing(), expiry))
         // the record pruned with nobody asking

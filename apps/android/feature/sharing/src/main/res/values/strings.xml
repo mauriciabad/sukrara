@@ -248,6 +248,10 @@
     <string name="sh_share_denied_title">You didn\'t allow %1$s</string>
     <!-- Share screen: denied -->
     <string name="sh_share_denied_body">Nobody can use this invite any more. Create another one to invite someone.</string>
+    <!-- Share screen: the person allowed stopped following by themselves; %1$s = name -->
+    <string name="sh_share_left_title">%1$s stopped following you</string>
+    <!-- Share screen: the person allowed was removed (Settings › Sharing); %1$s = name -->
+    <string name="sh_share_removed_title">You removed %1$s</string>
     <!-- Share screen: nobody used the invite in time -->
     <string name="sh_share_expired_title">This invite expired</string>
     <!-- Share screen: expired -->

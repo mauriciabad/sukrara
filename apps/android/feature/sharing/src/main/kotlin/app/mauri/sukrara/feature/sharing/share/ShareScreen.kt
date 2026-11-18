@@ -150,11 +150,34 @@ fun ShareScreen(
                 ) { p ->
                     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         when (p) {
-                            InviteProgress.Open -> ReadyInvite(invite.invite, onAnother)
-                            is InviteProgress.Asked -> InviteAsked(p.request, onReview)
-                            is InviteProgress.Following -> InviteFollowing(p.follower, onDone, onAnother)
-                            is InviteProgress.Denied -> InviteEnded(denied = p, onDone = onDone, onAnother = onAnother)
-                            InviteProgress.Expired -> InviteEnded(denied = null, onDone = onDone, onAnother = onAnother)
+                            InviteProgress.Open -> {
+                                ReadyInvite(invite.invite, onAnother)
+                            }
+
+                            is InviteProgress.Asked -> {
+                                InviteAsked(p.request, onReview)
+                            }
+
+                            is InviteProgress.Following -> {
+                                InviteFollowing(p.follower, onDone, onAnother)
+                            }
+
+                            is InviteProgress.Denied -> {
+                                InviteEnded(denied = p, onDone = onDone, onAnother = onAnother)
+                            }
+
+                            is InviteProgress.Ended -> {
+                                InviteEnded(
+                                    denied = null,
+                                    ended = p.follower,
+                                    onDone = onDone,
+                                    onAnother = onAnother,
+                                )
+                            }
+
+                            InviteProgress.Expired -> {
+                                InviteEnded(denied = null, onDone = onDone, onAnother = onAnother)
+                            }
                         }
                     }
                 }
@@ -225,15 +248,24 @@ private fun ColumnScope.InviteFollowing(
     }
 }
 
-/** Denied ([denied], with who asked when known) or expired unused ([denied] null): the invite can't be used any more. */
+/**
+ * Denied ([denied], with who asked when known), allowed and then ended ([ended]: they left, or were removed) or expired
+ * unused (both null): the invite can't be used any more.
+ */
 @Composable
 private fun ColumnScope.InviteEnded(
     denied: InviteProgress.Denied?,
     onDone: () -> Unit,
     onAnother: () -> Unit,
+    ended: FollowerRecord? = null,
 ) {
     val title =
         when {
+            ended != null -> {
+                val name = Profile.shownName(ended.name).ifBlank { stringResource(R.string.sh_approve_unnamed) }
+                stringResource(if (ended.left) R.string.sh_share_left_title else R.string.sh_share_removed_title, name)
+            }
+
             denied == null -> {
                 stringResource(R.string.sh_share_expired_title)
             }
@@ -244,7 +276,7 @@ private fun ColumnScope.InviteEnded(
             }
         }
     OutcomeTitle(title)
-    OutcomeBody(stringResource(if (denied == null) R.string.sh_share_expired_body else R.string.sh_share_denied_body))
+    OutcomeBody(stringResource(if (denied == null && ended == null) R.string.sh_share_expired_body else R.string.sh_share_denied_body))
     Button(
         onClick = onAnother,
         modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
