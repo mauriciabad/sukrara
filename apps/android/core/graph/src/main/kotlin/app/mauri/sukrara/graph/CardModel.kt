@@ -5,6 +5,8 @@ package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.SensorTiming
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TrendRate
@@ -45,11 +47,15 @@ fun interface MuteRule {
     fun muteUntil(t: Treatment): Long?
 }
 
-/** The wearer's sensor as the card needs it: start, end and warm-up end (epoch s). */
+/**
+ * The sensor as the card needs it: start, end and warm-up end (epoch s), and [renew]: where a new one is started, so
+ * an ended sensor's pill says where to replace it (contracts/graph/sensor `renew`).
+ */
 data class SensorInfo(
     val startS: Long,
     val endS: Long,
     val warmupEndS: Long = startS + 60L * SensorTiming.DEFAULT_WARMUP_MIN,
+    val renew: SensorRenew = SensorRenew.HERE,
 ) {
     val lengthS: Long get() = (endS - startS).coerceAtLeast(1)
 }
@@ -112,4 +118,33 @@ object TrendAngle {
     private val DEGREES = listOf(90f, 90f, 45f, 0f, -45f, -90f, -90f)
     private val SYMBOLS = listOf("⇊", "↓", "↘", "→", "↗", "↑", "⇈")
     private val NIGHTSCOUT = listOf("DoubleDown", "SingleDown", "FortyFiveDown", "Flat", "FortyFiveUp", "SingleUp", "DoubleUp")
+}
+
+/**
+ * Where a new sensor is started once this one ends (contracts/graph/sensor `renew`): [HERE] in Sukrara (it reads the
+ * sensor, or the other Sukrara does: *Replace sensor*); else in the app that reads it for this source, which the ended
+ * sensor's pill names (*Replace in Libre app*): the Libre app behind LibreLinkUp, Juggluco, or a Nightscout site's
+ * uploader (*its app*: the site doesn't say which).
+ */
+enum class SensorRenew(
+    val id: String,
+) {
+    HERE("here"),
+    LIBRE_APP("libreApp"),
+    JUGGLUCO("juggluco"),
+    ITS_APP("itsApp"),
+    ;
+
+    companion object {
+        fun of(id: String?): SensorRenew = entries.firstOrNull { it.id == id } ?: HERE
+
+        /** Where the source [spec] starts a new sensor (null: none yet, Sukrara). */
+        fun of(spec: SourceSpec?): SensorRenew =
+            when (spec?.kind) {
+                SourceKind.PhoneApp -> JUGGLUCO
+                SourceKind.LibreLinkUp -> LIBRE_APP
+                SourceKind.Nightscout -> ITS_APP
+                SourceKind.Sensor, SourceKind.Sukrara, null -> HERE
+            }
+    }
 }

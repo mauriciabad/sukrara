@@ -252,7 +252,8 @@ object GlucoseCard {
                 warmup = sensor?.warmup,
                 unit = unit,
                 locale = locale,
-            ).also { f -> faceObserver?.invoke(surface, f) }
+            ).let { f -> if (sensor == null) f else f.copy(renew = sensor.renew) }
+            .also { f -> faceObserver?.invoke(surface, f) }
 
     /**
      * Where the sensor's time left goes on a card [st] (the WHOLE card, also when drawn in parts): in the chart's

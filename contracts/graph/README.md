@@ -75,7 +75,7 @@ start + 60 min). `expect`:
 | `ended` | `now ≥ end`: while readings keep arriving the value stays (with the `pill`), "Sensor ended" once they stop (#3) |
 | `life` | the disc's arc: share of the sensor's life left, 1 → 0 (± 0.001) |
 | `warmup` | while warming up (no reading since the start, ≤ 15 min past the warm-up's end) the card's figure, minutes rounded up (`42m`), from 60 of them hours (`1h`: one rounding, so 59:15 left is `1h`), `Almost ready` from the warm-up's end until the first reading (never `0m` or less); `null` = not warming |
-| `pill` | the sensor's pill for a reading at `latest` (`StatusBadge.sensor`, English words), `{kind: "sensor", text, short, tonal}`: ended with a fresh or late reading → "Ended · Replace sensor" beside the value; ended without one (none, or ≥ 5 min old) → "Replace sensor" under "Sensor ended"; else `null` |
+| `pill` | the sensor's pill for a reading at `latest` (`StatusBadge.sensor`, English words), `{kind: "sensor", text, short, tonal}`: ended with a fresh or late reading → "Ended · Replace sensor" beside the value; ended without one (none, or ≥ 5 min old) → "Replace sensor" under "Sensor ended"; else `null`. With `renew` (where a new sensor is started: `here`, the default, or `libreApp` / `juggluco` / `itsApp` for LibreLinkUp, Juggluco and a Nightscout site's uploader) the words name that app: "Ended · Replace in Libre app", "Replace in Juggluco" |
 | `ring` | the ring over the main ring: warming → the warm-up done (fills 0 → 1); else the countdown, share of the window left; `null` = no ring (more than the window left, or ended) (± 0.001) |
 
 ## Clock (`clock/*.json`)

@@ -96,6 +96,7 @@ import app.mauri.sukrara.graph.GraphPlace
 import app.mauri.sukrara.graph.SensorBadge
 import app.mauri.sukrara.graph.SensorInfo
 import app.mauri.sukrara.graph.SensorLife
+import app.mauri.sukrara.graph.SensorRenew
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
 import app.mauri.sukrara.graph.cardSensor
@@ -121,12 +122,12 @@ fun homeLook(
     unit: GlucoseUnit,
 ): GlucoseLook {
     // the same sensor dates and warm-up rule the drawn card uses (a reading since the sensor's start ends the warm-up)
-    val info = state.sensor.cardSensor(now)
+    val info = state.sensor.cardSensor(now, SensorRenew.of(state.spec))
     val warming = info != null && SensorLife.warming(info, state.latest?.t?.epochSecond, now.epochSecond)
     val sensor =
         when (val s = state.sensor) {
             SensorState.Ended -> {
-                SensorBadge.Look(label = "", life = 0f, ended = true)
+                SensorBadge.Look(label = "", life = 0f, ended = true, renew = SensorRenew.of(state.spec))
             }
 
             is SensorState.WarmingUp -> {
@@ -150,7 +151,7 @@ internal fun panelModel(
     treatments: List<Treatment>,
     now: Instant,
     words: CardWords,
-    sensor: SensorInfo? = glucose.sensor.cardSensor(now),
+    sensor: SensorInfo? = glucose.sensor.cardSensor(now, SensorRenew.of(glucose.spec)),
 ): CardModel =
     CardModel(
         readings = points,
@@ -203,7 +204,7 @@ fun PanelCard(
     val points = remember(history) { history.map { it.toPoint() } }
     val status = glucose.alerts.status
     val quiet = glucose.alerts.treatmentQuiet
-    val sensor = glucose.sensor.cardSensor(now)
+    val sensor = glucose.sensor.cardSensor(now, SensorRenew.of(glucose.spec))
     val model =
         remember(points, treatments, nowS, words, status, quiet, sensor) {
             panelModel(glucose, points, treatments, now, words, sensor)

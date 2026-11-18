@@ -34,7 +34,7 @@ fun cardModelOf(
         words = words,
         status = state.alerts.status,
         muteRule = muteRuleOf(state.alerts),
-        sensor = state.sensor.cardSensor(now),
+        sensor = state.sensor.cardSensor(now, SensorRenew.of(state.spec)),
         metricsOf = slots,
     )
 
@@ -56,15 +56,15 @@ private data class QuietRule(
  * The sensor's dates as the card needs them; null when nothing is known (the card then shows no sensor badge). The hub
  * knows only the end (active) or the warm-up's end: the rest comes from [SensorTiming]'s defaults, as in the alerts.
  */
-fun SensorState.cardInfo(): SensorInfo? =
+fun SensorState.cardInfo(renew: SensorRenew = SensorRenew.HERE): SensorInfo? =
     when (this) {
         is SensorState.Active -> {
-            endsAt?.let { SensorInfo(startS = it.epochSecond - WEAR_S, endS = it.epochSecond) }
+            endsAt?.let { SensorInfo(startS = it.epochSecond - WEAR_S, endS = it.epochSecond, renew = renew) }
         }
 
         is SensorState.WarmingUp -> {
             val start = readyAt.epochSecond - SensorTiming.DEFAULT_WARMUP_MIN * 60L
-            SensorInfo(startS = start, endS = start + WEAR_S, warmupEndS = readyAt.epochSecond)
+            SensorInfo(startS = start, endS = start + WEAR_S, warmupEndS = readyAt.epochSecond, renew = renew)
         }
 
         else -> {
@@ -77,8 +77,11 @@ fun SensorState.cardInfo(): SensorInfo? =
  * ([SensorState.Ended]) as ending at [now], so every card says *Sensor ended* with *Replace sensor* in the value's
  * place (as the app panel and the text surfaces do) instead of the last reading's age.
  */
-fun SensorState.cardSensor(now: Instant): SensorInfo? =
-    cardInfo()
-        ?: if (this == SensorState.Ended) SensorInfo(startS = now.epochSecond - WEAR_S, endS = now.epochSecond) else null
+fun SensorState.cardSensor(
+    now: Instant,
+    renew: SensorRenew = SensorRenew.HERE,
+): SensorInfo? =
+    cardInfo(renew)
+        ?: if (this == SensorState.Ended) SensorInfo(startS = now.epochSecond - WEAR_S, endS = now.epochSecond, renew = renew) else null
 
 private const val WEAR_S = SensorTiming.DEFAULT_WEAR_MIN * 60L

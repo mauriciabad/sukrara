@@ -108,7 +108,8 @@ import Testing
         model.nightscoutConfig = NightscoutConfig(site: Self.site, secret: Self.token)
         await until { model.sensor != nil }
         let start = clock.now.timeIntervalSince1970 - 30 * 60
-        #expect(model.sensor == SensorInfo(start: start, end: start + 15 * 86_400, warmupEnd: start + 3600))
+        #expect(
+            model.sensor == SensorInfo(start: start, end: start + 15 * 86_400, warmupEnd: start + 3600, renew: .itsApp))
         #expect(model.cardData.sensor == model.sensor)
         // no reading since the start: warming up, as the card shows it
         let life = NightscoutSensorLife.Life(

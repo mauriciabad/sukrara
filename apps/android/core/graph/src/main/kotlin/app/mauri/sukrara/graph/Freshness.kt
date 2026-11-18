@@ -264,6 +264,8 @@ data class GlucoseLook(
     val warmup: String? = null,
     val rate: Double? = null,
     val ended: Boolean = false,
+    /** Where a new sensor is started ([SensorInfo.renew]): the ended sensor's pill names it. */
+    val renew: SensorRenew = SensorRenew.HERE,
     /** The trend's text band (contracts/trend): the text arrow, the words, doubled at ±3; null without a trend. */
     val band: Int? = rate?.let(TrendAngle::step),
 ) {

@@ -202,6 +202,69 @@
    }
   },
   {
+   "name": "LibreLinkUp's sensor ended, readings keep arriving: replaced in the Libre app",
+   "start": -1296600,
+   "end": -600,
+   "countdownHours": 8,
+   "latest": -60,
+   "renew": "libreApp",
+   "expect": {
+    "label": "0m",
+    "ended": true,
+    "life": 0,
+    "warmup": null,
+    "ring": null,
+    "pill": {
+     "kind": "sensor",
+     "text": "Ended · Replace in Libre app",
+     "short": "Ended",
+     "tonal": false
+    }
+   }
+  },
+  {
+   "name": "Juggluco's sensor ended, readings stopped: Sensor ended, replaced in Juggluco",
+   "start": -1296600,
+   "end": -600,
+   "countdownHours": 8,
+   "latest": -360,
+   "renew": "juggluco",
+   "expect": {
+    "label": "0m",
+    "ended": true,
+    "life": 0,
+    "warmup": null,
+    "ring": null,
+    "pill": {
+     "kind": "sensor",
+     "text": "Replace in Juggluco",
+     "short": "Sensor",
+     "tonal": false
+    }
+   }
+  },
+  {
+   "name": "a Nightscout site's sensor ended, no reading: replaced in its app (the uploader)",
+   "start": -1296600,
+   "end": -600,
+   "countdownHours": 8,
+   "latest": null,
+   "renew": "itsApp",
+   "expect": {
+    "label": "0m",
+    "ended": true,
+    "life": 0,
+    "warmup": null,
+    "ring": null,
+    "pill": {
+     "kind": "sensor",
+     "text": "Replace in its app",
+     "short": "Sensor",
+     "tonal": false
+    }
+   }
+  },
+  {
    "name": "24 h window, 20 h left: ring",
    "start": -1224000,
    "end": 72000,

@@ -5,6 +5,7 @@ package app.mauri.sukrara.graph
 
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.graph.Fixtures.bool
 import app.mauri.sukrara.graph.Fixtures.double
@@ -51,7 +52,16 @@ class SpokenFixtureTest {
                     val from = latest?.t ?: now
                     (1..h["hours"].long()!! * 12).map { k -> GlucosePoint(from - k * 300, h["sgv"].long()!!.toInt(), null) }.reversed()
                 } ?: emptyList()
-            val sensor = c["sensor"]?.jsonObject?.let { SensorInfo(now + it["start"].long()!!, now + it["end"].long()!!) }
+            val sensor =
+                c["sensor"]?.jsonObject?.let {
+                    val start = now + it["start"].long()!!
+                    SensorInfo(
+                        start,
+                        now + it["end"].long()!!,
+                        start + 60L * SensorTiming.DEFAULT_WARMUP_MIN,
+                        SensorRenew.of(it["renew"].str()),
+                    )
+                }
             val card = c["card"]?.jsonObject
             val style =
                 CardStyle(

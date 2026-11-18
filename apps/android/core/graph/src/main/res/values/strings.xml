@@ -18,6 +18,13 @@
     <string name="badge_replace_sensor_short">Sensor</string>
     <string name="badge_sensor_ended">Ended · Replace sensor</string>
     <string name="badge_sensor_ended_short">Ended</string>
+    <!-- The ended sensor's pill when a new one is started in another app: %1$s = card_app_* ("Libre app") -->
+    <string name="badge_replace_in">Replace in %1$s</string>
+    <string name="badge_sensor_ended_in">Ended · Replace in %1$s</string>
+    <!-- Where a new sensor is started: the Libre app behind LibreLinkUp, Juggluco, a Nightscout site's uploader -->
+    <string name="card_app_libre">Libre app</string>
+    <string name="card_app_juggluco">Juggluco</string>
+    <string name="card_app_its">its app</string>
     <string name="chart_back_to_now">Now</string>
     <string name="duration_now">now</string>
     <string name="duration_minutes">%1$dm</string>
@@ -84,6 +91,8 @@
     </plurals>
     <string name="a11y_almost_ready">Sensor almost ready, waiting for the first reading</string>
     <string name="a11y_sensor_ended">Sensor ended. Replace sensor</string>
+    <!-- %1$s = card_app_* ("Libre app") -->
+    <string name="a11y_sensor_ended_in">Sensor ended. Replace it in %1$s</string>
     <string name="a11y_sensor_ends">Sensor ends in %1$s</string>
     <plurals name="a11y_muted_left">
         <item quantity="one">Alerts muted, %1$s left</item>

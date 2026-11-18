@@ -90,7 +90,9 @@ import Testing
         #expect(!alerts.mirroring && alerts.nextWake != nil)
         // the sensor LibreLinkUp says, with the default warm-up and wear
         let start = clock.now.timeIntervalSince1970 - 2 * 86_400
-        #expect(model.sensor == SensorInfo(start: start, end: start + 15 * 86_400, warmupEnd: start + 3600))
+        #expect(
+            model.sensor
+                == SensorInfo(start: start, end: start + 15 * 86_400, warmupEnd: start + 3600, renew: .libreApp))
         // this Mac's own treatment log
         let carbs = Treatment(
             id: UUID().uuidString.lowercased(), k: .carbs, a: 30, t: Int64(clock.now.timeIntervalSince1970), n: "",

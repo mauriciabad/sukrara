@@ -93,6 +93,8 @@ object SensorBadge {
         val fill: Float = 0f,
         val readyAt: Long = 0,
         val end: Long = 0,
+        /** Where a new sensor is started ([SensorInfo.renew]): the ended sensor's words. */
+        val renew: SensorRenew = SensorRenew.HERE,
     ) {
         /** Warming up past the warm-up's end: "Almost ready", "Waiting for the first reading". */
         fun waiting(now: Long) = warmup != null && now >= readyAt
@@ -120,6 +122,7 @@ object SensorBadge {
                 fill = SensorLife.warmupFraction(it, now).toFloat(),
                 readyAt = it.warmupEndS,
                 end = it.endS,
+                renew = it.renew,
             )
         }
 

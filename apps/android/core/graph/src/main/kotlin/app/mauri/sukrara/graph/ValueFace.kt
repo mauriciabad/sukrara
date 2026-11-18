@@ -64,7 +64,7 @@ internal class ValueFace(
             GlucoseLook.State.WARMING_UP -> drawWarmup(cv, box, checkNotNull(sensor), small)
 
             // an ended sensor says so as soon as it has ended, instead of a value or "No reading since" (not an error)
-            GlucoseLook.State.ENDED -> drawEnded(cv, box)
+            GlucoseLook.State.ENDED -> drawEnded(cv, box, face.renew)
 
             GlucoseLook.State.NO_READINGS, GlucoseLook.State.NONE -> drawNone(cv, box, face, small)
 
@@ -77,8 +77,9 @@ internal class ValueFace(
     private fun drawEnded(
         cv: Canvas,
         box: RectF,
+        renew: SensorRenew,
     ) {
-        val pill = StatusBadge.replaceSensor(w)
+        val pill = StatusBadge.replaceSensor(w, renew)
         val badgeH = (box.height() * 0.24f).coerceIn(14 * d, 24 * d)
         val row = box.height() - badgeH * 1.25f >= 20 * d
         val textBox = if (row) RectF(box.left, box.top, box.right, box.bottom - badgeH * 1.25f) else box

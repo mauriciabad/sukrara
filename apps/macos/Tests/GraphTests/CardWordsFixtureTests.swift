@@ -35,6 +35,11 @@ import Testing
         case "badge_replace_sensor_short": d.replaceSensorShort
         case "badge_sensor_ended": d.sensorEndedPill
         case "badge_sensor_ended_short": d.sensorEndedPillShort
+        case "badge_replace_in": d.replaceInApp("X")
+        case "badge_sensor_ended_in": d.sensorEndedInApp("X")
+        case "card_app_libre": d.appLibre
+        case "card_app_juggluco": d.appJuggluco
+        case "card_app_its": d.appIts
         case "chart_back_to_now": d.backToNow
         case "duration_now": d.now
         case "duration_minutes": d.durations.minutes(7)

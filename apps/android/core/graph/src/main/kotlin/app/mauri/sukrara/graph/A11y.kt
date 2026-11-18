@@ -77,7 +77,7 @@ object A11y {
             }
         val alert = status(model.status, now, w).takeIf { badge && face.state == GlucoseLook.State.VALUE }
         // a sensor past its end whose readings keep arriving: its pill's words after the value (#3)
-        val ended = w.string(R.string.a11y_sensor_ended).takeIf { face.ended && age }
+        val ended = w.sensorEndedSpoken(face.renew).takeIf { face.ended && age }
         return sentences(w, listOfNotNull(glucose, alert, ended))
     }
 
@@ -339,7 +339,7 @@ object A11y {
         w: CardWords,
     ): String =
         when {
-            look.ended -> w.string(R.string.a11y_sensor_ended)
+            look.ended -> w.sensorEndedSpoken(look.renew)
             look.waiting(now) -> w.string(R.string.a11y_almost_ready)
             else -> left(R.plurals.a11y_warming_up, look.readyAt, now, w)
         }

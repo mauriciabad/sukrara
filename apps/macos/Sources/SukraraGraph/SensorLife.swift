@@ -9,16 +9,27 @@ import SukraraCore
 
 // MARK: - Sensor life (SensorLife.kt, SensorBadge.kt)
 
-/// The wearer's current sensor (unix s), from the live event's `ss`/`se`/`sw` (PROTOCOL-v2 "Sensor life").
+/// The current sensor (unix s), from the live event's `ss`/`se`/`sw` (PROTOCOL-v2 "Sensor life") or the source, and
+/// `renew`: where a new one is started, so the ended sensor's pill says where to replace it (nil = in Sukrara).
 public struct SensorInfo: Codable, Equatable, Sendable {
     public var start: TimeInterval
     public var end: TimeInterval
     public var warmupEnd: TimeInterval
-    public init(start: TimeInterval, end: TimeInterval, warmupEnd: TimeInterval) {
+    public var renew: SensorRenew?
+    public init(start: TimeInterval, end: TimeInterval, warmupEnd: TimeInterval, renew: SensorRenew? = nil) {
         self.start = start
         self.end = end
         self.warmupEnd = warmupEnd
+        self.renew = renew
     }
+}
+
+/// Where a new sensor is started once this one ends (contracts/graph/sensor `renew`; Android `SensorRenew`): `here` in
+/// Sukrara (the phone that reads it: *Replace sensor*), else in the app that reads it for this source, which the ended
+/// sensor's pill names (*Replace in Libre app*): the Libre app behind LibreLinkUp, Juggluco, or a Nightscout site's
+/// uploader (*its app*: the site doesn't say which).
+public enum SensorRenew: String, Codable, Equatable, Sendable {
+    case here, libreApp, juggluco, itsApp
 }
 
 /// The sensor's remaining life and warm-up; the same rules as Android's SensorLife (contracts/graph/sensor). The
@@ -83,10 +94,13 @@ enum SensorBadge {
         var end: TimeInterval = 0
         /// The language the label and the warm-up line are in.
         var words: CardWords = .en
+        /// Where a new sensor is started (`SensorInfo.renew`): the ended sensor's words.
+        var renew: SensorRenew = .here
 
         static func == (a: Look, b: Look) -> Bool {
             a.label == b.label && a.life == b.life && a.ended == b.ended && a.warmup == b.warmup && a.fill == b.fill
                 && a.readyAt == b.readyAt && a.end == b.end && a.words.language == b.words.language
+                && a.renew == b.renew
         }
 
         /// Warming up past the warm-up's end: `warmup` is "Almost ready", the line under it "Waiting for the first reading".
@@ -107,7 +121,8 @@ enum SensorBadge {
             label: SensorLife.label(end: s.end, now: now, words.drawn.durations),
             life: SensorLife.lifeFraction(s, now: now), ended: SensorLife.ended(end: s.end, now: now),
             warmup: warm ? SensorLife.warmupLabel(s, now: now, words) : nil,
-            fill: SensorLife.warmupFraction(s, now: now), readyAt: s.warmupEnd, end: s.end, words: words)
+            fill: SensorLife.warmupFraction(s, now: now), readyAt: s.warmupEnd, end: s.end, words: words,
+            renew: s.renew ?? .here)
     }
 
     /// The ring over the main ring: the warm-up filling up, else the end countdown draining (nil = none).

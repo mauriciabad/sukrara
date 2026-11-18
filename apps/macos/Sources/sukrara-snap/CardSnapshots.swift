@@ -93,6 +93,14 @@
                         sensor: SensorInfo(start: now - 15 * 86400, end: now - 3600, warmupEnd: 0), now: now)
                 ),
                 (
+                    // LibreLinkUp's sensor: replaced in the Libre app (contracts/graph/sensor `renew`)
+                    "ended-librelinkup",
+                    CardData(
+                        readings: ending(4200, 120, 0),
+                        sensor: SensorInfo(start: now - 15 * 86400, end: now - 3600, warmupEnd: 0, renew: .libreApp),
+                        now: now)
+                ),
+                (
                     "low",
                     CardData(
                         readings: ending(60, 64, -1.2), sensor: sensor, alerts: CardAlerts(status: .needed(.low)),

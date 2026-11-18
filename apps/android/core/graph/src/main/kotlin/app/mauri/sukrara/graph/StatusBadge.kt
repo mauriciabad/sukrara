@@ -83,14 +83,23 @@ object StatusBadge {
             }
         }
 
-    /** The action pill on an ended sensor whose readings have stopped, under "Sensor ended". */
-    fun replaceSensor(w: CardWords) = Look("sensor", w.replaceSensor, w.replaceSensorShort, false)
+    /**
+     * The action pill on an ended sensor whose readings have stopped, under "Sensor ended": where the new one is started
+     * ([renew]: *Replace sensor* in Sukrara, *Replace in Libre app* with LibreLinkUp).
+     */
+    fun replaceSensor(
+        w: CardWords,
+        renew: SensorRenew = SensorRenew.HERE,
+    ) = Look("sensor", w.replaceSensor(renew), w.replaceSensorShort, false)
 
     /**
      * The pill beside the value of a sensor past its end whose readings keep arriving (#3): "Ended · Replace sensor".
      * An alert's pill wins over it (the action that matters now); it comes back once that one is gone.
      */
-    fun sensorEnded(w: CardWords) = Look("sensor", w.sensorEndedPill, w.sensorEndedPillShort, false)
+    fun sensorEnded(
+        w: CardWords,
+        renew: SensorRenew = SensorRenew.HERE,
+    ) = Look("sensor", w.sensorEndedPill(renew), w.sensorEndedPillShort, false)
 
     /** The sensor's pill for [face] (contracts/graph/sensor `pill`): ended with a value, ended without one, or none. */
     fun sensor(
@@ -98,8 +107,8 @@ object StatusBadge {
         w: CardWords,
     ): Look? =
         when {
-            face.state == GlucoseLook.State.ENDED -> replaceSensor(w)
-            face.ended -> sensorEnded(w)
+            face.state == GlucoseLook.State.ENDED -> replaceSensor(w, face.renew)
+            face.ended -> sensorEnded(w, face.renew)
             else -> null
         }
 

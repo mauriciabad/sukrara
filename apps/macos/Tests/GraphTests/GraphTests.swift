@@ -313,7 +313,8 @@ func fixtureSetHasCases(_ set: String) {
         let start = now + (c.number("start") ?? 0)
         let info = SensorInfo(
             start: start, end: now + (c.number("end") ?? 0),
-            warmupEnd: c.number("warmup").map { now + $0 } ?? start + 3600)
+            warmupEnd: c.number("warmup").map { now + $0 } ?? start + 3600,
+            renew: c.string("renew").flatMap(SensorRenew.init(rawValue:)))
         let e = c.expect
         let look = try #require(
             SensorBadge.look(info, now: now, latest: c.number("latest").map { now + $0 }, words: .en))
@@ -325,8 +326,9 @@ func fixtureSetHasCases(_ set: String) {
         if let want = e.number("ring") { #expect(abs((ring ?? .nan) - want) <= 0.001) } else { #expect(ring == nil) }
         // the sensor's pill as the value's place draws it, for a reading at `latest`
         let latest = c.number("latest").map { now + $0 }
-        let face = Freshness.look(
+        var face = Freshness.look(
             sgv: latest == nil ? nil : 120, t: latest, rate: 0, now: now, ended: look.ended, warmup: look.warmup)
+        face.renew = look.renew
         let pill = StatusBadge.sensor(face, .en)
         let wp = e.child("pill")
         #expect(pill?.kind == wp.string("kind") && pill?.text == wp.string("text") && pill?.short == wp.string("short"))

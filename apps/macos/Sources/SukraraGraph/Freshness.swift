@@ -183,6 +183,8 @@ public struct GlucoseLook: Equatable, Sendable {
     /// A value whose sensor is past its end while its readings keep arriving (#3): the card adds the "Ended · Replace
     /// sensor" pill (`StatusBadge.sensor`).
     public var ended = false
+    /// Where a new sensor is started (`SensorInfo.renew`): the ended sensor's pill names it.
+    public var renew: SensorRenew = .here
     public var grey: Bool { strike }
     public var shown: Bool { state == .value }
     /// The trend as text for places that can only write text (the menu bar): the arrow of `rate` when the card draws

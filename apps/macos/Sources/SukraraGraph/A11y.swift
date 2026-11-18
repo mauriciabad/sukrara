@@ -33,6 +33,24 @@ public struct CardWords: Sendable {
         let average, gmi, cv: String
         let noReadingsYet, noReadingSince, sensorEnded, warmingUp, almostReady, waitingReading: String
         let readyAt: @Sendable (String) -> String
+        /// Where a new sensor is started, named on the ended sensor's pill ("Replace in %@", "Ended · Replace in %@")
+        /// with the app (`SensorRenew`): the Libre app, Juggluco, a site's uploader ("its app").
+        let replaceInApp, sensorEndedInApp: @Sendable (String) -> String
+        let appLibre, appJuggluco, appIts: String
+
+        /// The app `renew` names; nil = Sukrara itself.
+        func app(_ renew: SensorRenew) -> String? {
+            switch renew {
+            case .here: nil
+            case .libreApp: appLibre
+            case .juggluco: appJuggluco
+            case .itsApp: appIts
+            }
+        }
+        /// The ended sensor's action pill: "Replace sensor", or where ("Replace in Libre app").
+        func replaceIn(_ renew: SensorRenew) -> String { app(renew).map(replaceInApp) ?? replaceSensor }
+        /// The pill beside a value past the sensor's end: "Ended · Replace sensor", or where.
+        func sensorEndedIn(_ renew: SensorRenew) -> String { app(renew).map(sensorEndedInApp) ?? sensorEndedPill }
     }
     let unit: (mgdl: String, mmol: String)
     let below, above: @Sendable (String) -> String
@@ -53,6 +71,10 @@ public struct CardWords: Sendable {
     /// The time left in a sentence: `one` = it is a single unit ("queda 1 h", "quedan 1 h 30 min").
     let warmingUp: @Sendable (_ left: String, _ one: Bool) -> String
     let almostReady, sensorEnded: String
+    /// "Sensor ended. Replace it in %@" (the app, `Drawn.app`).
+    let sensorEndedInApp: @Sendable (String) -> String
+    /// What VoiceOver says of an ended sensor, with where to replace it.
+    func sensorEnded(_ renew: SensorRenew) -> String { drawn.app(renew).map(sensorEndedInApp) ?? sensorEnded }
     let sensorEnds: @Sendable (_ left: String) -> String
     let days, hours: @Sendable (Int) -> String
     /// The status pill's sentence: the action an alert asks for, and the mutes with the time left.
@@ -82,7 +104,9 @@ public struct CardWords: Sendable {
             periodDays: { "\($0)d" }, periodHours: { "\($0)h" }, average: "avg", gmi: "GMI", cv: "CV",
             noReadingsYet: "No readings yet", noReadingSince: "No reading since", sensorEnded: "Sensor ended",
             warmingUp: "Warming up", almostReady: "Almost ready", waitingReading: "Waiting for the first reading",
-            readyAt: { "Ready at \($0)" }),
+            readyAt: { "Ready at \($0)" }, replaceInApp: { "Replace in \($0)" },
+            sensorEndedInApp: { "Ended · Replace in \($0)" }, appLibre: "Libre app", appJuggluco: "Juggluco",
+            appIts: "its app"),
         unit: ("milligrams per decilitre", "millimoles per litre"),
         below: { "below \($0)" }, above: { "above \($0)" }, old: "old reading", inRange: "in range",
         justNow: "just now", ago: { "\($0) ago" },
@@ -95,6 +119,7 @@ public struct CardWords: Sendable {
         lastReading: { "Glucose: last reading \($0)" },
         warmingUp: { left, _ in "Sensor warming up, \(left) left" },
         almostReady: "Sensor almost ready, waiting for the first reading", sensorEnded: "Sensor ended. Replace sensor",
+        sensorEndedInApp: { "Sensor ended. Replace it in \($0)" },
         sensorEnds: { "Sensor ends in \($0)" }, days: { $0 == 1 ? "1 day" : "\($0) days" },
         hours: { $0 == 1 ? "1 hour" : "\($0) hours" },
         eatCarbs: "Eat carbs", takeInsulin: "Take insulin", mutedForever: "Alerts muted until you turn it off",
@@ -124,7 +149,9 @@ public struct CardWords: Sendable {
             timeLeft: { "\(queda($1)) \($0)" }, periodDays: { "\($0) d" }, periodHours: { "\($0) h" },
             average: "media", gmi: "GMI", cv: "CV", noReadingsYet: "Aún no hay lecturas",
             noReadingSince: "Sin lecturas desde", sensorEnded: "Sensor terminado", warmingUp: "Calentando",
-            almostReady: "Casi listo", waitingReading: "Esperando la primera lectura", readyAt: { "Listo a las \($0)" }),
+            almostReady: "Casi listo", waitingReading: "Esperando la primera lectura", readyAt: { "Listo a las \($0)" },
+            replaceInApp: { "Cambiar en \($0)" }, sensorEndedInApp: { "Terminado · Cambiar en \($0)" },
+            appLibre: "la app Libre", appJuggluco: "Juggluco", appIts: "su app"),
         unit: ("miligramos por decilitro", "milimoles por litro"),
         below: { "por debajo de \($0)" }, above: { "por encima de \($0)" }, old: "lectura antigua",
         inRange: "en rango", justNow: "ahora mismo", ago: { "hace \($0)" },
@@ -137,6 +164,7 @@ public struct CardWords: Sendable {
         lastReading: { "Glucosa: última lectura \($0)" },
         warmingUp: { "Sensor calentando, \(queda($1)) \($0)" },
         almostReady: "Sensor casi listo, esperando la primera lectura", sensorEnded: "Sensor terminado. Cambiar sensor",
+        sensorEndedInApp: { "Sensor terminado. Cámbialo en \($0)" },
         sensorEnds: { "El sensor termina en \($0)" }, days: { $0 == 1 ? "1 día" : "\($0) días" },
         hours: { $0 == 1 ? "1 hora" : "\($0) horas" },
         eatCarbs: "Come hidratos", takeInsulin: "Ponte insulina",
@@ -306,7 +334,7 @@ enum A11y {
         let alert =
             style.badge && look.state == .value ? status(data.alerts.status, now: data.now, words: w) : nil
         // a sensor past its end whose readings keep arriving: its pill's words after the value (#3)
-        let ended = look.ended ? w.sensorEnded : nil
+        let ended = look.ended ? w.sensorEnded(look.renew) : nil
         return sentences([glucose, alert, ended].compactMap { $0 }, w)
     }
 
@@ -448,7 +476,7 @@ enum A11y {
     /// The sensor's own states where the value goes: warming up (its time left) or ended.
     private static func sensorState(_ data: CardData, words w: CardWords) -> String {
         guard let s = SensorBadge.look(data.sensor, now: data.now, latest: data.latest?.t, words: w), !s.ended else {
-            return w.sensorEnded
+            return w.sensorEnded(data.sensor?.renew ?? .here)
         }
         if s.waiting(now: data.now) { return w.almostReady }
         let (l, one) = left(s.readyAt - data.now)

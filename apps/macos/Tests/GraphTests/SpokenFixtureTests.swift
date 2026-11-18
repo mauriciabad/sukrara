@@ -31,7 +31,9 @@ import Testing
         }
         let s = c.child("sensor")
         let sensor = s.number("start").map { start in
-            SensorInfo(start: now + start, end: now + s.number("end")!, warmupEnd: now + start + 3600)
+            SensorInfo(
+                start: now + start, end: now + s.number("end")!, warmupEnd: now + start + 3600,
+                renew: s.string("renew").flatMap(SensorRenew.init(rawValue:)))
         }
         let card = c.child("card")
         let rings = (card["rings"] as? [[String: Any]] ?? []).map(JSON.init).map {

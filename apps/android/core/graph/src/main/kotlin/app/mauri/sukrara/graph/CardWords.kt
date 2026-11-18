@@ -60,6 +60,26 @@ class CardWords private constructor(
     /** The range word the card draws under an out-of-range value ("Low", "Very high"). */
     fun range(state: RangeState): String = r.getString(state.words)
 
+    /** The app a new sensor is started in ([SensorRenew]), null for Sukrara itself. */
+    fun renewApp(renew: SensorRenew): String? =
+        when (renew) {
+            SensorRenew.HERE -> null
+            SensorRenew.LIBRE_APP -> r.getString(R.string.card_app_libre)
+            SensorRenew.JUGGLUCO -> r.getString(R.string.card_app_juggluco)
+            SensorRenew.ITS_APP -> r.getString(R.string.card_app_its)
+        }
+
+    /** The ended sensor's action pill: *Replace sensor*, or where (*Replace in Libre app*). */
+    fun replaceSensor(renew: SensorRenew): String = renewApp(renew)?.let { r.getString(R.string.badge_replace_in, it) } ?: replaceSensor
+
+    /** The pill beside a value past the sensor's end: *Ended · Replace sensor*, or where. */
+    fun sensorEndedPill(renew: SensorRenew): String =
+        renewApp(renew)?.let { r.getString(R.string.badge_sensor_ended_in, it) } ?: sensorEndedPill
+
+    /** What a screen reader says of an ended sensor: *Sensor ended. Replace sensor*, or where. */
+    fun sensorEndedSpoken(renew: SensorRenew): String =
+        renewApp(renew)?.let { r.getString(R.string.a11y_sensor_ended_in, it) } ?: r.getString(R.string.a11y_sensor_ended)
+
     /** "Muted · 1h 20m". */
     fun mutedFor(min: Long): String = r.getString(R.string.badge_muted_for, Durations.compact(min, durations))
 

@@ -18,19 +18,20 @@ enum StatusBadge {
 
     /// The action pill on an ended sensor whose readings have stopped (round sensor-life), under "Sensor ended": the
     /// same pill, kind "sensor" (neutral colour, sensor disc).
-    static func replaceSensor(_ w: CardWords) -> Look {
-        Look(kind: "sensor", text: w.drawn.replaceSensor, short: w.drawn.replaceSensorShort, tonal: false)
+    /// `renew`: where the new one is started (*Replace sensor* in Sukrara, *Replace in Libre app* with LibreLinkUp).
+    static func replaceSensor(_ w: CardWords, _ renew: SensorRenew = .here) -> Look {
+        Look(kind: "sensor", text: w.drawn.replaceIn(renew), short: w.drawn.replaceSensorShort, tonal: false)
     }
     /// The pill beside the value of a sensor past its end whose readings keep arriving (#3): "Ended · Replace sensor".
     /// An alert's pill wins over it (the action that matters now); it comes back once that one is gone.
-    static func sensorEnded(_ w: CardWords) -> Look {
-        Look(kind: "sensor", text: w.drawn.sensorEndedPill, short: w.drawn.sensorEndedPillShort, tonal: false)
+    static func sensorEnded(_ w: CardWords, _ renew: SensorRenew = .here) -> Look {
+        Look(kind: "sensor", text: w.drawn.sensorEndedIn(renew), short: w.drawn.sensorEndedPillShort, tonal: false)
     }
     /// The sensor's pill for `face` (contracts/graph/sensor `pill`; StatusBadge.sensor on Android): ended with a value,
     /// ended without one, or none.
     static func sensor(_ face: GlucoseLook, _ w: CardWords) -> Look? {
-        if face.state == .ended { return replaceSensor(w) }
-        return face.ended ? sensorEnded(w) : nil
+        if face.state == .ended { return replaceSensor(w, face.renew) }
+        return face.ended ? sensorEnded(w, face.renew) : nil
     }
     /// The pill over a scrolled chart (GlucoseGraph, `ChartView.now`): the same pill, kind "now" (neutral colour, arrow).
     static func backToNow(_ w: CardWords) -> Look {

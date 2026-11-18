@@ -414,8 +414,19 @@ public final class AppModel {
                     warmupEnd: Date(timeIntervalSince1970: TimeInterval($0.warmupEnd)))
             })
         sensor = s.map {
-            SensorInfo(start: TimeInterval($0.start), end: TimeInterval($0.end), warmupEnd: TimeInterval($0.warmupEnd))
+            SensorInfo(
+                start: TimeInterval($0.start), end: TimeInterval($0.end), warmupEnd: TimeInterval($0.warmupEnd),
+                renew: sensorRenew)
         }
+    }
+
+    /// Where the monitored source's new sensor is started: the ended sensor's pill names that app (the followed phone:
+    /// Sukrara there, *Replace sensor*).
+    private var sensorRenew: SensorRenew {
+        if followMonitoring { return .here }
+        if lanMonitoring { return .juggluco }
+        if nightscoutMonitoring { return .itsApp }
+        return libreLinkUpMonitoring ? .libreApp : .here
     }
 
     /// Monitoring started, stopped or moved to the other source: the alert rules forget the old one and the history
@@ -548,7 +559,7 @@ public final class AppModel {
 
     /// The wearer's name while following pauses Juggluco (nil = not paused).
     var lanPausedFor: String? {
-        followMonitoring ? (wearerName ?? L10n.t("the wearer")) : nil
+        followMonitoring ? (wearerName ?? L10n.t("this person")) : nil
     }
 
     /// Try Again on the Juggluco source.

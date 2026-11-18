@@ -133,10 +133,12 @@ public enum GlucoseCard {
         _ latest: GraphReading?, now: TimeInterval, sensor: SensorBadge.Look?,
         format: (Int) -> String = { "\($0)" }
     ) -> GlucoseLook {
-        Freshness.look(
+        var look = Freshness.look(
             sgv: latest?.sgv, t: latest?.t, rate: latest?.rate, band: latest?.trendBand, now: now,
             ended: sensor?.ended == true,
             warmup: sensor?.warmup, format: format)
+        look.renew = sensor?.renew ?? .here
+        return look
     }
 
     /// Where the sensor's time left goes on a card `st` (the WHOLE card, also when its parts are drawn in separate boxes):
@@ -301,7 +303,7 @@ public enum GlucoseCard {
             return drawWarmup(ctx, box, sensor, small, now, pal, d: d, rec: rec)
         }
         // an ended sensor says so as soon as it has ended, instead of a value or "No reading since" (not an error)
-        if face.state == .ended { return drawEnded(ctx, box, pal, d: d, words: w, rec: rec) }
+        if face.state == .ended { return drawEnded(ctx, box, pal, d: d, words: w, renew: face.renew, rec: rec) }
         guard let r, face.shown, let s = face.text else {
             // Fit the longer line into the space left of the rings; no readings for 20 min: the menubar's "no readings"
             // symbol before the words, as tall as both lines.
@@ -520,7 +522,8 @@ public enum GlucoseCard {
     /// "Replace sensor" (StatusBadge.replaceSensor, the same pill as "Eat carbs": full, short or icon only as room
     /// allows); a box too short for the pill's row gets the icon-only pill beside the words (GlucoseCard.drawEnded).
     private static func drawEnded(
-        _ ctx: CGContext, _ box: CGRect, _ pal: GraphPalette, d: CGFloat, words w: CardWords, rec: CardLayout
+        _ ctx: CGContext, _ box: CGRect, _ pal: GraphPalette, d: CGFloat, words w: CardWords, renew: SensorRenew,
+        rec: CardLayout
     ) {
         let words = w.drawn.sensorEnded
         let badgeH = min(max(box.height * 0.24, 14 * d), 24 * d)
@@ -541,7 +544,7 @@ public enum GlucoseCard {
         if row {
             let pw = StatusBadge.draw(
                 ctx, x: box.minX, y: textBox.maxY + badgeH * 0.25, h: badgeH, maxW: box.width,
-                StatusBadge.replaceSensor(w),
+                StatusBadge.replaceSensor(w, renew),
                 dark: pal.dark, knockout: pal.knockout, ground: rec.style.ground)
             rec.add(
                 "value.pill", CGRect(x: box.minX, y: textBox.maxY + badgeH * 0.25, width: pw, height: badgeH), "[row]")
@@ -549,7 +552,7 @@ public enum GlucoseCard {
             let x = box.minX + size * 1.25 + Ink.width(words, f) + badgeH * 0.3
             if x + badgeH <= box.maxX {
                 _ = StatusBadge.draw(
-                    ctx, x: x, y: box.midY - badgeH / 2, h: badgeH, maxW: badgeH, StatusBadge.replaceSensor(w),
+                    ctx, x: x, y: box.midY - badgeH / 2, h: badgeH, maxW: badgeH, StatusBadge.replaceSensor(w, renew),
                     dark: pal.dark, knockout: pal.knockout, ground: rec.style.ground)
                 rec.add("value.pill", CGRect(x: x, y: box.midY - badgeH / 2, width: badgeH, height: badgeH), "[icon]")
             } else {
