@@ -15,6 +15,16 @@ final class NightscoutTreatmentActions: TreatmentActions {
     func send(_ treatment: Treatment) async -> Bool { await model?.writeNightscout(treatment) ?? false }
 }
 
+/// The treatment windows' actions while LibreLinkUp is the source: each entry goes into this Mac's own log (LibreLinkUp
+/// takes no treatments; nothing is uploaded).
+final class LibreLinkUpTreatmentActions: TreatmentActions {
+    private weak var model: AppModel?
+
+    init(model: AppModel) { self.model = model }
+
+    func send(_ treatment: Treatment) async -> Bool { await model?.writeLibreLinkUp(treatment) ?? false }
+}
+
 /// The windows' follow and treatment actions over the follower runtime (`FollowerService`), and the runtime's
 /// snapshot in the windows' words. The only place the window layer meets SukraraShare's types.
 final class FollowerAdapter: FollowActions, TreatmentActions {

@@ -44,7 +44,7 @@ import Testing
                     == spec.alertRole(mirrorsWearer: c["settingsFrom"] as? String == "wearer").rawValue)
             checked += 1
         }
-        #expect(checked == 9)
+        #expect(checked == 11)
     }
 
     @Test func everyReadingIdRanksAsTheContractSays() throws {

@@ -46,6 +46,23 @@
             func write(_ treatment: Treatment) -> Bool { false }
         }
 
+        /// A LibreLinkUp source that only ever says `snapshot` (nothing is asked of LibreLinkUp).
+        private actor StillLibreLinkUp: LibreLinkUpSourcing {
+            let snapshot: LibreLinkUpSnapshot
+            init(_ snapshot: LibreLinkUpSnapshot) { self.snapshot = snapshot }
+            func snapshots() -> AsyncStream<LibreLinkUpSnapshot> {
+                AsyncStream { $0.yield(snapshot) }
+            }
+            func set(_ config: LibreLinkUpConfig?) {}
+            func connect(email: String, password: String, yours: Bool) -> LluConnectResult { .unreachable }
+            func recheck(yours: Bool, saved: String?) -> LluConnectResult { .unreachable }
+            func signOut() {}
+            func retry() {}
+            func network(online: Bool) {}
+            func readings(since: Date) -> [Reading] { snapshot.readings.filter { $0.t >= since } }
+            func write(_ treatment: Treatment) -> Bool { false }
+        }
+
         private static func scenes() -> [(String, Scene)] {
             let now = Date()
             let day = RealisticSynthetic.readings(until: now.timeIntervalSince1970 - 60, days: 1).map {
@@ -71,7 +88,8 @@
                 setup: SetupFlow = done, permission: NotificationPermission = .allowed,
                 mode: LaunchMode = .normal, scroll: ChartScroll = ChartScroll(),
                 keychainUnreadable: Bool = false, update: Updates.Reminder = .none, nearby: NearbyState? = nil,
-                relays: Int? = 3, nightscout: NightscoutSnapshot? = nil, act: (AlertController) -> Void = { _ in }
+                relays: Int? = 3, nightscout: NightscoutSnapshot? = nil, libreLinkUp: LibreLinkUpSnapshot? = nil,
+                act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
                 own.source = .own
@@ -86,7 +104,15 @@
                 let updates = Updates(engine: StillUpdater())
                 if case .available(let version, let ready) = update { updates.found(version: version, ready: ready) }
                 let model = AppModel(
-                    plan: plan, alerts: controller, updates: updates, nightscout: nightscout.map(StillNightscout.init))
+                    plan: plan, alerts: controller, updates: updates, nightscout: nightscout.map(StillNightscout.init),
+                    libreLinkUp: libreLinkUp.map(StillLibreLinkUp.init))
+                if let libreLinkUp {
+                    // LibreLinkUp as the source: its readings and the sensor's serial and start
+                    model.sourceKind = .libreLinkUp
+                    model.libreLinkUpConfig = LibreLinkUpConfig(patient: "p")
+                    model.apply(FollowerSnapshot.empty)
+                    model.apply(libreLinkUp: libreLinkUp)
+                }
                 if let nightscout {
                     // a Nightscout site as the source: its readings and its Sensor Start's life
                     model.sourceKind = .nightscout
@@ -102,7 +128,7 @@
                 snapshot.relaysConnected = relays
                 let start = Int(now.timeIntervalSince1970) - 6 * 86400
                 snapshot.sensor = WearerSensor(start: start, end: start + 14 * 86400, warmupEnd: start + 3600)
-                if nightscout == nil { model.apply(snapshot) }
+                if nightscout == nil && libreLinkUp == nil { model.apply(snapshot) }
                 act(controller)
                 controller.refreshUI()
                 model.notificationPermission = permission
@@ -184,7 +210,26 @@
                         nightscout: site(sensorAgo: 3 * 86_400, readings: ending(112, rate: -0.4, age: 120)))
                 ),
             ]
-            return nightscout + [
+            // LibreLinkUp as the source: live (its path badge), and a password LibreLinkUp refused (the reason)
+            func llu(_ readings: [Reading], signInAgain: Bool = false) -> LibreLinkUpSnapshot {
+                LibreLinkUpSnapshot(
+                    email: "alex@example.com", signInAgain: signInAgain, patient: "p", name: "Ana Example",
+                    running: true, outcome: signInAgain ? .refused : .ok, readings: readings, monitoring: true,
+                    sensor: LluSensor(serial: "0D00ABC123", start: Int(now.timeIntervalSince1970) - 4 * 86_400))
+            }
+            let libreLinkUp: [(String, Scene)] = [
+                (
+                    "panel-librelinkup-live",
+                    scene(link: .notFollowing, readings: [], libreLinkUp: llu(ending(126, rate: 1.5, age: 70)))
+                ),
+                (
+                    "panel-librelinkup-signedout",
+                    scene(
+                        link: .notFollowing, readings: [],
+                        libreLinkUp: llu(ending(126, rate: 0, age: 35 * 60), signInAgain: true))
+                ),
+            ]
+            return nightscout + libreLinkUp + [
                 // in range, low, high and stale on the bar, over a wallpaper and with Reduce Transparency
                 ("menubar-inks", inks),
                 ("panel-following", scene(readings: ending(112, rate: -0.4))),

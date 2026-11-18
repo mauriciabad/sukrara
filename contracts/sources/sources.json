@@ -21,7 +21,7 @@
     {"id": "phoneApp", "persons": ["yours", "theirs"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco"]},
     {"id": "lanJuggluco", "persons": ["yours", "theirs"], "platforms": ["mac"], "firstHand": true, "offline": true, "group": "network", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco-lan"]},
     {"id": "nightscout", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": true, "offline": false, "group": "online", "delay_s": 120, "backfill": true, "brings": ["treatments"], "readings": ["nightscout"]},
-    {"id": "libreLinkUp", "persons": ["yours", "theirs"], "platforms": ["android"], "firstHand": true, "offline": false, "group": "online", "delay_s": 90, "backfill": true, "brings": ["sensorLife"], "readings": ["librelinkup", "librelinkup-graph"]},
+    {"id": "libreLinkUp", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": true, "offline": false, "group": "online", "delay_s": 90, "backfill": true, "brings": ["sensorLife"], "readings": ["librelinkup", "librelinkup-graph"]},
     {"id": "sukrara", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": false, "offline": false, "group": "sukrara", "delay_s": 60, "backfill": true, "brings": ["sensorLife", "treatments", "alerts", "settings"], "readings": ["relay", "nearby"]}
   ],
   "keying": [

@@ -21,6 +21,8 @@ public final class SettingsModel {
     public let juggluco: JugglucoModel
     /// A Nightscout site (Settings › Source, setup's Connect).
     public let nightscout: NightscoutModel
+    /// LibreLinkUp (Settings › Source, setup's Connect).
+    public let libreLinkUp: LibreLinkUpModel
     /// Whose glucose and where it comes from (Settings › Source, setup's two steps).
     public let source: SourceChoiceModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
@@ -61,6 +63,7 @@ public final class SettingsModel {
         self.follow = follow
         self.juggluco = JugglucoModel(store: store)
         self.nightscout = NightscoutModel(store: store)
+        self.libreLinkUp = LibreLinkUpModel(store: store)
         self.source = SourceChoiceModel(store: store)
         self.wearer = wearer
         self.version = version

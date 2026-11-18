@@ -178,6 +178,10 @@
       "reason": "Mac Nightscout source (Settings › Source): URLSessionNightscoutHTTP's GET / POST / DELETE to the site the person connected (NightscoutSite: https only, loopback http for a local test site), redirects refused, an ephemeral session; tests use FakeNightscoutHTTP; dev, fixture and snapshot runs never start it (LaunchMode)"
     },
     {
+      "path": "apps/macos/Sources/SukraraShare/LibreLinkUp/LibreLinkUpApi.swift",
+      "reason": "Mac LibreLinkUp source (Settings › Source): URLSessionLibreLinkUpHTTP's login POST and GETs to https://api.libreview.io or a region's https://api-<region>.libreview.io only (LibreLinkUpApi builds every URL; a region is 2-3 lower-case letters, contracts/sources/librelinkup/login.json), redirects refused, an ephemeral session; tests use FakeLibreLinkUpHTTP; dev, fixture and snapshot runs never start it (LaunchMode)"
+    },
+    {
       "path": "apps/macos/Sources/SukraraShare/Lan/JugglucoLanSource.swift",
       "reason": "Mac Juggluco on this network (opt-in): URLSessionLanHTTP's GETs and live stream; every URL is built by JugglucoApi.base (private IPv4 addresses only); tests use a fake LanHTTP"
     },
@@ -204,6 +208,7 @@
     "apps/macos/Sources/SukraraCore/Export/GlucoseCsv.swift": "a device record: the CSV's rate column is the sensor's own (contracts/export)",
     "apps/macos/Sources/SukraraShare/Lan/JugglucoApi.swift": "an input: Juggluco's rate is the sensor's own",
     "apps/macos/Sources/SukraraCore/Nightscout/NightscoutEntries.swift": "an input: a Nightscout entry's 5-minute delta / 5 is its uploader's rate (contracts/sources/nightscout/entries.json)",
+    "apps/macos/Sources/SukraraCore/LibreLinkUp/LibreLinkUp.swift": "an input: LibreLinkUp's TrendArrow as the live reading's rate (contracts/sources/librelinkup/graph.json)",
     "apps/macos/Sources/SukraraShare/Follower/FollowerRuntime.swift": "the wire: a follower decodes the wearer's r / rate100 as the sensor's own rate",
     "apps/macos/Sources/SukraraApp/Launch/FixtureFollower.swift": "synthetic fixture readings for snapshots and tests, built with a sensor rate",
     "apps/macos/Sources/SukraraApp/Panel/ShellSnapshots.swift": "synthetic snapshot readings, built with a sensor rate",

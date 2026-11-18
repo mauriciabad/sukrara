@@ -39,6 +39,8 @@ public enum Service: CaseIterable, Sendable {
     case lan
     /// A Nightscout site over the internet (created idle; it calls the site only while it is the person's source).
     case nightscout
+    /// LibreLinkUp over the internet (created idle; it calls LibreLinkUp only while it is the person's source).
+    case libreLinkUp
     /// The Mac's camera for the follow step's QR scanner (nothing opens at launch: the camera runs only while the
     /// scanner is on screen).
     case camera
@@ -47,11 +49,13 @@ public enum Service: CaseIterable, Sendable {
 /// The services a launch MAY start: an upper limit. The app ANDs it with the user's settings
 /// (`limited(by:)`) and starts services only through `ServicesPlan.start(using:)`.
 public struct ServicesPlan: Equatable, Sendable {
-    public var ble, relays, alerts, widgetFeed, notifications, updater, loginItem, lan, nightscout, camera: Bool
+    public var ble, relays, alerts, widgetFeed, notifications, updater, loginItem, lan, nightscout, libreLinkUp: Bool
+    public var camera: Bool
 
     public init(
         ble: Bool, relays: Bool, alerts: Bool, widgetFeed: Bool, notifications: Bool, updater: Bool = false,
-        loginItem: Bool = false, lan: Bool = false, nightscout: Bool = false, camera: Bool = false
+        loginItem: Bool = false, lan: Bool = false, nightscout: Bool = false, libreLinkUp: Bool = false,
+        camera: Bool = false
     ) {
         self.ble = ble
         self.relays = relays
@@ -62,12 +66,13 @@ public struct ServicesPlan: Equatable, Sendable {
         self.loginItem = loginItem
         self.lan = lan
         self.nightscout = nightscout
+        self.libreLinkUp = libreLinkUp
         self.camera = camera
     }
 
     public static let all = ServicesPlan(
         ble: true, relays: true, alerts: true, widgetFeed: true, notifications: true, updater: true,
-        loginItem: true, lan: true, nightscout: true, camera: true)
+        loginItem: true, lan: true, nightscout: true, libreLinkUp: true, camera: true)
     /// Everything the installed app of `distribution` starts: all, except the updater in the App Store version
     /// (only the store updates it).
     public static func all(for distribution: Distribution) -> ServicesPlan {
@@ -89,6 +94,7 @@ public struct ServicesPlan: Equatable, Sendable {
         case .loginItem: loginItem
         case .lan: lan
         case .nightscout: nightscout
+        case .libreLinkUp: libreLinkUp
         case .camera: camera
         }
     }
@@ -108,6 +114,7 @@ public struct ServicesPlan: Equatable, Sendable {
             loginItem: loginItem && wanted.loginItem,
             lan: lan && wanted.lan,
             nightscout: nightscout && wanted.nightscout,
+            libreLinkUp: libreLinkUp && wanted.libreLinkUp,
             camera: camera && wanted.camera
         )
     }

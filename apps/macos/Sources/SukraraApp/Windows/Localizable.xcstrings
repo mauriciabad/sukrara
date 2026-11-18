@@ -2708,22 +2708,6 @@
         }
       }
     },
-    "Nightscout on this Mac: glucose and treatments, no phone app needed" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nightscout on this Mac: glucose and treatments, no phone app needed"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nightscout en este Mac: glucosa y tratamientos, sin app en el móvil"
-          }
-        }
-      }
-    },
     "Nightscout refused the token" : {
       "localizations" : {
         "en" : {
@@ -11825,6 +11809,1046 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sukrara muestra la glucosa en la barra de menús, la tuya o la de otra persona, y te avisa cuando está fuera de rango."
+          }
+        }
+      }
+    },
+    "Abbott changed it. An update of Sukrara may bring it back." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbott changed it. An update of Sukrara may bring it back."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbott lo cambió. Una actualización de Sukrara puede devolverlo."
+          }
+        }
+      }
+    },
+    "Account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cuenta"
+          }
+        }
+      }
+    },
+    "Change Account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change Account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar de cuenta"
+          }
+        }
+      }
+    },
+    "Change Account…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change Account…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar de cuenta…"
+          }
+        }
+      }
+    },
+    "Choose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir"
+          }
+        }
+      }
+    },
+    "Connecting to LibreLinkUp…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecting to LibreLinkUp…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectando con LibreLinkUp…"
+          }
+        }
+      }
+    },
+    "Email" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correo"
+          }
+        }
+      }
+    },
+    "In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En la app Libre: Menú › Aplicaciones conectadas › LibreLinkUp, invita a este correo."
+          }
+        }
+      }
+    },
+    "Keep This Account" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep This Account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantener esta cuenta"
+          }
+        }
+      }
+    },
+    "LibreLinkUp Settings…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp Settings…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de LibreLinkUp…"
+          }
+        }
+      }
+    },
+    "LibreLinkUp asked Sukrara to wait" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp asked Sukrara to wait"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp pidió a Sukrara que espere"
+          }
+        }
+      }
+    },
+    "LibreLinkUp asked Sukrara to wait. It tries again by itself." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp asked Sukrara to wait. It tries again by itself."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp pidió a Sukrara que espere. Lo vuelve a intentar solo."
+          }
+        }
+      }
+    },
+    "LibreLinkUp has no glucose yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp has no glucose yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp aún no tiene glucosa"
+          }
+        }
+      }
+    },
+    "LibreLinkUp has no glucose yet. The Libre app sends it once its sensor runs." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp has no glucose yet. The Libre app sends it once its sensor runs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp aún no tiene glucosa. La app Libre la envía cuando su sensor funciona."
+          }
+        }
+      }
+    },
+    "LibreLinkUp is Abbott's and isn't made for Sukrara: it may change or stop any day. Sukrara tells you when it does." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp is Abbott's and isn't made for Sukrara: it may change or stop any day. Sukrara tells you when it does."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp es de Abbott y no está hecho para Sukrara: puede cambiar o dejar de funcionar cualquier día. Sukrara te avisa si pasa."
+          }
+        }
+      }
+    },
+    "LibreLinkUp needs you" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp needs you"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp te necesita"
+          }
+        }
+      }
+    },
+    "LibreLinkUp needs you first: open the LibreLinkUp app, sign in and accept the new terms. Then try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp needs you first: open the LibreLinkUp app, sign in and accept the new terms. Then try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp te necesita antes: abre la app LibreLinkUp, inicia sesión y acepta las nuevas condiciones. Luego vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "LibreLinkUp needs you: open the LibreLinkUp app, sign in and accept the new terms." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp needs you: open the LibreLinkUp app, sign in and accept the new terms."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp te necesita: abre la app LibreLinkUp, inicia sesión y acepta las nuevas condiciones."
+          }
+        }
+      }
+    },
+    "LibreLinkUp or Nightscout on this Mac, and your treatments here: no phone app needed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp or Nightscout on this Mac, and your treatments here: no phone app needed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp o Nightscout en este Mac, y tus tratamientos aquí: sin app en el móvil"
+          }
+        }
+      }
+    },
+    "LibreLinkUp refused the password" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp refused the password"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp rechazó la contraseña"
+          }
+        }
+      }
+    },
+    "LibreLinkUp refused the password. Sign in again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp refused the password. Sign in again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp rechazó la contraseña. Vuelve a iniciar sesión."
+          }
+        }
+      }
+    },
+    "LibreLinkUp refused this email or password" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp refused this email or password"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp rechazó este correo o contraseña"
+          }
+        }
+      }
+    },
+    "LibreLinkUp stopped answering Sukrara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp stopped answering Sukrara"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp dejó de responder a Sukrara"
+          }
+        }
+      }
+    },
+    "LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it back." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it back."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp dejó de responder a Sukrara: Abbott lo cambió. Una actualización de Sukrara puede devolverlo."
+          }
+        }
+      }
+    },
+    "No answer from LibreLinkUp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answer from LibreLinkUp"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp no responde"
+          }
+        }
+      }
+    },
+    "No answer from LibreLinkUp. Sukrara tries again by itself." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answer from LibreLinkUp. Sukrara tries again by itself."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp no responde. Sukrara lo vuelve a intentar solo."
+          }
+        }
+      }
+    },
+    "No answer from LibreLinkUp. Try again in a moment." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No answer from LibreLinkUp. Try again in a moment."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp no responde. Vuelve a intentarlo en un momento."
+          }
+        }
+      }
+    },
+    "No internet. Connect and try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No internet. Connect and try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin internet. Conéctate y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "No one shares glucose with this account now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No one shares glucose with this account now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahora nadie comparte glucosa con esta cuenta"
+          }
+        }
+      }
+    },
+    "No one shares glucose with this account now. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No one shares glucose with this account now. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahora nadie comparte glucosa con esta cuenta. En la app Libre: Menú › Aplicaciones conectadas › LibreLinkUp, invita a este correo."
+          }
+        }
+      }
+    },
+    "No one shares glucose with this account yet. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email, accept the invite in LibreLinkUp, then try again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No one shares glucose with this account yet. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email, accept the invite in LibreLinkUp, then try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nadie comparte glucosa con esta cuenta todavía. En la app Libre: Menú › Aplicaciones conectadas › LibreLinkUp, invita a este correo, acepta la invitación en LibreLinkUp y vuelve a intentarlo."
+          }
+        }
+      }
+    },
+    "Not signed in to LibreLinkUp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not signed in to LibreLinkUp"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No has iniciado sesión en LibreLinkUp"
+          }
+        }
+      }
+    },
+    "Nothing new from LibreLinkUp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing new from LibreLinkUp"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada nuevo de LibreLinkUp"
+          }
+        }
+      }
+    },
+    "Nothing new from LibreLinkUp: its last reading was %@. Open the Libre app: it may have stopped uploading." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nothing new from LibreLinkUp: its last reading was %@. Open the Libre app: it may have stopped uploading."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nada nuevo de LibreLinkUp: su última lectura fue %@. Abre la app Libre: puede que haya dejado de subir."
+          }
+        }
+      }
+    },
+    "Open the Libre app: it may have stopped uploading." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the Libre app: it may have stopped uploading."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la app Libre: puede que haya dejado de subir."
+          }
+        }
+      }
+    },
+    "Open the LibreLinkUp app, sign in and accept the new terms." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the LibreLinkUp app, sign in and accept the new terms."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre la app LibreLinkUp, inicia sesión y acepta las nuevas condiciones."
+          }
+        }
+      }
+    },
+    "Password" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Password"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraseña"
+          }
+        }
+      }
+    },
+    "Pick someone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick someone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige a alguien"
+          }
+        }
+      }
+    },
+    "Read %@'s Glucose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read %@'s Glucose"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leer la glucosa de %@"
+          }
+        }
+      }
+    },
+    "Read %@'s glucose?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Read %@'s glucose?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Leer la glucosa de %@?"
+          }
+        }
+      }
+    },
+    "Reading %@'s glucose." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reading %@'s glucose."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Leyendo la glucosa de %@."
+          }
+        }
+      }
+    },
+    "Sign In" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión"
+          }
+        }
+      }
+    },
+    "Sign In…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign In…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciar sesión…"
+          }
+        }
+      }
+    },
+    "Sign Out" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar sesión"
+          }
+        }
+      }
+    },
+    "Sign Out of LibreLinkUp…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign Out of LibreLinkUp…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerrar sesión en LibreLinkUp…"
+          }
+        }
+      }
+    },
+    "Sign in to LibreLinkUp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in to LibreLinkUp"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión en LibreLinkUp"
+          }
+        }
+      }
+    },
+    "Sign out of LibreLinkUp?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign out of LibreLinkUp?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Cerrar sesión en LibreLinkUp?"
+          }
+        }
+      }
+    },
+    "Signed in as %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signed in as %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión iniciada como %@"
+          }
+        }
+      }
+    },
+    "Signing In…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signing In…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Iniciando sesión…"
+          }
+        }
+      }
+    },
+    "Someone without a name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Someone without a name"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alguien sin nombre"
+          }
+        }
+      }
+    },
+    "Started %@, %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Started %@, %@ · %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empezó el %1$@, %2$@ · %3$@"
+          }
+        }
+      }
+    },
+    "Sukrara gets no glucose until you sign in again or choose another source. The readings already here stay." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara gets no glucose until you sign in again or choose another source. The readings already here stay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara no recibe glucosa hasta que vuelvas a iniciar sesión o elijas otro origen. Las lecturas que ya hay se quedan."
+          }
+        }
+      }
+    },
+    "The Libre app sends it once its sensor runs." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Libre app sends it once its sensor runs."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La app Libre la envía cuando su sensor funciona."
+          }
+        }
+      }
+    },
+    "The Libre app shares your glucose here · about 1 min late · may stop working any day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Libre app shares your glucose here · about 1 min late · may stop working any day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La app Libre comparte aquí tu glucosa · aprox. 1 min de retraso · puede dejar de funcionar cualquier día"
+          }
+        }
+      }
+    },
+    "The glucose is in the menu bar now." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The glucose is in the menu bar now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La glucosa ya está en la barra de menús."
+          }
+        }
+      }
+    },
+    "The readings of %@ on this Mac and the treatments logged here are deleted: two people's glucose never mix." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The readings of %@ on this Mac and the treatments logged here are deleted: two people's glucose never mix."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se borran las lecturas de %@ en este Mac y los tratamientos registrados aquí: la glucosa de dos personas nunca se mezcla."
+          }
+        }
+      }
+    },
+    "Their Libre app shares with your LibreLinkUp account · about 1 min late · may stop working any day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their Libre app shares with your LibreLinkUp account · about 1 min late · may stop working any day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su app Libre la comparte con tu cuenta de LibreLinkUp · aprox. 1 min de retraso · puede dejar de funcionar cualquier día"
+          }
+        }
+      }
+    },
+    "This account follows several people. Pick the one Sukrara shows; you can change it in Settings › Source." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This account follows several people. Pick the one Sukrara shows; you can change it in Settings › Source."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esta cuenta sigue a varias personas. Elige la que muestra Sukrara; puedes cambiarla en Ajustes › Origen."
+          }
+        }
+      }
+    },
+    "Too many attempts: LibreLinkUp asks to wait a few minutes. Sukrara doesn't retry by itself, so your account isn't locked longer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Too many attempts: LibreLinkUp asks to wait a few minutes. Sukrara doesn't retry by itself, so your account isn't locked longer."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demasiados intentos: LibreLinkUp pide esperar unos minutos. Sukrara no reintenta solo, así tu cuenta no se bloquea más tiempo."
+          }
+        }
+      }
+    },
+    "Trying…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trying…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intentando…"
+          }
+        }
+      }
+    },
+    "Use the LibreLinkUp account the Libre app shares your glucose with. To share with yourself: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the LibreLinkUp account the Libre app shares your glucose with. To share with yourself: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa la cuenta de LibreLinkUp con la que la app Libre comparte tu glucosa. Para compartirla contigo: en la app Libre, Menú › Aplicaciones conectadas › LibreLinkUp, invita a tu propio correo y acepta la invitación en LibreLinkUp una vez."
+          }
+        }
+      }
+    },
+    "Use your LibreLinkUp account: the one their Libre app invited." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use your LibreLinkUp account: the one their Libre app invited."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa tu cuenta de LibreLinkUp: la que invitó su app Libre."
+          }
+        }
+      }
+    },
+    "Waiting for the first reading from LibreLinkUp…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Waiting for the first reading from LibreLinkUp…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esperando la primera lectura de LibreLinkUp…"
+          }
+        }
+      }
+    },
+    "Whose glucose?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whose glucose?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿La glucosa de quién?"
+          }
+        }
+      }
+    },
+    "the person read now" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "the person read now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la persona que se lee ahora"
           }
         }
       }

@@ -30,6 +30,8 @@ public enum NoDataReason: Codable, Sendable, Equatable {
     case juggluco(JugglucoWait)
     /// The Nightscout site gives no reading (contracts/sources/health.json in the panel's words).
     case nightscout(NightscoutWait)
+    /// LibreLinkUp gives no reading.
+    case libreLinkUp(LibreLinkUpWait)
 
     /// Why Juggluco gives no reading (`LanState` in words the widget can carry).
     public enum JugglucoWait: Codable, Sendable, Equatable {
@@ -56,9 +58,36 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case rateLimited
     }
 
+    /// Why LibreLinkUp gives no reading (contracts/sources/health.json with LibreLinkUp's own states).
+    public enum LibreLinkUpWait: Codable, Sendable, Equatable {
+        /// No account signed in, or no one picked yet: Connect.
+        case notSignedIn
+        /// The first call is on its way.
+        case connecting
+        /// LibreLinkUp answers but has no glucose at all (the Libre app sends it once its sensor runs).
+        case noGlucose
+        /// LibreLinkUp answers, nothing new since `since` (epoch s): the Libre app is the place to look.
+        case silent(since: TimeInterval)
+        /// No network on this Mac: it catches up when it's back.
+        case offline
+        /// A network, but no answer from LibreLinkUp: it tries again by itself.
+        case unreachable
+        /// LibreLinkUp refused the password.
+        case signedOut
+        /// LibreLinkUp asked to wait.
+        case rateLimited
+        /// New terms to accept in the LibreLinkUp app.
+        case terms
+        /// No one shares with this account now (or not the person picked).
+        case notShared
+        /// LibreLinkUp stopped answering Sukrara: Abbott changed it.
+        case stopped
+    }
+
     /// What the panel offers for it: follow someone (a new invite), the Following settings (cancel a request, stop
-    /// following), Juggluco's settings (address, secret) or the Nightscout source's (site, token).
-    public enum Action: Sendable, Equatable { case follow, following, juggluco, nightscout }
+    /// following), Juggluco's settings (address, secret), the Nightscout source's (site, token) or LibreLinkUp's
+    /// (sign in, whose glucose).
+    public enum Action: Sendable, Equatable { case follow, following, juggluco, nightscout, libreLinkUp }
 
     public var action: Action? {
         switch self {
@@ -68,6 +97,10 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case .juggluco: .juggluco
         case .nightscout(.unreachable), .nightscout(.signedOut): .nightscout
         case .nightscout: nil
+        case .libreLinkUp(.notSignedIn), .libreLinkUp(.signedOut), .libreLinkUp(.notShared), .libreLinkUp(.terms),
+            .libreLinkUp(.stopped):
+            .libreLinkUp
+        case .libreLinkUp: nil
         case .offlineBuild, .wearerSilent: nil
         }
     }

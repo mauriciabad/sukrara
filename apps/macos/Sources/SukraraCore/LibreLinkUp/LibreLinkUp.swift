@@ -1,0 +1,332 @@
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+import CryptoKit
+import Foundation
+
+/// One answer of LibreLinkUp's login (contracts/sources/librelinkup/login.json `answer`).
+public enum LluLogin: Equatable, Sendable, CustomStringConvertible {
+    /// Signed in: the account's id, a token for the calls, and when it expires (epoch s).
+    case account(accountId: String, token: String, expires: TimeInterval)
+    /// Sign in again at the account's regional host (`api-<region>.libreview.io`).
+    case redirect(region: String)
+    case badCredentials
+    /// New terms of use or a new privacy policy to accept in LibreLinkUp (`tou`, `pp`).
+    case terms(step: String?)
+    /// Too many attempts: wait at least this long (nil = the source's own minimum).
+    case rateLimited(retryAfter: TimeInterval?)
+    /// This client's version is refused: the one asked for.
+    case version(minimum: String)
+    /// The login is gone: Abbott retired the API.
+    case retired
+    case failed(String)
+
+    /// Never the token.
+    public var description: String {
+        switch self {
+        case .account: "account(***)"
+        case .redirect(let region): "redirect(\(region))"
+        case .badCredentials: "badCredentials"
+        case .terms(let step): "terms(\(step ?? "-"))"
+        case .rateLimited(let wait): "rateLimited(\(wait.map { "\($0)" } ?? "-"))"
+        case .version(let minimum): "version(\(minimum))"
+        case .retired: "retired"
+        case .failed(let why): "failed(\(why))"
+        }
+    }
+}
+
+/// An authenticated call's outcome (contracts/sources/librelinkup/calls.json).
+public enum LluCallOutcome: String, Sendable, Equatable {
+    case ok, expired, rateLimited, terms, version, retired, server, network
+}
+
+/// One authenticated call's answer: its outcome, the body when `ok`.
+public struct LluCall: @unchecked Sendable {
+    public var outcome: LluCallOutcome
+    /// The whole answer object when `ok` (JSONSerialization's).
+    public var body: [String: Any]?
+    public var retryAfter: TimeInterval?
+    public var minimumVersion: String?
+
+    public init(
+        _ outcome: LluCallOutcome, body: [String: Any]? = nil, retryAfter: TimeInterval? = nil,
+        minimumVersion: String? = nil
+    ) {
+        self.outcome = outcome
+        self.body = body
+        self.retryAfter = retryAfter
+        self.minimumVersion = minimumVersion
+    }
+}
+
+/// Someone the account follows (a LibreLinkUp connection): their patient id and name.
+public struct LluPerson: Codable, Equatable, Hashable, Sendable {
+    public var id: String
+    public var name: String
+
+    public init(id: String, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
+/// Whose glucose the account brings (contracts/sources/librelinkup/connections.json).
+public struct LluPick: Equatable, Sendable {
+    public enum State: String, Sendable { case picked, choose, none, gone }
+    public var choices: [LluPerson]
+    public var state: State
+    public var pick: String?
+}
+
+/// A sensor LibreLinkUp says is running: its serial (a new serial = a new sensor) and start (epoch s).
+public struct LluSensor: Codable, Equatable, Sendable {
+    public var serial: String
+    public var start: Int
+
+    public init(serial: String, start: Int) {
+        self.serial = serial
+        self.start = start
+    }
+
+    /// As the card and the alert rules take it: LibreLinkUp doesn't say how long it lasts, so `SensorTiming`'s
+    /// defaults apply (contracts/sensor/life.json).
+    public var sensor: WearerSensor {
+        WearerSensor(
+            start: start, end: start + Int(SensorTiming.defaultWear), warmupEnd: start + Int(SensorTiming.defaultWarmup)
+        )
+    }
+}
+
+/// One graph answer: the readings (the live one and the graph's points), the sensor, the person's name.
+public struct LluGraph: Equatable, Sendable {
+    /// A reading and the id it is stored under (`librelinkup` live, `librelinkup-graph` a graph point).
+    public struct Point: Equatable, Sendable {
+        public var reading: Reading
+        public var source: String
+        public var live: Bool { source == LibreLinkUp.liveId }
+    }
+
+    public var readings: [Point]
+    public var sensor: LluSensor?
+    public var name: String
+}
+
+/// THE LibreLinkUp client's pure rules (docs/44 step 2, contracts/sources/librelinkup; Android `:core:data`
+/// `LibreLinkUp`'s companion): the login's and the calls' answers, the people an account follows, whose glucose to
+/// read, and the graph's readings and sensor. Both apps pass the same fixtures; `LibreLinkUpSource` does the I/O.
+public enum LibreLinkUp {
+    public static let host = "api.libreview.io"
+    public static let product = "llu.android"
+    /// The LibreLinkUp version every call names (contracts/sources/librelinkup/poll.json `headers`).
+    public static let version = "4.17.0"
+    public static let loginPath = "/llu/auth/login"
+    public static let connectionsPath = "/llu/connections"
+    /// The reading ids (contracts/sources/dedup.json): the live reading, and the graph's 5-minute points.
+    public static let liveId = "librelinkup"
+    public static let graphId = "librelinkup-graph"
+
+    public static func graphPath(_ patientId: String) -> String { "/llu/connections/\(patientId)/graph" }
+
+    /// The host of `region` (nil = the global one).
+    public static func host(region: String?) -> String { region.map { "api-\($0).libreview.io" } ?? host }
+
+    /// The `Account-Id` header: the account's id as SHA-256 hex.
+    public static func sha256(_ text: String) -> String {
+        SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// TrendArrow 1…5 (falling quickly … rising quickly) as mg/dL/min; any other: none.
+    static let arrowRate: [Int: Double] = [1: -2.5, 2: -1.5, 3: 0, 4: 1.5, 5: 2.5]
+
+    static func object(_ body: Data) -> [String: Any]? {
+        (try? JSONSerialization.jsonObject(with: body)) as? [String: Any]
+    }
+
+    /// One login answer (`code`, `body`, the Retry-After header): login.json's rules.
+    public static func parseLogin(code: Int, body: Data, retryAfter: TimeInterval? = nil) -> LluLogin {
+        let o = object(body)
+        let data = o?["data"] as? [String: Any]
+        let status = int(o?["status"])
+        if code == 429 || status == 429 {
+            let lockout = number((data?["data"] as? [String: Any])?["lockout"])
+            return .rateLimited(retryAfter: retryAfter ?? lockout)
+        }
+        if code == 403, let minimum = text(data?["minimumVersion"]) { return .version(minimum: minimum) }
+        if code == 401 { return .badCredentials }
+        if code == 404 { return .retired }
+        guard code == 200, o != nil else { return .failed("HTTP \(code)") }
+        if status == 0, let data, data["redirect"] as? Bool == true || text(data["redirect"]) == "true" {
+            guard let region = text(data["region"]), region.wholeMatch(of: /[a-z]{2,3}/) != nil else {
+                return .failed("bad region")
+            }
+            return .redirect(region: region)
+        }
+        if status == 0, let data {
+            let id = text((data["user"] as? [String: Any])?["id"])
+            let ticket = data["authTicket"] as? [String: Any]
+            if let id, id.count == 36, let token = text(ticket?["token"]), !token.isEmpty {
+                return .account(accountId: id, token: token, expires: number(ticket?["expires"]) ?? 0)
+            }
+            return .failed("no token")
+        }
+        switch status {
+        case 2: return .badCredentials
+        case 4: return .terms(step: text((data?["step"] as? [String: Any])?["type"]))
+        default: return .failed("status \(status.map(String.init) ?? "none")")
+        }
+    }
+
+    /// An authenticated call's answer: calls.json's rules.
+    public static func parseCall(code: Int, body: Data, retryAfter: TimeInterval? = nil) -> LluCall {
+        let o = object(body)
+        let data = o?["data"] as? [String: Any]
+        let status = int(o?["status"])
+        if code == 429 || status == 429 { return LluCall(.rateLimited, retryAfter: retryAfter) }
+        if code == 401 { return LluCall(.expired) }
+        if code == 403, let minimum = text(data?["minimumVersion"]) {
+            return LluCall(.version, minimumVersion: minimum)
+        }
+        if code == 403 || code == 404 || code == 410 { return LluCall(.retired) }
+        guard code == 200, let o else { return LluCall(.server) }
+        if status == 4 { return LluCall(.terms) }
+        guard status == 0, o["data"] != nil else { return LluCall(.server) }
+        return LluCall(.ok, body: o)
+    }
+
+    static func nameOf(_ c: [String: Any]) -> String {
+        [text(c["firstName"]), text(c["lastName"])].compactMap { $0 }
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            .joined(separator: " ").trimmingCharacters(in: .whitespaces)
+    }
+
+    /// The people a connections answer (`body` = its whole object) lists, in its order.
+    public static func people(_ body: [String: Any]) -> [LluPerson] {
+        (body["data"] as? [Any] ?? []).compactMap { $0 as? [String: Any] }.compactMap { c in
+            guard let id = text(c["patientId"]), !id.isEmpty else { return nil }
+            return LluPerson(id: id, name: nameOf(c))
+        }
+    }
+
+    /// Whose glucose to read among `choices` (connections.json): `saved` while still shared (else gone); for your own
+    /// glucose (`yours`) the account itself, else the only one; for someone else's the only one besides the account.
+    public static func pick(_ choices: [LluPerson], accountId: String, yours: Bool, saved: String?) -> LluPick {
+        let ids = choices.map(\.id)
+        if ids.isEmpty { return LluPick(choices: choices, state: .none, pick: nil) }
+        if let saved, !saved.isEmpty {
+            return ids.contains(saved)
+                ? LluPick(choices: choices, state: .picked, pick: saved)
+                : LluPick(choices: choices, state: .gone, pick: nil)
+        }
+        let candidates: [String]
+        if yours {
+            if ids.contains(accountId) { return LluPick(choices: choices, state: .picked, pick: accountId) }
+            candidates = ids
+        } else {
+            let others = ids.filter { $0 != accountId }
+            candidates = others.isEmpty ? ids : others
+        }
+        return candidates.count == 1
+            ? LluPick(choices: choices, state: .picked, pick: candidates[0])
+            : LluPick(choices: choices, state: .choose, pick: nil)
+    }
+
+    /// A FactoryTimestamp (`M/d/yyyy h:mm:ss AM`, UTC) as epoch seconds, nil when it isn't one.
+    public static func time(_ text: String?) -> TimeInterval? {
+        guard let t = text?.trimmingCharacters(in: .whitespaces).uppercased(),
+            let m = t.wholeMatch(of: /(\d{1,2})\/(\d{1,2})\/(\d{4}) (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)/),
+            let month = Int(m.1), let day = Int(m.2), let year = Int(m.3), let hour12 = Int(m.4),
+            let minute = Int(m.5), let second = Int(m.6),
+            (1...12).contains(month), (1...31).contains(day), (1...12).contains(hour12), minute < 60, second < 60
+        else { return nil }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "UTC")!
+        let hour = hour12 % 12 + (m.7 == "PM" ? 12 : 0)
+        let parts = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute, second: second)
+        guard let date = calendar.date(from: parts), calendar.component(.day, from: date) == day else { return nil }
+        return date.timeIntervalSince1970
+    }
+
+    static func point(_ m: [String: Any], live: Bool) -> LluGraph.Point? {
+        guard let t = time(text(m["FactoryTimestamp"])), let v = number(m["ValueInMgPerDl"]), v > 0, v.isFinite
+        else { return nil }
+        let rate = live ? int(m["TrendArrow"]).flatMap { arrowRate[$0] } : nil
+        return LluGraph.Point(
+            reading: Reading(t: Date(timeIntervalSince1970: t), mgdl: Int((v + 0.5).rounded(.down)), sensorRate: rate),
+            source: live ? liveId : graphId)
+    }
+
+    /// One graph answer (`body` = its whole object): graph.json's rules.
+    public static func graph(_ body: [String: Any]) -> LluGraph {
+        let data = body["data"] as? [String: Any] ?? [:]
+        let conn = data["connection"] as? [String: Any] ?? [:]
+        var out = (data["graphData"] as? [Any] ?? []).compactMap {
+            ($0 as? [String: Any]).flatMap { point($0, live: false) }
+        }
+        if let m = conn["glucoseMeasurement"] as? [String: Any], let p = point(m, live: true) { out.append(p) }
+        out.sort { ($0.reading.t, $0.source) < ($1.reading.t, $1.source) }
+        let first = ((data["activeSensors"] as? [Any])?.first as? [String: Any])?["sensor"] as? [String: Any]
+        let sensor = [first, conn["sensor"] as? [String: Any]].compactMap { $0 }.lazy.compactMap { s -> LluSensor? in
+            guard let sn = text(s["sn"]), !sn.isEmpty, let a = number(s["a"]), a > 0 else { return nil }
+            return LluSensor(serial: sn, start: Int(a))
+        }.first
+        return LluGraph(readings: out, sensor: sensor, name: nameOf(conn))
+    }
+
+    /// THE rank rule for LibreLinkUp's two ids (contracts/sources/dedup.json; `ReadingRank.merge` gives the same):
+    /// every live reading, and a graph point only where no live reading lies within the window (they only fill gaps).
+    /// Both lists in time order; linear, for a month of readings.
+    public static func merge(live: [Reading], graph: [Reading]) -> [Reading] {
+        var out: [Reading] = []
+        out.reserveCapacity(live.count + graph.count)
+        var i = 0
+        for g in graph {
+            while i < live.count, live[i].t.timeIntervalSince(g.t) < -ReadingRank.window { i += 1 }
+            let near = i < live.count && live[i].t.timeIntervalSince(g.t) <= ReadingRank.window
+            if !near { out.append(g) }
+        }
+        out += live
+        return out.sorted { $0.t < $1.t }
+    }
+
+    // MARK: - JSON values
+
+    static func text(_ v: Any?) -> String? {
+        switch v {
+        case let s as String: s
+        case let n as NSNumber where CFGetTypeID(n) != CFBooleanGetTypeID(): n.stringValue
+        default: nil
+        }
+    }
+
+    static func number(_ v: Any?) -> Double? {
+        guard let n = v as? NSNumber, CFGetTypeID(n) != CFBooleanGetTypeID() else { return nil }
+        return n.doubleValue
+    }
+
+    static func int(_ v: Any?) -> Int? {
+        guard let d = number(v), d == d.rounded() else { return nil }
+        return Int(d)
+    }
+}
+
+/// When the LibreLinkUp source asks again (contracts/sources/librelinkup/poll.json).
+public enum LluPoll {
+    public static let every: TimeInterval = 60
+    public static let backoff: [TimeInterval] = [60, 120, 300, 600]
+    public static let rateLimitedMin: TimeInterval = 600
+    public static let renewBefore: TimeInterval = 300
+    public static let connectionsEvery: TimeInterval = 1800
+    /// New terms: asked again now and then (the person accepts in LibreLinkUp; no lockout risk).
+    public static let terms: TimeInterval = 600
+    /// Abbott refused this client: asked again rarely.
+    public static let retired: TimeInterval = 3600
+
+    /// Seconds to the next call; nil = only when the person acts (a refused password: retries lock the account).
+    public static func wait(failures: Int, rateLimited: TimeInterval? = nil, refused: Bool = false) -> TimeInterval? {
+        if refused { return nil }
+        if let rateLimited { return max(rateLimitedMin, rateLimited) }
+        if failures == 0 { return every }
+        return backoff[min(failures - 1, backoff.count - 1)]
+    }
+}

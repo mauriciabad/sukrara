@@ -27,6 +27,9 @@ final class AppServices: ServiceStarting {
     private(set) var lan: JugglucoLanSource?
     /// A Nightscout site: created idle, switched on and off by `AppModel` while it is the person's source.
     private(set) var nightscout: NightscoutSource?
+    /// LibreLinkUp: created idle, switched on and off by `AppModel` while it is the person's source (its account in
+    /// the Keychain).
+    private(set) var libreLinkUp: LibreLinkUpSource?
     /// Hands the card to the widgets (App Group file + timeline reloads). Fed by `AppModel` on every change.
     private(set) var widget: WidgetFeed?
     /// Makes the Mac's camera for the QR scanner (`SystemCamera`; it opens the camera only while the scanner is on
@@ -189,6 +192,10 @@ final class AppServices: ServiceStarting {
         case .nightscout:
             nightscout = NightscoutSource.files(
                 directory: plan.data.paths.appSupport.appending(path: "nightscout", directoryHint: .isDirectory))
+        case .libreLinkUp:
+            libreLinkUp = LibreLinkUpSource.files(
+                directory: plan.data.paths.appSupport.appending(path: "librelinkup", directoryHint: .isDirectory),
+                secrets: secrets)
         }
     }
 
@@ -214,7 +221,7 @@ final class AppServices: ServiceStarting {
         #endif
         return AppModel(
             plan: plan, clock: clock, alerts: alerts, updates: updates, loginItem: loginItem, follower: follower,
-            widget: widget, lan: lan, nightscout: nightscout)
+            widget: widget, lan: lan, nightscout: nightscout, libreLinkUp: libreLinkUp)
     }
 }
 

@@ -119,6 +119,47 @@ struct NoDataText: Equatable {
                 return NoDataText(
                     title: L10n.t("Nightscout asked Sukrara to wait"), body: L10n.t("It tries again by itself."))
             }
+        case .libreLinkUp(let wait):
+            let settings = L10n.t("LibreLinkUp Settings…")
+            switch wait {
+            case .notSignedIn:
+                return NoDataText(title: L10n.t("Not signed in to LibreLinkUp"), action: L10n.t("Sign In…"))
+            case .connecting:
+                return NoDataText(title: L10n.t("Connecting to LibreLinkUp…"))
+            case .noGlucose:
+                return NoDataText(
+                    title: L10n.t("LibreLinkUp has no glucose yet"),
+                    body: L10n.t("The Libre app sends it once its sensor runs."))
+            case .silent(let since):
+                let ago = NightscoutStatus.ago(max(1, Int(now - since) / 60))
+                return NoDataText(
+                    title: L10n.t("Nothing new from LibreLinkUp"),
+                    body: L10n.t("Its last reading was \(ago).") + " "
+                        + L10n.t("Open the Libre app: it may have stopped uploading."))
+            case .offline:
+                return NoDataText(title: L10n.t("No internet"), body: L10n.t("Sukrara catches up when you're back."))
+            case .unreachable:
+                return NoDataText(
+                    title: L10n.t("No answer from LibreLinkUp"), body: L10n.t("It tries again by itself."))
+            case .signedOut:
+                return NoDataText(title: L10n.t("LibreLinkUp refused the password"), action: L10n.t("Sign In Again…"))
+            case .rateLimited:
+                return NoDataText(
+                    title: L10n.t("LibreLinkUp asked Sukrara to wait"), body: L10n.t("It tries again by itself."))
+            case .terms:
+                return NoDataText(
+                    title: L10n.t("LibreLinkUp needs you"),
+                    body: L10n.t("Open the LibreLinkUp app, sign in and accept the new terms."), action: settings)
+            case .notShared:
+                return NoDataText(
+                    title: L10n.t("No one shares glucose with this account now"),
+                    body: L10n.t("In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email."),
+                    action: settings)
+            case .stopped:
+                return NoDataText(
+                    title: L10n.t("LibreLinkUp stopped answering Sukrara"),
+                    body: L10n.t("Abbott changed it. An update of Sukrara may bring it back."), action: settings)
+            }
         }
     }
 }

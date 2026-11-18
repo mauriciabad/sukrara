@@ -527,6 +527,96 @@
                 out.append((name, AnyView(about.aboutWindow())))
             }
             out += nightscoutScenes(suite: suite, follow: follow(.notFollowing))
+            out += libreLinkUpScenes(suite: suite, follow: follow(.notFollowing))
+            return out
+        }
+
+        /// LibreLinkUp as the source (#213 step 2): the online sources with LibreLinkUp picked, Connect in each state,
+        /// Settings › Source in each health state, and the treatment log this Mac keeps.
+        private static func libreLinkUpScenes(suite: String, follow: FollowModel) -> [(String, AnyView)] {
+            var out: [(String, AnyView)] = []
+            let now = Date()
+            let ana = LluPerson(id: "11111111-2222-4333-8444-555555555555", name: "Ana Example")
+            let leo = LluPerson(id: "66666666-7777-4888-9999-aaaaaaaaaaaa", name: "Leo")
+            func scratch(_ person: Person, patient: String = "") -> DefaultsSettingsStore {
+                let s = DefaultsSettingsStore(defaults: UserDefaults(suiteName: "\(suite).\(UUID().uuidString)")!)
+                s.set(person.rawValue, for: MacSettings.sourcePerson)
+                s.set(SourceKind.libreLinkUp.rawValue, for: MacSettings.sourceKind)
+                s.set(patient, for: MacSettings.libreLinkUpPatient)
+                return s
+            }
+            func snap(
+                _ outcome: SourceHealth.Outcome?, _ ages: [TimeInterval], email: String = "alex@example.com",
+                people: [LluPerson] = [ana], signInAgain: Bool = false
+            ) -> LibreLinkUpSnapshot {
+                LibreLinkUpSnapshot(
+                    email: email, signInAgain: signInAgain, people: people, patient: ana.id, name: ana.name,
+                    running: true, outcome: outcome,
+                    readings: ages.map { Reading(t: now.addingTimeInterval(-$0), mgdl: 118) },
+                    monitoring: outcome == .ok,
+                    sensor: LluSensor(serial: "0D00ABC123", start: Int(now.timeIntervalSince1970) - 4 * 86_400))
+            }
+            // the sources this Mac reads itself, LibreLinkUp picked for someone else's glucose
+            let online = SetupModel(settings: SettingsModel(store: scratch(.theirs), follow: follow, version: "0.15.0"))
+            online.pickedPhone = false
+            online.pickedPerson = .theirs
+            online.pickedKind = .libreLinkUp
+            online.flow.open(.source)
+            out.append(("setup-source-online-librelinkup", AnyView(SetupView(model: online, close: {}))))
+            // Connect: the form (yours), refused, several people, no one shared, waiting, received
+            let connects: [(String, Person, String, LibreLinkUpSnapshot, LluConnectResult?)] = [
+                ("form", .yours, "", .off, nil),
+                ("refused", .yours, "", .off, .badCredentials),
+                ("toomany", .theirs, "", .off, .rateLimited),
+                ("choose", .theirs, "", snap(nil, [], people: [ana, leo]), nil),
+                ("noone", .theirs, "", snap(nil, [], people: []), .noOne),
+                ("waiting", .theirs, ana.id, snap(nil, []), nil),
+                ("received", .theirs, ana.id, snap(.ok, [60]), nil),
+            ]
+            for (name, person, patient, snapshot, result) in connects {
+                let m = SetupModel(
+                    settings: SettingsModel(
+                        store: scratch(person, patient: patient), follow: follow, version: "0.15.0"))
+                let llu = m.settings.libreLinkUp
+                llu.snapshot = { snapshot }
+                llu.available = { true }
+                llu.person = { person }
+                llu.now = { now }
+                llu.result = result
+                if result == .badCredentials || result == .rateLimited {
+                    llu.emailDraft = "alex@example.com"
+                    llu.passwordDraft = "synthetic"
+                }
+                if name == "choose" { llu.picked = leo.id }
+                m.flow.open(.follow)
+                out.append(("setup-connect-librelinkup-\(name)", AnyView(SetupView(model: m, close: {}))))
+            }
+            // Settings › Source: live (one person), several people, new terms, not shared, password refused, signed out
+            let states: [(String, String, LibreLinkUpSnapshot)] = [
+                ("live", ana.id, snap(.ok, [70, 130])),
+                ("several", ana.id, snap(.ok, [70], people: [ana, leo])),
+                ("terms", ana.id, snap(.terms, [1500])),
+                ("notshared", ana.id, snap(.notShared, [3000], people: [])),
+                ("refused", ana.id, snap(.refused, [1500], signInAgain: true)),
+                ("signedout", "", .off),
+            ]
+            for (name, patient, snapshot) in states {
+                let m = SettingsModel(store: scratch(.theirs, patient: patient), follow: follow, version: "0.15.0")
+                m.libreLinkUp.snapshot = { snapshot }
+                m.libreLinkUp.available = { true }
+                m.libreLinkUp.person = { .theirs }
+                m.libreLinkUp.now = { now }
+                if snapshot.signInAgain { m.libreLinkUp.emailDraft = snapshot.email }
+                m.pane = .source
+                out.append(
+                    (
+                        "settings-source-librelinkup-\(name)",
+                        AnyView(
+                            SettingsView(
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                            ).settingsWindow(m, width: 560, height: 980))
+                    ))
+            }
             return out
         }
 

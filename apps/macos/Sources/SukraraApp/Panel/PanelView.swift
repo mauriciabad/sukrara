@@ -71,9 +71,9 @@ struct PanelView: View {
                         path: model.linkPath.map {
                             PathBadge(path: $0, open: links.map { l in { l.openSettingsPane(.source) } })
                         }
-                            ?? model.nightscoutPath.map {
+                            ?? model.onlinePath.map {
                                 PathBadge(
-                                    path: $0, site: "Nightscout",
+                                    path: $0.path, site: $0.site,
                                     open: links.map { l in { l.openSettingsPane(.source) } })
                             })
                 }
@@ -94,7 +94,7 @@ struct PanelView: View {
         case nil: nil
         case .follow: links.openFollow
         case .following: { links.openSettingsPane(.source) }
-        case .juggluco, .nightscout: { links.openSettingsPane(.source) }
+        case .juggluco, .nightscout, .libreLinkUp: { links.openSettingsPane(.source) }
         }
     }
 
@@ -449,9 +449,9 @@ enum AddTreatmentAvailability: Equatable {
     /// The Keychain won't read the follower key (retrying): nothing can be signed until it does.
     case keyUnreadable
 
-    /// The panel's: this Mac's own log with Nightscout, else the link, or the Keychain retrying.
+    /// The panel's: this Mac's own log with an online source, else the link, or the Keychain retrying.
     init(_ model: AppModel) {
-        if model.nightscoutActive {
+        if model.ownLogActive {
             self = .available
             return
         }

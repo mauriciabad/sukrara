@@ -50,6 +50,7 @@ public final class SourceChoiceModel {
         case .sukrara: s.person == .yours ? L10n.t("Sukrara on your phone") : L10n.t("Their Sukrara")
         case .lanJuggluco: L10n.t("Juggluco on this network")
         case .nightscout: "Nightscout"
+        case .libreLinkUp: "LibreLinkUp"
         }
     }
 
@@ -75,6 +76,12 @@ public final class SourceChoiceModel {
             s.person == .yours
                 ? L10n.t("Glucose and treatments from your site · about 2 min late")
                 : L10n.t("Glucose and treatments from their site · about 2 min late")
+        case .libreLinkUp:
+            s.person == .yours
+                ? L10n.t("The Libre app shares your glucose here · about 1 min late · may stop working any day")
+                : L10n.t(
+                    "Their Libre app shares with your LibreLinkUp account · about 1 min late · may stop working any day"
+                )
         }
     }
 }
@@ -281,7 +288,9 @@ struct SourceKindChoice: View {
 
 /// Settings › Source: whose glucose (two cards), where it comes from (radio rows), then that source's own rows: the
 /// person this Mac follows (Follow…, the waiting code, Stop following…, Reconnect Now), Juggluco on this network
-/// (its state, address and secret) or a Nightscout site (how it's going, site, token, treatments both ways). A change applies at once (nothing to delete on the Mac: the readings are each
+/// (its state, address and secret), a Nightscout site (how it's going, site, token, treatments both ways) or LibreLinkUp
+/// (how it's going, account, whose glucose, sensor, sign out). A change applies at once (nothing to delete on the Mac:
+/// the readings are each
 /// source's own store); Back is just another pick.
 struct SourcePane: View {
     @Bindable var model: SettingsModel
@@ -375,6 +384,8 @@ struct SourcePane: View {
                 case .nightscout:
                     NightscoutRows(model: model.nightscout)
                         .onAppear(perform: model.nightscout.load)
+                case .libreLinkUp:
+                    LibreLinkUpRows(model: model.libreLinkUp)
                 }
             }
         }

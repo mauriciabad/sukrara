@@ -146,7 +146,7 @@ public final class URLSessionNightscoutHTTP: NightscoutHTTP {
 }
 
 /// Refuses every redirect (the 3xx is the answer).
-private final class NoRedirects: NSObject, URLSessionTaskDelegate, Sendable {
+final class NoRedirects: NSObject, URLSessionTaskDelegate, Sendable {
     func urlSession(
         _ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
         newRequest request: URLRequest

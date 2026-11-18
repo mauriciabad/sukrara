@@ -21,12 +21,15 @@ final class WindowCoordinator {
     private let adapter: FollowerAdapter?
     /// The treatment windows' actions while Nightscout is the source: this Mac's own log.
     private let nightscoutActions: NightscoutTreatmentActions
+    /// The same with LibreLinkUp as the source.
+    private let libreLinkUpActions: LibreLinkUpTreatmentActions
 
     init(model: AppModel, store: any SettingsStoring, requestNotifications: @escaping () async -> Bool) {
         self.model = model
         let adapter = model.follower.map(FollowerAdapter.init(follower:))
         self.adapter = adapter
         nightscoutActions = NightscoutTreatmentActions(model: model)
+        libreLinkUpActions = LibreLinkUpTreatmentActions(model: model)
         follow = FollowModel(status: .notFollowing, actions: adapter)
         settings = SettingsModel(
             store: store, follow: follow, version: Self.version, distribution: model.plan.distribution,
@@ -67,8 +70,8 @@ final class WindowCoordinator {
         // the How You Appear row only while a follow exists (the runtime's own profile is just a default before)
         follow.me = snapshot.link == .notFollowing ? nil : snapshot.me
         settings.wearer = Self.wearerSettings(snapshot)
-        // Nightscout as the source: the treatment windows show this Mac's own log (`apply(nightscout:)`)
-        guard model.sourceKind != .nightscout else { return }
+        // an online source: the treatment windows show this Mac's own log (`apply(nightscout:)`, `apply(libreLinkUp:)`)
+        guard model.sourceKind != .nightscout, model.sourceKind != .libreLinkUp else { return }
         let canWrite = if case .following(_, true) = snapshot.link { true } else { false }
         treatments.actions = adapter
         treatments.pulled = []
@@ -95,6 +98,18 @@ final class WindowCoordinator {
         treatments.sync(
             snapshot.treatments, deliveries: Dictionary(uniqueKeysWithValues: own.map { ($0.id, .sent) }),
             canWrite: model.nightscoutActive)
+    }
+
+    /// A LibreLinkUp snapshot while it is the source: the treatment windows show this Mac's own log (LibreLinkUp
+    /// brings none, and nothing goes anywhere).
+    func apply(libreLinkUp snapshot: LibreLinkUpSnapshot) {
+        guard model.sourceKind == .libreLinkUp else { return }
+        treatments.actions = libreLinkUpActions
+        treatments.isFollowing = false
+        treatments.wearer = nil
+        treatments.pulled = []
+        treatments.note = nil
+        treatments.sync(snapshot.treatments, deliveries: [:], canWrite: model.libreLinkUpActive)
     }
 
     /// The wearer's mirrored settings while following (nil otherwise: this Mac's own values apply).

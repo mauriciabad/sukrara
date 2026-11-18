@@ -25,6 +25,9 @@ public enum SourceKind: String, CaseIterable, Sendable, Codable {
     case lanJuggluco
     /// A Nightscout site (https): glucose and treatments both ways, about 2 minutes late.
     case nightscout
+    /// LibreLinkUp, Abbott's follower service the Libre app uploads to (https): glucose about a minute late and the
+    /// sensor's life; no treatments (this Mac keeps its own).
+    case libreLinkUp
 
     public var persons: Set<Person> { [.yours, .theirs] }
     public var firstHand: Bool { self != .sukrara }
@@ -33,16 +36,23 @@ public enum SourceKind: String, CaseIterable, Sendable, Codable {
         switch self {
         case .sukrara: .sukrara
         case .lanJuggluco: .network
-        case .nightscout: .online
+        case .nightscout, .libreLinkUp: .online
         }
     }
-    public var delaySeconds: Int { self == .nightscout ? 120 : 60 }
+    public var delaySeconds: Int {
+        switch self {
+        case .nightscout: 120
+        case .libreLinkUp: 90
+        case .sukrara, .lanJuggluco: 60
+        }
+    }
     public var backfill: Bool { true }
     public var readings: Set<String> {
         switch self {
         case .sukrara: ["relay", "nearby"]
         case .lanJuggluco: ["juggluco-lan"]
         case .nightscout: ["nightscout"]
+        case .libreLinkUp: [LibreLinkUp.liveId, LibreLinkUp.graphId]
         }
     }
 

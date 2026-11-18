@@ -188,6 +188,10 @@ public struct SetupView: View {
                         page(.follow, L10n.t("Connect Nightscout")) {
                             NightscoutConnect(model: model.settings.nightscout)
                         }
+                    } else if model.runningKind == .libreLinkUp {
+                        page(.follow, L10n.t("Sign in to LibreLinkUp")) {
+                            LibreLinkUpConnect(model: model.settings.libreLinkUp)
+                        }
                     } else if model.runningKind == .lanJuggluco {
                         page(.follow, L10n.t("Connect Juggluco")) {
                             Form { JugglucoRows(model: model.settings.juggluco) }.formStyle(.grouped)
@@ -352,6 +356,11 @@ public struct SetupView: View {
             // connected: the site answered (Waiting for the first reading may take a few minutes)
             return model.settings.nightscout.snapshot().monitoring
         }
+        if model.runningKind == .libreLinkUp {
+            // connected: LibreLinkUp answered for the person picked
+            let llu = model.settings.libreLinkUp
+            return llu.mode == .connected && llu.snapshot().monitoring
+        }
         switch model.follow.status {
         case .following, .waiting: return true
         default: return false
@@ -409,7 +418,7 @@ struct PhoneChoice: View {
                     "Follow the phone that reads your sensor: alerts, treatments and settings come with it"))
             card(
                 false, symbol: "globe", title: L10n.t("No · Read it online"),
-                means: L10n.t("Nightscout on this Mac: glucose and treatments, no phone app needed"))
+                means: L10n.t("LibreLinkUp or Nightscout on this Mac, and your treatments here: no phone app needed"))
         }
         .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.25), value: selected)
     }

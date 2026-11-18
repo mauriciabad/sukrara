@@ -9,11 +9,13 @@ import SwiftUI
 
 /// THE text field of the Mac: no placeholder (the owner, #181: "remove all placeholders"; Apple's Human Interface
 /// Guidelines, Text fields: a placeholder is no label, it disappears as soon as someone types). Its name is the label
-/// the caller shows beside or above it, and what VoiceOver reads. `secure`: a password-style field.
+/// the caller shows beside or above it, and what VoiceOver reads. `secure`: a password-style field. `content`: what it
+/// holds for AutoFill (`.username`, `.password`: the Passwords app and password managers offer the saved sign-in).
 struct TextInput: View {
     let label: String
     @Binding var text: String
     var secure = false
+    var content: NSTextContentType? = nil
 
     var body: some View {
         Group {
@@ -23,6 +25,7 @@ struct TextInput: View {
                 TextField(text: $text) { EmptyView() }
             }
         }
+        .textContentType(content)
         .textFieldStyle(.roundedBorder)
         .accessibilityLabel(label)
     }

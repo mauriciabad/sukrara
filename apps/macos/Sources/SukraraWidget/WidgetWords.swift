@@ -42,6 +42,12 @@ struct WidgetWords: Sendable {
             case .nightscout(.offline): return ("No internet", "Sukrara catches up when you're back")
             case .nightscout(.signedOut): return ("Nightscout refused the token", "Open Sukrara to sign in again")
             case .nightscout: return ("No reading from Nightscout", why)
+            case .libreLinkUp(.notSignedIn): return ("Not signed in to LibreLinkUp", "Open Sukrara to sign in")
+            case .libreLinkUp(.connecting): return ("Connecting to LibreLinkUp", "Over the internet")
+            case .libreLinkUp(.offline): return ("No internet", "Sukrara catches up when you're back")
+            case .libreLinkUp(.signedOut):
+                return ("LibreLinkUp refused the password", "Open Sukrara to sign in again")
+            case .libreLinkUp: return ("No reading from LibreLinkUp", why)
             }
         })
 
@@ -73,6 +79,13 @@ struct WidgetWords: Sendable {
             case .nightscout(.signedOut):
                 return ("Nightscout rechazó el token", "Abre Sukrara para volver a iniciar sesión")
             case .nightscout: return ("Sin lecturas de Nightscout", why)
+            case .libreLinkUp(.notSignedIn):
+                return ("No has iniciado sesión en LibreLinkUp", "Abre Sukrara para iniciar sesión")
+            case .libreLinkUp(.connecting): return ("Conectando con LibreLinkUp", "Por internet")
+            case .libreLinkUp(.offline): return ("Sin internet", "Sukrara se pone al día cuando vuelva")
+            case .libreLinkUp(.signedOut):
+                return ("LibreLinkUp rechazó la contraseña", "Abre Sukrara para volver a iniciar sesión")
+            case .libreLinkUp: return ("Sin lecturas de LibreLinkUp", why)
             }
         })
 

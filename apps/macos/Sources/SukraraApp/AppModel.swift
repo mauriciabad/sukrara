@@ -80,15 +80,48 @@ public final class AppModel {
     @ObservationIgnored private var nightscoutTask: Task<Void, Never>?
     /// Every Nightscout snapshot, after the model took its part (the treatment windows).
     @ObservationIgnored var onNightscout: ((NightscoutSnapshot) -> Void)?
+    /// The LibreLinkUp source (nil when the plan doesn't allow it: dev, fixture and snapshot runs).
+    @ObservationIgnored let libreLinkUp: (any LibreLinkUpSourcing)?
+    /// What the LibreLinkUp source last said.
+    private(set) var libreLinkUpSnapshot = LibreLinkUpSnapshot.off
+    /// Whom LibreLinkUp reads while it is the source (nil otherwise, or no one picked yet).
+    var libreLinkUpConfig: LibreLinkUpConfig? {
+        didSet {
+            guard libreLinkUpConfig != oldValue else { return }
+            let wasMonitoring = monitoring
+            syncLibreLinkUp()
+            applyTreatments()
+            guard monitoring != wasMonitoring else { return }
+            monitoringChanged(from: wasMonitoring)
+            applySensor()
+            apply(readings: monitoredReadings)
+            feedWidget()
+        }
+    }
+    @ObservationIgnored private var libreLinkUpSent: LibreLinkUpConfig?
+    @ObservationIgnored private var libreLinkUpTask: Task<Void, Never>?
+    /// Every LibreLinkUp snapshot, after the model took its part (Settings › Source, setup's Connect, the treatment
+    /// windows).
+    @ObservationIgnored var onLibreLinkUp: ((LibreLinkUpSnapshot) -> Void)?
     /// Where the glucose comes from as answered (`source.kind`, docs/44); nil = not answered yet: the Mac reads what it
     /// is set up to read (following someone wins, Juggluco while nobody is followed, as before the question).
     var sourceKind: SourceKind? {
         didSet {
             guard sourceKind != oldValue else { return }
+            let wasMonitoring = monitoring
             if let last = lastSnapshot { apply(last) } else { syncLan() }
             syncNightscout()
+            syncLibreLinkUp()
             applyTreatments()
+            if monitoring != wasMonitoring {
+                // an online source switched off: its readings and sensor leave the card and the alerts at once
+                monitoringChanged(from: wasMonitoring)
+                applySensor()
+                apply(readings: monitoredReadings)
+                feedWidget()
+            }
             onNightscout?(nightscoutSnapshot)
+            onLibreLinkUp?(libreLinkUpSnapshot)
         }
     }
     /// The last follower snapshot, applied again when the source changes.
@@ -130,13 +163,30 @@ public final class AppModel {
     }
     /// Nightscout is the source with a site: its log is the treatment log, its state the no-data reason.
     var nightscoutActive: Bool { !followMonitoring && nightscoutSent != nil }
-    private var monitoring: Bool { followMonitoring || lanMonitoring || nightscoutMonitoring }
-    /// How Nightscout's readings come (the panel's badge): over the internet, or none while offline; nil when it isn't
-    /// the source.
-    var nightscoutPath: LinkPath? {
-        guard nightscoutActive, nightscoutSnapshot.outcome != nil else { return nil }
-        return nightscoutSnapshot.online ? .internet : .offline
+    /// LibreLinkUp's readings feed the card and the alert rules: the source, someone picked, and it answered once.
+    private var libreLinkUpMonitoring: Bool {
+        !followMonitoring && libreLinkUpSent != nil && libreLinkUpSnapshot.monitoring
     }
+    /// LibreLinkUp is the source with someone to read: its log is the treatment log, its state the no-data reason.
+    var libreLinkUpActive: Bool { !followMonitoring && libreLinkUpSent != nil }
+    /// LibreLinkUp is the answered source but reads no one yet (signed out, or no one picked): Connect.
+    private var libreLinkUpUnset: Bool {
+        libreLinkUp != nil && sourceKind == .libreLinkUp && !followMonitoring && libreLinkUpSent == nil
+    }
+    private var monitoring: Bool { followMonitoring || lanMonitoring || nightscoutMonitoring || libreLinkUpMonitoring }
+    /// How Nightscout's or LibreLinkUp's readings come (the panel's badge, with the source's name): over the internet,
+    /// or none while offline; nil when neither is the source.
+    var onlinePath: (path: LinkPath, site: String)? {
+        if nightscoutActive, nightscoutSnapshot.outcome != nil {
+            return (nightscoutSnapshot.online ? .internet : .offline, "Nightscout")
+        }
+        if libreLinkUpActive, libreLinkUpSnapshot.outcome != nil {
+            return (libreLinkUpSnapshot.online ? .internet : .offline, "LibreLinkUp")
+        }
+        return nil
+    }
+    /// This Mac keeps the treatment log itself (an online source: Nightscout's site or LibreLinkUp).
+    var ownLogActive: Bool { nightscoutActive || libreLinkUpActive }
     /// The source reads a stream from another Sukrara (or nothing is answered yet: what the Mac follows).
     private var followsSource: Bool { sourceKind == nil || sourceKind == .sukrara }
     var unit: GlucoseUnit = .mgdl
@@ -180,7 +230,8 @@ public final class AppModel {
     init(
         plan: LaunchPlan, clock: any TimeSource = SystemClock(), alerts: AlertController? = nil,
         updates: Updates? = nil, loginItem: LoginItem? = nil, follower: (any FollowerService)? = nil,
-        widget: WidgetFeed? = nil, lan: (any LanSourcing)? = nil, nightscout: (any NightscoutSourcing)? = nil
+        widget: WidgetFeed? = nil, lan: (any LanSourcing)? = nil, nightscout: (any NightscoutSourcing)? = nil,
+        libreLinkUp: (any LibreLinkUpSourcing)? = nil
     ) {
         self.plan = plan
         self.clock = clock
@@ -191,6 +242,7 @@ public final class AppModel {
         self.widget = widget
         self.lan = lan
         self.nightscout = nightscout
+        self.libreLinkUp = libreLinkUp
         now = clock.now
         alerts?.onUIChange = { [weak self] in
             self?.feedWidget()
@@ -211,6 +263,12 @@ public final class AppModel {
             feeds.append(
                 Task { [weak self] in
                     for await snapshot in await nightscout.snapshots() { self?.apply(nightscout: snapshot) }
+                })
+        }
+        if let libreLinkUp {
+            feeds.append(
+                Task { [weak self] in
+                    for await snapshot in await libreLinkUp.snapshots() { self?.apply(libreLinkUp: snapshot) }
                 })
         }
         guard let follower else { return }
@@ -243,6 +301,7 @@ public final class AppModel {
         followerKnown = true
         syncLan()
         syncNightscout()
+        syncLibreLinkUp()
         monitoringChanged(from: wasMonitoring)
         if let alerts { alerts.setMirroring(followMonitoring && alerts.settings.source == .wearer) }
         applyTreatments()
@@ -287,12 +346,27 @@ public final class AppModel {
         feedWidget()
     }
 
-    /// The readings the card and the alert rules use: following wins over Juggluco and Nightscout (never two people's
-    /// mixed; only one of them is ever the source).
+    /// What the LibreLinkUp source said: its readings feed the card and the alerts while it is the source, this Mac's
+    /// treatment log the marks, the quiets and the export.
+    func apply(libreLinkUp snapshot: LibreLinkUpSnapshot) {
+        let wasMonitoring = monitoring
+        libreLinkUpSnapshot = snapshot
+        monitoringChanged(from: wasMonitoring)
+        onLibreLinkUp?(snapshot)
+        guard libreLinkUpActive || wasMonitoring else { return }
+        applyTreatments()
+        applySensor()
+        apply(readings: monitoredReadings)
+        feedWidget()
+    }
+
+    /// The readings the card and the alert rules use: following wins over Juggluco and the online sources (never two
+    /// people's mixed; only one of them is ever the source).
     private var monitoredReadings: [Reading] {
-        followMonitoring
-            ? followReadings
-            : lanMonitoring ? lanSnapshot.readings : nightscoutMonitoring ? nightscoutSnapshot.readings : []
+        if followMonitoring { return followReadings }
+        if lanMonitoring { return lanSnapshot.readings }
+        if nightscoutMonitoring { return nightscoutSnapshot.readings }
+        return libreLinkUpMonitoring ? libreLinkUpSnapshot.readings : []
     }
 
     /// The sensor of the same source: the wearer's, the one Juggluco reads, or the one the Nightscout site's newest
@@ -301,7 +375,9 @@ public final class AppModel {
     private var monitoredSensor: WearerSensor? {
         if followMonitoring { return followSensor }
         if lanMonitoring { return lanSnapshot.sensor }
-        return nightscoutMonitoring ? nightscoutSnapshot.sensor : nil
+        if nightscoutMonitoring { return nightscoutSnapshot.sensor }
+        // LibreLinkUp's serial and start, with the default warm-up and wear (it doesn't say the length)
+        return libreLinkUpMonitoring ? libreLinkUpSnapshot.sensor?.sensor : nil
     }
 
     /// The treatments of the source: the followed wearer's log, or this Mac's own with Nightscout (the site's
@@ -309,7 +385,11 @@ public final class AppModel {
     private func applyTreatments() {
         let followed = (lastSnapshot?.treatments ?? []).filter { !$0.del }
         let live: [Treatment] =
-            followMonitoring ? followed : nightscoutActive ? nightscoutSnapshot.treatments.filter { !$0.del } : []
+            followMonitoring
+            ? followed
+            : nightscoutActive
+                ? nightscoutSnapshot.treatments.filter { !$0.del }
+                : libreLinkUpActive ? libreLinkUpSnapshot.treatments.filter { !$0.del } : []
         // the alert rules hear the wearer's treatments as before (also before a reading), Nightscout's while it is
         // the source
         let heard = followsSource ? followed : live
@@ -343,7 +423,10 @@ public final class AppModel {
     private func monitoringChanged(from wasMonitoring: Bool) {
         if monitoring && !wasMonitoring { alerts?.monitoringStopped(nil) }  // back: the "stopped" note goes
         let source: HistorySource =
-            followMonitoring ? .follow : lanMonitoring ? .lan : nightscoutMonitoring ? .nightscout : .none
+            followMonitoring
+            ? .follow
+            : lanMonitoring
+                ? .lan : nightscoutMonitoring ? .nightscout : libreLinkUpMonitoring ? .libreLinkUp : .none
         // stopped, or straight from Juggluco to a wearer (or back): the episodes were about the other readings
         if wasMonitoring && (!monitoring || (historySource != .none && source != historySource)) {
             alerts?.resetMonitoring()
@@ -399,6 +482,58 @@ public final class AppModel {
     func writeNightscout(_ treatment: Treatment) async -> Bool {
         guard nightscoutActive, let nightscout else { return false }
         return await nightscout.write(treatment)
+    }
+
+    /// Hands whom LibreLinkUp reads to its source while it is the source (and nobody followed is read), else off;
+    /// waits for the follower's first snapshot like Juggluco.
+    private func syncLibreLinkUp() {
+        guard libreLinkUp != nil else { return }
+        let waiting = follower != nil && !followerKnown && sourceKind != .libreLinkUp
+        let want = followMonitoring || waiting || sourceKind != .libreLinkUp ? nil : libreLinkUpConfig
+        guard want != libreLinkUpSent else { return }
+        libreLinkUpSent = want
+        toLibreLinkUp { await $0.set(want) }
+    }
+
+    /// Runs `step` on the LibreLinkUp source after every earlier one.
+    private func toLibreLinkUp(_ step: @escaping @Sendable (any LibreLinkUpSourcing) async -> Void) {
+        guard let libreLinkUp else { return }
+        let previous = libreLinkUpTask
+        libreLinkUpTask = Task {
+            await previous?.value
+            await step(libreLinkUp)
+        }
+    }
+
+    /// Try Again on the LibreLinkUp source.
+    func retryLibreLinkUp() {
+        guard libreLinkUpSent != nil else { return }
+        toLibreLinkUp { await $0.retry() }
+    }
+
+    /// Connect's *Sign In* (after every earlier step on the source); nil when this run has no LibreLinkUp source.
+    func connectLibreLinkUp(email: String, password: String, yours: Bool) async -> LluConnectResult? {
+        guard let libreLinkUp else { return nil }
+        await libreLinkUpTask?.value
+        return await libreLinkUp.connect(email: email, password: password, yours: yours)
+    }
+
+    /// Connect's *Try Again* (no one shared, new terms): whom the saved account follows, read again.
+    func recheckLibreLinkUp(yours: Bool, saved: String?) async -> LluConnectResult? {
+        guard let libreLinkUp else { return nil }
+        await libreLinkUpTask?.value
+        return await libreLinkUp.recheck(yours: yours, saved: saved)
+    }
+
+    /// Settings › Source's *Sign Out* (confirmed): the account goes, the readings and the log stay.
+    func signOutLibreLinkUp() {
+        toLibreLinkUp { await $0.signOut() }
+    }
+
+    /// Writes one of this Mac's treatments into LibreLinkUp's log (the Treatments window and Add Treatment).
+    func writeLibreLinkUp(_ treatment: Treatment) async -> Bool {
+        guard libreLinkUpActive, let libreLinkUp else { return false }
+        return await libreLinkUp.write(treatment)
     }
 
     /// Runs `step` on the Juggluco source after every earlier one (switching, Try Again and stop stay in order).
@@ -573,12 +708,14 @@ public final class AppModel {
         let follower = self.follower
         let lan = self.lan
         let nightscout = self.nightscout
+        let libreLinkUp = self.libreLinkUp
         Task { [weak self] in
             let loaded: [Reading] =
                 switch source {
                 case .follow: await follower?.readings(since: since) ?? []
                 case .lan: await lan?.readings(since: since) ?? []
                 case .nightscout: await nightscout?.readings(since: since) ?? []
+                case .libreLinkUp: await libreLinkUp?.readings(since: since) ?? []
                 case .none: []
                 }
             guard let self, self.historySource == source else { return }
@@ -628,16 +765,20 @@ public final class AppModel {
         if plan.isOffline && plan.mode != .fixture { return .offlineBuild }
         // shown over the stored readings too: with the Keychain unreadable no new reading can arrive, and the alerts
         // go on over the last ones (no data included) while the runtime retries
-        if keychainUnreadable, !lanMonitoring, !nightscoutActive { return .broken(.keyUnreadable) }
-        if case .broken(let why) = link, !lanMonitoring, !nightscoutActive { return .broken(why) }
+        let ownSource = lanMonitoring || ownLogActive || libreLinkUpUnset
+        if keychainUnreadable, !ownSource { return .broken(.keyUnreadable) }
+        if case .broken(let why) = link, !ownSource { return .broken(why) }
         guard readings.isEmpty else {
             guard look.state == .noReadings else { return nil }
             if followMonitoring { return .wearerSilent(since: readings.last?.t.timeIntervalSince1970) }
             if nightscoutMonitoring { return Self.nightscoutWait(nightscoutSnapshot, now: clock.now) }
+            if libreLinkUpMonitoring { return Self.libreLinkUpWait(libreLinkUpSnapshot, now: clock.now) }
             return lanMonitoring ? Self.lanWait(lanSnapshot.state) : nil
         }
         if !followMonitoring, lanSent != nil, let wait = Self.lanWait(lanSnapshot.state) { return wait }
         if nightscoutActive, let wait = Self.nightscoutWait(nightscoutSnapshot, now: clock.now) { return wait }
+        if libreLinkUpActive, let wait = Self.libreLinkUpWait(libreLinkUpSnapshot, now: clock.now) { return wait }
+        if libreLinkUpUnset { return .libreLinkUp(.notSignedIn) }
         switch link {
         case .notFollowing, .joining: return .notFollowing
         case .requested: return .waitingApproval
@@ -678,6 +819,24 @@ public final class AppModel {
         case .rateLimited: .nightscout(.rateLimited)
         // LibreLinkUp's own states: a site never reaches them
         case .actionNeeded, .notShared, .stopped: .nightscout(.unreachable(host: snapshot.host))
+        }
+    }
+
+    /// Why LibreLinkUp gives no reading now (contracts/sources/health.json with its own states), nil while it is live.
+    static func libreLinkUpWait(_ snapshot: LibreLinkUpSnapshot, now: Date) -> NoDataReason? {
+        switch snapshot.health(at: now) {
+        case .connecting: .libreLinkUp(.connecting)
+        case .live, .late: nil
+        case .noNewReadings:
+            snapshot.readings.last.map { .libreLinkUp(.silent(since: $0.t.timeIntervalSince1970)) }
+                ?? .libreLinkUp(.noGlucose)
+        case .offline: .libreLinkUp(.offline)
+        case .unreachable: .libreLinkUp(.unreachable)
+        case .signedOut: snapshot.email.isEmpty ? .libreLinkUp(.notSignedIn) : .libreLinkUp(.signedOut)
+        case .rateLimited: .libreLinkUp(.rateLimited)
+        case .actionNeeded: .libreLinkUp(.terms)
+        case .notShared: .libreLinkUp(.notShared)
+        case .stopped: .libreLinkUp(.stopped)
         }
     }
 
@@ -747,11 +906,14 @@ public final class AppModel {
         if let follower { Task { await follower.reconnect() } }
         retryLan()  // Juggluco's stream died with the network too: look again now, not after the backoff
         retryNightscout()
+        retryLibreLinkUp()
     }
 
-    /// The Mac's network path changed: Nightscout says *No internet* while it is down and asks again when it's back.
+    /// The Mac's network path changed: the online sources say *No internet* while it is down and ask again when it's
+    /// back.
     func network(online: Bool) {
         toNightscout { await $0.network(online: online) }
+        toLibreLinkUp { await $0.network(online: online) }
     }
 
     /// The clock changed (also small NTP corrections): re-read the time and re-check the alerts; the connections stay.
@@ -784,13 +946,16 @@ public final class AppModel {
         toLan { await $0.set(nil) }
         nightscoutSent = nil
         toNightscout { await $0.set(nil) }
+        libreLinkUpSent = nil
+        toLibreLinkUp { await $0.set(nil) }
         await lanTask?.value
         await nightscoutTask?.value
+        await libreLinkUpTask?.value
         await follower?.stop()
     }
 }
 
 /// Where the history was loaded from.
 private enum HistorySource {
-    case none, follow, lan, nightscout
+    case none, follow, lan, nightscout, libreLinkUp
 }
