@@ -92,6 +92,9 @@ class AlertRuntime(
     private var doses = Doses()
     private var sensor: SensorWindow? = null
 
+    /** The sensor [sensor] is for (its id; null = none known). */
+    private var sensorId: String? = null
+
     /**
      * When monitoring started (epoch s) as last given to the machine (it keeps its own copy): no data counts from it
      * until the source delivers a reading, also with none ever.
@@ -284,7 +287,9 @@ class AlertRuntime(
             val now = now()
             who = state.wearerName
             val monitoringNow = state.monitoringStartedAt != null
-            val window = windowOf(state.sensor)
+            val id = idOf(state.sensor)
+            val window = windowAfter(state.sensor, sensor.takeIf { id == sensorId })
+            sensorId = id
             // what an alert up shows is the newest reading, also for what this input posts before the reading's turn
             state.latest?.let(::readingOf)?.let { n -> if (latest.let { it == null || n.t >= it.t }) latest = n }
             // before no data turns on: it counts from the source's start, never from an older source's last reading
@@ -821,6 +826,30 @@ class AlertRuntime(
                 carbs = treatments.filter { !it.deleted && it.kind == TreatmentKind.Carbs }.map { it.at.epochSecond }.sorted(),
                 rapid = treatments.filter { !it.deleted && it.kind == TreatmentKind.RapidInsulin }.map { it.at.epochSecond }.sorted(),
             )
+
+        /**
+         * The engine's window for [s] after [warming], the window it has for the same sensor: a sensor just out of its
+         * warm-up keeps its start and warm-up end, so the engine ends the warm-up itself, at the first reading it gets
+         * (`SensorTiming.warming`). The hub shows the sensor running as soon as its source has that reading, which can
+         * reach the engine a moment later (through the store, or after the sensor in the same state): no data rang for
+         * that moment (the owner's phone, 2026-11-18, a new Libre 3 behind LibreLinkUp).
+         */
+        fun windowAfter(
+            s: SensorState,
+            warming: SensorWindow?,
+        ): SensorWindow? {
+            val w = windowOf(s)
+            if (s !is SensorState.Active || warming == null || warming.warmupEndEpoch == 0L) return w
+            return SensorWindow(warming.startEpoch, w?.endEpoch ?: warming.endEpoch, warming.warmupEndEpoch)
+        }
+
+        /** The sensor's id in [s] (null: none known, or no sensor). */
+        fun idOf(s: SensorState): String? =
+            when (s) {
+                is SensorState.Active -> s.id
+                is SensorState.WarmingUp -> s.id
+                else -> null
+            }
 
         /** The engine's sensor life from what the hub shows (null: no window known, no data counts as usual). */
         fun windowOf(s: SensorState): SensorWindow? =

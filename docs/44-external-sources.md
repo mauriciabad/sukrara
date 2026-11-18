@@ -780,6 +780,13 @@ edition; LibreLinkUp the source on both).** Found and fixed:
   `SourceStatus.Connecting`); home already showed the card's warm-up.
 - **Mac: *Reading received* for any stored reading**, the old sensor's 4-hour-old one included (Android says it only for
   a live one). Now it shows only for a live or late reading; Nightscout's step too.
+- **Android rang *No glucose data* for a moment at the first reading after the warm-up** (19:14:21, with the old
+  sensor's 13:38 value, cleared 1 s later when *Very high* fired for 256 mg/dL). The source shows the sensor running as
+  soon as it has the reading, and the alert runtime's window for a running sensor had no warm-up
+  (`AlertRuntime.windowOf`), so it fed the engine a running sensor before the reading. A sensor just out of its
+  warm-up now keeps its start and warm-up end there (`windowAfter`, same sensor id), and the engine ends the warm-up at
+  the first reading it gets (`AlertWarmupEndTest`). The Mac didn't do this: it rang *Very high* at 19:14:09 and nothing
+  else.
 
 Answered:
 - **LibreLinkUp serves whatever reaches LibreView, Sukrara's upload included.** The old sensor's readings up to 13:38:25,
