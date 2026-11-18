@@ -1048,6 +1048,47 @@ Discarded:
   *Keep following?* first, one pattern instead of two.
 - A follow row in *Also saved on this phone*: under D a follow is never kept behind another source.
 
+**One person, one link (2026-11-18, Mac; contracts/sources/link.json, Appendix G).**
+
+Added:
+- `LinkRules` (pick, leave, defaults, the fence: `LinkContractTests`); no *Whose glucose* (schema `source.person`
+  Android's only, `SourceSpec(kind:)`), LibreLinkUp reading every connection; setup's *Yes* preselected and
+  *Recommended*, no *Skip* on either source question.
+- *Keep following Ana?* (an alert: two answers, nothing to fill in) on Settings › Source and setup's source step, then
+  the leave questions as a sheet (HIG: a short task with choices; alerts don't hold controls), *Stop Following* never
+  the default button. Leaving through one function, `AppModel.leaveLink` (the runtime's `unfollow`, which sends the
+  `leave`). No source after *Stop following* alone: the panel's *Pick a Source…*.
+- D in `AppModel`: nothing of the link (settings, name, path, Bluetooth warning, mirrored alerts, escalation, no-data
+  reasons) for another source; *Settings from* only while linked; Juggluco on the network with its own treatment log.
+- **Every identity's history apart** (`KeptHistory`, `kept/<source>-<identity>/`): LibreLinkUp per patient and
+  Nightscout per site are shelved and taken back instead of deleted; a follow left with *Keep it* is kept and the next
+  identity read continues it (`continuedBy`): the chart, rings, report and export count over both, merged by the fence
+  (`LinkRules.continuing`). Following the same wearer again takes the kept follow back.
+- **A live follow found behind another source at launch is asked about** (*Keep following?*, the source in use as the
+  picked one), never left: a leave is final.
+- Settings › Source **Also saved on this Mac**: LibreLinkUp's account (*Sign Out…*), the Nightscout site (*Forget…*, new),
+  Juggluco's address and secret (*Forget…*), every kept history not shown (*Delete…*); named as Android's group, rows as
+  the pane's (service label, the detail, a button with an ellipsis that asks first). Settings › Metrics' *Needs more
+  readings…* (Android's words).
+- Debug-only dev-run switches for the online sources (`DevOnline`: the fake LibreLinkUp, a Nightscout stub on
+  loopback), so the journeys are walked on the app.
+
+Discarded:
+- *Whose glucose* on the Mac (the owner: "pointless on the Mac"): it only changed words; per-identity stores keep
+  people apart instead.
+- Leaving a follow found behind another source without a question (SPEC.md's "no question"; built in 752c15701): the
+  owner's Mac lost its follow on the first launch of d342b0818 and needed a new invite. Asked instead.
+- A *continues* for that automatic leave of an ended follow: the source in use may read someone else.
+- Merging a kept history into one with the same identity at the next leave: following that wearer again takes it back
+  into the stores first, so one copy per identity is always whole.
+- A row for the follow in *Also saved on this Mac*: D never keeps one behind another source (asked, or left when ended).
+- Juggluco's history in *Also saved on this Mac*: it is one identity (the network) and stays with its address; *Forget*
+  drops only the address and secret.
+- A separate component for the kept-history rows (a list with swipe to delete): one pattern for every removal on the pane
+  (a button that asks), and macOS Settings forms use buttons, not swipes.
+- Walking a real join on a dev run: the fixture follower can't join; the restore at a join is code-only
+  (`FollowerStores.restore`).
+
 **Treatments beside the Libre app (2026-11-18, decision 4 decided, Android).** The waiting above becomes the exception:
 while LibreLinkUp is your source, the LibreView upload sends the treatments as the app identity the Libre app doesn't
 use (from LibreLinkUp's `dtid`), never glucose, never a sign-in on the Libre app's identity, with a watchdog on
@@ -1905,6 +1946,7 @@ Platform; journey and repro; what's left behind or broken; fix.
    - Fix: D. Until then, gate wearer settings, path badge and blocked features on `followMonitoring`; keep the follow's rows and *Stop following* on the Source pane for every source.
    - **Android fixed** (705ca9364): D. Every path that picks another source while linked asks *Keep following Ana?*, then the leave questions; *Stop following* asks them too (`AppLink`, `SetupViewModelTest`, `AppLinkTest`); a follow an earlier version kept behind another source is left at start (`AppLink.leaveLeftBehind`). `NonLinkSourceTest` checks link.json's `after` list.
    - **Mac fixed** (752c15701): D. Another source picked while following asks *Keep following?*, then the leave sheet; a follow left behind another source by an earlier version is left at start (`AppModel.leaveLink`, history kept, settings untouched); for any other source the path badge, Bluetooth warning, wearer name, settings, mirrored alerts and escalation are the link's only while it is the source. `AppModelLinkTests` (link.json `after`); walked on a fixture dev run (Accessibility; synthetic screenshots in the session scratch, `one-link/mac/`).
+   - **Mac changed** (8fe2fd5e5): the owner's Mac (LibreLinkUp plus a live follow) left its follow on the first launch of d342b0818, unasked. A live follow found behind another source is now asked about at launch (Settings › Source, *Keep following Ana?*: *Keep Following* makes the link the source again; *Stop Following…* the leave sheet); only an ended one is left at start. `AppModelLinkTests.theFollowFoundBehindASourceIsAsked`; walked on a fixture dev run launched with LibreLinkUp stored.
 2. **HIGH, both: the same person loses the phone's treatments and pen doses** on a Mac reading LibreLinkUp, and Mac entries never reach the phone, Tidepool or Nightscout.
    - Fix: D (the Mac follows the phone).
 3. **HIGH, Android: the old follow's name on another source's alerts, notification, widgets and Source page** (`android/25`–`27`).
@@ -1916,6 +1958,7 @@ Platform; journey and repro; what's left behind or broken; fix.
    - **Fixed** (cc0cc830d): `SourceRecord.forAnotherPerson` clears the pick and the site with the history; LibreLinkUp picks again by the rule (a lone connection that isn't the account is still picked for *Yours*: the contract's rule); the Connect step only offers the earlier site (*The site read before: check it's yours*, its token kept for it) and always shows after a person change. `AppSourcesTest`, `SetupViewModelTest`; emulator: Theirs · Leo → Yours asked *Delete the earlier history?*, then LibreLinkUp's list instead of Leo.
 5. **HIGH, Android: history overwritten across sources and people; "The history on this phone stays" is false** (`android/14`).
    - Fix: key someone else's readings by source identity; within one person, fence backfill at the previous source's last reading; correct the dialog copy.
+   - **Mac fixed** (30645e8cd, 7b3f274e0): every identity's history apart under `kept/` (`KeptHistory`): LibreLinkUp per patient and Nightscout per site are kept aside and taken back, never deleted (*Read Ana Example's glucose?* still asks: the alerts change person); a follow left with *Keep it* is continued by the next identity read, merged by the fence (`LinkRules.continuing`, checked against link.json's fence cases). `LibreLinkUpSourceTests`, `NightscoutSourceTests`, `KeptHistoryTests`, `AppModelLinkTests.theNextIdentityReadContinuesTheKeptHistory`; walked on a dev run with the fake LibreLinkUp (Alex → Ana: Alex kept apart).
    - **Android fixed** (f58cb2e77, 705ca9364): one person's history at a time (no database change). `ReadingRank.plan` takes the fence (link.json `fence`, `LinkContractTest`): set at the last reading at every source change for the same person (`AppSources`, `AppSourcesTest`) and at a leave with *Keep it*, so the next source fills gaps and never replaces a kept reading. That makes "The history on this phone stays" true; a person change still deletes it (asked).
 6. **HIGH, Android: another LibreLinkUp person is read without asking, and readings mix.**
    - Fix: port the Mac's confirmation (`M/Windows/Settings/LibreLinkUpRows.swift:129-140`).
@@ -1946,6 +1989,7 @@ Platform; journey and repro; what's left behind or broken; fix.
 12. **MEDIUM, both: accounts of sources not in use can't be seen or removed** (follow key, LibreLinkUp account and pick, Nightscout site and token; Nightscout can't be forgotten at all).
     - Fix: an "Also on this device" group with *Sign out*, *Forget*, *Stop following*, without reconnecting.
     - **Android fixed** (6c34632a5): Settings › Source › *Also saved on this phone*: *Sign out of LibreLinkUp*, *Forget Nightscout site*, each confirmed, hidden when empty; no follow to list (D leaves it).
+    - **Mac fixed** (d342b0818, 7b3f274e0): Settings › Source › *Also saved on this Mac*: LibreLinkUp's account (*Sign Out…*: the person read kept apart), the Nightscout site and token (*Forget…*, new: the site's history kept apart), Juggluco's address and secret (*Forget…*), every kept history not shown (*Delete…*), each confirmed, hidden when empty. `AppModelLinkTests.alsoSavedListsWhatIsNotInUseAndRemovesIt`, `LibreLinkUpSourceTests`, `NightscoutSourceTests`; walked on a dev run (Forget, Sign Out, Delete).
 13. **MEDIUM, Mac: a standalone Mac runs *Settings from: Their settings*** (schema default `wearer`).
     - Alerts, Readings, Graph and Metrics stay read-only with "Waiting for this person's settings" forever.
     - Fix: *Settings from* only while linked.
@@ -1959,8 +2003,10 @@ Platform; journey and repro; what's left behind or broken; fix.
 16. **MEDIUM, Mac: rings counted over LibreLinkUp's 12 h** while the follow holds 8.7 days of the same person.
     - Fix: §4 point 5.
     - Android, the "says why" part (§4 Q3; be3c32adf): Settings › Metrics adds *Needs more readings: 12 h of the last 7 days, 42 h needed* to a hidden metric's summary (`MetricNeedTest`).
+    - **Mac fixed** (30645e8cd, adbd39d4c): the rings, the report and the export count over the identity read and the kept follow it continues (finding 5's merge); Settings › Metrics says why a hidden metric is hidden, Android's words (`SlotNumbers.need`, `SettingsWindowTests`). Walked: after the leave and LibreLinkUp's 12 h, the 7-day ring showed over the kept week; the 30-day one said *Needs more readings: 7 days of the last 30 days, 8 days needed*.
 17. **MEDIUM, Mac (QA tooling): dev and fixture runs have no LibreLinkUp, Nightscout or Juggluco source**, so the Mac's online journeys can't be walked on the app, only in unit tests.
     - Fix: debug-only loopback overrides for dev runs, like Android's `LIBRELINKUP` command.
+    - **Fixed** (8fe2fd5e5): `DevOnline` (`#if DEBUG`): `SUKRARA_DEV_LIBRELINKUP=http://127.0.0.1:<port>` sends LibreLinkUp's calls to `tools/librelinkup-probe/fake.py`, `SUKRARA_DEV_NIGHTSCOUT=1` runs Nightscout for a site on loopback; the run's accounts stay in memory, never the login Keychain; the fixture follower's leave with *Keep it* writes real kept files. docs/DEVELOPMENT.md; allow.json `cleartext_ok`. Used for every Mac walk above.
 18. **LOW-MEDIUM, copy:**
     - Mac: *Yes · Follow it* says "the phone that reads your sensor", which excludes a parent following a child.
     - Mac: after *Yours*, the Follow step says "Their glucose shows in the menu bar now" (`mac-04`).
