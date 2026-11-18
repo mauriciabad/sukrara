@@ -99,11 +99,11 @@ public protocol LibreLinkUpSourcing: Sendable {
     /// Switches it on with `config`, or off (nil). The same config again changes nothing. Another person than the
     /// one whose readings and log it holds starts both again.
     func set(_ config: LibreLinkUpConfig?) async
-    /// Signs in (Connect): saved only when LibreLinkUp accepts it; whom the account follows, and whom to read
-    /// (`yours`: the account itself first).
-    func connect(email: String, password: String, yours: Bool) async -> LluConnectResult
+    /// Signs in (Connect): saved only when LibreLinkUp accepts it; whom the account follows, and whom to read (the
+    /// only connection, the account's own included; several: the person picks).
+    func connect(email: String, password: String) async -> LluConnectResult
     /// *Try Again* after no one shared or new terms: whom the saved account follows, the pick kept while shared.
-    func recheck(yours: Bool, saved: String?) async -> LluConnectResult
+    func recheck(saved: String?) async -> LluConnectResult
     /// Forgets the account (the readings and the log stay).
     func signOut() async
     /// Try Again (and the network came back): ask now instead of after the wait.
@@ -220,16 +220,19 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         start(config)
     }
 
-    public func connect(email: String, password: String, yours: Bool) async -> LluConnectResult {
+    public func connect(email: String, password: String) async -> LluConnectResult {
         stop()
         // a sign-in the person makes ends a wait LibreLinkUp asked for
         holdUntil = nil
         let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let saved = try? account()
-        let region = saved?.email.caseInsensitiveCompare(email) == .orderedSame ? saved?.region : nil
+        let same = saved?.email.caseInsensitiveCompare(email) == .orderedSame
+        let region = same ? saved?.region : nil
+        // the same account signing in again (Sign In Again) keeps the person it reads while they still share
+        let held = same && !current.patient.isEmpty ? current.patient : nil
         let result: LluConnectResult
         switch await signIn(email: email, password: password, region: region, gen: generation) {
-        case .ready(let s): result = await pick(s, yours: yours, saved: nil)
+        case .ready(let s): result = await pick(s, saved: held)
         case let other: result = Self.result(other)
         }
         publishAccount()
@@ -237,13 +240,13 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         return result
     }
 
-    public func recheck(yours: Bool, saved: String?) async -> LluConnectResult {
+    public func recheck(saved: String?) async -> LluConnectResult {
         // asked to wait: not even Try Again calls before then
         if holding { return .rateLimited }
         stop()
         let result: LluConnectResult
         switch await session(gen: generation) {
-        case .ready(let s): result = await pick(s, yours: yours, saved: saved)
+        case .ready(let s): result = await pick(s, saved: saved)
         case let other: result = Self.result(other)
         }
         publishAccount()
@@ -541,7 +544,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     }
 
     /// Whom the account follows after a sign-in, and whom to read (connections.json); a pick that's gone picks again.
-    private func pick(_ session: Ready, yours: Bool, saved: String?) async -> LluConnectResult {
+    private func pick(_ session: Ready, saved: String?) async -> LluConnectResult {
         let (r, _) = await call(LibreLinkUp.connectionsPath, session, gen: generation)
         guard r.outcome == .ok, let body = r.body else {
             switch r.outcome {
@@ -558,8 +561,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         // LibreLinkUp answered: no longer asked to wait
         holdUntil = nil
         let people = LibreLinkUp.people(body)
-        var p = LibreLinkUp.pick(people, accountId: session.accountId, yours: yours, saved: saved)
-        if p.state == .gone { p = LibreLinkUp.pick(people, accountId: session.accountId, yours: yours, saved: nil) }
+        var p = LibreLinkUp.pick(people, saved: saved)
+        if p.state == .gone { p = LibreLinkUp.pick(people, saved: nil) }
         peopleChecked = clock.now
         var s = await log()
         s.people = people

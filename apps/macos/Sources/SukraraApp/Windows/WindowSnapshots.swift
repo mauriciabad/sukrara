@@ -114,17 +114,6 @@
                 m.flow.open(step)
                 out.append(("setup-\(step.rawValue)", AnyView(SetupView(model: m, close: {}))))
             }
-            // whose glucose picked, then the sources for that person
-            for (name, person, step) in [
-                ("setup-person-yours", Person.yours, SetupFlow.Step.person), ("setup-source-yours", .yours, .source),
-                ("setup-source-theirs", .theirs, .source),
-            ] {
-                let m = SetupModel(
-                    settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
-                m.pickedPerson = person
-                m.flow.open(step)
-                out.append((name, AnyView(SetupView(model: m, close: {}))))
-            }
             // the notification step of a build without Time Sensitive (no provisioning profile): Focus settings
             let unavailable = SetupModel(
                 settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
@@ -260,7 +249,6 @@
             settings.newestReading = { trendApp.newestReading }
             // Juggluco on this network: on, in each state (its own defaults: the switch is on there)
             let lanStore = InMemorySettingsStore()
-            lanStore.set(Person.yours.rawValue, for: MacSettings.sourcePerson)
             lanStore.set(SourceKind.lanJuggluco.rawValue, for: MacSettings.sourceKind)
             let lanStates: [(String, LanState, String?)] = [
                 ("looking", .looking, nil), ("notfound", .notFound, nil),
@@ -538,9 +526,8 @@
             let now = Date()
             let ana = LluPerson(id: "11111111-2222-4333-8444-555555555555", name: "Ana Example")
             let leo = LluPerson(id: "66666666-7777-4888-9999-aaaaaaaaaaaa", name: "Leo")
-            func scratch(_ person: Person, patient: String = "") -> InMemorySettingsStore {
+            func scratch(patient: String = "") -> InMemorySettingsStore {
                 let s = InMemorySettingsStore()
-                s.set(person.rawValue, for: MacSettings.sourcePerson)
                 s.set(SourceKind.libreLinkUp.rawValue, for: MacSettings.sourceKind)
                 s.set(patient, for: MacSettings.libreLinkUpPatient)
                 return s
@@ -556,32 +543,29 @@
                     monitoring: outcome == .ok,
                     sensor: LluSensor(serial: "0D00ABC123", start: Int(now.timeIntervalSince1970) - 4 * 86_400))
             }
-            // the sources this Mac reads itself, LibreLinkUp picked for someone else's glucose
-            let online = SetupModel(settings: SettingsModel(store: scratch(.theirs), follow: follow, version: "0.15.0"))
+            // the sources this Mac reads itself, LibreLinkUp picked
+            let online = SetupModel(settings: SettingsModel(store: scratch(), follow: follow, version: "0.15.0"))
             online.pickedPhone = false
-            online.pickedPerson = .theirs
             online.pickedKind = .libreLinkUp
             online.flow.open(.source)
             out.append(("setup-source-online-librelinkup", AnyView(SetupView(model: online, close: {}))))
-            // Connect: the form (yours), refused, several people, no one shared, waiting, received
-            let connects: [(String, Person, String, LibreLinkUpSnapshot, LluConnectResult?)] = [
-                ("form", .yours, "", .off, nil),
-                ("refused", .yours, "", .off, .badCredentials),
-                ("toomany", .theirs, "", .off, .rateLimited),
-                ("choose", .theirs, "", snap(nil, [], people: [ana, leo]), nil),
-                ("noone", .theirs, "", snap(nil, [], people: []), .noOne),
-                ("pickedgone", .theirs, ana.id, snap(.notShared, [3000], people: [leo]), nil),
-                ("waiting", .theirs, ana.id, snap(nil, []), nil),
-                ("received", .theirs, ana.id, snap(.ok, [60]), nil),
+            // Connect: the form, refused, several people, no one shared, waiting, received
+            let connects: [(String, String, LibreLinkUpSnapshot, LluConnectResult?)] = [
+                ("form", "", .off, nil),
+                ("refused", "", .off, .badCredentials),
+                ("toomany", "", .off, .rateLimited),
+                ("choose", "", snap(nil, [], people: [ana, leo]), nil),
+                ("noone", "", snap(nil, [], people: []), .noOne),
+                ("pickedgone", ana.id, snap(.notShared, [3000], people: [leo]), nil),
+                ("waiting", ana.id, snap(nil, []), nil),
+                ("received", ana.id, snap(.ok, [60]), nil),
             ]
-            for (name, person, patient, snapshot, result) in connects {
+            for (name, patient, snapshot, result) in connects {
                 let m = SetupModel(
-                    settings: SettingsModel(
-                        store: scratch(person, patient: patient), follow: follow, version: "0.15.0"))
+                    settings: SettingsModel(store: scratch(patient: patient), follow: follow, version: "0.15.0"))
                 let llu = m.settings.libreLinkUp
                 llu.snapshot = { snapshot }
                 llu.available = { true }
-                llu.person = { person }
                 llu.now = { now }
                 llu.result = result
                 if result == .badCredentials || result == .rateLimited {
@@ -603,11 +587,10 @@
                 ("signedout", "", .off),
             ]
             for (name, patient, snapshot) in states {
-                let store = scratch(.theirs, patient: patient)
+                let store = scratch(patient: patient)
                 let m = SettingsModel(store: store, follow: follow, version: "0.15.0")
                 m.libreLinkUp.snapshot = { snapshot }
                 m.libreLinkUp.available = { true }
-                m.libreLinkUp.person = { .theirs }
                 m.libreLinkUp.now = { now }
                 m.sensorLife.now = { now }
                 m.sensorLife.sensor = {
@@ -638,10 +621,7 @@
             let now = Date()
             func scratch(_ kind: SourceKind?) -> InMemorySettingsStore {
                 let s = InMemorySettingsStore()
-                if let kind {
-                    s.set(Person.yours.rawValue, for: MacSettings.sourcePerson)
-                    s.set(kind.rawValue, for: MacSettings.sourceKind)
-                }
+                if let kind { s.set(kind.rawValue, for: MacSettings.sourceKind) }
                 return s
             }
             func readings(_ ages: [TimeInterval]) -> [Reading] {
@@ -654,7 +634,7 @@
                     outcome: outcome, host: "ns.example.org", readings: readings(ages), monitoring: outcome == .ok,
                     readOnly: readOnly)
             }
-            // the first question: nothing picked, then "No · Read it online"
+            // the first question: "No · Read it here"
             for (name, picked) in [("setup-phone-no", false as Bool?)] {
                 let m = SetupModel(settings: SettingsModel(store: scratch(nil), follow: follow, version: "0.12.0"))
                 m.pickedPhone = picked
@@ -664,7 +644,6 @@
             // the sources this Mac reads itself, Nightscout picked
             let online = SetupModel(settings: SettingsModel(store: scratch(nil), follow: follow, version: "0.12.0"))
             online.pickedPhone = false
-            online.pickedPerson = .yours
             online.pickedKind = .nightscout
             online.flow.open(.source)
             out.append(("setup-source-online", AnyView(SetupView(model: online, close: {}))))

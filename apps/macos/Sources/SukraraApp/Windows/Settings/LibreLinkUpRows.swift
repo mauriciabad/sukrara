@@ -18,15 +18,9 @@ public final class LibreLinkUpModel {
     @ObservationIgnored var snapshot: () -> LibreLinkUpSnapshot = { .off }
     /// This run may call the internet (false in dev, fixture and snapshot runs).
     @ObservationIgnored var available: () -> Bool = { false }
-    /// Whose glucose this Mac shows (the account itself is picked first for yours).
-    @ObservationIgnored var person: () -> Person = { .yours }
     /// The source's *Sign In* and *Try Again* (nil = no source in this run).
-    @ObservationIgnored var signIn: (_ email: String, _ password: String, _ yours: Bool) async -> LluConnectResult? = {
-        _, _, _ in nil
-    }
-    @ObservationIgnored var recheckSource: (_ yours: Bool, _ saved: String?) async -> LluConnectResult? = { _, _ in
-        nil
-    }
+    @ObservationIgnored var signIn: (_ email: String, _ password: String) async -> LluConnectResult? = { _, _ in nil }
+    @ObservationIgnored var recheckSource: (_ saved: String?) async -> LluConnectResult? = { _ in nil }
     @ObservationIgnored var signOutSource: () -> Void = {}
     @ObservationIgnored var retry: () -> Void = {}
     /// "Now" for the status line (tests and snapshots pin it).
@@ -89,7 +83,7 @@ public final class LibreLinkUpModel {
         let email = emailDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !email.isEmpty, !passwordDraft.isEmpty, !busy else { return }
         busy = true
-        let answer = await signIn(email, passwordDraft, person() == .yours)
+        let answer = await signIn(email, passwordDraft)
         busy = false
         handle(answer, signedIn: true)
     }
@@ -98,7 +92,7 @@ public final class LibreLinkUpModel {
     @MainActor func recheck() async {
         guard !busy else { return }
         busy = true
-        let answer = await recheckSource(person() == .yours, patient.isEmpty ? nil : patient)
+        let answer = await recheckSource(patient.isEmpty ? nil : patient)
         busy = false
         handle(answer, signedIn: false)
     }
@@ -514,11 +508,9 @@ struct LibreLinkUpConnect: View {
             switch mode {
             case .form:
                 Text(
-                    model.person() == .yours
-                        ? L10n.t(
-                            "Use the LibreLinkUp account the Libre app shares your glucose with. To share with yourself: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once."
-                        )
-                        : L10n.t("Use your LibreLinkUp account: the one their Libre app invited.")
+                    L10n.t(
+                        "Use the LibreLinkUp account the Libre app invited. For your own glucose: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once."
+                    )
                 )
                 .fixedSize(horizontal: false, vertical: true)
                 Form { LibreLinkUpForm(model: model) }.formStyle(.columns)

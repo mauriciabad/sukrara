@@ -18,7 +18,13 @@
     "its wearer's), 'start' = the start but not the length, 'maybeStart' = a start only when one is logged (a Nightscout",
     "site's Sensor Start), 'none' = nothing (later: Dexcom Share, an official app's notification). 'wear' = the schema",
     "setting holding the wear length of a source that doesn't say it (null for 'full'): one per source, remembered",
-    "across sensors. A manual start (schema sensor.manualStart) is offered for 'maybeStart' and 'none', your glucose only."
+    "across sensors. A manual start (schema sensor.manualStart) is offered for 'maybeStart' and 'none', your glucose only.",
+    "The Mac doesn't ask whose glucose (owner, 2026-11-18; schema source.person is Android's only): 'persons' and",
+    "'keying' are Android's. 'macKeying' = what each (source, Settings from) gets on the Mac, keyed by the source alone:",
+    "it owns nobody's glucose (it never uploads, shares or reminds), a stream runs Settings from, and every other source",
+    "runs this Mac's own settings (Settings from exists only while linked, contracts/sources/link.json). Its readings and",
+    "treatment logs stay apart per person by the source's identity (the wearer's key, LibreLinkUp's patient, the",
+    "Nightscout site, Juggluco on the network), and a manual start is taken whoever wears the sensor."
   ],
   "persons": ["yours", "theirs"],
   "sources": [
@@ -32,9 +38,7 @@
   "keying": [
     {"person": "yours", "source": "sensor", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
     {"person": "yours", "source": "phoneApp", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
-    {"person": "yours", "source": "lanJuggluco", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
     {"person": "theirs", "source": "phoneApp", "settingsFrom": "wearer", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
-    {"person": "theirs", "source": "lanJuggluco", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
     {"person": "yours", "source": "nightscout", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
     {"person": "theirs", "source": "nightscout", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
     {"person": "yours", "source": "libreLinkUp", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
@@ -43,6 +47,13 @@
     {"person": "theirs", "source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"},
     {"person": "yours", "source": "sukrara", "settingsFrom": "wearer", "owner": false, "stream": true, "alertRole": "FOLLOWER_MIRROR"},
     {"person": "yours", "source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"}
+  ],
+  "macKeying": [
+    {"source": "lanJuggluco", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
+    {"source": "nightscout", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
+    {"source": "libreLinkUp", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
+    {"source": "sukrara", "settingsFrom": "wearer", "owner": false, "stream": true, "alertRole": "FOLLOWER_MIRROR"},
+    {"source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"}
   ],
   "invalid": [
     {"person": "theirs", "source": "sensor", "why": "a sensor Sukrara reads is on this device's own person"}

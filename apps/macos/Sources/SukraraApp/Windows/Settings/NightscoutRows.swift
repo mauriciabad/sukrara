@@ -398,7 +398,7 @@ struct NightscoutConnect: View {
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(L10n.t("Reading received"))
-                            Text(L10n.t("Your glucose is in the menu bar now.")).font(.caption)
+                            Text(L10n.t("The glucose is in the menu bar now.")).font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     } icon: {

@@ -234,9 +234,9 @@ public enum LibreLinkUp {
         }
     }
 
-    /// Whose glucose to read among `choices` (connections.json): `saved` while still shared (else gone); for your own
-    /// glucose (`yours`) the account itself, else the only one; for someone else's the only one besides the account.
-    public static func pick(_ choices: [LluPerson], accountId: String, yours: Bool, saved: String?) -> LluPick {
+    /// Whose glucose to read among `choices` (connections.json `mac`: the Mac doesn't ask whose glucose): `saved`
+    /// while still shared (else gone), else the only connection (the account's own included), else choose.
+    public static func pick(_ choices: [LluPerson], saved: String?) -> LluPick {
         let ids = choices.map(\.id)
         if ids.isEmpty { return LluPick(choices: choices, state: .none, pick: nil) }
         if let saved, !saved.isEmpty {
@@ -244,16 +244,8 @@ public enum LibreLinkUp {
                 ? LluPick(choices: choices, state: .picked, pick: saved)
                 : LluPick(choices: choices, state: .gone, pick: nil)
         }
-        let candidates: [String]
-        if yours {
-            if ids.contains(accountId) { return LluPick(choices: choices, state: .picked, pick: accountId) }
-            candidates = ids
-        } else {
-            let others = ids.filter { $0 != accountId }
-            candidates = others.isEmpty ? ids : others
-        }
-        return candidates.count == 1
-            ? LluPick(choices: choices, state: .picked, pick: candidates[0])
+        return ids.count == 1
+            ? LluPick(choices: choices, state: .picked, pick: ids[0])
             : LluPick(choices: choices, state: .choose, pick: nil)
     }
 

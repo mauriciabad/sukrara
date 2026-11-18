@@ -4,14 +4,15 @@
 import Foundation
 import SukraraCore
 
-/// The Mac's first-run walk as a pure state machine: Welcome → Do you have Sukrara on your phone? → Whose glucose →
-/// Source (only when the Mac reads it online) → Follow (or Connect Juggluco / Nightscout) → Alerts (thresholds
-/// confirmed explicitly) → Notifications → Open at login → Done. A Mac that finished setup before Whose glucose and
-/// Source existed has them unfinished: the panel's *Finish Setup…* asks them. Every step can be done or skipped; a skipped step keeps "Finish setup"
-/// visible in the panel until it's done. The step states persist under the schema key `setup.steps`.
+/// The Mac's first-run walk as a pure state machine: Welcome → Do you have Sukrara on your phone? → Source (only when
+/// the Mac reads it itself) → Follow (or Connect Juggluco / Nightscout / LibreLinkUp) → Alerts (thresholds confirmed
+/// explicitly) → Notifications → Open at login → Done. The Mac doesn't ask whose glucose (the owner, 2026-11-18). A Mac
+/// that finished setup before the source question existed has it unfinished: the panel's *Finish Setup…* asks it.
+/// Every step but the source's two can be skipped; a skipped step keeps "Finish setup" visible in the panel until it's
+/// done. The step states persist under the schema key `setup.steps`.
 public struct SetupFlow: Equatable, Sendable {
     public enum Step: String, CaseIterable, Codable, Sendable {
-        case welcome, phone, person, source, follow, alerts, notifications, openAtLogin
+        case welcome, phone, source, follow, alerts, notifications, openAtLogin
     }
 
     public enum StepState: String, Codable, Sendable {

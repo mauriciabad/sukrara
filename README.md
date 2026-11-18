@@ -81,8 +81,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Setup asks only what alerts and monitoring need: whose glucose (yours or someone else's, two illustrated choices) and
   where it comes from (your sensor, Juggluco, a Nightscout site, LibreLinkUp, or another Sukrara), then permissions, the sensor and alert levels;
   followers, insulin pens, updates and your old history come after, right away or later from Settings › Finish setup.
-- Change whose glucose and its source any time in Settings › Source, on the phone and the Mac: the same app wears or
-  follows, no reinstall.
+- Change whose glucose and its source any time in Settings › Source: the same app wears or follows, no reinstall. The
+  Mac asks only where the glucose comes from: names come from the source.
 - A feature you use that Android or macOS blocks (a missing permission, a login item waiting for you) never fails
   silently: home or the menu bar panel says so, with Allow and Turn off.
 

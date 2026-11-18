@@ -209,20 +209,15 @@ func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
         #expect(fake.calls == ["register", "register"])  // found on: not registered again
     }
 
-    /// Whose glucose isn't stored before the source: a Mac relaunched on the source step asks it again (the step shows
-    /// the cards) instead of guessing someone else's, and stores nothing until it is answered.
-    @Test func aRelaunchOnTheSourceStepAsksWhoseGlucoseAgain() {
+    /// The Mac doesn't ask whose glucose: the source step stores the source alone, and neither of the source's two
+    /// steps can be skipped (finding 19: Skip jumped to a list without another Sukrara).
+    @Test func theSourceStepStoresTheSourceAlone() {
         let model = SetupModel(settings: scratchSettings())
         model.flow.open(.source)
-        #expect(model.sourcePerson == nil)
-        model.chooseSource()
-        #expect(model.settings.source.stored == nil && model.flow.states[.source] == nil)
-        model.pickedPerson = .yours
-        model.choosePerson()
-        #expect(model.flow.current == .source && model.sourcePerson == .yours)
         model.pickedKind = .lanJuggluco
         model.chooseSource()
-        #expect(model.settings.source.stored == SourceSpec(person: .yours, kind: .lanJuggluco))
+        #expect(model.settings.source.stored == SourceSpec(kind: .lanJuggluco))
+        #expect(!SetupFlow.Step.allCases.map(\.rawValue).contains("person"))
     }
 
     @Test func withoutALoginItemTheSetupStepDoesNothing() {
@@ -351,18 +346,16 @@ private extension DateComponents {
         #expect(f.current == nil && f.isComplete && !f.needsFinishing)
     }
 
-    /// docs/44: a Mac that finished setup before the phone question, Whose glucose and Source existed has them left:
+    /// docs/44: a Mac that finished setup before the phone question and Source existed has them left:
     /// Finish Setup… asks them, first.
     @Test func aMacFromBeforeTheQuestionIsAskedItOnce() {
         var f = SetupFlow(states: [
             .welcome: .done, .follow: .done, .alerts: .done, .notifications: .done, .openAtLogin: .done,
         ])
-        #expect(f.needsFinishing && f.unfinished == [.phone, .person, .source])
+        #expect(f.needsFinishing && f.unfinished == [.phone, .source])
         f.reopen()
         #expect(f.current == .phone)
         f.complete(.phone)
-        #expect(f.current == .person)
-        f.complete(.person)
         #expect(f.current == .source)
         f.complete(.source)
         #expect(f.isComplete)
@@ -372,7 +365,6 @@ private extension DateComponents {
         var f = SetupFlow()
         f.complete(.welcome)
         f.complete(.phone)
-        f.complete(.person)
         f.complete(.source)
         f.skip(.follow)
         #expect(f.current == .alerts)
@@ -395,7 +387,6 @@ private extension DateComponents {
         var f = SetupFlow()
         f.complete(.welcome)
         f.complete(.phone)
-        f.complete(.person)
         f.complete(.source)
         f.skip(.follow)
         f.reopen()
@@ -464,7 +455,6 @@ private extension DateComponents {
         #expect(f.isFirstRun)
         f.complete(.welcome)
         f.complete(.phone)
-        f.complete(.person)
         f.complete(.source)
         f.skip(.follow)
         f.save(to: store)

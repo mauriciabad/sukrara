@@ -550,17 +550,17 @@ public final class AppModel {
     }
 
     /// Connect's *Sign In* (after every earlier step on the source); nil when this run has no LibreLinkUp source.
-    func connectLibreLinkUp(email: String, password: String, yours: Bool) async -> LluConnectResult? {
+    func connectLibreLinkUp(email: String, password: String) async -> LluConnectResult? {
         guard let libreLinkUp else { return nil }
         await libreLinkUpTask?.value
-        return await libreLinkUp.connect(email: email, password: password, yours: yours)
+        return await libreLinkUp.connect(email: email, password: password)
     }
 
     /// Connect's *Try Again* (no one shared, new terms): whom the saved account follows, read again.
-    func recheckLibreLinkUp(yours: Bool, saved: String?) async -> LluConnectResult? {
+    func recheckLibreLinkUp(saved: String?) async -> LluConnectResult? {
         guard let libreLinkUp else { return nil }
         await libreLinkUpTask?.value
-        return await libreLinkUp.recheck(yours: yours, saved: saved)
+        return await libreLinkUp.recheck(saved: saved)
     }
 
     /// Settings › Source's *Sign Out* (confirmed): the account goes, the readings and the log stay.

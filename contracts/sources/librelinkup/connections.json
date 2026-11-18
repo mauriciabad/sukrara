@@ -5,7 +5,9 @@
   "health 'notShared', the person picks again); for your own glucose the account itself (you invited your own email",
   "from the Libre app), else the only one; for someone else's the only one besides the account; several = 'choose'",
   "(the Connect step lists them); none = 'none' (health 'notShared': invite this email from the Libre app).",
-  "'account' is the signed-in account's id."
+  "'account' is the signed-in account's id. 'mac': the Mac's pick, which doesn't ask whose glucose (owner,",
+  "2026-11-18): every connection, the account's own included: the saved one while still shared, else the only one,",
+  "else choose."
  ],
  "account": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
  "cases": [
@@ -60,6 +62,10 @@
     ],
     "state": "picked",
     "pick": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0"
+   },
+   "mac": {
+    "state": "choose",
+    "pick": null
    }
   },
   {
@@ -91,6 +97,10 @@
       "name": "Ana Example"
      }
     ],
+    "state": "picked",
+    "pick": "11111111-2222-4333-8444-555555555555"
+   },
+   "mac": {
     "state": "picked",
     "pick": "11111111-2222-4333-8444-555555555555"
    }
@@ -146,6 +156,10 @@
     ],
     "state": "choose",
     "pick": null
+   },
+   "mac": {
+    "state": "choose",
+    "pick": null
    }
   },
   {
@@ -177,6 +191,10 @@
       "name": "Ana Example"
      }
     ],
+    "state": "picked",
+    "pick": "11111111-2222-4333-8444-555555555555"
+   },
+   "mac": {
     "state": "picked",
     "pick": "11111111-2222-4333-8444-555555555555"
    }
@@ -232,6 +250,10 @@
     ],
     "state": "choose",
     "pick": null
+   },
+   "mac": {
+    "state": "choose",
+    "pick": null
    }
   },
   {
@@ -285,6 +307,10 @@
     ],
     "state": "picked",
     "pick": "66666666-7777-4888-9999-aaaaaaaaaaaa"
+   },
+   "mac": {
+    "state": "choose",
+    "pick": null
    }
   },
   {
@@ -338,6 +364,10 @@
     ],
     "state": "picked",
     "pick": "66666666-7777-4888-9999-aaaaaaaaaaaa"
+   },
+   "mac": {
+    "state": "picked",
+    "pick": "66666666-7777-4888-9999-aaaaaaaaaaaa"
    }
   },
   {
@@ -371,6 +401,10 @@
     ],
     "state": "gone",
     "pick": null
+   },
+   "mac": {
+    "state": "gone",
+    "pick": null
    }
   },
   {
@@ -380,6 +414,10 @@
    "data": [],
    "expect": {
     "choices": [],
+    "state": "none",
+    "pick": null
+   },
+   "mac": {
     "state": "none",
     "pick": null
    }

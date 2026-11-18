@@ -1763,18 +1763,18 @@
         }
       }
     },
-    "Follow the phone that reads your sensor: alerts, treatments and settings come with it" : {
+    "Follow the phone that reads the sensor, yours or your child's: alerts, treatments and settings come with it" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Follow the phone that reads your sensor: alerts, treatments and settings come with it"
+            "value" : "Follow the phone that reads the sensor, yours or your child's: alerts, treatments and settings come with it"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sigue el móvil que lee tu sensor: las alertas, los tratamientos y los ajustes vienen con él"
+            "value" : "Sigue el móvil que lee el sensor, el tuyo o el de tu hijo: las alertas, los tratamientos y los ajustes vienen con él"
           }
         }
       }
@@ -2083,34 +2083,18 @@
         }
       }
     },
-    "Glucose and treatments from their site · about 2 min late" : {
+    "Glucose and treatments from a site · about 2 min late" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Glucose and treatments from their site · about 2 min late"
+            "value" : "Glucose and treatments from a site · about 2 min late"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Glucosa y tratamientos de su sitio · unos 2 min de retraso"
-          }
-        }
-      }
-    },
-    "Glucose and treatments from your site · about 2 min late" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glucose and treatments from your site · about 2 min late"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Glucosa y tratamientos de tu sitio · unos 2 min de retraso"
+            "value" : "Glucosa y tratamientos de un sitio · unos 2 min de retraso"
           }
         }
       }
@@ -2479,6 +2463,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Más tarde"
+          }
+        }
+      }
+    },
+    "LibreLinkUp, Nightscout or Juggluco read on this Mac, treatments logged here: no Sukrara on the phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp, Nightscout or Juggluco read on this Mac, treatments logged here: no Sukrara on the phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp, Nightscout o Juggluco leídos en este Mac, los tratamientos anotados aquí: sin Sukrara en el móvil"
           }
         }
       }
@@ -2852,18 +2852,18 @@
         }
       }
     },
-    "No · Read it online" : {
+    "No · Read it here" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No · Read it online"
+            "value" : "No · Read it here"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No · Leerla en línea"
+            "value" : "No · Leerla aquí"
           }
         }
       }
@@ -3156,6 +3156,22 @@
         }
       }
     },
+    "Recommended" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recommended"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recomendado"
+          }
+        }
+      }
+    },
     "Same as the menu bar (%@)" : {
       "comment" : "The widgets' pop-up, first item: follow the menu bar's value (12 h, On)",
       "localizations" : {
@@ -3317,6 +3333,22 @@
         }
       }
     },
+    "Sukrara asks once more where the glucose comes from. It keeps reading as now until you answer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara asks once more where the glucose comes from. It keeps reading as now until you answer."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara vuelve a preguntar de dónde viene la glucosa. Sigue leyendo como ahora hasta que respondas."
+          }
+        }
+      }
+    },
     "Sukrara catches up when you're back." : {
       "localizations" : {
         "en" : {
@@ -3333,6 +3365,70 @@
         }
       }
     },
+    "Sukrara on a phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara on a phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara en un móvil"
+          }
+        }
+      }
+    },
+    "Sukrara shows glucose in the menu bar and alerts you when it's out of range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara shows glucose in the menu bar and alerts you when it's out of range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara muestra la glucosa en la barra de menús y te avisa cuando está fuera de rango."
+          }
+        }
+      }
+    },
+    "The glucose shows in the menu bar now." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The glucose shows in the menu bar now."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La glucosa ya se ve en la barra de menús."
+          }
+        }
+      }
+    },
+    "The Libre app shares with a LibreLinkUp account · about 1 min late · may stop working any day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Libre app shares with a LibreLinkUp account · about 1 min late · may stop working any day"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La app Libre comparte con una cuenta de LibreLinkUp · aprox. 1 min de retraso · puede dejar de funcionar cualquier día"
+          }
+        }
+      }
+    },
     "The person this Mac follows, and Juggluco on this network" : {
       "localizations" : {
         "en" : {
@@ -3345,6 +3441,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La persona a la que sigue este Mac, y Juggluco en esta red"
+          }
+        }
+      }
+    },
+    "The phone that reads the sensor shares it here, with alerts, treatments and settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The phone that reads the sensor shares it here, with alerts, treatments and settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El móvil que lee el sensor la comparte aquí, con las alertas, los tratamientos y los ajustes"
           }
         }
       }
@@ -3553,6 +3665,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Usa https://: el token viajaría sin protección"
+          }
+        }
+      }
+    },
+    "Use the LibreLinkUp account the Libre app invited. For your own glucose: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the LibreLinkUp account the Libre app invited. For your own glucose: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa la cuenta de LibreLinkUp que invitó la app Libre. Para tu propia glucosa: en la app Libre, Menú › Aplicaciones conectadas › LibreLinkUp, invita a tu propio correo y acepta la invitación en LibreLinkUp una vez."
           }
         }
       }
@@ -4113,22 +4241,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La versión, la política de privacidad, la web y Sukrara en otros dispositivos"
-          }
-        }
-      }
-    },
-    "Their glucose shows in the menu bar now." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their glucose shows in the menu bar now."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Su glucosa ya se ve en la barra de menús."
           }
         }
       }
@@ -7381,6 +7493,38 @@
         }
       }
     },
+    "Where does the glucose come from?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where does the glucose come from?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿De dónde viene la glucosa?"
+          }
+        }
+      }
+    },
+    "Where the glucose comes from: another Sukrara, Juggluco on this network, Nightscout or LibreLinkUp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where the glucose comes from: another Sukrara, Juggluco on this network, Nightscout or LibreLinkUp"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De dónde viene la glucosa: otro Sukrara, Juggluco en esta red, Nightscout o LibreLinkUp"
+          }
+        }
+      }
+    },
     "Widgets" : {
       "localizations" : {
         "en" : {
@@ -9361,22 +9505,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "También puedes pegar el enlace o importar una imagen del código."
-          }
-        }
-      }
-    },
-    "Your glucose is in the menu bar now." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your glucose is in the menu bar now."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu glucosa ya está en la barra de menús."
           }
         }
       }
@@ -11477,134 +11605,6 @@
         }
       }
     },
-    "Yours" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yours"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La tuya"
-          }
-        }
-      }
-    },
-    "Someone else's" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Someone else's"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La de otra persona"
-          }
-        }
-      }
-    },
-    "You wear the sensor." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You wear the sensor."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Llevas tú el sensor."
-          }
-        }
-      }
-    },
-    "A child, a partner or a friend." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "A child, a partner or a friend."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Un hijo o una hija, tu pareja, un amigo."
-          }
-        }
-      }
-    },
-    "Sukrara on your phone" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara on your phone"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara en tu móvil"
-          }
-        }
-      }
-    },
-    "Their Sukrara" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their Sukrara"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Su Sukrara"
-          }
-        }
-      }
-    },
-    "Your phone reads your sensor and shares it with this Mac" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Your phone reads your sensor and shares it with this Mac"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tu móvil lee tu sensor y la comparte con este Mac"
-          }
-        }
-      }
-    },
-    "Their phone shares it with this Mac after an invite" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their phone shares it with this Mac after an invite"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Su móvil la comparte con este Mac tras una invitación"
-          }
-        }
-      }
-    },
     "Juggluco on a phone on this Wi-Fi reads the sensor; Sukrara reads Juggluco" : {
       "localizations" : {
         "en" : {
@@ -11617,38 +11617,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Juggluco, en un móvil de esta wifi, lee el sensor y Sukrara lee Juggluco"
-          }
-        }
-      }
-    },
-    "Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara vuelve a preguntar de quién es esta glucosa y de dónde viene. Sigue leyendo como ahora hasta que respondas."
-          }
-        }
-      }
-    },
-    "Whose glucose" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Whose glucose"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De quién es la glucosa"
           }
         }
       }
@@ -11717,38 +11685,6 @@
         }
       }
     },
-    "Whose glucose and where it comes from: the person this Mac follows, or Juggluco on this network" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Whose glucose and where it comes from: the person this Mac follows, or Juggluco on this network"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De quién es la glucosa y de dónde viene: la persona que sigue este Mac, o Juggluco en esta red"
-          }
-        }
-      }
-    },
-    "Whose glucose will Sukrara show?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Whose glucose will Sukrara show?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿De quién es la glucosa que mostrará Sukrara?"
-          }
-        }
-      }
-    },
     "You can change it any time in Settings › Source." : {
       "localizations" : {
         "en" : {
@@ -11765,38 +11701,6 @@
         }
       }
     },
-    "Where does your glucose come from?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Where does your glucose come from?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿De dónde viene tu glucosa?"
-          }
-        }
-      }
-    },
-    "Where does their glucose come from?" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Where does their glucose come from?"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¿De dónde viene su glucosa?"
-          }
-        }
-      }
-    },
     "Connect Juggluco" : {
       "localizations" : {
         "en" : {
@@ -11809,22 +11713,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Conecta Juggluco"
-          }
-        }
-      }
-    },
-    "Sukrara shows glucose in the menu bar, yours or someone else's, and alerts you when it's out of range." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara shows glucose in the menu bar, yours or someone else's, and alerts you when it's out of range."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sukrara muestra la glucosa en la barra de menús, la tuya o la de otra persona, y te avisa cuando está fuera de rango."
           }
         }
       }
@@ -12113,22 +12001,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "LibreLinkUp te necesita: abre la app LibreLinkUp, inicia sesión y acepta las nuevas condiciones."
-          }
-        }
-      }
-    },
-    "LibreLinkUp or Nightscout on this Mac, and your treatments here: no phone app needed" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LibreLinkUp or Nightscout on this Mac, and your treatments here: no phone app needed"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LibreLinkUp o Nightscout en este Mac, y tus tratamientos aquí: sin app en el móvil"
           }
         }
       }
@@ -12661,22 +12533,6 @@
         }
       }
     },
-    "The Libre app shares your glucose here · about 1 min late · may stop working any day" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The Libre app shares your glucose here · about 1 min late · may stop working any day"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La app Libre comparte aquí tu glucosa · aprox. 1 min de retraso · puede dejar de funcionar cualquier día"
-          }
-        }
-      }
-    },
     "The glucose is in the menu bar now." : {
       "localizations" : {
         "en" : {
@@ -12705,22 +12561,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Se borran las lecturas de %@ en este Mac y los tratamientos registrados aquí: la glucosa de dos personas nunca se mezcla."
-          }
-        }
-      }
-    },
-    "Their Libre app shares with your LibreLinkUp account · about 1 min late · may stop working any day" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their Libre app shares with your LibreLinkUp account · about 1 min late · may stop working any day"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Su app Libre la comparte con tu cuenta de LibreLinkUp · aprox. 1 min de retraso · puede dejar de funcionar cualquier día"
           }
         }
       }
@@ -12769,38 +12609,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Intentando…"
-          }
-        }
-      }
-    },
-    "Use the LibreLinkUp account the Libre app shares your glucose with. To share with yourself: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use the LibreLinkUp account the Libre app shares your glucose with. To share with yourself: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa la cuenta de LibreLinkUp con la que la app Libre comparte tu glucosa. Para compartirla contigo: en la app Libre, Menú › Aplicaciones conectadas › LibreLinkUp, invita a tu propio correo y acepta la invitación en LibreLinkUp una vez."
-          }
-        }
-      }
-    },
-    "Use your LibreLinkUp account: the one their Libre app invited." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Use your LibreLinkUp account: the one their Libre app invited."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Usa tu cuenta de LibreLinkUp: la que invitó su app Libre."
           }
         }
       }

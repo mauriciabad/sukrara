@@ -127,7 +127,7 @@ extension SettingsModel.Pane {
         switch self {
         case .general: L10n.t("Settings from, reading aloud, open at login and updates")
         case .source:
-            L10n.t("Whose glucose and where it comes from: the person this Mac follows, or Juggluco on this network")
+            L10n.t("Where the glucose comes from: another Sukrara, Juggluco on this network, Nightscout or LibreLinkUp")
         case .alerts: L10n.t("When to alert, night alerts, quiet times, sounds and fine-tuning")
         case .readings: L10n.t("The unit, the ranges and the trend arrow")
         case .graph: L10n.t("Time shown, lines, treatments and the sensor on the graph")

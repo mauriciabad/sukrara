@@ -205,7 +205,7 @@ public enum SettingsSpec {
         SettingInfo(id: "setup.steps", type: "setup", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:setupSteps", path: nil, only: "mac", reason: "The Mac's first-run walk (welcome, follow, alerts, notifications, open at login); Android's first run is its own role / permission flow with its own state", mirrorExcept: []),
         SettingInfo(id: "general.openAtLogin", type: "bool", number: nil, mirror: false, wire: nil, android: "", mac: "system:SMAppService.mainApp", path: nil, only: "mac", reason: "A menu bar app starts as a login item; Android starts Sukrara's service on boot by itself", mirrorExcept: []),
         SettingInfo(id: "general.readAloudShortcut", type: "bool", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:readAloudShortcut", path: nil, only: "mac", reason: "A system-wide keyboard shortcut is the Mac's way to ask from any app, and it may clash with another app's; Android asks through the Read glucose aloud app shortcut (launcher, TalkBack's actions on the app icon), which needs no setting", mirrorExcept: []),
-        SettingInfo(id: "source.person", type: "enum", number: nil, mirror: false, wire: nil, android: "state:person", mac: "defaults:sourcePerson", path: nil, only: nil, reason: nil, mirrorExcept: []),
+        SettingInfo(id: "source.person", type: "enum", number: nil, mirror: false, wire: nil, android: "state:person", mac: "", path: nil, only: "android", reason: "The Mac doesn't ask whose glucose (owner, 2026-11-18: \"it is pointless to ask that in mac\"): it never uploads, shares or rings sensor reminders, so the answer only changed words. Its card says glucose, names come from the source, and readings and treatment logs stay apart per person by the source's identity (docs/44 'Decisions for the owner')", mirrorExcept: []),
         SettingInfo(id: "source.kind", type: "enum", number: nil, mirror: false, wire: nil, android: "state:kind", mac: "defaults:sourceKind", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "source.jugglucoAddress", type: "string", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:jugglucoAddress", path: nil, only: "mac", reason: "The Mac reads Juggluco's web server on the home network (source.kind lanJuggluco); Android reads Juggluco on the phone itself (source.kind phoneApp), at a fixed loopback address", mirrorExcept: []),
         SettingInfo(id: "source.jugglucoSecret", type: "secret", number: nil, mirror: false, wire: nil, android: "secure:juggluco", mac: "keychain:jugglucoSecret", path: nil, only: nil, reason: nil, mirrorExcept: []),
@@ -295,7 +295,6 @@ public enum SettingsSpec {
         public static let unit = "unit"
         public static let setupSteps = "setupSteps"
         public static let readAloudShortcut = "readAloudShortcut"
-        public static let sourcePerson = "sourcePerson"
         public static let sourceKind = "sourceKind"
         public static let jugglucoAddress = "jugglucoAddress"
         public static let nightscoutURL = "nightscoutURL"

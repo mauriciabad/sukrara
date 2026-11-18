@@ -78,7 +78,7 @@ import Testing
         await until { model.noDataReason == .libreLinkUp(.notSignedIn) }
         #expect(model.noDataReason?.action == .libreLinkUp)
         #expect(model.notMonitoringReason == "Not signed in to LibreLinkUp")
-        let result = await model.connectLibreLinkUp(email: "alex@example.com", password: "pw", yours: false)
+        let result = await model.connectLibreLinkUp(email: "alex@example.com", password: "pw")
         #expect(result == .connected(people: [LluPerson(id: Self.ana, name: "Ana Example")], picked: Self.ana))
         model.libreLinkUpConfig = LibreLinkUpConfig(patient: Self.ana)
         #expect(AddTreatmentAvailability(model) == .available)
@@ -113,7 +113,7 @@ import Testing
         defer { try? FileManager.default.removeItem(at: dir) }
         model.run()
         model.sourceKind = .libreLinkUp
-        #expect(await source.connect(email: "alex@example.com", password: "wrong", yours: true) == .badCredentials)
+        #expect(await source.connect(email: "alex@example.com", password: "wrong") == .badCredentials)
         model.libreLinkUpConfig = LibreLinkUpConfig(patient: Self.ana)
         // no account saved: nothing to read
         await until { model.libreLinkUpSnapshot.outcome != nil }
@@ -196,11 +196,7 @@ import Testing
         var haptics: [Bool] = []
         m.haptic = { haptics.append($0) }
         #expect(m.mode == .form)
-        m.signIn = { _, _, yours in
-            #expect(!yours)
-            return .connected(people: [ana, leo], picked: nil)
-        }
-        m.person = { .theirs }
+        m.signIn = { _, _ in .connected(people: [ana, leo], picked: nil) }
         m.emailDraft = "alex@example.com"
         m.passwordDraft = "pw"
         await m.connect()
@@ -218,13 +214,13 @@ import Testing
         m.write(ana.id)
         #expect(store.value(MacSettings.libreLinkUpPatient) == Self.ana && m.confirming == nil)
         // a refused password: the reason under the field, a reject tap, nothing saved
-        m.signIn = { _, _, _ in .badCredentials }
+        m.signIn = { _, _ in .badCredentials }
         m.passwordDraft = "wrong"
         await m.connect()
         #expect(m.result == .badCredentials && haptics.last == false)
         #expect(LibreLinkUpModel.problem(m.result) == "LibreLinkUp refused this email or password")
         // no one shared: the pick goes, Try Again asks without the password
-        m.signIn = { _, _, _ in .noOne }
+        m.signIn = { _, _ in .noOne }
         m.passwordDraft = "pw"
         await m.connect()
         snap = LibreLinkUpSnapshot(email: "alex@example.com")
@@ -259,7 +255,7 @@ import Testing
         #expect(NoDataReason.libreLinkUp(.pickedGone).action == .libreLinkUp)
         #expect(m.mode == .problem)
         // Pick Again, one person left: reading them is asked first (Ana's readings are on this Mac)
-        m.recheckSource = { _, saved in
+        m.recheckSource = { saved in
             #expect(saved == Self.ana)
             return .connected(people: [leo], picked: leo.id)
         }
@@ -268,7 +264,7 @@ import Testing
         m.confirming = nil
         // several left: the pick goes, the choice shows
         snap.people = [leo, max]
-        m.recheckSource = { _, _ in .connected(people: [leo, max], picked: nil) }
+        m.recheckSource = { _ in .connected(people: [leo, max], picked: nil) }
         await m.recheck()
         snap.patient = ""
         snap.outcome = nil
@@ -286,10 +282,9 @@ import Testing
         let no = SetupModel(settings: settings)
         #expect(no.onlineKinds.contains(.libreLinkUp))
         #expect(SourceKind.libreLinkUp.group == .online)
-        let spec = SourceSpec(person: .theirs, kind: .libreLinkUp)!
-        #expect(SourceChoiceModel.title(spec) == "LibreLinkUp")
+        #expect(SourceChoiceModel.title(.libreLinkUp) == "LibreLinkUp")
         #expect(
-            SourceChoiceModel.means(spec)
-                == "Their Libre app shares with your LibreLinkUp account · about 1 min late · may stop working any day")
+            SourceChoiceModel.means(.libreLinkUp)
+                == "The Libre app shares with a LibreLinkUp account · about 1 min late · may stop working any day")
     }
 }

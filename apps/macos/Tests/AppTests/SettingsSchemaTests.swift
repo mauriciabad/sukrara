@@ -49,7 +49,7 @@ import Testing
             t("graph.sensorTime.place", MacSettings.widgetSensorTime),
             t("follower.settingsFrom", MacSettings.settingsFrom), t("general.unit", MacSettings.unit),
             t("glucose.trend", MacSettings.trend),
-            t("setup.steps", MacSettings.setupSteps), t("source.person", MacSettings.sourcePerson),
+            t("setup.steps", MacSettings.setupSteps),
             t("source.kind", MacSettings.sourceKind),
             t("source.jugglucoAddress", MacSettings.jugglucoAddress), t("settings.pane", MacSettings.settingsPane),
             t("source.nightscoutUrl", MacSettings.nightscoutURL),

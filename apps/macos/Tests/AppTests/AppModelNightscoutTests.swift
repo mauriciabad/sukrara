@@ -257,13 +257,12 @@ import Testing
         let yes = SetupModel(settings: settings)
         yes.complete(.welcome)
         #expect(yes.flow.current == .phone)
-        yes.pickedPhone = true
+        // nothing answered: Yes is preselected (the recommended answer)
+        #expect(yes.phone)
         yes.choosePhone()
-        yes.pickedPerson = .theirs
-        yes.choosePerson()
-        #expect(yes.flow.current == .follow && settings.source.stored == .theirSukrara)
+        #expect(yes.flow.current == .follow && settings.source.stored == .sukrara)
         yes.back()
-        #expect(yes.flow.current == .person)
+        #expect(yes.flow.current == .phone)
 
         let settings2 = SettingsModel(
             store: scratchStore(), follow: FollowModel(status: .notFollowing, actions: nil), version: "t")
@@ -271,22 +270,20 @@ import Testing
         no.complete(.welcome)
         no.pickedPhone = false
         no.choosePhone()
-        no.pickedPerson = .yours
-        no.choosePerson()
         #expect(no.flow.current == .source && no.pickedKind == .nightscout)
         #expect(!no.onlineKinds.contains(.sukrara))
         no.chooseSource()
         #expect(no.flow.current == .follow && no.runningKind == .nightscout)
         no.back()
         #expect(no.flow.current == .source)
-        #expect(settings2.source.stored == SourceSpec(person: .yours, kind: .nightscout))
+        #expect(settings2.source.stored == SourceSpec(kind: .nightscout))
     }
 
     @Test func aMacSetUpBeforeTheQuestionIsNotAskedIt() {
         let store = scratchStore()
-        SourceSpec(person: .theirs, kind: .sukrara)?.store(in: store)
+        SourceSpec.sukrara.store(in: store)
         SetupFlow(states: [
-            .welcome: .done, .person: .done, .source: .done, .follow: .done, .alerts: .done, .notifications: .done,
+            .welcome: .done, .source: .done, .follow: .done, .alerts: .done, .notifications: .done,
             .openAtLogin: .done,
         ]).save(to: store)
         let m = SetupModel(

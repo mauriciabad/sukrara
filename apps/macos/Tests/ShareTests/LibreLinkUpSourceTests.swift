@@ -173,16 +173,12 @@ import Testing
 
     @Test func signsInInItsRegionAndReadsTheLiveReadingAndTheGraphsGaps() async throws {
         let s = server()
-        s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.account, "Alex")] }
+        s.people.withLock { $0 = [(Self.account, "Alex")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        // yours: the account that follows itself is picked
-        let result = await r.source.connect(email: " \(Self.email) ", password: Self.password, yours: true)
-        #expect(
-            result
-                == .connected(
-                    people: [.init(id: Self.ana, name: "Ana"), .init(id: Self.account, name: "Alex")],
-                    picked: Self.account))
+        // the only connection is picked, the account's own included (the Mac doesn't ask whose glucose)
+        let result = await r.source.connect(email: " \(Self.email) ", password: Self.password)
+        #expect(result == .connected(people: [.init(id: Self.account, name: "Alex")], picked: Self.account))
         await r.source.set(LibreLinkUpConfig(patient: Self.account))
         let snap = try #require(await wait(r.source) { $0.monitoring })
         // the live reading with its arrow; the graph's points at 5, 10 and 15 min (none within 2 min of the live one)
@@ -210,7 +206,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = try #require(await wait(r.source) { $0.monitoring })
         // the live reading is 50 s old: the next is due in 10 s, too soon (45 s at least), so 8 s after the one after
@@ -224,7 +220,7 @@ import Testing
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
         #expect(
-            await r.source.connect(email: Self.email, password: Self.password, yours: false)
+            await r.source.connect(email: Self.email, password: Self.password)
                 == .connected(people: [.init(id: Self.ana, name: "Ana")], picked: Self.ana))
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = await wait(r.source) { $0.monitoring }
@@ -252,9 +248,9 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        #expect(await r.source.connect(email: Self.email, password: "wrong", yours: false) == .badCredentials)
+        #expect(await r.source.connect(email: Self.email, password: "wrong") == .badCredentials)
         #expect(r.secrets.read(account: MacSettings.libreLinkUpSecretAccount) == nil)  // nothing saved
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = await wait(r.source) { $0.monitoring }
         // the password changed in LibreLinkUp: the token ends, the saved password is refused once and forgotten
@@ -274,29 +270,29 @@ import Testing
         let s = server()
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        #expect(await r.source.connect(email: Self.email, password: Self.password, yours: false) == .noOne)
+        #expect(await r.source.connect(email: Self.email, password: Self.password) == .noOne)
         s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.leo, "Leo")] }
         #expect(
-            await r.source.recheck(yours: false, saved: nil)
+            await r.source.recheck(saved: nil)
                 == .connected(
                     people: [.init(id: Self.ana, name: "Ana"), .init(id: Self.leo, name: "Leo")], picked: nil))
         // a pick that's still shared is kept
         #expect(
-            await r.source.recheck(yours: false, saved: Self.leo)
+            await r.source.recheck(saved: Self.leo)
                 == .connected(
                     people: [.init(id: Self.ana, name: "Ana"), .init(id: Self.leo, name: "Leo")], picked: Self.leo))
         s.login.withLock { $0 = (200, #"{"status":4,"data":{"step":{"type":"tou"}}}"#) }
-        #expect(await r.source.connect(email: Self.email, password: Self.password, yours: false) == .terms)
+        #expect(await r.source.connect(email: Self.email, password: Self.password) == .terms)
         s.login.withLock { $0 = (429, #"{"status":429,"data":{"data":{"lockout":300}}}"#) }
-        #expect(await r.source.connect(email: Self.email, password: Self.password, yours: false) == .rateLimited)
+        #expect(await r.source.connect(email: Self.email, password: Self.password) == .rateLimited)
         s.login.withLock { $0 = (404, "{}") }
-        #expect(await r.source.connect(email: Self.email, password: Self.password, yours: false) == .stopped)
+        #expect(await r.source.connect(email: Self.email, password: Self.password) == .stopped)
     }
 
     @Test func noNetworkIsOffline() async throws {
         let r = rig(server(), offline: true)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        #expect(await r.source.connect(email: Self.email, password: Self.password, yours: true) == .offline)
+        #expect(await r.source.connect(email: Self.email, password: Self.password) == .offline)
     }
 
     @Test func aPersonWhoStoppedSharingIsNotSharedAndARateLimitWaitsTenMinutes() async throws {
@@ -304,7 +300,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.leo))
         let gone = try #require(await wait(r.source) { $0.outcome != nil })
         #expect(gone.health(at: clock.now) == .notShared)
@@ -322,7 +318,7 @@ import Testing
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
         s.login.withLock { $0 = (403, #"{"status":920,"data":{"minimumVersion":"4.18.0"}}"#) }
-        #expect(await r.source.connect(email: Self.email, password: Self.password, yours: false) == .stopped)
+        #expect(await r.source.connect(email: Self.email, password: Self.password) == .stopped)
         #expect(r.http.requests.map { $0.headers["version"] } == ["4.17.0", "4.18.0"])
     }
 
@@ -335,7 +331,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         s.graphNext.withLock { $0 = [(403, Self.tooOld)] }
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         // not "stopped": the version asked for, the same call once more, the readings in
@@ -373,7 +369,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         s.graphNext.withLock { $0 = [(403, Self.tooOld), (403, Self.tooOld)] }
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         let stopped = try #require(await wait(r.source) { $0.outcome != nil })
@@ -388,7 +384,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         s.graphNext.withLock { $0 = [(403, #"{"status":920,"data":{"minimumVersion":"4.18.0\r\nX-Injected: 1"}}"#)] }
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = try #require(await wait(r.source) { $0.outcome != nil })
@@ -401,7 +397,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.leo, "Leo")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = try #require(await wait(r.source) { $0.monitoring })
         // Ana's invite was removed in the Libre app: LibreLinkUp refuses her graph; Leo still shares
@@ -419,7 +415,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = try #require(await wait(r.source) { $0.monitoring })
         s.graphStatus.withLock { $0 = 429 }
@@ -430,7 +426,7 @@ import Testing
         await r.source.retry()
         await r.source.network(online: false)
         await r.source.network(online: true)
-        #expect(await r.source.recheck(yours: false, saved: Self.ana) == .rateLimited)
+        #expect(await r.source.recheck(saved: Self.ana) == .rateLimited)
         await r.source.set(nil)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         #expect(await wait(r.source) { $0.running }?.health(at: clock.now) == .rateLimited)
@@ -448,7 +444,7 @@ import Testing
         s.graphStatus.withLock { $0 = nil }
         let graphsBefore = graphs(r).count
         #expect(
-            await r.source.connect(email: Self.email, password: Self.password, yours: false)
+            await r.source.connect(email: Self.email, password: Self.password)
                 == .connected(people: [.init(id: Self.ana, name: "Ana")], picked: Self.ana))
         #expect(await eventually { graphs(r).count == graphsBefore + 1 })
         await r.source.set(nil)
@@ -459,23 +455,23 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.account, "Alex")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = try #require(await wait(r.source) { $0.monitoring })
         // signing in again to read the same person: one graph call, no connections call (the sign-in read them)
         var before = r.http.requests.count
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         #expect(await eventually { graphs(r).count == 2 })
         try await Task.sleep(for: .milliseconds(200))
         #expect(graphs(r).count == 2)
         #expect(r.http.requests.dropFirst(before).filter { $0.path == "/llu/connections" }.count == 1)
-        // a sign-in that picks another person (yours: the account itself): nothing for Ana, the new pick's one call
+        // a sign-in, then another person picked (the account itself): nothing for Ana, the new pick's one call
         before = graphs(r).count
         #expect(
-            await r.source.connect(email: Self.email, password: Self.password, yours: true)
+            await r.source.connect(email: Self.email, password: Self.password)
                 == .connected(
                     people: [.init(id: Self.ana, name: "Ana"), .init(id: Self.account, name: "Alex")],
-                    picked: Self.account))
+                    picked: Self.ana))
         await r.source.set(LibreLinkUpConfig(patient: Self.account))
         _ = try #require(await wait(r.source) { $0.patient == Self.account && $0.monitoring })
         try await Task.sleep(for: .milliseconds(200))
@@ -483,7 +479,7 @@ import Testing
         // Try Again whose people call fails: no graph call after it
         s.connectionsStatus.withLock { $0 = 503 }
         before = graphs(r).count
-        #expect(await r.source.recheck(yours: true, saved: Self.account) == .unreachable)
+        #expect(await r.source.recheck(saved: Self.account) == .unreachable)
         try await Task.sleep(for: .milliseconds(200))
         #expect(graphs(r).count == before)
         await r.source.set(nil)
@@ -494,7 +490,7 @@ import Testing
         s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.leo, "Leo")] }
         let r = rig(s)
         defer { try? FileManager.default.removeItem(at: r.dir) }
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
         _ = await wait(r.source) { $0.monitoring }
         let carbs = Treatment(
@@ -511,7 +507,7 @@ import Testing
         #expect(await !r.source.readings(since: .distantPast).isEmpty)
         #expect(await !r.source.write(carbs))  // off: nothing logged
         // Leo: Ana's readings and log are gone (two people's data never mix)
-        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.leo))
         let leo = try #require(await wait(r.source) { $0.patient == Self.leo && $0.monitoring })
         #expect(leo.treatments.isEmpty)

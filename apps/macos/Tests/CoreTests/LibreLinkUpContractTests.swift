@@ -60,8 +60,6 @@ import Testing
     }
 
     @Test func whoseGlucoseIsPickedAsTheContractSays() throws {
-        let f = try file("connections.json")
-        let account = try #require(f["account"] as? String)
         for c in try cases("connections.json") {
             let name = c["name"] as? String ?? ""
             let e = try #require(c["expect"] as? [String: Any])
@@ -70,10 +68,11 @@ import Testing
                 LluPerson(id: $0["id"] as? String ?? "", name: $0["name"] as? String ?? "")
             }
             #expect(people == want, "\(name)")
-            let got = LibreLinkUp.pick(
-                people, accountId: account, yours: c["person"] as? String == "yours", saved: c["saved"] as? String)
-            #expect(got.state.rawValue == e["state"] as? String, "\(name)")
-            #expect(got.pick == e["pick"] as? String, "\(name)")
+            // the Mac's pick: every connection, the account's own included (it doesn't ask whose glucose)
+            let mac = try #require(c["mac"] as? [String: Any])
+            let got = LibreLinkUp.pick(people, saved: c["saved"] as? String)
+            #expect(got.state.rawValue == mac["state"] as? String, "\(name)")
+            #expect(got.pick == mac["pick"] as? String, "\(name)")
         }
     }
 

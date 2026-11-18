@@ -54,8 +54,8 @@
                 AsyncStream { $0.yield(snapshot) }
             }
             func set(_ config: LibreLinkUpConfig?) {}
-            func connect(email: String, password: String, yours: Bool) -> LluConnectResult { .unreachable }
-            func recheck(yours: Bool, saved: String?) -> LluConnectResult { .unreachable }
+            func connect(email: String, password: String) -> LluConnectResult { .unreachable }
+            func recheck(saved: String?) -> LluConnectResult { .unreachable }
             func signOut() {}
             func retry() {}
             func network(online: Bool) {}

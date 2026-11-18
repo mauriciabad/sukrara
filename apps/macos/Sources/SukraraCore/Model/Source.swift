@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Foundation
 
-/// Whose glucose this Mac shows (schema `source.person`, docs/44 "Person × Source"): the person's own, or someone
-/// else's (a child, a partner, a friend). Android `Person`.
+/// Whose glucose a source brings in contracts/sources/sources.json (`persons`) and the sensor-life contract: Android's
+/// *Whose glucose* question. The Mac doesn't ask it (the owner, 2026-11-18: it never uploads, shares or reminds, so the
+/// answer only changed words): its sources are keyed by kind alone (`SourceSpec`), names come from the source.
 public enum Person: String, CaseIterable, Sendable, Codable {
     case yours, theirs
 }
@@ -14,8 +15,8 @@ public enum SourceGroup: String, Sendable, CaseIterable {
     case offline, network, online, sukrara
 }
 
-/// Where the glucose comes from (schema `source.kind`), with what it declares in contracts/sources/sources.json: the
-/// persons it can bring, whether this Mac gets the data itself (`firstHand`) or another Sukrara relays it, whether it
+/// Where the glucose comes from (schema `source.kind`), with what it declares in contracts/sources/sources.json:
+/// whether this Mac gets the data itself (`firstHand`) or another Sukrara relays it, whether it
 /// works offline, the picker's group, the usual delay and the reading ids it stores. Rules and screens read these,
 /// never the id (`SourcesTests`). The Mac's sources only; Android's are its own.
 public enum SourceKind: String, CaseIterable, Sendable, Codable {
@@ -29,7 +30,6 @@ public enum SourceKind: String, CaseIterable, Sendable, Codable {
     /// sensor's life; no treatments (this Mac keeps its own).
     case libreLinkUp
 
-    public var persons: Set<Person> { [.yours, .theirs] }
     public var firstHand: Bool { self != .sukrara }
     public var offline: Bool { self == .lanJuggluco }
     public var group: SourceGroup {
@@ -75,9 +75,6 @@ public enum SourceKind: String, CaseIterable, Sendable, Codable {
         case .libreLinkUp: MacSettings.libreLinkUpWear
         }
     }
-
-    /// The sources the picker offers for `person`, in the picker's order.
-    public static func forPerson(_ person: Person) -> [SourceKind] { allCases.filter { $0.persons.contains(person) } }
 }
 
 /// The alert engine's role a `SourceSpec` runs as (Android `AlertRole`: WEARER / FOLLOWER_MIRROR / FOLLOWER_OWN).
@@ -87,53 +84,47 @@ public enum SourceAlertRole: String, Sendable {
     case followerOwn = "FOLLOWER_OWN"
 }
 
-/// THE choice that replaced "this Mac follows" (docs/44): whose glucose × where it comes from, keyed as
-/// contracts/sources/sources.json `keying` says. `owner`: your glucose read first-hand (Juggluco on the network, a
-/// Nightscout site);
-/// `stream`: another Sukrara (*Settings from*, the follow); `person`: the words and what a change deletes.
+/// THE choice that replaced "this Mac follows" (docs/44): where the glucose comes from, keyed as
+/// contracts/sources/sources.json `macKeying` says. The Mac never owns anyone's glucose (it never uploads, shares or
+/// reminds), so a source is keyed by its kind alone: `stream` = another Sukrara (*Settings from*, the follow, the
+/// mirrored alerts and escalation); every other source runs this Mac's own settings and rules.
 public struct SourceSpec: Equatable, Sendable {
-    public let person: Person
     public let kind: SourceKind
 
-    /// The pair, or nil when no source offers it.
-    public init?(person: Person?, kind: SourceKind?) {
-        guard let person, let kind, kind.persons.contains(person) else { return nil }
-        self.person = person
+    public init(kind: SourceKind) { self.kind = kind }
+
+    /// A stored answer; nil = not answered.
+    public init?(kind: SourceKind?) {
+        guard let kind else { return nil }
         self.kind = kind
     }
 
-    public var owner: Bool { person == .yours && kind.firstHand }
     public var stream: Bool { kind == .sukrara }
-    public var theirs: Bool { person == .theirs }
 
-    /// The alert role, unchanged from what the Mac did: a stream mirrors the wearer's alerts with *Settings from:
-    /// Wearer*; every other case runs this Mac's own rules.
+    /// The alert role: a stream mirrors the wearer's alerts with *Settings from: Their settings*; every other case
+    /// runs this Mac's own rules.
     public func alertRole(mirrorsWearer: Bool) -> SourceAlertRole {
-        if owner { return .wearer }
-        return stream && mirrorsWearer ? .followerMirror : .followerOwn
+        stream && mirrorsWearer ? .followerMirror : .followerOwn
     }
 
-    /// Someone else's glucose from their Sukrara: what following was.
-    public static let theirSukrara = SourceSpec(person: .theirs, kind: .sukrara)!
+    /// Another Sukrara: what following is.
+    public static let sukrara = SourceSpec(kind: .sukrara)
 
-    /// The stored answer (`sourcePerson`, `sourceKind`); nil = not answered (an unknown id too).
+    /// The stored answer (`sourceKind`); nil = not answered (an unknown id too).
     public static func stored(in store: some SettingsStoring) -> SourceSpec? {
-        SourceSpec(
-            person: Person(rawValue: store.value(MacSettings.sourcePerson)),
-            kind: SourceKind(rawValue: store.value(MacSettings.sourceKind)))
+        SourceSpec(kind: SourceKind(rawValue: store.value(MacSettings.sourceKind)))
     }
 
     /// Stores the answer; another source clears the manual sensor start (it was set for that source's sensor).
     public func store(in store: some SettingsStoring) {
         if Self.stored(in: store)?.kind != kind { store.set(0.0, for: MacSettings.manualStart) }
-        store.set(person.rawValue, for: MacSettings.sourcePerson)
         store.set(kind.rawValue, for: MacSettings.sourceKind)
     }
 
     /// What the Mac runs on: the answer, else what it is already set up to read (a Mac updated from before the
-    /// question: following someone → their Sukrara), so monitoring never stops for the answer.
+    /// question: following someone → another Sukrara), so monitoring never stops for the answer.
     public static func running(in store: some SettingsStoring, following: Bool) -> SourceSpec? {
-        stored(in: store) ?? (following ? theirSukrara : nil)
+        stored(in: store) ?? (following ? sukrara : nil)
     }
 }
 

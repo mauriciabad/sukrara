@@ -68,7 +68,7 @@ struct FollowingNow: View {
                     }
                 VStack(alignment: .leading, spacing: 4) {
                     Text(L10n.t("You follow \(wearer)")).font(.headline)
-                    Text(L10n.t("Their glucose shows in the menu bar now."))
+                    Text(L10n.t("The glucose shows in the menu bar now."))
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

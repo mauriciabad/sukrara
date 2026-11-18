@@ -147,7 +147,7 @@ final class WindowCoordinator {
         ) {
             SettingsWindowContent(
                 model: settings, app: model, openFollow: { [weak self] in self?.openFollow() },
-                answerSource: { [weak self] in self?.openSetup(at: .person) },
+                answerSource: { [weak self] in self?.openSetup(at: .phone) },
                 openAbout: { [weak self] in self?.openAbout() })
         }
     }

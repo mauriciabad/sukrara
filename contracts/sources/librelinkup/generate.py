@@ -162,7 +162,9 @@ def pick(connections, account, person, saved):
         return {**out, "state": "none", "pick": None}
     if saved:
         return {**out, "state": "picked", "pick": saved} if saved in ids else {**out, "state": "gone", "pick": None}
-    if person == "yours":
+    if person is None:
+        candidates = ids  # the Mac: every connection, the account's own included
+    elif person == "yours":
         if account in ids:
             return {**out, "state": "picked", "pick": account}
         candidates = ids
@@ -348,6 +350,8 @@ K({"name": "the person picked before stopped sharing", "person": "theirs", "save
 K({"name": "no one shares with this account yet", "person": "yours", "saved": None, "data": []})
 for c in connections:
     c["expect"] = pick(c["data"], ACCOUNT, c["person"], c["saved"])
+    mac = pick(c["data"], ACCOUNT, None, c["saved"])
+    c["mac"] = {"state": mac["state"], "pick": mac["pick"]}
 
 # ------------------------------------------------------------------ graph.json
 
@@ -587,7 +591,9 @@ dump("connections.json", {"_about": [
     "health 'notShared', the person picks again); for your own glucose the account itself (you invited your own email",
     "from the Libre app), else the only one; for someone else's the only one besides the account; several = 'choose'",
     "(the Connect step lists them); none = 'none' (health 'notShared': invite this email from the Libre app).",
-    "'account' is the signed-in account's id.",
+    "'account' is the signed-in account's id. 'mac': the Mac's pick, which doesn't ask whose glucose (owner,",
+    "2026-11-18): every connection, the account's own included: the saved one while still shared, else the only one,",
+    "else choose.",
 ], "account": ACCOUNT, "cases": connections})
 dump("graph.json", {"_about": [
     "One graph answer (GET /llu/connections/<patientId>/graph) -> readings and the sensor. Each reading is",

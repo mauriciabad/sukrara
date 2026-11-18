@@ -20,7 +20,6 @@ import Testing
         #expect(Set(mac.compactMap { $0["id"] as? String }) == Set(SourceKind.allCases.map(\.rawValue)))
         for s in mac {
             let kind = try #require(SourceKind(rawValue: s["id"] as? String ?? ""))
-            #expect(Set(s["persons"] as? [String] ?? []) == Set(kind.persons.map(\.rawValue)))
             #expect(s["firstHand"] as? Bool == kind.firstHand)
             #expect(s["offline"] as? Bool == kind.offline)
             #expect(s["group"] as? String == kind.group.rawValue)
@@ -33,20 +32,19 @@ import Testing
         #expect(try json("sources/sources.json")["persons"] as? [String] == Person.allCases.map(\.rawValue))
     }
 
-    @Test func eachPersonAndSourceGetsTheBehaviourTheContractKeys() throws {
-        let keying = try #require(try json("sources/sources.json")["keying"] as? [[String: Any]])
-        var checked = 0
+    /// The Mac doesn't ask whose glucose: each source (and *Settings from*) gets what `macKeying` says, and no Mac
+    /// source owns anyone's glucose (it never uploads, shares or reminds).
+    @Test func eachSourceGetsTheBehaviourTheMacKeyingSays() throws {
+        let keying = try #require(try json("sources/sources.json")["macKeying"] as? [[String: Any]])
         for c in keying {
-            guard let kind = SourceKind(rawValue: c["source"] as? String ?? "") else { continue }  // Android's own
-            let spec = try #require(SourceSpec(person: Person(rawValue: c["person"] as? String ?? ""), kind: kind))
-            #expect(c["owner"] as? Bool == spec.owner)
+            let spec = try #require(SourceSpec(kind: SourceKind(rawValue: c["source"] as? String ?? "")))
+            #expect(c["owner"] as? Bool == false)
             #expect(c["stream"] as? Bool == spec.stream)
             #expect(
                 c["alertRole"] as? String
                     == spec.alertRole(mirrorsWearer: c["settingsFrom"] as? String == "wearer").rawValue)
-            checked += 1
         }
-        #expect(checked == 10)
+        #expect(Set(keying.compactMap { $0["source"] as? String }) == Set(SourceKind.allCases.map(\.rawValue)))
     }
 
     @Test func everyReadingIdRanksAsTheContractSays() throws {
@@ -76,11 +74,10 @@ import Testing
     @Test func anUnansweredMacReadsWhatItFollows() {
         let store = InMemorySettingsStore()
         #expect(SourceSpec.running(in: store, following: false) == nil)
-        #expect(SourceSpec.running(in: store, following: true) == .theirSukrara)
-        let juggluco = SourceSpec(person: .yours, kind: .lanJuggluco)!
+        #expect(SourceSpec.running(in: store, following: true) == .sukrara)
+        let juggluco = SourceSpec(kind: .lanJuggluco)
         juggluco.store(in: store)
         #expect(SourceSpec.stored(in: store) == juggluco)
         #expect(SourceSpec.running(in: store, following: true) == juggluco)
-        #expect(SourceSpec(person: .theirs, kind: .lanJuggluco)?.owner == false)
     }
 }

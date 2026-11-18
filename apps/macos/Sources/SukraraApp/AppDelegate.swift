@@ -110,14 +110,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let libreLinkUp = windows.settings.libreLinkUp
         libreLinkUp.available = { [weak model] in model?.libreLinkUp != nil }
         libreLinkUp.snapshot = { [weak model] in model?.libreLinkUpSnapshot ?? .off }
-        libreLinkUp.person = { [weak windows] in windows?.settings.source.running?.person ?? .yours }
         libreLinkUp.retry = { [weak model] in model?.retryLibreLinkUp() }
-        libreLinkUp.signIn = { [weak model] email, password, yours in
-            await model?.connectLibreLinkUp(email: email, password: password, yours: yours)
+        libreLinkUp.signIn = { [weak model] email, password in
+            await model?.connectLibreLinkUp(email: email, password: password)
         }
-        libreLinkUp.recheckSource = { [weak model] yours, saved in
-            await model?.recheckLibreLinkUp(yours: yours, saved: saved)
-        }
+        libreLinkUp.recheckSource = { [weak model] saved in await model?.recheckLibreLinkUp(saved: saved) }
         libreLinkUp.signOutSource = { [weak model] in model?.signOutLibreLinkUp() }
         model.onLibreLinkUp = { [weak windows] snapshot in windows?.apply(libreLinkUp: snapshot) }
         windows.settings.sensorLife.sensor = { [weak model] in model?.sourceSensor }

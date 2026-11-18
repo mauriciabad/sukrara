@@ -15,8 +15,6 @@ public final class SetupModel {
     public let settings: SettingsModel
     /// Thresholds changed on the alert step; nothing is stored before Confirm thresholds.
     var editedThresholds: [AlertKind: Double] = [:]
-    /// Whose glucose picked on the person step (stored with the source, on the source step).
-    var pickedPerson: Person?
     /// The source picked on the source step.
     var pickedKind: SourceKind = .sukrara
     /// *Do you have Sukrara on your phone?*: yes = follow it, no = read it online (nil = not answered here yet).
@@ -42,17 +40,23 @@ public final class SetupModel {
         self.follow = settings.follow
     }
 
-    /// The first question's answer as shown: picked here, else what the Mac runs on (a stream = yes).
-    var phone: Bool? { pickedPhone ?? settings.source.running.map { $0.kind == .sukrara } }
+    /// The first question's answer as shown: picked here, else what the Mac runs on (a stream = yes), else yes: the
+    /// recommended answer (one person, one link: following Sukrara brings alerts, treatments and settings too).
+    var phone: Bool { pickedPhone ?? settings.source.running.map { $0.kind == .sukrara } ?? true }
 
-    /// *Do you have Sukrara on your phone?*'s Continue: yes goes to Whose glucose and then Follow (the source is the
-    /// phone); no to Whose glucose and the sources this Mac reads itself.
+    /// *Do you have Sukrara on your phone?*'s Continue: yes stores another Sukrara as the source and goes on to
+    /// Follow; no to the sources this Mac reads itself.
     func choosePhone() {
-        guard let yes = phone else { return }
+        let yes = phone
         pickedPhone = yes
         if yes {
             pickedKind = .sukrara
-        } else if pickedKind == .sukrara {
+            settings.source.choose(.sukrara)
+            complete(.phone)
+            complete(.source)
+            return
+        }
+        if pickedKind == .sukrara {
             pickedKind = settings.source.running.map(\.kind).flatMap { $0 == .sukrara ? nil : $0 } ?? .nightscout
         }
         complete(.phone)
@@ -66,31 +70,9 @@ public final class SetupModel {
 
     func complete(_ s: SetupFlow.Step) { flow.complete(s); flow.save(to: store) }
 
-    /// The person step's Continue: the pick (preselected with what the Mac runs on) carries to the source step.
-    func choosePerson() {
-        guard let p = pickedPerson ?? settings.source.running?.person else { return }
-        pickedPerson = p
-        if phone == true {
-            // the phone is the source: stored with the person, straight on to Follow
-            if let spec = SourceSpec(person: p, kind: .sukrara) { settings.source.choose(spec) }
-            complete(.person)
-            complete(.source)
-            return
-        }
-        if let running = settings.source.running, running.person == p, running.kind != .sukrara {
-            pickedKind = running.kind
-        }
-        complete(.person)
-    }
-
-    /// Whose glucose the source step is for: the pick, else what the Mac runs on; nil after a relaunch half-way (the pick
-    /// isn't stored before the source): the source step asks it again.
-    var sourcePerson: Person? { pickedPerson ?? settings.source.running?.person }
-
-    /// The source step's Continue: whose glucose and the source are stored together.
+    /// The source step's Continue: the source is stored.
     func chooseSource() {
-        guard let person = sourcePerson, let spec = SourceSpec(person: person, kind: pickedKind) else { return }
-        settings.source.choose(spec)
+        settings.source.choose(SourceSpec(kind: pickedKind))
         complete(.source)
     }
 
@@ -145,7 +127,7 @@ public final class SetupModel {
 
 /// First-run setup: Welcome → Follow → Alerts (thresholds checked, changed, confirmed) → Notifications → Open at
 /// login → Done.
-/// Every step has Back and, but Whose glucose and Source, Skip; closing the window leaves "Finish setup" in the panel.
+/// Every step has Back and, but the source's two, Skip; closing the window leaves "Finish setup" in the panel.
 public struct SetupView: View {
     @Bindable var model: SetupModel
     var close: () -> Void
@@ -168,21 +150,10 @@ public struct SetupView: View {
                         Text(L10n.t("You can change it any time in Settings › Source.")).font(.callout)
                             .foregroundStyle(.secondary)
                     }
-                case .person: personPage
                 case .source:
-                    if let person = model.sourcePerson {
-                        page(
-                            .source,
-                            person == .yours
-                                ? L10n.t("Where does your glucose come from?")
-                                : L10n.t("Where does their glucose come from?")
-                        ) {
-                            SourceKindChoice(
-                                person: person, selected: $model.pickedKind,
-                                only: model.phone == false ? model.onlineKinds : nil)
-                        }
-                    } else {
-                        personPage
+                    page(.source, L10n.t("Where does the glucose come from?")) {
+                        SourceKindChoice(
+                            selected: $model.pickedKind, only: model.phone ? nil : model.onlineKinds)
                     }
                 case .follow:
                     if model.runningKind == .nightscout {
@@ -247,31 +218,22 @@ public struct SetupView: View {
     /// How far a step slides in (points): enough to read the direction, short enough to stay quick.
     static let stepSlide: CGFloat = 40
 
-    /// *Whose glucose will Sukrara show?*: the two cards, preselected with what the Mac runs on.
-    private var personPage: some View {
-        page(.person, L10n.t("Whose glucose will Sukrara show?")) {
-            PersonChoice(
-                selected: Binding(
-                    get: { model.pickedPerson ?? model.settings.source.running?.person },
-                    set: { model.pickedPerson = $0 }))
-            Text(L10n.t("You can change it any time in Settings › Source.")).font(.callout)
-                .foregroundStyle(.secondary)
-        }
-    }
-
     private var welcome: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(L10n.t("Welcome to Sukrara")).font(.largeTitle.bold())
             Text(
                 L10n.t(
-                    "Sukrara shows glucose in the menu bar, yours or someone else's, and alerts you when it's out of range."
-                ))
+                    "Sukrara shows glucose in the menu bar and alerts you when it's out of range."
+                )
+            )
+            .fixedSize(horizontal: false, vertical: true)
             Text(
                 L10n.t(
                     "Sukrara isn't a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor's app or a meter, and ask your doctor, before you decide on a treatment."
                 )
             )
             .font(.callout).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
             HStack {
                 Spacer()
                 Button(L10n.t("Set up later")) {
@@ -359,9 +321,9 @@ public struct SetupView: View {
             HStack {
                 Button(L10n.t("Back")) { model.back() }
                 Spacer()
-                // whose glucose and its source can't be skipped (Android's rule too): without them Sukrara reads
+                // the source's two questions can't be skipped (Android's rule too): without them Sukrara reads
                 // nothing; closing the window leaves them on Finish Setup…
-                if step != .person && step != .source {
+                if step != .phone && step != .source {
                     Button(L10n.t("Skip")) { model.skip(step) }
                 }
                 // one default button per window: on Follow someone, Return belongs to the invite link's Continue until
@@ -371,8 +333,7 @@ public struct SetupView: View {
                     .disabled(
                         (step == .follow && !followDone) || (step == .openAtLogin && model.loginItem == nil)
                             || (step == .alerts && !model.thresholdsInOrder)
-                            || (step == .person && model.pickedPerson == nil && model.settings.source.running == nil)
-                            || (step == .phone && model.phone == nil))
+                    )
             }
         }
     }
@@ -410,7 +371,6 @@ public struct SetupView: View {
         case .openAtLogin: model.openAtLogin()
         case .alerts: model.confirmThresholds()
         case .phone: model.choosePhone()
-        case .person: model.choosePerson()
         case .source: model.chooseSource()
         default: model.complete(s)
         }
@@ -431,10 +391,12 @@ public struct SetupView: View {
     }
 }
 
-/// *Do you have Sukrara on your phone?*: two big choices side by side, picked like Whose glucose (tonal fill, a
-/// stronger outline, a spring, a trackpad tap; Reduce Motion: at once). VoiceOver: two buttons with the selected trait.
+/// *Do you have Sukrara on your phone?*: two big choices side by side (tonal fill, a stronger outline, a spring, a
+/// trackpad tap; Reduce Motion: at once), *Yes* first, preselected and marked *Recommended* (one person, one link).
+/// The words fit you following your own phone and a parent following a child's. VoiceOver: two buttons with the
+/// selected trait, the recommendation read with the first.
 struct PhoneChoice: View {
-    @Binding var selected: Bool?
+    @Binding var selected: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Each card's picks: its symbol bounces only when that card is picked (a shared value bounced the card left too).
     @State private var picks: [Bool: Int] = [:]
@@ -444,14 +406,19 @@ struct PhoneChoice: View {
             card(
                 true, symbol: "iphone.radiowaves.left.and.right", title: L10n.t("Yes · Follow it"),
                 means: L10n.t(
-                    "Follow the phone that reads your sensor: alerts, treatments and settings come with it"))
+                    "Follow the phone that reads the sensor, yours or your child's: alerts, treatments and settings come with it"
+                ), recommended: true)
             card(
-                false, symbol: "globe", title: L10n.t("No · Read it online"),
-                means: L10n.t("LibreLinkUp or Nightscout on this Mac, and your treatments here: no phone app needed"))
+                false, symbol: "globe", title: L10n.t("No · Read it here"),
+                means: L10n.t(
+                    "LibreLinkUp, Nightscout or Juggluco read on this Mac, treatments logged here: no Sukrara on the phone"
+                ))
         }
     }
 
-    private func card(_ value: Bool, symbol: String, title: String, means: String) -> some View {
+    private func card(_ value: Bool, symbol: String, title: String, means: String, recommended: Bool = false)
+        -> some View
+    {
         let on = selected == value
         return Button {
             if !on {
@@ -468,6 +435,14 @@ struct PhoneChoice: View {
                         .symbolEffect(.bounce, value: picks[value, default: 0])
                         .frame(height: 40)
                     Spacer()
+                    if recommended {
+                        Text(L10n.t("Recommended"))
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2)
+                            .background(Capsule().fill(Color.accentColor.opacity(on ? 0.22 : 0.12)))
+                            .foregroundStyle(Color.accentColor)
+                    }
                     Image(systemName: on ? "checkmark.circle.fill" : "circle")
                         .foregroundStyle(on ? Color.accentColor : .secondary)
                         .font(.title3)

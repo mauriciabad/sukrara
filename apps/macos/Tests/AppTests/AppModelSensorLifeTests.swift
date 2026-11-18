@@ -99,11 +99,11 @@ import Testing
 
     @Test func anotherSourceClearsTheManualStart() {
         let store = InMemorySettingsStore()
-        SourceSpec(person: .yours, kind: .nightscout)!.store(in: store)
+        SourceSpec(kind: .nightscout).store(in: store)
         store.set(1_791_000_000.0, for: MacSettings.manualStart)
-        SourceSpec(person: .yours, kind: .nightscout)!.store(in: store)
+        SourceSpec(kind: .nightscout).store(in: store)
         #expect(store.value(MacSettings.manualStart) == 1_791_000_000)  // the same answer keeps it
-        SourceSpec(person: .yours, kind: .lanJuggluco)!.store(in: store)
+        SourceSpec(kind: .lanJuggluco).store(in: store)
         #expect(store.value(MacSettings.manualStart) == 0)
     }
 
