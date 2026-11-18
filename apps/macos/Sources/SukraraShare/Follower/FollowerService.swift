@@ -33,6 +33,9 @@ public struct FollowerSnapshot: Sendable, Equatable {
     public var me: Profile?
     /// The wearer's name and picture (from the invite, then the roster), nil before any.
     public var wearer: Profile?
+    /// This Mac stopped following and no relay or the wearer's phone took its `leave` yet: the wearer's name ("" when
+    /// unknown), nil when nothing waits (PROTOCOL-v2 "Leave").
+    public var untoldLeave: String?
 
     public static let empty = FollowerSnapshot(
         link: .notFollowing, readings: [], sensor: nil, treatments: [], unsentTreatments: 0, deliveries: [:],
@@ -127,7 +130,8 @@ public protocol FollowerService: Sendable {
     func setProfile(name: String, avatar: Avatar?) async
     /// Looks for phones offering nearby pairing while not following (the follow window is open).
     func searchNearby(_ on: Bool) async
-    /// Stops following: wipes the wearer's readings, treatments, sensor and settings, then the follower key.
+    /// Stops following: tells the wearer (a `leave`, kept until two relays have it), wipes the wearer's readings,
+    /// treatments, sensor and settings, then the follower key.
     func unfollow() async
     func send(_ treatment: Treatment) async -> TreatmentSendResult
 }

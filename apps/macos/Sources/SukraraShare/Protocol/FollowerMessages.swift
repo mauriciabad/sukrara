@@ -36,6 +36,11 @@ public struct FollowerMessages: Sendable {
         ["v": Wire.version, "type": "history", "since": hourStart]
     }
 
+    /// This follower stopped following, or cancelled its waiting request (PROTOCOL-v2 "Leave"). Final for this key.
+    public static func leaveBody() -> [String: Any] {
+        ["v": Wire.version, "type": "leave"]
+    }
+
     /// A rumor (kind 30500) to the identity, wrapped with an absolute expiration of now + `ttl`.
     public func toOwner(_ body: [String: Any], identity: String, ttl: Int, now: Int) throws(CryptoError) -> SignedEvent
     {

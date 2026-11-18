@@ -23,15 +23,16 @@ data class SavedNote(
     val mgdl: Int? = null,
     val minutes: Int? = null,
     val remote: Boolean = false,
+    val nobody: Boolean = false,
 ) {
     /** null = a type this build doesn't know (dropped). */
     fun note(): AlertNote? =
         AlertNoteType.entries.firstOrNull { it.name == type }?.let {
-            AlertNote(Instant.ofEpochSecond(t), it, kind, mgdl, minutes, remote)
+            AlertNote(Instant.ofEpochSecond(t), it, kind, mgdl, minutes, remote, nobody)
         }
 
     companion object {
-        fun of(n: AlertNote) = SavedNote(n.at.epochSecond, n.type.name, n.kind, n.mgdl, n.minutes, n.remote)
+        fun of(n: AlertNote) = SavedNote(n.at.epochSecond, n.type.name, n.kind, n.mgdl, n.minutes, n.remote, n.nobody)
     }
 }
 
@@ -40,7 +41,8 @@ data class SavedNote(
  * last, kept to [MAX] lines. Only the first ring of an alert counts (not its repeats), and a change of level inside
  * it (low → very low: a different kind than [lastFired] says its group last rang); a silent re-post after a restart is
  * its own *Resumed* line. [muteAllBefore] / [muteAllAfter] = when Mute all ends (0 = off), as last seen and after this
- * input: a timed one that ran out by itself is *Alerts back on* (before what it lets ring).
+ * input: a timed one that ran out by itself is *Alerts back on* (before what it lets ring). [told]: someone follows the
+ * wearer now (PROTOCOL-v2 "Leave"): its escalation lines say the followers were told only then.
  */
 object AlertNotes {
     const val MAX = 20
@@ -52,6 +54,7 @@ object AlertNotes {
         muteAllBefore: Long = 0,
         muteAllAfter: Long = 0,
         lastFired: Map<AlertGroup, AlertKind> = emptyMap(),
+        told: Boolean = true,
     ): List<AlertNote> {
         val at = Instant.ofEpochSecond(now)
         val remote = input is AlertInput.Remote
@@ -125,7 +128,7 @@ object AlertNotes {
 
                 // #39: the wearer escalated a very low to the followers / it was answered after that
                 is AlertEffect.Escalated -> {
-                    out += AlertNote(at, AlertNoteType.Escalated, AlertKind.VERY_LOW.wire, minutes = e.minutes)
+                    out += AlertNote(at, AlertNoteType.Escalated, AlertKind.VERY_LOW.wire, minutes = e.minutes, nobody = !told)
                 }
 
                 is AlertEffect.Answered -> {
@@ -133,7 +136,11 @@ object AlertNotes {
                 }
 
                 is AlertEffect.Mirror -> {
-                    if (e.event.state == AlertEvent.State.ANSWERED) out += AlertNote(at, AlertNoteType.Answered, e.event.k.wire)
+                    if (e.event.state ==
+                        AlertEvent.State.ANSWERED
+                    ) {
+                        out += AlertNote(at, AlertNoteType.Answered, e.event.k.wire, nobody = !told)
+                    }
                 }
 
                 else -> {

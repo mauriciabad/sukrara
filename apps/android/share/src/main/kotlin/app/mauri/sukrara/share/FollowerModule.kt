@@ -12,18 +12,21 @@ import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.protocol.event.Profile
+import app.mauri.sukrara.protocol.follow.LeaveOutbox
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.ble.NearbyTransportFactory
 import app.mauri.sukrara.share.crypto.SdkNostrCrypto
 import app.mauri.sukrara.share.follower.FollowerEngine
 import app.mauri.sukrara.share.follower.FollowerNotice
 import app.mauri.sukrara.share.follower.FollowerStore
+import app.mauri.sukrara.share.follower.LeaveSender
 import app.mauri.sukrara.share.follower.RelayTransportFactory
 import app.mauri.sukrara.share.follower.WearerSettingsCache
 import app.mauri.sukrara.share.transport.AndroidNetworkWatch
 import app.mauri.sukrara.share.transport.OkHttpWebSockets
 import app.mauri.sukrara.share.transport.RelayAccess
 import app.mauri.sukrara.share.transport.RelayPool
+import kotlinx.coroutines.CoroutineScope
 import okhttp3.OkHttpClient
 
 /**
@@ -46,22 +49,37 @@ class FollowerModule(
     private val notices: (FollowerNotice, Profile?) -> Unit,
     /** Where the relay connections go (the app's `LaunchPlan`; release: the relays the wearer names). */
     private val relayAccess: RelayAccess = RelayAccess.Public,
+    /** The `leave` messages still on their way (a plain store: nothing in them is secret). */
+    private val leaveOutbox: StateStore<LeaveOutbox>? = null,
+    /** The process scope: a `leave` keeps going after the follow (and the page) are gone. */
+    private val scope: CoroutineScope? = null,
+    /** Asks the system to run [LeaveSender.flush] once a network is up, also with the app closed (WorkManager). */
+    private val scheduleLeaves: () -> Unit = {},
 ) {
     private val crypto by lazy { SdkNostrCrypto() }
 
+    private val relays by lazy {
+        RelayTransportFactory { urls, auth ->
+            RelayPool(
+                urls,
+                auth,
+                crypto,
+                OkHttpWebSockets(http),
+                dispatchers.io,
+                { clock.now().epochSecond },
+                access = relayAccess,
+            )
+        }
+    }
+
+    /** Carries *Stop following*'s `leave` to the wearer until two relays keep it (PROTOCOL-v2 "Leave"). */
+    val leaves: LeaveSender? by lazy {
+        val store = leaveOutbox ?: return@lazy null
+        val scope = scope ?: return@lazy null
+        LeaveSender(store, relays, crypto, clock, scope, AndroidNetworkWatch(context), scheduleLeaves)
+    }
+
     val engine: FollowerEngine by lazy {
-        val relays =
-            RelayTransportFactory { urls, auth ->
-                RelayPool(
-                    urls,
-                    auth,
-                    crypto,
-                    OkHttpWebSockets(http),
-                    dispatchers.io,
-                    { clock.now().epochSecond },
-                    access = relayAccess,
-                )
-            }
         FollowerEngine(
             crypto = crypto,
             store = FollowerStore(secure, crypto),
@@ -75,6 +93,7 @@ class FollowerModule(
             nearbyTransports = NearbyTransportFactory { identity -> AndroidNearbyCentral(context, crypto, identity) },
             settingsCache = wearerSettings,
             network = AndroidNetworkWatch(context),
+            leaves = leaves,
         )
     }
 }

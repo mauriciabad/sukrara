@@ -23,4 +23,8 @@
     <string name="share_follow_revoked_text">%1$s ha dejado de compartir contigo. Sus lecturas ya no llegan a este teléfono.</string>
     <string name="share_follow_expired_title">Invitación caducada</string>
     <string name="share_follow_expired_text">La invitación de %1$s caducó antes de que te diera acceso. Pídele un enlace nuevo y vuelve a unirte en Ajustes › Compartir.</string>
+    <string name="share_left_title">%1$s ha dejado de seguirte</string>
+    <string name="share_left_text">Ya no ve tu glucosa ni recibe tus alertas.</string>
+    <string name="share_leave_untold_title">%1$s aún no lo sabe</string>
+    <string name="share_leave_untold_text">Sukrara le dirá que has dejado de seguirle en cuanto este teléfono tenga internet. No desinstales Sukrara hasta entonces.</string>
 </resources>

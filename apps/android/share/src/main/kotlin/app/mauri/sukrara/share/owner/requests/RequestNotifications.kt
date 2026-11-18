@@ -9,6 +9,7 @@ import android.content.Context
 import android.content.Intent
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.R
+import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.PendingRequest
 
@@ -20,6 +21,9 @@ interface RequestNotifications {
     fun showNotAllowed()
 
     fun cancel()
+
+    /** [follower] stopped following (PROTOCOL-v2 "Leave"): its own notification, apart from the requests'. */
+    fun showLeft(follower: FollowerRecord) = Unit
 }
 
 /**
@@ -70,6 +74,8 @@ class AndroidRequestNotifications(
     private val time: (Long) -> String,
     private val post: (Notification) -> Unit,
     private val remove: () -> Unit,
+    /** Posts *Ana stopped following you* (its own id: a request waiting stays). */
+    private val postLeft: (Notification) -> Unit = {},
 ) : RequestNotifications {
     /** The follower's name, or *Someone* when it has none (an empty or blank name never shows as "?" or nothing). */
     private fun shown(name: String) = Profile.shownName(name).ifEmpty { context.getString(R.string.share_request_someone) }
@@ -107,6 +113,17 @@ class AndroidRequestNotifications(
     }
 
     override fun cancel() = remove()
+
+    override fun showLeft(follower: FollowerRecord) {
+        val text = context.getString(R.string.share_left_text)
+        val builder =
+            base()
+                .setContentTitle(context.getString(R.string.share_left_title, shown(follower.name)))
+                .setContentText(text)
+                .setStyle(Notification.BigTextStyle().bigText(text))
+                .setCategory(Notification.CATEGORY_STATUS)
+        postLeft(builder.build())
+    }
 
     private fun base(): Notification.Builder {
         val builder =

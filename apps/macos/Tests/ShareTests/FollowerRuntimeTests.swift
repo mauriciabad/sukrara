@@ -16,10 +16,12 @@ struct RuntimeHarness {
     let stores: FollowerStores
     let runtime: FollowerRuntime
 
-    /// `directory`: an earlier harness's, to relaunch on the same stores.
+    /// `directory`: an earlier harness's, to relaunch on the same stores. `leaveRelays`: where a `leave` goes (default:
+    /// the hub); `sleep`: every wait of the runtime (default: an hour, i.e. none happens in a test).
     init(
         now: Int, hub: FakeRelayHub = FakeRelayHub(), secrets: any SecretStoring = InMemorySecretStore(),
-        directory: URL? = nil
+        directory: URL? = nil, leaveRelays: FollowerRuntime.RelayFactory? = nil,
+        sleep: @escaping @Sendable (Double) async throws -> Void = { _ in try await Task.sleep(for: .seconds(3600)) }
     ) {
         self.hub = hub
         self.secrets = secrets
@@ -29,8 +31,8 @@ struct RuntimeHarness {
         stores = .files(SukraraPaths(home: self.directory), clock: clock)
         runtime = FollowerRuntime(
             secrets: secrets, stores: stores, crypto: NostrSDKCrypto(), clock: clock,
-            me: Profile(name: "Mac", avatar: nil), makeRelays: { _, _ in hub.connect() },
-            sleep: { _ in try await Task.sleep(for: .seconds(3600)) })
+            me: Profile(name: "Mac", avatar: nil), makeRelays: { _, _ in hub.connect() }, sleep: sleep,
+            leaveRelays: leaveRelays)
     }
 
     var paths: SukraraPaths { SukraraPaths(home: directory) }
@@ -534,6 +536,14 @@ extension FollowerRuntime {
     }
 
     var isFollowing: Bool { get async { await currentLink.isFollowing } }
+
+    /// Test helper: the newest snapshot.
+    var snapshotNow: FollowerSnapshot {
+        get async {
+            var iterator = snapshots().makeAsyncIterator()
+            return await iterator.next() ?? .empty
+        }
+    }
 
     func currentLinkIsWriter() async -> Bool {
         if case .following(_, let canWrite) = await currentLink { return canWrite }

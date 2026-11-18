@@ -49,7 +49,9 @@ class FollowerSyncFixtureTest {
             .File(Contracts.root, "protocol/sync")
             .listFiles { f -> f.extension == "json" }!!
             .map { it.nameWithoutExtension }
-            .filter { it != "owner-conflict" } // the wearer's side (IdentityConflictTest)
+            // the wearer's side (IdentityConflictTest); the follower's leave and the wearer's side of it (LeaveFixtureTest,
+            // FollowerEngineTest, LeaveWearerTest)
+            .filter { it != "owner-conflict" && it != "leave" }
             .sorted()
 
     @Test fun everyFollowerSequenceLeavesTheExpectedState() {

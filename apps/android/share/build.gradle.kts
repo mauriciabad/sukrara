@@ -26,6 +26,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp)
+    // the follower's `leave` once a network is up, also with the app closed (LeaveWorker)
+    implementation(libs.androidx.work.runtime)
     testImplementation(project(":core:testing"))
     // the Android network watch on ConnectivityManager
     testImplementation(libs.robolectric)

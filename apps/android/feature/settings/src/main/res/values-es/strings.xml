@@ -734,6 +734,8 @@
     <string name="st_note_escalated">%1$s: sin respuesta en %2$s, se avisó a quien te sigue</string>
     <string name="st_note_escalated_remote">%1$s · sin respuesta en su móvil</string>
     <string name="st_note_answered">%1$s respondida: se avisó a quien te sigue</string>
+    <string name="st_note_escalated_nobody">%1$s: sin respuesta en %2$s, nadie te sigue para avisarle</string>
+    <string name="st_note_answered_nobody">%1$s respondida</string>
     <string name="st_note_answered_remote">%1$s respondida en su móvil</string>
     <string name="st_profile_add_name">Añade tu nombre</string>
     <string name="st_profile_summary">Tu perfil: el nombre y la foto que ven tus seguidores</string>

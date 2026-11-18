@@ -11,15 +11,18 @@ public struct FollowerStores: Sendable {
     public var treatments: any TreatmentStoring
     public var sensor: SensorStateStore
     public var settings: WearerSettingsStore
+    /// The `leave` messages still on their way (PROTOCOL-v2 "Leave"); never wiped with the wearer's data.
+    public var leaves: LeaveOutboxStore
 
     public init(
         readings: any ReadingsStoring, treatments: any TreatmentStoring, sensor: SensorStateStore,
-        settings: WearerSettingsStore
+        settings: WearerSettingsStore, leaves: LeaveOutboxStore
     ) {
         self.readings = readings
         self.treatments = treatments
         self.sensor = sensor
         self.settings = settings
+        self.leaves = leaves
     }
 
     public static func files(_ paths: SukraraPaths, clock: any TimeSource) -> FollowerStores {
@@ -27,7 +30,8 @@ public struct FollowerStores: Sendable {
             readings: ReadingsFileStore(directory: paths.appSupport, clock: clock),
             treatments: TreatmentFileStore(directory: paths.appSupport, clock: clock),
             sensor: SensorStateStore(url: paths.sensorFile, clock: clock),
-            settings: WearerSettingsStore(url: paths.wearerSettingsFile, clock: clock))
+            settings: WearerSettingsStore(url: paths.wearerSettingsFile, clock: clock),
+            leaves: LeaveOutboxStore(url: paths.leaveOutboxFile, clock: clock))
     }
 }
 
@@ -48,6 +52,8 @@ public actor FollowerRuntime: FollowerService {
     /// A phone with nothing to pair with (it may open pairing in a moment): 5 s, as Android's *Find phones nearby*
     /// (link-rules.json).
     public static let nearbyLeaveNoPairing: Double = 5
+    /// How long *Stop following* waits for the wearer's phone to take the `leave` over Bluetooth.
+    static let nearbyLeaveWait: Double = 3
     private static let log = Logger(subsystem: SukraraIDs.appBundleID, category: "follower")
 
     private let secrets: any SecretStoring
@@ -59,6 +65,8 @@ public actor FollowerRuntime: FollowerService {
     private let makeRelays: RelayFactory
     private let makeNearby: NearbyFactory?
     private let sleep: @Sendable (Double) async throws -> Void
+    /// Carries *Stop following*'s `leave` to the wearer until two relays keep it (PROTOCOL-v2 "Leave").
+    private let leaver: LeaveSender
 
     private var session: FollowerSession?
     /// Bumped when a follow begins or ends: work that awaited across that change drops its writes, so a previous
@@ -106,7 +114,8 @@ public actor FollowerRuntime: FollowerService {
         secrets: any SecretStoring, account: String = KeychainStore.followerAccount, stores: FollowerStores,
         crypto: any NostrCrypto, clock: any TimeSource, me: Profile, makeRelays: @escaping RelayFactory,
         makeNearby: NearbyFactory? = nil,
-        sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) }
+        sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
+        leaveRelays: RelayFactory? = nil
     ) {
         self.secrets = secrets
         self.account = account
@@ -117,6 +126,8 @@ public actor FollowerRuntime: FollowerService {
         self.makeRelays = makeRelays
         self.makeNearby = makeNearby
         self.sleep = sleep
+        leaver = LeaveSender(
+            store: stores.leaves, crypto: crypto, clock: clock, makeRelays: leaveRelays ?? makeRelays, sleep: sleep)
     }
 
     private var now: Int { Int(clock.now.timeIntervalSince1970) }
@@ -151,7 +162,14 @@ public actor FollowerRuntime: FollowerService {
     public func start() async {
         guard !started, !stopped else { return }
         started = true
+        await leaver.onChange { [weak self] in await self?.publishSnapshot() }
         await load()
+        sendLeaves()
+    }
+
+    /// A `leave` still waiting goes now (start, wake, network back, *Stop following*), in the background.
+    private func sendLeaves() {
+        Task { [leaver] in await leaver.flush() }
     }
 
     /// Reads the follower state from the Keychain and starts following.
@@ -224,6 +242,7 @@ public actor FollowerRuntime: FollowerService {
     }
 
     public func reconnect() async {
+        sendLeaves()
         if keychainUnreadable, !stopped, session == nil, !beginning { return await load() }  // try the Keychain now
         guard !stopped, session != nil, !reconnectQueued else { return }
         reconnectQueued = true
@@ -292,8 +311,9 @@ public actor FollowerRuntime: FollowerService {
     public func confirmNearby(same: Bool) async -> Bool {
         guard let pair = session?.state.pair, !pair.confirmed else { return false }
         guard same else {
-            // the codes differ: whoever answered isn't the phone in front of the person; nothing of it was used
-            await unfollow()
+            // the codes differ: whoever answered isn't the phone in front of the person; nothing of it was used, and
+            // nothing is sent to it (PROTOCOL-v2 "Leave")
+            await unfollow(tell: false)
             return true
         }
         guard var current = session, let outcome = current.confirmPairing() else { return false }
@@ -433,10 +453,19 @@ public actor FollowerRuntime: FollowerService {
 
     // MARK: - unfollowing
 
-    public func unfollow() async {
+    public func unfollow() async { await unfollow(tell: true) }
+
+    /// Stop following. While the wearer knows this key (approved, or its request waits) and `tell`, a `leave` sealed by
+    /// it is saved in the outbox before the key goes, written to the wearer's phone if it's connected over Bluetooth,
+    /// and sent to the relays until two keep it (PROTOCOL-v2 "Leave"). `tell` false: *Different code* in a nearby
+    /// pairing (the phone that answered isn't the wearer's).
+    func unfollow(tell: Bool) async {
         endKeychainRetry()
         generation += 1
         joinTask?.cancel()
+        let leave = tell ? leaveOf(session) : nil
+        if let leave { await leaver.add(leave) }  // before the key goes: a crash after can't lose it
+        if let leave, let nearby, await sendNearby(leave.wrap, over: nearby) { await leaver.tookNearby(leave.wrap.id) }
         await serially(.disconnect)
         session = nil
         persisted = nil
@@ -451,6 +480,30 @@ public actor FollowerRuntime: FollowerService {
         }
         if searchingNearby { startNearby() }
         await publishSnapshot()
+        if leave != nil { sendLeaves() }
+    }
+
+    /// The `leave` for `session` with its outbox entry, nil when nothing is to be sent.
+    private func leaveOf(_ session: FollowerSession?) -> PendingLeave? {
+        guard let session, let wrap = try? session.leave(now: now) else { return nil }
+        let relays = session.state.relays.isEmpty ? Wire.defaultRelays : session.state.relays
+        return PendingLeave(
+            wrap: wrap, relays: relays, expiry: now + Wire.ttlLeave,
+            wearer: Profile.shownName(session.state.wearer?.name) ?? "")
+    }
+
+    /// Writes `wrap` to the wearer's phone over Bluetooth (one that proved it's the wearer's); false after 3 s.
+    private func sendNearby(_ wrap: SignedEvent, over nearby: any NearbyTransport) async -> Bool {
+        await withTaskGroup(of: Bool.self) { group in
+            group.addTask { await nearby.send(wrap) }
+            group.addTask { [sleep] in
+                try? await sleep(Self.nearbyLeaveWait)
+                return false
+            }
+            let first = await group.next() ?? false
+            group.cancelAll()
+            return first
+        }
     }
 
     private func wipeStores() async {
@@ -783,7 +836,8 @@ public actor FollowerRuntime: FollowerService {
             deliveries: log.entries.compactMapValues(\.delivery), wearerSettings: await stores.settings.load(),
             storeIssues: issues, nearby: nearbyState, relaysConnected: connectedRelays?.count,
             nearbyOffer: canJoin ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable,
-            me: session?.state.me ?? me, wearer: session?.state.wearer)
+            me: session?.state.me ?? me, wearer: session?.state.wearer,
+            untoldLeave: await leaver.outbox().untold.map(\.wearer))
         guard snapshot != current else { return }
         current = snapshot
         for continuation in snapshotSubscribers.values { continuation.yield(snapshot) }

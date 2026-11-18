@@ -95,6 +95,8 @@ class OwnerEngine(
     private val sensor: Flow<SensorLife?> = flowOf(null),
     /** Called for a new access request (the notification with Allow / Deny lives in the app layer). */
     private val onRequest: (PendingRequest) -> Unit = {},
+    /** Called when a follower stopped following (`leave`; the notification lives in the app layer). */
+    private val onLeft: (FollowerRecord) -> Unit = {},
     /** The network came back: the relays reconnect at once. Watched only while sharing runs. */
     private val network: NetworkWatch = NetworkWatch.None,
 ) {
@@ -127,6 +129,9 @@ class OwnerEngine(
 
     /** Every entry point: one at a time, including across suspensions inside (SecureStore, Room). */
     private suspend fun <T> locked(block: suspend () -> T): T = withContext(serial) { lock.withLock { block() } }
+
+    /** Approved followers now (one that left or was removed isn't counted). */
+    fun followerCount(): Int = owner?.activeFollowers()?.size ?: 0
 
     /** The identity key for NIP-42 AUTH (relays serve the wraps addressed to it only after AUTH). */
     fun identityKey(): app.mauri.sukrara.protocol.KeyPair? = owner?.identity(ctx.crypto)
@@ -416,6 +421,14 @@ class OwnerEngine(
                     historyRepublishedAt = now()
                     publish(readings.republish(handled.step.state, now(), signal.since))
                 }
+            }
+
+            // PROTOCOL-v2 "Leave": rotated like a Remove; the last 24 h again under the new epoch, its Bluetooth links
+            // no longer trusted, and the wearer told
+            is InboxSignal.FollowerLeft -> {
+                publish(readings.republish(handled.step.state, now()))
+                nearby.forget(signal.follower.key)
+                onLeft(signal.follower)
             }
 
             null -> {

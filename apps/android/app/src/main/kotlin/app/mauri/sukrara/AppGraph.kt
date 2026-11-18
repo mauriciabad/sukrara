@@ -86,6 +86,7 @@ import app.mauri.sukrara.integrations.nightscout.site.NsSourceSettings
 import app.mauri.sukrara.integrations.nightscout.site.NsSourceState
 import app.mauri.sukrara.integrations.tidepool.TpState
 import app.mauri.sukrara.monitor.MonitorModule
+import app.mauri.sukrara.monitor.alerts.AlertEventSink
 import app.mauri.sukrara.monitor.alerts.AlertRecord
 import app.mauri.sukrara.monitor.alerts.AlertsModule
 import app.mauri.sukrara.monitor.hub.MonitorRecord
@@ -105,6 +106,7 @@ import app.mauri.sukrara.pen.PenTapHint
 import app.mauri.sukrara.pen.PensModule
 import app.mauri.sukrara.protocol.event.AlertCodec
 import app.mauri.sukrara.protocol.event.SensorLife
+import app.mauri.sukrara.protocol.follow.LeaveOutbox
 import app.mauri.sukrara.sensor.SensorInfo
 import app.mauri.sukrara.sensor.SensorModule
 import app.mauri.sukrara.sensor.ble.SensorGlucose
@@ -118,6 +120,9 @@ import app.mauri.sukrara.share.ShareOwnerModule
 import app.mauri.sukrara.share.ble.NearbyStatus
 import app.mauri.sukrara.share.follower.FollowState
 import app.mauri.sukrara.share.follower.FollowerNotifications
+import app.mauri.sukrara.share.follower.LeaveNotifications
+import app.mauri.sukrara.share.follower.LeaveSender
+import app.mauri.sukrara.share.follower.LeaveWorker
 import app.mauri.sukrara.share.follower.WearerSettingsCache
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.SeenWraps
@@ -139,6 +144,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emitAll
@@ -501,11 +507,25 @@ class AppGraph(
             // the wearer's `alert` events (what its rules decide without this phone's actions, escalations included) to
             // every follower at once, over the relays and Bluetooth (PROTOCOL-v2 "Alerts"); none before the unlock (the
             // sharing identity is credential-encrypted): followers then get the readings at the unlock
-            events = { e ->
-                if (unlocked.value) {
-                    scope.launch { runCatching { shareOwner.ownerEngine.publishAlert(AlertCodec.decode(AlertEvent.encode(e))) } }
-                }
-            },
+            events =
+                object : AlertEventSink {
+                    override fun publish(event: AlertEvent) {
+                        if (unlocked.value) {
+                            scope.launch {
+                                runCatching {
+                                    shareOwner.ownerEngine.publishAlert(
+                                        AlertCodec.decode(AlertEvent.encode(event)),
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // the history line says *your followers were told* only while someone follows (a follower that left
+                    // isn't counted: PROTOCOL-v2 "Leave")
+                    override fun listening(): Boolean =
+                        unlocked.value && shareOwner.ownerEngine.running && shareOwner.ownerEngine.followerCount() > 0
+                },
             // a low-side alert's *Log carbs* only where it opens the dialog (never before the unlock: the log is locked)
             canLogTreatments = { userUnlocked() && runCatching { treatments.canAdd() }.getOrDefault(false) },
             // the glucose notification IS the alert while one is up (docs/36), unless *Separate alert notifications*
@@ -919,7 +939,33 @@ class AppGraph(
             dispatchers = dispatchers,
             notices = notifications::show,
             relayAccess = launch.relays,
+            // *Stop following*'s `leave` keeps going after the follow is gone, also with the app closed (WorkManager)
+            leaveOutbox = data.typedStore("follower_leaves", LeaveOutbox.serializer(), LeaveOutbox(), LeaveOutbox()),
+            scope = scope,
+            scheduleLeaves = { LeaveWorker.schedule(app) },
         )
+    }
+
+    /**
+     * A `leave` this phone couldn't hand to any relay or the wearer's phone yet (offline after *Stop following*): *Ana
+     * hasn't been told yet*, once the first attempt is over (never a flash while a relay is about to answer), gone
+     * once one took it (PROTOCOL-v2 "Leave").
+     */
+    private fun followUntoldLeaves() {
+        val sender = follower.leaves ?: return
+        val info = NotificationGroups.Group.INFO
+        val untold = LeaveNotifications(app, Channels.REQUESTS, info.key)
+        scope.launch {
+            sender.resume()
+            sender.outbox.map { it.untold?.wearer }.distinctUntilChanged().collectLatest { wearer ->
+                if (wearer == null) {
+                    NotificationGroups.cancel(app, NotificationIds.LEAVE_UNTOLD, info)
+                } else {
+                    delay(LeaveSender.WAIT_MS)
+                    NotificationGroups.post(app, NotificationIds.LEAVE_UNTOLD, untold.untold(wearer), info, Channels.REQUESTS)
+                }
+            }
+        }
     }
 
     /**
@@ -1177,6 +1223,7 @@ class AppGraph(
                     time = { ClockText.time(it) },
                     post = { NotificationGroups.post(app, NotificationIds.REQUESTS, it, info, Channels.REQUESTS) },
                     remove = { NotificationGroups.cancel(app, NotificationIds.REQUESTS, info) },
+                    postLeft = { NotificationGroups.post(app, NotificationIds.FOLLOWER_LEFT, it, info, Channels.REQUESTS) },
                 ),
             // what followers on *Settings from: Wearer* use (cold: the alert runtime is built when the engine reads it)
             mirrored = WearerSettingsSource(data.settings, flow { emitAll(alerts.store.settings) }),
@@ -1398,6 +1445,8 @@ class AppGraph(
             step("follower") {
                 follower.engine.load()
                 leaveLeftBehindLink()
+                // a `leave` a previous run couldn't send goes now (and its notification while it waits)
+                followUntoldLeaves()
                 // a follow that ended (declined, invite used, removed) arms no "no data" alarm for a stream that won't come
                 scope.launch {
                     follower.engine.state.map { it.ended }.distinctUntilChanged().collect { ended ->

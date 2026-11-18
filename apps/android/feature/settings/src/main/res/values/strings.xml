@@ -729,6 +729,9 @@
     <string name="st_note_escalated">%1$s: no answer for %2$s, your followers were told</string>
     <string name="st_note_escalated_remote">%1$s · no response on their phone</string>
     <string name="st_note_answered">%1$s answered: your followers were told</string>
+    <!-- the wearer's escalation while nobody followed (no follower, or sharing off) -->
+    <string name="st_note_escalated_nobody">%1$s: no answer for %2$s, no follower to tell</string>
+    <string name="st_note_answered_nobody">%1$s answered</string>
     <string name="st_note_answered_remote">%1$s answered on their phone</string>
     <string name="st_profile_add_name">Add your name</string>
     <string name="st_profile_summary">Your profile: the name and picture your followers see</string>

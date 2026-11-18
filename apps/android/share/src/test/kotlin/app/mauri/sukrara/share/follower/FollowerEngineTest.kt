@@ -30,6 +30,7 @@ import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.event.SettingsCodec
 import app.mauri.sukrara.protocol.event.SettingsPayload
 import app.mauri.sukrara.protocol.follow.FollowStatus
+import app.mauri.sukrara.protocol.follow.LeaveOutbox
 import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.share.FakeNetworkWatch
 import app.mauri.sukrara.share.FakeRelayTransport
@@ -94,6 +95,7 @@ class FollowerEngineTest {
     private fun TestScope.engine(
         timeoutMs: Long = 25_000,
         secureStore: SecureStore = secure,
+        leaves: LeaveSender? = null,
     ) = FollowerEngine(
         crypto,
         FollowerStore(secureStore, crypto),
@@ -107,9 +109,19 @@ class FollowerEngineTest {
         joinTimeoutMs = timeoutMs,
         settingsCache = settingsCache,
         network = network,
+        leaves = leaves,
     )
 
     private val network = FakeNetworkWatch()
+
+    /** The relays a `leave` goes to after *Stop following* (its own connection), and the outbox it is kept in. */
+    private val leaveRelay = FakeRelayTransport()
+    private val outbox = InMemoryStateStore(LeaveOutbox())
+    private val leaveNetwork = FakeNetworkWatch()
+    private var retries = 0
+
+    private fun TestScope.leaveSender() =
+        LeaveSender(outbox, { _, _ -> leaveRelay }, crypto, clock, backgroundScope, leaveNetwork) { retries++ }
 
     private var lookupFirst = true
 
@@ -522,6 +534,167 @@ class FollowerEngineTest {
             assertEquals(FollowState.NotFollowing, e.state.value)
             assertNull(links.last())
             assertFalse(relay.started)
+        }
+
+    /**
+     * PROTOCOL-v2 "Leave": *Stop following* seals a `leave` with the follower key before the key goes, keeps only the
+     * signed wrap in the outbox, and sends it to every relay until two keep it (one isn't enough: it may drop it); while
+     * none has it, the network watch and the WorkManager job bring it back.
+     */
+    @Test fun stopFollowingTellsTheWearerUntilTwoRelaysKeepIt() =
+        runTest {
+            val leaves = leaveSender()
+            val e = engine(leaves = leaves)
+            val request = joined(e)
+            val (_, published) = approve(request)
+            deliverAll(published)
+            runCurrent()
+            var done = false
+            backgroundScope.launch { done = e.unfollow() }
+            runCurrent()
+            assertTrue(done)
+            assertNull(secure.read(FollowerStore.NAME))
+            val waiting =
+                outbox.data
+                    .first()
+                    .leaves
+                    .single()
+            assertEquals("Ana", waiting.wearer)
+            assertEquals(Wire.DEFAULT_RELAYS, waiting.relays)
+            // what the outbox keeps is the wrap only: sealed by the key that's gone, readable only by the wearer
+            val wrap = SignedEvent.parse(waiting.wrapJson)!!
+            assertEquals(waiting.eventId, wrap.id)
+            val opened = crypto.unwrap(wearer0.identity(crypto).secret, wrap)!!
+            assertEquals(crypto.unwrap(wearer0.identity(crypto).secret, request)!!.sender, opened.sender)
+            assertEquals(Rumor.Leave, RumorCodec.decode(opened.kind, opened.content))
+            assertEquals((NOW + Wire.TTL_LEAVE).toString(), wrap.tag("expiration"))
+            // sent at once on its own connection, with a throwaway key for AUTH
+            assertEquals(listOf(wrap), leaveRelay.published)
+            leaveRelay.ok(wrap.id, "nos.lol")
+            runCurrent()
+            assertTrue(
+                "told",
+                outbox.data
+                    .first()
+                    .leaves
+                    .single()
+                    .told,
+            )
+            leaveRelay.ok(wrap.id, "relay.example", accepted = true)
+            leaveRelay.ok(wrap.id, "nostr.mom", accepted = false)
+            runCurrent()
+            assertEquals(
+                "a relay not on the list and a refusal don't count",
+                1,
+                outbox.data
+                    .first()
+                    .leaves
+                    .single()
+                    .accepted.size,
+            )
+            leaveRelay.ok(wrap.id, "relay.primal.net")
+            runCurrent()
+            assertTrue(
+                "two relays keep it: done",
+                outbox.data
+                    .first()
+                    .leaves
+                    .isEmpty(),
+            )
+            assertFalse(leaveRelay.started)
+            assertEquals(0, retries)
+        }
+
+    @Test fun aLeaveNoRelayTookWaitsForTheNetworkAndTheJob() =
+        runTest {
+            val leaves = leaveSender()
+            val e = engine(leaves = leaves)
+            val (_, published) = approve(joined(e))
+            deliverAll(published)
+            runCurrent()
+            backgroundScope.launch { e.unfollow() }
+            runCurrent()
+            advanceTimeBy(LeaveSender.WAIT_MS + 1)
+            runCurrent()
+            val waiting =
+                outbox.data
+                    .first()
+                    .leaves
+                    .single()
+            assertFalse(waiting.told)
+            assertEquals(1, retries)
+            assertEquals(1, leaveNetwork.open)
+            // the network comes back: sent again, and kept this time
+            leaveRelay.published.clear()
+            leaveNetwork.networkBack()
+            runCurrent()
+            assertEquals(waiting.eventId, leaveRelay.published.single().id)
+            leaveRelay.ok(waiting.eventId, "nos.lol")
+            leaveRelay.ok(waiting.eventId, "relay.snort.social")
+            runCurrent()
+            assertTrue(
+                outbox.data
+                    .first()
+                    .leaves
+                    .isEmpty(),
+            )
+            assertEquals(0, leaveNetwork.open)
+        }
+
+    /** Cancel while the request waits tells the wearer too (its request goes); a follow that ended, or tell = false, doesn't. */
+    @Test fun aWaitingRequestIsWithdrawnButAnEndedFollowSendsNothing() =
+        runTest {
+            val e = engine(leaves = leaveSender())
+            joined(e)
+            backgroundScope.launch { e.unfollow() }
+            runCurrent()
+            assertEquals(
+                1,
+                outbox.data
+                    .first()
+                    .leaves.size,
+            )
+
+            outbox.update { LeaveOutbox() }
+            relay.published.clear()
+            lookupFirst = true
+            val again = engine(leaves = leaveSender())
+            joined(again)
+            backgroundScope.launch { again.unfollow(tell = false) }
+            runCurrent()
+            assertTrue(
+                "different code: nothing is sent",
+                outbox.data
+                    .first()
+                    .leaves
+                    .isEmpty(),
+            )
+
+            relay.published.clear()
+            lookupFirst = true
+            val declined = engine(leaves = leaveSender())
+            val request = joined(declined)
+            val handled = HandleInbox(ctx)(created.step.state, request, NOW)
+            val no =
+                DenyRequest(ctx)(
+                    handled.step.state,
+                    handled.step.state.pending
+                        .single()
+                        .follower,
+                    NOW,
+                )!!
+            deliverAll(no.publish.filter { it.kind == Wire.KIND_WRAP })
+            runCurrent()
+            assertEquals(FollowStatus.Declined, (declined.state.value as FollowState.Following).status)
+            backgroundScope.launch { declined.unfollow() }
+            runCurrent()
+            assertTrue(
+                "declined: the wearer knows already",
+                outbox.data
+                    .first()
+                    .leaves
+                    .isEmpty(),
+            )
         }
 
     @Test fun theRecordSurvivesARestartAndAnUnreadableOneIsKept() =

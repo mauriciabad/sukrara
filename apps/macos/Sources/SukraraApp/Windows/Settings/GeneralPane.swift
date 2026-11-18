@@ -215,6 +215,10 @@ struct FollowingRows: View {
         switch follow.status {
         case .notFollowing:
             row(L10n.t("Not following anyone"), "person.crop.circle.badge.questionmark")
+            // PROTOCOL-v2 "Leave": offline after Stop following; it goes by itself once online
+            if let untold = follow.untoldLeave {
+                Text(Self.untoldText(untold)).foregroundStyle(.secondary)
+            }
             Button(L10n.t("Follow…"), action: openFollow)
             ScanQRButton(follow: follow, openFollow: openFollow)
         case .joining:
@@ -261,7 +265,7 @@ struct FollowingRows: View {
                 } message: {
                     Text(
                         L10n.t(
-                            "Their readings are removed from this Mac. To follow again, they have to send a new invite."
+                            "Their phone is told you stopped. Their readings are removed from this Mac. To follow again, they have to send a new invite."
                         ))
                 }
         case .declined, .inviteUsed, .inviteExpired, .revoked, .broken:
@@ -273,6 +277,16 @@ struct FollowingRows: View {
 
     private func row(_ text: String, _ symbol: String) -> some View {
         Label(text, systemImage: symbol).frame(minHeight: 24)
+    }
+
+    /// The wearer hasn't been told yet that this Mac stopped following (`name` "" = unknown).
+    static func untoldText(_ name: String) -> String {
+        name.isEmpty
+            ? L10n.t(
+                "The person you followed hasn't been told yet that you stopped. Sukrara tells them once this Mac is online."
+            )
+            : L10n.t(
+                "\(name) hasn't been told yet that you stopped following. Sukrara tells them once this Mac is online.")
     }
 
     static func endText(_ s: FollowStatus) -> String {

@@ -68,6 +68,12 @@ fun interface AlertAlarm {
 /** Sends the wearer's `alert` events to the followers (publisher; a no-op until it is wired). */
 fun interface AlertEventSink {
     fun publish(event: AlertEvent)
+
+    /**
+     * Whether anyone follows now (sharing runs with an active follower): the escalation's history line says the
+     * followers were told only then (PROTOCOL-v2 "Leave").
+     */
+    fun listening(): Boolean = true
 }
 
 /**

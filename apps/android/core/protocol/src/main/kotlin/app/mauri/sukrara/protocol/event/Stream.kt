@@ -97,8 +97,15 @@ data class BackupEpoch(val n: Int, val nsec: String) {
     override fun toString() = "BackupEpoch($n)"
 }
 
-/** A follower in the owner backup. */
-data class BackupFollower(val key: String, val name: String, val avatar: Avatar?, val since: Long, val revoked: Long?)
+/** A follower in the owner backup; [left] = it stopped following by itself (`leave`, at [revoked]), not removed. */
+data class BackupFollower(
+    val key: String,
+    val name: String,
+    val avatar: Avatar?,
+    val since: Long,
+    val revoked: Long?,
+    val left: Boolean = false,
+)
 
 /**
  * An invite in the owner backup: [token], [expiry], the owner's own [label] ("who is it for?"), whether it was a
@@ -159,6 +166,7 @@ object BackupCodec {
                                 put("avatar", f.avatar?.json ?: JsonNull)
                                 put("since", f.since)
                                 f.revoked?.let { put("revoked", it) }
+                                if (f.left) put("left", true)
                             },
                         )
                     }
@@ -182,7 +190,14 @@ object BackupCodec {
         val followers =
             objects(o, "followers").mapNotNull { f ->
                 val key = f.string("f")?.takeIf(Hex::isKey) ?: return@mapNotNull null
-                BackupFollower(key, f.string("name").orEmpty(), Avatar.of(f["avatar"]), f.longOrNull("since") ?: 0, f.longOrNull("revoked"))
+                BackupFollower(
+                    key,
+                    f.string("name").orEmpty(),
+                    Avatar.of(f["avatar"]),
+                    f.longOrNull("since") ?: 0,
+                    f.longOrNull("revoked"),
+                    f.bool("left") ?: false,
+                )
             }
         val invites =
             objects(o, "invites").mapNotNull { i ->

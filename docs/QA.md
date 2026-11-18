@@ -938,6 +938,14 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
    home), no No data alarm afterwards. Again with the relay stopped: *Telling your followers…* waits 15 s with
    *Cancel*; *Cancel* says *Cancelled. Nothing changed…* and the follower keeps following once the relay is back.
+10. Leave (PROTOCOL-v2 "Leave"): follower *Stop following* (the leave questions say *<name>'s phone is told.*). The relay logs one kind 1059 event `p`-tagged to the wearer's identity. The wearer shows *<name>
+    stopped following you* within seconds, Settings › Sharing counts one follower less, and *Past followers* lists them
+    with *Left <today>*. Again with the wearer's emulator off: start it a few minutes later and the same happens
+    (the date is still when they left). Again with the follower offline (airplane mode) at *Stop following*: after
+    about 20 s the follower shows *<name> hasn't been told yet*. Back online, it goes within seconds (or with the app
+    closed, from the WorkManager job) and the notification leaves. A Mac follower: *Not following anyone* says *<name>
+    hasn't been told yet…* while offline. The wearer's escalation line (Lately) with no follower left reads *no
+    follower to tell*.
 
 ## Q23 Import history
 

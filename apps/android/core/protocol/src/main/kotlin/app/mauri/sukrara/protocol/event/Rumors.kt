@@ -50,6 +50,15 @@ sealed interface Rumor {
         override val type = "history"
     }
 
+    /**
+     * Follower → owner (30500): this follower stopped following, or cancelled its waiting request (PROTOCOL-v2 "Leave").
+     * Final for that follower key.
+     */
+    data object Leave : Rumor {
+        override val kind = Wire.KIND_TO_OWNER
+        override val type = "leave"
+    }
+
     /** Owner → follower (30501): the read key of [epoch] (as nsec), the stream id and the publishing devices. */
     data class KeyDelivery(
         val sid: String,
@@ -141,7 +150,7 @@ object RumorCodec {
                 put("profile", r.profile?.toJson() ?: JsonNull)
             }
 
-            Rumor.Revoked, Rumor.InviteUsed, Rumor.Declined -> {
+            Rumor.Revoked, Rumor.InviteUsed, Rumor.Declined, Rumor.Leave -> {
                 Unit
             }
         }
@@ -197,6 +206,10 @@ object RumorCodec {
 
             "history" -> {
                 Rumor.History(o.long("since"))
+            }
+
+            "leave" -> {
+                Rumor.Leave
             }
 
             else -> {

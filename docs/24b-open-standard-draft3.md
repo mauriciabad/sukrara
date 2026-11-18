@@ -8,6 +8,11 @@ reference: [`poc/spec/reference/ogs/d3`](../poc/spec/reference/ogs/d3) · eviden
 > removed writer or a lost phone could keep writing into the old epoch; strangers got envelopes over Bluetooth) and
 > several smaller ones. They are fixed in the spec, the vectors and the reference; the figures below are the
 > current ones. 24c lists every change and what was rejected.
+>
+> **2026-11-18:** the standalone repository gets C§9.5 *Leaving*: a `leave` that is hard to lose, kept a year, sent
+> until two relays have it, final for its key. Rationale D17 and two reference tests come with it; the vectors didn't
+> change ([pull request #1](https://github.com/mauriciabad/open-glucose-stream/pull/1)). It is what Sukrara built on
+> draft 1 ([docs/44 Appendix G](44-external-sources.md#in-sukrara-the-leave-2026-11-18)).
 
 ## Goal
 

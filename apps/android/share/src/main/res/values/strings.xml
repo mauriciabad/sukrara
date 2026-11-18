@@ -23,4 +23,10 @@
     <string name="share_follow_revoked_text">%1$s stopped sharing with you. Their readings no longer reach this phone.</string>
     <string name="share_follow_expired_title">Invite expired</string>
     <string name="share_follow_expired_text">The invite from %1$s expired before they allowed you. Ask them for a new link, then join again in Settings › Sharing.</string>
+    <!-- the wearer's phone: a follower stopped following (PROTOCOL-v2 "Leave"); %1$s = the follower's name -->
+    <string name="share_left_title">%1$s stopped following you</string>
+    <string name="share_left_text">They no longer see your glucose or get your alerts.</string>
+    <!-- this phone stopped following and couldn't tell the wearer yet (offline); %1$s = the wearer's name -->
+    <string name="share_leave_untold_title">%1$s hasn\'t been told yet</string>
+    <string name="share_leave_untold_text">Sukrara tells them you stopped following once this phone is online. Keep Sukrara installed until then.</string>
 </resources>

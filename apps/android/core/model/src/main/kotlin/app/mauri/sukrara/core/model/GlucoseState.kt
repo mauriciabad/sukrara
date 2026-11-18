@@ -230,6 +230,8 @@ data class AlertNote(
     val mgdl: Int? = null,
     val minutes: Int? = null,
     val remote: Boolean = false,
+    /** The wearer's escalation or its answer while nobody followed (no active follower, or sharing off): nobody was told. */
+    val nobody: Boolean = false,
 )
 
 /** [AllBack]: a timed Mute all ended by itself; [Resumed]: an alert shown again without sound after a restart. */

@@ -106,6 +106,7 @@ class ShareOwnerModule(
                     RelayPolicy(on, min.toInt())
                 },
             onRequest = { requests.onRequest(it) },
+            onLeft = requestNotifications::showLeft,
             sensor = sensor,
             network = AndroidNetworkWatch(context),
         ).also { engine ->

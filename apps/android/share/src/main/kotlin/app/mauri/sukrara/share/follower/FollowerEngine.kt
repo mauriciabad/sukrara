@@ -34,6 +34,7 @@ import app.mauri.sukrara.protocol.follow.FollowStatus
 import app.mauri.sukrara.protocol.follow.FollowerState
 import app.mauri.sukrara.protocol.follow.Item
 import app.mauri.sukrara.protocol.follow.NearbyPair
+import app.mauri.sukrara.protocol.follow.PendingLeave
 import app.mauri.sukrara.protocol.follow.StreamFollower
 import app.mauri.sukrara.protocol.invite.Invite
 import app.mauri.sukrara.protocol.invite.InviteFailure
@@ -77,6 +78,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.security.SecureRandom
 import java.time.Instant
 
@@ -180,6 +182,8 @@ class FollowerEngine(
     private val settingsCache: StateStore<WearerSettingsCache>? = null,
     /** The network came back: the relays reconnect at once. Watched only while connected (the service hosts it). */
     private val network: NetworkWatch = NetworkWatch.None,
+    /** Carries the `leave` that *Stop following* makes (PROTOCOL-v2 "Leave"); null: nothing is sent (tests). */
+    private val leaves: LeaveSender? = null,
 ) : ReadingSource {
     private val serial = dispatcher.limitedParallelism(1)
     private val lock = Mutex()
@@ -458,7 +462,8 @@ class FollowerEngine(
     suspend fun confirmNearby(same: Boolean): Boolean {
         if (!same) {
             val waiting = locked { record?.stream?.pair?.let { !it.confirmed } == true }
-            return waiting && unfollow()
+            // the phone that answered isn't the wearer's: nothing is sent (PROTOCOL-v2 "Leave")
+            return waiting && unfollow(tell = false)
         }
         return locked {
             val f = follower ?: return@locked false
@@ -523,19 +528,30 @@ class FollowerEngine(
     // ------------------------------------------------------------------------------------------------ leaving
 
     /**
-     * Stop following: the connection closes, the record (F, the read keys) and the wearer's readings and treatments go.
-     * Nothing is sent: the wearer's next rotation leaves this key out. False when the Keystore refused the delete
-     * (the person can try again). [keepHistory]: the readings and treatments stay (one person, one link: the person
-     * kept the history; the wearer's settings go either way).
+     * Stop following: the record (F, the read keys) and the wearer's readings and treatments go, the connection closes.
+     * While approved or waiting for the wearer's answer, the wearer is told ([tell], PROTOCOL-v2 "Leave"): a `leave`
+     * sealed by F is saved in the outbox before F goes, written to the wearer's phone if it's connected over Bluetooth,
+     * and sent to the relays by [LeaveSender] until two keep it. [tell] false: *Different code* in a nearby pairing (the
+     * phone that answered isn't the wearer's). [keepHistory]: the readings and treatments stay (one person, one link:
+     * the person kept the history; the wearer's settings go either way). False when the Keystore refused the delete (the
+     * person can try again; nothing was sent).
      */
-    suspend fun unfollow(keepHistory: Boolean = false): Boolean =
+    suspend fun unfollow(
+        keepHistory: Boolean = false,
+        tell: Boolean = true,
+    ): Boolean =
         locked {
             val out = sink
-            disconnect()
+            val leave = if (tell) leaveOf(record) else null
+            // saved before the key goes: a crash after the delete can't lose it
+            leave?.let { leaves?.add(it.first) }
             // the data first: a crash before the key delete is healed by the next unfollow / join
             wipeData(history = !keepHistory)
             val deleted = store.delete()
             if (deleted) {
+                // the wearer's phone nearby takes it at once (still connected here); the relays get it either way
+                leave?.let { (pending, wrap) -> if (sendNearby(wrap)) leaves?.tookNearby(pending.eventId) }
+                disconnect()
                 record = null
                 follower = null
                 setSettings(null)
@@ -543,12 +559,33 @@ class FollowerEngine(
                 _status.value = SourceStatus.NotStarted
                 _state.value = FollowState.NotFollowing
                 setLink(null)
+                leave?.let { leaves?.kick() }
             } else {
+                leave?.let { leaves?.drop(it.first.eventId) }
                 // still following: back online (the stored data is gone; the backfill brings it again)
+                disconnect()
                 out?.let { connect(it) }
             }
             deleted
         }
+
+    /** The `leave` for [r] while the wearer knows this key (approved, or its request waits), with the outbox entry. */
+    private fun leaveOf(r: FollowerRecord?): Pair<PendingLeave, SignedEvent>? {
+        val stream = r?.stream ?: return null
+        val identity = stream.identity ?: return null
+        if (stream.status != FollowStatus.Requested && stream.status != FollowStatus.Active) return null
+        val now = now()
+        val wrap = events.gift(stream.follower, identity, Rumor.Leave, now, now + Wire.TTL_LEAVE)
+        val relays = stream.relays.ifEmpty { Wire.DEFAULT_RELAYS }
+        val name = Profile.shownName(r.wearer?.name.orEmpty())
+        return PendingLeave(wrap.toJson(), wrap.id, relays, now + Wire.TTL_LEAVE, name) to wrap
+    }
+
+    /** Writes [ev] to the wearer's phone over Bluetooth when one proved it's the wearer's; false otherwise or after 3 s. */
+    private suspend fun sendNearby(ev: SignedEvent): Boolean {
+        val nb = nearby ?: return false
+        return withTimeoutOrNull(NEARBY_LEAVE_MS) { nb.send(ev) } == true
+    }
 
     /**
      * This phone deleted the stored history while it follows (a change of whose glucose on the link): the relays are
@@ -1204,6 +1241,9 @@ class FollowerEngine(
 
         /** PROTOCOL-v2 "Bluetooth link": another wearer's phone is avoided for 10 minutes (link-rules.json). */
         const val LEAVE_OTHER_PHONE_S = 600L
+
+        /** How long *Stop following* waits for the wearer's phone to take the `leave` over Bluetooth. */
+        const val NEARBY_LEAVE_MS = 3_000L
 
         /**
          * *Find phones nearby*: every phone is read again after this long, offering *Pair nearby* or not (one may open

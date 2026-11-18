@@ -291,6 +291,12 @@ object NotificationIds {
     /** What the followed wearer said: invite used, declined, access removed. */
     const val FOLLOWING = 31
 
+    /** The wearer's phone: *Ana stopped following you* (PROTOCOL-v2 "Leave"). */
+    const val FOLLOWER_LEFT = 32
+
+    /** This phone stopped following and no relay took its `leave` yet: *Ana hasn't been told yet* (silent). */
+    const val LEAVE_UNTOLD = 33
+
     /** Alerts: the `alerts` notification group's summary, then one slot per alert group (level, rate, no data). */
     const val ALERTS_SUMMARY = 1000
     const val ALERTS_BASE = 1001

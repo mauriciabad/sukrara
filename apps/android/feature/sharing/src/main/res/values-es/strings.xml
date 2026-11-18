@@ -241,13 +241,14 @@
     <!-- TalkBack on a follower row whose picture carries the Can add treatments mark -->
     <string name="sh_followers_can_add">Puede añadir tratamientos</string>
     <!-- Button: show removed followers -->
-    <string name="sh_followers_removed_show">Eliminados</string>
+    <string name="sh_followers_removed_show">Seguidores anteriores</string>
     <!-- Button: fold removed followers -->
     <string name="sh_followers_removed_hide">Ver menos</string>
     <!-- Group title: removed followers -->
-    <string name="sh_followers_removed">Eliminados</string>
+    <string name="sh_followers_removed">Seguidores anteriores</string>
     <!-- Removed follower; %1$s = date -->
     <string name="sh_followers_removed_at">Eliminado el %1$s</string>
+    <string name="sh_followers_left_at">Dejó de seguirte el %1$s</string>
     <!-- The follower sheet's switch: this follower may add treatments -->
     <string name="sh_followers_writer">Puede añadir tratamientos</string>
     <!-- Switch summary -->

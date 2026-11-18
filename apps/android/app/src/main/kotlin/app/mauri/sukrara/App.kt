@@ -22,6 +22,8 @@ import app.mauri.sukrara.monitor.lockedboot.LockedBootReceiver
 import app.mauri.sukrara.pen.PensHost
 import app.mauri.sukrara.pen.PensModule
 import app.mauri.sukrara.share.ShareOwnerModule
+import app.mauri.sukrara.share.follower.LeaveHost
+import app.mauri.sukrara.share.follower.LeaveSender
 import app.mauri.sukrara.share.owner.requests.ShareOwnerHost
 import app.mauri.sukrara.widgets.WidgetsHost
 import app.mauri.sukrara.widgets.WidgetsModule
@@ -39,7 +41,8 @@ class App :
     TreatmentsHost,
     ShareOwnerHost,
     WidgetsHost,
-    PensHost {
+    PensHost,
+    LeaveHost {
     private val graphOnce =
         lazy {
             // before the first unlock after a restart only its device-protected part loads; the rest waits for the unlock
@@ -137,6 +140,11 @@ class App :
     private val Configuration.isNight get() = uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
 
     override val treatments: TreatmentsModule get() = graph.treatments
+
+    override suspend fun leaveSender(): LeaveSender? {
+        graph.ready.await()
+        return graph.follower.leaves
+    }
 
     override val shareOwner: ShareOwnerModule get() = graph.shareOwner
 

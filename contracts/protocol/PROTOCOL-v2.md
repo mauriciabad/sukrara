@@ -34,13 +34,14 @@ event's `r` is the trend's rate the wearer's alert showed ([Alerts](#alerts--v2-
 | **hour chunk** | 30078 | `D` | `["d", H("cgm2:h:"+sid+":"+hourStart)]`, `["c", H("cgm2:glucose:"+sid)]`, `["gk", gk_n]`, exp hour+7 d | `{"v":2,"h":hourStart,"dev":src,"r":[[dt,sgv,rate100],…]}` → `G_n` |
 | **settings** | 30078 | `D` | `["d", H("cgm2:settings:"+sid)]`, `["gk", gk_n]`, exp now+30 d | `{"v":2,"type":"settings","u","graph":{…},"alerts":{…}}` → `G_n` ([Settings](#settings--v2-addition-2026-10-21-round-f28)) |
 | **roster** | 30078 | `I` | `["d", H("cgm2:roster:"+sid)]`, `["gk", gk_n]`, exp now+30 d (refreshed weekly) | `{"v":2,"epoch":n,"devices":[hex D…],"writers":[hex W…],"relays":[…],"profile":{…}}` → `G_n` (`profile`: the wearer's, see [Profiles](#profiles)) |
-| **owner backup** | 30078 | `I` | `["d", H("cgm2:backup:"+I.pub_hex)]`, exp now+90 d (refreshed weekly) | `{"v":2,"sid","epochs":[{"n","g":nsec}],"followers":[{"f":hex,"name","avatar","since","revoked"?}],"invites":[{"t","x"}],"relays":[…],"profile":{…}}` → **`I` itself** |
+| **owner backup** | 30078 | `I` | `["d", H("cgm2:backup:"+I.pub_hex)]`, exp now+90 d (refreshed weekly) | `{"v":2,"sid","epochs":[{"n","g":nsec}],"followers":[{"f":hex,"name","avatar","since","revoked"?,"left"?}],"invites":[{"t","x"}],"relays":[…],"profile":{…}}` → **`I` itself** |
 | **invite** | rumor kind 30502 in gift wrap to `invite_key(secret)` | seal by `I` | wrap exp = invite expiry | `{"v":3,"type":"invite","x":expiry,"r":[relays],"profile":{…}}` ([PROTOCOL-identity](PROTOCOL-identity.md#short-invites-v3)) |
 | **access request** | rumor kind 30500 in NIP-59 gift wrap (1059) to `I` | seal by `F` | — | `{"v":2,"type":"request","token":t,"profile":{"name":"Mom","avatar":{…}}}`; a [nearby](#nearby-pairing) request adds `"n":na` |
 | **profile update** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"profile","profile":{…}}` (applied only for an approved, non-revoked `F`, and only when its rumor `created_at` is not older than the last one applied) |
 | **key delivery** | rumor kind 30501 in gift wrap to `F` | seal by `I` | — | `{"v":2,"type":"key","sid","epoch":n,"g":nsec(G_n),"devices":[…],"relays":[…]}` |
 | **rekey request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"rekey","have":gk}` (follower saw an unknown `gk`; `have` = the `gk` of the newest epoch it holds, never the unknown one; owners only log it) |
 | **history request** | rumor kind 30500 in gift wrap to `I` | seal by `F` | — | `{"v":2,"type":"history","since":hourStart}` (follower's backfill found hours missing) |
+| **leave** | rumor kind 30500 in gift wrap to `I` | seal by `F` | wrap exp now + 365 d | `{"v":2,"type":"leave"}`: the follower stopped following, or cancelled its request ([Leave](#leave--v2-addition-2026-11-18-213)) |
 | **revoked notice** | rumor kind 30501 in gift wrap to `F` | seal by `I` | — | `{"v":2,"type":"revoked"}` (courtesy; security comes from rotation) |
 | **invite used** | rumor kind 30501 in gift wrap to `F` | seal by `I` | exp +7 d | `{"v":2,"type":"invite-used"}`: another follower's request had already claimed this invite |
 | **declined** | rumor kind 30501 in gift wrap to `F` | seal by `I` | exp +7 d | `{"v":2,"type":"declined"}`: the owner denied the request (no key follows) |
@@ -53,7 +54,7 @@ request) arrive already expired ("invalid: event expired", found 2026-10-17). Fo
 request only with a valid, unexpired invite token (and the owner still confirms it in the UI).
 
 TTLs (Android and Mac, both from now): access request, profile update, rekey request, invite used and declined **7 d**;
-history request **1 d**; key delivery and revoked **30 d**; the invite wrap until the invite expires. A key delivery
+history request **1 d**; key delivery and revoked **30 d**; leave **365 d**; the invite wrap until the invite expires. A key delivery
 whose `sid` differs from the one the follower already has is rejected: a stream's `sid` never changes.
 
 ### Relay rules (learned while testing, 2026-10-16)
@@ -271,6 +272,62 @@ per-place windows and sensor time, the alerts main switch) is per device and nev
   forgets it (the next wearer's `u` may be older). Android `WearerSettings.received`, Mac `WearerSettings.received`.
 - Privacy: followers already see the readings; the settings are encrypted to the group key like every other event.
 
+## Leave — v2 addition, 2026-11-18 (#213)
+
+A follower that stops following tells the wearer, so the wearer's list, its escalation note and its notification say
+who still follows. The message must survive a follower that leaves offline or uninstalls soon after, a wearer's phone
+that is off for days and relays that drop events. Pinned by [sync/leave.json](sync/leave.json) (Android
+`LeaveFixtureTest` + `LeaveWearerTest`, Mac `LeaveFixtureTests`); design and sources: [docs/44 Appendix G](../../docs/44-external-sources.md#appendix-g-switching-sources-with-a-sukrara-link-journey-review-2026-11-18).
+
+| Event | kind | signed by | tags | content (decrypted) |
+|---|---|---|---|---|
+| **leave** | rumor kind 30500 in NIP-59 gift wrap (1059) to `I` | seal by `F` | `["p", I]`, `["expiration", now + 365 d]` | `{"v":2,"type":"leave"}` |
+
+**Follower** (Android and Mac):
+- *Stop following* sends `leave` while the follower is approved or its request waits (status `requested` or `active`);
+  *Cancel* on a waiting request is the same. Nothing is sent for a follow that already ended (declined, invite used,
+  expired, removed), for *Different code* in a nearby pairing (the phone that answered isn't the wearer's), or when
+  the follower key can't be read.
+- The wrap is made **before** `F` and the stream are deleted: sealed by `F`, rumor `created_at` = now, absolute
+  expiration now + 365 d. Then `F`, the read keys and the wearer's data are deleted as before.
+- **Leave outbox**: the signed wrap (never `F`), the stream's relays and the wearer's name are saved on the device
+  (Android: a plain store; Mac: `leave-outbox.json` in Application Support; nothing secret: the wrap is encrypted and
+  signed by a one-time key). It is sent at once to every relay of the stream and, when the wearer's phone is connected
+  over Bluetooth and proved it's the wearer's ([Bluetooth link](#bluetooth-link)), over Bluetooth. It is sent again
+  to every relay that hasn't answered `OK true` at each start, whenever the network comes back, and (Android) from a
+  WorkManager job that waits for a network, until **2 relays** accepted it (all of them when the stream lists fewer),
+  or it expired. Then it is dropped. A relay asking for NIP-42 AUTH gets a throwaway key's.
+- **Told**: once one relay accepted it or the wearer's phone took it over Bluetooth (the write response). Until then
+  the follower says *<wearer> hasn't been told yet* and that it happens once the device is online (Android: a silent
+  notification; Mac: Settings › Following and Source).
+- A leave is final for that follower key: every join makes a new `F`, so coming back takes a new invite or *Pair
+  nearby* and the wearer's Allow, as the first time.
+
+**Wearer** (Android): the inbox handles a `leave` like any wrap to `I` (verified, once, marked handled only once its
+handling is saved; the relays send it again at each start for as long as they keep it). The sender is the seal's
+signer `F`:
+- **An active follower**: it is marked **left** at `min(now, max(since, rumor created_at))` (when it left, not when the
+  wearer heard: a phone off for days still shows the day), taken out of the writers and Nearby devices, its pending
+  control events dropped, then a **rotation** as for Remove, without a `revoked` notice (nobody reads it): new epoch,
+  keys to the other followers, roster, backup (its entry gets `"left": true`), the last 24 h, the treatment log and the
+  settings again. The wearer gets the notification *<name> stopped following you*, and the followers list shows it
+  under *Past followers* with *Left <date>*.
+- **A waiting request** from `F`: withdrawn. The request and its notification go; its invite stays used.
+- **Anyone else** (an unknown key, a follower removed or already left): nothing. A request from a key that left is
+  ignored too: a leave is final, so a leave the relays still keep (a year; the wearer forgets handled wraps after
+  14 days) can never undo a later approval, and no rule compares two phones' clocks.
+- The escalation note (*Alerts lately*) says *your followers were told* only while sharing runs with at least one
+  active follower; otherwise *no follower to tell*.
+
+**Security**: only `F` can seal its leave (NIP-59: the seal's signer is the sender), and only `I` can read it (NIP-44
+v2 to `I`). A copy replayed later changes nothing (a left key stays left). A relay can drop or delay it but not forge,
+alter or redirect it: hence two relays, Bluetooth and the retries. A stranger's leave is from another key and is
+ignored.
+
+**Not covered**: a follower that uninstalls while offline before any relay or the wearer's phone took the leave. Only
+silence can tell then: a per-follower *last seen* (later).
+
+## Invite link / QR
 ## Invite link / QR
 
 Since Sukrara 0.11 the invite is the **v3 short link** of [PROTOCOL-identity](PROTOCOL-identity.md#short-invites-v3):
@@ -400,6 +457,8 @@ delivery jumps ahead of queued chunks), then a *history request* (≤ 1 per 30 m
 approved, non-revoked `F` and a rumor younger than 1 h, at most once per 10 min overall, by republishing its chunks for
 hours ≥ `since` (capped at 24 h) under the current epoch on the relays (and BLE). Nothing is sent back privately: the
 follower's open `#c` subscription picks the chunks up. Older followers/owners ignore the unknown `type`.
+
+**Leave** (a follower stops following): see [Leave](#leave--v2-addition-2026-11-18-213).
 
 **Revoke** (owner removes a follower)
 1. New `G_{n+1}`; *key delivery* to every remaining follower; *revoked notice* to the removed one.

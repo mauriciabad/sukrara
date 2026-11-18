@@ -1008,6 +1008,9 @@ Discarded or deferred, with reasons:
 
 ## Decisions for the owner
 
+**Built (2026-11-18): the `leave`.** A follower that stops tells the wearer, hard to lose (Appendix G, *In Sukrara:
+the `leave`*). Coming back takes a new invite.
+
 **Owner, 2026-11-18: switching sources with a Sukrara link, decided.** The journey review in Appendix G recommended
 *one person, one link* (D); the owner's answers are at its top: D yes, other sources stay visible behind *Keep
 following?*, leaving asks which settings and whether to keep the history, *Settings from* loses *Default*, the `leave`
@@ -1628,6 +1631,85 @@ poll as the floor. With each reading's time, the SPEC's trend quiets can hold, u
 - **5: ask** when leaving whether to keep or delete the history this device received.
 - **7: yes**, *Settings from* becomes *Their settings* / *This device's own*.
 - Last-seen per follower (3) comes later.
+
+### In Sukrara: the `leave` (2026-11-18)
+
+Built on both apps: PROTOCOL-v2 "Leave" ([spec](../contracts/protocol/PROTOCOL-v2.md#leave--v2-addition-2026-11-18-213),
+fixture `contracts/protocol/sync/leave.json`). The link model (*Stop following* with the leave questions, history and
+settings kept) leaves through the same call, so every way out of a link sends it.
+
+**Delivery.** Compared, with sources:
+
+| Option | Survives | Loses it when | Verdict |
+|---|---|---|---|
+| One-shot gift wrap (as `rekey`) | nothing more | the follower is offline or uninstalls; a relay drops it; the wearer is off longer than its TTL | the base, not enough alone |
+| Replaceable / addressable state signed by `F` | relays MUST keep the latest version ([NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md)) | — | **rejected**: a public event by a stream key names a follower of the stream on relays (the privacy rule); kind 30078 relays may serve it only to its author ([NIP-78](https://github.com/nostr-protocol/nips/blob/master/78.md), docs/24 P1) |
+| Retry until the wearer acknowledges | a relay that drops the stored copy | the follower uninstalls | **rejected**: `F` and a subscription must stay alive while the wearer is off (days). Marmot does this for MLS SelfRemove ([member-departure](https://github.com/marmot-protocol/marmot/blob/master/protocol-core/member-departure.md)), because an MLS leave needs a commit by someone else |
+| Bluetooth when nearby | no internet | not connected at that moment | **kept** as the fast path |
+| Silence (last seen) | an uninstall while offline | — | **later**, the only answer to that case (owner: later) |
+
+Chosen: a **durable outbox** (the signed wrap only, never `F`), as Marmot's publish lifecycle keeps signed bytes and
+per-relay status across restarts ([publish-lifecycle](https://github.com/marmot-protocol/marmot/blob/master/protocol-core/publish-lifecycle.md)):
+- the wrap lives **365 days** on the relays: strfry and nostr-rs-relay put no upper bound on NIP-40 expiration
+  ([strfry](https://github.com/hoytech/strfry/blob/master/src/events.cpp),
+  [nostr-rs-relay](https://github.com/scsibug/nostr-rs-relay/blob/master/src/event.rs));
+- it is sent until **two relays** answered `OK true`: one may drop it ([NIP-59](https://github.com/nostr-protocol/nips/blob/master/59.md):
+  "relays may choose not to store gift wrapped events"; NIP-11's `retention` was removed,
+  [nips#1946](https://github.com/nostr-protocol/nips/pull/1946));
+- it is sent again at each start, when the network comes back, and on Android from a WorkManager job that waits for a
+  network ([WorkManager](https://developer.android.com/topic/libraries/architecture/workmanager): survives reboots, not
+  an uninstall);
+- over Bluetooth too when the wearer's phone is connected.
+
+The wearer's inbox already takes every wrap to `I` at each connect (no `since`), handles each once, and handling it
+again changes nothing. Signal's peer-to-peer v1 leave got lost exactly this way: members kept sending to someone who
+had left ([Signal-Android #8443](https://github.com/signalapp/Signal-Android/issues/8443)).
+
+**Coming back: a new invite** (or *Pair nearby*), with a new follower key, as the first time. Reusing the invite is
+impossible: invites are single-use bearer tokens, claimed and gone in 24 h. A one-tap re-approval of the same key was
+weighed against:
+- **consent**: the wearer's Allow stays the one door;
+- **security**: a leave lives a year on the relays and the wearer forgets handled wraps after 14 days. A re-approved
+  key would need a rule comparing the follower's clock with the wearer's to keep an old leave from removing it again.
+  A lost or sold phone would also keep a key the wearer re-trusts in one tap;
+- **simplicity**: coming back is a join, with no new message.
+
+So a leave is final for its key. Draft 3 already answers a removed key's join with `ended`, and Dexcom
+([G7 guide](https://dexcompdf.s3.us-west-2.amazonaws.com/en-us/G7-15-CGM-Users-Guide.pdf), "Stopped Following You"),
+LibreLinkUp ([manual](https://freestyleserver.com/Payloads/IFU/2026/q1/ART53380_001_rev_A_pub/languages/en/x_librelinkup/DOC53380/users_manual.html):
+"the person will need to send a new invitation") and Matrix invite-only rooms do the same. It costs the owner's test
+loop about a minute (decision 8).
+
+**What the wearer sees.** On the wearer's side:
+- the notification *Ana stopped following you* · *They no longer see your glucose or get your alerts.*;
+- Settings › Sharing moves them under *Past followers* (was *Removed*) with *Left 18 Nov 2026*. The date is when they
+  left, so a phone that was off shows the real day;
+- a rotation as for Remove, so the key that left reads nothing new, escalations included;
+- the escalation note says *your followers were told* only while someone follows (else *no follower to tell*);
+- a waiting request that is cancelled is withdrawn.
+
+The follower's *Stop following* says the wearer's phone is told (Android: the leave questions; Mac: the confirmation,
+*Their phone is told you stopped.*). While offline, Android shows the
+notification *Ana hasn't been told yet* (after the first 20 s attempt) and the Mac shows a line under *Not following
+anyone*.
+
+**Last seen** belongs to a later round. It is the only fix for a follower that uninstalls while offline, and it would
+let the escalation note count only followers seen recently. Its cost is a periodic message per follower (or the
+Bluetooth `HELLO` times), which the owner put off.
+
+**Discarded**:
+- a leave on a source switch (the link model decides);
+- a confirmation step beyond the existing one;
+- an in-app surface for *hasn't been told yet* on Android: the person lands on setup after *Stop following*; the link
+  model places it;
+- a leave for *Different code* in nearby pairing: the phone that answered isn't the wearer's;
+- a leave for a follow that already ended.
+
+**Open standard**: draft 3 already had a one-shot `leave` (30 days). C§9.5 now carries this delivery and the
+wearer's rules, rationale D17 explains why, the reference implements them with two tests, and the vectors are
+unchanged ([open-glucose-stream#1](https://github.com/mauriciabad/open-glucose-stream/pull/1), waiting for the
+owner's merge). Draft 1's
+text is frozen in `poc/spec`; PROTOCOL-v2 is Sukrara's.
 
 *Product / UX / QA journey review of #213 (Person × Source, Nightscout, LibreLinkUp, the polish round), Mac first and
 switching between sources on both apps, after the owner found the Mac on LibreLinkUp still linked to their phone with

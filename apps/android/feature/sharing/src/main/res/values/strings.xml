@@ -378,14 +378,16 @@
     <string name="sh_backup_row_missing">Not backed up: a new phone would lose your followers</string>
     <!-- TalkBack on a follower row whose picture carries the Can add treatments mark -->
     <string name="sh_followers_can_add">Can add treatments</string>
-    <!-- Button: show removed followers -->
-    <string name="sh_followers_removed_show">Removed</string>
+    <!-- Button: show the followers who were removed or left -->
+    <string name="sh_followers_removed_show">Past followers</string>
     <!-- Button: fold removed followers -->
     <string name="sh_followers_removed_hide">See less</string>
-    <!-- Group title: removed followers -->
-    <string name="sh_followers_removed">Removed</string>
+    <!-- Group title: the followers who were removed or left -->
+    <string name="sh_followers_removed">Past followers</string>
     <!-- Removed follower; %1$s = date -->
     <string name="sh_followers_removed_at">Removed %1$s</string>
+    <!-- A follower who stopped following by itself; %1$s = date -->
+    <string name="sh_followers_left_at">Left %1$s</string>
     <!-- The follower sheet's switch: this follower may add treatments -->
     <string name="sh_followers_writer">Can add treatments</string>
     <!-- Switch summary -->

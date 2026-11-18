@@ -62,4 +62,7 @@ class FakeRelayTransport(var answering: Int = 1) : RelayTransport {
     suspend fun deliver(id: String, event: SignedEvent) = _inbound.emit(RelayInbound.Event(event, id, "fake.relay"))
 
     suspend fun ok(eventId: String) = _inbound.emit(RelayInbound.Ok(eventId, true, "fake.relay"))
+
+    /** The relay at [host] answers [eventId] (a pool tags each answer with its relay's host). */
+    suspend fun ok(eventId: String, host: String, accepted: Boolean = true) = _inbound.emit(RelayInbound.Ok(eventId, accepted, host))
 }

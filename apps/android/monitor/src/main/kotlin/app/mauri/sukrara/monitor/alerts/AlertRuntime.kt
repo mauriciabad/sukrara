@@ -436,7 +436,8 @@ class AlertRuntime(
         input: AlertInput? = null,
     ): List<AlertEffect> {
         val muteAll = m.uiState(now).muteAllUntil
-        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll, lastFired))
+        val told = effects.none { it is AlertEffect.Escalated || it is AlertEffect.Mirror } || events.listening()
+        notes = AlertNotes.append(notes, AlertNotes.of(input, effects, now, muteAllSeen, muteAll, lastFired, told))
         muteAllSeen = muteAll
         effects.filterIsInstance<AlertEffect.Fire>().forEach { lastFired[it.firing.kind.group] = it.firing.kind }
         val scheduled = effects.filterIsInstance<AlertEffect.Schedule>()

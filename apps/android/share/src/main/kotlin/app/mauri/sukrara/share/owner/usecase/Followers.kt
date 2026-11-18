@@ -12,6 +12,7 @@ import app.mauri.sukrara.protocol.event.RumorCodec
 import app.mauri.sukrara.protocol.invite.InviteLink
 import app.mauri.sukrara.protocol.invite.Invites
 import app.mauri.sukrara.protocol.invite.NearbyPairing
+import app.mauri.sukrara.share.owner.FollowerRecord
 import app.mauri.sukrara.share.owner.InviteRecord
 import app.mauri.sukrara.share.owner.OwnerState
 import app.mauri.sukrara.share.owner.PendingRequest
@@ -86,11 +87,14 @@ sealed interface InboxSignal {
 
     /** A follower asked for the hours since [since]: the engine republishes them (rate limited). */
     data class HistoryWanted(val since: Long) : InboxSignal
+
+    /** [follower] stopped following (`leave`): the epoch rotated; the engine republishes the last 24 h and tells the wearer. */
+    data class FollowerLeft(val follower: FollowerRecord) : InboxSignal
 }
 
 /**
  * One gift wrap addressed to the identity (30500 from followers): `request` (single-use invite claim), `profile`,
- * `rekey`, `history`. Unknown senders and stale or invalid requests change nothing.
+ * `rekey`, `history`, `leave`. Unknown senders and stale or invalid requests change nothing.
  */
 class HandleInbox(private val ctx: OwnerContext) {
     data class Handled(val step: Step, val signal: InboxSignal? = null)
@@ -146,14 +150,35 @@ class HandleInbox(private val ctx: OwnerContext) {
                 }
             }
 
+            Rumor.Leave -> {
+                leave(s, sender, u.createdAt, now) ?: none
+            }
+
             else -> {
                 none
             }
         }
     }
 
+    /**
+     * PROTOCOL-v2 "Leave": an active follower is marked left and the epoch rotates ([FollowerLeft]); a waiting request
+     * from it is withdrawn (its invite stays used). Anyone else (unknown, removed, already left): null, nothing changes.
+     */
+    private fun leave(s: OwnerState, sender: String, at: Long, now: Long): Handled? {
+        FollowerLeft(ctx)(s, sender, at, now)?.let { (step, record) -> return Handled(step, InboxSignal.FollowerLeft(record)) }
+        val waiting = s.pending.firstOrNull { it.follower == sender } ?: return null
+        val next =
+            s.copy(
+                pending = s.pending - waiting,
+                invites = s.invites.map { if (it.token == waiting.token) it.copy(done = true) else it },
+            )
+        return Handled(ControlEvents.backup(ctx, next, now))
+    }
+
     private fun request(s: OwnerState, sender: String, r: Rumor.Request, now: Long): Handled {
         val known = s.followers.lastOrNull { it.key == sender }
+        // a leave is final for its key: a request from it never brings it back (a replayed leave can't undo an approval)
+        if (known?.left == true) return Handled(Step(s))
         if (known?.active == true) return Handled(ControlEvents.deliverKey(ctx, s, sender, now))
         val invite = s.invites.firstOrNull { it.token == r.token }?.takeIf { it.expiry >= now } ?: return Handled(Step(s))
         if (invite.claimedBy != null && invite.claimedBy != sender) {
@@ -210,9 +235,7 @@ class ApproveRequest(private val ctx: OwnerContext) {
             withoutRequest.copy(
                 invites = s.invites.map { if (it.token == p.token) it.copy(done = true) else it },
                 followers =
-                    s.followers.filter { it.key != follower } +
-                        app.mauri.sukrara.share.owner
-                            .FollowerRecord(follower, p.name, now, avatarJson = p.avatarJson),
+                    s.followers.filter { it.key != follower } + FollowerRecord(follower, p.name, now, avatarJson = p.avatarJson),
                 // asked with *Pair nearby*: listed in Nearby devices also while out of range (this phone only)
                 nearbyPaired = if (p.nearby) s.nearbyPaired + follower else s.nearbyPaired,
             )
@@ -246,6 +269,27 @@ class RemoveFollower(private val ctx: OwnerContext) {
                 pendingControl = s.pendingControl.filter { it.follower != follower },
             )
         return ControlEvents.notice(ctx, next, follower, Rumor.Revoked, now) + { Rotate(ctx)(it, now) }
+    }
+}
+
+/**
+ * An active follower's `leave` (PROTOCOL-v2 "Leave"): marked left at when it left ([at], the rumor's time, kept between
+ * its approval and [now]: a wearer's phone that was off for days still shows the day), out of the writers and Nearby
+ * devices, its waiting control events dropped, then a rotation as Remove does but without a `revoked` notice (nobody
+ * reads it). Null when [follower] isn't an active follower. Also returns the record as left.
+ */
+class FollowerLeft(private val ctx: OwnerContext) {
+    operator fun invoke(s: OwnerState, follower: String, at: Long, now: Long): Pair<Step, FollowerRecord>? {
+        val known = s.followers.lastOrNull { it.key == follower && it.active } ?: return null
+        val left = known.copy(revoked = at.coerceIn(known.since, maxOf(known.since, now)), left = true)
+        val next =
+            s.copy(
+                followers = s.followers.map { if (it.key == follower && it.active) left else it },
+                writers = s.writers - follower,
+                nearbyPaired = s.nearbyPaired - follower,
+                pendingControl = s.pendingControl.filter { it.follower != follower },
+            )
+        return Rotate(ctx)(next, now) to left
     }
 }
 

@@ -26,6 +26,8 @@ public enum Wire {
     public static let ttlRequest = 7 * 86_400
     public static let ttlHistory = 86_400
     public static let ttlTreatment = 30 * 86_400
+    /// A follower's `leave` (PROTOCOL-v2 "Leave"): a year on the relays, so a wearer's phone off for long still gets it.
+    public static let ttlLeave = 365 * 86_400
 
     /// A follower drops an alert whose `at` is older than this (seconds).
     public static let alertMaxAge = 600

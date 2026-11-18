@@ -102,17 +102,26 @@ private fun noteText(
             stringResource(R.string.st_note_resumed, name)
         }
 
-        // #39: a very low nobody answered on the wearer's phone (here: told the followers; a follower: shown here)
+        // #39: a very low nobody answered on the wearer's phone (here: told the followers, or nobody followed; a
+        // follower: shown here)
         AlertNoteType.Escalated -> {
-            if (n.remote) {
-                stringResource(R.string.st_note_escalated_remote, name)
-            } else {
-                stringResource(R.string.st_note_escalated, name, Durations.text((n.minutes ?: 0).toLong(), w.durations))
+            val waited = Durations.text((n.minutes ?: 0).toLong(), w.durations)
+            when {
+                n.remote -> stringResource(R.string.st_note_escalated_remote, name)
+                n.nobody -> stringResource(R.string.st_note_escalated_nobody, name, waited)
+                else -> stringResource(R.string.st_note_escalated, name, waited)
             }
         }
 
         AlertNoteType.Answered -> {
-            stringResource(if (n.remote) R.string.st_note_answered_remote else R.string.st_note_answered, name)
+            stringResource(
+                when {
+                    n.remote -> R.string.st_note_answered_remote
+                    n.nobody -> R.string.st_note_answered_nobody
+                    else -> R.string.st_note_answered
+                },
+                name,
+            )
         }
     }
 }

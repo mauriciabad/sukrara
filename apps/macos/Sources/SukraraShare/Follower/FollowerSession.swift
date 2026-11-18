@@ -156,6 +156,14 @@ public struct FollowerSession: Sendable {
     }
 
     /// A history request for the hours from `since` (PROTOCOL-v2 "Missing history"; the caller throttles).
+    /// The `leave` *Stop following* sends while the wearer knows this key (approved, or its request waits), sealed by
+    /// the follower key before it goes (PROTOCOL-v2 "Leave"); nil for a follow that ended (the wearer knows already).
+    public func leave(now: Int) throws(CryptoError) -> SignedEvent? {
+        guard state.status == .requested || state.status == .active else { return nil }
+        return try messages.toOwner(
+            FollowerMessages.leaveBody(), identity: state.identity, ttl: Wire.ttlLeave, now: now)
+    }
+
     public func historyRequest(since hourStart: Int, now: Int) throws(CryptoError) -> SignedEvent {
         try messages.toOwner(
             FollowerMessages.historyBody(since: hourStart), identity: state.identity, ttl: Wire.ttlHistory, now: now)

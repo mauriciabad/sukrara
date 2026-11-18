@@ -63,6 +63,7 @@ final class WindowCoordinator {
         follow.source = FollowerAdapter.source(snapshot)
         follow.problem = FollowerAdapter.problem(snapshot)
         follow.bluetoothBlocked = snapshot.link.isFollowing && snapshot.nearby == .unauthorized
+        follow.untoldLeave = snapshot.untoldLeave
         follow.nearby = snapshot.nearbyOffer.map {
             NearbyPhone(wearer: $0.wearerName ?? L10n.t("A phone"), avatar: $0.wearerAvatar)
         }

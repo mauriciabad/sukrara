@@ -87,8 +87,8 @@ class FollowersActions(
 
 /**
  * Settings › Sharing while sharing: how the wearer appears (opens How you appear), Backup, requests waiting, the
- * followers with their pictures, those who can add treatments marked (a follower opens [FollowerSheet]), and the removed
- * ones folded under a count. Share invites someone.
+ * followers with their pictures, those who can add treatments marked (a follower opens [FollowerSheet]), and the past
+ * ones (removed, or left by themselves: *Left <date>*) folded under a count. Share invites someone.
  */
 @Composable
 fun FollowersPage(
@@ -175,7 +175,10 @@ fun FollowersPage(
                             PersonRow(
                                 f.avatarJson,
                                 f.name,
-                                stringResource(R.string.sh_followers_removed_at, date(f.revoked ?: 0)),
+                                stringResource(
+                                    if (f.left) R.string.sh_followers_left_at else R.string.sh_followers_removed_at,
+                                    date(f.revoked ?: 0),
+                                ),
                                 onClick = null,
                             )
                         }

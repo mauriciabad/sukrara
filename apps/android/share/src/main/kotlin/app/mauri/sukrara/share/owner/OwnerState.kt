@@ -27,6 +27,8 @@ data class FollowerRecord(
     val avatarJson: String? = null,
     /** When the follower wrote the profile update applied last (its rumor's created_at, epoch s): an older one is ignored. */
     val profileAt: Long = 0,
+    /** It stopped following by itself (`leave`, at [revoked]), not removed by the wearer. Final for this key. */
+    val left: Boolean = false,
 ) {
     val active: Boolean get() = revoked == null
 }

@@ -5909,18 +5909,50 @@
         }
       }
     },
-    "Their readings are removed from this Mac. To follow again, they have to send a new invite." : {
+    "Their phone is told you stopped. Their readings are removed from this Mac. To follow again, they have to send a new invite." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Their readings are removed from this Mac. To follow again, they have to send a new invite."
+            "value" : "Their phone is told you stopped. Their readings are removed from this Mac. To follow again, they have to send a new invite."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sus lecturas se borran de este Mac. Para volver a seguirle, tendrá que enviarte una invitación nueva."
+            "value" : "Su teléfono sabrá que has dejado de seguirle. Sus lecturas se borran de este Mac. Para volver a seguirle, tendrá que enviarte una invitación nueva."
+          }
+        }
+      }
+    },
+    "The person you followed hasn't been told yet that you stopped. Sukrara tells them once this Mac is online." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The person you followed hasn't been told yet that you stopped. Sukrara tells them once this Mac is online."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La persona a la que seguías aún no sabe que lo has dejado. Sukrara se lo dirá en cuanto este Mac tenga internet."
+          }
+        }
+      }
+    },
+    "%@ hasn't been told yet that you stopped following. Sukrara tells them once this Mac is online." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ hasn't been told yet that you stopped following. Sukrara tells them once this Mac is online."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ aún no sabe que has dejado de seguirle. Sukrara se lo dirá en cuanto este Mac tenga internet."
           }
         }
       }
