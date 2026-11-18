@@ -478,12 +478,12 @@ Discarded or deferred, with reasons:
 
 ## Decisions for the owner
 
-**Root channel researched (Appendix F): one new decision, 12; nothing else changes.** The owner's idea (with root,
-read the official app's data or sit in the middle of its Bluetooth link) doesn't work "probably always": the Libre,
-Medtronic and Roche apps refuse rooted phones (Abbott: the Libre app stops "without notification", alarms included),
-Dexcom says not to; Libre 3's store and link are encrypted and its app aborts on LSPosed. What's left is reading an
-app's unencrypted store where the app still runs on root (Eversense, unverified), and taking over a Libre 3 started
-without LibreView. The test of the Libre app's notification needs an unrooted phone.
+**Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes
+with every root setup and isn't an issue (the Libre app ran on their rooted phone with it, so a test R1 is
+unnecessary); the person owns the sensor and the phone and may take their own data for themselves; makers use their
+position to lock people into basic ecosystems. The owner will reconsider later; nothing root-specific is built until
+then. **Priorities**: build the easy, high-value parts; deprioritise, or skip when low value, devices the owner can't
+test that aren't trivial to implement.
 
 **Owner, 2026-11-18: all as recommended**, 9 too once explained. 11 was researched further ("we didn't truly research
 this enough": Appendix E) and needs the owner's answer again. The owner uses only Sukrara with Libre 3 sensors (no
@@ -518,12 +518,8 @@ Ordered by how much they block.
     is Dexcom's invitation-only API for companies with a server holding the secrets, and Abbott has no program; the EU
     Data Act gives the person their data "continuously and in real-time" where feasible, so one email per maker opens
     a serverless path or puts a refusal on record.
-12. **Root**: only read what an official app keeps unencrypted, read-only, for apps that run on a rooted phone, beside
-    their notification (Later, each app after a rooted tester's check), plus the Libre 3 takeover without LibreView;
-    never hooks, lifted keys or interception; on a rooted phone with an app that refuses root, say so and keep
-    Sukrara's alerts on? *Recommend yes*: the only root doors that break no maker protection (Data Act 4(11), 11(1))
-    and change no medical app; Libre 3, your case, isn't one of them; decision 11's request is the lawful way to the
-    rest.
+12. **Root**: *parked by the owner* (see the top of this section). Appendix F's recommendation (only an app's
+    unencrypted store read-only, never hooks, lifted keys or interception) is not accepted; the owner decides later.
 
 **What you could test for us**
 
