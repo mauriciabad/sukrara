@@ -73,16 +73,19 @@ enum class OnlineHealth {
 
     /** LibreLinkUp stopped answering Sukrara (Abbott changed it): said plainly; an update of Sukrara may fix it. */
     Stopped,
+
+    /** The source answers and its sensor warms up: nothing new until the warm-up's end (the newest is the old sensor's). */
+    WarmingUp,
     ;
 
     /** Readings may still come by themselves: nothing for the person to do. */
-    val fine: Boolean get() = this == Connecting || this == Live || this == Late
+    val fine: Boolean get() = this == Connecting || this == Live || this == Late || this == WarmingUp
 
     /** The problem [SourceStatus.Interrupted] carries, null while readings come. */
     val problem: SourceProblem?
         get() =
             when (this) {
-                Connecting, Live, Late -> null
+                Connecting, Live, Late, WarmingUp -> null
                 NoNewReadings -> SourceProblem.NoNewReadings
                 Offline -> SourceProblem.Offline
                 Unreachable -> SourceProblem.Unreachable
@@ -99,13 +102,15 @@ enum class OnlineHealth {
 
         /**
          * The state for the last call's [outcome] (null = nothing asked yet), whether the phone is [online], and the
-         * newest reading's age ([newestAge], null = the site has none). A refusal or a rate limit says so whatever the
-         * network; a failure is [Offline] only without a network.
+         * newest reading's age ([newestAge], null = the site has none), and whether the source's sensor is [warmingUp]
+         * (an answer then says [WarmingUp], whatever the age). A refusal or a rate limit says so whatever the network; a
+         * failure is [Offline] only without a network.
          */
         fun of(
             outcome: CallOutcome?,
             online: Boolean,
             newestAge: Duration?,
+            warmingUp: Boolean = false,
         ): OnlineHealth =
             when (outcome) {
                 null -> {
@@ -138,6 +143,7 @@ enum class OnlineHealth {
 
                 CallOutcome.Ok -> {
                     when {
+                        warmingUp -> WarmingUp
                         newestAge == null || newestAge > SILENT_AFTER -> NoNewReadings
                         newestAge > LATE_AFTER -> Late
                         else -> Live

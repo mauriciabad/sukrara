@@ -672,6 +672,8 @@ class SetupViewModel(
         record { SetupMachine.completeSensor(it, facts) }
     }
 
+    fun completeConnect() = record(SetupMachine::completeConnect)
+
     fun editThreshold(
         kind: AlertKind,
         value: Double,

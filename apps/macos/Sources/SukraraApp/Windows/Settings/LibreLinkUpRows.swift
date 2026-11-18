@@ -262,6 +262,8 @@ struct LibreLinkUpStatus: Equatable {
                 text: L10n.t(
                     "LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it back."),
                 symbol: "xmark.octagon", action: .tryAgain)
+        case .warmingUp:
+            return LibreLinkUpStatus(text: NightscoutStatus.warmup(s.sensor?.sensor, now: now), symbol: "hourglass")
         }
     }
 }
@@ -513,6 +515,12 @@ struct LibreLinkUpConnect: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var received = false
 
+    /// *Reading received*: a reading that is now's (live or late), not the old sensor's before a warm-up (the owner's
+    /// test, 2026-11-18: a reading 4 hours old read as received).
+    static func received(_ s: LibreLinkUpSnapshot, now: Date) -> Bool {
+        !s.readings.isEmpty && [.live, .late].contains(s.health(at: now))
+    }
+
     var body: some View {
         let snap = model.snapshot()
         let mode = model.mode
@@ -569,7 +577,7 @@ struct LibreLinkUpConnect: View {
         .animation(reduceMotion ? .easeInOut(duration: 0.25) : .spring(duration: 0.4, bounce: 0.2), value: mode)
         .onAppear(perform: model.open)
         .modifier(LibreLinkUpConfirm(model: model))
-        .onChange(of: !snap.readings.isEmpty && mode == .connected, initial: true) { _, isIn in
+        .onChange(of: Self.received(snap, now: model.now()) && mode == .connected, initial: true) { _, isIn in
             guard isIn, !received else { return }
             NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .now)
             AccessibilityNotification.Announcement(L10n.t("Reading received")).post()
@@ -589,9 +597,10 @@ struct LibreLinkUpConnect: View {
             if !snap.name.isEmpty {
                 Text(L10n.t("Reading \(snap.name)'s glucose.")).foregroundStyle(.secondary)
             }
-            if snap.readings.isEmpty {
+            if !Self.received(snap, now: model.now()) {
                 let status = LibreLinkUpStatus.of(snap, now: model.now())
-                if snap.health(at: model.now()) == .connecting || snap.health(at: model.now()) == .noNewReadings {
+                let health = snap.health(at: model.now())
+                if health == .connecting || (health == .noNewReadings && snap.readings.isEmpty) {
                     HStack(spacing: 8) {
                         ProgressView().controlSize(.small)
                         Text(L10n.t("Waiting for the first reading from LibreLinkUp…")).foregroundStyle(.secondary)

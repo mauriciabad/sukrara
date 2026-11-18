@@ -49,6 +49,7 @@ class OnlineHealthTest {
                     outcome?.let { o -> CallOutcome.entries.first { id(it) == o } },
                     c.getValue("online").jsonPrimitive.boolean,
                     age?.let { Duration.ofSeconds(it.toLong()) },
+                    c["warmingUp"]?.jsonPrimitive?.boolean ?: false,
                 )
             assertEquals(c.getValue("name").jsonPrimitive.content, c.getValue("state").jsonPrimitive.content, id(got))
         }

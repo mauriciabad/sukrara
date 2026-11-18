@@ -158,6 +158,32 @@ import Testing
         #expect(refused.health(at: now) == .signedOut)
     }
 
+    /// The owner's test (2026-11-18): a new Libre 3 warming up behind LibreLinkUp, whose newest reading was the old
+    /// sensor's, 4 hours old: the status says the warm-up and when it ends, the panel leaves it to the card, and Connect
+    /// says no *Reading received*.
+    @Test func aNewSensorWarmingUpSaysSoNotNothingNew() {
+        let now = clock.now
+        let start = Int(now.timeIntervalSince1970) - 20 * 60
+        var s = LibreLinkUpSnapshot(
+            email: "alex@example.com", running: true, outcome: .ok,
+            readings: [Reading(t: now.addingTimeInterval(-4 * 3600), mgdl: 170)])
+        s.sensor = LluSensor(serial: "0D00NEW456", start: start)
+        #expect(s.health(at: now) == .warmingUp)
+        let ready = Clock.time(Date(timeIntervalSince1970: TimeInterval(start + 3600)))
+        #expect(LibreLinkUpStatus.of(s, now: now).text == "Sensor warming up · ready at \(ready)")
+        #expect(LibreLinkUpStatus.of(s, now: now).action == nil)
+        #expect(AppModel.libreLinkUpWait(s, now: now) == nil)
+        #expect(!LibreLinkUpConnect.received(s, now: now))
+        // past the warm-up's end, still no reading: almost ready (up to 15 min), then nothing new as before
+        let late = now.addingTimeInterval(45 * 60)
+        #expect(LibreLinkUpStatus.of(s, now: late).text == "Sensor almost ready · waiting for the first reading")
+        #expect(s.health(at: now.addingTimeInterval(56 * 60)) == .noNewReadings)
+        // the first reading of the new sensor: live, received
+        s.readings.append(Reading(t: now.addingTimeInterval(40 * 60), mgdl: 120))
+        #expect(s.health(at: now.addingTimeInterval(41 * 60)) == .live)
+        #expect(LibreLinkUpConnect.received(s, now: now.addingTimeInterval(41 * 60)))
+    }
+
     /// Connect: the form, *Whose glucose?* for several people, the pick saved; another person than the one whose
     /// readings this Mac holds is asked first; no one shared says how and keeps no pick.
     @Test func connectSignsInPicksAndAsksBeforeAnotherPerson() async {

@@ -412,6 +412,14 @@ object SetupMachine {
         facts: SetupFacts,
     ): SetupRecord = if (facts.ownSensorLive) record.done(SetupStep.Sensor) else record
 
+    /**
+     * An online source's Connect step (Nightscout, LibreLinkUp) is answered by *Continue* once it is connected (its
+     * *Continue* shows only then: signed in, someone picked): its readings may not come yet (a new sensor warming up,
+     * the uploader stopped) and its health says why, there and on home (the owner's test, 2026-11-18: *Continue* did
+     * nothing during a Libre 3's warm-up).
+     */
+    fun completeConnect(record: SetupRecord): SetupRecord = record.done(SetupStep.Sensor)
+
     /** P4: the only way to complete the alert step is "Confirm thresholds" (the thresholds are saved first). */
     fun confirmAlerts(record: SetupRecord): SetupRecord = record.done(SetupStep.Alerts)
 

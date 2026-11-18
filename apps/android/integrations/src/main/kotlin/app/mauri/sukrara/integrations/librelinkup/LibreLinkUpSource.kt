@@ -225,7 +225,7 @@ class LibreLinkUpSource(
                 patient = s.patient,
                 name = st.name,
                 people = st.people.map { LluPerson(it.id, it.name) },
-                health = health(l, now),
+                health = health(l, now, st.sensorLife),
                 newest = l.newest,
                 sensor = st.sensorLife,
             )
@@ -422,24 +422,34 @@ class LibreLinkUpSource(
         val l = live.value.copy(online = network.online())
         live.value = l
         val now = clock.now()
-        sensorFlow.value = store.data
-            .first()
-            .sensorLife
-            ?.state(l.newest, now) ?: SensorState.Active(endsAt = null)
-        val h = health(l, now)
+        val life = store.data.first().sensorLife
+        sensorFlow.value = life?.state(l.newest, now) ?: SensorState.Active(endsAt = null)
+        val h = health(l, now, life)
         statusFlow.value =
             when {
-                h == OnlineHealth.Connecting -> SourceStatus.Connecting
+                // warming up: the newest reading is the old sensor's, so not live (and no problem: the card says it)
+                h == OnlineHealth.Connecting || h == OnlineHealth.WarmingUp -> SourceStatus.Connecting
+
                 h.fine && l.newest != null -> SourceStatus.Live(l.newest)
+
                 h.fine -> SourceStatus.Connecting
+
                 else -> SourceStatus.Interrupted(l.newest ?: now, h.problem)
             }
     }
 
+    /** The health at [now], the sensor LibreLinkUp says ([life]) warming up or not (contracts/sources/health.json). */
     private fun health(
         l: Live,
         now: Instant,
-    ): OnlineHealth = OnlineHealth.of(l.outcome, l.online, l.newest?.let { Duration.between(it, now).coerceAtLeast(Duration.ZERO) })
+        life: NsSensor?,
+    ): OnlineHealth =
+        OnlineHealth.of(
+            l.outcome,
+            l.online,
+            l.newest?.let { Duration.between(it, now).coerceAtLeast(Duration.ZERO) },
+            warmingUp = life?.state(l.newest, now) is SensorState.WarmingUp,
+        )
 
     private class Cycle(
         /** null = not set up (no account, or no one picked: the Connect step). */

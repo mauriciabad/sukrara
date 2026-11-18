@@ -31,7 +31,7 @@ class AppSiteSource(
 ) : SiteSourcePort {
     override val connection: Flow<SiteConnection> =
         source.view
-            .map { v -> SiteConnection(v.root, v.host, v.configured, v.health, v.newest, v.pulling) }
+            .map { v -> SiteConnection(v.root, v.host, v.configured, v.health, v.newest, v.pulling, v.readyAt) }
             .distinctUntilChanged()
 
     override suspend fun connect(

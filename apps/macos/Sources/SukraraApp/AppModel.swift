@@ -789,6 +789,9 @@ public final class AppModel {
         if !followMonitoring, lanSent != nil, let wait = Self.lanWait(lanSnapshot.state) { return wait }
         if nightscoutActive, let wait = Self.nightscoutWait(nightscoutSnapshot, now: clock.now) { return wait }
         if libreLinkUpActive, let wait = Self.libreLinkUpWait(libreLinkUpSnapshot, now: clock.now) { return wait }
+        // a sensor warming up before any reading: the card's warm-up, not a reason
+        if nightscoutActive, nightscoutSnapshot.health(at: clock.now) == .warmingUp { return nil }
+        if libreLinkUpActive, libreLinkUpSnapshot.health(at: clock.now) == .warmingUp { return nil }
         if libreLinkUpUnset { return .libreLinkUp(.notSignedIn) }
         switch link {
         case .notFollowing, .joining: return .notFollowing
@@ -820,7 +823,8 @@ public final class AppModel {
     static func nightscoutWait(_ snapshot: NightscoutSnapshot, now: Date) -> NoDataReason? {
         switch snapshot.health(at: now) {
         case .connecting: .nightscout(.connecting)
-        case .live, .late: nil
+        // warming up: the card says it (the sensor's life), nothing is wrong
+        case .live, .late, .warmingUp: nil
         case .noNewReadings:
             snapshot.readings.last.map { .nightscout(.silent(since: $0.t.timeIntervalSince1970)) }
                 ?? .nightscout(.noGlucose)
@@ -837,7 +841,8 @@ public final class AppModel {
     static func libreLinkUpWait(_ snapshot: LibreLinkUpSnapshot, now: Date) -> NoDataReason? {
         switch snapshot.health(at: now) {
         case .connecting: .libreLinkUp(.connecting)
-        case .live, .late: nil
+        // warming up: the card says it (the sensor's life), nothing is wrong
+        case .live, .late, .warmingUp: nil
         case .noNewReadings:
             snapshot.readings.last.map { .libreLinkUp(.silent(since: $0.t.timeIntervalSince1970)) }
                 ?? .libreLinkUp(.noGlucose)

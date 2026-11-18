@@ -767,6 +767,31 @@ Discarded or deferred, with reasons:
   transition it was drawn with, so its direction could be the previous move's); the new step's 40 pt slide gives the
   direction.
 
+**Step 2's live test (2026-11-18, the owner's phone and Mac; a new Libre 3 started 18:13 by the Libre app, Spanish
+edition; LibreLinkUp the source on both).** Found and fixed:
+- ***Continue* did nothing** on Android's Connect step until a live reading arrived (`completeSensor` waits for
+  `ownSensorLive`), so it looked enabled and stayed during the warm-up (Nightscout's step too). Now *Continue* answers
+  the step once connected (`SetupMachine.completeConnect`); the health line says the rest. The Mac's was already
+  gated on LibreLinkUp's answer.
+- **The health line said *Nothing new from LibreLinkUp: its last reading was 4 hours ago… it may have stopped
+  uploading*** during the warm-up, because the newest reading was the old sensor's. `health.json` gains `warmingUp`:
+  with the source's sensor in its warm-up, an answer reads *Sensor warming up · ready at 19:13*, then *Sensor almost
+  ready · waiting for the first reading* (both apps, both online sources). The status isn't *Live* then (Android
+  `SourceStatus.Connecting`); home already showed the card's warm-up.
+- **Mac: *Reading received* for any stored reading**, the old sensor's 4-hour-old one included (Android says it only for
+  a live one). Now it shows only for a live or late reading; Nightscout's step too.
+
+Answered:
+- **LibreLinkUp serves whatever reaches LibreView, Sukrara's upload included.** The old sensor's readings up to 13:38:25,
+  which Sukrara's LibreView upload had sent (last at 13:38:30), came back from LibreLinkUp: on the Mac, a live 13:38:25
+  reading and graph points to 13:36. On the phone the rank rule kept Juggluco's copies. At 15:04 the upload found the
+  Libre app uploading and paused (`pausedForLibreApp`).
+- **The warm-up Live Update** was posted 45 s after LibreLinkUp gave the sensor's start, then swiped 9 s later
+  (`REASON_CANCEL`), so by design it is gone for that sensor. There is no way back after a swipe:
+  [#226](https://github.com/mauriciabad/sukrara/issues/226).
+- **The widgets don't redraw during a warm-up** (any source: the redraw follows the newest reading's freshness steps
+  only). The cause and a repro are in #226's comment.
+
 ## Decisions for the owner
 
 **Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes

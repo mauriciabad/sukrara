@@ -16,11 +16,17 @@
   "policy (status 4): 'actionNeeded', the person opens LibreLinkUp and accepts them (Sukrara never accepts for them);",
   "'notShared' = the account follows no one, or no longer the person picked: 'notShared'; 'retired' = Abbott's API",
   "refuses this client (a version Sukrara can't send, an endpoint gone): 'stopped', said plainly (an update of Sukrara",
-  "may bring it back). These three say so whatever the network, as a refusal does."
+  "may bring it back). These three say so whatever the network, as a refusal does.",
+  "'warmingUp' (default false) = the source's sensor, by its sensor life (the start the source gives, the warm-up",
+  "contracts/sensor/life.json sets, SensorTiming.warming: no reading since its start), is in its warm-up: an answer",
+  "('ok') then says 'warmingUp' (the sensor warming up, ready at its warm-up's end) whatever the newest reading's age,",
+  "since the newest reading is the old sensor's and nothing new can come before then (owner's test, 2026-11-18: a new",
+  "Libre 3 read as 'nothing new … it may have stopped uploading'). A problem, no network or nothing asked yet still",
+  "says so."
  ],
  "late_after_s": 420,
  "silent_after_s": 900,
- "states": ["connecting", "live", "late", "noNewReadings", "offline", "unreachable", "signedOut", "rateLimited", "actionNeeded", "notShared", "stopped"],
+ "states": ["connecting", "live", "late", "noNewReadings", "offline", "unreachable", "signedOut", "rateLimited", "actionNeeded", "notShared", "stopped", "warmingUp"],
  "cases": [
   {"name": "nothing asked yet", "outcome": null, "online": true, "newestAge_s": null, "state": "connecting"},
   {"name": "nothing asked yet, no network", "outcome": null, "online": false, "newestAge_s": null, "state": "offline"},
@@ -42,6 +48,12 @@
   {"name": "no one shares with this account", "outcome": "notShared", "online": true, "newestAge_s": null, "state": "notShared"},
   {"name": "the person picked stopped sharing", "outcome": "notShared", "online": true, "newestAge_s": 300, "state": "notShared"},
   {"name": "Abbott's API refuses this client", "outcome": "retired", "online": true, "newestAge_s": 600, "state": "stopped"},
-  {"name": "refused this client, and offline: still stopped", "outcome": "retired", "online": false, "newestAge_s": 600, "state": "stopped"}
+  {"name": "refused this client, and offline: still stopped", "outcome": "retired", "online": false, "newestAge_s": 600, "state": "stopped"},
+  {"name": "a new sensor warming up, the newest reading the old sensor's", "outcome": "ok", "online": true, "newestAge_s": 16200, "warmingUp": true, "state": "warmingUp"},
+  {"name": "warming up, the old sensor's last reading 4 min ago", "outcome": "ok", "online": true, "newestAge_s": 240, "warmingUp": true, "state": "warmingUp"},
+  {"name": "warming up, no glucose at all yet", "outcome": "ok", "online": true, "newestAge_s": null, "warmingUp": true, "state": "warmingUp"},
+  {"name": "warming up, nothing asked yet", "outcome": null, "online": true, "newestAge_s": null, "warmingUp": true, "state": "connecting"},
+  {"name": "warming up, no network on this device", "outcome": "network", "online": false, "newestAge_s": 600, "warmingUp": true, "state": "offline"},
+  {"name": "warming up, the password refused", "outcome": "refused", "online": true, "newestAge_s": null, "warmingUp": true, "state": "signedOut"}
  ]
 }

@@ -29,7 +29,8 @@ import Testing
             let outcome = (c["outcome"] as? String).flatMap(SourceHealth.Outcome.init(rawValue:))
             #expect((outcome == nil) == (c["outcome"] as? String == nil))
             let state = SourceHealth.state(
-                outcome: outcome, online: c["online"] as? Bool ?? true, newestAge: Self.double(c["newestAge_s"]))
+                outcome: outcome, online: c["online"] as? Bool ?? true, newestAge: Self.double(c["newestAge_s"]),
+                warmingUp: c["warmingUp"] as? Bool ?? false)
             #expect(state.rawValue == c["state"] as? String, "\(c["name"] ?? "")")
         }
     }

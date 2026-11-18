@@ -268,6 +268,8 @@
     <!-- Another Sukrara's summary outside setup's group (whose title says it): %1$s = what it brings -->
     <string name="ds_source_means_sukrara">%1$s · internet or Bluetooth nearby</string>
     <!-- the Source row's summary on the Settings overview: whose · where from -->
+    <string name="ds_online_warming_up">Sensor warming up · ready at %1$s</string>
+    <string name="ds_online_almost_ready">Sensor almost ready · waiting for the first reading</string>
     <string name="ds_online_connecting">Connecting…</string>
     <string name="ds_online_live">Live · last reading %1$s</string>
     <!-- an online source's newest reading is under a minute old, in "Live · last reading %1$s" -->

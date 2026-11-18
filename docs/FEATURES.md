@@ -783,7 +783,10 @@ min late, backfills; `contracts/sources/sources.json`); its readings are `nights
   *Live · last reading 2 min ago*, *Late · last reading 9 min ago* (readings in gaps), *Nothing new from Nightscout: its
   last reading was 40 min ago. Check the app that uploads to it.* (the site answers, nothing reaches it; also *no
   glucose yet*), *No internet. Sukrara catches up when you're back.*, *No answer from ns.example.org. Check the
-  address.*, *Nightscout refused the token. Sign in again.*, *Nightscout asked Sukrara to wait.* Home shows it as the
+  address.*, *Nightscout refused the token. Sign in again.*, *Nightscout asked Sukrara to wait.*, *Sensor warming up ·
+  ready at 19:13* (the site's sensor in its warm-up, its *Sensor Start* + the default 60 min, whatever the newest
+  reading's age: that one is the old sensor's; past it *Sensor almost ready · waiting for the first reading*; home shows
+  the card's warm-up, `health.json` `warmingUp`). Home shows it as the
   no-data reason once the value hides (*No readings from Nightscout* + the line + *Sign in again* / *Source*); the
   no-data alert counts from the reading's time as for any source (a reading that arrives 16 min late never alerts:
   `contracts/alerts/scenarios/online.txt`). An online source needs no Bluetooth (never *Bluetooth is off*).
@@ -796,8 +799,9 @@ min late, backfills; `contracts/sources/sources.json`); its readings are `nights
   site answers. Each problem under its field (*Not a web address*, *Use https://: the token would travel unprotected*,
   *No Nightscout at this address*, *Nightscout refused this token or secret*) or as a notice (*No answer from the site*,
   *No internet*), with a reject haptic; connected → *Connected to ns.example.org* with the health line (*Waiting for the
-  first reading…* → *Reading received. Sukrara is monitoring.*, a confirm haptic, TalkBack hears it once), *Continue*,
-  *Change site*. Editing a saved site keeps its token when the field is left empty (*Saved. Leave it empty to keep
+  first reading…* → *Reading received. Sukrara is monitoring.*, a confirm haptic, TalkBack hears it once; received only
+  for a reading that is now's, live or late), *Continue* (connected is enough: with no reading yet, or a sensor warming
+  up, the health line says why and the step goes on), *Change site*. Editing a saved site keeps its token when the field is left empty (*Saved. Leave it empty to keep
   it.*); *Keep this site* goes back. No glucose value shows in setup (a value is a card surface). Mac: the same
   (`NightscoutRows.swift`), Return presses *Connect* until the site answers.
 - **Treatments both ways** (`source.nightscoutTreatments`, on; `contracts/sources/nightscout/treatments.json`): the
@@ -882,7 +886,9 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   in again.*, *LibreLinkUp asked Sukrara to wait…*, *LibreLinkUp needs you: open the LibreLinkUp app, sign in and accept
   the new terms.*, *No one shares glucose with this account now. In the Libre app: Menu › Connected apps › LibreLinkUp,
   invite this email.*, *LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it
-  back.* The no-data alert counts from the reading's time (scenarios `librelinkup.txt`: a minute cadence 1–3 min late,
+  back.*, *Sensor warming up · ready at 19:13* (the sensor LibreLinkUp says, `sn` / `a` + the default 60 min, in its
+  warm-up: whatever the newest reading's age, which is the old sensor's; past it *Sensor almost ready · waiting for the
+  first reading*; `health.json` `warmingUp`, the owner's test 2026-11-18). The no-data alert counts from the reading's time (scenarios `librelinkup.txt`: a minute cadence 1–3 min late,
   a reading 9 min late, readings out of order).
 - **Connect** (setup's step after the source; Settings › Source's *Account* / *Sign in again* open it alone): the
   title with LibreLinkUp's app icon before it (both apps), and that icon on Settings › Source's *Account* row (Mac:
@@ -896,8 +902,9 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   that follows itself is picked for your glucose (else the only person); for someone else's, the only person besides
   the account; several → *Whose glucose?* (radio rows, *Continue*); no one → *Signed in as …* with the invite
   instructions, *Try again* (no password), *Change account*. Connected → *Signed in as …*, *Reading Alex Example's
-  glucose.* and the health (*Waiting for the first reading from LibreLinkUp…* → *Reading received*, confirm haptic),
-  *Continue*, *Change account*. A note says LibreLinkUp is Abbott's and may change or stop.
+  glucose.* and the health (*Waiting for the first reading from LibreLinkUp…* → *Reading received*, confirm haptic; or
+  *Sensor warming up · ready at 19:13*), *Continue* (connected is enough: a sensor warming up or an old reading says so
+  in the health and the step goes on), *Change account*. A note says LibreLinkUp is Abbott's and may change or stop.
 - **Bring your history back, source-aware**: *Your last 12 hours came with LibreLinkUp. For more, bring back 90 days
   from LibreView, where the Libre app uploads.* → Import history (its LibreView download); *Start empty*.
 - **Sensor life from LibreLinkUp**: the sensor's serial and start (`sn`, `a`; a new serial is a new sensor) with the
@@ -941,7 +948,8 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   attempts, no answer, no internet, stopped); several people → *Whose glucose?* (radio rows, *Choose*); no one →
   *Signed in as …* with the invite instructions, *Try Again* (no password), *Change Account*; connected → *Signed in
   as …*, *Reading Ana Example's glucose.*, *Waiting for the first reading from LibreLinkUp…* → *Reading received* (a
-  check that pops in, a trackpad tap, VoiceOver hears it) → *Continue*. A note says LibreLinkUp is Abbott's and may
+  check that pops in, a trackpad tap, VoiceOver hears it; only for a reading that is now's: the old sensor's before a
+  warm-up shows the status line, *Sensor warming up · ready at 19:13*) → *Continue*. A note says LibreLinkUp is Abbott's and may
   change or stop. The account (email, password, token, region, a raised version) lives only in the Keychain
   (`source.libreLinkUpSecret`), whom it reads in `source.libreLinkUpPatient`; the same client rules as Android (the
   token kept until 5 min before it ends, a refused password never retried, terms never accepted, a version asked for
@@ -967,7 +975,8 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
 fix and sign in again; *Later* → home's *Finish setup*) → several people → pick → *Continue* · no one shares → *Try
 again* / *Change account* / *Later* → connected → *Continue* (or *Change account* → the form, *Sign in as …* only for another LibreView account; *Keep this
 account* back).
-Live / Late: nothing to do. Nothing new: the Libre app is the place to look; clears with the next reading. No internet /
+Live / Late: nothing to do. Warming up: nothing to do, clears with the new sensor's first reading. Nothing new: the
+Libre app is the place to look; clears with the next reading. No internet /
 no answer: clear by themselves; *Try again*. Asked to wait: clears by itself, no *Try again* (nothing calls LibreLinkUp
 before the time it gave; a sign-in does). Signed out: *Sign in again*. New terms: accept in
 LibreLinkUp, *Try again*. Not shared: *Pick again* (*The person picked stopped sharing…*, at once when LibreLinkUp refuses their graph) or invite

@@ -71,6 +71,15 @@ class LibreLinkUpSourceGallery {
         listOf(
             "live" to rows(yours),
             "silent" to rows(yours.copy(health = OnlineHealth.NoNewReadings, newest = now.minusSeconds(2400))),
+            // a new sensor warming up, the newest reading the old sensor's (the owner's test, 2026-11-18)
+            "warming-up" to
+                rows(
+                    yours.copy(
+                        health = OnlineHealth.WarmingUp,
+                        newest = now.minusSeconds(4 * 3600),
+                        sensor = NsSensor("0D00NEW456", now.minusSeconds(20 * 60)),
+                    ),
+                ),
             "signed-out" to rows(yours.copy(health = OnlineHealth.SignedOut)),
             "terms" to rows(yours.copy(health = OnlineHealth.ActionNeeded)),
             "not-shared" to rows(theirs.copy(health = OnlineHealth.NotShared), Person.Theirs),

@@ -305,6 +305,14 @@ class SetupMachineTest {
     }
 
     @Test
+    fun `a connected online source's Continue answers the step without a reading`() {
+        // a new sensor warming up behind LibreLinkUp: connected, no live reading yet (the owner's test, 2026-11-18)
+        val r = m.completePermissions(wearer())
+        assertEquals(Alerts, m.next(m.completeConnect(r), facts))
+        assertTrue(m.answers(Sensor, m::completeConnect))
+    }
+
+    @Test
     fun `a step shown alone is over only when the action answers it`() {
         val live = facts.copy(ownSensorLive = true)
         assertTrue(m.answers(Permissions, m::completePermissions))

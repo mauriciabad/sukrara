@@ -35,6 +35,7 @@ class AppLluSource(
                 people = v.people.map { LluChoice(it.id, it.name) },
                 health = v.health,
                 newest = v.newest,
+                readyAt = v.sensor?.warmupEnd,
                 libreViewEmail = (lv as? LibreViewAccountState.SignedIn)?.email,
             )
         }.distinctUntilChanged()

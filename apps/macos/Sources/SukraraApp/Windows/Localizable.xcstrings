@@ -3189,6 +3189,22 @@
         }
       }
     },
+    "Sensor almost ready · waiting for the first reading" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor almost ready · waiting for the first reading"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor casi listo · esperando la primera lectura"
+          }
+        }
+      }
+    },
     "Sensor time left" : {
       "localizations" : {
         "en" : {
@@ -3201,6 +3217,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiempo restante del sensor"
+          }
+        }
+      }
+    },
+    "Sensor warming up · ready at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor warming up · ready at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sensor calentando · listo a las %@"
           }
         }
       }

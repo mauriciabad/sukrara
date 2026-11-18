@@ -189,6 +189,8 @@ data class SetupActions(
     val sendTestAlert: (() -> Unit)? = null,
     val openSensorSetup: () -> Unit = {},
     val completeSensor: () -> Unit = {},
+    /** *Continue* on a connected online source's step ([SetupMachine.completeConnect]). */
+    val completeConnect: () -> Unit = {},
     /** *Connect* on the online source's step (address, token or API secret). */
     val connectSite: (address: String, credential: String) -> Unit = { _, _ -> },
     val clearSiteResult: () -> Unit = {},
@@ -265,6 +267,7 @@ private fun SetupViewModel.actions(
             letThroughDnd = ::readinessLetThroughDnd,
             openSensorSetup = onOpenSensorSetup,
             completeSensor = ::completeSensor,
+            completeConnect = ::completeConnect,
             connectSite = ::connectSite,
             clearSiteResult = ::clearSiteResult,
             pullSiteHistory = ::pullSiteHistory,

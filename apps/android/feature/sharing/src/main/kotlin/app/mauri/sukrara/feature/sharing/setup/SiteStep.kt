@@ -42,6 +42,7 @@ import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.source.iconRes
 import app.mauri.sukrara.designsystem.source.onlineHealthText
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.graph.ClockText
 import kotlinx.coroutines.delay
 import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -142,7 +143,17 @@ private fun ColumnScope.Connected(
     }
     val live = u.facts.ownSensorLive
     NoticeCard(
-        if (live) stringResource(R.string.sh_setup_sensor_live) else onlineHealthText(c.health, c.newest, now, c.host),
+        if (live) {
+            stringResource(R.string.sh_setup_sensor_live)
+        } else {
+            onlineHealthText(
+                c.health,
+                c.newest,
+                now,
+                c.host,
+                readyAt = c.readyAt?.takeIf { it.isAfter(now) }?.let { ClockText.time(it.epochSecond) },
+            )
+        },
         Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         title = stringResource(R.string.sh_setup_site_connected, c.host),
         icon = if (live) DsR.drawable.ds_ic_check_circle else c.health.iconRes(),
@@ -157,7 +168,7 @@ private fun ColumnScope.Connected(
     }
     StepButtons(
         stringResource(R.string.sh_setup_continue),
-        actions.completeSensor,
+        actions.completeConnect,
         secondary = listOf(stringResource(R.string.sh_setup_site_change) to change),
     )
 }

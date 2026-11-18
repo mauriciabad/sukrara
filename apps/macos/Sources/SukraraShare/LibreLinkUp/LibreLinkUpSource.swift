@@ -87,7 +87,8 @@ public struct LibreLinkUpSnapshot: Sendable, Equatable {
     public func health(at now: Date) -> SourceHealth.State {
         if signInAgain { return .signedOut }
         return SourceHealth.state(
-            outcome: outcome, online: online, newestAge: readings.last.map { now.timeIntervalSince($0.t) })
+            outcome: outcome, online: online, newestAge: readings.last.map { now.timeIntervalSince($0.t) },
+            warmingUp: SourceHealth.warming(sensor?.sensor, latest: readings.last?.t, now: now))
     }
 }
 

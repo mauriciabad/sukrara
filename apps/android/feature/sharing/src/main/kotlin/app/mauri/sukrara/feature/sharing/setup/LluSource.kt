@@ -27,6 +27,8 @@ data class LluConnection(
     val people: List<LluChoice> = emptyList(),
     val health: OnlineHealth = OnlineHealth.Connecting,
     val newest: Instant? = null,
+    /** The sensor's warm-up end (LibreLinkUp's start + the default warm-up), said while [health] is warming up. */
+    val readyAt: Instant? = null,
     /** THE LibreView account's email when its password is saved: *Sign in as …* in one tap (your own glucose). */
     val libreViewEmail: String? = null,
 )

@@ -20,6 +20,8 @@ data class SiteConnection(
     val newest: Instant? = null,
     /** *Bring back 90 days* is running: from when. */
     val pulling: Instant? = null,
+    /** The site's sensor's warm-up end, said while [health] is [OnlineHealth.WarmingUp]. */
+    val readyAt: Instant? = null,
 )
 
 /** The answer of *Connect* (the field the problem belongs to shows it). */

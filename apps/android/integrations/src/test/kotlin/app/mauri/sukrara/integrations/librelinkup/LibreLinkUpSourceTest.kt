@@ -371,6 +371,25 @@ class LibreLinkUpSourceTest {
         }
 
     @Test
+    fun `a new sensor warming up says so, not that nothing new comes`() =
+        runBlocking {
+            // the owner's test (2026-11-18): a new Libre 3 started after LibreLinkUp's newest reading (the old sensor's,
+            // 50 s old here: live, were it not for the new sensor)
+            val start = now.minusSeconds(20)
+            graph = ok(graphBody(0).replace("1794744000", "${start.epochSecond}").replace("0D00ABC123", "0D00NEW456"))
+            source().connect("owner@example.com", "pw")
+            val s = source()
+            val job = launch { s.readings.collect {} }
+            val v = withTimeout(10_000) { s.view.first { it.health != OnlineHealth.Connecting } }
+            assertEquals(OnlineHealth.WarmingUp, v.health)
+            assertEquals(start.plusSeconds(3600), v.sensor?.warmupEnd)
+            // not live: the newest reading is the old sensor's
+            kotlinx.coroutines.delay(300)
+            assertEquals(SourceStatus.Connecting, s.status.value)
+            job.cancel()
+        }
+
+    @Test
     fun `signing out keeps nothing of the account`() =
         runBlocking {
             val s = source()

@@ -181,12 +181,24 @@ struct NightscoutStatus: Equatable {
         case .rateLimited:
             return NightscoutStatus(
                 text: L10n.t("Nightscout asked Sukrara to wait. It tries again by itself."), symbol: "hourglass")
+        case .warmingUp:
+            return NightscoutStatus(text: warmup(s.sensor, now: now), symbol: "hourglass")
         // LibreLinkUp's own states: a site never reaches them
         case .actionNeeded, .notShared, .stopped:
             return NightscoutStatus(
                 text: L10n.t("No answer from \(s.host). Check the address."), symbol: "network.slash",
                 action: .tryAgain)
         }
+    }
+
+    /// An online source's sensor warming up: "Sensor warming up · ready at 19:13", or almost ready once that time has
+    /// passed (Android `ds_online_warming_up` / `ds_online_almost_ready`).
+    static func warmup(_ sensor: WearerSensor?, now: Date) -> String {
+        guard let sensor, TimeInterval(sensor.warmupEnd) > now.timeIntervalSince1970 else {
+            return L10n.t("Sensor almost ready · waiting for the first reading")
+        }
+        return L10n.t(
+            "Sensor warming up · ready at \(Clock.time(Date(timeIntervalSince1970: TimeInterval(sensor.warmupEnd))))")
     }
 
     /// "just now", "9 min ago", "1 h 30 min ago" (`Durations.text`, Android's words).
@@ -348,8 +360,9 @@ struct NightscoutConnect: View {
         case .connecting: return .connecting
         case .offline, .unreachable, .signedOut, .rateLimited, .actionNeeded, .notShared, .stopped:
             return .failed(status)
-        case .live, .late, .noNewReadings:
-            return s.readings.isEmpty ? .waiting(status.text) : .received
+        // received: a reading that is now's (an old one, or a sensor warming up, says what it waits for)
+        case .live, .late: return .received
+        case .noNewReadings, .warmingUp: return .waiting(status.text)
         }
     }
 

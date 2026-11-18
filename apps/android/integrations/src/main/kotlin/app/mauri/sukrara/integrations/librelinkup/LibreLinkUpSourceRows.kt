@@ -32,6 +32,7 @@ import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.source.iconRes
 import app.mauri.sukrara.designsystem.source.onlineHealthText
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.ui.since
 import java.time.Instant
@@ -93,7 +94,19 @@ fun LibreLinkUpSourceRows(
         val health = if (view.signInAgain) OnlineHealth.SignedOut else view.health
         // the state changes by itself as calls come back: cross-fades, and TalkBack hears it once
         AnimatedContent(
-            health to onlineHealthText(health, view.newest, now, "LibreLinkUp", SourceKind.LibreLinkUp),
+            health to
+                onlineHealthText(
+                    health,
+                    view.newest,
+                    now,
+                    "LibreLinkUp",
+                    SourceKind.LibreLinkUp,
+                    readyAt =
+                        view.sensor
+                            ?.warmupEnd
+                            ?.takeIf { it.isAfter(now) }
+                            ?.let { ClockText.time(it.epochSecond) },
+                ),
             transitionSpec = { Motion.fadeThrough(reduced) },
             label = "llu-health",
         ) { (h, text) ->
@@ -131,8 +144,9 @@ fun LibreLinkUpSourceRows(
                     }
 
                     // nothing new: the line, no action here (the Libre app is the place to look); asked to wait: no
-                    // *Try again* (a call before the time LibreLinkUp gave may lengthen the lockout), it asks by itself
-                    OnlineHealth.NoNewReadings, OnlineHealth.RateLimited -> {
+                    // *Try again* (a call before the time LibreLinkUp gave may lengthen the lockout), it asks by itself;
+                    // a sensor warming up: when it's ready
+                    OnlineHealth.NoNewReadings, OnlineHealth.RateLimited, OnlineHealth.WarmingUp -> {
                         InfoRow(stringResource(R.string.in_nss_status), summary = text, icon = h.iconRes())
                     }
 

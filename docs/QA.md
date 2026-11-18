@@ -1177,7 +1177,9 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       graph's points; `calls=expired` → one new login, no state shown; `calls=version` → the next call names the version
       asked for, no *Stopped*; `calls=terms` / `ratelimit` / `retired` / `down` → their words and exit on home and
       Settings › Source; `people=none` → *Pick again*; the fake stopped with the network off → *No internet*;
-      `sensor=new` → a new sensor on the card (warm-up while it has no readings).
+      `sensor=new` → a new sensor on the card (warm-up while it has no readings); Settings › Source and Connect say
+      *Sensor warming up · ready at …* (not *Nothing new*), and Connect's *Continue* goes on (Mac: no *Reading received*
+      for the old sensor's reading).
 - [ ] Settings › Source › LibreLinkUp: account, whose glucose, sensor, status with its exit (*Sign in again*, *Try
       again*, *Pick again*); *Sign out* is confirmed. Share with apps › LibreView says *Paused: the Libre app uploads…*
       and offers no *Take over*; Tidepool shows *Glucose from LibreLinkUp* (on).

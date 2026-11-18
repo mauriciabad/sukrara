@@ -26,6 +26,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SwitchRow
 import app.mauri.sukrara.designsystem.source.iconRes
 import app.mauri.sukrara.designsystem.source.onlineHealthText
+import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.ui.since
 import java.time.Instant
@@ -67,7 +68,8 @@ fun NightscoutSourceRows(
         )
         val health = if (view.credentialUnreadable) OnlineHealth.SignedOut else view.health
         // the state changes by itself as calls come back: cross-fades, and TalkBack hears it once
-        AnimatedContent(health to onlineHealthText(health, view.newest, now, view.host), transitionSpec = {
+        val readyAt = view.readyAt?.takeIf { it.isAfter(now) }?.let { ClockText.time(it.epochSecond) }
+        AnimatedContent(health to onlineHealthText(health, view.newest, now, view.host, readyAt = readyAt), transitionSpec = {
             Motion.fadeThrough(reduced)
         }, label = "nss-health") { (h, text) ->
             Column(Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
@@ -92,8 +94,9 @@ fun NightscoutSourceRows(
                         )
                     }
 
-                    // nothing new reaching the site: the line, no action here (the uploader is the place to look)
-                    OnlineHealth.NoNewReadings -> {
+                    // nothing new reaching the site: the line, no action here (the uploader is the place to look); a
+                    // sensor warming up: when it's ready
+                    OnlineHealth.NoNewReadings, OnlineHealth.WarmingUp -> {
                         InfoRow(stringResource(R.string.in_nss_status), summary = text, icon = h.iconRes())
                     }
 

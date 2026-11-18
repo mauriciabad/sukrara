@@ -46,6 +46,7 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.source.iconRes
 import app.mauri.sukrara.designsystem.source.onlineHealthText
 import app.mauri.sukrara.feature.sharing.R
+import app.mauri.sukrara.graph.ClockText
 import kotlinx.coroutines.delay
 import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
@@ -259,7 +260,14 @@ private fun ColumnScope.LluConnected(
         if (live) {
             stringResource(R.string.sh_setup_sensor_live)
         } else {
-            onlineHealthText(c.health, c.newest, now, "LibreLinkUp", SourceKind.LibreLinkUp)
+            onlineHealthText(
+                c.health,
+                c.newest,
+                now,
+                "LibreLinkUp",
+                SourceKind.LibreLinkUp,
+                readyAt = c.readyAt?.takeIf { it.isAfter(now) }?.let { ClockText.time(it.epochSecond) },
+            )
         }
     NoticeCard(
         if (c.name.isNotBlank()) stringResource(R.string.sh_setup_llu_reading, c.name) + "\n" + text else text,
@@ -277,7 +285,7 @@ private fun ColumnScope.LluConnected(
     }
     StepButtons(
         stringResource(R.string.sh_setup_continue),
-        actions.completeSensor,
+        actions.completeConnect,
         secondary = listOf(stringResource(R.string.sh_setup_llu_change) to change),
     )
 }

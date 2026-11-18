@@ -34,13 +34,20 @@ public enum SourceHealth {
         case connecting, live, late, noNewReadings, offline, unreachable, signedOut, rateLimited
         /// LibreLinkUp's own: new terms to accept, no one shares (any more), stopped answering Sukrara.
         case actionNeeded, notShared, stopped
+        /// The source answers and its sensor warms up: nothing new until the warm-up's end (the newest reading is the
+        /// old sensor's).
+        case warmingUp
     }
 
     /// Newer than this is live; up to `silentAfter` late (readings come in gaps); older: nothing new reaches the site.
     public static let lateAfter: TimeInterval = 420
     public static let silentAfter: TimeInterval = 900
 
-    public static func state(outcome: Outcome?, online: Bool, newestAge: TimeInterval?) -> State {
+    /// The state for the last call's `outcome`, the network, the newest reading's age and whether the source's sensor
+    /// is `warmingUp` (an answer then says `.warmingUp`, whatever the age).
+    public static func state(outcome: Outcome?, online: Bool, newestAge: TimeInterval?, warmingUp: Bool = false)
+        -> State
+    {
         // a refusal or a rate limit says so whatever the network
         switch outcome {
         case .refused: return .signedOut
@@ -55,9 +62,19 @@ public enum SourceHealth {
         case nil: return .connecting
         case .network, .server, .notFound: return .unreachable
         case .ok, .refused, .rateLimited, .terms, .notShared, .retired:
+            if warmingUp { return .warmingUp }
             guard let age = newestAge else { return .noNewReadings }
             if age <= lateAfter { return .live }
             return age <= silentAfter ? .late : .noNewReadings
         }
+    }
+
+    /// The source's `sensor` (its start and the default warm-up) is warming up at `now`, the newest reading taken at
+    /// `latest` (`SensorTiming.warming`: no reading since its start).
+    public static func warming(_ sensor: WearerSensor?, latest: Date?, now: Date) -> Bool {
+        guard let sensor else { return false }
+        return SensorTiming.warming(
+            start: TimeInterval(sensor.start), warmupEnd: TimeInterval(sensor.warmupEnd),
+            latest: latest?.timeIntervalSince1970, now: now.timeIntervalSince1970)
     }
 }

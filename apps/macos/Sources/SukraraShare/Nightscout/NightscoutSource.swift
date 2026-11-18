@@ -71,7 +71,8 @@ public struct NightscoutSnapshot: Sendable, Equatable {
     /// The state the person sees at `now` (contracts/sources/health.json).
     public func health(at now: Date) -> SourceHealth.State {
         SourceHealth.state(
-            outcome: outcome, online: online, newestAge: readings.last.map { now.timeIntervalSince($0.t) })
+            outcome: outcome, online: online, newestAge: readings.last.map { now.timeIntervalSince($0.t) },
+            warmingUp: SourceHealth.warming(sensor, latest: readings.last?.t, now: now))
     }
 }
 
