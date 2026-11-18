@@ -199,6 +199,7 @@ class WidgetUpdater(
                             mutedUntil = alerts.mutedUntil,
                         ),
                     link = link?.let { LinkState(it.wearerName, lastHeardAt = null, revoked = it.revoked) },
+                    name = name,
                 )
         }
     }

@@ -70,7 +70,7 @@ internal fun SourceScreen(
     SettingsPage(stringResource(SettingsR.string.st_source_title), onBack) {
         val spec = loaded?.spec
         SourcePageContent(
-            SourcePageState(spec, answered = stored != null, name = glucose.link?.wearerName, latest = glucose.latest?.t),
+            SourcePageState(spec, answered = stored != null, name = glucose.name, latest = glucose.latest?.t),
             sensor,
             now,
             SourceActions(

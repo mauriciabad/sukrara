@@ -570,7 +570,7 @@ class AppGraph(
             // Share with apps' rows, which the settings search finds too (their strings are :integrations')
             moreSearch = AppsSearch.entries,
             source = spec,
-            sourceName = flow { emitAll(monitor.hub.state) }.map { it.link?.wearerName }.distinctUntilChanged(),
+            sourceName = flow { emitAll(monitor.hub.state) }.map { it.name }.distinctUntilChanged(),
             advanced = {
                 AppAdvanced(
                     spec,
@@ -1261,6 +1261,12 @@ class AppGraph(
             step("integrations") {
                 integrations.load()
                 integrations.start(scope)
+            }
+            // the name LibreLinkUp gives the person it reads: the hub shows it only while LibreLinkUp is the source
+            step("source name") {
+                scope.launch {
+                    integrations.libreLinkUpSource.personName.collect { monitor.hubImpl.setName(SourceKind.LibreLinkUp, it) }
+                }
             }
             step("pens") { pens.start() }
             // the sensor's end in the calendar (opt-in, the wearer's phone)

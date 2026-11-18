@@ -232,7 +232,7 @@ class WidgetUpdaterTest {
             ticks.emit(Unit)
             runCurrent()
             assertEquals(4, redraws)
-            glucose.value = glucose.value.copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", t0))
+            glucose.value = glucose.value.copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", t0), name = "Ana")
             runCurrent()
             assertEquals(5, redraws)
             glucose.value = glucose.value.copy(link = LinkState("Ana", t0.plusSeconds(30)))

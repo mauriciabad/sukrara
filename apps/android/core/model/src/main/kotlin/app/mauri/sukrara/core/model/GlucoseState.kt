@@ -33,6 +33,11 @@ data class GlucoseState(
     val service: ServiceState = ServiceState.NotRunning,
     /** The phone's clock is behind the readings, so the newest ones are dropped (#50); null = it isn't. */
     val clockBehind: ClockBehind? = null,
+    /**
+     * Whose glucose by name, as the current source names them (a stream's wearer, the person LibreLinkUp reads); null =
+     * the source gives none. Never a name another source gave (docs/44 Appendix G finding 3).
+     */
+    val name: String? = null,
 ) {
     /** Why nothing is monitored yet ("Not monitoring: no sensor yet"), or null while monitoring. */
     val notMonitoring: NotMonitoringReason?

@@ -142,6 +142,7 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
             spec = SourceSpec.TheirSukrara,
             latest = latest?.copy(source = SourceId.Relay),
             link = LinkState(wearer, latest?.t),
+            name = wearer,
             monitoringStartedAt = latest?.t ?: clock.now(),
         )
 }

@@ -3,11 +3,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.monitor.hub
 
+import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.NotMonitoringReason
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.testing.FakeClock
@@ -96,6 +99,34 @@ class GlucoseHubTest {
                     ?.mgdl,
             )
             assertEquals(clock.now().toEpochMilli(), record.data.first().startedAtEpochMs)
+        }
+
+    @Test
+    fun `a follow kept behind another source lends it neither its link nor its name (Appendix G finding 3)`() =
+        runTest {
+            role.value = SourceSpec(Person.Theirs, SourceKind.LibreLinkUp)
+            val hub = hub()
+            runCurrent()
+            hub.setLink(LinkState("Ana", clock.now(), revoked = true))
+            runCurrent()
+            assertNull(hub.state.value.link)
+            assertNull(hub.state.value.name)
+
+            hub.setName(SourceKind.LibreLinkUp, "Leo")
+            runCurrent()
+            assertEquals("Leo", hub.state.value.name)
+
+            // back to the stream: its link and its wearer's name, never LibreLinkUp's person
+            role.value = SourceSpec.TheirSukrara
+            runCurrent()
+            assertEquals("Ana", hub.state.value.link?.wearerName)
+            assertEquals("Ana", hub.state.value.name)
+
+            // a source that names no one: no name at all
+            role.value = SourceSpec(Person.Theirs, SourceKind.Nightscout)
+            runCurrent()
+            assertNull(hub.state.value.link)
+            assertNull(hub.state.value.name)
         }
 
     @Test

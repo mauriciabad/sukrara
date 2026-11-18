@@ -79,6 +79,12 @@ class GlucoseHubImpl(
     override val state: StateFlow<GlucoseState> = mutableState.asStateFlow()
 
     private val sourceSensor = MutableStateFlow<SensorState>(SensorState.None)
+
+    /** The follower engine's link, kept while another source is in use: shown only while the stream is the source. */
+    private val followLink = MutableStateFlow<LinkState?>(null)
+
+    /** The name each other source gives whose glucose it reads ([setName]). */
+    private val names = MutableStateFlow<Map<SourceKind, String>>(emptyMap())
     private val bluetoothOn = MutableStateFlow(true)
 
     // serial dispatcher only
@@ -98,7 +104,7 @@ class GlucoseHubImpl(
             // briefly look "not monitoring" to the alert runtime (no data off, a showing no-data alert cleared)
             launch {
                 combine(spec, record.data) { r, rec -> r to rec.startedAtEpochMs?.let(Instant::ofEpochMilli) }.collect { (r, startedAt) ->
-                    mutableState.update { it.copy(spec = r, monitoringStartedAt = startedAt) }
+                    mutableState.update { named(it.copy(spec = r, monitoringStartedAt = startedAt)) }
                     inputsLoaded.complete(Unit)
                 }
             }
@@ -161,7 +167,33 @@ class GlucoseHubImpl(
 
     override fun setAlerts(alerts: AlertUiState) = mutableState.update { it.copy(alerts = alerts) }
 
-    override fun setLink(link: LinkState?) = mutableState.update { it.copy(link = link) }
+    /** The follower engine's link: the state shows it (and its wearer's name) only while a stream is the source. */
+    override fun setLink(link: LinkState?) {
+        followLink.value = link
+        mutableState.update(::named)
+    }
+
+    /** The name [kind] gives whose glucose it reads (LibreLinkUp's person; null = none), shown while it is the source. */
+    fun setName(
+        kind: SourceKind,
+        name: String?,
+    ) {
+        names.update { if (name.isNullOrBlank()) it - kind else it + (kind to name) }
+        mutableState.update(::named)
+    }
+
+    /** [s] with the link and the name of its source only: another source's never show (Appendix G finding 3). */
+    private fun named(s: GlucoseState): GlucoseState {
+        val spec = s.spec
+        val link = followLink.value.takeIf { spec?.stream == true }
+        val name =
+            when {
+                spec == null -> null
+                spec.stream -> link?.wearerName
+                else -> names.value[spec.kind]
+            }?.takeIf { it.isNotBlank() }
+        return if (s.link == link && s.name == name) s else s.copy(link = link, name = name)
+    }
 
     /**
      * Back to "Not monitoring" after the person removed the sensor, changed whose glucose or a follow ended (an explicit

@@ -307,6 +307,14 @@ class LibreLinkUpSource(
             )
         }.distinctUntilChanged()
 
+    /**
+     * The name of the person read, as LibreLinkUp says it (null = no one picked, or no name): the hub's name while
+     * LibreLinkUp is the source (alerts, the notification, widgets, Settings › Source).
+     */
+    val personName: Flow<String?> =
+        combine(config.data, store.data) { s, st -> st.name.takeIf { s.patient.isNotEmpty() && it.isNotEmpty() } }
+            .distinctUntilChanged()
+
     /** Ask now (a new sign-in, a person picked, *Try again*). */
     fun kick() {
         kicks.trySend(Unit)

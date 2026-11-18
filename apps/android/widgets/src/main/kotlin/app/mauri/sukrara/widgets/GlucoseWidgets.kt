@@ -188,9 +188,8 @@ fun describeCard(
     val style = widgetStyle(kind, frame, overrides)
     val sentence = A11y.card(model, style, CardSurface.WIDGET_DESCRIPTION)
     val name =
-        frame.glucose.link
-            ?.wearerName
-            ?.takeIf { frame.glucose.spec?.theirs == true && it.isNotBlank() }
+        frame.glucose.name
+            ?.takeIf { frame.glucose.spec?.theirs == true }
     return if (name != null) context.getString(R.string.widget_desc_follower, name, sentence) else sentence
 }
 

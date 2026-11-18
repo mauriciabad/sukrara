@@ -154,9 +154,8 @@ fun describeLock(
     val style = lockWidgetCardStyle(frame.config)
     val sentence = A11y.card(model, style, CardSurface.LOCK_DESCRIPTION)
     val name =
-        frame.glucose.link
-            ?.wearerName
-            ?.takeIf { frame.glucose.spec?.theirs == true && it.isNotBlank() }
+        frame.glucose.name
+            ?.takeIf { frame.glucose.spec?.theirs == true }
     val said = if (name != null) context.getString(R.string.widget_desc_follower, name, sentence) else sentence
     return if (widgetTap(context, frame) is WidgetTap.QuickTreatment) context.getString(R.string.widget_lock_desc_tap, said) else said
 }

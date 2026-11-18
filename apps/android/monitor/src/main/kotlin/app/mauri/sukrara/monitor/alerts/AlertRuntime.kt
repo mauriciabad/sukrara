@@ -944,7 +944,7 @@ internal data class AlertFeed(
     val latest: Reading?,
 ) {
     companion object {
-        fun of(s: GlucoseState) = AlertFeed(s.spec?.let(AlertSide::of), s.link?.wearerName, s.monitoringStartedAt, s.sensor, s.latest)
+        fun of(s: GlucoseState) = AlertFeed(s.spec?.let(AlertSide::of), s.name, s.monitoringStartedAt, s.sensor, s.latest)
     }
 }
 
