@@ -1257,7 +1257,9 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       | Follow ended (the wearer removed the device) → other source | none (already closed) | the follow key gone after the leave questions; no *Keep following?* | as answered | own engine | the new source's | (already removed) |
       | Android: someone else's glucose (link) → yours | none | the follow key gone | as answered | wearer (your glucose) | your log, the earlier history deleted (asked) | told |
       | Online source → *Their Sukrara* (join) | relay (and Bluetooth) open | the online account kept, listed under *Also on this device* with *Sign out* / *Forget* | *Their settings* (default) | mirror | the wearer's | following |
-      | Updated with a follow kept behind another source | none after the start | the follow key gone | unchanged (the source's own) | own engine | the source's own | told |
+      | Updated with a live follow kept behind another source → *Keep following* | relay (and Bluetooth) open | the other source's account kept (*Also saved on this …*) | *Their settings* | mirror | the wearer's | following |
+      | Updated with a live follow kept behind another source → *Stop following* | none | the follow key gone | unchanged (the source's own) | own engine | the source's own | told |
+      | Updated with an ended follow kept behind another source | none after the start | the follow key gone, no question | unchanged (the source's own) | own engine | the source's own | (already ended) |
 
       Offline (the wearer's phone or the relay unreachable) at *Stop following*: where the person lands (Android setup's
       source step and Settings › Source; Mac under *Not following anyone* and at the top of Settings › Source) says

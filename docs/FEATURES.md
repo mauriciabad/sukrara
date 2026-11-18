@@ -766,9 +766,16 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   link left through one call (the engine's `unfollow`, which tells the wearer's phone), then the history: kept (the fence
   at its last reading; the wearer's entries stay read-only and are never uploaded or shared by the next source; this
   phone's own entries that never reached the wearer, *Sending…* / *Not sent*, become its own) or deleted; then the
-  picked source's own step (sign in, site, *Connect Juggluco*, the sensor). A follow kept behind another source by an
-  earlier version is left at start with no question: the source in use stays, the wearer's phone is told, the history
-  and the settings stay as they are.
+  picked source's own step (sign in, site, *Connect Juggluco*, the sensor). A live follow kept behind another source by
+  an earlier version (link.json `behind`) is **asked about at start**, never left unasked (a leave is final: it takes a
+  new invite): Settings › Source opens (once per launch; the question stays there until answered) with the same *Keep
+  following Ana?*, the source in use as the one picked: *Keep following* (the default; Back, a tap outside and *Cancel*
+  in the leave questions too) makes the link the source again, the other source's account kept (*Also saved on this
+  phone*); *Stop following* → *Stop following Ana?* (no settings or history question: the settings weren't in use and
+  the history lies among the source's readings, so it is kept) → left, the wearer's phone told, the source in use
+  staying (`AppGraph.followFoundBehind`, `AppLink.behindFacts` / `leaveBehind`, `FollowBehindDialogs`, `AppLinkTest`).
+  One that ended has no one to keep following: left at start with no question, the history and the settings as they
+  are.
 - **One person, one link** (Mac; `LinkRules` over link.json, `LinkContractTests`, `AppModelLinkTests`): the same
   model. Picking another source while following (Settings › Source's rows, setup's source step opened from Settings)
   asks **Keep following Ana?** (*this Sukrara* with no name yet) as an alert: *Ana's Sukrara already sends this Mac the
@@ -882,7 +889,10 @@ following* → the picked source stored → its own step. Mac, following: anothe
 *Keep Following* (Return / Escape: nothing changes) or *Stop Following…* → the leave sheet (an ended follow: at once;
 also Settings › Source's *Stop following…*) → *Cancel* (Escape: nothing changes) / *Stop Following* → the picked
 source's rows, or no source → the panel's *Pick a Source…* → Settings › Source → any source (*Sukrara on a phone* →
-*Follow…*: the way back to following). After it: *Follow someone* (Back → Source), *Connect Juggluco* / *Set up sensor*
+*Follow…*: the way back to following). Both apps, a live follow found behind another source at start → Settings ›
+Source opens with *Keep following Ana?* → *Keep following* (Android also Back / outside / *Cancel* in the leave
+questions; Mac also *Cancel* in the leave sheet: the link is the source again) or *Stop following* → the leave questions →
+*Stop following* (the source in use stays); the app closed before an answer → asked again at the next launch. After it: *Follow someone* (Back → Source), *Connect Juggluco* / *Set up sensor*
 (*Later* → home's *Finish setup*), or home / Settings › Source. Unanswered (an update) → setup at *Whose glucose* /
 home's banner / Settings › Source's *Answer* (Mac *Answer…* / *Finish Setup…*; neither question has *Skip* on either
 app); monitoring runs meanwhile. Juggluco not installed → its connect step says so, *Later* / Back. Stream ended → *Join with a new link* / *Stop

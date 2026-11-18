@@ -410,7 +410,7 @@ public final class AppModel {
     }
 
     /// A follow record found behind another source (a Mac updated in the old state: one person, one link says it
-    /// can't exist). A live one (following, or waiting for the wearer) is asked about once per launch, as picking that
+    /// can't exist; link.json `behind`). A live one (following, or waiting for the wearer) is asked about once per launch, as picking that
     /// source while following asks (*Keep following {name}?*: *Keep Following* makes the link the source again, *Stop
     /// Following…* the leave questions, the source in use staying): a leave is final and tells the wearer, so it never
     /// happens without the person's answer. One that ended (removed, declined, an invite used or expired, broken) has
@@ -418,13 +418,13 @@ public final class AppModel {
     /// read someone else), the settings untouched.
     private func leaveBehindIfNeeded(_ snapshot: FollowerSnapshot) {
         guard !followsSource, !behindHandled, let kind = sourceKind else { return }
-        switch linkState {
-        case .none: return
-        case .active:
+        switch LinkRules.behind(linked: linkState) {
+        case nil: return
+        case .keepFollowing:
             behindHandled = true
             AppLog.app.info("a follow kept behind another source: asking")
             onFollowBehind?(kind)
-        case .ended:
+        case .leave:
             behindHandled = true
             AppLog.app.info("an ended follow kept behind another source: leaving it (history kept)")
             Task { [weak self] in await self?.leaveLink(keepHistory: true, continues: false) }

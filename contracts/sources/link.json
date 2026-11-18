@@ -15,6 +15,11 @@
     "'questions' = settings (Keep their settings / Sukrara's defaults) | history (Keep it / Delete it) | deleteHistory.",
     "'result' = the settings the device keeps when no settings question is asked (own = its own as they are; defaults =",
     "the mirrored rows at the schema defaults; theirs = the wearer's mirrored rows copied as its own).",
+    "'behind': a follow record found at start behind another source (a device updated from before one person, one link).",
+    "'asks' = keepFollowing (it is live: Keep following {name}? as if the source in use was just picked; Keep following",
+    "makes the link the source again, the other source's account kept; Stop following goes on to the leave questions,",
+    "the source in use staying; a leave is final, so it is never made unasked) | leave (it ended: left at once, no",
+    "question, the history kept apart, the settings untouched) | null (no follow record).",
     "'defaults' = the preselected answers: nothing the person sees shifts, nothing is lost.",
     "'fence': leaving with Keep, the next source continues the kept history: its backfill fills gaps but never replaces",
     "a kept reading at or before 'fence_s' (the last kept reading); after the fence the rank rule (dedup.json) applies.",
@@ -42,6 +47,11 @@
     {"name": "nothing to ask at all", "settingsFrom": "custom", "theirs": "none", "history": false, "personChange": false, "questions": [], "result": "own"},
     {"name": "Android: someone else's glucose to yours deletes the history (asked as that)", "settingsFrom": "wearer", "theirs": "differ", "history": true, "personChange": true, "questions": ["settings", "deleteHistory"], "result": null},
     {"name": "Android: a person change with nothing received", "settingsFrom": "custom", "theirs": "differ", "history": false, "personChange": true, "questions": [], "result": "own"}
+  ],
+  "behind": [
+    {"name": "a live follow behind another source is asked about, never left unasked", "linked": "active", "asks": "keepFollowing"},
+    {"name": "an ended follow behind another source is left at start", "linked": "ended", "asks": "leave"},
+    {"name": "no follow record behind the source", "linked": "none", "asks": null}
   ],
   "defaults": {"settings": "theirs", "history": "keep"},
   "fence": [

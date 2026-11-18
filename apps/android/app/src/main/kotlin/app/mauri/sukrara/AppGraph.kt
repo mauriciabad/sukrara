@@ -22,6 +22,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.LifeSettings
+import app.mauri.sukrara.core.model.Link
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.MoveRules
 import app.mauri.sukrara.core.model.PenDuplicates
@@ -890,7 +891,7 @@ class AppGraph(
 
     /**
      * Leaving the Sukrara link (one person, one link: contracts/sources/link.json): *Stop following*, another source
-     * picked while linked, a follow kept behind another source by an earlier version ([leaveLeftBehindLink]).
+     * picked while linked, a follow found behind another source at start ([followFoundBehind]).
      */
     val link: AppLink by lazy {
         AppLink(
@@ -935,15 +936,55 @@ class AppGraph(
     }
 
     /**
-     * A follow kept behind another source by an earlier version (one person, one link can't have it): left at start,
-     * with no question. The source in use stays (the person chose it; going back could show the wrong person), the
-     * wearer's phone is told, the history stays, the settings are untouched (they weren't in use).
+     * A live follow found at start behind the source in use (an install updated from before one person, one link):
+     * that source, while Settings › Source asks *Keep following {name}?* (link.json `behind`); null = nothing to ask.
+     * Asked once per launch, kept until answered.
      */
-    private suspend fun leaveLeftBehindLink() {
+    private val _followBehind = MutableStateFlow<SourceSpec?>(null)
+    val followBehind: StateFlow<SourceSpec?> = _followBehind
+
+    /**
+     * A follow record found at start behind another source (one person, one link can't have it). A live one is asked
+     * about ([followBehind]): a leave is final and tells the wearer, so it never happens unasked. One that ended has no
+     * one to keep following: left at once, the source in use staying, the history kept, the settings untouched (they
+     * weren't in use).
+     */
+    private suspend fun followFoundBehind() {
         val stored = source.data.first().spec
-        if (AppLink.leaveLeftBehind(stored, follower.engine::isFollowing, { leaveLink(keepHistory = true) }, data.treatments)) {
-            data.diagLog.log("source", "left the follow kept behind ${stored?.kind?.id}")
+        val state = follower.engine.state.value
+        when (AppLink.behind(stored, follower.engine.isFollowing(), state.ended)) {
+            Link.Behind.KeepFollowing -> {
+                _followBehind.value = stored
+                data.diagLog.log("source", "a live follow behind ${stored?.kind?.id}: asking")
+            }
+
+            Link.Behind.Leave -> {
+                if (AppLink.leaveBehind(::leaveLink, data.treatments)) {
+                    data.diagLog.log("source", "left the ended follow behind ${stored?.kind?.id}")
+                }
+            }
+
+            null -> {
+                Unit
+            }
         }
+    }
+
+    /** *Keep following* on a follow found behind the source in use: the link is the source again (that source's account kept). */
+    suspend fun keepFollowingBehind() {
+        val inUse = _followBehind.value ?: return
+        _followBehind.value = null
+        setup.sources.set(SourceSpec(inUse.person, SourceKind.Sukrara))
+        resetMonitoring()
+        startMonitoring(StartReason.App)
+    }
+
+    /** *Stop following* on a follow found behind the source in use: left (the wearer told), that source staying. */
+    suspend fun stopFollowingBehind(): Boolean {
+        if (_followBehind.value == null) return true
+        if (!link.leaveBehind()) return false
+        _followBehind.value = null
+        return true
     }
 
     /** The Nightscout source's Connect step and *Bring back 90 days* (setup), and the site to confirm after a person change. */
@@ -1489,7 +1530,7 @@ class AppGraph(
             step("share") { scope.launch { shareOwner.ownerEngine.followSource(spec, scope) } }
             step("follower") {
                 follower.engine.load()
-                leaveLeftBehindLink()
+                followFoundBehind()
                 // a `leave` a previous run couldn't send goes now (and its notification while it waits)
                 followUntoldLeaves()
                 // a follow that ended (declined, invite used, removed) arms no "no data" alarm for a stream that won't come

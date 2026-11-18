@@ -63,6 +63,33 @@ class AppLink(
         val spec = running.first()
         val f = follow.value
         if (spec?.stream != true || f == FollowState.NotFollowing || f == FollowState.Loading) return null
+        val (name, told) = whom(f)
+        val (wearerInUse, theirs) = settings.state()
+        val loss = HistoryLoss.of(readings.span(), treatments.span())
+        val personChange = next != null && next.person != spec.person
+        return LeaveFacts(name, spec.person == Person.Yours, told, Link.leave(wearerInUse, theirs, loss != null, personChange), loss)
+    }
+
+    /**
+     * What leaving a live follow found behind [inUse] at start asks (link.json `behind`): only whether to stop, the
+     * wearer told. Nothing about the settings (the link's weren't in use beside another source) or the history (it is
+     * kept: it lies among the readings [inUse] brought since, so it can't be deleted on its own). Null = no follow.
+     */
+    suspend fun behindFacts(inUse: SourceSpec): LeaveFacts? {
+        val f = follow.value
+        if (inUse.stream || f == FollowState.NotFollowing || f == FollowState.Loading) return null
+        val (name, told) = whom(f)
+        return LeaveFacts(name, inUse.person == Person.Yours, told, Link.leave(false, Link.Theirs.None, false, false), null)
+    }
+
+    /**
+     * *Stop following* on a follow found behind the source in use: left (the wearer told), the history kept, the
+     * source in use staying, the settings untouched. False when the key store refused.
+     */
+    suspend fun leaveBehind(): Boolean = leaveBehind(leaveLink, treatments)
+
+    /** The name the wearer gives and whether their phone knows this one (approved or waiting): it is told. */
+    private fun whom(f: FollowState): Pair<String?, Boolean> {
         val following = f as? FollowState.Following
         val name =
             following
@@ -70,11 +97,7 @@ class AppLink(
                 ?.name
                 ?.let(Profile::shownName)
                 ?.takeIf { it.isNotBlank() }
-        val told = following?.status == FollowStatus.Active || following?.status == FollowStatus.Requested
-        val (wearerInUse, theirs) = settings.state()
-        val loss = HistoryLoss.of(readings.span(), treatments.span())
-        val personChange = next != null && next.person != spec.person
-        return LeaveFacts(name, spec.person == Person.Yours, told, Link.leave(wearerInUse, theirs, loss != null, personChange), loss)
+        return name to (following?.status == FollowStatus.Active || following?.status == FollowStatus.Requested)
     }
 
     override suspend fun leave(
@@ -114,17 +137,24 @@ class AppLink(
 
     companion object {
         /**
-         * A follow kept behind another source by an earlier version ([stored] isn't the link, yet a follow record is
-         * there: one person, one link can't have it) is left with no question: [leave] (the wearer told, the history
-         * kept), the wearer's entries kept read-only. True when it left one.
+         * What a follow record found behind [stored] at start asks (link.json `behind`, [Link.behind]): asked about
+         * while it is live, left at once when it [ended]; null = the link is the source, or no record ([recorded]).
          */
-        suspend fun leaveLeftBehind(
+        fun behind(
             stored: SourceSpec?,
-            following: suspend () -> Boolean,
-            leave: suspend () -> Boolean,
+            recorded: Boolean,
+            ended: Boolean,
+        ): Link.Behind? {
+            if (stored == null || stored.stream || !recorded) return null
+            return Link.behind(if (ended) Link.Linked.Ended else Link.Linked.Active)
+        }
+
+        /** Leaves a follow behind another source: [leave] (the wearer told, the history kept), the wearer's entries kept read-only. */
+        suspend fun leaveBehind(
+            leave: suspend (keepHistory: Boolean) -> Boolean,
             treatments: TreatmentsRepository,
         ): Boolean {
-            if (stored == null || stored.stream || !following() || !leave()) return false
+            if (!leave(true)) return false
             keepHistory(treatments)
             return true
         }

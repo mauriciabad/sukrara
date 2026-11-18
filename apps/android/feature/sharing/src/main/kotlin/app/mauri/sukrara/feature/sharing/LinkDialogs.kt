@@ -91,6 +91,27 @@ internal fun KeepFollowingDialog(
 }
 
 /**
+ * A live follow found behind the source in use at start (link.json `behind`): the same *Keep following {name}?* as
+ * picking [inUse] while following. *Keep following* (the default: Back, a tap outside, and *Cancel* in the leave
+ * questions too) makes the link the source again; *Stop following* goes on to the leave questions ([facts]), then
+ * [onLeave] leaves the link, [inUse] staying the source. A leave is final: it never happens unasked.
+ */
+@Composable
+fun FollowBehindDialogs(
+    facts: LeaveFacts,
+    inUse: SourceKind,
+    onKeep: () -> Unit,
+    onLeave: () -> Unit,
+) {
+    var stopping by rememberSaveable { mutableStateOf(false) }
+    if (stopping) {
+        LeaveLinkDialog(facts, onCancel = onKeep, onLeave = { onLeave() })
+    } else {
+        KeepFollowingDialog(facts.name, facts.yours, inUse, onKeep = onKeep, onStop = { stopping = true })
+    }
+}
+
+/**
  * The leave questions in one place (link.json `leave`): *Stop following {name}?*, what the wearer's phone is told and
  * how to follow again, then only the questions [facts] asks: the settings this phone keeps (*Keep {name}'s settings* /
  * *Sukrara's defaults*), the history the link brought (*Keep it* / *Delete it*, saying what goes), or, when whose glucose

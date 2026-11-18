@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.Link
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceAlertRole
@@ -92,8 +93,8 @@ class NonLinkSourceTest {
     @Test
     fun `a non-link source uses nothing derived from the link`() =
         runTest {
-            // record + connection: a follow kept behind another source is left at start (the wearer told), so nothing
-            // is kept to connect with; the follower engine is the reading source only for the link
+            // record + connection: an ended follow behind another source is left at start (the wearer told), so
+            // nothing is kept to connect with; the follower engine is the reading source only for the link
             var left = false
             val treatments = InMemoryTreatmentsRepository()
             treatments.replace(
@@ -113,15 +114,15 @@ class NonLinkSourceTest {
             )
             check("record") {
                 kotlinx.coroutines.runBlocking {
-                    assertTrue(AppLink.leaveLeftBehind(llu, { true }, { true.also { left = true } }, treatments))
+                    // an ended follow found behind the source is left at start (a live one is asked: AppLinkTest)
+                    assertEquals(Link.Behind.Leave, AppLink.behind(llu, recorded = true, ended = true))
+                    assertTrue(AppLink.leaveBehind({ true.also { left = true } }, treatments))
                 }
                 assertTrue(left)
             }
             check("connection") {
-                // nothing to connect with after the leave, and the link itself is never left behind
-                kotlinx.coroutines.runBlocking {
-                    assertFalse(AppLink.leaveLeftBehind(SourceSpec.TheirSukrara, { true }, { error("never") }, treatments))
-                }
+                // nothing to connect with after the leave, and the link itself is never found behind
+                assertNull(AppLink.behind(SourceSpec.TheirSukrara, recorded = true, ended = true))
             }
 
             // settings: never the wearer's; Settings from isn't there; every pane is editable

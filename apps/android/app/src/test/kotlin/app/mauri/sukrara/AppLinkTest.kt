@@ -167,4 +167,35 @@ class AppLinkTest {
             assertTrue(link.leave(LeaveAnswers(), null))
             assertEquals("settings:defaults", events.first())
         }
+
+    @Test
+    fun `a follow found behind another source is asked about while live, left at start when it ended`() =
+        runTest {
+            val llu = SourceSpec(Person.Yours, SourceKind.LibreLinkUp)
+            // live: asked (Keep following?), never left unasked; ended: left; the link itself or no record: nothing
+            assertEquals(Link.Behind.KeepFollowing, AppLink.behind(llu, recorded = true, ended = false))
+            assertEquals(Link.Behind.Leave, AppLink.behind(llu, recorded = true, ended = true))
+            assertNull(AppLink.behind(SourceSpec.TheirSukrara, recorded = true, ended = false))
+            assertNull(AppLink.behind(llu, recorded = false, ended = false))
+            assertNull(AppLink.behind(null, recorded = true, ended = false))
+
+            // the question: whom, told, and nothing about settings or history (kept: it lies among the source's readings)
+            received()
+            running.value = llu
+            val facts = link.behindFacts(llu)!!
+            assertEquals("Ana", facts.name)
+            assertTrue(facts.told)
+            assertTrue(facts.yours)
+            assertEquals(emptyList<Link.Question>(), facts.plan.questions)
+            assertEquals(Link.Kept.Own, facts.plan.result)
+            assertNull(link.behindFacts(SourceSpec.TheirSukrara))
+
+            // Stop following: left (the wearer told), the history kept, the settings untouched, no after-leave reset
+            assertTrue(link.leaveBehind())
+            assertEquals(listOf("leave:true"), events)
+            assertEquals(2, readings.all.size)
+            assertTrue(treatments.get("ana")!!.fromLink)
+            keyStoreRefuses = true
+            assertFalse(link.leaveBehind())
+        }
 }

@@ -25,6 +25,8 @@ import app.mauri.sukrara.feature.settings.source.AlsoSaved
 import app.mauri.sukrara.feature.settings.source.SourceActions
 import app.mauri.sukrara.feature.settings.source.SourcePageContent
 import app.mauri.sukrara.feature.settings.source.SourcePageState
+import app.mauri.sukrara.feature.sharing.FollowBehindDialogs
+import app.mauri.sukrara.feature.sharing.LeaveFacts
 import app.mauri.sukrara.feature.sharing.follower.FollowingPage
 import app.mauri.sukrara.feature.sharing.follower.FollowingViewModel
 import app.mauri.sukrara.integrations.librelinkup.LibreLinkUpSourceActions
@@ -83,6 +85,19 @@ internal fun SourceScreen(
     }.collectAsStateWithLifecycle(null)
     val pageScope = rememberCoroutineScope()
     val untold by graph.untoldLeave.collectAsStateWithLifecycle(null)
+    // a live follow found behind the source in use at start: asked here, never left unasked (link.json `behind`)
+    val behind by graph.followBehind.collectAsStateWithLifecycle()
+    behind?.let { inUse ->
+        val facts by produceState<LeaveFacts?>(null, inUse) { value = graph.link.behindFacts(inUse) }
+        facts?.let { f ->
+            FollowBehindDialogs(
+                f,
+                inUse.kind,
+                onKeep = { pageScope.launch { graph.keepFollowingBehind() } },
+                onLeave = { pageScope.launch { graph.stopFollowingBehind() } },
+            )
+        }
+    }
     SettingsPage(stringResource(SettingsR.string.st_source_title), onBack) {
         val spec = loaded?.spec
         // what this phone keeps for a source it doesn't read now (Appendix G finding 12)

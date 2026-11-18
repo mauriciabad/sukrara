@@ -34,6 +34,24 @@ public enum LinkRules {
         }
     }
 
+    /// What a follow record found behind another source at launch asks (link.json `behind`).
+    public enum Behind: String, Sendable, Equatable {
+        /// *Keep following {name}?*, the source in use as the one picked: a leave is final, never made unasked.
+        case keepFollowing
+        /// Left at once, no question, the history kept apart: it ended, there is no one to keep following.
+        case leave
+    }
+
+    /// A follow record found behind another source at launch (a Mac updated from before one person, one link): asked
+    /// about while `linked` is live, left at once when it ended; nil = no follow record.
+    public static func behind(linked: State) -> Behind? {
+        switch linked {
+        case .none: nil
+        case .active: .keepFollowing
+        case .ended: .leave
+        }
+    }
+
     /// The wearer's mirrored settings as this Mac holds them: never received, received at every schema default, or
     /// different from the defaults.
     public enum Theirs: String, Sendable, Equatable {

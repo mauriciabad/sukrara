@@ -18,7 +18,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 
-/** [Link] and [ReadingRank]'s fence against contracts/sources/link.json (`pick`, `leave`, `defaults`, `fence`). */
+/** [Link] and [ReadingRank]'s fence against contracts/sources/link.json (`pick`, `behind`, `leave`, `defaults`, `fence`). */
 class LinkContractTest {
     private val link = Json.parseToJsonElement(Contracts.file("sources/link.json").readText()).jsonObject
 
@@ -40,6 +40,17 @@ class LinkContractTest {
             checked++
         }
         assertEquals("every Android pick case", 8, checked)
+    }
+
+    @Test
+    fun `a follow found behind another source at start is asked about while live`() {
+        val cases = link.cases("behind")
+        assertEquals(3, cases.size)
+        for (c in cases) {
+            val linked = Link.Linked.entries.single { enumId(it.name) == c.str("linked") }
+            val asks = c.getValue("asks").jsonPrimitive.contentOrNull
+            assertEquals(c.str("name"), asks, Link.behind(linked)?.name?.let(::enumId))
+        }
     }
 
     @Test

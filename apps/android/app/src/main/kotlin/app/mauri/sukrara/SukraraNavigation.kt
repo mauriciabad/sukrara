@@ -496,6 +496,15 @@ fun SukraraNavigation(
         historyOffered = true
         if (backStack.none { it is SetupRoute || it is SetupStepRoute }) backStack.push(SetupStepRoute(SetupStep.History))
     }
+    // a live follow found behind the source in use at start (link.json `behind`): Settings › Source opens with Keep
+    // following {name}?, once per launch (it stays asked there until answered)
+    var behindShown by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (behindShown) return@LaunchedEffect
+        graph.followBehind.first { it != null }
+        behindShown = true
+        if (SourceKey !in backStack) backStack.push(SourceKey)
+    }
     // an invite link says where it works, on top of whatever is open (Back returns there), once per link: a recreated
     // activity keeps it
     var handledLink by rememberSaveable { mutableStateOf<String?>(null) }

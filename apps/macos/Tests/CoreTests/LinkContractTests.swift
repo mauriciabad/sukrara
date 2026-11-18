@@ -32,6 +32,15 @@ import Testing
         #expect(checked == 8)
     }
 
+    @Test func aFollowFoundBehindAnotherSourceIsAskedAboutWhileLive() throws {
+        let all = try cases("behind")
+        #expect(all.count == 3)
+        for c in all {
+            let linked = try #require(LinkRules.State(rawValue: c["linked"] as? String ?? ""))
+            #expect(LinkRules.behind(linked: linked)?.rawValue == c["asks"] as? String, "\(c["name"]!)")
+        }
+    }
+
     @Test func leavingAsksOnlyTheQuestionsWhoseAnswersDiffer() throws {
         var checked = 0
         for c in try cases("leave") where c["personChange"] as? Bool != true {  // Android's Whose glucose

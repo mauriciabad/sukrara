@@ -32,6 +32,26 @@ object Link {
             else -> Ask.Leave
         }
 
+    /** What a follow record found behind another source at start asks (link.json `behind`). */
+    enum class Behind {
+        /** *Keep following {name}?*, the source in use as the one picked: a leave is final, never made unasked. */
+        KeepFollowing,
+
+        /** Left at once, no question, the history kept: it ended, there is no one to keep following. */
+        Leave,
+    }
+
+    /**
+     * A follow record found behind another source at start (a device updated from before one person, one link):
+     * asked about while [linked] is live, left at once when it ended; null = no follow record.
+     */
+    fun behind(linked: Linked): Behind? =
+        when (linked) {
+            Linked.None -> null
+            Linked.Active -> Behind.KeepFollowing
+            Linked.Ended -> Behind.Leave
+        }
+
     /** The wearer's mirrored settings this phone holds (link.json `leave.theirs`). */
     enum class Theirs { None, Defaults, Differ }
 
