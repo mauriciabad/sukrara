@@ -85,6 +85,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   followers, insulin pens, updates and your old history come after, right away or later from Settings › Finish setup.
 - Change whose glucose and its source any time in Settings › Source: the same app wears or follows, no reinstall. The
   Mac asks only where the glucose comes from: names come from the source.
+- One person, one link: a device follows a Sukrara or reads another source, never both. Picking another source while
+  following asks first; leaving asks which settings and history the device keeps, and the wearer is told.
 - A feature you use that Android or macOS blocks (a missing permission, a login item waiting for you) never fails
   silently: home or the menu bar panel says so, with Allow and Turn off.
 

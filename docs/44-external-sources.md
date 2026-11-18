@@ -1006,6 +1006,30 @@ Discarded or deferred, with reasons:
   minute, as the file shows); Sukrara sends notes only for a note (`contracts/treatments/SPEC.md` `n`). Matching the app
   is a contract change (a second record number per version, its retraction): its own issue.
 
+**One person, one link (2026-11-18, Android; contracts/sources/link.json, Appendix G).**
+
+Added:
+- `Link.pick` / `Link.leave` / the defaults and `ReadingRank.plan`'s fence as link.json says (`LinkContractTest`).
+- *Keep following Ana?* on every path that picks another source while linked (Settings › Source, *Whose glucose* →
+  source, setup's source step, *Pair new sensor*), and the leave questions in one SPA dialog (the app's settings
+  dialogs: `SettingsDialog` + `DialogRadio`; an M3 dialog may hold a short radio list, so two two-option questions fit
+  without a full-screen dialog, and *Stop following* keeps the error colour of the app's other destructive confirms).
+- `AppLink`: the settings kept (`copyWearer` / the defaults, *Settings from* back to *Their settings*), the link left
+  through one call (`FollowerEngine.unfollow(keepHistory)`, which sends the `leave`), the history kept behind the fence
+  (the wearer's entries read-only and never sent; own unsent entries this phone's own) or deleted; *Stop following*
+  alone keeps whose glucose, so a kept history is never adopted for the other person. A follow an earlier version kept
+  behind another source is left at start. The leave's *not told yet* shows in setup and Settings › Source too.
+- Settings › Source: *Reconnect* on the follow; *Also saved on this phone* (*Sign out of LibreLinkUp*, *Forget
+  Nightscout site*). Escalation rows and *Settings from* only where they act (search included). Settings › Metrics:
+  *Needs more readings…* for a hidden metric. `NonLinkSourceTest` over link.json `after`.
+
+Discarded:
+- Keying someone else's readings by source identity on Android (the Mac's way): one person's history at a time with
+  the fence gives the same result without a database version (which would wipe every phone).
+- *Read another way…* as a separate row while linked: *Where it comes from* already lists every source and asks
+  *Keep following?* first, one pattern instead of two.
+- A follow row in *Also saved on this phone*: under D a follow is never kept behind another source.
+
 ## Decisions for the owner
 
 **Built (2026-11-18): the `leave`.** A follower that stops tells the wearer, hard to lose (Appendix G, *In Sukrara:
@@ -1851,6 +1875,7 @@ Platform; journey and repro; what's left behind or broken; fix.
    - Repro: dev fixture, setup *Yes · Follow it* → Settings › Source → *LibreLinkUp* (`mac-07` → `mac-08`). The follow rows vanish (who, *Stop following*, *Reconnect*, *How you appear*). Only the footer says the follow is kept.
    - Left behind: relays and Bluetooth (owner's Mac), the follow store, the phone's settings and thresholds applied to LibreLinkUp, *Their settings* in General and Alerts, the panel badge naming the follow's path, the Bluetooth-blocked warning.
    - Fix: D. Until then, gate wearer settings, path badge and blocked features on `followMonitoring`; keep the follow's rows and *Stop following* on the Source pane for every source.
+   - **Android fixed** (705ca9364): D. Every path that picks another source while linked asks *Keep following Ana?*, then the leave questions; *Stop following* asks them too (`AppLink`, `SetupViewModelTest`, `AppLinkTest`); a follow an earlier version kept behind another source is left at start (`AppLink.leaveLeftBehind`). `NonLinkSourceTest` checks link.json's `after` list.
 2. **HIGH, both: the same person loses the phone's treatments and pen doses** on a Mac reading LibreLinkUp, and Mac entries never reach the phone, Tidepool or Nightscout.
    - Fix: D (the Mac follows the phone).
 3. **HIGH, Android: the old follow's name on another source's alerts, notification, widgets and Source page** (`android/25`–`27`).
@@ -1862,6 +1887,7 @@ Platform; journey and repro; what's left behind or broken; fix.
    - **Fixed** (cc0cc830d): `SourceRecord.forAnotherPerson` clears the pick and the site with the history; LibreLinkUp picks again by the rule (a lone connection that isn't the account is still picked for *Yours*: the contract's rule); the Connect step only offers the earlier site (*The site read before: check it's yours*, its token kept for it) and always shows after a person change. `AppSourcesTest`, `SetupViewModelTest`; emulator: Theirs · Leo → Yours asked *Delete the earlier history?*, then LibreLinkUp's list instead of Leo.
 5. **HIGH, Android: history overwritten across sources and people; "The history on this phone stays" is false** (`android/14`).
    - Fix: key someone else's readings by source identity; within one person, fence backfill at the previous source's last reading; correct the dialog copy.
+   - **Android fixed** (f58cb2e77, 705ca9364): one person's history at a time (no database change). `ReadingRank.plan` takes the fence (link.json `fence`, `LinkContractTest`): set at the last reading at every source change for the same person (`AppSources`, `AppSourcesTest`) and at a leave with *Keep it*, so the next source fills gaps and never replaces a kept reading. That makes "The history on this phone stays" true; a person change still deletes it (asked).
 6. **HIGH, Android: another LibreLinkUp person is read without asking, and readings mix.**
    - Fix: port the Mac's confirmation (`M/Windows/Settings/LibreLinkUpRows.swift:129-140`).
    - **Fixed** (bd07a8cf6): *Read Leo Example's glucose?* (`ReadAnotherPersonDialog`) on the Person row, setup's list and a sign-in or *Try again* that would read someone else (*Cancel* keeps the person read); the source remembers whose readings the phone holds (`LluSourceState.held`) and deletes them and the treatments before another person's arrive, dropping an answer for the earlier person still on its way. `LibreLinkUpSourceTest`, `LibreLinkUpPersonConfirmTest`; emulator: Ana → Leo asked first, and the next person change counted only Leo's 12 h.
@@ -1874,6 +1900,7 @@ Platform; journey and repro; what's left behind or broken; fix.
    - Android: wearer rows for someone else's non-stream source (`AlertsSettingsPage.kt:223-249`, `AlertsViewModel.kt:148`).
    - Risk: a parent who mutes the Mac and relies on "also when muted here" gets nothing.
    - Fix: show it only while linked with *Their settings*, or decide escalation works with own rules.
+   - **Android fixed** (61c758651): the wearer's rows only where this phone owns your glucose (`spec.owner`), the follower's switch only while linked with *Their settings*, the search likewise (`EscalationRowsTest`, `SettingsSearchTest.linkRowsOnlyWhileLinked`).
 10. **MEDIUM-HIGH, Android: treatments cross logs.**
     - Nightscout uploaded the 25 g from Ana's log to the site.
     - The site's entries show on Ana's card after return.
@@ -1881,11 +1908,13 @@ Platform; journey and repro; what's left behind or broken; fix.
     - Own entries stay *Sending…*.
     - Ana's treatments weren't re-fetched after Theirs → Yours → Theirs (cause not pinned).
     - Fix: per-log ownership; never upload another log's entries; reset the follow's treatment cursor when the history is wiped.
+    - **Android fixed** (705ca9364): a link left with *Keep it* marks the wearer's entries as kept from the link (`TreatmentRecord.fromLink`): read-only, never uploaded (Nightscout source and uploader, Tidepool, LibreView) or shared; this phone's own unsent entries become its own (no *Sending…* without a link). The follow has no treatment cursor (it asks for the last 30 days at every subscription); a deletion while still linked (yours ↔ someone else's) now asks the relays again (`FollowerEngine.refetch`). `AppLinkTest`, `NonLinkSourceTest`.
 11. **MEDIUM, Android: pairing a sensor while showing someone else's glucose forces *Yours* and deletes all readings and treatments without *Delete the earlier history?*** (`A/app/.../AppGraph.kt:316-319` → `SetupPorts.kt:40-46`). Code-read, not walked.
     - Fix: go through `loss()` and the dialog.
     - **Fixed** (1f97a2dba): the new-sensor flow opened while someone else's glucose shows opens setup's source step confirming your own sensor (`SetupStepRoute.yourSensor`: *Delete the earlier history?* when there is history), then the sensor step; `setSourceKind` never changes the person by itself. `SetupViewModelTest`; emulator: Theirs · Juggluco → Settings › Sensor › *Pair new sensor* asked first, then *Connect your sensor*.
 12. **MEDIUM, both: accounts of sources not in use can't be seen or removed** (follow key, LibreLinkUp account and pick, Nightscout site and token; Nightscout can't be forgotten at all).
     - Fix: an "Also on this device" group with *Sign out*, *Forget*, *Stop following*, without reconnecting.
+    - **Android fixed** (6c34632a5): Settings › Source › *Also saved on this phone*: *Sign out of LibreLinkUp*, *Forget Nightscout site*, each confirmed, hidden when empty; no follow to list (D leaves it).
 13. **MEDIUM, Mac: a standalone Mac runs *Settings from: Their settings*** (schema default `wearer`).
     - Alerts, Readings, Graph and Metrics stay read-only with "Waiting for this person's settings" forever.
     - Fix: *Settings from* only while linked.
@@ -1896,6 +1925,7 @@ Platform; journey and repro; what's left behind or broken; fix.
     - **Fixed** (c2645aa55): `NoDataReason` gives *LinkRevoked* only while the stream is the source (the hub's link is too, 2c1a4863d). `NoDataReasonTest`; not walked (needs an ended follow behind another source).
 16. **MEDIUM, Mac: rings counted over LibreLinkUp's 12 h** while the follow holds 8.7 days of the same person.
     - Fix: §4 point 5.
+    - Android, the "says why" part (§4 Q3; be3c32adf): Settings › Metrics adds *Needs more readings: 12 h of the last 7 days, 42 h needed* to a hidden metric's summary (`MetricNeedTest`).
 17. **MEDIUM, Mac (QA tooling): dev and fixture runs have no LibreLinkUp, Nightscout or Juggluco source**, so the Mac's online journeys can't be walked on the app, only in unit tests.
     - Fix: debug-only loopback overrides for dev runs, like Android's `LIBRELINKUP` command.
 18. **LOW-MEDIUM, copy:**
