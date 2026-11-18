@@ -82,7 +82,9 @@ import Testing
         for _ in 0..<20 where w.title != SettingsModel.Pane.source.title { await Task.yield() }
         #expect(w.title == SettingsModel.Pane.source.title)
         #expect(w.toolbar?.selectedItemIdentifier?.rawValue == "source")
-        #expect(w.contentRect(forFrameRect: w.frame).height == SettingsModel.Pane.source.height)
+        // The pane's height, or less on a short screen (a CI runner's): the window keeps 80 pt free
+        let area = (w.screen ?? NSScreen.main)?.visibleFrame.height ?? 900
+        #expect(w.contentRect(forFrameRect: w.frame).height == min(SettingsModel.Pane.source.height, area - 80))
         _ = chrome
     }
 
