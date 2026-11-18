@@ -416,8 +416,10 @@ section with what was added and what was discarded, with the reasons.
 
 ## Decisions for the owner
 
-**Owner, 2026-11-18: all as recommended.** Two are still open: 9 waits on a clearer explanation, and 11 was
-researched further ("we didn't truly research this enough": Appendix E) and needs your answer again. The owner uses
+**Owner, 2026-11-18: all as recommended**, 9 too once explained. 11 was researched further ("we didn't truly research
+this enough": Appendix E) and needs the owner's answer again. The owner also raised a channel neither note covered:
+**with root**, reading the official app's data or sitting in the middle of its Bluetooth link, which could work for
+nearly every sensor (not required, a good option when the phone has root); being researched. The owner uses
 only Sukrara with Libre 3 sensors (no Libre app, no LibreLinkUp). For testing they're fine installing apps on the phone
 or emulators and making accounts, as long as their normal setup ends up Sukrara alone.
 
@@ -440,7 +442,10 @@ Ordered by how much they block.
 8. **Move suggestion** only at a sensor change, tested families, ≥ 7 days at ≥ 95 %, twice at most, never on the Mac,
    for a loop or someone else's? *Recommend yes*; say if you want it sooner or never.
 9. **Re-sharing someone else's glucose** to Sukrara followers (grandparents via a parent)? *Recommend not now*: nobody
-   asked; consent and loops.
+   asked; consent and loops. *Owner: OK.* A parent who wants the child's glucose on their own Mac too signs in to the
+   Mac with their own LibreLinkUp (or Dexcom Share, Nightscout) account: *Someone else's · LibreLinkUp* (decision 7);
+   phone and Mac each read the account. Their treatments stay on the device they were logged on. To verify in step 2:
+   whether one LibreLinkUp account can stay signed in on two devices at once.
 10. **Manual sensor start** for sources without sensor life? *Recommend yes*: small, and reminders work for every source.
 11. **Dexcom / Abbott partner APIs**? *Recommend don't apply; send a Data Act request instead* (Appendix E): real time
     is Dexcom's invitation-only API for companies with a server holding the secrets, and Abbott has no program; the EU
