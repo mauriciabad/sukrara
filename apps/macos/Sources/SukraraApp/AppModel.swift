@@ -676,6 +676,8 @@ public final class AppModel {
         case .unreachable: .nightscout(.unreachable(host: snapshot.host))
         case .signedOut: .nightscout(.signedOut)
         case .rateLimited: .nightscout(.rateLimited)
+        // LibreLinkUp's own states: a site never reaches them
+        case .actionNeeded, .notShared, .stopped: .nightscout(.unreachable(host: snapshot.host))
         }
     }
 

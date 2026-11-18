@@ -22,10 +22,18 @@ public enum SourceHealth {
         case refused
         /// 429: the site asked to wait.
         case rateLimited
+        /// LibreLinkUp asks the person to accept new terms (login status 4).
+        case terms
+        /// LibreLinkUp: the account follows no one, or no longer the person picked.
+        case notShared
+        /// LibreLinkUp refuses this client (a version it asks for, an endpoint gone): Abbott changed it.
+        case retired
     }
 
     public enum State: String, CaseIterable, Sendable, Codable {
         case connecting, live, late, noNewReadings, offline, unreachable, signedOut, rateLimited
+        /// LibreLinkUp's own: new terms to accept, no one shares (any more), stopped answering Sukrara.
+        case actionNeeded, notShared, stopped
     }
 
     /// Newer than this is live; up to `silentAfter` late (readings come in gaps); older: nothing new reaches the site.
@@ -37,13 +45,16 @@ public enum SourceHealth {
         switch outcome {
         case .refused: return .signedOut
         case .rateLimited: return .rateLimited
+        case .terms: return .actionNeeded
+        case .notShared: return .notShared
+        case .retired: return .stopped
         default: break
         }
         guard online else { return .offline }
         switch outcome {
         case nil: return .connecting
         case .network, .server, .notFound: return .unreachable
-        case .ok, .refused, .rateLimited:
+        case .ok, .refused, .rateLimited, .terms, .notShared, .retired:
             guard let age = newestAge else { return .noNewReadings }
             if age <= lateAfter { return .live }
             return age <= silentAfter ? .late : .noNewReadings

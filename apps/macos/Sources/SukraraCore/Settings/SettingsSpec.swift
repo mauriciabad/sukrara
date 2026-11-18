@@ -210,6 +210,8 @@ public enum SettingsSpec {
         SettingInfo(id: "source.nightscoutUrl", type: "string", number: nil, mirror: false, wire: nil, android: "state:nightscoutUrl", mac: "defaults:nightscoutURL", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "source.nightscoutTreatments", type: "bool", number: nil, mirror: false, wire: nil, android: "state:nightscoutTreatments", mac: "defaults:nightscoutTreatments", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "source.nightscoutSecret", type: "secret", number: nil, mirror: false, wire: nil, android: "secure:nightscoutSource", mac: "keychain:nightscoutSourceSecret", path: nil, only: nil, reason: nil, mirrorExcept: []),
+        SettingInfo(id: "source.libreLinkUpPatient", type: "string", number: nil, mirror: false, wire: nil, android: "state:libreLinkUpPatient", mac: "defaults:libreLinkUpPatient", path: nil, only: nil, reason: nil, mirrorExcept: []),
+        SettingInfo(id: "source.libreLinkUpSecret", type: "secret", number: nil, mirror: false, wire: nil, android: "secure:libreLinkUpSource", mac: "keychain:libreLinkUpSourceSecret", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "settings.pane", type: "enum", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:settingsPane", path: nil, only: "mac", reason: "The Mac Settings window reopens on the last pane it showed (HIG Settings); Android settings are a navigation stack that starts at its top", mirrorExcept: []),
         SettingInfo(id: "update.automaticChecks", type: "bool", number: nil, mirror: false, wire: nil, android: "settings:updateChecks", mac: "system:SPUUpdater.automaticallyChecksForUpdates", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "update.automaticInstall", type: "bool", number: nil, mirror: false, wire: nil, android: "settings:updateInstall", mac: "system:SPUUpdater.automaticallyDownloadsUpdates", path: nil, only: nil, reason: nil, mirrorExcept: []),
@@ -292,6 +294,7 @@ public enum SettingsSpec {
         public static let jugglucoAddress = "jugglucoAddress"
         public static let nightscoutURL = "nightscoutURL"
         public static let nightscoutTreatments = "nightscoutTreatments"
+        public static let libreLinkUpPatient = "libreLinkUpPatient"
         public static let settingsPane = "settingsPane"
         public static let reportDays = "reportDays"
     }

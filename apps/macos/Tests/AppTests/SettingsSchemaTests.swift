@@ -54,6 +54,7 @@ import Testing
             t("source.jugglucoAddress", MacSettings.jugglucoAddress), t("settings.pane", MacSettings.settingsPane),
             t("source.nightscoutUrl", MacSettings.nightscoutURL),
             t("source.nightscoutTreatments", MacSettings.nightscoutTreatments),
+            t("source.libreLinkUpPatient", MacSettings.libreLinkUpPatient),
             t("report.days", MacSettings.reportDays),
             t("general.readAloudShortcut", MacSettings.readAloudShortcut), t(json, MacSettings.alerts),
             t("alerts.throughFocus", MacSettings.throughFocus),
@@ -230,6 +231,7 @@ import Testing
         let accounts = [
             "source.jugglucoSecret": MacSettings.jugglucoSecretAccount,
             "source.nightscoutSecret": MacSettings.nightscoutSecretAccount,
+            "source.libreLinkUpSecret": MacSettings.libreLinkUpSecretAccount,
         ]
         #expect(Set(secrets.map(\.id)) == Set(accounts.keys))
         for info in secrets { #expect(info.mac == "keychain:\(accounts[info.id] ?? "")", "\(info.id)") }

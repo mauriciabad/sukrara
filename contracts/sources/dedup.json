@@ -5,16 +5,19 @@
     "a lower-ranked stored reading is removed when the higher one arrives, a lower-ranked incoming reading is dropped.",
     "Equal ranks: what is stored first stays (relay and nearby carry the same reading). The same source at the same",
     "time replaces its own reading (a re-send). 'readingRank' maps every reading source id to its rank; imported history",
-    "(Import history) is the lowest, as its own rule already says (the sensor wins). 'cases': 'stored' then 'incoming'",
+    "(Import history) is the lowest, as its own rule already says (the sensor wins). 'onlineHistory' = an online source's",
+    "graph points (LibreLinkUp's 5-minute history): they only fill gaps between its live readings (docs/44 Appendix D 4).",
+    "'cases': 'stored' then 'incoming'",
     "(each [seconds, source, mg/dL]; one batch) -> 'kept', sorted by time then source."
   ],
   "window_s": 120,
-  "rank": ["sensor", "phoneApp", "network", "online", "sukrara", "imported"],
+  "rank": ["sensor", "phoneApp", "network", "online", "onlineHistory", "sukrara", "imported"],
   "readingRank": {
     "libre3": "sensor", "dexcom-g7": "sensor", "dexcom-g6": "sensor", "accu-chek-smartguide": "sensor", "aidex-x": "sensor",
     "juggluco": "phoneApp",
     "juggluco-lan": "network",
-    "nightscout": "online",
+    "nightscout": "online", "librelinkup": "online",
+    "librelinkup-graph": "onlineHistory",
     "relay": "sukrara", "nearby": "sukrara",
     "import-libreview": "imported", "import-tidepool": "imported", "import-file": "imported"
   },
@@ -35,6 +38,15 @@
     {"name": "the sensor replaces Nightscout's copy (back from an online source)", "stored": [[0, "nightscout", 100]], "incoming": [[50, "libre3", 101]], "kept": [[50, "libre3", 101]]},
     {"name": "Nightscout over imported history", "stored": [[0, "import-tidepool", 100]], "incoming": [[100, "nightscout", 102]], "kept": [[100, "nightscout", 102]]},
     {"name": "Nightscout's readings 5 min apart are each a measurement", "stored": [[0, "nightscout", 100]], "incoming": [[300, "nightscout", 104]], "kept": [[0, "nightscout", 100], [300, "nightscout", 104]]},
-    {"name": "a Juggluco reading on this phone over Nightscout's copy", "stored": [[0, "nightscout", 100]], "incoming": [[-30, "juggluco", 99]], "kept": [[-30, "juggluco", 99]]}
+    {"name": "a Juggluco reading on this phone over Nightscout's copy", "stored": [[0, "nightscout", 100]], "incoming": [[-30, "juggluco", 99]], "kept": [[-30, "juggluco", 99]]},
+    {"name": "LibreLinkUp's readings a minute apart are each a measurement", "stored": [[0, "librelinkup", 100]], "incoming": [[60, "librelinkup", 101]], "kept": [[0, "librelinkup", 100], [60, "librelinkup", 101]]},
+    {"name": "a LibreLinkUp graph point beside a live reading is dropped", "stored": [[0, "librelinkup", 100]], "incoming": [[40, "librelinkup-graph", 100]], "kept": [[0, "librelinkup", 100]]},
+    {"name": "a live LibreLinkUp reading replaces the graph point of the same measurement", "stored": [[0, "librelinkup-graph", 100]], "incoming": [[70, "librelinkup", 102]], "kept": [[70, "librelinkup", 102]]},
+    {"name": "graph points fill a gap between live readings", "stored": [[0, "librelinkup", 100], [900, "librelinkup", 110]], "incoming": [[300, "librelinkup-graph", 104], [600, "librelinkup-graph", 107]], "kept": [[0, "librelinkup", 100], [300, "librelinkup-graph", 104], [600, "librelinkup-graph", 107], [900, "librelinkup", 110]]},
+    {"name": "one batch: the live reading and the graph's newest point of the same measurement", "stored": [], "incoming": [[0, "librelinkup-graph", 120], [50, "librelinkup", 121]], "kept": [[50, "librelinkup", 121]]},
+    {"name": "the sensor taken over replaces LibreLinkUp's copy (the move)", "stored": [[0, "librelinkup", 100]], "incoming": [[30, "libre3", 101]], "kept": [[30, "libre3", 101]]},
+    {"name": "the sensor's backfill replaces LibreLinkUp's graph point", "stored": [[0, "librelinkup-graph", 100]], "incoming": [[-60, "libre3", 99]], "kept": [[-60, "libre3", 99]]},
+    {"name": "a LibreLinkUp graph point over imported history", "stored": [[0, "import-libreview", 100]], "incoming": [[90, "librelinkup-graph", 101]], "kept": [[90, "librelinkup-graph", 101]]},
+    {"name": "a relayed copy is dropped beside LibreLinkUp's live reading", "stored": [[0, "librelinkup", 100]], "incoming": [[20, "relay", 100]], "kept": [[0, "librelinkup", 100]]}
   ]
 }

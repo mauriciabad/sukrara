@@ -12,11 +12,18 @@
   "they carry a Libre 3's live reading, its serial and life count; rule 7 adds that no loop should take internet",
   "readings for a sensor's, and apps that want a site's glucose read the site themselves). Someone else's glucose is",
   "never shared or uploaded whatever its source (sources.json keying 'owner'); a Mac on its own uploads nothing. The",
-  "treatments Sukrara logs itself keep today's rules, plus both ways with the source site."
+  "treatments Sukrara logs itself keep today's rules, plus both ways with the source site.",
+  "LibreLinkUp (docs/44 step 2, rules 2, 3 and 6): 'librelinkup' = glucose read from LibreLinkUp (the official app",
+  "uploads it to LibreView). LibreView takes one uploading device per account, so while LibreLinkUp is the source the",
+  "LibreView upload sends nothing at all, treatments neither ('libreView' 'no'; it resumes when Sukrara reads the sensor,",
+  "with Take over). 'on' = on unless the person turns it off, a switch that says why: Tidepool can link LibreView itself",
+  "(US only), so the switch says it would count twice there. LibreLinkUp brings no treatments: the ones logged in Sukrara",
+  "keep today's rules (Tidepool, Nightscout, followers). 'nightscoutSame' doesn't apply (no site is the source): 'yes'."
  ],
  "targets": ["libreView", "tidepool", "nightscoutSame", "nightscoutOther", "healthConnect", "followers", "garmin", "broadcasts"],
  "rows": {
   "nightscout": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "garmin": "yes", "broadcasts": "no"},
-  "nightscout-treatments": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "garmin": "yes", "broadcasts": "no"}
+  "nightscout-treatments": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "garmin": "yes", "broadcasts": "no"},
+  "librelinkup": {"libreView": "no", "tidepool": "on", "nightscoutSame": "yes", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "garmin": "yes", "broadcasts": "no"}
  }
 }

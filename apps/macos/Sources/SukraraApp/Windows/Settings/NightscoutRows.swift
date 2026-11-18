@@ -181,6 +181,11 @@ struct NightscoutStatus: Equatable {
         case .rateLimited:
             return NightscoutStatus(
                 text: L10n.t("Nightscout asked Sukrara to wait. It tries again by itself."), symbol: "hourglass")
+        // LibreLinkUp's own states: a site never reaches them
+        case .actionNeeded, .notShared, .stopped:
+            return NightscoutStatus(
+                text: L10n.t("No answer from \(s.host). Check the address."), symbol: "network.slash",
+                action: .tryAgain)
         }
     }
 
@@ -337,7 +342,8 @@ struct NightscoutConnect: View {
         let status = NightscoutStatus.of(s, now: now)
         switch s.health(at: now) {
         case .connecting: return .connecting
-        case .offline, .unreachable, .signedOut, .rateLimited: return .failed(status)
+        case .offline, .unreachable, .signedOut, .rateLimited, .actionNeeded, .notShared, .stopped:
+            return .failed(status)
         case .live, .late, .noNewReadings:
             return s.readings.isEmpty ? .waiting(status.text) : .received
         }

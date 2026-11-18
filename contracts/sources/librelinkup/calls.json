@@ -1,0 +1,107 @@
+{
+ "_about": [
+  "An authenticated call's answer (GET /llu/connections, /llu/connections/<patientId>/graph, with",
+  "'Authorization: Bearer <token>' and 'Account-Id: sha256hex(account id)') -> the outcome the source acts on:",
+  "'ok'; 'expired' (sign in again with the saved password, once); 'rateLimited'; 'terms'; 'version' (as login.json);",
+  "'retired' (refused or gone: health 'stopped'); 'server' (health 'unreachable')."
+ ],
+ "cases": [
+  {
+   "name": "an answer",
+   "code": 200,
+   "body": {
+    "status": 0,
+    "data": []
+   },
+   "expect": {
+    "outcome": "ok"
+   }
+  },
+  {
+   "name": "the token expired: sign in again with the saved password",
+   "code": 401,
+   "body": {
+    "message": "Unauthorized"
+   },
+   "expect": {
+    "outcome": "expired"
+   }
+  },
+  {
+   "name": "asked to wait",
+   "code": 429,
+   "retryAfter": 120,
+   "body": {},
+   "expect": {
+    "outcome": "rateLimited",
+    "retryAfter_s": 120
+   }
+  },
+  {
+   "name": "new terms mid-session",
+   "code": 200,
+   "body": {
+    "status": 4,
+    "data": {
+     "step": {
+      "type": "tou"
+     }
+    }
+   },
+   "expect": {
+    "outcome": "terms"
+   }
+  },
+  {
+   "name": "this version is too old",
+   "code": 403,
+   "body": {
+    "status": 920,
+    "data": {
+     "minimumVersion": "4.18.0"
+    }
+   },
+   "expect": {
+    "outcome": "version",
+    "minimumVersion": "4.18.0"
+   }
+  },
+  {
+   "name": "refused for another reason: the API no longer serves this client",
+   "code": 403,
+   "body": {
+    "status": 403,
+    "message": "Forbidden"
+   },
+   "expect": {
+    "outcome": "retired"
+   }
+  },
+  {
+   "name": "the endpoint is gone",
+   "code": 404,
+   "body": {},
+   "expect": {
+    "outcome": "retired"
+   }
+  },
+  {
+   "name": "the server failed",
+   "code": 503,
+   "body": {},
+   "expect": {
+    "outcome": "server"
+   }
+  },
+  {
+   "name": "an answer that isn't LibreLinkUp's",
+   "code": 200,
+   "body": {
+    "hello": "world"
+   },
+   "expect": {
+    "outcome": "server"
+   }
+  }
+ ]
+}

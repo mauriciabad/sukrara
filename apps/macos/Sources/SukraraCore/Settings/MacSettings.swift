@@ -75,6 +75,10 @@ public enum MacSettings {
         key: SettingsSpec.Keys.nightscoutTreatments, defaultValue: true)
     /// The Keychain account of the Nightscout source's token or API secret (schema `source.nightscoutSecret`).
     public static let nightscoutSecretAccount = "nightscoutSourceSecret"
+    /// Whom the LibreLinkUp source reads (schema `source.libreLinkUpPatient`: a patientId; "" = pick it at Connect).
+    public static let libreLinkUpPatient = SettingSpec(key: SettingsSpec.Keys.libreLinkUpPatient, defaultValue: "")
+    /// The Keychain account of the LibreLinkUp source's email, password and token (schema `source.libreLinkUpSecret`).
+    public static let libreLinkUpSecretAccount = "libreLinkUpSourceSecret"
     /// The alert settings: ONE JSON value (contracts/alerts/SPEC.md §3), owned by the alert settings store.
     public static let alerts = SettingSpec(key: SettingsSpec.Keys.alerts, defaultValue: Data())
     /// The first-run walk's step states (JSON), owned by `SetupFlow`.

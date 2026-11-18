@@ -1,0 +1,72 @@
+{
+ "_about": [
+  "When the LibreLinkUp source asks again: every 'every_s' (the Libre app uploads each minute); after failures in a",
+  "row 'backoff_s'; asked to wait (429) at least 'rateLimited_min_s', or Retry-After / the lockout when longer;",
+  "a refused password never by itself (the person signs in again: retries lock the account). A token is renewed",
+  "'renewBefore_s' before it expires; the connections are read again every 'connectionsEvery_s' (and when the",
+  "graph call fails for the person). 'headers': what every call sends ('version' may be raised once by a 403 that",
+  "names a minimum, login.json)."
+ ],
+ "every_s": 60,
+ "backoff_s": [
+  60,
+  120,
+  300,
+  600
+ ],
+ "rateLimited_min_s": 600,
+ "renewBefore_s": 300,
+ "connectionsEvery_s": 1800,
+ "headers": {
+  "product": "llu.android",
+  "version": "4.17.0",
+  "Accept": "application/json",
+  "Content-Type": "application/json",
+  "cache-control": "no-cache"
+ },
+ "cases": [
+  {
+   "name": "an answer: again in a minute",
+   "failures": 0,
+   "wait_s": 60
+  },
+  {
+   "name": "one failure",
+   "failures": 1,
+   "wait_s": 60
+  },
+  {
+   "name": "two failures",
+   "failures": 2,
+   "wait_s": 120
+  },
+  {
+   "name": "three",
+   "failures": 3,
+   "wait_s": 300
+  },
+  {
+   "name": "many: at most 10 min apart",
+   "failures": 9,
+   "wait_s": 600
+  },
+  {
+   "name": "asked to wait without a time",
+   "failures": 1,
+   "rateLimited": 0,
+   "wait_s": 600
+  },
+  {
+   "name": "asked to wait 15 min",
+   "failures": 1,
+   "rateLimited": 900,
+   "wait_s": 900
+  },
+  {
+   "name": "the password was refused: never again by itself",
+   "failures": 1,
+   "refused": true,
+   "wait_s": null
+  }
+ ]
+}

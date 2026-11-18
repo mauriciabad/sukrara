@@ -11,11 +11,16 @@
   "it catches up when it's back), 'unreachable' (a network but no answer from the site: down, or the address is wrong),",
   "'signedOut' (refused: enter the token again; nothing is asked again until then or 'refused_s'), 'rateLimited'",
   "(the site asked to wait). A refusal or a rate limit says so whatever the network; a failure is 'offline' only",
-  "when the device has no network. The no-data alert still counts from the reading's time (contracts/alerts/SPEC.md)."
+  "when the device has no network. The no-data alert still counts from the reading's time (contracts/alerts/SPEC.md).",
+  "LibreLinkUp adds three outcomes (docs/44 step 2): 'terms' = the login asks to accept new terms or a new privacy",
+  "policy (status 4): 'actionNeeded', the person opens LibreLinkUp and accepts them (Sukrara never accepts for them);",
+  "'notShared' = the account follows no one, or no longer the person picked: 'notShared'; 'retired' = Abbott's API",
+  "refuses this client (a version Sukrara can't send, an endpoint gone): 'stopped', said plainly (an update of Sukrara",
+  "may bring it back). These three say so whatever the network, as a refusal does."
  ],
  "late_after_s": 420,
  "silent_after_s": 900,
- "states": ["connecting", "live", "late", "noNewReadings", "offline", "unreachable", "signedOut", "rateLimited"],
+ "states": ["connecting", "live", "late", "noNewReadings", "offline", "unreachable", "signedOut", "rateLimited", "actionNeeded", "notShared", "stopped"],
  "cases": [
   {"name": "nothing asked yet", "outcome": null, "online": true, "newestAge_s": null, "state": "connecting"},
   {"name": "nothing asked yet, no network", "outcome": null, "online": false, "newestAge_s": null, "state": "offline"},
@@ -31,6 +36,12 @@
   {"name": "not a Nightscout at that address", "outcome": "notFound", "online": true, "newestAge_s": null, "state": "unreachable"},
   {"name": "the token was refused", "outcome": "refused", "online": true, "newestAge_s": 60, "state": "signedOut"},
   {"name": "refused, and now offline: still signed out", "outcome": "refused", "online": false, "newestAge_s": 600, "state": "signedOut"},
-  {"name": "asked to wait", "outcome": "rateLimited", "online": true, "newestAge_s": 200, "state": "rateLimited"}
+  {"name": "asked to wait", "outcome": "rateLimited", "online": true, "newestAge_s": 200, "state": "rateLimited"},
+  {"name": "LibreLinkUp asks to accept new terms", "outcome": "terms", "online": true, "newestAge_s": 120, "state": "actionNeeded"},
+  {"name": "new terms, and now offline: still to accept", "outcome": "terms", "online": false, "newestAge_s": 900, "state": "actionNeeded"},
+  {"name": "no one shares with this account", "outcome": "notShared", "online": true, "newestAge_s": null, "state": "notShared"},
+  {"name": "the person picked stopped sharing", "outcome": "notShared", "online": true, "newestAge_s": 300, "state": "notShared"},
+  {"name": "Abbott's API refuses this client", "outcome": "retired", "online": true, "newestAge_s": 600, "state": "stopped"},
+  {"name": "refused this client, and offline: still stopped", "outcome": "retired", "online": false, "newestAge_s": 600, "state": "stopped"}
  ]
 }

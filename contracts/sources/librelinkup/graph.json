@@ -1,0 +1,885 @@
+{
+ "_about": [
+  "One graph answer (GET /llu/connections/<patientId>/graph) -> readings and the sensor. Each reading is",
+  "[epoch s, mg/dL, source, rate]: 'librelinkup' = the live reading (data.connection.glucoseMeasurement), its",
+  "TrendArrow as a rate in mg/dL/min (1..5 = -2.5, -1.5, 0, 1.5, 2.5; else none: THE trend is still computed from the",
+  "readings, contracts/trend); 'librelinkup-graph' = the graph's points (about every 5 min, 12 h back: they only fill",
+  "gaps, dedup.json 'onlineHistory'). Times from FactoryTimestamp, which is UTC ('M/d/yyyy h:mm:ss AM'); the local",
+  "Timestamp is never read. ValueInMgPerDl rounded; 0 or none = skipped; LO / HI stay numbers here (the hub flags",
+  "them). 'sensor': the first of data.activeSensors[0].sensor and data.connection.sensor with a serial and a start",
+  "('sn', 'a' epoch s): a new serial is a new sensor; its life uses contracts/sensor/life.json's defaults (warm-up,",
+  "wear), as LibreLinkUp doesn't say how long it lasts. 'name' = the connection's first and last name."
+ ],
+ "now": 1795003200,
+ "cases": [
+  {
+   "name": "the live reading with its arrow, and the graph's 5-minute points",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:10 AM",
+       "Timestamp": "11/18/2026 12:59:10 PM",
+       "type": 1,
+       "ValueInMgPerDl": 112,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 112,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 3
+      }
+     },
+     "graphData": [
+      {
+       "FactoryTimestamp": "11/18/2026 11:45:00 AM",
+       "Timestamp": "11/18/2026 12:45:00 PM",
+       "type": 0,
+       "ValueInMgPerDl": 104,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 104,
+       "isHigh": false,
+       "isLow": false
+      },
+      {
+       "FactoryTimestamp": "11/18/2026 11:50:00 AM",
+       "Timestamp": "11/18/2026 12:50:00 PM",
+       "type": 0,
+       "ValueInMgPerDl": 107,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 107,
+       "isHigh": false,
+       "isLow": false
+      },
+      {
+       "FactoryTimestamp": "11/18/2026 11:55:00 AM",
+       "Timestamp": "11/18/2026 12:55:00 PM",
+       "type": 0,
+       "ValueInMgPerDl": 110,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 110,
+       "isHigh": false,
+       "isLow": false
+      }
+     ],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795002300,
+      104,
+      "librelinkup-graph",
+      null
+     ],
+     [
+      1795002600,
+      107,
+      "librelinkup-graph",
+      null
+     ],
+     [
+      1795002900,
+      110,
+      "librelinkup-graph",
+      null
+     ],
+     [
+      1795003150,
+      112,
+      "librelinkup",
+      0.0
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "every arrow: falling quickly to rising quickly",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 140,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 140,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 1
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      140,
+      "librelinkup",
+      -2.5
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "falling",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 140,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 140,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 2
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      140,
+      "librelinkup",
+      -1.5
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "rising",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 140,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 140,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 4
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      140,
+      "librelinkup",
+      1.5
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "rising quickly",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 140,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 140,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 5
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      140,
+      "librelinkup",
+      2.5
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "no arrow: no rate",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 140,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 140,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 0
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      140,
+      "librelinkup",
+      null
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "below the sensor's range: LO travels as its number, the hub flags it",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 38,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 38,
+       "isHigh": false,
+       "isLow": true,
+       "TrendArrow": 2
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      38,
+      "librelinkup",
+      -1.5
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "above the range",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 512,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 512,
+       "isHigh": true,
+       "isLow": false,
+       "TrendArrow": 4
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      512,
+      "librelinkup",
+      1.5
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "a point without a time or a value is skipped",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "glucoseMeasurement": {
+       "ValueInMgPerDl": 120
+      }
+     },
+     "graphData": [
+      {
+       "FactoryTimestamp": "not a time",
+       "ValueInMgPerDl": 100
+      },
+      {
+       "FactoryTimestamp": "11/18/2026 11:55:00 AM",
+       "ValueInMgPerDl": 0
+      },
+      {
+       "FactoryTimestamp": "11/18/2026 11:50:00 AM",
+       "ValueInMgPerDl": 101
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795002600,
+      101,
+      "librelinkup-graph",
+      null
+     ]
+    ],
+    "sensor": null,
+    "name": ""
+   }
+  },
+  {
+   "name": "afternoon and midnight times read as UTC (12-hour clock)",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:59 PM",
+       "Timestamp": "11/19/2026 12:59:59 AM",
+       "type": 1,
+       "ValueInMgPerDl": 130,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 130,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 3
+      }
+     },
+     "graphData": [
+      {
+       "FactoryTimestamp": "11/18/2026 12:00:00 AM",
+       "Timestamp": "11/18/2026 1:00:00 AM",
+       "type": 0,
+       "ValueInMgPerDl": 120,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 120,
+       "isHigh": false,
+       "isLow": false
+      },
+      {
+       "FactoryTimestamp": "11/18/2026 1:00:00 PM",
+       "Timestamp": "11/18/2026 2:00:00 PM",
+       "type": 0,
+       "ValueInMgPerDl": 125,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 125,
+       "isHigh": false,
+       "isLow": false
+      }
+     ],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00ABC123",
+        "a": 1794744000,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1794960000,
+      120,
+      "librelinkup-graph",
+      null
+     ],
+     [
+      1795006800,
+      125,
+      "librelinkup-graph",
+      null
+     ],
+     [
+      1795046399,
+      130,
+      "librelinkup",
+      0.0
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "the sensor only in the connection (activeSensors missing)",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00ABC123",
+       "a": 1794744000,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 99,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 99,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 3
+      }
+     },
+     "graphData": []
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      99,
+      "librelinkup",
+      0.0
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00ABC123",
+     "start": 1794744000
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "no sensor: life unknown",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 99,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 99,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 3
+      }
+     },
+     "graphData": []
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      99,
+      "librelinkup",
+      0.0
+     ]
+    ],
+    "sensor": null,
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "a new sensor: a new serial and start",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {
+      "id": "c-1",
+      "patientId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "firstName": "Alex",
+      "lastName": "Example",
+      "sensor": {
+       "deviceId": "",
+       "sn": "0D00XYZ789",
+       "a": 1795001400,
+       "w": 60,
+       "pt": 4
+      },
+      "glucoseMeasurement": {
+       "FactoryTimestamp": "11/18/2026 11:59:00 AM",
+       "Timestamp": "11/18/2026 12:59:00 PM",
+       "type": 1,
+       "ValueInMgPerDl": 99,
+       "MeasurementColor": 1,
+       "GlucoseUnits": 1,
+       "Value": 99,
+       "isHigh": false,
+       "isLow": false,
+       "TrendArrow": 3
+      }
+     },
+     "graphData": [],
+     "activeSensors": [
+      {
+       "sensor": {
+        "deviceId": "",
+        "sn": "0D00XYZ789",
+        "a": 1795001400,
+        "w": 60,
+        "pt": 4
+       },
+       "device": {
+        "did": "synthetic-device",
+        "dtid": 40068
+       }
+      }
+     ]
+    }
+   },
+   "expect": {
+    "readings": [
+     [
+      1795003140,
+      99,
+      "librelinkup",
+      0.0
+     ]
+    ],
+    "sensor": {
+     "serial": "0D00XYZ789",
+     "start": 1795001400
+    },
+    "name": "Alex Example"
+   }
+  },
+  {
+   "name": "no glucose yet (a new account)",
+   "body": {
+    "status": 0,
+    "data": {
+     "connection": {},
+     "graphData": []
+    }
+   },
+   "expect": {
+    "readings": [],
+    "sensor": null,
+    "name": ""
+   }
+  }
+ ]
+}

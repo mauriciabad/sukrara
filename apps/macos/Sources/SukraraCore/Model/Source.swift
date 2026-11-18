@@ -114,7 +114,7 @@ public enum ReadingRank {
 
     /// Highest first (dedup.json `rank`).
     public enum Rank: Int, CaseIterable, Sendable, Comparable {
-        case sensor, phoneApp, network, online, sukrara, imported
+        case sensor, phoneApp, network, online, onlineHistory, sukrara, imported
         public static func < (a: Rank, b: Rank) -> Bool { a.rawValue < b.rawValue }
 
         public var name: String { String(describing: self) }
@@ -122,8 +122,8 @@ public enum ReadingRank {
 
     private static let ranks: [String: Rank] = [
         "libre3": .sensor, "dexcom-g7": .sensor, "dexcom-g6": .sensor, "accu-chek-smartguide": .sensor,
-        "aidex-x": .sensor, "juggluco": .phoneApp, "juggluco-lan": .network, "nightscout": .online, "relay": .sukrara,
-        "nearby": .sukrara,
+        "aidex-x": .sensor, "juggluco": .phoneApp, "juggluco-lan": .network, "nightscout": .online,
+        "librelinkup": .online, "librelinkup-graph": .onlineHistory, "relay": .sukrara, "nearby": .sukrara,
         "import-libreview": .imported, "import-tidepool": .imported, "import-file": .imported,
     ]
 

@@ -1,0 +1,233 @@
+{
+ "_about": [
+  "LibreLinkUp's login answers -> what Sukrara does (docs/44 step 2; the LibreView sign-in uses the same login).",
+  "POST https://api.libreview.io/llu/auth/login (then api-<region>.libreview.io after a redirect) with",
+  "{email, password} and the headers in poll.json 'headers'. 'expect.answer': 'account' (the account id, the token",
+  "and when it expires: renew 'renewBefore_s' before by signing in again), 'redirect' (sign in again at the",
+  "region's host; a region that isn't 2-3 lower-case letters is refused), 'badCredentials' (never retried by itself:",
+  "retries lock the account), 'terms' (status 4: the person accepts in LibreLinkUp; Sukrara never accepts for them),",
+  "'rateLimited' (wait at least poll.json 'rateLimited_min_s', longer when Retry-After or the lockout says so),",
+  "'version' (send that version once; still refused = 'retired'), 'retired' (the API is gone), 'failed'."
+ ],
+ "now": 1795003200,
+ "cases": [
+  {
+   "name": "signed in: the account's id and a token that lasts an hour",
+   "code": 200,
+   "body": {
+    "status": 0,
+    "data": {
+     "user": {
+      "id": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "country": "ES",
+      "uiLanguage": "es-ES"
+     },
+     "authTicket": {
+      "token": "eyJ.synthetic.token",
+      "expires": 1795006800,
+      "duration": 3600000
+     }
+    }
+   },
+   "expect": {
+    "answer": "account",
+    "accountId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+    "token": "eyJ.synthetic.token",
+    "expires": 1795006800
+   }
+  },
+  {
+   "name": "signed in with a 180-day token (older accounts)",
+   "code": 200,
+   "body": {
+    "status": 0,
+    "data": {
+     "user": {
+      "id": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+      "country": "ES",
+      "uiLanguage": "es-ES"
+     },
+     "authTicket": {
+      "token": "eyJ.synthetic.token",
+      "expires": 1810555200,
+      "duration": 3600000
+     }
+    }
+   },
+   "expect": {
+    "answer": "account",
+    "accountId": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0",
+    "token": "eyJ.synthetic.token",
+    "expires": 1810555200
+   }
+  },
+  {
+   "name": "the account lives in another region: sign in again there",
+   "code": 200,
+   "body": {
+    "status": 0,
+    "data": {
+     "redirect": true,
+     "region": "eu"
+    }
+   },
+   "expect": {
+    "answer": "redirect",
+    "region": "eu"
+   }
+  },
+  {
+   "name": "a region that isn't one is no redirect",
+   "code": 200,
+   "body": {
+    "status": 0,
+    "data": {
+     "redirect": true,
+     "region": "eu.evil.example"
+    }
+   },
+   "expect": {
+    "answer": "failed"
+   }
+  },
+  {
+   "name": "wrong email or password (status 2)",
+   "code": 200,
+   "body": {
+    "status": 2,
+    "error": {
+     "message": "notAuthenticated"
+    }
+   },
+   "expect": {
+    "answer": "badCredentials"
+   }
+  },
+  {
+   "name": "wrong email or password (HTTP 401)",
+   "code": 401,
+   "body": {},
+   "expect": {
+    "answer": "badCredentials"
+   }
+  },
+  {
+   "name": "new terms of use to accept: the person accepts them in LibreLinkUp",
+   "code": 200,
+   "body": {
+    "status": 4,
+    "data": {
+     "step": {
+      "type": "tou",
+      "componentName": "AcceptDocument"
+     },
+     "user": {
+      "accountType": "pat",
+      "country": "ES"
+     },
+     "authTicket": {
+      "token": "step-token",
+      "expires": 1795006800,
+      "duration": 3600000
+     }
+    }
+   },
+   "expect": {
+    "answer": "terms",
+    "step": "tou"
+   }
+  },
+  {
+   "name": "a new privacy policy to accept: the same, never accepted for them",
+   "code": 200,
+   "body": {
+    "status": 4,
+    "data": {
+     "step": {
+      "type": "pp",
+      "componentName": "AcceptDocument"
+     }
+    }
+   },
+   "expect": {
+    "answer": "terms",
+    "step": "pp"
+   }
+  },
+  {
+   "name": "too many attempts: locked for a while, the lockout from the answer",
+   "code": 429,
+   "body": {
+    "status": 429,
+    "data": {
+     "code": 60,
+     "data": {
+      "failures": 5,
+      "interval": 60,
+      "lockout": 300
+     },
+     "message": "locked"
+    }
+   },
+   "expect": {
+    "answer": "rateLimited",
+    "retryAfter_s": 300
+   }
+  },
+  {
+   "name": "too many attempts, with Retry-After",
+   "code": 429,
+   "retryAfter": 900,
+   "body": {},
+   "expect": {
+    "answer": "rateLimited",
+    "retryAfter_s": 900
+   }
+  },
+  {
+   "name": "this version is too old: the minimum it asks for",
+   "code": 403,
+   "body": {
+    "status": 920,
+    "data": {
+     "minimumVersion": "4.18.0"
+    }
+   },
+   "expect": {
+    "answer": "version",
+    "minimumVersion": "4.18.0"
+   }
+  },
+  {
+   "name": "the login is gone (Abbott retired the API)",
+   "code": 404,
+   "body": {},
+   "expect": {
+    "answer": "retired"
+   }
+  },
+  {
+   "name": "the server failed",
+   "code": 502,
+   "body": {},
+   "expect": {
+    "answer": "failed"
+   }
+  },
+  {
+   "name": "an answer without a token is no sign-in",
+   "code": 200,
+   "body": {
+    "status": 0,
+    "data": {
+     "user": {
+      "id": "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0"
+     }
+    }
+   },
+   "expect": {
+    "answer": "failed"
+   }
+  }
+ ]
+}

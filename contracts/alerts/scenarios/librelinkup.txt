@@ -1,0 +1,62 @@
+# LibreLinkUp as a source (docs/44 step 2): the Libre app uploads a reading each minute and Sukrara asks each minute,
+# so each reading arrives a minute or more after it was taken (`age`), sometimes later after a gap. The rules are the
+# same as for any source (§1, §2); these timelines pin how they play out at that cadence. (format: SPEC.md §7)
+
+scenario A reading a minute, each 1 min late: a low rising back into range is quieted, as from the sensor
+ 0  glucose 60 age 1                  => Low glucose
+ 1  glucose 61 age 1
+ 2  glucose 62 age 1
+ 3  glucose 63 age 1                  => clear low                      # 60 61 62 63 taken a minute before: a clear rise
+ 4  glucose 64 age 1
+ 5  glucose 65 age 1                                                    # the repeat came due: it waits
+ 6  glucose 66 age 1
+ 7  glucose 67 age 1
+ 8  glucose 68 age 1
+ 9  glucose 69 age 1
+10  glucose 70 age 1                                                    # 70: in range
+15
+
+scenario A reading a minute, each 3 min late: the newest is too old for the rise to hold the low
+ 0  glucose 60 age 3                  => Low glucose
+ 1  glucose 61 age 3
+ 2  glucose 62 age 3
+ 3  glucose 63 age 3
+ 4  glucose 64 age 3
+ 5  glucose 65 age 3                  => Low glucose                    # 3 min old: the quiet needs the newest ≤ 2.5 min
+ 6  glucose 66 age 3
+ 7  glucose 67 age 3
+ 8  glucose 68 age 3
+ 9  glucose 69 age 3
+10  glucose 70 age 3                  => clear low                      # in range
+15
+
+scenario A minute cadence, 2 min late: a low alerts when the reading that shows it arrives
+ 0  glucose 100 age 2
+ 1  glucose 72 age 2
+ 2  glucose 69 age 2                  => Low glucose                    # taken at 0, here at 2
+ 7                                    => Low glucose
+ 8  glucose 75 age 2                  => clear low
+12
+
+scenario The Libre app stops uploading: no data 20 min after the last reading was taken, not after it arrived
+ 0  glucose 120 age 1
+10  sensor off                                                          # the last reading arrived at 9, taken at 8
+28                                    => No glucose data
+29
+
+scenario A gap, then a reading 9 min late: it alerts (under 15 min old), and clears once it is older
+ 0  glucose 120 age 1
+ 5  sensor off
+14  sensor on, glucose 62 age 9      => Low glucose                    # taken at 5
+15  sensor off
+19                                    => Low glucose                    # its repeat: the reading is 14 min old
+20                                    => clear low                      # now 15 min old
+25                                    => No glucose data                # 20 min after it was taken
+26
+
+scenario Readings that arrive out of order (an older one after a newer one) never clear or repeat an alert by themselves
+ 0  glucose 100 age 1
+ 4  glucose 65 age 1                  => Low glucose                    # taken at 3
+ 5  glucose 120 age 4                                                   # taken at 1: older than the low, changes nothing
+ 8                                    => clear low                      # taken at 4, now newer: 120 is in range
+12
