@@ -61,7 +61,12 @@ final class AppServices: ServiceStarting {
         self.plan = plan
         makeUpdater = updater
         self.entitlements = entitlements
-        secrets = KeychainStore.secrets(service: plan.data.keychainService, entitlements: entitlements)
+        var secrets = KeychainStore.secrets(service: plan.data.keychainService, entitlements: entitlements)
+        #if DEBUG
+            // a dev run with online sources on this Mac keeps its accounts in memory: never the login Keychain
+            if DevOnline.allowed(plan, ProcessInfo.processInfo.environment) { secrets = DevSecrets() }
+        #endif
+        self.secrets = secrets
         makeWidget = widget
         defaults = plan.data.defaultsSuite.flatMap(UserDefaults.init(suiteName:)) ?? .standard
     }
@@ -218,8 +223,25 @@ final class AppServices: ServiceStarting {
     /// alert engine, the updater, the login item and the widget feed.
     func model(clock: any TimeSource = SystemClock()) -> AppModel {
         var follower: (any FollowerService)? = follower
+        var nightscout: (any NightscoutSourcing)? = nightscout
+        var libreLinkUp: (any LibreLinkUpSourcing)? = libreLinkUp
         #if DEBUG
-            if plan.mode == .fixture { follower = FixtureFollower() }
+            if plan.mode == .fixture { follower = FixtureFollower(kept: plan.data.paths.kept) }
+            // a dev run asked to: the online sources against servers on this Mac (Appendix G finding 17)
+            let env = ProcessInfo.processInfo.environment
+            if DevOnline.allowed(plan, env) {
+                let support = plan.data.paths.appSupport
+                if nightscout == nil, DevOnline.nightscout(env) {
+                    nightscout = NightscoutSource.files(
+                        directory: support.appending(path: "nightscout", directoryHint: .isDirectory),
+                        kept: plan.data.paths.kept)
+                }
+                if libreLinkUp == nil, let base = DevOnline.libreLinkUp(env) {
+                    libreLinkUp = LibreLinkUpSource.files(
+                        directory: support.appending(path: "librelinkup", directoryHint: .isDirectory),
+                        kept: plan.data.paths.kept, secrets: secrets, http: LoopbackLibreLinkUpHTTP(base: base))
+                }
+            }
         #endif
         return AppModel(
             plan: plan, clock: clock, alerts: alerts, updates: updates, loginItem: loginItem, follower: follower,

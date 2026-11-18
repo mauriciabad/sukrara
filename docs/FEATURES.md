@@ -787,8 +787,13 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   went), the history kept (moved to `kept/<identity>/`, `KeptHistory`) or deleted, then the picked source (its own
   rows: sign in, site, Juggluco) or, from *Stop following…* alone, **no source**: the panel's *Not monitoring: no
   source* with **Pick a Source…** (Settings › Source, every source offered, *Sukrara on a phone* first). A join (an
-  invite link opened, a phone nearby) makes another Sukrara the source first. A follow kept behind another source by an
-  earlier version (the owner's Mac) is left at start, no question: the source stays, the history kept, the settings
+  invite link opened, a phone nearby) makes another Sukrara the source first. A live follow kept behind another source
+  by an earlier version (the owner's Mac: LibreLinkUp as the source and the phone followed) is **asked about at launch**,
+  never left unasked (a leave is final: it takes a new invite): Settings › Source opens with the same *Keep following
+  Ana?* (*Reading LibreLinkUp here instead means this Mac stops following it.*): *Keep Following* (default; also
+  *Cancel* in the leave sheet) makes the link the source again, the other source's account kept (*Also saved on this
+  Mac*); *Stop Following…* → the leave sheet, the source in use staying. One that ended (removed, declined, the invite
+  used or expired, broken) has no one to keep following: it is left at start, its history kept apart, the settings
   untouched. While another source is in use nothing of the link counts: no relays or Bluetooth (the follow is left),
   no *Settings from* (every pane editable; schema value kept for a link), no escalation switch, no wearer name, path
   badge or Bluetooth warning, no mirrored alerts, the source's own sensor and no-data reasons (*Not monitoring: no
@@ -862,9 +867,9 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   this Mac reads continues it (`kept.json` `continuedBy`), so the panel's chart, the rings, the report and the CSV export
   count over the kept readings and then the new source's, merged by the fence (`LinkRules.continuing`: the new source's
   backfill fills gaps and never replaces a kept reading), and the kept treatments show as marks and export lines
-  (never alert quiets). A follow left at start behind another source (no question asked) is kept but continues nothing:
-  that source may read someone else. Kept histories not shown are listed in Settings › Source (*Also saved on this
-  Mac*).
+  (never alert quiets). An ended follow left at start behind another source (no question asked) is kept but continues
+  nothing: that source may read someone else. Kept histories not shown are listed in Settings › Source (*Also saved on
+  this Mac*).
 
 **States and exits**: *Whose glucose* → pick (either card, any time) → *Continue* → Source; Back → Welcome (setup) or
 Settings › Source unchanged. Source → pick → *Continue* → stored (first time) / *Switch to …?* → *Switch* / *Cancel* /

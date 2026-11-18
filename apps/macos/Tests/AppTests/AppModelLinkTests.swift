@@ -97,10 +97,13 @@ actor LinkLeftovers: FollowerService {
         model.sourceKind = .lanJuggluco
         model.lanConfig = LanConfig(address: Self.phone)
         model.run()
-        await until {
-            let left = await follower.left
-            return model.readings.last?.mgdl == 123 && !left.isEmpty
-        }
+        var asked: [SourceKind] = []
+        model.onFollowBehind = { asked.append($0) }
+        await until { model.readings.last?.mgdl == 123 && !asked.isEmpty }
+        // the person answers the question with Stop Following (its own test: theFollowFoundBehindASourceIsAsked)
+        #expect(asked == [.lanJuggluco])
+        #expect(await follower.left.isEmpty)
+        await model.leaveLink(keepHistory: true)
         #expect(await model.writeLan(Treatment(id: "mac-1", k: .rapid, a: 2, t: 1, u: 1, o: .mac)))
         await until { model.treatments.map(\.id) == ["mac-1"] }
         let settings = SettingsModel(
@@ -112,7 +115,7 @@ actor LinkLeftovers: FollowerService {
         for id in after.compactMap({ $0["id"] as? String }) {
             switch id {
             case "connection":
-                // the follow was left (its relays and Bluetooth go with it), the history kept
+                // the follow was left once answered (its relays and Bluetooth go with it), the history kept
                 #expect(await follower.left == [true], "\(id)")
             case "settings":
                 #expect(settings.settingsFrom == .custom && settings.editable && !settings.linkSource, "\(id)")
@@ -183,6 +186,70 @@ actor LinkLeftovers: FollowerService {
         // not linked: a pick asks nothing
         linked = .none
         #expect(leave.pick(.nightscout, from: .setup) && settings.source.stored == SourceSpec(kind: .nightscout))
+    }
+
+    /// A Mac updated with both (the owner's, 2026-11-18: LibreLinkUp as the source and a live follow of the phone): at
+    /// launch it asks *Keep following Ana?* in Settings › Source, as picking that source would, and never leaves the
+    /// link unasked (a leave is final: it took a new invite). *Keep Following* (and *Cancel* in the leave questions)
+    /// reads the link again; *Stop Following* leaves it, the source in use staying. An ended follow behind a source has
+    /// no one to keep following: it is left at once, its history kept.
+    @MainActor @Test func theFollowFoundBehindASourceIsAsked() async throws {
+        let follower = LinkLeftovers(ana())
+        let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
+        let model = AppModel(plan: plan, clock: clock, follower: follower)
+        let store = InMemorySettingsStore()
+        SourceSpec(kind: .libreLinkUp).store(in: store)
+        model.sourceKind = .libreLinkUp
+        let settings = SettingsModel(
+            store: store, follow: FollowModel(status: .notFollowing, actions: nil), version: "t")
+        let leave = settings.leave
+        leave.linkState = { model.linkState }
+        leave.history = { (true, nil) }
+        leave.name = { model.linkName }
+        leave.leave = { keep in await model.leaveLink(keepHistory: keep) }
+        var asked: [SourceKind] = []
+        model.onFollowBehind = { kind in
+            asked.append(kind)
+            leave.askBehind(kind)
+        }
+        model.run()
+        await until { !asked.isEmpty }
+        model.apply(ana())  // a later snapshot asks nothing more
+        #expect(asked == [.libreLinkUp])
+        #expect(await follower.left.isEmpty)
+        #expect(leave.askingKeepFollowing && leave.keepTitle == "Keep following Ana?")
+        #expect(leave.keepText.contains("Reading LibreLinkUp here instead"))
+        // Keep Following: the link is the source again
+        leave.keepFollowing()
+        #expect(SourceSpec.stored(in: store) == .sukrara)
+        #expect(await follower.left.isEmpty)
+        // asked again (the next launch): Stop Following… → the leave questions; Cancel keeps following too
+        SourceSpec(kind: .libreLinkUp).store(in: store)
+        leave.askBehind(.libreLinkUp)
+        leave.stopInstead()
+        #expect(leave.askingLeave)
+        leave.cancel()
+        #expect(SourceSpec.stored(in: store) == .sukrara)
+        // Stop Following: left (the wearer told), the source in use stays
+        SourceSpec(kind: .libreLinkUp).store(in: store)
+        leave.askBehind(.libreLinkUp)
+        leave.stopInstead()
+        await leave.confirm()
+        #expect(await follower.left == [true])
+        #expect(SourceSpec.stored(in: store) == SourceSpec(kind: .libreLinkUp))
+
+        // an ended follow behind a source: left at once, nothing asked
+        var ended = ana()
+        ended.link = .revoked
+        let gone = LinkLeftovers(ended)
+        let other = AppModel(plan: plan, clock: clock, follower: gone)
+        other.sourceKind = .nightscout
+        var askedEnded = false
+        other.onFollowBehind = { _ in askedEnded = true }
+        other.run()
+        await until { !(await gone.left).isEmpty }
+        #expect(await gone.left == [true])
+        #expect(!askedEnded)
     }
 
     /// Appendix G finding 12: *Also saved on this Mac* lists what isn't in use (another source's site and secret, a kept

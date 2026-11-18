@@ -122,6 +122,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         alsoSaved.forgetNightscoutSource = { [weak model] in await model?.forgetNightscout() }
         model.onLibreLinkUp = { [weak windows] snapshot in windows?.apply(libreLinkUp: snapshot) }
         model.onLan = { [weak windows] snapshot in windows?.apply(lan: snapshot) }
+        // a Mac updated with a live follow behind another source: asked in Settings › Source, never left unasked
+        model.onFollowBehind = { [weak windows] inUse in
+            windows?.settings.leave.askBehind(inUse)
+            windows?.openSettings(pane: .source)
+        }
         windows.settings.sensorLife.sensor = { [weak model] in model?.sourceSensor }
         model.onSnapshot = { [weak self, weak windows] snapshot in
             windows?.apply(snapshot)

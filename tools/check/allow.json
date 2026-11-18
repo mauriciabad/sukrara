@@ -119,6 +119,11 @@
       "reason": "Mac Juggluco on this network (opt-in switch, off by default; Settings says it is plain http): built only from a LanAddress that isPrivate (10/8, 172.16/12, 192.168/16), never a public address or a name"
     },
     {
+      "path": "apps/macos/Sources/SukraraApp/Launch/DevOnline.swift",
+      "contains": "url.scheme == \"http\", [\"127.0.0.1\", \"localhost\"]",
+      "reason": "debug builds only (#if DEBUG), a dev run that asks for it (SUKRARA_DEV_LIBRELINKUP): LibreLinkUp's calls go to tools/librelinkup-probe/fake.py on this Mac's loopback (127.0.0.1 / localhost, http only there) instead of libreview.io, so the online journeys are walked on the app (docs/44 Appendix G finding 17); the connection is URLSessionLibreLinkUpHTTP's (network_ok)"
+    },
+    {
       "path": "apps/android/app/src/main/kotlin/app/mauri/sukrara/LaunchPlan.kt",
       "contains": "url.startsWith(\"ws://\")",
       "reason": "LaunchPlan accepts a ws:// test relay only from a debug build's RELAYS command (src/debug, a local relay such as ws://10.0.2.2:7447); release builds always get the public wss:// relays whatever the choice (LaunchPlanTest); opens nothing"

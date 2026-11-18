@@ -148,6 +148,9 @@ public final class AppModel {
     @ObservationIgnored private var continued: [Reading] = []
     /// Their treatments (read-only): the chart's marks and the export, never the alert rules.
     @ObservationIgnored private var continuedTreatments: [Treatment] = []
+    /// Counts the changes of what is kept or shown (a leave, a continuation bound, another identity read, a delete):
+    /// *Also saved on this Mac* reads the kept histories again.
+    private(set) var keptRevision = 0
     private(set) var sensor: SensorInfo?
     /// The wearer's live treatments as the chart's marks, oldest first.
     private(set) var marks: [GraphMark] = []
@@ -212,8 +215,12 @@ public final class AppModel {
     /// The source reads a stream from another Sukrara (or nothing is answered yet: what the Mac follows). One person,
     /// one link: only then does anything of the link count (its readings, settings, name, path, alerts, reasons).
     var followsSource: Bool { sourceKind == nil || sourceKind == .sukrara }
-    /// A follow record left behind another source (a Mac updated from before one person, one link) is being left.
-    @ObservationIgnored private var leavingBehind = false
+    /// A follow record found behind another source (a Mac updated from before one person, one link) was asked about
+    /// (this launch), or an ended one is being left.
+    @ObservationIgnored private var behindHandled = false
+    /// A live follow found behind another source: Settings › Source asks *Keep following {name}?* (the source in use as
+    /// the one picked). A leave is final, so it is never left without the person's answer.
+    @ObservationIgnored var onFollowBehind: ((SourceKind) -> Void)?
     var unit: GlucoseUnit = .mgdl
     /// The card's settings (bands, hours…): this Mac's, or the wearer's mirrored ones (`GraphConfig.load`).
     var graph = GraphConfig() {
@@ -370,6 +377,7 @@ public final class AppModel {
         if keepHistory, continues, let identity, let kept {
             KeptHistory.awaitNext(KeptHistory.id(.sukrara, identity), in: kept)
         }
+        keptRevision += 1
     }
 
     /// Whose history is shown (`KeptHistory.id`): the followed wearer, the LibreLinkUp person, the Nightscout site or
@@ -389,6 +397,7 @@ public final class AppModel {
 
     /// The kept histories not shown now (Settings › Source's *Also saved on this Mac*), newest first.
     func keptNotShown() -> [KeptHistory.Info] {
+        _ = keptRevision
         guard let kept else { return [] }
         return KeptHistory.notShown(with: shownIdentity, in: kept)
     }
@@ -397,23 +406,28 @@ public final class AppModel {
     func deleteKept(_ id: String) {
         guard let kept else { return }
         KeptHistory.delete(id, in: kept)
+        keptRevision += 1
     }
 
-    /// A follow record left behind another source (a Mac updated in the old state: one person, one link says it
-    /// can't exist) is left at once: the source in use stays (the person chose it; switching back could show the
-    /// wrong person), the wearer is told, the history kept, the settings untouched (they weren't in use). No question.
+    /// A follow record found behind another source (a Mac updated in the old state: one person, one link says it
+    /// can't exist). A live one (following, or waiting for the wearer) is asked about once per launch, as picking that
+    /// source while following asks (*Keep following {name}?*: *Keep Following* makes the link the source again, *Stop
+    /// Following…* the leave questions, the source in use staying): a leave is final and tells the wearer, so it never
+    /// happens without the person's answer. One that ended (removed, declined, an invite used or expired, broken) has
+    /// no one to keep following: it is left at once, its history kept apart (it continues nothing: the source in use may
+    /// read someone else), the settings untouched.
     private func leaveBehindIfNeeded(_ snapshot: FollowerSnapshot) {
-        guard !followsSource, !leavingBehind else { return }
-        switch snapshot.link {
-        case .notFollowing, .joining: return
-        default: break
-        }
-        leavingBehind = true
-        AppLog.app.info("a follow kept behind another source: leaving it (history kept)")
-        Task { [weak self] in
-            // kept apart: the source in use may read someone else (only a leave the person answered continues it)
-            await self?.leaveLink(keepHistory: true, continues: false)
-            self?.leavingBehind = false
+        guard !followsSource, !behindHandled, let kind = sourceKind else { return }
+        switch linkState {
+        case .none: return
+        case .active:
+            behindHandled = true
+            AppLog.app.info("a follow kept behind another source: asking")
+            onFollowBehind?(kind)
+        case .ended:
+            behindHandled = true
+            AppLog.app.info("an ended follow kept behind another source: leaving it (history kept)")
+            Task { [weak self] in await self?.leaveLink(keepHistory: true, continues: false) }
         }
     }
 
@@ -597,6 +611,7 @@ public final class AppModel {
         history = []
         continued = []
         continuedTreatments = []
+        keptRevision += 1
         loadHistory()
     }
 
@@ -643,6 +658,7 @@ public final class AppModel {
     func forgetNightscout() async {
         toNightscout { await $0.forget() }
         await nightscoutTask?.value
+        keptRevision += 1
     }
 
     /// Writes one of this Mac's treatments into Nightscout's log (the Treatments window and Add Treatment).
@@ -895,6 +911,7 @@ public final class AppModel {
                 }
             let (before, marks) = await Self.continuation(of: identity, in: kept)
             guard let self, self.historySource == source, self.historyIdentity == identity else { return }
+            if !before.isEmpty { self.keptRevision += 1 }  // a continuation bound: no longer listed apart
             if before != self.continued || marks != self.continuedTreatments {
                 self.continued = before
                 self.continuedTreatments = marks

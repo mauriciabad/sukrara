@@ -32,23 +32,21 @@ public final class AlsoSavedModel {
     }
 
     @ObservationIgnored weak var settings: SettingsModel?
-    /// The kept histories not shown now (the app model's), newest first.
+    /// The kept histories not shown now (the app model's, observed: a leave or another identity read lists them
+    /// again), newest first.
     @ObservationIgnored var keptNotShown: () -> [KeptHistory.Info] = { [] }
     @ObservationIgnored var deleteKept: (String) -> Void = { _ in }
     /// The Nightscout source keeps the forgotten site's readings and log apart.
     @ObservationIgnored var forgetNightscoutSource: () async -> Void = {}
     /// The removal being confirmed.
     var confirming: Item?
-    /// The kept histories as last read (`load`).
-    private(set) var kept: [KeptHistory.Info] = []
     /// A Nightscout token and Juggluco's API secret are in the Keychain (read by `load`, not on every draw).
     private var nightscoutSecret = false
     private var jugglucoSecret = false
 
-    /// Reads the kept histories again (the pane appears, the source changes, a removal).
+    /// Reads the Keychain flags again (the pane appears, the source changes, a removal).
     func load() {
         guard let settings else { return }
-        kept = keptNotShown()
         nightscoutSecret = !NightscoutModel.secret(settings.nightscout.secrets).isEmpty
         jugglucoSecret = !JugglucoModel.secret(settings.juggluco.secrets).isEmpty
     }
@@ -68,7 +66,7 @@ public final class AlsoSavedModel {
         if running != .lanJuggluco, !address.isEmpty || jugglucoSecret {
             out.append(.juggluco(address: address))
         }
-        return out + kept.map(Item.kept)
+        return out + keptNotShown().map(Item.kept)
     }
 
     /// The confirmed removal.

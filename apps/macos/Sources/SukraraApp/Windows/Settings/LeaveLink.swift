@@ -31,6 +31,9 @@ public final class LeaveLinkModel {
 
     /// The source picked that asked (nil = *Stop following* alone).
     private(set) var picked: SourceKind?
+    /// The question is about a follow found behind the source in use (a Mac updated from before one person, one
+    /// link): *Keep Following* makes the link the source again.
+    private(set) var behind = false
     private(set) var origin: Origin = .settings
     var askingKeepFollowing = false
     var askingLeave = false
@@ -71,10 +74,22 @@ public final class LeaveLinkModel {
         openLeave()
     }
 
-    /// *Keep Following*: nothing changes.
+    /// A live follow found behind `inUse` at launch (`AppModel.onFollowBehind`): the same question as picking `inUse`
+    /// while following, asked in Settings › Source. *Keep Following* reads the link again; *Stop Following…* the leave
+    /// questions, `inUse` staying the source.
+    func askBehind(_ inUse: SourceKind) {
+        picked = inUse
+        origin = .settings
+        behind = true
+        askingKeepFollowing = true
+    }
+
+    /// *Keep Following*: nothing changes (a follow found behind the source in use becomes the source again).
     func keepFollowing() {
         askingKeepFollowing = false
         picked = nil
+        if behind { settings?.source.choose(.sukrara) }
+        behind = false
     }
 
     /// *Stop Following…* in the question: the leave questions.
@@ -99,6 +114,10 @@ public final class LeaveLinkModel {
     func cancel() {
         askingLeave = false
         picked = nil
+        // a follow found behind the source in use: *Cancel* in the leave questions keeps following, as the question's
+        // default does (it stays asked until answered)
+        if behind { settings?.source.choose(.sukrara) }
+        behind = false
     }
 
     /// *Stop Following*: the settings, the history, the link left, the new source (SPEC "What leaving does").
@@ -116,6 +135,7 @@ public final class LeaveLinkModel {
         leaving = false
         askingLeave = false
         self.picked = nil
+        behind = false
         left(picked, origin)
     }
 

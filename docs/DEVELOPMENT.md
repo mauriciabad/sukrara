@@ -290,7 +290,12 @@ The Android commands are `DebugFakes`' actions, `adb shell am broadcast -n app.m
 app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS`, `UPDATES`, `GARMIN_SIM` and `LIBRELINKUP` (their
 extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens", "Sukrara Aura"; docs/QA.md "Emulator", Q27). The Mac's:
 `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` (a debug dev run's
-QR scanner reads the made-up `SyntheticCamera` feed, never the Mac's camera). The `debug-docs` check fails when
+QR scanner reads the made-up `SyntheticCamera` feed, never the Mac's camera; its *Stop Following* with *Keep it* writes
+the made-up week as a kept history). A debug dev run walks the online sources against servers on this Mac (docs/44
+Appendix G finding 17, `DevOnline`): `SUKRARA_DEV_LIBRELINKUP=http://127.0.0.1:8766` sends LibreLinkUp's calls to
+`tools/librelinkup-probe/fake.py`, `SUKRARA_DEV_NIGHTSCOUT=1` runs the Nightscout source for a site on this Mac's
+loopback (any stub answering Nightscout's API); such a run keeps its accounts in memory, never the login Keychain.
+The `debug-docs` check fails when
 docs/FEATURES.md, docs/QA.md or this file name a command or extra the code doesn't have: add the command to the code
 first, or fix the docs.
 
