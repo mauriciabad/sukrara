@@ -416,6 +416,11 @@ section with what was added and what was discarded, with the reasons.
 
 ## Decisions for the owner
 
+**Owner, 2026-11-18: all as recommended.** Two are still open: 9 waits on a clearer explanation, and 11 is being
+researched further ("we didn't truly research this enough"). The owner uses only Sukrara with Libre 3 sensors (no Libre
+app, no LibreLinkUp). For testing they're fine installing apps on the phone or emulators and making accounts, as long as
+their normal setup ends up Sukrara alone.
+
 Ordered by how much they block.
 
 1. **Person × Source** (*Whose glucose* + *Source*, both changeable) instead of "follower is one more source"?
