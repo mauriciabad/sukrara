@@ -701,13 +701,15 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
 (`AlertSide`, the alert scenarios unchanged).
 
 - **Whose glucose will Sukrara show?** (setup's step after Welcome; Settings › Source › *Whose glucose*): two big cards,
-  each an illustration drawn in the app's colours (light and dark; Yours: an arm with a sensor and the phone beside it,
-  its signal going to the phone; Someone else's: a smaller person with a sensor and a phone further away showing their
-  line, a dotted path between), the answer and one line (*You wear the sensor.* / *A child, a partner or a friend.*),
-  a radio button each (TalkBack: radio button, selected). Picking one lifts its card (tonal fill, a stronger outline, a
-  shadow, the app's spring) and its art's ring breathes out once, with a tick; reduced motion: it changes at once, no
-  ring; the press ripple stays inside the card's corners. Someone else's art is in the tertiary colour (Android) /
-  purple (Mac), never a low's red. Under them, in setup, *You can change it any time in Settings › Source.* *Continue* (nothing
+  each an illustration drawn in the app's colours (light and dark, the same drawing on both apps; Yours: you, the sensor
+  on your arm sending its signal to the phone in your hand; Someone else's: a small person with a sensor and their own
+  phone, reaching your phone in two dotted arches, through the cloud above and over Bluetooth below; a tinted circle
+  behind your phone, stronger on the picked card), the answer and one line (*You wear the sensor.* / *A child, a
+  partner or a friend.*), a radio button each (TalkBack: radio button, selected). Picking one lifts its card (tonal
+  fill, a stronger outline, a shadow, the app's spring) and its art plays once, with a tick: the sensor pulses, the
+  waves go out (Yours) or a dot travels each arch (Someone else's), and the line on your phone scrolls on as if time
+  passed, landing on the same shape; reduced motion: it changes at once, the art stays still; the press ripple stays
+  inside the card's corners. Someone else's art is in violet (Android) / purple (Mac), never a low's red or pink. Under them, in setup, *You can change it any time in Settings › Source.* *Continue* (nothing
   stored yet) → the source.
 - **Where does your (their) glucose come from?** The sources for that person in SPA's radio rows (every choice in
   Settings looks the same), grouped by what the person feels (*On this phone · works offline*, *From another Sukrara ·

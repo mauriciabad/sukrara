@@ -87,7 +87,7 @@ public final class SourceChoiceModel {
 }
 
 /// The two big choices of *Whose glucose will Sukrara show?*: an illustration each, the answer and one line, side by
-/// side. Picking one lifts it (tonal fill, a stronger outline, a spring) and its art's ring breathes out once with a
+/// side. Picking one lifts it (tonal fill, a stronger outline, a spring) and its art plays once (`PersonArt`) with a
 /// trackpad tap; Reduce Motion: it changes at once. VoiceOver: two buttons with the selected trait.
 struct PersonChoice: View {
     @Binding var selected: Person?
@@ -101,7 +101,13 @@ struct PersonChoice: View {
                     selected = p
                 } label: {
                     VStack(alignment: .leading, spacing: 8) {
-                        PersonArt(person: p, selected: on).frame(height: 120)
+                        PersonArt(
+                            person: p, selected: on,
+                            background: on
+                                ? Color(nsColor: .windowBackgroundColor).mix(with: .accentColor, by: 0.14)
+                                : Color(nsColor: .controlBackgroundColor)
+                        )
+                        .frame(height: 120)
                         HStack(alignment: .firstTextBaseline) {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(SourceChoiceModel.personName(p)).font(.title3.bold())
@@ -156,111 +162,284 @@ struct ChoiceCardMotion: ViewModifier {
     }
 }
 
-/// The art of `person`, drawn in the system's colours (light and dark), never a glucose number. Yours: an arm with a
-/// sensor, its signal and the phone beside it; someone else's: a smaller person with a sensor, a dotted path to a phone
-/// showing their line. The ring behind it breathes out once when it is picked (none with Reduce Motion).
+/// The art of `person`, drawn on a 320 × 120-ish board scaled to fit, in the system's colours (light and dark), never a
+/// glucose number. Yours: you, the sensor on your arm sending its signal to the phone in your hand. Someone else's: a
+/// small person with a sensor and their own phone (their Sukrara), reaching your phone in two arches: high through the
+/// cloud, low over Bluetooth. A tinted circle sits behind the phone, stronger when picked. On a pick (none with Reduce
+/// Motion) the sensor pulses, the waves go out or a dot travels each arch, and the phone's line scrolls on as if time
+/// passed, landing on the same shape. `background` is the card's fill (the cut-out around the hand). Android:
+/// `PersonArt` in PersonChoice.kt, the same drawing.
 struct PersonArt: View {
     let person: Person
     let selected: Bool
-    @State private var breath: CGFloat = 1
+    var background: Color = Color(nsColor: .controlBackgroundColor)
+    @State private var pickedAt: Date?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        // someone else's in purple (Android's tertiary): never a red or pink, the colours of a low
-        let tone: Color = person == .yours ? .accentColor : .purple
-        Canvas { ctx, size in
-            let c = CGPoint(x: size.width / 2, y: size.height / 2)
-            let r = size.height * 0.46
-            ctx.fill(circle(c, r), with: .color(tone.opacity(selected ? 0.22 : 0.12)))
-            if breath < 1 {
-                ctx.stroke(
-                    circle(c, r * (1 + 0.22 * breath)), with: .color(tone.opacity(0.5 * (1 - breath))), lineWidth: 3)
+        TimelineView(.animation(paused: pickedAt == nil)) { timeline in
+            let t =
+                pickedAt.map { min(timeline.date.timeIntervalSince($0), PersonArtDrawing.pickS) }
+                ?? PersonArtDrawing.pickS
+            Canvas { ctx, size in
+                PersonArtDrawing(person: person, selected: selected, card: background, t: t).draw(&ctx, size)
             }
-            if person == .yours { yours(ctx, c, r, tone) } else { theirs(ctx, c, r, tone) }
         }
         .accessibilityHidden(true)
         .onChange(of: selected) { _, on in
             guard on, !reduceMotion else { return }
-            breath = 0
-            withAnimation(.easeOut(duration: 0.7)) { breath = 1 }
+            let start = Date()
+            pickedAt = start
+            Task { @MainActor in
+                try? await Task.sleep(for: .seconds(PersonArtDrawing.pickS + 0.1))
+                if pickedAt == start { pickedAt = nil }
+            }
         }
     }
+}
 
-    private func circle(_ c: CGPoint, _ r: CGFloat) -> Path {
-        Path(ellipseIn: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
+/// `PersonArt`'s drawing at `t` seconds since the pick (`pickS` = at rest), in board units.
+struct PersonArtDrawing {
+    static let pickS: Double = 1.6
+    static let board = CGSize(width: 320, height: 132)
+    let person: Person
+    let selected: Bool
+    let card: Color
+    let t: Double
+
+    // someone else's in purple: never a red or pink, the colours of a low
+    private var tone: Color { person == .yours ? .accentColor : .purple }
+    private var bodyFill: Color {
+        Color(
+            nsColor: NSColor(name: nil) { a in
+                a.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                    ? NSColor(srgbRed: 0.227, green: 0.227, blue: 0.235, alpha: 1)
+                    : NSColor(srgbRed: 0.898, green: 0.898, blue: 0.918, alpha: 1)
+            })
+    }
+    private var line: Color { .secondary }
+    private var screen: Color { Color(nsColor: .textBackgroundColor) }
+
+    func draw(_ ctx: inout GraphicsContext, _ size: CGSize) {
+        let s = min(size.width / Self.board.width, size.height / Self.board.height)
+        ctx.translateBy(x: (size.width - Self.board.width * s) / 2, y: (size.height - Self.board.height * s) / 2)
+        ctx.scaleBy(x: s, y: s)
+        if person == .yours { yours(ctx) } else { theirs(ctx) }
     }
 
-    private func yours(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat, _ tone: Color) {
-        var arm = ctx
-        arm.translateBy(x: c.x, y: c.y)
-        arm.rotate(by: .degrees(-28))
-        let w = r * 0.42
-        let rect = CGRect(x: -r * 1.25, y: -w / 2 + r * 0.18, width: r * 1.7, height: w)
-        arm.fill(Path(roundedRect: rect, cornerRadius: w / 2), with: .color(Color(nsColor: .quaternaryLabelColor)))
-        arm.stroke(Path(roundedRect: rect, cornerRadius: w / 2), with: .color(.secondary), lineWidth: 1.5)
-        let sensor = CGPoint(x: c.x - r * 0.38, y: c.y + r * 0.02)
-        disc(ctx, sensor, r * 0.2, tone)
-        for i in 1...2 {
-            let a = r * (0.18 + 0.16 * CGFloat(i))
+    private func yours(_ ctx: GraphicsContext) {
+        ctx.fill(circle(216, 64, 58), with: .color(tone.opacity(selected ? 0.26 : 0.14)))
+        var arm = Path()
+        arm.move(to: CGPoint(x: 144, y: 104))
+        arm.addQuadCurve(to: CGPoint(x: 198, y: 86), control: CGPoint(x: 174, y: 114))
+        // the arm starts inside the shoulder, so it grows out of it
+        figure(ctx, 124, 96, 60)
+        ctx.stroke(arm, with: .color(tone), style: StrokeStyle(lineWidth: 15, lineCap: .round))
+        phone(ctx, 216, 60, 80, 10, delay: 0.12)
+        ctx.fill(circle(199, 85, 9), with: .color(tone))
+        ctx.stroke(circle(199, 85, 9), with: .color(card), lineWidth: 3)
+        pulses(ctx, 165, 106, 8)
+        sensor(ctx, 165, 106, 8)
+        for (i, r) in [17.0, 24, 31].enumerated() {
+            let base = 0.85 - 0.2 * Double(i)
+            let delay = 0.1 + 0.15 * Double(i)
+            let alpha = t >= Self.pickS ? base : min(max((t - delay) / 0.36, 0), 1) * base
             var p = Path()
-            p.addArc(center: sensor, radius: a, startAngle: .degrees(-60), endAngle: .degrees(10), clockwise: false)
-            ctx.stroke(
-                p, with: .color(tone.opacity(0.85 - 0.25 * Double(i))),
-                style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+            p.addArc(
+                center: CGPoint(x: 165, y: 106), radius: r, startAngle: .degrees(-108), endAngle: .degrees(-62),
+                clockwise: false)
+            ctx.stroke(p, with: .color(tone.opacity(alpha)), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
         }
-        phone(ctx, CGPoint(x: c.x + r * 0.62, y: c.y), r * 0.95, tone)
     }
 
-    private func theirs(_ ctx: GraphicsContext, _ c: CGPoint, _ r: CGFloat, _ tone: Color) {
-        let who = CGPoint(x: c.x - r * 0.55, y: c.y + r * 0.05)
-        ctx.fill(circle(CGPoint(x: who.x, y: who.y - r * 0.38), r * 0.2), with: .color(tone))
-        ctx.fill(
-            Path(
-                roundedRect: CGRect(x: who.x - r * 0.3, y: who.y - r * 0.12, width: r * 0.6, height: r * 0.72),
-                cornerRadius: r * 0.28),
-            with: .color(tone))
-        disc(ctx, CGPoint(x: who.x + r * 0.2, y: who.y + r * 0.12), r * 0.12, tone)
-        let phoneAt = CGPoint(x: c.x + r * 0.62, y: c.y)
-        var path = Path()
-        path.move(to: CGPoint(x: who.x + r * 0.34, y: who.y - r * 0.42))
-        path.addQuadCurve(
-            to: CGPoint(x: phoneAt.x - r * 0.3, y: phoneAt.y - r * 0.5), control: CGPoint(x: c.x + r * 0.1, y: c.y - r))
-        ctx.stroke(
-            path, with: .color(tone.opacity(0.8)), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, dash: [1, 7]))
-        phone(ctx, phoneAt, r * 0.95, tone)
+    private func theirs(_ ctx: GraphicsContext) {
+        ctx.fill(circle(240, 66, 62), with: .color(tone.opacity(selected ? 0.26 : 0.14)))
+        figure(ctx, 52, 106, 30)
+        pulses(ctx, 62, 110, 4.5)
+        sensor(ctx, 62, 110, 4.5)
+        phone(ctx, 82, 100, 30, 10, plain: true)
+        ctx.fill(circle(74, 110, 4.5), with: .color(tone))
+        ctx.stroke(circle(74, 110, 4.5), with: .color(card), lineWidth: 2)
+        var high = Path()
+        high.move(to: CGPoint(x: 86, y: 80))
+        high.addCurve(
+            to: CGPoint(x: 211, y: 44), control1: CGPoint(x: 90, y: 38), control2: CGPoint(x: 160, y: 24))
+        var low = Path()
+        low.move(to: CGPoint(x: 98, y: 104))
+        low.addCurve(
+            to: CGPoint(x: 211, y: 97), control1: CGPoint(x: 108, y: 92), control2: CGPoint(x: 168, y: 88))
+        dotted(ctx, high)
+        traveller(ctx, high, 4.5)
+        cloud(ctx, 138.9, 40)  // the high arch's middle
+        dotted(ctx, low)
+        traveller(ctx, low, 3.5)
+        bluetooth(ctx, 153.5, 92.2)  // the low arch's middle
+        phone(ctx, 240, 66, 112, -6, chip: true, delay: 0.05)
+    }
+
+    private func circle(_ x: CGFloat, _ y: CGFloat, _ r: CGFloat) -> Path {
+        Path(ellipseIn: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2))
+    }
+
+    /// A person: a round head over rounded shoulders.
+    private func figure(_ ctx: GraphicsContext, _ cx: CGFloat, _ cy: CGFloat, _ s: CGFloat) {
+        ctx.fill(circle(cx, cy - s * 0.55, s * 0.3), with: .color(tone))
+        let top = cy - s * 0.08
+        var p = Path()
+        p.move(to: CGPoint(x: cx - s * 0.62, y: cy + s * 0.62))
+        p.addCurve(
+            to: CGPoint(x: cx, y: top), control1: CGPoint(x: cx - s * 0.62, y: top + s * 0.12),
+            control2: CGPoint(x: cx - s * 0.32, y: top))
+        p.addCurve(
+            to: CGPoint(x: cx + s * 0.62, y: cy + s * 0.62), control1: CGPoint(x: cx + s * 0.32, y: top),
+            control2: CGPoint(x: cx + s * 0.62, y: top + s * 0.12))
+        p.closeSubpath()
+        ctx.fill(p, with: .color(tone))
     }
 
     /// A Libre seen from above: a white disc with the filament's dot, ringed in the tone.
-    private func disc(_ ctx: GraphicsContext, _ at: CGPoint, _ r: CGFloat, _ tone: Color) {
-        ctx.fill(circle(at, r), with: .color(.white))
-        ctx.fill(circle(at, r * 0.32), with: .color(.gray.opacity(0.5)))
-        ctx.stroke(circle(at, r), with: .color(tone), lineWidth: 2)
+    private func sensor(_ ctx: GraphicsContext, _ x: CGFloat, _ y: CGFloat, _ r: CGFloat) {
+        ctx.fill(circle(x, y, r), with: .color(.white))
+        ctx.fill(circle(x, y, r * 0.32), with: .color(Color(red: 0.725, green: 0.745, blue: 0.769)))
+        ctx.stroke(circle(x, y, r), with: .color(tone), lineWidth: 2)
     }
 
-    /// A phone: the body, the screen, the in-range band and a gentle line ending in a dot (no digits).
-    private func phone(_ ctx: GraphicsContext, _ at: CGPoint, _ h: CGFloat, _ tone: Color) {
-        let w = h * 0.52
-        let body = CGRect(x: at.x - w / 2, y: at.y - h / 2, width: w, height: h)
-        ctx.fill(Path(roundedRect: body, cornerRadius: w * 0.18), with: .color(Color(nsColor: .quaternaryLabelColor)))
-        ctx.stroke(Path(roundedRect: body, cornerRadius: w * 0.18), with: .color(.secondary), lineWidth: 1.5)
-        let inset = w * 0.1
-        let screen = CGRect(
-            x: body.minX + inset, y: body.minY + inset * 1.6, width: w - inset * 2, height: h - inset * 3.2)
-        ctx.fill(Path(roundedRect: screen, cornerRadius: w * 0.08), with: .color(Color(nsColor: .textBackgroundColor)))
+    /// Three rings leaving the sensor on a pick, a quarter second apart.
+    private func pulses(_ ctx: GraphicsContext, _ x: CGFloat, _ y: CGFloat, _ r: CGFloat) {
+        for i in 0..<3 {
+            let local = t - 0.25 * Double(i)
+            guard local > 0, local < 1 else { continue }
+            let e = 1 - (1 - local) * (1 - local)
+            ctx.stroke(
+                circle(x, y, r * (1 + 1.8 * e)), with: .color(tone.opacity(0.7 * (1 - e))), lineWidth: 1.5)
+        }
+    }
+
+    private func dotted(_ ctx: GraphicsContext, _ path: Path) {
+        ctx.stroke(
+            path, with: .color(tone.opacity(0.75)), style: StrokeStyle(lineWidth: 2.5, lineCap: .round, dash: [1, 7]))
+    }
+
+    /// A dot travelling `path` in the first 1.1 s of a pick (close to linear, a soft start and end), fading at its ends.
+    private func traveller(_ ctx: GraphicsContext, _ path: Path, _ r: CGFloat) {
+        let travel = 1.1
+        guard t > 0, t < travel else { return }
+        let p = t / travel
+        let at = path.trimmedPath(from: 0, to: max(Self.ease(p, 0.33, 0.12, 0.67, 0.88), 0.0001)).currentPoint
+        guard let at else { return }
+        let alpha = p < 0.12 ? p / 0.12 : p < 0.85 ? 1 : (1 - p) / 0.15
+        ctx.fill(circle(at.x, at.y, r), with: .color(tone.opacity(alpha)))
+    }
+
+    /// A cloud (the internet): three soft shapes, outlined as one (each outline first, every fill over them).
+    private func cloud(_ ctx: GraphicsContext, _ cx: CGFloat, _ cy: CGFloat) {
+        let parts = [
+            Path(roundedRect: CGRect(x: cx - 16, y: cy - 5, width: 32, height: 13), cornerRadius: 6.5),
+            circle(cx - 6, cy - 5, 8), circle(cx + 5, cy - 8, 10),
+        ]
+        for p in parts { ctx.stroke(p, with: .color(line), lineWidth: 3) }
+        for p in parts { ctx.fill(p, with: .color(screen)) }
+    }
+
+    /// A Bluetooth badge: the rune in the tone on a small disc.
+    private func bluetooth(_ ctx: GraphicsContext, _ x: CGFloat, _ y: CGFloat) {
+        ctx.fill(circle(x, y, 10), with: .color(screen))
+        ctx.stroke(circle(x, y, 10), with: .color(line), lineWidth: 1.5)
+        var rune = Path()
+        rune.addLines([
+            CGPoint(x: x - 3.6, y: y - 3.4), CGPoint(x: x + 3.4, y: y + 3.2), CGPoint(x: x, y: y + 6.4),
+            CGPoint(x: x, y: y - 6.4), CGPoint(x: x + 3.4, y: y - 3.2), CGPoint(x: x - 3.6, y: y + 3.4),
+        ])
+        ctx.stroke(rune, with: .color(tone), style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round))
+    }
+
+    /// A phone `h` tall centred at `cx`, `cy`, turned `rot`°: the body, the screen and, unless `plain`, the range band
+    /// and a glucose line without digits (`chip`: the followed person's portrait on top). On a pick the line scrolls
+    /// left by one screen of new readings after `delay` s and lands on the same shape; the newest dot rides it.
+    private func phone(
+        _ ctx: GraphicsContext, _ cx: CGFloat, _ cy: CGFloat, _ h: CGFloat, _ rot: Double, plain: Bool = false,
+        chip: Bool = false, delay: Double = 0
+    ) {
+        var ctx = ctx
+        ctx.translateBy(x: cx, y: cy)
+        ctx.rotate(by: .degrees(rot))
+        ctx.translateBy(x: -cx, y: -cy)
+        let w = h * 0.5, x0 = cx - w / 2, y0 = cy - h / 2, i = w * 0.08
+        let bodyRect = CGRect(x: x0, y: y0, width: w, height: h)
+        ctx.fill(Path(roundedRect: bodyRect, cornerRadius: w * 0.18), with: .color(bodyFill))
+        ctx.stroke(Path(roundedRect: bodyRect, cornerRadius: w * 0.18), with: .color(line), lineWidth: 1.5)
+        let sx = x0 + i, sy = y0 + i * 1.6, sw = w - 2 * i, sh = h - 3.2 * i
+        ctx.fill(
+            Path(roundedRect: CGRect(x: sx, y: sy, width: sw, height: sh), cornerRadius: w * 0.1), with: .color(screen))
+        if !plain {
+            func x(_ f: CGFloat) -> CGFloat { sx + sw * f }
+            func y(_ f: CGFloat) -> CGFloat { sy + sh * f }
+            if chip {
+                ctx.fill(circle(x(0.22), y(0.14), sw * 0.11), with: .color(tone))
+                ctx.fill(
+                    Path(
+                        roundedRect: CGRect(x: x(0.38), y: y(0.11), width: sw * 0.4, height: sh * 0.06),
+                        cornerRadius: sh * 0.03), with: .color(line.opacity(0.45)))
+            }
+            ctx.fill(
+                Path(CGRect(x: sx, y: y(0.42), width: sw, height: sh * 0.26)), with: .color(tone.opacity(0.2)))
+            // the line, a bridge of new readings, then the line again one screen `d` later
+            let d = sw
+            let segments: [[CGFloat]] = [
+                [x(0.06), y(0.66), x(0.3), y(0.3), x(0.52), y(0.82), x(0.82), y(0.5)],
+                [x(0.82), y(0.5), x(0.92), y(0.39), x(0.98), y(0.78), x(0.06) + d, y(0.66)],
+                [x(0.06) + d, y(0.66), x(0.3) + d, y(0.3), x(0.52) + d, y(0.82), x(0.82) + d, y(0.5)],
+            ]
+            var path = Path()
+            path.move(to: CGPoint(x: segments[0][0], y: segments[0][1]))
+            for c in segments {
+                path.addCurve(
+                    to: CGPoint(x: c[6], y: c[7]), control1: CGPoint(x: c[2], y: c[3]),
+                    control2: CGPoint(x: c[4], y: c[5]))
+            }
+            let p = t >= Self.pickS ? 0 : min(max((t - delay) / 1.1, 0), 1)
+            let eased = p < 0.5 ? 4 * p * p * p : 1 - pow(-2 * p + 2, 3) / 2
+            let shift = d * CGFloat(eased)
+            let edge = x(0.82)
+            var clipped = ctx
+            clipped.clip(to: Path(CGRect(x: x(0.06), y: sy, width: edge - x(0.06), height: sh)))
+            clipped.translateBy(x: -shift, y: 0)
+            clipped.stroke(path, with: .color(tone), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+            ctx.fill(circle(edge, Self.y(at: edge + shift, in: segments), 3.5), with: .color(tone))
+        }
         ctx.fill(
             Path(
-                CGRect(
-                    x: screen.minX, y: screen.minY + screen.height * 0.38, width: screen.width,
-                    height: screen.height * 0.3)),
-            with: .color(tone.opacity(0.18)))
-        var line = Path()
-        line.move(to: CGPoint(x: screen.minX + screen.width * 0.06, y: screen.minY + screen.height * 0.6))
-        let end = CGPoint(x: screen.minX + screen.width * 0.82, y: screen.minY + screen.height * 0.5)
-        line.addCurve(
-            to: end, control1: CGPoint(x: screen.minX + screen.width * 0.3, y: screen.minY + screen.height * 0.25),
-            control2: CGPoint(x: screen.minX + screen.width * 0.55, y: screen.minY + screen.height * 0.8))
-        ctx.stroke(line, with: .color(tone), style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
-        ctx.fill(circle(end, 3.5), with: .color(tone))
+                roundedRect: CGRect(x: cx - w * 0.15, y: y0 + h - i * 1.15, width: w * 0.3, height: i * 0.35),
+                cornerRadius: 2), with: .color(line.opacity(0.5)))
+    }
+
+    /// The y of the cubic `segments` (each x0 y0 x1 y1 x2 y2 x3 y3, x growing) where x = `x`.
+    static func y(at x: CGFloat, in segments: [[CGFloat]]) -> CGFloat {
+        let c = segments.first { x <= $0[6] } ?? segments[segments.count - 1]
+        func at(_ t: CGFloat, _ o: Int) -> CGFloat {
+            let u = 1 - t
+            return u * u * u * c[o] + 3 * u * u * t * c[o + 2] + 3 * u * t * t * c[o + 4] + t * t * t * c[o + 6]
+        }
+        var lo: CGFloat = 0, hi: CGFloat = 1
+        for _ in 0..<24 {
+            let mid = (lo + hi) / 2
+            if at(mid, 0) < x { lo = mid } else { hi = mid }
+        }
+        return at((lo + hi) / 2, 1)
+    }
+
+    /// CSS-style cubic-bezier easing (x1, y1, x2, y2) at `p`.
+    static func ease(_ p: Double, _ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double) -> Double {
+        func b(_ t: Double, _ a: Double, _ c: Double) -> Double {
+            let u = 1 - t
+            return 3 * u * u * t * a + 3 * u * t * t * c + t * t * t
+        }
+        var lo = 0.0, hi = 1.0
+        for _ in 0..<24 {
+            let mid = (lo + hi) / 2
+            if b(mid, x1, x2) < p { lo = mid } else { hi = mid }
+        }
+        return b((lo + hi) / 2, y1, y2)
     }
 }
 
