@@ -176,7 +176,7 @@ class SetupViewModelTest {
             vm.ui.first { it?.step == SetupStep.Join }
             events.clear()
             // the join step's Back to the source, with the followed person's history on the phone by then
-            val loss = HistoryLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+            val loss = HistoryLoss(4 * 1440, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
             roles.loss = loss
             vm.back {}
             vm.ui.first { it?.step == SetupStep.Source }

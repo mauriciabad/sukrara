@@ -275,4 +275,19 @@
     <string name="ds_source_short_sensor">sensor</string>
     <string name="ds_source_short_phone_app">Juggluco</string>
     <string name="ds_source_short_sukrara">Sukrara</string>
+    <plurals name="ds_glucose_minutes">
+        <item quantity="one">%1$s minuto de glucosa</item>
+        <item quantity="many">%1$s minutos de glucosa</item>
+        <item quantity="other">%1$s minutos de glucosa</item>
+    </plurals>
+    <plurals name="ds_glucose_hours">
+        <item quantity="one">%1$s hora de glucosa</item>
+        <item quantity="many">%1$s horas de glucosa</item>
+        <item quantity="other">%1$s horas de glucosa</item>
+    </plurals>
+    <plurals name="ds_glucose_days">
+        <item quantity="one">%1$s día de glucosa</item>
+        <item quantity="many">%1$s días de glucosa</item>
+        <item quantity="other">%1$s días de glucosa</item>
+    </plurals>
 </resources>

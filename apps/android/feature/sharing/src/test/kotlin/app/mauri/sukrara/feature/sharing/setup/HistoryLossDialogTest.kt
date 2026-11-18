@@ -81,14 +81,14 @@ class HistoryLossDialogTest {
             }
         }
 
-    private val loss = HistoryLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+    private val loss = HistoryLoss(4 * 1440, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
 
     @Test fun deletingHistorySaysWhatAndWhen() {
         show(SourceChange(SourceSpec.YourSensor, loss, SourceSpec.TheirSukrara))
         compose.onNodeWithText("Delete the earlier history?").assertExists()
         compose
             .onNodeWithText(
-                "You chose “Yours”. This deletes what this phone kept from before: 1,204 glucose readings and " +
+                "You chose “Yours”. This deletes what this phone kept from before: 4 days of glucose and " +
                     "12 treatments, from Oct 3, 2026 to Nov 10, 2026. It can’t be undone.",
             ).assertExists()
     }

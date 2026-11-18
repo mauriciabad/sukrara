@@ -9,6 +9,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingRank
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.storage.GLUCOSE_SLOT_S
 import app.mauri.sukrara.core.model.storage.HistoryImport
 import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
@@ -140,7 +141,10 @@ class InMemoryReadingsRepository : ReadingsRepository {
             .map { it.t }
             .let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
 
-    override suspend fun span(): StoredSpan = readings.value.map { it.t }.let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
+    override suspend fun span(): StoredSpan =
+        readings.value.map { it.t }.let { t ->
+            StoredSpan(t.size, t.minOrNull(), t.maxOrNull(), t.map { Math.floorDiv(it.epochSecond, GLUCOSE_SLOT_S) }.distinct().size)
+        }
 
     override suspend fun deleteAll(): Int {
         val before = readings.value.size

@@ -61,11 +61,12 @@ interface SourcePort {
 }
 
 /**
- * The history a person change deletes (the previous person's): [readings] glucose readings and [treatments] logged
- * treatments, together spanning [from]..[to]. Setup asks before deleting it (#125).
+ * The history a person change deletes (the previous person's): [glucoseMinutes] of glucose (`StoredSpan.glucoseMinutes`,
+ * the export's measure) and [treatments] logged treatments, together spanning [from]..[to]. Setup asks before deleting
+ * it (#125).
  */
 data class HistoryLoss(
-    val readings: Int,
+    val glucoseMinutes: Long,
     val treatments: Int,
     val from: Instant,
     val to: Instant,
@@ -79,7 +80,7 @@ data class HistoryLoss(
             val firsts = listOfNotNull(readings.first, treatments.first)
             val lasts = listOfNotNull(readings.last, treatments.last)
             if (readings.count + treatments.count == 0 || firsts.isEmpty() || lasts.isEmpty()) return null
-            return HistoryLoss(readings.count, treatments.count, firsts.min(), lasts.max())
+            return HistoryLoss(readings.glucoseMinutes, treatments.count, firsts.min(), lasts.max())
         }
     }
 }

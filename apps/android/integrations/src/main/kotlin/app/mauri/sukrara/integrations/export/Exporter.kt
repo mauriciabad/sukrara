@@ -9,6 +9,7 @@ import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
+import app.mauri.sukrara.core.model.storage.glucoseMinutes
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -38,8 +39,11 @@ data class ExportData(
     val treatments: List<TreatmentRecord>,
     val sensor: CurrentSensor?,
 ) {
-    /** Counted once (on the loading dispatcher), not on every recomposition. */
-    val readingRows: Int = GlucoseCsv.thin(readings, from, to).size
+    /**
+     * The glucose time in the file, in minutes (`glucoseMinutes`: the 5-minute stretches with a reading, the measure the
+     * delete-history dialog uses too), counted once on the loading dispatcher, not on every recomposition.
+     */
+    val glucoseMinutes: Long = glucoseMinutes(readings.asSequence().map { it.t }.filter { it >= from && it < to })
     val treatmentRows: Int = treatments.count { !it.treatment.deleted && it.treatment.at >= from && it.treatment.at < to }
 }
 

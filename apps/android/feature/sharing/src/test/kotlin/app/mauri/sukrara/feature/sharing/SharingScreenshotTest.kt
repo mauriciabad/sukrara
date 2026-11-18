@@ -262,7 +262,7 @@ class SharingScreenshotTest {
                 SetupContent(ui(SetupStep.Source, 3, facts).copy(sourceChange = SourceChange(juggluco, null, SourceSpec.YourSensor)), a)
             },
             "setup-3-source-delete-history" to {
-                val loss = HistoryLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+                val loss = HistoryLoss(4 * 1440, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
                 SetupContent(
                     ui(SetupStep.Source, 3, facts.copy(spec = SourceSpec.TheirSukrara))
                         .copy(person = Person.Yours, sourceChange = SourceChange(SourceSpec.YourSensor, loss, SourceSpec.TheirSukrara)),

@@ -45,6 +45,7 @@ import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.designsystem.rows.ValueRow
+import app.mauri.sukrara.designsystem.time.glucoseTime
 import app.mauri.sukrara.integrations.R
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -198,7 +199,7 @@ fun ExportContent(
             stringResource(R.string.in_export_contents),
             summary =
                 ui.data?.let { d ->
-                    pluralStringResource(R.plurals.in_export_readings, d.readingRows, d.readingRows) + " · " +
+                    glucoseTime(d.glucoseMinutes) + " · " +
                         pluralStringResource(R.plurals.in_export_treatments, d.treatmentRows, d.treatmentRows)
                 } ?: stringResource(R.string.in_export_counting),
         )

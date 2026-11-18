@@ -82,16 +82,35 @@ class SecretUnreadableException(
     cause: Throwable?,
 ) : Exception("secret '$name' unreadable (transient=$transient)", cause)
 
-/** How many stored entries there are and when the oldest and newest are (null when [count] is 0). */
+/**
+ * How many stored entries there are and when the oldest and newest are (null when [count] is 0); for readings also
+ * how many [GLUCOSE_SLOT_S] stretches hold one ([slots]: the glucose time, the same on every screen whatever the
+ * source's cadence).
+ */
 data class StoredSpan(
     val count: Int,
     val first: Instant?,
     val last: Instant?,
+    val slots: Int = count,
 ) {
+    /** The glucose time these readings cover, in minutes ([slots] × 5 min). */
+    val glucoseMinutes: Long get() = slots * GLUCOSE_SLOT_S / 60
+
     companion object {
         val EMPTY = StoredSpan(0, null, null)
     }
 }
+
+/**
+ * The stretch glucose time is counted in (5 min): "18 hours of glucose" counts the 5-minute stretches that hold a
+ * reading, so a minute's readings and a 5-minute source's say the same, and the delete-history dialog and the export
+ * (a row each 5 minutes) agree.
+ */
+const val GLUCOSE_SLOT_S = 300L
+
+/** The glucose time [times] cover, in minutes: the [GLUCOSE_SLOT_S] stretches that hold one, × 5 min. */
+fun glucoseMinutes(times: Sequence<Instant>): Long =
+    times.map { Math.floorDiv(it.epochSecond, GLUCOSE_SLOT_S) }.distinct().count() * GLUCOSE_SLOT_S / 60
 
 /**
  * Glucose history (Room): the current person's readings (a person change deletes them all, [deleteAll]). Upserting

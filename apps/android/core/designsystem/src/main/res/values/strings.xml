@@ -283,4 +283,17 @@
     <string name="ds_source_short_sensor">sensor</string>
     <string name="ds_source_short_phone_app">Juggluco</string>
     <string name="ds_source_short_sukrara">Sukrara</string>
+    <!-- How much glucose there is (the delete-history dialog, the export): %1$s = the number -->
+    <plurals name="ds_glucose_minutes">
+        <item quantity="one">%1$s minute of glucose</item>
+        <item quantity="other">%1$s minutes of glucose</item>
+    </plurals>
+    <plurals name="ds_glucose_hours">
+        <item quantity="one">%1$s hour of glucose</item>
+        <item quantity="other">%1$s hours of glucose</item>
+    </plurals>
+    <plurals name="ds_glucose_days">
+        <item quantity="one">%1$s day of glucose</item>
+        <item quantity="other">%1$s days of glucose</item>
+    </plurals>
 </resources>

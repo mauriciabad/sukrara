@@ -20,6 +20,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.time.glucoseTime
 import app.mauri.sukrara.feature.sharing.HistoryLoss
 import app.mauri.sukrara.feature.sharing.R
 import java.text.NumberFormat
@@ -30,7 +31,7 @@ import java.util.Locale
 
 /**
  * The source step's confirmation when whose glucose changes and this phone has earlier history (#125): what goes, in plain
- * words (*1,204 glucose readings and 12 treatments, from 3 Oct 2026 to 10 Nov 2026*), *Export CSV first* (the
+ * words (*4 days of glucose and 12 treatments, from 3 Oct 2026 to 10 Nov 2026*), *Export CSV first* (the
  * export page on everything; the dialog is still here on the way back), *Delete and continue* and *Cancel* (the source
  * stays as it was, nothing is deleted). Back and a tap outside are Cancel.
  */
@@ -68,14 +69,11 @@ internal fun HistoryLossDialog(
     )
 }
 
-/** *1,204 glucose readings and 12 treatments* (either alone when the other is none). */
+/** *4 days of glucose and 12 treatments* (either alone when the other is none; the export's words, [glucoseTime]). */
 @Composable
 private fun lossWhat(loss: HistoryLoss): String {
     val numbers = NumberFormat.getIntegerInstance(locale())
-    val readings =
-        loss.readings.takeIf { it > 0 }?.let {
-            pluralStringResource(R.plurals.sh_setup_person_delete_readings, it, numbers.format(it))
-        }
+    val readings = loss.glucoseMinutes.takeIf { it > 0 }?.let { glucoseTime(it) }
     val treatments =
         loss.treatments.takeIf { it > 0 }?.let {
             pluralStringResource(R.plurals.sh_setup_person_delete_treatments, it, numbers.format(it))

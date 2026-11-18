@@ -41,7 +41,7 @@ class RoomReadingsRepository(
     override suspend fun spanOf(sources: Set<SourceId>): StoredSpan =
         if (sources.isEmpty()) StoredSpan.EMPTY else dao.span(sources.map { it.id }).toSpan()
 
-    override suspend fun span(): StoredSpan = dao.spanAll().toSpan()
+    override suspend fun span(): StoredSpan = dao.spanAll().toSpan().copy(slots = dao.slotsAll())
 
     override suspend fun deleteAll(): Int = dao.deleteAll()
 

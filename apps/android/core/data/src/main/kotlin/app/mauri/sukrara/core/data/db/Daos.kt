@@ -91,6 +91,10 @@ interface ReadingDao {
     @Query("SELECT COUNT(*) AS count, MIN(t) AS oldest, MAX(t) AS newest FROM readings")
     suspend fun spanAll(): SpanRow
 
+    /** How many 5-minute stretches hold a reading (`GLUCOSE_SLOT_S`, epoch-aligned): the glucose time a person change deletes. */
+    @Query("SELECT COUNT(DISTINCT t / 300000) FROM readings")
+    suspend fun slotsAll(): Int
+
     /** A person change: the previous person's readings go. */
     @Query("DELETE FROM readings")
     suspend fun deleteAll(): Int
