@@ -270,7 +270,9 @@ first reading* → *Reading received*, the value counting in. Motion and haptics
   internet · Sukrara catches up when you're back* / *LibreLinkUp needs you: accept the new terms*, the usual cause of
   follower outages ([xDrip #2392](https://github.com/NightscoutFoundation/xDrip/discussions/2392)). On home, the Source
   page and the no-data alert; never a silent stop.
-- **Treatments logged in the official app never arrive** (no cloud carries them): *Log treatments in Sukrara*, once.
+- **Treatments logged in the official app don't arrive by themselves**: LibreLinkUp doesn't carry them; LibreView
+  keeps them, but gives them only in its reports and its *Download glucose data* file (captcha), which Import history
+  reads (checked 2026-11-18, "In Sukrara"). *Log treatments in Sukrara*, once.
   More situations: Appendix C.
 
 ### The move
@@ -424,7 +426,8 @@ re-sharing someone else's glucose (decision 9), a Clarity file import, root read
 ## Gaps (asked, not answered by either note)
 
 - **Treatments to LibreView while the official app uploads**: impossible without stopping its glucose (rule 6); "the
-  treatments should work" holds everywhere else: decision 4.
+  treatments should work" holds everywhere else: decision 4. They wait and go up at *Take over* ("In Sukrara",
+  treatments while the Libre app holds the sensor).
 - **The Libre app's notification**: unverified; decides Libre's only offline path and the order of steps 2 and 3.
 - **Battery** of two apps plus a poll each minute: no numbers; measure in step 2.
 - **Sukrara's own LibreView sign-in** rides on the LibreLinkUp 4.x login: when Abbott ends it, new sign-ins (a new Libre
@@ -935,6 +938,71 @@ Discarded or deferred, with reasons:
 - **Dexcom Share and the official app's notification**: their sources come later; their `life` will be `none`, so the
   manual start works for them without UI changes.
 
+**Treatments while the Libre app holds the sensor (2026-11-18, Android; the owner's phone on LibreLinkUp, the Libre 3
+app uploading).** The owner logged a NovoPen dose in Sukrara; home's row showed the crossed-out cloud in the error colour
+(*LibreView upload stopped*), and LibreView didn't have the dose. Not uploading it is decision 4; the mark was wrong.
+Checked in code and tests, and against the owner's LibreView file of 18 Nov (read in place, never copied):
+- **The file**: the Libre app (its own reader serial) sent the new sensor's readings from 19:14 (its first after the
+  warm-up), seven scans, the test treatment as **two records of the same minute** (20:19 `Long-Acting Insulin` 0.1, and
+  a `Notes` row *Test treatment with note*), and sensor events; Sukrara's device has readings 3 Nov 13:38 → 18 Nov
+  13:36 and its 24 insulin / 1 carbs records up to 17 Nov, nothing after the pause (as decided). Each uploader shows as
+  its own device (the file's `Serial Number`), so the same reading sent by both would be two rows.
+
+Fixed:
+- **The mark says it waits, and why**: `UploadMark.WaitsForLibreApp` (☁↑ in the list's grey, not the error colour)
+  *Waiting for LibreView: the Libre app uploads now. It goes up once Sukrara reads your sensor and you take over.*;
+  `LvEntryMarks.waitsForLibreApp` apart from `stopped`. The LibreView status adds *What you log here waits: once Sukrara
+  reads your sensor, tap Take over and it goes up from here.*
+- **Glucose from the takeover on**: back from LibreLinkUp the upload kept the glucose start of its first switch-on, so
+  the sensor's backfill (24 h) of the hours the Libre app had already sent would have gone up again as Sukrara's device
+  (docs/41: LibreView counts it twice). Now the resume moves the start to the takeover; *Send earlier glucose* offers
+  the rest with its warning. Treatments keep their start: nobody sent them.
+- Verified (`LibreViewUploaderTest` *issue 213*): six days of entries while paused (a pen dose of 8.5 u injected after
+  1.5 u priming, long-acting doses, an edit, a delete before upload, a delete of one LibreView had) send nothing, not
+  even a sign-in, mark as waiting, and after the sensor takeover and *Take over* all go up in one upload at their own
+  times and kinds (8.5 u, never the priming), the edit as its new version, the deleted-before one never, the other
+  retracted. Limits: the last 30 days by when the treatment happened (`WINDOW_S`), 100 per upload with the rest at once.
+- **Import history from that file** brings the Libre app's treatments: the owner's real file through the import path
+  on the JVM (into an empty store, Europe/Madrid: 17 057 readings and 209 treatments of the last 90 days, a second run
+  adds 0) gave the test treatment as long-acting 0.1 u and a separate note *Test treatment with note*, both 20:19
+  (LibreView's two records). `HistoryImporterTest` *issue 213* (synthetic, the file's shape) adds that a dose Sukrara
+  logged and uploaded comes back as the same treatment (same kind ±2 min and amount), never twice. Imported treatments
+  never go to LibreView.
+
+- **Can the official app's treatments reach Sukrara?** Not by themselves; the earlier "no cloud carries them" was half
+  right. **LibreLinkUp carries none**: Abbott's [FAQ](https://www.librelinkup.com/faqs) says its users don't get notes
+  about insulin or food; `/llu/connections/{id}/logbook` holds only scans and alarm events (type, `alarmType`, glucose:
+  [DiaBLE](https://github.com/gui-dos/DiaBLE/blob/e6a909c88faeada49f461d30834174cd95db4042/DiaBLE/LibreLink.swift#L880-L912),
+  [pylibrelinkup](https://github.com/robberwick/pylibrelinkup/blob/00944c9aff47868c8c3639fe078bc5f79a052b48/src/pylibrelinkup/pylibrelinkup.py#L229-L242));
+  no client imports treatments from it ([GlucoDataHandler](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/common/src/main/java/de/michelinside/glucodatahandler/common/tasks/LibreLinkSourceTask.kt#L56-L58),
+  [nightscout-librelink-up](https://github.com/timoschlueter/nightscout-librelink-up/blob/bff2317f5cc0db4a1a40971bbf601c87ab0e856d/src/index.ts#L212-L238);
+  nightscout-connect makes only a *Sensor Start*,
+  [librelinkup.js](https://github.com/nightscout/nightscout-connect/blob/4dde1ecdcad1fd923e69d458e5e2faa7bc78e4f1/lib/sources/librelinkup.js#L296-L320)).
+  **LibreView keeps them** (the owner's file above) and shows them to the person's own website login: the export file
+  (`POST /export`, behind a reCAPTCHA, [libreview-data-export](https://github.com/YtoTech/libreview-data-export/blob/eead4eeb5fe2a9226e486ec561ca316d1b473b49/export-data.py#L37-L40))
+  and the Daily Log report (`POST /reports`, client report 5, no captcha; read for glucose only by
+  [libre-desktop](https://github.com/sshivaji/libre-desktop/blob/e6f85d2137f2f206d0d40391c28e8bcb5e956a5f/Sources/LibreDesktop/LibreViewClient.swift#L79-L177)
+  and [lvconnect](https://github.com/skobkars/lvconnect/blob/b3209dd5401072b76faf9d587d82a77bb6513d4e/index.js#L429-L441)).
+  No open-source project reads treatments from LibreView; Juggluco only uploads
+  ([Libreview.java](https://github.com/j-kaltes/Juggluco/blob/81f59687334771a44a6e348994f95f0065a671b5/Common/src/mobile/java/tk/glucodata/Libreview.java#L258-L503));
+  Tidepool's LibreView driver skips them
+  ([libreViewDriver.js](https://github.com/tidepool-org/uploader/blob/cad13ded996051d216d364430024de0b63d87c9b/lib/drivers/abbott/libreViewDriver.js#L88-L96)).
+  Whether the Daily Log's `Days[]` holds insulin, food and notes is unverified (the report shows them; no parser reads
+  them).
+
+Discarded or deferred, with reasons:
+- **Reading the official app's treatments from LibreView's Daily Log report** by itself: the only automatic path, but
+  it needs the website's own login (a second sign-in, `Account-Id`; the extra steps docs/41 found for the device
+  nickname), a report format nobody parses for treatments, and it would ask LibreView every few minutes for a few
+  days' use. The two-app period is meant to be short: log in Sukrara, and *Import history* brings what the Libre app
+  logged, once. Worth a probe if people stay in the two-app setup for long.
+- **Taking over LibreView for treatments only**: decision 4 (it stops the Libre app's glucose, so the source).
+- **Joining the Libre app's dose and its same-minute note into one treatment on import**: closer to what was logged,
+  but a person's separate note of that minute would fold into the dose; two rows lose nothing. Later if asked.
+- **An insulin's or carbs' note to LibreView**: the Libre app sends it as a second record (a custom note of the same
+  minute, as the file shows); Sukrara sends notes only for a note (`contracts/treatments/SPEC.md` `n`). Matching the app
+  is a contract change (a second record number per version, its retraction): its own issue.
+
 ## Decisions for the owner
 
 **Waiting on the owner (2026-11-18): switching sources with a Sukrara link.** The journey review in Appendix G
@@ -1130,7 +1198,7 @@ long-tail counts (GitHub keyword hits, 2026-11-18): Sibionics 24 (Juggluco), Eve
 | Upstream silent, internet fine | *Late: the Libre app hasn't sent anything to LibreLinkUp for 12 min. Open the Libre app.*; `no_data` as for any source |
 | No internet | *No internet. The Libre app still has your glucose; Sukrara catches up when you're back* |
 | The account needs action (terms, password, token) | *LibreLinkUp needs you: open LibreLinkUp, sign out and in, accept the new terms*, on home's source line, the Source page and the no-data alert's text |
-| A treatment logged in the official app | never arrives (no cloud carries it); *Log treatments in Sukrara*, once |
+| A treatment logged in the official app | doesn't arrive by itself (LibreLinkUp doesn't carry it; LibreView's file does, through Import history); *Log treatments in Sukrara*, once |
 | Battery | the source's description: *Uses more battery than reading the sensor*; no nag |
 | Notification source: notification hidden or app killed | *Not getting readings: the Dexcom app's notification is off* + *Open its settings* |
 | Restarted, not unlocked yet | online and app sources need credential-protected secrets: today's locked-boot notice + `no_data` (*Unlock to resume LibreLinkUp*) |
