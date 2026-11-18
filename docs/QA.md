@@ -1200,6 +1200,15 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       `sensor=new` → a new sensor on the card (warm-up while it has no readings); Settings › Source and Connect say
       *Sensor warming up · ready at …* (not *Nothing new*), and Connect's *Continue* goes on (Mac: no *Reading received*
       for the old sensor's reading).
+- [ ] LibreView maintenance (docs/45; signed in after `login=redirect`, so the account's region is `eu`):
+      `maintenance=1` → Settings › Source *LibreView maintenance until …* (clock mark, no error colour, no *Try again*);
+      after 20 min home's reason *LibreView maintenance until …* with *Change source* (and *Read the sensor in Sukrara*
+      only for your glucose with `pt=4` and no loop or pump app installed), the card and widgets *LibreView maintenance* /
+      *until …*, the glucose notification's line, the no-data alert on time with *No data · LibreView maintenance*;
+      `until=none` → the same without a time; `maintenance=0` → back by itself within 5 min. `ahead=600` → Settings ›
+      Source *Next maintenance · … today, …*, home's quiet line under the card (tap → Settings › Source); `ahead=50` →
+      one silent notification (*LibreView maintenance at …*), not again after a restart. A sign-in during it → the
+      neutral *LibreView is down for maintenance…* notice. TalkBack reads the card's maintenance.
 - [ ] Settings › Source › LibreLinkUp: account, whose glucose, sensor, status with its exit (*Sign in again*, *Try
       again*, *Pick again*); *Sign out* is confirmed. Tidepool shows *Glucose from LibreLinkUp* (on).
 - [ ] LibreView beside the Libre app (FEATURES.md *LibreView upload* "Beside the Libre app", docs/45), emulator and the

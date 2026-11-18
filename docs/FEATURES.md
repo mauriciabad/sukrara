@@ -1022,6 +1022,33 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   warm-up: whatever the newest reading's age, which is the old sensor's; past it *Sensor almost ready · waiting for the
   first reading*; `health.json` `warmingUp`, the owner's test 2026-11-18). The no-data alert counts from the reading's time (scenarios `librelinkup.txt`: a minute cadence 1–3 min late,
   a reading 9 min late, readings out of order).
+- **LibreView maintenance** (docs/45 "In Sukrara: LibreView's maintenance"; `health.json` `maintenance`,
+  `contracts/sources/librelinkup/status.json`): Abbott's region answers HTTP 911 (or `status 911`) during its
+  maintenance windows, before any sign-in; that is **an expected wait, never an error** (no error colour, no *Try
+  again*, nothing about the account changed). Sukrara asks gently (the backoff, at most 5 min apart; 30 s after the
+  window's end when known) and leaves it at the first normal answer. **Its end** comes from Abbott's public status page
+  (`status.freestyle.abbott`, no key, nothing of the person's sent): the login's region (`eu`, `eu2` = UK & Ireland,
+  `us`, `de`…) matched to the page's *LibreLinkUp Mobile App* / *LibreView Web App* windows; fetched only while
+  LibreLinkUp is a signed-in source (at once on entering maintenance, every 10 min in it, else every 6 h); none known,
+  or past its planned end: no time is said. **Every surface says it**: Settings › Source and Connect *LibreView
+  maintenance until 23:00. LibreLinkUp sends no glucose until then; readings come back by themselves.* (a clock mark);
+  home's reason / the Mac panel *LibreView maintenance until 23:00* · *Abbott is servicing LibreView, so LibreLinkUp
+  sends no glucose. It comes back by itself when that ends. To get glucose meanwhile, change the source.* with a quiet
+  *Change source* (Mac *Change Source…*) and, on Android only where `MoveRules` allow it (your glucose from the Libre
+  app, a Libre 3 / 3 Plus by LibreLinkUp's `pt`, no loop or pump app installed: AAPS, CamAPS FX, Omnipod 5, Tandem,
+  MiniMed Mobile), *Read the sensor in Sukrara*; the glucose notification's line *LibreView maintenance until 23:00*;
+  the card on every surface (widgets, lock screen, notification card, the Mac panel and widgets) *LibreView
+  maintenance* / *until 23:00* in the value's place once it has no value (the graph-only pill the same; TalkBack /
+  VoiceOver *Glucose: no reading since 22:04, LibreView maintenance until 23:00*); the Mac widgets *LibreView
+  maintenance* · *Until 23:00*. **The no-data alert rings on time** (no scenario changed) and says why: *No data ·
+  LibreView maintenance*, *Until 23:00 · last reading 22:04 · 72 mg/dL* (`copy.json` `why: maintenance`). **Ahead of
+  a window** for the account's region: Settings › Source *Next maintenance · LibreView maintenance today, 22:00–23:00:
+  LibreLinkUp sends no glucose then* (*tomorrow*, *Thu 3 Dec*) as soon as Abbott lists it; the same quiet line under
+  the card (home, the Mac panel) from 12 h before (a tap opens Settings › Source); one silent notification an hour
+  before, once a window (*LibreView maintenance at 22:00* · *No glucose from LibreLinkUp from 22:00 to 23:00. Readings
+  come back by themselves after.*; Android channel *LibreView maintenance*). The source's description says it too:
+  *nothing arrives while Abbott's LibreView is down, maintenance included*. Followers get no reason over the link
+  (they see the wearer's phone quiet, as for any gap).
 - **Connect** (setup's step after the source; Settings › Source's *Account* / *Sign in again* open it alone): the
   title with LibreLinkUp's app icon before it (both apps), and that icon on Settings › Source's *Account* row (Mac:
   also *Email* while signed out; *Password* a key, *Person* and *Sensor* their symbols, so titles line up); for your
@@ -1132,7 +1159,13 @@ no answer: clear by themselves; *Try again*. Asked to wait: clears by itself, no
 before the time it gave; a sign-in does). Signed out: *Sign in again*. New terms: accept in
 LibreLinkUp, *Try again*. Not shared: *Pick again* (*The person picked stopped sharing…*, at once when LibreLinkUp refuses their graph) or invite
 and *Try again*. Stopped: *Try again*; *Where it comes
-from* to leave. Sign out: confirmed; *Account* signs in again. LibreView upload: treatments only, beside the Libre app,
+from* to leave. LibreView maintenance: nothing to fix, it ends by itself at the first normal answer (its end said when
+Abbott's status page gives it); the ways out are waiting, *Change source* (home, the Mac panel) / *Where it comes from*
+(Settings › Source), and on Android where `MoveRules` allow it *Read the sensor in Sukrara* (the takeover below); a
+sign-in during it says *LibreView is down for maintenance…* (a neutral notice) and nothing is saved. A window ahead:
+its line leaves when the window begins (the maintenance state says it then) or when Abbott no longer lists it; the
+heads-up notification goes by itself at the window's end, a tap opens the app, its channel (Android *LibreView
+maintenance*, macOS's notification settings) turns it off. Sign out: confirmed; *Account* signs in again. LibreView upload: treatments only, beside the Libre app,
 while LibreLinkUp is the source (paused with its reason when LibreLinkUp doesn't say which app); after the takeover
 *Take over*. Takeover: *Read the sensor in Sukrara* → *Take the sensor
 from the Libre app* → *Take over* / *Open the Libre app's info* / *Cancel* → the tap (the usual new-sensor states) →
@@ -3577,7 +3610,9 @@ the person was. Reachable with TalkBack (the result is a live region) and withou
   mid-sensor.
 - When: after each new reading that can go up, treatment change or setting change, and every 5 minutes. At most 100 treatments and
   288 readings per upload; a bigger catch-up continues at once. Network or server trouble retries after 30 s doubling
-  to 15 min (±20 %); a token LibreView no longer accepts (401 / 403 / `wrongDeviceInToken`) is dropped and the next
+  to 15 min (±20 %), LibreView's maintenance too (HTTP 911 or `status 911`, docs/45: *LibreView is down for
+  maintenance. Sukrara sends it once LibreView is back.*, never *stopped*; THE LibreView sign-in says *LibreView is down
+  for maintenance. Sign in once it's back, usually within the hour.* in the plain text colour); a token LibreView no longer accepts (401 / 403 / `wrongDeviceInToken`) is dropped and the next
   cycle signs in again with the saved account (the contract's re-auth): an expired token goes on by itself, another
   device that took over shows *Take over* (a token refused right after it was given counts as that too); treatments
   LibreView refuses (`status` ≠ 0)

@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import app.mauri.sukrara.core.data.libreview.LluPerson
+import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
@@ -86,6 +87,12 @@ class LibreLinkUpSourceGallery {
             "stopped" to rows(yours.copy(health = OnlineHealth.Stopped)),
             "rate-limited" to rows(yours.copy(health = OnlineHealth.RateLimited)),
             "theirs" to rows(theirs, Person.Theirs),
+            // LibreView's maintenance (docs/45): a wait with its end, then none known; a window ahead
+            "maintenance" to
+                rows(yours.copy(health = OnlineHealth.Maintenance, newest = now.minusSeconds(1500), until = now.plusSeconds(1800))),
+            "maintenance-open" to rows(yours.copy(health = OnlineHealth.Maintenance, newest = now.minusSeconds(1500))),
+            "maintenance-ahead" to
+                rows(yours.copy(ahead = MaintenanceWindow(now.plusSeconds(10 * 3600), now.plusSeconds(11 * 3600)))),
         )
 
     private fun gallery(

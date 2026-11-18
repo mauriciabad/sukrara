@@ -331,3 +331,34 @@ comes after LibreView's downtime.
   nothing twice (the file import brings the same entries exactly).
 - **What it would cost.** One more Abbott sign-in to keep alive; a format Abbott can change without notice; and about
   400 requests a day.
+
+### In Sukrara: LibreView's maintenance (both apps)
+
+*2026-11-18, the owner: "would be nice to detect 'Down for maintenance' edge case, and act accordingly … no readings
+because of maintenance is not an error user can act on, he can only wait or change source."* Offline only: tests
+against the contract and MockWebServer / fakes, the emulator against `fake.py` (`maintenance`, `until`, `ahead`); the
+live window had ended before it was built.
+
+| Added | Where |
+|---|---|
+| **911 is maintenance**: HTTP 911 or body `status 911`, before every other rule, on the LibreLinkUp login and every call; the account is never touched (a 911 login isn't a refused password) | contracts/sources/librelinkup `login.json` / `calls.json` (`generate.py`); Android `LibreLinkUp.parseLogin` / `parseCall`, `LluSession.Maintenance`; Mac `LibreLinkUp.swift`; both apps' contract tests |
+| **A health state, not an error**: `maintenance` whatever the network and the warm-up; it ends with the first normal answer | `contracts/sources/health.json`; `OnlineHealth.Maintenance`, `SourceProblem.Maintenance`, `SourceStatus.Interrupted.until`; Mac `SourceHealth.State.maintenance` |
+| **Polled gently**: the failures' backoff at most 5 min apart, 30 s after the window's end when Abbott gives one and that is sooner; a 429 still holds | `poll.json` `after` / `maintenanceMax_s` / `maintenanceAfterEnd_s`; `LluPoll.maintenanceS` (both apps) |
+| **The end from Abbott's status page** (`status.freestyle.abbott/api/v2/summary.json`, no key, nothing of the person's sent): the account's region (the login's redirect) mapped to the page's components in the *LibreLinkUp Mobile App* / *LibreView Web App* groups (`eu` → *Europe, Middle East, Africa*, `eu2` → *UK & Ireland*, `us`, `de`, `fr`, `jp`, `ap` → *Other Asia*, `au` → *Australia, New Zealand*, `ae`, `ca`, `la`, `ru`, `cn`); in progress or begun → `until`, none or past its planned end → no end said; fetched only while LibreLinkUp is a signed-in source (on entering maintenance, every 10 min in it, else every 6 h); a failure keeps the last answer and says nothing | `status.json` (the rules, the regions, 14 cases); Android `LibreViewStatus` (`:core:data`), Mac `LibreViewStatus.swift`; privacy policy, `tools/check/allow.json` |
+| **Every surface says it, as a wait**: home's reason / the Mac panel (*LibreView maintenance until 23:00* · *Abbott is servicing LibreView, so LibreLinkUp sends no glucose. It comes back by itself when that ends. To get glucose meanwhile, change the source.*, a quiet *Change source*), Settings › Source and setup's Connect (a clock mark, no error colour, no *Try again*), the glucose notification's line, the Mac widgets, the card on every card surface (*LibreView maintenance* / *until 23:00* in the value's place, the graph-only pill, TalkBack / VoiceOver) | `OnlineHealthText`, `maintenanceTitle`, `NoDataReason.SourceTrouble.waitOnly`, `LiveNotificationContent.detail`, `CardPause` (both renderers; graph scenes `maintenance` / `maintenance-open`, `words.json`); Mac `NoDataText`, `WidgetWords`, `LibreLinkUpRows` |
+| **The no-data alert keeps its time, says why**: *No data · LibreView maintenance*, *Until 23:00 · last reading 22:04 · 72 mg/dL* | `contracts/alerts/copy.json` `why: maintenance`; `AlertCopy` / Mac `AlertText`; no scenario changed |
+| **Warn ahead**: *Next maintenance · LibreView maintenance today, 22:00–23:00: LibreLinkUp sends no glucose then* on Settings › Source as soon as Abbott lists it; the same quiet line under the card (home, the Mac panel) from 12 h before; one silent notification an hour before, once a window (Android channel *LibreView maintenance*; the Mac's passive notification) | `status.json` `upcoming`, `warnHome_s`, `notify_s`; `MaintenanceNotice`, `LluSourceState.warnedS`; Mac `AppModel` |
+| **The other way out, only where it makes sense**: *Read the sensor in Sukrara* beside *Change source* on home while your glucose comes from the Libre app with a Libre 3 / 3 Plus (`pt` 4) and no loop or pump app is installed (AAPS, CamAPS FX, Omnipod 5, Tandem t:slim / Mobi, MiniMed Mobile); never on the Mac | `MoveRules` (`:core:model`: docs/44 "The move"'s never-rules, for the later move suggestion too), `<queries>` in `:integrations` |
+| **LibreView's own sign-in and upload**: 911 is *LibreView is down for maintenance*, waited out and retried, never *stopped* or a refused account | `Trouble.Maintenance`, `LibreViewClient`, `SignInResult.Maintenance` |
+| **The source's description**: *nothing arrives while Abbott's LibreView is down, maintenance included* (Android, as the Mac's) | `ds_source_librelinkup_means*` |
+
+| Discarded | Why |
+|---|---|
+| Quieting or delaying the no-data alert during maintenance | nobody, Sukrara included, has the glucose; the Libre app still alarms and Sukrara can't know whether the person wants its alarm (only the words change) |
+| Saying maintenance from the status page alone | the page is the plan, the 911 the fact: tonight the servers were back at 22:38 while the page said *in progress* at 22:44 |
+| The *Libre App* and *Libre Data Sharing API* groups | they list other regions' components (a Germany window names the sharing API's *United States*): a US account would be warned of Germany's window |
+| A region from `/llu/config/country` or the account's country | the login's redirect already names the region the 911 comes from |
+| A notification when maintenance begins | home, the notification's line and the card say it then; the no-data alert rings at 20 min as always |
+| A setting to turn the heads-up off | the channel is the switch (Android's and macOS's own notification settings); one notification a window, a few a month at most |
+| Warning on home days ahead | the line would sit under the glucose for days; Settings › Source has it as soon as it's listed, home from 12 h before |
+| Suggesting the sensor during maintenance for someone else's glucose, an untested family, with a loop or pump app, or on the Mac | docs/44 "The move": a takeover would cut off the pump, and the Mac reads no sensor |

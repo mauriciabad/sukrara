@@ -213,11 +213,16 @@
                 ),
             ]
             // LibreLinkUp as the source: live (its path badge), and a password LibreLinkUp refused (the reason)
-            func llu(_ readings: [Reading], signInAgain: Bool = false) -> LibreLinkUpSnapshot {
+            func llu(
+                _ readings: [Reading], signInAgain: Bool = false, outcome: SourceHealth.Outcome? = nil,
+                windows: [MaintenanceWindow] = []
+            ) -> LibreLinkUpSnapshot {
                 LibreLinkUpSnapshot(
                     email: "alex@example.com", signInAgain: signInAgain, patient: "p", name: "Ana Example",
-                    running: true, outcome: signInAgain ? .refused : .ok, readings: readings, monitoring: true,
-                    sensor: LluSensor(serial: "0D00ABC123", start: Int(now.timeIntervalSince1970) - 4 * 86_400))
+                    running: true, outcome: outcome ?? (signInAgain ? .refused : .ok), readings: readings,
+                    monitoring: true,
+                    sensor: LluSensor(serial: "0D00ABC123", start: Int(now.timeIntervalSince1970) - 4 * 86_400),
+                    windows: windows)
             }
             let libreLinkUp: [(String, Scene)] = [
                 (
@@ -229,6 +234,29 @@
                     scene(
                         link: .notFollowing, readings: [],
                         libreLinkUp: llu(ending(126, rate: 0, age: 35 * 60), signInAgain: true))
+                ),
+                // LibreView's maintenance (docs/45): a wait with its end, never an error; then a window ahead
+                (
+                    "panel-librelinkup-maintenance",
+                    scene(
+                        link: .notFollowing, readings: [],
+                        libreLinkUp: llu(
+                            ending(72, rate: -0.3, age: 25 * 60), outcome: .maintenance,
+                            windows: [
+                                MaintenanceWindow(
+                                    start: now.addingTimeInterval(-1800), end: now.addingTimeInterval(2100), live: true)
+                            ]))
+                ),
+                (
+                    "panel-librelinkup-maintenance-ahead",
+                    scene(
+                        link: .notFollowing, readings: [],
+                        libreLinkUp: llu(
+                            ending(126, rate: 0.4, age: 70),
+                            windows: [
+                                MaintenanceWindow(
+                                    start: now.addingTimeInterval(10 * 3600), end: now.addingTimeInterval(11 * 3600))
+                            ]))
                 ),
             ]
             return nightscout + libreLinkUp + [

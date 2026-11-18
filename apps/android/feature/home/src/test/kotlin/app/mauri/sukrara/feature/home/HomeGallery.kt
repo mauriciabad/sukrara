@@ -30,12 +30,15 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.SourceSpec
+import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
@@ -75,6 +78,7 @@ class HomeGallery {
         withTreatments: Boolean = false,
         problems: Int = 0,
         phoneApp: PhoneAppProblem? = null,
+        moveOffered: Boolean = false,
     ): HomeUiState {
         val look = homeLook(glucose, NOW, GlucoseUnit.MGDL)
         val treatments =
@@ -87,7 +91,7 @@ class HomeGallery {
             glucose = glucose,
             now = NOW,
             look = look,
-            reason = NoDataReason.of(glucose, look, phoneApp),
+            reason = NoDataReason.of(glucose, look, phoneApp, moveOffered),
             banner = banner,
             firstProblem = AlertReadiness(setOf(AlertRequirement.ExactAlarm)).firstProblem,
             nextSetupStep = "Alert thresholds",
@@ -187,6 +191,31 @@ class HomeGallery {
             // #213: LibreLinkUp is the source and the Libre app uploads: the entry waits, nothing is wrong
             "libreview-waits-libre-app" to
                 ui(Samples.wearer(), withTreatments = true).copy(marks = mapOf("a" to UploadMark.WaitsForLibreApp)),
+            // docs/45: LibreView's maintenance, an expected wait: its end, the quiet ways out (the sensor only where
+            // MoveRules allow it), and a window ahead under the card
+            "maintenance" to
+                ui(
+                    Samples.wearer(ageMin = 25).copy(
+                        spec = libreLinkUp,
+                        source =
+                            SourceStatus.Interrupted(
+                                NOW.minus(Duration.ofMinutes(25)),
+                                SourceProblem.Maintenance,
+                                NOW.plus(Duration.ofMinutes(35)),
+                            ),
+                    ),
+                    moveOffered = true,
+                ),
+            "maintenance-open" to
+                ui(
+                    Samples.wearer(ageMin = 25).copy(
+                        spec = libreLinkUp,
+                        source = SourceStatus.Interrupted(NOW.minus(Duration.ofMinutes(25)), SourceProblem.Maintenance),
+                    ),
+                ),
+            "maintenance-ahead" to
+                ui(Samples.wearer().copy(spec = libreLinkUp))
+                    .copy(maintenanceAhead = MaintenanceWindow(NOW.plus(Duration.ofHours(10)), NOW.plus(Duration.ofHours(11)))),
             // docs/45: the Libre app stopped uploading right after Sukrara's LibreView sign-in beside it
             "libreview-libre-app-stopped" to
                 ui(Samples.wearer(), banner = BannerKind.LibreAppStopped).copy(libreAppStopped = NOW.minus(Duration.ofMinutes(12))),

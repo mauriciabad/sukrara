@@ -253,7 +253,10 @@ inside the ring, at every font scale) pin instead.
   and `value_text_ok` (files that write a glucose value as data or event text). `tools/check` (card-surface, card-api,
   card-text) holds the code to it.
 - `layout/scenes.json`: the scenes (synthetic readings by integer maths, treatments, sensor states; `now` fixed, UTC)
-  and settings variants every surface is rendered with.
+  and settings variants every surface is rendered with. `pause` = the source waits for LibreView's maintenance
+  (`CardPause`, docs/45): `until` s from now, none = no end known; once the value's place has no value it says
+  *LibreView maintenance* / *until 23:00* (`value.pause.text`) and a graph-only card's pill the same (`graph.age`
+  `pause`).
 - The renderer reports what it laid out (`CardLayout`: element, box, what it shows; `(no room)` = decided but left out
   for room, `[...]` = how it was placed). `CardLayoutTest` (Android) and `LayoutSelfTest` (Mac, in `-graphselftest`)
   render every registered surface through its real entry path at each size, for every scene and settings variant.
