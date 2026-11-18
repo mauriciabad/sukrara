@@ -7,6 +7,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.protocol.NostrCrypto
 import app.mauri.sukrara.protocol.SignedEvent
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.follow.LeaveOutbox
 import app.mauri.sukrara.protocol.follow.PendingLeave
 import app.mauri.sukrara.share.transport.NetworkWatch
@@ -28,7 +29,8 @@ import kotlinx.coroutines.withTimeoutOrNull
  * start, whenever the network comes back and from [scheduleRetry]'s job (Android: WorkManager, which waits for a
  * network also while the app is closed), until [LeaveOutbox.NEEDED] relays keep it or it expired. Its own short-lived
  * relay connection: the follow it belonged to is gone (and with it the follower key: a relay asking for AUTH gets a
- * throwaway key's).
+ * throwaway key's). A relay's answer counts by the URL its connection was opened with (PROTOCOL-v2 "Relay answers"),
+ * so [relaysFor] must be what [transports] connects to for a list of relays.
  */
 class LeaveSender(
     private val store: StateStore<LeaveOutbox>,
@@ -37,6 +39,8 @@ class LeaveSender(
     private val clock: Clock,
     private val scope: CoroutineScope,
     private val network: NetworkWatch = NetworkWatch.None,
+    /** The relays a pool connects to for a leave's list (the app's `RelayAccess`: a debug build's test relays). */
+    private val relaysFor: (List<String>) -> List<String> = Wire::validRelays,
     /** Asks the system to call [flush] again once a network is up, also with the app closed; nothing in tests. */
     private val scheduleRetry: () -> Unit = {},
 ) {
@@ -68,12 +72,14 @@ class LeaveSender(
      */
     suspend fun flush(waitMs: Long = WAIT_MS): Boolean =
         lock.withLock {
-            store.update { it.pruned(now()) }
+            store.update { it.pruned(now(), relaysFor) }
             val waiting = store.data.first().leaves
             if (waiting.isEmpty()) return@withLock finished()
+            val urls = waiting.flatMap { it.waitingOn(relaysFor(it.relays)) }.distinct()
+            // no relay to send to (a debug build pointed nowhere): it waits, as offline
+            if (urls.isEmpty()) return@withLock waitForNetwork()
             val events = waiting.mapNotNull { l -> SignedEvent.parse(l.wrapJson) }
             val ids = events.mapTo(HashSet()) { it.id }
-            val urls = waiting.flatMap { it.waitingOn() }.distinct()
             val throwaway = crypto.generate()
             val relays = transports.create(urls) { throwaway }
             try {
@@ -82,11 +88,11 @@ class LeaveSender(
                         launch(start = CoroutineStart.UNDISPATCHED) {
                             relays.inbound.collect { m ->
                                 if (m is RelayInbound.Ok && m.accepted && m.eventId in ids) {
-                                    store.update { it.update(m.eventId) { l -> l.accept(m.relay) } }
+                                    store.update { it.answered(m.url, m.answer, relaysFor) }
                                     // every leave of this attempt is kept: stop listening (ends this child only)
                                     if (store.data
                                             .first()
-                                            .pruned(now())
+                                            .pruned(now(), relaysFor)
                                             .leaves
                                             .none { it.eventId in ids }
                                     ) {
@@ -103,7 +109,7 @@ class LeaveSender(
             } finally {
                 relays.stop()
             }
-            store.update { it.pruned(now()) }
+            store.update { it.pruned(now(), relaysFor) }
             if (store.data
                     .first()
                     .leaves

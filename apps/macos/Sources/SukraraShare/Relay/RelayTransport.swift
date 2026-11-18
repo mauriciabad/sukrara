@@ -57,11 +57,47 @@ public enum RelayInbound: Equatable, Sendable {
     case event(SignedEvent, subscription: String, relay: String)
     /// End of stored events for a subscription on one relay (backfill done there).
     case endOfStored(subscription: String, relay: String)
-    /// Answer to one of our publishes.
-    case ok(eventId: String, accepted: Bool, relay: String)
+    /// Answer to one of our publishes, from the connection opened with `url` (the leave outbox tells relays apart by
+    /// it: PROTOCOL-v2 "Relay answers").
+    case ok(RelayOk, relay: String, url: String)
     /// The relay closed a subscription (reason text from the relay; auth-required is handled inside the pool).
     case closed(subscription: String, reason: String, relay: String)
     case connection(RelayConnection, relay: String)
+}
+
+/// A relay's NIP-01 answer to an event we sent, `["OK", <event id>, <true|false>, <message>, …]` (PROTOCOL-v2 "Relay
+/// answers", contracts/protocol/relays/relay-answers.json `answers`; Android `RelayOk`). `accepted` is the third
+/// element when it is a JSON boolean (anything else: false); `message` the fourth when it is a string (old relays leave
+/// it out).
+public struct RelayOk: Equatable, Sendable {
+    public var eventId: String
+    public var accepted: Bool
+    public var message: String
+
+    public init(eventId: String, accepted: Bool, message: String = "") {
+        self.eventId = eventId
+        self.accepted = accepted
+        self.message = message
+    }
+
+    /// The answer in the relay message `text`; nil when it isn't an `OK` with a string id.
+    public init?(frame text: String) {
+        guard let frame = try? JSONDecoder().decode(RelayFrame.self, from: Data(text.utf8)) else { return nil }
+        self.init(frame)
+    }
+
+    init?(_ frame: RelayFrame) {
+        guard frame.type == "OK", let id = frame.string(1) else { return nil }
+        self.init(eventId: id, accepted: frame.bool(2) ?? false, message: frame.string(3) ?? "")
+    }
+
+    /// The relay keeps the event: `true` whatever the message (empty, `duplicate:`, `pow:` …), or `false` with
+    /// `duplicate:`: it already holds that exact id (NIP-20 says such a relay MUST answer `true`; some answer
+    /// `false`). Never any other `false`.
+    public var kept: Bool { accepted || message.hasPrefix("duplicate:") }
+
+    /// NIP-42: the relay takes the event only from an authenticated client: AUTH, then send it again.
+    public var authRequired: Bool { !accepted && message.hasPrefix("auth-required:") }
 }
 
 public enum RelayConnection: Equatable, Sendable {

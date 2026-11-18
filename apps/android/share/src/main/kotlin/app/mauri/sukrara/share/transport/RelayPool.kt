@@ -5,6 +5,7 @@ package app.mauri.sukrara.share.transport
 
 import app.mauri.sukrara.protocol.KeyPair
 import app.mauri.sukrara.protocol.NostrCrypto
+import app.mauri.sukrara.protocol.RelayOk
 import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.protocol.UnsignedEvent
 import app.mauri.sukrara.protocol.Wire
@@ -31,7 +32,6 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
@@ -49,10 +49,10 @@ data class Backoff(val baseSeconds: Double = 2.0, val capSeconds: Double = 300.0
  * The relay connection (mirrors the Mac `RelayPool`): one WebSocket per relay, reconnect with [Backoff] (a suspended
  * delay, never a busy loop), subscriptions and an outbox re-sent after every reconnect (gift wraps must reach relays
  * that were down; a newer live / addressable event replaces the older one), NIP-42 AUTH as [authKey] when a relay
- * closes a REQ with `auth-required`. All state lives on one serial dispatcher. Events are not deduped here, but an
- * event for a subscription that isn't open or doesn't match its filter is dropped before anyone verifies it, and a
- * relay sending more than [EVENT_BURST] events at once or [EVENTS_PER_SECOND] after that loses its socket (PROTOCOL-v2
- * "Relay rules"; Mac `RelayPool`, same numbers).
+ * closes a REQ or answers an EVENT with `auth-required` (PROTOCOL-v2 "Relay answers"). All state lives on one serial
+ * dispatcher. Events are not deduped here, but an event for a subscription that isn't open or doesn't match its filter
+ * is dropped before anyone verifies it, and a relay sending more than [EVENT_BURST] events at once or
+ * [EVENTS_PER_SECOND] after that loses its socket (PROTOCOL-v2 "Relay rules"; Mac `RelayPool`, same numbers).
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class RelayPool(
@@ -298,13 +298,17 @@ class RelayPool(
             }
 
             "OK" -> {
-                val id = str(1) ?: return true
-                val accepted = (msg.getOrNull(2) as? JsonPrimitive)?.booleanOrNull ?: false
-                if (id == connection.authEventId) {
-                    if (accepted) resend(socket)
-                } else {
-                    _inbound.emit(RelayInbound.Ok(id, accepted, relay))
+                val ok = RelayOk.of(msg) ?: return true
+                if (ok.eventId == connection.authEventId) {
+                    if (ok.accepted) resend(socket)
+                    return true
                 }
+                // NIP-42 on a write: AUTH (once per connection), then the outbox goes again on this socket
+                if (ok.authRequired && authKey() != null) {
+                    connection.authPending = true
+                    authenticate(url, connection, socket)
+                }
+                _inbound.emit(RelayInbound.Ok(ok, relay, url))
             }
         }
         return true

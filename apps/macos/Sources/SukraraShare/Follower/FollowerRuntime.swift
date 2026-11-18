@@ -648,8 +648,8 @@ public actor FollowerRuntime: FollowerService {
         case .event(let event, _, _): await receive(event)
         case .endOfStored(let subscription, _):
             if subscription == "chunks", historyTask == nil { scheduleHistoryCheck() }  // again after a reconnect
-        case .ok(let eventId, let accepted, _):
-            if accepted { await markSent(eventId: eventId) }
+        case .ok(let answer, _, _):
+            if answer.kept { await markSent(eventId: answer.eventId) }
         case .connection(let state, let relay):
             var up = connectedRelays ?? []
             if state == .connected { up.insert(relay) } else { up.remove(relay) }

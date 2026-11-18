@@ -84,7 +84,9 @@ struct RelayPoolTests {
                 .connection(.connected, relay: "relay.test.invalid"),
                 .event(live, subscription: "live", relay: "relay.test.invalid"),
                 .endOfStored(subscription: "live", relay: "relay.test.invalid"),
-                .ok(eventId: "abc", accepted: false, relay: "relay.test.invalid"),
+                .ok(
+                    RelayOk(eventId: "abc", accepted: false, message: "blocked"), relay: "relay.test.invalid",
+                    url: relay),
             ])
         await pool.stop()
     }

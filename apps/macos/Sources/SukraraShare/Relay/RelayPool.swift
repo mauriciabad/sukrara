@@ -23,7 +23,8 @@ public struct Backoff: Sendable {
 
 /// The relay connection: one WebSocket per relay, reconnect with backoff, subscriptions and an outbox re-sent after
 /// every reconnect (gift wraps must reach relays that were down), NIP-42 AUTH as `authKey` when a relay closes a REQ
-/// with `auth-required` (once per connection; REQs re-sent after the relay accepts it), a watchdog that pings a relay
+/// or answers an EVENT with `auth-required` (once per connection; REQs and the outbox re-sent after the relay accepts
+/// it: PROTOCOL-v2 "Relay answers"), a watchdog that pings a relay
 /// silent for 150 s and reconnects after 270 s. Events are not deduped here: the follower session does that (an
 /// event under a not-yet-known epoch must be seen again later). An event for a subscription that isn't open or doesn't
 /// match its filter is dropped before anyone verifies it, and a relay sending more than `eventBurst` events at once or
@@ -205,16 +206,20 @@ public actor RelayPool: RelayTransport {
                 continuation.yield(.closed(subscription: sub, reason: reason, relay: relay))
             }
         case "OK":
-            guard let id = string(1) else { return true }
-            let accepted = frame.bool(2) ?? false
-            if id == connections[url]?.authEventId {
-                Self.log.info("relay \(relay, privacy: .public) AUTH \(accepted ? "accepted" : "refused")")
-                guard accepted else { return true }
+            guard let ok = RelayOk(frame) else { return true }
+            if ok.eventId == connections[url]?.authEventId {
+                Self.log.info("relay \(relay, privacy: .public) AUTH \(ok.accepted ? "accepted" : "refused")")
+                guard ok.accepted else { return true }
                 for (sub, filter) in subscriptions { try? await socket.send(Self.req(sub, filter)) }
                 for item in outbox { try? await socket.send("[\"EVENT\",\(item.event.json())]") }
-            } else {
-                continuation.yield(.ok(eventId: id, accepted: accepted, relay: relay))
+                return true
             }
+            // NIP-42 on a write: AUTH (once per connection), then the outbox goes again on this socket
+            if ok.authRequired, authKey != nil {
+                connections[url]?.authPending = true
+                await authenticate(url, socket: socket)
+            }
+            continuation.yield(.ok(ok, relay: relay, url: url.absoluteString))
         default:
             break
         }

@@ -47,7 +47,7 @@ public actor FakeRelay: RelayLink {
 
     public func publish(_ event: SignedEvent) {
         published.append(event)
-        continuation.yield(.ok(eventId: event.id, accepted: true, relay: host))
+        continuation.yield(.ok(RelayOk(eventId: event.id, accepted: true), relay: host, url: "wss://\(host)"))
         deliver(event)
     }
 

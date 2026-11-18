@@ -570,7 +570,7 @@ class FollowerEngineTest {
             assertEquals((NOW + Wire.TTL_LEAVE).toString(), wrap.tag("expiration"))
             // sent at once on its own connection, with a throwaway key for AUTH
             assertEquals(listOf(wrap), leaveRelay.published)
-            leaveRelay.ok(wrap.id, "nos.lol")
+            leaveRelay.ok(wrap.id, "wss://nos.lol")
             runCurrent()
             assertTrue(
                 "told",
@@ -580,8 +580,8 @@ class FollowerEngineTest {
                     .single()
                     .told,
             )
-            leaveRelay.ok(wrap.id, "relay.example", accepted = true)
-            leaveRelay.ok(wrap.id, "nostr.mom", accepted = false)
+            leaveRelay.ok(wrap.id, "wss://relay.example", accepted = true)
+            leaveRelay.ok(wrap.id, "wss://nostr.mom", accepted = false, message = "blocked: not on the list")
             runCurrent()
             assertEquals(
                 "a relay not on the list and a refusal don't count",
@@ -592,7 +592,7 @@ class FollowerEngineTest {
                     .single()
                     .accepted.size,
             )
-            leaveRelay.ok(wrap.id, "relay.primal.net")
+            leaveRelay.ok(wrap.id, "wss://relay.primal.net", message = "duplicate: already have this event")
             runCurrent()
             assertTrue(
                 "two relays keep it: done",
@@ -629,8 +629,8 @@ class FollowerEngineTest {
             leaveNetwork.networkBack()
             runCurrent()
             assertEquals(waiting.eventId, leaveRelay.published.single().id)
-            leaveRelay.ok(waiting.eventId, "nos.lol")
-            leaveRelay.ok(waiting.eventId, "relay.snort.social")
+            leaveRelay.ok(waiting.eventId, "wss://nos.lol/")
+            leaveRelay.ok(waiting.eventId, "wss://relay.snort.social", accepted = false, message = "duplicate: already have this event")
             runCurrent()
             assertTrue(
                 outbox.data

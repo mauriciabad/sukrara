@@ -88,6 +88,38 @@ whose `sid` differs from the one the follower already has is rejected: a stream'
   ([relays/relay-lists.json](relays/relay-lists.json)). A debug build's local test relay is configured on the device, never
   taken from a relay list.
 
+### Relay answers (2026-11-19, #213)
+
+What a relay's answer to an `EVENT` means, wherever an app waits for one (the leave outbox counts relays; treatments,
+the owner's control events and a replace's notices wait for one relay). Pinned by
+[relays/relay-answers.json](relays/relay-answers.json) (Android `RelayAnswersTest`, Mac `RelayAnswersTests`).
+- **The answer** is NIP-01's `["OK", <event id>, <true|false>, <message>, …]`
+  ([NIP-01](https://github.com/nostr-protocol/nips/blob/master/01.md), "From relay to client"; it absorbed
+  [NIP-20](https://github.com/nostr-protocol/nips/blob/ab6308c29a/20.md)). It is matched by the event id and by the
+  connection it came on: it counts for the relay whose URL that connection was opened with, never for a relay the
+  event wasn't sent to (nostr-tools does the same: one pending publish per connection,
+  [`abstract-relay.ts`](https://github.com/nbd-wtf/nostr-tools/blob/master/abstract-relay.ts)).
+- **The relay keeps the event** when the third element is the JSON `true`, whatever the message: empty,
+  `duplicate:` (it already had it: the usual answer to an outbox's resend after a lost answer or a reconnect),
+  `pow:` or anything else, and also when the message or a fifth element is missing or present. Also `false` with a
+  message that starts with `duplicate:`: NIP-20 says a relay that already has the event MUST answer `true`, yet some
+  answer `false` (grain before [0.8.2](https://freedom.tech/posts/2026-11-14-grain-0-8-2/), relays built from
+  go-nostr examples), and the exact id is on that relay either way (strfry and nostr-rs-relay answer `true`). Nothing
+  else counts: any other `false`, a `"true"` string, a missing verdict, an answer for another id, silence.
+- **`false` with `auth-required:`** ([NIP-42](https://github.com/nostr-protocol/nips/blob/master/42.md), "in response
+  to an `EVENT` message"): AUTH as for a REQ above (once per connection), then the event goes again on that
+  connection. Every other `false` waits for the next attempt (`rate-limited:`, `error:`); a relay that refuses
+  (`blocked:`, `restricted:`, `invalid:`, `pow:`) keeps getting it at later attempts and never counts.
+- **Which relay**: two URLs name the same relay when they are equal after scheme and host in lower case, the
+  scheme's default port (443 for `wss`, 80 for `ws`), a fragment, repeated slashes and a trailing `/` are dropped; the
+  path keeps its case ([RFC 3986 §6.2.2–6.2.3](https://www.rfc-editor.org/rfc/rfc3986#section-6.2.2), as
+  nostr-tools' `normalizeURL`). `wss://Nos.lol:443/` is `wss://nos.lol`; `wss://relay.example.org:4848` and
+  `wss://relay.example.org/inbox` are other relays than `wss://relay.example.org`. Never the host alone: a port or a
+  path makes another relay, and a debug build's test relay is another URL than the relays it stands in for.
+- `OK true` is the relay's receipt, not a promise to serve the event later (in a November 2026 measurement one relay
+  answered `true` and never served it: [nips#2539](https://github.com/nostr-protocol/nips/issues/2539)). Hence the
+  leave's two relays.
+
 ## Treatments (insulin / carbs / notes) — v2 addition, 2026-10-16
 
 Event format = [libreview SPEC §5](../libreview/SPEC.md); this section fixes who publishes what and how followers
@@ -294,12 +326,18 @@ that is off for days and relays that drop events. Pinned by [sync/leave.json](sy
   (Android: a plain store; Mac: `leave-outbox.json` in Application Support; nothing secret: the wrap is encrypted and
   signed by a one-time key). It is sent at once to every relay of the stream and, when the wearer's phone is connected
   over Bluetooth and proved it's the wearer's ([Bluetooth link](#bluetooth-link)), over Bluetooth. It is sent again
-  to every relay that hasn't answered `OK true` at each start, whenever the network comes back, and (Android) from a
-  WorkManager job that waits for a network, until **2 relays** accepted it (all of them when the stream lists fewer),
-  or it expired. Then it is dropped. A relay asking for NIP-42 AUTH gets a throwaway key's.
-- **Told**: once one relay accepted it or the wearer's phone took it over Bluetooth (the write response). Until then
-  the follower says *<wearer> hasn't been told yet* and that it happens once the device is online (Android: a silent
-  notification; Mac: Settings › Following and Source).
+  to every relay of the stream that doesn't keep it yet at each start, whenever the network comes back, and
+  (Android) from a WorkManager job that waits for a network, until **2 relays** of the stream keep it (every one when
+  the stream lists fewer), or it expired. Then it is dropped. A relay keeps it when its answer on the connection the
+  leave went out on says so ([Relay answers](#relay-answers-2026-11-19-213): `OK true` with or without a message such
+  as `duplicate:`, or `OK false` with `duplicate:`), counted once per relay (`wss://nos.lol/` and `wss://nos.lol` are
+  one; `wss://nos.lol:4848` another). The stream's relays are its valid ones
+  ([Relay rules](#relay-rules-learned-while-testing-2026-10-16)); a debug build pointed at a local test relay sends
+  there instead, and that relay stands in for all of them. A relay asking for NIP-42 AUTH gets a throwaway key's,
+  then the leave again.
+- **Told**: once one relay of the stream keeps it or the wearer's phone took it over Bluetooth (the write response).
+  Until then the follower says *<wearer> hasn't been told yet* and that it happens once the device is online
+  (Android: a silent notification; Mac: Settings › Following and Source).
 - A leave is final for that follower key: every join makes a new `F`, so coming back takes a new invite or *Pair
   nearby* and the wearer's Allow, as the first time.
 

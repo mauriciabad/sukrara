@@ -8,16 +8,16 @@ import SukraraTesting
 import Synchronization
 import Testing
 
-/// A relay pool whose relays at `hosts` keep every event published to them (`OK true`): what the leave sender talks to.
+/// A relay pool whose relays at `urls` keep every event published to them (`OK true`): what the leave sender talks to.
 actor AnsweringRelays: RelayLink {
     nonisolated let inbound: AsyncStream<RelayInbound>
     private let continuation: AsyncStream<RelayInbound>.Continuation
-    let hosts: [String]
+    let urls: [String]
     private(set) var published: [SignedEvent] = []
     private(set) var stopped = false
 
-    init(hosts: [String]) {
-        self.hosts = hosts
+    init(urls: [String]) {
+        self.urls = urls
         (inbound, continuation) = AsyncStream.makeStream()
     }
 
@@ -32,7 +32,9 @@ actor AnsweringRelays: RelayLink {
 
     func publish(_ event: SignedEvent) {
         published.append(event)
-        for host in hosts { continuation.yield(.ok(eventId: event.id, accepted: true, relay: host)) }
+        for url in urls {
+            continuation.yield(.ok(RelayOk(eventId: event.id, accepted: true), relay: "relay", url: url))
+        }
     }
 }
 
@@ -75,19 +77,25 @@ struct LeaveFixtureTests {
         }
     }
 
-    /// Told once a relay or the wearer's phone took it; done at two relays (or every one listed), or once expired.
+    /// An answer counts for the relay whose connection it came on, when it names the leave and says the relay keeps it
+    /// (`true`, or `false` with `duplicate:`); told once a relay or the wearer's phone took it, done at two of the valid
+    /// relays (or every one), or once expired.
     @Test func theOutboxIsDoneOnlyWhenTwoRelaysKeepIt() throws {
         let outbox = fixture["outbox"] as! [String: Any]
         let made = fixture["now"] as! Int
         let ttl = fixture["ttl"] as! Int
-        let wrap = try #require(
+        var wrap = try #require(
             SignedEvent.decode(json: JSONText.encode((fixture["events"] as! [String: Any])["leave-F"]!)))
+        wrap.id = outbox["id"] as! String
         for run in outbox["runs"] as! [[String: Any]] {
             let name = run["name"] as! String
             var leave = PendingLeave(
                 wrap: wrap, relays: (run["relays"] ?? outbox["relays"]) as! [String], expiry: made + ttl, wearer: "Ana")
             leave.nearby = run["nearby"] as? Bool ?? false
-            for host in run["accepted"] as! [String] { leave.accept(host) }
+            for answer in run["answers"] as! [[String: Any]] {
+                guard let ok = RelayOk(frame: JSONText.encode(answer["ok"]!)) else { continue }
+                leave.answered(ok, from: answer["from"] as! String)
+            }
             let at = made + (run["after"] as? Int ?? 0)
             #expect(leave.told == run["told"] as! Bool, "\(name) told")
             #expect(leave.done(now: at) == run["done"] as! Bool, "\(name) done")
@@ -101,11 +109,11 @@ struct LeaveFixtureTests {
     /// wrap in `leave-outbox.json` and sends it until two relays keep it; one relay isn't enough.
     @Test func stopFollowingTellsTheWearerUntilTwoRelaysKeepIt() async throws {
         let answering = Mutex<[AnsweringRelays]>([])
-        let hosts = Mutex(["nos.lol"])
+        let urls = Mutex(["wss://nos.lol"])
         let h = RuntimeHarness(
             now: v.now, hub: FakeRelayHub(stored: [v.event("invite")]),
             leaveRelays: { _, _ in
-                let relays = AnsweringRelays(hosts: hosts.withLock { $0 })
+                let relays = AnsweringRelays(urls: urls.withLock { $0 })
                 answering.withLock { $0.append(relays) }
                 return relays
             },
@@ -126,9 +134,9 @@ struct LeaveFixtureTests {
         // one relay keeps it: told (nothing shown), but still sent until a second one does
         #expect(await eventually { await first.stopped })
         let kept = try #require(await leaves.load()?.leaves.single)
-        #expect(kept.told && kept.accepted == ["nos.lol"] && kept.wearer == "Alex")
+        #expect(kept.told && kept.accepted == ["wss://nos.lol"] && kept.wearer == "Alex")
         #expect(await eventually { await h.runtime.snapshotNow.untoldLeave == nil })
-        hosts.withLock { $0 = ["relay.example.org"] }  // the invite's other relay
+        urls.withLock { $0 = ["wss://relay.example.org/"] }  // the invite's other relay
         await h.runtime.reconnect()  // the Mac woke / the network came back
         #expect(await eventually { await leaves.load() == nil })
         await h.runtime.stop()
@@ -136,16 +144,16 @@ struct LeaveFixtureTests {
 
     /// Offline: the outbox keeps it and the follow rows say the wearer hasn't been told yet.
     @Test func aLeaveNobodyTookIsShownUntilOneDoes() async throws {
-        let hosts = Mutex<[String]>([])
+        let urls = Mutex<[String]>([])
         let h = RuntimeHarness(
             now: v.now, hub: FakeRelayHub(stored: [v.event("invite")]),
-            leaveRelays: { _, _ in AnsweringRelays(hosts: hosts.withLock { $0 }) },
+            leaveRelays: { _, _ in AnsweringRelays(urls: urls.withLock { $0 }) },
             sleep: { _ in try await Task.sleep(for: .milliseconds(30)) })
         await h.runtime.start()
         try await h.runtime.lookUpAndFollow(link: (v.derivations["invite"] as! [String: Any])["link"] as! String)
         await h.runtime.unfollow()
         #expect(await eventually { await h.runtime.snapshotNow.untoldLeave == "Alex" })
-        hosts.withLock { $0 = ["nos.lol", "relay.example.org"] }  // the invite's two relays
+        urls.withLock { $0 = ["wss://nos.lol", "wss://relay.example.org"] }  // the invite's two relays
         await h.runtime.reconnect()
         #expect(await eventually { await h.runtime.snapshotNow.untoldLeave == nil })
         #expect(await eventually { await h.stores.leaves.load() == nil })

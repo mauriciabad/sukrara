@@ -370,76 +370,314 @@
         }
     },
     "outbox": {
+        "id": "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
         "relays": [
             "wss://a.example/",
-            "wss://b.example",
-            "wss://c.example",
-            "wss://d.example"
+            "wss://B.example",
+            "wss://c.example:4848",
+            "wss://c.example/inbox"
         ],
         "runs": [
             {
                 "name": "online",
-                "accepted": [
-                    "a.example",
-                    "b.example"
+                "answers": [
+                    {
+                        "from": "wss://a.example/",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    },
+                    {
+                        "from": "wss://B.example",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            "duplicate: already have this event"
+                        ]
+                    }
                 ],
                 "told": true,
                 "done": true,
                 "waiting": [
-                    "wss://c.example",
-                    "wss://d.example"
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
                 ]
             },
             {
                 "name": "one-relay",
-                "accepted": [
-                    "a.example"
+                "answers": [
+                    {
+                        "from": "wss://a.example/",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    }
                 ],
                 "told": true,
                 "done": false,
                 "waiting": [
-                    "wss://b.example",
-                    "wss://c.example",
-                    "wss://d.example"
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
                 ]
             },
             {
-                "name": "offline",
-                "accepted": [],
+                "name": "duplicate-only",
+                "answers": [
+                    {
+                        "from": "wss://c.example:4848",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            "duplicate: already have this event"
+                        ]
+                    }
+                ],
+                "told": true,
+                "done": false,
+                "waiting": [
+                    "wss://a.example/",
+                    "wss://B.example",
+                    "wss://c.example/inbox"
+                ]
+            },
+            {
+                "name": "duplicate-false",
+                "answers": [
+                    {
+                        "from": "wss://c.example/inbox",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            false,
+                            "duplicate: already have this event"
+                        ]
+                    },
+                    {
+                        "from": "wss://a.example/",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true
+                        ]
+                    }
+                ],
+                "told": true,
+                "done": true,
+                "waiting": [
+                    "wss://B.example",
+                    "wss://c.example:4848"
+                ]
+            },
+            {
+                "name": "spelled-another-way",
+                "answers": [
+                    {
+                        "from": "wss://A.example:443",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    },
+                    {
+                        "from": "wss://b.example/",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    }
+                ],
+                "told": true,
+                "done": true,
+                "waiting": [
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
+                ]
+            },
+            {
+                "name": "another-port-or-path-is-another-relay",
+                "answers": [
+                    {
+                        "from": "wss://c.example",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    },
+                    {
+                        "from": "wss://c.example:4849",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    },
+                    {
+                        "from": "wss://c.example/outbox",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    }
+                ],
                 "told": false,
                 "done": false,
                 "waiting": [
                     "wss://a.example/",
-                    "wss://b.example",
-                    "wss://c.example",
-                    "wss://d.example"
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
+                ]
+            },
+            {
+                "name": "refused",
+                "answers": [
+                    {
+                        "from": "wss://a.example/",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            false,
+                            "blocked: you are banned from posting here"
+                        ]
+                    },
+                    {
+                        "from": "wss://B.example",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            false,
+                            "rate-limited: slow down there chief",
+                            "1000"
+                        ]
+                    },
+                    {
+                        "from": "wss://c.example:4848",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            false,
+                            "auth-required: we only accept events from registered users"
+                        ]
+                    },
+                    {
+                        "from": "wss://c.example/inbox",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            "true",
+                            ""
+                        ]
+                    }
+                ],
+                "told": false,
+                "done": false,
+                "waiting": [
+                    "wss://a.example/",
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
+                ]
+            },
+            {
+                "name": "another-event",
+                "answers": [
+                    {
+                        "from": "wss://a.example/",
+                        "ok": [
+                            "OK",
+                            "13d9861f4ff3374f7a53252dc5a4e7623b44455d5d915651f6f9041060d70164",
+                            true,
+                            ""
+                        ]
+                    },
+                    {
+                        "from": "wss://B.example",
+                        "ok": [
+                            "NOTICE",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5"
+                        ]
+                    }
+                ],
+                "told": false,
+                "done": false,
+                "waiting": [
+                    "wss://a.example/",
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
+                ]
+            },
+            {
+                "name": "offline",
+                "answers": [],
+                "told": false,
+                "done": false,
+                "waiting": [
+                    "wss://a.example/",
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
                 ]
             },
             {
                 "name": "nearby-only",
                 "nearby": true,
-                "accepted": [],
+                "answers": [],
                 "told": true,
                 "done": false,
                 "waiting": [
                     "wss://a.example/",
-                    "wss://b.example",
-                    "wss://c.example",
-                    "wss://d.example"
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
                 ]
             },
             {
                 "name": "a-relay-not-listed",
-                "accepted": [
-                    "x.example",
-                    "a.example"
+                "answers": [
+                    {
+                        "from": "wss://x.example",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    },
+                    {
+                        "from": "wss://a.example/",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    }
                 ],
                 "told": true,
                 "done": false,
                 "waiting": [
-                    "wss://b.example",
-                    "wss://c.example",
-                    "wss://d.example"
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
                 ]
             },
             {
@@ -447,24 +685,64 @@
                 "relays": [
                     "wss://a.example"
                 ],
-                "accepted": [
-                    "a.example"
+                "answers": [
+                    {
+                        "from": "wss://a.example",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    }
                 ],
                 "told": true,
                 "done": true,
                 "waiting": []
             },
             {
+                "name": "only-valid-relays-count",
+                "relays": [
+                    "wss://a.example",
+                    "ws://b.example",
+                    "wss://localhost:7447"
+                ],
+                "answers": [
+                    {
+                        "from": "wss://a.example",
+                        "ok": [
+                            "OK",
+                            "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                            true,
+                            ""
+                        ]
+                    }
+                ],
+                "told": true,
+                "done": true,
+                "waiting": []
+            },
+            {
+                "name": "no-valid-relay",
+                "relays": [
+                    "ws://b.example"
+                ],
+                "answers": [],
+                "told": false,
+                "done": false,
+                "waiting": []
+            },
+            {
                 "name": "expired",
-                "accepted": [],
+                "answers": [],
                 "after": 31536000,
                 "told": false,
                 "done": true,
                 "waiting": [
                     "wss://a.example/",
-                    "wss://b.example",
-                    "wss://c.example",
-                    "wss://d.example"
+                    "wss://B.example",
+                    "wss://c.example:4848",
+                    "wss://c.example/inbox"
                 ]
             }
         ]

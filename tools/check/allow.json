@@ -59,6 +59,16 @@
   "strings_warn_only": [],
   "cleartext_ok": [
     {
+      "path": "apps/android/core/protocol/src/main/kotlin/app/mauri/sukrara/protocol/Wire.kt",
+      "contains": "\"ws\" -> \":80\"",
+      "reason": "Wire.relayKey only compares relay URLs (PROTOCOL-v2 'Relay answers'): it drops ws://'s default port 80 so two spellings of one relay match; it opens nothing and accepts nothing (relay lists stay wss:// only, Wire.isRelayUrl)"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraShare/Protocol/Payloads.swift",
+      "contains": "let defaultPort = scheme == \"wss\" ? \":443\" : scheme == \"ws\" ? \":80\" : nil",
+      "reason": "Relays.key only compares relay URLs (PROTOCOL-v2 'Relay answers'): it drops ws://'s default port 80 so two spellings of one relay match; it opens nothing and accepts nothing (relay lists stay wss:// only, Relays.isRelay)"
+    },
+    {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/nightscout/site/NightscoutSite.kt",
       "contains": "(scheme == \"http\" && u.port == 80)",
       "reason": "Nightscout source address parsing (contracts/sources/nightscout/sites.json): an http address is recognised only to write its root without the default port, then refused with 'Use https://' unless it is this phone's loopback"

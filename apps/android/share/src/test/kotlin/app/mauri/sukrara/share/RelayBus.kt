@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.share
 
+import app.mauri.sukrara.protocol.RelayOk
 import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.share.transport.FetchResult
 import app.mauri.sukrara.share.transport.RelayFilter
@@ -54,7 +55,7 @@ class RelayBus {
 
         override fun publish(event: SignedEvent) {
             if (stored.none { it.id == event.id }) stored += event
-            _inbound.tryEmit(RelayInbound.Ok(event.id, true, HOST))
+            _inbound.tryEmit(RelayInbound.Ok(RelayOk(event.id, true), HOST, "wss://$HOST"))
             links.filter { it.started }.forEach { it.deliver(event) }
         }
 

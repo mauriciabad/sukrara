@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.share.transport
 
+import app.mauri.sukrara.protocol.RelayOk
 import app.mauri.sukrara.protocol.SignedEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,8 +53,16 @@ sealed interface RelayInbound {
     /** End of stored events for a subscription on one relay. */
     data class EndOfStored(val subscription: String, override val relay: String) : RelayInbound
 
-    /** A relay's answer to one of our publishes. */
-    data class Ok(val eventId: String, val accepted: Boolean, override val relay: String) : RelayInbound
+    /**
+     * A relay's answer to one of our publishes ([RelayOk]), from the connection opened with [url] (as the pool got it:
+     * [RelayAccess] applied; the leave outbox tells relays apart by it, PROTOCOL-v2 "Relay answers").
+     */
+    data class Ok(val answer: RelayOk, override val relay: String, val url: String) : RelayInbound {
+        val eventId: String get() = answer.eventId
+
+        /** The relay keeps the event ([RelayOk.kept]: `true`, or `false` with `duplicate:`). */
+        val accepted: Boolean get() = answer.kept
+    }
 
     /** The relay closed a subscription (auth-required is handled inside the pool). */
     data class Closed(val subscription: String, val reason: String, override val relay: String) : RelayInbound

@@ -165,18 +165,26 @@ class LeaveFixtureTest {
         }
     }
 
-    /** The follower's outbox: told once a relay or the wearer's phone took it, done at two relays (or every one), or expired. */
+    /**
+     * The follower's outbox: an answer counts for the relay whose connection it came on, when it names the leave and
+     * says the relay keeps it (`true`, or `false` with `duplicate:`); told once a relay or the wearer's phone took it,
+     * done at two of the valid relays (or every one), or expired.
+     */
     @Test fun theOutboxIsDoneOnlyWhenTwoRelaysKeepIt() {
         val fx = ContractFiles.json("protocol/sync/leave.json")
         val outbox = fx.getValue("outbox").jsonObject
         val ttl = fx.getValue("ttl").jsonPrimitive.long
         val made = fx.getValue("now").jsonPrimitive.long
+        val id = outbox.str("id")
         outbox.getValue("runs").jsonArray.forEach { r ->
             val run = r.jsonObject
             val name = run.str("name")
             val relays = (run["relays"] ?: outbox.getValue("relays")).jsonArray.map { it.jsonPrimitive.content }
-            var leave = PendingLeave("{}", "e", relays, made + ttl, "Ana", nearby = run["nearby"]?.jsonPrimitive?.booleanOrNull ?: false)
-            run.getValue("accepted").jsonArray.forEach { leave = leave.accept(it.jsonPrimitive.content) }
+            var leave = PendingLeave("{}", id, relays, made + ttl, "Ana", nearby = run["nearby"]?.jsonPrimitive?.booleanOrNull ?: false)
+            run.getValue("answers").jsonArray.forEach {
+                val answer = it.jsonObject
+                RelayOk.parse(answer.getValue("ok").toString())?.let { ok -> leave = leave.answered(answer.str("from"), ok) }
+            }
             val at = made + (run["after"]?.jsonPrimitive?.long ?: 0)
             assertEquals("$name told", run.getValue("told").jsonPrimitive.boolean, leave.told)
             assertEquals("$name done", run.getValue("done").jsonPrimitive.boolean, leave.done(at))
@@ -229,28 +237,68 @@ class LeaveFixtureTest {
                     """.trimIndent(),
                 ).jsonObject
 
-        /** The follower's outbox rule: relays answer `OK true` (`accepted`, hosts), [after] seconds since it was made. */
+        /**
+         * The follower's outbox rule: a leave ([id]) sent to `relays`, the relays' NIP-01 answers (`from`: the URL its
+         * connection was opened with; `ok`: what the relay sent), [after] seconds since it was made.
+         */
         val OUTBOX: JsonObject =
             Json
                 .parseToJsonElement(
                     """
                     {
-                      "relays": ["wss://a.example/", "wss://b.example", "wss://c.example", "wss://d.example"],
+                      "id": "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5",
+                      "relays": ["wss://a.example/", "wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"],
                       "runs": [
-                        {"name": "online", "accepted": ["a.example", "b.example"], "told": true, "done": true,
-                         "waiting": ["wss://c.example", "wss://d.example"]},
-                        {"name": "one-relay", "accepted": ["a.example"], "told": true, "done": false,
-                         "waiting": ["wss://b.example", "wss://c.example", "wss://d.example"]},
-                        {"name": "offline", "accepted": [], "told": false, "done": false,
-                         "waiting": ["wss://a.example/", "wss://b.example", "wss://c.example", "wss://d.example"]},
-                        {"name": "nearby-only", "nearby": true, "accepted": [], "told": true, "done": false,
-                         "waiting": ["wss://a.example/", "wss://b.example", "wss://c.example", "wss://d.example"]},
-                        {"name": "a-relay-not-listed", "accepted": ["x.example", "a.example"], "told": true, "done": false,
-                         "waiting": ["wss://b.example", "wss://c.example", "wss://d.example"]},
-                        {"name": "one-relay-stream", "relays": ["wss://a.example"], "accepted": ["a.example"], "told": true,
-                         "done": true, "waiting": []},
-                        {"name": "expired", "accepted": [], "after": 31536000, "told": false, "done": true,
-                         "waiting": ["wss://a.example/", "wss://b.example", "wss://c.example", "wss://d.example"]}
+                        {"name": "online", "answers": [
+                          {"from": "wss://a.example/", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]},
+                          {"from": "wss://B.example", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, "duplicate: already have this event"]}],
+                         "told": true, "done": true, "waiting": ["wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "one-relay", "answers": [
+                          {"from": "wss://a.example/", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]}],
+                         "told": true, "done": false, "waiting": ["wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "duplicate-only", "answers": [
+                          {"from": "wss://c.example:4848", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, "duplicate: already have this event"]}],
+                         "told": true, "done": false, "waiting": ["wss://a.example/", "wss://B.example", "wss://c.example/inbox"]},
+                        {"name": "duplicate-false", "answers": [
+                          {"from": "wss://c.example/inbox", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", false, "duplicate: already have this event"]},
+                          {"from": "wss://a.example/", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true]}],
+                         "told": true, "done": true, "waiting": ["wss://B.example", "wss://c.example:4848"]},
+                        {"name": "spelled-another-way", "answers": [
+                          {"from": "wss://A.example:443", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]},
+                          {"from": "wss://b.example/", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]}],
+                         "told": true, "done": true, "waiting": ["wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "another-port-or-path-is-another-relay", "answers": [
+                          {"from": "wss://c.example", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]},
+                          {"from": "wss://c.example:4849", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]},
+                          {"from": "wss://c.example/outbox", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]}],
+                         "told": false, "done": false, "waiting": ["wss://a.example/", "wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "refused", "answers": [
+                          {"from": "wss://a.example/", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", false, "blocked: you are banned from posting here"]},
+                          {"from": "wss://B.example", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", false, "rate-limited: slow down there chief", "1000"]},
+                          {"from": "wss://c.example:4848", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", false, "auth-required: we only accept events from registered users"]},
+                          {"from": "wss://c.example/inbox", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", "true", ""]}],
+                         "told": false, "done": false, "waiting": ["wss://a.example/", "wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "another-event", "answers": [
+                          {"from": "wss://a.example/", "ok": ["OK", "13d9861f4ff3374f7a53252dc5a4e7623b44455d5d915651f6f9041060d70164", true, ""]},
+                          {"from": "wss://B.example", "ok": ["NOTICE", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5"]}],
+                         "told": false, "done": false, "waiting": ["wss://a.example/", "wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "offline", "answers": [], "told": false, "done": false,
+                         "waiting": ["wss://a.example/", "wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "nearby-only", "nearby": true, "answers": [], "told": true, "done": false,
+                         "waiting": ["wss://a.example/", "wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "a-relay-not-listed", "answers": [
+                          {"from": "wss://x.example", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]},
+                          {"from": "wss://a.example/", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]}],
+                         "told": true, "done": false, "waiting": ["wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]},
+                        {"name": "one-relay-stream", "relays": ["wss://a.example"], "answers": [
+                          {"from": "wss://a.example", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]}],
+                         "told": true, "done": true, "waiting": []},
+                        {"name": "only-valid-relays-count", "relays": ["wss://a.example", "ws://b.example", "wss://localhost:7447"], "answers": [
+                          {"from": "wss://a.example", "ok": ["OK", "cc44fab9b469c92ca7617fafb12a87ccdc1d682b4ac47f1fd7cec7dfb04db8e5", true, ""]}],
+                         "told": true, "done": true, "waiting": []},
+                        {"name": "no-valid-relay", "relays": ["ws://b.example"], "answers": [], "told": false, "done": false, "waiting": []},
+                        {"name": "expired", "answers": [], "after": 31536000, "told": false, "done": true,
+                         "waiting": ["wss://a.example/", "wss://B.example", "wss://c.example:4848", "wss://c.example/inbox"]}
                       ]
                     }
                     """.trimIndent(),

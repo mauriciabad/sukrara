@@ -81,6 +81,34 @@ object Wire {
      */
     fun validRelays(urls: List<String>): List<String> = urls.filter(::isRelayUrl).distinct().take(MAX_RELAYS)
 
+    /**
+     * Which relay [url] names, for telling relays apart (PROTOCOL-v2 "Relay answers", contracts/protocol/relays/
+     * relay-answers.json `keys`): scheme and host in lower case, the scheme's default port (443 / 80), a fragment,
+     * repeated slashes and a trailing slash dropped; the path keeps its case. Two URLs name the same relay when their
+     * keys are equal (`wss://Nos.lol:443/` = `wss://nos.lol`; `wss://a.example:4848` and `wss://a.example/inbox` are
+     * other relays than `wss://a.example`). Mac `Relays.key`.
+     */
+    fun relayKey(url: String): String {
+        val text = url.trim().substringBefore('#')
+        val sep = text.indexOf("://")
+        if (sep < 0) return text.lowercase()
+        val scheme = text.substring(0, sep).lowercase()
+        val rest = text.substring(sep + 3)
+        val slash = rest.indexOf('/').let { if (it < 0) rest.length else it }
+        var authority = rest.substring(0, slash).lowercase()
+        val default =
+            when (scheme) {
+                "wss" -> ":443"
+                "ws" -> ":80"
+                else -> null
+            }
+        if (default != null && authority.endsWith(default)) authority = authority.dropLast(default.length)
+        val path = rest.substring(slash).replace(MANY_SLASHES, "/").trimEnd('/')
+        return "$scheme://$authority$path"
+    }
+
+    private val MANY_SLASHES = Regex("/{2,}")
+
     /** A `wss://` URL with a public host: no user info, query or fragment, no loopback / LAN name or address. */
     fun isRelayUrl(url: String): Boolean {
         if (url.length > MAX_RELAY_URL || !url.startsWith("wss://") || url.any { it.code !in 0x21..0x7e }) return false

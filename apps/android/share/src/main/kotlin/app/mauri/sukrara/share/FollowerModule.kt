@@ -76,7 +76,7 @@ class FollowerModule(
     val leaves: LeaveSender? by lazy {
         val store = leaveOutbox ?: return@lazy null
         val scope = scope ?: return@lazy null
-        LeaveSender(store, relays, crypto, clock, scope, AndroidNetworkWatch(context), scheduleLeaves)
+        LeaveSender(store, relays, crypto, clock, scope, AndroidNetworkWatch(context), relayAccess::connectTo, scheduleLeaves)
     }
 
     val engine: FollowerEngine by lazy {

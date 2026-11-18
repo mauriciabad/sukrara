@@ -402,6 +402,26 @@ public enum Relays {
         return out
     }
 
+    /// Which relay `url` names, for telling relays apart (PROTOCOL-v2 "Relay answers", contracts/protocol/relays/
+    /// relay-answers.json `keys`): scheme and host in lower case, the scheme's default port (443 / 80), a fragment,
+    /// repeated slashes and a trailing slash dropped; the path keeps its case. Two URLs name the same relay when their
+    /// keys are equal (`wss://Nos.lol:443/` = `wss://nos.lol`; `wss://a.example:4848` and `wss://a.example/inbox` are
+    /// other relays than `wss://a.example`). Android `Wire.relayKey`.
+    public static func key(_ url: String) -> String {
+        let text = String(url.trimmingCharacters(in: .whitespacesAndNewlines).prefix { $0 != "#" })
+        guard let sep = text.range(of: "://") else { return text.lowercased() }
+        let scheme = text[..<sep.lowerBound].lowercased()
+        let rest = text[sep.upperBound...]
+        let slash = rest.firstIndex(of: "/") ?? rest.endIndex
+        var authority = rest[..<slash].lowercased()
+        let defaultPort = scheme == "wss" ? ":443" : scheme == "ws" ? ":80" : nil
+        if let defaultPort, authority.hasSuffix(defaultPort) { authority.removeLast(defaultPort.count) }
+        var path = String(rest[slash...])
+        while path.contains("//") { path = path.replacingOccurrences(of: "//", with: "/") }
+        while path.hasSuffix("/") { path.removeLast() }
+        return "\(scheme)://\(authority)\(path)"
+    }
+
     /// A `wss://` URL with a public host: no user info, query or fragment, no loopback / LAN name or address.
     public static func isRelay(_ url: String) -> Bool {
         guard url.unicodeScalars.allSatisfy({ (0x21...0x7e).contains($0.value) }), url.utf8.count <= maxURL,

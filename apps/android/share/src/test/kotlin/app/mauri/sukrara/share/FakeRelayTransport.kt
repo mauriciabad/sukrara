@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.share
 
+import app.mauri.sukrara.protocol.RelayOk
 import app.mauri.sukrara.protocol.SignedEvent
 import app.mauri.sukrara.share.transport.FetchResult
 import app.mauri.sukrara.share.transport.RelayFilter
@@ -61,8 +62,16 @@ class FakeRelayTransport(var answering: Int = 1) : RelayTransport {
     /** A relay delivers [event] on subscription [id]. */
     suspend fun deliver(id: String, event: SignedEvent) = _inbound.emit(RelayInbound.Event(event, id, "fake.relay"))
 
-    suspend fun ok(eventId: String) = _inbound.emit(RelayInbound.Ok(eventId, true, "fake.relay"))
+    suspend fun ok(eventId: String) = _inbound.emit(RelayInbound.Ok(RelayOk(eventId, true), "fake.relay", "wss://fake.relay"))
 
-    /** The relay at [host] answers [eventId] (a pool tags each answer with its relay's host). */
-    suspend fun ok(eventId: String, host: String, accepted: Boolean = true) = _inbound.emit(RelayInbound.Ok(eventId, accepted, host))
+    /**
+     * The relay whose connection was opened with [url] answers [eventId] with NIP-01 `["OK", id, accepted, message]`
+     * (a pool tags each answer with that URL and its host).
+     */
+    suspend fun ok(
+        eventId: String,
+        url: String,
+        accepted: Boolean = true,
+        message: String = "",
+    ) = _inbound.emit(RelayInbound.Ok(RelayOk(eventId, accepted, message), url.substringAfter("://").substringBefore('/'), url))
 }

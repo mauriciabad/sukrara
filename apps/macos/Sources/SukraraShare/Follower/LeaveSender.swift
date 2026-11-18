@@ -6,8 +6,10 @@ import SukraraCore
 
 /// One `leave` on its way to the wearer (PROTOCOL-v2 "Leave"): the signed gift wrap (never the follower key: it is
 /// encrypted to the wearer and signed by a one-time key), the stream's `relays`, its `expiry` and the wearer's name for
-/// the person. `accepted` = hosts of the relays that answered `OK true`; `nearby` = the wearer's phone took it over
-/// Bluetooth. The same rules as Android's `PendingLeave` (contracts/protocol/sync/leave.json `outbox`).
+/// the person. `accepted` = the relays that keep it (`Relays.key` of the URL whose connection answered); `nearby` = the
+/// wearer's phone took it over Bluetooth. The same rules as Android's `PendingLeave` (contracts/protocol/sync/leave.json
+/// `outbox`). `to` in the rules = the relays it goes to: the valid ones of `relays` (`Relays.valid`, what a relay pool
+/// connects to).
 public struct PendingLeave: Codable, Equatable, Sendable {
     public var wrap: SignedEvent
     public var relays: [String]
@@ -23,23 +25,30 @@ public struct PendingLeave: Codable, Equatable, Sendable {
         self.wearer = wearer
     }
 
-    private var hosts: Set<String> { Set(relays.map(LeaveOutbox.host)) }
+    /// The relays it goes to.
+    public var sentTo: [String] { Relays.valid(relays) }
 
     /// The wearer can learn it now: a relay keeps it, or the wearer's phone took it over Bluetooth.
     public var told: Bool { !accepted.isEmpty || nearby }
 
-    /// Nothing more to send: `LeaveOutbox.needed` relays keep it (all of them when fewer are listed), or it expired.
+    /// Nothing more to send: `LeaveOutbox.needed` of the relays it goes to keep it (every one when fewer), or it
+    /// expired.
     public func done(now: Int) -> Bool {
-        now >= expiry || accepted.filter(hosts.contains).count >= min(LeaveOutbox.needed, hosts.count)
+        if now >= expiry { return true }
+        let keys = Set(sentTo.map(Relays.key))
+        return !keys.isEmpty && accepted.filter(keys.contains).count >= min(LeaveOutbox.needed, keys.count)
     }
 
-    /// The relays still to send it to.
-    public var waitingOn: [String] { relays.filter { !accepted.contains(LeaveOutbox.host($0)) } }
+    /// The relays it goes to that don't keep it yet.
+    public var waitingOn: [String] { sentTo.filter { !accepted.contains(Relays.key($0)) } }
 
-    /// `relay` (a host, as relay pools tag their answers) answered `OK true`; a relay that isn't listed doesn't count.
-    public mutating func accept(_ relay: String) {
-        let host = LeaveOutbox.host(relay)
-        if hosts.contains(host) { accepted.insert(host) }
+    /// The relay at `url` (the URL its connection was opened with) answered `ok`: it keeps this leave when the answer
+    /// names this leave's id, says the relay keeps it (`RelayOk.kept`: `true`, or `false` with `duplicate:`), and the
+    /// relay is one it goes to. Anything else changes nothing.
+    public mutating func answered(_ ok: RelayOk, from url: String) {
+        let key = Relays.key(url)
+        guard ok.eventId == wrap.id, ok.kept, sentTo.contains(where: { Relays.key($0) == key }) else { return }
+        accepted.insert(key)
     }
 }
 
@@ -52,14 +61,13 @@ public struct LeaveOutbox: Codable, Equatable, Sendable {
 
     public init(leaves: [PendingLeave] = []) { self.leaves = leaves }
 
-    /// A relay URL's host, as the relay pools tag their answers (`wss://nos.lol/` → `nos.lol`).
-    public static func host(_ url: String) -> String {
-        let rest = url.range(of: "://").map { String(url[$0.upperBound...]) } ?? url
-        return String(rest.prefix { $0 != "/" })
-    }
-
     /// Without the ones that are done.
     public func pruned(now: Int) -> LeaveOutbox { LeaveOutbox(leaves: leaves.filter { !$0.done(now: now) }) }
+
+    /// Every leave after the relay at `url` answered `ok` (`PendingLeave.answered`).
+    public mutating func answered(_ ok: RelayOk, from url: String) {
+        for i in leaves.indices { leaves[i].answered(ok, from: url) }
+    }
 
     /// The oldest leave nobody took yet: its wearer is who the person is told about.
     public var untold: PendingLeave? { leaves.first { !$0.told } }
@@ -74,7 +82,8 @@ extension SukraraPaths {
 /// Carries the follower's `leave` until the wearer can't miss it (PROTOCOL-v2 "Leave"): every leave still waiting goes
 /// to the relays that haven't accepted it, at once after *Stop following*, at launch and whenever the Mac wakes or the
 /// network comes back, until two relays keep it or it expired. Its own short-lived relay connection (the follow and its
-/// key are gone: a relay asking for AUTH gets a throwaway key's).
+/// key are gone: a relay asking for AUTH gets a throwaway key's). A relay's answer counts by the URL its connection was
+/// opened with (PROTOCOL-v2 "Relay answers").
 public actor LeaveSender {
     /// How long one attempt waits for the relays' answers (seconds).
     public static let wait: Double = 20
@@ -146,12 +155,15 @@ public actor LeaveSender {
         let ids = Set(waiting.map(\.wrap.id))
         var urls: [String] = []
         for url in waiting.flatMap(\.waitingOn) where !urls.contains(url) { urls.append(url) }
+        guard !urls.isEmpty else { return false }  // no relay it can go to: it waits, as offline
         let relays = makeRelays(urls, crypto.generateSecret())
         await relays.start()
         let answers = Task { [weak self] in
             for await message in relays.inbound {
-                guard case .ok(let id, true, let relay) = message, ids.contains(id), let self else { continue }
-                if await self.accepted(id, by: relay, of: ids) { return }
+                guard case .ok(let ok, _, let url) = message, ok.kept, ids.contains(ok.eventId), let self else {
+                    continue
+                }
+                if await self.answered(ok, from: url, of: ids) { return }
             }
         }
         for leave in waiting { await relays.publish(leave.wrap) }
@@ -166,11 +178,9 @@ public actor LeaveSender {
         return await outbox().leaves.isEmpty
     }
 
-    /// Records `relay`'s acceptance; true once every leave of this attempt is done.
-    private func accepted(_ id: String, by relay: String, of ids: Set<String>) async -> Bool {
-        await change { o in
-            for i in o.leaves.indices where o.leaves[i].wrap.id == id { o.leaves[i].accept(relay) }
-        }
+    /// Records the answer of the relay at `url`; true once every leave of this attempt is done.
+    private func answered(_ ok: RelayOk, from url: String, of ids: Set<String>) async -> Bool {
+        await change { $0.answered(ok, from: url) }
         return await outbox().pruned(now: now).leaves.allSatisfy { !ids.contains($0.wrap.id) }
     }
 

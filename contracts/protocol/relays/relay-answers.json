@@ -1,0 +1,120 @@
+{
+  "v": 1,
+  "about": "What a relay's answer to an EVENT means (PROTOCOL-v2 'Relay answers'; NIP-01 OK, NIP-20, NIP-42). keys: a relay URL -> the key that tells relays apart (equal keys = the same relay; an answer counts for the relay whose connection it came on). answers: a relay -> client message -> the answer it is (id: the event it answers, null = not an OK answer), whether the relay keeps the event (kept) and whether it wants NIP-42 AUTH first (auth). Run by Android RelayAnswersTest and Mac RelayAnswersTests.",
+  "keys": [
+    { "url": "wss://nos.lol", "key": "wss://nos.lol" },
+    { "url": "wss://nos.lol/", "key": "wss://nos.lol" },
+    { "url": "wss://Nos.LOL", "key": "wss://nos.lol" },
+    { "url": "WSS://nos.lol", "key": "wss://nos.lol" },
+    { "url": "wss://nos.lol:443", "key": "wss://nos.lol" },
+    { "url": "wss://nos.lol:443/", "key": "wss://nos.lol" },
+    { "url": " wss://nos.lol ", "key": "wss://nos.lol" },
+    { "url": "wss://nos.lol/#top", "key": "wss://nos.lol" },
+    { "url": "wss://nos.lol:80", "key": "wss://nos.lol:80" },
+    { "url": "ws://nos.lol", "key": "ws://nos.lol" },
+    { "url": "ws://nos.lol:80/", "key": "ws://nos.lol" },
+    { "url": "ws://nos.lol:443", "key": "ws://nos.lol:443" },
+    { "url": "wss://relay.example.org:4848", "key": "wss://relay.example.org:4848" },
+    { "url": "wss://relay.example.org:4848/", "key": "wss://relay.example.org:4848" },
+    { "url": "wss://relay.example.org/inbox", "key": "wss://relay.example.org/inbox" },
+    { "url": "wss://relay.example.org/inbox/", "key": "wss://relay.example.org/inbox" },
+    { "url": "wss://relay.example.org//inbox", "key": "wss://relay.example.org/inbox" },
+    { "url": "wss://relay.example.org/Inbox", "key": "wss://relay.example.org/Inbox" },
+    { "url": "ws://10.0.2.2:7447", "key": "ws://10.0.2.2:7447" },
+    { "url": "ws://10.0.2.2:7447/", "key": "ws://10.0.2.2:7447" }
+  ],
+  "answers": [
+    {
+      "why": "NIP-01: accepted",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", true, ""],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": true, "auth": false
+    },
+    {
+      "why": "NIP-01 / NIP-20: already stored (sent again after a lost answer or a reconnect)",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", true, "duplicate: already have this event"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": true, "auth": false
+    },
+    {
+      "why": "strfry's wording",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", true, "duplicate: have this event"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": true, "auth": false
+    },
+    {
+      "why": "NIP-20 says MUST be true; some relays (grain before 0.8.2, go-nostr samples) say false: the relay holds this exact id",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false, "duplicate: already have this event"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": true, "auth": false
+    },
+    {
+      "why": "accepted with a reason",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", true, "pow: difficulty 25>=24"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": true, "auth": false
+    },
+    {
+      "why": "an old relay leaves the message out",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", true],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": true, "auth": false
+    },
+    {
+      "why": "NIP-01's optional fifth element",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", true, "", "1000"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": true, "auth": false
+    },
+    {
+      "why": "refused",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false, "blocked: you are banned from posting here"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "refused for now: sent again at the next attempt",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false, "rate-limited: slow down there chief", "1000"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "refused",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false, "invalid: event creation date is too far off from the current time"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "refused after AUTH (NIP-42)",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false, "restricted: not allowed to write."],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "NIP-42: AUTH, then send it again on this connection",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false, "auth-required: we only accept events from registered users"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": true
+    },
+    {
+      "why": "the prefix is what counts, not a word inside the message",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false, "error: duplicate: key value violates unique constraint"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "refused without a reason",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", false],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "only a JSON true accepts",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "true", ""],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "only a JSON true accepts",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", 1, ""],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    {
+      "why": "no verdict",
+      "frame": ["OK", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30"],
+      "id": "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30", "kept": false, "auth": false
+    },
+    { "why": "no event id", "frame": ["OK"], "id": null, "kept": false, "auth": false },
+    { "why": "an id that isn't a string", "frame": ["OK", 5, true, ""], "id": null, "kept": false, "auth": false },
+    {
+      "why": "not an OK",
+      "frame": ["NOTICE", "b1a649ebe8b435ec71d3784793f3bbf4b93e64e17568a741aecd4c7ddeafce30"],
+      "id": null, "kept": false, "auth": false
+    }
+  ]
+}
