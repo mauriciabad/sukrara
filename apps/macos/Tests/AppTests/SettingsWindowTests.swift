@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import AppKit
 import SukraraCore
+import SukraraGraph
 import Testing
 
 @testable import SukraraApp
@@ -101,5 +102,31 @@ import Testing
         #expect(menu.menu.items.first { $0.title == L10n.t("About Sukrara") }?.isEnabled == false)
         menu.openAbout = {}
         #expect(menu.menu.items.first { $0.title == L10n.t("About Sukrara") }?.isEnabled == true)
+    }
+
+    /// Appendix G §4 (the owner's Q3; Android `MetricNeedTest`): a metric under the card's 25 % says why in Settings ›
+    /// Metrics, in hours up to three days, then days; enough (or unknown) says nothing.
+    @Test func aMetricHiddenForWantOfReadingsSaysWhy() throws {
+        let week: TimeInterval = 7 * 86_400
+        let now: TimeInterval = 1_790_000_000
+        // 12 h of readings every 5 minutes: the 7-day metric is hidden, the 12-hour one isn't
+        let twelve = stride(from: now - 12 * 3600 + 300, through: now, by: 300).map { GraphReading(t: $0, v: 120) }
+        var config = GraphConfig()
+        config.slots[0].window = week
+        config.slots[1].window = 43_200
+        let slots = SlotNumbers.of(twelve, now: now, configs: [config])
+        let n = try #require(slots.need(week))
+        #expect(abs(n.have - 12 * 3600) < 600 && n.need == 42 * 3600)
+        #expect(slots.need(43_200) == nil)
+        #expect(
+            MetricNeed(have: n.have, window: week, need: n.need).text
+                == "Needs more readings: 12 h of the last 7 days, 42 h needed")
+        let month: TimeInterval = 30 * 86_400
+        #expect(
+            MetricNeed(have: 0.2 * month, window: month, need: 0.25 * month).text
+                == "Needs more readings: 6 days of the last 30 days, 8 days needed")
+        #expect(
+            MetricNeed(have: 0, window: 43_200, need: 10_800).text
+                == "Needs more readings: 0 min of the last 12 h, 3 h needed")
     }
 }

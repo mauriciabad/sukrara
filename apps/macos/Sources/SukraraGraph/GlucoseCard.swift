@@ -10,6 +10,8 @@ import SukraraCore
 
 /// Value + trend arrow + rings + chart in one drawing (GlucoseCard.kt), adapting to the size.
 public enum GlucoseCard {
+    /// A metric beside the value is drawn only when its window has at least this much data (Settings › Metrics says
+    /// why a metric under it isn't on the card: `SlotNumbers.need`; Android `GlucoseMetrics.SLOT_MIN_COVERAGE`).
     static let minCoverage = 0.25
     /// With a pill the number keeps at least this share of its size without it (contracts/graph "The value with a pill").
     static let pillKeep: CGFloat = 0.85
@@ -767,6 +769,15 @@ public struct SlotNumbers: Sendable, Equatable, Codable {
 
     func metrics(_ window: TimeInterval, _ bands: Bands) -> GlucoseMetrics? {
         entries.first { $0.window == window && $0.bands == bands }?.metrics
+    }
+
+    /// Why a metric of `window` isn't drawn (the card's rule, `GlucoseCard.minCoverage`): the seconds its readings
+    /// cover and the seconds it needs; nil = drawn (enough readings) or not counted. Settings › Metrics says it.
+    public func need(_ window: TimeInterval) -> (have: TimeInterval, need: TimeInterval)? {
+        guard let coverage = entries.first(where: { $0.window == window })?.metrics.tir.coverage,
+            coverage < GlucoseCard.minCoverage
+        else { return nil }
+        return (coverage * window, GlucoseCard.minCoverage * window)
     }
 }
 

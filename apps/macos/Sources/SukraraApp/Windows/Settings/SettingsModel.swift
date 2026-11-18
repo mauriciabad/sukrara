@@ -31,6 +31,9 @@ public final class SettingsModel {
     public let leave: LeaveLinkModel
     /// Settings › Source's *Also saved on this Mac*.
     public let alsoSaved: AlsoSavedModel
+    /// Why a metric of `window` seconds isn't on the card: the seconds its readings cover and need (nil = it is, or not
+    /// known; `SlotNumbers.need`): Settings › Metrics says it (`MetricNeed`).
+    @ObservationIgnored var need: (TimeInterval) -> (have: TimeInterval, need: TimeInterval)? = { _ in nil }
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
     /// Whether macOS lets Sukrara post Time Sensitive (Settings › Alerts, the setup's notification step); nil: this run

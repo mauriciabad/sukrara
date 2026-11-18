@@ -115,6 +115,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         libreLinkUp.recheckSource = { [weak model] saved in await model?.recheckLibreLinkUp(saved: saved) }
         libreLinkUp.signOutSource = { [weak model] in model?.signOutLibreLinkUp() }
+        windows.settings.need = { [weak model] window in model?.slots?.need(window) }
         let alsoSaved = windows.settings.alsoSaved
         alsoSaved.keptNotShown = { [weak model] in model?.keptNotShown() ?? [] }
         alsoSaved.deleteKept = { [weak model] id in model?.deleteKept(id) }

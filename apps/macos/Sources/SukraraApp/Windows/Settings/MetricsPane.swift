@@ -5,6 +5,38 @@ import SukraraCore
 import SukraraGraph
 import SwiftUI
 
+/// Why a metric isn't on the card (docs/44 Appendix G §4, the owner's Q3; Android `MetricNeed`): its readings cover
+/// `have` of the last `window`, and the renderer draws a metric from `need` on (its 25 %: `SlotNumbers.need`).
+/// Settings › Metrics says it in the metric's summary; the card stays the renderer's and says nothing.
+struct MetricNeed: Equatable {
+    var have: TimeInterval
+    var window: TimeInterval
+    var need: TimeInterval
+
+    /// *Needs more readings: 12 h of the last 7 days, 42 h needed*.
+    var text: String {
+        L10n.t(
+            "Needs more readings: \(Self.duration(have)) of the last \(Self.period(window)), \(Self.duration(need)) needed"
+        )
+    }
+
+    /// A coverage as the person reads it: whole hours up to three days (*12 h*, *42 h*), then days (*8 days*).
+    static func duration(_ seconds: TimeInterval) -> String {
+        let hours = Int((seconds / 3600).rounded())
+        return hours < 72 ? Durations.text(hours * 60) : days(seconds)
+    }
+
+    /// The metric's window: hours under a day (*12 h*), else days (*7 days*).
+    static func period(_ seconds: TimeInterval) -> String {
+        seconds < 86_400 ? Durations.text(Int((seconds / 60).rounded())) : days(seconds)
+    }
+
+    private static func days(_ seconds: TimeInterval) -> String {
+        let n = Int((seconds / 86_400).rounded())
+        return n == 1 ? L10n.t("1 day") : L10n.t("\(n) days")
+    }
+}
+
 /// The metrics with options of their own (docs/39): the main, second and third, and the one shown in the last
 /// treatment's place while there's no recent treatment (Android's `MetricSlot`).
 enum MetricSlot: String, CaseIterable, Identifiable {
@@ -181,7 +213,7 @@ struct MetricsPane: View {
         return ToggleDetailsRow(
             title: slot.title,
             summary: slot == .noRecent && !g.lastOn
-                ? L10n.t("Needs the last treatment on") : Self.metricSummary(r),
+                ? L10n.t("Needs the last treatment on") : summary(r),
             isOn: Binding(
                 get: { r.on },
                 set: { on in
@@ -195,6 +227,12 @@ struct MetricsPane: View {
         ) { editing = slot }
     }
 
+    /// What a metric shows and its period, and why the card doesn't draw it while its readings are too few.
+    private func summary(_ r: RingSpec) -> String {
+        guard r.on, let n = model.need(r.window) else { return Self.metricSummary(r) }
+        return "\(Self.metricSummary(r))\n\(MetricNeed(have: n.have, window: r.window, need: n.need).text)"
+    }
+
     private func graphValue<V>(_ path: WritableKeyPath<GraphConfig, V>) -> Binding<V> {
         Binding(get: { g[keyPath: path] }, set: { v in model.updateGraph { $0[keyPath: path] = v } })
     }
@@ -202,7 +240,7 @@ struct MetricsPane: View {
     /// Outside Custom: what's in use, in words.
     private var summary: [(String, String)] {
         // the pane's order: the three metrics, the last treatment and what shows without one, the rings' look
-        let slots: [(String, String)] = MetricSlot.slots.map { ($0.title, Self.metricSummary($0.spec(g))) }
+        let slots: [(String, String)] = MetricSlot.slots.map { ($0.title, summary($0.spec(g))) }
         return slots + [
             (L10n.t("Last treatment"), g.lastOn ? Self.whereName(g.lastWhere) : L10n.t("Off")),
             (MetricSlot.noRecent.title, Self.metricSummary(g.lastElse)),

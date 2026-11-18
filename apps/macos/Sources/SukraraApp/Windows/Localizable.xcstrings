@@ -3076,6 +3076,22 @@
         }
       }
     },
+    "Needs more readings: %@ of the last %@, %@ needed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Needs more readings: %1$@ of the last %2$@, %3$@ needed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faltan lecturas: %1$@ de los últimos %2$@, se necesitan %3$@"
+          }
+        }
+      }
+    },
     "Nightscout asked Sukrara to wait" : {
       "localizations" : {
         "en" : {

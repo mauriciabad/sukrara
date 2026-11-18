@@ -1339,8 +1339,10 @@ mirrored (a follower in *Settings from: Wearer* shows the wearer's, read-only).
   treatment, second, no recent treatment, third). One home-screen widget can show fewer: *Metrics* in its own settings
   (Home screen widgets). A metric that's on but hidden for want of readings says why in Settings › Metrics, never on
   the card (it stays glanceable): its row's summary adds *Needs more readings: 12 h of the last 7 days, 42 h needed*
-  (the renderer's 25 %; hours up to three days, then days; Android `MetricNeed`, `MetricNeedTest`; docs/44 Appendix G
-  §4 Q3).
+  (the renderer's 25 %; hours up to three days, then days; Android `MetricNeed`, `MetricNeedTest`; the Mac's rows and
+  the read-only summary outside *This Mac's own* too, `MetricNeed`, `SettingsWindowTests`; docs/44 Appendix G
+  §4 Q3). States and exits: the line goes by itself once the readings cover a quarter of the period; the row's switch
+  hides the metric, its page (Mac *Details…*) picks a shorter period.
 - **Android**: Settings › *Metrics* (`ds_ic_speed`): the live card on top; the three metrics (each row's icon the card's
   three places, the same size, with its own filled: `MetricIconsTest`), then the last treatment and *No recent treatment*, each a two-target row (the switch shows or hides it, the row opens its page; summary
   *Time in range · 1 day* or *Off*); *Time-in-range rings* (summary *In range (70–179 mg/dL) · rewards*); *Reset
