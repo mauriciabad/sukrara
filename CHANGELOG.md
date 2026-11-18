@@ -2,7 +2,9 @@
 
 Sukrara's releases. 0.x versions are previews.
 
-## Unreleased — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
+## Unreleased
+
+## 0.16.0 — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 
 - **Where your glucose comes from** (#213, docs/44): Settings › Source picks one of these, and changing it never needs
   a reinstall:

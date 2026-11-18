@@ -31,7 +31,7 @@ own notes stay in [`poc/spikes/showcase-android/NEXT.md`](../poc/spikes/showcase
 | Website: live preview | `cd website && npm run dev` (http://localhost:4321) |
 | Website: what CI runs | `cd website && npm run build && npm run check` (links, the apps' URLs, App Links, the feed) |
 | A release to every channel | `tools/release/release.py <version>` (`--dry-run`, `--from <step>`): [Release](#release) |
-| Version | `tools/release/version.sh` → `0.15.0 15000` (from `VERSION`) |
+| Version | `tools/release/version.sh` → `0.16.0 16000` (from `VERSION`) |
 
 CI (`.github/workflows/checks.yml`) runs on every push, each push its own run at once (pushes never queue behind or
 cancel each other; a pull request's newer push cancels its older run). Its `changes` job (`tools/ci/changes.py`)
@@ -116,7 +116,7 @@ the Mac Info.plist `SukraraBuild`):
   (`android-release.sh`, `play-bundle.sh`, `mac-release.sh`, `mac-appstore.sh`), and only from the release commit (the
   last commit that changed `VERSION`, with no other change and no untracked file; `website/public/appcast.xml` may differ:
   `mac-release.sh` writes it in the gate and `release.py` commits it before `testflight`); anything else stops the
-  build. About and Settings keep *0.15.0 · GitHub version* / *Google Play version* / *App Store version*.
+  build. About and Settings keep *0.16.0 · GitHub version* / *Google Play version* / *App Store version*.
 - **Development** (`development <commits> <commit> <date>`): every other build: `tools/install.sh` (which unsets the
   flag), CI, Android debug builds (`development` alone, so the build cache keeps them), `swift build` / `swift test`
   (no Info.plist). About and Settings say *Development build · 0.14.5 + 23 commits · d744fd74 · 14 Nov* (Spanish
