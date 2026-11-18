@@ -1,0 +1,7 @@
+• El Mac por su cuenta: Ajustes › Origen lee una cuenta de LibreLinkUp o un sitio de Nightscout, sin Sukrara en un teléfono. El Mac ya no pregunta de quién es la glucosa.
+• Nightscout: lecturas, la vida del sensor y tratamientos en ambos sentidos; un token de solo lectura los deja en el Mac.
+• LibreLinkUp: tu glucosa un minuto después de que la app Libre la lea, el calentamiento y el fin del sensor, y su inicio y duración cuando LibreLinkUp no los dice.
+• Una persona, un enlace: el Mac sigue a un Sukrara o lee otro origen, nunca los dos. Elegir otro origen pregunta ¿Seguir siguiendo?; Dejar de seguir pregunta qué pasa con los ajustes y el historial; También guardado en este Mac lista las cuentas y sitios de los que cerrar sesión u olvidar.
+• Dejar de seguir avisa a la persona, aunque su teléfono esté apagado días; hasta que un relé guarda el mensaje, Ajustes dice que aún no lo sabe.
+• El mantenimiento de LibreView se muestra como una espera, con cuándo vuelve la glucosa y un aviso tranquilo antes.
+• Ajustes › Métricas dice por qué un anillo está oculto.

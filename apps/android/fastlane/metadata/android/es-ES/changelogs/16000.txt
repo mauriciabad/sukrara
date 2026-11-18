@@ -1,0 +1,5 @@
+• Ajustes › Origen: lee LibreLinkUp o Nightscout y sigue usando la app Libre.
+• Tus tratamientos van a LibreView junto a la app Libre.
+• Al cambiar, pregunta ¿Seguir siguiendo?; dejar de seguir avisa a esa persona.
+• El mantenimiento de LibreView se muestra como una espera, con su fin y un aviso antes.
+• Métricas dice por qué un anillo está oculto.

@@ -2,8 +2,52 @@
 
 Sukrara's releases. 0.x versions are previews.
 
-## Unreleased
+## Unreleased — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 
+- **Where your glucose comes from** (#213, docs/44): Settings › Source picks one of these, and changing it never needs
+  a reinstall:
+  - another Sukrara, nearby over Bluetooth or over the internet (the default);
+  - your sensor;
+  - Juggluco;
+  - a Nightscout site;
+  - a LibreLinkUp account.
+
+  The setup's first question shows the choices as two big cards. Readings from different ways never double: one
+  reading per measurement.
+- **LibreLinkUp as a source, on Android and the Mac:** keep the official Libre app on your sensor and see your glucose
+  in Sukrara about a minute later.
+  - Sign in with a LibreLinkUp account and pick whose glucose.
+  - The sensor's warm-up and end show as they do with a sensor Sukrara reads.
+  - Where LibreLinkUp doesn't say a sensor's start or length, you can set them.
+  - It uses Abbott's follower service, which isn't an open API and may stop. It also sends nothing while Abbott
+    services LibreView.
+- **Nightscout as a source, on Android and the Mac:**
+  - readings, and the sensor's life from the site;
+  - treatments both ways (a read-only token keeps them on the device);
+  - *Bring back 90 days from Nightscout*.
+- **The Mac without Sukrara on the phone:** the Mac reads LibreLinkUp or Nightscout itself. It no longer asks whose
+  glucose it shows.
+- **One person, one link:** a device either follows another Sukrara or reads another source, never both.
+  - Picking another source while following asks *Keep following?*.
+  - *Stop following* asks what happens to the settings and the history.
+  - *Also saved on this phone* / *on this Mac* lists the accounts and sites you can sign out of or forget.
+  - Each person's history is kept apart.
+  - A ring hidden for want of readings says why.
+- **Leaving tells the person you followed:** a follower that stops sends a message the wearer gets even days later.
+  - Until a relay keeps it, the follower says *Ana hasn't been told yet*. The wearer sees *Ana stopped following you*.
+  - Following again takes a new invite.
+  - The message is in the open standard (Open Glucose Stream draft 3, C§9.5 and N§3.4).
+- **LibreView while the Libre app uploads:** your insulin, carbs and notes go to LibreView beside it, as the LibreLink
+  app, never as the Libre app's own identity. Your clinic sees them under *FreeStyle LibreLink*.
+  - Log each treatment in one app only, or it shows twice.
+  - If the Libre app stops uploading after Sukrara signs in, Sukrara stops and says how to fix it.
+- **LibreView maintenance is a wait, not an error:**
+  - Sukrara says when LibreLinkUp's glucose comes back, using Abbott's status page.
+  - It warns ahead: a quiet line from 12 h before, and a silent notification an hour before.
+  - The no-data alert still rings, and says why.
+  - With root, the changed card asks once to restart System UI.
+- **Sukrara Aura** also runs on the round 390 × 390 AMOLED Garmins (#220). It is built from source until it's on the
+  Connect IQ store.
 - **Sukrara Aura** no longer crashes and leaves the watch on its default face: its glide could start while the watch
   was in low power, as when it came back from a notification, and a change of the screen's mode could reach its
   background link (#223).

@@ -1,0 +1,7 @@
+• The Mac on its own: Settings › Source reads a LibreLinkUp account or a Nightscout site, without Sukrara on a phone. The Mac no longer asks whose glucose it shows.
+• Nightscout: readings, the sensor's life and treatments both ways; a read-only token keeps them on the Mac.
+• LibreLinkUp: your glucose about a minute after the official Libre app reads it, the sensor's warm-up and end, and its start and length where LibreLinkUp doesn't say them.
+• One person, one link: the Mac follows a Sukrara or reads another source, never both. Picking another source asks Keep Following?; Stop Following asks what happens to the settings and the history; Also Saved on This Mac lists the accounts and sites to sign out of or forget.
+• Stopping tells the person you followed, even if their phone is off for days; until a relay keeps the message, Settings says they haven't been told yet.
+• LibreView maintenance shows as a wait, with when glucose comes back and a quiet notice ahead.
+• Settings › Metrics says why a ring is hidden.

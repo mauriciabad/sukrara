@@ -1,0 +1,5 @@
+• Settings › Source: read LibreLinkUp or Nightscout and keep the official Libre app.
+• Your treatments go to LibreView beside the Libre app.
+• Switching asks Keep following?; stopping tells the person you followed.
+• LibreView maintenance shows as a wait, with its end time and a warning ahead.
+• Metrics say why a ring is hidden.
