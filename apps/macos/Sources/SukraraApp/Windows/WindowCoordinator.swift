@@ -23,6 +23,8 @@ final class WindowCoordinator {
     private let nightscoutActions: NightscoutTreatmentActions
     /// The same with LibreLinkUp as the source.
     private let libreLinkUpActions: LibreLinkUpTreatmentActions
+    /// The same with Juggluco on the network as the source.
+    private let jugglucoActions: JugglucoTreatmentActions
 
     init(model: AppModel, store: any SettingsStoring, requestNotifications: @escaping () async -> Bool) {
         self.model = model
@@ -30,6 +32,7 @@ final class WindowCoordinator {
         self.adapter = adapter
         nightscoutActions = NightscoutTreatmentActions(model: model)
         libreLinkUpActions = LibreLinkUpTreatmentActions(model: model)
+        jugglucoActions = JugglucoTreatmentActions(model: model)
         follow = FollowModel(status: .notFollowing, actions: adapter)
         settings = SettingsModel(
             store: store, follow: follow, version: Self.version, distribution: model.plan.distribution,
@@ -45,6 +48,18 @@ final class WindowCoordinator {
         setup.requestNotifications = requestNotifications
         setup.loginItem = model.loginItem
         follow.searchNearby = { [weak adapter] on in adapter?.searchNearby(on) }
+        // one person, one link: the leave questions over the app model, leaving through its one function
+        let leave = settings.leave
+        leave.linkState = { [weak model] in model?.linkState ?? .none }
+        leave.history = { [weak model] in model?.linkHistory ?? (false, nil) }
+        leave.name = { [weak model] in model?.linkName }
+        leave.leave = { [weak model] keep in await model?.leaveLink(keepHistory: keep) }
+        leave.left = { [weak setup] picked, origin in if origin == .setup { setup?.leftLink(picked) } }
+        adapter?.leave = { [weak model] keep in await model?.leaveLink(keepHistory: keep) }
+        adapter?.willJoin = { [weak settings] in
+            guard let settings, settings.source.running?.kind != .sukrara else { return }
+            settings.source.choose(.sukrara)
+        }
     }
 
     static var version: String {
@@ -70,9 +85,11 @@ final class WindowCoordinator {
         follow.wearer = snapshot.wearer
         // the How You Appear row only while a follow exists (the runtime's own profile is just a default before)
         follow.me = snapshot.link == .notFollowing ? nil : snapshot.me
-        settings.wearer = Self.wearerSettings(snapshot)
-        // an online source: the treatment windows show this Mac's own log (`apply(nightscout:)`, `apply(libreLinkUp:)`)
-        guard model.sourceKind != .nightscout, model.sourceKind != .libreLinkUp else { return }
+        // one person, one link: nothing of the link while another source is in use
+        settings.wearer = model.followsSource ? Self.wearerSettings(snapshot) : nil
+        // another source: the treatment windows show this Mac's own log (`apply(nightscout:)`, `apply(libreLinkUp:)`,
+        // `apply(lan:)`)
+        guard model.followsSource else { return }
         let canWrite = if case .following(_, true) = snapshot.link { true } else { false }
         treatments.actions = adapter
         treatments.pulled = []
@@ -111,6 +128,18 @@ final class WindowCoordinator {
         treatments.pulled = []
         treatments.note = nil
         treatments.sync(snapshot.treatments, deliveries: [:], canWrite: model.libreLinkUpActive)
+    }
+
+    /// A Juggluco snapshot while it is the source: the treatment windows show this Mac's own log (Juggluco's web
+    /// server brings none; Appendix G finding 8: never the followed phone's).
+    func apply(lan snapshot: LanSnapshot) {
+        guard model.sourceKind == .lanJuggluco else { return }
+        treatments.actions = jugglucoActions
+        treatments.isFollowing = false
+        treatments.wearer = nil
+        treatments.pulled = []
+        treatments.note = nil
+        treatments.sync(snapshot.treatments, deliveries: [:], canWrite: model.lanActive)
     }
 
     /// The wearer's mirrored settings while following (nil otherwise: this Mac's own values apply).

@@ -91,7 +91,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         juggluco.secrets = secrets
         juggluco.available = { [weak model] in model?.lan != nil }
         juggluco.state = { [weak model] in model?.lanSnapshot.state ?? .off }
-        juggluco.pausedFor = { [weak model] in model?.lanPausedFor }
         juggluco.retry = { [weak model] in model?.retryLan() }
         juggluco.secretChanged = { [weak self] secret in
             self?.lanSecret = secret
@@ -117,6 +116,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         libreLinkUp.recheckSource = { [weak model] saved in await model?.recheckLibreLinkUp(saved: saved) }
         libreLinkUp.signOutSource = { [weak model] in model?.signOutLibreLinkUp() }
         model.onLibreLinkUp = { [weak windows] snapshot in windows?.apply(libreLinkUp: snapshot) }
+        model.onLan = { [weak windows] snapshot in windows?.apply(lan: snapshot) }
         windows.settings.sensorLife.sensor = { [weak model] in model?.sourceSensor }
         model.onSnapshot = { [weak self, weak windows] snapshot in
             windows?.apply(snapshot)

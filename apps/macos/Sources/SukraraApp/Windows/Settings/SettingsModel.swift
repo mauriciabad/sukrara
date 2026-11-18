@@ -27,6 +27,8 @@ public final class SettingsModel {
     public let source: SourceChoiceModel
     /// The sensor's start and wear length of a source that doesn't say them (Settings › Source › *Sensor*).
     public let sensorLife: SensorLifeModel
+    /// *Keep following?* and the leave questions (one person, one link).
+    public let leave: LeaveLinkModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
     /// Whether macOS lets Sukrara post Time Sensitive (Settings › Alerts, the setup's notification step); nil: this run
@@ -68,14 +70,20 @@ public final class SettingsModel {
         self.libreLinkUp = LibreLinkUpModel(store: store)
         self.source = SourceChoiceModel(store: store)
         self.sensorLife = SensorLifeModel(store: store)
+        self.leave = LeaveLinkModel()
         self.wearer = wearer
         self.version = version
         self.distribution = distribution
         self.appBuild = appBuild
         pane = Pane(rawValue: store.value(MacSettings.settingsPane)) ?? .general
+        leave.settings = self
     }
 
     // MARK: Settings from
+
+    /// The source is another Sukrara (or not answered yet): *Settings from* and the escalation switch exist only then
+    /// (one person, one link; Appendix G findings 9 and 13).
+    public var linkSource: Bool { _ = revision; return source.running.map(\.stream) ?? true }
 
     /// Rows mirror the wearer (read-only) while following in "Settings from: Wearer".
     public var mirrors: Bool { settingsFrom == .wearer && wearer != nil }
@@ -120,6 +128,15 @@ public final class SettingsModel {
             alerts.update { $0 = defaults }
             settingsFrom = .custom
         }
+    }
+
+    /// Sukrara's defaults as this Mac's own (leaving a link with *Sukrara's defaults*, or their settings were the
+    /// defaults): the mirrored card settings and alert rules at their defaults, *This Mac's own*.
+    public func useDefaultsAsOwn() {
+        writeGraph(GraphConfig())
+        let defaults = alerts.settings.withMirroredDefaults()
+        alerts.update { $0 = defaults }
+        settingsFrom = .custom
     }
 
     /// "Reset to Defaults" (after the confirmation, Custom only): this Mac's own mirrored settings (ranges, graph,
@@ -320,7 +337,7 @@ public final class SettingsModel {
 }
 
 /// A store with nothing in it and "Settings from: Wearer": loads only what the wearer sent (else the defaults).
-private final class WearerOnly: SettingsStoring, Sendable {
+final class WearerOnly: SettingsStoring, Sendable {
     func value<Value>(_ spec: SettingSpec<Value>) -> Value {
         spec.key == MacSettings.settingsFrom.key
             ? (SettingsFrom.wearer.rawValue as? Value ?? spec.defaultValue)

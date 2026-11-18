@@ -130,10 +130,16 @@ public protocol FollowerService: Sendable {
     func setProfile(name: String, avatar: Avatar?) async
     /// Looks for phones offering nearby pairing while not following (the follow window is open).
     func searchNearby(_ on: Bool) async
-    /// Stops following: tells the wearer (a `leave`, kept until two relays have it), wipes the wearer's readings,
-    /// treatments, sensor and settings, then the follower key.
-    func unfollow() async
+    /// Stops following: tells the wearer (a `leave`, kept until two relays have it), keeps the wearer's readings and
+    /// treatments aside as their history (`keepHistory`) or wipes them, wipes their sensor and settings, then the
+    /// follower key. The app calls it from one place, `AppModel.leaveLink`.
+    func unfollow(keepHistory: Bool) async
     func send(_ treatment: Treatment) async -> TreatmentSendResult
+}
+
+extension FollowerService {
+    /// Stops following, the history wiped (a request withdrawn, a fake in tests).
+    public func unfollow() async { await unfollow(keepHistory: false) }
 }
 
 /// A relay connection the runtime can start and stop (`RelayPool`; tests use `FakeRelay`).

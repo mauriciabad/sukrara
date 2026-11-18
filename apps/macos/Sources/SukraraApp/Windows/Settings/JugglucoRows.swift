@@ -16,8 +16,6 @@ public final class JugglucoModel {
     @ObservationIgnored var secrets: (any SecretStoring)?
     /// The source's state (the app model's), `.off` when nothing feeds it.
     @ObservationIgnored var state: () -> LanState = { .off }
-    /// The wearer's name while this Mac follows someone (Juggluco then pauses), else nil.
-    @ObservationIgnored var pausedFor: () -> String? = { nil }
     /// This run may read the network (false in dev, fixture and snapshot runs: the switch is dimmed).
     @ObservationIgnored var available: () -> Bool = { false }
     @ObservationIgnored var retry: () -> Void = {}
@@ -113,12 +111,7 @@ struct JugglucoRows: View {
         if !model.available() {
             Text(L10n.t("Not available in this run (development or test build).")).foregroundStyle(.secondary)
         } else {
-            if let wearer = model.pausedFor() {
-                Label(
-                    L10n.t("Paused while following \(wearer): their readings come first."), systemImage: "pause.circle"
-                )
-                .foregroundStyle(.secondary)
-            } else {
+            do {
                 let line = JugglucoModel.line(model.state())
                 HStack {
                     Label(line.text, systemImage: line.symbol)

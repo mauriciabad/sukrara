@@ -13,16 +13,21 @@ public struct FollowerStores: Sendable {
     public var settings: WearerSettingsStore
     /// The `leave` messages still on their way (PROTOCOL-v2 "Leave"); never wiped with the wearer's data.
     public var leaves: LeaveOutboxStore
+    /// Moves the wearer's readings and treatments aside as a kept history (`unfollow(keepHistory: true)`): the wearer's
+    /// identity and name. nil = nothing to keep them in (they are wiped).
+    public var keep: (@Sendable (_ identity: String, _ name: String?) async -> Void)?
 
     public init(
         readings: any ReadingsStoring, treatments: any TreatmentStoring, sensor: SensorStateStore,
-        settings: WearerSettingsStore, leaves: LeaveOutboxStore
+        settings: WearerSettingsStore, leaves: LeaveOutboxStore,
+        keep: (@Sendable (_ identity: String, _ name: String?) async -> Void)? = nil
     ) {
         self.readings = readings
         self.treatments = treatments
         self.sensor = sensor
         self.settings = settings
         self.leaves = leaves
+        self.keep = keep
     }
 
     public static func files(_ paths: SukraraPaths, clock: any TimeSource) -> FollowerStores {
@@ -31,7 +36,12 @@ public struct FollowerStores: Sendable {
             treatments: TreatmentFileStore(directory: paths.appSupport, clock: clock),
             sensor: SensorStateStore(url: paths.sensorFile, clock: clock),
             settings: WearerSettingsStore(url: paths.wearerSettingsFile, clock: clock),
-            leaves: LeaveOutboxStore(url: paths.leaveOutboxFile, clock: clock))
+            leaves: LeaveOutboxStore(url: paths.leaveOutboxFile, clock: clock),
+            keep: { identity, name in
+                KeptHistory.keep(
+                    from: paths.appSupport, files: [ReadingsFileStore.fileName, TreatmentFileStore.fileName],
+                    as: KeptHistory.Info(id: KeptHistory.id(.sukrara, identity), name: name), in: paths.kept)
+            })
     }
 }
 
@@ -453,13 +463,14 @@ public actor FollowerRuntime: FollowerService {
 
     // MARK: - unfollowing
 
-    public func unfollow() async { await unfollow(tell: true) }
+    public func unfollow(keepHistory: Bool) async { await unfollow(tell: true, keepHistory: keepHistory) }
 
     /// Stop following. While the wearer knows this key (approved, or its request waits) and `tell`, a `leave` sealed by
     /// it is saved in the outbox before the key goes, written to the wearer's phone if it's connected over Bluetooth,
     /// and sent to the relays until two keep it (PROTOCOL-v2 "Leave"). `tell` false: *Different code* in a nearby
-    /// pairing (the phone that answered isn't the wearer's).
-    func unfollow(tell: Bool) async {
+    /// pairing (the phone that answered isn't the wearer's). `keepHistory`: the readings and treatments received are
+    /// moved aside as the wearer's kept history (one person, one link) instead of wiped.
+    func unfollow(tell: Bool, keepHistory: Bool = false) async {
         endKeychainRetry()
         generation += 1
         joinTask?.cancel()
@@ -467,6 +478,9 @@ public actor FollowerRuntime: FollowerService {
         if let leave { await leaver.add(leave) }  // before the key goes: a crash after can't lose it
         if let leave, let nearby, await sendNearby(leave.wrap, over: nearby) { await leaver.tookNearby(leave.wrap.id) }
         await serially(.disconnect)
+        // one person, one link: the history received may stay, moved aside as the wearer's (the wipe below then
+        // finds nothing of it)
+        if keepHistory, let state = session?.state { await stores.keep?(state.identity, state.wearer?.name) }
         session = nil
         persisted = nil
         lastHistoryRequest = nil

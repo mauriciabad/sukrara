@@ -130,6 +130,38 @@
         }
       }
     },
+    "%@'s phone is told." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s phone is told."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se avisa al móvil de %@."
+          }
+        }
+      }
+    },
+    "%@'s Sukrara already sends this Mac the glucose it reads, from whichever source it uses, with treatments, pen doses, alerts and settings. Reading %@ here instead means this Mac stops following it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@'s Sukrara already sends this Mac the glucose it reads, from whichever source it uses, with treatments, pen doses, alerts and settings. Reading %@ here instead means this Mac stops following it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El Sukrara de %1$@ ya envía a este Mac la glucosa que lee, de la fuente que use, con tratamientos, dosis de bolígrafo, alertas y ajustes. Leer %2$@ aquí en su lugar hace que este Mac deje de seguirlo."
+          }
+        }
+      }
+    },
     "%@, same as the menu bar" : {
       "comment" : "VoiceOver: the widgets' pop-up while it follows the menu bar (\"12 hours, same as the menu bar\")",
       "localizations" : {
@@ -511,6 +543,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Las alertas te llegan como notificaciones, aunque Sukrara esté en segundo plano."
+          }
+        }
+      }
+    },
+    "Alerts, ranges and the graph go back to how Sukrara starts." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerts, ranges and the graph go back to how Sukrara starts."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas, los rangos y la gráfica vuelven a como empieza Sukrara."
+          }
+        }
+      }
+    },
+    "Alerts, ranges and the graph stay as they are now, as this Mac's own." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alerts, ranges and the graph stay as they are now, as this Mac's own."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las alertas, los rangos y la gráfica se quedan como están, como propios de este Mac."
           }
         }
       }
@@ -1123,6 +1187,38 @@
         }
       }
     },
+    "Connect Nightscout…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Nightscout…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectar Nightscout…"
+          }
+        }
+      }
+    },
+    "Connect the site the glucose is uploaded to." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect the site the glucose is uploaded to."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta el sitio al que se sube la glucosa."
+          }
+        }
+      }
+    },
     "Connecting to Nightscout…" : {
       "localizations" : {
         "en" : {
@@ -1267,6 +1363,22 @@
         }
       }
     },
+    "Delete it" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borrarlo"
+          }
+        }
+      }
+    },
     "Deleted %@" : {
       "localizations" : {
         "en" : {
@@ -1279,6 +1391,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eliminado: %@"
+          }
+        }
+      }
+    },
+    "Deletes the glucose and treatments received since %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deletes the glucose and treatments received since %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borra la glucosa y los tratamientos recibidos desde el %@."
+          }
+        }
+      }
+    },
+    "Deletes the treatments received." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deletes the treatments received."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borra los tratamientos recibidos."
           }
         }
       }
@@ -1759,6 +1903,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sigue a alguien para ver y añadir sus tratamientos"
+          }
+        }
+      }
+    },
+    "Follow Sukrara on a phone, or read Juggluco, Nightscout or LibreLinkUp on this Mac. No alerts ring until a reading arrives." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Follow Sukrara on a phone, or read Juggluco, Nightscout or LibreLinkUp on this Mac. No alerts ring until a reading arrives."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sigue Sukrara en un móvil, o lee Juggluco, Nightscout o LibreLinkUp en este Mac. No suena ninguna alerta hasta que llegue una lectura."
           }
         }
       }
@@ -2371,6 +2531,86 @@
         }
       }
     },
+    "Keep %@'s settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep %@'s settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quedarse con los ajustes de %@"
+          }
+        }
+      }
+    },
+    "Keep Following" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Following"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seguir Siguiendo"
+          }
+        }
+      }
+    },
+    "Keep following %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep following %@?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Seguir siguiendo a %@?"
+          }
+        }
+      }
+    },
+    "Keep following this Sukrara?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep following this Sukrara?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Seguir siguiendo este Sukrara?"
+          }
+        }
+      }
+    },
+    "Keep it" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conservarlo"
+          }
+        }
+      }
+    },
     "Keep the order: very low below low, low below high, high below very high, very high below extremely high." : {
       "localizations" : {
         "en" : {
@@ -2383,6 +2623,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mantén el orden: muy bajo por debajo de bajo, bajo por debajo de alto, alto por debajo de muy alto, muy alto por debajo de extremadamente alto."
+          }
+        }
+      }
+    },
+    "Keep their settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep their settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quedarse con sus ajustes"
           }
         }
       }
@@ -2852,6 +3108,22 @@
         }
       }
     },
+    "No source: Sukrara reads nothing until you pick where the glucose comes from." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No source: Sukrara reads nothing until you pick where the glucose comes from."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin origen: Sukrara no lee nada hasta que elijas de dónde viene la glucosa."
+          }
+        }
+      }
+    },
     "No · Read it here" : {
       "localizations" : {
         "en" : {
@@ -2880,6 +3152,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "No es una dirección web"
+          }
+        }
+      }
+    },
+    "Not monitoring: no Nightscout site yet" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: no Nightscout site yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: aún no hay sitio de Nightscout"
+          }
+        }
+      }
+    },
+    "Not monitoring: no source" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not monitoring: no source"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin vigilancia: no hay origen"
           }
         }
       }
@@ -3008,6 +3312,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Abre el sitio en el navegador"
+          }
+        }
+      }
+    },
+    "Pick a Source…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick a Source…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir un Origen…"
           }
         }
       }
@@ -3285,6 +3605,22 @@
         }
       }
     },
+    "Settings on this Mac" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings on this Mac"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajustes de este Mac"
+          }
+        }
+      }
+    },
     "Sign In Again" : {
       "localizations" : {
         "en" : {
@@ -3333,18 +3669,50 @@
         }
       }
     },
-    "Sukrara asks once more where the glucose comes from. It keeps reading as now until you answer." : {
+    "Stop Following" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sukrara asks once more where the glucose comes from. It keeps reading as now until you answer."
+            "value" : "Stop Following"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sukrara vuelve a preguntar de dónde viene la glucosa. Sigue leyendo como ahora hasta que respondas."
+            "value" : "Dejar de Seguir"
+          }
+        }
+      }
+    },
+    "Stop following this Sukrara?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop following this Sukrara?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Dejar de seguir este Sukrara?"
+          }
+        }
+      }
+    },
+    "Stop Following…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stop Following…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dejar de Seguir…"
           }
         }
       }
@@ -3397,6 +3765,22 @@
         }
       }
     },
+    "Sukrara's defaults" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara's defaults"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los de Sukrara por defecto"
+          }
+        }
+      }
+    },
     "The glucose shows in the menu bar now." : {
       "localizations" : {
         "en" : {
@@ -3413,6 +3797,22 @@
         }
       }
     },
+    "The history this Mac received" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The history this Mac received"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El historial que recibió este Mac"
+          }
+        }
+      }
+    },
     "The Libre app shares with a LibreLinkUp account · about 1 min late · may stop working any day" : {
       "localizations" : {
         "en" : {
@@ -3425,6 +3825,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La app Libre comparte con una cuenta de LibreLinkUp · aprox. 1 min de retraso · puede dejar de funcionar cualquier día"
+          }
+        }
+      }
+    },
+    "The next source continues it: for when it reads the same person." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The next source continues it: for when it reads the same person."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La siguiente fuente lo continúa: para cuando lea a la misma persona."
           }
         }
       }
@@ -3557,6 +3973,22 @@
         }
       }
     },
+    "Their phone is told." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their phone is told."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se avisa a su móvil."
+          }
+        }
+      }
+    },
     "This Mac's own" : {
       "localizations" : {
         "en" : {
@@ -3589,6 +4021,22 @@
         }
       }
     },
+    "This Sukrara already sends this Mac the glucose it reads, from whichever source it uses, with treatments, pen doses, alerts and settings. Reading %@ here instead means this Mac stops following it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Sukrara already sends this Mac the glucose it reads, from whichever source it uses, with treatments, pen doses, alerts and settings. Reading %@ here instead means this Mac stops following it."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este Sukrara ya envía a este Mac la glucosa que lee, de la fuente que use, con tratamientos, dosis de bolígrafo, alertas y ajustes. Leer %@ aquí en su lugar hace que este Mac deje de seguirlo."
+          }
+        }
+      }
+    },
     "This token can only read: your treatments stay on this Mac" : {
       "localizations" : {
         "en" : {
@@ -3617,6 +4065,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiempo mostrado, líneas, tratamientos y el sensor en la gráfica"
+          }
+        }
+      }
+    },
+    "To follow again you need a new invite link, or their phone nearby." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To follow again you need a new invite link, or their phone nearby."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para volver a seguir necesitas un enlace de invitación nuevo, o su móvil cerca."
           }
         }
       }
@@ -5905,22 +6369,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Su móvil puede estar apagado, sin conexión o sin batería."
-          }
-        }
-      }
-    },
-    "Their phone is told you stopped. Their readings are removed from this Mac. To follow again, they have to send a new invite." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Their phone is told you stopped. Their readings are removed from this Mac. To follow again, they have to send a new invite."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Su teléfono sabrá que has dejado de seguirle. Sus lecturas se borran de este Mac. Para volver a seguirle, tendrá que enviarte una invitación nueva."
           }
         }
       }
@@ -10309,22 +10757,6 @@
         }
       }
     },
-    "Paused while following %@: their readings come first." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Paused while following %@: their readings come first."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "En pausa mientras sigues a %@: sus lecturas van primero."
-          }
-        }
-      }
-    },
     "Try Again" : {
       "localizations" : {
         "en" : {
@@ -11665,22 +12097,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "De dónde viene"
-          }
-        }
-      }
-    },
-    "Changing the source keeps the person this Mac follows, so switching back needs no new invite." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Changing the source keeps the person this Mac follows, so switching back needs no new invite."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cambiar el origen conserva a la persona que sigue este Mac: para volver no hace falta otra invitación."
           }
         }
       }

@@ -18,6 +18,10 @@ public struct SukraraPaths: Sendable, Equatable {
         home.appending(path: "Library/Application Support/\(SukraraIDs.appBundleID)", directoryHint: .isDirectory)
     }
 
+    /// `…/app.mauri.sukrara/kept/`: the histories kept when this Mac stopped reading someone (one person, one link:
+    /// leaving a link with *Keep it*), one folder per identity, its readings and treatments as their source stored them.
+    public var kept: URL { appSupport.appending(path: "kept", directoryHint: .isDirectory) }
+
     /// `~/Library/Logs/app.mauri.sukrara/`: the bounded file log (see `logLimitBytes`, `logFileCount`).
     public var logs: URL {
         home.appending(path: "Library/Logs/\(SukraraIDs.appBundleID)", directoryHint: .isDirectory)

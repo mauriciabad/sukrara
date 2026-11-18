@@ -20,6 +20,7 @@ import Testing
             settings: AlertSettings(), clock: clock, store: MemoryAlertStore(), notifier: notifier, wake: wake)
         let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
         let model = AppModel(plan: plan, clock: clock, alerts: alerts)
+        model.sourceKind = .sukrara
         var snapshot = FollowerSnapshot.empty
         model.apply(snapshot)
         #expect(model.notMonitoringReason == "Not monitoring: not following anyone yet" && wake.at == nil)
@@ -42,6 +43,7 @@ import Testing
     @Test func everyNoDataStateHasAReasonAndAWayOut() {
         let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
         let model = AppModel(plan: plan, clock: clock)
+        model.sourceKind = .sukrara
         var snapshot = FollowerSnapshot.empty
         let cases: [(LinkState, NoDataReason, NoDataReason.Action?)] = [
             (.notFollowing, .notFollowing, .follow), (.joining, .notFollowing, .follow),

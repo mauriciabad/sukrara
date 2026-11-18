@@ -114,11 +114,13 @@ extension NumberField where Focus == Bool {
 /// anything `leading` on the left, then Cancel (Escape) and the action (Return: the default button, in the accent
 /// colour), at the regular size: style, not size, marks the preferred choice. `returnConfirms` false: an action that a
 /// reflex Return must not take (Follow someone) stays a plain button. Without `cancel` the row has only its action
-/// (Done on a settings sheet), and Escape does it too; without `action`, only Cancel.
+/// (Done on a settings sheet), and Escape does it too; without `action`, only Cancel. `destructive`: the action deletes
+/// or ends something (Stop Following): in red, and never the default button.
 struct DialogButtons<Leading: View>: View {
     let action: String?
     var enabled = true
     var returnConfirms = true
+    var destructive = false
     let cancel: (() -> Void)?
     let confirm: () -> Void
     @ViewBuilder var leading: () -> Leading
@@ -131,7 +133,8 @@ struct DialogButtons<Leading: View>: View {
                 Button(L10n.t("Cancel"), role: .cancel, action: cancel).keyboardShortcut(.cancelAction)
             }
             if let action {
-                Button(action, action: confirm).keyboardShortcut(returnConfirms ? .defaultAction : nil)
+                Button(action, role: destructive ? .destructive : nil, action: confirm)
+                    .keyboardShortcut(returnConfirms && !destructive ? .defaultAction : nil)
                     .disabled(!enabled)
             }
         }
@@ -148,12 +151,12 @@ struct DialogButtons<Leading: View>: View {
 
 extension DialogButtons where Leading == EmptyView {
     init(
-        _ action: String?, enabled: Bool = true, returnConfirms: Bool = true, cancel: (() -> Void)?,
-        confirm: @escaping () -> Void
+        _ action: String?, enabled: Bool = true, returnConfirms: Bool = true, destructive: Bool = false,
+        cancel: (() -> Void)?, confirm: @escaping () -> Void
     ) {
         self.init(
-            action: action, enabled: enabled, returnConfirms: returnConfirms, cancel: cancel, confirm: confirm,
-            leading: { EmptyView() })
+            action: action, enabled: enabled, returnConfirms: returnConfirms, destructive: destructive, cancel: cancel,
+            confirm: confirm, leading: { EmptyView() })
     }
 }
 

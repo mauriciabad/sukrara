@@ -62,7 +62,7 @@ import Testing
         let model = model(network(), alerts: alerts)
         model.run()
         model.apply(FollowerSnapshot.empty)
-        #expect(model.notMonitoringReason == "Not monitoring: not following anyone yet")
+        #expect(model.notMonitoringReason == "Not monitoring: no source")
         model.lanConfig = LanConfig(address: Self.phone)
         await until { model.readings.last?.mgdl == 123 }
         #expect(model.statusTitle.hasPrefix("123"))
@@ -115,25 +115,8 @@ import Testing
         #expect(!JugglucoModel.line(.connected(Self.phone)).localNetwork)
     }
 
-    @Test func followingPausesJugglucoNeverMixingTwoPeople() async {
-        let model = model(network())
-        model.run()
-        model.lanConfig = LanConfig(address: Self.phone)
-        await until { model.readings.last?.mgdl == 123 }
-        var snapshot = FollowerSnapshot.empty
-        snapshot.link = .following(wearer: "Ana", canWrite: false)
-        snapshot.wearer = Profile(name: "Ana", avatar: nil)
-        snapshot.readings = [Reading(t: clock.now.addingTimeInterval(-30), mgdl: 200, sensorRate: 0)]
-        model.apply(snapshot)
-        #expect(model.readings.map(\.mgdl) == [200])
-        #expect(model.lanPausedFor == "Ana")
-        await until { model.lanSnapshot.state == .off }
-        #expect(model.lanSnapshot.state == .off)
-        #expect(model.readings.map(\.mgdl) == [200])
-    }
-
-    /// docs/44: Juggluco on the network chosen as the source reads Juggluco even while this Mac still follows someone
-    /// (the follow stays for switching back); choosing their Sukrara again shows the wearer's.
+    /// docs/44: Juggluco on the network chosen as the source reads Juggluco, never a follow's readings beside it (one
+    /// person, one link: a follow left behind is left, `AppModelLinkTests`); another Sukrara chosen shows the wearer's.
     @Test func theChosenSourceIsReadNeverBothPeople() async {
         let model = model(network())
         model.run()

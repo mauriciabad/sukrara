@@ -127,5 +127,16 @@ extension SettingsStoring {
     }
 
     public var unit: GlucoseUnit { GlucoseUnit(rawValue: value(MacSettings.unit)) ?? .mgdl }
-    public var settingsFrom: SettingsFrom { SettingsFrom(rawValue: value(MacSettings.settingsFrom)) ?? .wearer }
+    /// *Settings from* in use: the answer while the source is another Sukrara (or not answered yet: what the Mac
+    /// follows), else this Mac's own. One person, one link (Appendix G finding 13): Settings from exists only while
+    /// linked; a Mac reading Juggluco, Nightscout or LibreLinkUp edits and runs its own settings.
+    public var settingsFrom: SettingsFrom {
+        let kind = SourceKind(rawValue: value(MacSettings.sourceKind))
+        return kind == nil || kind == .sukrara ? storedSettingsFrom : .custom
+    }
+
+    /// The *Settings from* answer as stored (kept for a link while another source runs this Mac's own).
+    public var storedSettingsFrom: SettingsFrom {
+        SettingsFrom(rawValue: value(MacSettings.settingsFrom)) ?? .wearer
+    }
 }

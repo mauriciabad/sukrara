@@ -22,17 +22,20 @@ struct GeneralPane: View {
 
     var body: some View {
         Form {
-            Section {
-                SettingsFromPicker(model: model)
-            } header: {
-                Text(L10n.t("Settings"))
-            } footer: {
-                Text(
-                    L10n.t(
-                        "Their settings decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; This Mac's own lets you set them here. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+            // only while the source is another Sukrara: every other source runs this Mac's own settings
+            if model.linkSource {
+                Section {
+                    SettingsFromPicker(model: model)
+                } header: {
+                    Text(L10n.t("Settings"))
+                } footer: {
+                    Text(
+                        L10n.t(
+                            "Their settings decide the ranges, the trend arrow, the time shown, the rings, the lines, the last treatment, the sensor countdown and when to alert; This Mac's own lets you set them here. Sounds, the no-data alert, the notification's buttons and each place's own time shown and sensor time are always this Mac's."
+                        )
                     )
-                )
-                .formFooter()
+                    .formFooter()
+                }
             }
             Section {
                 Toggle(isOn: $model.readAloudShortcut) {
@@ -210,6 +213,8 @@ struct OpenAtLoginRows: View {
 struct FollowingRows: View {
     @Bindable var follow: FollowModel
     var openFollow: () -> Void
+    /// *Stop following…*: the leave questions (`LeaveLinkModel.stopFollowing`).
+    var stopFollowing: () -> Void = {}
 
     var body: some View {
         switch follow.status {
@@ -255,23 +260,13 @@ struct FollowingRows: View {
                     Task { await follow.saveProfile(name: name, avatar: avatar) }
                 }
             }
-            Button(L10n.t("Stop following…"), role: .destructive) { follow.confirmingUnfollow = true }
-                .confirmationDialog(
-                    L10n.t("Stop following \(wearer ?? L10n.t("this person"))?"),
-                    isPresented: $follow.confirmingUnfollow
-                ) {
-                    Button(L10n.t("Stop following"), role: .destructive) { Task { await follow.unfollow() } }
-                    Button(L10n.t("Cancel"), role: .cancel) {}
-                } message: {
-                    Text(
-                        L10n.t(
-                            "Their phone is told you stopped. Their readings are removed from this Mac. To follow again, they have to send a new invite."
-                        ))
-                }
+            Button(L10n.t("Stop following…"), role: .destructive, action: stopFollowing)
         case .declined, .inviteUsed, .inviteExpired, .revoked, .broken:
             Notice(Self.endText(follow.status))
             Button(L10n.t("Follow again…"), action: openFollow)
             ScanQRButton(follow: follow, openFollow: openFollow)
+            // the follow ended: leaving keeps or deletes what it brought, then no source
+            Button(L10n.t("Stop following…"), role: .destructive, action: stopFollowing)
         }
     }
 

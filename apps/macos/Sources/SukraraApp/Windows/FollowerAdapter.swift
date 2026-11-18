@@ -17,6 +17,14 @@ final class NightscoutTreatmentActions: TreatmentActions {
 
 /// The treatment windows' actions while LibreLinkUp is the source: each entry goes into this Mac's own log (LibreLinkUp
 /// takes no treatments; nothing is uploaded).
+final class JugglucoTreatmentActions: TreatmentActions {
+    private weak var model: AppModel?
+
+    init(model: AppModel) { self.model = model }
+
+    func send(_ treatment: Treatment) async -> Bool { await model?.writeLan(treatment) ?? false }
+}
+
 final class LibreLinkUpTreatmentActions: TreatmentActions {
     private weak var model: AppModel?
 
@@ -46,6 +54,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
     }
 
     func join(invite: Invite) async throws(FollowFailure) {
+        willJoin()
         do {
             try await follower.join(invite: invite)
         } catch {
@@ -56,6 +65,7 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
     /// The typed name goes with the request (the runtime keeps the picture it has).
     func joinNearby(name: String) async throws(FollowFailure) {
         guard let offer else { throw .notFound }
+        willJoin()
         await setName(name)
         do {
             try await follower.joinNearby(offer)
@@ -71,7 +81,13 @@ final class FollowerAdapter: FollowActions, TreatmentActions {
     func setName(_ name: String) async { await follower.setProfile(name: name, avatar: me?.avatar) }
 
     func cancelJoin() async { await follower.cancelJoin() }
-    func unfollow() async { await follower.unfollow() }
+    /// A request withdrawn (*Cancel* while waiting): the link left through `AppModel.leaveLink`, nothing to keep.
+    func unfollow() async { await leave(false) }
+
+    /// THE one way out of a link (`AppModel.leaveLink`, set by the coordinator).
+    var leave: (_ keepHistory: Bool) async -> Void = { _ in }
+    /// A join begins (a link or nearby): the source becomes another Sukrara first (one person, one link).
+    var willJoin: () -> Void = {}
 
     func send(_ treatment: Treatment) async -> Bool { await follower.send(treatment) == .sending }
 

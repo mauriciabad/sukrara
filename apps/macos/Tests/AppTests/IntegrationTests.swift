@@ -35,7 +35,7 @@ actor StopRecordingFollower: FollowerService {
     func searchNearby(_ on: Bool) async {}
     func setProfile(name: String, avatar: Avatar?) async {}
     func readings(since: Date) async -> [Reading] { await inner.readings(since: since) }
-    func unfollow() async {}
+    func unfollow(keepHistory: Bool) async {}
     func send(_ treatment: Treatment) async -> TreatmentSendResult { .notAllowed }
 }
 

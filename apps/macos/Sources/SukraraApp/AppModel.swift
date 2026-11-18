@@ -43,8 +43,7 @@ public final class AppModel {
     @ObservationIgnored let lan: (any LanSourcing)?
     /// What the Juggluco source last said.
     private(set) var lanSnapshot = LanSnapshot.off
-    /// The person's Juggluco switch, address and secret (nil = off). Following someone pauses it: never two people's
-    /// readings mixed.
+    /// Juggluco's address and secret while it is the source (nil = another source).
     var lanConfig: LanConfig? {
         didSet {
             let wasMonitoring = monitoring
@@ -103,6 +102,8 @@ public final class AppModel {
     /// Every LibreLinkUp snapshot, after the model took its part (Settings › Source, setup's Connect, the treatment
     /// windows).
     @ObservationIgnored var onLibreLinkUp: ((LibreLinkUpSnapshot) -> Void)?
+    /// Every Juggluco snapshot, after the model took its part (the treatment windows).
+    @ObservationIgnored var onLan: ((LanSnapshot) -> Void)?
     /// Where the glucose comes from as answered (`source.kind`, docs/44); nil = not answered yet: the Mac reads what it
     /// is set up to read (following someone wins, Juggluco while nobody is followed, as before the question).
     var sourceKind: SourceKind? {
@@ -164,8 +165,10 @@ public final class AppModel {
     private var wearerName: String?
     /// The follower's first snapshot arrived (whether this Mac follows someone is known).
     @ObservationIgnored private var followerKnown = false
-    /// Juggluco's readings feed the card and the alert rules: switched on, not following, and reached at least once.
+    /// Juggluco's readings feed the card and the alert rules: the source, and reached at least once.
     private var lanMonitoring: Bool { !followMonitoring && lanSent != nil && lanSnapshot.monitoring }
+    /// Juggluco on the network is the source: its log (this Mac's own) is the treatment log.
+    var lanActive: Bool { !followMonitoring && sourceKind == .lanJuggluco && lanSent != nil }
     /// Nightscout's readings feed the card and the alert rules: the source, and the site answered at least once.
     private var nightscoutMonitoring: Bool {
         !followMonitoring && nightscoutSent != nil && nightscoutSnapshot.monitoring
@@ -194,10 +197,14 @@ public final class AppModel {
         }
         return nil
     }
-    /// This Mac keeps the treatment log itself (an online source: Nightscout's site or LibreLinkUp).
-    var ownLogActive: Bool { nightscoutActive || libreLinkUpActive }
-    /// The source reads a stream from another Sukrara (or nothing is answered yet: what the Mac follows).
-    private var followsSource: Bool { sourceKind == nil || sourceKind == .sukrara }
+    /// This Mac keeps the treatment log itself (every source but another Sukrara: Nightscout's site, LibreLinkUp,
+    /// Juggluco on the network).
+    var ownLogActive: Bool { nightscoutActive || libreLinkUpActive || lanActive }
+    /// The source reads a stream from another Sukrara (or nothing is answered yet: what the Mac follows). One person,
+    /// one link: only then does anything of the link count (its readings, settings, name, path, alerts, reasons).
+    var followsSource: Bool { sourceKind == nil || sourceKind == .sukrara }
+    /// A follow record left behind another source (a Mac updated from before one person, one link) is being left.
+    @ObservationIgnored private var leavingBehind = false
     var unit: GlucoseUnit = .mgdl
     /// The card's settings (bands, hours…): this Mac's, or the wearer's mirrored ones (`GraphConfig.load`).
     var graph = GraphConfig() {
@@ -215,9 +222,13 @@ public final class AppModel {
     private(set) var now: Date
     var notificationPermission: NotificationPermission = .allowed
 
-    /// The features macOS blocks now (docs/40), without those put off with Not Now: the panel names the first.
+    /// The features macOS blocks now (docs/40), without those put off with Not Now: the panel names the first. The
+    /// follow's (Bluetooth) only while it is the source.
     var blocked: [BlockedFeature] {
-        BlockedFeature.of(link: link, nearby: nearby, login: loginItem?.status).filter {
+        BlockedFeature.of(
+            link: followsSource ? link : .notFollowing, nearby: followsSource ? nearby : nil,
+            login: loginItem?.status
+        ).filter {
             $0.canTurnOff || !notNowBlocked.contains($0)
         }
     }
@@ -287,7 +298,10 @@ public final class AppModel {
             })
         feeds.append(
             Task { [weak self] in
-                for await alert in await follower.alerts() { self?.alerts?.wearerAlert(alert) }
+                // the wearer's alerts only while the link is the source (link.json `after`: alerts, escalation)
+                for await alert in await follower.alerts() where self?.followsSource == true {
+                    self?.alerts?.wearerAlert(alert)
+                }
             })
         Task { await follower.start() }
     }
@@ -297,17 +311,19 @@ public final class AppModel {
         let wasMonitoring = monitoring
         lastSnapshot = snapshot
         link = snapshot.link
-        keychainUnreadable = snapshot.keychainUnreadable
-        nearby = snapshot.nearby
-        linkPath = LinkPath.of(snapshot)
+        keychainUnreadable = followsSource && snapshot.keychainUnreadable
+        // the follow's path and Bluetooth only while it is the source (Appendix G finding 1)
+        nearby = followsSource ? snapshot.nearby : nil
+        linkPath = followsSource ? LinkPath.of(snapshot) : nil
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
         // Juggluco chosen as the source: the follow stays (switching back needs no new invite) but isn't read
         followMonitoring =
             followsSource && (link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty))
         followReadings = followMonitoring ? snapshot.readings : []
         followSensor = snapshot.sensor
-        wearerName = Profile.shownName(snapshot.wearer?.name)
+        wearerName = followsSource ? Profile.shownName(snapshot.wearer?.name) : nil
         followerKnown = true
+        leaveBehindIfNeeded(snapshot)
         syncLan()
         syncNightscout()
         syncLibreLinkUp()
@@ -330,12 +346,63 @@ public final class AppModel {
         feedWidget()
     }
 
-    /// What the Juggluco source said: its readings feed the card and the alerts while nobody is followed.
+    // MARK: one person, one link
+
+    /// Leaves the link: THE one place this Mac stops following (the leave sheet's *Stop Following*, a request
+    /// withdrawn, a follow left behind another source). `keepHistory`: the readings and treatments received stay as
+    /// the wearer's kept history (`KeptHistory`), else they go with the rest. Today it calls the runtime's
+    /// `unfollow(keepHistory:)`; the PROTOCOL-v2 `leave` message the wearer is told with lands inside it (#213).
+    func leaveLink(keepHistory: Bool) async {
+        await follower?.unfollow(keepHistory: keepHistory)
+    }
+
+    /// A follow record left behind another source (a Mac updated in the old state: one person, one link says it
+    /// can't exist) is left at once: the source in use stays (the person chose it; switching back could show the
+    /// wrong person), the wearer is told, the history kept, the settings untouched (they weren't in use). No question.
+    private func leaveBehindIfNeeded(_ snapshot: FollowerSnapshot) {
+        guard !followsSource, !leavingBehind else { return }
+        switch snapshot.link {
+        case .notFollowing, .joining: return
+        default: break
+        }
+        leavingBehind = true
+        AppLog.app.info("a follow kept behind another source: leaving it (history kept)")
+        Task { [weak self] in
+            await self?.leaveLink(keepHistory: true)
+            self?.leavingBehind = false
+        }
+    }
+
+    /// The link's state as picking a source asks it (`LinkRules.pickAsks`): a follow that runs or waits, one that ended,
+    /// or none.
+    var linkState: LinkRules.State {
+        switch link {
+        case .notFollowing: .none
+        case .joining, .requested, .following: .active
+        case .declined, .inviteUsed, .inviteExpired, .revoked, .broken: .ended
+        }
+    }
+
+    /// Whether this Mac holds readings or treatments received through the link (the leave sheet asks keep / delete),
+    /// and its oldest reading.
+    var linkHistory: (held: Bool, since: Date?) {
+        let readings = historySource == .follow && !history.isEmpty ? history : (lastSnapshot?.readings ?? [])
+        let held = !readings.isEmpty || !(lastSnapshot?.treatments.isEmpty ?? true)
+        return (held, readings.first?.t)
+    }
+
+    /// The wearer's name as the follow gives it (nil = none yet).
+    var linkName: String? { Profile.shownName(lastSnapshot?.wearer?.name) ?? FollowerAdapter.wearerName(link) }
+
+    /// What the Juggluco source said: its readings feed the card and the alerts while it is the source, this Mac's
+    /// treatment log the marks, the quiets and the export.
     func apply(lan snapshot: LanSnapshot) {
         let wasMonitoring = monitoring
         lanSnapshot = snapshot
         monitoringChanged(from: wasMonitoring)
+        onLan?(snapshot)
         guard !followMonitoring else { return }
+        applyTreatments()
         applySensor()
         apply(readings: monitoredReadings)
         feedWidget()
@@ -407,16 +474,19 @@ public final class AppModel {
         return sensorLifeSettings.life(kind, said: said, now: clock.now.timeIntervalSince1970)
     }
 
-    /// The treatments of the source: the followed wearer's log, or this Mac's own with Nightscout (the site's
-    /// read-only among them): the chart's marks, the alert rules' treatment quiets and the CSV export.
+    /// The treatments of the source: the followed wearer's log, or this Mac's own with every other source (with
+    /// Nightscout the site's read-only among them): the chart's marks, the alert rules' treatment quiets and the CSV
+    /// export. Never the wearer's while another source is in use (Appendix G finding 8).
     private func applyTreatments() {
-        let followed = (lastSnapshot?.treatments ?? []).filter { !$0.del }
+        let followed = followsSource ? (lastSnapshot?.treatments ?? []).filter { !$0.del } : []
         let live: [Treatment] =
             followMonitoring
             ? followed
             : nightscoutActive
                 ? nightscoutSnapshot.treatments.filter { !$0.del }
-                : libreLinkUpActive ? libreLinkUpSnapshot.treatments.filter { !$0.del } : []
+                : libreLinkUpActive
+                    ? libreLinkUpSnapshot.treatments.filter { !$0.del }
+                    : lanActive ? lanSnapshot.treatments.filter { !$0.del } : []
         // the alert rules hear the wearer's treatments as before (also before a reading), Nightscout's while it is
         // the source
         let heard = followsSource ? followed : live
@@ -584,9 +654,10 @@ public final class AppModel {
         }
     }
 
-    /// The wearer's name while following pauses Juggluco (nil = not paused).
-    var lanPausedFor: String? {
-        followMonitoring ? (wearerName ?? L10n.t("this person")) : nil
+    /// Writes one of this Mac's treatments into Juggluco's log (the Treatments window and Add Treatment).
+    func writeLan(_ treatment: Treatment) async -> Bool {
+        guard lanActive, let lan else { return false }
+        return await lan.write(treatment)
     }
 
     /// Try Again on the Juggluco source.
@@ -803,7 +874,8 @@ public final class AppModel {
         if plan.isOffline && plan.mode != .fixture { return .offlineBuild }
         // shown over the stored readings too: with the Keychain unreadable no new reading can arrive, and the alerts
         // go on over the last ones (no data included) while the runtime retries
-        let ownSource = lanMonitoring || ownLogActive || libreLinkUpUnset
+        // the link's reasons only while it is the source (Appendix G finding 14)
+        let ownSource = !followsSource || lanMonitoring || ownLogActive || libreLinkUpUnset
         if keychainUnreadable, !ownSource { return .broken(.keyUnreadable) }
         if case .broken(let why) = link, !ownSource { return .broken(why) }
         guard readings.isEmpty else {
@@ -820,6 +892,15 @@ public final class AppModel {
         if nightscoutActive, nightscoutSnapshot.health(at: clock.now) == .warmingUp { return nil }
         if libreLinkUpActive, libreLinkUpSnapshot.health(at: clock.now) == .warmingUp { return nil }
         if libreLinkUpUnset { return .libreLinkUp(.notSignedIn) }
+        switch sourceKind {
+        case .nightscout: return nightscoutActive ? nil : .nightscout(.noSite)
+        case .libreLinkUp: return .libreLinkUp(.notSignedIn)
+        case .lanJuggluco: return Self.lanWait(lanSnapshot.state) ?? .juggluco(.looking)
+        case .sukrara: break
+        case nil:
+            // no source: left a link with nothing picked (or never answered), and nothing followed
+            if followerKnown, link == .notFollowing { return .noSource }
+        }
         switch link {
         case .notFollowing, .joining: return .notFollowing
         case .requested: return .waitingApproval

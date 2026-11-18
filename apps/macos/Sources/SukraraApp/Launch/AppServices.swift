@@ -185,10 +185,11 @@ final class AppServices: ServiceStarting {
         case .camera:
             makeCamera = { SystemCamera() }
         case .lan:
+            let juggluco = plan.data.paths.appSupport.appending(path: "juggluco", directoryHint: .isDirectory)
             lan = JugglucoLanSource(
-                http: URLSessionLanHTTP(),
-                store: ReadingsFileStore(
-                    directory: plan.data.paths.appSupport.appending(path: "juggluco", directoryHint: .isDirectory)))
+                http: URLSessionLanHTTP(), store: ReadingsFileStore(directory: juggluco),
+                treatmentLog: JSONFileStore(
+                    url: juggluco.appending(path: TreatmentFileStore.fileName, directoryHint: .notDirectory)))
         case .nightscout:
             nightscout = NightscoutSource.files(
                 directory: plan.data.paths.appSupport.appending(path: "nightscout", directoryHint: .isDirectory))

@@ -27,6 +27,8 @@ struct WidgetWords: Sendable {
             let why = "Open Sukrara to see why"
             switch r {
             case .offlineBuild: return ("Not monitoring", "Development build")
+            case .noSource: return ("No source", "Open Sukrara to pick one")
+            case .nightscout(.noSite): return ("Not connected to Nightscout", "Open Sukrara to connect")
             case .notFollowing: return ("Not following anyone yet", follow)
             case .waitingApproval: return ("Waiting for them to allow this Mac", "They allow it on their phone")
             case .declined: return ("They declined", follow)
@@ -61,6 +63,8 @@ struct WidgetWords: Sendable {
             let why = "Abre Sukrara para ver por qué"
             switch r {
             case .offlineBuild: return ("Sin vigilancia", "Versión de desarrollo")
+            case .noSource: return ("Sin origen", "Abre Sukrara para elegir uno")
+            case .nightscout(.noSite): return ("Sin conexión con Nightscout", "Abre Sukrara para conectar")
             case .notFollowing: return ("Aún no sigues a nadie", follow)
             case .waitingApproval:
                 return ("Esperando a que permita este Mac", "Lo permite en su móvil")

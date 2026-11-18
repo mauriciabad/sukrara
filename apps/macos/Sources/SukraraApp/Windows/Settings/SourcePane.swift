@@ -37,6 +37,13 @@ public final class SourceChoiceModel {
         changed()
     }
 
+    /// No source (*Stop following* alone): the panel's *Pick a Source…*.
+    func clear() {
+        SourceSpec.clear(in: store)
+        revision += 1
+        changed()
+    }
+
     static func title(_ kind: SourceKind) -> String {
         switch kind {
         case .sukrara: L10n.t("Sukrara on a phone")
@@ -96,7 +103,7 @@ struct ChoiceCardMotion: ViewModifier {
 /// offline*, *Online · needs internet*, *From another Sukrara · internet or Bluetooth nearby*): setup's source step
 /// (without another Sukrara when the Mac reads it itself) and Settings › Source.
 struct SourceKindChoice: View {
-    @Binding var selected: SourceKind
+    @Binding var selected: SourceKind?
     /// The sources offered (nil = every one).
     var only: Set<SourceKind>? = nil
 
@@ -121,7 +128,7 @@ struct SourceKindChoice: View {
                                 }
                             }
                             .padding(.vertical, 3)
-                            .tag(kind)
+                            .tag(Optional(kind))
                         }
                     } label: {
                         EmptyView()
@@ -151,39 +158,47 @@ struct SourcePane: View {
         let choice = model.source
         let running = choice.running
         Form {
-            if choice.stored == nil {
+            // PROTOCOL-v2 "Leave" still on its way after this Mac left a link for another source (or none): said
+            // until it goes (with the link the follow's rows say it)
+            if running?.stream != true, let untold = model.follow.untoldLeave {
+                Section {
+                    Label(FollowingRows.untoldText(untold), systemImage: "paperplane")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if running == nil {
                 Section {
                     HStack(alignment: .firstTextBaseline) {
                         Label(
-                            L10n.t(
-                                "Sukrara asks once more where the glucose comes from. It keeps reading as now until you answer."
-                            ),
+                            L10n.t("No source: Sukrara reads nothing until you pick where the glucose comes from."),
                             systemImage: "info.circle")
                         Spacer()
                         if let answer { Button(L10n.t("Answer…"), action: answer) }
                     }
                 }
+                Section {
+                    SourceKindChoice(
+                        selected: Binding(get: { nil }, set: { $0.map { model.leave.pick($0, from: .settings) } }))
+                } header: {
+                    Text(L10n.t("Where it comes from"))
+                }
             }
             if let running {
                 Section {
+                    // another source picked while following asks first (one person, one link)
                     SourceKindChoice(
-                        selected: Binding(get: { running.kind }, set: { choice.choose(SourceSpec(kind: $0)) }))
+                        selected: Binding(
+                            get: { running.kind }, set: { $0.map { model.leave.pick($0, from: .settings) } }))
                 } header: {
                     Text(L10n.t("Where it comes from"))
-                } footer: {
-                    // only true while this Mac follows someone (said to no one else)
-                    if model.follow.status.hasFollow {
-                        Text(
-                            L10n.t(
-                                "Changing the source keeps the person this Mac follows, so switching back needs no new invite."
-                            )
-                        )
-                        .formFooter()
-                    }
                 }
                 switch running.kind {
                 case .sukrara:
-                    Section { FollowingRows(follow: model.follow, openFollow: openFollow) }
+                    Section {
+                        FollowingRows(
+                            follow: model.follow, openFollow: openFollow,
+                            stopFollowing: { model.leave.stopFollowing(from: .settings) })
+                    }
                     if case .following = model.follow.status, let reconnect {
                         Section {
                             HStack {
@@ -224,5 +239,6 @@ struct SourcePane: View {
             }
         }
         .formStyle(.grouped)
+        .modifier(LeaveLinkPresenter(model: model.leave, origin: .settings))
     }
 }

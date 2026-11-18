@@ -10,6 +10,8 @@ import Foundation
 public enum NoDataReason: Codable, Sendable, Equatable {
     /// A dev or snapshot run: nothing is monitored on purpose.
     case offlineBuild
+    /// No source: this Mac left a link (*Stop following*) and reads nothing until one is picked.
+    case noSource
     /// Nobody is followed (first run, after Stop following), or an invite is being looked up.
     case notFollowing
     /// This Mac asked to follow; the wearer allows it on their phone.
@@ -42,6 +44,8 @@ public enum NoDataReason: Codable, Sendable, Equatable {
 
     /// Why the Nightscout site gives no reading.
     public enum NightscoutWait: Codable, Sendable, Equatable {
+        /// Nightscout is the source, no site connected yet.
+        case noSite
         /// The first call is on its way.
         case connecting
         /// The site answers but has no glucose at all.
@@ -89,15 +93,16 @@ public enum NoDataReason: Codable, Sendable, Equatable {
     /// What the panel offers for it: follow someone (a new invite), the Following settings (cancel a request, stop
     /// following), Juggluco's settings (address, secret), the Nightscout source's (site, token) or LibreLinkUp's
     /// (sign in, whose glucose).
-    public enum Action: Sendable, Equatable { case follow, following, juggluco, nightscout, libreLinkUp }
+    public enum Action: Sendable, Equatable { case follow, following, source, juggluco, nightscout, libreLinkUp }
 
     public var action: Action? {
         switch self {
         case .notFollowing, .declined, .inviteUsed, .inviteExpired, .revoked: .follow
         case .waitingApproval, .broken: .following
+        case .noSource: .source
         case .juggluco(.looking), .juggluco(.firstReading): nil
         case .juggluco: .juggluco
-        case .nightscout(.unreachable), .nightscout(.signedOut): .nightscout
+        case .nightscout(.unreachable), .nightscout(.signedOut), .nightscout(.noSite): .nightscout
         case .nightscout: nil
         case .libreLinkUp(.notSignedIn), .libreLinkUp(.signedOut), .libreLinkUp(.notShared), .libreLinkUp(.pickedGone),
             .libreLinkUp(.terms),

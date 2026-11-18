@@ -70,10 +70,15 @@ public final class SetupModel {
 
     func complete(_ s: SetupFlow.Step) { flow.complete(s); flow.save(to: store) }
 
-    /// The source step's Continue: the source is stored.
+    /// The source step's Continue: the source is stored, or another source while following asks *Keep following?*
+    /// first (the walk goes on once it was left: `leftLink`).
     func chooseSource() {
-        settings.source.choose(SourceSpec(kind: pickedKind))
-        complete(.source)
+        if settings.leave.pick(pickedKind, from: .setup) { complete(.source) }
+    }
+
+    /// The link was left from the source step with a source picked: on to its step.
+    func leftLink(_ picked: SourceKind?) {
+        if picked != nil, flow.current == .source { complete(.source) }
     }
 
     /// The source the walk goes on with (the follow step becomes Connect Juggluco for Juggluco).
@@ -153,7 +158,8 @@ public struct SetupView: View {
                 case .source:
                     page(.source, L10n.t("Where does the glucose come from?")) {
                         SourceKindChoice(
-                            selected: $model.pickedKind, only: model.phone ? nil : model.onlineKinds)
+                            selected: Binding(get: { model.pickedKind }, set: { $0.map { model.pickedKind = $0 } }),
+                            only: model.phone ? nil : model.onlineKinds)
                     }
                 case .follow:
                     if model.runningKind == .nightscout {
@@ -196,6 +202,7 @@ public struct SetupView: View {
             .transition(Self.step(back: model.flow.wentBack, reduceMotion: reduceMotion))
         }
         .animation(Self.stepAnimation(reduceMotion: reduceMotion), value: model.flow.current)
+        .modifier(LeaveLinkPresenter(model: model.settings.leave, origin: .setup))
         .padding(24)
         .frame(width: 520, alignment: .topLeading)
     }

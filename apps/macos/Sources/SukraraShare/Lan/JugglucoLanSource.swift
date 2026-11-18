@@ -36,12 +36,19 @@ public struct LanSnapshot: Sendable, Equatable {
     public var monitoring: Bool
     /// The sensor Juggluco reads (start, end, warm-up), nil before Juggluco named one.
     public var sensor: WearerSensor?
+    /// This Mac's treatment log with Juggluco (live entries, oldest first): Juggluco's web server brings none, so the
+    /// treatments logged here are the log (Appendix G finding 8: never the followed phone's).
+    public var treatments: [Treatment]
 
-    public init(state: LanState, readings: [Reading], monitoring: Bool, sensor: WearerSensor? = nil) {
+    public init(
+        state: LanState, readings: [Reading], monitoring: Bool, sensor: WearerSensor? = nil,
+        treatments: [Treatment] = []
+    ) {
         self.state = state
         self.readings = readings
         self.monitoring = monitoring
         self.sensor = sensor
+        self.treatments = treatments
     }
 
     public static let off = LanSnapshot(state: .off, readings: [], monitoring: false)
@@ -69,6 +76,8 @@ public protocol LanSourcing: Sendable {
     func retry() async
     /// Its stored readings since `since`, oldest first (31 days kept).
     func readings(since: Date) async -> [Reading]
+    /// An entry this Mac adds, changes or deletes (a tombstone) in its log; false = not taken (off).
+    func write(_ treatment: Treatment) async -> Bool
 }
 
 /// Plain-http GETs on the home network (`URLSessionLanHTTP`; tests use a fake that never touches the network).
@@ -92,6 +101,9 @@ public actor JugglucoLanSource: LanSourcing {
     private let interfaces: @Sendable () -> [LanInterface]
     private let sleep: @Sendable (Double) async throws -> Void
     private let backoff: Backoff
+    /// This Mac's treatment log with Juggluco (`treatments.json`; nil = kept in memory only).
+    private let treatmentLog: JSONFileStore<TreatmentLog>?
+    private var logLoaded = false
     private static let log = Logger(subsystem: SukraraIDs.appBundleID, category: "juggluco")
     /// Seconds between sweeps while nothing was found, and between tries with a refused secret.
     static let sweepAgain: Double = 60
@@ -112,17 +124,19 @@ public actor JugglucoLanSource: LanSourcing {
         http: any LanHTTP, store: any ReadingsStoring, clock: any TimeSource = SystemClock(),
         interfaces: @escaping @Sendable () -> [LanInterface] = LanInterface.current,
         sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
-        backoff: Backoff = Backoff(base: 5, cap: 60)
+        backoff: Backoff = Backoff(base: 5, cap: 60), treatmentLog: JSONFileStore<TreatmentLog>? = nil
     ) {
         self.http = http
         self.store = store
+        self.treatmentLog = treatmentLog
         self.clock = clock
         self.interfaces = interfaces
         self.sleep = sleep
         self.backoff = backoff
     }
 
-    public func snapshots() -> AsyncStream<LanSnapshot> {
+    public func snapshots() async -> AsyncStream<LanSnapshot> {
+        await loadLog()
         let (stream, continuation) = AsyncStream.makeStream(of: LanSnapshot.self, bufferingPolicy: .bufferingNewest(1))
         let id = UUID()
         subscribers[id] = continuation
@@ -142,10 +156,33 @@ public actor JugglucoLanSource: LanSourcing {
         task = nil
         generation += 1
         guard let config else {
-            publish(LanSnapshot.off)
+            var off = LanSnapshot.off
+            off.treatments = current.treatments
+            publish(off)
             return
         }
         start(config)
+    }
+
+    /// The log, read once.
+    private func loadLog() async {
+        guard !logLoaded else { return }
+        logLoaded = true
+        current.treatments = (await treatmentLog?.load() ?? TreatmentLog()).live
+    }
+
+    public func write(_ treatment: Treatment) async -> Bool {
+        guard config != nil else { return false }
+        await loadLog()
+        var log = await treatmentLog?.load() ?? TreatmentLog(entries: current.treatments)
+        var t = treatment
+        t.o = .mac
+        log.merge([t])
+        try? await treatmentLog?.save(log)
+        var s = current
+        s.treatments = log.live
+        publish(s)
+        return true
     }
 
     public func retry() async {

@@ -250,17 +250,14 @@
             // Juggluco on this network: on, in each state (its own defaults: the switch is on there)
             let lanStore = InMemorySettingsStore()
             lanStore.set(SourceKind.lanJuggluco.rawValue, for: MacSettings.sourceKind)
-            let lanStates: [(String, LanState, String?)] = [
-                ("looking", .looking, nil), ("notfound", .notFound, nil),
-                ("connected", .connected("192.168.1.23"), nil),
-                ("secret", .unauthorized("192.168.1.23"), nil), ("paused", .off, "Marta"),
-                ("localnetwork", .localNetworkDenied, nil),
+            let lanStates: [(String, LanState)] = [
+                ("looking", .looking), ("notfound", .notFound), ("connected", .connected("192.168.1.23")),
+                ("secret", .unauthorized("192.168.1.23")), ("localnetwork", .localNetworkDenied),
             ]
-            for (name, state, paused) in lanStates {
+            for (name, state) in lanStates {
                 let m = SettingsModel(store: lanStore, follow: follow(.notFollowing), version: "0.12.0")
                 m.juggluco.available = { true }
                 m.juggluco.state = { state }
-                m.juggluco.pausedFor = { paused }
                 m.pane = .source
                 out.append(
                     (

@@ -50,18 +50,21 @@ struct AlertsRangesPane: View {
             }
             if let controller { ActiveNowSection(alerts: controller) }
             nightSection
-            // #39: the wearer's very low nobody answered on its phone, escalated to this Mac
-            Section {
-                Toggle(L10n.t("When they don't answer a very low"), isOn: alertBinding(\.escalation.follow))
-            } header: {
-                Text(L10n.t("If a very low gets no answer"))
-            } footer: {
-                Text(
-                    L10n.t(
-                        "Alert me, also when muted here, if nobody answers it on their phone: “Very low · no response”."
+            // #39: the wearer's very low nobody answered on its phone, escalated to this Mac: only while their settings
+            // apply (the wearer's alerts are mirrored), never where it does nothing (Appendix G finding 9)
+            if model.settingsFrom == .wearer && model.linkSource {
+                Section {
+                    Toggle(L10n.t("When they don't answer a very low"), isOn: alertBinding(\.escalation.follow))
+                } header: {
+                    Text(L10n.t("If a very low gets no answer"))
+                } footer: {
+                    Text(
+                        L10n.t(
+                            "Alert me, also when muted here, if nobody answers it on their phone: “Very low · no response”."
+                        )
                     )
-                )
-                .formFooter()
+                    .formFooter()
+                }
             }
             // each quiet rule: its switch and what it is set to; Details… opens its length and what it does
             Section(L10n.t("Quiet times")) {

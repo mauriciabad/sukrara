@@ -20,6 +20,13 @@ struct NoDataText: Equatable {
         case .offlineBuild:
             return NoDataText(
                 title: L10n.t("Not monitoring: offline development build (no sensor, internet or alerts)"))
+        case .noSource:
+            return NoDataText(
+                title: L10n.t("Not monitoring: no source"),
+                body: L10n.t(
+                    "Follow Sukrara on a phone, or read Juggluco, Nightscout or LibreLinkUp on this Mac. No alerts ring until a reading arrives."
+                ),
+                action: L10n.t("Pick a Source…"))
         case .notFollowing:
             return NoDataText(
                 title: L10n.t("Not monitoring: not following anyone yet"),
@@ -98,6 +105,10 @@ struct NoDataText: Equatable {
         case .nightscout(let wait):
             let upload = L10n.t("Check the app that uploads to it.")
             switch wait {
+            case .noSite:
+                return NoDataText(
+                    title: L10n.t("Not monitoring: no Nightscout site yet"),
+                    body: L10n.t("Connect the site the glucose is uploaded to."), action: L10n.t("Connect Nightscout…"))
             case .connecting:
                 return NoDataText(title: L10n.t("Connecting to Nightscout…"))
             case .noGlucose:
