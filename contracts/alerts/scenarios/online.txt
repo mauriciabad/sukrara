@@ -1,0 +1,38 @@
+# Online sources (docs/44 step 1, Nightscout): a reading every 5 min, each arriving minutes after it was taken
+# (`age`). The rules are the same as for any source (§1); these timelines pin how they play out at that cadence.
+# (format: SPEC.md §7)
+
+scenario An online source every 5 min, each reading 2 min late: a low alerts when the reading that shows it arrives
+ 0  readings every 5, glucose 100 age 2
+ 5  glucose 75 age 2
+10  glucose 65 age 2   => Low glucose      # taken at 8, here at 10
+15  glucose 64 age 2   => Low glucose      # its repeat, on the next reading
+20  glucose 66 age 2   => Low glucose
+25  glucose 85 age 2   => clear low
+31
+
+scenario A reading that arrives 16 min after it was taken never alerts; no data counts from its time
+ 0  source started
+ 1  glucose 50 age 16                       # taken at −15: too old to alert (§1: older than 15 min)
+ 2  sensor off
+ 5                     => No glucose data   # 20 min after it was taken, not after it arrived
+ 6
+
+scenario A low that arrives 14 min late alerts, and clears once it is older than 15 min
+ 0  source started
+ 1  glucose 60 age 14  => Low glucose        # taken at −13
+ 2  sensor off         => clear low          # now 15 min old
+ 7                     => No glucose data    # 20 min after it was taken
+ 8
+
+scenario The uploader goes silent: no data 20 min after the last reading was taken, not after it arrived
+ 0  readings every 5, glucose 120 age 2
+12  sensor off                               # the last reading arrived at 10, taken at 8
+28                     => No glucose data
+29
+
+scenario At a 5-minute cadence a falling high is never quieted: four readings in 5 min never come
+ 0  readings every 5, glucose 220 moving -2  => High glucose
+15                                           => High glucose   # its repeat: the fall can't quiet it
+25                                           => clear high     # 170: back in range
+41

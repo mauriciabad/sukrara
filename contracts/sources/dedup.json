@@ -14,6 +14,7 @@
     "libre3": "sensor", "dexcom-g7": "sensor", "dexcom-g6": "sensor", "accu-chek-smartguide": "sensor", "aidex-x": "sensor",
     "juggluco": "phoneApp",
     "juggluco-lan": "network",
+    "nightscout": "online",
     "relay": "sukrara", "nearby": "sukrara",
     "import-libreview": "imported", "import-tidepool": "imported", "import-file": "imported"
   },
@@ -29,6 +30,11 @@
     {"name": "imported history never replaces anything", "stored": [[0, "relay", 100]], "incoming": [[60, "import-file", 100]], "kept": [[0, "relay", 100]]},
     {"name": "a sensor reading removes every lower copy around it", "stored": [[-100, "relay", 98], [0, "import-file", 100], [100, "nearby", 103]], "incoming": [[0, "libre3", 100]], "kept": [[0, "libre3", 100]]},
     {"name": "a batch keeps the higher-ranked of two incoming copies", "stored": [], "incoming": [[0, "relay", 100], [10, "juggluco", 101]], "kept": [[10, "juggluco", 101]]},
-    {"name": "Juggluco on the network over the relayed copy (Mac)", "stored": [[0, "relay", 100]], "incoming": [[20, "juggluco-lan", 100]], "kept": [[20, "juggluco-lan", 100]]}
+    {"name": "Juggluco on the network over the relayed copy (Mac)", "stored": [[0, "relay", 100]], "incoming": [[20, "juggluco-lan", 100]], "kept": [[20, "juggluco-lan", 100]]},
+    {"name": "Nightscout over a relayed copy", "stored": [[0, "relay", 100]], "incoming": [[40, "nightscout", 100]], "kept": [[40, "nightscout", 100]]},
+    {"name": "the sensor replaces Nightscout's copy (back from an online source)", "stored": [[0, "nightscout", 100]], "incoming": [[50, "libre3", 101]], "kept": [[50, "libre3", 101]]},
+    {"name": "Nightscout over imported history", "stored": [[0, "import-tidepool", 100]], "incoming": [[100, "nightscout", 102]], "kept": [[100, "nightscout", 102]]},
+    {"name": "Nightscout's readings 5 min apart are each a measurement", "stored": [[0, "nightscout", 100]], "incoming": [[300, "nightscout", 104]], "kept": [[0, "nightscout", 100], [300, "nightscout", 104]]},
+    {"name": "a Juggluco reading on this phone over Nightscout's copy", "stored": [[0, "nightscout", 100]], "incoming": [[-30, "juggluco", 99]], "kept": [[-30, "juggluco", 99]]}
   ]
 }

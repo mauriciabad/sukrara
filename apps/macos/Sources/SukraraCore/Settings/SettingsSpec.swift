@@ -207,6 +207,9 @@ public enum SettingsSpec {
         SettingInfo(id: "source.kind", type: "enum", number: nil, mirror: false, wire: nil, android: "state:kind", mac: "defaults:sourceKind", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "source.jugglucoAddress", type: "string", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:jugglucoAddress", path: nil, only: "mac", reason: "The Mac reads Juggluco's web server on the home network (source.kind lanJuggluco); Android reads Juggluco on the phone itself (source.kind phoneApp), at a fixed loopback address", mirrorExcept: []),
         SettingInfo(id: "source.jugglucoSecret", type: "secret", number: nil, mirror: false, wire: nil, android: "secure:juggluco", mac: "keychain:jugglucoSecret", path: nil, only: nil, reason: nil, mirrorExcept: []),
+        SettingInfo(id: "source.nightscoutUrl", type: "string", number: nil, mirror: false, wire: nil, android: "state:nightscoutUrl", mac: "defaults:nightscoutURL", path: nil, only: nil, reason: nil, mirrorExcept: []),
+        SettingInfo(id: "source.nightscoutTreatments", type: "bool", number: nil, mirror: false, wire: nil, android: "state:nightscoutTreatments", mac: "defaults:nightscoutTreatments", path: nil, only: nil, reason: nil, mirrorExcept: []),
+        SettingInfo(id: "source.nightscoutSecret", type: "secret", number: nil, mirror: false, wire: nil, android: "secure:nightscoutSource", mac: "keychain:nightscoutSourceSecret", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "settings.pane", type: "enum", number: nil, mirror: false, wire: nil, android: "", mac: "defaults:settingsPane", path: nil, only: "mac", reason: "The Mac Settings window reopens on the last pane it showed (HIG Settings); Android settings are a navigation stack that starts at its top", mirrorExcept: []),
         SettingInfo(id: "update.automaticChecks", type: "bool", number: nil, mirror: false, wire: nil, android: "settings:updateChecks", mac: "system:SPUUpdater.automaticallyChecksForUpdates", path: nil, only: nil, reason: nil, mirrorExcept: []),
         SettingInfo(id: "update.automaticInstall", type: "bool", number: nil, mirror: false, wire: nil, android: "settings:updateInstall", mac: "system:SPUUpdater.automaticallyDownloadsUpdates", path: nil, only: nil, reason: nil, mirrorExcept: []),
@@ -287,6 +290,8 @@ public enum SettingsSpec {
         public static let sourcePerson = "sourcePerson"
         public static let sourceKind = "sourceKind"
         public static let jugglucoAddress = "jugglucoAddress"
+        public static let nightscoutURL = "nightscoutURL"
+        public static let nightscoutTreatments = "nightscoutTreatments"
         public static let settingsPane = "settingsPane"
         public static let reportDays = "reportDays"
     }

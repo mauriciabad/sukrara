@@ -1,0 +1,145 @@
+{
+ "_about": [
+  "When a Nightscout source asks the site again (docs/44 'Living with two apps': as live as possible without",
+  "asking all the time). After an answer: the next reading is expected one cadence after the newest ('cadence_s':",
+  "the gap between the two newest readings, clamped to [min_cadence_s, max_cadence_s]; one reading or none:",
+  "max_cadence_s) plus 'upload_lag_s', and the source asks then, never sooner than 'min_s' from now (an empty site:",
+  "every 'late_s'); once it is",
+  "overdue it asks every 'overdue_s', and every 'late_s' once it is more than 'late_after_s' overdue. After a",
+  "failure: 'backoff_s' by the number of failures in a row (the last value from then on); rate-limited: the site's",
+  "Retry-After when longer than the backoff; refused (signed out): 'refused_s', or at once when the person",
+  "saves another token. Cases: 'now', 'newest' / 'previous' (reading times, null = none), 'failures' (in a row,",
+  "0 = the last call answered), 'retryAfter_s', 'refused' -> 'wait_s'."
+ ],
+ "min_s": 15,
+ "upload_lag_s": 45,
+ "min_cadence_s": 60,
+ "max_cadence_s": 300,
+ "overdue_s": 30,
+ "late_s": 60,
+ "late_after_s": 300,
+ "backoff_s": [
+  30,
+  60,
+  120,
+  300
+ ],
+ "refused_s": 1800,
+ "cases": [
+  {
+   "name": "a 5-minute uploader: ask 45 s after the next reading is due",
+   "now": 1792000060,
+   "newest": 1792000000,
+   "previous": 1791999700,
+   "failures": 0,
+   "wait_s": 285
+  },
+  {
+   "name": "a 1-minute uploader (xDrip+ with a Libre 2)",
+   "now": 1792000010,
+   "newest": 1792000000,
+   "previous": 1791999940,
+   "failures": 0,
+   "wait_s": 95
+  },
+  {
+   "name": "gaps longer than 5 min count as 5",
+   "now": 1792000030,
+   "newest": 1792000000,
+   "previous": 1791999100,
+   "failures": 0,
+   "wait_s": 315
+  },
+  {
+   "name": "one reading: 5 minutes",
+   "now": 1792000000,
+   "newest": 1792000000,
+   "previous": null,
+   "failures": 0,
+   "wait_s": 345
+  },
+  {
+   "name": "never sooner than 15 s",
+   "now": 1792000340,
+   "newest": 1792000000,
+   "previous": 1791999700,
+   "failures": 0,
+   "wait_s": 15
+  },
+  {
+   "name": "overdue: every 30 s",
+   "now": 1792000400,
+   "newest": 1792000000,
+   "previous": 1791999700,
+   "failures": 0,
+   "wait_s": 30
+  },
+  {
+   "name": "long overdue (the uploader is silent): every minute",
+   "now": 1792000700,
+   "newest": 1792000000,
+   "previous": 1791999700,
+   "failures": 0,
+   "wait_s": 60
+  },
+  {
+   "name": "an empty site: every minute",
+   "now": 1792000000,
+   "newest": null,
+   "previous": null,
+   "failures": 0,
+   "wait_s": 60
+  },
+  {
+   "name": "first failure",
+   "now": 1792000000,
+   "newest": 1791999940,
+   "previous": 1791999640,
+   "failures": 1,
+   "wait_s": 30
+  },
+  {
+   "name": "third failure",
+   "now": 1792000000,
+   "newest": 1791999940,
+   "previous": 1791999640,
+   "failures": 3,
+   "wait_s": 120
+  },
+  {
+   "name": "many failures: every 5 min",
+   "now": 1792000000,
+   "newest": null,
+   "previous": null,
+   "failures": 9,
+   "wait_s": 300
+  },
+  {
+   "name": "rate-limited: the site's Retry-After",
+   "now": 1792000000,
+   "newest": null,
+   "previous": null,
+   "failures": 1,
+   "retryAfter_s": 600,
+   "wait_s": 600
+  },
+  {
+   "name": "rate-limited with a short Retry-After: the backoff",
+   "now": 1792000000,
+   "newest": null,
+   "previous": null,
+   "failures": 2,
+   "retryAfter_s": 5,
+   "wait_s": 60
+  },
+  {
+   "name": "refused: half an hour, or a new token",
+   "now": 1792000000,
+   "newest": 1791999940,
+   "previous": null,
+   "failures": 1,
+   "refused": true,
+   "wait_s": 1800
+  }
+ ]
+}

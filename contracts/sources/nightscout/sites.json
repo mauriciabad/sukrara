@@ -1,0 +1,151 @@
+{
+ "_about": [
+  "The Nightscout address a person types or pastes (setup's Connect, Settings › Source) -> the site Sukrara reads:",
+  "'parse': input -> 'root' (scheme + host [+ port] + path, lowercase scheme and host, without the default port,",
+  "a trailing '/', or an API path '/api/v1' / '/api/v3' at its end), 'token' (a '?token=' in the pasted address,",
+  "Nightscout's way of sharing a site with a token, taken out of the address) and 'problem' (url: not a web address,",
+  "or one with a user name; https: plain http to anything but this device, docs CLAUDE.md 'Cleartext'). No scheme =",
+  "https. 'same': two addresses are the same site when their roots are equal (docs/44 'Data' rule 2: glucose from",
+  "site X never goes back to X; Nightscout upload to the same site is off while it is the source)."
+ ],
+ "parse": [
+  {
+   "input": "https://ns.example.org",
+   "root": "https://ns.example.org",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "  https://ns.example.org/  ",
+   "root": "https://ns.example.org",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "ns.example.org",
+   "root": "https://ns.example.org",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "HTTPS://NS.Example.ORG:443/",
+   "root": "https://ns.example.org",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "https://ns.example.org:8443",
+   "root": "https://ns.example.org:8443",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "https://ns.example.org/?token=reader-0123456789abcdef",
+   "root": "https://ns.example.org",
+   "token": "reader-0123456789abcdef",
+   "problem": null
+  },
+  {
+   "input": "https://ns.example.org/api/v1/",
+   "root": "https://ns.example.org",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "https://host.example.org/ana/",
+   "root": "https://host.example.org/ana",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "http://ns.example.org",
+   "root": "http://ns.example.org",
+   "token": null,
+   "problem": "https"
+  },
+  {
+   "input": "http://192.168.1.20:1337",
+   "root": "http://192.168.1.20:1337",
+   "token": null,
+   "problem": "https"
+  },
+  {
+   "input": "http://127.0.0.1:1337",
+   "root": "http://127.0.0.1:1337",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "http://localhost:1337/",
+   "root": "http://localhost:1337",
+   "token": null,
+   "problem": null
+  },
+  {
+   "input": "https://user:pass@ns.example.org",
+   "root": "https://user:pass@ns.example.org",
+   "token": null,
+   "problem": "url"
+  },
+  {
+   "input": "ftp://ns.example.org",
+   "root": "ftp://ns.example.org",
+   "token": null,
+   "problem": "url"
+  },
+  {
+   "input": "",
+   "root": "",
+   "token": null,
+   "problem": "url"
+  },
+  {
+   "input": "not a site",
+   "root": "not a site",
+   "token": null,
+   "problem": "url"
+  }
+ ],
+ "same": [
+  [
+   "https://ns.example.org",
+   "https://NS.example.org/",
+   true
+  ],
+  [
+   "https://ns.example.org",
+   "https://ns.example.org:443",
+   true
+  ],
+  [
+   "https://ns.example.org",
+   "https://ns.example.org/?token=reader-0123456789abcdef",
+   true
+  ],
+  [
+   "https://ns.example.org/api/v1",
+   "https://ns.example.org",
+   true
+  ],
+  [
+   "https://ns.example.org",
+   "ns.example.org",
+   true
+  ],
+  [
+   "https://ns.example.org",
+   "https://other.example.org",
+   false
+  ],
+  [
+   "https://host.example.org/ana",
+   "https://host.example.org/ben",
+   false
+  ],
+  [
+   "https://ns.example.org",
+   "https://ns.example.org:8443",
+   false
+  ]
+ ]
+}

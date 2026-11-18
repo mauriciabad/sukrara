@@ -205,6 +205,9 @@ object SettingsSpec {
         SettingInfo("source.kind", "enum", null, false, null, "state:kind", "defaults:sourceKind", null, null, null, listOf()),
         SettingInfo("source.jugglucoAddress", "string", null, false, null, "", "defaults:jugglucoAddress", null, "mac", "The Mac reads Juggluco's web server on the home network (source.kind lanJuggluco); Android reads Juggluco on the phone itself (source.kind phoneApp), at a fixed loopback address", listOf()),
         SettingInfo("source.jugglucoSecret", "secret", null, false, null, "secure:juggluco", "keychain:jugglucoSecret", null, null, null, listOf()),
+        SettingInfo("source.nightscoutUrl", "string", null, false, null, "state:nightscoutUrl", "defaults:nightscoutURL", null, null, null, listOf()),
+        SettingInfo("source.nightscoutTreatments", "bool", null, false, null, "state:nightscoutTreatments", "defaults:nightscoutTreatments", null, null, null, listOf()),
+        SettingInfo("source.nightscoutSecret", "secret", null, false, null, "secure:nightscoutSource", "keychain:nightscoutSourceSecret", null, null, null, listOf()),
         SettingInfo("settings.pane", "enum", null, false, null, "", "defaults:settingsPane", null, "mac", "The Mac Settings window reopens on the last pane it showed (HIG Settings); Android settings are a navigation stack that starts at its top", listOf()),
         SettingInfo("update.automaticChecks", "bool", null, false, null, "settings:updateChecks", "system:SPUUpdater.automaticallyChecksForUpdates", null, null, null, listOf()),
         SettingInfo("update.automaticInstall", "bool", null, false, null, "settings:updateInstall", "system:SPUUpdater.automaticallyDownloadsUpdates", null, null, null, listOf()),
@@ -302,6 +305,9 @@ object SettingsSpec {
         const val PERSON = "person"
         const val KIND = "kind"
         const val JUGGLUCO = "juggluco"
+        const val NIGHTSCOUT_URL = "nightscoutUrl"
+        const val NIGHTSCOUT_TREATMENTS = "nightscoutTreatments"
+        const val NIGHTSCOUT_SOURCE = "nightscoutSource"
         const val UPDATE_CHECKS = "updateChecks"
         const val UPDATE_INSTALL = "updateInstall"
         const val RELAY_SHARING = "relaySharing"

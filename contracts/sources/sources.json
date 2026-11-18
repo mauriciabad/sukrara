@@ -5,7 +5,7 @@
     "picker, word the Source page and key behaviour. A source is per device (never mirrored). 'persons' = whose glucose it",
     "may bring; 'platforms' = the apps that offer it; 'firstHand' = this device gets the data itself (not relayed by",
     "another Sukrara); 'offline' = works without internet; 'group' = how the picker groups it (what the person feels:",
-    "offline / network / sukrara); 'delay_s' = typical time from the sensor's reading to this device; 'backfill' = it",
+    "offline / network / online / sukrara); 'delay_s' = typical time from the sensor's reading to this device; 'backfill' = it",
     "brings readings missed while away; 'brings' = what it brings besides glucose; 'readings' = the reading source ids it",
     "stores (dedup.json ranks them). 'keying' = what each (person, source, Settings from) gets, the cases every app's",
     "SourceSpec passes: 'owner' = this device owns your glucose (shares it with Sukrara followers, uploads it, insulin",
@@ -19,6 +19,7 @@
     {"id": "sensor", "persons": ["yours"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["libre3", "dexcom-g7", "dexcom-g6", "accu-chek-smartguide", "aidex-x"]},
     {"id": "phoneApp", "persons": ["yours", "theirs"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco"]},
     {"id": "lanJuggluco", "persons": ["yours", "theirs"], "platforms": ["mac"], "firstHand": true, "offline": true, "group": "network", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco-lan"]},
+    {"id": "nightscout", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": true, "offline": false, "group": "online", "delay_s": 120, "backfill": true, "brings": ["treatments"], "readings": ["nightscout"]},
     {"id": "sukrara", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": false, "offline": false, "group": "sukrara", "delay_s": 60, "backfill": true, "brings": ["sensorLife", "treatments", "alerts", "settings"], "readings": ["relay", "nearby"]}
   ],
   "keying": [
@@ -27,6 +28,8 @@
     {"person": "yours", "source": "lanJuggluco", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
     {"person": "theirs", "source": "phoneApp", "settingsFrom": "wearer", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
     {"person": "theirs", "source": "lanJuggluco", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
+    {"person": "yours", "source": "nightscout", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
+    {"person": "theirs", "source": "nightscout", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
     {"person": "theirs", "source": "sukrara", "settingsFrom": "wearer", "owner": false, "stream": true, "alertRole": "FOLLOWER_MIRROR"},
     {"person": "theirs", "source": "sukrara", "settingsFrom": "default", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"},
     {"person": "theirs", "source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"},

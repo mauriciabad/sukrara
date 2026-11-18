@@ -1,0 +1,20 @@
+{
+ "_about": [
+  "Where data that came from an online source goes (docs/44 'Data: nothing duplicated, lost or looped', the table's",
+  "Nightscout row): per origin, per target, 'yes' (sent as from any first-hand source), 'no' (never: back to where it",
+  "came from, or a service with one uploader per account), 'off' (off unless the person turns it on, a switch that says",
+  "why) or 'unlabelled' (sent without a sensor label, rule 7: no loop trusts internet readings as a sensor's). Rows:",
+  "'nightscout' = glucose read from the source site; 'nightscout-treatments' = treatments pulled from it (read-only",
+  "here). Targets: libreView (the LibreView upload), tidepool (the Tidepool upload), nightscoutSame (Nightscout upload",
+  "to the source's own site: the upload pauses while that site is the source, its treatments go both ways through the",
+  "source), nightscoutOther (upload to another site), healthConnect, followers (Sukrara's own sharing, your glucose",
+  "only), broadcasts (apps on the phone, Garmin). Someone else's glucose is never shared or uploaded whatever its source",
+  "(sources.json keying 'owner'); a Mac on its own uploads nothing. The treatments Sukrara logs itself keep today's",
+  "rules, plus both ways with the source site."
+ ],
+ "targets": ["libreView", "tidepool", "nightscoutSame", "nightscoutOther", "healthConnect", "followers", "broadcasts"],
+ "rows": {
+  "nightscout": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "broadcasts": "unlabelled"},
+  "nightscout-treatments": {"libreView": "no", "tidepool": "off", "nightscoutSame": "no", "nightscoutOther": "yes", "healthConnect": "yes", "followers": "yes", "broadcasts": "no"}
+ }
+}
