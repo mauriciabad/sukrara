@@ -246,8 +246,8 @@
     <string name="ds_source_phone_app_means">Juggluco lee el sensor y Sukrara lee Juggluco</string>
     <string name="ds_source_phone_app_means_theirs">Juggluco recibe su glucosa y Sukrara lee Juggluco</string>
     <string name="ds_source_nightscout">Nightscout</string>
-    <string name="ds_source_nightscout_means">Glucosa y tratamientos de tu sitio · unos 2 min de retraso</string>
-    <string name="ds_source_nightscout_means_theirs">Glucosa y tratamientos de su sitio · unos 2 min de retraso</string>
+    <string name="ds_source_nightscout_means">Glucosa y tratamientos de tu sitio · unos 2 min de retraso · no llega nada mientras tu sitio no funciona</string>
+    <string name="ds_source_nightscout_means_theirs">Glucosa y tratamientos de su sitio · unos 2 min de retraso · no llega nada mientras su sitio no funciona</string>
     <string name="ds_source_librelinkup">LibreLinkUp</string>
     <string name="ds_source_librelinkup_means">La app Libre comparte aquí tu glucosa · aprox. 1 min de retraso · no llega nada mientras LibreView de Abbott no funciona, mantenimiento incluido · puede dejar de funcionar cualquier día</string>
     <string name="ds_source_librelinkup_means_theirs">Su app Libre la comparte con tu cuenta de LibreLinkUp · aprox. 1 min de retraso · no llega nada mientras LibreView de Abbott no funciona, mantenimiento incluido · puede dejar de funcionar cualquier día</string>

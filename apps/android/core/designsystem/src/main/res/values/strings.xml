@@ -251,8 +251,8 @@
     <string name="ds_source_phone_app_means">Juggluco reads the sensor, Sukrara reads Juggluco</string>
     <string name="ds_source_phone_app_means_theirs">Juggluco gets their glucose, Sukrara reads Juggluco</string>
     <string name="ds_source_nightscout">Nightscout</string>
-    <string name="ds_source_nightscout_means">Glucose and treatments from your site · about 2 min late</string>
-    <string name="ds_source_nightscout_means_theirs">Glucose and treatments from their site · about 2 min late</string>
+    <string name="ds_source_nightscout_means">Glucose and treatments from your site · about 2 min late · nothing arrives while your site is down</string>
+    <string name="ds_source_nightscout_means_theirs">Glucose and treatments from their site · about 2 min late · nothing arrives while their site is down</string>
     <string name="ds_source_librelinkup">LibreLinkUp</string>
     <string name="ds_source_librelinkup_means">The Libre app shares your glucose here · about 1 min late · nothing arrives while Abbott\'s LibreView is down, maintenance included · may stop working any day</string>
     <string name="ds_source_librelinkup_means_theirs">Their Libre app shares with your LibreLinkUp account · about 1 min late · nothing arrives while Abbott\'s LibreView is down, maintenance included · may stop working any day</string>

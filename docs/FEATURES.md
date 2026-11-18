@@ -995,7 +995,9 @@ LibreLinkUp*, invite your own email) while the Libre app keeps the sensor, or so
 following a child). `source.kind` `libreLinkUp` (group *Online · needs internet*, about 10 s late, backfills about
 12 h); its live readings are `librelinkup` (ranked *online*), the graph's 5-minute points `librelinkup-graph` (ranked
 *onlineHistory*: they only fill gaps between live readings, `contracts/sources/dedup.json`). Its description says it
-*may stop working any day* (Abbott can change or end the API; decision 3).
+says *nothing arrives while Abbott's LibreView is down, maintenance included* (LibreView's maintenance stops LibreLinkUp
+too: the owner, 2026-11-18) and *may stop working any day* (Abbott can change or end the API; decision 3); Nightscout's
+says the same of its site (*nothing arrives while your site is down*), as on the Mac.
 
 - **Reading LibreLinkUp** (Android `:core:data` `LibreLinkUp` + `:integrations` `librelinkup/`; Mac
   `SukraraCore/LibreLinkUp` + `SukraraShare/LibreLinkUp`; `contracts/sources/librelinkup`): the login the LibreView sign-in uses too (`POST /llu/auth/login`, headers
