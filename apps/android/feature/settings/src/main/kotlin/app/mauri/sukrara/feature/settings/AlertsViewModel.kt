@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
+/** Which escalation rows Settings › Alerts shows ([AlertsUi.escalation]). */
+enum class Escalation { TellFollowers, TakeTheirs, None }
+
 /**
  * The alert pages' state: the alert settings in use and what is muted / quiet now. [mirrored] = a follower not in
  * Custom (*Settings from*): each alert's on / threshold / remind (but no data's) and the quiet rules are the wearer's or
@@ -33,7 +36,22 @@ data class AlertsUi(
     val follower: Boolean = false,
     /** *Separate alert notifications* (docs/36): every alert also a notification of its own, which a watch gets. */
     val separate: Boolean = false,
+    /** This phone reads your glucose first-hand (`SourceSpec.owner`): it has followers to tell. */
+    val owner: Boolean = true,
 ) {
+    /**
+     * The escalation rows only where they act (docs/44 Appendix G finding 9): the wearer's *tell followers* where this
+     * phone owns your glucose; a follower's *also when muted here* only while it follows with *Their settings* (the
+     * wearer's escalations reach it then); none on any other source.
+     */
+    val escalation: Escalation
+        get() =
+            when {
+                owner -> Escalation.TellFollowers
+                follower && mirrored -> Escalation.TakeTheirs
+                else -> Escalation.None
+            }
+
     /** [kind]'s on / threshold / remind come from *Settings from* (read-only here). */
     fun mirrors(kind: AlertKind): Boolean = mirrored && kind != AlertKind.NO_DATA
 
@@ -144,9 +162,20 @@ class AlertsViewModel(
             deps.alertState,
             deps.settingsFrom.state,
             deps.settings.flow(SurfaceSettings.SeparateAlerts),
-        ) { own, inUse, st, from, separate ->
-            AlertsUi(inUse ?: own, st, mirrored = from.readOnly, follower = from != null, separate = separate)
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), null)
+        ) { own, inUse, st, from, separate -> Triple(own, inUse, st) to (from to separate) }
+            .combine(deps.source) { (a, b), spec ->
+                val (own, inUse, st) = a
+                val (from, separate) = b
+                AlertsUi(
+                    inUse ?: own,
+                    st,
+                    mirrored = from.readOnly,
+                    follower = from != null,
+                    separate = separate,
+                    owner =
+                        spec?.owner == true,
+                )
+            }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_MS), null)
 
     fun setSeparate(on: Boolean) {
         viewModelScope.launch { deps.settings.set(SurfaceSettings.SeparateAlerts, on) }

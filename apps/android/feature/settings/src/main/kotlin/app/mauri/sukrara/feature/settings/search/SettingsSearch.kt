@@ -194,6 +194,9 @@ fun SettingsSearchBar(
     pens: Boolean = false,
     wearer: Boolean = true,
     updater: Boolean = true,
+    /** This phone follows a Sukrara ([Seen.Linked]) and, with [theirSettings], takes their settings. */
+    linked: Boolean = !wearer,
+    theirSettings: Boolean = linked,
     recent: RecentSearch = RecentSearch(),
     initialQuery: String? = null,
     /** Other features' rows ([app.mauri.sukrara.feature.settings.SettingsDeps.moreSearch]). */
@@ -205,8 +208,8 @@ fun SettingsSearchBar(
     val state = rememberContainedSearchBarState(if (initialQuery != null) SearchBarValue.Expanded else SearchBarValue.Collapsed)
     val text = rememberTextFieldState(initialQuery.orEmpty())
     val items =
-        remember(res, pens, wearer, updater, more) {
-            (SettingsIndex.entries + more).filter { it.shownOn(pens, wearer, updater) }.map { it.item(res) }
+        remember(res, pens, wearer, updater, linked, theirSettings, more) {
+            (SettingsIndex.entries + more).filter { it.shownOn(pens, wearer, updater, linked, theirSettings) }.map { it.item(res) }
         }
     val expanded = state.currentValue == SearchBarValue.Expanded || state.targetValue == SearchBarValue.Expanded
 

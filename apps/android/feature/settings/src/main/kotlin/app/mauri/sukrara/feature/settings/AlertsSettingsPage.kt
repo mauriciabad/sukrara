@@ -220,34 +220,37 @@ fun AlertsSettingsContent(
                 icon = DsR.drawable.ds_ic_bedtime,
             )
         }
-        // #39: a very low nobody answers: the wearer tells the followers; a follower takes those escalations
-        SettingsGroup(title = stringResource(R.string.st_escalation_title)) {
-            if (ui.follower) {
-                SwitchRow(
-                    stringResource(R.string.st_escalation_follow),
-                    s.escalation.follow,
-                    { on -> actions.edit { it.copy(escalation = it.escalation.copy(follow = on)) } },
-                    summary = stringResource(R.string.st_escalation_follow_summary),
-                    icon = DsR.drawable.ds_ic_group,
-                )
-            } else {
-                SwitchRow(
-                    stringResource(R.string.st_escalation_on),
-                    s.escalation.on,
-                    { on -> actions.edit { it.copy(escalation = it.escalation.copy(on = on)) } },
-                    summary = stringResource(R.string.st_escalation_on_summary),
-                    icon = DsR.drawable.ds_ic_group,
-                )
-                ValueRow(
-                    stringResource(R.string.st_escalation_min),
-                    numberLabel(SchemaPrefs.spec("alerts.escalation.min"), s.escalation.min.toDouble()),
-                    { dialog = "escalateMin" },
-                    icon = DsR.drawable.ds_ic_timer,
-                    enabled = s.escalation.on,
-                )
+        // #39: a very low nobody answers: the wearer tells the followers; a follower takes those escalations. Only where
+        // they act (Appendix G finding 9)
+        if (ui.escalation != Escalation.None) {
+            SettingsGroup(title = stringResource(R.string.st_escalation_title)) {
+                if (ui.escalation == Escalation.TakeTheirs) {
+                    SwitchRow(
+                        stringResource(R.string.st_escalation_follow),
+                        s.escalation.follow,
+                        { on -> actions.edit { it.copy(escalation = it.escalation.copy(follow = on)) } },
+                        summary = stringResource(R.string.st_escalation_follow_summary),
+                        icon = DsR.drawable.ds_ic_group,
+                    )
+                } else {
+                    SwitchRow(
+                        stringResource(R.string.st_escalation_on),
+                        s.escalation.on,
+                        { on -> actions.edit { it.copy(escalation = it.escalation.copy(on = on)) } },
+                        summary = stringResource(R.string.st_escalation_on_summary),
+                        icon = DsR.drawable.ds_ic_group,
+                    )
+                    ValueRow(
+                        stringResource(R.string.st_escalation_min),
+                        numberLabel(SchemaPrefs.spec("alerts.escalation.min"), s.escalation.min.toDouble()),
+                        { dialog = "escalateMin" },
+                        icon = DsR.drawable.ds_ic_timer,
+                        enabled = s.escalation.on,
+                    )
+                }
             }
+            FooterText(stringResource(R.string.st_escalation_footer))
         }
-        FooterText(stringResource(R.string.st_escalation_footer))
         // the review edits the thresholds: only where this phone's own are in use
         if (!ui.mirrored) {
             SettingsGroup {

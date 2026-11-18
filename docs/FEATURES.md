@@ -83,7 +83,11 @@ Rules: [contracts/alerts/SPEC.md](../contracts/alerts/SPEC.md); timelines: [cont
   ends with the very low. Settings: the wearer's Settings › Alerts › *If a very low gets no answer* › **Tell my
   followers** (on) and **After** (5–30 min, the one number input); a follower's (Android and Mac) **When they don't
   answer a very low** (on). Followers with their own rules (*Settings from* *This device's own*) don't get escalations
-  (their own very low runs). Lately / the Mac log: *Very low: no answer for 5 min, your followers were told*, *Very low
+  (their own very low runs). The rows show only where they act (Appendix G finding 9): Android shows the wearer's
+  where this phone reads your glucose first-hand, the follower's only while it follows with *Their settings*, neither
+  on any other source (someone else's LibreLinkUp or Nightscout), and the settings search finds them only there
+  (`EscalationRowsTest`, `SettingsSearchTest.linkRowsOnlyWhileLinked`); its *Settings from* rows too, only while it
+  follows a Sukrara. Lately / the Mac log: *Very low: no answer for 5 min, your followers were told*, *Very low
   answered: your followers were told*, only while sharing runs with at least one follower (one that left or was removed
   doesn't count: PROTOCOL-v2 "Leave"); otherwise *Very low: no answer for 5 min, no follower to tell* and *Very low
   answered*; a follower's *Very low · no response (from the wearer)*, *Very low answered on

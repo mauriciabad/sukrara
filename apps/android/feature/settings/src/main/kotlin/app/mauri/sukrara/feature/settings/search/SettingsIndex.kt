@@ -32,8 +32,12 @@ sealed interface SearchTarget {
     data class Other(val page: OtherPage) : SearchTarget
 }
 
-/** Whose phone shows a row: every phone, only the wearer's or only a follower's. */
-enum class Seen { Everyone, Wearer, Follower }
+/**
+ * Whose phone shows a row: every phone, only the wearer's (your glucose read here), every other ([Follower]), only one
+ * that follows a Sukrara ([Linked]: *Settings from*), or only one that follows with *Their settings* ([TheirSettings]:
+ * the escalations it takes). A search never opens a page without its row (Appendix G §1, *Settings from*).
+ */
+enum class Seen { Everyone, Wearer, Follower, Linked, TheirSettings }
 
 /**
  * One row the search finds: its [title] and [summary] as the page shows them (string resources, no format arguments),
@@ -67,12 +71,15 @@ data class SearchEntry(
 
     /**
      * Whether this phone shows the row: [pens] = it reads insulin pens, [wearer] = the wearer's phone (else a
-     * follower's), [updater] = this build has the updater.
+     * follower's), [updater] = this build has the updater, [linked] = it follows a Sukrara, [theirSettings] = with
+     * *Their settings*.
      */
     fun shownOn(
         pens: Boolean,
         wearer: Boolean,
         updater: Boolean = true,
+        linked: Boolean = !wearer,
+        theirSettings: Boolean = linked,
     ): Boolean =
         (pens || !pensOnly) &&
             (updater || !updaterOnly) &&
@@ -80,6 +87,8 @@ data class SearchEntry(
                 Seen.Everyone -> true
                 Seen.Wearer -> wearer
                 Seen.Follower -> !wearer
+                Seen.Linked -> linked
+                Seen.TheirSettings -> linked && theirSettings
             }
 }
 
@@ -384,7 +393,7 @@ object SettingsIndex {
             // among its keywords, so muscle memory still finds it ("Ranges" → Readings, "Rings" → Metrics)
             add(overview(R.string.st_alerts_title, R.string.st_overview_alerts_on, SearchTarget.Page(SettingsRoute.Alerts)))
             add(overview(R.string.st_reliability_title, R.string.st_reliability_ready, SearchTarget.Page(SettingsRoute.Reliability)))
-            add(overview(R.string.st_from_title, null, SearchTarget.Page(SettingsRoute.SettingsFrom), seen = Seen.Follower))
+            add(overview(R.string.st_from_title, null, SearchTarget.Page(SettingsRoute.SettingsFrom), seen = Seen.Linked))
             add(
                 overview(
                     R.string.st_readings_title,
@@ -526,7 +535,7 @@ object SettingsIndex {
                 alerts,
                 R.string.st_escalation_title,
                 R.string.st_escalation_follow to R.string.st_escalation_follow_summary,
-                seen = Seen.Follower,
+                seen = Seen.TheirSettings,
             )
             pageRow(SettingsRoute.ThresholdReview, null)
             // each quiet rule's row opens its page: its switch and its length are there
@@ -939,14 +948,14 @@ object SettingsIndex {
                 R.string.st_from_header,
                 R.string.st_from_wearer to R.string.st_from_wearer_summary,
                 R.string.st_from_custom to R.string.st_from_custom_summary,
-                seen = Seen.Follower,
+                seen = Seen.Linked,
             )
             rows(
                 from,
                 R.string.st_from_start_from,
                 R.string.st_from_copy to R.string.st_from_copy_summary,
                 R.string.st_from_reset to R.string.st_from_reset_summary,
-                seen = Seen.Follower,
+                seen = Seen.Linked,
             )
         }
 }

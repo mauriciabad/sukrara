@@ -240,7 +240,13 @@ class SettingsIndexTest {
             },
             // a follower's Alerts page: its own escalation switch instead of the wearer's two rows (#39)
             Scene("alerts (follower)", SearchTarget.Page(SettingsRoute.Alerts)) {
-                AlertsSettingsContent(AlertsUi(AlertSettings(), AlertUiState(), follower = true), null, clock, AlertsActions()) {}
+                AlertsSettingsContent(
+                    AlertsUi(AlertSettings(), AlertUiState(), mirrored = true, follower = true, owner = false),
+                    null,
+                    clock,
+                    AlertsActions(),
+                ) {
+                }
             },
             *AlertKind.entries
                 .map { kind ->

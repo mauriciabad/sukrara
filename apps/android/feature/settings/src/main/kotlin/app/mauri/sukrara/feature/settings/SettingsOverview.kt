@@ -143,6 +143,9 @@ fun SettingsOverviewContent(
             pens = actions.pens,
             wearer = sharing.wearer,
             updater = actions.updater,
+            // *Settings from* exists only while this phone follows a Sukrara: never a search result that opens nothing
+            linked = settingsFrom != null,
+            theirSettings = settingsFrom?.from == app.mauri.sukrara.core.data.settings.SettingsFrom.Wearer,
             recent = recent,
             initialQuery = searchQuery,
             more = moreSearch,

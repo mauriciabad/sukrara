@@ -244,6 +244,26 @@ class SettingsSearchTest {
     }
 
     /**
+     * Appendix G: someone else's glucose from a source that isn't a Sukrara link (LibreLinkUp, Nightscout) has no
+     * *Settings from* (the search opened a blank page) and no escalation rows (they act nowhere there, finding 9); a
+     * follower with its own settings takes no escalations either.
+     */
+    @Test
+    fun linkRowsOnlyWhileLinked() {
+        fun titles(
+            linked: Boolean,
+            theirSettings: Boolean = linked,
+        ) = SettingsIndex.entries.filter { it.shownOn(pens = false, wearer = false, linked = linked, theirSettings = theirSettings) }
+        val from = SearchTarget.Page(SettingsRoute.SettingsFrom)
+        val elsewhere = titles(linked = false)
+        assertTrue(elsewhere.none { it.target == from || it.on == from })
+        assertTrue(elsewhere.none { it.title == R.string.st_escalation_follow || it.title == R.string.st_escalation_on })
+        assertTrue(titles(linked = true).any { it.target == from })
+        assertTrue(titles(linked = true).any { it.title == R.string.st_escalation_follow })
+        assertTrue(titles(linked = true, theirSettings = false).none { it.title == R.string.st_escalation_follow })
+    }
+
+    /**
      * The Google Play build (no updater: #188) finds no *Check again* and no update switches; both builds find the root
      * rows (#142), the privacy policy and *About the versions*.
      */
