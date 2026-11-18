@@ -751,6 +751,12 @@ Every app change (CLAUDE.md *Complete flows*; user, 2026-10-21: "There's no way 
 - [ ] Each state has a way to change it and to leave it (undo, cancel, turn off, unmute, go back), without needing a
       notification, and with TalkBack / VoiceOver (a button or an accessibility action).
 - [ ] Leaving it updates everything that showed it at once (history, badge, widgets, ring, notification).
+- [ ] **What's left behind** (docs/44 Appendix G §8: earlier reviews compared screens and never asked what a hidden
+      state keeps doing). For a state that ends or is replaced, check what it leaves running or stored, not only what
+      shows: open sockets (Mac `lsof -nP -i -a -p $(pgrep -x Sukrara)`; Android the relay's log or
+      `adb shell cat /proc/net/tcp6` by the app's uid), stored accounts and keys, the settings in use, the alert role, the
+      treatment log entries go to, and what the other side (the wearer's list) believes. Leaving a Sukrara link: Q30's
+      table.
 - [ ] *Status bar text* placement without the LSPosed module: the rows say the placement needs the module and what shows
       meanwhile; the dialog lets you leave a clock placement (system-icon placements selectable).
 - [ ] Alerts: emulator `SYNTHETIC --ei cycle 135` (a low) → Mute 30 min → the muted notification's *Unmute* brings *Low glucose*
@@ -1213,6 +1219,34 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       with readings here asks first), *Sensor*, *Sign Out of LibreLinkUp…* confirmed. The panel: *LibreLinkUp* path
       badge; a refused password → *LibreLinkUp refused the password* + *Sign In Again…*; not signed in → *Sign In…*.
       Add Treatment writes this Mac's own log (nothing uploaded); Spanish and VoiceOver on every step.
+
+- [ ] **One person, one link** (docs/44 Appendix G, `contracts/sources/link.json`; FEATURES.md *Source*): two emulators
+      (wearer + follower) over the local relay, and a Mac dev run; fakes only (the local relay, the fake LibreLinkUp, a
+      Nightscout stub). On a linked device every other source is still in the picker; picking one asks *Keep following
+      <name>?* naming the picked source (LibreLinkUp, Nightscout, Juggluco, your sensor: each reads right); *Keep
+      Following* (Return / the default) changes nothing. *Stop following* asks only what `link.json` says (settings only
+      with *Their settings* that differ from the defaults; history only when something was received; Android's person
+      change asks the deletion with *Export CSV first*); *Cancel* changes nothing. After each transition, what's left
+      behind:
+
+      | Transition | Sockets / Bluetooth | Stored accounts | Settings in use | Alert role | Treatment log | Wearer's list |
+      |---|---|---|---|---|---|---|
+      | Linked → other source → *Keep Following* | relay (and Bluetooth) open, as before | as before | as before | mirror or own, as before | the wearer's | following |
+      | Linked → other source → *Stop Following* (keep settings, keep history) | no relay socket, no Bluetooth to the phone | the new source's; the follow key gone | the wearer's values, now this device's own; *Settings from* not shown, panes editable | own engine on the new source | the new source's own log; the kept wearer entries read-only, never uploaded | told (`leave`): the device leaves the list |
+      | Linked → *Stop following* (Sukrara's defaults, delete history) | none | none for the link | the mirrored rows at their defaults | none until a source is picked | empty | told |
+      | Linked with *This device's own* → leave | none | the follow key gone | this device's own, unchanged (no settings question) | own engine | the new source's | told |
+      | Follow ended (the wearer removed the device) → other source | none (already closed) | the follow key gone after the leave questions; no *Keep following?* | as answered | own engine | the new source's | (already removed) |
+      | Android: someone else's glucose (link) → yours | none | the follow key gone | as answered | wearer (your glucose) | your log, the earlier history deleted (asked) | told |
+      | Online source → *Their Sukrara* (join) | relay (and Bluetooth) open | the online account kept, listed under *Also on this device* with *Sign out* / *Forget* | *Their settings* (default) | mirror | the wearer's | following |
+      | Updated with a follow kept behind another source | none after the start | the follow key gone | unchanged (the source's own) | own engine | the source's own | told |
+
+      Offline (the wearer's phone or the relay unreachable) at *Stop following*: where the person lands (Android setup's
+      source step and Settings › Source; Mac under *Not following anyone* and at the top of Settings › Source) says
+      *<name> hasn't been told yet* until the leave is delivered, then it goes by itself (bring the relay back).
+      Also: the name, picture, path badge and blocked-feature warning of the link appear nowhere on a non-link source
+      (card, alerts, notification, widgets, Settings); the no-data reason is the source's; rings and reports count over
+      the shown person's history (Mac: the kept history continues with the next source after *Keep it*); a hidden ring
+      says why in Settings › Metrics. TalkBack / VoiceOver read both questions and their choices; Spanish.
 
 ## Q29 Website
 
