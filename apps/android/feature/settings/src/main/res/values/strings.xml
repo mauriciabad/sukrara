@@ -319,7 +319,7 @@
     <string name="st_sensor_status_pair_again">Needs pairing again</string>
     <string name="st_sensor_status_sign_in">Needs the LibreView sign-in</string>
     <string name="st_sensor_status_permission">Needs the Nearby devices permission</string>
-    <string name="st_sensor_juggluco_unreachable_text">Juggluco doesn’t answer, so Sukrara gets no readings. Open Juggluco and turn on its web server (Settings › Web server), or choose This phone reads the sensor below.</string>
+    <string name="st_sensor_juggluco_unreachable_text">Juggluco doesn’t answer, so Sukrara gets no readings. Open Juggluco and turn on its web server (Settings › Web server), or choose another source in Settings › Source.</string>
     <string name="st_sensor_open_juggluco">Open Juggluco</string>
     <string name="st_sensor_status_juggluco_refused">Juggluco refused the API secret: no readings</string>
     <string name="st_sensor_juggluco_refused_text">Juggluco refuses Sukrara, so there are no readings: its web server has an API secret and the one here is missing or different. Type the secret set in Juggluco (Settings › Web server).</string>

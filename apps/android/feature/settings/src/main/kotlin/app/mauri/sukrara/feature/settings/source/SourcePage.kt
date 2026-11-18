@@ -142,7 +142,7 @@ fun SourcePageContent(
                     stringResource(R.string.st_sensor),
                     actions.openSensor,
                     summary = stringResource(R.string.st_source_sensor_summary),
-                    icon = DsR.drawable.ds_ic_dia_sensor,
+                    icon = DsR.drawable.ds_ic_tune,
                 )
             }
         }
