@@ -37,6 +37,9 @@
 
         public static func render(to dir: URL) throws -> Int {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+            // a render isn't the app bundle: it gets the bundle's icon, so the rows that draw Sukrara's own app icon
+            // (another Sukrara as a source, Follow someone) show the brand's, as the app does
+            NSApplication.shared.applicationIconImage = brandIcon
             var n = 0
             let windowed = Self.windowed
             // `SUKRARA_SNAP_ONLY=setup-phone,settings-source-nightscout`: only the scenes whose names start so

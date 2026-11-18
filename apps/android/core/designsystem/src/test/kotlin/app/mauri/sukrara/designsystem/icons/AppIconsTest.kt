@@ -51,8 +51,10 @@ class AppIconsTest {
 
     @Test
     fun bundledIconsAreAppIcons() {
+        // Sukrara itself is never a copy: its icon is this app's own launcher icon
+        assertEquals(listOf(Service.Sukrara), Service.entries.filter { it.bundled == null })
         for (s in Service.entries) {
-            val d = ctx.getDrawable(s.bundled)
+            val d = ctx.getDrawable(s.bundled ?: continue)
             val ok =
                 d is AdaptiveIconDrawable ||
                     (

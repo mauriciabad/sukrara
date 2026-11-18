@@ -1256,7 +1256,7 @@ nothing (or an SF Symbol) where Android draws the service's icon.
 
 | Place | Android | Mac before | Mac now |
 |---|---|---|---|
-| *Where it comes from* (setup's source step, Settings › Source) | `SourceIcon`: Juggluco, Nightscout, LibreLinkUp (LibreView's until now) icons; sensor / Sukrara symbols | text only | `SourceIcon` 32 pt: Juggluco, Nightscout, LibreLinkUp; Sukrara's drop |
+| *Where it comes from* (setup's source step, Settings › Source) | `SourceIcon`: Juggluco, Nightscout, LibreLinkUp (LibreView's until now) icons; sensor / Sukrara symbols (Sukrara's app icon since, below) | text only | `SourceIcon` 32 pt: Juggluco, Nightscout, LibreLinkUp; Sukrara's drop (Sukrara's app icon since, below) |
 | Setup's connect steps (*Connect Juggluco*, *Connect Nightscout*, *Sign in to LibreLinkUp*) | nothing | nothing | the service's icon before the title (32 pt); Android got the same (`StepHeader(service)`) |
 | Settings › Source, Nightscout | *Site* row: the owl | nothing | *Site address* row: the owl (20 pt), the token row a key |
 | Settings › Source, LibreLinkUp | *Account* row: LibreView's icon | nothing | *Account* (signed in) / *Email* (signed out): LibreLinkUp's icon; *Password* a key, *Person*, *Sensor* symbols; Android's *Account* row now LibreLinkUp's |
@@ -1315,6 +1315,29 @@ Discarded: LibreView, Tidepool, xDrip+ and Health Connect on the Mac (it has non
 title icon *and* row icons in setup's connect steps (the same icon twice; the columns form's right-aligned labels take
 none: `serviceRowIcons` off there). Test `ServiceIconTests` (every file loads, square, ≥ 128 px; every source's service).
 Screenshots: `sukrara-snap windows` → `settings-source-*`, `setup-source-*`, `setup-connect-*` (light, dark, large text).
+
+#### Sukrara's own icon for another Sukrara (2026-11-18)
+
+The owner: "why not use own sukrara icon for sukrara? in mac and android." The rows that stand for another Sukrara
+(*Their Sukrara* / *Sukrara on your phone* in *Where it comes from*, setup's and Settings › Source's) showed the
+drop, a symbol, beside the other sources' app icons; setup's *Follow someone* step had no icon, unlike the other
+connect steps.
+
+**Added.** Android: `Service.Sukrara` (no package, no bundled copy: `AppIcons.forService` loads this app's own
+`applicationInfo` icon, the adaptive launcher icon, through the same IconDrawableFactory port at 32 dp);
+`SourceIcon(SourceKind.Sukrara)` and `JoinStep`'s `StepHeader` use it. Mac: `AppService.sukrara` is
+`NSApplication.applicationIconImage` (the bundle's `AppIcon.icns`), drawn whole at the row's size because it is
+already on the icon grid (rounded square, padding, shadow) the other art gets masked to; `SourceIcon` and setup's
+*Follow someone* title use it. `sukrara-snap` gives its process the brand's icns (a render isn't the bundle). Both
+read the installed app's icon, so the rows can't drift from the brand (a debug or a future icon shows as installed).
+Tests: `AppIconsTest` (only Sukrara has no bundled copy), `ServiceIconRowsTest.theSourcePageShowsSukrarasOwnIconForAnotherSukrara`,
+`ServiceIconTests.sukraraIsTheAppsOwnIcon`.
+
+**Left as the drop or a symbol** (they mean glucose or a state, not another Sukrara): the status-bar / notification
+small icon (`ds_ic_status_sukrara`, monochrome by Android's rule), the notification icon picker's Sukrara glyph, the
+widget / card face's drop. The Mac's *Do you have Sukrara on your phone?* cards keep their phone / globe symbols (a
+pair of answers, not a source row); the person rows under Settings › Source (*Following Marta*) keep the wearer's
+avatar (a person, not an app).
 
 ## Insulin pens (investigation 29)
 

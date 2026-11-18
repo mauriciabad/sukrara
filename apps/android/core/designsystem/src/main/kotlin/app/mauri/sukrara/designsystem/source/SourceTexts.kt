@@ -115,7 +115,10 @@ fun SourceKind.iconRes(): Int =
         SourceKind.Sukrara -> R.drawable.ds_ic_status_sukrara
     }
 
-/** The source's icon at a row's start: an app or a service shows its own icon, the others the tinted glyph. */
+/**
+ * The source's icon at a row's start: an app or a service shows its own icon, another Sukrara Sukrara's own app icon,
+ * the sensor the tinted glyph.
+ */
 @Composable
 fun SourceIcon(
     kind: SourceKind,
@@ -125,6 +128,7 @@ fun SourceIcon(
         SourceKind.PhoneApp -> ServiceIcon(Service.Juggluco, modifier)
         SourceKind.Nightscout -> ServiceIcon(Service.Nightscout, modifier)
         SourceKind.LibreLinkUp -> ServiceIcon(Service.LibreLinkUp, modifier)
-        else -> RowIcon(kind.iconRes())
+        SourceKind.Sukrara -> ServiceIcon(Service.Sukrara, modifier)
+        SourceKind.Sensor -> RowIcon(kind.iconRes())
     }
 }

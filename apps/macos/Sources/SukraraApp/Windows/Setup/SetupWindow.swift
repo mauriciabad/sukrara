@@ -203,7 +203,7 @@ public struct SetupView: View {
                                 }
                         }
                     } else {
-                        page(.follow, L10n.t("Follow someone")) { FollowStep(follow: model.follow) }
+                        page(.follow, L10n.t("Follow someone"), service: .sukrara) { FollowStep(follow: model.follow) }
                     }
                 case .alerts: page(.alerts, L10n.t("Check your alerts")) { thresholds }
                 case .notifications:

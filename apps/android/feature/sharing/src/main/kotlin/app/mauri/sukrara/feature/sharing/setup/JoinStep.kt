@@ -36,6 +36,7 @@ import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.banner.NoticeTone
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.designsystem.icons.Service
 import app.mauri.sukrara.feature.sharing.ConfirmWhenAllowed
 import app.mauri.sukrara.feature.sharing.MatchCodeLine
 import app.mauri.sukrara.feature.sharing.PairingCodeCard
@@ -60,7 +61,7 @@ internal fun ColumnScope.JoinStep(
     actions: SetupActions,
 ) {
     val follow = u.follow
-    StepHeader(stringResource(R.string.sh_join_title), stringResource(R.string.sh_join_body))
+    StepHeader(stringResource(R.string.sh_join_title), stringResource(R.string.sh_join_body), Service.Sukrara)
     if (follow is FollowState.Following && follow.status in WAITING) {
         val name = follow.wearer?.name?.takeIf { it.isNotBlank() } ?: stringResource(R.string.sh_join_someone)
         val pairing = follow.pairing

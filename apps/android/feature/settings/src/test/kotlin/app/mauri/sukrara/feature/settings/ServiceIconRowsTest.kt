@@ -97,6 +97,29 @@ class ServiceIconRowsTest {
         capture("source")
     }
 
+    /** The owner: "why not use own sukrara icon for sukrara?": another Sukrara is Sukrara's own app icon, not the drop. */
+    @Test
+    fun theSourcePageShowsSukrarasOwnIconForAnotherSukrara() {
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                app.mauri.sukrara.feature.settings.source.SourcePageContent(
+                    app.mauri.sukrara.feature.settings.source.SourcePageState(
+                        app.mauri.sukrara.core.model.SourceSpec.TheirSukrara,
+                        answered = true,
+                        name = "Ana",
+                    ),
+                    null,
+                    now,
+                    app.mauri.sukrara.feature.settings.source
+                        .SourceActions(),
+                    SensorSettingsActions(),
+                )
+            }
+        }
+        assertRowIcon("Where it comes from", serviceIconTag(Service.Sukrara))
+        capture("source-sukrara")
+    }
+
     @Test
     fun overviewClinicBannerShowsTheServices() {
         compose.setContent {

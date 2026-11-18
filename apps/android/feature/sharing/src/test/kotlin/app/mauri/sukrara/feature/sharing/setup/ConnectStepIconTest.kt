@@ -24,7 +24,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Setup's connect steps show the app or service they connect by its own icon before the title (as the Mac's setup):
- * Juggluco, a Nightscout site, LibreLinkUp. Review images: build/outputs/roborazzi/connect-step-*.png.
+ * Juggluco, a Nightscout site, LibreLinkUp, and Sukrara's own icon on *Follow someone*. Review images: build/outputs/roborazzi/connect-step-*.png.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -32,32 +32,36 @@ import org.robolectric.annotation.GraphicsMode
 class ConnectStepIconTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    private fun ui(kind: SourceKind) =
-        SetupUi(
-            step = SetupStep.Sensor,
-            index = 5,
-            count = 6,
-            facts = SetupFacts(spec = SourceSpec(Person.Yours, kind), ownSensorLive = false, hasIdentity = false),
-            record = SetupRecord(),
-            readiness = AlertReadiness(emptySet()),
-            alerts =
-                AlertThresholds(
-                    app.mauri.sukrara.alerts
-                        .AlertSettings(),
-                ),
-            gate = RestoreGate.evaluate(false),
-            share = app.mauri.sukrara.share.owner.OwnerShareState.NoIdentity,
-            restore = RestoreUi.Idle,
-            busy = false,
-            single = false,
-            canBack = true,
-        )
+    private fun ui(
+        kind: SourceKind,
+        step: SetupStep = SetupStep.Sensor,
+        person: Person = Person.Yours,
+    ) = SetupUi(
+        step = step,
+        index = 5,
+        count = 6,
+        facts = SetupFacts(spec = SourceSpec(person, kind), ownSensorLive = false, hasIdentity = false),
+        record = SetupRecord(),
+        readiness = AlertReadiness(emptySet()),
+        alerts =
+            AlertThresholds(
+                app.mauri.sukrara.alerts
+                    .AlertSettings(),
+            ),
+        gate = RestoreGate.evaluate(false),
+        share = app.mauri.sukrara.share.owner.OwnerShareState.NoIdentity,
+        restore = RestoreUi.Idle,
+        busy = false,
+        single = false,
+        canBack = true,
+    )
 
     private fun check(
         kind: SourceKind,
         service: Service,
+        u: SetupUi = ui(kind),
     ) {
-        compose.setContent { SetupContent(ui(kind), SetupActions()) }
+        compose.setContent { SetupContent(u, SetupActions()) }
         compose.onAllNodesWithTag(serviceIconTag(service), useUnmergedTree = true).assertCountEquals(1)
         // the icon loads off the main thread
         Thread.sleep(300)
@@ -73,4 +77,8 @@ class ConnectStepIconTest {
 
     @Test
     fun lluStepShowsLibreLinkUp() = check(SourceKind.LibreLinkUp, Service.LibreLinkUp)
+
+    @Test
+    fun followStepShowsSukrara() =
+        check(SourceKind.Sukrara, Service.Sukrara, ui(SourceKind.Sukrara, SetupStep.Join, Person.Theirs))
 }

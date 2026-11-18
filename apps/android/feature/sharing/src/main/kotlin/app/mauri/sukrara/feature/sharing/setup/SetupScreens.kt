@@ -413,7 +413,8 @@ fun SetupContent(
 
 /**
  * A step's title (a heading for TalkBack) and its plain-words explanation. A step that connects another app or service
- * (Juggluco, a Nightscout site, LibreLinkUp) puts its [service]'s icon before the title, as the Mac's setup does.
+ * (Juggluco, a Nightscout site, LibreLinkUp, another Sukrara to follow) puts its [service]'s icon before the title, as
+ * the Mac's setup does.
  */
 @Composable
 internal fun ColumnScope.StepHeader(

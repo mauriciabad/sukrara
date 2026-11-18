@@ -33,13 +33,14 @@ import kotlinx.coroutines.withContext
 /**
  * Another app or service that a row or a banner stands for, drawn as an app icon. [packages]: the installed app whose
  * real icon is used when present (the first one found; each is in this module's `<queries>`); [bundled]: Sukrara's copy
- * of the service's own icon, used when the app isn't installed (or the service has no app). Every bundled icon is an
+ * of the service's own icon, used when the app isn't installed (or the service has no app); null for [Sukrara] itself,
+ * which is this app's own launcher icon (never a copy, so it can't drift from the brand). Every bundled icon is an
  * `<adaptive-icon>` (or, for an app whose launcher icon is legacy, that legacy bitmap), so it goes through the same
  * loader as an installed app. Sources and licences: docs/10-showcase.md "Service and app icons".
  */
 enum class Service(
     val packages: List<String>,
-    @param:DrawableRes val bundled: Int,
+    @param:DrawableRes val bundled: Int?,
 ) {
     Juggluco(listOf("tk.glucodata"), R.drawable.ds_ic_app_juggluco),
     Xdrip(listOf("com.eveningoutpost.dexdrip"), R.drawable.ds_ic_app_xdrip),
@@ -55,6 +56,9 @@ enum class Service(
     // the follower app whose account the LibreLinkUp source signs in with (not LibreView, the clinic's site)
     LibreLinkUp(listOf("org.nativescript.LibreLinkUp"), R.drawable.ds_ic_app_librelinkup),
     Tidepool(emptyList(), R.drawable.ds_ic_app_tidepool),
+
+    // another Sukrara (the wearer's phone a follower reads): this app's own launcher icon
+    Sukrara(emptyList(), null),
 }
 
 /** The test tag of a [ServiceIcon] (tests check which row carries which icon). */
@@ -101,11 +105,14 @@ object AppIcons {
         return badged(ctx, item)
     }
 
-    /** The service's installed app if there is one, else its bundled icon. */
+    /** The service's installed app if there is one, else its bundled icon; Sukrara: this app's own launcher icon. */
     fun forService(
         ctx: Context,
         s: Service,
-    ): Drawable = s.packages.firstNotNullOfOrNull { forPackage(ctx, it) } ?: forResource(ctx, s.bundled)
+    ): Drawable =
+        s.packages.firstNotNullOfOrNull { forPackage(ctx, it) }
+            ?: s.bundled?.let { forResource(ctx, it) }
+            ?: badged(ctx, ctx.applicationInfo)
 
     /** An installed app's icon; the system's default app icon when it isn't installed (any more). */
     fun forPackageOrDefault(

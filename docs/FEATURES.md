@@ -712,8 +712,9 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
 - **Where does your (their) glucose come from?** The sources for that person in SPA's radio rows (every choice in
   Settings looks the same), grouped by what the person feels (*On this phone · works offline*, *From another Sukrara ·
   internet or Bluetooth nearby*: either is enough, said once in the title, not again in its rows),
-  each with its icon (the app's or service's own: Juggluco's, Nightscout's owl, LibreLinkUp's; the sensor's and
-  Sukrara's drop as symbols; Mac: the same in its radio rows, `SourceIcon`) and what it brings (*Live every minute · no other app*: the group's title
+  each with its icon (the app's or service's own: Juggluco's, Nightscout's owl, LibreLinkUp's, and Sukrara's own app
+  icon for *Their Sukrara* / *Sukrara on your phone*; the sensor's as a symbol; Mac: the same in its radio rows,
+  `SourceIcon`) and what it brings (*Live every minute · no other app*: the group's title
   says *works offline*, the rows don't repeat it), the sensor marked *Recommended*. Preselected with what the device
   reads, else the usual one (your sensor; their Sukrara). *Continue* stores both at once the first time; a change says
   what changes first (*Switch to “Juggluco on this phone”?* with what happens, from the sensor also that Sukrara stops
@@ -3020,13 +3021,19 @@ digit by digit).
   `ServiceIconRowsTest`. LibreLinkUp (the source's *Account* row, its row in *Where it comes from*, the setup step's
   title) shows the LibreLinkUp app's own icon (installed: `<queries>` `org.nativescript.LibreLinkUp`; else Sukrara's
   copy), not LibreView's: LibreLinkUp is the account the person signs in with. Setup's connect steps (Juggluco,
-  Nightscout, LibreLinkUp) put the service's icon before the title (`StepHeader`, `ConnectStepIconTest`).
+  Nightscout, LibreLinkUp, and *Follow someone* for another Sukrara) put the service's icon before the title
+  (`StepHeader`, `ConnectStepIconTest`). Another Sukrara (*Where it comes from*'s *Their Sukrara* / *Sukrara on your
+  phone*, setup's and Settings › Source's) is Sukrara's own launcher icon, read from this app (`Service.Sukrara`, no
+  bundled copy), through the same loader and at the same size as the others. The drop stays where it means glucose
+  or the app's status glyph (the status-bar icon, the notification icon picker, the widget's face).
 - **Service icons on the Mac** (`SukraraApp` `Windows/ServiceIcon.swift`: `AppService`, `ServiceIcon`, `ServiceLabel`,
   `SourceIcon`; the art in `Resources/ServiceIcons`): Juggluco, Nightscout and LibreLinkUp with the same marks as
   Android, masked as macOS draws app icons (the icon grid's rounded square, continuous corners, the soft shadow), the
   same in light and dark, growing with the text size: 32 pt on *Where it comes from*'s rows (setup and Settings ›
   Source) and before setup's connect step titles, 20 pt on Settings › Source's *Site address*, *Account* / *Email* and
-  Juggluco's *Address* rows (their neighbours a symbol so titles line up). Another Sukrara is Sukrara's drop. Not on
+  Juggluco's *Address* rows (their neighbours a symbol so titles line up). Another Sukrara (*Their Sukrara* /
+  *Sukrara on your phone*, setup's *Follow someone* title) is Sukrara's own app icon, the running app's
+  (`NSApplication.applicationIconImage`, already on the icon grid, so drawn whole, no copy). Not on
   the Mac (Android only): xDrip+, Health Connect, Tidepool, LibreView, Garmin. The panel's *Nightscout* /
   *LibreLinkUp* badge keeps the globe (it says the path, in the text's colour) and the no-data reasons their symbols
   (Android draws no icon there). Test `ServiceIconTests`; renders `sukrara-snap windows` → `settings-source-*`,

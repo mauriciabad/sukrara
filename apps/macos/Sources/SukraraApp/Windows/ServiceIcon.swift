@@ -8,8 +8,8 @@ import SwiftUI
 /// Another app or service that a row stands for, drawn as its app icon: the Mac counterpart of Android's
 /// `:core:designsystem` `icons/AppIcons` (`Service`, `ServiceIcon`; `Service` here is LaunchMode's), with the same marks
 /// from the same sources. Each file in `Resources/ServiceIcons` is the icon's square layer (what macOS masks: HIG "App
-/// icons"); sources and licences in docs/10-showcase.md "Service and app icons". Only the services the Mac works with:
-/// xDrip+, Health Connect, Tidepool and LibreView are Android's.
+/// icons"); sources and licences in docs/10-showcase.md "Service and app icons". Another Sukrara is this app's own icon
+/// (never a copy). Only the services the Mac works with: xDrip+, Health Connect, Tidepool and LibreView are Android's.
 enum AppService: String, CaseIterable {
     /// Juggluco's launcher icon (GPL-3.0, as Sukrara): its two layers, the visible part.
     case juggluco
@@ -17,18 +17,24 @@ enum AppService: String, CaseIterable {
     case nightscout
     /// LibreLinkUp's app icon, as its App Store and Google Play listings show it.
     case libreLinkUp
+    /// Another Sukrara (the phone a follower reads): Sukrara's own app icon, the one the running app has
+    /// (`NSApplication.applicationIconImage`: the bundle's `AppIcon.icns`), so it always matches the installed brand.
+    case sukrara
 
-    /// The file in `Resources/ServiceIcons`.
-    var file: (name: String, ext: String) {
+    /// The file in `Resources/ServiceIcons` (nil: Sukrara, the app's own icon).
+    var file: (name: String, ext: String)? {
         switch self {
         case .juggluco: ("juggluco", "png")
         case .nightscout: ("nightscout", "svg")
         case .libreLinkUp: ("librelinkup", "png")
+        case .sukrara: nil
         }
     }
 
-    /// The service's square art (nil only if the resource is missing: the place stays empty, never a crash).
+    /// The service's square art, or Sukrara's whole app icon (nil only if the resource is missing: the place stays
+    /// empty, never a crash).
     var image: NSImage? {
+        guard let file else { return NSApplication.shared.applicationIconImage }
         if let cached = Self.cache[self] { return cached }
         guard
             let url = Bundle.module.url(
@@ -41,10 +47,10 @@ enum AppService: String, CaseIterable {
 
     private static var cache: [AppService: NSImage] = [:]
 
-    /// The service a source reads from (Android `SourceIcon`); nil for another Sukrara (Sukrara's own drop).
-    static func of(_ kind: SourceKind) -> AppService? {
+    /// The app or service a source reads from (Android `SourceIcon`).
+    static func of(_ kind: SourceKind) -> AppService {
         switch kind {
-        case .sukrara: nil
+        case .sukrara: .sukrara
         case .lanJuggluco: .juggluco
         case .nightscout: .nightscout
         case .libreLinkUp: .libreLinkUp
@@ -74,12 +80,20 @@ struct ServiceIcon: View {
         let tile = side * 824 / 1024
         ZStack {
             if let image = service.image {
-                Image(nsImage: image)
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: tile, height: tile)
-                    .clipShape(RoundedRectangle(cornerRadius: tile * 185.4 / 824, style: .continuous))
-                    .shadow(color: .black.opacity(0.28), radius: max(0.5, side / 64), y: max(0.5, side / 96))
+                if service.file == nil {
+                    // Sukrara's app icon is already on the icon grid (its rounded square and shadow): drawn whole
+                    Image(nsImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: side, height: side)
+                } else {
+                    Image(nsImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: tile, height: tile)
+                        .clipShape(RoundedRectangle(cornerRadius: tile * 185.4 / 824, style: .continuous))
+                        .shadow(color: .black.opacity(0.28), radius: max(0.5, side / 64), y: max(0.5, side / 96))
+                }
             }
         }
         .frame(width: side, height: side)
@@ -138,25 +152,13 @@ struct ServiceLabel: View {
     }
 }
 
-/// A source's icon at the start of its row (Android `SourceIcon`): the app's or service's own icon, and Sukrara's drop
-/// in the text's secondary colour for another Sukrara (Android's `ds_ic_status_sukrara`).
+/// A source's icon at the start of its row (Android `SourceIcon`): the app's or service's own icon, Sukrara's own app
+/// icon for another Sukrara.
 struct SourceIcon: View {
     let kind: SourceKind
     var size: ServiceIconSize = .twoLines
-    @ScaledMetric(relativeTo: .body) private var scale: CGFloat = 1
 
     var body: some View {
-        if let service = AppService.of(kind) {
-            ServiceIcon(service: service, size: size)
-        } else {
-            let side = size.rawValue * scale
-            Image(systemName: "drop.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: side * 0.42, height: side * 0.56)
-                .foregroundStyle(.secondary)
-                .frame(width: side, height: side)
-                .accessibilityHidden(true)
-        }
+        ServiceIcon(service: AppService.of(kind), size: size)
     }
 }
