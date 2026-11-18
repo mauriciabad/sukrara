@@ -2028,6 +2028,16 @@ Platform; journey and repro; what's left behind or broken; fix.
     active as a denial).
     - **Android fixed** (`InviteProgress.Ended`): allowed and then left says *Ana stopped following you*, removed in
       Settings › Sharing *You removed Ana*, also once the invite record is pruned; never a denial. `InviteProgressTest`.
+21. **MEDIUM, Android (the owner's phone, d342b0818): deleting an entry LibreView had said only *Deleted: 0,2u long
+    insulin*, not *… It is removed from LibreView too.*** (beside the Libre 3 app, sending as LibreLink; also a note).
+    The delete did go up (the ledger at `v` 0, `lastOkMs` its time), so nothing held it but the marks:
+    `LvEntryMarks.removesOnDelete` counted a refused upload (`LvState.refused`, which waits for a change) as stopped,
+    and the delete is that change.
+    - **Android fixed** (`LvEntryMarks.held` / `refused`): a refused upload still marks the rows *stopped*, but no longer
+      hides that a delete takes the entry out of LibreView; sign in again, another device on the identity and the Libre
+      app stopped still do. `LibreViewUploaderTest` (*an entry LibreView has is said to go from LibreView on delete*).
+      Inferred from the code and the owner's files (the only state that holds the mark back and lets the delete go at
+      once); not walked on the owner's phone.
 
 ### 7. Questions and settings: what they change, and what to remove
 - **Mac *Whose glucose*** changes only words, LibreLinkUp's pick (yourself or the other connection) and the per-person log question. Its removal (decided) must:

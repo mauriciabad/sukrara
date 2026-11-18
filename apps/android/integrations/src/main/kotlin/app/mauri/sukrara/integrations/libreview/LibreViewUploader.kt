@@ -100,8 +100,8 @@ data class LvPageState(
 /**
  * What LibreView has of the entries while the upload runs (the wearer, signed in, switch on), for home's list: [from] =
  * new entries go up when changed after it (epoch s; 0 = the entries switch is off: no marks); [stopped] = nothing goes
- * up until the person acts (sign in again, take over from another device, LibreView refused the last upload, or the
- * watchdog stopped it); [waitsForLibreApp] = the official app uploads and its identity isn't known: every entry waits,
+ * up now: [held] until the person acts (sign in again, take over from another device, or the watchdog stopped it), or
+ * [refused] (LibreView refused the last upload) until the next change; [waitsForLibreApp] = the official app uploads and its identity isn't known: every entry waits,
  * nothing is wrong, and they go up once Sukrara reads the sensor and the person takes over; [official] = the identity
  * the official app uploads under: an entry LibreView has under it (sent before LibreLinkUp became the source) waits the
  * same way for its edits and deletes (signing in there would stop the official app's upload).
@@ -109,10 +109,16 @@ data class LvPageState(
 data class LvEntryMarks(
     val ledger: Map<String, LvSent>,
     val from: Long,
-    val stopped: Boolean,
+    /** Held until the person acts: sign in again, *Take over*, *Send again* after the Libre app stopped. */
+    val held: Boolean,
     val waitsForLibreApp: Boolean = false,
     val official: LvIdentity? = null,
+    /** LibreView refused the last upload: nothing goes until an entry or a setting changes (a delete is such a change). */
+    val refused: Boolean = false,
 ) {
+    /** Nothing goes up now ([held], or [refused]): the rows' *stopped* mark. */
+    val stopped: Boolean get() = held || refused
+
     fun mark(
         t: Treatment,
         now: Instant,
@@ -123,10 +129,11 @@ data class LvEntryMarks(
         waitsForLibreApp || (official != null && ledger[t.id]?.let { it.v != 0L && LvIdentity.of(it.via) == official } == true)
 
     /**
-     * Deleting [t] takes it out of LibreView on the next upload (it has a live version and the upload isn't stopped or
-     * waiting for the Libre app).
+     * Deleting [t] takes it out of LibreView on the next upload: it has a live version, and the upload isn't held by
+     * something only the person lifts or waiting for the Libre app. A refused upload doesn't hold it: the delete is the
+     * change that sends again (the owner's phone, d342b0818: the delete went up, the snackbar didn't say so).
      */
-    fun removesOnDelete(t: Treatment): Boolean = !stopped && !waits(t) && (ledger[t.id]?.v ?: 0L) != 0L
+    fun removesOnDelete(t: Treatment): Boolean = !held && !waits(t) && (ledger[t.id]?.v ?: 0L) != 0L
 }
 
 /** Where the upload stands: Sukrara is the uploader, or it sends beside the official app ([beside]). */
@@ -309,15 +316,16 @@ class LibreViewUploader(
         combine(settingsFlow, login.account, store.data, role, modeFlow) { s, a, st, r, mode ->
             if (s.on && a != LibreViewAccountState.SignedOut && r?.owner == true) {
                 val send = mode.send
-                val stopped =
-                    (send != null && st.otherOn(send)) || st.refused || a is LibreViewAccountState.SignInAgain ||
+                val held =
+                    (send != null && st.otherOn(send)) || a is LibreViewAccountState.SignInAgain ||
                         (mode.beside && st.libreAppStopped > 0)
                 LvEntryMarks(
                     st.ledger,
                     if (s.treatments) st.entriesFrom else 0L,
-                    stopped,
+                    held,
                     waitsForLibreApp = mode.beside && send == null,
                     official = mode.official,
+                    refused = st.refused,
                 )
             } else {
                 null

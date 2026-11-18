@@ -1084,6 +1084,43 @@ class LibreViewUploaderTest {
         }
 
     @Test
+    fun `issue 213 - an entry LibreView has is said to go from LibreView on delete, also after a refused upload`() =
+        runBlocking {
+            // the owner's phone (d342b0818): beside the Libre 3 app, sending as LibreLink; the entry is there (v ≠ 0)
+            signedInAndOn()
+            role.value = libreLinkUp
+            officialAppSays(40068)
+            treatments.upsertIfNewer(treatment("a", 0, kind = TreatmentKind.LongInsulin, amount = 0.2, modified = clock.now()))
+            uploader.cycle()
+            val a = treatments.get("a")!!.treatment
+            assertEquals(
+                "librelink",
+                store.data
+                    .first()
+                    .ledger
+                    .getValue("a")
+                    .via,
+            )
+            assertTrue(uploader.entryMarks.first()!!.removesOnDelete(a))
+
+            // a later upload refused (another entry): nothing goes until a change, and a delete is one
+            clock.advance(Duration.ofMinutes(1))
+            measurements = MockResponse().setBody("""{"status":5,"reason":"bad"}""")
+            treatments.upsertIfNewer(treatment("b", 0, modified = clock.now()))
+            uploader.cycle()
+            assertTrue(store.data.first().refused)
+            val marks = uploader.entryMarks.first()!!
+            assertTrue("the rows still say the upload stopped", marks.stopped)
+            assertTrue("home's snackbar: removed from LibreView too", marks.removesOnDelete(a))
+
+            // the person's other reasons still hold a delete back: another device on LibreLink, the Libre app stopped
+            store.update { it.copy(linkOtherDevice = true) }
+            assertFalse(uploader.entryMarks.first()!!.removesOnDelete(a))
+            store.update { it.copy(linkOtherDevice = false, libreAppStopped = clock.now().epochSecond) }
+            assertFalse(uploader.entryMarks.first()!!.removesOnDelete(a))
+        }
+
+    @Test
     fun `issue 213 - beside LibreLink (a Libre 1 or 2) the treatments go up as the Libre 3 app, never as LibreLink`() =
         runBlocking {
             for (dtid in listOf(40066, 40067)) {
