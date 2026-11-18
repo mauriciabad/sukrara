@@ -11,6 +11,21 @@ import app.mauri.sukrara.monitor.hub.GlucoseHubImpl
 /** Why the service is being started (logs, and which paths may start it). */
 enum class StartReason { App, Boot, LockedBoot, PackageReplaced, TimeChanged, HealthCheck, AlertCheck, Resume }
 
+/** What the source has to read now (the starter's check: cheap, it runs on every start and health check). */
+enum class Readiness {
+    /** Something to read: the service runs. */
+    Ready,
+
+    /** Nothing before the first unlock (a Sukrara stream, Juggluco): the service waits; monitoring stays as it was. */
+    AfterUnlock,
+
+    /**
+     * Nothing set up to read (no sensor paired, not following anyone): nothing comes until the person sets a source up,
+     * so this phone isn't monitoring.
+     */
+    Nothing,
+}
+
 enum class StartResult {
     Started,
 
@@ -40,18 +55,20 @@ interface StoppedNotice {
  */
 class MonitorStarter(
     private val hub: GlucoseHubImpl,
-    /** Whether the source has something to monitor (a cheap check: it runs on every start and health check). */
-    private val canMonitor: suspend (SourceSpec) -> Boolean,
+    /** What the source has to read now. */
+    private val readiness: suspend (SourceSpec) -> Readiness,
     private val launcher: ServiceLauncher,
     private val notice: StoppedNotice,
     private val log: (String) -> Unit = {},
 ) {
     suspend fun start(reason: StartReason): StartResult {
-        val spec = hub.state.value.spec
-        if (spec == null || !canMonitor(spec)) {
+        val now = readinessNow()
+        if (now != Readiness.Ready) {
             // nothing to resume any more: an earlier "stopped" goes away
             if (hub.state.value.service is ServiceState.Stopped) hub.setService(ServiceState.NotRunning)
             notice.cancel()
+            settle(now)
+            log("start ($reason): ${StartResult.NotNeeded} (${now ?: "no source"})")
             return StartResult.NotNeeded
         }
         return if (launcher.launch()) {
@@ -61,6 +78,25 @@ class MonitorStarter(
             denied()
             StartResult.Denied
         }.also { log("start ($reason): $it") }
+    }
+
+    /**
+     * The running service found nothing to read after a source change (the sensor chosen with none paired) and stops:
+     * the same as a start that finds it ([settle]), without waiting for the next start.
+     */
+    suspend fun nothingToRead() = settle(readinessNow())
+
+    private suspend fun readinessNow(): Readiness? =
+        hub.state.value.spec
+            ?.let { readiness(it) }
+
+    /**
+     * Nothing set up to read (the sensor forgotten, the sensor chosen before one is paired) is not monitoring, as after
+     * *Forget this sensor*: home says so (*Pair sensor*, never "it reconnects on its own") and no "no data" alarm waits
+     * for a reading that can't come; readings still on their way can't arm it again.
+     */
+    private suspend fun settle(now: Readiness?) {
+        if (now == Readiness.Nothing && hub.state.value.monitoringStartedAt != null) hub.resetMonitoring(fence = true)
     }
 
     /** The service itself couldn't go to the foreground (or Android refused the start). */

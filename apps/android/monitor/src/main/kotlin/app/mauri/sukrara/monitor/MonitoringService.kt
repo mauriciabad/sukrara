@@ -160,6 +160,7 @@ class MonitoringService : Service() {
                 val source = role?.let { m.source(it) }
                 if (source == null) {
                     // nothing to monitor (setup not done, no sensor, not following): no service; the app shows why
+                    m.starter.nothingToRead()
                     stopSelf()
                 } else {
                     m.hubImpl.attach(source)

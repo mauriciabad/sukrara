@@ -86,6 +86,7 @@ import app.mauri.sukrara.monitor.notify.SharingLine
 import app.mauri.sukrara.monitor.sensorend.CalendarRecord
 import app.mauri.sukrara.monitor.sensorend.SensorCalendar
 import app.mauri.sukrara.monitor.sensorend.SensorEndMemory
+import app.mauri.sukrara.monitor.service.Readiness
 import app.mauri.sukrara.monitor.service.StartReason
 import app.mauri.sukrara.pen.PenLog
 import app.mauri.sukrara.pen.PenNotificationPorts
@@ -357,7 +358,7 @@ class AppGraph(
                 ),
             spec = spec,
             source = ::readingSource,
-            canMonitor = ::canMonitor,
+            readiness = ::sourceReadiness,
             settings = followerSettings.settings,
             // before the unlock the treatments are locked away: the card shows none (they come at the unlock)
             treatments = recentTreatments,
@@ -1097,7 +1098,7 @@ class AppGraph(
         scope.async(dispatchers.io, CoroutineStart.LAZY) {
             monitorReady.await()
             val s = spec.first()
-            !unlocked.value && s?.readsSensor == true && canMonitor(s)
+            !unlocked.value && s?.readsSensor == true && sourceReadiness(s) == Readiness.Ready
         }
 
     /**
@@ -1189,24 +1190,39 @@ class AppGraph(
 
     /**
      * Whether [readingSource] gives a source, without building one: no pairing decrypted, no made-up source built (the
-     * starter asks on every start and health check).
+     * starter asks on every start and health check). Nothing set up (no sensor paired, no Nightscout site, not
+     * following) is [Readiness.Nothing]: this phone isn't monitoring then; Juggluco, Nightscout and a stream before the
+     * first unlock only wait.
      */
-    private suspend fun canMonitor(spec: SourceSpec): Boolean =
+    private suspend fun sourceReadiness(spec: SourceSpec): Readiness =
         when (spec.kind) {
             SourceKind.Sensor, SourceKind.PhoneApp -> {
-                BuildVariant.hasWearerSource(this) || readsSensor(spec)
+                when {
+                    BuildVariant.hasWearerSource(this) || readsSensor(spec) -> Readiness.Ready
+                    spec.kind == SourceKind.PhoneApp -> Readiness.AfterUnlock
+                    else -> Readiness.Nothing
+                }
             }
 
             SourceKind.Nightscout -> {
-                unlocked.value &&
+                when {
+                    !unlocked.value -> Readiness.AfterUnlock
+
                     nightscoutSourceConfig.data
                         .first()
                         .url
-                        .isNotEmpty()
+                        .isNotEmpty() -> Readiness.Ready
+
+                    else -> Readiness.Nothing
+                }
             }
 
             SourceKind.Sukrara -> {
-                unlocked.value && follower.engine.isFollowing()
+                when {
+                    !unlocked.value -> Readiness.AfterUnlock
+                    follower.engine.isFollowing() -> Readiness.Ready
+                    else -> Readiness.Nothing
+                }
             }
         }
 

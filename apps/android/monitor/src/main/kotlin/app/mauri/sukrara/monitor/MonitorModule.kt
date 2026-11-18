@@ -31,6 +31,7 @@ import app.mauri.sukrara.monitor.service.AndroidStoppedNotice
 import app.mauri.sukrara.monitor.service.FreshnessTicker
 import app.mauri.sukrara.monitor.service.HealthCheck
 import app.mauri.sukrara.monitor.service.MonitorStarter
+import app.mauri.sukrara.monitor.service.Readiness
 import app.mauri.sukrara.monitor.systemui.SystemUiRoot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
@@ -67,8 +68,8 @@ class MonitorModule(
     record: StateStore<MonitorRecord>,
     spec: Flow<SourceSpec?>,
     val source: suspend (SourceSpec) -> ReadingSource?,
-    /** Whether [source] would give a source, without building it (the starter asks on every start and health check). */
-    canMonitor: suspend (SourceSpec) -> Boolean,
+    /** What [source] has to read now, without building it (the starter asks on every start and health check). */
+    readiness: suspend (SourceSpec) -> Readiness,
     settings: SettingsRepository,
     treatments: Flow<List<Treatment>>,
     val graphConfig: Flow<GraphConfig>,
@@ -99,7 +100,7 @@ class MonitorModule(
     val starter =
         MonitorStarter(
             hub = hubImpl,
-            canMonitor = canMonitor,
+            readiness = readiness,
             launcher = AndroidServiceLauncher(context),
             notice = AndroidStoppedNotice(context),
             log = { android.util.Log.i("Sukrara.monitor", it) },

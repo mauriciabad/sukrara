@@ -2002,10 +2002,18 @@ Android (`:monitor`: `GlucoseHubImpl`, `MonitoringService`, `MonitorStarter`, `M
 tests `GlucoseHubTest`, `MonitorServiceLogicTest`).
 - One `connectedDevice` foreground service for both roles hosts the role's one reading source; START_STICKY.
 - Started from: opening the app, boot, app update, time / time-zone change, the **health check** (an exact wake-up
-  every 15 min on the monotonic clock that restarts the service when there is something to monitor), the alert check, and the *Resume* notice. Nothing starts when setup isn't done or nothing is set up to monitor.
+  every 15 min on the monotonic clock that restarts the service when there is something to monitor), the alert check, and the *Resume* notice. Nothing starts when setup isn't done or nothing is set up to monitor. Every
+  start is logged with its outcome (`Sukrara.monitor: start (PackageReplaced): Started`, `… NotNeeded (Nothing)`).
+- **Nothing set up to read** (`MonitorStarter`, `Readiness.Nothing`: your sensor with no pairing, i.e. forgotten or
+  chosen in Source before one is paired; Nightscout with no site; a stream not following anyone) is *Not monitoring*: a
+  start (or the service, at the change) that finds it resets monitoring as *Forget this sensor* does, so home says *Not
+  monitoring: no sensor yet* with *Pair sensor* (never *it reconnects on its own*) and no "no data" alarm waits for a
+  reading that can't come. Juggluco, Nightscout and a stream before the first unlock only wait (`AfterUnlock`):
+  monitoring stays armed. (Seen on the owner's phone, 2026-11-18: Juggluco armed monitoring, then the sensor was chosen
+  with no pairing; nothing ran and home said *it reconnects on its own*.)
 - **Monitoring starts at the first reading** of the current source (remembered across restarts). Before that every
   surface says *Not monitoring: no sensor yet* and no "no data" alarm can be armed. Only removing the
-  sensor or changing the role (explicit actions) go back to *Not monitoring*.
+  sensor, choosing a source with nothing to read (above) or changing whose glucose go back to *Not monitoring*.
 - Readings: LO / HI kept (never dropped) and stored as the flags at the one way in (Android hub `GlucoseRange.normalise`,
   Mac follower `GlucoseRange.normalised`): any number below 40 from any source (sensor, Juggluco, relay, Nearby) is
   stored as 39 and any above 400 as 401, without a rate, so the follower's card shows *LO* / *HI* and the graph, uploads

@@ -32,7 +32,8 @@ class MonitorServiceLogicTest {
     private val role = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
     private var allowed = true
     private var launches = 0
-    private var somethingToMonitor = true
+    private var readiness = Readiness.Ready
+    private val record = InMemoryStateStore(MonitorRecord())
     private val asked = mutableListOf<SourceSpec>()
     private val notice =
         object : StoppedNotice {
@@ -69,7 +70,7 @@ class MonitorServiceLogicTest {
                 dispatchers,
                 FakeClock(),
                 InMemoryReadingsRepository(),
-                InMemoryStateStore(MonitorRecord()),
+                record,
                 role,
             )
         hub.start()
@@ -77,7 +78,7 @@ class MonitorServiceLogicTest {
         val starter =
             MonitorStarter(hub, { r ->
                 asked += r
-                somethingToMonitor
+                readiness
             }, {
                 launches++
                 allowed
@@ -103,15 +104,58 @@ class MonitorServiceLogicTest {
     fun `nothing to monitor starts nothing and shows no notice`() =
         runTest {
             val (_, starter) = setUp()
-            somethingToMonitor = false
+            readiness = Readiness.Nothing
             assertEquals(StartResult.NotNeeded, starter.start(StartReason.HealthCheck))
             role.value = null
-            somethingToMonitor = true
+            readiness = Readiness.Ready
             runCurrent()
             assertEquals(StartResult.NotNeeded, starter.start(StartReason.Boot))
             assertEquals(0, launches)
             assertEquals(0, notice.shown)
             assertEquals("asked for the hub's role, never without one", listOf(SourceSpec.YourSensor), asked)
+        }
+
+    @Test
+    fun `nothing set up to read is not monitoring, so no no-data alarm stays armed`() =
+        runTest {
+            // the owner's phone (#213 step 0): monitoring armed by Juggluco, then the sensor chosen with no pairing
+            val (hub, starter) = setUp()
+            record.update { it.copy(startedAtEpochMs = 1_000) }
+            runCurrent()
+            readiness = Readiness.Nothing
+            assertEquals(StartResult.NotNeeded, starter.start(StartReason.PackageReplaced))
+            runCurrent()
+            assertNull(hub.state.value.monitoringStartedAt)
+            assertEquals(0, launches)
+        }
+
+    @Test
+    fun `the service stopping for nothing to read settles it at once, never a source that has something`() =
+        runTest {
+            val (hub, starter) = setUp()
+            record.update { it.copy(startedAtEpochMs = 1_000) }
+            runCurrent()
+            // a race: the service saw no source, but the source has one by now
+            starter.nothingToRead()
+            runCurrent()
+            assertEquals(Instant.ofEpochMilli(1_000), hub.state.value.monitoringStartedAt)
+
+            readiness = Readiness.Nothing
+            starter.nothingToRead()
+            runCurrent()
+            assertNull(hub.state.value.monitoringStartedAt)
+        }
+
+    @Test
+    fun `a source that waits for the unlock keeps monitoring armed`() =
+        runTest {
+            val (hub, starter) = setUp()
+            record.update { it.copy(startedAtEpochMs = 1_000) }
+            runCurrent()
+            readiness = Readiness.AfterUnlock
+            assertEquals(StartResult.NotNeeded, starter.start(StartReason.LockedBoot))
+            runCurrent()
+            assertEquals(Instant.ofEpochMilli(1_000), hub.state.value.monitoringStartedAt)
         }
 
     @Test
@@ -129,7 +173,7 @@ class MonitorServiceLogicTest {
     fun `the health check reschedules even when there is nothing to monitor`() =
         runTest {
             val (_, starter) = setUp()
-            somethingToMonitor = false
+            readiness = Readiness.Nothing
             assertEquals(StartResult.NotNeeded, HealthCheck(alarms, starter).onFire())
             assertEquals(1, alarms.health.size)
         }
