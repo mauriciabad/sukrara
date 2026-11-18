@@ -22,8 +22,8 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
   = no relay: Q22), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local
   test release and trusts the debug key: Q25), `GARMIN_SIM --ez on true|false` (Sukrara Aura's push goes to the
-  Connect IQ simulator instead of Garmin Connect: Q27), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp and
-  the LibreView sign-in go to the local fake `tools/librelinkup-probe/fake.py`: Q30). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
+  Connect IQ simulator instead of Garmin Connect: Q27), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp,
+  the LibreView sign-in and the LibreView upload go to the local fake `tools/librelinkup-probe/fake.py`: Q30). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
   stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an
   alert, a treatment or a sensor state that isn't real (a release build has no DebugReceiver).
@@ -1201,8 +1201,18 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       *Sensor warming up · ready at …* (not *Nothing new*), and Connect's *Continue* goes on (Mac: no *Reading received*
       for the old sensor's reading).
 - [ ] Settings › Source › LibreLinkUp: account, whose glucose, sensor, status with its exit (*Sign in again*, *Try
-      again*, *Pick again*); *Sign out* is confirmed. Share with apps › LibreView says *Paused: the Libre app uploads…*
-      and offers no *Take over*; Tidepool shows *Glucose from LibreLinkUp* (on).
+      again*, *Pick again*); *Sign out* is confirmed. Tidepool shows *Glucose from LibreLinkUp* (on).
+- [ ] LibreView beside the Libre app (FEATURES.md *LibreView upload* "Beside the Libre app", docs/45), emulator and the
+      fake only (it serves LibreView's app API under `/lv/` too and acts as LibreView does: one session per app
+      identity, a sign-in on the Libre app's identity stops its readings and prints `!!!`): the LibreView account and
+      Share with apps › LibreView on → *Beside the Libre app* says *FreeStyle LibreLink* and *log in one app only*,
+      *Glucose* says the Libre app sends it; log a dose → the fake prints `LibreView upload as librelink: 1 entries,
+      0 glucose` and never a `libre3` sign-in (`/_fake` lists the sign-ins); `dtid=40067` → uploads as `libre3`, never
+      `librelink`; `dtid=40069` → *Paused: LibreLinkUp doesn't say which Libre app…*, nothing sent, home's rows
+      *Waiting for LibreView…*; `lvother=1` + `lvexpire=1` → *Another device sends as FreeStyle LibreLink* → *Take
+      over* (the dialog says the Libre app isn't affected). Watchdog: `lvmerge=1` + `lvexpire=1`, log a dose (a new
+      sign-in stops the fake's readings) → after 10 min the status *Stopped since …* and home's *The Libre app stopped
+      uploading* (*Fix* → the page); `stopped=0`, the status row → *Send again* → the next dose goes up.
 - [ ] The move (the owner's phone, with the Libre app holding a running Libre 3 and LibreLinkUp as the source): *Read the
       sensor in Sukrara* → *Take the sensor from the Libre app* (what the Libre app loses, *Open the Libre app's info*)
       → force-stop the Libre app → *Take over* → tap: the source becomes *Sukrara reads your sensor* by itself, the

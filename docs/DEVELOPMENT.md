@@ -341,7 +341,10 @@ curl 'http://127.0.0.1:8766/_fake?login=terms'      # what it answers: login, ca
 ```
 
 The command saves the choice and ends the app process (open the app); `--es server off` goes back to Abbott's hosts.
-The LibreView upload (`fsll3.freestyleserver.com`) isn't faked: keep it off on the emulator, or its network off.
+The fake also serves LibreView's app API (`/lv/`), so the LibreView upload goes there too (with `adb reverse` on
+`127.0.0.1` only: through 10.0.2.2 the upload refuses the plain-http address and only fails): one session per app identity as
+LibreView keeps them, `dtid`, `lvother`, `lvexpire` and `lvmerge` to reach every state of *Beside the Libre app*
+(docs/QA.md Q30).
 
 ## Garmin (Sukrara Aura)
 
