@@ -937,6 +937,11 @@ Discarded or deferred, with reasons:
 
 ## Decisions for the owner
 
+**Waiting on the owner (2026-11-18): switching sources with a Sukrara link.** The journey review in Appendix G
+recommends *one person, one link* and lists 8 decisions (its §5): D vs A / B / C, other sources on a linked device,
+the `leave` event and last-seen, settings and history when leaving a link, C as a later backup path, *Default* in
+*Settings from*, the cost to testing.
+
 **Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes
 with every root setup and isn't an issue (the Libre app ran on their rooted phone with it, so a test R1 is
 unnecessary); the person owns the sensor and the phone and may take their own data for themselves; makers use their
@@ -1524,3 +1529,232 @@ poll as the floor. With each reading's time, the SPEC's trend quiets can hold, u
 | **R1** Does the Libre app run here? (10 min) | install the Libre app from Google Play, open it to its first screens; **don't sign in to a sensor, don't tap the sensor** while it's installed; uninstall | whether today's app stops on root as Abbott says (expected yes), and how: a message or a silent stop | none expected: Sukrara keeps the sensor's one link; not tapping keeps the Libre app from claiming it |
 | **R2** Is its store still encrypted? (5 min, before uninstalling, if R1 got past the first screen) | a root shell lists the Libre app's data file names and sizes and tries to open its database read-only as plain SQLite or Realm; nothing copied off the phone, no settings value read | whether the 2023 finding holds (expected yes). Run by a rooted Eversense user on their app, it decides decision 12's first app | none: read-only |
 | R3 The Libre app's notification (already asked) | **on an unrooted phone** (a spare, or a tester's): at a sensor change start the new sensor in the Libre app signed in to your LibreView, a day, then take it over in Sukrara on your phone by tap | whether the notification carries the value (decision 2) | medium: a day on the Libre app's alarms on the other phone; a failed takeover leaves the sensor there, still alarming |
+
+## Appendix G: switching sources with a Sukrara link (journey review, 2026-11-18)
+
+*Product / UX / QA journey review of #213 (Person × Source, Nightscout, LibreLinkUp, the polish round), Mac first and
+switching between sources on both apps, after the owner found the Mac on LibreLinkUp still linked to their phone with
+the follow out of reach. Walked on the real apps: the Mac as a dev fixture run driven through Accessibility; Android on
+two emulators (wearer + follower) with the local relay, the fake LibreLinkUp and a Nightscout stub. The owner's Mac
+and phone were only read. Screenshots (synthetic data) stayed in the session's scratch folder, not in the repo:
+`mac-01` … `mac-12`, `android/00` … `android/27`.*
+
+### Top findings (severity order, one line each)
+1. **HIGH, both apps.** A follow left behind by a source switch is invisible and can't be stopped.
+   - The Mac keeps it fully live: relays, Bluetooth, the phone's settings and thresholds, the path badge.
+   - Android pauses it silently.
+   - The wearer's phone shows the follower as a follower in both cases.
+2. **HIGH, same person on two devices.** The Mac on LibreLinkUp loses the phone's treatments and pen doses (the owner's NovoPen case). Its own entries reach nothing.
+3. **HIGH, Android.** After leaving a stream, alerts, the live notification, widgets and Settings › Source carry the old follow's name. Leo's alert read "Ana" (`android/27`).
+4. **HIGH, Android.** Changing *Whose glucose* keeps LibreLinkUp's pick, so someone else's glucose became "yours": it was offered to the clinic share and treated as the wearer's (`android/20`, `android/21`).
+5. **HIGH, Android.** "The history on this phone stays" is false.
+   - The rank rule lets the new source's backfill overwrite the old one's readings, another person's included.
+   - On return, the stream's backfill is dropped. Ana's card showed the stub's curve (`android/14`).
+6. **HIGH, both apps.** No follower ever tells the wearer it left, paused or switched. The wearer's list shows it as following, and the "your followers were told" note is written regardless.
+7. **HIGH, Mac.** With Juggluco as the source and a kept follow, Treatments and Add Treatment write into the followed phone's log. The card's chart and alert quiets ignore those entries (`mac-11`).
+8. **HIGH, both apps.** The escalation switch shows "on" where it does nothing:
+   - Mac: in *Settings from* Default or Custom, and on every non-stream source.
+   - Android: shows the wearer's "tell followers" rows for someone else's non-stream source.
+9. **HIGH, Android.** Picking another LibreLinkUp person never asks first (the Mac asks), and their readings mix with the earlier person's.
+10. **MEDIUM.** The rest is in the findings below:
+    - accounts of sources not in use stay hidden;
+    - a standalone Mac stuck in "Their settings";
+    - no-data reasons that fall through to the follow;
+    - treatments crossing logs;
+    - a sensor pairing that deletes the history without the dialog;
+    - rings counted over 12 h;
+    - wording.
+
+### Recommendation on A / B / C
+None of the three as stated. I recommend **one person, one link (call it D)**.
+
+A Sukrara link is a relationship, not one radio row among sources. While a device is linked, it reads that person through the link.
+- **Same person (the owner's case).** The phone's own source is upstream. A phone on *Yours · LibreLinkUp* already shares those readings with its followers, plus pen doses, treatments, settings, alerts and escalation. So the Mac keeps following the phone. Reading LibreLinkUp on the Mac too adds nothing except for testing, and loses all of that.
+- **Different person.** This means switching who the device watches, so it means leaving the link.
+- **Leaving a link** always means *Stop following*, confirmed, and:
+  - the wearer is told (a new PROTOCOL-v2 `leave` event);
+  - their settings are copied as this device's own;
+  - the history stays as that person's;
+  - coming back takes a new invite or nearby pairing.
+- **Why not the others:**
+  - A is unsafe for a different person and pointless for the same one.
+  - B leaves a relationship the wearer believes is live, with frozen or swapped settings and two treatment logs. That is exactly the owner's objection.
+  - C is only coherent for the same person; it could come later as a "backup path" under the link if wanted.
+
+### 1. What the Sukrara link carries, and what happens today when another source is picked
+
+Prefixes:
+- `M/` = `apps/macos/Sources/SukraraApp/` (except where `SukraraShare` is named)
+- `A/` = `apps/android/` (inventory with file:line by a code-reading agent, verified by the emulator walk)
+
+**Read-only evidence from the owner's Mac** (`sourceKind=libreLinkUp`, `sourcePerson=yours`, `settingsFrom` unset, so the default "wearer" applies):
+- The follow store `readings.csv` (11,951 rows) was written to the minute while LibreLinkUp was the source.
+- Four TLS sockets were open, including the relay at nos.lol.
+- Bluetooth showed "Tartaruga" connected.
+- `wearer-settings.json` (15 Nov) was being applied.
+
+| Link item | Mac today | Android today |
+|---|---|---|
+| Relays and Bluetooth | **Stay connected.** `follower.start()` is unconditional (`M/AppModel.swift:283`). `FollowerService` has no pause (`SukraraShare/Follower/FollowerService.swift:101-131`). Readings are only ignored (`AppModel.swift:191,296-298`). | **Closed at once** (walked: relay socket gone; the wearer shows "Paired, not nearby"). `A/share/.../FollowerEngine.kt:564-578,705-718`. Follow record and key kept. |
+| History | The follow store keeps filling, unused. Rings count only over the active store (`AppModel.swift:434-451,711`), so LibreLinkUp's 12 h hides the 7/14/30-day rings. | The rank rule overwrites relayed readings with online ones, another person's too. The stream's backfill is dropped on return (`ReadingRank.kt:21-34`). |
+| 53 mirrored settings + *Settings from* | **Keep applying** the phone's values, thresholds included, to the other source: `M/Windows/WindowCoordinator.swift:116-119` (gated on `link.isFollowing` only), `AppDelegate.swift:330-352`, `Launch/AppServices.swift:74-77`. General and Alerts still say "Their settings" (`mac-09`). | **Silently stop** (treated as Custom): `A/app/.../FollowerSettingsBridge.kt:70-74`. Hidden, and the choice is kept for a return. Settings search still lists *Settings from* and opens a blank page (`SettingsIndex.kt:387`, `SettingsScreen.kt:711-714`). |
+| Mirrored alert events, acks | Dropped: `setMirroring(followMonitoring && …)` (`AppModel.swift:306`, `Alerts/AlertController.swift:135-148`). The Mac's own engine runs on the new source. | Not received. Own engine runs (`AlertRuntime.kt:804-815,964-969`). |
+| Escalation | Arrives and is dropped silently; the switch still shows "on" (`Windows/Settings/AlertsRangesPane.swift:52-64`). | Not received. The wearer still sends it to everyone and notes "followers were told" (`AlertNotes.kt:127`). |
+| Treatments, writer rights, pen doses | LibreLinkUp or Nightscout: the Mac's own log. The phone's log and pen doses are invisible, and Mac entries go nowhere. Juggluco: Add Treatment still writes to the followed phone's log (`WindowCoordinator.swift:73-80`, `Panel/PanelView.swift:451-458`) while chart and quiets ignore it (`AppModel.swift:385-404`). | One shared log. The followed person's entries become locally editable (`TreatmentLog.kt:157-160`). Own entries stay *Sending…*. Nightscout uploads entries from the wearer's log to the site (`NightscoutSource.kt:450-455`, walked). |
+| Sensor life | From the new source (`AppModel.swift:375-381`). | From the new source; the stale record sensor shows again on return. |
+| Names, avatars | Gated (`AppModel.swift:562`). | **Stale old name** on alerts, notification, widgets and the Source page (`AlertRuntime.kt:288,947`, `SourceScreen.kt:73`, `GlucoseWidgets.kt:192`, `LockWidget.kt:158`). Cause: `follower.engine.load()` sets the hub link for any source (`AppGraph.kt:1219-1220`). |
+| Wearer's list, presence | "Connected" over Bluetooth while the Mac ignores the stream. | "Following since…, Paired, not nearby". No last-seen exists (`OwnerState.kt:21-33`). Unfollow sends nothing on either app (`FollowerEngine.kt:526-528`; Mac `FollowerRuntime.swift:436-454`). |
+| Link problems (revoked, broken) | Hidden behind the new source. Where that source isn't running yet, the reason falls through to the link (`AppModel.swift:779-801`). | Home keeps "You no longer follow this person" while the new source has values (`NoDataReason.kt:177-179`). |
+| Path badge, blocked features | Panel badge shows the follow's Bluetooth or internet path for LibreLinkUp readings (`PanelView.swift:71-77`, linkPath first). Bluetooth-blocked warning for an unused follow (`Panel/BlockedFeatures.swift:46-48`). | Gated on stream. |
+| Mute all, mutes | `resetMonitoring` on a source change (`AppModel.swift:442-444`). | Setup's switch resets mutes when the stream flag changes (`SetupViewModel.kt:397-410`). Other paths carry them over. |
+| Way back | Instant: it never left. | Instant, silent resume, no Join step (`SetupViewModel.kt:427`). |
+
+### 2. A / B / C per item
+
+Case (i) = the new source is the **same person** the link follows. Case (ii) = a **different person**.
+
+| Item | A: keep the link live | B: pause it | C: both, with fallback |
+|---|---|---|---|
+| Readings path | (i) the link stays up only for battery cost; (ii) same | closed; key kept | (i) link first, online fills gaps; (ii) impossible |
+| History | (i) fine; (ii) two people's stores must stay apart | (i) gap, backfill on resume; (ii) apart | (i) one merged history (rank: stream above online) |
+| Mirrored settings | (i) right; **(ii) the wrong person's thresholds** | (i) frozen copy, or own values that suddenly change (the owner's objection); (ii) must be own | (i) phone's, live |
+| Alerts | (i) mirrored: the card (online, 1–3 min late) disagrees with the phone's alert; own engine: the Mac rings later and ignores carbs logged on the phone. **(ii) the child's alerts under the parent's card: unsafe** | own engine; nothing from the phone | (i) mirror while the stream is live, own engine (phone's settings) when it's silent: a SPEC change plus scenarios |
+| Escalation | (i) works if mirrored; (ii) wrong person | **lost silently**, while the wearer believes it's delivered | (i) works |
+| Treatments, pen doses | (i) right only if the Mac keeps the link's log (today it doesn't); (ii) wrong log | **(i) two logs: the NovoPen case**; (ii) apart | (i) the link's log |
+| Wearer's view | (i) true; (ii) true, but the device isn't watching their glucose | **looks like a follower, hears nothing** (no protocol message exists) | true |
+| Double-alert risk | (i) phone + Mac, as with any follow, but the Mac's is late and ignores the phone's quiets; (ii) one device ringing for two people | low | needs a "never twice for one measurement" rule |
+| Way back | — | instant | — |
+
+**The owner's NovoPen case.** The phone is on *Yours · LibreLinkUp*, so it is first-hand and its owner engine shares readings and treatments, pen doses included, with followers. Confirmed on the emulators: the wearer on LibreLinkUp kept feeding the follower. So the only model that brings the pen doses to the Mac is the one where the Mac stays linked: D, or C under a link.
+- **What the wearer's phone needs for D:** nothing new for the follow itself. It does need a `leave` event when a follower stops, and ideally a last-seen time per follower.
+- **For C later:** nothing beyond that.
+
+### 3. Real use cases for "another source while linked"
+- **Testing** (the owner today). Real, rare.
+- **Same person, phone moved back to the official app.** If Sukrara stays on the phone (*Yours · LibreLinkUp*), it still shares, so the Mac keeps following. There is nothing to switch.
+- **Phone gone** (lost, or Sukrara uninstalled). The link is dead; leave it (Stop following), then use an online source.
+- **Fallback when the phone is offline.** LibreLinkUp or Nightscout for that person is usually fed by the same phone's upload, so it's no real fallback. It only helps when another device uploads the sensor, which is rare.
+- **Different person** (a parent switching the Mac from the child to themselves). That means changing who the device watches, so it means leaving the link (later: several people).
+
+Conclusion: offer another source on a linked device only behind an explanation.
+- **Same person:** "Your phone already sends this Mac what it reads from LibreLinkUp, with your treatments, pen doses, alerts and settings." Buttons: *Keep following your phone* (default) / *Stop following and read LibreLinkUp here*.
+- **Different person:** leaving the link, confirmed.
+
+### 4. Recommended model (D) and the coordinator's questions
+1. **While linked**, Settings › Source shows the link: who, path, *Stop following*, *Reconnect*. Other sources sit behind *Read another way…* with the explanation above. Android works the same way for *Their Sukrara* and *Sukrara on your other phone*.
+2. **Leaving a link** is confirmed and says what happens:
+   - the wearer is told (`leave`);
+   - their settings become this device's own (`SettingsModel.copyWearer`, `M/Windows/Settings/SettingsModel.swift:101-108`), so nothing shifts;
+   - the history stays as that person's (not wiped as *Stop following* wipes today, `FollowerRuntime.swift:445`, `FollowerEngine.kt:552-559`);
+   - for a different person, it offers *Keep Ana's settings as a start* / *Sukrara's defaults*.
+3. ***Settings from* exists only while linked.** Otherwise the device uses its own settings (that's the case on Android; the Mac isn't). The escalation switch shows only while linked with *Their settings*, as SPEC §4 lines 489-490 say.
+4. **Someone else's readings are keyed by the source's identity** (wearer key, LibreLinkUp patient, Nightscout site). This is the owner's Mac decision, extended to Android. The rank rule merges only within one identity.
+5. **Metrics questions:**
+   - (Q1) Yes, count over every store of the person shown. "Same person" is known only by declaration: *Sukrara on your phone* and LibreLinkUp's own connection.
+   - (Q2) In D a follow that isn't the source never supplies settings. They are copied once, explicitly, when leaving.
+   - (Q3) Yes, a hidden metric says why on both apps, e.g. "Needs more readings: 12 h of the last 7 days (25 % needed)".
+6. **C, if the owner wants it later:** "Backup: LibreLinkUp when your phone is silent", a switch under the link, same person only.
+
+### 5. Decisions for the owner
+1. Adopt D (one person, one link) instead of A, B or C?
+2. On a linked device, offer other sources behind the explanation (recommended), or hide them?
+3. Protocol: add `leave` now (recommended)? Per-follower last-seen now or later? The wearer's "followers were told" note only when someone is listening?
+4. Leaving a link copies their settings as own: yes for the same person, ask for a different person?
+5. Keep the history when leaving (recommended) instead of today's wipe?
+6. C as a later backup path for the same person: wanted or never?
+7. Drop *Default* from *Settings from*, keeping *Their settings* / *This device's own*? Optional; it differs little from Custom reset to defaults.
+8. Accept the cost to the owner's testing: trying LibreLinkUp on the Mac means unlinking and re-pairing nearby afterwards, about a minute.
+
+### 6. Findings
+Platform; journey and repro; what's left behind or broken; fix.
+
+1. **HIGH, Mac: the follow runs on behind another source, hidden.**
+   - Repro: dev fixture, setup *Yes · Follow it* → Settings › Source → *LibreLinkUp* (`mac-07` → `mac-08`). The follow rows vanish (who, *Stop following*, *Reconnect*, *How you appear*). Only the footer says the follow is kept.
+   - Left behind: relays and Bluetooth (owner's Mac), the follow store, the phone's settings and thresholds applied to LibreLinkUp, *Their settings* in General and Alerts, the panel badge naming the follow's path, the Bluetooth-blocked warning.
+   - Fix: D. Until then, gate wearer settings, path badge and blocked features on `followMonitoring`; keep the follow's rows and *Stop following* on the Source pane for every source.
+2. **HIGH, both: the same person loses the phone's treatments and pen doses** on a Mac reading LibreLinkUp, and Mac entries never reach the phone, Tidepool or Nightscout.
+   - Fix: D (the Mac follows the phone).
+3. **HIGH, Android: the old follow's name on another source's alerts, notification, widgets and Source page** (`android/25`–`27`).
+   - Fix: hub link null unless `spec.stream`; take the name from the current source.
+4. **HIGH, Android: a change of *Whose glucose* keeps the LibreLinkUp pick, and Ana's glucose became "yours"** (`android/20`, `21`).
+   - It then offered *Share with your clinic* and *Set up sharing*, and alerted as the wearer. Cause: `LibreLinkUpSource.kt:312-350`.
+   - Fix: a person change clears `source.libreLinkUpPatient` and picks again by the rule; it also confirms the stored Nightscout site.
+5. **HIGH, Android: history overwritten across sources and people; "The history on this phone stays" is false** (`android/14`).
+   - Fix: key someone else's readings by source identity; within one person, fence backfill at the previous source's last reading; correct the dialog copy.
+6. **HIGH, Android: another LibreLinkUp person is read without asking, and readings mix.**
+   - Fix: port the Mac's confirmation (`M/Windows/Settings/LibreLinkUpRows.swift:129-140`).
+7. **HIGH, both: the wearer is never told a follower stopped or switched.** It stays listed with no last-seen; escalations fan out to devices that aren't listening (`android/22`, `15`).
+   - Fix: `leave` event (PROTOCOL-v2 addition, both apps) and last-seen (decision 3).
+8. **HIGH, Mac: Juggluco source plus a kept follow writes treatments into the followed phone's log** (`mac-11`).
+   - Fix: D; meanwhile the treatment log and Add Treatment follow the source only.
+9. **HIGH, both: escalation switch on where it does nothing.**
+   - Mac: Default, Custom, any non-stream source.
+   - Android: wearer rows for someone else's non-stream source (`AlertsSettingsPage.kt:223-249`, `AlertsViewModel.kt:148`).
+   - Risk: a parent who mutes the Mac and relies on "also when muted here" gets nothing.
+   - Fix: show it only while linked with *Their settings*, or decide escalation works with own rules.
+10. **MEDIUM-HIGH, Android: treatments cross logs.**
+    - Nightscout uploaded the 25 g from Ana's log to the site.
+    - The site's entries show on Ana's card after return.
+    - Ana's entries become editable.
+    - Own entries stay *Sending…*.
+    - Ana's treatments weren't re-fetched after Theirs → Yours → Theirs (cause not pinned).
+    - Fix: per-log ownership; never upload another log's entries; reset the follow's treatment cursor when the history is wiped.
+11. **MEDIUM, Android: pairing a sensor while showing someone else's glucose forces *Yours* and deletes all readings and treatments without *Delete the earlier history?*** (`A/app/.../AppGraph.kt:316-319` → `SetupPorts.kt:40-46`). Code-read, not walked.
+    - Fix: go through `loss()` and the dialog.
+12. **MEDIUM, both: accounts of sources not in use can't be seen or removed** (follow key, LibreLinkUp account and pick, Nightscout site and token; Nightscout can't be forgotten at all).
+    - Fix: an "Also on this device" group with *Sign out*, *Forget*, *Stop following*, without reconnecting.
+13. **MEDIUM, Mac: a standalone Mac runs *Settings from: Their settings*** (schema default `wearer`).
+    - Alerts, Readings, Graph and Metrics stay read-only with "Waiting for this person's settings" forever.
+    - Fix: *Settings from* only while linked.
+14. **MEDIUM, Mac: the no-data reason falls through to the follow.** *Nightscout* chosen without a site says "Not following anyone · Follow Someone…" or "Their phone may be off" (`AppModel.swift:779-801`; reproduced in a dev run, `mac-10`).
+    - Fix: a reason per source (e.g. Nightscout: no site yet); the link's reason only when the follow is the source.
+15. **MEDIUM, Android: home keeps "You no longer follow this person · Join with a new invite"** while another source shows values.
+    - Fix: gate on stream.
+16. **MEDIUM, Mac: rings counted over LibreLinkUp's 12 h** while the follow holds 8.7 days of the same person.
+    - Fix: §4 point 5.
+17. **MEDIUM, Mac (QA tooling): dev and fixture runs have no LibreLinkUp, Nightscout or Juggluco source**, so the Mac's online journeys can't be walked on the app, only in unit tests.
+    - Fix: debug-only loopback overrides for dev runs, like Android's `LIBRELINKUP` command.
+18. **LOW-MEDIUM, copy:**
+    - Mac: *Yes · Follow it* says "the phone that reads your sensor", which excludes a parent following a child.
+    - Mac: after *Yours*, the Follow step says "Their glucose shows in the menu bar now" (`mac-04`).
+    - Mac: Welcome still says "yours or someone else's", and its two lines are cut with "…" in the restored 520×194 window (`mac-01`; the owner's saved setup frame is 520×134).
+    - Mac: the Source toolbar help names only the follow and Juggluco.
+    - Android switch dialogs: "your glucose" for someone else's (`android/03`, `09`); "once it accepts your request" when an approved follow resumes (`android/13`); "the pairing stays" with nothing paired (`android/19`); LibreLinkUp → sensor says nothing about the Libre app holding the sensor (`android/24`).
+    - Android: "0 minutes ago"; Sharing "(your sensor or Juggluco)"; InviteHere "shares its own readings" for someone else's.
+19. **LOW:**
+    - Android: Nightscout → Juggluco (not installed) skips *Connect Juggluco*, because the old Nightscout reading satisfies `facts.ownSensorLive`.
+    - Mac: *Skip* on *Do you have Sukrara on your phone?* jumps to a source list without *Their Sukrara*.
+
+### 7. Questions and settings: what they change, and what to remove
+- **Mac *Whose glucose*** changes only words, LibreLinkUp's pick (yourself or the other connection) and the per-person log question. Its removal (decided) must:
+  - replace the pick with "all connections, the account's own included";
+  - make the card name the person from the source. The deferred "card words with the person's name" becomes required, because a Mac switching between a parent's and a child's glucose would otherwise show unnamed glucose.
+- **Mac *Settings from*** on a standalone Mac changes nothing except locking the panes: remove it there.
+- ***Default* vs *Custom*** (both apps) differ little: decision 7.
+- **Escalation switch** outside *Their settings*: hide (finding 9).
+- **Mac setup's alert step** says "(Settings from: Custom)" on a standalone Mac: meaningless there.
+- ***Do you have Sukrara on your phone?*** is decisive: keep it, reword it for parents.
+- **Android *Whose glucose*** changes a lot (sharing, uploads, pens, reminders): keep it, but it must also reset the LibreLinkUp pick and the Nightscout site (finding 4).
+
+### 8. Why earlier reviews missed it
+FEATURES (the Mac Settings window) and QA Q30 specify the hiding as the expected result: "Juggluco on the network chosen while following someone shows Juggluco only… the follow kept for switching back" (test `AppModelSourceTests.theChosenSourceIsReadNeverBothPeople`). Reviews compared screens against that spec and never asked what the hidden follow keeps doing, or how to leave it.
+
+Fix: Q19 and Q30 gain a "left behind" table per transition on both apps:
+- sockets via `lsof` or `/proc`;
+- stored accounts;
+- *Settings from* in use;
+- alert role;
+- treatment log;
+- the wearer's list.
+
+Plus a unit test on each app: "a non-stream source uses nothing derived from the link" (settings, name, badge, treatments).
+
+### 9. Seen on the way, and not checked
+- **Leftover defaults files.** About 3,000 plists in `~/Library/Preferences` from Mac test and snapshot runs: 2,006 `app.mauri.sukrara.tests.*` and 958 `app.mauri.sukrara.snap.*`, 12 MB. Tests and `sukrara-snap` should remove their suites. *(Fixed since: f10ba774d.)*
+- **Folder icon in my screenshots.** The *Sukrara on your phone* row shows a folder icon in a bare dev run: `applicationIconImage` of a non-bundle. Not a bundled-app bug. *(A dev run draws Sukrara's icon since 88af07a98.)*
+- **Not checked:**
+  - the Mac's Bluetooth and relays in a dev run (offline by design; read from the owner's Mac read-only and from code);
+  - the Mac's online sources live;
+  - widgets, Spanish, VoiceOver and TalkBack;
+  - Android with Juggluco installed;
+  - the wearer's "followers were told" note while the follower was away (code only).
