@@ -119,7 +119,11 @@ class GlucoseHubTest {
             // back to the stream: its link and its wearer's name, never LibreLinkUp's person
             role.value = SourceSpec.TheirSukrara
             runCurrent()
-            assertEquals("Ana", hub.state.value.link?.wearerName)
+            assertEquals(
+                "Ana",
+                hub.state.value.link
+                    ?.wearerName,
+            )
             assertEquals("Ana", hub.state.value.name)
 
             // a source that names no one: no name at all

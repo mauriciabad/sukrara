@@ -67,6 +67,34 @@ class AppSourcesTest {
             assertTrue(treatments.between(Instant.EPOCH, t0.plusSeconds(60)).first().isEmpty())
         }
 
+    @Test fun aChangeOfWhoseGlucoseLetsGoOfTheOtherPersonsSiteAndLibreLinkUpPick() =
+        runTest {
+            // Appendix G finding 4: Ana's pick read on as "yours"
+            var after: Pair<SourceRecord, SourceSpec>? = null
+            val sources = AppSources(store, running, readings, treatments) { was, spec -> after = was to spec }
+            sources.set(SourceSpec(Person.Theirs, SourceKind.LibreLinkUp))
+            store.update { it.copy(libreLinkUpPatient = "ana", nightscoutUrl = "https://ana.example") }
+
+            val yours = SourceSpec(Person.Yours, SourceKind.LibreLinkUp)
+            sources.set(yours)
+
+            val r = store.data.first()
+            assertEquals(yours, r.spec)
+            assertEquals("", r.libreLinkUpPatient)
+            assertEquals("", r.nightscoutUrl)
+            assertEquals("ana", after?.first?.libreLinkUpPatient)
+            assertEquals("https://ana.example", after?.first?.nightscoutUrl)
+            assertEquals(yours, after?.second)
+
+            // the same person: both stay (the way back)
+            after = null
+            store.update { it.copy(libreLinkUpPatient = "me", nightscoutUrl = "https://me.example") }
+            sources.set(SourceSpec(Person.Yours, SourceKind.Nightscout))
+            assertEquals("me", store.data.first().libreLinkUpPatient)
+            assertEquals("https://me.example", store.data.first().nightscoutUrl)
+            assertNull(after)
+        }
+
     @Test fun aSourceChangeForTheSamePersonKeepsTheHistory() =
         runTest {
             sources.set(SourceSpec(Person.Yours, SourceKind.Sukrara))

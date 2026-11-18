@@ -22,6 +22,11 @@ data class SiteConnection(
     val pulling: Instant? = null,
     /** The site's sensor's warm-up end, said while [health] is [OnlineHealth.WarmingUp]. */
     val readyAt: Instant? = null,
+    /**
+     * The site read for the person before a change of whose glucose, offered to confirm (nothing is read until
+     * *Connect*; its saved token is kept for it); "" = none.
+     */
+    val earlier: String = "",
 )
 
 /** The answer of *Connect* (the field the problem belongs to shows it). */

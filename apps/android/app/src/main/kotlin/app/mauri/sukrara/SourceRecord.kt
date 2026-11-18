@@ -22,7 +22,8 @@ import kotlinx.serialization.Serializable
  * `source.nightscoutTreatments`, `source.libreLinkUpPatient`): whose glucose this phone shows, where it comes from (by
  * their contract ids), the Nightscout source's site and treatments switch, and whom LibreLinkUp reads. Empty person / kind = setup has no answer yet; an id this version
  * doesn't know, or a pair no source offers, reads as no answer ([spec]). The site stays when the source changes, so
- * going back to Nightscout needs no new address (its token stays in the secure store).
+ * going back to Nightscout needs no new address (its token stays in the secure store); a change of whose glucose clears
+ * the site and LibreLinkUp's pick ([forAnotherPerson]): they were the other person's.
  */
 @Serializable
 data class SourceRecord(
@@ -65,6 +66,13 @@ data class SourceRecord(
             SettingsSpec.Keys.JUGGLUCO_WEAR -> jugglucoWear
             else -> 0
         }
+
+    /**
+     * This record after a change of whose glucose: the Nightscout site and LibreLinkUp's pick were the other person's,
+     * so neither is read for the new one until the person confirms the site or LibreLinkUp picks again (docs/44
+     * Appendix G finding 4).
+     */
+    fun forAnotherPerson(): SourceRecord = copy(nightscoutUrl = "", libreLinkUpPatient = "")
 
     /** This record with [kind]'s wear length set to [minutes]. */
     fun withWear(

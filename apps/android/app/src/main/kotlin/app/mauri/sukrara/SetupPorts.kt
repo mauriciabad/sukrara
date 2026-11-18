@@ -21,13 +21,19 @@ import kotlinx.coroutines.flow.map
  * glucose never mixes two people: every reading and treatment (the previous person's) is deleted. A source change for
  * the same person keeps them (one continuous history: the rank rule keeps one reading per measurement). The person is
  * compared with what the phone runs on ([running]: an install updated from before the question has history of that
- * person). Setup asks [loss] first and confirms with the person before deleting anything (#125).
+ * person). Setup asks [loss] first and confirms with the person before deleting anything (#125). The other person's
+ * Nightscout site and LibreLinkUp pick go too ([SourceRecord.forAnotherPerson]).
  */
 class AppSources(
     private val store: StateStore<SourceRecord>,
     override val running: Flow<SourceSpec?>,
     private val readings: ReadingsRepository,
     private val treatments: TreatmentsRepository,
+    /**
+     * After a change of whose glucose, with the record before it: the sources let go of what was the other person's
+     * (the site to confirm, LibreLinkUp's name).
+     */
+    private val anotherPerson: suspend (before: SourceRecord, spec: SourceSpec) -> Unit = { _, _ -> },
 ) : SourcePort {
     override val stored: Flow<SourceSpec?> = store.data.map { it.spec }
 
@@ -39,10 +45,13 @@ class AppSources(
 
     override suspend fun set(spec: SourceSpec) {
         val before = running.first()
-        store.update { it.with(spec) }
-        if (before != null && before.person != spec.person) {
+        val another = before != null && before.person != spec.person
+        val was = store.data.first()
+        store.update { r -> r.with(spec).let { if (another) it.forAnotherPerson() else it } }
+        if (another) {
             readings.deleteAll()
             treatments.deleteAll()
+            anotherPerson(was, spec)
         }
     }
 }

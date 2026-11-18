@@ -65,7 +65,9 @@ internal fun ColumnScope.SiteStep(
     val haptics = rememberHaptics()
     val signedOut = c.health == OnlineHealth.SignedOut
     var editing by rememberSaveable(c.root, c.saved) { mutableStateOf(c.root.isEmpty() || !c.saved || signedOut) }
-    var address by rememberSaveable(c.root) { mutableStateOf(c.root) }
+    // the site read before a change of whose glucose: offered, read only once *Connect* confirms it
+    val offered = c.root.ifEmpty { c.earlier }
+    var address by rememberSaveable(offered) { mutableStateOf(offered) }
     // the secret is never kept in saved state: a rotation asks for it again
     var credential by remember { mutableStateOf("") }
     LaunchedEffect(site.result) {
@@ -106,7 +108,13 @@ internal fun ColumnScope.SiteStep(
                         actions.clearSiteResult()
                     },
                     result = site.result ?: SiteConnectResult.Refused.takeIf { signedOut && address == c.root && credential.isEmpty() },
-                    keepsSaved = c.saved && !signedOut && address.trim().trimEnd('/') == c.root,
+                    keepsSaved = c.saved && !signedOut && offered.isNotEmpty() && address.trim().trimEnd('/') == offered,
+                    check =
+                        if (c.root.isEmpty() && c.earlier.isNotEmpty() && address.trim().trimEnd('/') == c.earlier) {
+                            if (person == Person.Yours) R.string.sh_setup_site_check else R.string.sh_setup_site_check_theirs
+                        } else {
+                            null
+                        },
                 )
                 AnimatedVisibility(site.connecting) { LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 StepButtons(
@@ -182,6 +190,8 @@ private fun SiteForm(
     onCredential: (String) -> Unit,
     result: SiteConnectResult?,
     keepsSaved: Boolean,
+    /** The address offered after a change of whose glucose: ask to check it is the right person's site. */
+    check: Int? = null,
 ) {
     val addressProblem =
         when (result) {
@@ -205,7 +215,7 @@ private fun SiteForm(
             placeholder = { Text(stringResource(R.string.sh_setup_site_placeholder)) },
             singleLine = true,
             isError = addressProblem != null,
-            supportingText = addressProblem?.let { { Text(stringResource(it)) } },
+            supportingText = (addressProblem ?: check)?.let { { Text(stringResource(it)) } },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Next),
             modifier = Modifier.fillMaxWidth(),
         )

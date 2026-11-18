@@ -751,7 +751,12 @@ class AppGraph(
             context = app,
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
             // the hub's readings: a change of whose glucose also clears this phone's recent readings kept for the next restart
-            sources = AppSources(source, spec, hubReadings, data.treatments),
+            sources =
+                AppSources(source, spec, hubReadings, data.treatments) { was, now ->
+                    // the other person's site is only offered to confirm; LibreLinkUp's pick (cleared) loses its name
+                    if (now.kind == SourceKind.Nightscout && was.nightscoutUrl.isNotEmpty()) siteSource.confirm(was.nightscoutUrl)
+                    integrations.libreLinkUpSource.forgetPick()
+                },
             hub = monitor.hub,
             sharing =
                 EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings, diag = { data.diagLog.log("sharing", it) }) {
@@ -781,10 +786,15 @@ class AppGraph(
             // the root step and the status bar text
             systemAccess = monitor.root.access,
             // the Nightscout source's Connect step and *Bring back 90 days*
-            site = AppSiteSource(integrations.nightscoutAccount, integrations.nightscoutSource, nightscoutSourceConfig, clock),
+            site = siteSource,
             // LibreLinkUp's Connect step (its own account; *Sign in as …* with THE LibreView account)
             llu = AppLluSource(integrations.libreLinkUpSource, data.libreViewLogin),
         )
+    }
+
+    /** The Nightscout source's Connect step and *Bring back 90 days* (setup), and the site to confirm after a person change. */
+    private val siteSource by lazy {
+        AppSiteSource(integrations.nightscoutAccount, integrations.nightscoutSource, nightscoutSourceConfig, clock)
     }
 
     /** A Sukrara stream: joins, the other phone's stream while the service runs, Stop following. */

@@ -14,6 +14,7 @@ import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.designsystem.root.AccessProblem
@@ -407,15 +408,21 @@ class SetupViewModel(
             m.sources.set(spec)
             person.value = null
             m.startMonitoring()
-            afterSource(spec)
+            // another person: LibreLinkUp's pick (cleared with the other person's history) is made again by the rule
+            val another = before != null && before.person != spec.person
+            if (another && spec.kind == SourceKind.LibreLinkUp) recheckLlu()
+            afterSource(spec, another)
         }
 
     /**
      * After the source is stored: in the walk, the next unanswered step follows by itself; on its own (Settings ›
-     * Source), a stream not joined yet goes on to the join step, a sensor or app not read yet to the connect step,
-     * otherwise the visit is over.
+     * Source), a stream not joined yet goes on to the join step, a sensor or app not read yet (or [another] person's
+     * now) to the connect step, otherwise the visit is over.
      */
-    private suspend fun afterSource(spec: SourceSpec) {
+    private suspend fun afterSource(
+        spec: SourceSpec,
+        another: Boolean = false,
+    ) {
         person.value = null
         if (mode.value == Mode.Walk.name) {
             shown.value = null
@@ -428,7 +435,10 @@ class SetupViewModel(
         alone.value =
             when {
                 spec.stream && !facts.following -> SetupStep.Join.name
-                !spec.stream && !live -> SetupStep.Sensor.name
+
+                // another person: the source's site or pick was the other person's, so its Connect step confirms it
+                !spec.stream && (another || !live) -> SetupStep.Sensor.name
+
                 else -> null
             }
     }

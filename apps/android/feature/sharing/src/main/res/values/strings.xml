@@ -712,6 +712,8 @@
     <string name="sh_setup_site_placeholder">https://your-site.example</string>
     <string name="sh_setup_site_credential">Access token or API secret</string>
     <string name="sh_setup_site_credential_help">In Nightscout › Admin tools › Subjects: a token with the careportal role reads glucose and sends treatments; readable only reads.</string>
+    <string name="sh_setup_site_check">The site read before: check it\'s yours</string>
+    <string name="sh_setup_site_check_theirs">The site read before: check it\'s theirs</string>
     <string name="sh_setup_site_credential_saved">Saved. Leave it empty to keep it.</string>
     <string name="sh_setup_site_connect">Connect</string>
     <string name="sh_setup_site_connecting">Connecting…</string>

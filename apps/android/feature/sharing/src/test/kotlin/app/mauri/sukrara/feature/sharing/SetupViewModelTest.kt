@@ -27,6 +27,9 @@ import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.feature.sharing.setup.JoinUi
+import app.mauri.sukrara.feature.sharing.setup.LluConnectOutcome
+import app.mauri.sukrara.feature.sharing.setup.LluConnection
+import app.mauri.sukrara.feature.sharing.setup.LluSourcePort
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
 import app.mauri.sukrara.feature.sharing.setup.SetupCard
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
@@ -96,8 +99,29 @@ class SetupViewModelTest {
             clock = clock,
             follower = follower,
             systemAccess = FakeSystemAccess(),
+            llu = llu,
         )
     }
+
+    /** LibreLinkUp's Connect step: records each *Try again* (whom the account follows, read again). */
+    private val llu =
+        object : LluSourcePort {
+            override val connection = MutableStateFlow(LluConnection())
+
+            override suspend fun connect(
+                email: String,
+                password: String,
+            ) = LluConnectOutcome.Unreachable
+
+            override suspend fun connectWithLibreView() = LluConnectOutcome.Unreachable
+
+            override suspend fun recheck(): LluConnectOutcome {
+                events += "llu:recheck"
+                return LluConnectOutcome.Connected
+            }
+
+            override suspend fun choose(patient: String) = Unit
+        }
 
     private fun vm(
         startAt: SetupStep? = null,
@@ -546,6 +570,31 @@ class SetupViewModelTest {
             val juggluco = SourceSpec(Person.Yours, SourceKind.PhoneApp)
             vm.chooseSource(juggluco)
             assertEquals(SetupStep.Sensor, vm.ui.first { it?.step != SetupStep.Source }!!.step)
+        }
+
+    @Test
+    fun `a change of whose glucose on LibreLinkUp picks again and confirms on the Connect step, Appendix G finding 4`() =
+        runTest {
+            val theirs = SourceSpec(Person.Theirs, SourceKind.LibreLinkUp)
+            roles.role.value = theirs
+            record.update { SetupRecord(completed = SetupStep.entries.toSet()) }
+            // Ana's glucose arrives live from LibreLinkUp
+            hub.state.value =
+                hub.state.value.copy(
+                    spec = theirs,
+                    latest = Reading(clock.now(), 120, null, SourceId.LibreLinkUp),
+                    source = SourceStatus.Live(clock.now()),
+                )
+            val vm = vm(startAt = SetupStep.Person)
+            vm.ui.launchIn(backgroundScope)
+            vm.ui.first { it?.step == SetupStep.Person }
+            vm.choosePerson(Person.Yours)
+            vm.ui.first { it?.step == SetupStep.Source }
+            val yours = SourceSpec(Person.Yours, SourceKind.LibreLinkUp)
+            vm.chooseSource(yours)
+            // never Ana's live reading taken as yours: the Connect step shows, and LibreLinkUp picks again
+            assertEquals(SetupStep.Sensor, vm.ui.first { it?.step != SetupStep.Source }!!.step)
+            assertEquals(listOf("reset", "source:yours:libreLinkUp", "start", "llu:recheck"), events.take(4))
         }
 
     @Test

@@ -440,6 +440,14 @@ class LibreLinkUpSource(
         read(patient)
     }
 
+    /**
+     * A change of whose glucose cleared the pick (`source.libreLinkUpPatient`): the other person's name goes with it.
+     * [recheck] then picks again by the rule for the new person.
+     */
+    suspend fun forgetPick() {
+        store.update { it.copy(name = "") }
+    }
+
     /** Signs out of the source's account (Settings › Source): the readings stay, the source waits for a new sign-in. */
     suspend fun signOut() {
         account.forget()
