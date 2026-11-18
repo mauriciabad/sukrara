@@ -11,7 +11,7 @@
     import SwiftUI
 
     /// `sukrara-snap windows <dir>`: every window state with synthetic data, light + dark, default + large text.
-    /// Offline: a scratch defaults suite, no runtime behind the models (actions nil).
+    /// Offline: settings in memory (no defaults suite left behind), no runtime behind the models (actions nil).
     public enum WindowSnapshots {
         /// Renders every word in one language (`es`), whatever the Mac's: the windows' (String Catalog) and the
         /// card's, the widget's and the mute lines' (`AppLanguage`).
@@ -93,9 +93,8 @@
             return data
         }
 
-        private static func scenes() -> [(String, AnyView)] {
-            let suite = "app.mauri.sukrara.snap.\(UUID().uuidString)"
-            let store = DefaultsSettingsStore(defaults: UserDefaults(suiteName: suite)!)
+        static func scenes() -> [(String, AnyView)] {
+            let store = InMemorySettingsStore()
             func follow(_ s: FollowStatus, failure: String? = nil, nearby: Bool = false) -> FollowModel {
                 let m = FollowModel(status: s, actions: nil, macName: "Ana's MacBook")
                 if nearby { m.nearby = NearbyPhone(wearer: "Marta", avatar: .v1(c: 6, s: "dots", a: 45, n: 11)) }
@@ -137,8 +136,8 @@
                 json: #"{"alerts":{"alerts":{"low":{"on":true,"mgdl":72},"high":{"on":true,"mgdl":200}}}}"#,
                 wearer: "Marta")
             func scratchSettings(_ wearer: WearerSettings?) -> SettingsModel {
-                let s = DefaultsSettingsStore(defaults: UserDefaults(suiteName: "\(suite).\(UUID().uuidString)")!)
-                return SettingsModel(store: s, follow: follow(.notFollowing), wearer: wearer, version: "0.12.0")
+                SettingsModel(
+                    store: InMemorySettingsStore(), follow: follow(.notFollowing), wearer: wearer, version: "0.12.0")
             }
             let ownAlerts = scratchSettings(nil)
             ownAlerts.settingsFrom = .custom
@@ -260,7 +259,7 @@
                 })
             settings.newestReading = { trendApp.newestReading }
             // Juggluco on this network: on, in each state (its own defaults: the switch is on there)
-            let lanStore = DefaultsSettingsStore(defaults: UserDefaults(suiteName: suite + ".lan")!)
+            let lanStore = InMemorySettingsStore()
             lanStore.set(Person.yours.rawValue, for: MacSettings.sourcePerson)
             lanStore.set(SourceKind.lanJuggluco.rawValue, for: MacSettings.sourceKind)
             let lanStates: [(String, LanState, String?)] = [
@@ -347,9 +346,7 @@
                         ).settingsWindow(mirrored, width: 560, height: 900))
                 ))
             // the Graph and Metrics panes: this Mac's own (Custom, a few values changed) and the wearer's (read-only)
-            func scratch() -> DefaultsSettingsStore {
-                DefaultsSettingsStore(defaults: UserDefaults(suiteName: "app.mauri.sukrara.snap.\(UUID().uuidString)")!)
-            }
+            func scratch() -> InMemorySettingsStore { InMemorySettingsStore() }
             let ownStore = scratch()
             let own = SettingsModel(store: ownStore, follow: following, version: "0.12.0")
             own.settingsFrom = .custom
@@ -529,20 +526,20 @@
                     version: "0.12.0", build: "12000", distribution: distribution, appBuild: .release, icon: brandIcon)
                 out.append((name, AnyView(about.aboutWindow())))
             }
-            out += nightscoutScenes(suite: suite, follow: follow(.notFollowing))
-            out += libreLinkUpScenes(suite: suite, follow: follow(.notFollowing))
+            out += nightscoutScenes(follow: follow(.notFollowing))
+            out += libreLinkUpScenes(follow: follow(.notFollowing))
             return out
         }
 
         /// LibreLinkUp as the source (#213 step 2): the online sources with LibreLinkUp picked, Connect in each state,
         /// Settings › Source in each health state, and the treatment log this Mac keeps.
-        private static func libreLinkUpScenes(suite: String, follow: FollowModel) -> [(String, AnyView)] {
+        private static func libreLinkUpScenes(follow: FollowModel) -> [(String, AnyView)] {
             var out: [(String, AnyView)] = []
             let now = Date()
             let ana = LluPerson(id: "11111111-2222-4333-8444-555555555555", name: "Ana Example")
             let leo = LluPerson(id: "66666666-7777-4888-9999-aaaaaaaaaaaa", name: "Leo")
-            func scratch(_ person: Person, patient: String = "") -> DefaultsSettingsStore {
-                let s = DefaultsSettingsStore(defaults: UserDefaults(suiteName: "\(suite).\(UUID().uuidString)")!)
+            func scratch(_ person: Person, patient: String = "") -> InMemorySettingsStore {
+                let s = InMemorySettingsStore()
                 s.set(person.rawValue, for: MacSettings.sourcePerson)
                 s.set(SourceKind.libreLinkUp.rawValue, for: MacSettings.sourceKind)
                 s.set(patient, for: MacSettings.libreLinkUpPatient)
@@ -636,11 +633,11 @@
 
         /// Nightscout as the source (#213 step 1): setup's first question, the online sources, Connect in each state,
         /// Settings › Source in each health state, and the treatment log with the site's read-only entries.
-        private static func nightscoutScenes(suite: String, follow: FollowModel) -> [(String, AnyView)] {
+        private static func nightscoutScenes(follow: FollowModel) -> [(String, AnyView)] {
             var out: [(String, AnyView)] = []
             let now = Date()
-            func scratch(_ kind: SourceKind?) -> DefaultsSettingsStore {
-                let s = DefaultsSettingsStore(defaults: UserDefaults(suiteName: "\(suite).\(UUID().uuidString)")!)
+            func scratch(_ kind: SourceKind?) -> InMemorySettingsStore {
+                let s = InMemorySettingsStore()
                 if let kind {
                     s.set(Person.yours.rawValue, for: MacSettings.sourcePerson)
                     s.set(kind.rawValue, for: MacSettings.sourceKind)

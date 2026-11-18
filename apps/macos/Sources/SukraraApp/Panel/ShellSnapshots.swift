@@ -30,7 +30,7 @@
             return n
         }
 
-        private struct Scene { var view: AnyView }
+        struct Scene { var view: AnyView }
 
         /// A Nightscout source that only ever says `snapshot` (nothing is asked of any site).
         private actor StillNightscout: NightscoutSourcing {
@@ -63,7 +63,7 @@
             func write(_ treatment: Treatment) -> Bool { false }
         }
 
-        private static func scenes() -> [(String, Scene)] {
+        static func scenes() -> [(String, Scene)] {
             let now = Date()
             let day = RealisticSynthetic.readings(until: now.timeIntervalSince1970 - 60, days: 1).map {
                 Reading(t: Date(timeIntervalSince1970: $0.t), mgdl: Int($0.v.rounded()), sensorRate: $0.rate)
@@ -77,8 +77,9 @@
                     Reading(t: now.addingTimeInterval(-ago), mgdl: i % 100 < 3 ? 200 : 118, sensorRate: 0)
                 } + [Reading(t: now.addingTimeInterval(-60), mgdl: mgdl, sensorRate: 2.5)]
             }
-            let suite = "app.mauri.sukrara.snap.\(UUID().uuidString)"
-            let store = DefaultsSettingsStore(defaults: UserDefaults(suiteName: suite)!)
+            // the plan's data: a scratch folder name (nothing starts there: no `AppServices`)
+            let root = FileManager.default.temporaryDirectory.appending(path: "sukrara-snap-\(UUID().uuidString)")
+            let store = InMemorySettingsStore()
             let done = SetupFlow(states: [
                 .welcome: .done, .follow: .done, .alerts: .done, .notifications: .done, .openAtLogin: .done,
             ])
@@ -100,7 +101,7 @@
                 // shows the panel of a monitoring Mac, the fixture's the offline synthetic run
                 let plan = LaunchPlan(
                     mode: mode, services: mode == .fixture ? .none : .all,
-                    data: .isolated(root: FileManager.default.temporaryDirectory.appending(path: suite)))
+                    data: .isolated(root: root))
                 let updates = Updates(engine: StillUpdater())
                 if case .available(let version, let ready) = update { updates.found(version: version, ready: ready) }
                 let model = AppModel(
@@ -159,7 +160,7 @@
                     wake: NoWake())
                 let plan = LaunchPlan(
                     mode: .normal, services: .all,
-                    data: .isolated(root: FileManager.default.temporaryDirectory.appending(path: suite)))
+                    data: .isolated(root: root))
                 let model = AppModel(plan: plan, alerts: controller)
                 var snapshot = FollowerSnapshot.empty
                 snapshot.link = .following(wearer: "Marta", canWrite: true)

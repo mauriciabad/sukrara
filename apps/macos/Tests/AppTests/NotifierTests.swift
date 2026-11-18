@@ -393,19 +393,16 @@ final class FakeCenter: NotificationPosting {
     }
 
     @Test func settingsKeepTheChoice() {
-        let scratch = FileManager.default.temporaryDirectory.appending(path: "sukrara-focus-\(UUID().uuidString)")
-        let defaults = UserDefaults(suiteName: scratch.lastPathComponent)!
+        let store = InMemorySettingsStore()
         let model = SettingsModel(
-            store: DefaultsSettingsStore(defaults: defaults), follow: FollowModel(status: .notFollowing, actions: nil),
-            version: "test")
+            store: store, follow: FollowModel(status: .notFollowing, actions: nil), version: "test")
         #expect(model.focusStatus == nil)  // nil: this run posts no notifications
         model.timeSensitive = .on
         #expect(model.focusStatus == .respected)
         model.throughFocus = true
         #expect(model.focusStatus == .through)
-        #expect(DefaultsSettingsStore(defaults: defaults).value(MacSettings.throughFocus))
+        #expect(store.value(MacSettings.throughFocus))
         model.throughFocus = false
         #expect(model.focusStatus == .respected)
-        defaults.removePersistentDomain(forName: scratch.lastPathComponent)
     }
 }

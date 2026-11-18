@@ -62,17 +62,3 @@ public final class InMemorySecretStore: SecretStoring {
     public func write(_ data: Data, account: String) { items.withLock { $0[account] = data } }
     public func delete(account: String) { _ = items.withLock { $0.removeValue(forKey: account) } }
 }
-
-public final class InMemorySettingsStore: SettingsStoring {
-    private let values = Mutex<[String: any SettingValue]>([:])
-
-    public init() {}
-
-    public func value<Value>(_ spec: SettingSpec<Value>) -> Value {
-        values.withLock { $0[spec.key] as? Value } ?? spec.defaultValue
-    }
-
-    public func set<Value>(_ value: Value, for spec: SettingSpec<Value>) {
-        values.withLock { $0[spec.key] = value }
-    }
-}

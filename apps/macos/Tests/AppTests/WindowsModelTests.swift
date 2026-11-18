@@ -13,13 +13,8 @@ import Testing
 
 @testable import SukraraApp
 
-/// A fresh UserDefaults suite per test: never the app's own domain.
-func scratchStore() -> DefaultsSettingsStore {
-    let name = "app.mauri.sukrara.tests.\(UUID().uuidString)"
-    let d = UserDefaults(suiteName: name)!
-    d.removePersistentDomain(forName: name)
-    return DefaultsSettingsStore(defaults: d)
-}
+/// Fresh settings per test, in memory: never the app's own domain, and no suite left in ~/Library/Preferences.
+func scratchStore() -> InMemorySettingsStore { InMemorySettingsStore() }
 
 /// The settings window's model over a fresh store, following nobody.
 func scratchSettings(wearer: WearerSettings? = nil) -> SettingsModel {
