@@ -106,6 +106,7 @@ import app.mauri.sukrara.pen.PenNotificationPorts
 import app.mauri.sukrara.pen.PenTag
 import app.mauri.sukrara.pen.PenTapHint
 import app.mauri.sukrara.pen.PensModule
+import app.mauri.sukrara.protocol.Wire
 import app.mauri.sukrara.protocol.event.AlertCodec
 import app.mauri.sukrara.protocol.event.SensorLife
 import app.mauri.sukrara.protocol.follow.LeaveOutbox
@@ -870,13 +871,17 @@ class AppGraph(
             } else {
                 emitAll(
                     sender.outbox
-                        .map { it.untold?.wearer }
+                        .map { o -> o.untold?.let { it.wearer to it.expiry } }
                         .distinctUntilChanged()
-                        .flatMapLatest { w ->
+                        .flatMapLatest { untold ->
                             flow {
-                                // after the first attempt only: never a flash while a relay is about to answer
-                                if (w != null) delay(LeaveSender.WAIT_MS)
-                                emit(w)
+                                // after the first attempt only (from when the leave was made): never a flash while a
+                                // relay is about to answer, and at once on a page opened later
+                                if (untold != null) {
+                                    val madeMs = (untold.second - Wire.TTL_LEAVE) * 1000
+                                    delay((madeMs + LeaveSender.WAIT_MS - clock.now().toEpochMilli()).coerceAtLeast(0))
+                                }
+                                emit(untold?.first)
                             }
                         },
                 )
