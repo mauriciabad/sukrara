@@ -100,6 +100,7 @@ internal fun SourceScreen(
                                     }
                                 },
                                 choose = { id -> scope.launch { graph.integrations.libreLinkUpSource.choose(id) } },
+                                keepPerson = graph.integrations.libreLinkUpSource::keepPerson,
                                 takeOver = openNewSensor,
                                 signOut = { scope.launch { graph.integrations.libreLinkUpSource.signOut() } },
                                 openSensor = openSensor,

@@ -19,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import app.mauri.sukrara.core.data.libreview.LluPerson
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SourceKind
@@ -31,6 +32,7 @@ import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.source.ReadAnotherPersonDialog
 import app.mauri.sukrara.designsystem.source.iconRes
 import app.mauri.sukrara.designsystem.source.onlineHealthText
 import app.mauri.sukrara.graph.ClockText
@@ -45,8 +47,10 @@ class LibreLinkUpSourceActions(
     val editAccount: () -> Unit = {},
     /** *Try again* now (offline, unreachable, asked to wait, new terms accepted, invited). */
     val retry: () -> Unit = {},
-    /** Whose glucose among the account's people. */
+    /** Whose glucose among the account's people (another person than the one held: after its confirmation). */
     val choose: (String) -> Unit = {},
+    /** *Cancel* on the person a sign-in or *Try again* found: the one read stays. */
+    val keepPerson: () -> Unit = {},
     /** *Read the sensor in Sukrara*: the new-sensor flow, which takes the running Libre 3 over with a tap. */
     val takeOver: () -> Unit = {},
     val signOut: () -> Unit = {},
@@ -72,6 +76,9 @@ fun LibreLinkUpSourceRows(
     val reduced = LocalReducedMotion.current
     var choosing by rememberSaveable { mutableStateOf(false) }
     var signingOut by rememberSaveable { mutableStateOf(false) }
+    // another person than the one whose readings this phone holds: asked first (their readings would mix)
+    var confirming by rememberSaveable { mutableStateOf<String?>(null) }
+    val pick: (String) -> Unit = { id -> if (view.held.isNotEmpty() && id != view.held) confirming = id else actions.choose(id) }
     SettingsGroup(title = stringResource(R.string.in_llu_title)) {
         NavigationRow(
             stringResource(R.string.in_llu_account),
@@ -208,7 +215,22 @@ fun LibreLinkUpSourceRows(
             view.people.map { Choice(it.name.ifBlank { stringResource(R.string.in_llu_unnamed) }, it.id) },
             view.patient,
             onClose = { choosing = false },
-        ) { actions.choose(it) }
+        ) { pick(it) }
+    }
+    val asked = confirming?.let { id -> view.people.firstOrNull { it.id == id } ?: LluPerson(id, "") } ?: view.pending
+    if (asked != null) {
+        val unnamed = stringResource(R.string.in_llu_unnamed)
+        ReadAnotherPersonDialog(
+            who = asked.name.ifBlank { unnamed },
+            held = view.people.firstOrNull { it.id == view.held }?.name ?: view.name.takeIf { view.patient == view.held },
+            onRead = {
+                confirming = null
+                actions.choose(asked.id)
+            },
+            onCancel = {
+                if (confirming != null) confirming = null else actions.keepPerson()
+            },
+        )
     }
     if (signingOut) {
         AlertDialog(

@@ -121,6 +121,8 @@ class SetupViewModelTest {
             }
 
             override suspend fun choose(patient: String) = Unit
+
+            override fun keepPerson() = Unit
         }
 
     private fun vm(

@@ -43,6 +43,7 @@ import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
 import app.mauri.sukrara.designsystem.rows.RadioRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.source.ReadAnotherPersonDialog
 import app.mauri.sukrara.designsystem.source.iconRes
 import app.mauri.sukrara.designsystem.source.onlineHealthText
 import app.mauri.sukrara.feature.sharing.R
@@ -195,6 +196,8 @@ internal fun ColumnScope.LluStep(
 
                 LluMode.Choose -> {
                     var picked by rememberSaveable { mutableStateOf<String?>(null) }
+                    // another person than the one whose readings this phone holds: asked first
+                    var confirming by rememberSaveable { mutableStateOf(false) }
                     SettingsGroup(modifier = Modifier.selectableGroup()) {
                         for (p in c.people) {
                             RadioRow(
@@ -204,9 +207,25 @@ internal fun ColumnScope.LluStep(
                             )
                         }
                     }
+                    picked?.takeIf { confirming }?.let { id ->
+                        ReadAnotherPersonDialog(
+                            who =
+                                c.people
+                                    .firstOrNull { it.id == id }
+                                    ?.name
+                                    ?.ifBlank { null }
+                                    ?: stringResource(R.string.sh_setup_llu_unnamed),
+                            held = c.heldName,
+                            onRead = {
+                                confirming = false
+                                actions.chooseLlu(id)
+                            },
+                            onCancel = { confirming = false },
+                        )
+                    }
                     StepButtons(
                         stringResource(R.string.sh_setup_continue),
-                        { picked?.let(actions.chooseLlu) },
+                        { picked?.let { id -> if (c.held.isNotEmpty() && id != c.held) confirming = true else actions.chooseLlu(id) } },
                         enabled = picked != null,
                         secondary = listOf(stringResource(R.string.sh_setup_llu_change) to { changing = true }),
                     )
@@ -238,6 +257,15 @@ internal fun ColumnScope.LluStep(
                 }
             }
         }
+    }
+    // a sign-in or *Try again* found another person to read: never read without the person's OK
+    c.pending?.let { p ->
+        ReadAnotherPersonDialog(
+            who = p.name.ifBlank { stringResource(R.string.sh_setup_llu_unnamed) },
+            held = c.heldName,
+            onRead = { actions.chooseLlu(p.id) },
+            onCancel = actions.keepLluPerson,
+        )
     }
 }
 

@@ -5,6 +5,10 @@
 <resources>
     <string name="ds_ok">Aceptar</string>
     <string name="ds_cancel">Cancelar</string>
+    <string name="ds_read_other_title">¿Leer la glucosa de %1$s?</string>
+    <string name="ds_read_other_body">Se borran las lecturas de %1$s en este teléfono y los tratamientos registrados aquí: la glucosa de dos personas nunca se mezcla.</string>
+    <string name="ds_read_other_body_unnamed">Se borran las lecturas de este teléfono y los tratamientos registrados aquí: la glucosa de dos personas nunca se mezcla.</string>
+    <string name="ds_read_other_confirm">Leer la glucosa de %1$s</string>
     <string name="ds_delete">Borrar</string>
     <string name="ds_undo">Deshacer</string>
     <!-- a pen treatment's note field in its sheet -->

@@ -69,6 +69,12 @@ data class LluSourceState(
     /** The sensor LibreLinkUp last said (serial = its id: a new serial is a new sensor); empty = none known. */
     val sensorSerial: String = "",
     val sensorStartS: Long = 0,
+    /**
+     * The person whose LibreLinkUp readings this phone holds (patient id, "" = none): reading anyone else deletes them
+     * first, with the treatments logged here (two people's glucose never mix). A sign-out keeps it; a change of whose
+     * glucose (which deletes the history) clears it.
+     */
+    val held: String = "",
 ) {
     val sensorLife: NsSensor? get() =
         if (sensorSerial.isNotEmpty() && sensorStartS > 0) NsSensor(sensorSerial, Instant.ofEpochSecond(sensorStartS)) else null
@@ -99,6 +105,13 @@ data class LluSourceView(
     val newest: Instant? = null,
     /** The sensor LibreLinkUp says is running. */
     val sensor: NsSensor? = null,
+    /** The person whose readings this phone holds (patient id, "" = none): another one is asked first. */
+    val held: String = "",
+    /**
+     * The person a sign-in or *Try again* would read now, instead of the one read: not read until the person says so
+     * ([LibreLinkUpSource.choose]) or keeps the one read ([LibreLinkUpSource.keepPerson]); null = none.
+     */
+    val pending: LluPerson? = null,
 ) {
     /** Signed in and someone picked: the source can read. */
     val configured: Boolean get() = signedIn && patient.isNotEmpty()
@@ -246,6 +259,11 @@ class LibreLinkUpSource(
     /** The person's side of the sensor's life: its wear length (LibreLinkUp says the start, not the length). */
     private val life: Flow<LifeSettings> = flowOf(LifeSettings()),
     private val log: (String) -> Unit = {},
+    /**
+     * Another person is about to be read than the one whose readings this phone holds: deletes those readings and the
+     * treatments logged here, and starts monitoring over (the app's; Appendix G finding 6).
+     */
+    private val anotherPerson: suspend () -> Unit = {},
 ) : ReadingSource {
     private val statusFlow = MutableStateFlow<SourceStatus>(SourceStatus.NotStarted)
     override val status: StateFlow<SourceStatus> = statusFlow.asStateFlow()
@@ -281,6 +299,9 @@ class LibreLinkUpSource(
 
     @Volatile private var peopleCheckedS = 0L
 
+    /** Another person a sign-in or *Try again* found to read, waiting for the person's OK ([LluSourceView.pending]). */
+    private val pending = MutableStateFlow<LluPerson?>(null)
+
     /** The newest live reading of the person read (epoch s, null = none yet) and the calls' timing to the next one. */
     @Volatile private var liveNewestS: Long? = null
 
@@ -291,7 +312,13 @@ class LibreLinkUpSource(
 
     /** What the pages show. */
     val view: Flow<LluSourceView> =
-        combine(config.data, combine(store.data, life, ::Pair), live, account.saved, ticker()) { s, (st, lf), l, saved, now ->
+        combine(
+            config.data,
+            combine(store.data, life, pending, ::Triple),
+            live,
+            account.saved,
+            ticker(),
+        ) { s, (st, lf, waiting), l, saved, now ->
             val readable = saved as? LluAccount.Saved.Readable
             val sensor = effective(st.sensorLife, lf, now)
             LluSourceView(
@@ -304,6 +331,8 @@ class LibreLinkUpSource(
                 health = health(l, now, sensor),
                 newest = l.newest,
                 sensor = sensor,
+                held = st.held,
+                pending = waiting,
             )
         }.distinctUntilChanged()
 
@@ -390,6 +419,7 @@ class LibreLinkUpSource(
             else -> LluConnectResult.Unreachable
         }
         val yours = config.person.first() != Person.Theirs
+        val current = config.data.first().patient
         // a new sign-in picks again (another account follows other people); *Try again* keeps a pick still shared
         val p =
             LibreLinkUp.pick(people, s.accountId, yours, saved).let {
@@ -401,15 +431,24 @@ class LibreLinkUpSource(
                     it
                 }
             }
+        // another person than the one read: never read without the person's OK (Appendix G finding 6)
+        val another = p.pick?.takeIf { current.isNotEmpty() && it != current }?.let { id -> people.first { it.id == id } }
         store.update { st ->
             st.copy(
                 people = people.map { LluPersonState(it.id, it.name) },
-                name = people.firstOrNull { it.id == p.pick }?.name ?: st.name.takeIf { p.pick == null }.orEmpty(),
+                name =
+                    if (another != null) {
+                        st.name
+                    } else {
+                        people.firstOrNull { it.id == p.pick }?.name ?: st.name.takeIf { p.pick == null }.orEmpty()
+                    },
             )
         }
         peopleCheckedS = clock.now().epochSecond
         // a sign-in LibreLinkUp accepted: no longer asked to wait
         holdUntilS = 0L
+        pending.value = another
+        if (another != null) return LluConnectResult.Connected(people, p.pick)
         if (p.state == LluPick.State.None) {
             config.set(LluSourceSettings(patient = ""))
             return LluConnectResult.NoOne
@@ -425,8 +464,13 @@ class LibreLinkUpSource(
         if (same) kick()
     }
 
-    /** The person picked among the account's (several, or the one picked before stopped sharing). */
+    /**
+     * The person picked among the account's (several, or the one picked before stopped sharing), or the one a sign-in
+     * found, once the person said so: another person than the one whose readings this phone holds deletes them first
+     * ([LluSourceState.held], at the next call).
+     */
     suspend fun choose(patient: String) {
+        pending.value = null
         val st = store.data.first()
         store.update {
             it.copy(
@@ -441,18 +485,26 @@ class LibreLinkUpSource(
     }
 
     /**
-     * A change of whose glucose cleared the pick (`source.libreLinkUpPatient`): the other person's name goes with it.
-     * [recheck] then picks again by the rule for the new person.
+     * A change of whose glucose cleared the pick (`source.libreLinkUpPatient`) and deleted the history: the other
+     * person's name goes with it, and no LibreLinkUp readings are held any more. [recheck] then picks again by the rule.
      */
     suspend fun forgetPick() {
-        store.update { it.copy(name = "") }
+        pending.value = null
+        store.update { it.copy(name = "", held = "") }
+    }
+
+    /** *Cancel* on the person a sign-in or *Try again* found ([LluSourceView.pending]): the one read stays. */
+    fun keepPerson() {
+        pending.value = null
     }
 
     /** Signs out of the source's account (Settings › Source): the readings stay, the source waits for a new sign-in. */
     suspend fun signOut() {
         account.forget()
         config.set(LluSourceSettings())
-        store.update { LluSourceState() }
+        pending.value = null
+        // the readings stay: whose they are is kept, so the next account's person can't mix with them
+        store.update { LluSourceState(held = it.held) }
         live.value = Live(online = network.online())
         kick()
     }
@@ -597,6 +649,12 @@ class LibreLinkUpSource(
             liveNewestS = null
             timing = LluPoll.Timing()
         }
+        val held = store.data.first().held
+        if (held != patient) {
+            // the readings this phone holds are another person's: deleted before this one's arrive (never mixed)
+            if (held.isNotEmpty()) anotherPerson()
+            store.update { it.copy(held = patient) }
+        }
         val now = clock.now()
         val checked = now.epochSecond - peopleCheckedS < LluPoll.CONNECTIONS_EVERY_S
         if (!checked) shared(session, patient, now)?.let { return it }
@@ -612,6 +670,8 @@ class LibreLinkUpSource(
         // the whole 12 h at the first call and after a gap, else only what's new (the graph's old points don't change)
         val from = if (known == null || Duration.between(known, now) > GAP) Instant.EPOCH else known.minus(OVERLAP)
         val batch = g.readings.filter { it.t.isAfter(from) && !it.t.isAfter(now.plus(AHEAD)) }
+        // another person picked while this call ran: the earlier person's answer is dropped, never stored as theirs
+        if (config.data.first().patient != patient) return Cycle(null)
         if (batch.isNotEmpty()) out.send(batch)
         val newestLive = g.readings.filter { it.source == SourceId.LibreLinkUp }.maxOfOrNull { it.t }
         val newest = listOfNotNull(newestLive ?: g.readings.maxOfOrNull { it.t }, known).maxOrNull()

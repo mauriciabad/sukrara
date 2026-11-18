@@ -132,8 +132,69 @@ class LibreLinkUpSourceTest {
 
     private fun source(): LibreLinkUpSource {
         val api = LibreLinkUp(OkHttpClient(), "http", host) { host }
-        return LibreLinkUpSource(config, LluAccount(secure, api, clock), state, NetworkState.Always, clock, Dispatchers.IO, life)
+        return LibreLinkUpSource(
+            config,
+            LluAccount(secure, api, clock),
+            state,
+            NetworkState.Always,
+            clock,
+            Dispatchers.IO,
+            life,
+            anotherPerson = { others++ },
+        )
     }
+
+    /** How often the app was told another person is about to be read (it deletes the earlier one's history). */
+    private var others = 0
+
+    private val leo = "22222222-3333-4444-8555-666666666666"
+
+    @Test
+    fun `another person is read only after the earlier person's history is deleted, Appendix G finding 6`() =
+        runBlocking {
+            config.whose.value = Person.Theirs
+            val s = source()
+            s.connect("parent@example.com", "pw")
+            assertEquals(ana, config.flow.value.patient)
+            withTimeout(10_000) { s.readings.first() }
+            assertEquals(ana, state.data.first().held)
+            assertEquals(0, others)
+            // Alex picked on Settings › Source (after its confirmation)
+            s.choose(account)
+            withTimeout(10_000) { s.readings.first() }
+            assertEquals(1, others)
+            assertEquals(account, state.data.first().held)
+        }
+
+    @Test
+    fun `a sign-in that would read another person waits for the person's OK and keeps the one read`() =
+        runBlocking {
+            config.whose.value = Person.Theirs
+            val s = source()
+            s.connect("parent@example.com", "pw")
+            assertEquals(ana, config.flow.value.patient)
+            // another account, which follows only Leo
+            people = """[{"patientId":"$leo","firstName":"Leo","lastName":"Example"}]"""
+            s.connect("other@example.com", "pw")
+            assertEquals(ana, config.flow.value.patient)
+            assertEquals(
+                leo,
+                s.view
+                    .first()
+                    .pending
+                    ?.id,
+            )
+            assertEquals("Ana Example", state.data.first().name)
+            // *Cancel*: Ana stays
+            s.keepPerson()
+            assertEquals(null, s.view.first().pending)
+            assertEquals(ana, config.flow.value.patient)
+            // *Read Leo's glucose*
+            s.connect("other@example.com", "pw")
+            s.choose(leo)
+            assertEquals(leo, config.flow.value.patient)
+            assertEquals(null, s.view.first().pending)
+        }
 
     private fun logins() = requests.count { it.path == LibreLinkUp.LOGIN }
 

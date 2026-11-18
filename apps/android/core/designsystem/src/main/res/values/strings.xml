@@ -5,6 +5,10 @@
 <resources>
     <string name="ds_ok">OK</string>
     <string name="ds_cancel">Cancel</string>
+    <string name="ds_read_other_title">Read %1$s\'s glucose?</string>
+    <string name="ds_read_other_body">%1$s\'s readings on this phone and the treatments logged here are deleted: two people\'s glucose never mix.</string>
+    <string name="ds_read_other_body_unnamed">The readings on this phone and the treatments logged here are deleted: two people\'s glucose never mix.</string>
+    <string name="ds_read_other_confirm">Read %1$s\'s glucose</string>
     <string name="ds_delete">Delete</string>
     <string name="ds_undo">Undo</string>
     <!-- a pen treatment's note field in its sheet -->

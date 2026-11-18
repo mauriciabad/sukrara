@@ -201,6 +201,8 @@ data class SetupActions(
     val connectLluLibreView: () -> Unit = {},
     val recheckLlu: () -> Unit = {},
     val chooseLlu: (String) -> Unit = {},
+    /** *Cancel* on another person a sign-in found: the person read stays. */
+    val keepLluPerson: () -> Unit = {},
     val clearLluResult: () -> Unit = {},
     val thresholdRows: ThresholdRows = { _, _ -> },
     val editThreshold: (AlertKind, Double) -> Unit = { _, _ -> },
@@ -275,6 +277,7 @@ private fun SetupViewModel.actions(
             connectLluLibreView = ::connectLluLibreView,
             recheckLlu = ::recheckLlu,
             chooseLlu = ::chooseLlu,
+            keepLluPerson = ::keepLluPerson,
             clearLluResult = ::clearLluResult,
             thresholdRows = thresholdRows,
             editThreshold = ::editThreshold,

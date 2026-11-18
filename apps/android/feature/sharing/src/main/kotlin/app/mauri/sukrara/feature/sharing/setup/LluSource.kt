@@ -31,6 +31,12 @@ data class LluConnection(
     val readyAt: Instant? = null,
     /** THE LibreView account's email when its password is saved: *Sign in as …* in one tap (your own glucose). */
     val libreViewEmail: String? = null,
+    /** The person whose readings this phone holds (patient id, "" = none): reading another one asks first. */
+    val held: String = "",
+    /** Their name, when known. */
+    val heldName: String = "",
+    /** Another person a sign-in or *Try again* found, read only after the person's OK; null = none. */
+    val pending: LluChoice? = null,
 )
 
 /** The answer of *Connect* (the field the problem belongs to shows it). */
@@ -76,8 +82,11 @@ interface LluSourcePort {
     /** Reads whom the saved account follows again (*Try again* after inviting it from the Libre app). */
     suspend fun recheck(): LluConnectOutcome
 
-    /** The person picked among several. */
+    /** The person picked among several (another one than [LluConnection.held]: after its confirmation). */
     suspend fun choose(patient: String)
+
+    /** *Cancel* on [LluConnection.pending]: the person read stays. */
+    fun keepPerson()
 
     companion object {
         /** No LibreLinkUp source in this build or test. */
@@ -95,6 +104,8 @@ interface LluSourcePort {
                 override suspend fun recheck() = LluConnectOutcome.Unreachable
 
                 override suspend fun choose(patient: String) = Unit
+
+                override fun keepPerson() = Unit
             }
     }
 }

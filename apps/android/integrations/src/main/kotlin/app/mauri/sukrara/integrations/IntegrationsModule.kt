@@ -123,6 +123,11 @@ class IntegrationsModule(
     libreLinkUpState: StateStore<LluSourceState>,
     /** Whom the LibreLinkUp source reads (kept with whose glucose and where from). */
     libreLinkUpConfig: LluSourceConfig,
+    /**
+     * LibreLinkUp is about to read another person than the one whose readings this phone holds: their readings and
+     * the treatments logged here go, monitoring starts over (two people's glucose never mix).
+     */
+    anotherLluPerson: suspend () -> Unit,
     /** The person's side of each source's sensor life: its wear length, the manual start (the app's source file). */
     sensorLife: (SourceKind) -> Flow<LifeSettings>,
     appVersion: String,
@@ -222,6 +227,7 @@ class IntegrationsModule(
             dispatchers.io,
             sensorLife(SourceKind.LibreLinkUp),
             log,
+            anotherLluPerson,
         )
 
     val libreView =

@@ -673,6 +673,11 @@ class AppGraph(
             libreLinkUpState =
                 data.typedStore("librelinkup-source", LluSourceState.serializer(), LluSourceState(), whenCorrupt = LluSourceState()),
             libreLinkUpConfig = libreLinkUpConfig,
+            anotherLluPerson = {
+                hubReadings.deleteAll()
+                data.treatments.deleteAll()
+                resetMonitoring()
+            },
             sensorLife = ::lifeSettings,
             appVersion = appVersion,
             readings = readings,

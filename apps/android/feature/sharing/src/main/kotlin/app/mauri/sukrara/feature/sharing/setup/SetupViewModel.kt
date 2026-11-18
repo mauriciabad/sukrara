@@ -574,6 +574,9 @@ class SetupViewModel(
         }
     }
 
+    /** *Cancel* on another person a sign-in or *Try again* found: the person read stays. */
+    fun keepLluPerson() = m.llu.keepPerson()
+
     fun clearLluResult() {
         if (lluAttempt.value.result != null) lluAttempt.value = lluAttempt.value.copy(result = null)
     }

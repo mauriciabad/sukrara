@@ -37,6 +37,9 @@ class AppLluSource(
                 newest = v.newest,
                 readyAt = v.sensor?.warmupEnd,
                 libreViewEmail = (lv as? LibreViewAccountState.SignedIn)?.email,
+                held = v.held,
+                heldName = v.people.firstOrNull { it.id == v.held }?.name ?: v.name.takeIf { v.patient == v.held }.orEmpty(),
+                pending = v.pending?.let { LluChoice(it.id, it.name) },
             )
         }.distinctUntilChanged()
 
@@ -53,6 +56,8 @@ class AppLluSource(
     override suspend fun recheck() = outcome(source.recheck())
 
     override suspend fun choose(patient: String) = source.choose(patient)
+
+    override fun keepPerson() = source.keepPerson()
 
     private fun outcome(r: LluConnectResult): LluConnectOutcome =
         when (r) {
