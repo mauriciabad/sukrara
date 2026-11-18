@@ -621,7 +621,7 @@
     <string name="sh_link_leave_history_keep_sub">La siguiente fuente lo continúa: para cuando lea a la misma persona.</string>
     <string name="sh_link_leave_history_delete">Borrarlo</string>
     <string name="sh_link_leave_history_delete_sub">Borra %1$s, %2$s.</string>
-    <string name="sh_link_leave_delete_text">A partir de ahora se muestra la glucosa de otra persona, así que se borra lo que guardaba este móvil: %1$s, %2$s. No se puede deshacer.</string>
+    <string name="sh_link_leave_delete_text">Cambia de quién es la glucosa que muestra este móvil, así que se borra lo que guardaba: %1$s, %2$s. No se puede deshacer.</string>
     <string name="sh_following_reconnect">Reconectar</string>
     <string name="sh_link_untold">%1$s aún no sabe que has dejado de seguirle. Sukrara se lo dirá en cuanto este móvil tenga internet.</string>
     <string name="sh_link_untold_unnamed">La persona a la que seguías aún no sabe que lo has dejado. Sukrara se lo dirá en cuanto este móvil tenga internet.</string>
