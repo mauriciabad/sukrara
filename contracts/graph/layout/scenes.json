@@ -12,6 +12,8 @@
   {"id": "old", "lo": 90, "hi": 170, "period": 28800, "days": 8, "age": 3600, "last": 118, "rate": 0.2},
   {"id": "gone", "lo": 90, "hi": 170, "period": 28800, "days": 8, "age": 18000, "last": 125, "rate": 0.0},
   {"id": "none", "days": 0},
+  {"id": "new-source", "lo": 90, "hi": 170, "period": 28800, "days": 1, "age": 60, "last": 120, "rate": 0.0,
+   "about": "a source that has only just started (LibreLinkUp's 12 h backfill, a new Nightscout site, a new phone): a day of readings, so a metric whose period has data for less than a quarter of it (7 / 14 / 30 days) is left out on every surface and both apps, the 1-day one shows (the Mac on LibreLinkUp, 2026-11-18: no rings, the same decision Android makes over the same readings)"},
   {"id": "warmup", "lo": 90, "hi": 170, "period": 28800, "days": 8, "age": 7200, "last": 110, "rate": 0.0,
    "sensor": {"start": -1200, "end": 1208400, "warmupEnd": 2400}},
   {"id": "ended", "lo": 90, "hi": 170, "period": 28800, "days": 8, "age": 4200, "last": 120, "rate": 0.0,
