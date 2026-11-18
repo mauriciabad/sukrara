@@ -735,7 +735,7 @@ throwaway data. Schema: `contracts/settings/settings.json`; `tools/check/run.sh`
       Control-click → Move Up / Move Down. No position numbers on either.
 - [ ] Follower: overview *Settings from* = Wearer; Graph's mirrored rows are read-only and the places on its Time shown / Sensor time left pages stay editable; Alerts rows say
       "Set by the wearer's app" and quiet times are hidden. Change a range on the wearer's emulator: the follower's
-      graph follows within a minute. *Custom* → the rows appear; *Copy the wearer's settings* asks first, then copies.
+      graph follows within a minute. *Custom* → the rows appear; *Copy their settings* asks first, then copies.
 - [ ] Mac: the same choices per number (pop-up + *Custom…* field and stepper), Settings from in General, drag to
       reorder the rings. Spanish on Android: every new row and dialog translated.
 

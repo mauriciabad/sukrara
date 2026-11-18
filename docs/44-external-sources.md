@@ -673,10 +673,9 @@ Seen and left, with the reason:
   isn't faked): the gate's pages were checked in the gallery (light, dark, largest font, Spanish) and the switch to the
   sensor with its backfill was simulated with `SYNTHETIC` over the fake's identical curve (the backfill replaced every
   LibreLinkUp reading within 2 min); the owner's test covers the rest.
-- **The upload status says *Sukrara takes over once it reads your sensor***: after the tap it *offers* *Take over*
-  (FEATURES); a copy change for when the upload page is next touched.
-- **Restore your followers** says *Sensor running in Sukrara* ✓ for any source with readings (Nightscout too): its words
-  are the sensor's; to reword with the other sources' setup copy.
+- **The upload status said *Sukrara takes over once it reads your sensor***, while after the tap it *offers* *Take over*:
+  fixed in the polish round (below).
+- **Restore your followers** said *Sensor running in Sukrara* ✓ for any source with readings: fixed in the polish round.
 - **Home says nothing between 7 and 20 min** of a late or stopped LibreLinkUp (the stale value and its time show; the
   reason comes with the no-data alert at 20 min): the card's rule for every source, kept.
 
@@ -707,6 +706,66 @@ working account offers the form and *Keep This Account*; no *Try Again* on the r
 
 Not applicable on the Mac: *Sign in as …* refused (the Mac has no LibreView account to offer; its form is the only
 sign-in) and *Open the Libre app's info* (no takeover on the Mac).
+
+**Polish round (2026-11-18, both apps; the owner's list from the product, UX and QA reviews).**
+
+Added:
+- **"Wearer" / "follower" left the UI** ("Naming"): the strings say it from the person's side, *Their settings* / *Ana's
+  settings* (*Settings from*, was *The wearer's settings* / *Ana (wearer)*), *Copy their settings*, *No readings from
+  their phone*, *They stopped sharing*, *the key to follow them*, *Logged by someone who follows you*, the camera and
+  Bluetooth prompts on the Mac, the widgets' reasons; an unknown name reads *this person*. *Your followers* (the people
+  who follow you) stays: it is the person's own word for them. Code names stay.
+- **Setup's groups read as cards in both themes**: setup's page is SPA's `settingsBackground` (as its own `GlifScaffold`
+  and every Settings page), its cards the groups' row colour (`groupsBackground` / `groupCard` in the designsystem), so
+  the Source and Notification steps' rows no longer float on a near-identical white.
+- **Setup's steps move on M3's shared axis X** ([Material motion](https://m3.material.io/blog/android-material-motion),
+  `Motion.sharedAxisX`: 30 dp, 300 ms, the fade-through's opacity; Back slides the other way, `SetupMachine.goesBack`;
+  reduced motion: the fade only). The Mac pushes a step in from the trailing edge (Back: the leading one), as a navigation
+  push and Setup Assistant's panes move, and fades the one left; Reduce Motion: a cross-fade ([HIG
+  Motion](https://developer.apple.com/design/human-interface-guidelines/motion), *Prefer cross-fade transitions* in
+  [WWDC19 244](https://developer.apple.com/videos/play/wwdc2019/244/)).
+- **One measure of glucose on both screens**: the delete-history dialog and Export say *4 days of glucose* / *18 hours of
+  glucose* (the 5-minute stretches that hold a reading, `glucoseMinutes`), where one counted every reading (5,276) and
+  the other the file's 5-minute rows (225).
+- **The ended sensor names where it's replaced** (contracts/graph `renew`, both renderers): *Replace in Libre app*
+  (LibreLinkUp), *Replace in Juggluco*, *Replace in its app* (a Nightscout site's uploader), *Ended · Replace in …*,
+  VoiceOver / TalkBack *Sensor ended. Replace it in …*; home's reason says *Apply a new one and start it in the Libre
+  app* and its pill and action open Source, not the new-sensor flow.
+- **Home with Juggluco as the source** says Juggluco's reason with its way out (Source): *Juggluco isn't installed*
+  (re-checked on resume), *doesn't answer* (its web server), *refuses Sukrara* (the API secret), else *No readings from
+  Juggluco · Check that Juggluco is reading the sensor*; never the sensor's *Keep the phone near the sensor*.
+- **Monitoring starts at the first unlock**: the boot broadcast after the unlock took the locked-boot path while the
+  readings taken before the unlock were moved (`awaitMonitor` looked at the history's unlock, not Android's), and the
+  starter read the hub's copy of the source, which follows a moment later; a source known only after the unlock (a
+  follow, the history) started nothing until the app was opened or the 15-minute health check. Now the boot waits for
+  the unlocked part and the starter reads THE source (`MonitorStarter` `spec`).
+- **Online readings say nothing about whose they are** (`historyOwner`): someone else's Nightscout with a damaged source
+  file was taken as yours (its readings aren't relayed); readings only from an online source now guess nothing and
+  setup asks; relayed ones still mean someone else's, a sensor's or an import yours.
+- **The LibreView upload's paused status** says what happens: *Once Sukrara reads your sensor, tap Take over to upload
+  from here.*
+- **Restore your followers' checklist** names the source: *Sensor running in Sukrara* only for the sensor Sukrara reads,
+  else *Readings arriving from Nightscout* (LibreLinkUp, Juggluco), ticked by a live reading from it; the warning says
+  *once your glucose arrives on this phone*.
+- **Only the card being picked springs** (the owner: on the Mac the pick played on both cards): Mac
+  `ChoiceCardMotion` springs the picked card and eases the one left back without bounce (each card's symbol bounces
+  on its own pick); Android's card left settles without the spatial spring. Checked frame by frame on both.
+- **The another-Sukrara group says what it needs** (the owner: *From another Sukrara* didn't say it): *From another
+  Sukrara · internet or Bluetooth nearby*, the pattern of *On this phone · works offline* and *Online · needs
+  internet*; "or" says either is enough, and *nearby* that Bluetooth needs the phone close. Its rows dropped the same
+  words (said once); outside the group (Settings › Source's summary) Android adds them back.
+- **This doc's motion table** said a picked source row expands and the others dim; the build keeps every row's
+  description so the sources compare side by side (corrected in Appendix C).
+
+Discarded or deferred, with reasons:
+- **The source row expanding on pick and the others dimming** (Appendix C's first plan): hiding what the other sources
+  bring takes away the comparison; the radio's own fill is the feedback.
+- **The sensor-end notification and the status-bar line** (*Sensor ended · Replace sensor*, its *Replace sensor* action):
+  they follow the sensor Sukrara reads (its reminders); an online source's sensor-end reminders and their words come
+  with the manual start (decision 10).
+- **A full-width push on the Mac**: the step left fades in place instead of sliding out (a SwiftUI removal keeps the
+  transition it was drawn with, so its direction could be the previous move's); the new step's 40 pt slide gives the
+  direction.
 
 ## Decisions for the owner
 
@@ -912,14 +971,16 @@ postpone nonessential setup ([HIG](https://developer.apple.com/design/human-inte
 | Moment | Motion | Haptic |
 |---|---|---|
 | Person card picked | card lifts (tonal fill, outline grows), its art's ring breathes once | tick |
-| Source picked | the row expands in place to show what it brings and its delay; the others dim | tick |
+| Source picked | the radio fills; every row keeps showing what it brings and its delay, so the sources compare side by side (nothing dims or expands) | tick |
+| Step to step (setup) | M3 shared axis X ([Material motion](https://m3.material.io/blog/android-material-motion)): forward slides in from the end, Back from the start, 30 dp with a fade through; Mac: the step pushes in from the trailing edge (Back: the leading one) and fades in, the step left fades out | none |
 | First reading from a new source | value counts up from *—*; the source line cross-fades *Waiting…* → *LibreLinkUp · 1 min* | confirm |
 | The move's switch | home's source chip morphs (icon cross-fade, width spring); the graph doesn't redraw | confirm |
 | Late / offline / back | status dot colour tween, the line slides; *Back online* collapses after 3 s | none (alerts own the strong haptics) |
 | Checklist step ticks | the existing self-ticking check pop | confirm |
 | Mac | SwiftUI springs; `NSHapticFeedbackManager` `.levelChange` on the first reading and the switch | |
 
-All honour reduced motion (fade / snap) and announce the new state once (TalkBack / VoiceOver live region).
+All honour reduced motion (fade / snap; setup's steps cross-fade: [HIG Motion](https://developer.apple.com/design/human-interface-guidelines/motion),
+Apple's *Prefer cross-fade transitions* for screen changes, [WWDC19 244](https://developer.apple.com/videos/play/wwdc2019/244/)) and announce the new state once (TalkBack / VoiceOver live region).
 
 ### States and exits (for FEATURES.md)
 
