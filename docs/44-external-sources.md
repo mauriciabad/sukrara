@@ -1613,8 +1613,8 @@ poll as the floor. With each reading's time, the SPEC's trend quiets can hold, u
   it serves the same edge case.
 - **Decision 8: acceptable.** Idea to consider: rejoining with the same invite or identity after leaving, instead of a
   new profile; open to either.
-- Decisions 2, 3 (last-seen later), 4, 5 and 7 weren't answered: the recommendations stand until the owner says
-  otherwise.
+- Decisions 2, 4, 5 and 7 are **being discussed with the owner**: not settled, nothing built on them yet. Last-seen
+  per follower (3) comes later.
 
 *Product / UX / QA journey review of #213 (Person × Source, Nightscout, LibreLinkUp, the polish round), Mac first and
 switching between sources on both apps, after the owner found the Mac on LibreLinkUp still linked to their phone with
