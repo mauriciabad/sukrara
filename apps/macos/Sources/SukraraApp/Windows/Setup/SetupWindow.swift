@@ -15,6 +15,10 @@ public final class SetupModel {
     public let settings: SettingsModel
     /// Thresholds changed on the alert step; nothing is stored before Confirm thresholds.
     var editedThresholds: [AlertKind: Double] = [:]
+    /// Whose glucose picked on the person step (stored with the source, on the source step).
+    var pickedPerson: Person?
+    /// The source picked on the source step.
+    var pickedKind: SourceKind = .sukrara
     @ObservationIgnored let store: any SettingsStoring
     /// Asks for notification permission; true = granted.
     @ObservationIgnored var requestNotifications: () async -> Bool = { false }
@@ -29,6 +33,25 @@ public final class SetupModel {
     }
 
     func complete(_ s: SetupFlow.Step) { flow.complete(s); flow.save(to: store) }
+
+    /// The person step's Continue: the pick (preselected with what the Mac runs on) carries to the source step.
+    func choosePerson() {
+        guard let p = pickedPerson ?? settings.source.running?.person else { return }
+        pickedPerson = p
+        if let running = settings.source.running, running.person == p { pickedKind = running.kind }
+        complete(.person)
+    }
+
+    /// The source step's Continue: whose glucose and the source are stored together.
+    func chooseSource() {
+        let person = pickedPerson ?? settings.source.running?.person ?? .theirs
+        guard let spec = SourceSpec(person: person, kind: pickedKind) else { return }
+        settings.source.choose(spec)
+        complete(.source)
+    }
+
+    /// The source the walk goes on with (the follow step becomes Connect Juggluco for Juggluco).
+    var runningKind: SourceKind { settings.source.running?.kind ?? pickedKind }
     func skip(_ s: SetupFlow.Step) { flow.skip(s); flow.save(to: store) }
 
     /// The Open at login step's primary action: asks macOS, and the step is done only once Sukrara is a login item.
@@ -94,7 +117,37 @@ public struct SetupView: View {
             Group {
                 switch model.flow.current {
                 case .welcome: welcome
-                case .follow: page(.follow, L10n.t("Follow someone")) { FollowStep(follow: model.follow) }
+                case .person:
+                    page(.person, L10n.t("Whose glucose will Sukrara show?")) {
+                        PersonChoice(
+                            selected: Binding(
+                                get: { model.pickedPerson ?? model.settings.source.running?.person },
+                                set: { model.pickedPerson = $0 }))
+                        Text(L10n.t("You can change it any time in Settings › Source.")).font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                case .source:
+                    page(
+                        .source,
+                        (model.pickedPerson ?? .theirs) == .yours
+                            ? L10n.t("Where does your glucose come from?")
+                            : L10n.t("Where does their glucose come from?")
+                    ) {
+                        SourceKindChoice(person: model.pickedPerson ?? .theirs, selected: $model.pickedKind)
+                    }
+                case .follow:
+                    if model.runningKind == .lanJuggluco {
+                        page(.follow, L10n.t("Connect Juggluco")) {
+                            Form { JugglucoRows(model: model.settings.juggluco) }.formStyle(.grouped)
+                                .onAppear(perform: model.settings.juggluco.load)
+                                .onDisappear {
+                                    model.settings.juggluco.saveAddress()
+                                    model.settings.juggluco.saveSecret()
+                                }
+                        }
+                    } else {
+                        page(.follow, L10n.t("Follow someone")) { FollowStep(follow: model.follow) }
+                    }
                 case .alerts: page(.alerts, L10n.t("Check your alerts")) { thresholds }
                 case .notifications:
                     page(.notifications, L10n.t("Allow notifications")) {
@@ -123,7 +176,7 @@ public struct SetupView: View {
             Text(L10n.t("Welcome to Sukrara")).font(.largeTitle.bold())
             Text(
                 L10n.t(
-                    "Sukrara shows the glucose of someone you follow in the menu bar and alerts you when it's out of range."
+                    "Sukrara shows glucose in the menu bar, yours or someone else's, and alerts you when it's out of range."
                 ))
             Text(
                 L10n.t(
@@ -218,15 +271,17 @@ public struct SetupView: View {
                     .keyboardShortcut(step == .follow && !followDone ? nil : .defaultAction)
                     .disabled(
                         (step == .follow && !followDone) || (step == .openAtLogin && model.loginItem == nil)
-                            || (step == .alerts && !model.thresholdsInOrder))
+                            || (step == .alerts && !model.thresholdsInOrder)
+                            || (step == .person && model.pickedPerson == nil && model.settings.source.running == nil))
             }
         }
     }
 
     private var followDone: Bool {
+        if model.runningKind == .lanJuggluco { return true }
         switch model.follow.status {
-        case .following, .waiting: true
-        default: false
+        case .following, .waiting: return true
+        default: return false
         }
     }
 
@@ -245,6 +300,8 @@ public struct SetupView: View {
             if await model.requestNotifications() { model.complete(s) } else { model.skip(s) }
         case .openAtLogin: model.openAtLogin()
         case .alerts: model.confirmThresholds()
+        case .person: model.choosePerson()
+        case .source: model.chooseSource()
         default: model.complete(s)
         }
     }

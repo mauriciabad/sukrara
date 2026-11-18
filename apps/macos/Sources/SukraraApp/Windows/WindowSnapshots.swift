@@ -107,6 +107,17 @@
                 m.flow.open(step)
                 out.append(("setup-\(step.rawValue)", AnyView(SetupView(model: m, close: {}))))
             }
+            // whose glucose picked, then the sources for that person
+            for (name, person, step) in [
+                ("setup-person-yours", Person.yours, SetupFlow.Step.person), ("setup-source-yours", .yours, .source),
+                ("setup-source-theirs", .theirs, .source),
+            ] {
+                let m = SetupModel(
+                    settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
+                m.pickedPerson = person
+                m.flow.open(step)
+                out.append((name, AnyView(SetupView(model: m, close: {}))))
+            }
             // the notification step of a build without Time Sensitive (no provisioning profile): Focus settings
             let unavailable = SetupModel(
                 settings: SettingsModel(store: store, follow: follow(.notFollowing), version: "0.12.0"))
@@ -242,7 +253,8 @@
             settings.newestReading = { trendApp.newestReading }
             // Juggluco on this network: on, in each state (its own defaults: the switch is on there)
             let lanStore = DefaultsSettingsStore(defaults: UserDefaults(suiteName: suite + ".lan")!)
-            lanStore.set(true, for: MacSettings.jugglucoLan)
+            lanStore.set(Person.yours.rawValue, for: MacSettings.sourcePerson)
+            lanStore.set(SourceKind.lanJuggluco.rawValue, for: MacSettings.sourceKind)
             let lanStates: [(String, LanState, String?)] = [
                 ("looking", .looking, nil), ("notfound", .notFound, nil),
                 ("connected", .connected("192.168.1.23"), nil),
@@ -254,10 +266,10 @@
                 m.juggluco.available = { true }
                 m.juggluco.state = { state }
                 m.juggluco.pausedFor = { paused }
-                m.pane = .following
+                m.pane = .source
                 out.append(
                     (
-                        "settings-following-juggluco-\(name)",
+                        "settings-source-juggluco-\(name)",
                         AnyView(
                             SettingsView(
                                 model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
@@ -375,12 +387,13 @@
                 ("settings-graph-wearer", .graph, fromWearer, 860),
                 ("settings-metrics", .metrics, own, 1340),
                 ("settings-metrics-wearer", .metrics, fromWearer, 760),
-                ("settings-following", .following, own, 560),
+                (("settings-source", .source, own, 760)),
             ] {
                 model.pane = pane
                 let m = SettingsModel(store: model.store, follow: model.follow, wearer: model.wearer, version: "0.12.0")
                 m.pane = pane
                 m.newestReading = { trendApp.newestReading }
+                m.source.following = { true }  // these scenes follow Marta
                 out.append(
                     (
                         name,
@@ -392,7 +405,7 @@
             }
             // following nobody: Follow… and Scan QR Code…
             let nobody = SettingsModel(store: scratch(), follow: follow(.notFollowing), version: "0.12.0")
-            nobody.pane = .following
+            nobody.pane = .source
             out.append(
                 (
                     "settings-following-none",

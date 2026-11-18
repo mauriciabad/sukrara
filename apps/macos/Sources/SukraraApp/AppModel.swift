@@ -58,6 +58,16 @@ public final class AppModel {
         }
     }
     @ObservationIgnored private var lanSent: LanConfig?
+    /// Where the glucose comes from as answered (`source.kind`, docs/44); nil = not answered yet: the Mac reads what it
+    /// is set up to read (following someone wins, Juggluco while nobody is followed, as before the question).
+    var sourceKind: SourceKind? {
+        didSet {
+            guard sourceKind != oldValue else { return }
+            if let last = lastSnapshot { apply(last) } else { syncLan() }
+        }
+    }
+    /// The last follower snapshot, applied again when the source changes.
+    @ObservationIgnored private var lastSnapshot: FollowerSnapshot?
     @ObservationIgnored private var lanTask: Task<Void, Never>?
     /// Where `history` was loaded from.
     @ObservationIgnored private var historySource = HistorySource.none
@@ -172,12 +182,16 @@ public final class AppModel {
     /// One follower snapshot: the link, readings, sensor and treatments, and whether the wearer's alerts are mirrored.
     func apply(_ snapshot: FollowerSnapshot) {
         let wasMonitoring = monitoring
+        lastSnapshot = snapshot
         link = snapshot.link
         keychainUnreadable = snapshot.keychainUnreadable
         nearby = snapshot.nearby
         linkPath = LinkPath.of(snapshot)
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
-        followMonitoring = link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty)
+        // Juggluco chosen as the source: the follow stays (switching back needs no new invite) but isn't read
+        followMonitoring =
+            sourceKind != .lanJuggluco
+            && (link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty))
         followReadings = followMonitoring ? snapshot.readings : []
         followSensor = snapshot.sensor
         wearerName = Profile.shownName(snapshot.wearer?.name)
@@ -269,7 +283,8 @@ public final class AppModel {
     /// Juggluco first.
     private func syncLan() {
         guard lan != nil else { return }
-        let want = followMonitoring || (follower != nil && !followerKnown) ? nil : lanConfig
+        let waiting = follower != nil && !followerKnown && sourceKind != .lanJuggluco
+        let want = followMonitoring || waiting ? nil : lanConfig
         guard want != lanSent else { return }
         lanSent = want
         toLan { await $0.set(want) }

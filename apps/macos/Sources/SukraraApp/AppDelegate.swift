@@ -51,11 +51,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Juggluco's API secret, read once from the Keychain and kept as the Settings window changes it.
     private var lanSecret = ""
 
-    /// The Juggluco switch, address and secret (nil = off).
+    /// Juggluco's address and secret while it is the source (`source.kind` lanJuggluco), else nil.
     private var lanConfig: LanConfig? {
-        store.value(MacSettings.jugglucoLan)
+        storedKind == .lanJuggluco
             ? LanConfig(address: store.value(MacSettings.jugglucoAddress), secret: lanSecret) : nil
     }
+
+    /// The source as answered (nil = not answered yet).
+    private var storedKind: SourceKind? { SourceKind(rawValue: store.value(MacSettings.sourceKind)) }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = MainMenu.make()
@@ -121,6 +124,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         observeClockStyle()
         observeNetwork()
         refreshNotificationPermission()
+        model.sourceKind = storedKind
         model.lanConfig = lanConfig
         model.run()
         if case .snapshot = model.plan.mode {} else { windows.showSetupIfFirstRun() }
@@ -284,6 +288,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if model.graph != graph { model.graph = graph }
         if model.widgetGraph != widgetGraph { model.widgetGraph = widgetGraph }
         if changed { model.feedWidget(settingsChanged: true) }
+        model.sourceKind = storedKind
         model.lanConfig = lanConfig
         shortcut?.set(on: store.value(MacSettings.readAloudShortcut))
     }

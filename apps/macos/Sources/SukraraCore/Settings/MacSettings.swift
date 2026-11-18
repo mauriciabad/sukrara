@@ -60,8 +60,10 @@ public enum MacSettings {
     public static let readAloudShortcut = SettingSpec(key: SettingsSpec.Keys.readAloudShortcut, defaultValue: true)
     /// Let Sukrara through a Focus: alarm-level alerts post Time Sensitive (off by default; #184).
     public static let throughFocus = SettingSpec(key: SettingsSpec.Keys.throughFocus, defaultValue: false)
-    /// Read glucose from Juggluco's web server on the home network (off by default; plain http, private addresses).
-    public static let jugglucoLan = SettingSpec(key: SettingsSpec.Keys.jugglucoLan, defaultValue: false)
+    /// Whose glucose this Mac shows (`Person`); empty = not answered yet (docs/44 Person × Source).
+    public static let sourcePerson = SettingSpec(key: SettingsSpec.Keys.sourcePerson, defaultValue: "")
+    /// Where it comes from (`SourceKind`: another Sukrara, or Juggluco on the home network); empty = not answered yet.
+    public static let sourceKind = SettingSpec(key: SettingsSpec.Keys.sourceKind, defaultValue: "")
     /// Juggluco's address ("192.168.1.23" or with ":port"); blank = find it on this Mac's networks.
     public static let jugglucoAddress = SettingSpec(key: SettingsSpec.Keys.jugglucoAddress, defaultValue: "")
     /// The Keychain account of Juggluco's API secret (schema `source.jugglucoSecret`).

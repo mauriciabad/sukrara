@@ -34,6 +34,8 @@
     {"paths": ["apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/*", "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/localserver/XdripPage.kt", "contracts/watchface/payload/*", "apps/garmin/source/link/*"],
      "qa": ["Q27 Garmin link (phone → Sukrara Aura) and the xDrip+ server page"]},
     {"paths": ["apps/android/*/src/main/*", "apps/macos/Sources/*"], "qa": ["Q19 Complete flows (states and exits)", "Q20 The person and the feel"]},
+    {"paths": ["apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/Source.kt", "apps/android/feature/sharing/src/main/kotlin/app/mauri/sukrara/feature/sharing/setup/SourceSteps.kt", "apps/android/feature/settings/src/main/kotlin/app/mauri/sukrara/feature/settings/source/*", "apps/macos/Sources/SukraraApp/Windows/Settings/SourcePane.swift", "contracts/sources/*"],
+     "qa": ["Q30 Source: whose glucose and where it comes from"]},
     {"paths": ["website/*"], "qa": ["Q29 Website"]}
   ]
 }

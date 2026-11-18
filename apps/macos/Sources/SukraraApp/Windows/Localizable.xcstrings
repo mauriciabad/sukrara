@@ -10548,6 +10548,358 @@
           }
         }
       }
+    },
+    "Yours" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yours"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tuya"
+          }
+        }
+      }
+    },
+    "Someone else's" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Someone else's"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La de otra persona"
+          }
+        }
+      }
+    },
+    "You wear the sensor." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You wear the sensor."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Llevas tú el sensor."
+          }
+        }
+      }
+    },
+    "A child, a partner or a friend." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A child, a partner or a friend."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un hijo o una hija, tu pareja, un amigo."
+          }
+        }
+      }
+    },
+    "Sukrara on your phone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara on your phone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara en tu móvil"
+          }
+        }
+      }
+    },
+    "Their Sukrara" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their Sukrara"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su Sukrara"
+          }
+        }
+      }
+    },
+    "Your phone reads your sensor and shares it with this Mac · internet or Bluetooth nearby" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your phone reads your sensor and shares it with this Mac · internet or Bluetooth nearby"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu móvil lee tu sensor y la comparte con este Mac · por internet o por Bluetooth cerca"
+          }
+        }
+      }
+    },
+    "Their phone shares it with this Mac after an invite · internet or Bluetooth nearby" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Their phone shares it with this Mac after an invite · internet or Bluetooth nearby"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Su móvil la comparte con este Mac tras una invitación · por internet o por Bluetooth cerca"
+          }
+        }
+      }
+    },
+    "Juggluco on a phone on this Wi-Fi reads the sensor; Sukrara reads Juggluco · no internet needed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco on a phone on this Wi-Fi reads the sensor; Sukrara reads Juggluco · no internet needed"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Juggluco, en un móvil de esta wifi, lee el sensor y Sukrara lee Juggluco · sin internet"
+          }
+        }
+      }
+    },
+    "Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara vuelve a preguntar de quién es esta glucosa y de dónde viene. Sigue leyendo como ahora hasta que respondas."
+          }
+        }
+      }
+    },
+    "Whose glucose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whose glucose"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De quién es la glucosa"
+          }
+        }
+      }
+    },
+    "Where it comes from" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where it comes from"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De dónde viene"
+          }
+        }
+      }
+    },
+    "Changing the source keeps the person this Mac follows, so switching back needs no new invite." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Changing the source keeps the person this Mac follows, so switching back needs no new invite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar el origen conserva a la persona que sigue este Mac: para volver no hace falta otra invitación."
+          }
+        }
+      }
+    },
+    "In Juggluco: Settings › Web server, with Local only off. Plain http on your home network only: readings travel unencrypted between the phone and this Mac." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Juggluco: Settings › Web server, with Local only off. Plain http on your home network only: readings travel unencrypted between the phone and this Mac."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En Juggluco: Ajustes › Servidor web, con Solo local desactivado. http simple solo en la red de casa: las lecturas viajan sin cifrar entre el móvil y este Mac."
+          }
+        }
+      }
+    },
+    "Source" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Origen"
+          }
+        }
+      }
+    },
+    "Whose glucose and where it comes from: the person this Mac follows, or Juggluco on this network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whose glucose and where it comes from: the person this Mac follows, or Juggluco on this network"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De quién es la glucosa y de dónde viene: la persona que sigue este Mac, o Juggluco en esta red"
+          }
+        }
+      }
+    },
+    "Whose glucose will Sukrara show?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Whose glucose will Sukrara show?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿De quién es la glucosa que mostrará Sukrara?"
+          }
+        }
+      }
+    },
+    "You can change it any time in Settings › Source." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change it any time in Settings › Source."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puedes cambiarlo cuando quieras en Ajustes › Origen."
+          }
+        }
+      }
+    },
+    "Where does your glucose come from?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where does your glucose come from?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿De dónde viene tu glucosa?"
+          }
+        }
+      }
+    },
+    "Where does their glucose come from?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where does their glucose come from?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿De dónde viene su glucosa?"
+          }
+        }
+      }
+    },
+    "Connect Juggluco" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connect Juggluco"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecta Juggluco"
+          }
+        }
+      }
+    },
+    "Sukrara shows glucose in the menu bar, yours or someone else's, and alerts you when it's out of range." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara shows glucose in the menu bar, yours or someone else's, and alerts you when it's out of range."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sukrara muestra la glucosa en la barra de menús, la tuya o la de otra persona, y te avisa cuando está fuera de rango."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

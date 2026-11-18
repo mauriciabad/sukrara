@@ -238,7 +238,7 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
 - [ ] How the readings come (2026-11-15), following on a test build: the end of the *Mute All Alerts* row (and of Mute
       all's *Unmute* / *Change Time*) says *Internet* with the globe; with the wearer's phone in Bluetooth range
       *Nearby* with the Bluetooth mark within a minute; Wi-Fi off and the phone out of range: *Offline* in red; back:
-      *Internet*. The tooltip and VoiceOver say it in words; a click opens Settings › Following. Synthetic:
+      *Internet*. The tooltip and VoiceOver say it in words; a click opens Settings › Source. Synthetic:
       `sukrara-snap shell` → `panel-nearby-*.png`, `panel-offline-*.png`, `panel-muted-all-nearby-*.png`.
 - [ ] Card overflow (#181): `sukrara-snap shell` → `panel-flowers-*.png`: the flowers and laurel at the card's right
       and top edges and the value's first digit at its left edge are whole, drawn over the panel's margin (compare
@@ -279,7 +279,7 @@ system-icon placement. Read-only checks; screenshots stay off the repo (health d
       Mail or Messages (once the site serves `/.well-known/apple-app-site-association`) opens the Follow step with
       *Follow* / *Cancel*, never following by itself; while launching, it waits for the launch.
 - [ ] QR scanner (#172; only a build installed with `tools/install.sh mac` may open the camera, a dev run shows the
-      made-up feed): the Follow step's *Scan QR Code…* and Settings › Following › *Scan QR Code…*. First time →
+      made-up feed): the Follow step's *Scan QR Code…* and Settings › Source › *Scan QR Code…*. First time →
       *Allow Camera* → macOS asks (in Spanish with the Mac in Spanish) → the live picture, mirrored; the phone's Share ›
       Invite QR → green check and a tap, then who is inviting (*Cancel* sends nothing); a menu / Wi-Fi QR → the orange
       *That QR code isn't a Sukrara invite*, scanning goes on, the warning leaves once the code does; an iPhone near the
@@ -900,7 +900,7 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    `…0202000A:1D17` (10.0.2.2:7447). `RELAYS --es urls http://x` is refused in logcat (`SukraraDebug`) and changes
    nothing.
 4. Wearer: *Share with someone* → *Create invite*. Follower: `adb shell am start -a android.intent.action.VIEW -d
-   '<link>' -p app.mauri.sukrara` → *I follow someone* → *Join*: the relay logs the invite lookup (`REQ q-…`, 1
+   '<link>' -p app.mauri.sukrara` → *Someone else's* → *Their Sukrara* → *Join*: the relay logs the invite lookup (`REQ q-…`, 1
    stored) and the request (kind 1059); the follower shows *Waiting for <name> to allow you* with *If <name> asks for a
    code: NNNN* as one quiet line.
 5. Wearer (left on the share screen with the QR): within seconds the screen turns into *<name> asked to follow you*
@@ -1123,6 +1123,23 @@ Every app change (CLAUDE.md *Design from the person's life first*, *Make it juic
       reject); motion shows where things came from and went; numbers that change animate; no jank on a mid-range phone.
 - [ ] With reduced motion / remove animations on, and with TalkBack / VoiceOver, everything still works and reads well.
 
+
+## Q30 Source: whose glucose and where it comes from
+
+docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthetic data only.
+
+- [ ] Fresh install: setup's *Whose glucose* shows two illustrated cards (light and dark), nothing preselected; a pick
+      lifts its card, the ring breathes once, a tick; with *Remove animations* it snaps. TalkBack reads "radio button".
+- [ ] *Yours* → Source shows the sensor (*Recommended* line), Juggluco and *Sukrara on your other phone*; *Someone
+      else's* → Juggluco and *Their Sukrara*. Back from Source returns to the cards, nothing stored.
+- [ ] Settings › Source: *Whose glucose* and *Where it comes from* open the steps alone; a change says what changes
+      (*Switch to …?*), a change of person with history asks *Delete the earlier history?* (*Export CSV first*, *Cancel*).
+- [ ] Their Sukrara: the follow rows and *Settings from* are on Settings › Source; Settings › Sharing says sharing is for
+      your own glucose and leads there. *Stop following* → setup.
+- [ ] An install updated from a version before #213 (wearer, Juggluco, follower): monitoring and alerts keep running;
+      setup opens on *Whose glucose* preselected; answering the same deletes nothing; Back → home's *Finish setup*.
+- [ ] Mac: setup's *Whose glucose* (two cards side by side) and *Source* (radio rows); Settings › Source pane; Juggluco on
+      the network chosen while following someone shows Juggluco only; back to *Their Sukrara* shows the wearer at once.
 
 ## Q29 Website
 

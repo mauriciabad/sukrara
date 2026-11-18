@@ -69,7 +69,7 @@ struct PanelView: View {
                     AlertBlocks(
                         alerts: alerts, now: context.date, custom: $customMute,
                         path: model.linkPath.map {
-                            PathBadge(path: $0, open: links.map { l in { l.openSettingsPane(.following) } })
+                            PathBadge(path: $0, open: links.map { l in { l.openSettingsPane(.source) } })
                         })
                 }
                 if let updates = model.updates { UpdateRow(updates: updates) }
@@ -88,8 +88,8 @@ struct PanelView: View {
         switch action {
         case nil: nil
         case .follow: links.openFollow
-        case .following: { links.openSettingsPane(.following) }
-        case .juggluco: { links.openSettingsPane(.following) }
+        case .following: { links.openSettingsPane(.source) }
+        case .juggluco: { links.openSettingsPane(.source) }
         }
     }
 

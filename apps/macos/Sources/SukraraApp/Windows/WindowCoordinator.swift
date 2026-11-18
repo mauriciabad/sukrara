@@ -29,6 +29,7 @@ final class WindowCoordinator {
             store: store, follow: follow, version: Self.version, distribution: model.plan.distribution,
             appBuild: .current)
         settings.newestReading = { [weak model] in model?.newestReading }
+        settings.source.following = { [weak model] in model?.link.isFollowing ?? false }
         setup = SetupModel(settings: settings)
         treatments = TreatmentsModel(rows: [], canWrite: false, actions: adapter)
         // the rows' glucose then: the readings the card shows (each with its own trend) and the card's unit

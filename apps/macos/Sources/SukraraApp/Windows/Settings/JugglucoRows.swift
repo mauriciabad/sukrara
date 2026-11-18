@@ -7,8 +7,8 @@ import SukraraCore
 import SukraraShare
 import SwiftUI
 
-/// Settings › Following: Juggluco on this network (schema `source.jugglucoLan`, `source.jugglucoAddress`, the
-/// secret in the Keychain `source.jugglucoSecret`), where it stands and its exits.
+/// Settings › Source with Juggluco on this network as the source (schema `source.kind` lanJuggluco,
+/// `source.jugglucoAddress`, the secret in the Keychain `source.jugglucoSecret`): where it stands and its exits.
 @Observable
 public final class JugglucoModel {
     @ObservationIgnored let store: any SettingsStoring
@@ -33,14 +33,6 @@ public final class JugglucoModel {
         self.secrets = secrets
         addressDraft = store.value(MacSettings.jugglucoAddress)
         secretDraft = ""
-    }
-
-    var on: Bool {
-        get { _ = revision; return store.value(MacSettings.jugglucoLan) }
-        set {
-            store.set(newValue, for: MacSettings.jugglucoLan)
-            revision += 1
-        }
     }
 
     /// Loads the stored secret into its field (when the pane shows).
@@ -118,12 +110,9 @@ struct JugglucoRows: View {
     @Bindable var model: JugglucoModel
 
     var body: some View {
-        let available = model.available()
-        Toggle(L10n.t("Juggluco on this network"), isOn: available ? $model.on : .constant(false))
-            .disabled(!available)
-        if !available {
+        if !model.available() {
             Text(L10n.t("Not available in this run (development or test build).")).foregroundStyle(.secondary)
-        } else if model.on {
+        } else {
             if let wearer = model.pausedFor() {
                 Label(
                     L10n.t("Paused while following \(wearer): their readings come first."), systemImage: "pause.circle"

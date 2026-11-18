@@ -12,13 +12,15 @@ import SukraraGraph
 @Observable
 public final class SettingsModel {
     /// The panes in toolbar order (schema `settings.pane`'s values); an unknown stored one opens General.
-    public enum Pane: String, CaseIterable, Sendable { case general, following, alerts, readings, graph, metrics }
+    public enum Pane: String, CaseIterable, Sendable { case general, source, alerts, readings, graph, metrics }
 
     @ObservationIgnored let store: any SettingsStoring
     public let alerts: AlertSettingsStore
     public let follow: FollowModel
-    /// Juggluco on this network (Settings › Following).
+    /// Juggluco on this network (Settings › Source).
     public let juggluco: JugglucoModel
+    /// Whose glucose and where it comes from (Settings › Source, setup's two steps).
+    public let source: SourceChoiceModel
     /// The wearer's mirrored settings (nil while not following or none arrived yet).
     public var wearer: WearerSettings?
     /// Whether macOS lets Sukrara post Time Sensitive (Settings › Alerts, the setup's notification step); nil: this run
@@ -56,6 +58,7 @@ public final class SettingsModel {
         self.alerts = AlertSettingsStore(store: store)
         self.follow = follow
         self.juggluco = JugglucoModel(store: store)
+        self.source = SourceChoiceModel(store: store)
         self.wearer = wearer
         self.version = version
         self.distribution = distribution

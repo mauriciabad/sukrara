@@ -174,48 +174,6 @@ struct SettingsFromPicker: View {
     }
 }
 
-/// Following: the link with the wearer, its state in words and its exits, and Juggluco on this network (both answer
-/// "where does this Mac get glucose").
-struct FollowingPane: View {
-    @Bindable var model: SettingsModel
-    var openFollow: () -> Void
-    /// Reconnect the relays and Bluetooth now (nil when this run has no follower runtime).
-    var reconnect: (() -> Void)?
-
-    var body: some View {
-        Form {
-            Section { FollowingRows(follow: model.follow, openFollow: openFollow) }
-            if case .following = model.follow.status, let reconnect {
-                Section {
-                    HStack {
-                        Spacer()
-                        Button(L10n.t("Reconnect Now"), action: reconnect)
-                            .help(L10n.t("Reconnect over the internet and to the phone over Bluetooth now"))
-                    }
-                }
-            }
-            Section {
-                JugglucoRows(model: model.juggluco)
-            } header: {
-                Text(verbatim: "Juggluco")
-            } footer: {
-                Text(
-                    L10n.t(
-                        "While this Mac follows nobody, it can read glucose from Juggluco's web server on the same network (in Juggluco: Settings › Web server, with Local only off). Plain http on your home network only: readings travel unencrypted between the phone and this Mac."
-                    )
-                )
-                .formFooter()
-            }
-            .onAppear(perform: model.juggluco.load)
-            .onDisappear {
-                model.juggluco.saveAddress()
-                model.juggluco.saveSecret()
-            }
-        }
-        .formStyle(.grouped)
-    }
-}
-
 /// Open at login with every `SMAppService` state in words and its way out; a run without a login item says so
 /// (the switch is dimmed) instead of a switch that does nothing.
 struct OpenAtLoginRows: View {
@@ -351,7 +309,7 @@ struct SettingsView: View {
                 GeneralPane(
                     model: model, loginItem: loginItem, updates: updates, openFollow: openFollow,
                     openAbout: openAbout)
-            case .following: FollowingPane(model: model, openFollow: openFollow, reconnect: reconnect)
+            case .source: SourcePane(model: model, openFollow: openFollow, reconnect: reconnect)
             case .alerts: AlertsRangesPane(model: model, controller: alerts)
             case .readings: ReadingsPane(model: model)
             case .graph: GraphPane(model: model)

@@ -102,7 +102,7 @@ extension SettingsModel.Pane {
     var title: String {
         switch self {
         case .general: L10n.t("General")
-        case .following: L10n.t("Following")
+        case .source: L10n.t("Source")
         case .alerts: L10n.t("Alerts")
         case .readings: L10n.t("Readings")
         case .graph: L10n.t("Graph")
@@ -114,7 +114,7 @@ extension SettingsModel.Pane {
     var symbol: String {
         switch self {
         case .general: "gearshape"
-        case .following: "person.2"
+        case .source: "dot.radiowaves.left.and.right"
         case .alerts: "bell.badge"
         case .readings: "drop"
         case .graph: "chart.xyaxis.line"
@@ -126,7 +126,8 @@ extension SettingsModel.Pane {
     var help: String {
         switch self {
         case .general: L10n.t("Settings from, reading aloud, open at login and updates")
-        case .following: L10n.t("The person this Mac follows, and Juggluco on this network")
+        case .source:
+            L10n.t("Whose glucose and where it comes from: the person this Mac follows, or Juggluco on this network")
         case .alerts: L10n.t("When to alert, night alerts, quiet times, sounds and fine-tuning")
         case .readings: L10n.t("The unit, the ranges and the trend arrow")
         case .graph: L10n.t("Time shown, lines, treatments and the sensor on the graph")
@@ -138,7 +139,7 @@ extension SettingsModel.Pane {
     var height: CGFloat {
         switch self {
         case .general: 640
-        case .following: 560
+        case .source: 620
         case .alerts: 720
         case .readings: 720
         case .graph: 680

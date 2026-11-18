@@ -132,6 +132,25 @@ import Testing
         #expect(model.readings.map(\.mgdl) == [200])
     }
 
+    /// docs/44: Juggluco on the network chosen as the source reads Juggluco even while this Mac still follows someone
+    /// (the follow stays for switching back); choosing their Sukrara again shows the wearer's.
+    @Test func theChosenSourceIsReadNeverBothPeople() async {
+        let model = model(network())
+        model.run()
+        model.sourceKind = .lanJuggluco
+        model.lanConfig = LanConfig(address: Self.phone)
+        var snapshot = FollowerSnapshot.empty
+        snapshot.link = .following(wearer: "Ana", canWrite: false)
+        snapshot.readings = [Reading(t: clock.now.addingTimeInterval(-30), mgdl: 200, sensorRate: 0)]
+        model.apply(snapshot)
+        await until { model.readings.last?.mgdl == 123 }
+        #expect(model.readings.map(\.mgdl).contains(123) && !model.readings.map(\.mgdl).contains(200))
+        model.lanConfig = nil
+        model.sourceKind = .sukrara
+        await until { model.readings.map(\.mgdl) == [200] }
+        #expect(model.readings.map(\.mgdl) == [200])
+    }
+
     /// The menu bar, panel and widgets show the same 7 / 30-day rings, before and after the panel opens.
     @Test func everySurfaceCountsTheRingsOverTheStoredHistory() async {
         let model = model(network())

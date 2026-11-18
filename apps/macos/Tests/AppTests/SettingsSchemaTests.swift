@@ -49,7 +49,8 @@ import Testing
             t("graph.sensorTime.place", MacSettings.widgetSensorTime),
             t("follower.settingsFrom", MacSettings.settingsFrom), t("general.unit", MacSettings.unit),
             t("glucose.trend", MacSettings.trend),
-            t("setup.steps", MacSettings.setupSteps), t("source.jugglucoLan", MacSettings.jugglucoLan),
+            t("setup.steps", MacSettings.setupSteps), t("source.person", MacSettings.sourcePerson),
+            t("source.kind", MacSettings.sourceKind),
             t("source.jugglucoAddress", MacSettings.jugglucoAddress), t("settings.pane", MacSettings.settingsPane),
             t("report.days", MacSettings.reportDays),
             t("general.readAloudShortcut", MacSettings.readAloudShortcut), t(json, MacSettings.alerts),
@@ -120,7 +121,9 @@ import Testing
             } else if let list = schemaDefault as? [Double] {
                 #expect(t.value as? String == list.map { String(Int($0)) }.joined(separator: ","), "\(t.id)")
             }
-            if let values = row["values"] as? [String], let v = t.value as? String {
+            // a row without a default (whose glucose, the source) stores "" until answered
+            if let values = row["values"] as? [String], let v = t.value as? String, row["default"] != nil || !v.isEmpty
+            {
                 if info.type == "order" {
                     #expect(Set(v.split(separator: ",").map(String.init)) == Set(values), "\(t.id)")
                 } else {

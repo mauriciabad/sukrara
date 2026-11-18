@@ -340,9 +340,26 @@ private extension DateComponents {
         #expect(f.current == nil && f.isComplete && !f.needsFinishing)
     }
 
+    /// docs/44: a Mac that finished setup before Whose glucose and Source existed has them left: Finish Setup… asks
+    /// them, first.
+    @Test func aMacFromBeforeTheQuestionIsAskedItOnce() {
+        var f = SetupFlow(states: [
+            .welcome: .done, .follow: .done, .alerts: .done, .notifications: .done, .openAtLogin: .done,
+        ])
+        #expect(f.needsFinishing && f.unfinished == [.person, .source])
+        f.reopen()
+        #expect(f.current == .person)
+        f.complete(.person)
+        #expect(f.current == .source)
+        f.complete(.source)
+        #expect(f.isComplete)
+    }
+
     @Test func skippingLeavesFinishSetup() {
         var f = SetupFlow()
         f.complete(.welcome)
+        f.complete(.person)
+        f.complete(.source)
         f.skip(.follow)
         #expect(f.current == .alerts)
         f.complete(.alerts)
@@ -363,6 +380,8 @@ private extension DateComponents {
     @Test func finishSetupReopensWhereTheWalkWasLeft() {
         var f = SetupFlow()
         f.complete(.welcome)
+        f.complete(.person)
+        f.complete(.source)
         f.skip(.follow)
         f.reopen()
         #expect(f.current == .alerts)
@@ -404,6 +423,8 @@ private extension DateComponents {
         var f = SetupFlow(store: store)
         #expect(f.isFirstRun)
         f.complete(.welcome)
+        f.complete(.person)
+        f.complete(.source)
         f.skip(.follow)
         f.save(to: store)
         let again = SetupFlow(store: store)

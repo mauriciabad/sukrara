@@ -170,6 +170,16 @@
       }
     },
     {
+      "name": "sources",
+      "level": "fail",
+      "why": "Person × Source (docs/44, contracts/sources): what each source declares, the behaviour each person and source gets and THE rank rule are the same on every app, which both pass (SourcesContractTest, SourcesTests)",
+      "sides": {
+        "contracts": ["contracts/sources/*"],
+        "android": ["apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/Source.kt", "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/core/model/ReadingRank.kt"],
+        "mac": ["apps/macos/Sources/SukraraCore/Model/Source.swift"]
+      }
+    },
+    {
       "name": "durations",
       "level": "warn",
       "trigger": ["cases"],

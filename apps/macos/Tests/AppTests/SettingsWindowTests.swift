@@ -30,7 +30,7 @@ import Testing
     /// docs/35 §7: General first (HIG), Following second (where this Mac gets glucose), then Alerts, Readings, Graph,
     /// Metrics; the schema's `settings.pane` values are this order (SettingsSchemaTests).
     @Test func thePanesComeInTheirOrder() {
-        #expect(SettingsModel.Pane.allCases == [.general, .following, .alerts, .readings, .graph, .metrics])
+        #expect(SettingsModel.Pane.allCases == [.general, .source, .alerts, .readings, .graph, .metrics])
         #expect(SettingsModel.Pane.readings.symbol == "drop")
     }
 
@@ -78,11 +78,11 @@ import Testing
         let w = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 400, height: 300), styleMask: [], backing: .buffered, defer: true)
         let chrome = SettingsWindowChrome(window: w, model: m)
-        m.pane = .following  // a no-data reason's way out, a pane's Change…
-        for _ in 0..<20 where w.title != SettingsModel.Pane.following.title { await Task.yield() }
-        #expect(w.title == SettingsModel.Pane.following.title)
-        #expect(w.toolbar?.selectedItemIdentifier?.rawValue == "following")
-        #expect(w.contentRect(forFrameRect: w.frame).height == SettingsModel.Pane.following.height)
+        m.pane = .source  // a no-data reason's way out, a pane's Change…
+        for _ in 0..<20 where w.title != SettingsModel.Pane.source.title { await Task.yield() }
+        #expect(w.title == SettingsModel.Pane.source.title)
+        #expect(w.toolbar?.selectedItemIdentifier?.rawValue == "source")
+        #expect(w.contentRect(forFrameRect: w.frame).height == SettingsModel.Pane.source.height)
         _ = chrome
     }
 
