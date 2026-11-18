@@ -711,6 +711,12 @@ public final class AppModel {
     /// Settings › Source's *Sign Out* (confirmed): the account goes, the readings and the log stay.
     func signOutLibreLinkUp() {
         toLibreLinkUp { await $0.signOut() }
+        // signed out while another source is read: the person read is kept apart (listed in Also saved on this Mac)
+        let task = libreLinkUpTask
+        Task { [weak self] in
+            await task?.value
+            self?.keptRevision += 1
+        }
     }
 
     /// Writes one of this Mac's treatments into LibreLinkUp's log (the Treatments window and Add Treatment).

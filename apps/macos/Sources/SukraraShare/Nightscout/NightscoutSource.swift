@@ -395,11 +395,14 @@ public actor NightscoutSource: NightscoutSourcing {
         guard let body = try? await call(NightscoutApi.treatments(root, since: from), config: config),
             let docs = (try? JSONSerialization.jsonObject(with: body)) as? [[String: Any]], gen == generation
         else { return nil }
-        var s = await log(for: config)
+        let planned = await log(for: config)
         let plan = NightscoutTreatments.plan(
-            site: docs, local: Array(s.entries.values), ledger: s.ledger, device: s.device,
+            site: docs, local: Array(planned.entries.values), ledger: planned.ledger, device: planned.device,
             window: Int64(from)...Int64(now + 600))
         let ms = Int64(now * 1000)
+        // the site's changes go into the log as it is now (read again right before saving, no wait in between): an
+        // entry written here while this round asked the site is never overwritten by the copy the plan was made from
+        var s = await log(for: config)
         for e in plan.upsert {
             if let sent = s.ledger.pushed[e.id], var own = s.entries[e.id] {
                 // ours, changed on the site: its version, at the version that went up (nothing to send back)
@@ -422,10 +425,13 @@ public actor NightscoutSource: NightscoutSourcing {
         try? await state.save(s)
         await publishLog(s)
         guard !readOnly, !(plan.push.isEmpty && plan.remove.isEmpty) else { return docs }
+        // what went up, recorded into the log as it is then: an entry written here meanwhile (Add Treatment while this
+        // round talks to the site) must not be overwritten by this round's older copy
+        var sent: [String: Int64?] = [:]
         for id in plan.push {
-            guard let t = s.entries[id], gen == generation else { return docs }
+            guard let t = s.entries[id], gen == generation else { break }
             switch await upsert(root, t, device: s.device, config: config) {
-            case .ok: s.ledger.pushed[id] = t.u
+            case .ok: sent[id] = .some(t.u)
             case .refused: readOnly = true
             case .failed: break
             }
@@ -434,15 +440,17 @@ public actor NightscoutSource: NightscoutSourcing {
         if !readOnly {
             for id in plan.remove where gen == generation {
                 switch await remove(root, identifier: id, config: config) {
-                case .ok: s.ledger.pushed[id] = nil
+                case .ok: sent[id] = .some(nil)
                 case .refused: readOnly = true
                 case .failed: break
                 }
                 if readOnly { break }
             }
         }
-        try? await state.save(s)
-        await publishLog(s)
+        var latest = await log(for: config)
+        for (id, u) in sent { latest.ledger.pushed[id] = u }
+        try? await state.save(latest)
+        await publishLog(latest)
         return docs
     }
 

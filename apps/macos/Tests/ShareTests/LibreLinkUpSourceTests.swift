@@ -529,6 +529,10 @@ import Testing
         #expect(await r.source.readings(since: .distantPast).allSatisfy { $0.mgdl < 150 })
         #expect(KeptHistory.list(in: kept).map(\.id) == [KeptHistory.id(.libreLinkUp, Self.leo)])
         await r.source.set(nil)
+        // signed out while another source is read (Also saved on this Mac): Ana is kept apart too, nothing left here
+        await r.source.signOut()
+        #expect(Set(KeptHistory.list(in: kept).map(\.id)) == [anaID, KeptHistory.id(.libreLinkUp, Self.leo)])
+        #expect(await r.source.readings(since: .distantPast).isEmpty)
     }
 
     /// LibreView's maintenance (docs/45): the region answers HTTP 911; the source says `maintenance` (not an error),

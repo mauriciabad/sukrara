@@ -122,7 +122,9 @@ public final class AlsoSavedModel {
             )
         case .kept(let info):
             (
-                L10n.t("Delete \(name(info))'s history?"),
+                // a site's history is no one's by name
+                info.kind == .nightscout
+                    ? L10n.t("Delete the history of \(name(info))?") : L10n.t("Delete \(name(info))'s history?"),
                 L10n.t("The glucose and treatments kept on this Mac are deleted. This can't be undone."),
                 L10n.t("Delete"), true
             )

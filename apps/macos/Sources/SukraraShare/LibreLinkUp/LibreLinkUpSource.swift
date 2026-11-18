@@ -119,7 +119,7 @@ public protocol LibreLinkUpSourcing: Sendable {
     func connect(email: String, password: String) async -> LluConnectResult
     /// *Try Again* after no one shared or new terms: whom the saved account follows, the pick kept while shared.
     func recheck(saved: String?) async -> LluConnectResult
-    /// Forgets the account (the readings and the log stay).
+    /// Forgets the account (the readings and the log stay; while another source is read they are kept apart).
     func signOut() async
     /// Try Again (and the network came back): ask now instead of after the wait.
     func retry() async
@@ -305,12 +305,26 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     }
 
     public func signOut() async {
+        let running = config != nil
         stop()
         try? secrets.delete(account: MacSettings.libreLinkUpSecretAccount)
         version = LibreLinkUp.version
         peopleChecked = nil
         var s = await log()
         s.people = []
+        if !running, !s.patient.isEmpty {
+            // signed out while another source is read (*Also saved on this Mac*): the person read is kept apart,
+            // listed with its *Delete* (nothing of it would be reachable otherwise)
+            await shelve(s)
+            s = LibreLinkUpState()
+            var snap = current
+            snap.patient = ""
+            snap.name = ""
+            snap.treatments = []
+            snap.sensor = nil
+            snap.readings = []
+            current = snap
+        }
         try? await state.save(s)
         // off until a new sign-in picks whom to read (the app clears the pick too)
         config = nil

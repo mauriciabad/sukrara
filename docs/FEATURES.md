@@ -813,7 +813,8 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   *Sign out of LibreLinkUp?* · the account and whom it follows stay in LibreLinkUp) and *Forget Nightscout site* (its
   address; the address and token go, the site stays); hidden when there is none; the settings search finds both. Mac
   **Also saved on this Mac** (Settings › Source's last group, `AlsoSavedRows`): the LibreLinkUp account (its email,
-  *Sign Out…*: *Sukrara forgets this account's sign-in on this Mac…*), the Nightscout site (its host, *Forget…*: the
+  *Sign Out…*: *Sukrara forgets this account's sign-in on this Mac…*, the person it read kept as a kept history), the
+  Nightscout site (its host, *Forget…*: the
   address and token go, the site's glucose and treatments stay as a kept history, `NightscoutSource.forget`), Juggluco's
   address and API secret (*Forget…*), each only while that source isn't the one in use, then every kept history not
   shown (the person's name or the source's, *Sukrara on a phone · kept 18 Nov 2026*, *Delete…*: *Delete Ana's

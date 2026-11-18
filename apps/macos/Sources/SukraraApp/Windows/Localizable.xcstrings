@@ -1459,6 +1459,22 @@
         }
       }
     },
+    "Delete the history of %@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the history of %@?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Eliminar el historial de %@?"
+          }
+        }
+      }
+    },
     "Deleted %@" : {
       "localizations" : {
         "en" : {
