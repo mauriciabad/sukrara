@@ -1,0 +1,2949 @@
+{
+ "_about": [
+  "LibreView's maintenance windows from Abbott's public status page (an Atlassian Statuspage, no key, no account:",
+  "GET 'url', https only, redirects never followed, 'timeout_s'). Only while LibreLinkUp is a signed-in source: at",
+  "once when a call answers 'maintenance' (calls.json) and every 'maintenanceEvery_s' while it lasts, for the",
+  "window's end; otherwise every 'every_s', for the windows ahead. The last good answer is kept; a failure (no",
+  "answer, not the page's) changes nothing and says nothing: 'no end time known'. 'regions': LibreLinkUp's region",
+  "(the login's redirect) -> the page's region components; 'groups': the component groups that are LibreLinkUp's and",
+  "LibreView's servers (others list stray regions). A window (scheduled_maintenances[]: status 'scheduled',",
+  "'in_progress' or 'verifying'; 'completed' is none) is the region's when one of its components has one of the",
+  "region's names and its group_id is one of 'groups'. 'windows' (sorted by start): start / end from",
+  "scheduled_for / scheduled_until (ISO 8601 with a zone; anything else, or an end not after the start, is skipped),",
+  "'live' = in progress or verifying. 'until': the end of the window the region is in (live, or its start has come),",
+  "the latest of several, null when none (one past its planned end too: no time made up); the health's end ('LibreView",
+  "maintenance until 23:00') and poll.json's 'until'. 'upcoming': the next window not begun, the warn-ahead:",
+  "Settings › Source says it once known, home from 'warnHome_s' before its start, and Android posts one silent",
+  "notification 'notify_s' before it (docs/45 'In Sukrara'). A 911 is what says maintenance: the page only adds times."
+ ],
+ "url": "https://status.freestyle.abbott/api/v2/summary.json",
+ "every_s": 21600,
+ "maintenanceEvery_s": 600,
+ "timeout_s": 15,
+ "warnHome_s": 43200,
+ "notify_s": 3600,
+ "regions": {
+  "us": [
+   "United States"
+  ],
+  "eu": [
+   "Europe, Middle East, Africa"
+  ],
+  "eu2": [
+   "UK & Ireland"
+  ],
+  "de": [
+   "Germany"
+  ],
+  "fr": [
+   "France"
+  ],
+  "jp": [
+   "Japan"
+  ],
+  "ap": [
+   "Other Asia"
+  ],
+  "au": [
+   "Australia, New Zealand"
+  ],
+  "ae": [
+   "United Arab Emirates"
+  ],
+  "ca": [
+   "Canada"
+  ],
+  "la": [
+   "Latin America"
+  ],
+  "ru": [
+   "Russia"
+  ],
+  "cn": [
+   "China"
+  ]
+ },
+ "groups": [
+  "LibreLinkUp Mobile App",
+  "LibreView Web App"
+ ],
+ "cases": [
+  {
+   "name": "tonight's window, an EU account: maintenance until its end",
+   "region": "eu",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "maintenance",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-app-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-app-6",
+      "name": "Japan",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-6",
+      "name": "Japan",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-api-6",
+      "name": "Japan",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-app-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "in_progress",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-eu",
+      "name": "Server Maintenance - EU",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T14:00:00.000-08:00",
+      "scheduled_until": "2026-11-18T15:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-germany",
+      "name": "Server Maintenance - GERMANY",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-12-17T04:00:00.000-08:00",
+      "scheduled_until": "2026-12-17T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-japan",
+      "name": "Server Maintenance - JAPAN",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-12-03T04:00:00.000-08:00",
+      "scheduled_until": "2026-12-03T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-6",
+        "name": "Japan",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-6",
+        "name": "Japan",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-api-6",
+        "name": "Japan",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-united-states",
+      "name": "Server Maintenance - UNITED STATES",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2027-01-07T04:00:00.000-08:00",
+      "scheduled_until": "2027-01-07T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1795001400,
+      "end": 1795005000,
+      "live": true
+     },
+     {
+      "start": 1795039200,
+      "end": 1795042800,
+      "live": false
+     }
+    ],
+    "until": 1795005000,
+    "upcoming": {
+     "start": 1795039200,
+     "end": 1795042800
+    }
+   }
+  },
+  {
+   "name": "the same window, a UK account (eu2)",
+   "region": "eu2",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "maintenance",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-app-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "in_progress",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-eu",
+      "name": "Server Maintenance - EU",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T14:00:00.000-08:00",
+      "scheduled_until": "2026-11-18T15:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-germany",
+      "name": "Server Maintenance - GERMANY",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-12-17T04:00:00.000-08:00",
+      "scheduled_until": "2026-12-17T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1795001400,
+      "end": 1795005000,
+      "live": true
+     }
+    ],
+    "until": 1795005000,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "a German account: tonight's EMEA window isn't its region; its own a month ahead",
+   "region": "de",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "maintenance",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-app-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "in_progress",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-germany",
+      "name": "Server Maintenance - GERMANY",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-12-17T04:00:00.000-08:00",
+      "scheduled_until": "2026-12-17T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1797508800,
+      "end": 1797512400,
+      "live": false
+     }
+    ],
+    "until": null,
+    "upcoming": {
+     "start": 1797508800,
+     "end": 1797512400
+    }
+   }
+  },
+  {
+   "name": "a US account: a Germany window naming the data sharing API's United States isn't its",
+   "region": "us",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-5",
+      "name": "Germany",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-app-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-12",
+      "name": "United States",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-server-maintenance-germany",
+      "name": "Server Maintenance - GERMANY",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-12-17T04:00:00.000-08:00",
+      "scheduled_until": "2026-12-17T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-5",
+        "name": "Germany",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-server-maintenance-united-states",
+      "name": "Server Maintenance - UNITED STATES",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2027-01-07T04:00:00.000-08:00",
+      "scheduled_until": "2027-01-07T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-12",
+        "name": "United States",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1799323200,
+      "end": 1799326800,
+      "live": false
+     }
+    ],
+    "until": null,
+    "upcoming": {
+     "start": 1799323200,
+     "end": 1799326800
+    }
+   }
+  },
+  {
+   "name": "a Japanese account: its window only in LibreView Web App's group still counts",
+   "region": "jp",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-6",
+      "name": "Japan",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-6",
+      "name": "Japan",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-api-6",
+      "name": "Japan",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-server-maintenance-japan",
+      "name": "Server Maintenance - JAPAN",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-12-03T04:00:00.000-08:00",
+      "scheduled_until": "2026-12-03T05:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-6",
+        "name": "Japan",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-6",
+        "name": "Japan",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-api-6",
+        "name": "Japan",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1796299200,
+      "end": 1796302800,
+      "live": false
+     }
+    ],
+    "until": null,
+    "upcoming": {
+     "start": 1796299200,
+     "end": 1796302800
+    }
+   }
+  },
+  {
+   "name": "the window's time has come, Abbott hasn't marked it in progress yet",
+   "region": "eu",
+   "now": 1795039260,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-server-maintenance-eu",
+      "name": "Server Maintenance - EU",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T14:00:00.000-08:00",
+      "scheduled_until": "2026-11-18T15:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1795039200,
+      "end": 1795042800,
+      "live": false
+     }
+    ],
+    "until": 1795042800,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "in progress but past its planned end: no end known (none made up)",
+   "region": "eu",
+   "now": 1795005060,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "maintenance",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "in_progress",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1795001400,
+      "end": 1795005000,
+      "live": true
+     }
+    ],
+    "until": null,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "verifying counts as still in maintenance",
+   "region": "eu",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "verifying",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1795001400,
+      "end": 1795005000,
+      "live": true
+     }
+    ],
+    "until": 1795005000,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "a completed window is none",
+   "region": "eu",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "completed",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [],
+    "until": null,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "times without a zone or upside down are skipped",
+   "region": "eu",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-server-maintenance-eu",
+      "name": "Server Maintenance - EU",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18 22:00",
+      "scheduled_until": "2026-11-18T15:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     },
+     {
+      "id": "m-backwards",
+      "name": "Server Maintenance - EU",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T15:00:00.000-08:00",
+      "scheduled_until": "2026-11-18T14:00:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [],
+    "until": null,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "UTC times (Z) read too",
+   "region": "eu",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-server-maintenance-eu",
+      "name": "Server Maintenance - EU",
+      "status": "scheduled",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T22:00:00.000Z",
+      "scheduled_until": "2026-11-18T23:00:00.000Z",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [
+     {
+      "start": 1795039200,
+      "end": 1795042800,
+      "live": false
+     }
+    ],
+    "until": null,
+    "upcoming": {
+     "start": 1795039200,
+     "end": 1795042800
+    }
+   }
+  },
+  {
+   "name": "a region the page doesn't list: nothing known",
+   "region": "xx",
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "in_progress",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [],
+    "until": null,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "no region known (no redirect yet): nothing known",
+   "region": null,
+   "now": 1795003200,
+   "body": {
+    "page": {
+     "id": "synthetic",
+     "name": "FreeStyle Libre Server",
+     "url": "https://status.freestyle.abbott",
+     "time_zone": "America/Los_Angeles"
+    },
+    "status": {
+     "indicator": "none",
+     "description": "synthetic"
+    },
+    "components": [
+     {
+      "id": "grp-app",
+      "name": "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-lv",
+      "name": "LibreView Web App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-llu",
+      "name": "LibreLinkUp Mobile App",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-api",
+      "name": "Libre Data Sharing API",
+      "status": "operational",
+      "group_id": null,
+      "group": true
+     },
+     {
+      "id": "grp-app-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-app-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-app",
+      "group": false
+     },
+     {
+      "id": "grp-lv-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-lv-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-lv",
+      "group": false
+     },
+     {
+      "id": "grp-llu-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-llu-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     },
+     {
+      "id": "grp-api-3",
+      "name": "Europe, Middle East, Africa",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-api-10",
+      "name": "UK & Ireland",
+      "status": "operational",
+      "group_id": "grp-api",
+      "group": false
+     },
+     {
+      "id": "grp-llu-x",
+      "name": "Account Registration",
+      "status": "operational",
+      "group_id": "grp-llu",
+      "group": false
+     }
+    ],
+    "incidents": [],
+    "scheduled_maintenances": [
+     {
+      "id": "m-aws-rds-maintenance-emea-uk-ireland",
+      "name": "AWS RDS Maintenance - EMEA, UK, IRELAND",
+      "status": "in_progress",
+      "impact": "maintenance",
+      "scheduled_for": "2026-11-18T03:30:00.000-08:00",
+      "scheduled_until": "2026-11-18T04:30:00.000-08:00",
+      "components": [
+       {
+        "id": "grp-app-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-app-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-app",
+        "group": false
+       },
+       {
+        "id": "grp-lv-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-lv-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-lv",
+        "group": false
+       },
+       {
+        "id": "grp-llu-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-llu-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       },
+       {
+        "id": "grp-api-3",
+        "name": "Europe, Middle East, Africa",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-api-10",
+        "name": "UK & Ireland",
+        "status": "operational",
+        "group_id": "grp-api",
+        "group": false
+       },
+       {
+        "id": "grp-llu-x",
+        "name": "Account Registration",
+        "status": "operational",
+        "group_id": "grp-llu",
+        "group": false
+       }
+      ]
+     }
+    ]
+   },
+   "expect": {
+    "windows": [],
+    "until": null,
+    "upcoming": null
+   }
+  },
+  {
+   "name": "an answer that isn't the page's",
+   "region": "eu",
+   "now": 1795003200,
+   "body": {
+    "hello": "world"
+   },
+   "expect": {
+    "windows": [],
+    "until": null,
+    "upcoming": null
+   }
+  }
+ ]
+}

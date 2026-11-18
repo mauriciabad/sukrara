@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkPath
+import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
@@ -22,6 +23,7 @@ import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingHistory
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.StateStore
@@ -267,6 +269,11 @@ data class HomeUiState(
     val clinicBehind: Instant? = null,
     /** The sign-in after which the Libre app stopped uploading ([BannerKind.LibreAppStopped]). */
     val libreAppStopped: Instant? = null,
+    /**
+     * The next LibreView maintenance window of LibreLinkUp's region while it begins within
+     * [MAINTENANCE_AHEAD] (contracts/sources/librelinkup/status.json `warnHome_s`): home's quiet line under the card.
+     */
+    val maintenanceAhead: MaintenanceWindow? = null,
 ) {
     val mutedUntil: Instant? get() = glucose.alerts.mutedUntil?.takeIf { it > now }
 }
@@ -333,7 +340,12 @@ class HomeViewModel(
                 glucose = glucose,
                 now = now,
                 look = look,
-                reason = NoDataReason.of(glucose, look, env.phoneApp),
+                reason = NoDataReason.of(glucose, look, env.phoneApp, env.moveOffered),
+                maintenanceAhead =
+                    env.maintenanceAhead?.takeIf {
+                        it.start.isAfter(now) && Duration.between(now, it.start) <= MAINTENANCE_AHEAD &&
+                            glucose.spec?.kind == SourceKind.LibreLinkUp
+                    },
                 banner = HomeBanners.pick(readiness, env, glucose.service is ServiceState.Stopped, problems.size, memory, now),
                 firstProblem = readiness?.firstProblem,
                 readiness = readiness,
@@ -578,6 +590,9 @@ class HomeViewModel(
         /** Entries logged a little ahead (a dose about to be taken) still show. */
         private val FUTURE_SLACK: Duration = Duration.ofHours(1)
         private const val MINUTE_MS = 60_000L
+
+        /** Home says a LibreView maintenance window from this long before it begins (status.json `warnHome_s`). */
+        private val MAINTENANCE_AHEAD: Duration = Duration.ofHours(12)
 
         fun factory(
             deps: HomeDeps,

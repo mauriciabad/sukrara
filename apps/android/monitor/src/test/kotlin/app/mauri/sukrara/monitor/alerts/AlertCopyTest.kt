@@ -226,7 +226,7 @@ class AlertCopyTest {
         fun kind() = AlertKind.fromWire(c.str("kind"))!!
         return when (c.str("state")) {
             "headline" -> {
-                AlertCopy.headline(kind(), c.long("treated").toInt(), w)
+                AlertCopy.headline(kind(), c.long("treated").toInt(), w, maintenance = c.has("why", "maintenance"))
             }
 
             "headline_escalated" -> {
@@ -239,7 +239,8 @@ class AlertCopyTest {
                         AlertReading(readingAt(c), it.jsonPrimitive.int, c.rate())
                     }
                 val f = Firing(kind(), "e1", 1, reading, if (kind() == AlertKind.NO_DATA) 20.0 else 70.0, AT)
-                AlertCopy.body(f, w, if (c.str("unit") == "mmol") GlucoseUnit.MMOL else GlucoseUnit.MGDL, locale, now = AT)
+                val unit = if (c.str("unit") == "mmol") GlucoseUnit.MMOL else GlucoseUnit.MGDL
+                AlertCopy.body(f, w, unit, locale, now = AT, maintenanceEnds = c["ends"]?.jsonPrimitive?.content)
             }
 
             "action" -> {
@@ -267,6 +268,11 @@ class AlertCopyTest {
             }
         }
     }
+
+    private fun JsonObject.has(
+        k: String,
+        v: String,
+    ): Boolean = this[k]?.jsonPrimitive?.content == v
 
     private fun JsonObject.rate(): Double? = get("rate")?.jsonPrimitive?.content?.toDouble()
 

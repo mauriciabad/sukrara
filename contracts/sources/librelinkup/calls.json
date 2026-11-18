@@ -4,7 +4,9 @@
   "'Authorization: Bearer <token>' and 'Account-Id: sha256hex(account id)') -> the outcome the source acts on:",
   "'ok'; 'expired' (sign in again with the saved password, once); 'rateLimited'; 'terms'; 'version' (as login.json:",
   "sent from then on, the call made once more);",
-  "'retired' (refused or gone: health 'stopped'); 'server' (health 'unreachable')."
+  "'retired' (refused or gone: health 'stopped'); 'server' (health 'unreachable'); 'maintenance' (HTTP 911 or",
+  "status 911, before anything else: LibreView is down for maintenance in the region, docs/45; health",
+  "'maintenance', an expected wait, never an error)."
  ],
  "cases": [
   {
@@ -115,6 +117,34 @@
    },
    "expect": {
     "outcome": "server"
+   }
+  },
+  {
+   "name": "LibreView down for maintenance: HTTP 911 on every path (2026-11-18)",
+   "code": 911,
+   "body": {
+    "status": 911
+   },
+   "expect": {
+    "outcome": "maintenance"
+   }
+  },
+  {
+   "name": "maintenance said only in the body",
+   "code": 200,
+   "body": {
+    "status": 911
+   },
+   "expect": {
+    "outcome": "maintenance"
+   }
+  },
+  {
+   "name": "maintenance with an empty answer",
+   "code": 911,
+   "body": {},
+   "expect": {
+    "outcome": "maintenance"
    }
   }
  ]

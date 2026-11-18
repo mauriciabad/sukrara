@@ -134,6 +134,8 @@ class AlertsModule(
             },
             unit = { unitNow.value },
             canLog = canLogTreatments,
+            // LibreView's maintenance, from the source: no data says why (docs/45; the timing is the engine's, unchanged)
+            maintenance = { hub.state.value.source.maintenance },
         )
 
     /** Settings' sound preview and *Send a test alert*. */

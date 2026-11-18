@@ -29,6 +29,9 @@ sealed interface LoginAnswer {
     /** The account must accept new terms in the LibreLinkUp / LibreView app first. */
     data object AcceptTerms : LoginAnswer
 
+    /** LibreView is down for maintenance in the account's region (HTTP 911, docs/45): try again once it ends. */
+    data object Maintenance : LoginAnswer
+
     data class Failed(val why: String) : LoginAnswer
 }
 
@@ -39,6 +42,9 @@ sealed interface SignInResult {
     data object BadCredentials : SignInResult
 
     data object AcceptTerms : SignInResult
+
+    /** LibreView is down for maintenance (docs/45): nothing is wrong with the account; try again once it ends. */
+    data object Maintenance : SignInResult
 
     /** Network or server trouble; [why] is for diagnostics. Try again later. */
     data class Failed(val why: String) : SignInResult
@@ -80,6 +86,7 @@ class LibreViewAccount internal constructor(
                 is LluLogin.RateLimited -> LoginAnswer.Failed("too many attempts: try again later")
                 is LluLogin.Version -> LoginAnswer.Failed("version ${l.minimumVersion} needed")
                 LluLogin.Retired -> LoginAnswer.Failed("the login is gone")
+                LluLogin.Maintenance -> LoginAnswer.Maintenance
                 is LluLogin.Failed -> LoginAnswer.Failed(l.why)
             }
     }
@@ -129,6 +136,10 @@ class LibreViewAccount internal constructor(
 
                     LoginAnswer.AcceptTerms -> {
                         return@withContext SignInResult.AcceptTerms
+                    }
+
+                    LoginAnswer.Maintenance -> {
+                        return@withContext SignInResult.Maintenance
                     }
 
                     is LoginAnswer.Failed -> {

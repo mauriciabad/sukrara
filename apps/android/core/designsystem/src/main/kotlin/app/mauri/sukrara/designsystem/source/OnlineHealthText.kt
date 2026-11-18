@@ -16,7 +16,8 @@ import java.time.Instant
  * THE words of an online source's health (contracts/sources/health.json), the same on home, Settings › Source and
  * setup's Connect step: what is happening and, when the person can do something, what. [host] names the site;
  * [kind] the source (a Nightscout site's uploader, or the Libre app behind LibreLinkUp, is where to look); [readyAt]
- * the source's sensor's warm-up end as a clock time (`ClockText`), null once it has passed (*almost ready*).
+ * the source's sensor's warm-up end as a clock time (`ClockText`), null once it has passed (*almost ready*); [until]
+ * LibreView's maintenance end as a clock time, null when not known.
  */
 @Composable
 fun onlineHealthText(
@@ -26,6 +27,7 @@ fun onlineHealthText(
     host: String,
     kind: SourceKind = SourceKind.Nightscout,
     readyAt: String? = null,
+    until: String? = null,
 ): String {
     val llu = kind == SourceKind.LibreLinkUp
     val ago =
@@ -91,6 +93,11 @@ fun onlineHealthText(
         OnlineHealth.WarmingUp -> {
             readyAt?.let { stringResource(R.string.ds_online_warming_up, it) } ?: stringResource(R.string.ds_online_almost_ready)
         }
+
+        OnlineHealth.Maintenance -> {
+            until?.let { stringResource(R.string.ds_online_llu_maintenance_until, it) }
+                ?: stringResource(R.string.ds_online_llu_maintenance)
+        }
     }
 }
 
@@ -101,6 +108,9 @@ fun OnlineHealth.iconRes(): Int =
         OnlineHealth.Connecting, OnlineHealth.Live, OnlineHealth.Late -> R.drawable.ds_ic_public
 
         OnlineHealth.WarmingUp -> R.drawable.ds_ic_hourglass_top
+
+        // a scheduled pause, not a broken link
+        OnlineHealth.Maintenance -> R.drawable.ds_ic_schedule
 
         OnlineHealth.SignedOut, OnlineHealth.ActionNeeded -> R.drawable.ds_ic_key
 

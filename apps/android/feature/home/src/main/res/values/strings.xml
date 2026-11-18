@@ -61,6 +61,10 @@
     <string name="reason_llu_title">No readings from LibreLinkUp</string>
     <string name="reason_site_unreachable">Your Nightscout site doesn’t answer. Sukrara keeps trying; check the address in Settings › Source.</string>
     <string name="reason_site_action">Source</string>
+    <!-- LibreView's maintenance (docs/45): an expected wait, not an error. The title is ds_maintenance(_until). -->
+    <string name="reason_maintenance_body">Abbott is servicing LibreView, so LibreLinkUp sends no glucose. It comes back by itself when that ends. To get glucose meanwhile, change the source.</string>
+    <string name="reason_maintenance_action">Change source</string>
+    <string name="reason_maintenance_read_sensor">Read the sensor in Sukrara</string>
     <string name="reason_site_not_connected">Connect your Nightscout site in Settings › Source, or wait a moment while Sukrara reaches it.</string>
     <string name="reason_no_readings_title">No readings from the sensor</string>
     <string name="reason_no_readings_body">Last reading %1$s. Keep the phone near the sensor; it reconnects on its own.</string>

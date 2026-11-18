@@ -200,7 +200,15 @@ private fun Form(
             Text(
                 stringResource(error.message),
                 Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
-                color = MaterialTheme.colorScheme.error,
+                // maintenance is a wait, not a mistake: the plain text colour
+                color =
+                    if (error ==
+                        SignInError.Maintenance
+                    ) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
                 style = MaterialTheme.typography.bodyMedium,
             )
         }
@@ -220,6 +228,7 @@ private val SignInError.message: Int
         when (this) {
             SignInError.WrongPassword -> R.string.libreview_error_wrong_password
             SignInError.AcceptTerms -> R.string.libreview_error_accept_terms
+            SignInError.Maintenance -> R.string.libreview_error_maintenance
             SignInError.Failed -> R.string.libreview_error_failed
         }
 

@@ -53,7 +53,7 @@ object A11y {
                 }
 
                 GlucoseLook.State.NO_READINGS -> {
-                    w.string(R.string.a11y_no_reading_since, Freshness.timeText(checkNotNull(r).t, now))
+                    noReadingSince(model, Freshness.timeText(checkNotNull(r).t, now))
                 }
 
                 GlucoseLook.State.VALUE -> {
@@ -165,8 +165,19 @@ object A11y {
             Freshness.AgeMark.NONE -> null
             Freshness.AgeMark.TIME -> w.string(R.string.a11y_last_reading, time)
             Freshness.AgeMark.DIMMED -> w.string(R.string.a11y_last_reading, time) + ", " + w.string(R.string.a11y_value_old)
-            Freshness.AgeMark.NO_READINGS, Freshness.AgeMark.FACE -> w.string(R.string.a11y_no_reading_since, time)
+            Freshness.AgeMark.NO_READINGS, Freshness.AgeMark.FACE -> noReadingSince(model, time)
         }
+    }
+
+    /** *Glucose: no reading since 22:04*, and LibreView's maintenance with its end when the source waits for it. */
+    private fun noReadingSince(
+        model: CardModel,
+        time: String,
+    ): String {
+        val w = model.words
+        val pause = model.pause ?: return w.string(R.string.a11y_no_reading_since, time)
+        return pause.untilS?.let { w.string(R.string.a11y_no_reading_maintenance_until, time, ClockText.time(it)) }
+            ?: w.string(R.string.a11y_no_reading_maintenance, time)
     }
 
     /**

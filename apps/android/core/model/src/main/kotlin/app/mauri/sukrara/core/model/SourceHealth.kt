@@ -33,6 +33,9 @@ enum class CallOutcome {
 
     /** LibreLinkUp refuses this client (a version Sukrara can't send, an endpoint gone): Abbott changed the API. */
     Retired,
+
+    /** LibreLinkUp's region answers HTTP 911: LibreView is down for maintenance (docs/45). */
+    Maintenance,
 }
 
 /**
@@ -76,10 +79,19 @@ enum class OnlineHealth {
 
     /** The source answers and its sensor warms up: nothing new until the warm-up's end (the newest is the old sensor's). */
     WarmingUp,
+
+    /**
+     * LibreView is down for maintenance (LibreLinkUp's region answers 911): nothing comes until it ends. An expected
+     * wait, not an error: what is happening and, when Abbott's status page says it, until when.
+     */
+    Maintenance,
     ;
 
     /** Readings may still come by themselves: nothing for the person to do. */
     val fine: Boolean get() = this == Connecting || this == Live || this == Late || this == WarmingUp
+
+    /** Nothing to fix (fine, or LibreView's maintenance: a wait that ends by itself): never in an error's colour. */
+    val nothingToFix: Boolean get() = fine || this == Maintenance
 
     /** The problem [SourceStatus.Interrupted] carries, null while readings come. */
     val problem: SourceProblem?
@@ -94,6 +106,7 @@ enum class OnlineHealth {
                 ActionNeeded -> SourceProblem.ActionNeeded
                 NotShared -> SourceProblem.NotShared
                 Stopped -> SourceProblem.Stopped
+                Maintenance -> SourceProblem.Maintenance
             }
 
     companion object {
@@ -104,7 +117,8 @@ enum class OnlineHealth {
          * The state for the last call's [outcome] (null = nothing asked yet), whether the phone is [online], and the
          * newest reading's age ([newestAge], null = the site has none), and whether the source's sensor is [warmingUp]
          * (an answer then says [WarmingUp], whatever the age). A refusal or a rate limit says so whatever the network; a
-         * failure is [Offline] only without a network.
+         * failure is [Offline] only without a network. LibreView's maintenance says so whatever the network and the
+         * warm-up.
          */
         fun of(
             outcome: CallOutcome?,
@@ -137,6 +151,10 @@ enum class OnlineHealth {
                     Stopped
                 }
 
+                CallOutcome.Maintenance -> {
+                    Maintenance
+                }
+
                 CallOutcome.Network, CallOutcome.Server, CallOutcome.NotFound -> {
                     if (online) Unreachable else Offline
                 }
@@ -153,5 +171,9 @@ enum class OnlineHealth {
     }
 }
 
-/** Why an online source brings nothing now ([SourceStatus.Interrupted.problem]): home and Settings › Source say it. */
-enum class SourceProblem { NoNewReadings, Offline, Unreachable, SignedOut, RateLimited, ActionNeeded, NotShared, Stopped }
+/**
+ * Why an online source brings nothing now ([SourceStatus.Interrupted.problem]): home and Settings › Source say it.
+ * [Maintenance] is an expected wait, nothing to fix: every surface says what is happening and until when
+ * ([SourceStatus.Interrupted.until]), never in an error's colour.
+ */
+enum class SourceProblem { NoNewReadings, Offline, Unreachable, SignedOut, RateLimited, ActionNeeded, NotShared, Stopped, Maintenance }

@@ -99,6 +99,7 @@ import app.mauri.sukrara.graph.SensorLife
 import app.mauri.sukrara.graph.SensorRenew
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.TrendMark
+import app.mauri.sukrara.graph.cardPause
 import app.mauri.sukrara.graph.cardSensor
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Band
@@ -163,6 +164,7 @@ internal fun panelModel(
         sensor = sensor,
         // each slot's window counted once per reading, not per scrolled frame
         metricsOf = MetricsCache(points, now.epochSecond),
+        pause = glucose.cardPause(),
     )
 
 /**

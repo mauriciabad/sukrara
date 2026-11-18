@@ -117,7 +117,9 @@ class NightscoutAccount(
                 }
 
                 // LibreLinkUp's own outcomes: a site never answers with them
-                CallOutcome.Server, CallOutcome.RateLimited, CallOutcome.Terms, CallOutcome.NotShared, CallOutcome.Retired -> {
+                CallOutcome.Server, CallOutcome.RateLimited, CallOutcome.Terms, CallOutcome.NotShared, CallOutcome.Retired,
+                CallOutcome.Maintenance,
+                -> {
                     return null to NsConnectResult.Unreachable
                 }
             }

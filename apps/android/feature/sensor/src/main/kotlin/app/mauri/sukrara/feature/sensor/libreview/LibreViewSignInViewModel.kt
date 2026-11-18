@@ -23,7 +23,7 @@ interface LibreViewPort {
     suspend fun signOut()
 }
 
-enum class SignInError { WrongPassword, AcceptTerms, Failed }
+enum class SignInError { WrongPassword, AcceptTerms, Maintenance, Failed }
 
 sealed interface SignInUi {
     /** The saved account is being read (no form flashes for a signed-in person). */
@@ -75,6 +75,9 @@ class LibreViewSignInViewModel(private val port: LibreViewPort) : ViewModel() {
                     SignInResult.BadCredentials -> SignInUi.SignedOut(SignInError.WrongPassword, e, again)
 
                     SignInResult.AcceptTerms -> SignInUi.SignedOut(SignInError.AcceptTerms, e, again)
+
+                    // nothing wrong with the account: LibreView is down for maintenance (docs/45)
+                    SignInResult.Maintenance -> SignInUi.SignedOut(SignInError.Maintenance, e, again)
 
                     // offline, a server error, an answer it can't read: "couldn't sign in", never a guess at why
                     is SignInResult.Failed -> SignInUi.SignedOut(SignInError.Failed, e, again)

@@ -387,6 +387,7 @@
     <string name="in_import_report">Informar del problema</string>
     <string name="in_import_err_unreadable">No se pudo abrir el archivo. Elígelo otra vez.</string>
     <string name="in_import_err_signed_out">No has iniciado sesión en Tidepool. Inicia sesión e importa otra vez.</string>
+    <string name="in_llu_maintenance_ahead">Próximo mantenimiento</string>
     <string name="in_llu_title">LibreLinkUp</string>
     <string name="in_llu_account">Cuenta</string>
     <string name="in_llu_account_none">Sin iniciar sesión</string>

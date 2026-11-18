@@ -391,6 +391,7 @@
     <string name="in_import_report">Report the problem</string>
     <string name="in_import_err_unreadable">Couldn\'t open the file. Choose it again.</string>
     <string name="in_import_err_signed_out">Not signed in to Tidepool. Sign in, then import again.</string>
+    <string name="in_llu_maintenance_ahead">Next maintenance</string>
     <string name="in_llu_title">LibreLinkUp</string>
     <string name="in_llu_account">Account</string>
     <string name="in_llu_account_none">Not signed in</string>

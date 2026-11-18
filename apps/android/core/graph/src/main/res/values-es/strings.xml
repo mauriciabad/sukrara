@@ -43,6 +43,8 @@
     <string name="slot_tir_very_good">muy bien</string>
     <string name="card_no_readings_yet">Aún no hay lecturas</string>
     <string name="card_no_reading_since">Sin lecturas desde</string>
+    <string name="card_maintenance">Mantenimiento de LibreView</string>
+    <string name="card_maintenance_until">hasta las %1$s</string>
     <string name="card_sensor_ended">Sensor terminado</string>
     <string name="card_warming_up">Calentando</string>
     <string name="card_ready_at">Listo a las %1$s</string>
@@ -80,6 +82,8 @@
     <string name="a11y_just_now">ahora mismo</string>
     <string name="a11y_no_readings">Glucosa: aún no hay lecturas</string>
     <string name="a11y_no_reading_since">Glucosa: sin lecturas desde %1$s</string>
+    <string name="a11y_no_reading_maintenance_until">Glucosa: sin lecturas desde %1$s, mantenimiento de LibreView hasta las %2$s</string>
+    <string name="a11y_no_reading_maintenance">Glucosa: sin lecturas desde %1$s, mantenimiento de LibreView</string>
     <string name="a11y_last_reading">Glucosa: última lectura %1$s</string>
     <plurals name="a11y_warming_up">
         <item quantity="one">Sensor calentando, queda %1$s</item>

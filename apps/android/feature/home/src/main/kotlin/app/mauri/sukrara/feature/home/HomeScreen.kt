@@ -85,6 +85,7 @@ import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.DndStatus
 import app.mauri.sukrara.core.model.Durations
+import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenQuestionInfo
@@ -123,6 +124,8 @@ import app.mauri.sukrara.designsystem.sharing.FirstThatFits
 import app.mauri.sukrara.designsystem.sharing.LinePart
 import app.mauri.sukrara.designsystem.sharing.MarkedLine
 import app.mauri.sukrara.designsystem.sharing.PathMark
+import app.mauri.sukrara.designsystem.source.maintenanceAheadText
+import app.mauri.sukrara.designsystem.source.maintenanceTitle
 import app.mauri.sukrara.designsystem.state.StateKind
 import app.mauri.sukrara.designsystem.state.StateScreen
 import app.mauri.sukrara.feature.home.banners.BannerKind
@@ -719,7 +722,47 @@ private fun GlucoseSection(
                 ReasonRow(compact, state.now) { callbacks.onAction(it) }
                 UntestedSensorCard(state.untestedSensor)
                 SensorLine(state) { callbacks.onAction(HomeAction.PairSensor) }
+                MaintenanceAheadLine(state.maintenanceAhead, state.now) { callbacks.onAction(HomeAction.OpenSource) }
             }
+        }
+    }
+}
+
+/**
+ * A LibreView maintenance window ahead for LibreLinkUp's region (from 12 h before it begins, docs/45): one quiet line
+ * under the card, never above the glucose; it leaves by itself when the window begins (home's reason says it then). A
+ * tap opens Settings › Source, where the source can be changed.
+ */
+@Composable
+private fun MaintenanceAheadLine(
+    ahead: MaintenanceWindow?,
+    now: Instant,
+    onOpen: () -> Unit,
+) {
+    var shown by remember { mutableStateOf(ahead) }
+    if (ahead != null) shown = ahead
+    Reveal(ahead != null) {
+        val w = shown ?: return@Reveal
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clickable(onClickLabel = stringResource(R.string.reason_maintenance_action), onClick = onOpen)
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .testTag("home-maintenance-ahead"),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painterResource(DsR.drawable.ds_ic_schedule),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                maintenanceAheadText(w.start, now, clockTime(w.start), clockTime(w.end)),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -849,9 +892,21 @@ private fun ReasonRow(
                 Text(text.first, style = MaterialTheme.typography.titleMedium, modifier = Modifier.semantics { heading() })
                 Text(text.second, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            r.action?.let { action ->
-                FilledTonalButton(onClick = { onAction(action) }, modifier = Modifier.align(Alignment.End).padding(top = 4.dp)) {
-                    Text(actionLabel(r))
+            val wait = (r as? NoDataReason.SourceTrouble)?.takeIf { it.waitOnly }
+            if (wait != null) {
+                // LibreView's maintenance: nothing to fix, so the ways out are quiet text buttons (wait, or another
+                // source; reading the sensor here only where MoveRules allow it)
+                Row(Modifier.align(Alignment.End), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    if (wait.move) {
+                        TextButton({ onAction(HomeAction.PairSensor) }) { Text(stringResource(R.string.reason_maintenance_read_sensor)) }
+                    }
+                    TextButton({ onAction(HomeAction.OpenSource) }) { Text(actionLabel(r)) }
+                }
+            } else {
+                r.action?.let { action ->
+                    FilledTonalButton(onClick = { onAction(action) }, modifier = Modifier.align(Alignment.End).padding(top = 4.dp)) {
+                        Text(actionLabel(r))
+                    }
                 }
             }
         }
@@ -939,7 +994,14 @@ private fun reasonText(
 
         is NoDataReason.SourceTrouble -> {
             val llu = reason.kind == SourceKind.LibreLinkUp
-            stringResource(if (llu) R.string.reason_llu_title else R.string.reason_site_title) to
+            // LibreView's maintenance: what is happening and until when, never as an error (docs/45)
+            val title =
+                if (reason.waitOnly) {
+                    maintenanceTitle(reason.until?.let(::clockTime))
+                } else {
+                    stringResource(if (llu) R.string.reason_llu_title else R.string.reason_site_title)
+                }
+            title to
                 when (reason.problem) {
                     SourceProblem.SignedOut -> {
                         stringResource(if (llu) DsR.string.ds_online_llu_signed_out else DsR.string.ds_online_signed_out)
@@ -973,6 +1035,10 @@ private fun reasonText(
 
                     SourceProblem.Stopped -> {
                         stringResource(DsR.string.ds_online_llu_stopped)
+                    }
+
+                    SourceProblem.Maintenance -> {
+                        stringResource(R.string.reason_maintenance_body)
                     }
                 }
         }
@@ -1063,7 +1129,11 @@ private fun actionLabel(reason: NoDataReason): String =
             }
 
             is NoDataReason.SourceTrouble -> {
-                if (reason.problem == SourceProblem.SignedOut) DsR.string.ds_online_sign_in else R.string.reason_site_action
+                when (reason.problem) {
+                    SourceProblem.SignedOut -> DsR.string.ds_online_sign_in
+                    SourceProblem.Maintenance -> R.string.reason_maintenance_action
+                    else -> R.string.reason_site_action
+                }
             }
 
             else -> {

@@ -264,7 +264,12 @@ data class LiveNotificationContent(
                 text =
                     when {
                         look.ended -> UiText(R.string.monitor_notif_sensor_ended_line)
+
+                        // LibreView's maintenance says why the value ages (the value's age is struck already)
+                        state.source.maintenance != null -> detail
+
                         look.fresh.showTime -> UiText(R.string.monitor_notif_reading_at, listOf(reading.t))
+
                         else -> detail
                     },
                 strike = look.strike,
@@ -299,9 +304,14 @@ data class LiveNotificationContent(
             actions: List<Action> = emptyList(),
         ) = LiveNotificationContent(title, text, strike = false, chip = null, icon = icon, readingAt = null, tap = tap, actions = actions)
 
-        /** The second line for a sensor that needs something (shown under the value or state). */
+        /**
+         * The second line (under the value or state): LibreView's maintenance and its end (docs/45: an expected wait,
+         * said as soon as the source says it), or what the sensor needs.
+         */
         private fun detail(state: GlucoseState): UiText? =
-            when (state.sensor) {
+            state.source.maintenance?.let { m ->
+                m.until?.let { UiText(R.string.monitor_notif_maintenance_until, listOf(it)) } ?: UiText(R.string.monitor_notif_maintenance)
+            } ?: when (state.sensor) {
                 SensorState.BluetoothOff -> UiText(R.string.monitor_notif_bluetooth_off)
                 SensorState.CoreMissing -> UiText(R.string.monitor_notif_core_missing)
                 else -> null

@@ -134,6 +134,10 @@
       "reason": "THE LibreLinkUp client (the LibreLinkUp source and the LibreView sign-in): https only to api.libreview.io or api-<region>.libreview.io (region validated as 2-3 lower-case letters), redirects never followed; another scheme or host only from tests (loopback) or a debug build's LIBRELINKUP command (src/debug, loopback / 10.0.2.2)"
     },
     {
+      "path": "apps/android/core/data/src/main/kotlin/app/mauri/sukrara/core/data/libreview/LibreViewStatus.kt",
+      "reason": "Abbott's public status page (LibreView's maintenance windows, docs/45): one GET of the fixed https://status.freestyle.abbott/api/v2/summary.json, no key, no cookies, nothing of the person's sent, redirects never followed, only while LibreLinkUp is a signed-in source; another URL only from a debug build's LIBRELINKUP command (src/debug, loopback)"
+    },
+    {
       "path": "apps/android/sensor/src/main/kotlin/app/mauri/sukrara/sensor/libreview/LibreViewAccount.kt",
       "reason": "LibreView receiver-ID sign-in: https only, fixed host api.libreview.io or api-<region>.libreview.io (region validated as 2-3 lower-case letters)"
     },
@@ -319,7 +323,16 @@
     "package:com.freestylelibre.app.ch": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.freestylelibre.app.au": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
     "package:com.librelink.app": "an official Libre app next to Sukrara can stop the sensor: the new-sensor flow warns first (:feature:sensor OfficialApps)",
-    "intent:android.intent.action.TTS_SERVICE": "Read glucose aloud: the phone's text-to-speech engine (:monitor ReadAloud)"
+    "intent:android.intent.action.TTS_SERVICE": "Read glucose aloud: the phone's text-to-speech engine (:monitor ReadAloud)",
+    "package:info.nightscout.androidaps": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.camdiab.fx_alert.mgdl": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.camdiab.fx_alert.mmoll": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.camdiab.fx_alert.mmoll.ca": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.insulet.myblue.pdm": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.tandemdiabetes.tconnect": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.tandemdiabetes.mobi": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.medtronic.diabetes.minimedmobile.eu": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)",
+    "package:com.medtronic.diabetes.minimedmobile.us": "a loop or pump app that may hold the CGM: home never offers to read the sensor in Sukrara while one is installed (MoveRules.LOOP_APPS, docs/44 'The move'; :integrations)"
   },
   "prerelease_ok": {
     "material3": {

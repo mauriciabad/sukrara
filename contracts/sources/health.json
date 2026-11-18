@@ -22,11 +22,16 @@
   "('ok') then says 'warmingUp' (the sensor warming up, ready at its warm-up's end) whatever the newest reading's age,",
   "since the newest reading is the old sensor's and nothing new can come before then (owner's test, 2026-11-18: a new",
   "Libre 3 read as 'nothing new … it may have stopped uploading'). A problem, no network or nothing asked yet still",
-  "says so."
+  "says so.",
+  "'maintenance' (LibreLinkUp, docs/45) = the region's host answers HTTP 911: LibreView is down for maintenance.",
+  "State 'maintenance': an expected wait, not an error (no error colour, no troubleshooting): what is happening, when",
+  "it ends when Abbott's status page says (contracts/sources/librelinkup/status.json 'until'), and the two real",
+  "options, wait or change the source. It says so whatever the network and the warm-up (the last answer said it),",
+  "and ends with the first normal answer."
  ],
  "late_after_s": 420,
  "silent_after_s": 900,
- "states": ["connecting", "live", "late", "noNewReadings", "offline", "unreachable", "signedOut", "rateLimited", "actionNeeded", "notShared", "stopped", "warmingUp"],
+ "states": ["connecting", "live", "late", "noNewReadings", "offline", "unreachable", "signedOut", "rateLimited", "actionNeeded", "notShared", "stopped", "warmingUp", "maintenance"],
  "cases": [
   {"name": "nothing asked yet", "outcome": null, "online": true, "newestAge_s": null, "state": "connecting"},
   {"name": "nothing asked yet, no network", "outcome": null, "online": false, "newestAge_s": null, "state": "offline"},
@@ -54,6 +59,11 @@
   {"name": "warming up, no glucose at all yet", "outcome": "ok", "online": true, "newestAge_s": null, "warmingUp": true, "state": "warmingUp"},
   {"name": "warming up, nothing asked yet", "outcome": null, "online": true, "newestAge_s": null, "warmingUp": true, "state": "connecting"},
   {"name": "warming up, no network on this device", "outcome": "network", "online": false, "newestAge_s": 600, "warmingUp": true, "state": "offline"},
-  {"name": "warming up, the password refused", "outcome": "refused", "online": true, "newestAge_s": null, "warmingUp": true, "state": "signedOut"}
+  {"name": "warming up, the password refused", "outcome": "refused", "online": true, "newestAge_s": null, "warmingUp": true, "state": "signedOut"},
+  {"name": "LibreView down for maintenance (HTTP 911)", "outcome": "maintenance", "online": true, "newestAge_s": 1500, "state": "maintenance"},
+  {"name": "maintenance, the last reading still fresh", "outcome": "maintenance", "online": true, "newestAge_s": 60, "state": "maintenance"},
+  {"name": "maintenance, and now offline: still maintenance until an answer says otherwise", "outcome": "maintenance", "online": false, "newestAge_s": 1500, "state": "maintenance"},
+  {"name": "maintenance while a new sensor warms up", "outcome": "maintenance", "online": true, "newestAge_s": 16200, "warmingUp": true, "state": "maintenance"},
+  {"name": "maintenance, no glucose at all yet", "outcome": "maintenance", "online": true, "newestAge_s": null, "state": "maintenance"}
  ]
 }

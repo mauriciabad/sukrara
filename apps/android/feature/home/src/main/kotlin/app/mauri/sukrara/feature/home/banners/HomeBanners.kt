@@ -6,6 +6,7 @@ package app.mauri.sukrara.feature.home.banners
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.LinkPath
+import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.feature.home.PhoneAppProblem
 import kotlinx.serialization.Serializable
@@ -101,6 +102,10 @@ data class HomeEnvironment(
     val followPath: LinkPath? = null,
     /** When the sign-in was after which the Libre app stopped uploading (the LibreView upload stopped); null = it didn't. */
     val libreAppStopped: Instant? = null,
+    /** The next LibreView maintenance window of the LibreLinkUp source's region (home says it from 12 h before). */
+    val maintenanceAhead: MaintenanceWindow? = null,
+    /** Reading the sensor in Sukrara may be offered ([app.mauri.sukrara.core.model.MoveRules]). */
+    val moveOffered: Boolean = false,
 ) {
     /** What a closed Libre-app-stopped banner is remembered under: that stop (its sign-in). */
     val stoppedKey: String? get() = libreAppStopped?.let { "${BannerKind.LibreAppStopped.name}:${it.epochSecond}" }

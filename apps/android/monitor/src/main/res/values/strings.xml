@@ -31,6 +31,8 @@
     <string name="alert_context_eat_more_again">eat more again</string>
     <string name="alert_context_after_insulin">still after insulin</string>
     <string name="alert_context_after_more_insulin">still after more insulin</string>
+    <!-- no data while LibreView is down for maintenance (docs/45): "No data · LibreView maintenance" -->
+    <string name="alert_context_maintenance">LibreView maintenance</string>
     <string name="alert_text_value">%1$s %2$s</string>
     <!-- a late reading (#195): %1$s = the value as alert_text_value (and the rate), %2$s = the reading's time (14:05, Tue 14:05) -->
     <string name="alert_text_value_at">%1$s · %2$s</string>
@@ -46,6 +48,8 @@
     <string name="alert_text_no_data">No reading yet</string>
     <!-- %1$s = when the last reading came (14:05, Tue 14:05, 12 Oct), %2$s = its value as alert_text_glucose -->
     <string name="alert_text_no_data_last">Last reading %1$s · %2$s</string>
+    <!-- no data during LibreView's maintenance: %1$s = its end (23:00), %2$s = when the last reading came, %3$s = its value -->
+    <string name="alert_text_no_data_maintenance">Until %1$s · last reading %2$s · %3$s</string>
     <string name="alert_relaxed_subtext">Reminders every %1$s</string>
 
     <!-- Alert notification actions, never with "…" (the owner, 2026-11-14): Mute / Remind work from the lock screen,
@@ -91,6 +95,13 @@
     <string name="monitor_channel_pen_results">Pen doses</string>
     <string name="monitor_channel_pen_check">Pen reminders</string>
     <string name="monitor_channel_treatment_draft">Unsaved treatments</string>
+    <string name="monitor_channel_maintenance">LibreView maintenance</string>
+    <!-- one silent heads-up an hour before LibreView's maintenance (docs/45): %1$s = its start, %2$s = its end (clock times) -->
+    <string name="monitor_maintenance_title">LibreView maintenance at %1$s</string>
+    <string name="monitor_maintenance_text">No glucose from LibreLinkUp from %1$s to %2$s. Readings come back by themselves after.</string>
+    <!-- the glucose notification's second line while LibreView is down for maintenance: %1$s = its end -->
+    <string name="monitor_notif_maintenance_until">LibreView maintenance until %1$s</string>
+    <string name="monitor_notif_maintenance">LibreView maintenance</string>
     <string name="monitor_channel_alert_very_low">Very low</string>
     <string name="monitor_channel_alert_low">Low</string>
     <string name="monitor_channel_alert_high">High</string>

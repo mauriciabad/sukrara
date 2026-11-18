@@ -8,7 +8,9 @@
   "retries lock the account), 'terms' (status 4: the person accepts in LibreLinkUp; Sukrara never accepts for them),",
   "'rateLimited' (wait at least poll.json 'rateLimited_min_s', longer when Retry-After or the lockout says so),",
   "'version' (sent from then on, the request made once more, poll.json 'versions'; still refused = 'retired'; a",
-  "minimum that isn't a version is none and never goes into a header), 'retired' (the API is gone), 'failed'."
+  "minimum that isn't a version is none and never goes into a header), 'retired' (the API is gone), 'failed',",
+  "'maintenance' (HTTP 911 or status 911: LibreView is down for maintenance in the region, docs/45; nothing about the",
+  "account is changed or forgotten; asked again gently, poll.json 'after')."
  ],
  "now": 1795003200,
  "cases": [
@@ -241,6 +243,34 @@
    },
    "expect": {
     "answer": "failed"
+   }
+  },
+  {
+   "name": "LibreView down for maintenance: HTTP 911 before any sign-in (the region's host, 2026-11-18)",
+   "code": 911,
+   "body": {
+    "status": 911
+   },
+   "expect": {
+    "answer": "maintenance"
+   }
+  },
+  {
+   "name": "maintenance said only in the body",
+   "code": 200,
+   "body": {
+    "status": 911
+   },
+   "expect": {
+    "answer": "maintenance"
+   }
+  },
+  {
+   "name": "maintenance with an empty answer",
+   "code": 911,
+   "body": {},
+   "expect": {
+    "answer": "maintenance"
    }
   }
  ]

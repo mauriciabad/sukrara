@@ -36,7 +36,11 @@ fun cardModelOf(
         muteRule = muteRuleOf(state.alerts),
         sensor = state.sensor.cardSensor(now, SensorRenew.of(state.spec)),
         metricsOf = slots,
+        pause = state.cardPause(),
     )
+
+/** LibreView's maintenance as the card draws it (the source's [SourceStatus.maintenance]), null = no pause. */
+fun GlucoseState.cardPause(): CardPause? = source.maintenance?.let { CardPause(it.until?.epochSecond) }
 
 /**
  * THE card's [MuteRule] on Android, for every surface (this file's [cardModelOf] and the app panel): the alert runtime's

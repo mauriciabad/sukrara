@@ -59,6 +59,9 @@ object Channels {
     const val PEN_CHECK = "pen.check"
     const val TREATMENT_DRAFT = "treatment.draft"
 
+    /** LibreView's maintenance ahead (docs/45): one silent heads-up an hour before a window stops LibreLinkUp. */
+    const val MAINTENANCE = "libreview.maintenance"
+
     /**
      * *App updates* (#188): the GitHub version's update notification, low importance, in [Group.INFO]. Not in [ALL]: only
      * the updater (`:update`, the full flavor) creates it, so the Google Play build never shows the channel.
@@ -147,6 +150,15 @@ object Channels {
             Spec(
                 TREATMENT_DRAFT,
                 R.string.monitor_channel_treatment_draft,
+                NotificationManager.IMPORTANCE_DEFAULT,
+                Group.INFO,
+                Kind.INFO,
+                silent = true,
+            ),
+            // a heads-up the person plans with (night, a parent following): seen on the lock screen, never a sound
+            Spec(
+                MAINTENANCE,
+                R.string.monitor_channel_maintenance,
                 NotificationManager.IMPORTANCE_DEFAULT,
                 Group.INFO,
                 Kind.INFO,
@@ -303,6 +315,9 @@ object NotificationIds {
 
     /** Settings › an alert › *Send a test alert*: its own slot, so a test never replaces (or is replaced by) a real alert. */
     const val ALERT_TEST = 1010
+
+    /** LibreView's maintenance ahead: one a window (the next replaces it). */
+    const val MAINTENANCE = 34
 
     /** The `info` notification group's summary. */
     const val INFO_SUMMARY = 1100

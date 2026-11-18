@@ -190,8 +190,11 @@ internal class ValueFace(
                 typeface =
                     Typeface.create(Typeface.DEFAULT, 600, false)
             }
-        val line1 = if (r == null) w.noReadingsYet else w.noReadingSince
-        val line2 = r?.let { Freshness.timeText(it.t, nowS) }
+        // LibreView's maintenance: what is happening and until when, instead of "No reading since" (the chart keeps the
+        // last reading's time)
+        val pause = model.pause?.takeIf { r != null && face.state == GlucoseLook.State.NO_READINGS }?.let(w::pauseLines)
+        val line1 = pause?.first() ?: if (r == null) w.noReadingsYet else w.noReadingSince
+        val line2 = if (pause != null) pause.getOrNull(1) else r?.let { Freshness.timeText(it.t, nowS) }
 
         fun iconW() = if (r != null) big.textSize * (2.1f + 0.35f) else 0f
         val widest = listOfNotNull(line1, line2).maxOf { big.measureText(it) }
@@ -203,8 +206,9 @@ internal class ValueFace(
         cv.drawText(line1, x, y, big)
         if (line2 != null) {
             cv.drawText(line2, x, y + big.textSize * 1.25f, big)
-            rec.add("time.text", info = line2)
+            if (pause == null) rec.add("time.text", info = line2)
         }
+        if (pause != null) rec.add("value.pause.text", info = pause.joinToString(" · "))
         rec.add(
             "value.none",
             RectF(

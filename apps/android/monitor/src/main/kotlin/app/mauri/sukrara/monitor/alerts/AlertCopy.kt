@@ -45,6 +45,8 @@ object AlertCopy {
             "alert_context_after_insulin" to R.string.alert_context_after_insulin,
             "alert_context_after_more_insulin" to R.string.alert_context_after_more_insulin,
             "alert_context_no_response" to R.string.alert_context_no_response,
+            "alert_context_maintenance" to R.string.alert_context_maintenance,
+            "alert_text_no_data_maintenance" to R.string.alert_text_no_data_maintenance,
             "alert_text_value" to R.string.alert_text_value,
             "alert_text_value_at" to R.string.alert_text_value_at,
             "alert_text_glucose" to R.string.alert_text_glucose,
@@ -75,9 +77,14 @@ object AlertCopy {
         w: AlertWords,
         /** #39: a follower's very low nobody answered on the wearer's phone ("Very low glucose · no response"). */
         escalated: Boolean = false,
+        /** LibreView is down for maintenance (docs/45): no data says why ("No data · LibreView maintenance"). */
+        maintenance: Boolean = false,
     ): String {
         val base = w.get("alert_headline_${kind.wire}")
         if (escalated) return w.get("alert_headline_with_context").format(base, w.get("alert_context_no_response"))
+        if (maintenance && kind == AlertKind.NO_DATA) {
+            return w.get("alert_headline_with_context").format(base, w.get("alert_context_maintenance"))
+        }
         val context =
             when {
                 treated <= 0 || !kind.isLevel -> return base
@@ -102,7 +109,8 @@ object AlertCopy {
         unit: GlucoseUnit,
         locale: Locale = Locale.getDefault(),
         now: Long = f.reading?.t ?: f.at,
-    ): String = bodyOf(f, w, unit, locale, now).text
+        maintenanceEnds: String? = null,
+    ): String = bodyOf(f, w, unit, locale, now, maintenanceEnds).text
 
     /** [body], with where its strike-through ends. */
     fun bodyOf(
@@ -111,6 +119,8 @@ object AlertCopy {
         unit: GlucoseUnit,
         locale: Locale = Locale.getDefault(),
         now: Long = f.reading?.t ?: f.at,
+        /** LibreView's maintenance end as the card writes a time (copy.json `why: maintenance`), null = none known. */
+        maintenanceEnds: String? = null,
     ): AlertBody {
         val r = f.reading
         if (f.kind == AlertKind.NO_DATA) {
@@ -118,7 +128,9 @@ object AlertCopy {
             if (r == null) return AlertBody(w.get("alert_text_no_data"))
             // when it came, not "for 20 min": a time never goes out of date on a notification left up
             val at = Freshness.timeText(r.t, now, locale)
-            return AlertBody(w.get("alert_text_no_data_last").format(at, value(r, null, w, unit, locale)))
+            val last = value(r, null, w, unit, locale)
+            if (maintenanceEnds != null) return AlertBody(w.get("alert_text_no_data_maintenance").format(maintenanceEnds, at, last))
+            return AlertBody(w.get("alert_text_no_data_last").format(at, last))
         }
         if (r == null) return AlertBody(w.get("alert_text_no_reading"))
         val look = GlucoseCard.face(GlucosePoint(r.t, r.mgdl, r.rate, r.arrowBand), now, null, CardSurface.ALERT_NOTIFICATION, unit, locale)

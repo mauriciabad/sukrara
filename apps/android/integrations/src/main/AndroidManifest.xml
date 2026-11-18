@@ -33,6 +33,17 @@
         <intent>
             <action android:name="glucodata.Minute" />
         </intent>
+        <!-- Loop and pump apps that may hold the CGM (MoveRules.LOOP_APPS, docs/44 "The move"): one installed = Sukrara
+             never offers to read the sensor itself (LibreView maintenance's hint on home) -->
+        <package android:name="info.nightscout.androidaps" />
+        <package android:name="com.camdiab.fx_alert.mgdl" />
+        <package android:name="com.camdiab.fx_alert.mmoll" />
+        <package android:name="com.camdiab.fx_alert.mmoll.ca" />
+        <package android:name="com.insulet.myblue.pdm" />
+        <package android:name="com.tandemdiabetes.tconnect" />
+        <package android:name="com.tandemdiabetes.mobi" />
+        <package android:name="com.medtronic.diabetes.minimedmobile.eu" />
+        <package android:name="com.medtronic.diabetes.minimedmobile.us" />
     </queries>
 
     <application>

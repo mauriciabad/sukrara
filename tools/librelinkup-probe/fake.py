@@ -37,6 +37,17 @@ device and one session per app identity (the Libre 3 app, LibreLink), the offici
 sign-in that gets a token on the official app's identity stops its upload as the real one did: LibreLinkUp gets no
 new readings (`stopped=1`) until `stopped=0` (the person signed the Libre app out and in). `/_fake` lists the sign-ins
 and the uploads per identity.
+
+Maintenance (docs/45), set the same way:
+  maintenance 1 = LibreView down for maintenance: every LibreLinkUp and /lv/ path (the logins too) answers HTTP
+             911 {"status": 911} before any sign-in (docs/45); 0 = back
+  until      minutes from now the maintenance window ends on the status page (default 35; `none` = no window listed,
+             so Sukrara knows no end)
+  ahead      minutes from now a scheduled 60-min window begins on the status page (default none: none listed)
+
+It also serves Abbott's status page (`/api/v2/summary.json`, contracts/sources/librelinkup/status.json) for the
+region `eu` (Europe, Middle East, Africa): a debug build reads it from this fake. The account's region comes from a
+login redirect, so sign in after `/_fake?login=redirect` for the status page's times to apply.
 Python 3.9+ standard library.
 """
 from __future__ import annotations
@@ -82,6 +93,9 @@ STATE = {
     "dtid": 40068,
     "lvlogin": "ok",
     "lvmerge": 0,
+    "maintenance": 0,
+    "until": 35,
+    "ahead": None,
 }
 TOKENS: dict[str, int] = {}  # token -> expires (epoch s)
 
@@ -144,6 +158,32 @@ def connection(pid: str, live: bool = True) -> dict:
         c["glucoseMeasurement"] = measurement(newest(), True)
         c["glucoseItem"] = c["glucoseMeasurement"]
     return c
+
+
+def iso(t: int) -> str:
+    return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def summary() -> dict:
+    """Abbott's status page summary (an Atlassian Statuspage) for the region `eu`: the maintenance window in progress
+    while `maintenance` is on and `until` is set, and a scheduled one `ahead` minutes from now."""
+    now = int(time.time())
+    groups = [{"id": "grp-llu", "name": "LibreLinkUp Mobile App", "group": True, "group_id": None},
+              {"id": "grp-lv", "name": "LibreView Web App", "group": True, "group_id": None}]
+    region = [{"id": "llu-emea", "name": "Europe, Middle East, Africa", "group": False, "group_id": "grp-llu"},
+              {"id": "lv-emea", "name": "Europe, Middle East, Africa", "group": False, "group_id": "grp-lv"}]
+    windows = []
+    if STATE["maintenance"] and STATE["until"] is not None:
+        windows.append({"id": "m-now", "name": "Server Maintenance - EU (synthetic)", "status": "in_progress",
+                        "scheduled_for": iso(now - 600), "scheduled_until": iso(now + int(STATE["until"]) * 60),
+                        "components": region})
+    if STATE["ahead"] is not None:
+        start = now + int(STATE["ahead"]) * 60
+        windows.append({"id": "m-ahead", "name": "Server Maintenance - EU (synthetic)", "status": "scheduled",
+                        "scheduled_for": iso(start), "scheduled_until": iso(start + 3600), "components": region})
+    return {"page": {"id": "synthetic", "name": "FreeStyle Libre Server"},
+            "status": {"indicator": "maintenance" if windows else "none"}, "components": groups + region,
+            "incidents": [], "scheduled_maintenances": windows}
 
 
 def ticket(token: str) -> dict:
@@ -242,6 +282,8 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self.body()
         path = urlparse(self.path).path
+        if STATE["maintenance"]:
+            return self.send(911, {"status": 911})
         if path.startswith("/lv/"):
             return self.lv("POST", path, body)
         if path != "/llu/auth/login":
@@ -272,6 +314,10 @@ class Handler(BaseHTTPRequestHandler):
         url = urlparse(self.path)
         if url.path == "/_fake":
             return self.control(parse_qs(url.query))
+        if url.path == "/api/v2/summary.json":
+            return self.send(200, summary())
+        if STATE["maintenance"]:
+            return self.send(911, {"status": 911})
         if url.path.startswith("/lv/"):
             return self.lv("GET", url.path, {})
         token = (self.headers.get("Authorization") or "").removeprefix("Bearer ").strip()
@@ -328,7 +374,7 @@ class Handler(BaseHTTPRequestHandler):
                 LV["token"] = {"libre3": None, "librelink": None}
             elif k == "lvother":
                 LV["active"]["librelink"] = "older-install" if int(v) else None
-            elif k in ("lag", "pt", "ttl", "retryafter", "dtid", "lvmerge"):
+            elif k in ("lag", "pt", "ttl", "retryafter", "dtid", "lvmerge", "maintenance", "until", "ahead"):
                 STATE[k] = int(v) if v not in ("", "none") else None
             elif k in STATE:
                 STATE[k] = v

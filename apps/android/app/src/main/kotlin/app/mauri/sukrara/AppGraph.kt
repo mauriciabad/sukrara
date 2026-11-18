@@ -23,6 +23,7 @@ import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.LifeSettings
 import app.mauri.sukrara.core.model.LinkPath
+import app.mauri.sukrara.core.model.MoveRules
 import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.ReadingSource
@@ -91,6 +92,7 @@ import app.mauri.sukrara.monitor.alerts.AlertRecord
 import app.mauri.sukrara.monitor.alerts.AlertsModule
 import app.mauri.sukrara.monitor.hub.MonitorRecord
 import app.mauri.sukrara.monitor.notify.Channels
+import app.mauri.sukrara.monitor.notify.MaintenanceNotice
 import app.mauri.sukrara.monitor.notify.NotificationGroups
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.SharingLine
@@ -781,6 +783,8 @@ class AppGraph(
                 BuildVariant.connectIq(app) { data.diagLog.log("integrations", it) }
                     ?: ConnectIq(app) { data.diagLog.log("integrations", it) },
             libreLinkUpServer = BuildVariant.libreLinkUpServer(app),
+            // the one heads-up an hour before LibreView's maintenance stops LibreLinkUp (docs/45)
+            maintenanceAhead = { w -> MaintenanceNotice.post(app, w.start, w.end) },
         )
     }
 
@@ -1179,8 +1183,17 @@ class AppGraph(
                     }.distinctUntilChanged()
             },
             phoneAppInstalled = ::jugglucoInstalled,
+            maintenanceAhead = { integrations.libreLinkUpSource.maintenanceAhead },
+            // MoveRules: your glucose from the Libre app (LibreLinkUp), a family Sukrara has tested directly
+            moveFamily = {
+                combine(spec, integrations.libreLinkUpSource.testedFamily) { s, tested -> s?.officialAppUploads == true && tested }
+            },
+            loopAppInstalled = { MoveRules.LOOP_APPS.any { appInstalled(it) } },
         )
     }
+
+    /** Whether [pkg] is installed (the package must be in a manifest's `<queries>`). */
+    private fun appInstalled(pkg: String): Boolean = runCatching { app.packageManager.getPackageInfo(pkg, 0) }.isSuccess
 
     val widgets by lazy {
         WidgetsModule(

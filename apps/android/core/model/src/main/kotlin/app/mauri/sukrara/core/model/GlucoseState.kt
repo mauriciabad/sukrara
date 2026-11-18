@@ -143,6 +143,9 @@ enum class StopReason {
 
 /** Whether readings are arriving from the current source. */
 sealed interface SourceStatus {
+    /** LibreView's maintenance, the source waiting for it to end ([Interrupted.until], when known); null = not in one. */
+    val maintenance: Interrupted? get() = (this as? Interrupted)?.takeIf { it.problem == SourceProblem.Maintenance }
+
     /** Monitoring hasn't started (no alarm about missing data in this state). */
     data object NotStarted : SourceStatus
 
@@ -150,10 +153,14 @@ sealed interface SourceStatus {
 
     data class Live(val lastReadingAt: Instant) : SourceStatus
 
-    /** No readings since [since]; [problem]: why, when the source knows (an online source's health, docs/44). */
+    /**
+     * No readings since [since]; [problem]: why, when the source knows (an online source's health, docs/44); [until]:
+     * when it ends, when known (LibreView's maintenance window from Abbott's status page, docs/45).
+     */
     data class Interrupted(
         val since: Instant,
         val problem: SourceProblem? = null,
+        val until: Instant? = null,
     ) : SourceStatus
 }
 

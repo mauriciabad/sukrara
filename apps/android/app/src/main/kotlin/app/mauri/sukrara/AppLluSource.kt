@@ -36,6 +36,7 @@ class AppLluSource(
                 health = v.health,
                 newest = v.newest,
                 readyAt = v.sensor?.warmupEnd,
+                until = v.until,
                 libreViewEmail = (lv as? LibreViewAccountState.SignedIn)?.email,
                 held = v.held,
                 heldName = v.people.firstOrNull { it.id == v.held }?.name ?: v.name.takeIf { v.patient == v.held }.orEmpty(),
@@ -69,5 +70,6 @@ class AppLluSource(
             LluConnectResult.Unreachable -> LluConnectOutcome.Unreachable
             LluConnectResult.Offline -> LluConnectOutcome.Offline
             LluConnectResult.Stopped -> LluConnectOutcome.Stopped
+            LluConnectResult.Maintenance -> LluConnectOutcome.Maintenance
         }
 }

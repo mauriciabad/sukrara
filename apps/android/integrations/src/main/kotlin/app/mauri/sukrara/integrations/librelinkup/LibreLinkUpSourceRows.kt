@@ -34,6 +34,7 @@ import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.source.ReadAnotherPersonDialog
 import app.mauri.sukrara.designsystem.source.iconRes
+import app.mauri.sukrara.designsystem.source.maintenanceAheadText
 import app.mauri.sukrara.designsystem.source.onlineHealthText
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.integrations.R
@@ -116,6 +117,7 @@ fun LibreLinkUpSourceRows(
                             ?.warmupEnd
                             ?.takeIf { it.isAfter(now) }
                             ?.let { ClockText.time(it.epochSecond) },
+                    until = view.until?.let { ClockText.time(it.epochSecond) },
                 ),
             transitionSpec = { Motion.fadeThrough(reduced) },
             label = "llu-health",
@@ -155,8 +157,9 @@ fun LibreLinkUpSourceRows(
 
                     // nothing new: the line, no action here (the Libre app is the place to look); asked to wait: no
                     // *Try again* (a call before the time LibreLinkUp gave may lengthen the lockout), it asks by itself;
-                    // a sensor warming up: when it's ready
-                    OnlineHealth.NoNewReadings, OnlineHealth.RateLimited, OnlineHealth.WarmingUp -> {
+                    // a sensor warming up: when it's ready; LibreView's maintenance: until when (a wait, not an error:
+                    // the ways out are waiting and *Where it comes from* above)
+                    OnlineHealth.NoNewReadings, OnlineHealth.RateLimited, OnlineHealth.WarmingUp, OnlineHealth.Maintenance -> {
                         InfoRow(stringResource(R.string.in_nss_status), summary = text, icon = h.iconRes())
                     }
 
@@ -166,6 +169,20 @@ fun LibreLinkUpSourceRows(
                     }
                 }
             }
+        }
+        // the next LibreView maintenance of the account's region, as soon as Abbott lists it (status.json `upcoming`)
+        view.ahead?.takeIf { view.health != OnlineHealth.Maintenance }?.let { w ->
+            InfoRow(
+                stringResource(R.string.in_llu_maintenance_ahead),
+                summary =
+                    maintenanceAheadText(
+                        w.start,
+                        now,
+                        ClockText.time(w.start.epochSecond),
+                        ClockText.time(w.end.epochSecond),
+                    ),
+                icon = DsR.drawable.ds_ic_schedule,
+            )
         }
         view.sensor?.let { s ->
             // how long it lasts is the person's choice (LibreLinkUp doesn't say): the Sensor page has it

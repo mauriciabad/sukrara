@@ -39,6 +39,14 @@ class CardWords private constructor(
     val warmingUp: String = r.getString(R.string.card_warming_up)
     val almostReady: String = r.getString(R.string.card_almost_ready)
     val waitingReading: String = r.getString(R.string.card_waiting_reading)
+    val maintenance: String = r.getString(R.string.card_maintenance)
+
+    /** *until 23:00*: the end of LibreView's maintenance under *LibreView maintenance* ([clock] = `ClockText`). */
+    fun until(clock: String): String = r.getString(R.string.card_maintenance_until, clock)
+
+    /** The card's words for a [pause]: *LibreView maintenance* and, when its end is known, *until 23:00*. */
+    fun pauseLines(pause: CardPause): List<String> = listOfNotNull(maintenance, pause.untilS?.let { until(ClockText.time(it)) })
+
     val durationNow: String = r.getString(R.string.duration_now)
 
     /** The one duration formatter's words ([Durations]). */

@@ -92,6 +92,7 @@
     <string name="libreview_error_wrong_password">Correo o contraseña incorrectos.</string>
     <string name="libreview_error_accept_terms">LibreView tiene condiciones nuevas. Acéptalas en la app LibreView o Libre y vuelve a iniciar sesión.</string>
     <string name="libreview_error_failed">No se pudo iniciar sesión en LibreView. Revisa la conexión y vuelve a intentarlo.</string>
+    <string name="libreview_error_maintenance">LibreView está en mantenimiento. Inicia sesión cuando vuelva, normalmente en menos de una hora.</string>
     <!-- elegir el tipo de sensor; las marcas no se traducen -->
     <string name="newsensor_choose_title">¿Qué sensor?</string>
     <string name="newsensor_choose_text">Elige el sensor que llevas. Sukrara lo lee en este móvil.</string>

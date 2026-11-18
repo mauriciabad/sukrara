@@ -22,9 +22,11 @@ import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.designsystem.alerts.AlertWords
 import app.mauri.sukrara.designsystem.alerts.MuteText
 import app.mauri.sukrara.graph.ClockText
+import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.R
@@ -58,6 +60,11 @@ class AlertNotifier(
      * low-side alert offer *Log carbs* (elsewhere the dialog would only open the app, which the tap already does).
      */
     private val canLog: () -> Boolean = { false },
+    /**
+     * LibreView is down for maintenance now (the source's [SourceStatus.Interrupted], its end when known): the no-data
+     * alert's words say so (contracts/alerts/copy.json `why: maintenance`); when it rings is the engine's, unchanged.
+     */
+    private val maintenance: () -> SourceStatus.Interrupted? = { null },
 ) : AlertPresenter {
     private val nm get() = ctx.getSystemService(NotificationManager::class.java)
 
@@ -79,7 +86,7 @@ class AlertNotifier(
         val kind = firing.kind
         val words = words()
         val part = glucoseAlert(firing, settings, who, relaxedMin, now, words)
-        val body = AlertCopy.bodyOf(firing, words, unit(), now = now)
+        val body = AlertCopy.bodyOf(firing, words, unit(), now = now, maintenanceEnds = maintenanceEnds(now))
         val text = if (body.strikeTo > 0) struck(body) else body.text
         // the header's age ("now", "3m", kept current by the system) is the reading's: the value's age, not the ring's
         val reading = firing.reading?.takeIf { kind != AlertKind.NO_DATA }
@@ -133,8 +140,8 @@ class AlertNotifier(
             group = kind.group,
             kind = kind,
             firingId = firing.id,
-            title = AlertCopy.headline(kind, firing.treated, words, firing.escalated),
-            body = AlertCopy.bodyOf(firing, words, unit(), now = now).text,
+            title = AlertCopy.headline(kind, firing.treated, words, firing.escalated, maintenance = maintenance() != null),
+            body = AlertCopy.bodyOf(firing, words, unit(), now = now, maintenanceEnds = maintenanceEnds(now)).text,
             channel = AlertChannels.id(ctx, kind, alarm),
             alarm = alarm,
             category = AlertCategory.of(alarm, AlertCategory.Dnd.of(nm)),
@@ -143,6 +150,10 @@ class AlertNotifier(
             rangeSaid = kind.isLevel,
         )
     }
+
+    /** LibreView's maintenance end as the card writes a time (*23:00*), null = not in one or no end known. */
+    private fun maintenanceEnds(now: Long): String? =
+        maintenance()?.until?.let { Freshness.timeText(it.epochSecond, now, ctx.resources.configuration.locales[0]) }
 
     /** A side's muted note on the glucose notification: "Low alerts muted", its countdown, *Treatment* and *Unmute*. */
     fun mutedAlert(

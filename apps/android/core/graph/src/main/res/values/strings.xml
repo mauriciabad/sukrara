@@ -45,6 +45,10 @@
     <string name="slot_tir_very_good">very good</string>
     <string name="card_no_readings_yet">No readings yet</string>
     <string name="card_no_reading_since">No reading since</string>
+    <!-- the source waits for LibreView's maintenance (docs/45): in the value's place instead of "No reading since" -->
+    <string name="card_maintenance">LibreView maintenance</string>
+    <!-- %1$s = its end as a clock time (23:00) -->
+    <string name="card_maintenance_until">until %1$s</string>
     <string name="card_sensor_ended">Sensor ended</string>
     <string name="card_warming_up">Warming up</string>
     <string name="card_ready_at">Ready at %1$s</string>
@@ -84,6 +88,8 @@
     <string name="a11y_just_now">just now</string>
     <string name="a11y_no_readings">Glucose: no readings yet</string>
     <string name="a11y_no_reading_since">Glucose: no reading since %1$s</string>
+    <string name="a11y_no_reading_maintenance_until">Glucose: no reading since %1$s, LibreView maintenance until %2$s</string>
+    <string name="a11y_no_reading_maintenance">Glucose: no reading since %1$s, LibreView maintenance</string>
     <string name="a11y_last_reading">Glucose: last reading %1$s</string>
     <plurals name="a11y_warming_up">
         <item quantity="one">Sensor warming up, %1$s left</item>

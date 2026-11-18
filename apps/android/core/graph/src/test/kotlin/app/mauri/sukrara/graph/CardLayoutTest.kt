@@ -77,6 +77,8 @@ class CardLayoutTest {
         val readings: List<GlucosePoint>,
         val treatments: List<Treatment>,
         val sensor: SensorInfo?,
+        /** scenes.json `pause`: LibreView's maintenance, `until` s from now (none = no end known). */
+        val pause: CardPause? = null,
     )
 
     /**
@@ -156,7 +158,8 @@ class CardLayoutTest {
                         now + it["warmupEnd"].long()!!,
                     )
                 }
-            Scene(o["id"].str()!!, readings, trs, sensor)
+            val pause = o["pause"]?.jsonObject?.let { CardPause(it["until"].long()?.let { u -> now + u }) }
+            Scene(o["id"].str()!!, readings, trs, sensor, pause)
         }
 
     /** scenes.json `settings`: id, the GraphConfig it runs with and the phone's 24-hour setting. */
@@ -378,6 +381,7 @@ class CardLayoutTest {
                         status = standInStatus(sc),
                         muteRule = defaultMutes,
                         sensor = sc.sensor,
+                        pause = sc.pause,
                     )
                 // the glyph surfaces (status bar, tile, notification text, widget description, read aloud): what
                 // GlucoseCard.face says for the newest reading, the sensor and the unit, as each of them asks it; the
@@ -919,6 +923,7 @@ class CardLayoutTest {
                     status = standInStatus(sc),
                     muteRule = defaultMutes,
                     sensor = sc.sensor,
+                    pause = sc.pause,
                 )
             val bmp = Bitmap.createBitmap((w * pd).toInt(), (h * pd).toInt(), Bitmap.Config.ARGB_8888)
             val l =

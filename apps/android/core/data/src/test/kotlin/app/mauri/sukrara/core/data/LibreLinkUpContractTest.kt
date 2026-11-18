@@ -4,6 +4,7 @@
 package app.mauri.sukrara.core.data
 
 import app.mauri.sukrara.core.data.libreview.LibreLinkUp
+import app.mauri.sukrara.core.data.libreview.LibreViewStatus
 import app.mauri.sukrara.core.data.libreview.LluCallOutcome
 import app.mauri.sukrara.core.data.libreview.LluLogin
 import app.mauri.sukrara.core.data.libreview.LluPick
@@ -74,6 +75,10 @@ class LibreLinkUpContractTest {
 
                     "retired" -> {
                         LluLogin.Retired
+                    }
+
+                    "maintenance" -> {
+                        LluLogin.Maintenance
                     }
 
                     else -> {
@@ -168,6 +173,53 @@ class LibreLinkUpContractTest {
         val h = file("poll.json").getValue("headers").jsonObject
         assertEquals(h.str("product"), LibreLinkUp.PRODUCT)
         assertEquals(h.str("version"), LibreLinkUp.VERSION)
+    }
+
+    @Test
+    fun `LibreView's maintenance windows are read from the status page as the contract says`() {
+        val f = file("status.json")
+        assertEquals(f.str("url"), LibreViewStatus.URL)
+        assertEquals(f.long("every_s"), LibreViewStatus.EVERY_S)
+        assertEquals(f.long("maintenanceEvery_s"), LibreViewStatus.MAINTENANCE_EVERY_S)
+        assertEquals(f.long("warnHome_s"), LibreViewStatus.WARN_HOME_S)
+        assertEquals(f.long("notify_s"), LibreViewStatus.NOTIFY_S)
+        assertEquals(
+            f.getValue("regions").jsonObject.mapValues { (_, v) -> v.jsonArray.map { it.jsonPrimitive.content } },
+            LibreViewStatus.REGIONS,
+        )
+        assertEquals(
+            f
+                .getValue("groups")
+                .jsonArray
+                .map { it.jsonPrimitive.content }
+                .toSet(),
+            LibreViewStatus.GROUPS,
+        )
+        for (c in f.cases()) {
+            val name = c.str("name")!!
+            val e = c.getValue("expect").jsonObject
+            val now = java.time.Instant.ofEpochSecond(c.long("now")!!)
+            val ws = LibreViewStatus.windows(c.getValue("body").jsonObject, c.str("region"))
+            assertEquals(
+                name,
+                e.getValue("windows").jsonArray.map {
+                    val w = it.jsonObject
+                    Triple(
+                        w.long("start"),
+                        w.long("end"),
+                        w
+                            .getValue("live")
+                            .jsonPrimitive.content
+                            .toBoolean(),
+                    )
+                },
+                ws.map { Triple(it.start.epochSecond, it.end.epochSecond, it.live) },
+            )
+            assertEquals(name, e.long("until"), LibreViewStatus.until(ws, now)?.epochSecond)
+            val up = e["upcoming"] as? JsonObject
+            val got = LibreViewStatus.upcoming(ws, now)
+            assertEquals(name, up?.long("start") to up?.long("end"), got?.start?.epochSecond to got?.end?.epochSecond)
+        }
     }
 
     @Test

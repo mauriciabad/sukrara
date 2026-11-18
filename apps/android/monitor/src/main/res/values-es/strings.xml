@@ -37,6 +37,8 @@
     <string name="alert_text_rising">%1$s · sube %2$s %3$s</string>
     <string name="alert_text_no_reading">Sin lectura reciente</string>
     <string name="alert_text_no_data">Aún no hay lecturas</string>
+    <string name="alert_text_no_data_maintenance">Hasta las %1$s · última lectura %2$s · %3$s</string>
+    <string name="alert_context_maintenance">mantenimiento de LibreView</string>
     <string name="alert_text_no_data_last">Última lectura %1$s · %2$s</string>
     <string name="alert_relaxed_subtext">Avisos cada %1$s</string>
 
@@ -77,6 +79,11 @@
     <string name="monitor_channel_pen_results">Dosis de la pluma</string>
     <string name="monitor_channel_pen_check">Recordatorios de la pluma</string>
     <string name="monitor_channel_treatment_draft">Tratamientos sin guardar</string>
+    <string name="monitor_channel_maintenance">Mantenimiento de LibreView</string>
+    <string name="monitor_maintenance_title">Mantenimiento de LibreView a las %1$s</string>
+    <string name="monitor_maintenance_text">LibreLinkUp no enviará glucosa de %1$s a %2$s. Las lecturas vuelven solas después.</string>
+    <string name="monitor_notif_maintenance_until">Mantenimiento de LibreView hasta las %1$s</string>
+    <string name="monitor_notif_maintenance">Mantenimiento de LibreView</string>
     <string name="monitor_channel_alert_very_low">Muy baja</string>
     <string name="monitor_channel_alert_low">Baja</string>
     <string name="monitor_channel_alert_high">Alta</string>

@@ -51,6 +51,9 @@ enum class Trouble(
     /** The service failed or is busy (5xx, 408, 429): it is tried again. */
     ServerError(R.string.ds_err_server),
 
+    /** LibreView is down for maintenance (HTTP 911, docs/45): an expected wait, tried again once it ends. */
+    Maintenance(R.string.ds_err_maintenance),
+
     /** The service answered but didn't accept what was sent. */
     Refused(R.string.ds_err_refused),
 
@@ -96,6 +99,7 @@ object UserErrors {
     /** The kind of a non-2xx HTTP status [code]. */
     fun ofHttp(code: Int): Trouble =
         when {
+            code == MAINTENANCE -> Trouble.Maintenance
             code == 401 || code == 403 -> Trouble.SignIn
             code == 408 -> Trouble.TimedOut
             code == 429 || code >= 500 -> Trouble.ServerError
@@ -103,6 +107,9 @@ object UserErrors {
             code in 400..499 -> Trouble.Refused
             else -> Trouble.Other
         }
+
+    /** LibreView's answer while it is down for maintenance (contracts/sources/librelinkup/calls.json `maintenance`). */
+    const val MAINTENANCE = 911
 
     private fun kind(t: Throwable): Trouble? {
         val m = t.message.orEmpty()

@@ -38,7 +38,13 @@ POLL = {
     "connectionsEvery_s": 1800,
     "terms_s": 600,
     "retired_s": 3600,
+    "maintenanceMax_s": 300,
+    "maintenanceAfterEnd_s": 30,
 }
+
+# LibreView's maintenance (docs/45 "LibreView's maintenance stops LibreLinkUp too"): every path of the region's host
+# answers HTTP 911 with {"status": 911} before any sign-in, during Abbott's maintenance windows.
+MAINTENANCE = 911
 
 
 def dump(name, obj):
@@ -95,6 +101,8 @@ def login(code, body, retry_after=None):
     """One answer of POST /llu/auth/login."""
     data = body.get("data") if isinstance(body, dict) else None
     status = body.get("status") if isinstance(body, dict) else None
+    if code == MAINTENANCE or status == MAINTENANCE:
+        return {"answer": "maintenance"}
     if code == 429 or status == 429:
         lockout = None
         if isinstance(data, dict) and isinstance(data.get("data"), dict):
@@ -133,6 +141,8 @@ def call(code, body, retry_after=None):
     """One answer of an authenticated GET (connections, graph): how the source's health reads it."""
     data = body.get("data") if isinstance(body, dict) else None
     status = body.get("status") if isinstance(body, dict) else None
+    if code == MAINTENANCE or status == MAINTENANCE:
+        return {"outcome": "maintenance"}
     if code == 429 or status == 429:
         return {"outcome": "rateLimited", "retryAfter_s": retry_after}
     if code == 401:
@@ -246,11 +256,25 @@ def wait(failures, rate_limited=None, refused=False):
     return b[min(max(failures, 1) - 1, len(b) - 1)]
 
 
-def after(outcome, failures, retry_after=None, now=0, newest=None, m=POLL["margin_s"]):
+def maintenance_wait(failures, now, until=None):
+    """Seconds to the next call while LibreView is down for maintenance: the failures' backoff, at most
+    'maintenanceMax_s' (the first normal answer ends it soon after the window), and when Abbott's status page gives the
+    window's end ('until', epoch s), 'maintenanceAfterEnd_s' after it when that is sooner (never sooner than the first
+    backoff step)."""
+    w = min(wait(failures), POLL["maintenanceMax_s"])
+    if until is not None and until > now:
+        w = min(w, max(until - now + POLL["maintenanceAfterEnd_s"], POLL["backoff_s"][0]))
+    return w
+
+
+def after(outcome, failures, retry_after=None, now=0, newest=None, m=POLL["margin_s"], until=None):
     """Seconds to the next call after a round that ended in outcome (None = not set up): None = only when the person
-    acts. An answer: timed to the next reading. Asked to wait (429) without a time: the minimum."""
+    acts. An answer: timed to the next reading. Asked to wait (429) without a time: the minimum. LibreView's
+    maintenance: gently, to its end."""
     if outcome is None:
         return None
+    if outcome == "maintenance":
+        return maintenance_wait(failures, now, until)
     if outcome == "ok":
         return timed(now, newest, m)
     if outcome == "terms":
@@ -300,6 +324,10 @@ L({"name": "the login is gone (Abbott retired the API)", "code": 404, "body": {}
 L({"name": "the server failed", "code": 502, "body": {}})
 L({"name": "an answer without a token is no sign-in", "code": 200,
    "body": {"status": 0, "data": {"user": {"id": ACCOUNT}}}})
+L({"name": "LibreView down for maintenance: HTTP 911 before any sign-in (the region's host, 2026-11-18)", "code": 911,
+   "body": {"status": 911}})
+L({"name": "maintenance said only in the body", "code": 200, "body": {"status": 911}})
+L({"name": "maintenance with an empty answer", "code": 911, "body": {}})
 for c in logins:
     c["expect"] = login(c["code"], c["body"], c.get("retryAfter"))
 
@@ -319,6 +347,9 @@ C({"name": "refused for another reason: the API no longer serves this client", "
 C({"name": "the endpoint is gone", "code": 404, "body": {}})
 C({"name": "the server failed", "code": 503, "body": {}})
 C({"name": "an answer that isn't LibreLinkUp's", "code": 200, "body": {"hello": "world"}})
+C({"name": "LibreView down for maintenance: HTTP 911 on every path (2026-11-18)", "code": 911, "body": {"status": 911}})
+C({"name": "maintenance said only in the body", "code": 200, "body": {"status": 911}})
+C({"name": "maintenance with an empty answer", "code": 911, "body": {}})
 for c in calls:
     c["expect"] = call(c["code"], c["body"], c.get("retryAfter"))
 
@@ -406,6 +437,181 @@ G({"name": "no glucose yet (a new account)", "body": {"status": 0, "data": {"con
 for c in graphs:
     c["expect"] = graph(c["body"])
 
+# ------------------------------------------------------------------ status.json (LibreView's maintenance windows)
+
+STATUS = {
+    "url": "https://status.freestyle.abbott/api/v2/summary.json",
+    "every_s": 21600,
+    "maintenanceEvery_s": 600,
+    "timeout_s": 15,
+    "warnHome_s": 43200,
+    "notify_s": 3600,
+}
+# LibreLinkUp's region (the login's redirect: api-<region>.libreview.io) -> the status page's region components. eu2 is
+# the UK's (nightscout-connect: GB and UK select EU2); ru and cn are listed for completeness (their hosts differ).
+REGIONS = {
+    "us": ["United States"],
+    "eu": ["Europe, Middle East, Africa"],
+    "eu2": ["UK & Ireland"],
+    "de": ["Germany"],
+    "fr": ["France"],
+    "jp": ["Japan"],
+    "ap": ["Other Asia"],
+    "au": ["Australia, New Zealand"],
+    "ae": ["United Arab Emirates"],
+    "ca": ["Canada"],
+    "la": ["Latin America"],
+    "ru": ["Russia"],
+    "cn": ["China"],
+}
+# The component groups that are LibreLinkUp's and LibreView's servers (the Libre app's group and the partners' data
+# sharing API list other regions' components too: a Germany window names 'Libre Data Sharing API - United States').
+GROUPS = ["LibreLinkUp Mobile App", "LibreView Web App"]
+LIVE = ("in_progress", "verifying")
+
+
+def iso(text):
+    """A status page time ('2026-11-18T13:00:00.000-08:00') as epoch s, None when it isn't one."""
+    if not isinstance(text, str):
+        return None
+    m = re.fullmatch(r"(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(\.\d+)?(Z|[+-]\d{2}:\d{2})", text.strip())
+    if not m:
+        return None
+    y, mo, d, h, mi, sec, _, tz = m.groups()
+    try:
+        t = datetime(int(y), int(mo), int(d), int(h), int(mi), int(sec), tzinfo=timezone.utc).timestamp()
+    except ValueError:
+        return None
+    if tz != "Z":
+        sign = 1 if tz[0] == "+" else -1
+        t -= sign * (int(tz[1:3]) * 3600 + int(tz[4:6]) * 60)
+    return int(t)
+
+
+def windows(body, region):
+    """The maintenance windows the status page lists for LibreLinkUp's [region] (None = not known: none), sorted by
+    start: each {start, end, live} ('live': Abbott marks it in progress)."""
+    names = REGIONS.get(region) or []
+    if not isinstance(body, dict) or not names:
+        return []
+    groups = {c.get("id"): c.get("name") for c in body.get("components") or [] if isinstance(c, dict) and c.get("group")}
+    out = []
+    for m in body.get("scheduled_maintenances") or []:
+        if not isinstance(m, dict) or m.get("status") not in ("scheduled",) + LIVE:
+            continue
+        start, end = iso(m.get("scheduled_for")), iso(m.get("scheduled_until"))
+        if start is None or end is None or end <= start:
+            continue
+        if not any(isinstance(c, dict) and c.get("name") in names and groups.get(c.get("group_id")) in GROUPS
+                   for c in m.get("components") or []):
+            continue
+        out.append({"start": start, "end": end, "live": m["status"] in LIVE})
+    out.sort(key=lambda w: (w["start"], w["end"]))
+    return out
+
+
+def until(ws, now):
+    """The end of the window LibreView is in at [now] (Abbott marks it in progress, or its planned time has come), the
+    latest when several overlap; None = none known (no window, or one past its planned end: no time is made up)."""
+    ends = [w["end"] for w in ws if now < w["end"] and (w["live"] or w["start"] <= now)]
+    return max(ends) if ends else None
+
+
+def upcoming(ws, now):
+    """The next window that hasn't begun (the warn-ahead), None = none listed."""
+    for w in ws:
+        if w["start"] > now and not w["live"]:
+            return {"start": w["start"], "end": w["end"]}
+    return None
+
+
+def utc(t):
+    return datetime.fromtimestamp(t, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+
+def pst(t):
+    """The status page writes its times in its own zone (America/Los_Angeles: -08:00 in winter)."""
+    return datetime.fromtimestamp(t - 8 * 3600, timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000-08:00")
+
+
+# the page's groups and region components (ids synthetic; the names are the page's, 2026-11-18)
+G_APP, G_LV, G_LLU, G_API = "grp-app", "grp-lv", "grp-llu", "grp-api"
+GROUP_NAMES = {G_APP: "Libre App, FreeStyle LibreLink, FreeStyle Libre 2, FreeStyle Libre 3 Mobile App*",
+               G_LV: "LibreView Web App", G_LLU: "LibreLinkUp Mobile App", G_API: "Libre Data Sharing API"}
+REGION_NAMES = sorted({n for v in REGIONS.values() for n in v})
+
+
+def comp(group, name):
+    return {"id": f"{group}-{REGION_NAMES.index(name) if name in REGION_NAMES else 'x'}", "name": name,
+            "status": "operational", "group_id": group, "group": False}
+
+
+def page_components(ms):
+    """The groups, and the components the windows name (the page lists every region of every group)."""
+    out = [{"id": g, "name": n, "status": "operational", "group_id": None, "group": True} for g, n in GROUP_NAMES.items()]
+    for m in ms:
+        for c in m.get("components", []):
+            if c not in out:
+                out.append(c)
+    return out
+
+
+def window(name, status, start, end, regions, groups=(G_APP, G_LV, G_LLU, G_API), extra=()):
+    cs = [comp(g, r) for g in groups for r in regions] + [comp(g, r) for g, r in extra]
+    cs.append(comp(G_LLU, "Account Registration"))
+    return {"id": "m-" + re.sub(r"[^a-z]+", "-", name.lower()).strip("-"), "name": name, "status": status,
+            "impact": "maintenance", "scheduled_for": pst(start), "scheduled_until": pst(end), "components": cs}
+
+
+def summary(*ms, indicator="none"):
+    return {"page": {"id": "synthetic", "name": "FreeStyle Libre Server", "url": "https://status.freestyle.abbott",
+                     "time_zone": "America/Los_Angeles"},
+            "status": {"indicator": indicator, "description": "synthetic"},
+            "components": page_components(ms), "incidents": [], "scheduled_maintenances": list(ms)}
+
+
+EMEA = "Europe, Middle East, Africa"
+UK = "UK & Ireland"
+H = 3600
+TONIGHT = window("AWS RDS Maintenance - EMEA, UK, IRELAND", "in_progress", NOW - 1800, NOW + 1800, [EMEA, UK])
+LATER_EU = window("Server Maintenance - EU", "scheduled", NOW + 10 * H, NOW + 11 * H, [EMEA], groups=(G_APP, G_LV, G_LLU, G_API))
+GERMANY = window("Server Maintenance - GERMANY", "scheduled", NOW + 29 * 86400, NOW + 29 * 86400 + H, ["Germany"],
+                 extra=[(G_API, "United States")])
+JAPAN = window("Server Maintenance - JAPAN", "scheduled", NOW + 15 * 86400, NOW + 15 * 86400 + H, ["Japan"],
+               groups=(G_APP, G_LV, G_API))
+US = window("Server Maintenance - UNITED STATES", "scheduled", NOW + 50 * 86400, NOW + 50 * 86400 + H,
+            ["United States"])
+statuses = []
+S = statuses.append
+S({"name": "tonight's window, an EU account: maintenance until its end", "region": "eu", "now": NOW,
+   "body": summary(TONIGHT, LATER_EU, GERMANY, JAPAN, US, indicator="maintenance")})
+S({"name": "the same window, a UK account (eu2)", "region": "eu2", "now": NOW,
+   "body": summary(TONIGHT, LATER_EU, GERMANY, indicator="maintenance")})
+S({"name": "a German account: tonight's EMEA window isn't its region; its own a month ahead", "region": "de",
+   "now": NOW, "body": summary(TONIGHT, GERMANY, indicator="maintenance")})
+S({"name": "a US account: a Germany window naming the data sharing API's United States isn't its", "region": "us",
+   "now": NOW, "body": summary(GERMANY, US)})
+S({"name": "a Japanese account: its window only in LibreView Web App's group still counts", "region": "jp",
+   "now": NOW, "body": summary(JAPAN)})
+S({"name": "the window's time has come, Abbott hasn't marked it in progress yet", "region": "eu", "now": NOW + 10 * H + 60,
+   "body": summary(LATER_EU)})
+S({"name": "in progress but past its planned end: no end known (none made up)", "region": "eu", "now": NOW + 1860,
+   "body": summary(TONIGHT, indicator="maintenance")})
+S({"name": "verifying counts as still in maintenance", "region": "eu", "now": NOW,
+   "body": summary({**TONIGHT, "status": "verifying"})})
+S({"name": "a completed window is none", "region": "eu", "now": NOW, "body": summary({**TONIGHT, "status": "completed"})})
+S({"name": "times without a zone or upside down are skipped", "region": "eu", "now": NOW,
+   "body": summary({**LATER_EU, "scheduled_for": "2026-11-18 22:00"},
+                   {**LATER_EU, "id": "m-backwards", "scheduled_for": pst(NOW + 11 * H), "scheduled_until": pst(NOW + 10 * H)})})
+S({"name": "UTC times (Z) read too", "region": "eu", "now": NOW,
+   "body": summary({**LATER_EU, "scheduled_for": utc(NOW + 10 * H), "scheduled_until": utc(NOW + 11 * H)})})
+S({"name": "a region the page doesn't list: nothing known", "region": "xx", "now": NOW, "body": summary(TONIGHT)})
+S({"name": "no region known (no redirect yet): nothing known", "region": None, "now": NOW, "body": summary(TONIGHT)})
+S({"name": "an answer that isn't the page's", "region": "eu", "now": NOW, "body": {"hello": "world"}})
+for c in statuses:
+    ws = windows(c["body"], c["region"])
+    c["expect"] = {"windows": ws, "until": until(ws, c["now"]), "upcoming": upcoming(ws, c["now"])}
+
 # ------------------------------------------------------------------ poll.json
 
 waits = []
@@ -436,9 +642,21 @@ A({"name": "the person picked no longer shares", "outcome": "notShared", "failur
 A({"name": "asked to wait without a time", "outcome": "rateLimited", "failures": 1})
 A({"name": "asked to wait 2 min: the minimum", "outcome": "rateLimited", "failures": 1, "retryAfter_s": 120})
 A({"name": "asked to wait 15 min", "outcome": "rateLimited", "failures": 1, "retryAfter_s": 900})
+A({"name": "LibreView maintenance, no end known: a minute", "outcome": "maintenance", "failures": 1, "now": NOW})
+A({"name": "maintenance, no end known, the third round: the backoff", "outcome": "maintenance", "failures": 3,
+   "now": NOW})
+A({"name": "maintenance for long: at most 5 min apart", "outcome": "maintenance", "failures": 9, "now": NOW})
+A({"name": "maintenance ending in 2 min: 30 s after its end", "outcome": "maintenance", "failures": 4, "now": NOW,
+   "until": NOW + 120})
+A({"name": "maintenance ending in 10 s: never sooner than a minute", "outcome": "maintenance", "failures": 4,
+   "now": NOW, "until": NOW + 10})
+A({"name": "maintenance ending in an hour: the backoff", "outcome": "maintenance", "failures": 2, "now": NOW,
+   "until": NOW + 3600})
+A({"name": "maintenance past its planned end: the backoff", "outcome": "maintenance", "failures": 4, "now": NOW,
+   "until": NOW - 60})
 for c in afters:
     c["wait_s"] = after(c["outcome"], c["failures"], c.get("retryAfter_s"), c.get("now", 0), c.get("newest"),
-                        c.get("margin_s", POLL["margin_s"]))
+                        c.get("margin_s", POLL["margin_s"]), c.get("until"))
 
 # when the next call goes, after an answer (timed): 'now', the newest live reading, the margin -> 'wait_s'
 timings = []
@@ -575,7 +793,9 @@ ABOUT_LOGIN = [
     "retries lock the account), 'terms' (status 4: the person accepts in LibreLinkUp; Sukrara never accepts for them),",
     "'rateLimited' (wait at least poll.json 'rateLimited_min_s', longer when Retry-After or the lockout says so),",
     "'version' (sent from then on, the request made once more, poll.json 'versions'; still refused = 'retired'; a",
-    "minimum that isn't a version is none and never goes into a header), 'retired' (the API is gone), 'failed'.",
+    "minimum that isn't a version is none and never goes into a header), 'retired' (the API is gone), 'failed',",
+    "'maintenance' (HTTP 911 or status 911: LibreView is down for maintenance in the region, docs/45; nothing about the",
+    "account is changed or forgotten; asked again gently, poll.json 'after').",
 ]
 dump("login.json", {"_about": ABOUT_LOGIN, "now": NOW, "cases": logins})
 dump("calls.json", {"_about": [
@@ -583,7 +803,9 @@ dump("calls.json", {"_about": [
     "'Authorization: Bearer <token>' and 'Account-Id: sha256hex(account id)') -> the outcome the source acts on:",
     "'ok'; 'expired' (sign in again with the saved password, once); 'rateLimited'; 'terms'; 'version' (as login.json:",
     "sent from then on, the call made once more);",
-    "'retired' (refused or gone: health 'stopped'); 'server' (health 'unreachable').",
+    "'retired' (refused or gone: health 'stopped'); 'server' (health 'unreachable'); 'maintenance' (HTTP 911 or",
+    "status 911, before anything else: LibreView is down for maintenance in the region, docs/45; health",
+    "'maintenance', an expected wait, never an error).",
 ], "cases": calls})
 dump("connections.json", {"_about": [
     "Whose glucose the account brings (GET /llu/connections -> data[]): 'choices' are the people it follows in the",
@@ -628,9 +850,29 @@ dump("poll.json", {"_about": [
     "may lengthen the lockout); a sign-in the person makes ends the wait. 'versions': a 403 on the login or a call",
     "naming a minimum version (login.json, calls.json) has that version sent from then on and the same request made",
     "once more; it stays with the account (a new sign-in, a restart), unless this build's own version is newer",
-    "('send', parts compared as numbers).",
+    "('send', parts compared as numbers). LibreView's maintenance (outcome 'maintenance', HTTP 911): the failures'",
+    "backoff, at most 'maintenanceMax_s' apart, and 'maintenanceAfterEnd_s' after the window's end when the status page",
+    "gives one ('until', status.json) and that is sooner, never sooner than the first backoff step; a 429 still holds",
+    "as above. The first normal answer ends it.",
 ], **POLL,
     "headers": {"product": "llu.android", "version": VERSION, "Accept": "application/json",
                 "Content-Type": "application/json", "cache-control": "no-cache"},
     "cases": waits, "after": afters, "timed": timings, "margins": margins, "sequences": sequences,
     "simulation": simulation, "versions": versions})
+dump("status.json", {"_about": [
+    "LibreView's maintenance windows from Abbott's public status page (an Atlassian Statuspage, no key, no account:",
+    "GET 'url', https only, redirects never followed, 'timeout_s'). Only while LibreLinkUp is a signed-in source: at",
+    "once when a call answers 'maintenance' (calls.json) and every 'maintenanceEvery_s' while it lasts, for the",
+    "window's end; otherwise every 'every_s', for the windows ahead. The last good answer is kept; a failure (no",
+    "answer, not the page's) changes nothing and says nothing: 'no end time known'. 'regions': LibreLinkUp's region",
+    "(the login's redirect) -> the page's region components; 'groups': the component groups that are LibreLinkUp's and",
+    "LibreView's servers (others list stray regions). A window (scheduled_maintenances[]: status 'scheduled',",
+    "'in_progress' or 'verifying'; 'completed' is none) is the region's when one of its components has one of the",
+    "region's names and its group_id is one of 'groups'. 'windows' (sorted by start): start / end from",
+    "scheduled_for / scheduled_until (ISO 8601 with a zone; anything else, or an end not after the start, is skipped),",
+    "'live' = in progress or verifying. 'until': the end of the window the region is in (live, or its start has come),",
+    "the latest of several, null when none (one past its planned end too: no time made up); the health's end ('LibreView",
+    "maintenance until 23:00') and poll.json's 'until'. 'upcoming': the next window not begun, the warn-ahead:",
+    "Settings › Source says it once known, home from 'warnHome_s' before its start, and Android posts one silent",
+    "notification 'notify_s' before it (docs/45 'In Sukrara'). A 911 is what says maintenance: the page only adds times.",
+], **STATUS, "regions": REGIONS, "groups": GROUPS, "cases": statuses})

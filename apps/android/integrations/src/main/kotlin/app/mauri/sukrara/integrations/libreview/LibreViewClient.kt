@@ -173,6 +173,8 @@ class LibreViewClient internal constructor(
         if (code == 401 || code == 403) return LvAuth.BadCredentials
         if (code != 200 || o == null) return LvAuth.Failed(if (code == 200) Trouble.Other else UserErrors.ofHttp(code))
         val status = o["status"]?.jsonPrimitive?.intOrNull
+        // down for maintenance (HTTP 911 is ofHttp's): tried again later, never a refusal (docs/45)
+        if (status == UserErrors.MAINTENANCE) return LvAuth.Failed(Trouble.Maintenance)
         val reason = o["reason"]?.jsonPrimitive?.contentOrNull.orEmpty()
         if (status == 20 && "wrongDeviceForUser" in reason) return LvAuth.OtherDevice
         if (status == 2) return LvAuth.BadCredentials
@@ -243,6 +245,7 @@ class LibreViewClient internal constructor(
                 LvPost.SignInAgain
             }
 
+            // 911: LibreView is down for maintenance (docs/45), waited out like a busy server, never "stopped"
             code == 408 || code == 425 || code == 429 || code >= 500 -> {
                 LvPost.Retry(UserErrors.ofHttp(code))
             }
@@ -256,6 +259,7 @@ class LibreViewClient internal constructor(
                 val reason = o["reason"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 when {
                     status == 0 -> LvPost.Ok
+                    status == UserErrors.MAINTENANCE -> LvPost.Retry(Trouble.Maintenance)
                     status == 20 && "wrongDevice" in reason -> LvPost.SignInAgain
                     status == 20 && "invalid" in reason.lowercase() -> LvPost.InvalidSession
                     else -> LvPost.Rejected("$status ${reason.take(80)}".trim())

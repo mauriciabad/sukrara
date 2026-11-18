@@ -14,6 +14,8 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.FeatureChecksSource
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkPath
+import app.mauri.sukrara.core.model.MaintenanceWindow
+import app.mauri.sukrara.core.model.MoveRules
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenQuestionInfo
@@ -116,6 +118,12 @@ class HomeModule(
     private val phoneAppLink: () -> Flow<PhoneAppProblem?> = { flowOf(null) },
     /** Whether Juggluco is installed, checked now (re-read on every resume: the person may install it meanwhile). */
     private val phoneAppInstalled: () -> Boolean = { true },
+    /** The next LibreView maintenance window of the LibreLinkUp source's region (home's quiet line). */
+    private val maintenanceAhead: () -> Flow<MaintenanceWindow?> = { flowOf(null) },
+    /** Your glucose from the Libre app, its sensor of a family Sukrara has tested directly ([MoveRules]). */
+    private val moveFamily: () -> Flow<Boolean> = { flowOf(false) },
+    /** A loop or pump app that may hold the CGM is installed ([MoveRules.LOOP_APPS]; re-read on every resume). */
+    private val loopAppInstalled: () -> Boolean = { true },
 ) : HomeDeps {
     override val treatments: TreatmentsRepository get() = data.treatments
 
@@ -152,6 +160,7 @@ class HomeModule(
     override val environment: StateFlow<HomeEnvironment> = env
 
     private val appInstalled = MutableStateFlow(true)
+    private val loopApp = MutableStateFlow(true)
 
     init {
         scope.launch { nextSetupStep.collect { step -> env.update { it.copy(nextSetupStep = step) } } }
@@ -172,6 +181,12 @@ class HomeModule(
         scope.launch { updateChecksOff().collect { off -> env.update { it.copy(updateChecksOff = off) } } }
         scope.launch { featureChecks.blocked.collect { b -> env.update { it.copy(blocked = b) } } }
         scope.launch { followPath().collect { p -> env.update { it.copy(followPath = p) } } }
+        scope.launch { maintenanceAhead().collect { w -> env.update { it.copy(maintenanceAhead = w) } } }
+        // LibreView maintenance's *Read the sensor in Sukrara*: only where MoveRules allow it
+        scope.launch {
+            combine(moveFamily(), loopApp) { family, loop -> MoveRules.mayOffer(yours = family, testedFamily = family, loopApp = loop) }
+                .collect { m -> env.update { it.copy(moveOffered = m) } }
+        }
         // Juggluco missing says so (not "no readings from the sensor"); else what its web server answers
         scope.launch {
             combine(appInstalled, phoneAppLink()) { installed, link -> if (installed) link else PhoneAppProblem.Missing }
@@ -206,6 +221,7 @@ class HomeModule(
         featureChecks.refresh()
         env.update { it.copy(widgetPlaced = widgetPlaced(), widgetPinnable = widgetPinnable()) }
         appInstalled.value = phoneAppInstalled()
+        loopApp.value = loopAppInstalled()
         scope.launch { runCatching { tapsBlocked() }.getOrNull()?.let { b -> env.update { it.copy(tapsBlocked = b) } } }
     }
 

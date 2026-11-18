@@ -33,6 +33,8 @@ data class CardModel(
     val countdownHours: Int = SensorLife.DEFAULT_COUNTDOWN_HOURS,
     /** The report numbers of a slot's window; the default computes them from [readings]. */
     val metricsOf: ((RingSpec, Bands) -> GlucoseMetrics)? = null,
+    /** The source waits for LibreView's maintenance to end (contracts/graph/layout/scenes.json `pause`); null = it doesn't. */
+    val pause: CardPause? = null,
 ) {
     val latest: GlucosePoint? by lazy { readings.maxByOrNull { it.t } }
 
@@ -41,6 +43,15 @@ data class CardModel(
         bands: Bands,
     ): GlucoseMetrics = metricsOf?.invoke(spec, bands) ?: GlucoseMetrics.of(readings, nowS - spec.windowS, nowS, bands)
 }
+
+/**
+ * The source waits for LibreView's maintenance (docs/45, contracts/sources/health.json `maintenance`) until [untilS]
+ * (epoch s; null = no end known): once the value's place has no value it says *LibreView maintenance* / *until 23:00*
+ * instead of *No reading since*, in the same soft ink (an expected wait, never an error).
+ */
+data class CardPause(
+    val untilS: Long?,
+)
 
 /** When a treatment's alert mute ends (epoch s), or null when its kind mutes nothing (the user's alert settings). */
 fun interface MuteRule {

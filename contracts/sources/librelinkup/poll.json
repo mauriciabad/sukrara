@@ -21,7 +21,10 @@
   "may lengthen the lockout); a sign-in the person makes ends the wait. 'versions': a 403 on the login or a call",
   "naming a minimum version (login.json, calls.json) has that version sent from then on and the same request made",
   "once more; it stays with the account (a new sign-in, a restart), unless this build's own version is newer",
-  "('send', parts compared as numbers)."
+  "('send', parts compared as numbers). LibreView's maintenance (outcome 'maintenance', HTTP 911): the failures'",
+  "backoff, at most 'maintenanceMax_s' apart, and 'maintenanceAfterEnd_s' after the window's end when the status page",
+  "gives one ('until', status.json) and that is sooner, never sooner than the first backoff step; a 429 still holds",
+  "as above. The first normal answer ends it."
  ],
  "cadence_s": 60,
  "margin_s": 8,
@@ -40,6 +43,8 @@
  "connectionsEvery_s": 1800,
  "terms_s": 600,
  "retired_s": 3600,
+ "maintenanceMax_s": 300,
+ "maintenanceAfterEnd_s": 30,
  "headers": {
   "product": "llu.android",
   "version": "4.17.0",
@@ -167,6 +172,59 @@
    "failures": 1,
    "retryAfter_s": 900,
    "wait_s": 900
+  },
+  {
+   "name": "LibreView maintenance, no end known: a minute",
+   "outcome": "maintenance",
+   "failures": 1,
+   "now": 1795003200,
+   "wait_s": 60
+  },
+  {
+   "name": "maintenance, no end known, the third round: the backoff",
+   "outcome": "maintenance",
+   "failures": 3,
+   "now": 1795003200,
+   "wait_s": 300
+  },
+  {
+   "name": "maintenance for long: at most 5 min apart",
+   "outcome": "maintenance",
+   "failures": 9,
+   "now": 1795003200,
+   "wait_s": 300
+  },
+  {
+   "name": "maintenance ending in 2 min: 30 s after its end",
+   "outcome": "maintenance",
+   "failures": 4,
+   "now": 1795003200,
+   "until": 1795003320,
+   "wait_s": 150
+  },
+  {
+   "name": "maintenance ending in 10 s: never sooner than a minute",
+   "outcome": "maintenance",
+   "failures": 4,
+   "now": 1795003200,
+   "until": 1795003210,
+   "wait_s": 60
+  },
+  {
+   "name": "maintenance ending in an hour: the backoff",
+   "outcome": "maintenance",
+   "failures": 2,
+   "now": 1795003200,
+   "until": 1795006800,
+   "wait_s": 120
+  },
+  {
+   "name": "maintenance past its planned end: the backoff",
+   "outcome": "maintenance",
+   "failures": 4,
+   "now": 1795003200,
+   "until": 1795003140,
+   "wait_s": 300
   }
  ],
  "timed": [

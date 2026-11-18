@@ -29,6 +29,8 @@
     "slot_cv_short": {"en": "CV", "es": "CV"},
     "card_no_readings_yet": {"en": "No readings yet", "es": "Aún no hay lecturas"},
     "card_no_reading_since": {"en": "No reading since", "es": "Sin lecturas desde"},
+    "card_maintenance": {"en": "LibreView maintenance", "es": "Mantenimiento de LibreView"},
+    "card_maintenance_until": {"en": "until %1$s", "es": "hasta las %1$s"},
     "card_sensor_ended": {"en": "Sensor ended", "es": "Sensor terminado"},
     "card_warming_up": {"en": "Warming up", "es": "Calentando"},
     "card_ready_at": {"en": "Ready at %1$s", "es": "Listo a las %1$s"},

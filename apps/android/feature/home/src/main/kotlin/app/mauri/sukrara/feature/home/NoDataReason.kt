@@ -130,8 +130,18 @@ sealed interface NoDataReason {
         val since: Instant?,
         /** Which online source (its words: a site's uploader, or the Libre app behind LibreLinkUp). */
         val kind: SourceKind = SourceKind.Nightscout,
+        /** LibreView's maintenance end, when Abbott's status page says it ([SourceProblem.Maintenance]). */
+        val until: Instant? = null,
+        /**
+         * LibreView's maintenance: *Read the sensor in Sukrara* may be offered as a quiet second way out ([MoveRules]:
+         * your glucose, a tested family, no loop or pump app holding the CGM).
+         */
+        val move: Boolean = false,
     ) : NoDataReason {
         override val action = HomeAction.OpenSource
+
+        /** An expected wait (LibreView's maintenance): the way out is quiet, never in an error's look. */
+        val waitOnly: Boolean get() = problem == SourceProblem.Maintenance
     }
 
     /** An online source that isn't reading: no site connected yet, or its first call is on its way (Settings › Source). */
@@ -168,6 +178,8 @@ sealed interface NoDataReason {
             look: GlucoseLook,
             /** Why Juggluco on this phone sends nothing, when it is the source and that is known. */
             phoneApp: PhoneAppProblem? = null,
+            /** Reading the sensor in Sukrara may be offered ([MoveRules], the app's): LibreView maintenance's second way out. */
+            moveOffered: Boolean = false,
         ): NoDataReason? {
             val follower = state.spec?.stream == true
             val latest = state.latest
@@ -240,7 +252,14 @@ sealed interface NoDataReason {
                 // an online source knows why nothing comes: say it, with the way to fix it
                 (state.source as? SourceStatus.Interrupted)?.problem != null -> {
                     val s = state.source as SourceStatus.Interrupted
-                    SourceTrouble(s.problem!!, latest?.t, state.spec?.kind ?: SourceKind.Nightscout)
+                    val maintenance = s.problem == SourceProblem.Maintenance
+                    SourceTrouble(
+                        s.problem!!,
+                        latest?.t,
+                        state.spec?.kind ?: SourceKind.Nightscout,
+                        until = s.until.takeIf { maintenance },
+                        move = maintenance && moveOffered,
+                    )
                 }
 
                 // an online source without a known problem: its page, not the sensor's

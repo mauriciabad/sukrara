@@ -95,6 +95,7 @@
     <string name="libreview_error_wrong_password">Wrong email or password.</string>
     <string name="libreview_error_accept_terms">LibreView has new terms. Accept them in the LibreView or Libre app, then sign in again.</string>
     <string name="libreview_error_failed">Couldn\'t sign in to LibreView. Check the connection and try again.</string>
+    <string name="libreview_error_maintenance">LibreView is down for maintenance. Sign in once it\'s back, usually within the hour.</string>
     <!-- choosing the sensor family; brand names are not translated -->
     <string name="newsensor_choose_title">Which sensor?</string>
     <string name="newsensor_choose_text">Pick the sensor you are wearing. Sukrara reads it on this phone.</string>

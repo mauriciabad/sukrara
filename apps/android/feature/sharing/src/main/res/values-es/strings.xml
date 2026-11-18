@@ -558,6 +558,7 @@
     <string name="sh_setup_llu_problem_rate">Demasiados intentos: LibreLinkUp pide esperar unos minutos. Sukrara no reintenta solo, así tu cuenta no se bloquea más tiempo.</string>
     <string name="sh_setup_llu_problem_no_one">Nadie comparte glucosa con esta cuenta todavía. En la app Libre: Menú › Aplicaciones conectadas › LibreLinkUp, invita a este correo, acepta la invitación en LibreLinkUp y vuelve a intentarlo.</string>
     <string name="sh_setup_llu_problem_unreachable">LibreLinkUp no responde. Vuelve a intentarlo en un momento.</string>
+    <string name="sh_setup_llu_problem_maintenance">LibreView está en mantenimiento, así que LibreLinkUp no puede iniciar sesión ahora. Inicia sesión cuando vuelva, normalmente en menos de una hora, o elige otro origen.</string>
     <string name="sh_setup_llu_choose_title">¿La glucosa de quién?</string>
     <string name="sh_setup_llu_choose_body">Esta cuenta sigue a varias personas. Elige la que muestra Sukrara; puedes cambiarla en Ajustes › Origen.</string>
     <string name="sh_setup_llu_unnamed">Alguien sin nombre</string>

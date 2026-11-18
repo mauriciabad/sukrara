@@ -39,6 +39,9 @@ sealed interface LluSession {
 
     data object Retired : LluSession
 
+    /** LibreView is down for maintenance in the account's region: try again later (the account stays as it is). */
+    data object Maintenance : LluSession
+
     /** No answer, or one Sukrara can't read: try again later. */
     data object Failed : LluSession
 }
@@ -118,6 +121,9 @@ class LluAccount(
 
     /** The saved account's email (the Connect step's form), null without one. */
     suspend fun email(): String? = runCatching { read()?.email }.getOrNull()
+
+    /** The saved account's region (the login's redirect: `eu`, `eu2`, `us`…), null without one or before a redirect. */
+    suspend fun region(): String? = runCatching { read()?.region }.getOrNull()
 
     /** A token that works now: the saved one, or a new login with the saved password. */
     suspend fun session(): LluSession =
@@ -202,6 +208,10 @@ class LluAccount(
                     return LluSession.Retired to false
                 }
 
+                LluLogin.Maintenance -> {
+                    return LluSession.Maintenance to false
+                }
+
                 is LluLogin.Failed -> {
                     return LluSession.Failed to false
                 }
@@ -238,6 +248,7 @@ class LluAccount(
                     is LluSession.Terms -> return LluCall(LluCallOutcome.Terms)
                     is LluSession.RateLimited -> return LluCall(LluCallOutcome.RateLimited, retryAfterS = s.retryAfterS)
                     LluSession.Retired -> return LluCall(LluCallOutcome.Retired)
+                    LluSession.Maintenance -> return LluCall(LluCallOutcome.Maintenance)
                     LluSession.Failed -> return LluCall(LluCallOutcome.Network)
                 }
             r = get(session)

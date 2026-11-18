@@ -12,12 +12,14 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.data.libreview.LibreLinkUp
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
+import app.mauri.sukrara.core.data.libreview.LibreViewStatus
 import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LifeSettings
+import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.HistoryImportStore
@@ -156,6 +158,8 @@ class IntegrationsModule(
     connectIq: ConnectIqPort = ConnectIq(context, log),
     /** A debug build's fake LibreLinkUp (scheme to host:port, every region), null = Abbott's hosts (release: always). */
     libreLinkUpServer: Pair<String, String>? = null,
+    /** A LibreView maintenance window of the LibreLinkUp account's region begins in an hour: the app's heads-up. */
+    maintenanceAhead: (MaintenanceWindow) -> Unit = {},
 ) {
     /** Your glucose read first-hand here: what uploads and outputs may send (docs/44 keying). */
     val wearer: Flow<Boolean> = role.map { it?.owner == true }
@@ -228,6 +232,14 @@ class IntegrationsModule(
             sensorLife(SourceKind.LibreLinkUp),
             log,
             anotherLluPerson,
+            // Abbott's status page (LibreView's maintenance windows); a debug build's fake LibreLinkUp serves its own
+            LibreViewStatus(
+                http,
+                libreLinkUpServer?.let { (scheme, host) ->
+                    "$scheme://$host/api/v2/summary.json"
+                } ?: LibreViewStatus.URL,
+            ),
+            maintenanceAhead,
         )
 
     val libreView =

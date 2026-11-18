@@ -4,12 +4,15 @@
 package app.mauri.sukrara.integrations.librelinkup
 
 import app.mauri.sukrara.core.data.libreview.LibreLinkUp
+import app.mauri.sukrara.core.data.libreview.LibreViewStatus
 import app.mauri.sukrara.core.data.libreview.LluCallOutcome
 import app.mauri.sukrara.core.data.libreview.LluPerson
 import app.mauri.sukrara.core.data.libreview.LluPick
 import app.mauri.sukrara.core.model.CallOutcome
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.LifeSettings
+import app.mauri.sukrara.core.model.MaintenanceWindow
+import app.mauri.sukrara.core.model.MoveRules
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
@@ -69,6 +72,8 @@ data class LluSourceState(
     /** The sensor LibreLinkUp last said (serial = its id: a new serial is a new sensor); empty = none known. */
     val sensorSerial: String = "",
     val sensorStartS: Long = 0,
+    /** The sensor's product type LibreLinkUp said (`pt`: 4 = Libre 3 / 3 Plus), null = not said. */
+    val sensorPt: Int? = null,
     /**
      * The person whose LibreLinkUp readings this phone holds (patient id, "" = none): reading anyone else deletes them
      * first, with the treatments logged here (two people's glucose never mix). A sign-out keeps it; a change of whose
@@ -80,6 +85,8 @@ data class LluSourceState(
      * said): which LibreView identity Sukrara may send treatments under (docs/45).
      */
     val deviceType: Int = 0,
+    /** The start (epoch s) of the LibreView maintenance window last announced ahead (one heads-up a window). */
+    val warnedS: Long = 0,
 ) {
     val sensorLife: NsSensor? get() =
         if (sensorSerial.isNotEmpty() && sensorStartS > 0) NsSensor(sensorSerial, Instant.ofEpochSecond(sensorStartS)) else null
@@ -117,6 +124,10 @@ data class LluSourceView(
      * ([LibreLinkUpSource.choose]) or keeps the one read ([LibreLinkUpSource.keepPerson]); null = none.
      */
     val pending: LluPerson? = null,
+    /** LibreView's maintenance end while [health] is [OnlineHealth.Maintenance], when Abbott's status page says it. */
+    val until: Instant? = null,
+    /** The next LibreView maintenance window of the account's region (the warn-ahead), null = none listed. */
+    val ahead: MaintenanceWindow? = null,
 ) {
     /** Signed in and someone picked: the source can read. */
     val configured: Boolean get() = signedIn && patient.isNotEmpty()
@@ -156,6 +167,9 @@ sealed interface LluConnectResult {
 
     /** LibreLinkUp refuses this client: Abbott changed it. */
     data object Stopped : LluConnectResult
+
+    /** LibreView is down for maintenance: sign in once it ends (nothing is wrong with the account). */
+    data object Maintenance : LluConnectResult
 }
 
 /** When the source asks again (contracts/sources/librelinkup/poll.json). */
@@ -180,6 +194,12 @@ object LluPoll {
 
     /** Abbott refused this client: asked again rarely. */
     const val RETIRED_S = 3600L
+
+    /** LibreView's maintenance: the backoff, at most this far apart (the first answer after it ends it soon). */
+    const val MAINTENANCE_MAX_S = 300L
+
+    /** ... and this long after the window's end when the status page gives it and that is sooner. */
+    const val MAINTENANCE_AFTER_END_S = 30L
 
     /** How late after a reading is due the call goes ([marginS]), and the new readings found in time in a row. */
     data class Timing(
@@ -224,7 +244,7 @@ object LluPoll {
     /**
      * Seconds to the next call after a cycle that ended in [outcome] (null = not set up), the [failures] in a row and a
      * 429's [retryAfterS]; null = only when the person acts. An answer: timed to the next reading ([timedS]). Asked to
-     * wait without a time: [RATE_LIMITED_MIN_S].
+     * wait without a time: [RATE_LIMITED_MIN_S]. LibreView's maintenance: [maintenanceS], to its end [untilS] when known.
      */
     fun next(
         outcome: CallOutcome?,
@@ -233,9 +253,11 @@ object LluPoll {
         nowS: Long = 0,
         newestS: Long? = null,
         marginS: Long = MARGIN_S,
+        untilS: Long? = null,
     ): Long? =
         when (outcome) {
             null -> null
+            CallOutcome.Maintenance -> maintenanceS(failures, nowS, untilS)
             CallOutcome.Ok -> timedS(nowS, newestS, marginS)
             CallOutcome.Terms -> TERMS_S
             CallOutcome.Retired -> RETIRED_S
@@ -243,6 +265,21 @@ object LluPoll {
             CallOutcome.RateLimited -> waitS(failures, rateLimitedS = retryAfterS ?: 0L)
             else -> waitS(failures, refused = outcome == CallOutcome.Refused)
         }
+
+    /**
+     * Seconds to the next call while LibreView is down for maintenance (poll.json `after`): the failures' backoff, at most
+     * [MAINTENANCE_MAX_S], and [MAINTENANCE_AFTER_END_S] after the window's end [untilS] when that is sooner (never sooner
+     * than the first backoff step).
+     */
+    fun maintenanceS(
+        failures: Int,
+        nowS: Long,
+        untilS: Long?,
+    ): Long {
+        val w = minOf(waitS(failures) ?: MAINTENANCE_MAX_S, MAINTENANCE_MAX_S)
+        if (untilS == null || untilS <= nowS) return w
+        return minOf(w, maxOf(untilS - nowS + MAINTENANCE_AFTER_END_S, BACKOFF_S.first()))
+    }
 
     /** Seconds to the next call after a failure, null = only when the person acts (a refused password: retries lock the account). */
     fun waitS(
@@ -279,6 +316,10 @@ class LibreLinkUpSource(
      * treatments logged here, and starts monitoring over (the app's; Appendix G finding 6).
      */
     private val anotherPerson: suspend () -> Unit = {},
+    /** Abbott's status page (LibreView's maintenance windows); null = never asked (tests). */
+    private val statusPage: LibreViewStatus? = null,
+    /** A maintenance window of the account's region begins in an hour: the one heads-up (the app posts it). */
+    private val warn: (MaintenanceWindow) -> Unit = {},
 ) : ReadingSource {
     private val statusFlow = MutableStateFlow<SourceStatus>(SourceStatus.NotStarted)
     override val status: StateFlow<SourceStatus> = statusFlow.asStateFlow()
@@ -327,17 +368,24 @@ class LibreLinkUpSource(
     /** LibreLinkUp asked to wait (429): no call before this (epoch s), whatever kicks the loop; a new sign-in ends it. */
     @Volatile private var holdUntilS = 0L
 
+    /** The account region's maintenance windows, from the status page's last good answer (status.json). */
+    private val windows = MutableStateFlow<List<MaintenanceWindow>>(emptyList())
+
+    /** When the status page was last asked (epoch s; 0 = never this run). */
+    @Volatile private var statusAskedS = 0L
+
     /** What the pages show. */
     val view: Flow<LluSourceView> =
         combine(
             config.data,
             combine(store.data, life, pending, ::Triple),
             live,
-            account.saved,
+            combine(account.saved, windows, ::Pair),
             ticker(),
-        ) { s, (st, lf, waiting), l, saved, now ->
+        ) { s, (st, lf, waiting), l, (saved, ws), now ->
             val readable = saved as? LluAccount.Saved.Readable
             val sensor = effective(st.sensorLife, lf, now)
+            val health = health(l, now, sensor)
             LluSourceView(
                 signedIn = readable != null && !readable.signedOut,
                 email = readable?.email.orEmpty(),
@@ -345,11 +393,13 @@ class LibreLinkUpSource(
                 patient = s.patient,
                 name = st.name,
                 people = st.people.map { LluPerson(it.id, it.name) },
-                health = health(l, now, sensor),
+                health = health,
                 newest = l.newest,
                 sensor = sensor,
                 held = st.held,
                 pending = waiting,
+                until = LibreViewStatus.until(ws, now).takeIf { health == OnlineHealth.Maintenance },
+                ahead = LibreViewStatus.upcoming(ws, now).takeIf { readable != null && !readable.signedOut },
             )
         }.distinctUntilChanged()
 
@@ -369,6 +419,15 @@ class LibreLinkUpSource(
         combine(config.data, store.data, live) { s, st, l ->
             if (s.patient.isEmpty()) null else LluUploader(st.deviceType.takeIf { it != 0 }, l.newest, l.answeredAt)
         }.distinctUntilChanged()
+
+    /**
+     * The LibreLinkUp sensor's family is one Sukrara has tested directly ([MoveRules.testedFamily]): with your glucose
+     * and no loop app, LibreView maintenance's quiet *Read the sensor in Sukrara* (the app's [MoveRules.mayOffer]).
+     */
+    val testedFamily: Flow<Boolean> = store.data.map { MoveRules.testedFamily(it.sensorPt) }.distinctUntilChanged()
+
+    /** The next LibreView maintenance window of the account's region (home's line from 12 h before). */
+    val maintenanceAhead: Flow<MaintenanceWindow?> = view.map { it.ahead }.distinctUntilChanged()
 
     /** Ask now (a new sign-in, a person picked, *Try again*). */
     fun kick() {
@@ -391,6 +450,7 @@ class LibreLinkUpSource(
                 is LluSession.Terms -> LluConnectResult.Terms
                 is LluSession.RateLimited -> LluConnectResult.RateLimited
                 LluSession.Retired -> LluConnectResult.Stopped
+                LluSession.Maintenance -> LluConnectResult.Maintenance
                 LluSession.Failed -> if (network.online()) LluConnectResult.Unreachable else LluConnectResult.Offline
             }
         }
@@ -426,6 +486,10 @@ class LibreLinkUpSource(
                     LluConnectResult.Stopped
                 }
 
+                LluSession.Maintenance -> {
+                    LluConnectResult.Maintenance
+                }
+
                 LluSession.Failed -> {
                     if (network.online()) LluConnectResult.Unreachable else LluConnectResult.Offline
                 }
@@ -441,6 +505,7 @@ class LibreLinkUpSource(
             LluCallOutcome.Terms -> LluConnectResult.Terms
             LluCallOutcome.RateLimited -> LluConnectResult.RateLimited
             LluCallOutcome.Retired, LluCallOutcome.Version -> LluConnectResult.Stopped
+            LluCallOutcome.Maintenance -> LluConnectResult.Maintenance
             LluCallOutcome.Network -> if (network.online()) LluConnectResult.Unreachable else LluConnectResult.Offline
             else -> LluConnectResult.Unreachable
         }
@@ -570,6 +635,7 @@ class LibreLinkUpSource(
                 }
             if (c.outcome == CallOutcome.Ok) failures = 0 else failures++
             val l = live.value
+            val entered = c.outcome == CallOutcome.Maintenance && l.outcome != CallOutcome.Maintenance
             live.value =
                 l.copy(
                     outcome = c.outcome ?: l.outcome,
@@ -577,6 +643,8 @@ class LibreLinkUpSource(
                     newest = c.newest ?: l.newest,
                     answeredAt = if (c.outcome == CallOutcome.Ok) clock.now() else l.answeredAt,
                 )
+            // LibreView's windows: at once on entering maintenance and every 10 min in it (its end), else every 6 h
+            if (c.outcome != null) askStatus(maintenance = c.outcome == CallOutcome.Maintenance, entered = entered)
             publish()
             val nowS = clock.now().epochSecond
             if (c.outcome == CallOutcome.Ok) {
@@ -585,11 +653,42 @@ class LibreLinkUpSource(
                 timing = LluPoll.timing(timing, nowS, liveNewestS, found)
                 if (found != null && (liveNewestS ?: Long.MIN_VALUE) < found) liveNewestS = found
             }
-            val wait = LluPoll.next(c.outcome, failures, c.retryAfterS, nowS, liveNewestS, timing.marginS)
+            val untilS = LibreViewStatus.until(windows.value, clock.now())?.epochSecond
+            val wait = LluPoll.next(c.outcome, failures, c.retryAfterS, nowS, liveNewestS, timing.marginS, untilS)
             // asked to wait: nothing calls LibreLinkUp before then (each call may lengthen the lockout); a sign-in does
             holdUntilS = if (c.outcome == CallOutcome.RateLimited && wait != null) clock.now().epochSecond + wait else 0L
             waitFor(wait)
         }
+    }
+
+    /**
+     * Abbott's status page, asked only while LibreLinkUp is a signed-in source (status.json): at once when a call
+     * [entered] maintenance and every [LibreViewStatus.MAINTENANCE_EVERY_S] while it lasts, else every
+     * [LibreViewStatus.EVERY_S]. A failure keeps the last good answer and says nothing.
+     */
+    private suspend fun askStatus(
+        maintenance: Boolean,
+        entered: Boolean,
+    ) {
+        val page = statusPage ?: return
+        val nowS = clock.now().epochSecond
+        val every = if (maintenance) LibreViewStatus.MAINTENANCE_EVERY_S else LibreViewStatus.EVERY_S
+        if (!entered && statusAskedS > 0 && nowS - statusAskedS < every) return
+        statusAskedS = nowS
+        val region = account.region()
+        withContext(io) { page.fetch(region) }?.let { windows.value = it }
+    }
+
+    /**
+     * The one heads-up a window ([LluSourceState.warnedS]): [LibreViewStatus.NOTIFY_S] before the next window of the
+     * account's region begins, while LibreLinkUp is read (never for a window already begun or past).
+     */
+    private suspend fun warnAhead(now: Instant) {
+        val next = LibreViewStatus.upcoming(windows.value, now) ?: return
+        if (Duration.between(now, next.start).seconds > LibreViewStatus.NOTIFY_S) return
+        if (store.data.first().warnedS == next.start.epochSecond) return
+        store.update { it.copy(warnedS = next.start.epochSecond) }
+        warn(next)
     }
 
     /** Waits [seconds] (null = until a kick), publishing the health as it ages on the way. */
@@ -615,14 +714,32 @@ class LibreLinkUpSource(
         statusFlow.value =
             when {
                 // warming up: the newest reading is the old sensor's, so not live (and no problem: the card says it)
-                h == OnlineHealth.Connecting || h == OnlineHealth.WarmingUp -> SourceStatus.Connecting
+                h == OnlineHealth.Connecting || h == OnlineHealth.WarmingUp -> {
+                    SourceStatus.Connecting
+                }
 
-                h.fine && l.newest != null -> SourceStatus.Live(l.newest)
+                h.fine && l.newest != null -> {
+                    SourceStatus.Live(l.newest)
+                }
 
-                h.fine -> SourceStatus.Connecting
+                h.fine -> {
+                    SourceStatus.Connecting
+                }
 
-                else -> SourceStatus.Interrupted(l.newest ?: now, h.problem)
+                // LibreView's maintenance: every surface says it, with its end when the status page gives one
+                h == OnlineHealth.Maintenance -> {
+                    SourceStatus.Interrupted(
+                        l.newest ?: now,
+                        h.problem,
+                        LibreViewStatus.until(windows.value, now),
+                    )
+                }
+
+                else -> {
+                    SourceStatus.Interrupted(l.newest ?: now, h.problem)
+                }
             }
+        if (l.outcome != null) warnAhead(now)
     }
 
     /** The health at [now], the sensor LibreLinkUp says ([life]) warming up or not (contracts/sources/health.json). */
@@ -663,6 +780,8 @@ class LibreLinkUpSource(
             LluCallOutcome.Server -> CallOutcome.Server
 
             LluCallOutcome.Network -> CallOutcome.Network
+
+            LluCallOutcome.Maintenance -> CallOutcome.Maintenance
         }
 
     /** One call: the session, whom to read (now and then), then the graph. */
@@ -713,6 +832,7 @@ class LibreLinkUpSource(
                 sensorSerial = g.sensor?.serial ?: st.sensorSerial,
                 sensorStartS = g.sensor?.start?.epochSecond ?: st.sensorStartS,
                 deviceType = g.deviceType ?: st.deviceType,
+                sensorPt = g.sensor?.pt ?: st.sensorPt,
             )
         }
         return Cycle(CallOutcome.Ok, newest, live = newestLive)
@@ -743,6 +863,7 @@ class LibreLinkUpSource(
             is LluSession.Terms -> Cycle(CallOutcome.Terms)
             is LluSession.RateLimited -> Cycle(CallOutcome.RateLimited, retryAfterS = s.retryAfterS)
             LluSession.Retired -> Cycle(CallOutcome.Retired)
+            LluSession.Maintenance -> Cycle(CallOutcome.Maintenance)
             LluSession.Failed -> Cycle(CallOutcome.Network)
         }
 

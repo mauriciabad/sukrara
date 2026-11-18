@@ -701,6 +701,7 @@
     <string name="sh_setup_llu_problem_rate">Too many attempts: LibreLinkUp asks to wait a few minutes. Sukrara doesn’t retry by itself, so your account isn’t locked longer.</string>
     <string name="sh_setup_llu_problem_no_one">No one shares glucose with this account yet. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email, accept the invite in LibreLinkUp, then try again.</string>
     <string name="sh_setup_llu_problem_unreachable">No answer from LibreLinkUp. Try again in a moment.</string>
+    <string name="sh_setup_llu_problem_maintenance">LibreView is down for maintenance, so LibreLinkUp can\'t sign in now. Sign in once it\'s back, usually within the hour, or choose another source.</string>
     <string name="sh_setup_llu_choose_title">Whose glucose?</string>
     <string name="sh_setup_llu_choose_body">This account follows several people. Pick the one Sukrara shows; you can change it in Settings › Source.</string>
     <string name="sh_setup_llu_unnamed">Someone without a name</string>

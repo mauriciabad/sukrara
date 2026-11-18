@@ -295,6 +295,7 @@ private fun ColumnScope.LluConnected(
                 "LibreLinkUp",
                 SourceKind.LibreLinkUp,
                 readyAt = c.readyAt?.takeIf { it.isAfter(now) }?.let { ClockText.time(it.epochSecond) },
+                until = c.until?.let { ClockText.time(it.epochSecond) },
             )
         }
     NoticeCard(
@@ -302,7 +303,7 @@ private fun ColumnScope.LluConnected(
         Modifier.semantics { liveRegion = LiveRegionMode.Polite },
         title = stringResource(R.string.sh_setup_llu_signed_in, c.email),
         icon = if (live) DsR.drawable.ds_ic_check_circle else c.health.iconRes(),
-        tone = if (live || c.health.fine) NoticeTone.Info else NoticeTone.Warning,
+        tone = if (live || c.health.nothingToFix) NoticeTone.Info else NoticeTone.Warning,
     )
     if (!live && c.health == OnlineHealth.Connecting) {
         Text(
@@ -368,13 +369,16 @@ private fun LluProblem(result: LluConnectOutcome?) {
             LluConnectOutcome.Unreachable -> R.string.sh_setup_llu_problem_unreachable
             LluConnectOutcome.Offline -> R.string.sh_setup_site_problem_offline
             LluConnectOutcome.Stopped -> DsR.string.ds_online_llu_stopped
+            LluConnectOutcome.Maintenance -> R.string.sh_setup_llu_problem_maintenance
             else -> null
         }
     AnimatedVisibility(general != null) {
         NoticeCard(
             general?.let { stringResource(it) },
             Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-            tone = NoticeTone.Warning,
+            // maintenance is a wait, not a mistake: no error colour
+            icon = if (result == LluConnectOutcome.Maintenance) DsR.drawable.ds_ic_schedule else NoticeTone.Warning.icon,
+            tone = if (result == LluConnectOutcome.Maintenance) NoticeTone.Info else NoticeTone.Warning,
         )
     }
 }

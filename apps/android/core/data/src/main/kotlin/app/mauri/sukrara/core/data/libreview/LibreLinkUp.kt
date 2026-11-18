@@ -57,11 +57,14 @@ sealed interface LluLogin {
     /** The login is gone: Abbott retired the API. */
     data object Retired : LluLogin
 
+    /** LibreView is down for maintenance in the account's region (HTTP 911): nothing about the account changes. */
+    data object Maintenance : LluLogin
+
     data class Failed(val why: String) : LluLogin
 }
 
 /** An authenticated call's outcome (contracts/sources/librelinkup/calls.json). */
-enum class LluCallOutcome { Ok, Expired, RateLimited, Terms, Version, Retired, Server, Network }
+enum class LluCallOutcome { Ok, Expired, RateLimited, Terms, Version, Retired, Server, Network, Maintenance }
 
 /** One authenticated call's answer: its [outcome], the body when [LluCallOutcome.Ok]. */
 data class LluCall(
@@ -86,10 +89,14 @@ data class LluPick(
     enum class State { Picked, Choose, None, Gone }
 }
 
-/** A sensor LibreLinkUp says is running: its serial (a new serial = a new sensor) and start. */
+/**
+ * A sensor LibreLinkUp says is running: its serial (a new serial = a new sensor), start and product type [pt] (4 = a
+ * Libre 3 / 3 Plus, 3 = a Libre 2 / 2 Plus; null = not said): the family `MoveRules` asks about.
+ */
 data class LluSensor(
     val serial: String,
     val start: Instant,
+    val pt: Int? = null,
 )
 
 /**
@@ -214,6 +221,12 @@ class LibreLinkUp(
         /** A version LibreLinkUp may ask for (it goes into a header as it is). */
         private val VERSION_FORMAT = Regex("\\d{1,3}(\\.\\d{1,4}){1,3}")
 
+        /**
+         * LibreView's maintenance: every path of the region's host answers HTTP 911 with `{"status": 911}`, before any
+         * sign-in (docs/45, login.json / calls.json `maintenance`).
+         */
+        const val MAINTENANCE = 911
+
         /** TrendArrow 1..5 (falling quickly .. rising quickly) as mg/dL/min; any other: none. */
         private val ARROW_RATE = mapOf(1 to -2.5, 2 to -1.5, 3 to 0.0, 4 to 1.5, 5 to 2.5)
 
@@ -251,6 +264,7 @@ class LibreLinkUp(
             val o = parse(body)
             val data = o?.get("data") as? JsonObject
             val status = o?.int("status")
+            if (code == MAINTENANCE || status == MAINTENANCE) return LluLogin.Maintenance
             if (code == 429 || status == 429) {
                 val lockout = (data?.get("data") as? JsonObject)?.long("lockout")
                 return LluLogin.RateLimited(retryAfterS ?: lockout)
@@ -289,6 +303,10 @@ class LibreLinkUp(
             val data = o?.get("data") as? JsonObject
             val status = o?.int("status")
             return when {
+                code == MAINTENANCE || status == MAINTENANCE -> {
+                    LluCall(LluCallOutcome.Maintenance)
+                }
+
                 code == 429 || status == 429 -> {
                     LluCall(LluCallOutcome.RateLimited, retryAfterS = retryAfterS)
                 }
@@ -397,7 +415,7 @@ class LibreLinkUp(
                 listOfNotNull(first, conn["sensor"] as? JsonObject).firstNotNullOfOrNull { s ->
                     val sn = s.text("sn")?.takeIf { it.isNotEmpty() }
                     val a = s.double("a")?.takeIf { it > 0 }
-                    if (sn != null && a != null) LluSensor(sn, Instant.ofEpochSecond(a.toLong())) else null
+                    if (sn != null && a != null) LluSensor(sn, Instant.ofEpochSecond(a.toLong()), s.int("pt")) else null
                 }
             return LluGraph(out, sensor, nameOf(conn), deviceType(data))
         }

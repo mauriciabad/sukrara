@@ -106,7 +106,9 @@ object GlucoseCard {
             dimmed?.let(cv::restoreToCount)
         }
         // a sensor that ended or is warming up says so instead of the reading's time, which would read as a gap
-        if (age != Freshness.AgeMark.NONE && latest != null) drawAgeLabel(cv, chart, latest.t, nowS, age, sl, model.words, pal, d, rec)
+        if (age != Freshness.AgeMark.NONE && latest != null) {
+            drawAgeLabel(cv, chart, latest.t, nowS, age, sl, model.words, pal, d, rec, model.pause)
+        }
         // a graph-only card without its chart: the value's face alone (a graph card has no slots or badge)
         if (noChart && !st.value) value.draw(cv, chart, null, null)
         if (st.value && part != CardPart.GRAPH) {
@@ -145,16 +147,20 @@ object GlucoseCard {
         pal: GraphPalette,
         d: Float,
         rec: CardLayout,
+        pause: CardPause? = null,
     ) {
         val warmup = sensor?.warmup
         val ended = sensor?.ended == true && warmup == null
+        // LibreView's maintenance, once the reading is old enough for "no readings": what is happening, until when
+        val paused = pause?.takeIf { warmup == null && !ended && age == Freshness.AgeMark.NO_READINGS }
         val text =
             when {
                 warmup != null -> if (sensor?.waiting(nowS) == true) warmup else "${w.warmingUp} · $warmup"
                 ended -> w.sensorEnded
+                paused != null -> w.pauseLines(paused).joinToString(" · ")
                 else -> Freshness.timeText(t, nowS)
             }
-        val own = warmup != null || ended
+        val own = warmup != null || ended || paused != null
         val ink =
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 color = pal.inkSoft
@@ -195,6 +201,7 @@ object GlucoseCard {
             when {
                 warmup != null -> "warmup"
                 ended -> "ended"
+                paused != null -> "pause"
                 else -> age.key
             },
         )

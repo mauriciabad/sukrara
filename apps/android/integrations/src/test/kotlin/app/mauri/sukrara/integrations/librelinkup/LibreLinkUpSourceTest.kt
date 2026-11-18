@@ -4,8 +4,10 @@
 package app.mauri.sukrara.integrations.librelinkup
 
 import app.mauri.sukrara.core.data.libreview.LibreLinkUp
+import app.mauri.sukrara.core.data.libreview.LibreViewStatus
 import app.mauri.sukrara.core.model.CallOutcome
 import app.mauri.sukrara.core.model.LifeSettings
+import app.mauri.sukrara.core.model.MaintenanceWindow
 import app.mauri.sukrara.core.model.OnlineHealth
 import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorState
@@ -70,6 +72,12 @@ class LibreLinkUpSourceTest {
     private var graph: MockResponse = ok(graphBody(0))
     private var graphFailsOnce: MockResponse? = null
 
+    /** The account's region from a redirect at the next login (all regions are this server). */
+    @Volatile private var redirectOnce = false
+
+    /** Abbott's status page (contracts/sources/librelinkup/status.json's shape). */
+    @Volatile private var summary = """{"components":[],"scheduled_maintenances":[]}"""
+
     private val config =
         object : LluSourceConfig {
             val flow = MutableStateFlow(LluSourceSettings())
@@ -101,8 +109,17 @@ class LibreLinkUpSourceTest {
                     requests += request
                     val path = request.path.orEmpty()
                     return when {
+                        path == LibreLinkUp.LOGIN && redirectOnce -> {
+                            redirectOnce = false
+                            ok("""{"status":0,"data":{"redirect":true,"region":"eu"}}""")
+                        }
+
                         path == LibreLinkUp.LOGIN -> {
                             login
+                        }
+
+                        path == "/api/v2/summary.json" -> {
+                            ok(summary)
                         }
 
                         path == LibreLinkUp.CONNECTIONS -> {
@@ -141,8 +158,67 @@ class LibreLinkUpSourceTest {
             Dispatchers.IO,
             life,
             anotherPerson = { others++ },
+            statusPage = LibreViewStatus(OkHttpClient(), "http://$host/api/v2/summary.json"),
+            warn = { warned += it },
         )
     }
+
+    /** The heads-ups the source asked the app to post (one a window). */
+    private val warned = CopyOnWriteArrayList<MaintenanceWindow>()
+
+    /** A status page with one window of Europe, Middle East, Africa (LibreLinkUp's `eu`). */
+    private fun window(
+        status: String,
+        start: Instant,
+        end: Instant,
+    ) = """{"components":[{"id":"g","name":"LibreLinkUp Mobile App","group":true}],"scheduled_maintenances":[""" +
+        """{"status":"$status","scheduled_for":"$start","scheduled_until":"$end",""" +
+        """"components":[{"name":"Europe, Middle East, Africa","group_id":"g"}]}]}"""
+
+    @Test
+    fun `LibreView's maintenance (HTTP 911) is a wait, with its end from Abbott's status page`() =
+        runBlocking {
+            redirectOnce = true
+            source().connect("owner@example.com", "pw")
+            graph = MockResponse().setResponseCode(911).setBody("""{"status":911}""")
+            summary = window("in_progress", now.minusSeconds(1800), now.plusSeconds(1800))
+            val s = source().also { it.account.load() }
+            val job = launch(Dispatchers.IO) { s.readings.collect {} }
+            val v = withTimeout(10_000) { s.view.first { it.health == OnlineHealth.Maintenance && it.until != null } }
+            assertEquals(now.plusSeconds(1800), v.until)
+            val st =
+                withTimeout(
+                    10_000,
+                ) { s.status.first { it is SourceStatus.Interrupted && it.until != null } } as SourceStatus.Interrupted
+            assertEquals(SourceProblem.Maintenance, st.problem)
+            assertEquals(now.plusSeconds(1800), st.until)
+            // nothing about the account changed: still signed in
+            assertTrue(v.signedIn)
+            assertTrue(warned.isEmpty())
+            job.cancel()
+        }
+
+    @Test
+    fun `a window ahead is said on the source and announced once, an hour before`() =
+        runBlocking {
+            redirectOnce = true
+            source().connect("owner@example.com", "pw")
+            val start = now.plusSeconds(1800)
+            summary = window("scheduled", start, start.plusSeconds(3600))
+            val s = source().also { it.account.load() }
+            val job = launch(Dispatchers.IO) { s.readings.collect {} }
+            val v = withTimeout(10_000) { s.view.first { it.ahead != null } }
+            assertEquals(MaintenanceWindow(start, start.plusSeconds(3600)), v.ahead)
+            withTimeout(10_000) { while (warned.isEmpty()) kotlinx.coroutines.delay(50) }
+            assertEquals(start.epochSecond, state.data.first().warnedS)
+            job.cancel()
+            // a restart never announces the same window again
+            val again = source().also { it.account.load() }
+            val job2 = launch(Dispatchers.IO) { again.readings.collect {} }
+            withTimeout(10_000) { again.view.first { it.ahead != null } }
+            assertEquals(1, warned.size)
+            job2.cancel()
+        }
 
     /** How often the app was told another person is about to be read (it deletes the earlier one's history). */
     private var others = 0
@@ -543,9 +619,24 @@ class LibreLinkUpSourceTest {
                     long(c, "now") ?: 0,
                     long(c, "newest"),
                     long(c, "margin_s") ?: LluPoll.MARGIN_S,
+                    long(c, "until"),
                 ),
             )
         }
+        assertEquals(
+            poll
+                .getValue("maintenanceMax_s")
+                .jsonPrimitive.content
+                .toLong(),
+            LluPoll.MAINTENANCE_MAX_S,
+        )
+        assertEquals(
+            poll
+                .getValue("maintenanceAfterEnd_s")
+                .jsonPrimitive.content
+                .toLong(),
+            LluPoll.MAINTENANCE_AFTER_END_S,
+        )
         // timed to the next reading
         for (c in poll.getValue("timed").jsonArray.map { it.jsonObject }) {
             assertEquals(

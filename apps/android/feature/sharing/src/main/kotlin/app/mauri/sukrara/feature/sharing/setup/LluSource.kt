@@ -29,6 +29,8 @@ data class LluConnection(
     val newest: Instant? = null,
     /** The sensor's warm-up end (LibreLinkUp's start + the default warm-up), said while [health] is warming up. */
     val readyAt: Instant? = null,
+    /** LibreView's maintenance end, said while [health] is maintenance (null = not known). */
+    val until: Instant? = null,
     /** THE LibreView account's email when its password is saved: *Sign in as …* in one tap (your own glucose). */
     val libreViewEmail: String? = null,
     /** The person whose readings this phone holds (patient id, "" = none): reading another one asks first. */
@@ -64,6 +66,9 @@ enum class LluConnectOutcome {
 
     /** LibreLinkUp refuses Sukrara (Abbott changed it). */
     Stopped,
+
+    /** LibreView is down for maintenance: sign in once it ends (an expected wait, not a mistake). */
+    Maintenance,
 }
 
 /** Setup's way to the LibreLinkUp source (`:integrations`' account and source, joined in `:app`). */
