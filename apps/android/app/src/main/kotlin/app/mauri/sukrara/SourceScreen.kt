@@ -32,6 +32,7 @@ import app.mauri.sukrara.integrations.librelinkup.LibreLinkUpSourceRows
 import app.mauri.sukrara.integrations.nightscout.site.NightscoutSourceActions
 import app.mauri.sukrara.integrations.nightscout.site.NightscoutSourceRows
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -68,10 +69,18 @@ internal fun SourceScreen(
             value = graph.clock.now()
         }
     }
-    val lluView by graph.integrations.libreLinkUpSource.view
-        .collectAsStateWithLifecycle(null)
-    val siteView by graph.integrations.nightscoutSource.view
-        .collectAsStateWithLifecycle(null)
+    // what this phone keeps for a source not in use (Appendix G finding 12): only what the rows say, so the views'
+    // tickers never redraw the page
+    val savedLlu by remember(graph) {
+        graph.integrations.libreLinkUpSource.view
+            .map { v -> v.email.takeIf { v.signedIn || v.email.isNotEmpty() } }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(null)
+    val savedSite by remember(graph) {
+        graph.integrations.nightscoutSource.view
+            .map { v -> v.host.takeIf { v.configured || v.host.isNotEmpty() } }
+            .distinctUntilChanged()
+    }.collectAsStateWithLifecycle(null)
     val pageScope = rememberCoroutineScope()
     val untold by graph.untoldLeave.collectAsStateWithLifecycle(null)
     SettingsPage(stringResource(SettingsR.string.st_source_title), onBack) {
@@ -80,14 +89,12 @@ internal fun SourceScreen(
         val saved =
             AlsoSaved(
                 libreLinkUp =
-                    lluView
-                        ?.takeIf { spec?.kind != SourceKind.LibreLinkUp && (it.signedIn || it.email.isNotEmpty()) }
-                        ?.email
+                    savedLlu
+                        ?.takeIf { spec?.kind != SourceKind.LibreLinkUp }
                         ?.ifEmpty { stringResource(SettingsR.string.st_source_saved_llu) },
                 nightscout =
-                    siteView
-                        ?.takeIf { spec?.kind != SourceKind.Nightscout && (it.configured || it.host.isNotEmpty()) }
-                        ?.host
+                    savedSite
+                        ?.takeIf { spec?.kind != SourceKind.Nightscout }
                         ?.ifEmpty { stringResource(SettingsR.string.st_source_saved_ns) },
             )
         SourcePageContent(
