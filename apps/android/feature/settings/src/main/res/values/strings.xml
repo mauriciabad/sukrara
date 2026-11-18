@@ -1008,4 +1008,14 @@
         <item quantity="one">%d day</item>
         <item quantity="other">%d days</item>
     </plurals>
+    <!-- Settings › Source: what this phone keeps for sources it doesn't read now (docs/44 Appendix G finding 12) [CHAR LIMIT=40] -->
+    <string name="st_source_saved_title">Also saved on this phone</string>
+    <string name="st_source_saved_llu">Sign out of LibreLinkUp</string>
+    <string name="st_source_saved_llu_title">Sign out of LibreLinkUp?</string>
+    <string name="st_source_saved_llu_text">Sukrara forgets this account’s sign-in on this phone. The account and whom it follows stay as they are in LibreLinkUp.</string>
+    <string name="st_source_saved_llu_action">Sign out</string>
+    <string name="st_source_saved_ns">Forget Nightscout site</string>
+    <string name="st_source_saved_ns_title">Forget this Nightscout site?</string>
+    <string name="st_source_saved_ns_text">Sukrara forgets the site’s address and token on this phone. The site itself stays as it is.</string>
+    <string name="st_source_saved_ns_action">Forget</string>
 </resources>

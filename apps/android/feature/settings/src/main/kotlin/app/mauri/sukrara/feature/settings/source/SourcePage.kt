@@ -19,6 +19,7 @@ import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.motion.LocalReducedMotion
 import app.mauri.sukrara.designsystem.motion.Motion
+import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
 import app.mauri.sukrara.designsystem.rows.InfoRow
 import app.mauri.sukrara.designsystem.rows.NavigationRow
@@ -51,7 +52,20 @@ data class SourcePageState(
     val answered: Boolean,
     val name: String? = null,
     val latest: Instant? = null,
+    /** What this phone holds for sources not in use ([AlsoSaved]), each with its removal. */
+    val saved: AlsoSaved = AlsoSaved(),
 )
+
+/**
+ * What this phone keeps for a source it doesn't read now (docs/44 Appendix G finding 12): the LibreLinkUp account (its
+ * email) and the Nightscout site (its address, with its token). Null = nothing kept.
+ */
+data class AlsoSaved(
+    val libreLinkUp: String? = null,
+    val nightscout: String? = null,
+) {
+    val empty: Boolean get() = libreLinkUp == null && nightscout == null
+}
 
 /** Where Settings › Source leads: setup's two questions in place, and the pages beside it. */
 class SourceActions(
@@ -61,6 +75,10 @@ class SourceActions(
     val changeSource: () -> Unit = {},
     val openSensor: () -> Unit = {},
     val openImport: () -> Unit = {},
+    /** *Sign out of LibreLinkUp* (another source in use): the account is forgotten, nothing reconnects. */
+    val signOutLibreLinkUp: () -> Unit = {},
+    /** *Forget Nightscout site* (another source in use): the address and its token are forgotten. */
+    val forgetNightscout: () -> Unit = {},
 )
 
 /**
@@ -204,6 +222,7 @@ fun SourcePageContent(
             Unit
         }
     }
+    AlsoSavedGroup(state.saved, actions)
     FooterText(stringResource(R.string.st_source_footer))
     SeeAlso(
         listOfNotNull(
@@ -221,6 +240,42 @@ fun SourcePageContent(
             ).takeIf { spec?.owner == true },
         ),
     )
+}
+
+/**
+ * *Also saved on this phone* (Appendix G finding 12): the accounts this phone keeps for sources it doesn't read now,
+ * each removable without reconnecting it (a confirmation says what goes and what stays); hidden when there are none.
+ */
+@Composable
+private fun AlsoSavedGroup(
+    saved: AlsoSaved,
+    actions: SourceActions,
+) {
+    if (saved.empty) return
+    SettingsGroup(title = stringResource(R.string.st_source_saved_title)) {
+        saved.libreLinkUp?.let { email ->
+            DangerRow(
+                stringResource(R.string.st_source_saved_llu),
+                stringResource(R.string.st_source_saved_llu_title),
+                stringResource(R.string.st_source_saved_llu_text),
+                stringResource(R.string.st_source_saved_llu_action),
+                actions.signOutLibreLinkUp,
+                summary = email,
+                icon = DsR.drawable.ds_ic_logout,
+            )
+        }
+        saved.nightscout?.let { site ->
+            DangerRow(
+                stringResource(R.string.st_source_saved_ns),
+                stringResource(R.string.st_source_saved_ns_title),
+                stringResource(R.string.st_source_saved_ns_text),
+                stringResource(R.string.st_source_saved_ns_action),
+                actions.forgetNightscout,
+                summary = site,
+                icon = DsR.drawable.ds_ic_link_off,
+            )
+        }
+    }
 }
 
 /** Juggluco's package (its launcher opens it so the person can turn its web server on). */

@@ -36,6 +36,11 @@ class AppFollowerSharing(
 
     override fun refreshNearby() = engine.refreshNearby()
 
+    override fun reconnect() {
+        engine.reconnectNow()
+        engine.refreshNearby()
+    }
+
     override suspend fun lookUp(link: String): InviteLookup = engine.lookUp(link)
 
     override suspend fun join(

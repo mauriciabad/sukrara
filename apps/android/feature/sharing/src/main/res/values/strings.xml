@@ -775,4 +775,6 @@
     <string name="sh_link_leave_history_delete_sub">Deletes %1$s, %2$s.</string>
     <!-- Whose glucose changes with the leave: the history goes; %1$s / %2$s as above -->
     <string name="sh_link_leave_delete_text">Someone else’s glucose shows from now, so what this phone kept goes: %1$s, %2$s. It can’t be undone.</string>
+    <!-- The follow's rows: the relays and Bluetooth try again now [CHAR LIMIT=24] -->
+    <string name="sh_following_reconnect">Reconnect</string>
 </resources>

@@ -40,6 +40,9 @@ interface FollowerSharing {
     /** Bluetooth turned on / Nearby devices allowed: look again. */
     fun refreshNearby() = Unit
 
+    /** *Reconnect*: the relays and Bluetooth try again now instead of after their wait. */
+    fun reconnect() = Unit
+
     /** *Find phones nearby* (join step): while collected, the phones in Bluetooth range offering *Pair nearby*. */
     fun findNearby(): Flow<NearbySearch> = flowOf(NearbySearch(NearbyStatus.Unsupported, emptyList()))
 

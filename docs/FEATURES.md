@@ -801,7 +801,12 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   *2 minutes ago* / *None yet*, cross-fading as it changes; no live region, so TalkBack never speaks the minutes ticking by), then the source's own rows: the sensor → Settings › Sensor (it
   keeps the physical sensor: pairing, life, LibreView; its *Glucose from* row leads here); Juggluco → its state
   (not installed, not answering: why, the rows under it being the way out; refused), *Open Juggluco* and the API secret; another Sukrara → the follow (who, waiting with its code,
-  the last reading, adding treatments, the relays, Bluetooth, *Stop following*) and *Settings from*. The foot: *Changing
+  the last reading, adding treatments, the relays, Bluetooth, *Reconnect* (Android: the relays and Bluetooth try again
+  now), *Stop following*) and *Settings from*; Android while it follows, *Where it comes from* still lists every source,
+  behind *Keep following?*. Android **Also saved on this phone** (Appendix G finding 12): what the phone keeps for a
+  source it doesn't read now, each removable without reconnecting it: *Sign out of LibreLinkUp* (the account's email;
+  *Sign out of LibreLinkUp?* · the account and whom it follows stay in LibreLinkUp) and *Forget Nightscout site* (its
+  address; the address and token go, the site stays); hidden when there is none; the settings search finds both. The foot: *Changing
   whose glucose deletes the history on this phone (Sukrara asks first). Changing the source keeps it.*; *See also* the
   sensor and Import history for your own glucose. Settings › Sharing on any other source says sharing is for your own
   glucose read on this device, with a row to Source. **The name** of whose glucose (*Someone else's · Leo Example*, the
@@ -854,7 +859,10 @@ source's rows, or no source → the panel's *Pick a Source…* → Settings › 
 (*Later* → home's *Finish setup*), or home / Settings › Source. Unanswered (an update) → setup at *Whose glucose* /
 home's banner / Settings › Source's *Answer* (Mac *Answer…* / *Finish Setup…*; neither question has *Skip* on either
 app); monitoring runs meanwhile. Juggluco not installed → its connect step says so, *Later* / Back. Stream ended → *Join with a new link* / *Stop
-following* → setup's first question. Juggluco unreachable → *Open Juggluco*; refused → *Change API secret*. Everything
+following* → setup's first question. Juggluco unreachable → *Open Juggluco*; refused → *Change API secret*. Android
+*Also saved on this phone*: *Sign out of LibreLinkUp* / *Forget Nightscout site* → their confirmation (*Cancel* /
+*Sign out* / *Forget*) → the row goes (the group with its last row); picking that source again asks to sign in or
+connect. Everything
 reachable from Settings › Source without a notification; TalkBack / VoiceOver read every card, row and state.
 
 ## Nightscout as a source (both apps)

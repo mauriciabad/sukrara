@@ -78,6 +78,8 @@ class FollowingViewModel(
 
     fun refreshNearby() = follower.refreshNearby()
 
+    fun reconnect() = follower.reconnect()
+
     suspend fun confirmNearby(same: Boolean): Boolean = follower.confirmNearby(same)
 
     companion object {
@@ -130,6 +132,10 @@ fun FollowingPage(
         onJoinAgain = onJoinAgain,
         nearby = nearby,
         onRefreshNearby = viewModel::refreshNearby,
+        onReconnect = {
+            haptics.confirm()
+            viewModel.reconnect()
+        },
         modifier = modifier,
         links = links,
         embedded = embedded,
@@ -166,6 +172,8 @@ fun FollowingContent(
     /** A *Pair nearby* join ended because the codes differed (said once the page shows "not following"). */
     mismatch: Boolean = false,
     onConfirmNearby: (same: Boolean) -> Unit = {},
+    /** *Reconnect* (approved or waiting): the relays and Bluetooth try again now. */
+    onReconnect: () -> Unit = {},
     /** Below the page, full width: *See also* the other data pages. */
     links: @Composable () -> Unit = {},
     /** Inside a scrolling page (Settings › Source): no scroll of its own. */
@@ -288,6 +296,13 @@ fun FollowingContent(
                 }
             }
             if (failed) NoticeCard(stringResource(R.string.sh_following_stop_failed), tone = NoticeTone.Error)
+            val live =
+                state is FollowState.Following && state.status in setOf(FollowStatus.Active, FollowStatus.Requested, FollowStatus.New)
+            if (live) {
+                OutlinedButton(onClick = onReconnect, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.sh_following_reconnect))
+                }
+            }
             if (state !is FollowState.Loading && state != FollowState.NotFollowing) {
                 OutlinedButton(
                     onClick = onStop,

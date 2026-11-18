@@ -21,6 +21,7 @@ import app.mauri.sukrara.feature.settings.search.Section
 import app.mauri.sukrara.feature.settings.search.SectionIcon
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsActions
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
+import app.mauri.sukrara.feature.settings.source.AlsoSaved
 import app.mauri.sukrara.feature.settings.source.SourceActions
 import app.mauri.sukrara.feature.settings.source.SourcePageContent
 import app.mauri.sukrara.feature.settings.source.SourcePageState
@@ -67,10 +68,29 @@ internal fun SourceScreen(
             value = graph.clock.now()
         }
     }
+    val lluView by graph.integrations.libreLinkUpSource.view
+        .collectAsStateWithLifecycle(null)
+    val siteView by graph.integrations.nightscoutSource.view
+        .collectAsStateWithLifecycle(null)
+    val pageScope = rememberCoroutineScope()
     SettingsPage(stringResource(SettingsR.string.st_source_title), onBack) {
         val spec = loaded?.spec
+        // what this phone keeps for a source it doesn't read now (Appendix G finding 12)
+        val saved =
+            AlsoSaved(
+                libreLinkUp =
+                    lluView
+                        ?.takeIf { spec?.kind != SourceKind.LibreLinkUp && (it.signedIn || it.email.isNotEmpty()) }
+                        ?.email
+                        ?.ifEmpty { stringResource(SettingsR.string.st_source_saved_llu) },
+                nightscout =
+                    siteView
+                        ?.takeIf { spec?.kind != SourceKind.Nightscout && (it.configured || it.host.isNotEmpty()) }
+                        ?.host
+                        ?.ifEmpty { stringResource(SettingsR.string.st_source_saved_ns) },
+            )
         SourcePageContent(
-            SourcePageState(spec, answered = stored != null, name = glucose.name, latest = glucose.latest?.t),
+            SourcePageState(spec, answered = stored != null, name = glucose.name, latest = glucose.latest?.t, saved = saved),
             sensor,
             now,
             SourceActions(
@@ -78,6 +98,17 @@ internal fun SourceScreen(
                 changeSource = { openStep(app.mauri.sukrara.feature.sharing.setup.SetupStep.Source) },
                 openSensor = openSensor,
                 openImport = openImport,
+                signOutLibreLinkUp = { pageScope.launch { graph.integrations.libreLinkUpSource.signOut() } },
+                forgetNightscout = {
+                    pageScope.launch {
+                        graph.integrations.nightscoutAccount.forget()
+                        graph.nightscoutSourceConfig.set(
+                            graph.nightscoutSourceConfig.data
+                                .first()
+                                .copy(url = ""),
+                        )
+                    }
+                },
             ),
             SensorSettingsActions(setJugglucoSecret = sensorVm::setJugglucoSecret),
             siteRows = {

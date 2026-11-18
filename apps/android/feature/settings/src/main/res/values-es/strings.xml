@@ -1016,4 +1016,13 @@
         <item quantity="many">%d días</item>
         <item quantity="other">%d días</item>
     </plurals>
+    <string name="st_source_saved_title">También guardado en este móvil</string>
+    <string name="st_source_saved_llu">Cerrar sesión en LibreLinkUp</string>
+    <string name="st_source_saved_llu_title">¿Cerrar sesión en LibreLinkUp?</string>
+    <string name="st_source_saved_llu_text">Sukrara olvida el inicio de sesión de esta cuenta en este móvil. La cuenta y a quién sigue se quedan como están en LibreLinkUp.</string>
+    <string name="st_source_saved_llu_action">Cerrar sesión</string>
+    <string name="st_source_saved_ns">Olvidar el sitio de Nightscout</string>
+    <string name="st_source_saved_ns_title">¿Olvidar este sitio de Nightscout?</string>
+    <string name="st_source_saved_ns_text">Sukrara olvida la dirección del sitio y su token en este móvil. El sitio en sí se queda como está.</string>
+    <string name="st_source_saved_ns_action">Olvidar</string>
 </resources>

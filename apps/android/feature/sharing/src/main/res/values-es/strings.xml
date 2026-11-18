@@ -621,4 +621,5 @@
     <string name="sh_link_leave_history_delete">Borrarlo</string>
     <string name="sh_link_leave_history_delete_sub">Borra %1$s, %2$s.</string>
     <string name="sh_link_leave_delete_text">A partir de ahora se muestra la glucosa de otra persona, así que se borra lo que guardaba este móvil: %1$s, %2$s. No se puede deshacer.</string>
+    <string name="sh_following_reconnect">Reconectar</string>
 </resources>
