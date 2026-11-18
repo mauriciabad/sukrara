@@ -80,6 +80,9 @@ public struct LibreLinkUpSnapshot: Sendable, Equatable {
 
     public static let off = LibreLinkUpSnapshot()
 
+    /// The person picked no longer shares with the account, others still do (pick again, not "no one shares").
+    public var pickedGone: Bool { !patient.isEmpty && !people.isEmpty && !people.contains { $0.id == patient } }
+
     /// The state the person sees at `now` (contracts/sources/health.json); a password refused says so first.
     public func health(at now: Date) -> SourceHealth.State {
         if signInAgain { return .signedOut }

@@ -209,6 +209,49 @@ import Testing
         #expect(signedOut && store.value(MacSettings.libreLinkUpPatient).isEmpty)
     }
 
+    /// The person picked stopped sharing, others still do: said so (not "no one shares") on Settings, Connect and the
+    /// panel, with *Pick Again*: the one remaining is asked first, several show the choice.
+    @Test func thePersonPickedStoppedSharingAndPickAgainChoosesAnew() async {
+        let store = InMemorySettingsStore()
+        let m = LibreLinkUpModel(store: store)
+        let leo = LluPerson(id: "leo", name: "Leo")
+        let max = LluPerson(id: "max", name: "Max")
+        let now = clock.now
+        store.set(Self.ana, for: MacSettings.libreLinkUpPatient)
+        var snap = LibreLinkUpSnapshot(
+            email: "alex@example.com", people: [leo], patient: Self.ana, name: "Ana Example", running: true,
+            outcome: .notShared, readings: [Reading(t: now.addingTimeInterval(-3000), mgdl: 100)])
+        m.snapshot = { snap }
+        m.now = { now }
+        #expect(snap.pickedGone)
+        let status = LibreLinkUpStatus.of(snap, now: now)
+        #expect(status.text == "The person picked stopped sharing glucose with this account.")
+        #expect(status.action == .pickAgain)
+        #expect(AppModel.libreLinkUpWait(snap, now: now) == .libreLinkUp(.pickedGone))
+        #expect(NoDataReason.libreLinkUp(.pickedGone).action == .libreLinkUp)
+        #expect(m.mode == .problem)
+        // Pick Again, one person left: reading them is asked first (Ana's readings are on this Mac)
+        m.recheckSource = { _, saved in
+            #expect(saved == Self.ana)
+            return .connected(people: [leo], picked: leo.id)
+        }
+        await m.recheck()
+        #expect(m.confirming == leo && store.value(MacSettings.libreLinkUpPatient) == Self.ana)
+        m.confirming = nil
+        // several left: the pick goes, the choice shows
+        snap.people = [leo, max]
+        m.recheckSource = { _, _ in .connected(people: [leo, max], picked: nil) }
+        await m.recheck()
+        snap.patient = ""
+        snap.outcome = nil
+        #expect(store.value(MacSettings.libreLinkUpPatient).isEmpty && m.mode == .choose)
+        // no one shares at all: the words say so, not "the person picked"
+        let none = LibreLinkUpSnapshot(
+            email: "alex@example.com", patient: Self.ana, running: true, outcome: .notShared)
+        #expect(!none.pickedGone && LibreLinkUpStatus.of(none, now: now).action == .recheck)
+        #expect(AppModel.libreLinkUpWait(none, now: now) == .libreLinkUp(.notShared))
+    }
+
     @Test func theSourceStepOffersLibreLinkUpOnline() {
         let settings = SettingsModel(
             store: scratchStore(), follow: FollowModel(status: .notFollowing, actions: nil), version: "t")

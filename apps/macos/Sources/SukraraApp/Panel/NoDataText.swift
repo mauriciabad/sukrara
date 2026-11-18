@@ -155,6 +155,10 @@ struct NoDataText: Equatable {
                     title: L10n.t("No one shares glucose with this account now"),
                     body: L10n.t("In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email."),
                     action: settings)
+            case .pickedGone:
+                return NoDataText(
+                    title: L10n.t("The person picked stopped sharing glucose"),
+                    body: L10n.t("Others still share with this account: pick again."), action: settings)
             case .stopped:
                 return NoDataText(
                     title: L10n.t("LibreLinkUp stopped answering Sukrara"),

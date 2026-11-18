@@ -12852,6 +12852,86 @@
           }
         }
       }
+    },
+    "Person" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Person"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Persona"
+          }
+        }
+      }
+    },
+    "Pick Again" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick Again"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir de nuevo"
+          }
+        }
+      }
+    },
+    "The person picked stopped sharing glucose with this account." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The person picked stopped sharing glucose with this account."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La persona elegida dejó de compartir su glucosa con esta cuenta."
+          }
+        }
+      }
+    },
+    "The person picked stopped sharing glucose" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The person picked stopped sharing glucose"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La persona elegida dejó de compartir su glucosa"
+          }
+        }
+      }
+    },
+    "Others still share with this account: pick again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Others still share with this account: pick again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otras personas aún comparten con esta cuenta: elige de nuevo."
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

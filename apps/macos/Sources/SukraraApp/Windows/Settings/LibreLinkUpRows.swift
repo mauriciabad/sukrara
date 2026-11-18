@@ -107,14 +107,15 @@ public final class LibreLinkUpModel {
         result = answer
         guard let answer else { return }
         switch answer {
-        case .connected(_, let p):
+        case .connected(let people, let p):
             haptic(true)
             if signedIn {
                 passwordDraft = ""
                 changing = false
             }
             picked = nil
-            if let p { choose(p) } else if signedIn { write("") }
+            // several people and none picked (a new sign-in, or the one picked stopped sharing): the choice shows
+            if let p { choose(p) } else if signedIn || !people.contains(where: { $0.id == patient }) { write("") }
         case .noOne:
             haptic(false)
             passwordDraft = ""
@@ -200,10 +201,13 @@ public final class LibreLinkUpModel {
 /// How LibreLinkUp is doing in words (contracts/sources/health.json with its own states; Android `onlineHealthText`
 /// with LibreLinkUp's words): the status line, its symbol in the text's colour, and the one action that helps.
 struct LibreLinkUpStatus: Equatable {
-    enum Action: Equatable { case signIn, tryAgain, recheck }
+    /// `pickAgain`: whom the account follows read again; the one remaining asked first, several: the choice shows.
+    enum Action: Equatable { case signIn, tryAgain, recheck, pickAgain }
     var text: String
     var symbol: String
     var action: Action?
+
+    static var pickedGone: String { L10n.t("The person picked stopped sharing glucose with this account.") }
 
     static func of(_ s: LibreLinkUpSnapshot, now: Date) -> LibreLinkUpStatus {
         let minutes = s.readings.last.map { max(0, Int(now.timeIntervalSince($0.t) / 60)) }
@@ -245,6 +249,10 @@ struct LibreLinkUpStatus: Equatable {
                 text: L10n.t("LibreLinkUp needs you: open the LibreLinkUp app, sign in and accept the new terms."),
                 symbol: "hand.raised", action: .recheck)
         case .notShared:
+            if s.pickedGone {
+                return LibreLinkUpStatus(
+                    text: Self.pickedGone, symbol: "person.crop.circle.badge.questionmark", action: .pickAgain)
+            }
             return LibreLinkUpStatus(
                 text: L10n.t(
                     "No one shares glucose with this account now. In the Libre app: Menu › Connected apps › LibreLinkUp, invite this email."
@@ -277,6 +285,7 @@ struct LibreLinkUpStatusRow: View {
                 case .signIn: Button(L10n.t("Sign In Again"), action: model.signInAgain)
                 case .tryAgain: Button(L10n.t("Try Again"), action: model.retry)
                 case .recheck: Button(L10n.t("Try Again")) { Task { await model.recheck() } }.disabled(model.busy)
+                case .pickAgain: Button(L10n.t("Pick Again")) { Task { await model.recheck() } }.disabled(model.busy)
                 case nil: EmptyView()
                 }
             }
@@ -363,7 +372,7 @@ struct LibreLinkUpPeople: View {
         let people = model.snapshot().people
         if menu {
             Picker(
-                L10n.t("Whose glucose"),
+                L10n.t("Person"),
                 selection: Binding(get: { model.patient }, set: { model.choose($0) })
             ) {
                 if !people.contains(where: { $0.id == model.patient }) {
@@ -447,7 +456,7 @@ struct LibreLinkUpRows: View {
                 if snap.people.count > 1 || (!snap.people.isEmpty && mode == .choose) {
                     LibreLinkUpPeople(model: model, menu: true)
                 } else if let only = snap.people.first(where: { $0.id == model.patient }) {
-                    LabeledContent(L10n.t("Whose glucose"), value: LibreLinkUpModel.name(only))
+                    LabeledContent(L10n.t("Person"), value: LibreLinkUpModel.name(only))
                 }
                 if let sensor = snap.sensor, !model.patient.isEmpty {
                     LabeledContent(L10n.t("Sensor"), value: LibreLinkUpModel.sensorLine(sensor))
@@ -522,13 +531,17 @@ struct LibreLinkUpConnect: View {
                         .disabled(model.picked == nil)
                 }
             case .problem:
+                let terms = snap.health(at: model.now()) == .actionNeeded || model.result == .terms
+                // the one picked stopped sharing, others still do: pick again, not "no one shares"
+                let gone = !terms && snap.pickedGone && model.patient == snap.patient
                 Notice(
                     L10n.t("Signed in as \(snap.email)"),
-                    text: snap.health(at: model.now()) == .actionNeeded || model.result == .terms
-                        ? LibreLinkUpModel.problem(.terms) : LibreLinkUpModel.problem(.noOne)
+                    text: terms
+                        ? LibreLinkUpModel.problem(.terms)
+                        : gone ? LibreLinkUpStatus.pickedGone : LibreLinkUpModel.problem(.noOne)
                 ) {
                     HStack {
-                        Button(model.busy ? L10n.t("Trying…") : L10n.t("Try Again")) {
+                        Button(model.busy ? L10n.t("Trying…") : gone ? L10n.t("Pick Again") : L10n.t("Try Again")) {
                             Task { await model.recheck() }
                         }
                         .disabled(model.busy)

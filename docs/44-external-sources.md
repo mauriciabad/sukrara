@@ -680,6 +680,34 @@ Seen and left, with the reason:
 - **Home says nothing between 7 and 20 min** of a late or stopped LibreLinkUp (the stale value and its time show; the
   reason comes with the no-data alert at 20 min): the card's rule for every source, kept.
 
+**Step 2's QA review, brought to the Mac (2026-11-18, against the fake `LibreLinkUpHTTP` only).** Android's list checked
+on the Mac's source and screens. Fixed:
+- **A version asked for on a call** read as *stopped* (the Mac raised it only at the login): sent from then on and the
+  call made once more, kept in the Keychain item through a new sign-in and a restart, a newer built-in version wins, a
+  minimum that isn't a version is none (`LibreLinkUp.isVersion`).
+- **Someone who stops sharing** read as *stopped* for an hour: whom the account follows is read at once; with others
+  still sharing, Settings and Connect say *The person picked stopped sharing glucose with this account.* with *Pick
+  Again* (the one left is asked first, as any other person; several: the choice), the panel *The person picked
+  stopped sharing glucose* (a new no-data reason, `pickedGone`), not *No one shares…*.
+- **Asked to wait**, *Try Again*, the network back, *Try Again* on the people and another person picked all called
+  LibreLinkUp at once: none calls before the time it gave (the loop starts after it), the status shows no *Try
+  Again* (it already didn't); a sign-in the person makes ends the wait.
+- **Calls after a sign-in or *Try Again***: the loop restarted with a round at once, so a pick of another person could
+  ask for the old person's graph first, and a refused connections call was followed by connections and graph again:
+  the graph once for the same person, the new person's own call only, the outcome's wait otherwise.
+- **A token refused early whose new sign-in failed** always read as a refused password: its own outcome (terms, wait,
+  no answer).
+- **The LibreLinkUp row was titled *Whose glucose*** like the pane's person row: *Person* (es *Persona*).
+- **Shared cases** (`contracts/sources/librelinkup`): a minimum that isn't a version (`login.json`, `calls.json`),
+  `poll.json` `after` (the wait after each outcome, `LluPoll.next` on both apps) and `versions` (which version is
+  sent); both apps' contract tests run them.
+
+Checked and already right on the Mac: *just now* under a minute (`NightscoutStatus.ago`); *Change Account* from a
+working account offers the form and *Keep This Account*; no *Try Again* on the rate-limited status.
+
+Not applicable on the Mac: *Sign in as …* refused (the Mac has no LibreView account to offer; its form is the only
+sign-in) and *Open the Libre app's info* (no takeover on the Mac).
+
 ## Decisions for the owner
 
 **Owner, 2026-11-18, on root (decision 12): parked.** The owner disagrees with Appendix F's verdict: hiding root comes

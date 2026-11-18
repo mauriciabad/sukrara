@@ -78,8 +78,10 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case rateLimited
         /// New terms to accept in the LibreLinkUp app.
         case terms
-        /// No one shares with this account now (or not the person picked).
+        /// No one shares with this account now.
         case notShared
+        /// The person picked stopped sharing with this account; others still do.
+        case pickedGone
         /// LibreLinkUp stopped answering Sukrara: Abbott changed it.
         case stopped
     }
@@ -97,7 +99,8 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case .juggluco: .juggluco
         case .nightscout(.unreachable), .nightscout(.signedOut): .nightscout
         case .nightscout: nil
-        case .libreLinkUp(.notSignedIn), .libreLinkUp(.signedOut), .libreLinkUp(.notShared), .libreLinkUp(.terms),
+        case .libreLinkUp(.notSignedIn), .libreLinkUp(.signedOut), .libreLinkUp(.notShared), .libreLinkUp(.pickedGone),
+            .libreLinkUp(.terms),
             .libreLinkUp(.stopped):
             .libreLinkUp
         case .libreLinkUp: nil

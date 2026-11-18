@@ -855,15 +855,17 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
 - **Reading LibreLinkUp** (Android `:core:data` `LibreLinkUp` + `:integrations` `librelinkup/`; Mac
   `SukraraCore/LibreLinkUp` + `SukraraShare/LibreLinkUp`; `contracts/sources/librelinkup`): the login the LibreView sign-in uses too (`POST /llu/auth/login`, headers
   `product: llu.android`, `version: 4.17.0`; the region's host after a redirect; a 403 naming a newer version sends that
-  one from then on (kept with the account) and asks once more, never in a loop (Android at the login and on a call; the
-  Mac at the login); status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` each
+  one from then on (kept with the account through a new sign-in and a restart; a newer built-in version wins; a
+  minimum that isn't a version never reaches a header) and asks once more, never in a loop, at the login and on a
+  call (`poll.json` `versions`); status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` each
   minute with the token and the account's id (SHA-256): the live reading with its arrow as the sensor's rate, the
   graph's points the first time and after a gap. Times from `FactoryTimestamp` (UTC). The token is kept with the
   account and reused until 5 min before it expires (a restart signs in again only then: each login counts towards
   LibreLinkUp's lockout); a token that stops working early signs in again once. Failures back off 1 → 10 min; a 429
   waits at least 10 min (or its Retry-After / lockout) and nothing (the network back, *Try again*) calls before then;
-  a refused password is never retried by itself. Whom the account
-  follows is read again every 30 min. https only, redirects never followed; the password and token live only in the
+  a refused password is never retried by itself (the wait after each outcome: `poll.json` `after`, `LluPoll.next` on
+  both apps). Whom the account follows is read again every 30 min, and at once when LibreLinkUp refuses the person's
+  graph (they may have stopped sharing). A sign-in or *Try again* asks for the graph once. https only, redirects never followed; the password and token live only in the
   Keystore (`source.libreLinkUpSecret`), apart from THE LibreView account.
 - **Its health, in words** (`contracts/sources/health.json`, with LibreLinkUp's own states; home's no-data reason
   *No readings from LibreLinkUp*, Settings › Source, the Connect step): *Live · last reading 1 min ago*, *Late*,
@@ -931,19 +933,22 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   check that pops in, a trackpad tap, VoiceOver hears it) → *Continue*. A note says LibreLinkUp is Abbott's and may
   change or stop. The account (email, password, token, region, a raised version) lives only in the Keychain
   (`source.libreLinkUpSecret`), whom it reads in `source.libreLinkUpPatient`; the same client rules as Android (the
-  token kept until 5 min before it ends, a refused password never retried, terms never accepted, a 429 waits at least
-  10 min). The live readings and the graph's points are stored apart (`librelinkup/readings.csv`,
+  token kept until 5 min before it ends, a refused password never retried, terms never accepted, a version asked for
+  on any call sent from then on, a 429 waits at least 10 min and nothing calls before then, whom the account follows
+  read at once when the person's graph is refused, one graph call per sign-in or pick). The live readings and the graph's points are stored apart (`librelinkup/readings.csv`,
   `librelinkup/graph/readings.csv`, 31 days) and merged by the rank rule (a graph point only where no live reading is
   within 2 min). **This Mac keeps its own treatment log** (`librelinkup/state.json`): *Add Treatment*, edit, delete
   and undo; LibreLinkUp takes none and the Mac uploads nothing. **Settings › Source › LibreLinkUp**: the status with its
   exit (*Sign In Again*, *Try Again*), *Account* (the email, *Change Account…*; the form while signed out, *Keep This
-  Account* back), *Whose glucose* (a menu when the account follows several people; another person while this Mac holds
+  Account* back), *Person* (whom LibreLinkUp reads, apart from the pane's *Whose glucose*: a menu when the account
+  follows several people; another person while this Mac holds
   someone's readings or log asks first: *Read Leo's glucose?* … *two people's glucose never mix*), *Sensor* (*Started
   Nov 14, 4:53 PM · 0D00ABC123*), *Sign Out of LibreLinkUp…* (confirmed; the readings and the log stay). The panel: a
   *LibreLinkUp* path badge and each state as the no-data reason (*Not signed in to LibreLinkUp* · *Sign In…*,
   *LibreLinkUp refused the password* · *Sign In Again…*, *Nothing new from LibreLinkUp*, *LibreLinkUp needs you*, *No
-  one shares glucose with this account now*, *LibreLinkUp stopped answering Sukrara*: the last three open Settings ›
-  Source), the widgets the same in short. No LibreView rows and no takeover on the Mac (it uploads nothing, it has no
+  one shares glucose with this account now*, *The person picked stopped sharing glucose* (*Others still share with
+  this account: pick again.*), *LibreLinkUp stopped answering Sukrara*: the last four open Settings › Source; asked to
+  wait, no *Try Again*), the widgets the same in short. No LibreView rows and no takeover on the Mac (it uploads nothing, it has no
   NFC).
 
 **States and exits**: Source → *LibreLinkUp* → *Continue* → Connect. Connect: *Sign in as …* / the form → signing in
@@ -963,9 +968,12 @@ the source switches by itself; back: *Where it comes from* → *LibreLinkUp*, th
 TalkBack reads every field, problem and state; the status lines are live regions. Mac: *No · Read it online* → whose
 glucose → *LibreLinkUp* → *Sign in to LibreLinkUp* → *Sign In* (Back leaves, nothing saved; *Skip* → *Finish
 Setup…*) → refused (under the field) / a notice → fix and *Sign In* again · several → *Choose* (*Change Account* back
-to the form) · no one → *Try Again* / *Change Account* · connected → *Reading received* → *Continue*. Settings ›
-Source: *Sign In Again* (the form, the email kept) / *Try Again*; *Change Account…* → the form → *Sign In* or *Keep
-This Account*; *Whose glucose* → another person (asked first when this Mac holds someone's readings or log: *Cancel*
+to the form) · no one → *Try Again* / *Change Account* · the one picked stopped sharing → *Pick Again* (the one
+left: *Read …'s glucose?*; several: the choice) / *Change Account* · connected → *Reading received* → *Continue*
+(*Change Account* → the form, *Keep This Account* back). Settings › Source: *Sign In Again* (the form, the email
+kept) / *Try Again* / *Pick Again* (*The person picked stopped sharing glucose with this account.*); asked to wait:
+none, it clears by itself (nothing calls LibreLinkUp before the time it gave; a sign-in does); *Change Account…* →
+the form → *Sign In* or *Keep This Account*; *Person* → another person (asked first when this Mac holds someone's readings or log: *Cancel*
 keeps them); *Sign Out of LibreLinkUp…* → *Sign Out* / *Cancel* → signed out (the form; the panel says *Not signed in
 to LibreLinkUp* · *Sign In…*). Leaving: *Where it comes from* (the account and the log stay for coming back). The
 panel's reasons open Settings › Source. VoiceOver reads every field, problem and state; the status line is announced

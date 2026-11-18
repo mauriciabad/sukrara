@@ -570,6 +570,7 @@
                 ("toomany", .theirs, "", .off, .rateLimited),
                 ("choose", .theirs, "", snap(nil, [], people: [ana, leo]), nil),
                 ("noone", .theirs, "", snap(nil, [], people: []), .noOne),
+                ("pickedgone", .theirs, ana.id, snap(.notShared, [3000], people: [leo]), nil),
                 ("waiting", .theirs, ana.id, snap(nil, []), nil),
                 ("received", .theirs, ana.id, snap(.ok, [60]), nil),
             ]
@@ -597,6 +598,7 @@
                 ("several", ana.id, snap(.ok, [70], people: [ana, leo])),
                 ("terms", ana.id, snap(.terms, [1500])),
                 ("notshared", ana.id, snap(.notShared, [3000], people: [])),
+                ("pickedgone", ana.id, snap(.notShared, [3000], people: [leo])),
                 ("refused", ana.id, snap(.refused, [1500], signInAgain: true)),
                 ("signedout", "", .off),
             ]

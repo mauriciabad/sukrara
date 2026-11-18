@@ -835,7 +835,7 @@ public final class AppModel {
         case .signedOut: snapshot.email.isEmpty ? .libreLinkUp(.notSignedIn) : .libreLinkUp(.signedOut)
         case .rateLimited: .libreLinkUp(.rateLimited)
         case .actionNeeded: .libreLinkUp(.terms)
-        case .notShared: .libreLinkUp(.notShared)
+        case .notShared: snapshot.pickedGone ? .libreLinkUp(.pickedGone) : .libreLinkUp(.notShared)
         case .stopped: .libreLinkUp(.stopped)
         }
     }
