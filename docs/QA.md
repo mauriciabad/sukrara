@@ -944,7 +944,7 @@ the local test relay; no public relay is involved (docs/DEVELOPMENT.md "Relays i
    kind 1059 notice before the new identity's events. Follower: *<name> stopped sharing with you* (notification and
    home), no No data alarm afterwards. Again with the relay stopped: *Telling your followers…* waits 15 s with
    *Cancel*; *Cancel* says *Cancelled. Nothing changed…* and the follower keeps following once the relay is back.
-10. Leave (PROTOCOL-v2 "Leave"): follower *Stop following* (the leave questions say *<name>'s phone is told.*). The relay logs one kind 1059 event `p`-tagged to the wearer's identity. The wearer shows *<name>
+10. Leave (PROTOCOL-v2 "Leave"): follower *Stop following* (the leave questions say *<name>'s phone is told.*). The relay logs one kind 1059 event `p`-tagged to the wearer's identity, on the follower's own connection that closes within a second of it (`+ … connected`, `EVENT kind 1059 … ok`, `- … gone`; with the follower's Bluetooth off, so the relay alone tells): the leave counts as told and sent. The same event again every minute or so (`… duplicate: already have this event`) means the relay's answers aren't counted (PROTOCOL-v2 "Relay answers"). The wearer shows *<name>
     stopped following you* within seconds, Settings › Sharing counts one follower less, and *Past followers* lists them
     with *Left <today>*. Again with the wearer's emulator off: start it a few minutes later and the same happens
     (the date is still when they left). Again with the follower offline (airplane mode) at *Stop following*: after
