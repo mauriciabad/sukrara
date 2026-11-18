@@ -1,0 +1,66 @@
+{
+  "_about": [
+    "One person, one link (docs/44 Appendix G, the owner 2026-11-18): a device either follows a Sukrara (the link, the",
+    "default) or reads one other source, never both. Every app passes these cases (Android LinkContractTest, Mac",
+    "LinkContractTests).",
+    "'pick': what picking a source asks. 'linked' = none | active | ended (the wearer removed this device, or the follow",
+    "can't go on); 'picked' = a sources.json id. 'asks' = keepFollowing (the question that says what the link already",
+    "brings, whichever source was picked; Keep following is the default, Stop following goes on to the leave questions) |",
+    "leave (straight to the leave questions: there is nothing left to keep following) | null (no question).",
+    "'leave': which questions leaving the link asks, in order. 'settingsFrom' = what the device used while linked",
+    "(wearer = Their settings, custom = This device's own); 'theirs' = the wearer's mirrored settings: none (never",
+    "received), defaults (received, every mirrored row at its schema default) or differ; 'history' = the device holds",
+    "readings or treatments received through the link; 'personChange' = Android only: Whose glucose changes with the",
+    "leave, so the history is deleted (asked as that deletion, with Export first) instead of asked keep / delete.",
+    "'questions' = settings (Keep their settings / Sukrara's defaults) | history (Keep it / Delete it) | deleteHistory.",
+    "'result' = the settings the device keeps when no settings question is asked (own = its own as they are; defaults =",
+    "the mirrored rows at the schema defaults; theirs = the wearer's mirrored rows copied as its own).",
+    "'defaults' = the preselected answers: nothing the person sees shifts, nothing is lost.",
+    "'fence': leaving with Keep, the next source continues the kept history: its backfill fills gaps but never replaces",
+    "a kept reading at or before 'fence_s' (the last kept reading); after the fence the rank rule (dedup.json) applies.",
+    "Each case: 'stored' then 'incoming' (each [seconds, source, mg/dL]; one batch) -> 'kept', sorted by time then source.",
+    "'after': what a device takes from a link it left, or reads beside another source: nothing. Each id is a thing the",
+    "link brings; every app's test runs a non-link source with a follow record's leftovers present and checks each."
+  ],
+  "pick": [
+    {"name": "linked, another source picked", "linked": "active", "picked": "libreLinkUp", "asks": "keepFollowing"},
+    {"name": "linked, Nightscout picked", "linked": "active", "picked": "nightscout", "asks": "keepFollowing"},
+    {"name": "linked, the sensor picked (Android)", "linked": "active", "picked": "sensor", "asks": "keepFollowing"},
+    {"name": "linked, Juggluco picked", "linked": "active", "picked": "lanJuggluco", "asks": "keepFollowing"},
+    {"name": "linked, the link picked again", "linked": "active", "picked": "sukrara", "asks": null},
+    {"name": "the follow ended: nothing to keep following", "linked": "ended", "picked": "nightscout", "asks": "leave"},
+    {"name": "the follow ended, the link picked again (a new invite)", "linked": "ended", "picked": "sukrara", "asks": null},
+    {"name": "not linked", "linked": "none", "picked": "libreLinkUp", "asks": null},
+    {"name": "not linked, the link picked (join)", "linked": "none", "picked": "sukrara", "asks": null}
+  ],
+  "leave": [
+    {"name": "their settings in use and different from the defaults: both questions", "settingsFrom": "wearer", "theirs": "differ", "history": true, "personChange": false, "questions": ["settings", "history"], "result": null},
+    {"name": "their settings equal the defaults: both answers would give the same settings", "settingsFrom": "wearer", "theirs": "defaults", "history": true, "personChange": false, "questions": ["history"], "result": "defaults"},
+    {"name": "their settings never arrived: the device ran on the defaults", "settingsFrom": "wearer", "theirs": "none", "history": true, "personChange": false, "questions": ["history"], "result": "defaults"},
+    {"name": "this device's own settings: nothing to ask, they stay", "settingsFrom": "custom", "theirs": "differ", "history": true, "personChange": false, "questions": ["history"], "result": "own"},
+    {"name": "nothing received: no history question", "settingsFrom": "wearer", "theirs": "differ", "history": false, "personChange": false, "questions": ["settings"], "result": null},
+    {"name": "nothing to ask at all", "settingsFrom": "custom", "theirs": "none", "history": false, "personChange": false, "questions": [], "result": "own"},
+    {"name": "Android: someone else's glucose to yours deletes the history (asked as that)", "settingsFrom": "wearer", "theirs": "differ", "history": true, "personChange": true, "questions": ["settings", "deleteHistory"], "result": null},
+    {"name": "Android: a person change with nothing received", "settingsFrom": "custom", "theirs": "differ", "history": false, "personChange": true, "questions": [], "result": "own"}
+  ],
+  "defaults": {"settings": "theirs", "history": "keep"},
+  "fence": [
+    {"name": "the next source's backfill never replaces a kept reading", "fence_s": 600, "stored": [[0, "relay", 100], [600, "relay", 110]], "incoming": [[30, "librelinkup", 140], [590, "librelinkup", 150]], "kept": [[0, "relay", 100], [600, "relay", 110]]},
+    {"name": "it fills a gap in the kept history", "fence_s": 600, "stored": [[0, "relay", 100], [600, "relay", 110]], "incoming": [[300, "librelinkup", 105]], "kept": [[0, "relay", 100], [300, "librelinkup", 105], [600, "relay", 110]]},
+    {"name": "after the fence the rank rule applies", "fence_s": 600, "stored": [[0, "relay", 100], [900, "relay", 120]], "incoming": [[910, "librelinkup", 121]], "kept": [[0, "relay", 100], [910, "librelinkup", 121]]},
+    {"name": "on the fence: kept", "fence_s": 600, "stored": [[600, "relay", 110]], "incoming": [[650, "libre3", 112]], "kept": [[600, "relay", 110]]},
+    {"name": "a sensor reading just after the window of the last kept one is new", "fence_s": 600, "stored": [[600, "relay", 110]], "incoming": [[721, "libre3", 112]], "kept": [[600, "relay", 110], [721, "libre3", 112]]}
+  ],
+  "after": [
+    {"id": "connection", "what": "no relay connection and no Bluetooth to the wearer's phone"},
+    {"id": "settings", "what": "the wearer's settings are never applied; Settings from is not shown; every pane is editable"},
+    {"id": "name", "what": "the wearer's name and picture appear nowhere (card, alerts, notification, widgets, Settings)"},
+    {"id": "path", "what": "no path badge or blocked-feature warning of the follow (Bluetooth, internet)"},
+    {"id": "alerts", "what": "no mirrored alert events or answers; the device's own engine runs on the source"},
+    {"id": "escalation", "what": "the escalation switch (a very low nobody answers on their phone) is not shown"},
+    {"id": "treatments", "what": "Treatments and Add Treatment use the source's own log, never the wearer's"},
+    {"id": "sensor", "what": "the sensor and its life come from the source, never the wearer's"},
+    {"id": "noData", "what": "the no-data reason is the source's, never the link's (not following, their phone off, removed)"},
+    {"id": "record", "what": "no follow record or key is kept once the device left; the wearer was told (PROTOCOL-v2 leave)"}
+  ]
+}
