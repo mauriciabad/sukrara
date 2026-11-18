@@ -26,6 +26,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -428,34 +429,38 @@ class LibreLinkUpSourceTest {
     @Test
     fun `when to ask again is the contract's`() {
         val poll = Json.parseToJsonElement(Contracts.file("sources/librelinkup/poll.json").readText()).jsonObject
-        assertEquals(poll.getValue("every_s").jsonPrimitive.long, LluPoll.EVERY_S)
-        assertEquals(poll.getValue("rateLimited_min_s").jsonPrimitive.long, LluPoll.RATE_LIMITED_MIN_S)
-        assertEquals(poll.getValue("renewBefore_s").jsonPrimitive.long, LluAccount.RENEW_BEFORE_S)
-        assertEquals(poll.getValue("connectionsEvery_s").jsonPrimitive.long, LluPoll.CONNECTIONS_EVERY_S)
+
+        fun long(
+            o: JsonObject,
+            k: String,
+        ): Long? = o[k]?.takeIf { it != JsonNull }?.jsonPrimitive?.long
+        assertEquals(long(poll, "cadence_s"), LluPoll.CADENCE_S)
+        assertEquals(long(poll, "margin_s"), LluPoll.MARGIN_S)
+        assertEquals(long(poll, "margin_up_s"), LluPoll.MARGIN_UP_S)
+        assertEquals(long(poll, "margin_hold"), LluPoll.MARGIN_HOLD.toLong())
+        assertEquals(long(poll, "margin_max_s"), LluPoll.MARGIN_MAX_S)
+        assertEquals(long(poll, "min_s"), LluPoll.MIN_S)
+        assertEquals(poll.getValue("backoff_s").jsonArray.map { it.jsonPrimitive.long }, LluPoll.BACKOFF_S)
+        assertEquals(long(poll, "rateLimited_min_s"), LluPoll.RATE_LIMITED_MIN_S)
+        assertEquals(long(poll, "renewBefore_s"), LluAccount.RENEW_BEFORE_S)
+        assertEquals(long(poll, "connectionsEvery_s"), LluPoll.CONNECTIONS_EVERY_S)
+        assertEquals(long(poll, "terms_s"), LluPoll.TERMS_S)
+        assertEquals(long(poll, "retired_s"), LluPoll.RETIRED_S)
         for (c in poll.getValue("cases").jsonArray.map { it.jsonObject }) {
-            val rate = c["rateLimited"]?.takeIf { it != JsonNull }?.jsonPrimitive?.long
+            val rate = long(c, "rateLimited")
             val refused = c["refused"]?.jsonPrimitive?.content == "true"
-            val want =
-                c
-                    .getValue("wait_s")
-                    .takeIf { it != JsonNull }
-                    ?.jsonPrimitive
-                    ?.long
             val failures = c.getValue("failures").jsonPrimitive.int
             val name = c.getValue("name").jsonPrimitive.content
-            assertEquals(name, want, LluPoll.waitS(failures, rate, refused))
+            assertEquals(name, long(c, "wait_s"), LluPoll.waitS(failures, rate, refused))
             // the source's own decision after a cycle: a 429 without a time (no Retry-After, no lockout) is the minimum
             val outcome =
                 when {
                     refused -> CallOutcome.Refused
                     rate != null -> CallOutcome.RateLimited
-                    failures == 0 -> CallOutcome.Ok
                     else -> CallOutcome.Server
                 }
-            assertEquals(name, want, LluPoll.next(outcome, failures, rate?.takeIf { it > 0 }))
+            assertEquals(name, long(c, "wait_s"), LluPoll.next(outcome, failures, rate?.takeIf { it > 0 }))
         }
-        assertEquals(poll.getValue("terms_s").jsonPrimitive.long, LluPoll.TERMS_S)
-        assertEquals(poll.getValue("retired_s").jsonPrimitive.long, LluPoll.RETIRED_S)
         // the wait after a round, by its outcome (the Mac's LluPoll.next passes the same cases)
         for (c in poll.getValue("after").jsonArray.map { it.jsonObject }) {
             val outcome =
@@ -465,18 +470,56 @@ class LibreLinkUpSourceTest {
                     ?.jsonPrimitive
                     ?.content
                     ?.let { o -> CallOutcome.entries.first { it.name.equals(o, ignoreCase = true) } }
-            val retryAfter = c["retryAfter_s"]?.takeIf { it != JsonNull }?.jsonPrimitive?.long
-            val want =
-                c
-                    .getValue("wait_s")
-                    .takeIf { it != JsonNull }
-                    ?.jsonPrimitive
-                    ?.long
             assertEquals(
                 c.getValue("name").jsonPrimitive.content,
-                want,
-                LluPoll.next(outcome, c.getValue("failures").jsonPrimitive.int, retryAfter),
+                long(c, "wait_s"),
+                LluPoll.next(
+                    outcome,
+                    c.getValue("failures").jsonPrimitive.int,
+                    long(c, "retryAfter_s"),
+                    long(c, "now") ?: 0,
+                    long(c, "newest"),
+                    long(c, "margin_s") ?: LluPoll.MARGIN_S,
+                ),
             )
+        }
+        // timed to the next reading
+        for (c in poll.getValue("timed").jsonArray.map { it.jsonObject }) {
+            assertEquals(
+                c.getValue("name").jsonPrimitive.content,
+                long(c, "wait_s"),
+                LluPoll.timedS(long(c, "now")!!, long(c, "newest"), long(c, "margin_s")!!),
+            )
+        }
+        // the margin follows LibreLinkUp
+        for (c in poll.getValue("margins").jsonArray.map { it.jsonObject }) {
+            val t =
+                LluPoll.timing(
+                    LluPoll.Timing(long(c, "margin")!!, c.getValue("streak").jsonPrimitive.int),
+                    long(c, "now")!!,
+                    long(c, "before"),
+                    long(c, "found"),
+                )
+            val name = c.getValue("name").jsonPrimitive.content
+            assertEquals(name, LluPoll.Timing(long(c, "margin_s")!!, c.getValue("streak_after").jsonPrimitive.int), t)
+        }
+        // calls in a row, the timing carried
+        for (q in poll.getValue("sequences").jsonArray.map { it.jsonObject }) {
+            var t = LluPoll.Timing()
+            var newest: Long? = null
+            for ((i, step) in q
+                .getValue("steps")
+                .jsonArray
+                .map { it.jsonObject }
+                .withIndex()) {
+                val now = long(step, "now")!!
+                val found = long(step, "found")
+                t = LluPoll.timing(t, now, newest, found)
+                if (found != null && (newest ?: Long.MIN_VALUE) < found) newest = found
+                val name = "${q.getValue("name").jsonPrimitive.content} #$i"
+                assertEquals(name, long(step, "margin_s"), t.marginS)
+                assertEquals(name, long(step, "wait_s"), LluPoll.timedS(now, newest, t.marginS))
+            }
         }
     }
 }

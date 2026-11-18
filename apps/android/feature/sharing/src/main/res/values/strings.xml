@@ -674,7 +674,7 @@
     <string name="sh_setup_ready_pending">Still to do: %1$s. Home\'s Finish setup banner brings you back to them.</string>
     <string name="sh_setup_source_group_online">Online · needs internet</string>
     <string name="sh_setup_source_change_nightscout">Sukrara reads your Nightscout site instead: glucose a few minutes late, and treatments both ways. The history on this phone stays.</string>
-    <string name="sh_setup_source_change_llu">Sukrara reads your glucose from LibreLinkUp, about a minute late: the Libre app keeps the sensor and its alarms. The history on this phone stays.</string>
+    <string name="sh_setup_source_change_llu">Sukrara reads your glucose from LibreLinkUp, about 10 seconds late: the Libre app keeps the sensor and its alarms. The history on this phone stays.</string>
     <string name="sh_setup_source_change_llu_from_sensor">Sukrara stops reading the sensor and reads LibreLinkUp. To give the sensor back to the Libre app, scan it there: any day of its life. The pairing and the history on this phone stay.</string>
     <string name="sh_setup_llu_title">Sign in to LibreLinkUp</string>
     <string name="sh_setup_llu_body">Use the LibreLinkUp account the Libre app shares your glucose with. To share with yourself: in the Libre app, Menu › Connected apps › LibreLinkUp, invite your own email, then accept the invite in LibreLinkUp once.</string>

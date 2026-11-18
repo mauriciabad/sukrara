@@ -862,7 +862,7 @@ every field, problem and state; the status lines are live regions.
 docs/44 step 2 (#213): LibreLinkUp, Abbott's follower service that the Libre app uploads to each minute, as the
 **Source**, on Android and on a Mac without Sukrara on the phone: your own glucose (a LibreLinkUp account that follows yourself: in the Libre app, *Menu › Connected apps ›
 LibreLinkUp*, invite your own email) while the Libre app keeps the sensor, or someone else's (a parent's own account
-following a child). `source.kind` `libreLinkUp` (group *Online · needs internet*, about a minute late, backfills about
+following a child). `source.kind` `libreLinkUp` (group *Online · needs internet*, about 10 s late, backfills about
 12 h); its live readings are `librelinkup` (ranked *online*), the graph's 5-minute points `librelinkup-graph` (ranked
 *onlineHistory*: they only fill gaps between live readings, `contracts/sources/dedup.json`). Its description says it
 *may stop working any day* (Abbott can change or end the API; decision 3).
@@ -872,8 +872,13 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   `product: llu.android`, `version: 4.17.0`; the region's host after a redirect; a 403 naming a newer version sends that
   one from then on (kept with the account through a new sign-in and a restart; a newer built-in version wins; a
   minimum that isn't a version never reaches a header) and asks once more, never in a loop, at the login and on a
-  call (`poll.json` `versions`); status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` each
-  minute with the token and the account's id (SHA-256): the live reading with its arrow as the sensor's rate, the
+  call (`poll.json` `versions`); status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` with
+  the token and the account's id (SHA-256), timed to each reading: 8 s after the next one is due (the newest live
+  reading + 1 min, on the sensor's own minute, a missed reading included), never sooner than 45 s after the last answer
+  (one call a reading, as the fixed minute it replaced: 60 an hour); a reading found a minute late (LibreLinkUp had it
+  after the call) adds 5 s (at most 40), ten in a row found in time take 1 s back (`poll.json` `timed`, `margins`,
+  `LluPoll.timed` / `LluPoll.timing` on both apps; the owner's test 2026-11-18 had a reading on the phone 26 s after the
+  sensor (worst 45), on the Mac 12 s (worst 17), with LibreLinkUp having it within 4 s): the live reading with its arrow as the sensor's rate, the
   graph's points the first time and after a gap. Times from `FactoryTimestamp` (UTC). The token is kept with the
   account and reused until 5 min before it expires (a restart signs in again only then: each login counts towards
   LibreLinkUp's lockout); a token that stops working early signs in again once. Failures back off 1 → 10 min; a 429

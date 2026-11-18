@@ -250,7 +250,7 @@ first reading* → *Reading received*, the value counting in. Motion and haptics
 
 ```
   Two apps can ring for the same low
-  The Libre app keeps its alarms. Sukrara's come about a minute later (LibreLinkUp).
+  The Libre app keeps its alarms. Sukrara's come about 10 seconds later (LibreLinkUp).
   ◉ Both ring                    keep this while you try Sukrara
   ○ Sukrara rings                turn off the Libre app's low and high alarms: [How]
                                  Its urgent low (55 mg/dL) can't be turned off.
@@ -798,6 +798,61 @@ Answered:
   [#226](https://github.com/mauriciabad/sukrara/issues/226).
 - **The widgets don't redraw during a warm-up** (any source: the redraw follows the newest reading's freshness steps
   only). The cause and a repro are in #226's comment.
+
+**Step 2's live test, follow-ups (2026-11-18, both apps).** The test measured a reading's way from the sensor to
+Sukrara: the phone a median 26 s (worst 45), the Mac 12 s (worst 17), while LibreLinkUp had each reading within
+about 4 s. Both apps asked every 60 s, so the delay was wherever that minute happened to fall.
+
+Added:
+- **Calls timed to the next reading** (`contracts/sources/librelinkup/poll.json` `timed`, `margins`, `sequences`;
+  `LluPoll.timed` / `LluPoll.timing` on both apps, the same cases): after an answer the next call goes 8 s
+  (`margin_s`) after the next reading is due: the newest live reading's time + 60 s, so it follows the sensor's own
+  minute and its drift, and a reading the sensor missed changes nothing (the one after is still due on that minute).
+  Never sooner than 45 s after an answer, so it stays one call a reading, 60 an hour, as the fixed minute was.
+  Readings arriving late: a new reading more than a minute old when found missed its call, so the margin grows 5 s
+  (at most 40); ten in a row found in time take a second back, down to 8 (a lag that lasts, or this clock ahead of
+  the Libre app's phone, is followed; one late upload changes nothing, because the next reading is found in time).
+  Failures, the 429 wait (10 min at least, nothing calls during it), the token reuse and the 30-min connections
+  read are as they were. `generate.py` runs the rule against LibreLinkUp behaving in eight ways and fails above
+  60.5 calls an hour (`poll.json` `simulation`, the fixed minute beside it from each second of the minute):
+
+  | LibreLinkUp | calls / h | delay median · worst | the fixed minute: median · worst |
+  |---|---|---|---|
+  | each reading 4 s after it (the owner's) | 60 | 8 s · 13 s | 35 s · 64 s |
+  | 1–7 s after it | 60 | 8 s · 13 s | 34 s · 65 s (16 readings an hour never shown live) |
+  | the sensor misses one reading in 10 | 60 | 8 s · 13 s | 35 s · 64 s |
+  | a slow uploader, 25 s after it | 60 | 27 s · 84 s (1 an hour never shown live) | 56 s · 85 s |
+  | one 40 s late upload in 15 | 60 | 8 s · 13 s (that one never shown live, as before) | 35 s · 64 s |
+  | this clock 20 s ahead, the sensor's minute 60.3 s | 60 | 7 s · 63 s | 35 s · 64 s |
+  | each call takes 1.5 s | 60 | 9.5 s · 14.5 s | 34 s · 64 s |
+
+  Expected on both apps: about 9 s from the sensor (8 s + the call), the worst a few seconds more; a reading
+  LibreLinkUp gets late shows at the next call, as before. The graph's 5-minute points still fill what a live
+  reading missed. The fake (`tools/librelinkup-probe/fake.py`) has a reading 4 s after it by default (it was 60 s,
+  from the old guess that the Libre app uploads a minute late).
+- **The Mac's dev run draws Sukrara's icon**: `swift run` isn't the bundle, so macOS gave it a generic icon and *Their
+  Sukrara* showed a folder in reviews. An unbundled launch now takes the brand's `AppIcon.icns` from its checkout
+  (`BrandIcon`, the file `bundle.sh` puts in the bundle; `sukrara-snap` uses the same).
+- **Snapshot and test runs leave no settings file**: each run made UUID-named UserDefaults suites
+  (`app.mauri.sukrara.snap.<UUID>`, `app.mauri.sukrara.tests.<UUID>`, `sukrara-focus-<UUID>`; about 40 a snapshot
+  run) that cfprefsd writes to ~/Library/Preferences at the first value, and nothing removed them (995 + 2,031 + 105
+  had piled up). They now keep settings in memory (`InMemorySettingsStore`, moved to `SukraraCore`; the settings
+  only ever go through `SettingsStoring`). `LeftoverSuitesTests`: building every snapshot scene and the tests'
+  scratch settings adds no file there, and only the app's launch (`AppServices`) makes a suite.
+
+Discarded:
+- **Removing each suite when done** (`removePersistentDomain(forName:)`): a run stopped by a crash, a failed
+  expectation or Ctrl-C still leaves its file, and every place that makes one has to remember. **A volatile domain**
+  (`setVolatileDomain`): `UserDefaults.set` writes the suite's persistent domain whatever volatile domains exist, so
+  it doesn't stop the file. In memory nothing reaches cfprefsd at all.
+- **A second call when the reading isn't there yet**: it would catch a late reading sooner, but a lag that lasts
+  would make it two calls a reading. The margin follows the lag instead, within the same 60 calls.
+- **Waiting longer while the Libre app is silent**: fewer calls, but a later first reading when it comes back; it
+  stays one call a minute, on the last reading's minute.
+- **Others' timing**: GlucoDataHandler asks at a fixed interval after its last request with a delay setting
+  ([DataSourceTask.kt](https://github.com/pachi81/GlucoDataHandler/blob/master/common/src/main/java/de/michelinside/glucodatahandler/common/tasks/DataSourceTask.kt):
+  `interval` ≥ 1 min, `delaySec`), not after the reading; Sukrara's Nightscout source already timed its calls to the
+  next expected reading (`contracts/sources/nightscout/poll.json`), which this follows.
 
 **Decision 10, sensor start and length (2026-11-18, both apps), with the QA review's wear length and the LibreView fix.**
 

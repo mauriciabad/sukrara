@@ -25,7 +25,7 @@ public enum SourceKind: String, CaseIterable, Sendable, Codable {
     case lanJuggluco
     /// A Nightscout site (https): glucose and treatments both ways, about 2 minutes late.
     case nightscout
-    /// LibreLinkUp, Abbott's follower service the Libre app uploads to (https): glucose about a minute late and the
+    /// LibreLinkUp, Abbott's follower service the Libre app uploads to (https): glucose about 10 seconds late and the
     /// sensor's life; no treatments (this Mac keeps its own).
     case libreLinkUp
 

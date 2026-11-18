@@ -20,7 +20,7 @@ Change what it answers while it runs, `curl 'http://127.0.0.1:8766/_fake?key=val
   calls      ok | expired (401 once: tokens issued so far stop) | terms | ratelimit | version | retired | down
   people     yours (the account itself) | other (one other person) | several | none | yours+other
   minimum    the version the `version` answers ask for (default 4.18.0)
-  lag        seconds the newest reading is behind now (default 60: the Libre app uploads about a minute late)
+  lag        seconds after a reading LibreLinkUp has it (default 4: the owner's test 2026-11-18)
   stopped    1 = no new readings from now on (the Libre app stopped uploading); 0 = they come again
   sensor     new = a new sensor (new serial, started 70 min ago); or `<serial>,<minutes since start>`
   pt         the sensor's `pt` in the answers (default 4)
@@ -59,7 +59,7 @@ STATE = {
     "calls": "ok",
     "people": "yours",
     "minimum": "4.18.0",
-    "lag": 60,
+    "lag": 4,
     "stopped": 0,
     "stoppedAt": None,
     "serial": "0D00SYN0A1",

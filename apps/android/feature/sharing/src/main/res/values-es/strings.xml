@@ -532,7 +532,7 @@
     <string name="sh_setup_ready_pending">Falta: %1$s. El aviso Termina la configuración de la pantalla principal te lleva a ellas.</string>
     <string name="sh_setup_source_group_online">En línea · necesita internet</string>
     <string name="sh_setup_source_change_nightscout">Sukrara lee tu sitio de Nightscout en su lugar: la glucosa con unos minutos de retraso y los tratamientos en ambos sentidos. El historial del móvil se queda.</string>
-    <string name="sh_setup_source_change_llu">Sukrara lee tu glucosa de LibreLinkUp, con un minuto de retraso aprox.: la app Libre se queda el sensor y sus alarmas. El historial de este móvil se queda.</string>
+    <string name="sh_setup_source_change_llu">Sukrara lee tu glucosa de LibreLinkUp, con unos 10 segundos de retraso: la app Libre se queda el sensor y sus alarmas. El historial de este móvil se queda.</string>
     <string name="sh_setup_source_change_llu_from_sensor">Sukrara deja de leer el sensor y lee LibreLinkUp. Para devolver el sensor a la app Libre, escanéalo con ella: cualquier día de su vida. El emparejamiento y el historial de este móvil se quedan.</string>
     <string name="sh_setup_llu_title">Inicia sesión en LibreLinkUp</string>
     <string name="sh_setup_llu_body">Usa la cuenta de LibreLinkUp con la que la app Libre comparte tu glucosa. Para compartirla contigo: en la app Libre, Menú › Aplicaciones conectadas › LibreLinkUp, invita a tu propio correo y acepta la invitación en LibreLinkUp una vez.</string>

@@ -1,18 +1,34 @@
 {
  "_about": [
-  "When the LibreLinkUp source asks again: every 'every_s' (the Libre app uploads each minute); after failures in a",
-  "row 'backoff_s'; asked to wait (429) at least 'rateLimited_min_s', or Retry-After / the lockout when longer;",
-  "a refused password never by itself (the person signs in again: retries lock the account). A token is renewed",
-  "'renewBefore_s' before it expires; the connections are read again every 'connectionsEvery_s' (and when the",
-  "graph call is refused: the person may have stopped sharing). 'headers': what every call sends.",
-  "'after': the wait after a round that ended in 'outcome' (contracts/sources/health.json's outcomes; null = only",
-  "when the person acts). Asked to wait, nothing calls LibreLinkUp before that time, whatever asks for it (the",
-  "network back, Try Again, another person picked: each call may lengthen the lockout); a sign-in the person makes",
-  "ends the wait. 'versions': a 403 on the login or a call naming a minimum version (login.json, calls.json) has",
-  "that version sent from then on and the same request made once more; it stays with the account (a new sign-in,",
-  "a restart), unless this build's own version is newer ('send', parts compared as numbers)."
+  "When the LibreLinkUp source asks again. After an answer, timed to the next reading ('timed'): the Libre app",
+  "uploads each reading as the sensor reads it, each 'cadence_s', and LibreLinkUp has it within seconds (the owner's",
+  "test 2026-11-18: about 4 s), so the next call goes 'margin_s' after the next reading is due (the newest live",
+  "reading + a cadence), the first such time at least 'min_s' from now: one call a reading at most, on the sensor's",
+  "own minute (its drift and a missed reading included: the next is still due on that minute). The margin follows",
+  "LibreLinkUp ('margins'): a new reading more than a cadence old when found missed its call, so the margin grows",
+  "'margin_up_s' (at most 'margin_max_s'); 'margin_hold' new readings in a row found in time take a second off,",
+  "down to 'margin_s'; it starts at 'margin_s' with each run. 'sequences' are calls in a row both apps replay (the",
+  "margin and streak carried from 'margin_s' and 0, the newest live reading from none). 'simulation': the rule",
+  "against LibreLinkUp behaving in these ways, beside the fixed minute it replaced (from every second of the minute):",
+  "calls an hour, the delay from a reading to its answer, readings never shown live (only the graph's 5-minute",
+  "points). After failures in a row 'backoff_s'; asked to wait (429) at least 'rateLimited_min_s', or Retry-After /",
+  "the lockout when longer; a refused password never by itself (the person signs in again: retries lock the",
+  "account). A token is renewed 'renewBefore_s' before it expires; the connections are read again every",
+  "'connectionsEvery_s' (and when the graph call is refused: the person may have stopped sharing). 'headers': what",
+  "every call sends. 'after': the wait after a round that ended in 'outcome' (contracts/sources/health.json's",
+  "outcomes; null = only when the person acts; 'ok' with 'now', 'newest', 'margin_s'). Asked to wait, nothing calls",
+  "LibreLinkUp before that time, whatever asks for it (the network back, Try Again, another person picked: each call",
+  "may lengthen the lockout); a sign-in the person makes ends the wait. 'versions': a 403 on the login or a call",
+  "naming a minimum version (login.json, calls.json) has that version sent from then on and the same request made",
+  "once more; it stays with the account (a new sign-in, a restart), unless this build's own version is newer",
+  "('send', parts compared as numbers)."
  ],
- "every_s": 60,
+ "cadence_s": 60,
+ "margin_s": 8,
+ "margin_up_s": 5,
+ "margin_hold": 10,
+ "margin_max_s": 40,
+ "min_s": 45,
  "backoff_s": [
   60,
   120,
@@ -32,11 +48,6 @@
   "cache-control": "no-cache"
  },
  "cases": [
-  {
-   "name": "an answer: again in a minute",
-   "failures": 0,
-   "wait_s": 60
-  },
   {
    "name": "one failure",
    "failures": 1,
@@ -84,9 +95,21 @@
    "wait_s": null
   },
   {
-   "name": "an answer",
+   "name": "an answer: timed to the next reading",
    "outcome": "ok",
    "failures": 0,
+   "now": 1795003210,
+   "newest": 1795003200,
+   "margin_s": 8,
+   "wait_s": 58
+  },
+  {
+   "name": "an answer with no reading yet: a minute",
+   "outcome": "ok",
+   "failures": 0,
+   "now": 1795003200,
+   "newest": null,
+   "margin_s": 8,
    "wait_s": 60
   },
   {
@@ -144,6 +167,1371 @@
    "failures": 1,
    "retryAfter_s": 900,
    "wait_s": 900
+  }
+ ],
+ "timed": [
+  {
+   "name": "a reading 10 s ago: 8 s after the next one is due",
+   "now": 1795003210,
+   "newest": 1795003200,
+   "margin_s": 8,
+   "wait_s": 58
+  },
+  {
+   "name": "found as it arrived",
+   "now": 1795003208,
+   "newest": 1795003200,
+   "margin_s": 8,
+   "wait_s": 60
+  },
+  {
+   "name": "a larger margin",
+   "now": 1795003208,
+   "newest": 1795003200,
+   "margin_s": 25,
+   "wait_s": 77
+  },
+  {
+   "name": "the next one's time is too close: the one after",
+   "now": 1795003230,
+   "newest": 1795003200,
+   "margin_s": 8,
+   "wait_s": 98
+  },
+  {
+   "name": "exactly 45 s away: kept",
+   "now": 1795003223,
+   "newest": 1795003200,
+   "margin_s": 8,
+   "wait_s": 45
+  },
+  {
+   "name": "the sensor missed one: still on its minute",
+   "now": 1795003268,
+   "newest": 1795003200,
+   "margin_s": 8,
+   "wait_s": 60
+  },
+  {
+   "name": "an hour old (the Libre app stopped): still once a minute, on its minute",
+   "now": 1795006801,
+   "newest": 1795003200,
+   "margin_s": 8,
+   "wait_s": 67
+  },
+  {
+   "name": "stamped ahead of this clock: counts as now",
+   "now": 1795003200,
+   "newest": 1795003240,
+   "margin_s": 8,
+   "wait_s": 68
+  },
+  {
+   "name": "no reading yet: a minute",
+   "now": 1795003200,
+   "newest": null,
+   "margin_s": 8,
+   "wait_s": 60
+  }
+ ],
+ "margins": [
+  {
+   "name": "found in time: one more in a row",
+   "margin": 13,
+   "streak": 3,
+   "now": 1795003273,
+   "before": 1795003200,
+   "found": 1795003260,
+   "margin_s": 13,
+   "streak_after": 4
+  },
+  {
+   "name": "the 10th in a row: a second less",
+   "margin": 13,
+   "streak": 9,
+   "now": 1795003273,
+   "before": 1795003200,
+   "found": 1795003260,
+   "margin_s": 12,
+   "streak_after": 0
+  },
+  {
+   "name": "never below 8",
+   "margin": 8,
+   "streak": 9,
+   "now": 1795003268,
+   "before": 1795003200,
+   "found": 1795003260,
+   "margin_s": 8,
+   "streak_after": 0
+  },
+  {
+   "name": "found a minute late (LibreLinkUp had it after the call): +5",
+   "margin": 8,
+   "streak": 4,
+   "now": 1795003328,
+   "before": 1795003200,
+   "found": 1795003260,
+   "margin_s": 13,
+   "streak_after": 0
+  },
+  {
+   "name": "late again, at most 40",
+   "margin": 38,
+   "streak": 0,
+   "now": 1795003418,
+   "before": 1795003260,
+   "found": 1795003320,
+   "margin_s": 40,
+   "streak_after": 0
+  },
+  {
+   "name": "nothing new: unchanged",
+   "margin": 13,
+   "streak": 2,
+   "now": 1795003273,
+   "before": 1795003200,
+   "found": 1795003200,
+   "margin_s": 13,
+   "streak_after": 2
+  },
+  {
+   "name": "the sensor missed one, the next found in time: not late",
+   "margin": 8,
+   "streak": 0,
+   "now": 1795003328,
+   "before": 1795003200,
+   "found": 1795003320,
+   "margin_s": 8,
+   "streak_after": 1
+  },
+  {
+   "name": "the first answer says nothing about timing",
+   "margin": 8,
+   "streak": 0,
+   "now": 1795003700,
+   "before": null,
+   "found": 1795003200,
+   "margin_s": 8,
+   "streak_after": 0
+  },
+  {
+   "name": "no live reading",
+   "margin": 8,
+   "streak": 0,
+   "now": 1795003268,
+   "before": 1795003200,
+   "found": null,
+   "margin_s": 8,
+   "streak_after": 0
+  }
+ ],
+ "sequences": [
+  {
+   "name": "the sensor misses one reading in 10",
+   "steps": [
+    {
+     "now": 1795003213,
+     "found": 1795003200,
+     "margin_s": 8,
+     "wait_s": 55
+    },
+    {
+     "now": 1795003268,
+     "found": 1795003260,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003328,
+     "found": 1795003320,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003388,
+     "found": 1795003380,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003448,
+     "found": 1795003440,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003508,
+     "found": 1795003440,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003568,
+     "found": 1795003560,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003628,
+     "found": 1795003620,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003688,
+     "found": 1795003680,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003748,
+     "found": 1795003740,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003808,
+     "found": 1795003800,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003868,
+     "found": 1795003860,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003928,
+     "found": 1795003920,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003988,
+     "found": 1795003980,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004048,
+     "found": 1795004040,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004108,
+     "found": 1795004040,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004168,
+     "found": 1795004160,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004228,
+     "found": 1795004220,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004288,
+     "found": 1795004280,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004348,
+     "found": 1795004340,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004408,
+     "found": 1795004400,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004468,
+     "found": 1795004460,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004528,
+     "found": 1795004520,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004588,
+     "found": 1795004580,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004648,
+     "found": 1795004640,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004708,
+     "found": 1795004640,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004768,
+     "found": 1795004760,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004828,
+     "found": 1795004820,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004888,
+     "found": 1795004880,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004948,
+     "found": 1795004940,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005008,
+     "found": 1795005000,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005068,
+     "found": 1795005060,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005128,
+     "found": 1795005120,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005188,
+     "found": 1795005180,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005248,
+     "found": 1795005240,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005308,
+     "found": 1795005240,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005368,
+     "found": 1795005360,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005428,
+     "found": 1795005420,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005488,
+     "found": 1795005480,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005548,
+     "found": 1795005540,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005608,
+     "found": 1795005600,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005668,
+     "found": 1795005660,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005728,
+     "found": 1795005720,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005788,
+     "found": 1795005780,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005848,
+     "found": 1795005840,
+     "margin_s": 8,
+     "wait_s": 60
+    }
+   ]
+  },
+  {
+   "name": "a slow uploader: 25 s after it",
+   "steps": [
+    {
+     "now": 1795003213,
+     "found": null,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003273,
+     "found": 1795003200,
+     "margin_s": 8,
+     "wait_s": 55
+    },
+    {
+     "now": 1795003328,
+     "found": 1795003260,
+     "margin_s": 13,
+     "wait_s": 65
+    },
+    {
+     "now": 1795003393,
+     "found": 1795003320,
+     "margin_s": 18,
+     "wait_s": 65
+    },
+    {
+     "now": 1795003458,
+     "found": 1795003380,
+     "margin_s": 23,
+     "wait_s": 65
+    },
+    {
+     "now": 1795003523,
+     "found": 1795003440,
+     "margin_s": 28,
+     "wait_s": 65
+    },
+    {
+     "now": 1795003588,
+     "found": 1795003560,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003648,
+     "found": 1795003620,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003708,
+     "found": 1795003680,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003768,
+     "found": 1795003740,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003828,
+     "found": 1795003800,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003888,
+     "found": 1795003860,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003948,
+     "found": 1795003920,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004008,
+     "found": 1795003980,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004068,
+     "found": 1795004040,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004128,
+     "found": 1795004100,
+     "margin_s": 27,
+     "wait_s": 59
+    },
+    {
+     "now": 1795004187,
+     "found": 1795004160,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004247,
+     "found": 1795004220,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004307,
+     "found": 1795004280,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004367,
+     "found": 1795004340,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004427,
+     "found": 1795004400,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004487,
+     "found": 1795004460,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004547,
+     "found": 1795004520,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004607,
+     "found": 1795004580,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004667,
+     "found": 1795004640,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004727,
+     "found": 1795004700,
+     "margin_s": 26,
+     "wait_s": 59
+    },
+    {
+     "now": 1795004786,
+     "found": 1795004760,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004846,
+     "found": 1795004820,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004906,
+     "found": 1795004880,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004966,
+     "found": 1795004940,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005026,
+     "found": 1795005000,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005086,
+     "found": 1795005060,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005146,
+     "found": 1795005120,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005206,
+     "found": 1795005180,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005266,
+     "found": 1795005240,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005326,
+     "found": 1795005300,
+     "margin_s": 25,
+     "wait_s": 59
+    },
+    {
+     "now": 1795005385,
+     "found": 1795005360,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005445,
+     "found": 1795005420,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005505,
+     "found": 1795005480,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005565,
+     "found": 1795005540,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005625,
+     "found": 1795005600,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005685,
+     "found": 1795005660,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005745,
+     "found": 1795005720,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005805,
+     "found": 1795005780,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005865,
+     "found": 1795005840,
+     "margin_s": 25,
+     "wait_s": 60
+    }
+   ]
+  },
+  {
+   "name": "one late upload (40 s) in 15",
+   "steps": [
+    {
+     "now": 1795003213,
+     "found": 1795003200,
+     "margin_s": 8,
+     "wait_s": 55
+    },
+    {
+     "now": 1795003268,
+     "found": 1795003260,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003328,
+     "found": 1795003320,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003388,
+     "found": 1795003380,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003448,
+     "found": 1795003440,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003508,
+     "found": 1795003500,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003568,
+     "found": 1795003560,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003628,
+     "found": 1795003560,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003688,
+     "found": 1795003680,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003748,
+     "found": 1795003740,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003808,
+     "found": 1795003800,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003868,
+     "found": 1795003860,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003928,
+     "found": 1795003920,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003988,
+     "found": 1795003980,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004048,
+     "found": 1795004040,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004108,
+     "found": 1795004100,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004168,
+     "found": 1795004160,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004228,
+     "found": 1795004220,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004288,
+     "found": 1795004280,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004348,
+     "found": 1795004340,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004408,
+     "found": 1795004400,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004468,
+     "found": 1795004460,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004528,
+     "found": 1795004460,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004588,
+     "found": 1795004580,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004648,
+     "found": 1795004640,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004708,
+     "found": 1795004700,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004768,
+     "found": 1795004760,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004828,
+     "found": 1795004820,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004888,
+     "found": 1795004880,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004948,
+     "found": 1795004940,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005008,
+     "found": 1795005000,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005068,
+     "found": 1795005060,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005128,
+     "found": 1795005120,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005188,
+     "found": 1795005180,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005248,
+     "found": 1795005240,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005308,
+     "found": 1795005300,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005368,
+     "found": 1795005360,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005428,
+     "found": 1795005360,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005488,
+     "found": 1795005480,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005548,
+     "found": 1795005540,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005608,
+     "found": 1795005600,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005668,
+     "found": 1795005660,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005728,
+     "found": 1795005720,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005788,
+     "found": 1795005780,
+     "margin_s": 8,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005848,
+     "found": 1795005840,
+     "margin_s": 8,
+     "wait_s": 60
+    }
+   ]
+  },
+  {
+   "name": "the sensor's clock drifts (60.3 s a reading) and this clock is 20 s ahead",
+   "steps": [
+    {
+     "now": 1795003233,
+     "found": 1795003200,
+     "margin_s": 8,
+     "wait_s": 95
+    },
+    {
+     "now": 1795003328,
+     "found": 1795003260,
+     "margin_s": 13,
+     "wait_s": 65
+    },
+    {
+     "now": 1795003393,
+     "found": 1795003321,
+     "margin_s": 18,
+     "wait_s": 66
+    },
+    {
+     "now": 1795003459,
+     "found": 1795003381,
+     "margin_s": 23,
+     "wait_s": 65
+    },
+    {
+     "now": 1795003524,
+     "found": 1795003441,
+     "margin_s": 28,
+     "wait_s": 65
+    },
+    {
+     "now": 1795003589,
+     "found": 1795003562,
+     "margin_s": 28,
+     "wait_s": 61
+    },
+    {
+     "now": 1795003650,
+     "found": 1795003622,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003710,
+     "found": 1795003682,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003770,
+     "found": 1795003743,
+     "margin_s": 28,
+     "wait_s": 61
+    },
+    {
+     "now": 1795003831,
+     "found": 1795003803,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003891,
+     "found": 1795003863,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795003951,
+     "found": 1795003924,
+     "margin_s": 28,
+     "wait_s": 61
+    },
+    {
+     "now": 1795004012,
+     "found": 1795003984,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004072,
+     "found": 1795004044,
+     "margin_s": 28,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004132,
+     "found": 1795004104,
+     "margin_s": 27,
+     "wait_s": 59
+    },
+    {
+     "now": 1795004191,
+     "found": 1795004165,
+     "margin_s": 27,
+     "wait_s": 61
+    },
+    {
+     "now": 1795004252,
+     "found": 1795004225,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004312,
+     "found": 1795004285,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004372,
+     "found": 1795004346,
+     "margin_s": 27,
+     "wait_s": 61
+    },
+    {
+     "now": 1795004433,
+     "found": 1795004406,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004493,
+     "found": 1795004466,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004553,
+     "found": 1795004527,
+     "margin_s": 27,
+     "wait_s": 61
+    },
+    {
+     "now": 1795004614,
+     "found": 1795004587,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004674,
+     "found": 1795004647,
+     "margin_s": 27,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004734,
+     "found": 1795004708,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004794,
+     "found": 1795004768,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004854,
+     "found": 1795004828,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004914,
+     "found": 1795004888,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795004974,
+     "found": 1795004949,
+     "margin_s": 26,
+     "wait_s": 61
+    },
+    {
+     "now": 1795005035,
+     "found": 1795005009,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005095,
+     "found": 1795005069,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005155,
+     "found": 1795005130,
+     "margin_s": 26,
+     "wait_s": 61
+    },
+    {
+     "now": 1795005216,
+     "found": 1795005190,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005276,
+     "found": 1795005250,
+     "margin_s": 26,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005336,
+     "found": 1795005310,
+     "margin_s": 25,
+     "wait_s": 59
+    },
+    {
+     "now": 1795005395,
+     "found": 1795005371,
+     "margin_s": 25,
+     "wait_s": 61
+    },
+    {
+     "now": 1795005456,
+     "found": 1795005431,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005516,
+     "found": 1795005491,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005576,
+     "found": 1795005552,
+     "margin_s": 25,
+     "wait_s": 61
+    },
+    {
+     "now": 1795005637,
+     "found": 1795005612,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005697,
+     "found": 1795005672,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005757,
+     "found": 1795005733,
+     "margin_s": 25,
+     "wait_s": 61
+    },
+    {
+     "now": 1795005818,
+     "found": 1795005793,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005878,
+     "found": 1795005853,
+     "margin_s": 25,
+     "wait_s": 60
+    },
+    {
+     "now": 1795005938,
+     "found": 1795005914,
+     "margin_s": 24,
+     "wait_s": 60
+    }
+   ]
+  }
+ ],
+ "simulation": [
+  {
+   "name": "the owner's test: LibreLinkUp has each reading 4 s after it",
+   "calls_per_hour": 60.3,
+   "delay_median_s": 8,
+   "delay_worst_s": 13,
+   "missed_per_hour": 0.0,
+   "fixedMinute": {
+    "calls_per_hour": 60.0,
+    "delay_median_s": 34.5,
+    "delay_worst_s": 63.5,
+    "missed_per_hour": 0.0
+   }
+  },
+  {
+   "name": "LibreLinkUp 1-7 s after it",
+   "calls_per_hour": 60.3,
+   "delay_median_s": 8,
+   "delay_worst_s": 13,
+   "missed_per_hour": 0.0,
+   "fixedMinute": {
+    "calls_per_hour": 60.0,
+    "delay_median_s": 33.5,
+    "delay_worst_s": 64.5,
+    "missed_per_hour": 16.4
+   }
+  },
+  {
+   "name": "the sensor misses one reading in 10",
+   "calls_per_hour": 60.4,
+   "delay_median_s": 8,
+   "delay_worst_s": 13,
+   "missed_per_hour": 0.0,
+   "fixedMinute": {
+    "calls_per_hour": 60.0,
+    "delay_median_s": 34.5,
+    "delay_worst_s": 63.5,
+    "missed_per_hour": 0.0
+   }
+  },
+  {
+   "name": "a slow uploader: 25 s after it",
+   "calls_per_hour": 60.0,
+   "delay_median_s": 27,
+   "delay_worst_s": 84,
+   "missed_per_hour": 0.9,
+   "fixedMinute": {
+    "calls_per_hour": 60.0,
+    "delay_median_s": 55.5,
+    "delay_worst_s": 84.5,
+    "missed_per_hour": 0.0
+   }
+  },
+  {
+   "name": "one late upload (40 s) in 15",
+   "calls_per_hour": 60.3,
+   "delay_median_s": 8,
+   "delay_worst_s": 13,
+   "missed_per_hour": 3.8,
+   "fixedMinute": {
+    "calls_per_hour": 60.0,
+    "delay_median_s": 34.5,
+    "delay_worst_s": 63.5,
+    "missed_per_hour": 3.8
+   }
+  },
+  {
+   "name": "the Libre app uploads every 5 min (readings late in batches)",
+   "calls_per_hour": 60.0,
+   "delay_median_s": 100,
+   "delay_worst_s": 100,
+   "missed_per_hour": 45.5,
+   "fixedMinute": {
+    "calls_per_hour": 60.0,
+    "delay_median_s": 94.5,
+    "delay_worst_s": 123.5,
+    "missed_per_hour": 45.5
+   }
+  },
+  {
+   "name": "the sensor's clock drifts (60.3 s a reading) and this clock is 20 s ahead",
+   "calls_per_hour": 59.7,
+   "delay_median_s": 7,
+   "delay_worst_s": 63,
+   "missed_per_hour": 0.9,
+   "fixedMinute": {
+    "calls_per_hour": 60.0,
+    "delay_median_s": 34.5,
+    "delay_worst_s": 63.5,
+    "missed_per_hour": 0.0
+   }
+  },
+  {
+   "name": "the call takes 1.5 s",
+   "calls_per_hour": 60.3,
+   "delay_median_s": 9.5,
+   "delay_worst_s": 14.5,
+   "missed_per_hour": 0.0,
+   "fixedMinute": {
+    "calls_per_hour": 58.7,
+    "delay_median_s": 34.0,
+    "delay_worst_s": 63.5,
+    "missed_per_hour": 1.6
+   }
   }
  ],
  "versions": [

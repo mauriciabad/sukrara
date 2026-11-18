@@ -205,6 +205,19 @@ import Testing
         await r.source.set(nil)
     }
 
+    @Test func theNextCallIsTimedToTheNextReading() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.ana, "Ana")] }
+        let r = rig(s)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password, yours: false)
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        _ = try #require(await wait(r.source) { $0.monitoring })
+        // the live reading is 50 s old: the next is due in 10 s, too soon (45 s at least), so 8 s after the one after
+        #expect(await eventually { r.waits.list.withLock { $0.last } == 78 })
+        await r.source.set(nil)
+    }
+
     @Test func theTokenIsKeptUntilItNearsItsEndAndAnEarlyRefusalSignsInOnce() async throws {
         let s = server()
         s.people.withLock { $0 = [(Self.ana, "Ana")] }

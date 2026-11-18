@@ -338,7 +338,15 @@ public enum LibreLinkUp {
 
 /// When the LibreLinkUp source asks again (contracts/sources/librelinkup/poll.json).
 public enum LluPoll {
-    public static let every: TimeInterval = 60
+    /// The Libre app uploads each reading as the sensor reads it, each minute.
+    public static let cadence: TimeInterval = 60
+    /// LibreLinkUp has a reading within seconds: the call goes this long after it is due (it grows when late).
+    public static let margin: TimeInterval = 8
+    public static let marginUp: TimeInterval = 5
+    public static let marginHold = 10
+    public static let marginMax: TimeInterval = 40
+    /// A timed call never sooner than this after an answer: one call a reading at most.
+    public static let minimum: TimeInterval = 45
     public static let backoff: [TimeInterval] = [60, 120, 300, 600]
     public static let rateLimitedMin: TimeInterval = 600
     public static let renewBefore: TimeInterval = 300
@@ -348,21 +356,56 @@ public enum LluPoll {
     /// Abbott refused this client: asked again rarely.
     public static let retired: TimeInterval = 3600
 
-    /// Seconds to the next call; nil = only when the person acts (a refused password: retries lock the account).
+    /// How late after a reading is due the call goes, and the new readings found in time in a row.
+    public struct Timing: Equatable, Sendable {
+        public var margin: TimeInterval
+        public var streak: Int
+        public init(margin: TimeInterval = LluPoll.margin, streak: Int = 0) {
+            self.margin = margin
+            self.streak = streak
+        }
+    }
+
+    /// The timing after a call answered at `now` that found the live reading `found` (nil = none), `before` the newest
+    /// live reading known before it (nil = none: a first call says nothing about timing). A new reading more than a
+    /// cadence old when found missed its call: the margin grows; `marginHold` in a row found in time take a second
+    /// off. Nothing new (the sensor missed one, or it is on its way): unchanged. (poll.json `margins`)
+    public static func timing(_ t: Timing, now: Date, before: Date?, found: Date?) -> Timing {
+        guard let found, let before, found > before else { return t }
+        if now.timeIntervalSince(found) > cadence { return Timing(margin: min(t.margin + marginUp, marginMax)) }
+        let streak = t.streak + 1
+        return streak >= marginHold
+            ? Timing(margin: max(t.margin - 1, margin)) : Timing(margin: t.margin, streak: streak)
+    }
+
+    /// Seconds to the next call after an answer: `margin` after the next reading is due (the newest live reading +
+    /// a cadence), the first such time at least `minimum` from now; a reading stamped ahead counts as now; none yet:
+    /// a cadence. (poll.json `timed`)
+    public static func timed(now: Date, newest: Date?, margin m: TimeInterval) -> TimeInterval {
+        guard let newest else { return cadence }
+        let n = min(newest, now)
+        let k = max(1, ((now.timeIntervalSince(n) + minimum - m) / cadence).rounded(.up))
+        return n.addingTimeInterval(k * cadence + m).timeIntervalSince(now)
+    }
+
+    /// Seconds to the next call after a failure; nil = only when the person acts (a refused password: retries lock the
+    /// account).
     public static func wait(failures: Int, rateLimited: TimeInterval? = nil, refused: Bool = false) -> TimeInterval? {
         if refused { return nil }
         if let rateLimited { return max(rateLimitedMin, rateLimited) }
-        if failures == 0 { return every }
-        return backoff[min(failures - 1, backoff.count - 1)]
+        return backoff[min(max(failures, 1) - 1, backoff.count - 1)]
     }
 
     /// Seconds to the next call after a round that ended in `outcome` (nil = not set up), the failures in a row and a
-    /// 429's wait; nil = only when the person acts (poll.json `after`). Asked to wait without a time: `rateLimitedMin`.
+    /// 429's wait; nil = only when the person acts (poll.json `after`). An answer: timed to the next reading
+    /// (`timed`). Asked to wait without a time: `rateLimitedMin`.
     public static func next(
-        outcome: SourceHealth.Outcome?, failures: Int, retryAfter: TimeInterval? = nil
+        outcome: SourceHealth.Outcome?, failures: Int, retryAfter: TimeInterval? = nil,
+        now: Date = Date(timeIntervalSince1970: 0), newest: Date? = nil, margin m: TimeInterval = margin
     ) -> TimeInterval? {
         switch outcome {
         case nil: nil
+        case .ok: timed(now: now, newest: newest, margin: m)
         case .terms: terms
         case .retired: retired
         case .notShared: connectionsEvery

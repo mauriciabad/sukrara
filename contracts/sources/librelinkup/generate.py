@@ -26,7 +26,12 @@ VERSION = "4.17.0"  # the LibreLinkUp version this build sends (poll.json 'heade
 VERSION_FORMAT = re.compile(r"\d{1,3}(\.\d{1,4}){1,3}")
 
 POLL = {
-    "every_s": 60,
+    "cadence_s": 60,
+    "margin_s": 8,
+    "margin_up_s": 5,
+    "margin_hold": 10,
+    "margin_max_s": 40,
+    "min_s": 45,
     "backoff_s": [60, 120, 300, 600],
     "rateLimited_min_s": 600,
     "renewBefore_s": 300,
@@ -199,23 +204,53 @@ def graph(body):
     return {"readings": out, "sensor": sensor, "name": name_of(conn)}
 
 
+def margin(m, streak, now, before, found):
+    """The margin and the in-time streak after a call answered at `now` that found the live reading `found` (None =
+    none), `before` the newest live reading known before it (None = none: a first call says nothing about timing).
+    A new reading more than a cadence old when found missed its call (LibreLinkUp had it later than the margin):
+    the margin grows by 'margin_up_s' (at most 'margin_max_s'). New readings found in time 'margin_hold' times in a
+    row: it shrinks by a second, back towards 'margin_s' (LibreLinkUp may be quick again; slowly, so a lag that stays
+    isn't missed again soon). Nothing new (a reading the sensor missed, or one still on its way): unchanged."""
+    if found is None or before is None or found <= before:
+        return m, streak
+    if now - found > POLL["cadence_s"]:
+        return min(m + POLL["margin_up_s"], POLL["margin_max_s"]), 0
+    streak += 1
+    if streak >= POLL["margin_hold"]:
+        return max(m - 1, POLL["margin_s"]), 0
+    return m, streak
+
+
+def timed(now, newest, m):
+    """Seconds to the next call after an answer: the next reading is due a cadence after the newest live reading,
+    LibreLinkUp has it within the margin; the first such time at least 'min_s' from now (a reading still missing
+    is asked for at the next one's time: one call a reading at most). A reading stamped ahead of this clock counts
+    as now. No reading yet: a cadence."""
+    c = POLL["cadence_s"]
+    if newest is None:
+        return c
+    n = min(newest, now)
+    k = max(1, -((n + m - now - POLL["min_s"]) // c))
+    return n + k * c + m - now
+
+
 def wait(failures, rate_limited=None, refused=False):
-    """Seconds to the next call: every minute; failures back off; a rate limit waits at least its minimum."""
+    """Seconds to the next call after a failure: failures back off; a rate limit waits at least its minimum."""
     if refused:
         return None
     if rate_limited is not None:
         return max(POLL["rateLimited_min_s"], rate_limited or 0)
-    if failures == 0:
-        return POLL["every_s"]
     b = POLL["backoff_s"]
-    return b[min(failures - 1, len(b) - 1)]
+    return b[min(max(failures, 1) - 1, len(b) - 1)]
 
 
-def after(outcome, failures, retry_after=None):
+def after(outcome, failures, retry_after=None, now=0, newest=None, m=POLL["margin_s"]):
     """Seconds to the next call after a round that ended in outcome (None = not set up): None = only when the person
-    acts. Asked to wait (429) without a time: the minimum."""
+    acts. An answer: timed to the next reading. Asked to wait (429) without a time: the minimum."""
     if outcome is None:
         return None
+    if outcome == "ok":
+        return timed(now, newest, m)
     if outcome == "terms":
         return POLL["terms_s"]
     if outcome == "retired":
@@ -371,7 +406,6 @@ for c in graphs:
 
 waits = []
 W = waits.append
-W({"name": "an answer: again in a minute", "failures": 0})
 W({"name": "one failure", "failures": 1})
 W({"name": "two failures", "failures": 2})
 W({"name": "three", "failures": 3})
@@ -385,7 +419,10 @@ for c in waits:
 afters = []
 A = afters.append
 A({"name": "not set up: only when the person signs in", "outcome": None, "failures": 0})
-A({"name": "an answer", "outcome": "ok", "failures": 0})
+A({"name": "an answer: timed to the next reading", "outcome": "ok", "failures": 0, "now": NOW + 10, "newest": NOW,
+   "margin_s": 8})
+A({"name": "an answer with no reading yet: a minute", "outcome": "ok", "failures": 0, "now": NOW, "newest": None,
+   "margin_s": 8})
 A({"name": "no answer, twice", "outcome": "network", "failures": 2})
 A({"name": "the server failed three times", "outcome": "server", "failures": 3})
 A({"name": "the password was refused", "outcome": "refused", "failures": 1})
@@ -396,7 +433,122 @@ A({"name": "asked to wait without a time", "outcome": "rateLimited", "failures":
 A({"name": "asked to wait 2 min: the minimum", "outcome": "rateLimited", "failures": 1, "retryAfter_s": 120})
 A({"name": "asked to wait 15 min", "outcome": "rateLimited", "failures": 1, "retryAfter_s": 900})
 for c in afters:
-    c["wait_s"] = after(c["outcome"], c["failures"], c.get("retryAfter_s"))
+    c["wait_s"] = after(c["outcome"], c["failures"], c.get("retryAfter_s"), c.get("now", 0), c.get("newest"),
+                        c.get("margin_s", POLL["margin_s"]))
+
+# when the next call goes, after an answer (timed): 'now', the newest live reading, the margin -> 'wait_s'
+timings = []
+T = timings.append
+T({"name": "a reading 10 s ago: 8 s after the next one is due", "now": NOW + 10, "newest": NOW, "margin_s": 8})
+T({"name": "found as it arrived", "now": NOW + 8, "newest": NOW, "margin_s": 8})
+T({"name": "a larger margin", "now": NOW + 8, "newest": NOW, "margin_s": 25})
+T({"name": "the next one's time is too close: the one after", "now": NOW + 30, "newest": NOW, "margin_s": 8})
+T({"name": "exactly 45 s away: kept", "now": NOW + 23, "newest": NOW, "margin_s": 8})
+T({"name": "the sensor missed one: still on its minute", "now": NOW + 68, "newest": NOW, "margin_s": 8})
+T({"name": "an hour old (the Libre app stopped): still once a minute, on its minute", "now": NOW + 3601,
+   "newest": NOW, "margin_s": 8})
+T({"name": "stamped ahead of this clock: counts as now", "now": NOW, "newest": NOW + 40, "margin_s": 8})
+T({"name": "no reading yet: a minute", "now": NOW, "newest": None, "margin_s": 8})
+for c in timings:
+    c["wait_s"] = timed(c["now"], c["newest"], c["margin_s"])
+
+# how the margin follows LibreLinkUp: the margin before, the call's answer time, the newest live reading before and
+# after it -> 'margin_s' after
+margins = []
+M = margins.append
+M({"name": "found in time: one more in a row", "margin": 13, "streak": 3, "now": NOW + 73, "before": NOW,
+   "found": NOW + 60})
+M({"name": "the 10th in a row: a second less", "margin": 13, "streak": 9, "now": NOW + 73, "before": NOW,
+   "found": NOW + 60})
+M({"name": "never below 8", "margin": 8, "streak": 9, "now": NOW + 68, "before": NOW, "found": NOW + 60})
+M({"name": "found a minute late (LibreLinkUp had it after the call): +5", "margin": 8, "streak": 4,
+   "now": NOW + 128, "before": NOW, "found": NOW + 60})
+M({"name": "late again, at most 40", "margin": 38, "streak": 0, "now": NOW + 218, "before": NOW + 60,
+   "found": NOW + 120})
+M({"name": "nothing new: unchanged", "margin": 13, "streak": 2, "now": NOW + 73, "before": NOW, "found": NOW})
+M({"name": "the sensor missed one, the next found in time: not late", "margin": 8, "streak": 0, "now": NOW + 128,
+   "before": NOW, "found": NOW + 120})
+M({"name": "the first answer says nothing about timing", "margin": 8, "streak": 0, "now": NOW + 500,
+   "before": None, "found": NOW})
+M({"name": "no live reading", "margin": 8, "streak": 0, "now": NOW + 68, "before": NOW, "found": None})
+for c in margins:
+    c["margin_s"], c["streak_after"] = margin(c["margin"], c["streak"], c["now"], c["before"], c["found"])
+
+
+def live_at(t, readings):
+    """The live reading LibreLinkUp shows at t: the newest uploaded (each reading [time, uploaded])."""
+    best = None
+    for r, up in readings:
+        if up <= t and (best is None or r > best):
+            best = r
+    return best
+
+
+def simulate(name, readings, skew=0, answer=0, hours=3, fixed=None, start=None):
+    """The source against LibreLinkUp for `hours`: readings [time, uploaded] in true time, this clock `skew` s ahead,
+    each answer `answer` s after the call. -> calls an hour, the delay of each reading shown (true time from its
+    reading to its answer), readings never shown live an hour, and the steps (this clock)."""
+    t = readings[0][0] + 13 if start is None else start
+    end = t + hours * 3600
+    m, streak, before, calls, seen, steps = POLL["margin_s"], 0, None, 0, {}, []
+    while t < end:
+        calls += 1
+        a = t + answer
+        found = live_at(a, readings)
+        if found is not None and found not in seen:
+            seen[found] = a - found
+        now = a + skew
+        m2, streak = margin(m, streak, now, before, found)
+        newest = found if before is None or (found is not None and found > before) else before
+        w = fixed if fixed is not None else timed(now, newest, m2)
+        steps.append({"now": now, "found": found, "margin_s": m2, "wait_s": w})
+        m, before = m2, newest
+        t = a + w
+    shown = sorted(seen.values())
+    span = [r for r, _ in readings if readings[0][0] + 600 <= r <= end - 120]
+    lost = sum(1 for r in span if r not in seen)
+    return {"name": name, "calls_per_hour": round(calls / hours, 1),
+            "delay_median_s": round(shown[len(shown) // 2], 1), "delay_worst_s": round(shown[-1], 1),
+            "missed_per_hour": round(lost / hours, 1)}, steps
+
+
+def minutes(n=200, period=60, lag=lambda i: 4, skip=lambda i: False, t0=NOW):
+    return [(t0 + i * period, t0 + i * period + lag(i)) for i in range(n) if not skip(i)]
+
+
+SIMS = [
+    ("the owner's test: LibreLinkUp has each reading 4 s after it", minutes(), {}),
+    ("LibreLinkUp 1-7 s after it", minutes(lag=lambda i: 1 + (i * 37 % 7)), {}),
+    ("the sensor misses one reading in 10", minutes(skip=lambda i: i % 10 == 5), {}),
+    ("a slow uploader: 25 s after it", minutes(lag=lambda i: 25), {}),
+    ("one late upload (40 s) in 15", minutes(lag=lambda i: 40 if i % 15 == 7 else 4), {}),
+    ("the Libre app uploads every 5 min (readings late in batches)",
+     [(NOW + i * 60, NOW + (i // 5 + 1) * 300 + 4) for i in range(200)], {}),
+    ("the sensor's clock drifts (60.3 s a reading) and this clock is 20 s ahead",
+     [(NOW + round(i * 60.3), NOW + round(i * 60.3) + 4) for i in range(200)], {"skew": 20}),
+    ("the call takes 1.5 s", minutes(), {"answer": 1.5}),
+]
+simulation = []
+for name, rs, kw in SIMS:
+    hours = (len(rs) * 60 - 600) / 3600
+    r, _ = simulate(name, rs, hours=hours, **kw)
+    # the fixed minute it replaces, from every second of the minute
+    fixed = [simulate(name, rs, hours=hours, fixed=60, start=rs[0][0] + p + 0.5, **kw)[0] for p in range(60)]
+    r["fixedMinute"] = {
+        "calls_per_hour": max(f["calls_per_hour"] for f in fixed),
+        "delay_median_s": sorted(f["delay_median_s"] for f in fixed)[30],
+        "delay_worst_s": max(f["delay_worst_s"] for f in fixed),
+        "missed_per_hour": max(f["missed_per_hour"] for f in fixed),
+    }
+    simulation.append(r)
+    # one call a reading at most (the 60 an hour the fixed minute made), however LibreLinkUp behaves
+    assert r["calls_per_hour"] <= 60.5, r
+
+# steps both apps replay (the margin carried from step to step, from 'margin_s'): integer times
+sequences = []
+for name, rs, kw in [SIMS[2], SIMS[3], SIMS[4], SIMS[6]]:
+    _, steps = simulate(name, rs, hours=1, **kw)
+    sequences.append({"name": name, "steps": steps[:45]})
 
 versions = []
 V = versions.append
@@ -449,18 +601,30 @@ dump("graph.json", {"_about": [
     "wear), as LibreLinkUp doesn't say how long it lasts. 'name' = the connection's first and last name.",
 ], "now": NOW, "cases": graphs})
 dump("poll.json", {"_about": [
-    "When the LibreLinkUp source asks again: every 'every_s' (the Libre app uploads each minute); after failures in a",
-    "row 'backoff_s'; asked to wait (429) at least 'rateLimited_min_s', or Retry-After / the lockout when longer;",
-    "a refused password never by itself (the person signs in again: retries lock the account). A token is renewed",
-    "'renewBefore_s' before it expires; the connections are read again every 'connectionsEvery_s' (and when the",
-    "graph call is refused: the person may have stopped sharing). 'headers': what every call sends.",
-    "'after': the wait after a round that ended in 'outcome' (contracts/sources/health.json's outcomes; null = only",
-    "when the person acts). Asked to wait, nothing calls LibreLinkUp before that time, whatever asks for it (the",
-    "network back, Try Again, another person picked: each call may lengthen the lockout); a sign-in the person makes",
-    "ends the wait. 'versions': a 403 on the login or a call naming a minimum version (login.json, calls.json) has",
-    "that version sent from then on and the same request made once more; it stays with the account (a new sign-in,",
-    "a restart), unless this build's own version is newer ('send', parts compared as numbers).",
+    "When the LibreLinkUp source asks again. After an answer, timed to the next reading ('timed'): the Libre app",
+    "uploads each reading as the sensor reads it, each 'cadence_s', and LibreLinkUp has it within seconds (the owner's",
+    "test 2026-11-18: about 4 s), so the next call goes 'margin_s' after the next reading is due (the newest live",
+    "reading + a cadence), the first such time at least 'min_s' from now: one call a reading at most, on the sensor's",
+    "own minute (its drift and a missed reading included: the next is still due on that minute). The margin follows",
+    "LibreLinkUp ('margins'): a new reading more than a cadence old when found missed its call, so the margin grows",
+    "'margin_up_s' (at most 'margin_max_s'); 'margin_hold' new readings in a row found in time take a second off,",
+    "down to 'margin_s'; it starts at 'margin_s' with each run. 'sequences' are calls in a row both apps replay (the",
+    "margin and streak carried from 'margin_s' and 0, the newest live reading from none). 'simulation': the rule",
+    "against LibreLinkUp behaving in these ways, beside the fixed minute it replaced (from every second of the minute):",
+    "calls an hour, the delay from a reading to its answer, readings never shown live (only the graph's 5-minute",
+    "points). After failures in a row 'backoff_s'; asked to wait (429) at least 'rateLimited_min_s', or Retry-After /",
+    "the lockout when longer; a refused password never by itself (the person signs in again: retries lock the",
+    "account). A token is renewed 'renewBefore_s' before it expires; the connections are read again every",
+    "'connectionsEvery_s' (and when the graph call is refused: the person may have stopped sharing). 'headers': what",
+    "every call sends. 'after': the wait after a round that ended in 'outcome' (contracts/sources/health.json's",
+    "outcomes; null = only when the person acts; 'ok' with 'now', 'newest', 'margin_s'). Asked to wait, nothing calls",
+    "LibreLinkUp before that time, whatever asks for it (the network back, Try Again, another person picked: each call",
+    "may lengthen the lockout); a sign-in the person makes ends the wait. 'versions': a 403 on the login or a call",
+    "naming a minimum version (login.json, calls.json) has that version sent from then on and the same request made",
+    "once more; it stays with the account (a new sign-in, a restart), unless this build's own version is newer",
+    "('send', parts compared as numbers).",
 ], **POLL,
     "headers": {"product": "llu.android", "version": VERSION, "Accept": "application/json",
                 "Content-Type": "application/json", "cache-control": "no-cache"},
-    "cases": waits, "after": afters, "versions": versions})
+    "cases": waits, "after": afters, "timed": timings, "margins": margins, "sequences": sequences,
+    "simulation": simulation, "versions": versions})

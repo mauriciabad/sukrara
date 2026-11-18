@@ -132,7 +132,17 @@ sealed interface LluConnectResult {
 
 /** When the source asks again (contracts/sources/librelinkup/poll.json). */
 object LluPoll {
-    const val EVERY_S = 60L
+    /** The Libre app uploads each reading as the sensor reads it, each minute. */
+    const val CADENCE_S = 60L
+
+    /** LibreLinkUp has a reading within seconds: the call goes this long after it is due (it grows when late). */
+    const val MARGIN_S = 8L
+    const val MARGIN_UP_S = 5L
+    const val MARGIN_HOLD = 10
+    const val MARGIN_MAX_S = 40L
+
+    /** A timed call never sooner than this after an answer: one call a reading at most. */
+    const val MIN_S = 45L
     val BACKOFF_S = listOf(60L, 120L, 300L, 600L)
     const val RATE_LIMITED_MIN_S = 600L
     const val CONNECTIONS_EVERY_S = 1800L
@@ -143,17 +153,62 @@ object LluPoll {
     /** Abbott refused this client: asked again rarely. */
     const val RETIRED_S = 3600L
 
+    /** How late after a reading is due the call goes ([marginS]), and the new readings found in time in a row. */
+    data class Timing(
+        val marginS: Long = MARGIN_S,
+        val streak: Int = 0,
+    )
+
+    /**
+     * The timing after a call answered at [nowS] that found the live reading [foundS] (null = none), [beforeS] the
+     * newest live reading known before it (null = none: a first call says nothing about timing). A new reading more
+     * than a cadence old when found missed its call: the margin grows; [MARGIN_HOLD] in a row found in time take a
+     * second off. Nothing new (the sensor missed one, or it is on its way): unchanged. (poll.json `margins`)
+     */
+    fun timing(
+        t: Timing,
+        nowS: Long,
+        beforeS: Long?,
+        foundS: Long?,
+    ): Timing {
+        if (foundS == null || beforeS == null || foundS <= beforeS) return t
+        if (nowS - foundS > CADENCE_S) return Timing(minOf(t.marginS + MARGIN_UP_S, MARGIN_MAX_S), 0)
+        val streak = t.streak + 1
+        return if (streak >= MARGIN_HOLD) Timing(maxOf(t.marginS - 1, MARGIN_S), 0) else t.copy(streak = streak)
+    }
+
+    /**
+     * Seconds to the next call after an answer: [marginS] after the next reading is due (the newest live reading
+     * [newestS] + a cadence), the first such time at least [MIN_S] from [nowS]; a reading stamped ahead counts as
+     * now; none yet: a cadence. (poll.json `timed`)
+     */
+    fun timedS(
+        nowS: Long,
+        newestS: Long?,
+        marginS: Long,
+    ): Long {
+        newestS ?: return CADENCE_S
+        val n = minOf(newestS, nowS)
+        val k = maxOf(1L, -Math.floorDiv(n + marginS - nowS - MIN_S, CADENCE_S))
+        return n + k * CADENCE_S + marginS - nowS
+    }
+
     /**
      * Seconds to the next call after a cycle that ended in [outcome] (null = not set up), the [failures] in a row and a
-     * 429's [retryAfterS]; null = only when the person acts. Asked to wait without a time: [RATE_LIMITED_MIN_S].
+     * 429's [retryAfterS]; null = only when the person acts. An answer: timed to the next reading ([timedS]). Asked to
+     * wait without a time: [RATE_LIMITED_MIN_S].
      */
     fun next(
         outcome: CallOutcome?,
         failures: Int,
         retryAfterS: Long?,
+        nowS: Long = 0,
+        newestS: Long? = null,
+        marginS: Long = MARGIN_S,
     ): Long? =
         when (outcome) {
             null -> null
+            CallOutcome.Ok -> timedS(nowS, newestS, marginS)
             CallOutcome.Terms -> TERMS_S
             CallOutcome.Retired -> RETIRED_S
             CallOutcome.NotShared -> CONNECTIONS_EVERY_S
@@ -161,7 +216,7 @@ object LluPoll {
             else -> waitS(failures, refused = outcome == CallOutcome.Refused)
         }
 
-    /** Seconds to the next call, null = only when the person acts (a refused password: retries lock the account). */
+    /** Seconds to the next call after a failure, null = only when the person acts (a refused password: retries lock the account). */
     fun waitS(
         failures: Int,
         rateLimitedS: Long? = null,
@@ -169,8 +224,7 @@ object LluPoll {
     ): Long? {
         if (refused) return null
         if (rateLimitedS != null) return maxOf(RATE_LIMITED_MIN_S, rateLimitedS)
-        if (failures == 0) return EVERY_S
-        return BACKOFF_S[(failures - 1).coerceAtMost(BACKOFF_S.size - 1)]
+        return BACKOFF_S[(failures.coerceAtLeast(1) - 1).coerceAtMost(BACKOFF_S.size - 1)]
     }
 }
 
@@ -226,6 +280,11 @@ class LibreLinkUpSource(
     @Volatile private var lastPatient: String? = null
 
     @Volatile private var peopleCheckedS = 0L
+
+    /** The newest live reading of the person read (epoch s, null = none yet) and the calls' timing to the next one. */
+    @Volatile private var liveNewestS: Long? = null
+
+    @Volatile private var timing = LluPoll.Timing()
 
     /** LibreLinkUp asked to wait (429): no call before this (epoch s), whatever kicks the loop; a new sign-in ends it. */
     @Volatile private var holdUntilS = 0L
@@ -389,6 +448,8 @@ class LibreLinkUpSource(
     override val readings: Flow<List<Reading>> =
         channelFlow {
             live.value = Live(online = network.online())
+            liveNewestS = null
+            timing = LluPoll.Timing()
             statusFlow.value = SourceStatus.Connecting
             launch { network.back.collect { kick() } }
             launch { config.data.drop(1).collect { kick() } }
@@ -417,7 +478,14 @@ class LibreLinkUpSource(
             val l = live.value
             live.value = l.copy(outcome = c.outcome ?: l.outcome, online = network.online(), newest = c.newest ?: l.newest)
             publish()
-            val wait = LluPoll.next(c.outcome, failures, c.retryAfterS)
+            val nowS = clock.now().epochSecond
+            if (c.outcome == CallOutcome.Ok) {
+                // timed to the next reading: the margin follows how soon LibreLinkUp has them
+                val found = c.live?.epochSecond
+                timing = LluPoll.timing(timing, nowS, liveNewestS, found)
+                if (found != null && (liveNewestS ?: Long.MIN_VALUE) < found) liveNewestS = found
+            }
+            val wait = LluPoll.next(c.outcome, failures, c.retryAfterS, nowS, liveNewestS, timing.marginS)
             // asked to wait: nothing calls LibreLinkUp before then (each call may lengthen the lockout); a sign-in does
             holdUntilS = if (c.outcome == CallOutcome.RateLimited && wait != null) clock.now().epochSecond + wait else 0L
             waitFor(wait)
@@ -475,6 +543,8 @@ class LibreLinkUpSource(
         val outcome: CallOutcome?,
         val newest: Instant? = null,
         val retryAfterS: Long? = null,
+        /** The live reading in the answer (null = none): the calls are timed to the next one. */
+        val live: Instant? = null,
     )
 
     private fun outcomeOf(o: LluCallOutcome): CallOutcome =
@@ -508,6 +578,8 @@ class LibreLinkUpSource(
             // another person: what the last one had says nothing about this one
             lastPatient = patient
             live.value = live.value.copy(newest = null)
+            liveNewestS = null
+            timing = LluPoll.Timing()
         }
         val now = clock.now()
         val checked = now.epochSecond - peopleCheckedS < LluPoll.CONNECTIONS_EVERY_S
@@ -534,7 +606,7 @@ class LibreLinkUpSource(
                 sensorStartS = g.sensor?.start?.epochSecond ?: st.sensorStartS,
             )
         }
-        return Cycle(CallOutcome.Ok, newest)
+        return Cycle(CallOutcome.Ok, newest, live = newestLive)
     }
 
     /**

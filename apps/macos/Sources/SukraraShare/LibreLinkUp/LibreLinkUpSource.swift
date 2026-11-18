@@ -395,6 +395,9 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
             do { try await sleep(first) } catch { return }
         }
         var failures = 0
+        // the newest live reading of this run and the calls' timing to the next one (poll.json `timed`)
+        var newest: Date?
+        var timing = LluPoll.Timing()
         while !Task.isCancelled && gen == generation {
             let c = await cycle(config.patient, gen: gen)
             guard !Task.isCancelled, gen == generation else { return }
@@ -407,7 +410,15 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
                 publish(s)
             }
             publishAccount()
-            let wait = LluPoll.next(outcome: c.outcome, failures: failures, retryAfter: c.retryAfter)
+            let now = clock.now
+            if c.outcome == .ok {
+                // the margin follows how soon LibreLinkUp has the readings
+                timing = LluPoll.timing(timing, now: now, before: newest, found: c.live)
+                if let found = c.live, found > newest ?? .distantPast { newest = found }
+            }
+            let wait = LluPoll.next(
+                outcome: c.outcome, failures: failures, retryAfter: c.retryAfter, now: now, newest: newest,
+                margin: timing.margin)
             // asked to wait: nothing calls LibreLinkUp before then (each call may lengthen the lockout)
             holdUntil = c.outcome == .rateLimited ? wait.map { clock.now.addingTimeInterval($0) } : nil
             // nil: only the person acts (a refused password: Sign In Again; retries lock the account)
@@ -419,6 +430,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     struct Cycle {
         var outcome: SourceHealth.Outcome?
         var retryAfter: TimeInterval?
+        /// The live reading in the answer (nil = none): the calls are timed to the next one.
+        var live: Date?
     }
 
     static func outcome(_ o: LluCallOutcome) -> SourceHealth.Outcome {
@@ -480,7 +493,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         snap.monitoring = true
         snap.lastAnswer = now
         publish(snap)
-        return Cycle(outcome: .ok)
+        return Cycle(outcome: .ok, live: g.readings.filter(\.live).map(\.reading.t).max())
     }
 
     /// Whom the account follows, read again: nil while `patient` is still shared, else the round's end (not shared, or

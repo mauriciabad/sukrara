@@ -108,9 +108,16 @@ import Testing
         #expect(h["version"] as? String == LibreLinkUp.version)
     }
 
+    static func date(_ v: Any?) -> Date? { double(v).map { Date(timeIntervalSince1970: $0) } }
+
     @Test func pollWaitsWhatTheContractSays() throws {
         let poll = try file("poll.json")
-        #expect(Self.double(poll["every_s"]) == LluPoll.every)
+        #expect(Self.double(poll["cadence_s"]) == LluPoll.cadence)
+        #expect(Self.double(poll["margin_s"]) == LluPoll.margin)
+        #expect(Self.double(poll["margin_up_s"]) == LluPoll.marginUp)
+        #expect(poll["margin_hold"] as? Int == LluPoll.marginHold)
+        #expect(Self.double(poll["margin_max_s"]) == LluPoll.marginMax)
+        #expect(Self.double(poll["min_s"]) == LluPoll.minimum)
         #expect((poll["backoff_s"] as? [NSNumber])?.map(\.doubleValue) == LluPoll.backoff)
         #expect(Self.double(poll["rateLimited_min_s"]) == LluPoll.rateLimitedMin)
         #expect(Self.double(poll["renewBefore_s"]) == LluPoll.renewBefore)
@@ -127,8 +134,43 @@ import Testing
         for c in try #require(poll["after"] as? [[String: Any]]) {
             let outcome = try (c["outcome"] as? String).map { try #require(SourceHealth.Outcome(rawValue: $0)) }
             let wait = LluPoll.next(
-                outcome: outcome, failures: c["failures"] as? Int ?? 0, retryAfter: Self.double(c["retryAfter_s"]))
+                outcome: outcome, failures: c["failures"] as? Int ?? 0, retryAfter: Self.double(c["retryAfter_s"]),
+                now: Self.date(c["now"]) ?? Date(timeIntervalSince1970: 0), newest: Self.date(c["newest"]),
+                margin: Self.double(c["margin_s"]) ?? LluPoll.margin)
             #expect(wait == Self.double(c["wait_s"]), "\(c["name"] ?? "")")
+        }
+    }
+
+    @Test func callsAreTimedToTheNextReading() throws {
+        let poll = try file("poll.json")
+        for c in try #require(poll["timed"] as? [[String: Any]]) {
+            let wait = LluPoll.timed(
+                now: try #require(Self.date(c["now"])), newest: Self.date(c["newest"]),
+                margin: try #require(Self.double(c["margin_s"])))
+            #expect(wait == Self.double(c["wait_s"]), "\(c["name"] ?? "")")
+        }
+        for c in try #require(poll["margins"] as? [[String: Any]]) {
+            let t = LluPoll.timing(
+                LluPoll.Timing(margin: try #require(Self.double(c["margin"])), streak: c["streak"] as? Int ?? -1),
+                now: try #require(Self.date(c["now"])), before: Self.date(c["before"]), found: Self.date(c["found"]))
+            let want = LluPoll.Timing(
+                margin: try #require(Self.double(c["margin_s"])), streak: c["streak_after"] as? Int ?? -1)
+            #expect(t == want, "\(c["name"] ?? "")")
+        }
+        // calls in a row, the timing carried
+        for q in try #require(poll["sequences"] as? [[String: Any]]) {
+            var t = LluPoll.Timing()
+            var newest: Date?
+            for (i, step) in try #require(q["steps"] as? [[String: Any]]).enumerated() {
+                let now = try #require(Self.date(step["now"]))
+                let found = Self.date(step["found"])
+                t = LluPoll.timing(t, now: now, before: newest, found: found)
+                if let found, found > newest ?? .distantPast { newest = found }
+                let name = "\(q["name"] ?? "") #\(i)"
+                #expect(t.margin == Self.double(step["margin_s"]), "\(name)")
+                #expect(
+                    LluPoll.timed(now: now, newest: newest, margin: t.margin) == Self.double(step["wait_s"]), "\(name)")
+            }
         }
     }
 
