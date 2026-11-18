@@ -118,6 +118,9 @@ class SettingsPagesTest {
             "source.nightscoutUrl",
             "source.nightscoutTreatments",
             "source.nightscoutSecret",
+            // Settings › Source › LibreLinkUp (`:integrations`' rows; the account through setup's Connect)
+            "source.libreLinkUpPatient",
+            "source.libreLinkUpSecret",
             // Settings › Status bar & notification and Settings › Sensor end
             "statusbar.show",
             "statusbar.colorize",

@@ -1256,11 +1256,16 @@ class AppGraph(
 
             // someone picked after a sign-in (the Connect step); a refused password later is the source's own state
             SourceKind.LibreLinkUp -> {
-                unlocked.value &&
+                when {
+                    !unlocked.value -> Readiness.AfterUnlock
+
                     libreLinkUpConfig.data
                         .first()
                         .patient
-                        .isNotEmpty()
+                        .isNotEmpty() -> Readiness.Ready
+
+                    else -> Readiness.Nothing
+                }
             }
 
             SourceKind.Sukrara -> {

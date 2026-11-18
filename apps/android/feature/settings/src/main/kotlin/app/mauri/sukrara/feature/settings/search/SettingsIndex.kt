@@ -462,6 +462,9 @@ object SettingsIndex {
             // a Nightscout site's rows (`:integrations`' NightscoutSourceRows): the site (its token with it), both ways
             add(SearchEntry(R.string.st_source_ns_site, source, listOf(R.string.st_source_title), group = R.string.st_source_ns))
             add(SearchEntry(R.string.st_source_ns_treatments, source, listOf(R.string.st_source_title), group = R.string.st_source_ns))
+            // LibreLinkUp's rows (`:integrations`' LibreLinkUpSourceRows): the account (its password with it), whose glucose
+            add(SearchEntry(R.string.st_source_llu_account, source, listOf(R.string.st_source_title), group = R.string.st_source_llu))
+            add(SearchEntry(R.string.st_source_llu_whose, source, listOf(R.string.st_source_title), group = R.string.st_source_llu))
             // Sensor → Source: where the glucose comes from is chosen there
             add(
                 SearchEntry(

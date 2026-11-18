@@ -973,4 +973,7 @@
     <string name="st_source_ns">Nightscout</string>
     <string name="st_source_ns_site">Site</string>
     <string name="st_source_ns_treatments">Treatments both ways</string>
+    <string name="st_source_llu">LibreLinkUp</string>
+    <string name="st_source_llu_account">LibreLinkUp account</string>
+    <string name="st_source_llu_whose">Whose glucose LibreLinkUp brings</string>
 </resources>
