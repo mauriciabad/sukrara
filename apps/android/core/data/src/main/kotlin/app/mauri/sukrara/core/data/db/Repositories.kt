@@ -24,10 +24,12 @@ import java.time.Instant
 
 /**
  * Readings in Room: the current person's (a person change deletes them all). Every store goes through THE rank rule
- * ([ReadingRank]): one reading per measurement, whichever sources brought it.
+ * ([ReadingRank]): one reading per measurement, whichever sources brought it, behind the kept history's [fence] (a
+ * source change for the same person, a link left with its history: contracts/sources/link.json `fence`).
  */
 class RoomReadingsRepository(
     private val dao: ReadingDao,
+    private val fence: suspend () -> Instant? = { null },
 ) : ReadingsRepository {
     override fun window(from: Instant): Flow<List<Reading>> = dao.window(from.toEpochMilli()).map { rows -> rows.map { it.toReading() } }
 
@@ -48,8 +50,9 @@ class RoomReadingsRepository(
     override suspend fun upsert(readings: List<Reading>) {
         if (readings.isEmpty()) return
         val window = ReadingRank.WINDOW.toMillis()
+        val kept = fence()
         dao.upsertRanked(readings.minOf { it.t.toEpochMilli() } - window, readings.maxOf { it.t.toEpochMilli() } + window) { stored ->
-            val plan = ReadingRank.plan(stored.map { it.toReading() }, readings)
+            val plan = ReadingRank.plan(stored.map { it.toReading() }, readings, kept)
             plan.upsert.map { it.toEntity() } to plan.remove.map { it.toEntity() }
         }
     }

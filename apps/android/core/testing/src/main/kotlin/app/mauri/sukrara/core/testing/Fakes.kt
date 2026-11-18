@@ -105,6 +105,9 @@ class InMemorySecureStore : SecureStore {
 class InMemoryReadingsRepository : ReadingsRepository {
     private val readings = MutableStateFlow<List<Reading>>(emptyList())
 
+    /** The kept history's fence, as Room's ([ReadingRank.plan]); null = none. */
+    var fence: Instant? = null
+
     override fun window(from: Instant): Flow<List<Reading>> = readings.map { all -> all.filter { it.t >= from } }
 
     override fun latest(): Flow<Reading?> = readings.map { it.lastOrNull() }
@@ -117,7 +120,7 @@ class InMemoryReadingsRepository : ReadingsRepository {
     override suspend fun upsert(readings: List<Reading>) {
         // as in Room: THE rank rule, one reading per measurement
         this.readings.update { current ->
-            val plan = ReadingRank.plan(current, readings)
+            val plan = ReadingRank.plan(current, readings, fence)
             val gone = plan.remove.map { it.t to it.source }.toSet()
             (current.filterNot { (it.t to it.source) in gone } + plan.upsert).associateBy { it.t to it.source }.values.sortedBy { it.t }
         }

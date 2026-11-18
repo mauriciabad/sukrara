@@ -178,7 +178,14 @@ class DataModule(
      * Every stored reading: the current person's (a person change deletes them). What the hub, the history, the report,
      * the export and the uploads read.
      */
-    val readings: ReadingsRepository by lazy { RoomReadingsRepository(database.readings()) }
+    val readings: ReadingsRepository by lazy { RoomReadingsRepository(database.readings()) { fence() } }
+
+    /**
+     * The kept history's fence every store of [readings] respects (`ReadingRank.plan`); the app points it at its
+     * `history.json` ([HistoryFence]) before anything is stored. None by default (tests, before that).
+     */
+    @Volatile
+    var fence: suspend () -> java.time.Instant? = { null }
 
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
 

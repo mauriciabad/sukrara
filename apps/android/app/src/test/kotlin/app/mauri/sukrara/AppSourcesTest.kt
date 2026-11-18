@@ -71,7 +71,7 @@ class AppSourcesTest {
         runTest {
             // Appendix G finding 4: Ana's pick read on as "yours"
             var after: Pair<SourceRecord, SourceSpec>? = null
-            val sources = AppSources(store, running, readings, treatments) { was, spec -> after = was to spec }
+            val sources = AppSources(store, running, readings, treatments, anotherPerson = { was, spec -> after = was to spec })
             sources.set(SourceSpec(Person.Theirs, SourceKind.LibreLinkUp))
             store.update { it.copy(libreLinkUpPatient = "ana", nightscoutUrl = "https://ana.example") }
 
@@ -106,6 +106,30 @@ class AppSourcesTest {
 
             assertEquals(1, all().size)
             assertEquals(1, treatments.between(Instant.EPOCH, t0.plusSeconds(60)).first().size)
+        }
+
+    /**
+     * Appendix G finding 5: the new source's backfill overwrote what the previous one read (another person's too). A
+     * source change for the same person fences the history at its last reading; a person change, whose history goes,
+     * lifts it.
+     */
+    @Test fun aSourceChangeForTheSamePersonFencesTheHistoryTheNextSourceContinues() =
+        runTest {
+            val sources = AppSources(store, running, readings, treatments, setFence = { readings.fence = it })
+            sources.set(SourceSpec(Person.Yours, SourceKind.Sukrara))
+            readings.upsert(listOf(reading(0, SourceId.Relay), reading(10, SourceId.Relay)))
+
+            sources.set(SourceSpec(Person.Yours, SourceKind.LibreLinkUp))
+            assertEquals(t0.plusSeconds(600), readings.fence)
+            // LibreLinkUp's backfill: over the kept readings it is dropped, in the gap between them it fills
+            readings.upsert(listOf(reading(1, SourceId.LibreLinkUp), reading(5, SourceId.LibreLinkUp), reading(11, SourceId.LibreLinkUp)))
+            assertEquals(
+                listOf(0L to SourceId.Relay, 5L to SourceId.LibreLinkUp, 10L to SourceId.Relay),
+                all().map { (it.t.epochSecond - t0.epochSecond) / 60 to it.source },
+            )
+
+            sources.set(SourceSpec.TheirSukrara)
+            assertNull(readings.fence)
         }
 
     @Test fun lossSaysWhatAChangeOfPersonWouldDelete() =

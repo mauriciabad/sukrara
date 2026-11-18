@@ -11,6 +11,7 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.AlertSettingsCodec
 import app.mauri.sukrara.core.data.DataModule
+import app.mauri.sukrara.core.data.readings.HistoryFence
 import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
@@ -30,6 +31,7 @@ import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.UploadHold
 import app.mauri.sukrara.designsystem.version.AppBuildInfo
@@ -191,7 +193,23 @@ class AppGraph(
 
     // ---- modules (one line each; construction does no I/O) ----
 
-    val data by lazy { DataModule(app, appVersion, dispatchers, clock, userUnlocked = userUnlocked) }
+    val data by lazy {
+        DataModule(app, appVersion, dispatchers, clock, userUnlocked = userUnlocked).also { d ->
+            // every store of readings respects the kept history's fence (the history opens after the unlock, as it)
+            d.fence = { historyFence.data.first().at }
+        }
+    }
+
+    /**
+     * The kept history's fence (`history.json`, [HistoryFence]): set at a source change for the same person and at a
+     * Sukrara link left with *Keep it* (contracts/sources/link.json `fence`, docs/44 Appendix G finding 5).
+     */
+    val historyFence: StateStore<HistoryFence> by lazy {
+        data.typedStore("history", HistoryFence.serializer(), HistoryFence(), whenCorrupt = HistoryFence())
+    }
+
+    /** Fences the history at [at] (its last kept reading; null = none: the history went). */
+    suspend fun setFence(at: Instant?) = historyFence.update { HistoryFence.at(at) }
 
     /**
      * The credential-encrypted storage is open to the graph: from the start on an unlocked phone; after a start before
@@ -763,11 +781,18 @@ class AppGraph(
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
             // the hub's readings: a change of whose glucose also clears this phone's recent readings kept for the next restart
             sources =
-                AppSources(source, spec, hubReadings, data.treatments) { was, now ->
-                    // the other person's site is only offered to confirm; LibreLinkUp's pick (cleared) loses its name
-                    if (now.kind == SourceKind.Nightscout && was.nightscoutUrl.isNotEmpty()) siteSource.confirm(was.nightscoutUrl)
-                    integrations.libreLinkUpSource.forgetPick()
-                },
+                AppSources(
+                    source,
+                    spec,
+                    hubReadings,
+                    data.treatments,
+                    anotherPerson = { was, now ->
+                        // the other person's site is only offered to confirm; LibreLinkUp's pick (cleared) loses its name
+                        if (now.kind == SourceKind.Nightscout && was.nightscoutUrl.isNotEmpty()) siteSource.confirm(was.nightscoutUrl)
+                        integrations.libreLinkUpSource.forgetPick()
+                    },
+                    setFence = ::setFence,
+                ),
             hub = monitor.hub,
             sharing =
                 EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings, diag = { data.diagLog.log("sharing", it) }) {

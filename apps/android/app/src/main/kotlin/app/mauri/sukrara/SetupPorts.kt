@@ -15,11 +15,14 @@ import app.mauri.sukrara.monitor.alerts.AlertStateStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.time.Instant
 
 /**
  * Setup's [SourcePort] on the app's `source` store (the hub and the alert runtime read the same one). A change of whose
  * glucose never mixes two people: every reading and treatment (the previous person's) is deleted. A source change for
- * the same person keeps them (one continuous history: the rank rule keeps one reading per measurement). The person is
+ * the same person keeps them as one continuous history: the fence goes at the last reading kept ([setFence],
+ * contracts/sources/link.json `fence`), so the new source's backfill fills gaps behind it and never replaces what the
+ * previous source read (docs/44 Appendix G finding 5); after it, the rank rule keeps one reading per measurement. The person is
  * compared with what the phone runs on ([running]: an install updated from before the question has history of that
  * person). Setup asks [loss] first and confirms with the person before deleting anything (#125). The other person's
  * Nightscout site and LibreLinkUp pick go too ([SourceRecord.forAnotherPerson]).
@@ -34,6 +37,8 @@ class AppSources(
      * (the site to confirm, LibreLinkUp's name).
      */
     private val anotherPerson: suspend (before: SourceRecord, spec: SourceSpec) -> Unit = { _, _ -> },
+    /** The kept history's fence (`history.json`): the last kept reading, null = none (the history went). */
+    private val setFence: suspend (Instant?) -> Unit = {},
 ) : SourcePort {
     override val stored: Flow<SourceSpec?> = store.data.map { it.spec }
 
@@ -51,7 +56,10 @@ class AppSources(
         if (another) {
             readings.deleteAll()
             treatments.deleteAll()
+            setFence(null)
             anotherPerson(was, spec)
+        } else if (before != null && before.kind != spec.kind) {
+            setFence(readings.span().last)
         }
     }
 }
