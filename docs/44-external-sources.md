@@ -1033,6 +1033,14 @@ Added:
   Nightscout site*). Escalation rows and *Settings from* only where they act (search included). Settings › Metrics:
   *Needs more readings…* for a hidden metric. `NonLinkSourceTest` over link.json `after`.
 
+Walked on two emulators (local relay, the fake LibreLinkUp, a Nightscout stub): someone else's LibreLinkUp (Metrics'
+*Needs more readings*, no escalation rows, no *Settings from* in the search) → their Sukrara (follow allowed; *Reconnect*;
+*Also saved* listing LibreLinkUp) → LibreLinkUp (*Keep following Ana?* → *Keep following*: nothing changed; *Stop
+following* → the questions, the settings one only once the wearer's settings differed from the defaults → kept: the
+wearer's list empty, the relay subscriptions gone) → Nightscout → Juggluco (*Sign out of LibreLinkUp*, *Forget
+Nightscout site*); then a new follow → *Whose glucose* → *Yours* → the sensor (*Keep following?*, the questions with
+*Delete the earlier history?*, the defaults → the sensor step).
+
 Discarded:
 - Keying someone else's readings by source identity on Android (the Mac's way): one person's history at a time with
   the fence gives the same result without a database version (which would wipe every phone).
