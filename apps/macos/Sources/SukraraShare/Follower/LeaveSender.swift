@@ -8,8 +8,8 @@ import SukraraCore
 /// encrypted to the wearer and signed by a one-time key), the stream's `relays`, its `expiry` and the wearer's name for
 /// the person. `accepted` = the relays that keep it (`Relays.key` of the URL whose connection answered); `nearby` = the
 /// wearer's phone took it over Bluetooth. The same rules as Android's `PendingLeave` (contracts/protocol/sync/leave.json
-/// `outbox`). `to` in the rules = the relays it goes to: the valid ones of `relays` (`Relays.valid`, what a relay pool
-/// connects to).
+/// `outbox`). The rules count only `sentTo`, the relays it goes to: the valid ones of `relays` (`Relays.valid`, what a
+/// relay pool connects to).
 public struct PendingLeave: Codable, Equatable, Sendable {
     public var wrap: SignedEvent
     public var relays: [String]
