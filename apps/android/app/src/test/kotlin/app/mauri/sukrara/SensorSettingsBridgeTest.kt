@@ -5,8 +5,11 @@ package app.mauri.sukrara
 
 import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.settings.SchemaSettings
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.feature.settings.sensor.SourceChoice
@@ -76,17 +79,17 @@ class SensorSettingsBridgeTest {
         }
     }
 
-    private val source = SchemaSettings.text("source.source", SensorSourceKind.Direct.id, SensorSourceKind.entries.map { it.id }.toSet())
+    private val spec = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
+    private val juggluco = SourceSpec(Person.Yours, SourceKind.PhoneApp)
     private val sensors = FakeSensors()
-    private val settings = InMemorySettingsRepository()
     private val service = MutableStateFlow<ServiceState>(ServiceState.Running)
     private val events = mutableListOf<String>()
 
     private fun TestScope.bridge() =
         SensorSettingsBridge(
             sensors = sensors,
-            settings = settings,
-            sourceSetting = source,
+            spec = spec,
+            setKind = { kind -> spec.value = SourceSpec(Person.Yours, kind) },
             scope = backgroundScope,
             service = service,
             startMonitoring = { events += "start" },
@@ -141,17 +144,17 @@ class SensorSettingsBridgeTest {
 
     @Test fun `to the sensor read directly with a pairing starts monitoring`() =
         runTest {
-            settings.set(source, SensorSourceKind.Juggluco.id)
+            spec.value = juggluco
             sensors.paired = true
             bridge().setSource(SourceChoice.Libre3Direct)
             runCurrent()
-            assertEquals(SensorSourceKind.Direct.id, settings.flow(source).first())
+            assertEquals(SourceSpec.YourSensor, spec.value)
             assertEquals(listOf("source changed", "start"), events)
         }
 
     @Test fun `to the sensor read directly with nothing paired stops and disarms instead`() =
         runTest {
-            settings.set(source, SensorSourceKind.Juggluco.id)
+            spec.value = juggluco
             bridge().setSource(SourceChoice.Libre3Direct)
             runCurrent()
             assertEquals(listOf("source changed", "reset"), events)
@@ -168,7 +171,7 @@ class SensorSettingsBridgeTest {
 
     @Test fun `the Juggluco secret is saved, shown only as set, and Juggluco is asked again at once`() =
         runTest {
-            settings.set(source, SensorSourceKind.Juggluco.id)
+            spec.value = juggluco
             val b = bridge()
             assertEquals(false, b.state.first().jugglucoSecret)
             b.setJugglucoSecret(" s3cret ")

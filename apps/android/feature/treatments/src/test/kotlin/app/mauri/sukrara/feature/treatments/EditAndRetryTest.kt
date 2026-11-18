@@ -4,7 +4,7 @@
 package app.mauri.sukrara.feature.treatments
 
 import app.mauri.sukrara.core.model.GlucoseState
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -54,12 +54,12 @@ class EditAndRetryTest {
 
     private fun TestScope.module(
         sync: TreatmentSync,
-        role: Role,
+        role: SourceSpec,
     ) = TreatmentsModule(
         repo,
         sync,
         clock,
-        MutableStateFlow(GlucoseState.Initial.copy(role = role)),
+        MutableStateFlow(GlucoseState.Initial.copy(spec = role)),
         InMemorySettingsRepository(),
         CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         hints,
@@ -72,7 +72,7 @@ class EditAndRetryTest {
         runTest {
             repo.upsertIfNewer(TreatmentRecord(stored))
             val sync = Sync(TreatmentWriter(null, throughOutbox = false))
-            val m = module(sync, Role.Wearer)
+            val m = module(sync, SourceSpec.YourSensor)
             val t = m.editable("a")!!
             val earlier = t0.minusSeconds(2400)
             val saved = m.edit(t, NewEntry(TreatmentKind.RapidInsulin, 4.5, "pizza"), earlier)!!
@@ -95,7 +95,7 @@ class EditAndRetryTest {
         runTest {
             repo.upsertIfNewer(TreatmentRecord(stored))
             // a follower may change only the entries it created: not the wearer's
-            val m = module(Sync(TreatmentWriter("ana", throughOutbox = true)), Role.Follower)
+            val m = module(Sync(TreatmentWriter("ana", throughOutbox = true)), SourceSpec.TheirSukrara)
             assertNull(m.editable("a"))
             assertNull(m.editable("gone"))
         }

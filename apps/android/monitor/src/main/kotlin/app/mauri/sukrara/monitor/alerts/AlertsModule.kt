@@ -18,7 +18,6 @@ import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NotificationStyle
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorEndConfig
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceStatus
@@ -72,7 +71,7 @@ class AlertsModule(
     /** The process scope: the readiness checklist shares its state there while a screen collects it. */
     scope: CoroutineScope,
     dispatchers: DispatcherProvider,
-    /** Whether the role's source talks to the sensor over Bluetooth (the checklist's Bluetooth item). */
+    /** Whether the source talks to the sensor over Bluetooth (the checklist's Bluetooth item). */
     needsBluetooth: Flow<Boolean>,
     events: AlertEventSink = AlertEventSink { },
     private val wearerSettings: Flow<AlertSettings?> = flowOf(null),
@@ -241,7 +240,7 @@ class AlertsModule(
     /** What an app update must wait for now ([AlertHolds]): the alerts showing, a very low that is on. */
     suspend fun hold(): AlertHold = AlertHolds.of(store.load().machine, hub.state.value.alerts.firingKinds)
 
-    /** "Start fresh" / leaving a role: alerts and their saved state go, the sensor-end notices too. */
+    /** "Start fresh" / another person's glucose: alerts and their saved state go, the sensor-end notices too. */
     suspend fun reset() {
         runtime.reset()
         sensorEnd.update(wearer = false, SensorState.None, null, sensorEndSettings.first())
@@ -267,9 +266,10 @@ class AlertsModule(
             // the sensor, its first reading and the settings re-plan; the newest reading only matters as "since the start"
             combine(
                 hub.state
-                    // a fresh process starts at "nothing known" (no role, no sensor): that is no reason to forget the plan
-                    .filter { it.role != null && it.source != SourceStatus.NotStarted }
-                    .map { Triple(it.role == Role.Wearer, it.sensor, it.latest?.t?.epochSecond) }
+                    // a fresh process starts at "nothing known" (no source, no sensor): that is no reason to forget the plan
+                    .filter { it.spec != null && it.source != SourceStatus.NotStarted }
+                    // sensor reminders are your glucose's, read here (docs/44 keying)
+                    .map { Triple(it.spec?.owner == true, it.sensor, it.latest?.t?.epochSecond) }
                     .distinctUntilChanged(),
                 sensorEndSettings,
             ) { (wearer, sensor, latest), s -> SensorEndInputs(wearer, sensor, latest, s) }

@@ -78,66 +78,44 @@ object GlucoseRange {
         }
 }
 
-/** Where readings come from. A value class so new sources are added without touching every `when`. */
+/**
+ * Where readings come from (the ids contracts/sources/sources.json `readings` lists; dedup.json ranks them). A value
+ * class so new sources are added without touching every `when`.
+ */
 @JvmInline
 value class SourceId(val id: String) {
     companion object {
-        /** The phone talks to a Libre 3 sensor over Bluetooth (wearer). */
+        /** The phone talks to a Libre 3 sensor over Bluetooth (source `sensor`). */
         val Libre3 = SourceId("libre3")
 
-        /** Juggluco's local web server on the same phone (wearer). */
+        /** Juggluco's local web server on the same phone (source `phoneApp`). */
         val Juggluco = SourceId("juggluco")
 
-        /** The other sensor families the phone reads itself (wearer); untested on real sensors. */
+        /** The other sensor families the phone reads itself (source `sensor`); untested on real sensors. */
         val DexcomG7 = SourceId("dexcom-g7")
         val DexcomG6 = SourceId("dexcom-g6")
         val SmartGuide = SourceId("accu-chek-smartguide")
         val AidexX = SourceId("aidex-x")
 
-        /** Every source that is this phone's own sensor (not a follower feed). */
-        val Wearer: Set<SourceId> = setOf(Libre3, Juggluco, DexcomG7, DexcomG6, SmartGuide, AidexX)
+        /** What this phone gets first-hand: its own sensor, or an app on it that reads one (never relayed). */
+        val FirstHand: Set<SourceId> = setOf(Libre3, Juggluco, DexcomG7, DexcomG6, SmartGuide, AidexX)
 
-        /** The wearer's readings over Nostr relays (follower). */
+        /** Another Sukrara's readings over Nostr relays (source `sukrara`). */
         val Relay = SourceId("relay")
 
-        /** The wearer's phone nearby over Bluetooth (follower). */
+        /** Another Sukrara's readings over Bluetooth nearby (source `sukrara`). */
         val Nearby = SourceId("nearby")
 
-        /** Every source that is the followed person's feed. */
-        val Follower: Set<SourceId> = setOf(Relay, Nearby)
+        /** What another Sukrara relays (a Sukrara stream). */
+        val Relayed: Set<SourceId> = setOf(Relay, Nearby)
 
         /**
-         * History brought back by Import history (`storage.ImportSource`: LibreView, Tidepool, a file): the wearer's
-         * own past readings, never this phone's sensor (no live reading, no restore gate) and never uploaded.
+         * History brought back by Import history (`storage.ImportSource`: LibreView, Tidepool, a file): the person's own
+         * past readings, never this phone's sensor (no live reading, no restore gate) and never uploaded.
          */
         val Imported: Set<SourceId> = setOf(SourceId("import-libreview"), SourceId("import-tidepool"), SourceId("import-file"))
-
-        /**
-         * The sources whose readings are [role]'s person: the phone's own sensor and its imported history, or the
-         * followed person's feed.
-         */
-        fun of(role: Role): Set<SourceId> =
-            when (role) {
-                Role.Wearer -> Wearer + Imported
-                Role.Follower -> Follower
-            }
-
-        /**
-         * The sources of the other role: another person's readings while [role] is this phone's role (the person
-         * followed earlier, or one's own sensor while following). Never shown, exported or sent; deleted at a role
-         * change. No role yet hides nothing (setup isn't done; the role chosen next cleans up).
-         */
-        fun notOf(role: Role?): Set<SourceId> =
-            when (role) {
-                null -> emptySet()
-                Role.Wearer -> Follower
-                Role.Follower -> Wearer + Imported
-            }
     }
 }
-
-/** Whether this phone wears the sensor or follows someone who does. */
-enum class Role { Wearer, Follower }
 
 /** The stored days and the live window as one history. */
 object ReadingHistory {

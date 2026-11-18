@@ -4,14 +4,12 @@
 package app.mauri.sukrara
 
 import app.mauri.sukrara.alerts.AlertSettings
-import app.mauri.sukrara.core.model.Role
-import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
-import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
-import app.mauri.sukrara.feature.sharing.RoleLoss
-import app.mauri.sukrara.feature.sharing.RoleStore
+import app.mauri.sukrara.feature.sharing.HistoryLoss
+import app.mauri.sukrara.feature.sharing.SourcePort
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.monitor.alerts.AlertStateStore
 import kotlinx.coroutines.flow.Flow
@@ -19,30 +17,33 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 /**
- * Setup's [RoleStore] on the app's `role` store (the hub and the alert runtime read the same one). A role change never
- * mixes two people: the other role's readings ([SourceId.notOf]: the person followed before, or one's own sensor
- * before following) are deleted, and so are the treatments when the role really changed (they are the previous
- * person's). The role is written first, so reads already leave the other role out while the delete runs. Setup asks
- * [loss] first and confirms with the person before deleting anything (#125).
+ * Setup's [SourcePort] on the app's `source` store (the hub and the alert runtime read the same one). A change of whose
+ * glucose never mixes two people: every reading and treatment (the previous person's) is deleted. A source change for
+ * the same person keeps them (one continuous history: the rank rule keeps one reading per measurement). The person is
+ * compared with what the phone runs on ([running]: an install updated from before the question has history of that
+ * person). Setup asks [loss] first and confirms with the person before deleting anything (#125).
  */
-class AppRoles(
-    private val store: StateStore<RoleRecord>,
+class AppSources(
+    private val store: StateStore<SourceRecord>,
+    override val running: Flow<SourceSpec?>,
     private val readings: ReadingsRepository,
     private val treatments: TreatmentsRepository,
-) : RoleStore {
-    override val role: Flow<Role?> = store.data.map { it.role }
+) : SourcePort {
+    override val stored: Flow<SourceSpec?> = store.data.map { it.spec }
 
-    override suspend fun loss(role: Role): RoleLoss? {
-        val before = store.data.first().role
-        val theirs = readings.spanOf(SourceId.notOf(role))
-        return RoleLoss.of(theirs, if (before != null && before != role) treatments.span() else StoredSpan.EMPTY)
+    override suspend fun loss(spec: SourceSpec): HistoryLoss? {
+        val before = running.first() ?: return null
+        if (before.person == spec.person) return null
+        return HistoryLoss.of(readings.span(), treatments.span())
     }
 
-    override suspend fun set(role: Role) {
-        val before = store.data.first().role
-        store.update { it.copy(role = role) }
-        readings.deleteFrom(SourceId.notOf(role))
-        if (before != null && before != role) treatments.deleteAll()
+    override suspend fun set(spec: SourceSpec) {
+        val before = running.first()
+        store.update { SourceRecord.of(spec) }
+        if (before != null && before.person != spec.person) {
+            readings.deleteAll()
+            treatments.deleteAll()
+        }
     }
 }
 

@@ -5,8 +5,7 @@ package app.mauri.sukrara.integrations.tidepool
 
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
-import app.mauri.sukrara.core.model.Role
-import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -60,10 +59,10 @@ data class TpPageState(
     val signedIn: Boolean,
     val email: String,
     val status: UploadStatus,
-    val role: Role?,
+    val role: SourceSpec?,
 ) {
     /** On and signed in on a follower's phone, waiting for *Upload the person you follow*. */
-    val needsChoice: Boolean get() = settings.on && signedIn && role == Role.Follower && !settings.uploadFollowed
+    val needsChoice: Boolean get() = settings.on && signedIn && role?.owner == false && !settings.uploadFollowed
 }
 
 /** The result of the page's sign-in. */
@@ -93,7 +92,7 @@ class TidepoolUploader(
     private val store: StateStore<TpState>,
     private val readings: ReadingsRepository,
     private val treatments: TreatmentsRepository,
-    private val role: Flow<Role?>,
+    private val role: Flow<SourceSpec?>,
     http: OkHttpClient,
     /** The app's version, as Tidepool shows the uploader. */
     private val version: String,
@@ -297,7 +296,7 @@ class TidepoolUploader(
 
         var rs = state.role(r)
         if (rs.deviceId.isEmpty()) {
-            val who = if (r == Role.Wearer) "wearer" else "following"
+            val who = if (r.owner) "wearer" else "following"
             rs = rs.copy(deviceId = "Sukrara-$who-" + UUID.randomUUID().toString().take(8))
         }
         // first cycle: what the phone keeps goes up once
@@ -308,12 +307,11 @@ class TidepoolUploader(
         val windowStart = Instant.ofEpochSecond(maxOf(rs.from, nowS - TidepoolQueue.WINDOW_S))
         val full = nowMs - fullScanMs >= FULL_SCAN_EVERY_MS
         val start = if (full) windowStart else maxOf(windowStart, clock.now() - RECENT)
-        // only this role's readings: never the person followed earlier (or one's own readings while following), and
-        // never imported history (Tidepool has it already or got it from the same place: it would count twice)
-        val own = SourceId.of(r)
+        // the current person's readings (a person change deletes the others), never imported history (Tidepool has it
+        // already or got it from the same place: it would count twice)
         val rd =
             if (s.glucose) {
-                readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { it.source in own && !it.imported }
+                readings.range(start, clock.now() + Duration.ofMinutes(1)).filter { !it.imported }
             } else {
                 emptyList()
             }
@@ -358,7 +356,7 @@ class TidepoolUploader(
      * posts it twice).
      */
     private suspend fun send(
-        r: Role,
+        r: SourceSpec,
         state: TpRoleState,
         plan: TidepoolQueue.Plan,
         nowS: Long,
@@ -400,7 +398,7 @@ class TidepoolUploader(
 
     /** This role's upload record on the account: found again by device id, or created. */
     private fun dataSet(
-        r: Role,
+        r: SourceSpec,
         deviceId: String,
     ): String {
         val found =
@@ -410,7 +408,7 @@ class TidepoolUploader(
                 (o["uploadId"] ?: o["id"])?.jsonPrimitive?.contentOrNull
             }
         if (found != null) return found
-        val model = if (r == Role.Wearer) "Sukrara" else "Sukrara (following)"
+        val model = if (r.owner) "Sukrara" else "Sukrara (following)"
         return client.createDataSet(TidepoolData.dataSet(deviceId, model, version, clock.zone, clock.now()))
     }
 
@@ -423,7 +421,7 @@ class TidepoolUploader(
         s: TpSettings,
         signed: Boolean,
         st: TpState,
-        r: Role?,
+        r: SourceSpec?,
     ): UploadStatus =
         when {
             !s.on -> UploadStatus.Off

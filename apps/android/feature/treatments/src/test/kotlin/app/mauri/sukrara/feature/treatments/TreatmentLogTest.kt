@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.treatments
 
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
@@ -115,11 +115,11 @@ class TreatmentLogTest {
     @Test fun writerScope() {
         val local = TreatmentWriter(null, false)
         val outbox = TreatmentWriter("ana", true)
-        assertTrue(WriterScope.canAdd(Role.Wearer, local))
-        assertFalse(WriterScope.canAdd(Role.Wearer, outbox))
-        assertTrue(WriterScope.canAdd(Role.Follower, outbox))
-        assertFalse(WriterScope.canAdd(Role.Follower, local))
-        assertFalse(WriterScope.canAdd(Role.Follower, null))
+        assertTrue(WriterScope.canAdd(SourceSpec.YourSensor, local))
+        assertFalse(WriterScope.canAdd(SourceSpec.YourSensor, outbox))
+        assertTrue(WriterScope.canAdd(SourceSpec.TheirSukrara, outbox))
+        assertFalse(WriterScope.canAdd(SourceSpec.TheirSukrara, local))
+        assertFalse(WriterScope.canAdd(SourceSpec.TheirSukrara, null))
         assertFalse(WriterScope.canAdd(null, local))
     }
 }

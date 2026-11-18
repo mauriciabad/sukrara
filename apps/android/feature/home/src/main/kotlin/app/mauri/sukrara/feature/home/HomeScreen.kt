@@ -88,7 +88,6 @@ import app.mauri.sukrara.core.model.Durations
 import app.mauri.sukrara.core.model.PenAnswer
 import app.mauri.sukrara.core.model.PenEntryInfo
 import app.mauri.sukrara.core.model.PenQuestionInfo
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -243,7 +242,7 @@ fun HomeContent(
     val snackbar = remember { SnackbarHostState() }
     TreatmentSnackbars(state, callbacks, penNotice, snackbar)
     val undoText = stringResource(R.string.home_undo)
-    val follower = state.glucose.role == Role.Follower
+    val follower = state.glucose.spec?.stream == true
     // Mute alerts' lengths: from the home control, its Change time, the quiet sheet and the card's TalkBack action
     var muteDialog by rememberSaveable { mutableStateOf(false) }
     val scroll = rememberScrollState()
@@ -304,7 +303,7 @@ fun HomeContent(
             )
         },
         floatingActionButton = {
-            if (state.glucose.role != null) {
+            if (state.glucose.spec != null) {
                 // icon-only while a safety banner shows or the page is scrolled, so it never covers what matters
                 val expanded = safetyBanner == null && atTop
                 val label = stringResource(R.string.home_add_treatment)
@@ -613,7 +612,7 @@ private fun GlucoseSection(
     val resources = LocalContext.current.resources
     val density = LocalDensity.current
     val reduced = LocalReducedMotion.current
-    val canMute = state.glucose.role != null
+    val canMute = state.glucose.spec != null
     // what sits between the card and the safety banner's bottom edge (the quiet chips and the banner), px
     var under by remember { mutableIntStateOf(0) }
     val fit =
@@ -621,13 +620,13 @@ private fun GlucoseSection(
             CARD_HEIGHT
         } else {
             // the banner ends above the floating button (bottom-end), so its actions at the end are never under it
-            val room = if (state.glucose.role != null) FAB_SPACE else SECTION_GAP
+            val room = if (state.glucose.spec != null) FAB_SPACE else SECTION_GAP
             (viewport - with(density) { under.toDp() } - room).coerceIn(MIN_CARD_HEIGHT, CARD_HEIGHT)
         }
     // a small screen at a large font: even the smallest card leaves the banner's end over the floating button, so its
     // buttons stop short of it (and wrap rather than slide under it)
     val bannerEnd = fit + with(density) { under.toDp() }
-    val overFab = safetyBanner != null && state.glucose.role != null && bannerEnd > viewport - FAB_SPACE + 1.dp
+    val overFab = safetyBanner != null && state.glucose.spec != null && bannerEnd > viewport - FAB_SPACE + 1.dp
     val actionsEnd = if (overFab) FAB_CLEARANCE else 0.dp
     val cardHeight by animateDpAsState(fit, Motion.defaultSpatial(reduced), label = "card height")
     Swap(state.reason?.takeIf { it.fullPage }) { fullPage ->
@@ -748,18 +747,18 @@ private fun SensorLine(
 /** The wearer's sensor ends within a day: home offers *Pair new sensor*. */
 internal fun lastDay(state: HomeUiState): Boolean {
     val ends = (state.glucose.sensor as? SensorState.Active)?.endsAt ?: return false
-    return state.glucose.role == Role.Wearer && Duration.between(state.now, ends) <= Duration.ofDays(1)
+    return state.glucose.spec?.owner == true && Duration.between(state.now, ends) <= Duration.ofDays(1)
 }
 
 /** What the card's pill does for [state] (only the wearer pairs a sensor; anyone with a role may add a treatment). */
 internal fun pillAction(state: HomeUiState): PillAction {
     val sensor = sensorPill(state)
     // the card draws *Replace sensor* there: only the wearer can act on it
-    if (sensor && state.glucose.role != Role.Wearer) return PillAction.None
+    if (sensor && state.glucose.spec?.owner != true) return PillAction.None
     return PillAction.of(
         state.glucose.alerts.status,
         state.now.epochSecond,
-        canAdd = state.glucose.role != null,
+        canAdd = state.glucose.spec != null,
         ended = sensor,
         muteAll = state.mutedUntil != null,
     )
@@ -1218,7 +1217,7 @@ private fun MuteControl(
     onAlert: (HomeAlertAction) -> Unit,
     onChange: () -> Unit,
 ) {
-    if (state.glucose.role == null) return
+    if (state.glucose.spec == null) return
     Swap(state.mutedUntil != null, modifier = Modifier.padding(horizontal = 16.dp)) { muted ->
         if (muted) {
             MuteAllState(state.glucose.alerts, state.now, onUnmute = { onAlert(HomeAlertAction.UnmuteAll) }, onChange = onChange)
@@ -1250,7 +1249,7 @@ private fun DndLine(
         state.readiness
             ?.dnd
             ?.heldNow
-            ?.takeIf { state.glucose.role != null && it != DndStatus.Held.None }
+            ?.takeIf { state.glucose.spec != null && it != DndStatus.Held.None }
     // the last line shown stays while it hides (a plain holder: no state written during composition)
     val last = remember { arrayOf(DndStatus.Held.All) }
     if (held != null) last[0] = held
@@ -1287,7 +1286,7 @@ private fun NightLine(
 ) {
     val until =
         state.glucose.alerts.nightUntil
-            ?.takeIf { state.glucose.role != null }
+            ?.takeIf { state.glucose.spec != null }
     Reveal(until != null) {
         val words = rememberAlertWords()
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("night-alerts"), verticalAlignment = Alignment.CenterVertically) {

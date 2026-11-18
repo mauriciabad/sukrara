@@ -4,7 +4,7 @@
 package app.mauri.sukrara.feature.treatments
 
 import app.mauri.sukrara.core.model.Clock
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
@@ -135,15 +135,18 @@ class TreatmentLog(
  * and changes everything; a follower adds only through the outbox and changes only the entries it created.
  */
 object WriterScope {
-    /** Whether a phone with [role] and [writer] (null = not allowed) offers Add treatment. */
+    /**
+     * Whether a phone on [spec] with [writer] (null = not allowed) offers Add treatment: a Sukrara stream through its
+     * outbox (the wearer's log), every other source into this phone's own log.
+     */
     fun canAdd(
-        role: Role?,
+        spec: SourceSpec?,
         writer: TreatmentWriter?,
     ): Boolean =
-        when (role) {
-            Role.Wearer -> writer != null && !writer.throughOutbox
-            Role.Follower -> writer != null && writer.throughOutbox
-            null -> false
+        when {
+            spec == null -> false
+            spec.stream -> writer != null && writer.throughOutbox
+            else -> writer != null && !writer.throughOutbox
         }
 
     /** Whether [writer] may edit or delete an entry created by [creator] (null = the wearer's own, unshared). */

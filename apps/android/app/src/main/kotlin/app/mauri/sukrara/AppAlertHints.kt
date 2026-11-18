@@ -10,7 +10,7 @@ import app.mauri.sukrara.alerts.AlertSource
 import app.mauri.sukrara.alerts.Rules
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.treatments.AlertHints
 import app.mauri.sukrara.feature.treatments.QuietRules
 import kotlinx.coroutines.flow.Flow
@@ -44,14 +44,14 @@ class AppAlertHints(
     }
 
     override val quiet: Flow<QuietRules> =
-        combine(settings, glucose) { s, g -> rules(s, g.role) }.distinctUntilChanged()
+        combine(settings, glucose) { s, g -> rules(s, g.spec) }.distinctUntilChanged()
 
     private fun rules(
         s: AlertSettings?,
-        role: Role?,
+        role: SourceSpec?,
     ): QuietRules {
         // not read yet, alerts off, or a follower that mirrors the wearer's alerts: nothing this phone decides is quiet
-        if (s == null || !s.on || (role == Role.Follower && s.source == AlertSource.WEARER)) return QuietRules.NONE
+        if (s == null || !s.on || (role?.stream == true && s.source == AlertSource.WEARER)) return QuietRules.NONE
         return QuietRules(
             afterInsulinMin = s.afterInsulin.min.takeIf { s.afterInsulin.on },
             afterCarbsMin = s.afterCarbs.min.takeIf { s.afterCarbs.on },

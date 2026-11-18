@@ -74,25 +74,13 @@ class SensorSettingsTest {
     ) = compose.setContent { SukraraTheme(dark = false, dynamic = false) { SensorSettingsContent(state, now, ZoneOffset.UTC, actions) {} } }
 
     @Test
-    fun `switching to Juggluco asks first, Cancel changes nothing, confirming switches`() {
-        val chosen = mutableListOf<SourceChoice>()
-        show(working, SensorSettingsActions(setSource = { chosen += it }))
-        compose.onNodeWithText("Juggluco").performScrollTo().performClick()
-        compose.onNodeWithText("Read glucose from Juggluco?").assertExists()
-        compose.onNodeWithText("Cancel").performClick()
-        assertEquals(emptyList<SourceChoice>(), chosen)
-        compose.onNodeWithText("Juggluco").performClick()
-        compose.onNodeWithText("Use Juggluco").performClick()
-        assertEquals(listOf(SourceChoice.Juggluco), chosen)
-    }
-
-    @Test
-    fun `the current source is selected and tapping it does nothing`() {
-        val chosen = mutableListOf<SourceChoice>()
-        show(working, SensorSettingsActions(setSource = { chosen += it }))
-        compose.onNodeWithText("This phone reads the sensor").performScrollTo().performClick()
-        compose.onNodeWithText("Read the sensor directly?").assertDoesNotExist()
-        assertTrue(chosen.isEmpty())
+    fun `where the glucose comes from is said here and chosen in Settings › Source`() {
+        var opened = 0
+        show(working, SensorSettingsActions(openSource = { opened++ }))
+        compose.onNodeWithText("The sensor, read by this phone").assertExists()
+        compose.onNodeWithText("Glucose from").performScrollTo().performClick()
+        assertEquals(1, opened)
+        compose.onNodeWithText("Read glucose from Juggluco?").assertDoesNotExist()
     }
 
     @Test
@@ -128,7 +116,7 @@ class SensorSettingsTest {
         compose.onNode(hasSetTextAction()).performTextInput("s3cret")
         compose.onNodeWithText("Save").performClick()
         assertEquals(listOf("s3cret"), saved)
-        compose.onAllNodesWithTextFirst("API secret").performClick()
+        compose.onNodeWithText("Change API secret").performClick()
         compose.onNodeWithText("Remove").performClick()
         assertEquals(listOf("s3cret", ""), saved)
     }
@@ -234,7 +222,7 @@ class SensorSettingsTest {
         vm.setSource(SourceChoice.Juggluco)
         compose.waitForIdle()
         assertEquals(listOf(SourceChoice.Juggluco), port.sources)
-        compose.onNodeWithText("Juggluco").assertIsSelected()
+        compose.onNodeWithText("Juggluco on this phone").assertExists()
     }
 
     @Test

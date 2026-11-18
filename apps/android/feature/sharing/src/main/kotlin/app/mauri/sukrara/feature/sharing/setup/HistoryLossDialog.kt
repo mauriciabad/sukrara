@@ -20,8 +20,8 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
+import app.mauri.sukrara.feature.sharing.HistoryLoss
 import app.mauri.sukrara.feature.sharing.R
-import app.mauri.sukrara.feature.sharing.RoleLoss
 import java.text.NumberFormat
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -29,15 +29,15 @@ import java.time.format.FormatStyle
 import java.util.Locale
 
 /**
- * The role step's confirmation when the new role deletes this phone's earlier history (#125): what goes, in plain
+ * The source step's confirmation when whose glucose changes and this phone has earlier history (#125): what goes, in plain
  * words (*1,204 glucose readings and 12 treatments, from 3 Oct 2026 to 10 Nov 2026*), *Export CSV first* (the
- * export page on everything; the dialog is still here on the way back), *Delete and continue* and *Cancel* (the role
+ * export page on everything; the dialog is still here on the way back), *Delete and continue* and *Cancel* (the source
  * stays as it was, nothing is deleted). Back and a tap outside are Cancel.
  */
 @Composable
-internal fun RoleLossDialog(
-    roleName: String,
-    loss: RoleLoss,
+internal fun HistoryLossDialog(
+    personName: String,
+    loss: HistoryLoss,
     onExport: () -> Unit,
     onDelete: () -> Unit,
     onCancel: () -> Unit,
@@ -46,12 +46,12 @@ internal fun RoleLossDialog(
     val haptics = rememberHaptics()
     AlertDialog(
         onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.sh_setup_role_delete_title)) },
+        title = { Text(stringResource(R.string.sh_setup_person_delete_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Text(stringResource(R.string.sh_setup_role_delete_text, roleName, lossWhat(loss), lossWhen(loss, zone)))
+                Text(stringResource(R.string.sh_setup_person_delete_text, personName, lossWhat(loss), lossWhen(loss, zone)))
                 OutlinedButton(onClick = onExport, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                    Text(stringResource(R.string.sh_setup_role_delete_export))
+                    Text(stringResource(R.string.sh_setup_person_delete_export))
                 }
             }
         },
@@ -62,7 +62,7 @@ internal fun RoleLossDialog(
                     onDelete()
                 },
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) { Text(stringResource(R.string.sh_setup_role_delete_confirm)) }
+            ) { Text(stringResource(R.string.sh_setup_person_delete_confirm)) }
         },
         dismissButton = { TextButton(onClick = onCancel) { Text(stringResource(R.string.sh_setup_cancel)) } },
     )
@@ -70,18 +70,18 @@ internal fun RoleLossDialog(
 
 /** *1,204 glucose readings and 12 treatments* (either alone when the other is none). */
 @Composable
-private fun lossWhat(loss: RoleLoss): String {
+private fun lossWhat(loss: HistoryLoss): String {
     val numbers = NumberFormat.getIntegerInstance(locale())
     val readings =
         loss.readings.takeIf { it > 0 }?.let {
-            pluralStringResource(R.plurals.sh_setup_role_delete_readings, it, numbers.format(it))
+            pluralStringResource(R.plurals.sh_setup_person_delete_readings, it, numbers.format(it))
         }
     val treatments =
         loss.treatments.takeIf { it > 0 }?.let {
-            pluralStringResource(R.plurals.sh_setup_role_delete_treatments, it, numbers.format(it))
+            pluralStringResource(R.plurals.sh_setup_person_delete_treatments, it, numbers.format(it))
         }
     return if (readings != null && treatments != null) {
-        stringResource(R.string.sh_setup_role_delete_and, readings, treatments)
+        stringResource(R.string.sh_setup_person_delete_and, readings, treatments)
     } else {
         readings ?: treatments.orEmpty()
     }
@@ -90,16 +90,16 @@ private fun lossWhat(loss: RoleLoss): String {
 /** *from 3 Oct 2026 to 10 Nov 2026*, or *from 10 Nov 2026* when it is all one day. */
 @Composable
 private fun lossWhen(
-    loss: RoleLoss,
+    loss: HistoryLoss,
     zone: ZoneId,
 ): String {
     val format = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale())
     val first = loss.from.atZone(zone).toLocalDate()
     val last = loss.to.atZone(zone).toLocalDate()
     return if (first == last) {
-        stringResource(R.string.sh_setup_role_delete_day, format.format(first))
+        stringResource(R.string.sh_setup_person_delete_day, format.format(first))
     } else {
-        stringResource(R.string.sh_setup_role_delete_range, format.format(first), format.format(last))
+        stringResource(R.string.sh_setup_person_delete_range, format.format(first), format.format(last))
     }
 }
 

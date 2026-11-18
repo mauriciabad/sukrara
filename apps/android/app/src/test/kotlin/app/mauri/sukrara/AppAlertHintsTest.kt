@@ -8,8 +8,8 @@ import app.mauri.sukrara.alerts.AlertSource
 import app.mauri.sukrara.alerts.QuietRule
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.feature.treatments.QuietRules
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +25,7 @@ import java.time.Duration
 class AppAlertHintsTest {
     private val clock = FakeClock()
     private val settings = MutableStateFlow<AlertSettings?>(AlertSettings())
-    private val glucose = MutableStateFlow(GlucoseState.Initial.copy(role = Role.Wearer))
+    private val glucose = MutableStateFlow(GlucoseState.Initial.copy(spec = SourceSpec.YourSensor))
     private val hints = AppAlertHints(settings, glucose, clock)
 
     private fun latest(
@@ -64,7 +64,7 @@ class AppAlertHintsTest {
             assertEquals(QuietRules(60, 15), hints.quiet.first())
             settings.value = AlertSettings(afterCarbs = QuietRule(on = false, min = 15))
             assertEquals(QuietRules(60, null), hints.quiet.first())
-            glucose.value = glucose.value.copy(role = Role.Follower)
+            glucose.value = glucose.value.copy(spec = SourceSpec.TheirSukrara)
             settings.value = AlertSettings(source = AlertSource.WEARER)
             assertEquals(QuietRules.NONE, hints.quiet.first())
             settings.value = AlertSettings(source = AlertSource.OWN)

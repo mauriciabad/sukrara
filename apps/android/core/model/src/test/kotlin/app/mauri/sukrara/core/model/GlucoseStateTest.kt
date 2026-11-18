@@ -15,7 +15,7 @@ class GlucoseStateTest {
     fun `the initial state shows no value and has not started monitoring`() {
         val s = GlucoseState.Initial
         assertNull(s.latest)
-        assertNull(s.role)
+        assertNull(s.spec)
         assertTrue(s.recent.isEmpty())
         assertEquals(SensorState.None, s.sensor)
         assertEquals(SourceStatus.NotStarted, s.source)

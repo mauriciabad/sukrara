@@ -4,8 +4,8 @@
 package app.mauri.sukrara.share.owner
 
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -35,7 +35,7 @@ import org.junit.Test
 import java.time.Instant
 
 /**
- * The app's sharing wiring (AppGraph: `ownerEngine.followRole(role)`, hub, treatment log): the engine runs only while
+ * The app's sharing wiring (AppGraph: `ownerEngine.followSource(role)`, hub, treatment log): the engine runs only while
  * the phone is the wearer, publishes the hub's readings and the log's changes, merges and echoes a writer's entry
  * from relays, and stops for a follower.
  */
@@ -90,12 +90,12 @@ class OwnerWiringTest {
                     FakeClock(Instant.ofEpochSecond(now)),
                     StandardTestDispatcher(testScheduler),
                 )
-            val role = MutableStateFlow<Role?>(null)
-            backgroundScope.launch { engine.followRole(role, backgroundScope) }
+            val role = MutableStateFlow<SourceSpec?>(null)
+            backgroundScope.launch { engine.followSource(role, backgroundScope) }
             runCurrent()
             assertFalse(engine.running)
 
-            role.value = Role.Wearer
+            role.value = SourceSpec.YourSensor
             runCurrent()
             assertTrue(engine.running)
             hub.push(Reading(Instant.ofEpochSecond(now - 30), 123, 0.5, SourceId.Libre3))
@@ -130,7 +130,7 @@ class OwnerWiringTest {
             assertEquals(writerEvent.tag("d"), echo.tag("d"))
             assertEquals(w.public.hex, log.get("b0000000-0000-4000-8000-00000000000b")!!.creator)
 
-            role.value = Role.Follower
+            role.value = SourceSpec.TheirSukrara
             runCurrent()
             assertFalse(engine.running)
             assertFalse(relay.started)

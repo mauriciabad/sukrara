@@ -4,6 +4,7 @@
 package app.mauri.sukrara.core.data.db
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -21,53 +22,40 @@ data class SpanRow(
 
 @Dao
 interface ReadingDao {
-    /** The card's window: everything from [from] not from [hidden] sources, oldest first, live. */
-    @Query("SELECT * FROM readings WHERE t >= :from AND source NOT IN (:hidden) ORDER BY t")
-    fun window(
-        from: Long,
-        hidden: List<String>,
-    ): Flow<List<ReadingEntity>>
+    /** The card's window: everything from [from], oldest first, live. */
+    @Query("SELECT * FROM readings WHERE t >= :from ORDER BY t")
+    fun window(from: Long): Flow<List<ReadingEntity>>
 
-    @Query("SELECT * FROM readings WHERE source NOT IN (:hidden) ORDER BY t DESC LIMIT 1")
-    fun latest(hidden: List<String>): Flow<ReadingEntity?>
+    @Query("SELECT * FROM readings ORDER BY t DESC LIMIT 1")
+    fun latest(): Flow<ReadingEntity?>
 
-    /** Backfill / export range [from, to), not from [hidden] sources. */
-    @Query("SELECT * FROM readings WHERE t >= :from AND t < :to AND source NOT IN (:hidden) ORDER BY t")
+    /** Backfill / export range [from, to). */
+    @Query("SELECT * FROM readings WHERE t >= :from AND t < :to ORDER BY t")
     suspend fun range(
         from: Long,
         to: Long,
-        hidden: List<String>,
     ): List<ReadingEntity>
 
     @Upsert
     suspend fun upsert(readings: List<ReadingEntity>)
 
+    @Delete
+    suspend fun delete(readings: List<ReadingEntity>)
+
     /**
-     * Stores [readings]; those that aren't [imported] then remove every imported reading within [tolerance] ms of them
-     * (the sensor's own reading wins over an imported copy, HistoryImport), in one transaction.
+     * Stores a batch by THE rank rule: [plan] gets every reading stored in [from, to] (the batch's span widened by the
+     * rule's window) and says what to write and what it replaces; one transaction.
      */
     @Transaction
-    suspend fun upsertOwnFirst(
-        readings: List<ReadingEntity>,
-        imported: List<String>,
-        tolerance: Long,
-    ) {
-        upsert(readings)
-        val own = readings.filter { it.source !in imported }
-        if (own.isNotEmpty()) dropImportedNear(own.minOf { it.t } - tolerance, own.maxOf { it.t } + tolerance, imported, tolerance)
-    }
-
-    /** Imported readings in [from, to] with a reading from another source within [tolerance] ms. */
-    @Query(
-        "DELETE FROM readings WHERE source IN (:imported) AND t >= :from AND t <= :to AND EXISTS (SELECT 1 FROM readings AS own " +
-            "WHERE own.source NOT IN (:imported) AND own.t >= readings.t - :tolerance AND own.t <= readings.t + :tolerance)",
-    )
-    suspend fun dropImportedNear(
+    suspend fun upsertRanked(
         from: Long,
         to: Long,
-        imported: List<String>,
-        tolerance: Long,
-    ): Int
+        plan: (stored: List<ReadingEntity>) -> Pair<List<ReadingEntity>, List<ReadingEntity>>,
+    ) {
+        val (write, remove) = plan(around(from, to))
+        if (remove.isNotEmpty()) delete(remove)
+        if (write.isNotEmpty()) upsert(write)
+    }
 
     /** Every reading in [from, to], any source (the import path compares with all of them). */
     @Query("SELECT * FROM readings WHERE t >= :from AND t <= :to ORDER BY t")
@@ -95,13 +83,17 @@ interface ReadingDao {
     @Query("DELETE FROM readings WHERE t < :cutoff")
     suspend fun deleteBefore(cutoff: Long): Int
 
-    /** What a role change would delete: how many readings from [sources], their first and last time. */
+    /** How many readings from [sources], their first and last time. */
     @Query("SELECT COUNT(*) AS count, MIN(t) AS oldest, MAX(t) AS newest FROM readings WHERE source IN (:sources)")
     suspend fun span(sources: List<String>): SpanRow
 
-    /** A role change: another person's readings go. */
-    @Query("DELETE FROM readings WHERE source IN (:sources)")
-    suspend fun deleteFrom(sources: List<String>): Int
+    /** What a person change would delete: every reading, the first and last time. */
+    @Query("SELECT COUNT(*) AS count, MIN(t) AS oldest, MAX(t) AS newest FROM readings")
+    suspend fun spanAll(): SpanRow
+
+    /** A person change: the previous person's readings go. */
+    @Query("DELETE FROM readings")
+    suspend fun deleteAll(): Int
 }
 
 @Dao

@@ -15,7 +15,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.PenNearEntry
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.TreatmentKind
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -46,7 +46,7 @@ class PenDuplicateTest {
 
     @Before
     fun setUp() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
         app.penNear = PenNearEntry("pen-1", 8.5, Instant.parse("2026-01-15T11:58:00Z").epochSecond)
     }
 

@@ -10,9 +10,9 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.treatments.QuickSource
 import app.mauri.sukrara.feature.treatments.QuickTreatmentActivity
 import app.mauri.sukrara.feature.treatments.QuickTreatmentIntents
@@ -38,14 +38,14 @@ class WidgetTapTest {
     private fun frame(
         mgdl: Int?,
         age: Duration = Duration.ofMinutes(1),
-        role: Role? = Role.Wearer,
+        role: SourceSpec? = SourceSpec.YourSensor,
         firing: Set<String> = emptySet(),
         sensor: SensorState = SensorState.Active(now.plus(Duration.ofDays(5))),
     ): WidgetFrame {
         val r = mgdl?.let { Reading(now.minus(age), it, 0.0, SourceId("test")) }
         val g =
             GlucoseState.Initial.copy(
-                role = role,
+                spec = role,
                 latest = r,
                 recent = listOfNotNull(r),
                 sensor = sensor,
@@ -87,7 +87,7 @@ class WidgetTapTest {
         )
         assertEquals(
             WidgetTap.OpenApp,
-            widgetTap(context, frame(120, Duration.ofMinutes(25), role = Role.Follower, sensor = SensorState.Ended)),
+            widgetTap(context, frame(120, Duration.ofMinutes(25), role = SourceSpec.TheirSukrara, sensor = SensorState.Ended)),
         )
         assertEquals(NavTargets.ACTION_SENSOR_SETUP, WidgetTap.intent(context, WidgetTap.NewSensor).action)
         assertEquals(
@@ -108,7 +108,7 @@ class WidgetTapTest {
         // still sending (#3): the value with the ended flag (the card's "Ended · Replace sensor" pill)
         val sending = frame(120, Duration.ofMinutes(1), sensor = SensorState.Ended)
         assertTrue(widgetLook(widgetModel(context, sending), sending.config.unit).ended)
-        val follower = frame(120, Duration.ofMinutes(6), role = Role.Follower, sensor = SensorState.Ended)
+        val follower = frame(120, Duration.ofMinutes(6), role = SourceSpec.TheirSukrara, sensor = SensorState.Ended)
         assertEquals(GlucoseLook.State.ENDED, widgetLook(widgetModel(context, follower), follower.config.unit).state)
     }
 

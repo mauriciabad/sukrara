@@ -9,7 +9,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.integrations.CurrentSensor
@@ -70,7 +70,7 @@ class Broadcaster(
     /** The Libre 3 driver's live readings (never history; only a real Libre 3 pairing emits). */
     private val live: Flow<LiveReading>,
     private val sensor: Flow<CurrentSensor?>,
-    private val role: Flow<Role?>,
+    private val role: Flow<SourceSpec?>,
     private val apps: AppDirectory,
     private val clock: Clock,
     private val io: CoroutineDispatcher,

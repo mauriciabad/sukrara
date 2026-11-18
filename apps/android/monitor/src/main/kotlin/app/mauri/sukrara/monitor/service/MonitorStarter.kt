@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.monitor.service
 
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.monitor.hub.GlucoseHubImpl
 
@@ -40,15 +40,15 @@ interface StoppedNotice {
  */
 class MonitorStarter(
     private val hub: GlucoseHubImpl,
-    /** Whether the role has something to monitor (a cheap check: it runs on every start and health check). */
-    private val canMonitor: suspend (Role) -> Boolean,
+    /** Whether the source has something to monitor (a cheap check: it runs on every start and health check). */
+    private val canMonitor: suspend (SourceSpec) -> Boolean,
     private val launcher: ServiceLauncher,
     private val notice: StoppedNotice,
     private val log: (String) -> Unit = {},
 ) {
     suspend fun start(reason: StartReason): StartResult {
-        val role = hub.state.value.role
-        if (role == null || !canMonitor(role)) {
+        val spec = hub.state.value.spec
+        if (spec == null || !canMonitor(spec)) {
             // nothing to resume any more: an earlier "stopped" goes away
             if (hub.state.value.service is ServiceState.Stopped) hub.setService(ServiceState.NotRunning)
             notice.cancel()

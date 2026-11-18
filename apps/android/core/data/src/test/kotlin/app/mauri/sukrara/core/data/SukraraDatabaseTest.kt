@@ -12,8 +12,8 @@ import app.mauri.sukrara.core.data.db.RoomTreatmentsRepository
 import app.mauri.sukrara.core.data.db.SeenWrapEntity
 import app.mauri.sukrara.core.data.db.SukraraDatabase
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -64,28 +64,25 @@ class SukraraDatabaseTest {
     ) = Reading(t0.plus(Duration.ofMinutes(minutes)), mgdl, 0.5, source)
 
     @Test
-    fun `across a role change every read shows only the current person's readings`() =
+    fun `a change of whose glucose deletes every reading, after saying what it deletes`() =
         runTest {
-            val role = MutableStateFlow<Role?>(Role.Wearer)
-            val scoped = RoomReadingsRepository(db.readings(), role.map(SourceId::notOf))
-            // the wearer's own sensor, then the person followed (the role changed meanwhile)
             readings.upsert(listOf(reading(0, 100), reading(5, 110, SourceId.Juggluco), reading(10, 200, SourceId.Relay)))
+            assertEquals(StoredSpan(3, t0, t0.plusSeconds(600)), readings.span())
+            assertEquals(StoredSpan(1, t0.plusSeconds(600), t0.plusSeconds(600)), readings.spanOf(setOf(SourceId.Relay)))
+            assertEquals(3, readings.deleteAll())
+            assertEquals(StoredSpan.EMPTY, readings.span())
+        }
 
-            assertEquals(listOf(100, 110), scoped.window(t0).first().map { it.mgdl })
-            assertEquals(110, scoped.latest().first()?.mgdl)
-            assertEquals(listOf(100, 110), scoped.range(t0, t0.plusSeconds(3600)).map { it.mgdl })
-
-            role.value = Role.Follower
-            assertEquals(listOf(200), scoped.window(t0).first().map { it.mgdl })
-            assertEquals(200, scoped.latest().first()?.mgdl)
-            assertEquals(listOf(200), scoped.range(t0, t0.plusSeconds(3600)).map { it.mgdl })
-
-            // what the change will delete, asked before deleting (setup's confirmation)
-            assertEquals(StoredSpan(2, t0, t0.plusSeconds(300)), readings.spanOf(SourceId.notOf(Role.Follower)))
-            assertEquals(StoredSpan.EMPTY, readings.spanOf(SourceId.notOf(null)))
-            assertEquals(2, scoped.deleteFrom(SourceId.notOf(Role.Follower)))
-            assertEquals(listOf(200), readings.window(t0).first().map { it.mgdl })
-            assertEquals("no role yet hides and deletes nothing", 0, readings.deleteFrom(SourceId.notOf(null)))
+    @Test
+    fun `the rank rule keeps one reading per measurement in Room`() =
+        runTest {
+            // the relayed copy first (another Sukrara), then this phone's sensor reads the same minute: the sensor's stays
+            readings.upsert(listOf(reading(0, 100, SourceId.Relay), reading(1, 101, SourceId.Relay)))
+            readings.upsert(listOf(reading(1, 102)))
+            assertEquals(listOf(102 to SourceId.Libre3), readings.window(t0).first().map { it.mgdl to it.source })
+            // a relayed copy arriving later is dropped; the sensor's next minute stays
+            readings.upsert(listOf(reading(2, 103, SourceId.Nearby), reading(2, 104)))
+            assertEquals(listOf(102, 104), readings.window(t0).first().map { it.mgdl })
         }
 
     @Test
@@ -97,12 +94,12 @@ class SukraraDatabaseTest {
         }
 
     @Test
-    fun `the same time and source is replaced, another source is kept`() =
+    fun `the same time and source is replaced, another source's copy goes by rank`() =
         runTest {
             readings.upsert(listOf(reading(0, 100)))
             readings.upsert(listOf(reading(0, 101), reading(0, 99, SourceId.Relay)))
             assertEquals(
-                setOf(101 to SourceId.Libre3, 99 to SourceId.Relay),
+                setOf(101 to SourceId.Libre3),
                 readings
                     .window(t0)
                     .first()

@@ -3,21 +3,32 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.sharing.setup
 
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import kotlinx.serialization.Serializable
 
 /**
  * The first-run setup steps, in their binding order, in two parts (#181): the **essentials** (what must be set before
- * monitoring and alerts can be trusted: the role, the follow, what alerts need, the sensor, the thresholds), then
+ * monitoring and alerts can be trusted: whose glucose and where from, the follow, what alerts need, the sensor, the
+ * thresholds), then
  * [Ready], then the **extras** (useful, never needed to start: updates, followers, insulin pens, history), which the
  * person walks right away or later from Settings › *Finish setup*. The sensor runs before the identity can be
  * restored (a restore moves the followers to this phone, so it waits until this phone has the sensor).
  */
 enum class SetupStep {
     Welcome,
-    Role,
 
-    /** Follower only: join with the wearer's invite link (not skippable: following is the role). */
+    /**
+     * *Whose glucose will Sukrara show?*: yours or someone else's, two illustrated choices (docs/44 "Setup"). Only a
+     * pick: [Source] stores both answers together.
+     */
+    Person,
+
+    /** *Where does it come from?*: the sources the person can use, grouped by what they feel; stores the answer. */
+    Source,
+
+    /** A Sukrara stream only: join with the invite link (not skippable: the stream is the source). */
     Join,
     Permissions,
     Sensor,
@@ -69,8 +80,8 @@ enum class SetupStep {
     History,
     ;
 
-    /** Welcome and Role can't be skipped: the app does nothing useful without a role. Every other step can. */
-    val skippable: Boolean get() = this != Welcome && this != Role && this != Join
+    /** Welcome, Person and Source can't be skipped: the app does nothing useful without a source. Every other step can. */
+    val skippable: Boolean get() = this != Welcome && this != Person && this != Source && this != Join
 
     /** Before [Ready]: monitoring and alerts can't be trusted until these are answered. */
     val essential: Boolean get() = ordinal < Ready.ordinal
@@ -84,9 +95,9 @@ enum class SetupStep {
 
 /**
  * What the person answered in setup, persisted (typed store `setup`): only answers, never where the screen is (a step
- * opened on its own is screen state, so leaving it half-way can't lose it). The role is NOT here: it lives in its own
- * store (`role`, the hub and the alert runtime read it), so a damaged setup file only shows the skipped steps again
- * and never turns a running wearer's alerts off.
+ * opened on its own is screen state, so leaving it half-way can't lose it). The source is NOT here: it lives in its own
+ * store (`source`, the hub and the alert runtime read it), so a damaged setup file only shows the skipped steps again
+ * and never turns running alerts off.
  */
 @Serializable
 data class SetupRecord(
@@ -96,11 +107,16 @@ data class SetupRecord(
 
 /** What setup reads from the phone and the other areas, re-read on every resume. */
 data class SetupFacts(
-    /** The phone's role (its own store); null = not chosen yet. */
-    val role: Role?,
-    /** This phone follows someone (joined; not declined, used up or removed). */
+    /** Whose glucose and where from, as answered (its own store); null = not answered yet. */
+    val spec: SourceSpec?,
+    /**
+     * What the phone runs on: [spec], else what it is already set up to read (an install updated from before the
+     * question): Person and Source are asked once more, preselected with it.
+     */
+    val running: SourceSpec? = spec,
+    /** This phone follows another Sukrara (joined; not declined, used up or removed). */
     val following: Boolean = false,
-    /** A live reading from this phone's own sensor ([RestoreGate.ownSensorLive]). */
+    /** A live reading this phone got first-hand: its sensor or Juggluco ([RestoreGate.ownSensorLive]). */
     val ownSensorLive: Boolean,
     /** This phone already has a sharing identity (restored or started fresh). */
     val hasIdentity: Boolean,
@@ -153,25 +169,21 @@ sealed interface SetupCard {
     data class Finish(val item: FinishItem) : SetupCard
 }
 
-/** Why choosing a role didn't happen. */
-enum class RoleRefusal {
-    /** P10: the role is chosen only after the person confirmed what it means. */
-    NotConfirmed,
-}
-
 /**
  * The pure setup rules: the ordered steps, what completes or skips each one, and the "Finish setup" items. No Android,
  * no I/O; [SetupViewModel] persists the records it returns.
  */
 object SetupMachine {
     fun steps(facts: SetupFacts): List<SetupStep> {
+        val spec = facts.spec ?: facts.running
         val all =
-            when (facts.role) {
-                // a follower's history is the wearer's (it comes from their phone): nothing to import; no pens
-                Role.Follower -> {
+            when {
+                // the history of a stream is on the other Sukrara: nothing to import; no pens, no followers of its own
+                spec?.stream == true -> {
                     listOf(
                         SetupStep.Welcome,
-                        SetupStep.Role,
+                        SetupStep.Person,
+                        SetupStep.Source,
                         SetupStep.Join,
                         SetupStep.Permissions,
                         SetupStep.Alerts,
@@ -182,7 +194,12 @@ object SetupMachine {
                     )
                 }
 
-                Role.Wearer, null -> {
+                // someone else's glucose from an app on this phone: connect it, nothing shared, uploaded or imported
+                spec?.owner == false -> {
+                    SetupStep.entries - SetupStep.Join - SetupStep.Identity - SetupStep.Pens - SetupStep.History
+                }
+
+                else -> {
                     SetupStep.entries - SetupStep.Join
                 }
             }.filter {
@@ -215,7 +232,7 @@ object SetupMachine {
         record: SetupRecord,
         facts: SetupFacts,
     ): Boolean {
-        if (facts.role != Role.Wearer) return false
+        if (facts.spec?.owner != true) return false
         val next = next(record, facts)
         return next == SetupStep.History || (next == null && extrasLeft(record, facts) == listOf(SetupStep.History))
     }
@@ -232,13 +249,13 @@ object SetupMachine {
 
     /**
      * Settings' *Finish setup*: the extras still open once the essentials' walk is over (or paused at [SetupStep.Ready]):
-     * not answered, not done elsewhere and not declined for good (*Not now*, *Start empty*); none before a role.
+     * not answered, not done elsewhere and not declined for good (*Not now*, *Start empty*); none before a source.
      */
     fun extrasLeft(
         record: SetupRecord,
         facts: SetupFacts,
     ): List<SetupStep> {
-        if (facts.role == null || next(record, facts)?.essential == true) return emptyList()
+        if (facts.spec == null || next(record, facts)?.essential == true) return emptyList()
         return steps(facts).filter { it.extra && !done(it, record, facts) && !(it.skipIsFinal && it in record.skipped) }
     }
 
@@ -250,15 +267,16 @@ object SetupMachine {
         )
 
     /**
-     * Home's *Finish setup* banner, or null (no role yet: home says setup is incomplete; or nothing left). Essentials
+     * Home's *Finish setup* banner, or null (no source yet: home says setup is incomplete; or nothing left). Essentials
      * only: a walk left before the essentials' end comes first and resumes where it stopped (never the join step: a
-     * follower's home already leads there); the extras are Settings' *Finish setup* ([extrasLeft]).
+     * stream's home already leads there); the extras are Settings' *Finish setup* ([extrasLeft]). An install updated
+     * from before the question runs on what it reads ([SetupFacts.running]): its banner resumes at whose glucose.
      */
     fun card(
         record: SetupRecord,
         facts: SetupFacts,
     ): SetupCard? {
-        if (facts.role == null) return null
+        if (facts.spec == null) return if (facts.running != null) SetupCard.Resume(SetupStep.Person) else null
         val next = next(record, facts)
         if (next != null && next.essential) return if (next == SetupStep.Join) null else SetupCard.Resume(next)
         return finishItems(record, facts).firstOrNull()?.let(SetupCard::Finish)
@@ -266,8 +284,8 @@ object SetupMachine {
 
     /**
      * Back in the walk from [step]: the step before it (its answer is kept), or null = Back leaves setup (home's banner
-     * resumes the walk at the step left). Never back into the role once chosen, except from the join step (a phone that
-     * wears the sensor after all).
+     * resumes the walk at the step left). From the source back to whose glucose, and from the join step back to the
+     * source (another source after all); otherwise never back into them once answered: Settings › Source changes them.
      */
     fun previous(
         step: SetupStep,
@@ -275,7 +293,9 @@ object SetupMachine {
     ): SetupStep? {
         val steps = steps(facts)
         val before = steps.getOrNull(steps.indexOf(step) - 1) ?: return null
-        return before.takeIf { step == SetupStep.Join || facts.role == null || it != SetupStep.Role }
+        return before.takeIf {
+            step == SetupStep.Join || step == SetupStep.Source || facts.spec == null || (it != SetupStep.Person && it != SetupStep.Source)
+        }
     }
 
     /**
@@ -298,7 +318,7 @@ object SetupMachine {
         change: (SetupRecord) -> SetupRecord,
     ): Boolean = change(SetupRecord()).let { step in it.completed || step in it.skipped }
 
-    /** Welcome and Role are done once a role exists (a damaged setup file never asks for the role again). */
+    /** Welcome, Person and Source are done once a source is stored (a damaged setup file never asks for it again). */
     private fun done(
         step: SetupStep,
         record: SetupRecord,
@@ -320,7 +340,7 @@ object SetupMachine {
             step in record.completed || facts.pens == true
         } else {
             step in record.completed ||
-                (facts.role != null && (step == SetupStep.Welcome || step == SetupStep.Role)) ||
+                (facts.spec != null && (step == SetupStep.Welcome || step == SetupStep.Person || step == SetupStep.Source)) ||
                 (step == SetupStep.Alerts && facts.alertsConfirmed) ||
                 // restored or started fresh elsewhere (Settings › Sharing's Set up)
                 (step == SetupStep.Identity && facts.hasIdentity)
@@ -354,16 +374,16 @@ object SetupMachine {
     /** *Continue* on the glucose notification step: the choice made there stays. */
     fun completeNotification(record: SetupRecord): SetupRecord = record.done(SetupStep.Notification)
 
-    /** P10: the role to store, or why not: refused until [confirmed]. */
-    fun chooseRole(
-        role: Role,
-        confirmed: Boolean,
-        facts: SetupFacts,
-    ): Result<Role, RoleRefusal> =
-        when {
-            !confirmed -> Result.Refused(RoleRefusal.NotConfirmed)
-            else -> Result.Done(role)
-        }
+    /**
+     * The source picker's choice for [person] before the person picks one: what this phone runs on when it brings that
+     * person's glucose, else the usual one (your sensor; their Sukrara, as following was).
+     */
+    fun preselected(
+        running: SourceSpec?,
+        person: Person,
+    ): SourceKind =
+        running?.kind?.takeIf { running.person == person }
+            ?: if (person == Person.Theirs) SourceKind.Sukrara else SourceKind.Sensor
 
     /** The join step is done once this phone follows someone (the request may still be waiting). */
     fun completeJoin(
@@ -374,7 +394,7 @@ object SetupMachine {
     /** The checklist step is done (missing items stay on the home reliability row). */
     fun completePermissions(record: SetupRecord): SetupRecord = record.done(SetupStep.Permissions)
 
-    /** The sensor step completes only with a real live reading from this phone's sensor. */
+    /** The sensor step completes only with a real live reading this phone got first-hand (its sensor or Juggluco). */
     fun completeSensor(
         record: SetupRecord,
         facts: SetupFacts,
@@ -389,7 +409,7 @@ object SetupMachine {
         facts: SetupFacts,
     ): SetupRecord = if (facts.hasIdentity) record.done(SetupStep.Identity) else record
 
-    /** Skip / "Later": the step goes to the Finish-setup card. Welcome and Role can't be skipped. */
+    /** Skip / "Later": the step goes to the Finish-setup card. Welcome, Person and Source can't be skipped. */
     fun skip(
         record: SetupRecord,
         step: SetupStep,
@@ -403,7 +423,7 @@ object SetupMachine {
         record: SetupRecord,
         facts: SetupFacts,
     ): List<FinishItem> {
-        if (facts.role == null) return emptyList()
+        if (facts.spec == null) return emptyList()
         val steps = steps(facts)
         return FinishItem.entries.filter { item ->
             val step = item.step
@@ -428,11 +448,4 @@ object SetupMachine {
     ): SetupRecord = record.copy(completed = record.completed - step, skipped = record.skipped - step)
 
     private fun SetupRecord.done(step: SetupStep) = copy(completed = completed + step, skipped = skipped - step)
-}
-
-/** A pure decision: the new value, or why not. */
-sealed interface Result<out T, out E> {
-    data class Done<T>(val value: T) : Result<T, Nothing>
-
-    data class Refused<E>(val reason: E) : Result<Nothing, E>
 }

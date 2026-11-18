@@ -4,8 +4,8 @@
 package app.mauri.sukrara.integrations.tidepool
 
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -57,7 +57,7 @@ class TidepoolUploaderTest {
     private val store = InMemoryStateStore(TpState())
     private val readings = InMemoryReadingsRepository()
     private val treatments = InMemoryTreatmentsRepository()
-    private val role = MutableStateFlow<Role?>(Role.Wearer)
+    private val role = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
     private val requests = mutableListOf<RecordedRequest>()
 
     /** Tokens the fake accepts; a refresh hands out the next one unless [refreshRefused]. */
@@ -247,10 +247,10 @@ class TidepoolUploaderTest {
         }
 
     @Test
-    fun `each role uploads only its own person's readings`() =
+    fun `the current person's readings go up, your glucose and anyone else's to separate records`() =
         runBlocking {
             signedInAndOn()
-            // left from following someone earlier, next to this phone's own sensor
+            // your glucose from your other phone earlier, then this phone's own sensor: one history
             readings.upsert(
                 listOf(
                     Reading(now - Duration.ofMinutes(10), 150, null, SourceId.Relay),
@@ -258,15 +258,16 @@ class TidepoolUploaderTest {
                 ),
             )
             uploader.cycle()
-            assertEquals(listOf(120), data().map { it["value"]!!.jsonPrimitive.content.toInt() })
+            assertEquals(listOf(150, 120), data().map { it["value"]!!.jsonPrimitive.content.toInt() })
 
-            // now following: only the followed person's readings, never this phone's own from before
-            role.value = Role.Follower
+            // someone else's glucose now (a change of person deletes the history first): its own upload record
+            readings.deleteAll()
+            role.value = SourceSpec.TheirSukrara
             uploader.change { it.copy(uploadFollowed = true) }
             readings.upsert(listOf(Reading(now - Duration.ofMinutes(1), 160, null, SourceId.Nearby)))
             uploader.cycle()
             val following = data("ds-2").map { it["value"]!!.jsonPrimitive.content.toInt() }
-            assertEquals(listOf(150, 160), following)
+            assertEquals(listOf(160), following)
         }
 
     @Test
@@ -302,7 +303,7 @@ class TidepoolUploaderTest {
             val first =
                 store.data
                     .first()
-                    .role(Role.Wearer)
+                    .role(SourceSpec.YourSensor)
                     .notes
                     .getValue("n1")
             removedNotes += first
@@ -315,7 +316,7 @@ class TidepoolUploaderTest {
             val second =
                 store.data
                     .first()
-                    .role(Role.Wearer)
+                    .role(SourceSpec.YourSensor)
                     .notes
                     .getValue("n1")
             assertNotEquals(first, second)
@@ -502,7 +503,7 @@ class TidepoolUploaderTest {
                 "",
                 store.data
                     .first()
-                    .role(Role.Wearer)
+                    .role(SourceSpec.YourSensor)
                     .dataSet,
             )
             clock.advance(Duration.ofMinutes(3))
@@ -511,7 +512,7 @@ class TidepoolUploaderTest {
                 "ds-2",
                 store.data
                     .first()
-                    .role(Role.Wearer)
+                    .role(SourceSpec.YourSensor)
                     .dataSet,
             )
             assertEquals(listOf(125), data("ds-2").map { it["value"]!!.jsonPrimitive.content.toInt() })
@@ -524,7 +525,7 @@ class TidepoolUploaderTest {
             signedInAndOn()
             readings.upsert(listOf(Reading(now - Duration.ofMinutes(5), 120, null, SourceId.Libre3)))
             uploader.cycle()
-            store.update { it.withRole(Role.Wearer, it.role(Role.Wearer).copy(dataSet = "")) }
+            store.update { it.withRole(SourceSpec.YourSensor, it.role(SourceSpec.YourSensor).copy(dataSet = "")) }
             readings.upsert(listOf(Reading(now, 125, null, SourceId.Libre3)))
             uploader.cycle()
             assertEquals(1, posted("/v1/users/u1/data_sets").size)
@@ -534,7 +535,7 @@ class TidepoolUploaderTest {
     @Test
     fun `a follower uploads the person they follow only after choosing to`() =
         runBlocking {
-            role.value = Role.Follower
+            role.value = SourceSpec.TheirSukrara
             signedInAndOn()
             readings.upsert(listOf(Reading(now, 130, null, SourceId.Relay)))
             val before = requests.size
@@ -552,7 +553,7 @@ class TidepoolUploaderTest {
             assertTrue(
                 store.data
                     .first()
-                    .role(Role.Follower)
+                    .role(SourceSpec.TheirSukrara)
                     .deviceId
                     .startsWith("Sukrara-following-"),
             )
@@ -567,7 +568,7 @@ class TidepoolUploaderTest {
             val device =
                 store.data
                     .first()
-                    .role(Role.Wearer)
+                    .role(SourceSpec.YourSensor)
                     .deviceId
             uploader.signOut()
             assertNull(secure.read(TidepoolUploader.NAME))
@@ -578,7 +579,7 @@ class TidepoolUploaderTest {
                 device,
                 store.data
                     .first()
-                    .role(Role.Wearer)
+                    .role(SourceSpec.YourSensor)
                     .deviceId,
             )
             store.update { it.copy(account = "someone else") }
@@ -587,7 +588,7 @@ class TidepoolUploaderTest {
                 device,
                 store.data
                     .first()
-                    .role(Role.Wearer)
+                    .role(SourceSpec.YourSensor)
                     .deviceId
                     .ifEmpty { "none" },
             )

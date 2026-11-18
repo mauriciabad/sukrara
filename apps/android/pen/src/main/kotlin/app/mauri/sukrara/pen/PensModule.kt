@@ -17,7 +17,7 @@ import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.PenQuestionInfo
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.UploadHold
@@ -49,7 +49,7 @@ class PensModule(
     log: PenLog,
     private val settings: SettingsRepository,
     clock: Clock,
-    private val roleSource: Flow<Role?>,
+    private val roleSource: Flow<SourceSpec?>,
     val scope: CoroutineScope,
     ports: PenNotificationPorts,
     /** Emits whenever the treatment log changes (an entry edited or deleted elsewhere): *Doses read* follows it. */
@@ -63,13 +63,13 @@ class PensModule(
     /** Debug builds only (a made-up read on an emulator without NFC): show the pen surfaces anyway. */
     val fakeNfc = kotlinx.coroutines.flow.MutableStateFlow(false)
 
-    private val role: StateFlow<Role?> = roleSource.stateIn(scope, SharingStarted.Eagerly, null)
+    private val role: StateFlow<SourceSpec?> = roleSource.stateIn(scope, SharingStarted.Eagerly, null)
 
     /** Pens exist only on the wearer's own phone with NFC (a follower would log into someone else's log). */
-    fun available(): Boolean = role.value == Role.Wearer && (hasNfc || fakeNfc.value)
+    fun available(): Boolean = role.value?.owner == true && (hasNfc || fakeNfc.value)
 
-    /** [available] once the stored role is loaded (a cold start by a pen tap or the timer must not read "no role"). */
-    suspend fun availableNow(): Boolean = roleSource.first() == Role.Wearer && (hasNfc || fakeNfc.value)
+    /** [available] once the stored source is loaded (a cold start by a pen tap or the timer must not read "no source"). */
+    suspend fun availableNow(): Boolean = roleSource.first()?.owner == true && (hasNfc || fakeNfc.value)
 
     val notices = PenNotices(context, ports)
 
@@ -130,18 +130,18 @@ class PensModule(
         pens.load()
     }
 
-    /** Keeps the tap component in step with the role and the setting, and reposts what waits (app start). */
+    /** Keeps the tap component in step with the source and the setting, and reposts what waits (app start). */
     fun start() {
         scope.launch {
             combine(roleSource, readingFlow, fakeNfc) { r, reading, fake ->
-                r == Role.Wearer && (hasNfc || fake) &&
+                r?.owner == true && (hasNfc || fake) &&
                     reading != PenReading.Off
             }.distinctUntilChanged()
                 .collect { on -> runCatching { setComponents(on) } }
         }
         scope.launch {
             roleSource.distinctUntilChanged().collect { r ->
-                if (r == Role.Wearer) {
+                if (r?.owner == true) {
                     ready()
                     syncNotices()
                     schedule(pens.ledger.value)
@@ -251,7 +251,7 @@ class PensModule(
 
     /** Pens can be read on this phone: the wearer's, with NFC (or the debug build's made-up NFC). */
     private val readsPens: Flow<Boolean> =
-        combine(roleSource, fakeNfc) { r, fake -> r == Role.Wearer && (hasNfc || fake) }.distinctUntilChanged()
+        combine(roleSource, fakeNfc) { r, fake -> r?.owner == true && (hasNfc || fake) }.distinctUntilChanged()
 
     /** Home's question card: the open questions while this phone reads pens, else none (a follower has no pens). */
     @OptIn(ExperimentalCoroutinesApi::class)

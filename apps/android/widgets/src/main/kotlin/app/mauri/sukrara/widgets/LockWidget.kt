@@ -33,7 +33,6 @@ import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
 import app.mauri.sukrara.core.model.LockBackground
 import app.mauri.sukrara.core.model.LockWidgetLink
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
@@ -157,7 +156,7 @@ fun describeLock(
     val name =
         frame.glucose.link
             ?.wearerName
-            ?.takeIf { frame.glucose.role == Role.Follower && it.isNotBlank() }
+            ?.takeIf { frame.glucose.spec?.theirs == true && it.isNotBlank() }
     val said = if (name != null) context.getString(R.string.widget_desc_follower, name, sentence) else sentence
     return if (widgetTap(context, frame) is WidgetTap.QuickTreatment) context.getString(R.string.widget_lock_desc_tap, said) else said
 }

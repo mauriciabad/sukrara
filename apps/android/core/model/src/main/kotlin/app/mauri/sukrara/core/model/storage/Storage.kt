@@ -94,9 +94,10 @@ data class StoredSpan(
 }
 
 /**
- * Glucose history (Room). Upserting the same timestamp and source replaces the value; a reading that isn't imported
- * removes the imported ones within [HistoryImport.SAME_READING] of it (the sensor's own reading wins). Imported history
- * is stored through [HistoryImportStore].
+ * Glucose history (Room): the current person's readings (a person change deletes them all, [deleteAll]). Upserting
+ * goes through THE rank rule ([app.mauri.sukrara.core.model.ReadingRank]): one reading per measurement whichever
+ * sources brought it, the same timestamp and source replacing its value. Imported history is stored through
+ * [HistoryImportStore].
  */
 interface ReadingsRepository {
     /** Readings at or after [from], oldest first, updated as new ones arrive. */
@@ -116,11 +117,14 @@ interface ReadingsRepository {
     /** Retention: deletes readings older than [cutoff]; returns how many. */
     suspend fun deleteBefore(cutoff: Instant): Int
 
-    /** What [deleteFrom] would delete: how many readings from [sources] and their first and last time. */
+    /** How many readings from [sources] are stored and their first and last time. */
     suspend fun spanOf(sources: Set<SourceId>): StoredSpan
 
-    /** A role change: deletes every reading from [sources] (another person's); returns how many. */
-    suspend fun deleteFrom(sources: Set<SourceId>): Int
+    /** What [deleteAll] would delete: every stored reading's count and first and last time. */
+    suspend fun span(): StoredSpan
+
+    /** A person change: deletes every reading (they were the previous person's); returns how many. */
+    suspend fun deleteAll(): Int
 }
 
 /**

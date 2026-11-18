@@ -8,9 +8,9 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.CardSurface
@@ -45,13 +45,13 @@ class LiveNotificationContentTest {
         ageS: Long = 30,
         rate: Double? = 1.2,
         sensor: SensorState = SensorState.Active(null),
-        role: Role? = Role.Wearer,
+        role: SourceSpec? = SourceSpec.YourSensor,
         started: Boolean = true,
         firing: Set<String> = emptySet(),
     ): GlucoseState {
         val reading = mgdl?.let { Reading(now.minusSeconds(ageS), it, rate, SourceId.Libre3).trended() }
         return GlucoseState.Initial.copy(
-            role = role,
+            spec = role,
             latest = reading,
             recent = listOfNotNull(reading),
             sensor = sensor,
@@ -216,7 +216,7 @@ class LiveNotificationContentTest {
         assertEquals(UiText(R.string.monitor_notif_value, listOf("138", "↗")), c.title)
         assertEquals(UiText(R.string.monitor_notif_sensor_ended_line), c.text)
         assertEquals(listOf(Target.SensorSetup), c.actions.map { it.target })
-        assertTrue(content(state(sensor = SensorState.Ended, role = Role.Follower)).actions.isEmpty())
+        assertTrue(content(state(sensor = SensorState.Ended, role = SourceSpec.TheirSukrara)).actions.isEmpty())
     }
 
     @Test
@@ -287,7 +287,7 @@ class LiveNotificationContentTest {
         assertEquals(line, content(state(), prefs).sharing)
         assertEquals(line, content(state(mgdl = null), prefs).sharing)
         assertEquals(line, content(state(ageS = 6 * 60, sensor = SensorState.Ended), prefs).sharing)
-        assertNull(content(state(role = Role.Follower), prefs).sharing)
+        assertNull(content(state(role = SourceSpec.TheirSukrara), prefs).sharing)
         assertNull(content(state(), NotificationPrefs()).sharing)
         assertNull(content(state(role = null), prefs).sharing)
         // a sharing identity without followers says nothing (no "0 followers" on the lock screen)
@@ -299,7 +299,7 @@ class LiveNotificationContentTest {
         val prefs = NotificationPrefs(chip = true, promotionAllowed = true, sharing = SharingLine(2, 1, wifi = true))
         assertEquals(SharingLine(2, 1, wifi = true), content(state(), prefs).sharing)
         // a follower's line names only the API (followers are the wearer's)
-        assertEquals(SharingLine(0, 0, wifi = true), content(state(role = Role.Follower), prefs).sharing)
+        assertEquals(SharingLine(0, 0, wifi = true), content(state(role = SourceSpec.TheirSukrara), prefs).sharing)
         assertEquals(SharingLine(0, 0, wifi = true), content(state(), prefs.copy(sharing = SharingLine(0, 0, wifi = true))).sharing)
         assertNull(content(state(role = null), prefs).sharing)
     }

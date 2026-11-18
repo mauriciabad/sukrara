@@ -74,7 +74,7 @@ class FollowingViewModel(
 }
 
 /**
- * Settings › Sharing on a follower phone: who this phone follows (picture and name from the wearer's roster), whether
+ * Settings › Source's rows for a Sukrara stream: who this phone follows (picture and name from the wearer's roster), whether
  * the request still waits (with the code the wearer may ask for), when the last reading arrived, whether this phone may
  * add entries, the relay connection, and the way out: Stop following (confirmed). A follow that ended says why and
  * offers Join with a new link (setup's join step). [onLeft] runs after Stop following worked (the app reopens setup).
@@ -87,6 +87,8 @@ fun FollowingPage(
     modifier: Modifier = Modifier,
     /** The page's foot: *See also* the other data pages (the app draws them). */
     links: @Composable () -> Unit = {},
+    /** Inside a scrolling page (Settings › Source): no scroll of its own. */
+    embedded: Boolean = false,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val nearby by viewModel.nearby.collectAsStateWithLifecycle()
@@ -116,6 +118,7 @@ fun FollowingPage(
         onRefreshNearby = viewModel::refreshNearby,
         modifier = modifier,
         links = links,
+        embedded = embedded,
     )
 }
 
@@ -134,11 +137,13 @@ fun FollowingContent(
     onConfirmNearby: (same: Boolean) -> Unit = {},
     /** Below the page, full width: *See also* the other data pages. */
     links: @Composable () -> Unit = {},
+    /** Inside a scrolling page (Settings › Source): no scroll of its own. */
+    embedded: Boolean = false,
 ) {
     var confirming by rememberSaveable { mutableStateOf(false) }
     val someone = stringResource(R.string.sh_join_someone)
     val name = Profile.shownName((state as? FollowState.Following)?.wearer?.name.orEmpty()).ifEmpty { someone }
-    Column(modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+    Column(if (embedded) modifier.fillMaxWidth() else modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Column(Modifier.padding(horizontal = 24.dp, vertical = 16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             when (state) {
                 FollowState.Loading -> {

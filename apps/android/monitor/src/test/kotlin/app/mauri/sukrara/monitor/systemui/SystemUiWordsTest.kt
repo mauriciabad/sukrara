@@ -12,9 +12,9 @@ import app.mauri.sukrara.core.data.settings.HookPosition
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.stats.Bands
@@ -49,7 +49,7 @@ class SystemUiWordsTest {
         sensor: SensorState = SensorState.Active(null),
     ): GlucoseState {
         val reading = Reading(now.minusSeconds(ageS), mgdl, rate, SourceId.Libre3).trended()
-        return GlucoseState.Initial.copy(role = Role.Wearer, latest = reading, recent = listOf(reading), sensor = sensor)
+        return GlucoseState.Initial.copy(spec = SourceSpec.YourSensor, latest = reading, recent = listOf(reading), sensor = sensor)
     }
 
     private fun icons(

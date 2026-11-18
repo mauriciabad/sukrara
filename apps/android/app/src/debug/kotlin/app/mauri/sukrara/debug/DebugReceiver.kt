@@ -9,12 +9,12 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.content.edit
 import app.mauri.sukrara.LaunchPlan
-import app.mauri.sukrara.RoleRecord
+import app.mauri.sukrara.SourceRecord
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertReading
 import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.graph
 import app.mauri.sukrara.monitor.MonitoringService
 import app.mauri.sukrara.monitor.alerts.AlertChannels
@@ -102,7 +102,7 @@ object DebugFakes {
                 endsAt = endsAt,
                 readyAt = readyAt,
             )
-            if (on) graph.role.update { if (it.role == null) RoleRecord(Role.Wearer) else it }
+            if (on) graph.source.update { if (it.spec == null) SourceRecord.of(SourceSpec.YourSensor) else it }
             context.stopService(Intent(context, MonitoringService::class.java))
             graph.monitor.starter.start(StartReason.App)
         }

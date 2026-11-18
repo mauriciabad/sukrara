@@ -1,0 +1,34 @@
+{
+  "_about": [
+    "One reading per measurement across sources (docs/44 'Data' rule 5, the rank rule): a reading from another source",
+    "within 'window_s' (either way) of a stored one is the same measurement. The higher 'rank' (first = highest) wins:",
+    "a lower-ranked stored reading is removed when the higher one arrives, a lower-ranked incoming reading is dropped.",
+    "Equal ranks: what is stored first stays (relay and nearby carry the same reading). The same source at the same",
+    "time replaces its own reading (a re-send). 'readingRank' maps every reading source id to its rank; imported history",
+    "(Import history) is the lowest, as its own rule already says (the sensor wins). 'cases': 'stored' then 'incoming'",
+    "(each [seconds, source, mg/dL]; one batch) -> 'kept', sorted by time then source."
+  ],
+  "window_s": 120,
+  "rank": ["sensor", "phoneApp", "network", "online", "sukrara", "imported"],
+  "readingRank": {
+    "libre3": "sensor", "dexcom-g7": "sensor", "dexcom-g6": "sensor", "accu-chek-smartguide": "sensor", "aidex-x": "sensor",
+    "juggluco": "phoneApp",
+    "juggluco-lan": "network",
+    "relay": "sukrara", "nearby": "sukrara",
+    "import-libreview": "imported", "import-tidepool": "imported", "import-file": "imported"
+  },
+  "cases": [
+    {"name": "the sensor replaces the relayed copy of the same measurement", "stored": [[0, "relay", 100]], "incoming": [[30, "libre3", 101]], "kept": [[30, "libre3", 101]]},
+    {"name": "a relayed copy of a sensor reading is dropped", "stored": [[0, "libre3", 100]], "incoming": [[60, "relay", 100]], "kept": [[0, "libre3", 100]]},
+    {"name": "relay and nearby carry the same reading: the first stays", "stored": [[0, "nearby", 100]], "incoming": [[0, "relay", 100]], "kept": [[0, "nearby", 100]]},
+    {"name": "readings of one source a minute apart are two measurements", "stored": [[0, "libre3", 100]], "incoming": [[60, "libre3", 102]], "kept": [[0, "libre3", 100], [60, "libre3", 102]]},
+    {"name": "the same source at the same time replaces itself", "stored": [[0, "juggluco", 100]], "incoming": [[0, "juggluco", 104]], "kept": [[0, "juggluco", 104]]},
+    {"name": "just outside the window: both stay", "stored": [[0, "relay", 100]], "incoming": [[121, "libre3", 110]], "kept": [[0, "relay", 100], [121, "libre3", 110]]},
+    {"name": "on the window's edge: the same measurement", "stored": [[0, "relay", 100]], "incoming": [[120, "libre3", 110]], "kept": [[120, "libre3", 110]]},
+    {"name": "Juggluco wins over imported history", "stored": [[0, "import-libreview", 100]], "incoming": [[-90, "juggluco", 99]], "kept": [[-90, "juggluco", 99]]},
+    {"name": "imported history never replaces anything", "stored": [[0, "relay", 100]], "incoming": [[60, "import-file", 100]], "kept": [[0, "relay", 100]]},
+    {"name": "a sensor reading removes every lower copy around it", "stored": [[-100, "relay", 98], [0, "import-file", 100], [100, "nearby", 103]], "incoming": [[0, "libre3", 100]], "kept": [[0, "libre3", 100]]},
+    {"name": "a batch keeps the higher-ranked of two incoming copies", "stored": [], "incoming": [[0, "relay", 100], [10, "juggluco", 101]], "kept": [[10, "juggluco", 101]]},
+    {"name": "Juggluco on the network over the relayed copy (Mac)", "stored": [[0, "relay", 100]], "incoming": [[20, "juggluco-lan", 100]], "kept": [[20, "juggluco-lan", 100]]}
+  ]
+}

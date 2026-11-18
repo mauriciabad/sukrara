@@ -18,9 +18,9 @@ import app.mauri.sukrara.alerts.Firing
 import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.monitor.AlertActionReceiver
 import app.mauri.sukrara.monitor.LiveNotification
@@ -72,7 +72,7 @@ class OneNotificationTest {
     private fun state(mgdl: Int = 62): GlucoseState {
         val reading = Reading(now.minusSeconds(30), mgdl, -2.0, SourceId.Libre3)
         return GlucoseState.Initial.copy(
-            role = Role.Wearer,
+            spec = SourceSpec.YourSensor,
             latest = reading,
             recent = listOf(reading),
             sensor = SensorState.Active(null),

@@ -190,7 +190,7 @@
     <string name="st_overview_reliability_problem">%1$d por arreglar</string>
     <string name="st_overview_graph">Tiempo mostrado, líneas, tratamientos en la gráfica</string>
     <string name="st_sensor">Sensor</string>
-    <string name="st_sensor_summary">Sensor actual, origen de las lecturas, LibreView</string>
+    <string name="st_sensor_summary">Sensor actual, su duración, LibreView</string>
     <string name="st_sharing">Compartir</string>
     <string name="st_sharing_summary">Seguidores y dispositivos</string>
     <string name="st_apps">Compartir con apps</string>
@@ -297,11 +297,6 @@
     <string name="st_sensor_scan_again_text">Sukrara no puede usar el emparejamiento guardado. Vuelve a escanear el sensor: sigue funcionando y no se pierde nada.</string>
     <string name="st_sensor_taken_over_text">Otra app se ha quedado con el sensor (la app oficial o Juggluco) y Sukrara ha dejado de leerlo. Cierra esa app y escanea el sensor para recuperarlo.</string>
     <string name="st_sensor_pair_again_text">El sensor rechazó el emparejamiento (un ID o PIN incorrectos). Vuelve a emparejarlo.</string>
-    <string name="st_sensor_source">Origen de las lecturas</string>
-    <string name="st_sensor_source_direct">Este móvil lee el sensor</string>
-    <string name="st_sensor_source_direct_why">Sukrara se conecta al sensor por Bluetooth.</string>
-    <string name="st_sensor_source_juggluco">Juggluco</string>
-    <string name="st_sensor_source_juggluco_why">Juggluco lee el sensor en este móvil; Sukrara recibe la glucosa del servidor web de Juggluco.</string>
     <string name="st_sensor_to_juggluco_title">¿Leer la glucosa desde Juggluco?</string>
     <string name="st_sensor_to_juggluco_text">Sukrara deja de conectarse al sensor y lee la glucosa desde Juggluco en este móvil. Juggluco debe estar abierto con su servidor web activado. El emparejamiento del sensor se guarda, así que puedes volver.</string>
     <string name="st_sensor_to_juggluco_confirm">Usar Juggluco</string>
@@ -965,4 +960,20 @@
     <string name="st_metrics_reset_all_title">¿Restablecer las métricas?</string>
     <string name="st_metrics_reset_all_text">Las métricas, el último tratamiento y los anillos de tiempo en rango vuelven a sus valores por defecto. Tus rangos se mantienen.</string>
     <string name="st_metrics_footer">Una métrica se muestra cuando hay datos de una cuarta parte de su periodo. La app, la notificación y los widgets las muestran; un widget puede mostrar menos en sus propios ajustes.</string>
+    <string name="st_source_title">Origen</string>
+    <string name="st_source_summary">De quién es la glucosa y de dónde viene</string>
+    <string name="st_source_whose">De quién es la glucosa</string>
+    <string name="st_source_from">De dónde viene</string>
+    <string name="st_source_status">Ahora</string>
+    <string name="st_source_live">En directo · última lectura %1$s</string>
+    <string name="st_source_waiting">Esperando la primera lectura</string>
+    <string name="st_source_not_chosen">Aún sin elegir</string>
+    <string name="st_source_ask">Sukrara vuelve a preguntar de quién es esta glucosa y de dónde viene. Sigue leyendo como ahora hasta que respondas.</string>
+    <string name="st_source_answer">Responder</string>
+    <string name="st_source_sensor_summary">Emparejar un sensor nuevo, su duración, LibreView</string>
+    <string name="st_source_open_juggluco_summary">Activa allí su servidor web (Ajustes › Servidor web)</string>
+    <string name="st_source_footer">Cambiar de quién es la glucosa borra el historial de este móvil (Sukrara pregunta antes). Cambiar el origen lo conserva.</string>
+    <string name="st_source_import">Importar historial</string>
+    <string name="st_source_import_summary">Recupera tus últimos 90 días desde LibreView, Tidepool o un archivo</string>
+    <string name="st_sharing_not_here">Compartir con seguidores de Sukrara es para tu propia glucosa, leída en este móvil (tu sensor o Juggluco). Cámbialo en Origen.</string>
 </resources>

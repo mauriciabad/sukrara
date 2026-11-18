@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.share.owner
 
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.SecureStore
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySecureStore
@@ -92,7 +92,7 @@ class NotificationAnswerTest {
             val e = engine()
             // the tap's broadcast and the graph's start of the wearer's sharing, in the same new process
             val answer = async { e.answerFromNotification(ana.public.hex, allow = true, WAIT_MS) }
-            backgroundScope.launch { e.followRole(flowOf(Role.Wearer), backgroundScope) }
+            backgroundScope.launch { e.followSource(flowOf(SourceSpec.YourSensor), backgroundScope) }
             runCurrent()
             assertTrue("allowed", answer.await())
             assertEquals(listOf(ana.public.hex), saved().activeFollowers().map { it.key })
@@ -108,7 +108,7 @@ class NotificationAnswerTest {
             val e = engine()
             // the Keystore is slow: the role's start holds the engine while it reads the identity
             secure.gate = CompletableDeferred()
-            backgroundScope.launch { e.followRole(flowOf(Role.Wearer), backgroundScope) }
+            backgroundScope.launch { e.followSource(flowOf(SourceSpec.YourSensor), backgroundScope) }
             runCurrent()
             val answer = async { e.answerFromNotification(ana.public.hex, allow = true, WAIT_MS) }
             runCurrent()
@@ -130,7 +130,7 @@ class NotificationAnswerTest {
             assertFalse("the answer never starts sharing itself", e.running)
             // the role store answers a moment later
             advanceTimeBy(WAIT_MS / 2)
-            backgroundScope.launch { e.followRole(flowOf(Role.Wearer), backgroundScope) }
+            backgroundScope.launch { e.followSource(flowOf(SourceSpec.YourSensor), backgroundScope) }
             runCurrent()
             assertTrue("allowed", answer.await())
             assertTrue("her key went out", anaGotHerKey())
@@ -143,7 +143,7 @@ class NotificationAnswerTest {
             saveAnasRequest()
             val e = engine()
             val answer = async { e.answerFromNotification(ana.public.hex, allow = false, WAIT_MS) }
-            backgroundScope.launch { e.followRole(flowOf(Role.Wearer), backgroundScope) }
+            backgroundScope.launch { e.followSource(flowOf(SourceSpec.YourSensor), backgroundScope) }
             runCurrent()
             assertTrue("denied", answer.await())
             assertTrue(saved().pending.isEmpty())
@@ -159,7 +159,7 @@ class NotificationAnswerTest {
             saveAnasRequest()
             val e = engine()
             val answer = async { e.answerFromNotification(ana.public.hex, allow = true, WAIT_MS) }
-            backgroundScope.launch { e.followRole(flowOf(Role.Follower), backgroundScope) }
+            backgroundScope.launch { e.followSource(flowOf(SourceSpec.TheirSukrara), backgroundScope) }
             advanceTimeBy(WAIT_MS + 1)
             runCurrent()
             assertFalse("not allowed: sharing doesn't run here", answer.await())

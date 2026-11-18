@@ -24,8 +24,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -37,7 +35,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,8 +63,10 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.NotificationStyle
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.RootAccess
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.designsystem.banner.NoticeCard
 import app.mauri.sukrara.designsystem.haptics.rememberHaptics
@@ -87,18 +86,17 @@ import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.share.ble.AndroidNearbyCentral
 import app.mauri.sukrara.share.ble.AndroidNearbyServer
 import app.mauri.sukrara.share.follower.NearbyOffer
-import androidx.compose.ui.semantics.Role as SemanticsRole
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
- * The first-run setup (brief 24, binding order), in two parts (#181): the essentials (welcome → role → permissions →
- * sensor → alert thresholds), then *The essentials are done* with what is left, then the optional steps (keep Sukrara
+ * The first-run setup (brief 24, binding order), in two parts (#181): the essentials (welcome → whose glucose → source
+ * → permissions → sensor → alert thresholds), then *The essentials are done* with what is left, then the optional steps (keep Sukrara
  * up to date (the GitHub version) → your followers → insulin pens → bring your history back) now or later from
  * Settings › *Finish setup*. Each step says "Step N of M" (or "Optional step N of M") to TalkBack, has Back (except the first; there Back leaves, and home's "Finish setup" banner resumes the walk)
  * and Skip / Later where skipping is safe; skipped steps go to the home "Finish setup" card.
  * [onOpenSensorSetup] opens the new-sensor flow; [thresholdRows] are Settings' threshold rows (the alert step
  * shows the same rows as Settings › Review alert thresholds); [onExportHistory] opens the CSV export on everything
- * this phone keeps (the role step's *Export CSV first*); [sendTestAlert] posts Settings' real test alert (the
+ * this phone keeps (the delete-history dialog's *Export CSV first*); [sendTestAlert] posts Settings' real test alert (the
  * permissions step's *Send a test alert*; null = no alert is on); [onDone] goes home.
  */
 @Composable
@@ -145,13 +143,15 @@ typealias ThresholdRows = @Composable (settings: AlertSettings, onThreshold: (Al
 data class SetupActions(
     val back: () -> Unit = {},
     val continueWelcome: () -> Unit = {},
-    /** Continue on the role step: shows the role's confirmation ([SetupUi.roleChange]). */
-    val reviewRole: (Role) -> Unit = {},
-    /** Cancel on the role's confirmation: nothing changes. */
-    val cancelRole: () -> Unit = {},
-    /** *Export CSV first* in the role-change dialog: the CSV export on everything, the dialog stays. */
+    /** *Continue* on the person step: whose glucose is picked, the source step follows. */
+    val choosePerson: (Person) -> Unit = {},
+    /** *Continue* on the source step: stored, or its confirmation shows first ([SetupUi.sourceChange]). */
+    val reviewSource: (SourceSpec) -> Unit = {},
+    /** Cancel on the source's confirmation: nothing changes. */
+    val cancelSource: () -> Unit = {},
+    /** *Export CSV first* in the delete-history dialog: the CSV export on everything, the dialog stays. */
     val exportHistory: () -> Unit = {},
-    val chooseRole: (Role) -> Unit = {},
+    val chooseSource: (SourceSpec) -> Unit = {},
     /** *Join*: look up the invite ([opened] = a link opened on this phone, looked up by itself). */
     val lookUp: (link: String, opened: Boolean) -> Unit = { _, _ -> },
     /** *Follow* on the invite shown, as the typed name. */
@@ -224,10 +224,11 @@ private fun SetupViewModel.actions(
         SetupActions(
             back = { back(onDone) },
             continueWelcome = ::continueWelcome,
-            reviewRole = ::reviewRole,
-            cancelRole = ::cancelRole,
+            choosePerson = ::choosePerson,
+            reviewSource = ::reviewSource,
+            cancelSource = ::cancelSource,
             exportHistory = onExportHistory,
-            chooseRole = ::chooseRole,
+            chooseSource = ::chooseSource,
             lookUp = ::lookUp,
             join = ::join,
             cancelInvite = ::cancelInvite,
@@ -304,19 +305,67 @@ fun SetupContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     when (s) {
-                        SetupStep.Welcome -> WelcomeStep(actions)
-                        SetupStep.Role -> RoleStep(u, actions)
-                        SetupStep.Join -> JoinStep(u, actions)
-                        SetupStep.Permissions -> PermissionsStep(u, actions)
-                        SetupStep.Updates -> UpdatesStep(u, actions)
-                        SetupStep.Root -> RootStep(u, actions)
-                        SetupStep.Notification -> NotificationStep(u, actions)
-                        SetupStep.Sensor -> SensorStep(u, actions)
-                        SetupStep.Alerts -> AlertConfirmStep(u, actions)
-                        SetupStep.Ready -> ReadyStep(u, actions)
-                        SetupStep.Identity -> IdentityStep(u, actions)
-                        SetupStep.Pens -> PensStep(u, actions)
-                        SetupStep.History -> HistoryStep(actions)
+                        SetupStep.Welcome -> {
+                            WelcomeStep(actions)
+                        }
+
+                        SetupStep.Person -> {
+                            PersonStep(u, actions)
+                        }
+
+                        SetupStep.Source -> {
+                            SourceStep(u, actions)
+                        }
+
+                        SetupStep.Join -> {
+                            JoinStep(u, actions)
+                        }
+
+                        SetupStep.Permissions -> {
+                            PermissionsStep(u, actions)
+                        }
+
+                        SetupStep.Updates -> {
+                            UpdatesStep(u, actions)
+                        }
+
+                        SetupStep.Root -> {
+                            RootStep(u, actions)
+                        }
+
+                        SetupStep.Notification -> {
+                            NotificationStep(u, actions)
+                        }
+
+                        SetupStep.Sensor -> {
+                            if ((u.facts.spec ?: u.facts.running)?.kind ==
+                                SourceKind.PhoneApp
+                            ) {
+                                JugglucoStep(u, actions)
+                            } else {
+                                SensorStep(u, actions)
+                            }
+                        }
+
+                        SetupStep.Alerts -> {
+                            AlertConfirmStep(u, actions)
+                        }
+
+                        SetupStep.Ready -> {
+                            ReadyStep(u, actions)
+                        }
+
+                        SetupStep.Identity -> {
+                            IdentityStep(u, actions)
+                        }
+
+                        SetupStep.Pens -> {
+                            PensStep(u, actions)
+                        }
+
+                        SetupStep.History -> {
+                            HistoryStep(actions)
+                        }
                     }
                     Spacer(Modifier.size(24.dp))
                 }
@@ -393,79 +442,6 @@ private fun ColumnScope.WelcomeStep(actions: SetupActions) {
     StepButtons(stringResource(R.string.sh_setup_start), actions.continueWelcome)
 }
 
-@Composable
-private fun ColumnScope.RoleStep(
-    u: SetupUi,
-    actions: SetupActions,
-) {
-    var selected by rememberSaveable { mutableStateOf(u.roleChange?.role) }
-    StepHeader(stringResource(R.string.sh_setup_role_title), stringResource(R.string.sh_setup_role_body))
-    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        RoleOption(
-            stringResource(R.string.sh_setup_role_wearer),
-            stringResource(R.string.sh_setup_role_wearer_means),
-            selected == Role.Wearer,
-        ) { selected = Role.Wearer }
-        RoleOption(
-            stringResource(R.string.sh_setup_role_follower),
-            stringResource(R.string.sh_setup_role_follower_means),
-            selected == Role.Follower,
-        ) {
-            selected = Role.Follower
-        }
-    }
-    StepButtons(
-        stringResource(R.string.sh_setup_continue),
-        onPrimary = { selected?.let(actions.reviewRole) },
-        enabled = selected != null && !u.busy,
-    )
-    // nothing to delete: what the role means; else what it deletes, with Export CSV first (#125)
-    val change = u.roleChange ?: return
-    val name = stringResource(if (change.role == Role.Wearer) R.string.sh_setup_role_wearer else R.string.sh_setup_role_follower)
-    val loss = change.loss
-    if (loss == null) {
-        ConfirmDialog(
-            title = stringResource(R.string.sh_setup_role_confirm_title, name),
-            text = stringResource(R.string.sh_setup_role_confirm_text),
-            confirm = stringResource(R.string.sh_setup_role_confirm),
-            onConfirm = { actions.chooseRole(change.role) },
-            onDismiss = actions.cancelRole,
-        )
-    } else {
-        RoleLossDialog(
-            roleName = name,
-            loss = loss,
-            onExport = actions.exportHistory,
-            onDelete = { actions.chooseRole(change.role) },
-            onCancel = actions.cancelRole,
-        )
-    }
-}
-
-@Composable
-private fun RoleOption(
-    title: String,
-    means: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    Card(
-        colors =
-            CardDefaults.cardColors(
-                containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainer,
-            ),
-        modifier = Modifier.fillMaxWidth().selectable(selected, role = SemanticsRole.RadioButton, onClick = onClick),
-    ) {
-        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            RadioButton(selected = selected, onClick = null)
-            Column(Modifier.padding(start = 12.dp)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(means, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-    }
-}
-
 /**
  * One step of a numbered checklist: its number, or a tick once [done] (null = the app can't tell, the number stays).
  * TalkBack reads the number (or "Done"), the text and [content] (a field, a checkbox) as one item.
@@ -512,7 +488,9 @@ private fun ColumnScope.PermissionsStep(
     // runtime permissions are asked in context, the first time; after a "don't ask again" the settings page opens
     val asked = remember { mutableStateOf(setOf<AlertRequirement>()) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
-    val items = AlertRequirement.entries.filter { it.inSetup && (it != AlertRequirement.Bluetooth || u.facts.role != Role.Follower) }
+    // Bluetooth is the sensor's and Bluetooth sharing's: only for your glucose read here (or before a source is known)
+    val spec = u.facts.spec ?: u.facts.running
+    val items = AlertRequirement.entries.filter { it.inSetup && (it != AlertRequirement.Bluetooth || spec?.owner != false) }
     for (r in items) {
         val ok = r !in u.readiness.missing
         if (r == AlertRequirement.SoundWhenUnlocked) {
@@ -543,8 +521,8 @@ private fun ColumnScope.PermissionsStep(
             }
         })
     }
-    // a follower's Bluetooth path, the internet's backup: asked here with the rest (docs/40), never needed to go on
-    if (u.facts.role == Role.Follower) NearbyFollowRow()
+    // a stream's Bluetooth path, the internet's backup: asked here with the rest (docs/40), never needed to go on
+    if (spec?.stream == true) NearbyFollowRow()
     actions.sendTestAlert?.let { TestAlertCard(it) }
     val allOk = items.none { it in u.readiness.missing }
     StepButtons(

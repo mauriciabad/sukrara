@@ -6,9 +6,9 @@ package app.mauri.sukrara.monitor.hub
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
@@ -37,7 +37,7 @@ class GlucoseHubTest {
     private val clock = FakeClock()
     private val repo = InMemoryReadingsRepository()
     private val record = InMemoryStateStore(MonitorRecord())
-    private val role = MutableStateFlow<Role?>(Role.Wearer)
+    private val role = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
 
     private class FakeSource : ReadingSource {
         val emitted = MutableSharedFlow<List<Reading>>()
@@ -59,7 +59,8 @@ class GlucoseHubTest {
     private fun reading(
         mgdl: Int,
         agoMin: Long = 0,
-    ) = Reading(clock.now() - Duration.ofMinutes(agoMin), mgdl, 0.5, SourceId.Libre3)
+        source: SourceId = SourceId.Libre3,
+    ) = Reading(clock.now() - Duration.ofMinutes(agoMin), mgdl, 0.5, source)
 
     private fun TestScope.hub(): GlucoseHubImpl {
         val dispatchers = TestDispatchers(StandardTestDispatcher(testScheduler))
@@ -262,9 +263,30 @@ class GlucoseHubTest {
      * fence is in the saved record); a join clears it, so its backfill arms no data.
      */
     @Test
+    fun `a reading still on its way from the previous source is dropped after a source change`() =
+        runTest {
+            role.value = SourceSpec.TheirSukrara
+            val hub = hub()
+            val source = FakeSource()
+            backgroundScope.launch { hub.attach(source) }
+            runCurrent()
+            // the sensor this phone read before is someone else's glucose now: never stored, never arms
+            source.emitted.emit(listOf(reading(118, agoMin = 1)))
+            runCurrent()
+            assertNull(hub.state.value.latest)
+            source.emitted.emit(listOf(reading(119, agoMin = 0, SourceId.Relay)))
+            runCurrent()
+            assertEquals(
+                119,
+                hub.state.value.latest
+                    ?.mgdl,
+            )
+        }
+
+    @Test
     fun `an ending's fence survives a restart and a join clears it`() =
         runTest {
-            role.value = Role.Follower // the follow ended: its link is gone, so nothing "starts" a source again
+            role.value = SourceSpec.TheirSukrara // the follow ended: its link is gone, so nothing "starts" a source again
             val first = hub()
             first.resetMonitoring(fence = true)
             runCurrent()
@@ -274,12 +296,12 @@ class GlucoseHubTest {
             val source = FakeSource()
             backgroundScope.launch { restarted.attach(source) }
             runCurrent()
-            source.emitted.emit(listOf(reading(118, agoMin = 2)))
+            source.emitted.emit(listOf(reading(118, agoMin = 2, SourceId.Relay)))
             runCurrent()
             assertEquals(NotMonitoringReason.NoSensorYet, restarted.state.value.notMonitoring)
 
             restarted.resetMonitoring(fence = false) // a join: its backfill is stamped before it
-            source.emitted.emit(listOf(reading(117, agoMin = 3)))
+            source.emitted.emit(listOf(reading(117, agoMin = 3, SourceId.Relay)))
             runCurrent()
             assertNotNull(restarted.state.value.monitoringStartedAt)
             assertNull(record.data.first().armAfterEpochMs)

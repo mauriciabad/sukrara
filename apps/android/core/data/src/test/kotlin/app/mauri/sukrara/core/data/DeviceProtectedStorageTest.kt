@@ -9,8 +9,8 @@ import app.mauri.sukrara.core.data.secure.SecretName
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.FakeClock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -72,7 +72,7 @@ class DeviceProtectedStorageTest {
             data.secureStore.write(SecretName.SENSOR, byteArrayOf(1))
             data.secureStore.write(SecretName.IDENTITY_OWNER, byteArrayOf(2))
             data.typedStore("alert_state", Int.serializer(), 0, 0).update { 1 }
-            data.typedStore("role", Int.serializer(), 0, 0).update { 1 }
+            data.typedStore("source", Int.serializer(), 0, 0).update { 1 }
             data.typedStore("setup", Int.serializer(), 0, 0).update { 1 }
 
             fun inDe(path: String) = File(de.parentFile, path).exists() && !File(ce.parentFile, path).exists()
@@ -85,7 +85,7 @@ class DeviceProtectedStorageTest {
             assertTrue(inDe("files/secure/sensor.bin"))
             assertTrue("the sharing identity stays credential-encrypted", inCe("files/secure/identity.owner.bin"))
             assertTrue(inDe("files/state/alert_state.json"))
-            assertTrue(inDe("files/state/role.json"))
+            assertTrue(inDe("files/state/source.json"))
             assertTrue(inCe("files/state/setup.json"))
         }
 
@@ -142,7 +142,7 @@ class DeviceProtectedStorageTest {
         runBlocking {
             // before the restart: unlocked, readings in the history and the last hours kept device-protected
             val before = data()
-            val hub = before.hubReadings(flowOf(Role.Wearer))
+            val hub = before.hubReadings()
             hub.upsert(listOf(reading(30), reading(29), reading(28)))
             assertEquals(3, before.readings.range(Instant.EPOCH, clock.now()).size)
             before.database.close()
@@ -150,7 +150,7 @@ class DeviceProtectedStorageTest {
             // the restart, before the first unlock
             unlocked = false
             val locked = data()
-            val lockedHub = locked.hubReadings(flowOf(Role.Wearer))
+            val lockedHub = locked.hubReadings()
             assertFalse(locked.unlocked.value)
             assertEquals("the hours before the restart", 3, lockedHub.window(Instant.EPOCH).first().size)
             lockedHub.upsert(listOf(reading(27, 90)))

@@ -6,7 +6,7 @@ package app.mauri.sukrara.integrations.nightscout
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -106,7 +106,7 @@ class NightscoutUploader(
     private val readings: ReadingsRepository,
     private val treatments: TreatmentsRepository,
     private val sensor: Flow<CurrentSensor?>,
-    private val role: Flow<Role?>,
+    private val role: Flow<SourceSpec?>,
     /** The phone's battery (percent, charging), null when unknown. */
     private val battery: () -> Pair<Int, Boolean>?,
     private val http: OkHttpClient,
@@ -266,7 +266,7 @@ class NightscoutUploader(
 
     private suspend fun cycleLocked() {
         val s = settingsFlow.first()
-        if (!s.on || role.first() != Role.Wearer) return
+        if (!s.on || role.first()?.owner != true) return
         val auth =
             try {
                 readAuth()?.also { if (saved.value != NsSaved.Readable) remember(it) }
@@ -369,10 +369,10 @@ class NightscoutUploader(
         s: NsSettings,
         saved: NsSaved,
         st: NsState,
-        r: Role?,
+        r: SourceSpec?,
     ): UploadStatus =
         when {
-            !s.on || r != Role.Wearer -> UploadStatus.Off
+            !s.on || r?.owner != true -> UploadStatus.Off
             s.url.isEmpty() || saved == NsSaved.None -> UploadStatus.Setup
             saved == NsSaved.Unreadable -> UploadStatus.CredentialUnreadable
             st.authFailed -> UploadStatus.AuthFailed

@@ -8,10 +8,10 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.NotMonitoringReason
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.feature.home.Samples.NOW
 import org.junit.Assert.assertEquals
@@ -38,7 +38,7 @@ class NoDataReasonTest {
     }
 
     @Test fun `a follower that never got a reading is asked to join`() {
-        val r = reason(Samples.noSensorYet(Role.Follower))
+        val r = reason(Samples.noSensorYet(SourceSpec.TheirSukrara))
         assertEquals(NoDataReason.NoSensorYet(follower = true), r)
         assertEquals(HomeAction.OpenSetup, r?.action)
     }
@@ -58,7 +58,7 @@ class NoDataReasonTest {
 
     @Test fun `follower silence names when the wearer was last heard`() {
         val heard = NOW.minus(Duration.ofMinutes(30))
-        val state = Samples.wearer(ageMin = 30).copy(role = Role.Follower, link = LinkState("Ana", heard))
+        val state = Samples.wearer(ageMin = 30).copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", heard))
         assertEquals(NoDataReason.WearerSilent(heard), reason(state))
     }
 
@@ -107,7 +107,7 @@ class NoDataReasonTest {
 
     @Test fun `a phone clock behind the readings says so even while the last value shows`() {
         val ahead = Duration.ofMinutes(12)
-        for (state in listOf(Samples.wearer(), Samples.wearer(ageMin = 25), Samples.wearer().copy(role = Role.Follower))) {
+        for (state in listOf(Samples.wearer(), Samples.wearer(ageMin = 25), Samples.wearer().copy(spec = SourceSpec.TheirSukrara))) {
             val r = reason(state.copy(clockBehind = ClockBehind(NOW + ahead, ahead)))
             assertEquals(NoDataReason.ClockBehind(ahead), r)
             assertEquals(HomeAction.OpenDateSettings, r?.action)
@@ -138,7 +138,7 @@ class NoDataReasonTest {
     }
 
     @Test fun `a revoked follower is told so`() {
-        val state = Samples.wearer().copy(role = Role.Follower, link = LinkState("Ana", NOW, revoked = true))
+        val state = Samples.wearer().copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", NOW, revoked = true))
         assertEquals(NoDataReason.LinkRevoked, reason(state))
     }
 
@@ -151,7 +151,10 @@ class NoDataReasonTest {
                 Samples.wearer(ageMin = 25),
                 Samples.wearer(sensor = SensorState.Ended),
                 Samples.wearer(ageMin = 25, sensor = SensorState.WarmingUp(NOW.plus(Duration.ofMinutes(40)))),
-                Samples.wearer(ageMin = 30).copy(role = Role.Follower, link = LinkState("Ana", NOW.minus(Duration.ofMinutes(30)))),
+                Samples
+                    .wearer(
+                        ageMin = 30,
+                    ).copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", NOW.minus(Duration.ofMinutes(30)))),
                 Samples.wearer(ageMin = 25).copy(service = ServiceState.Stopped(StopReason.StartDenied)),
             )
         for (state in underCard) assertFalse("$state", reason(state)!!.fullPage)

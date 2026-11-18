@@ -4,8 +4,8 @@
 package app.mauri.sukrara.integrations.history
 
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -124,7 +124,7 @@ class HistoryImporterTest {
                 InMemoryStateStore(TpState()),
                 readings,
                 treatments,
-                MutableStateFlow<Role?>(Role.Wearer),
+                MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor),
                 OkHttpClient(),
                 "1.0-test",
                 clock,

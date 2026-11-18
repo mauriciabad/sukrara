@@ -5,7 +5,7 @@ Mac [`apps/macos`](../apps/macos/), …) consumes and is tested against, so the 
 
 **Change rule:** a change here lands with every implementation (and their tests) in the same change. `tools/check`
 enforces it (parity groups `alert-scenarios`, `alert-spec`, `graph`, `trend`, `settings`, `protocol-v2`, `identity`,
-`treatments`, `export`, `watchface-link`; skip only with a `Parity-skip: <group>: <reason>` trailer) and CI runs every app's tests when
+`treatments`, `export`, `watchface-link`, `sources`; skip only with a `Parity-skip: <group>: <reason>` trailer) and CI runs every app's tests when
 anything here changes. **Alert scenario expectations never change without the owner's OK.**
 
 Formats are JSON / TXT / MD (+ the alert sound files). No file here names app source paths, except
@@ -29,6 +29,8 @@ directory. Mac tests resolve `Contracts.url(…)` (env `SUKRARA_CONTRACTS`, else
 | `watchface/payload/` | Sukrara Aura's payload, version 1 (README, `schema.json`, `cases.json`: phone state → payload → what the face makes of it; Garmin's own bytes): what the phone sends the Garmin face, pushed through Garmin Connect and fetched on 127.0.0.1:17582 | `AuraPayloadFixtureTest` (Android `:integrations`), `LinkTest` (`apps/garmin/tools/link-test.sh`) |
 | `trend/` (+ `tools/trend/cases.py`) | THE trend (#204): the rate from the readings (or the sensor's), the text band with hysteresis, the doubled arrow's hold, the drawn angle, what the fast alerts judge; the quiets' clear-move cases | `TrendRateTest` / `TrendFixtureTest` / `TrendEverywhereTest` (Android), `TrendRateTests` / `TrendFixtureTests` / `TrendEverywhereTests` (Mac) |
 | `settings/settings.json` | THE settings schema: every setting, its store + key per platform, number formats, mirroring | `tools/settings/gen.py` → `SettingsSpec`, `SettingsSchemaTest` on every app, `tools/check` |
+| `sources/sources.json` | THE glucose sources (docs/44 Person × Source): whose glucose × where from, what each source declares (persons, platforms, first-hand, offline, group, delay, backfill, reading ids) and the behaviour each pair gets (owner, stream, alert role) | `SourcesContractTest` (Android `:core:model`), `SourcesTests` (Mac) |
+| `sources/dedup.json` | THE rank rule: one reading per measurement across sources (±2 min, sensor > phone app > network > online > Sukrara > imported) with cases | `SourcesContractTest` (Android), `SourcesTests` (Mac) |
 | `settings/durations.json` | duration formatting cases ("1 h 30 min") | every `Durations` test |
 | `settings/units.json` | THE glucose units: mg/dL ↔ mmol/L factor and rounding, values and rates as written (en / es), typed mmol/L → stored mg/dL | `UnitsFixtureTest` (Android), `GlucoseUnitTests` (Mac); `gen.py` checks the schema's mmol/L variants |
 | `settings/README.md` | the settings stores and the alert settings safety rule | — |

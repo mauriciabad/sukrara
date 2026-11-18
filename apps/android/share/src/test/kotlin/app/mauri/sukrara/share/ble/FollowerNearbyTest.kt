@@ -129,8 +129,8 @@ class FollowerNearbyTest {
             live.filter { it.kind == Wire.KIND_LIVE }.forEach { nb.deliver(it) }
             runCurrent()
             assertEquals(listOf(123), received.flatten().map { it.mgdl })
-            // one source for the follow stream: a copy over relays and Bluetooth is one reading
-            assertEquals(SourceId.Relay, received.flatten().single().source)
+            // the way it came: Bluetooth (a copy over the relays is the same event, already seen; the rank rule keeps one)
+            assertEquals(SourceId.Nearby, received.flatten().single().source)
 
             // the same event again over the relays: already seen
             live.filter { it.kind == Wire.KIND_LIVE }.forEach { relay.deliver(FollowerEngine.LIVE, it) }

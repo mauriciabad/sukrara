@@ -15,10 +15,11 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
@@ -26,11 +27,11 @@ import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
 import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
-import app.mauri.sukrara.feature.sharing.setup.RoleChange
 import app.mauri.sukrara.feature.sharing.setup.SetupCard
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupViewModel
+import app.mauri.sukrara.feature.sharing.setup.SourceChange
 import app.mauri.sukrara.protocol.PublicKeyHex
 import app.mauri.sukrara.protocol.event.Profile
 import app.mauri.sukrara.protocol.follow.FollowStatus
@@ -136,67 +137,91 @@ class SetupViewModelTest {
     fun tearDown() = Dispatchers.resetMain()
 
     @Test
-    fun `choosing the role resets the alert runtime before the role is stored`() =
+    fun `whose glucose, then the source - stored at once the first time, the alert runtime reset first`() =
         runTest {
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.continueWelcome()
-            assertEquals(SetupStep.Role, vm.ui.first { it != null }!!.step)
-            vm.chooseRole(Role.Wearer)
-            assertEquals(listOf("reset", "role:Wearer", "start"), events)
+            assertEquals(SetupStep.Person, vm.ui.first { it != null }!!.step)
+            vm.choosePerson(Person.Yours)
+            assertEquals(Person.Yours, vm.ui.first { it?.step == SetupStep.Source }!!.person)
+            assertTrue("nothing stored before the source", events.isEmpty())
+            vm.reviewSource(SourceSpec.YourSensor)
             assertEquals(SetupStep.Permissions, vm.ui.first { it?.step == SetupStep.Permissions }!!.step)
+            assertEquals(listOf("reset", "source:yours:sensor", "start"), events)
+            assertEquals(null, vm.ui.value!!.sourceChange)
         }
 
     @Test
-    fun `with nothing to delete, Continue shows the plain role confirmation`() =
+    fun `Back from the source goes to whose glucose and changes nothing`() =
         runTest {
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.continueWelcome()
-            vm.ui.first { it?.step == SetupStep.Role }
-            vm.reviewRole(Role.Wearer)
-            assertEquals(RoleChange(Role.Wearer, null), vm.ui.first { it?.roleChange != null }!!.roleChange)
+            vm.ui.first { it?.step == SetupStep.Person }
+            vm.choosePerson(Person.Theirs)
+            assertTrue(vm.ui.first { it?.step == SetupStep.Source }!!.canBack)
+            vm.back {}
+            assertEquals(SetupStep.Person, vm.ui.first { it?.step == SetupStep.Person }!!.step)
             assertTrue(events.isEmpty())
-            vm.chooseRole(Role.Wearer)
-            assertEquals(listOf("reset", "role:Wearer", "start"), events)
-            assertEquals(null, vm.ui.first { it?.step == SetupStep.Permissions }!!.roleChange)
         }
 
     @Test
-    fun `a role change that deletes history asks first, and Cancel changes nothing`() =
+    fun `a change of whose glucose that deletes history asks first, and Cancel changes nothing`() =
         runTest {
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.ui.first { it != null }
-            vm.chooseRole(Role.Follower)
+            vm.chooseSource(SourceSpec.TheirSukrara)
             vm.ui.first { it?.step == SetupStep.Join }
             events.clear()
-            // the join step's Back to the role, with the followed person's history on the phone by then
-            val loss = RoleLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+            // the join step's Back to the source, with the followed person's history on the phone by then
+            val loss = HistoryLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
             roles.loss = loss
             vm.back {}
-            vm.ui.first { it?.step == SetupStep.Role }
+            vm.ui.first { it?.step == SetupStep.Source }
 
-            vm.reviewRole(Role.Wearer)
-            assertEquals(RoleChange(Role.Wearer, loss), vm.ui.first { it?.roleChange != null }!!.roleChange)
-            vm.cancelRole()
-            val after = vm.ui.first { it?.roleChange == null }!!
-            assertEquals(SetupStep.Role, after.step)
-            assertEquals(Role.Follower, roles.role.value)
+            vm.reviewSource(SourceSpec.YourSensor)
+            assertEquals(
+                SourceChange(SourceSpec.YourSensor, loss, replaces = SourceSpec.TheirSukrara),
+                vm.ui.first { it?.sourceChange != null }!!.sourceChange,
+            )
+            vm.cancelSource()
+            val after = vm.ui.first { it?.sourceChange == null }!!
+            assertEquals(SetupStep.Source, after.step)
+            assertEquals(SourceSpec.TheirSukrara, roles.role.value)
             assertTrue(events.isEmpty())
 
             // Delete and continue
-            vm.reviewRole(Role.Wearer)
-            vm.ui.first { it?.roleChange != null }
-            vm.chooseRole(Role.Wearer)
-            assertEquals(listOf("reset", "role:Wearer", "start"), events)
-            assertEquals(null, vm.ui.first { it?.step != SetupStep.Role }!!.roleChange)
+            vm.reviewSource(SourceSpec.YourSensor)
+            vm.ui.first { it?.sourceChange != null }
+            vm.chooseSource(SourceSpec.YourSensor)
+            assertEquals(listOf("reset", "source:yours:sensor", "start"), events)
+            assertEquals(null, vm.ui.first { it?.step != SetupStep.Source }!!.sourceChange)
+        }
+
+    @Test
+    fun `an install updated from before the question is asked once more, preselected, and keeps its history`() =
+        runTest {
+            roles.inferred.value = SourceSpec.YourSensor
+            record.update { SetupRecord(completed = SetupStep.entries.toSet() - SetupStep.Person - SetupStep.Source) }
+            val vm = vm()
+            vm.ui.launchIn(backgroundScope)
+            val u = vm.ui.first { it != null }!!
+            assertEquals(SetupStep.Person, u.step)
+            assertEquals(SourceSpec.YourSensor, u.facts.running)
+            vm.choosePerson(Person.Yours)
+            vm.ui.first { it?.step == SetupStep.Source }
+            // the same person: nothing to delete, no confirmation, the alerts keep running
+            vm.reviewSource(SourceSpec.YourSensor)
+            vm.ui.first { it?.step != SetupStep.Source }
+            assertEquals(listOf("source:yours:sensor", "start"), events)
         }
 
     @Test
     fun `the checklist follows the live readiness, not a copy taken on resume`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             assertTrue(
@@ -220,8 +245,8 @@ class SetupViewModelTest {
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.ui.first { it != null }
-            vm.chooseRole(Role.Follower)
-            assertEquals(listOf("reset", "role:Follower", "start"), events)
+            vm.chooseSource(SourceSpec.TheirSukrara)
+            assertEquals(listOf("reset", "source:theirs:sukrara", "start"), events)
             assertEquals(SetupStep.Join, vm.ui.first { it?.step == SetupStep.Join }!!.step)
             vm.lookUp("https://sukrara.mauri.app/join#bad")
             assertEquals(JoinUi.Failed(JoinResult.InvalidLink), vm.ui.first { it?.join is JoinUi.Failed }!!.join)
@@ -244,7 +269,7 @@ class SetupViewModelTest {
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.ui.first { it != null }
-            vm.chooseRole(Role.Follower)
+            vm.chooseSource(SourceSpec.TheirSukrara)
             assertEquals(SetupStep.Join, vm.ui.first { it?.step == SetupStep.Join }!!.step)
             vm.lookUp(LINK, opened = true)
             // a rotation draws the step again: the same opened link isn't looked up twice
@@ -271,7 +296,7 @@ class SetupViewModelTest {
     @Test
     fun `confirm writes exactly the shown thresholds to the runtime's store`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.ui.first { it != null }
@@ -303,7 +328,7 @@ class SetupViewModelTest {
     @Test
     fun `restore is refused while the gate is closed`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.ui.first { it != null }
@@ -314,7 +339,7 @@ class SetupViewModelTest {
     @Test
     fun `with a live reading the restore runs, and a wrong password stays on the step`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             hub.live(clock)
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
@@ -329,7 +354,7 @@ class SetupViewModelTest {
     @Test
     fun `opened from Settings › Sharing, setup shows the identity step alone, then leaves`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             // setup finished with the alerts still to confirm and the identity skipped
             record.update {
                 SetupRecord(
@@ -349,7 +374,7 @@ class SetupViewModelTest {
     @Test
     fun `bring your history back records the step before Import history opens, and Back skips it`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             val before = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Sensor, SetupStep.Alerts, SetupStep.Identity)
             record.update { SetupRecord(completed = before) }
             val vm = vm(startAt = SetupStep.History)
@@ -372,7 +397,7 @@ class SetupViewModelTest {
 
     /** Setup finished with the sensor and the alerts skipped (home's banner: *Alerts not confirmed*). */
     private suspend fun finishedWithTwoSkipped(): Set<SetupStep> {
-        roles.role.value = Role.Wearer
+        roles.role.value = SourceSpec.YourSensor
         sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
         val skipped = setOf(SetupStep.Sensor, SetupStep.Alerts)
         record.update {
@@ -428,14 +453,14 @@ class SetupViewModelTest {
     @Test
     fun `opened from home with the walk left half-way, setup resumes the walk exactly there`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             record.update { SetupRecord(completed = setOf(SetupStep.Welcome, SetupStep.Permissions), skipped = setOf(SetupStep.Sensor)) }
             assertEquals(SetupCard.Resume(SetupStep.Alerts), module.card.first())
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             val u = vm.ui.first { it != null }!!
             assertEquals(SetupStep.Alerts, u.step)
-            assertEquals(5, u.index)
+            assertEquals(6, u.index)
             assertTrue(!u.single && u.canBack)
         }
 
@@ -445,8 +470,8 @@ class SetupViewModelTest {
             val vm = vm()
             vm.ui.launchIn(backgroundScope)
             vm.continueWelcome()
-            vm.ui.first { it?.step == SetupStep.Role }
-            vm.chooseRole(Role.Wearer)
+            vm.ui.first { it?.step == SetupStep.Person }
+            vm.chooseSource(SourceSpec.YourSensor)
             val u = vm.ui.first { it?.step == SetupStep.Permissions }!!
             assertFalse(u.canBack)
             var left = false
@@ -461,7 +486,7 @@ class SetupViewModelTest {
     @Test
     fun `a step reached with Back is where setup resumes after a process death`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             val saved = SavedStateHandle()
             val before = vm(saved = saved)
             before.ui.launchIn(backgroundScope)
@@ -482,7 +507,7 @@ class SetupViewModelTest {
     @Test
     fun `Settings' Set up sharing shows the identity step alone, and Back changes nothing`() =
         runTest {
-            roles.role.value = Role.Wearer
+            roles.role.value = SourceSpec.YourSensor
             // a walk left on the alert step: the identity step was never reached
             val walk = SetupRecord(completed = setOf(SetupStep.Welcome, SetupStep.Permissions, SetupStep.Sensor))
             record.update { walk }

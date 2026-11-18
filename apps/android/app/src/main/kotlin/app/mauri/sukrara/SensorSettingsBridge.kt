@@ -7,8 +7,8 @@ import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
-import app.mauri.sukrara.core.model.storage.SettingSpec
-import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.settings.sensor.LibreViewSummary
 import app.mauri.sukrara.feature.settings.sensor.OpenOnScan
 import app.mauri.sukrara.feature.settings.sensor.SensorFamily
@@ -23,7 +23,6 @@ import app.mauri.sukrara.sensor.ble.LinkStatus
 import app.mauri.sukrara.sensor.ble.NoValueReason
 import app.mauri.sukrara.sensor.juggluco.JugglucoStatus
 import app.mauri.sukrara.sensor.pairing.PairingLoad
-import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -108,8 +107,8 @@ class SensorModulePort(private val m: SensorModule) : SensorSettingsSensors {
 }
 
 /**
- * Settings › Sensor over the sensor module and the source setting (`source.source`): the settings feature
- * can't see the sensor feature, so the app joins them here.
+ * Settings › Sensor (and the Juggluco rows of Settings › Source) over the sensor module and the source (`source.kind`):
+ * the settings feature can't see the sensor feature, so the app joins them here.
  *
  * A source change (or *Forget this sensor*) makes the monitoring service pick its source again ([sourceChanged]):
  * with a pairing (or Juggluco) monitoring starts and the page shows it connecting; with nothing to read the service
@@ -119,8 +118,10 @@ class SensorModulePort(private val m: SensorModule) : SensorSettingsSensors {
  */
 class SensorSettingsBridge(
     private val sensors: SensorSettingsSensors,
-    private val settings: SettingsRepository,
-    private val sourceSetting: SettingSpec<String>,
+    /** The source the phone runs on (`AppGraph.spec`). */
+    private val spec: Flow<SourceSpec?>,
+    /** Stores another source for the same person (Settings › Sensor's *Use Juggluco*). */
+    private val setKind: suspend (SourceKind) -> Unit,
     /** The app's scope: a source change finishes even if the page is left right after confirming. */
     private val scope: CoroutineScope,
     /** The monitoring service's state (the hub's). */
@@ -143,16 +144,15 @@ class SensorSettingsBridge(
 
     override val state: Flow<SensorSettingsState> =
         combine(
-            combine(settings.flow(sourceSetting), sensors.sensor, sensors.detail, ::Triple),
+            combine(spec.map { it?.kind == SourceKind.PhoneApp }, sensors.sensor, sensors.detail, ::Triple),
             combine(sensors.sensorInfo, sensors.tapOn, recheck, paired) { info, tapOn, _, paired ->
                 Triple(info, OpenOnScan(tapOn, tapOn && sensors.tapBlocked()).takeIf { sensors.tapAvailable }, paired)
             },
             combine(sensors.account, sensors.receiverId, sensors.jugglucoSecretSet.onStart { sensors.refreshJugglucoSecret() }, ::Triple),
             service,
-        ) { (source, sensor, detail), (info, openOnScan, paired), (account, receiverId, secretSet), service ->
-            val kind = SensorSourceKind.fromId(source)
+        ) { (juggluco, sensor, detail), (info, openOnScan, paired), (account, receiverId, secretSet), service ->
             SensorSettingsState(
-                source = if (kind == SensorSourceKind.Juggluco) SourceChoice.Juggluco else SourceChoice.Libre3Direct,
+                source = if (juggluco) SourceChoice.Juggluco else SourceChoice.Libre3Direct,
                 state = sensor,
                 sensor = info?.let { SensorSummary(it.serial, Instant.ofEpochSecond(it.startEpoch), Instant.ofEpochSecond(it.endEpoch)) },
                 account = account.email?.let { LibreViewSummary(it, receiverId, account is LibreViewAccountState.SignInAgain) },
@@ -160,7 +160,7 @@ class SensorSettingsBridge(
                 family = (detail as? SensorStatus.Direct)?.let { SensorFamily(it.profile.label, !it.profile.verified, it.skipped) },
                 paired = paired,
                 openOnScan = openOnScan,
-                stopped = stopped(detail, service, somethingToRead = paired || kind == SensorSourceKind.Juggluco),
+                stopped = stopped(detail, service, somethingToRead = paired || juggluco),
                 jugglucoSecret = secretSet,
             )
         }
@@ -210,14 +210,14 @@ class SensorSettingsBridge(
         }
 
     override fun setSource(source: SourceChoice) {
-        val kind = if (source == SourceChoice.Juggluco) SensorSourceKind.Juggluco else SensorSourceKind.Direct
+        val juggluco = source == SourceChoice.Juggluco
         // a Libre tap would open the new-sensor flow of a source that isn't read: the row is hidden then, so off
-        if (kind == SensorSourceKind.Juggluco) sensors.setTap(false)
+        if (juggluco) sensors.setTap(false)
         scope.launch {
-            settings.set(sourceSetting, kind.id)
+            setKind(if (juggluco) SourceKind.PhoneApp else SourceKind.Sensor)
             sourceChanged()
             // Juggluco is a source to monitor even with no sensor paired here; the sensor read directly needs a pairing
-            if (kind == SensorSourceKind.Juggluco || sensors.paired()) {
+            if (juggluco || sensors.paired()) {
                 startMonitoring()
             } else {
                 // nothing to read: the service stops (above), and no "no data" alarm for it (home: *No sensor yet*)
@@ -256,7 +256,7 @@ class SensorSettingsBridge(
         scope.launch {
             sensors.saveJugglucoSecret(secret)
             // reconnect now with it (a refused source would otherwise wait out its backoff)
-            if (SensorSourceKind.fromId(settings.flow(sourceSetting).first()) == SensorSourceKind.Juggluco) sensors.retry()
+            if (spec.first()?.kind == SourceKind.PhoneApp) sensors.retry()
         }
     }
 

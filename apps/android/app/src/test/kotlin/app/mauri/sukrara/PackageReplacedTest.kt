@@ -5,7 +5,7 @@ package app.mauri.sukrara
 
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.debug.SyntheticSource
 import app.mauri.sukrara.monitor.BootReceiver
 import app.mauri.sukrara.monitor.MonitoringService
@@ -34,7 +34,7 @@ class PackageReplacedTest {
 
     @Test fun `monitoring starts again by itself right after the app was updated`() {
         SyntheticSource.set(app, on = true, frozen = false, shift = 0, endsAt = null)
-        runBlocking { app.graph.role.update { RoleRecord(Role.Wearer) } }
+        runBlocking { app.graph.source.update { SourceRecord.of(SourceSpec.YourSensor) } }
         shadowOf(app).clearStartedServices()
 
         BootReceiver().onReceive(app, Intent(Intent.ACTION_MY_PACKAGE_REPLACED))

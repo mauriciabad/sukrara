@@ -5,7 +5,6 @@ package app.mauri.sukrara.feature.home
 
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NotMonitoringReason
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
@@ -122,7 +121,7 @@ sealed interface NoDataReason {
             state: GlucoseState,
             look: GlucoseLook,
         ): NoDataReason? {
-            val follower = state.role == Role.Follower
+            val follower = state.spec?.stream == true
             val latest = state.latest
             val valueShown = look.shown
             val sensor = state.sensor

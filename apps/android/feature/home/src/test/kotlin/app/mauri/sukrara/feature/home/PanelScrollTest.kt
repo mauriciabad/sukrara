@@ -22,9 +22,9 @@ import androidx.compose.ui.unit.dp
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -175,7 +175,7 @@ class PanelScrollTest {
         val latest = readings.last()
         val glucose =
             GlucoseState(
-                role = Role.Wearer,
+                spec = SourceSpec.YourSensor,
                 latest = latest,
                 recent = readings.filter { it.t.epochSecond > at - 12 * 3600 },
                 sensor = SensorState.Active(null),

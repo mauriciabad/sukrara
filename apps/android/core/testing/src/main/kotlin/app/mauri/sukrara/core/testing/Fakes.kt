@@ -6,6 +6,7 @@ package app.mauri.sukrara.core.testing
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.ReadingRank
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.HistoryImport
@@ -113,12 +114,11 @@ class InMemoryReadingsRepository : ReadingsRepository {
     ): List<Reading> = readings.value.filter { it.t >= from && it.t < to }
 
     override suspend fun upsert(readings: List<Reading>) {
-        val tolerance = HistoryImport.SAME_READING
+        // as in Room: THE rank rule, one reading per measurement
         this.readings.update { current ->
-            val own = readings.filterNot { it.imported }
-            // as in Room: the sensor's own reading removes the imported copies within the tolerance
-            val kept = current.filterNot { c -> c.imported && own.any { Duration.between(it.t, c.t).abs() <= tolerance } }
-            (kept + readings).associateBy { it.t to it.source }.values.sortedBy { it.t }
+            val plan = ReadingRank.plan(current, readings)
+            val gone = plan.remove.map { it.t to it.source }.toSet()
+            (current.filterNot { (it.t to it.source) in gone } + plan.upsert).associateBy { it.t to it.source }.values.sortedBy { it.t }
         }
     }
 
@@ -140,10 +140,12 @@ class InMemoryReadingsRepository : ReadingsRepository {
             .map { it.t }
             .let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
 
-    override suspend fun deleteFrom(sources: Set<SourceId>): Int {
+    override suspend fun span(): StoredSpan = readings.value.map { it.t }.let { StoredSpan(it.size, it.minOrNull(), it.maxOrNull()) }
+
+    override suspend fun deleteAll(): Int {
         val before = readings.value.size
-        readings.update { all -> all.filterNot { it.source in sources } }
-        return before - readings.value.size
+        readings.value = emptyList()
+        return before
     }
 }
 

@@ -319,10 +319,12 @@ def kotlin(schema):
             ", ".join(kstr(k) for k in s.get("mirrorExcept", []))))
     L.append("    )")
     stores, keys = stored(schema, "android")
-    # 'secure' is the Keystore SecureStore (secrets, one file each), not a Preferences DataStore file
-    stores = [s for s in stores if s != "secure"]
+    # 'secure' is the Keystore SecureStore (secrets, one file each) and 'state' a typed state file (source.json): neither
+    # is a Preferences DataStore file
+    stores = [s for s in stores if s not in ("secure", "state")]
     L.append("")
-    L.append("    /** The Preferences DataStore files (one per area); secrets (store 'secure') are in the SecureStore. */")
+    L.append("    /** The Preferences DataStore files (one per area); secrets (store 'secure') are in the SecureStore, the source (store")
+    L.append("     * 'state') in its typed state file. */")
     L.append("    object Stores {")
     L += ["        const val %s = %s" % (const_kt(s), kstr(s)) for s in stores]
     L.append("    }")

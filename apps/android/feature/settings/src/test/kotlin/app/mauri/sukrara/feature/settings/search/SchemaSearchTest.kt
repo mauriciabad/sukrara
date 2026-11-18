@@ -30,6 +30,7 @@ class SchemaSearchTest {
     private fun page(route: SettingsRoute) = SearchTarget.Page(route)
 
     private val sensor = SearchTarget.Other(OtherPage.Sensor)
+    private val source = SearchTarget.Other(OtherPage.Source)
     private val low = AlertKind.LOW
 
     /** Each schema setting's row: its title and the page it's on. */
@@ -66,8 +67,9 @@ class SchemaSearchTest {
             put("follower.settingsFrom", R.string.st_from_wearer to page(SettingsRoute.SettingsFrom))
             put("update.automaticChecks", R.string.st_update_auto_checks to page(SettingsRoute.About))
             put("update.automaticInstall", R.string.st_update_auto_install to page(SettingsRoute.About))
-            put("source.source", R.string.st_sensor_source to sensor)
-            put("source.jugglucoSecret", R.string.st_sensor_juggluco_secret to sensor)
+            put("source.person", R.string.st_source_whose to source)
+            put("source.kind", R.string.st_source_from to source)
+            put("source.jugglucoSecret", R.string.st_sensor_juggluco_secret to source)
             put("alerts.on", R.string.st_alerts_main to page(SettingsRoute.Alerts))
             put("alerts.kind.on", R.string.st_kind_low to page(SettingsRoute.Alerts))
             for (k in listOf("very_low", "low", "high", "very_high", "extremely_high", "falling_fast", "rising_fast", "no_data")) {
@@ -160,7 +162,7 @@ class SchemaSearchTest {
             "graph" to setOf(Section.Graph),
             "metrics" to setOf(Section.Metrics),
             "sensor" to setOf(Section.SensorEnd),
-            "source" to setOf(Section.Sensor),
+            "source" to setOf(Section.Source),
             "alerts" to setOf(Section.Alerts, Section.Reliability),
             "statusbar" to setOf(Section.StatusBar),
             "lock" to setOf(Section.LockScreen),

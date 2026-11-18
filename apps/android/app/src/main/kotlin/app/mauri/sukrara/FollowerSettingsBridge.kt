@@ -12,7 +12,7 @@ import app.mauri.sukrara.core.data.settings.MirroredGraph
 import app.mauri.sukrara.core.data.settings.Setting
 import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.settings.follower.SettingsFromPort
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
@@ -42,7 +42,7 @@ import java.time.Instant
 class FollowerSettingsBridge(
     private val own: SettingsRepository,
     private val alerts: AlertsAccess,
-    role: Flow<Role?>,
+    role: Flow<SourceSpec?>,
     /**
      * The credential-encrypted storage is open (`AppGraph.unlocked`): the stored choice is in it, so a follower uses its
      * own settings until the first unlock after a restart (#160; nothing of a follower's runs then that the choice
@@ -68,7 +68,7 @@ class FollowerSettingsBridge(
      * would take the process down with it.
      */
     private val from: Flow<SettingsFrom> =
-        combine(role.distinctUntilChanged(), unlocked.distinctUntilChanged()) { r, open -> r == Role.Follower && open }
+        combine(role.distinctUntilChanged(), unlocked.distinctUntilChanged()) { r, open -> r?.stream == true && open }
             .distinctUntilChanged()
             .flatMapLatest { readsStored -> if (readsStored) stored else flowOf(SettingsFrom.Custom) }
             .distinctUntilChanged()
@@ -94,11 +94,11 @@ class FollowerSettingsBridge(
 
     override val state: Flow<SettingsFromState?> =
         combine(role, stored, wearerOnFollower(role), wearerName) { r, f, p, name ->
-            if (r != Role.Follower) null else SettingsFromState(f, name, p?.let { Instant.ofEpochSecond(it.u) })
+            if (r?.stream != true) null else SettingsFromState(f, name, p?.let { Instant.ofEpochSecond(it.u) })
         }.distinctUntilChanged()
 
-    private fun wearerOnFollower(role: Flow<Role?>): Flow<SettingsPayload?> =
-        role.distinctUntilChanged().flatMapLatest { r -> if (r == Role.Follower) wearer else flowOf(null) }
+    private fun wearerOnFollower(role: Flow<SourceSpec?>): Flow<SettingsPayload?> =
+        role.distinctUntilChanged().flatMapLatest { r -> if (r?.stream == true) wearer else flowOf(null) }
 
     override suspend fun choose(from: SettingsFrom) = own.set(SettingsFrom.Stored, from.wire)
 

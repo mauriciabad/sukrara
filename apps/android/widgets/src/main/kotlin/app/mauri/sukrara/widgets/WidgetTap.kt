@@ -6,7 +6,7 @@ package app.mauri.sukrara.widgets
 import android.content.Context
 import android.content.Intent
 import app.mauri.sukrara.core.model.NavTargets
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.treatments.QuickSource
 import app.mauri.sukrara.feature.treatments.QuickTreatmentIntents
 import app.mauri.sukrara.graph.GlucoseLook
@@ -37,15 +37,15 @@ sealed interface WidgetTap {
          * on the wearer's behalf as in the app.
          */
         fun of(
-            role: Role?,
+            spec: SourceSpec?,
             look: GlucoseLook,
             mgdl: Int?,
             bands: Bands,
             firingKinds: Set<String>,
         ): WidgetTap {
             // the card says *Sensor ended* also when the source sent no dates (cardSensor)
-            if (role == Role.Wearer && look.state == GlucoseLook.State.ENDED) return NewSensor
-            if (role == null || look.state != GlucoseLook.State.VALUE) return OpenApp
+            if (spec?.owner == true && look.state == GlucoseLook.State.ENDED) return NewSensor
+            if (spec == null || look.state != GlucoseLook.State.VALUE) return OpenApp
             val low = firingKinds.any { it in LOW_KINDS } || (mgdl != null && bands.sane().of(mgdl).group < 0)
             return QuickTreatment(focusCarbs = low)
         }

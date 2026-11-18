@@ -201,14 +201,14 @@ object SettingsSpec {
         SettingInfo("setup.steps", "setup", null, false, null, "", "defaults:setupSteps", null, "mac", "The Mac's first-run walk (welcome, follow, alerts, notifications, open at login); Android's first run is its own role / permission flow with its own state", listOf()),
         SettingInfo("general.openAtLogin", "bool", null, false, null, "", "system:SMAppService.mainApp", null, "mac", "A menu bar app starts as a login item; Android starts Sukrara's service on boot by itself", listOf()),
         SettingInfo("general.readAloudShortcut", "bool", null, false, null, "", "defaults:readAloudShortcut", null, "mac", "A system-wide keyboard shortcut is the Mac's way to ask from any app, and it may clash with another app's; Android asks through the Read glucose aloud app shortcut (launcher, TalkBack's actions on the app icon), which needs no setting", listOf()),
-        SettingInfo("source.jugglucoLan", "bool", null, false, null, "", "defaults:jugglucoLan", null, "mac", "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)", listOf()),
-        SettingInfo("source.jugglucoAddress", "string", null, false, null, "", "defaults:jugglucoAddress", null, "mac", "The Mac reads Juggluco's web server on the home network as a glucose source; Android reads Juggluco on the phone itself (source.source)", listOf()),
+        SettingInfo("source.person", "enum", null, false, null, "state:person", "defaults:sourcePerson", null, null, null, listOf()),
+        SettingInfo("source.kind", "enum", null, false, null, "state:kind", "defaults:sourceKind", null, null, null, listOf()),
+        SettingInfo("source.jugglucoAddress", "string", null, false, null, "", "defaults:jugglucoAddress", null, "mac", "The Mac reads Juggluco's web server on the home network (source.kind lanJuggluco); Android reads Juggluco on the phone itself (source.kind phoneApp), at a fixed loopback address", listOf()),
         SettingInfo("source.jugglucoSecret", "secret", null, false, null, "secure:juggluco", "keychain:jugglucoSecret", null, null, null, listOf()),
         SettingInfo("settings.pane", "enum", null, false, null, "", "defaults:settingsPane", null, "mac", "The Mac Settings window reopens on the last pane it showed (HIG Settings); Android settings are a navigation stack that starts at its top", listOf()),
         SettingInfo("update.automaticChecks", "bool", null, false, null, "settings:updateChecks", "system:SPUUpdater.automaticallyChecksForUpdates", null, null, null, listOf()),
         SettingInfo("update.automaticInstall", "bool", null, false, null, "settings:updateInstall", "system:SPUUpdater.automaticallyDownloadsUpdates", null, null, null, listOf()),
         SettingInfo("report.days", "enum", null, false, null, "", "defaults:reportDays", null, "mac", "Both reports offer the same 1 / 7 / 14 / 30-day choice in the report itself; the Mac's report window remembers the last one, Android's card starts at 14 days", listOf()),
-        SettingInfo("source.source", "enum", null, false, null, "settings:source", "", null, "android", "Only the wearer's phone reads a sensor; the Mac follows (its source is the follow link, Settings › General)", listOf()),
         SettingInfo("sharing.nostr", "bool", null, false, null, "sharing:relaySharing", "", null, "android", "The wearer's phone publishes; a Mac follower only reads", listOf()),
         SettingInfo("sharing.nostrInterval", "number", "nostrInterval", false, null, "sharing:relayInterval", "", null, "android", "The wearer's phone publishes; a Mac follower only reads", listOf()),
         SettingInfo("sharing.bleFollowers", "bool", null, false, null, "sharing:nearbySharing", "", null, "android", "The wearer's phone is the Bluetooth peripheral; the Mac connects to it when nearby", listOf()),
@@ -250,7 +250,8 @@ object SettingsSpec {
         SettingInfo("healthConnect.on", "bool", null, false, null, "integrations:healthConnect", "", null, "android", "Health Connect is an Android platform store; macOS has none for a follower", listOf()),
     )
 
-    /** The Preferences DataStore files (one per area); secrets (store 'secure') are in the SecureStore. */
+    /** The Preferences DataStore files (one per area); secrets (store 'secure') are in the SecureStore, the source (store
+     * 'state') in its typed state file. */
     object Stores {
         const val GRAPH = "graph"
         const val SENSOR = "sensor"
@@ -298,10 +299,11 @@ object SettingsSpec {
         const val UNLOCKED_SOUND = "unlockedSound"
         const val SEPARATE_ALERTS = "separateAlerts"
         const val UNIT = "unit"
+        const val PERSON = "person"
+        const val KIND = "kind"
         const val JUGGLUCO = "juggluco"
         const val UPDATE_CHECKS = "updateChecks"
         const val UPDATE_INSTALL = "updateInstall"
-        const val SOURCE = "source"
         const val RELAY_SHARING = "relaySharing"
         const val RELAY_INTERVAL = "relayInterval"
         const val NEARBY_SHARING = "nearbySharing"

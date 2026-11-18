@@ -21,8 +21,10 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertRequirement
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.NotificationStyle
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.RootAccess
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.designsystem.sharing.PathMark
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
@@ -46,7 +48,6 @@ import app.mauri.sukrara.feature.sharing.setup.AlertThresholds
 import app.mauri.sukrara.feature.sharing.setup.JoinUi
 import app.mauri.sukrara.feature.sharing.setup.RestoreGate
 import app.mauri.sukrara.feature.sharing.setup.RestoreUi
-import app.mauri.sukrara.feature.sharing.setup.RoleChange
 import app.mauri.sukrara.feature.sharing.setup.RootUi
 import app.mauri.sukrara.feature.sharing.setup.ScanInvite
 import app.mauri.sukrara.feature.sharing.setup.ScanState
@@ -56,6 +57,7 @@ import app.mauri.sukrara.feature.sharing.setup.SetupFacts
 import app.mauri.sukrara.feature.sharing.setup.SetupRecord
 import app.mauri.sukrara.feature.sharing.setup.SetupStep
 import app.mauri.sukrara.feature.sharing.setup.SetupUi
+import app.mauri.sukrara.feature.sharing.setup.SourceChange
 import app.mauri.sukrara.feature.sharing.setup.ThresholdField
 import app.mauri.sukrara.feature.sharing.setup.UpdateChoice
 import app.mauri.sukrara.feature.sharing.share.ApproveDialog
@@ -111,7 +113,7 @@ class SharingScreenshotTest {
         Locale.setDefault(Locale.US)
     }
 
-    private val facts = SetupFacts(role = Role.Wearer, ownSensorLive = false, hasIdentity = false)
+    private val facts = SetupFacts(spec = SourceSpec.YourSensor, ownSensorLive = false, hasIdentity = false)
 
     private fun ui(
         step: SetupStep,
@@ -180,7 +182,7 @@ class SharingScreenshotTest {
 
     /** The join step after a link join, in [status]. */
     private fun linkUi(status: FollowStatus) =
-        ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(
+        ui(SetupStep.Join, 2, facts.copy(spec = SourceSpec.TheirSukrara)).copy(
             follow =
                 FollowState.Following(
                     status = status,
@@ -194,7 +196,7 @@ class SharingScreenshotTest {
 
     /** The join step while a *Pair nearby* join waits on [check]. */
     private fun pairingUi(check: PairingCheck) =
-        ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(
+        ui(SetupStep.Join, 2, facts.copy(spec = SourceSpec.TheirSukrara)).copy(
             follow =
                 FollowState.Following(
                     status = FollowStatus.Requested,
@@ -214,12 +216,25 @@ class SharingScreenshotTest {
                 for (field in ThresholdField.entries) Text("${field.name}: ${settings.rule(field.kind).threshold}")
             })
         return listOf(
-            "setup-1-welcome" to { SetupContent(ui(SetupStep.Welcome, 1, facts.copy(role = null)), a) },
-            "setup-2-role" to { SetupContent(ui(SetupStep.Role, 2, facts.copy(role = null)), a) },
-            "setup-2-role-delete-history" to {
-                val loss = RoleLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
-                SetupContent(ui(SetupStep.Role, 2, facts.copy(role = Role.Follower)).copy(roleChange = RoleChange(Role.Wearer, loss)), a)
+            "setup-1-welcome" to { SetupContent(ui(SetupStep.Welcome, 1, facts.copy(spec = null)), a) },
+            "setup-2-person" to { SetupContent(ui(SetupStep.Person, 2, facts.copy(spec = null)), a) },
+            "setup-2-person-yours" to { SetupContent(ui(SetupStep.Person, 2, facts.copy(spec = null)).copy(person = Person.Yours), a) },
+            "setup-3-source-yours" to { SetupContent(ui(SetupStep.Source, 3, facts.copy(spec = null)).copy(person = Person.Yours), a) },
+            "setup-3-source-theirs" to { SetupContent(ui(SetupStep.Source, 3, facts.copy(spec = null)).copy(person = Person.Theirs), a) },
+            "setup-3-source-change" to {
+                val juggluco = SourceSpec(Person.Yours, SourceKind.PhoneApp)
+                SetupContent(ui(SetupStep.Source, 3, facts).copy(sourceChange = SourceChange(juggluco, null, SourceSpec.YourSensor)), a)
             },
+            "setup-3-source-delete-history" to {
+                val loss = HistoryLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+                SetupContent(
+                    ui(SetupStep.Source, 3, facts.copy(spec = SourceSpec.TheirSukrara))
+                        .copy(person = Person.Yours, sourceChange = SourceChange(SourceSpec.YourSensor, loss, SourceSpec.TheirSukrara)),
+                    a,
+                )
+            },
+            "setup-5-juggluco" to
+                { SetupContent(ui(SetupStep.Sensor, 5, facts.copy(spec = SourceSpec(Person.Yours, SourceKind.PhoneApp))), a) },
             "setup-3-permissions" to {
                 SetupContent(
                     ui(SetupStep.Permissions, 3, missing = setOf(AlertRequirement.FullScreenIntent, AlertRequirement.BatteryExemption)),
@@ -228,7 +243,7 @@ class SharingScreenshotTest {
             },
             // docs/40: a follower's phone asks Nearby devices with the rest (Bluetooth, the internet's backup)
             "setup-3-permissions-follower" to {
-                SetupContent(ui(SetupStep.Permissions, 3, facts.copy(role = Role.Follower, following = true)), a)
+                SetupContent(ui(SetupStep.Permissions, 3, facts.copy(spec = SourceSpec.TheirSukrara, following = true)), a)
             },
             "setup-3b-updates" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.Open)), a) },
             "setup-3b-updates-on" to { SetupContent(ui(SetupStep.Updates, 4, facts.copy(updates = UpdateChoice.On)), a) },
@@ -368,7 +383,7 @@ class SharingScreenshotTest {
                     ui(
                         SetupStep.Join,
                         2,
-                        facts.copy(role = Role.Follower),
+                        facts.copy(spec = SourceSpec.TheirSukrara),
                     ).copy(nearby = NearbySearch(NearbyStatus.Searching, listOf(offer))),
                     a,
                 )
@@ -378,7 +393,7 @@ class SharingScreenshotTest {
                     ui(
                         SetupStep.Join,
                         2,
-                        facts.copy(role = Role.Follower),
+                        facts.copy(spec = SourceSpec.TheirSukrara),
                     ).copy(nearby = NearbySearch(NearbyStatus.BluetoothOff, emptyList())),
                     a,
                 )
@@ -394,7 +409,7 @@ class SharingScreenshotTest {
             "setup-join-pair-waiting" to { SetupContent(pairingUi(PairingCheck("021472", confirmed = true)), a) },
             "setup-join-pair-differed" to {
                 SetupContent(
-                    ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(join = JoinUi.Failed(JoinResult.CodesDiffered)),
+                    ui(SetupStep.Join, 2, facts.copy(spec = SourceSpec.TheirSukrara)).copy(join = JoinUi.Failed(JoinResult.CodesDiffered)),
                     a,
                 )
             },
@@ -407,7 +422,7 @@ class SharingScreenshotTest {
                         emptyList(),
                         me,
                     )
-                SetupContent(ui(SetupStep.Join, 2, facts.copy(role = Role.Follower)).copy(join = JoinUi.Confirm(invite)), a)
+                SetupContent(ui(SetupStep.Join, 2, facts.copy(spec = SourceSpec.TheirSukrara)).copy(join = JoinUi.Confirm(invite)), a)
             },
             "setup-join-scan-why" to { ScanScene(ScanState.Rationale) },
             "setup-join-scan-off" to { ScanScene(ScanState.Denied) },

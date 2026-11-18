@@ -23,8 +23,8 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.NotificationStyle
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.RootAccess
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
@@ -140,9 +140,10 @@ class SetupFlowTest {
     fun `Back on the step after the role goes home, and Finish setup resumes the walk exactly there`() {
         val tester = host(open = true)
         tap("Start")
-        tap("I wear the sensor")
+        tap("Yours")
         tap("Continue")
-        tap("Confirm", scroll = false)
+        shows("Where does your glucose come from?")
+        tap("Continue")
         shows("Let alerts reach you")
         back()
         shows(HOME)
@@ -150,7 +151,7 @@ class SetupFlowTest {
         assertEquals(SetupRecord(completed = setOf(SetupStep.Welcome)), recorded())
 
         tap(OPEN, scroll = false)
-        shows("Step 3 of 5")
+        shows("Step 4 of 6")
         shows("Let alerts reach you")
         tap("Continue")
         shows("Connect your sensor")
@@ -165,7 +166,7 @@ class SetupFlowTest {
 
     @Test
     fun `after a rotation Finish setup's Later moves on to the next skipped step, and Back goes home`() {
-        roles.role.value = Role.Wearer
+        roles.role.value = SourceSpec.YourSensor
         sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
         val skipped = setOf(SetupStep.Sensor, SetupStep.Alerts)
         val finished =
@@ -192,9 +193,10 @@ class SetupFlowTest {
      */
     private fun walkTheEssentials() {
         tap("Start")
-        tap("I wear the sensor")
+        tap("Yours")
         tap("Continue")
-        tap("Confirm", scroll = false)
+        shows("Where does your glucose come from?")
+        tap("Continue")
         shows("Let alerts reach you")
         tap("Continue")
         shows("Connect your sensor")

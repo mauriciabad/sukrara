@@ -5,8 +5,8 @@ package app.mauri.sukrara.integrations.localserver
 
 import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -205,9 +205,9 @@ class NightscoutApiTest {
     @Test
     fun `a follower's served entries say they are the followed person's`() {
         val zone = ZoneOffset.UTC
-        val wearer = NightscoutApi.treatment(treatments[0], zone, Role.Wearer)
+        val wearer = NightscoutApi.treatment(treatments[0], zone, relayed = false)
         assertEquals("Sukrara", wearer["enteredBy"]!!.jsonPrimitive.content)
-        val following = NightscoutApi.treatment(treatments[0], zone, Role.Follower)
+        val following = NightscoutApi.treatment(treatments[0], zone, relayed = true)
         assertEquals("Sukrara (following)", following["enteredBy"]!!.jsonPrimitive.content)
         assertEquals("Sukrara (following)", following["device"]!!.jsonPrimitive.content)
         val served =
@@ -215,16 +215,9 @@ class NightscoutApiTest {
                 HttpRequest("GET", "api/v1/treatments.json", emptyMap(), mapOf("api-secret" to NightscoutApi.sha1(secret))),
                 secret,
             ) {
-                NightscoutApi.Snapshot(emptyList(), treatments.filter { !it.deleted }, now, zone, Role.Follower)
+                NightscoutApi.Snapshot(emptyList(), treatments.filter { !it.deleted }, now, zone, relayed = true)
             }
         assertTrue(array(served).all { it.jsonObject["enteredBy"]!!.jsonPrimitive.content == "Sukrara (following)" })
-    }
-
-    @Test
-    fun `each role serves only its own person's readings`() {
-        assertTrue(SourceId.Libre3 in SourceId.of(Role.Wearer))
-        assertFalse(SourceId.Relay in SourceId.of(Role.Wearer))
-        assertEquals(setOf(SourceId.Relay, SourceId.Nearby), SourceId.of(Role.Follower))
     }
 
     private class Unreadable : SecureStore {
@@ -244,7 +237,7 @@ class NightscoutApiTest {
             secure,
             InMemoryReadingsRepository(),
             InMemoryTreatmentsRepository(),
-            flowOf(Role.Wearer),
+            flowOf(SourceSpec.YourSensor),
             FakeClock(now),
             Dispatchers.IO,
             InMemoryStateStore(LanPin()),
@@ -290,7 +283,7 @@ class NightscoutApiTest {
                     InMemorySecureStore(),
                     InMemoryReadingsRepository(),
                     InMemoryTreatmentsRepository(),
-                    flowOf(Role.Wearer),
+                    flowOf(SourceSpec.YourSensor),
                     FakeClock(now),
                     Dispatchers.IO,
                     pin,
@@ -354,7 +347,7 @@ class NightscoutApiTest {
                     secure,
                     InMemoryReadingsRepository(),
                     InMemoryTreatmentsRepository(),
-                    flowOf(Role.Wearer),
+                    flowOf(SourceSpec.YourSensor),
                     FakeClock(now),
                     Dispatchers.IO,
                     InMemoryStateStore(LanPin()),

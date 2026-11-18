@@ -8,15 +8,15 @@ import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 
 /** The hub as a wearer's phone sees it; readings appear in `recent`. */
 class FakeHub : GlucoseHub {
-    override val state = MutableStateFlow(GlucoseState.Initial.copy(role = Role.Wearer))
+    override val state = MutableStateFlow(GlucoseState.Initial.copy(spec = SourceSpec.YourSensor))
 
     fun push(r: Reading) {
         state.value = state.value.copy(latest = r, recent = state.value.recent + r)

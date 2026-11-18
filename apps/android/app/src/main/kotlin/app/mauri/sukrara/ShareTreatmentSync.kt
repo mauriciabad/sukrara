@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara
 
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.feature.treatments.TreatmentSync
 import app.mauri.sukrara.feature.treatments.TreatmentWriter
@@ -28,13 +28,13 @@ import kotlinx.coroutines.launch
 class ShareTreatmentSync(
     private val share: ShareOwnerModule,
     private val follower: FollowerEngine,
-    role: Flow<Role?>,
+    role: Flow<SourceSpec?>,
     scope: CoroutineScope,
 ) : TreatmentSync {
     override val writer: StateFlow<TreatmentWriter?> =
         combine(role, follower.state) { r, f ->
-            when (r) {
-                Role.Follower -> {
+            when (r?.stream) {
+                true -> {
                     if (f is FollowState.Following &&
                         f.canWrite
                     ) {
@@ -56,7 +56,7 @@ class ShareTreatmentSync(
     override suspend fun publish(record: TreatmentRecord) {
         share.scope.launch {
             runCatching {
-                if (role.value == Role.Follower) follower.publishTreatment(record) else share.ownerEngine.publishTreatment(record)
+                if (role.value?.stream == true) follower.publishTreatment(record) else share.ownerEngine.publishTreatment(record)
             }
         }
     }

@@ -4,7 +4,7 @@
 package app.mauri.sukrara.integrations.broadcasts
 
 import app.mauri.sukrara.core.model.GlucoseRange
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.serialization.Serializable
 import java.time.Duration
@@ -78,7 +78,7 @@ object BroadcastPlan {
     val PREFERENCE = listOf(BroadcastPayloads.XDRIP, BroadcastPayloads.LIBRE, BroadcastPayloads.GLUCODATA)
 
     fun decide(
-        role: Role?,
+        role: SourceSpec?,
         live: LiveReading,
         now: Instant,
         state: BcState,
@@ -86,7 +86,7 @@ object BroadcastPlan {
         /** Allowed packages whose signer still matches → the actions each declares a receiver for. */
         receivers: Map<String, Set<String>>,
     ): BcDecision {
-        if (role != Role.Wearer) return BcDecision.Wait(Hold.Follower)
+        if (role?.owner != true) return BcDecision.Wait(Hold.Follower)
         if (live.t > now + MAX_AHEAD) return BcDecision.Wait(Hold.Future)
         if (Duration.between(live.t, now) > MAX_AGE) return BcDecision.Wait(Hold.Stale)
         if (GlucoseRange.isLo(live.mgdl) || GlucoseRange.isHi(live.mgdl)) return BcDecision.Wait(Hold.OutOfRange)

@@ -32,52 +32,69 @@
     <!-- Setup welcome: what the app does -->
     <string name="sh_setup_welcome_body">Sukrara reads your glucose sensor, alerts you when you need it and shares your glucose with the people you choose.</string>
     <!-- Setup welcome: what setup will do -->
-    <string name="sh_setup_welcome_steps">Choose how you use this phone, allow what alerts need, connect your sensor and check your alerts: that is all Sukrara needs. Followers, insulin pens and your history are optional. You can leave any step for later.</string>
+    <string name="sh_setup_welcome_steps">Choose whose glucose and where it comes from, allow what alerts need, connect it and check your alerts: that is all Sukrara needs. Followers, insulin pens and your history are optional. You can leave any step for later.</string>
     <!-- Setup welcome: the reminder that Sukrara is not a medical device (the same sentence as Settings › About) -->
     <string name="sh_setup_not_medical">Sukrara isn\'t a medical device: values can be wrong, late or missing, and alerts may not ring. Check your sensor\'s app or a meter, and ask your doctor, before you decide on a treatment.</string>
-    <!-- Setup role step: title -->
-    <string name="sh_setup_role_title">How will you use this phone?</string>
-    <!-- Setup role step: explanation -->
-    <string name="sh_setup_role_body">Choose one. It decides what this phone does.</string>
-    <!-- Setup role: the wearer option -->
-    <string name="sh_setup_role_wearer">I wear the sensor</string>
-    <!-- Setup role: what the wearer option means -->
-    <string name="sh_setup_role_wearer_means">This phone reads your sensor and shares it.</string>
-    <!-- Setup role: the follower option -->
-    <string name="sh_setup_role_follower">I follow someone</string>
-    <!-- Setup role: what the follower option means -->
-    <string name="sh_setup_role_follower_means">This phone shows someone else\'s glucose.</string>
-    <!-- Setup role: following is not in this build yet -->
-    <!-- Setup role confirmation title; %1$s = the chosen option -->
-    <string name="sh_setup_role_confirm_title">%1$s?</string>
-    <!-- Setup role confirmation: what it means -->
-    <string name="sh_setup_role_confirm_text">One role per install. Changing it later means reinstalling Sukrara.</string>
-    <!-- Setup role confirmation button -->
-    <string name="sh_setup_role_confirm">Confirm</string>
-    <!-- Setup role change that deletes history: dialog title -->
-    <string name="sh_setup_role_delete_title">Delete the earlier history?</string>
-    <!-- Setup role change that deletes history: %1$s = the chosen option, %2$s = what is deleted ("1,204 glucose readings and 12 treatments"), %3$s = when ("from 3 Oct 2026 to 10 Nov 2026") -->
-    <string name="sh_setup_role_delete_text">You chose “%1$s”. This deletes what this phone kept from before: %2$s, %3$s. It can’t be undone. To keep a copy, export a CSV file first.</string>
-    <!-- Setup role change: how many glucose readings are deleted; %1$s = the number -->
-    <plurals name="sh_setup_role_delete_readings">
+    <!-- Setup person step: title (docs/44 Person × Source) -->
+    <string name="sh_setup_person_title">Whose glucose will Sukrara show?</string>
+    <!-- Setup person step: what "Yours" means -->
+    <string name="sh_setup_person_yours_means">You wear the sensor.</string>
+    <!-- Setup person step: what "Someone else's" means -->
+    <string name="sh_setup_person_theirs_means">A child, a partner or a friend.</string>
+    <!-- Setup person step: under the two choices (the copy that once said "reinstall": nothing needs reinstalling) -->
+    <string name="sh_setup_person_later">You can change it any time in Settings › Source.</string>
+    <!-- Setup source step: title for your glucose -->
+    <string name="sh_setup_source_title">Where does your glucose come from?</string>
+    <!-- Setup source step: title for someone else's glucose -->
+    <string name="sh_setup_source_title_theirs">Where does their glucose come from?</string>
+    <!-- Setup source step: the group of sources on this phone that work without internet -->
+    <string name="sh_setup_source_group_offline">On this phone · works offline</string>
+    <!-- Setup source step: the group of Sukrara streams -->
+    <string name="sh_setup_source_group_sukrara">From another Sukrara</string>
+    <!-- Setup source step: the most direct source's line; %1$s = what it brings -->
+    <string name="sh_setup_source_recommended">Recommended · %1$s</string>
+    <!-- Setup source step: changing a stored source, dialog title; %1$s = the source ("Juggluco on this phone") -->
+    <string name="sh_setup_source_change_title">Switch to “%1$s”?</string>
+    <!-- Setup source step: switching to the sensor Sukrara reads -->
+    <string name="sh_setup_source_change_sensor">Sukrara connects to the sensor itself, so no other app may hold it. The history on this phone stays.</string>
+    <!-- Setup source step: switching to Juggluco -->
+    <string name="sh_setup_source_change_phone_app">Sukrara stops connecting to the sensor and reads Juggluco on this phone, which must run with its web server on (Settings › Web server). The sensor’s pairing and the history stay.</string>
+    <!-- Setup source step: switching to another Sukrara -->
+    <string name="sh_setup_source_change_sukrara">Sukrara shows what another Sukrara shares, once it accepts your request. The history on this phone stays.</string>
+    <!-- Setup source step: confirms the switch -->
+    <string name="sh_setup_source_change_confirm">Switch</string>
+    <!-- Setup connect step for Juggluco: title -->
+    <string name="sh_setup_juggluco_title">Connect Juggluco</string>
+    <!-- Setup connect step for Juggluco: what to do -->
+    <string name="sh_setup_juggluco_body">In Juggluco, turn on its web server (Settings › Web server). Sukrara reads it on this phone; nothing leaves it.</string>
+    <!-- Setup connect step for Juggluco: no reading yet -->
+    <string name="sh_setup_juggluco_waiting">Waiting for the first reading from Juggluco. No alert can ring until one arrives.</string>
+    <!-- Setup connect step for Juggluco: opens Juggluco -->
+    <string name="sh_setup_juggluco_open">Open Juggluco</string>
+    <!-- Setup person change that deletes history: dialog title -->
+    <string name="sh_setup_person_delete_title">Delete the earlier history?</string>
+    <!-- Setup person change that deletes history: %1$s = whose glucose was chosen, %2$s = what is deleted ("1,204 glucose readings and 12 treatments"), %3$s = when ("from 3 Oct 2026 to 10 Nov 2026") -->
+    <string name="sh_setup_person_delete_text">You chose “%1$s”. This deletes what this phone kept from before: %2$s, %3$s. It can’t be undone. To keep a copy, export a CSV file first.</string>
+    <!-- Setup person change: how many glucose readings are deleted; %1$s = the number -->
+    <plurals name="sh_setup_person_delete_readings">
         <item quantity="one">%1$s glucose reading</item>
         <item quantity="other">%1$s glucose readings</item>
     </plurals>
-    <!-- Setup role change: how many treatments (insulin, carbs) are deleted; %1$s = the number -->
-    <plurals name="sh_setup_role_delete_treatments">
+    <!-- Setup person change: how many treatments (insulin, carbs) are deleted; %1$s = the number -->
+    <plurals name="sh_setup_person_delete_treatments">
         <item quantity="one">%1$s treatment</item>
         <item quantity="other">%1$s treatments</item>
     </plurals>
-    <!-- Setup role change: readings and treatments together; %1$s = readings, %2$s = treatments -->
-    <string name="sh_setup_role_delete_and">%1$s and %2$s</string>
-    <!-- Setup role change: the deleted history's dates; %1$s = first day, %2$s = last day -->
-    <string name="sh_setup_role_delete_range">from %1$s to %2$s</string>
-    <!-- Setup role change: the deleted history is from one day; %1$s = the day -->
-    <string name="sh_setup_role_delete_day">from %1$s</string>
-    <!-- Setup role change: opens the CSV export (all of the history) before deleting -->
-    <string name="sh_setup_role_delete_export">Export CSV first</string>
-    <!-- Setup role change: deletes the history and stores the new role -->
-    <string name="sh_setup_role_delete_confirm">Delete and continue</string>
+    <!-- Setup person change: readings and treatments together; %1$s = readings, %2$s = treatments -->
+    <string name="sh_setup_person_delete_and">%1$s and %2$s</string>
+    <!-- Setup person change: the deleted history's dates; %1$s = first day, %2$s = last day -->
+    <string name="sh_setup_person_delete_range">from %1$s to %2$s</string>
+    <!-- Setup person change: the deleted history is from one day; %1$s = the day -->
+    <string name="sh_setup_person_delete_day">from %1$s</string>
+    <!-- Setup person change: opens the CSV export (all of the history) before deleting -->
+    <string name="sh_setup_person_delete_export">Export CSV first</string>
+    <!-- Setup person change: deletes the history and stores the new source -->
+    <string name="sh_setup_person_delete_confirm">Delete and continue</string>
     <!-- Setup checklist: title -->
     <string name="sh_setup_permissions_title">Let alerts reach you</string>
     <!-- Setup checklist: explanation -->

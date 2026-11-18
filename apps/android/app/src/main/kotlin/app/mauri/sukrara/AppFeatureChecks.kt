@@ -12,7 +12,7 @@ import android.os.Build
 import android.provider.Settings
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.FeatureChecksSource
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.PlatformHealth
 import app.mauri.sukrara.integrations.localserver.LanState
@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 
 /** What each feature says now, for [FeatureChecks.blocked] (the states the features' own pages show). */
 data class FeatureFacts(
-    val role: Role?,
+    val role: SourceSpec?,
     /** The wearer's Bluetooth server: NeedsPermission only while it is wanted (switch on, someone follows). */
     val sharing: NearbyStatus = NearbyStatus.Stopped,
     /** The follower's Bluetooth path: NeedsPermission only while following. */
@@ -47,9 +47,9 @@ data class FeatureFacts(
 object FeatureChecks {
     fun blocked(f: FeatureFacts): List<BlockedFeature> =
         buildList {
-            if (f.role == Role.Wearer && f.sharing == NearbyStatus.NeedsPermission) add(BlockedFeature.BluetoothSharing)
-            if (f.role == Role.Follower && f.following == NearbyStatus.NeedsPermission) add(BlockedFeature.BluetoothFollowing)
-            if (f.role == Role.Wearer && f.healthConnect == HcStatus.NeedsPermission) add(BlockedFeature.HealthConnect)
+            if (f.role?.owner == true && f.sharing == NearbyStatus.NeedsPermission) add(BlockedFeature.BluetoothSharing)
+            if (f.role?.stream == true && f.following == NearbyStatus.NeedsPermission) add(BlockedFeature.BluetoothFollowing)
+            if (f.role?.owner == true && f.healthConnect == HcStatus.NeedsPermission) add(BlockedFeature.HealthConnect)
             if (f.homeNetwork == LanState.NoPermission) add(BlockedFeature.HomeNetwork)
         }
 }
@@ -63,7 +63,7 @@ object FeatureChecks {
 class AppFeatureChecks(
     context: Context,
     private val scope: CoroutineScope,
-    role: Flow<Role?>,
+    role: Flow<SourceSpec?>,
     private val sharing: Port<NearbyStatus>,
     private val following: Port<NearbyStatus>,
     private val healthConnect: Port<HcStatus>,
@@ -83,35 +83,32 @@ class AppFeatureChecks(
             .distinctUntilChanged()
             .flatMapLatest { r ->
                 combine(
-                    if (r == Role.Wearer) sharing.state() else flowOf(NearbyStatus.Stopped),
-                    if (r == Role.Follower) following.state() else flowOf(NearbyStatus.Stopped),
-                    if (r == Role.Wearer) healthConnect.state() else flowOf(HcStatus.Off),
+                    if (r?.owner == true) sharing.state() else flowOf(NearbyStatus.Stopped),
+                    if (r?.stream == true) following.state() else flowOf(NearbyStatus.Stopped),
+                    if (r?.owner == true) healthConnect.state() else flowOf(HcStatus.Off),
                     if (r != null) homeNetwork.state() else flowOf(LanState.Off),
                 ) { s, fo, hc, lan -> FeatureChecks.blocked(FeatureFacts(r, s, fo, hc, lan)) }
             }.distinctUntilChanged()
             .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     /** The role as last read: [refresh] wakes only what it has. */
-    @Volatile private var current: Role? = null
+    @Volatile private var current: SourceSpec? = null
 
     init {
         scope.launch { role.collect { current = it } }
     }
 
     override fun refresh() {
-        // only what this role has built: a follower's phone never wakes the wearer's sharing (and the other way round)
-        when (current) {
-            Role.Wearer -> {
+        // only what this source has built: a stream's phone never wakes the owner's sharing (and the other way round)
+        val spec = current
+        when {
+            spec?.owner == true -> {
                 sharing.refresh()
                 healthConnect.refresh()
             }
 
-            Role.Follower -> {
+            spec?.stream == true -> {
                 following.refresh()
-            }
-
-            null -> {
-                Unit
             }
         }
         if (current != null) homeNetwork.refresh()

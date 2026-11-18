@@ -191,7 +191,7 @@
     <string name="st_overview_reliability_problem">%1$d to fix</string>
     <string name="st_overview_graph">Time shown, lines, treatments on the graph</string>
     <string name="st_sensor">Sensor</string>
-    <string name="st_sensor_summary">Current sensor, reading source, LibreView</string>
+    <string name="st_sensor_summary">Current sensor, its life, LibreView</string>
     <string name="st_sharing">Sharing</string>
     <string name="st_sharing_summary">Followers and devices</string>
     <string name="st_apps">Share with apps</string>
@@ -299,11 +299,6 @@
     <string name="st_sensor_scan_again_text">Sukrara can’t use the saved pairing. Scan the sensor again: it keeps running and nothing is lost.</string>
     <string name="st_sensor_taken_over_text">Another app took over the sensor (the official app or Juggluco), so Sukrara stopped reading it. Close that app, then scan the sensor to take it back.</string>
     <string name="st_sensor_pair_again_text">The sensor refused the pairing (a wrong ID or PIN). Pair it again.</string>
-    <string name="st_sensor_source">Reading source</string>
-    <string name="st_sensor_source_direct">This phone reads the sensor</string>
-    <string name="st_sensor_source_direct_why">Sukrara connects to the sensor itself over Bluetooth.</string>
-    <string name="st_sensor_source_juggluco">Juggluco</string>
-    <string name="st_sensor_source_juggluco_why">Juggluco on this phone reads the sensor; Sukrara gets glucose from Juggluco’s web server.</string>
     <string name="st_sensor_to_juggluco_title">Read glucose from Juggluco?</string>
     <string name="st_sensor_to_juggluco_text">Sukrara stops connecting to the sensor and reads glucose from Juggluco on this phone. Juggluco must be running with its web server on. The sensor’s pairing stays saved, so you can switch back.</string>
     <string name="st_sensor_to_juggluco_confirm">Use Juggluco</string>
@@ -953,4 +948,23 @@
     <string name="st_metrics_reset_all_title">Reset the metrics?</string>
     <string name="st_metrics_reset_all_text">The metrics, the last treatment and the time-in-range rings go back to their defaults. Your ranges stay.</string>
     <string name="st_metrics_footer">A metric shows once there\'s data for a quarter of its period. The app, the notification and the widgets show them; a widget can show fewer in its own settings.</string>
+    <!-- Settings › Source (docs/44 Person × Source): whose glucose and where it comes from -->
+    <string name="st_source_title">Source</string>
+    <string name="st_source_summary">Whose glucose and where it comes from</string>
+    <string name="st_source_whose">Whose glucose</string>
+    <string name="st_source_from">Where it comes from</string>
+    <string name="st_source_status">Now</string>
+    <!-- %1$s = when the newest reading arrived ("2 minutes ago") -->
+    <string name="st_source_live">Live · last reading %1$s</string>
+    <string name="st_source_waiting">Waiting for the first reading</string>
+    <string name="st_source_not_chosen">Not chosen yet</string>
+    <string name="st_source_ask">Sukrara asks once more whose glucose this is and where it comes from. It keeps reading as now until you answer.</string>
+    <string name="st_source_answer">Answer</string>
+    <string name="st_source_sensor_summary">Pair a new sensor, its life, LibreView</string>
+    <string name="st_source_open_juggluco_summary">Turn on its web server there (Settings › Web server)</string>
+    <string name="st_source_footer">Changing whose glucose deletes the history on this phone (Sukrara asks first). Changing the source keeps it.</string>
+    <string name="st_source_import">Import history</string>
+    <string name="st_source_import_summary">Bring back your last 90 days from LibreView, Tidepool or a file</string>
+    <!-- Settings › Sharing when this phone doesn't read your glucose first-hand -->
+    <string name="st_sharing_not_here">Sharing with Sukrara followers is for your own glucose, read on this phone (your sensor or Juggluco). Change it in Source.</string>
 </resources>

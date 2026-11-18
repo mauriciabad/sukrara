@@ -8,7 +8,6 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NotMonitoringReason
 import app.mauri.sukrara.core.model.NotificationIcon
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.graph.GlucoseLook
 import app.mauri.sukrara.graph.RangeState
@@ -150,9 +149,9 @@ data class LiveNotificationContent(
             if (state.notMonitoring == NotMonitoringReason.SetupIncomplete) return notMonitoring(state).copy(lockScreen = prefs.lockScreen)
             val sharing =
                 prefs.sharing?.let { s ->
-                    // followers are the wearer's; the API on the Wi-Fi is either role's
-                    val line = if (state.role == Role.Wearer) s else s.copy(followers = 0, nearby = 0)
-                    line.takeIf { state.role != null && (it.followers > 0 || it.nearby > 0 || it.wifi) }
+                    // followers are your glucose's, read here; the API on the Wi-Fi is any source's
+                    val line = if (state.spec?.owner == true) s else s.copy(followers = 0, nearby = 0)
+                    line.takeIf { state.spec != null && (it.followers > 0 || it.nearby > 0 || it.wifi) }
                 }
             return content(state, now, face, prefs).copy(sharing = sharing, lockScreen = prefs.lockScreen)
         }
@@ -171,11 +170,9 @@ data class LiveNotificationContent(
                         UiText(R.string.monitor_notif_sensor_ended),
                         detail,
                         Icon.SENSOR_ENDED,
-                        if (state.role == Role.Wearer) Target.SensorSetup else Target.OpenApp,
+                        if (state.spec?.owner == true) Target.SensorSetup else Target.OpenApp,
                         actions =
-                            if (state.role ==
-                                Role.Wearer
-                            ) {
+                            if (state.spec?.owner == true) {
                                 listOf(REPLACE_SENSOR)
                             } else {
                                 emptyList()
@@ -277,7 +274,7 @@ data class LiveNotificationContent(
                 trendBand = look.band.takeIf { look.trend == TrendMark.ARROW },
                 readingAt = if (look.fresh.showTime) reading.t else null,
                 tap = quickTreatment(state),
-                actions = if (look.ended && state.role == Role.Wearer) listOf(REPLACE_SENSOR) else emptyList(),
+                actions = if (look.ended && state.spec?.owner == true) listOf(REPLACE_SENSOR) else emptyList(),
                 layout = if (live) Layout.LIVE_UPDATE else Layout.CARD,
                 look = look,
                 mgdl = reading.mgdl,
@@ -287,9 +284,9 @@ data class LiveNotificationContent(
             )
         }
 
-        /** Not monitoring: the wearer's *Set up sensor*; a follower's tap opens the app (no button repeating it). */
+        /** Not monitoring: *Set up sensor* for your glucose; someone else's or a stream's tap opens the app (no button repeating it). */
         private fun notMonitoring(state: GlucoseState): LiveNotificationContent {
-            if (state.role == Role.Follower) return plain(UiText(R.string.monitor_notif_not_monitoring), null, Icon.APP, Target.OpenApp)
+            if (state.spec?.owner == false) return plain(UiText(R.string.monitor_notif_not_monitoring), null, Icon.APP, Target.OpenApp)
             val setUp = Action(UiText(R.string.monitor_action_set_up_sensor), Target.SensorSetup)
             return plain(UiText(R.string.monitor_notif_not_monitoring), null, Icon.APP, setUp.target, listOf(setUp))
         }

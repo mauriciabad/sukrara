@@ -7,9 +7,9 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
@@ -64,7 +64,7 @@ class AuraLinkTest {
 
     private fun state(vararg mgdl: Pair<Long, Int>) =
         GlucoseState(
-            role = Role.Wearer,
+            spec = SourceSpec.YourSensor,
             latest = mgdl.lastOrNull()?.let { reading(it) },
             recent = mgdl.map(::reading),
             sensor = SensorState.Active(clock.now() + Duration.ofDays(5)),

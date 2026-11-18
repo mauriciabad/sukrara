@@ -28,7 +28,8 @@ val SetupStep.title: Int
     get() =
         when (this) {
             SetupStep.Welcome -> R.string.sh_setup_welcome_title
-            SetupStep.Role -> R.string.sh_setup_role_title
+            SetupStep.Person -> R.string.sh_setup_person_title
+            SetupStep.Source -> R.string.sh_setup_source_title
             SetupStep.Join -> R.string.sh_join_title
             SetupStep.Permissions -> R.string.sh_setup_permissions_title
             SetupStep.Sensor -> R.string.sh_setup_sensor_title

@@ -12,20 +12,20 @@ import java.time.Instant
  * live notification, alerts, sharing and uploads all read this; nothing keeps its own copy.
  */
 data class GlucoseState(
-    /** Null until first-run setup chose a role. */
-    val role: Role?,
+    /** Whose glucose and where from (docs/44 Person × Source); null until setup has an answer. */
+    val spec: SourceSpec?,
     val latest: Reading?,
     /** The recent window, oldest first. */
     val recent: List<Reading>,
     val sensor: SensorState,
     val source: SourceStatus,
     val alerts: AlertUiState,
-    /** The follower's link to the wearer; null on a wearer phone. */
+    /** The link to another Sukrara (a Sukrara stream); null for every other source. */
     val link: LinkState?,
     /**
      * When monitoring started: the current source's start (a sensor paired and connecting, Juggluco chosen, a follow
      * the wearer allowed) or its first reading, whichever came first (persisted; cleared only when the person removes
-     * the sensor or changes the role). No data counts from it until a reading: a source that never delivers one still
+     * the sensor or changes whose glucose). No data counts from it until a reading: a source that never delivers one still
      * alerts. Null = not monitoring yet, so no "no data" alarm can be armed.
      */
     val monitoringStartedAt: Instant? = null,
@@ -38,7 +38,7 @@ data class GlucoseState(
     val notMonitoring: NotMonitoringReason?
         get() =
             when {
-                role == null -> NotMonitoringReason.SetupIncomplete
+                spec == null -> NotMonitoringReason.SetupIncomplete
                 monitoringStartedAt == null -> NotMonitoringReason.NoSensorYet
                 else -> null
             }
@@ -47,7 +47,7 @@ data class GlucoseState(
         /** Before anything is known: nothing is shown as a value and no data alarm can fire. */
         val Initial =
             GlucoseState(
-                role = null,
+                spec = null,
                 latest = null,
                 recent = emptyList(),
                 sensor = SensorState.None,
@@ -113,10 +113,10 @@ enum class SensorAction {
 
 /** Why the app isn't monitoring yet. Shown as "Not monitoring: no sensor yet" with the action "Set up sensor". */
 enum class NotMonitoringReason {
-    /** First-run setup hasn't chosen a role. */
+    /** First-run setup has no answer yet for whose glucose and where from. */
     SetupIncomplete,
 
-    /** A role is set but no reading has come from a source yet (no sensor paired / not joined, or waiting). */
+    /** A source is chosen but no reading has come from it yet (no sensor paired / not joined, or waiting). */
     NoSensorYet,
 }
 
@@ -286,7 +286,7 @@ data class LinkState(
 )
 
 /**
- * The single glucose state source. Exactly one input per role feeds it (wearer: the sensor source; follower: the
+ * The single glucose state source. Exactly one input per source feeds it (the sensor or Juggluco; a Sukrara stream: the
  * follower engine). Implemented in `:monitor`.
  */
 interface GlucoseHub {

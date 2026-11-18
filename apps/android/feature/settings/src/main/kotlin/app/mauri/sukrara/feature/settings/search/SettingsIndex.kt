@@ -23,7 +23,7 @@ import app.mauri.sukrara.feature.settings.quietName
 import app.mauri.sukrara.core.designsystem.R as DsR
 
 /** Settings pages that belong to other features: the overview opens them ([SettingsSearchBar]'s `onOpenOther`). */
-enum class OtherPage { Sensor, Sharing, Apps, Profile, Backup, Export, Import }
+enum class OtherPage { Source, Sensor, Sharing, Apps, Profile, Backup, Export, Import }
 
 /** Where a search result leads: a settings page, or another feature's page. */
 sealed interface SearchTarget {
@@ -93,6 +93,7 @@ enum class Section(
 ) {
     Alerts(DsR.drawable.ds_ic_notifications, Category.Red),
     Reliability(DsR.drawable.ds_ic_check_circle, Category.Red),
+    Source(DsR.drawable.ds_ic_water_drop, Category.Green),
     SettingsFrom(DsR.drawable.ds_ic_tune, Category.Blue),
     Readings(DsR.drawable.ds_ic_water_drop, Category.Purple),
     Graph(DsR.drawable.ds_ic_monitoring, Category.Purple),
@@ -117,6 +118,7 @@ enum class Section(
             when (target) {
                 is SearchTarget.Other -> {
                     when (target.page) {
+                        OtherPage.Source -> Source
                         OtherPage.Sensor -> Sensor
                         OtherPage.Sharing -> Sharing
                         OtherPage.Apps -> Apps
@@ -409,6 +411,7 @@ object SettingsIndex {
             )
             add(overview(R.string.st_statusbar_title, R.string.st_overview_statusbar, SearchTarget.Page(SettingsRoute.StatusBar)))
             add(overview(R.string.st_lock_title, R.string.st_overview_lock, SearchTarget.Page(SettingsRoute.LockScreen)))
+            add(overview(R.string.st_source_title, R.string.st_source_summary, SearchTarget.Other(OtherPage.Source)))
             add(overview(R.string.st_sensor, R.string.st_sensor_summary, SearchTarget.Other(OtherPage.Sensor)))
             add(overview(R.string.st_sensorend_title, R.string.st_overview_sensorend, SearchTarget.Page(SettingsRoute.SensorEnd)))
             add(
@@ -444,13 +447,30 @@ object SettingsIndex {
                 R.string.st_sensor_ends to null,
                 R.string.st_sensor_pair_new to R.string.st_sensor_pair_new_summary,
             )
-            sensor(
-                R.string.st_sensor_source,
-                R.string.st_sensor_source to null,
-                R.string.st_sensor_source_direct to R.string.st_sensor_source_direct_why,
-                R.string.st_sensor_source_juggluco to R.string.st_sensor_source_juggluco_why,
+            // Settings › Source's own rows (the app's page: it holds another Sukrara's follow too)
+            val source = SearchTarget.Other(OtherPage.Source)
+            add(SearchEntry(R.string.st_source_whose, source, listOf(R.string.st_source_title)))
+            add(SearchEntry(R.string.st_source_from, source, listOf(R.string.st_source_title)))
+            add(
+                SearchEntry(
+                    R.string.st_sensor_juggluco_secret,
+                    source,
+                    listOf(R.string.st_source_title),
+                    group = R.string.st_sensor_juggluco,
+                ),
             )
-            sensor(R.string.st_sensor_juggluco, R.string.st_sensor_juggluco_secret to null)
+            // Sensor → Source: where the glucose comes from is chosen there
+            add(
+                SearchEntry(
+                    R.string.st_source_title,
+                    SearchTarget.Other(OtherPage.Sensor),
+                    listOf(R.string.st_sensor),
+                    SearchTarget.Other(OtherPage.Source),
+                    R.string.st_source_summary,
+                    R.string.st_see_also,
+                    highlight = null,
+                ),
+            )
             // Sensor ↔ Sensor end (docs/35 §7): its own overview row stays, and the Sensor page links to it
             add(
                 SearchEntry(

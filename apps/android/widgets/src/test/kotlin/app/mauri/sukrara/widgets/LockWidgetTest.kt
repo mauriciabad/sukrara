@@ -12,9 +12,9 @@ import app.mauri.sukrara.core.model.LockBackground
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.LockWidgetLink
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.graph.CardLayout
 import app.mauri.sukrara.graph.CardPart
@@ -57,7 +57,7 @@ class LockWidgetTest {
         mgdl: Int? = 128,
         age: Duration = Duration.ofMinutes(1),
         look: LockLook = LockLook(),
-        role: Role = Role.Wearer,
+        role: SourceSpec = SourceSpec.YourSensor,
     ): WidgetFrame {
         val readings =
             if (mgdl == null) {
@@ -67,7 +67,7 @@ class LockWidgetTest {
             }
         val g =
             GlucoseState.Initial.copy(
-                role = role,
+                spec = role,
                 latest = readings.lastOrNull(),
                 recent = readings,
                 sensor = SensorState.Active(now.plus(Duration.ofDays(6))),

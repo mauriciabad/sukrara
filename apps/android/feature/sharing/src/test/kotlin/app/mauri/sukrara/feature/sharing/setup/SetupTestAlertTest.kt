@@ -10,7 +10,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import app.mauri.sukrara.share.owner.OwnerShareState
 import org.junit.Assert.assertEquals
@@ -34,7 +34,7 @@ class SetupTestAlertTest {
                         step = SetupStep.Permissions,
                         index = 3,
                         count = 6,
-                        facts = SetupFacts(role = Role.Wearer, ownSensorLive = false, hasIdentity = false),
+                        facts = SetupFacts(spec = SourceSpec.YourSensor, ownSensorLive = false, hasIdentity = false),
                         record = SetupRecord(),
                         readiness = AlertReadiness(emptySet()),
                         alerts = AlertThresholds(AlertSettings()),

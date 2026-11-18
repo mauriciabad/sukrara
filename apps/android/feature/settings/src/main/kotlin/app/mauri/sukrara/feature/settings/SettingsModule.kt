@@ -67,6 +67,9 @@ class SettingsModule(
     featureChecks: () -> FeatureChecksSource = { FeatureChecksSource.None },
     /** Other features' rows the settings search finds ([SettingsDeps.moreSearch]). */
     moreSearch: List<SearchEntry> = emptyList(),
+    /** What the phone runs on and the name a stream follows ([SettingsDeps.source], [SettingsDeps.sourceName]). */
+    source: Flow<app.mauri.sukrara.core.model.SourceSpec?> = flowOf(null),
+    sourceName: Flow<String?> = flowOf(null),
 ) {
     val deps: SettingsDeps =
         object : SettingsDeps {
@@ -117,6 +120,8 @@ class SettingsModule(
             override val settingsFrom = settingsFrom
             override val moreSearch = moreSearch
             override val sensorCalendar by lazy { sensorCalendar() }
+            override val source = source
+            override val sourceName = sourceName
         }
 
     /** When the alert thresholds were confirmed (null = never): home's Finish-setup card asks until they are. */

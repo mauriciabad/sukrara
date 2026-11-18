@@ -7,8 +7,8 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentQuiet
@@ -52,7 +52,12 @@ class WidgetUpdaterTest {
     ) = Reading(at, mgdl, 0.2, SourceId("test"))
 
     private fun state(latest: Reading) =
-        GlucoseState.Initial.copy(role = Role.Wearer, latest = latest, recent = listOf(latest), source = SourceStatus.Live(latest.t))
+        GlucoseState.Initial.copy(
+            spec = SourceSpec.YourSensor,
+            latest = latest,
+            recent = listOf(latest),
+            source = SourceStatus.Live(latest.t),
+        )
 
     private fun TestScope.updater() =
         WidgetUpdater(
@@ -227,7 +232,7 @@ class WidgetUpdaterTest {
             ticks.emit(Unit)
             runCurrent()
             assertEquals(4, redraws)
-            glucose.value = glucose.value.copy(role = Role.Follower, link = LinkState("Ana", t0))
+            glucose.value = glucose.value.copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", t0))
             runCurrent()
             assertEquals(5, redraws)
             glucose.value = glucose.value.copy(link = LinkState("Ana", t0.plusSeconds(30)))

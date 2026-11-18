@@ -35,8 +35,8 @@ object DeviceProtected {
     /** Secrets: the sensor pairing (its Keystore key has no user authentication, so it opens before the first unlock). */
     val SECRETS: Set<String> = setOf(SecretName.SENSOR)
 
-    /** Typed state: the role (both copies), when monitoring started, the alert runtime's record, the sensor-end memory. */
-    val STATES: Set<String> = setOf("role", "role-backup", "monitor-record", "alert_state", "sensor_end")
+    /** Typed state: the source (both copies), when monitoring started, the alert runtime's record, the sensor-end memory. */
+    val STATES: Set<String> = setOf("source", "source-backup", "monitor-record", "alert_state", "sensor_end")
 
     /** The last 3 h of this phone's own readings and those read before the unlock ([RecentReadings]). */
     const val RECENT_READINGS = "recent-readings.json"

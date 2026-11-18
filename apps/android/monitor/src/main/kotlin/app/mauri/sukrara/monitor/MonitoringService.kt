@@ -148,11 +148,11 @@ class MonitoringService : Service() {
                 postGlucose(m, state, inputs, force)
             }
         }
-        // the role's source, picked again when the role changes (wearer ↔ follower) or the source may have (another
-        // glucose source, the sensor forgotten): nothing left to read stops the service
+        // the source, picked again when it changes (Settings › Source, setup) or may have (the sensor forgotten): nothing
+        // left to read stops the service
         combine(
             m.hubImpl.state
-                .map { it.role }
+                .map { it.spec }
                 .distinctUntilChanged(),
             m.sourceChanges.onStart { emit(Unit) },
         ) { role, _ -> role }

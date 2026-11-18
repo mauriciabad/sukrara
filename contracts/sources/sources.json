@@ -1,0 +1,39 @@
+{
+  "_about": [
+    "THE glucose sources (docs/44 'Person x Source', #213): whose glucose a device shows ('persons') x where it comes from",
+    "('sources'). Each source declares what it can do; the apps read these declarations, not the id, to group the",
+    "picker, word the Source page and key behaviour. A source is per device (never mirrored). 'persons' = whose glucose it",
+    "may bring; 'platforms' = the apps that offer it; 'firstHand' = this device gets the data itself (not relayed by",
+    "another Sukrara); 'offline' = works without internet; 'group' = how the picker groups it (what the person feels:",
+    "offline / network / sukrara); 'delay_s' = typical time from the sensor's reading to this device; 'backfill' = it",
+    "brings readings missed while away; 'brings' = what it brings besides glucose; 'readings' = the reading source ids it",
+    "stores (dedup.json ranks them). 'keying' = what each (person, source, Settings from) gets, the cases every app's",
+    "SourceSpec passes: 'owner' = this device owns your glucose (shares it with Sukrara followers, uploads it, insulin",
+    "pens, sensor reminders, Import history); 'stream' = a Sukrara stream (Settings from, escalation, writer scope, the",
+    "Following rows); 'alertRole' = the alert engine's role (WEARER / FOLLOWER_MIRROR / FOLLOWER_OWN, unchanged from the",
+    "roles it replaces). 'invalid' = pairs no app offers. A person change deletes this device's readings and treatments",
+    "(confirmed first); a source change keeps them."
+  ],
+  "persons": ["yours", "theirs"],
+  "sources": [
+    {"id": "sensor", "persons": ["yours"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["libre3", "dexcom-g7", "dexcom-g6", "accu-chek-smartguide", "aidex-x"]},
+    {"id": "phoneApp", "persons": ["yours", "theirs"], "platforms": ["android"], "firstHand": true, "offline": true, "group": "offline", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco"]},
+    {"id": "lanJuggluco", "persons": ["yours", "theirs"], "platforms": ["mac"], "firstHand": true, "offline": true, "group": "network", "delay_s": 60, "backfill": true, "brings": ["sensorLife"], "readings": ["juggluco-lan"]},
+    {"id": "sukrara", "persons": ["yours", "theirs"], "platforms": ["android", "mac"], "firstHand": false, "offline": false, "group": "sukrara", "delay_s": 60, "backfill": true, "brings": ["sensorLife", "treatments", "alerts", "settings"], "readings": ["relay", "nearby"]}
+  ],
+  "keying": [
+    {"person": "yours", "source": "sensor", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
+    {"person": "yours", "source": "phoneApp", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
+    {"person": "yours", "source": "lanJuggluco", "settingsFrom": "wearer", "owner": true, "stream": false, "alertRole": "WEARER"},
+    {"person": "theirs", "source": "phoneApp", "settingsFrom": "wearer", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
+    {"person": "theirs", "source": "lanJuggluco", "settingsFrom": "custom", "owner": false, "stream": false, "alertRole": "FOLLOWER_OWN"},
+    {"person": "theirs", "source": "sukrara", "settingsFrom": "wearer", "owner": false, "stream": true, "alertRole": "FOLLOWER_MIRROR"},
+    {"person": "theirs", "source": "sukrara", "settingsFrom": "default", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"},
+    {"person": "theirs", "source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"},
+    {"person": "yours", "source": "sukrara", "settingsFrom": "wearer", "owner": false, "stream": true, "alertRole": "FOLLOWER_MIRROR"},
+    {"person": "yours", "source": "sukrara", "settingsFrom": "custom", "owner": false, "stream": true, "alertRole": "FOLLOWER_OWN"}
+  ],
+  "invalid": [
+    {"person": "theirs", "source": "sensor", "why": "a sensor Sukrara reads is on this device's own person"}
+  ]
+}

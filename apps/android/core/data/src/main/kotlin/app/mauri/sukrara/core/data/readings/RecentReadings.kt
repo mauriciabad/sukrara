@@ -40,7 +40,7 @@ import java.time.Instant
  *   the history at the unlock and then deletes: no gap, and no duplicate (the history keeps one reading per time and
  *   source, so a merge cut short and repeated adds nothing twice).
  *
- * Only this phone's own sensor's readings: never a followed person's ([SourceId.Follower]) or imported ones. Their
+ * Only this phone's own sensor's readings: never another Sukrara's ([SourceId.Relayed]) or imported ones. Their
  * values are health data outside credential-encrypted storage: docs/ARCHITECTURE.md "Android storage" says what that
  * costs. A file of another version is not read (no backwards compatibility): it starts empty.
  */
@@ -73,7 +73,7 @@ class RecentReadings(
         readings: List<Reading>,
         locked: Boolean,
     ) {
-        val own = readings.filter { it.source !in SourceId.Follower && it.source !in SourceId.Imported }
+        val own = readings.filter { it.source !in SourceId.Relayed && it.source !in SourceId.Imported }
         if (own.isEmpty()) return
         mutex.withLock {
             val now = clock.now()
@@ -109,21 +109,15 @@ class RecentReadings(
         return waiting.size
     }
 
-    /** A role change: every reading of [sources] goes, here and in the readings waiting for the unlock. */
-    suspend fun deleteFrom(sources: Set<SourceId>) {
-        if (sources.isEmpty()) return
+    /** A person change: every reading goes, here and in the readings waiting for the unlock. */
+    suspend fun deleteAll() {
         mutex.withLock {
-            val all = loaded()
-            val kept = all.filter { it.source !in sources }
-            if (kept.size != all.size) {
-                current.value = kept
-                recent.save(kept.filter { !it.t.isBefore(clock.now() - KEEP) })
+            if (loaded().isNotEmpty()) {
+                current.value = emptyList()
+                recent.save(emptyList())
             }
             withContext(io) {
-                val waiting = readLocked()
-                if (waiting.any { it.source in sources }) {
-                    FileStore.writeAtomically(lockedFile, encodeLocked(waiting.filter { it.source !in sources }))
-                }
+                if (readLocked().isNotEmpty()) FileStore.writeAtomically(lockedFile, encodeLocked(emptyList()))
             }
         }
     }

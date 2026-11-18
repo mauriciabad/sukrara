@@ -11,7 +11,7 @@ import android.os.UserManager
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.debug.SyntheticSource
 import app.mauri.sukrara.monitor.AlertsHost
 import app.mauri.sukrara.monitor.MonitorHost
@@ -102,7 +102,7 @@ class LockedGraphTest {
             shift = SyntheticSource.shiftFor(Instant.now(), SyntheticSource.TROUGH_MINUTE),
             endsAt = null,
         )
-        runBlocking { host.graph.role.update { it.copy(role = Role.Wearer) } }
+        runBlocking { host.graph.source.update { SourceRecord.of(SourceSpec.YourSensor) } }
     }
 
     private fun alertNotifications(): List<Notification> = shadowOf(nm).allNotifications.filter { it.channelId.startsWith("alert") }
@@ -123,7 +123,7 @@ class LockedGraphTest {
             assertEquals(host.getString(R.string.monitor_locked_boot_monitoring_title), notice.extras.getString(Notification.EXTRA_TITLE))
 
             // what the service runs: the source into the hub, the alert runtime on the hub
-            val source = requireNotNull(graph.monitor.source(Role.Wearer))
+            val source = requireNotNull(graph.monitor.source(SourceSpec.YourSensor))
             running.launch { graph.monitor.hubImpl.attach(source) }
             requireNotNull(host.awaitAlerts()).attach(running)
             withTimeout(15_000) {
@@ -182,7 +182,7 @@ class LockedGraphTest {
     @Test
     fun `a follower doesn't monitor before the unlock, the waiting notice stands in`() =
         runBlocking {
-            host.graph.role.update { it.copy(role = Role.Follower) }
+            host.graph.source.update { SourceRecord.of(SourceSpec.TheirSukrara) }
             host.graph.monitorReady.start()
             assertFalse(host.graph.monitorsLocked.await())
             // what the hub's readings take their trend from: a follower's *Settings from* is credential-encrypted, so
@@ -198,17 +198,17 @@ class LockedGraphTest {
             LockedBootReceiver.lockedBootCompleted(host, LockedBootReceiver.lockedBoot(host))
             assertNull("no plan saved: nothing set up showed", shadowOf(nm).getNotification(NotificationIds.LOCKED_BOOT))
             assertNull(shadowOf(host).nextStartedService)
-            assertNull(host.graph.monitor.source(Role.Follower))
+            assertNull(host.graph.monitor.source(SourceSpec.TheirSukrara))
             assertEquals(emptyList<Throwable>(), crashes.toList())
         }
 
     @Test
     fun `with nothing paired the wearer's phone doesn't monitor before the unlock`() =
         runBlocking {
-            host.graph.role.update { it.copy(role = Role.Wearer) }
+            host.graph.source.update { SourceRecord.of(SourceSpec.YourSensor) }
             host.graph.monitorReady.start()
             assertFalse(host.graph.monitorsLocked.await())
-            assertEquals("the hub runs on device-protected storage", Role.Wearer, host.graph.monitor.hub.state.value.role)
+            assertEquals("the hub runs on device-protected storage", SourceSpec.YourSensor, host.graph.monitor.hub.state.value.spec)
             assertNull(host.awaitAlerts())
             assertEquals(emptyList<Throwable>(), crashes.toList())
         }

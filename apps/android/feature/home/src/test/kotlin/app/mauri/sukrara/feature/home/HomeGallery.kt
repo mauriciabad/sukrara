@@ -30,10 +30,10 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.LinkState
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorAction
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
@@ -104,7 +104,7 @@ class HomeGallery {
         )
 
     private val states: List<Pair<String, HomeUiState>> by lazy {
-        val follower = Samples.wearer().copy(role = Role.Follower, link = LinkState("Ana", NOW.minusSeconds(40)))
+        val follower = Samples.wearer().copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", NOW.minusSeconds(40)))
         listOf(
             "in-range" to ui(Samples.wearer(), withTreatments = true),
             "low" to ui(Samples.wearer(last = 62)),
@@ -131,7 +131,12 @@ class HomeGallery {
                     banner = BannerKind.MonitoringStopped,
                 ),
             "wearer-silent" to
-                ui(Samples.wearer(ageMin = 30).copy(role = Role.Follower, link = LinkState("Ana", NOW.minus(Duration.ofMinutes(30))))),
+                ui(
+                    Samples
+                        .wearer(
+                            ageMin = 30,
+                        ).copy(spec = SourceSpec.TheirSukrara, link = LinkState("Ana", NOW.minus(Duration.ofMinutes(30)))),
+                ),
             "link-revoked" to ui(follower.copy(link = LinkState("Ana", NOW.minus(Duration.ofMinutes(5)), revoked = true))),
             "follower" to ui(follower),
             "muted" to ui(Samples.wearer().copy(alerts = AlertUiState(mutedUntil = NOW.plus(Duration.ofMinutes(72))))),

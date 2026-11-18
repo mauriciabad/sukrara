@@ -17,6 +17,7 @@ import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.avatar.AvatarImage
 import app.mauri.sukrara.designsystem.banner.Banner
 import app.mauri.sukrara.designsystem.banner.BannerChoice
@@ -29,6 +30,7 @@ import app.mauri.sukrara.designsystem.rows.CategoryIcon
 import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.titleRes
+import app.mauri.sukrara.designsystem.source.sourceSummary
 import app.mauri.sukrara.feature.settings.follower.SettingsFromState
 import app.mauri.sukrara.feature.settings.follower.settingsFromLabel
 import app.mauri.sukrara.feature.settings.search.OtherPage
@@ -43,6 +45,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 /** Where the overview's rows lead. */
 class OverviewActions(
     val open: (SettingsRoute) -> Unit = {},
+    /** Settings › Source: whose glucose and where it comes from (the app's page). */
+    val openSource: () -> Unit = {},
     val openSensor: () -> Unit = {},
     val openSharing: () -> Unit = {},
     val openApps: () -> Unit = {},
@@ -78,7 +82,7 @@ class OverviewActions(
 /**
  * The settings overview: *Share your data with your clinic* until set up, Mute all's state with Unmute, then one row per
  * page in the order of docs/35 (as AOSP Settings' homepage, `top_level_settings.xml`: groups of coloured icons, each
- * row titled as the page it opens): [Alerts · Alert reliability] [Settings from · Readings · Graph · Metrics] [Status
+ * row titled as the page it opens): [Alerts · Alert reliability] [Source] [Settings from · Readings · Graph · Metrics] [Status
  * bar · Lock screen] [Sensor · Sensor end · Insulin pens] [Sharing · Share with apps · Backup · Import and export]
  * [Show closed tips · Advanced · About].
  */
@@ -108,6 +112,9 @@ fun SettingsOverviewContent(
     blocked: List<BlockedFeature> = emptyList(),
     /** What About's row says: the version, or the update waiting. */
     about: OverviewAbout = OverviewAbout(),
+    /** What the phone runs on (the *Source* row's summary) and the name of the person a stream follows. */
+    source: SourceSpec? = null,
+    sourceName: String? = null,
     onBack: () -> Unit,
 ) {
     val snackbar = remember { SnackbarHostState() }
@@ -123,6 +130,7 @@ fun SettingsOverviewContent(
             onOpen = { path -> path.forEach(actions.open) },
             onOpenOther = {
                 when (it) {
+                    OtherPage.Source -> actions.openSource()
                     OtherPage.Sensor -> actions.openSensor()
                     OtherPage.Sharing -> actions.openSharing()
                     OtherPage.Apps -> actions.openApps()
@@ -249,6 +257,15 @@ fun SettingsOverviewContent(
                     readiness.firstProblem?.let { stringResource(R.string.st_overview_reliability_problem, readiness.missing.size) }
                         ?: stringResource(R.string.st_reliability_ready),
                 leading = { SectionIcon(Section.Reliability) },
+            )
+        }
+        // where the glucose comes from (docs/44): the in of *Share with apps*' out, right after what alerts need
+        SettingsGroup {
+            NavigationRow(
+                stringResource(R.string.st_source_title),
+                actions.openSource,
+                summary = source?.let { sourceSummary(it, sourceName) } ?: stringResource(R.string.st_source_not_chosen),
+                leading = { SectionIcon(Section.Source) },
             )
         }
         SettingsGroup {

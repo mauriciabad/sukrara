@@ -73,26 +73,28 @@ class ServiceIconRowsTest {
     }
 
     @Test
-    fun readingSourceRadiosShowJugglucoAndThePhone() {
+    fun theSourcePageShowsJugglucosOwnIcon() {
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
-                SensorSettingsContent(
-                    SensorSettingsState(
-                        SourceChoice.Libre3Direct,
-                        SensorState.Active(now.plusSeconds(9 * 86_400)),
-                        SensorSummary("3MH00SYNTH1", now.minusSeconds(5 * 86_400), now.plusSeconds(9 * 86_400)),
-                        null,
+                app.mauri.sukrara.feature.settings.source.SourcePageContent(
+                    app.mauri.sukrara.feature.settings.source.SourcePageState(
+                        app.mauri.sukrara.core.model.SourceSpec(
+                            app.mauri.sukrara.core.model.Person.Yours,
+                            app.mauri.sukrara.core.model.SourceKind.PhoneApp,
+                        ),
+                        answered = true,
                     ),
+                    null,
                     now,
-                    zone,
+                    app.mauri.sukrara.feature.settings.source
+                        .SourceActions(),
                     SensorSettingsActions(),
-                ) {}
+                )
             }
         }
-        assertRowIcon("Juggluco", serviceIconTag(Service.Juggluco))
-        assertRowIcon("This phone reads the sensor", ROW_ICON_TAG)
-        compose.onNode(hasText("Juggluco") and hasAnyAncestor(hasTestTag(ROW_TAG))).performScrollTo()
-        capture("sensor")
+        assertRowIcon("Where it comes from", serviceIconTag(Service.Juggluco))
+        assertRowIcon("Whose glucose", ROW_ICON_TAG)
+        capture("source")
     }
 
     @Test

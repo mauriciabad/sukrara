@@ -128,7 +128,7 @@ class EngineOwnerSharing(
     private val diag: (String) -> Unit = {},
     private val now: () -> Long,
 ) : OwnerSharing {
-    /** The app starts the engine for a wearer (`followRole`); setup only reads its state. */
+    /** The app starts the engine for a wearer (`followSource`); setup only reads its state. */
     override val state: StateFlow<OwnerShareState> get() = engine.state
 
     override suspend fun startFresh(

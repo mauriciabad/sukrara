@@ -4,8 +4,8 @@
 package app.mauri.sukrara.integrations.healthconnect
 
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
@@ -26,7 +26,7 @@ class HealthConnectSyncTest {
     private val clock = FakeClock(now)
     private val readings = InMemoryReadingsRepository()
     private val store = InMemoryStateStore(HcState())
-    private val role = MutableStateFlow<Role?>(Role.Wearer)
+    private val role = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
     private val health = FakeHealth()
     private val sync = HealthConnectSync(InMemorySettingsRepository(), store, readings, role, health, clock, Dispatchers.Unconfined) {}
 
@@ -139,10 +139,10 @@ class HealthConnectSyncTest {
 
     @Test fun `a follower's phone writes nothing and says so`() =
         runBlocking {
-            role.value = Role.Follower
+            role.value = SourceSpec.TheirSukrara
             assertEquals(HcStatus.Follower, sync.status.first())
             health.available = false
-            role.value = Role.Wearer
+            role.value = SourceSpec.YourSensor
             assertEquals(HcStatus.Unavailable, sync.status.first())
         }
 

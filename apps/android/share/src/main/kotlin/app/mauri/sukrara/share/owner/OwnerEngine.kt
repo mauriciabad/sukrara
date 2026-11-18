@@ -5,7 +5,6 @@ package app.mauri.sukrara.share.owner
 
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseHub
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.protocol.PublicKeyHex
@@ -352,7 +351,7 @@ class OwnerEngine(
 
     private suspend fun readingsFrom(hub: GlucoseHub) {
         hub.state
-            .filter { it.role == Role.Wearer }
+            .filter { it.spec?.owner == true }
             .map { it.recent }
             .distinctUntilChanged()
             .collect { recent -> locked { owner?.let { publishReadings(readings.onReadings(it, recent, now())) } } }
@@ -702,7 +701,7 @@ class OwnerEngine(
      * stopped here, so a notification can't turn the wearer's sharing on or off, whatever the process state (#167: the
      * answer used to start the engine itself and stop it when done, which in a process the tap had just started could
      * stop the sharing the role had started meanwhile). In such a process it first waits, at most [waitMs], for the
-     * role's start (AppGraph's `followRole`) to load the identity. False when it didn't happen: sharing doesn't run on
+     * source's start (AppGraph's `followSource`) to load the identity. False when it didn't happen: sharing doesn't run on
      * this phone (not the wearer's, no identity), the request isn't waiting any more, it needs the app (a code to type
      * or compare), sharing is paused, the invite expired.
      */

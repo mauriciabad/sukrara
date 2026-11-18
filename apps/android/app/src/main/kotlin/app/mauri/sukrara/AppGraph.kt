@@ -21,9 +21,11 @@ import app.mauri.sukrara.core.model.DefaultDispatchers
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.LinkPath
 import app.mauri.sukrara.core.model.PenDuplicates
+import app.mauri.sukrara.core.model.Person
 import app.mauri.sukrara.core.model.ReadingSource
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemClock
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
@@ -102,7 +104,7 @@ import app.mauri.sukrara.share.follower.FollowerNotifications
 import app.mauri.sukrara.share.follower.WearerSettingsCache
 import app.mauri.sukrara.share.owner.OwnerShareState
 import app.mauri.sukrara.share.owner.SeenWraps
-import app.mauri.sukrara.share.owner.followRole
+import app.mauri.sukrara.share.owner.followSource
 import app.mauri.sukrara.share.owner.requests.AndroidRequestNotifications
 import app.mauri.sukrara.widgets.WidgetPlacements
 import app.mauri.sukrara.widgets.WidgetsModule
@@ -143,12 +145,12 @@ import java.time.Instant
  *
  * - Each area owns ONE module class in its own Gradle module (e.g. `DataModule` in `:core:data`, `MonitorModule` in
  *   `:monitor`) that builds its objects from constructor parameters. `AppGraph` only composes them, in dependency
- *   order (data → role → sensor → monitor → alerts → home → …): one `val x by lazy { XModule(…) }` block per module.
+ *   order (data → source → sensor → monitor → alerts → home → …): one `val x by lazy { XModule(…) }` block per module.
  * - Built in [App.onCreate] on the main thread, so the constructor does no I/O: everything is `lazy`, and work
  *   that reads disk happens in [monitorReady] and [ready] on the IO dispatcher.
  * - [scope] lives as long as the process; a failing child doesn't cancel the others.
  * - **Before the first unlock after a restart** ([unlocked] false, docs/30-direct-boot.md, #160) only the part that
- *   needs nothing but device-protected storage runs: the role, the hub (its readings from `HubReadings`), the sensor
+ *   needs nothing but device-protected storage runs: the source, the hub (its readings from `HubReadings`), the sensor
  *   source, the monitor (service, glucose notification) and the alert runtime, on the wearer's phone reading its own
  *   sensor ([monitorsLocked]). Their credential-encrypted inputs (treatments, sharing, the follower engine) wait
  *   ([whenUnlocked]); nothing else is built. At the unlock ([onUnlocked]) the readings taken before it go into the
@@ -192,11 +194,11 @@ class AppGraph(
     private fun <T> onceUnlocked(after: () -> Flow<T>): Flow<T> = unlocked.flatMapLatest { if (it) after() else emptyFlow() }
 
     /**
-     * A follower's phone: how the wearer's readings come now (home's header mark), from the Bluetooth link and the relays;
-     * null on a wearer's phone and before the unlock (the follower engine is credential-encrypted).
+     * A Sukrara stream: how the other phone's readings come now (home's header mark), from the Bluetooth link and the
+     * relays; null for every other source and before the unlock (the follower engine is credential-encrypted).
      */
     private fun followPath(): Flow<LinkPath?> =
-        combine(role.data.map { it.role }, unlocked) { r, u -> r == Role.Follower && u }
+        combine(spec, unlocked) { r, u -> r?.stream == true && u }
             .distinctUntilChanged()
             .flatMapLatest { on ->
                 if (!on) {
@@ -213,10 +215,10 @@ class AppGraph(
     private val sourceChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     /**
-     * The readings as the current role sees them (`DataModule.readingsFor`): another person's never reach the hub,
-     * the history, the report, the export or an upload, even right after a role change.
+     * The readings (the current person's: a change of whose glucose deletes the others), with THE trend: what the
+     * history, the report, the export and the uploads read.
      */
-    val readings by lazy { TrendReadings(data.readingsFor(role.data.map { it.role }), trendSetting) }
+    val readings by lazy { TrendReadings(data.readings, trendSetting) }
 
     /**
      * The *Trend arrow* in use (`glucose.trend`; a follower's per *Settings from*): every read of [readings] and the
@@ -230,20 +232,89 @@ class AppGraph(
     /**
      * THE hub's readings ([app.mauri.sukrara.core.data.readings.HubReadings]): [readings] once [unlocked], before that
      * this phone's own recent readings in device-protected storage; every own reading also stays there for the next
-     * restart. A role change's clean-up goes through it too.
+     * restart. A change of whose glucose clears it too.
      */
-    val hubReadings by lazy { data.hubReadings(role.data.map { it.role }) }
+    val hubReadings by lazy { data.hubReadings() }
 
     /**
-     * The phone's role, chosen in first-run setup (written with `role.update`); null = setup not done. Two
-     * copies, so one damaged file (reported on home) never stops monitoring ([RoleStore]).
+     * Whose glucose and where from (docs/44 "Person × Source"), as answered in setup or Settings › Source (written with
+     * `source.update`); empty = not answered. Two copies, so one damaged file (reported on home) never stops
+     * monitoring ([SourceStore]).
      */
-    val role by lazy {
-        RoleStore(
-            primary = data.typedStore("role", RoleRecord.serializer(), RoleRecord(), whenCorrupt = RoleRecord()),
-            backup = data.typedStore("role-backup", RoleRecord.serializer(), RoleRecord(), whenCorrupt = RoleRecord()),
+    val source by lazy {
+        SourceStore(
+            primary = data.typedStore("source", SourceRecord.serializer(), SourceRecord(), whenCorrupt = SourceRecord()),
+            backup = data.typedStore("source-backup", SourceRecord.serializer(), SourceRecord(), whenCorrupt = SourceRecord()),
         )
     }
+
+    /**
+     * What this phone is already set up to read while no answer is stored ([inferSource]); null inside = nothing (a new
+     * install: setup asks), a null value = not decided yet.
+     */
+    private val inferred = MutableStateFlow<Inferred?>(null)
+
+    private data class Inferred(val spec: SourceSpec?)
+
+    /** [spec] once read ([SpecLoad.spec] null = no source): screens that wait for it before drawing. */
+    val specLoaded: Flow<SpecLoad> by lazy { spec.map(::SpecLoad) }
+
+    /**
+     * THE source everything runs on: the answer, else what the phone is already set up to read (an install updated
+     * from before the question, a damaged file): monitoring never stops for want of an answer, and setup asks once
+     * more, preselected with it. Waits for that decision (made in [monitorReady]), so nothing sees "no source" first.
+     */
+    val spec: Flow<SourceSpec?> by lazy {
+        source.data
+            .map { it.spec }
+            .distinctUntilChanged()
+            .flatMapLatest { s -> if (s != null) flowOf(s) else inferred.filterNotNull().map { it.spec } }
+            .distinctUntilChanged()
+    }
+
+    /**
+     * What this phone reads when no answer is stored: following another Sukrara (once unlocked: the follow is
+     * credential-encrypted), a sensor pairing (only setup's sensor step makes one), or Juggluco on this phone after
+     * setup began (its welcome answered). Not a migration: today's facts of the modules that hold them, read again at
+     * every start, so a damaged source file never stops monitoring either. Nothing found = a new install (setup asks).
+     */
+    private suspend fun inferSource() {
+        if (source.data.first().spec != null) return run { inferred.value = Inferred(null) }
+        val found =
+            when {
+                unlocked.value && follower.engine.isFollowing() -> {
+                    SourceSpec.TheirSukrara
+                }
+
+                sensor.pairings.exists() -> {
+                    SourceSpec.YourSensor
+                }
+
+                unlocked.value &&
+                    setup.setupStore.data
+                        .first()
+                        .completed
+                        .isNotEmpty() && jugglucoInstalled() -> {
+                    SourceSpec(Person.Yours, SourceKind.PhoneApp)
+                }
+
+                else -> {
+                    null
+                }
+            }
+        inferred.value = Inferred(found)
+    }
+
+    /**
+     * The sensor screens chose another source (pairing a sensor, *Use Juggluco*): stored for the same person when it can
+     * bring that person's glucose, else as yours (setup's rules: a change of whose glucose deletes the other's history).
+     */
+    private suspend fun setSourceKind(kind: SourceKind) {
+        val person = spec.first()?.person ?: Person.Yours
+        setup.sources.set(SourceSpec.of(person, kind) ?: SourceSpec(Person.Yours, kind))
+    }
+
+    private fun jugglucoInstalled(): Boolean = app.packageManager.getLaunchIntentForPackage(JUGGLUCO_PACKAGE) != null
 
     val sensor by lazy {
         SensorModule(
@@ -252,7 +323,8 @@ class AppGraph(
             // losing it only asks for the LibreView sign-in again
             receiverIds = data.typedStore("receiver-ids", ReceiverIdState.serializer(), ReceiverIdState(), ReceiverIdState()),
             libreViewLogin = data.libreViewLogin,
-            sourceKind = data.settings.flow(SensorSource).map(SensorSourceKind::fromId),
+            // Juggluco on this phone is read through the sensor module's source; every other source reads the sensor
+            sourceKind = spec.map { if (it?.kind == SourceKind.PhoneApp) SensorSourceKind.Juggluco else SensorSourceKind.Direct },
             http = data.http,
             clock = clock,
             dispatchers = dispatchers,
@@ -275,7 +347,7 @@ class AppGraph(
                     MonitorRecord(),
                     whenCorrupt = MonitorRecord(startedAtEpochMs = clock.now().toEpochMilli()),
                 ),
-            role = role.data.map { it.role },
+            spec = spec,
             source = ::readingSource,
             canMonitor = ::canMonitor,
             settings = followerSettings.settings,
@@ -363,7 +435,7 @@ class AppGraph(
 
                     override suspend fun update(transform: (AlertSettings) -> AlertSettings) = alerts.store.updateSettings(transform)
                 },
-            role = role.data.map { it.role },
+            role = spec,
             unlocked = unlocked,
             wearer = flow { emitAll(follower.engine.wearerSettings) },
             wearerName = flow { emitAll(monitor.hub.state) }.map { it.link?.wearerName }.distinctUntilChanged(),
@@ -431,9 +503,11 @@ class AppGraph(
             sensorCalendar = { sensorCalendar },
             // Share with apps' rows, which the settings search finds too (their strings are :integrations')
             moreSearch = AppsSearch.entries,
+            source = spec,
+            sourceName = flow { emitAll(monitor.hub.state) }.map { it.link?.wearerName }.distinctUntilChanged(),
             advanced = {
                 AppAdvanced(
-                    role.data.map { it.role },
+                    spec,
                     shareOwner.ownerEngine,
                     follower.engine,
                     shareOwner.crypto,
@@ -445,7 +519,7 @@ class AppGraph(
                 )
             },
             overviewSharing =
-                combine(role.data, shareOwner.ownerEngine.state) { r, own ->
+                combine(spec, shareOwner.ownerEngine.state) { r, own ->
                     val sharing = own as? OwnerShareState.Sharing
                     val backup =
                         when (own) {
@@ -454,7 +528,7 @@ class AppGraph(
                             is OwnerShareState.AnotherAppSharingAsYou -> BackupState.Paused
                             OwnerShareState.Loading, OwnerShareState.NoIdentity -> BackupState.NoIdentity
                         }
-                    OverviewSharing(r.role != Role.Follower, sharing?.profile?.name, sharing?.profile?.avatar, backup)
+                    OverviewSharing(r?.owner != false, sharing?.profile?.name, sharing?.profile?.avatar, backup)
                 },
             alertPlayback =
                 object : AlertPlayback {
@@ -563,8 +637,8 @@ class AppGraph(
                     }
                 }.filterNotNull().distinctUntilChanged(),
             libreViewLogin = data.libreViewLogin,
-            role = role.data.map { it.role },
-            jugglucoIsSource = data.settings.flow(SensorSource).map { SensorSourceKind.fromId(it) == SensorSourceKind.Juggluco },
+            role = spec,
+            jugglucoIsSource = spec.map { it?.kind == SourceKind.PhoneApp },
             http = data.http,
             clock = clock,
             dispatchers = dispatchers,
@@ -583,7 +657,7 @@ class AppGraph(
         SensorUiModule(
             app,
             sensor,
-            data.settings,
+            ::setSourceKind,
             clock,
             scope,
             glucose = monitor.hub.state,
@@ -596,8 +670,8 @@ class AppGraph(
         SetupModule(
             context = app,
             setupStore = data.typedStore("setup", SetupRecord.serializer(), SetupRecord(), whenCorrupt = SetupRecord()),
-            // the hub's readings: a role change also clears this phone's recent readings kept for the next restart
-            roles = AppRoles(role, hubReadings, data.treatments),
+            // the hub's readings: a change of whose glucose also clears this phone's recent readings kept for the next restart
+            sources = AppSources(source, spec, hubReadings, data.treatments),
             hub = monitor.hub,
             sharing =
                 EngineOwnerSharing(shareOwner.ownerEngine, scope, data.settings, diag = { data.diagLog.log("sharing", it) }) {
@@ -615,7 +689,10 @@ class AppGraph(
                     follower.engine,
                     resetMonitoring = ::resetMonitoring,
                     startMonitoring = { startMonitoring(StartReason.App) },
-                    clearRole = { role.update { it.copy(role = null) } },
+                    clearRole = {
+                        inferred.value = Inferred(null)
+                        source.update { SourceRecord() }
+                    },
                 ),
             // the updates step (the GitHub version only)
             updates = updateSuggestion?.setup(),
@@ -626,7 +703,7 @@ class AppGraph(
         )
     }
 
-    /** The follower role: joins, the wearer's stream while the service runs, Stop following. */
+    /** A Sukrara stream: joins, the other phone's stream while the service runs, Stop following. */
     val follower by lazy {
         val info = NotificationGroups.Group.INFO
         val notifications =
@@ -653,7 +730,7 @@ class AppGraph(
     }
 
     /**
-     * No alarm armed from what came before (a previous role, a follow that ended): alert state and "monitoring since"
+     * No alarm armed from what came before (another person's glucose, a follow that ended): alert state and "monitoring since"
      * go. [fence]: an ending (a follow ended or stopped, nearby codes that differed): readings still on their way from
      * it can't arm no data again (#128); never on a join.
      */
@@ -670,7 +747,7 @@ class AppGraph(
             SensorCalendar(app, record),
             record,
             data.settings,
-            role.data.map { it.role },
+            spec,
             sensor.source.sensorInfo,
             clock,
             scope,
@@ -681,8 +758,8 @@ class AppGraph(
     val sensorSettings by lazy {
         SensorSettingsBridge(
             sensors = SensorModulePort(sensor),
-            settings = data.settings,
-            sourceSetting = SensorSource,
+            spec = spec,
+            setKind = ::setSourceKind,
             scope = scope,
             service =
                 monitor.hub.state
@@ -701,13 +778,13 @@ class AppGraph(
 
     /**
      * THE blocked-features checklist (docs/40): home's banner, Settings' rows and setup read this one instance. Each
-     * feature's state comes from the module that has it, read only on its role.
+     * feature's state comes from the module that has it, read only on the source that has it.
      */
     val featureChecks by lazy {
         AppFeatureChecks(
             app,
             scope,
-            role.data.map { it.role },
+            spec,
             sharing =
                 AppFeatureChecks.Port(
                     { shareOwner.ownerEngine.nearbyStatus },
@@ -849,7 +926,7 @@ class AppGraph(
     val treatments: TreatmentsModule by lazy {
         TreatmentsModule(
             data.treatments,
-            ShareTreatmentSync(shareOwner, follower.engine, role.data.map { it.role }, scope),
+            ShareTreatmentSync(shareOwner, follower.engine, spec, scope),
             clock,
             home.glucose,
             data.settings,
@@ -946,7 +1023,7 @@ class AppGraph(
                 },
             settings = data.settings,
             clock = clock,
-            roleSource = role.data.map { it.role },
+            roleSource = spec,
             scope = scope,
             ports =
                 PenNotificationPorts(
@@ -961,25 +1038,32 @@ class AppGraph(
 
     /**
      * The part that needs only device-protected storage, so it also runs before the first unlock after a restart: the
-     * role and the hub. [App] starts it; the service and the receivers that run then wait for it ([awaitMonitor]).
+     * source and the hub. [App] starts it; the service and the receivers that run then wait for it ([awaitMonitor]).
      */
     val monitorReady: Deferred<Unit> =
         scope.async(dispatchers.io, CoroutineStart.LAZY) {
-            step("role") { role.heal() }
+            step("source") { source.heal() }
+            // never left undecided: [spec] waits for it
+            try {
+                step("infer") { inferSource() }
+            } finally {
+                if (inferred.value == null) inferred.value = Inferred(null)
+            }
             step("monitor") { monitor.ready() }
         }
 
     /**
      * Before the first unlock after a restart: whether this phone monitors now, decided once per process (nothing can
-     * change the role or the pairing while it's locked). The wearer reading their own sensor does: the pairing, the
-     * alert settings and state are device-protected (#160). A follower doesn't (its sharing identity stays
-     * credential-encrypted), nor Juggluco as the source (it doesn't run before the unlock either): the locked-boot
-     * notice and its *No data* alarm stand in for them.
+     * change the source or the pairing while it's locked). Your own sensor read here does: the pairing, the alert settings
+     * and state are device-protected (#160). A Sukrara stream doesn't (its sharing identity stays credential-encrypted),
+     * nor Juggluco (it doesn't run before the unlock either): the locked-boot notice and its *No data* alarm stand in for
+     * them.
      */
     val monitorsLocked: Deferred<Boolean> =
         scope.async(dispatchers.io, CoroutineStart.LAZY) {
             monitorReady.await()
-            !unlocked.value && role.data.first().role == Role.Wearer && canMonitor(Role.Wearer)
+            val s = spec.first()
+            !unlocked.value && s?.readsSensor == true && canMonitor(s)
         }
 
     /**
@@ -1016,8 +1100,8 @@ class AppGraph(
             // a version change replaced the database with an empty one: Import history is offered again
             step("history") { if (data.databaseReplaced.value) setup.offerHistoryAgain() }
             monitorReady.await()
-            // a reading of the previous role that landed after the role change's clean-up
-            step("role") { hubReadings.deleteFrom(SourceId.notOf(role.data.first().role)) }
+            // the follow and the setup record are readable now: what an unanswered install reads is decided again
+            step("infer") { inferSource() }
             step("monitor") { monitor.readyUnlocked() }
             step("widgets") { widgets.start() }
             step("integrations") {
@@ -1031,55 +1115,53 @@ class AppGraph(
             // shows only then: never on and hidden)
             step("sensor tap") {
                 scope.launch {
-                    combine(role.data, data.settings.flow(SensorSource)) { r, source ->
-                        r.role == Role.Wearer && SensorSourceKind.fromId(source) != SensorSourceKind.Juggluco
-                    }.distinctUntilChanged()
+                    spec
+                        .map { it?.owner == true && it.readsSensor }
+                        .distinctUntilChanged()
                         .collect { allowed -> if (!allowed) sensor.tapLaunch.set(false) }
                 }
             }
             // the alerts' source follows *Settings from* (the wearer's alerts, or rules run here)
             step("settingsFrom") { scope.launch { followerSettings.keepAlertSource() } }
-            // sharing runs while this phone is the wearer (needs an identity: created / restored in Settings › Sharing)
-            step("share") { scope.launch { shareOwner.ownerEngine.followRole(role.data.map { it.role }, scope) } }
+            // sharing runs while this phone reads your glucose first-hand (needs an identity: created / restored in
+            // Settings › Sharing)
+            step("share") { scope.launch { shareOwner.ownerEngine.followSource(spec, scope) } }
             step("follower") {
                 follower.engine.load()
                 // a follow that ended (declined, invite used, removed) arms no "no data" alarm for a stream that won't come
                 scope.launch {
                     follower.engine.state.map { it.ended }.distinctUntilChanged().collect { ended ->
-                        if (ended && role.data.first().role == Role.Follower) resetMonitoring(fence = true)
+                        if (ended && spec.first()?.stream == true) resetMonitoring(fence = true)
                     }
                 }
             }
         }
 
     /**
-     * The role's one reading source, or null when nothing is set up to monitor (then the service doesn't run).
-     * Wearer: a debug build's synthetic source when switched on, else the sensor source once a sensor is paired (or
-     * Juggluco is the source). Follower: the follower engine.
+     * The source's one reading source, or null when nothing is set up to monitor (then the service doesn't run). The
+     * sensor or Juggluco: a debug build's synthetic source when switched on, else the sensor source once a sensor is
+     * paired (or Juggluco is the source). A Sukrara stream: the follower engine.
      */
-    private suspend fun readingSource(role: Role): ReadingSource? =
-        when (role) {
-            Role.Wearer -> BuildVariant.wearerSource(this) ?: sensorSource()
+    private suspend fun readingSource(spec: SourceSpec): ReadingSource? =
+        when (spec.kind) {
+            SourceKind.Sensor, SourceKind.PhoneApp -> BuildVariant.wearerSource(this) ?: sensorSource(spec)
 
             // the follower engine's identity and state are credential-encrypted: nothing to follow before the unlock
-            Role.Follower -> if (unlocked.value) follower.engine.takeIf { it.isFollowing() } else null
+            SourceKind.Sukrara -> if (unlocked.value) follower.engine.takeIf { it.isFollowing() } else null
         }
 
     /**
-     * Whether [readingSource] gives the role a source, without building one: no pairing decrypted, no made-up source
-     * built (the starter asks on every start and health check).
+     * Whether [readingSource] gives a source, without building one: no pairing decrypted, no made-up source built (the
+     * starter asks on every start and health check).
      */
-    private suspend fun canMonitor(role: Role): Boolean =
-        when (role) {
-            Role.Wearer -> BuildVariant.hasWearerSource(this) || readsSensor()
-            Role.Follower -> unlocked.value && follower.engine.isFollowing()
+    private suspend fun canMonitor(spec: SourceSpec): Boolean =
+        when (spec.kind) {
+            SourceKind.Sensor, SourceKind.PhoneApp -> BuildVariant.hasWearerSource(this) || readsSensor(spec)
+            SourceKind.Sukrara -> unlocked.value && follower.engine.isFollowing()
         }
 
-    /** Whether the role's source talks to the sensor over Bluetooth: the wearer's own sensor (not Juggluco). */
-    private fun needsBluetooth(): Flow<Boolean> =
-        combine(role.data, data.settings.flow(SensorSource)) { r, source ->
-            r.role == Role.Wearer && SensorSourceKind.fromId(source) != SensorSourceKind.Juggluco
-        }
+    /** Whether the source talks to the sensor over Bluetooth: the sensor Sukrara reads (not Juggluco, not a stream). */
+    private fun needsBluetooth(): Flow<Boolean> = spec.map { it?.readsSensor == true }
 
     /**
      * THE treatments of the last [TREATMENTS_WINDOW] (and any later), the window moving forward every hour: one query
@@ -1110,23 +1192,33 @@ class AppGraph(
         }
     }
 
-    private suspend fun sensorSource(): ReadingSource? =
-        if (readsSensor()) RunWhileAttached(sensor.source, sensor.source::start, sensor.source::stop) else null
+    private suspend fun sensorSource(spec: SourceSpec): ReadingSource? =
+        if (readsSensor(spec)) RunWhileAttached(sensor.source, sensor.source::start, sensor.source::stop) else null
 
     /**
-     * The wearer reads a sensor: Juggluco is the source (not before the first unlock: it doesn't run then, nor does its
-     * secret open), or a sensor is paired (a damaged pairing too: its source shows "scan the sensor again").
+     * The sensor module has something to read: Juggluco is the source (not before the first unlock: it doesn't run
+     * then, nor does its secret open), or a sensor is paired (a damaged pairing too: its source shows "scan the sensor
+     * again").
      */
-    private suspend fun readsSensor(): Boolean {
-        val juggluco = SensorSourceKind.fromId(data.settings.flow(SensorSource).first()) == SensorSourceKind.Juggluco
-        return if (juggluco) unlocked.value else sensor.pairings.exists()
-    }
+    private suspend fun readsSensor(spec: SourceSpec): Boolean =
+        if (spec.kind ==
+            SourceKind.PhoneApp
+        ) {
+            unlocked.value
+        } else {
+            sensor.pairings.exists()
+        }
+
+    /** [spec] as read: the source, or null when there is none. */
+    data class SpecLoad(val spec: SourceSpec?)
 
     private companion object {
         val TREATMENTS_WINDOW: Duration = Duration.ofHours(25)
 
         /** A config nobody draws with stops being read after this (a screen rotation keeps it). */
         const val SHARE_STOP_MS = 5_000L
-        val SensorSource = SchemaSettings.text("source.source", SensorSourceKind.Direct.id, SensorSourceKind.entries.map { it.id }.toSet())
+
+        /** Juggluco's package: its launcher shows it is installed (what an unanswered install reads, [inferSource]). */
+        const val JUGGLUCO_PACKAGE = "tk.glucodata"
     }
 }

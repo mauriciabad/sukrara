@@ -186,7 +186,8 @@ class SettingsTransfer(
         /** Android settings the file doesn't carry and reset doesn't touch, with why. */
         val KEPT: Map<String, String> =
             mapOf(
-                "source.source" to "where glucose comes from is the setup: switching it would drop the sensor",
+                "source.person" to "whose glucose this phone shows: changed only in Settings › Source, where it says what it deletes",
+                "source.kind" to "where glucose comes from: changed only in Settings › Source, switching it would drop the sensor",
                 CONFIRMED_ID to "a record of the person's review, not an option (cleared when the alert settings change)",
                 "sharing.nostr" to "who receives the data: changed only on the Sharing page, with the followers in view",
                 "sharing.bleFollowers" to "who receives the data: changed only on the Sharing page, with the followers in view",

@@ -38,9 +38,9 @@ import app.mauri.sukrara.core.model.PenSessionStatus
 import app.mauri.sukrara.core.model.PenTaps
 import app.mauri.sukrara.core.model.PenTypedBy
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.designsystem.pen.PenEntrySheet
 import app.mauri.sukrara.designsystem.pen.PenQuestionCard
@@ -361,7 +361,7 @@ class PenShotsTest {
         val readings = (36 downTo 0).map { i -> Reading(at.minusSeconds(i * 300L), 120 + (i % 7) * 3, 0.2, SourceId("synthetic")) }
         val g =
             GlucoseState.Initial.copy(
-                role = Role.Wearer,
+                spec = SourceSpec.YourSensor,
                 latest = readings.last(),
                 recent = readings,
                 sensor = SensorState.Active(at.plusSeconds(6 * 86400L)),

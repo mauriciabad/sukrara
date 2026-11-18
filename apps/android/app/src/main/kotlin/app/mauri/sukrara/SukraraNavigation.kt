@@ -41,10 +41,14 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.model.NavTargets
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.findActivity
 import app.mauri.sukrara.designsystem.motion.ScreenHost
 import app.mauri.sukrara.designsystem.motion.ScreenMotion
+import app.mauri.sukrara.designsystem.rows.FooterText
+import app.mauri.sukrara.designsystem.rows.NavigationRow
+import app.mauri.sukrara.designsystem.rows.SettingsGroup
+import app.mauri.sukrara.designsystem.source.sourceSummary
 import app.mauri.sukrara.feature.home.DataProblemScreen
 import app.mauri.sukrara.feature.home.HomeAction
 import app.mauri.sukrara.feature.home.HomeScreen
@@ -103,6 +107,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import java.util.concurrent.atomic.AtomicBoolean
+import app.mauri.sukrara.core.designsystem.R as DsR
 import app.mauri.sukrara.feature.settings.R as SettingsR
 import app.mauri.sukrara.feature.sharing.R as SharingR
 import app.mauri.sukrara.integrations.R as IntegrationsR
@@ -396,6 +401,10 @@ data object LibreViewSignInKey : NavKey
 @Serializable
 data object SensorSettingsKey : NavKey
 
+/** Settings › Source: whose glucose and where it comes from, with the source's own rows (docs/44). */
+@Serializable
+data object SourceKey : NavKey
+
 /** Invite links (`sukrara:` / `https://sukrara.mauri.app/join…`) open setup's join step (or say where they work). */
 fun isInviteLink(uri: Uri?): Boolean =
     uri != null &&
@@ -456,12 +465,13 @@ fun SukraraNavigation(
             newSensorShown()
         }
     }
-    // first launch (no role yet): setup opens on top of home; Back on its first step leaves it ("setup incomplete").
-    // Once a role exists setup never opens by itself: home's Finish setup banner resumes a walk left half-way
+    // no answer stored (a first launch, or an install updated from before the question): setup opens on top of home;
+    // Back on its first step leaves it. Once answered setup never opens by itself: home's Finish setup banner resumes a
+    // walk left half-way
     LaunchedEffect(Unit) {
-        if (graph.role.data
+        if (graph.source.data
                 .first()
-                .role == null && SetupRoute !in backStack
+                .spec == null && SetupRoute !in backStack
         ) {
             backStack.add(SetupRoute)
         }
@@ -483,23 +493,17 @@ fun SukraraNavigation(
         val link = deepLink?.toString()
         if (link != null && isInviteLink(deepLink) && link != handledLink) {
             handledLink = link
-            val role =
-                graph.role.data
-                    .first()
-                    .role
+            val spec = graph.spec.first()
             val follow = graph.follower.engine.state.value
-            if (role == Role.Wearer || (role == Role.Follower && follow.following)) {
+            if (spec != null && (!spec.stream || follow.following)) {
                 backStack.push(InviteHereRoute(link))
             } else {
-                // a phone that can follow: setup's join step starts with the link (the role step first if none yet)
+                // a phone that can follow: setup's join step starts with the link (whose glucose and the source first if
+                // there is no source yet)
                 graph.setup.pendingInvite.value = link
-                if (role ==
-                    Role.Follower
-                ) {
+                if (spec?.stream == true) {
                     backStack.push(SetupStepRoute(SetupStep.Join))
-                } else if (SetupRoute !in
-                    backStack
-                ) {
+                } else if (SetupRoute !in backStack) {
                     backStack.add(SetupRoute)
                 }
             }
@@ -529,20 +533,21 @@ fun SukraraNavigation(
                     }
                     entry<SharingRoute> {
                         val close = { backStack.pop(SharingRoute) }
-                        val role by remember(graph.role) { graph.role.data.map { it.role } }
-                            .collectAsStateWithLifecycle(null)
-                        if (role == Role.Follower) {
-                            SettingsPage(stringResource(SharingR.string.sh_following_title), close, scroll = false) {
-                                FollowingPage(
-                                    viewModel = viewModel(factory = FollowingViewModel.factory(graph.setup.follower)),
-                                    links = { DataLinks(DataPage.Sharing, wearer = false) { openData(it, backStack) } },
-                                    onJoinAgain = { backStack.push(SetupStepRoute(SetupStep.Join)) },
-                                    // the role is cleared: setup again, on top of home
-                                    onLeft = {
-                                        backStack.retainAll { it == HomeRoute }
-                                        backStack.add(SetupRoute)
-                                    },
-                                )
+                        val loaded by graph.specLoaded.collectAsStateWithLifecycle(null)
+                        val spec = loaded?.spec
+                        // sharing is your glucose's, read here (docs/44): anywhere else the page says so and leads to Source
+                        if (loaded != null && spec?.owner != true) {
+                            SettingsPage(stringResource(SettingsR.string.st_sharing), close) {
+                                FooterText(stringResource(SettingsR.string.st_sharing_not_here))
+                                SettingsGroup {
+                                    NavigationRow(
+                                        stringResource(SettingsR.string.st_source_title),
+                                        { backStack.push(SourceKey) },
+                                        summary = spec?.let { sourceSummary(it) },
+                                        icon = DsR.drawable.ds_ic_water_drop,
+                                    )
+                                }
+                                DataLinks(DataPage.Sharing, wearer = false) { openData(it, backStack) }
                             }
                             return@entry
                         }
@@ -679,6 +684,7 @@ fun SukraraNavigation(
                             navigate = { backStack.push(SettingsKey.of(it)) },
                             onBack = { backStack.pop(key) },
                             openSensor = { backStack.push(SensorSettingsKey) },
+                            openSource = { backStack.push(SourceKey) },
                             // Settings › Sharing: share / QR, followers, requests (no identity yet: its Set up opens setup)
                             openSharing = { backStack.push(SharingRoute) },
                             openApps = { backStack.push(AppsRoute) },
@@ -708,7 +714,7 @@ fun SukraraNavigation(
                         )
                     }
                     entry<AppsRoute> {
-                        val role by graph.role.data.collectAsStateWithLifecycle(null)
+                        val role by graph.specLoaded.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_apps_title), { backStack.pop(AppsRoute) }) {
                             AppsPage(
                                 viewModel = viewModel(factory = graph.integrations.appsViewModels),
@@ -722,7 +728,7 @@ fun SukraraNavigation(
                                 openGarmin = { backStack.push(GarminRoute) },
                                 openXdrip = { backStack.push(XdripRoute) },
                             )
-                            role?.let { r -> DataLinks(DataPage.Apps, r.role == Role.Wearer) { openData(it, backStack) } }
+                            role?.let { r -> DataLinks(DataPage.Apps, r.spec?.owner == true) { openData(it, backStack) } }
                         }
                     }
                     entry<ImportRoute> {
@@ -766,36 +772,36 @@ fun SukraraNavigation(
                         }
                     }
                     entry<NightscoutUploadRoute> {
-                        val role by graph.role.data.collectAsStateWithLifecycle(null)
+                        val role by graph.specLoaded.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_ns_title), { backStack.pop(NightscoutUploadRoute) }) {
                             role?.let { r ->
-                                NightscoutPage(viewModel(factory = graph.integrations.nightscoutViewModels(r.role == Role.Wearer)))
+                                NightscoutPage(viewModel(factory = graph.integrations.nightscoutViewModels(r.spec?.owner == true)))
                             }
                         }
                     }
                     entry<LibreViewRoute> {
-                        val role by graph.role.data.collectAsStateWithLifecycle(null)
+                        val role by graph.specLoaded.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_lv_title), { backStack.pop(LibreViewRoute) }) {
                             role?.let { r ->
                                 LibreViewPage(
-                                    viewModel(factory = graph.integrations.libreViewViewModels(r.role == Role.Wearer)),
+                                    viewModel(factory = graph.integrations.libreViewViewModels(r.spec?.owner == true)),
                                     openAccount = { backStack.push(LibreViewSignInKey) },
                                 )
                             }
                         }
                     }
                     entry<ExportRoute> {
-                        val role by graph.role.data.collectAsStateWithLifecycle(null)
+                        val role by graph.specLoaded.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_export_title), { backStack.pop(ExportRoute) }) {
-                            role?.let { r -> ExportPage(viewModel(factory = graph.integrations.exportViewModels(r.role == Role.Follower))) }
+                            role?.let { r -> ExportPage(viewModel(factory = graph.integrations.exportViewModels(r.spec?.owner == false))) }
                         }
                     }
                     entry<ExportAllRoute> {
-                        val role by graph.role.data.collectAsStateWithLifecycle(null)
+                        val role by graph.specLoaded.collectAsStateWithLifecycle(null)
                         SettingsPage(stringResource(IntegrationsR.string.in_export_title), { backStack.pop(ExportAllRoute) }) {
                             role?.let { r ->
                                 ExportPage(
-                                    viewModel(factory = graph.integrations.exportViewModels(r.role == Role.Follower, ExportPeriod.All)),
+                                    viewModel(factory = graph.integrations.exportViewModels(r.spec?.owner == false, ExportPeriod.All)),
                                 )
                             }
                         }
@@ -808,6 +814,22 @@ fun SukraraNavigation(
                             onSignIn = { backStack.add(LibreViewSignInKey) },
                             onBack = { backStack.remove(SensorSettingsKey) },
                             onSensorEnd = { backStack.push(SettingsKey.of(SettingsRoute.SensorEnd)) },
+                            onSource = { backStack.push(SourceKey) },
+                        )
+                    }
+                    entry<SourceKey> {
+                        SourceScreen(
+                            graph,
+                            openStep = { backStack.push(SetupStepRoute(it)) },
+                            openSensor = { backStack.push(SensorSettingsKey) },
+                            openImport = { backStack.push(ImportRoute) },
+                            openSettingsFrom = { backStack.push(SettingsKey.of(SettingsRoute.SettingsFrom)) },
+                            // the source is cleared: setup again, on top of home
+                            onLeftStream = {
+                                backStack.retainAll { it == HomeRoute }
+                                backStack.add(SetupRoute)
+                            },
+                            onBack = { backStack.remove(SourceKey) },
                         )
                     }
                     entry<DataProblemsRoute> {

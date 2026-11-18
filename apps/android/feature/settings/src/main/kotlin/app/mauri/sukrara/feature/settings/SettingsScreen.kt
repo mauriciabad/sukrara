@@ -187,6 +187,8 @@ fun SettingsScreen(
     preview: @Composable () -> Unit = {},
     /** Import and export's data rows (Import history, Export data: `:integrations`' rows, drawn by the app). */
     dataRows: @Composable () -> Unit = {},
+    /** Settings › Source (the app's page: it holds another Sukrara's follow too). */
+    openSource: () -> Unit = {},
 ) {
     // the pages are drawn in SPA's SettingsTheme; the glucose card keeps the app's theme (the one renderer, its colours)
     val cardPreview: @Composable () -> Unit = { SukraraTheme { preview() } }
@@ -210,6 +212,7 @@ fun SettingsScreen(
             onReviewFinish,
             cardPreview,
             dataRows,
+            openSource,
         )
     }
 }
@@ -233,6 +236,7 @@ private fun SettingsPages(
     onReviewFinish: (ThresholdReviewResult) -> Unit,
     cardPreview: @Composable () -> Unit,
     dataRows: @Composable () -> Unit,
+    openSource: () -> Unit,
 ) {
     val clock = deps.clock
     when (route) {
@@ -250,6 +254,8 @@ private fun SettingsPages(
             val from by deps.settingsFrom.state.collectAsStateWithLifecycle(null)
             val update by (deps.updates?.state ?: remember { MutableStateFlow(null) }).collectAsStateWithLifecycle()
             val recent = recentSearches(deps)
+            val source by deps.source.collectAsStateWithLifecycle(null)
+            val sourceName by deps.sourceName.collectAsStateWithLifecycle(null)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
                 deps.readiness.refresh()
                 deps.featureChecks.refresh()
@@ -261,6 +267,7 @@ private fun SettingsPages(
                 clock,
                 OverviewActions(
                     open = navigate,
+                    openSource = openSource,
                     openSensor = openSensor,
                     openSharing = openSharing,
                     openApps = openApps,
@@ -292,6 +299,8 @@ private fun SettingsPages(
                 setupExtras = extras,
                 blocked = blocked,
                 about = OverviewAbout(deps.appVersion, (update as? UpdateState.Available)?.release?.version),
+                source = source,
+                sourceName = sourceName,
                 onBack = onBack,
             )
         }

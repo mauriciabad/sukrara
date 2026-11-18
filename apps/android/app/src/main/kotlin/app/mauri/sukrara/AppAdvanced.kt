@@ -6,7 +6,7 @@ package app.mauri.sukrara
 import app.mauri.sukrara.core.data.diag.DiagLog
 import app.mauri.sukrara.core.data.settings.ImportResult
 import app.mauri.sukrara.core.data.settings.SettingsTransfer
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.settings.advanced.AdvancedPort
 import app.mauri.sukrara.feature.settings.advanced.AdvancedState
 import app.mauri.sukrara.feature.settings.advanced.AdvancedStats
@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.mapLatest
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AppAdvanced(
-    private val role: Flow<Role?>,
+    private val role: Flow<SourceSpec?>,
     private val owner: OwnerEngine,
     private val follower: FollowerEngine,
     private val crypto: NostrCrypto,
@@ -58,8 +58,8 @@ class AppAdvanced(
 
     override val state: Flow<AdvancedState> =
         combine(role, owner.state, follower.state, counts) { r, own, follow, stats ->
-            isFollower = r == Role.Follower
-            if (r == Role.Follower) {
+            isFollower = r?.stream == true
+            if (r?.stream == true) {
                 AdvancedState(
                     follower = true,
                     relays = rows((follow as? FollowState.Following)?.relays.orEmpty()),

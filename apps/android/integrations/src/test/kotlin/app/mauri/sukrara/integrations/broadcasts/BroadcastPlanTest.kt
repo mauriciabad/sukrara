@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.broadcasts
 
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryStateStore
@@ -43,7 +43,7 @@ class BroadcastPlanTest {
 
     private fun decide(
         r: LiveReading = live(),
-        role: Role? = Role.Wearer,
+        role: SourceSpec? = SourceSpec.YourSensor,
         state: BcState = BcState(),
         receivers: Map<String, Set<String>> = aaps,
         sensor: CurrentSensor? = this.sensor,
@@ -57,7 +57,7 @@ class BroadcastPlanTest {
     }
 
     @Test fun `nothing from a follower or before a role is known`() {
-        assertEquals(BcDecision.Wait(Hold.Follower), decide(role = Role.Follower))
+        assertEquals(BcDecision.Wait(Hold.Follower), decide(role = SourceSpec.TheirSukrara))
         assertEquals(BcDecision.Wait(Hold.Follower), decide(role = null))
     }
 
@@ -76,15 +76,15 @@ class BroadcastPlanTest {
         val again = LiveReading(121, null, now + Duration.ofSeconds(70), serial, 4320)
         assertEquals(
             BcDecision.Wait(Hold.Repeated),
-            BroadcastPlan.decide(Role.Wearer, again, now + Duration.ofSeconds(70), st, sensor, aaps),
+            BroadcastPlan.decide(SourceSpec.YourSensor, again, now + Duration.ofSeconds(70), st, sensor, aaps),
         )
         val tooSoon = LiveReading(121, null, now + Duration.ofSeconds(30), serial, 4321)
         assertEquals(
             BcDecision.Wait(Hold.TooSoon),
-            BroadcastPlan.decide(Role.Wearer, tooSoon, now + Duration.ofSeconds(30), st, sensor, aaps),
+            BroadcastPlan.decide(SourceSpec.YourSensor, tooSoon, now + Duration.ofSeconds(30), st, sensor, aaps),
         )
         val next = LiveReading(121, null, now + Duration.ofSeconds(60), serial, 4321)
-        assertTrue(BroadcastPlan.decide(Role.Wearer, next, now + Duration.ofSeconds(60), st, sensor, aaps) is BcDecision.Send)
+        assertTrue(BroadcastPlan.decide(SourceSpec.YourSensor, next, now + Duration.ofSeconds(60), st, sensor, aaps) is BcDecision.Send)
     }
 
     @Test fun `a clock moved back doesn't stop sending forever`() {
@@ -106,7 +106,7 @@ class BroadcastPlanTest {
         // only gdh received it (xdrip's send failed): xdrip gets it again next time
         val st = BroadcastPlan.after(BcState(), first, 4320, mapOf("gdh" to listOf(LIBRE_ACTIVATE, LIBRE), "xdrip" to listOf(LIBRE)))
         val next = LiveReading(121, null, now + Duration.ofMinutes(1), serial, 4321)
-        val second = BroadcastPlan.decide(Role.Wearer, next, now + Duration.ofMinutes(1), st, sensor, libre) as BcDecision.Send
+        val second = BroadcastPlan.decide(SourceSpec.YourSensor, next, now + Duration.ofMinutes(1), st, sensor, libre) as BcDecision.Send
         assertEquals(listOf(LIBRE_ACTIVATE, LIBRE), second.actions["xdrip"])
         assertEquals(listOf(LIBRE), second.actions["gdh"])
         // the sensor's start unknown (or another sensor's): no activation, no start in the reading
@@ -153,7 +153,7 @@ class BroadcastPlanTest {
                     store,
                     emptyFlow(),
                     flowOf(sensor),
-                    flowOf(Role.Wearer),
+                    flowOf(SourceSpec.YourSensor),
                     apps,
                     clock,
                     Dispatchers.Unconfined,
@@ -189,7 +189,7 @@ class BroadcastPlanTest {
                         InMemoryStateStore(BcState()),
                         emptyFlow(),
                         flowOf(sensor),
-                        flowOf(Role.Wearer),
+                        flowOf(SourceSpec.YourSensor),
                         apps,
                         FakeClock(now),
                         Dispatchers.Unconfined,

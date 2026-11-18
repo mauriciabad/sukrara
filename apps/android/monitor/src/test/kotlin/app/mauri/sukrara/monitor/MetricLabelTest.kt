@@ -9,9 +9,9 @@ import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.monitor.alerts.AlertNotifier
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent
@@ -45,7 +45,7 @@ class MetricLabelTest {
         val reading = Reading(now.minusSeconds(ageS), 62, rate, SourceId.Libre3).trended()
         val state =
             GlucoseState.Initial.copy(
-                role = Role.Wearer,
+                spec = SourceSpec.YourSensor,
                 latest = reading,
                 recent = listOf(reading),
                 sensor = SensorState.Active(null),

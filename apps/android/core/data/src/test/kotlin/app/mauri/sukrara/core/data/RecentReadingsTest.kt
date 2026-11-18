@@ -99,13 +99,13 @@ class RecentReadingsTest {
         }
 
     @Test
-    fun `a role change removes the old role's readings everywhere`() =
+    fun `a change of whose glucose removes every reading everywhere`() =
         runTest {
             val recent = store()
             recent.add(listOf(at(3), at(2, source = SourceId("synthetic"))), locked = true)
-            recent.deleteFrom(setOf(SourceId.Libre3))
-            assertEquals(listOf(at(2, source = SourceId("synthetic"))), recent.window(Instant.EPOCH).first())
-            assertEquals(listOf(at(2, source = SourceId("synthetic"))), store().lockedReadings())
-            assertEquals(listOf(at(2, source = SourceId("synthetic"))), store().window(Instant.EPOCH).first())
+            recent.deleteAll()
+            assertEquals(emptyList<Reading>(), recent.window(Instant.EPOCH).first())
+            assertEquals(emptyList<Reading>(), store().lockedReadings())
+            assertEquals(emptyList<Reading>(), store().window(Instant.EPOCH).first())
         }
 }

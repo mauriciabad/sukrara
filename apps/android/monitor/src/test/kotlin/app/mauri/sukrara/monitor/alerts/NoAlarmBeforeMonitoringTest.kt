@@ -5,7 +5,7 @@ package app.mauri.sukrara.monitor.alerts
 
 import app.mauri.sukrara.alerts.AlertGroup
 import app.mauri.sukrara.core.model.GlucoseState
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -60,7 +60,7 @@ class NoAlarmBeforeMonitoringTest {
             runtime.tick()
             assertEquals("no_data", rig.presenter.slots[AlertGroup.NO_DATA])
             // the source reports no sensor (removed / monitoring stopped on purpose): the hub clears monitoringStartedAt
-            runtime.onState(GlucoseState.Initial.copy(role = Role.Wearer, latest = null, monitoringStartedAt = null))
+            runtime.onState(GlucoseState.Initial.copy(spec = SourceSpec.YourSensor, latest = null, monitoringStartedAt = null))
             assertNull(rig.presenter.slots[AlertGroup.NO_DATA])
             assertNull(rig.alarm.at)
         }

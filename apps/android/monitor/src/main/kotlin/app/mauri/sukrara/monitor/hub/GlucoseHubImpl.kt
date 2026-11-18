@@ -13,10 +13,11 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
@@ -56,7 +57,7 @@ data class MonitorRecord(
 
 /**
  * The one glucose state source ([GlucoseHub]). Its inputs:
- *  - the phone's role (setting),
+ *  - whose glucose and where from (the source store),
  *  - the stored readings of the last [WINDOW] (`ReadingsRepository`, which every accepted reading goes through first),
  *  - [MonitorRecord] (when monitoring started),
  *  - exactly one attached [ReadingSource] at a time ([attach], run by the monitoring service),
@@ -71,7 +72,7 @@ class GlucoseHubImpl(
     private val clock: Clock,
     private val readings: ReadingsRepository,
     private val record: StateStore<MonitorRecord>,
-    private val role: kotlinx.coroutines.flow.Flow<Role?>,
+    private val spec: kotlinx.coroutines.flow.Flow<SourceSpec?>,
 ) : GlucoseHub {
     private val serial = dispatchers.default.limitedParallelism(1)
     private val mutableState = MutableStateFlow(GlucoseState.Initial)
@@ -87,17 +88,17 @@ class GlucoseHubImpl(
 
     private val inputsLoaded = CompletableDeferred<Unit>()
 
-    /** Completes once the role and the record have been read (after [start]). */
+    /** Completes once the source and the record have been read (after [start]). */
     suspend fun awaitInputs() = inputsLoaded.await()
 
-    /** Follows the role, the stored readings and the record. Call once, after the app's storage is ready. */
+    /** Follows the source, the stored readings and the record. Call once, after the app's storage is ready. */
     fun start(): Job =
         scope.launch(serial) {
-            // role and record land in one update: a state with the role but not yet `monitoringStartedAt` would
+            // source and record land in one update: a state with the source but not yet `monitoringStartedAt` would
             // briefly look "not monitoring" to the alert runtime (no data off, a showing no-data alert cleared)
             launch {
-                combine(role, record.data) { r, rec -> r to rec.startedAtEpochMs?.let(Instant::ofEpochMilli) }.collect { (r, startedAt) ->
-                    mutableState.update { it.copy(role = r, monitoringStartedAt = startedAt) }
+                combine(spec, record.data) { r, rec -> r to rec.startedAtEpochMs?.let(Instant::ofEpochMilli) }.collect { (r, startedAt) ->
+                    mutableState.update { it.copy(spec = r, monitoringStartedAt = startedAt) }
                     inputsLoaded.complete(Unit)
                 }
             }
@@ -109,7 +110,8 @@ class GlucoseHubImpl(
             }
             launch { windowStarts().flatMapLatest { from -> readings.window(from) }.collect(::applyWindow) }
             launch {
-                val wearer = state.map { it.role == Role.Wearer }.distinctUntilChanged()
+                // your glucose read here: its sensor needs Bluetooth (a stream has its own Bluetooth state)
+                val wearer = state.map { it.spec?.owner == true }.distinctUntilChanged()
                 combine(sourceSensor, bluetoothOn, wearer) { sensor, on, isWearer ->
                     if (isWearer && !on) SensorState.BluetoothOff else sensor
                 }.collect { shown -> mutableState.update { it.copy(sensor = shown) } }
@@ -161,7 +163,7 @@ class GlucoseHubImpl(
     override fun setLink(link: LinkState?) = mutableState.update { it.copy(link = link) }
 
     /**
-     * Back to "Not monitoring" after the person removed the sensor, changed the role or a follow ended (an explicit
+     * Back to "Not monitoring" after the person removed the sensor, changed whose glucose or a follow ended (an explicit
      * action or ending only: a source glitch never disarms the no-data alarm). With [fence] (a forgotten sensor; a
      * follow that ended, was stopped or whose nearby codes differed, #128) a reading still on its way (queued in the
      * source, a relay or Bluetooth before it stopped) is stored but doesn't arm monitoring again: only a reading
@@ -188,7 +190,11 @@ class GlucoseHubImpl(
         // again can't be stored under a substitute time): dropped; the missing data then shows and alarms as no data,
         // and home says the phone's clock is behind (#50); every LO / HI is stored as the flag (39 / 401, no rate)
         // whichever source sent which raw number
-        val (future, valid) = batch.mapNotNull(GlucoseRange::normalise).partition { it.t.isAfter(now + FUTURE_TOLERANCE) }
+        // a reading still on its way from the source used before a source change is dropped: after a change of whose
+        // glucose it would be the previous person's (docs/44 edge case 15)
+        val spec = state.value.spec
+        val current = batch.filter { spec == null || it.source !in SOURCE_READINGS || it.source in spec.kind.readings }
+        val (future, valid) = current.mapNotNull(GlucoseRange::normalise).partition { it.t.isAfter(now + FUTURE_TOLERANCE) }
         noteClock(future.maxOfOrNull { it.t }, valid.maxOfOrNull { it.t }, now)
         if (valid.isEmpty()) return
         readings.upsert(valid)
@@ -255,15 +261,16 @@ class GlucoseHubImpl(
 
     companion object {
         /**
-         * The role's source runs and readings are expected: the wearer's sensor source started (a pairing connecting,
-         * Juggluco chosen), a follow the wearer allowed.
+         * The source runs and readings are expected: the sensor source started (a pairing connecting, Juggluco chosen),
+         * a follow the other Sukrara allowed.
          */
-        fun sourceStarted(s: GlucoseState): Boolean =
-            when (s.role) {
-                Role.Wearer -> s.source !is SourceStatus.NotStarted
-                Role.Follower -> s.link?.active == true
-                null -> false
-            }
+        fun sourceStarted(s: GlucoseState): Boolean {
+            val spec = s.spec ?: return false
+            return if (spec.stream) s.link?.active == true else s.source !is SourceStatus.NotStarted
+        }
+
+        /** Every reading id a source declares (contracts/sources): one of another source is dropped ([accept]). */
+        private val SOURCE_READINGS = SourceKind.entries.flatMapTo(HashSet()) { it.readings }
 
         /** The recent window every surface can draw (the graph's longest setting is 24 h). */
         val WINDOW: Duration = Duration.ofHours(24)

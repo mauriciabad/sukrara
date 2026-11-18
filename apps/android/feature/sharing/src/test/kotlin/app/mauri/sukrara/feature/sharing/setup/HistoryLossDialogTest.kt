@@ -6,11 +6,14 @@ package app.mauri.sukrara.feature.sharing.setup
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.core.model.SourceKind
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
-import app.mauri.sukrara.feature.sharing.RoleLoss
+import app.mauri.sukrara.feature.sharing.HistoryLoss
 import app.mauri.sukrara.share.owner.OwnerShareState
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -30,16 +33,16 @@ import java.util.TimeZone
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "en")
-class RoleLossDialogTest {
+class HistoryLossDialogTest {
     @get:Rule val compose = createComposeRule()
 
     private val calls = mutableListOf<String>()
     private val actions =
         SetupActions(
-            reviewRole = { calls += "review:$it" },
-            cancelRole = { calls += "cancel" },
+            reviewSource = { calls += "review:${it.person.id}:${it.kind.id}" },
+            cancelSource = { calls += "cancel" },
             exportHistory = { calls += "export" },
-            chooseRole = { calls += "choose:$it" },
+            chooseSource = { calls += "choose:${it.person.id}:${it.kind.id}" },
         )
     private var zone: TimeZone? = null
 
@@ -53,15 +56,15 @@ class RoleLossDialogTest {
     @After
     fun tearDown() = TimeZone.setDefault(zone)
 
-    private fun show(change: RoleChange?) =
+    private fun show(change: SourceChange?) =
         compose.setContent {
             SukraraTheme(dark = false, dynamic = false) {
                 SetupContent(
                     SetupUi(
-                        step = SetupStep.Role,
+                        step = SetupStep.Source,
                         index = 2,
                         count = 6,
-                        facts = SetupFacts(role = Role.Follower, ownSensorLive = false, hasIdentity = false),
+                        facts = SetupFacts(spec = SourceSpec.TheirSukrara, ownSensorLive = false, hasIdentity = false),
                         record = SetupRecord(),
                         readiness = AlertReadiness(emptySet()),
                         alerts = AlertThresholds(AlertSettings()),
@@ -71,64 +74,64 @@ class RoleLossDialogTest {
                         busy = false,
                         single = false,
                         canBack = true,
-                        roleChange = change,
+                        sourceChange = change,
                     ),
                     actions,
                 )
             }
         }
 
-    private val loss = RoleLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
+    private val loss = HistoryLoss(1204, 12, Instant.parse("2026-10-03T08:00:00Z"), Instant.parse("2026-11-10T07:00:00Z"))
 
     @Test fun deletingHistorySaysWhatAndWhen() {
-        show(RoleChange(Role.Wearer, loss))
+        show(SourceChange(SourceSpec.YourSensor, loss, SourceSpec.TheirSukrara))
         compose.onNodeWithText("Delete the earlier history?").assertExists()
         compose
             .onNodeWithText(
-                "You chose “I wear the sensor”. This deletes what this phone kept from before: 1,204 glucose readings and " +
+                "You chose “Yours”. This deletes what this phone kept from before: 1,204 glucose readings and " +
                     "12 treatments, from Oct 3, 2026 to Nov 10, 2026. It can’t be undone. To keep a copy, export a CSV file first.",
             ).assertExists()
     }
 
     @Test fun exportFirstKeepsTheDialogAndDeletesNothing() {
-        show(RoleChange(Role.Wearer, loss))
+        show(SourceChange(SourceSpec.YourSensor, loss, SourceSpec.TheirSukrara))
         compose.onNodeWithText("Export CSV first").performClick()
         assertEquals(listOf("export"), calls)
         compose.onNodeWithText("Delete the earlier history?").assertExists()
     }
 
     @Test fun cancelChangesNothing() {
-        show(RoleChange(Role.Wearer, loss))
+        show(SourceChange(SourceSpec.YourSensor, loss, SourceSpec.TheirSukrara))
         compose.onNodeWithText("Cancel").performClick()
         assertEquals(listOf("cancel"), calls)
     }
 
-    @Test fun deleteAndContinueChoosesTheRole() {
-        show(RoleChange(Role.Wearer, loss))
+    @Test fun deleteAndContinueChoosesTheSource() {
+        show(SourceChange(SourceSpec.YourSensor, loss, SourceSpec.TheirSukrara))
         compose.onNodeWithText("Delete and continue").performClick()
-        assertEquals(listOf("choose:Wearer"), calls)
+        assertEquals(listOf("choose:yours:sensor"), calls)
     }
 
     @Test fun onlyTreatmentsOnOneDay() {
-        show(RoleChange(Role.Follower, RoleLoss(0, 1, loss.to, loss.to)))
+        show(SourceChange(SourceSpec.TheirSukrara, HistoryLoss(0, 1, loss.to, loss.to), SourceSpec.YourSensor))
         compose
             .onNodeWithText("1 treatment, from Nov 10, 2026", substring = true)
             .assertExists()
     }
 
     @Test fun nothingToDeleteIsThePlainConfirmation() {
-        show(RoleChange(Role.Wearer, null))
+        show(SourceChange(SourceSpec(Person.Yours, SourceKind.PhoneApp), null, SourceSpec.YourSensor))
         compose.onNodeWithText("Delete and continue").assertDoesNotExist()
         compose.onNodeWithText("Export CSV first").assertDoesNotExist()
-        compose.onNodeWithText("I wear the sensor?").assertExists()
-        compose.onNodeWithText("Confirm").performClick()
-        assertEquals(listOf("cancel", "choose:Wearer"), calls)
+        compose.onNodeWithText("Switch to “Juggluco on this phone”?").assertExists()
+        compose.onNodeWithText("Switch").performClick()
+        assertEquals(listOf("cancel", "choose:yours:phoneApp"), calls)
     }
 
     @Test fun continueAsksForTheConfirmation() {
         show(null)
-        compose.onNodeWithText("I follow someone").performClick()
-        compose.onNodeWithText("Continue").performClick()
-        assertEquals(listOf("review:Follower"), calls)
+        compose.onNodeWithText("Juggluco on this phone").performClick()
+        compose.onNodeWithText("Continue").performScrollTo().performClick()
+        assertEquals(listOf("review:theirs:phoneApp"), calls)
     }
 }

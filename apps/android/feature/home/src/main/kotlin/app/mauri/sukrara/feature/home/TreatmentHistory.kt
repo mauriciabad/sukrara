@@ -126,7 +126,7 @@ fun TreatmentHistoryContent(
             )
         },
         floatingActionButton = {
-            if (state.glucose.role != null) {
+            if (state.glucose.spec != null) {
                 val atTop by remember { derivedStateOf { list.firstVisibleItemIndex == 0 && list.firstVisibleItemScrollOffset == 0 } }
                 val label = stringResource(R.string.home_add_treatment)
                 ExtendedFloatingActionButton(

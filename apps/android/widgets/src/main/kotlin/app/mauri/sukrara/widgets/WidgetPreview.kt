@@ -18,9 +18,9 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.composeForPreview
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.graph.GraphConfig
 import java.time.Duration
 import java.time.Instant
@@ -71,7 +71,7 @@ fun previewFrame(
         }
     val glucose =
         GlucoseState.Initial.copy(
-            role = Role.Wearer,
+            spec = SourceSpec.YourSensor,
             latest = readings.last(),
             recent = readings,
             sensor = SensorState.Active(end.plus(Duration.ofDays(9))),

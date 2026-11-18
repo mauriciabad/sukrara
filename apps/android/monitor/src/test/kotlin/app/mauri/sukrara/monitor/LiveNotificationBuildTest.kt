@@ -12,9 +12,9 @@ import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.monitor.notify.CardFrame
 import app.mauri.sukrara.monitor.notify.Channels
@@ -56,7 +56,7 @@ class LiveNotificationBuildTest {
     ): GlucoseState {
         val reading = mgdl?.let { Reading(now.minusSeconds(ageS), it, 1.2, SourceId.Libre3) }
         return GlucoseState.Initial.copy(
-            role = Role.Wearer,
+            spec = SourceSpec.YourSensor,
             latest = reading,
             recent = listOfNotNull(reading),
             sensor = sensor,

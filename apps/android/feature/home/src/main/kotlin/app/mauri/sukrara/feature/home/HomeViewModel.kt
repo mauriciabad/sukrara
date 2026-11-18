@@ -21,7 +21,6 @@ import app.mauri.sukrara.core.model.PenQuestionInfo
 import app.mauri.sukrara.core.model.PensPort
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingHistory
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.ServiceState
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -345,11 +344,11 @@ class HomeViewModel(
                 readOnly = recent.readOnly,
                 fromPen = recent.fromPen,
                 delivery = recent.delivery,
-                profile = profile?.takeIf { glucose.role != Role.Follower },
+                profile = profile?.takeIf { glucose.spec?.owner != false },
                 marks = marks?.let { m -> listed.mapNotNull { t -> m.mark(t, now)?.let { t.id to it } }.toMap() }.orEmpty(),
                 undoInClinic = pendingUndo != null && inClinic,
-                untestedSensor = untested?.takeIf { glucose.role == Role.Wearer },
-                followPath = env.followPath?.takeIf { glucose.role == Role.Follower },
+                untestedSensor = untested?.takeIf { glucose.spec?.owner == true },
+                followPath = env.followPath?.takeIf { glucose.spec?.stream == true },
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), initial())
 

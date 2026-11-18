@@ -13,7 +13,7 @@ import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.NotificationStyle
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingSource
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -51,9 +51,10 @@ import kotlinx.coroutines.flow.shareIn
  * The monitor's objects (DI module): the hub, the service's starter, the health check, the freshness ticker and
  * the glucose notification. `AppGraph` builds one and the `Application` exposes it through [MonitorHost].
  *
- * [source] is the role's one reading source: wearer → the sensor module's source, follower → the follower engine;
+ * [source] is the one reading source of whose glucose and where from (docs/44): the sensor or Juggluco → the sensor
+ * module's source, a Sukrara stream → the follower engine;
  * null = nothing set up to monitor (no sensor paired, not following anyone), so the service doesn't run. The service
- * asks for it again on a role change and on every [sourceChanges] (another glucose source chosen, the sensor
+ * asks for it again on a source change and on every [sourceChanges] (another glucose source chosen, the sensor
  * forgotten): nothing left to read stops it.
  */
 class MonitorModule(
@@ -64,19 +65,19 @@ class MonitorModule(
     val clock: Clock,
     readings: ReadingsRepository,
     record: StateStore<MonitorRecord>,
-    role: Flow<Role?>,
-    val source: suspend (Role) -> ReadingSource?,
+    spec: Flow<SourceSpec?>,
+    val source: suspend (SourceSpec) -> ReadingSource?,
     /** Whether [source] would give a source, without building it (the starter asks on every start and health check). */
-    canMonitor: suspend (Role) -> Boolean,
+    canMonitor: suspend (SourceSpec) -> Boolean,
     settings: SettingsRepository,
     treatments: Flow<List<Treatment>>,
     val graphConfig: Flow<GraphConfig>,
     /** The wearer's followers and nearby devices for the notification's sub text (null: not sharing). */
     sharing: Flow<SharingLine?> = flowOf(null),
-    /** The role's reading source may have changed (Settings › Sensor): the service picks it again. */
+    /** The reading source may have changed (Settings › Source, the sensor forgotten): the service picks it again. */
     val sourceChanges: Flow<Unit> = emptyFlow(),
 ) {
-    val hubImpl = GlucoseHubImpl(scope, dispatchers, clock, readings, record, role)
+    val hubImpl = GlucoseHubImpl(scope, dispatchers, clock, readings, record, spec)
 
     /** What every other module reads. */
     val hub: GlucoseHub get() = hubImpl
@@ -187,7 +188,7 @@ class MonitorModule(
     suspend fun ready() {
         Channels.create(context)
         hubImpl.start()
-        // starters must see the real role from disk, not the initial "setup not done"
+        // starters must see the real source from disk, not the initial "setup not done"
         hubImpl.awaitInputs()
     }
 

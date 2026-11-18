@@ -9,9 +9,9 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingTrend
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -116,7 +116,7 @@ class AuraPayloadFixtureTest {
             } ?: TreatmentQuiet()
         val state =
             GlucoseState(
-                role = Role.Wearer,
+                spec = SourceSpec.YourSensor,
                 latest = readings.maxByOrNull { it.t },
                 recent = readings.sortedBy { it.t },
                 sensor = sensor(p.getValue("sensor").jsonObject),

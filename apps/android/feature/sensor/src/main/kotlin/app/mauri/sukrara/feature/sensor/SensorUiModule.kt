@@ -15,12 +15,11 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
-import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
-import app.mauri.sukrara.core.model.storage.SettingsRepository
+import app.mauri.sukrara.core.model.SourceKind
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewPort
 import app.mauri.sukrara.feature.sensor.libreview.LibreViewSignInViewModel
 import app.mauri.sukrara.feature.sensor.newsensor.NewSensorPort
@@ -32,7 +31,6 @@ import app.mauri.sukrara.sensor.SensorProfile
 import app.mauri.sukrara.sensor.libreview.SignInResult
 import app.mauri.sukrara.sensor.pairing.PairOutcome
 import app.mauri.sukrara.sensor.pairing.Pairing
-import app.mauri.sukrara.sensor.source.SensorSourceKind
 import app.mauri.sukrara.sensor.source.SensorStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -50,7 +48,8 @@ import kotlinx.coroutines.flow.map
 class SensorUiModule(
     context: Context,
     private val sensors: SensorModule,
-    private val settings: SettingsRepository,
+    /** Stores the source the new-sensor flow chose (the sensor read here, or Juggluco), keeping whose glucose. */
+    private val setKind: suspend (SourceKind) -> Unit,
     private val clock: Clock,
     private val appScope: CoroutineScope,
     /** The glucose hub's state (the *Sensor ready* page's first reading). */
@@ -87,7 +86,7 @@ class SensorUiModule(
             ): String {
                 val pairing = Pairing.scanned(profile, id, clock.now().toEpochMilli())
                 sensors.pairings.saveScanned(pairing)
-                settings.set(SOURCE, SensorSourceKind.Direct.id)
+                setKind(SourceKind.Sensor)
                 sensors.source.retry() // the source starts over with the new pairing (scan, then connect)
                 startMonitoring()
                 return SensorStatus.Direct.keyOf(pairing)
@@ -105,12 +104,12 @@ class SensorUiModule(
             override fun lookForAnother() = sensors.source.lookForAnother()
 
             override suspend fun useJuggluco() {
-                settings.set(SOURCE, SensorSourceKind.Juggluco.id)
+                setKind(SourceKind.PhoneApp)
                 startMonitoring() // Juggluco is a source to monitor even with no sensor paired here
             }
 
             override suspend fun onPaired() {
-                settings.set(SOURCE, SensorSourceKind.Direct.id)
+                setKind(SourceKind.Sensor)
                 startMonitoring()
             }
         }
@@ -136,9 +135,4 @@ class SensorUiModule(
         }
 
     private fun granted(permission: String) = ContextCompat.checkSelfPermission(app, permission) == PackageManager.PERMISSION_GRANTED
-
-    private companion object {
-        /** The glucose source setting (schema `source.source`); the source manager follows it. */
-        val SOURCE = SchemaSettings.text("source.source", SensorSourceKind.Direct.id, SensorSourceKind.entries.map { it.id }.toSet())
-    }
 }

@@ -186,7 +186,7 @@ class WidgetUpdater(
             /** Only what the picture, its description and its tap use (not the link's heartbeat or the service). */
             private fun GlucoseState.drawn() =
                 GlucoseState(
-                    role = role,
+                    spec = spec,
                     latest = latest,
                     recent = recent,
                     sensor = sensor,

@@ -4,8 +4,8 @@
 package app.mauri.sukrara.monitor.service
 
 import android.bluetooth.BluetoothAdapter
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.ServiceState
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.StopReason
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
@@ -29,11 +29,11 @@ import java.time.Instant
 /** MonitorStarter, HealthCheck, FreshnessTicker and the Bluetooth state mapping. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MonitorServiceLogicTest {
-    private val role = MutableStateFlow<Role?>(Role.Wearer)
+    private val role = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
     private var allowed = true
     private var launches = 0
     private var somethingToMonitor = true
-    private val asked = mutableListOf<Role>()
+    private val asked = mutableListOf<SourceSpec>()
     private val notice =
         object : StoppedNotice {
             var shown = 0
@@ -111,7 +111,7 @@ class MonitorServiceLogicTest {
             assertEquals(StartResult.NotNeeded, starter.start(StartReason.Boot))
             assertEquals(0, launches)
             assertEquals(0, notice.shown)
-            assertEquals("asked for the hub's role, never without one", listOf(Role.Wearer), asked)
+            assertEquals("asked for the hub's role, never without one", listOf(SourceSpec.YourSensor), asked)
         }
 
     @Test

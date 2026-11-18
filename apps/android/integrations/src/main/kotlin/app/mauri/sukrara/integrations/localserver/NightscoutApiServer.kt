@@ -6,8 +6,7 @@ package app.mauri.sukrara.integrations.localserver
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
-import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -77,8 +76,8 @@ class NightscoutApiServer(
     private val secure: SecureStore,
     private val readings: ReadingsRepository,
     private val treatments: TreatmentsRepository,
-    /** The phone's role: only that role's readings are served (never another person's left from an earlier role). */
-    private val role: Flow<Role?>,
+    /** Whose glucose and where from: a stream's entries are the wearer's (`enteredBy`). */
+    private val role: Flow<SourceSpec?>,
     private val clock: Clock,
     private val io: CoroutineDispatcher,
     /** The network the home-network option was turned on in. */
@@ -102,7 +101,7 @@ class NightscoutApiServer(
     @Volatile private var recentTreatments: List<Treatment> = emptyList()
 
     /** Whose data [recent] is (a follower's treatments are labelled as the followed person's). */
-    @Volatile private var servedRole: Role? = null
+    @Volatile private var servedRelayed: Boolean = false
     private val lock = Mutex()
 
     private val _lan = MutableStateFlow<LanState>(LanState.Off)
@@ -218,13 +217,12 @@ class NightscoutApiServer(
             combine(on.distinctUntilChanged(), role) { o, r -> if (o) r else null }
                 .distinctUntilChanged()
                 .flatMapLatest { r ->
-                    servedRole = r
+                    servedRelayed = r?.stream == true
                     if (r == null) {
                         flowOf(emptyList())
                     } else {
-                        hourly(WINDOW).flatMapLatest { from -> readings.window(from) }.map { list ->
-                            list.filter { it.source in SourceId.of(r) }.asReversed()
-                        }
+                        // the current person's readings (a person change deletes the others)
+                        hourly(WINDOW).flatMapLatest { from -> readings.window(from) }.map { list -> list.asReversed() }
                     }
                 }.catch { emit(emptyList()) }
                 .collect { recent = it }
@@ -434,7 +432,7 @@ class NightscoutApiServer(
     ): HttpAnswer =
         NightscoutApi.route(req, key) {
             val now = clock.now()
-            NightscoutApi.Snapshot(recent.filter { it.t >= now - WINDOW }, recentTreatments, now, clock.zone, servedRole)
+            NightscoutApi.Snapshot(recent.filter { it.t >= now - WINDOW }, recentTreatments, now, clock.zone, servedRelayed)
         }
 
     /** Answers as the home-network listener does (tests: that listener can't bind here). */

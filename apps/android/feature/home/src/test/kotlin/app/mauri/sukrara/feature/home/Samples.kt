@@ -5,9 +5,9 @@ package app.mauri.sukrara.feature.home
 
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -43,7 +43,7 @@ object Samples {
     ): GlucoseState {
         val recent = readings(last, ageMin)
         return GlucoseState(
-            role = Role.Wearer,
+            spec = SourceSpec.YourSensor,
             latest = recent.last(),
             recent = recent,
             sensor = sensor,
@@ -56,12 +56,12 @@ object Samples {
         )
     }
 
-    fun noSensorYet(role: Role = Role.Wearer) =
+    fun noSensorYet(role: SourceSpec = SourceSpec.YourSensor) =
         GlucoseState.Initial.copy(
-            role = role,
+            spec = role,
             link =
                 if (role ==
-                    Role.Follower
+                    SourceSpec.TheirSukrara
                 ) {
                     app.mauri.sukrara.core.model
                         .LinkState("Ana", null)

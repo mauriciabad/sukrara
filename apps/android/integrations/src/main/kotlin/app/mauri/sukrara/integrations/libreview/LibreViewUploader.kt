@@ -9,8 +9,8 @@ import app.mauri.sukrara.core.data.libreview.email
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.SecretUnreadableException
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -142,7 +142,7 @@ class LibreViewUploader(
     private val sensor: Flow<CurrentSensor?>,
     /** THE LibreView account (one per app; the sensor and Import history use it too). */
     private val login: LibreViewLogin,
-    private val role: Flow<Role?>,
+    private val role: Flow<SourceSpec?>,
     private val client: LibreViewClient,
     private val clock: Clock,
     private val io: CoroutineDispatcher,
@@ -170,7 +170,7 @@ class LibreViewUploader(
     val intervalFlow: Flow<Double> = settings.flow(INTERVAL)
 
     /** The wearer's newest reading from this phone's own sensor (any source: what LibreView should get). */
-    private val newest: Flow<Reading?> = latest.map { r -> r?.takeIf { it.source in SourceId.Wearer } }.distinctUntilChanged()
+    private val newest: Flow<Reading?> = latest.map { r -> r?.takeIf { it.source in SourceId.FirstHand } }.distinctUntilChanged()
 
     /**
      * Since when LibreView lacks the glucose the phone has (epoch s) once uploading it has stalled
@@ -221,7 +221,7 @@ class LibreViewUploader(
         val s: LvSettings,
         val a: LibreViewAccountState,
         val st: LvState,
-        val r: Role?,
+        val r: SourceSpec?,
         val every: Double,
     )
 
@@ -234,7 +234,7 @@ class LibreViewUploader(
         combine(behindS, login.account, store.data, role) { b, a, st, r ->
             b
                 ?.takeIf {
-                    r == Role.Wearer && a != LibreViewAccountState.SignedOut &&
+                    r?.owner == true && a != LibreViewAccountState.SignedOut &&
                         (st.glucoseError ?: st.lastError) != Trouble.NoInternet
                 }?.let(Instant::ofEpochSecond)
         }.distinctUntilChanged()
@@ -242,7 +242,7 @@ class LibreViewUploader(
     /** What LibreView has of the entries while the upload runs (home's cloud marks); null while it's off. */
     val entryMarks: Flow<LvEntryMarks?> =
         combine(settingsFlow, login.account, store.data, role) { s, a, st, r ->
-            if (s.on && a != LibreViewAccountState.SignedOut && r == Role.Wearer) {
+            if (s.on && a != LibreViewAccountState.SignedOut && r?.owner == true) {
                 val stopped = st.otherDevice || st.refused || a is LibreViewAccountState.SignInAgain
                 LvEntryMarks(st.ledger, if (s.treatments) st.entriesFrom else 0L, stopped)
             } else {
@@ -509,7 +509,7 @@ class LibreViewUploader(
 
     private suspend fun cycleLocked() {
         val s = settingsFlow.first()
-        if (!s.on || role.first() != Role.Wearer) return
+        if (!s.on || role.first()?.owner != true) return
         // no usable account: the page asks to sign in (again)
         if (login.current() !is LibreViewAccountState.SignedIn) return
         var state = ensureDevice()
@@ -782,12 +782,12 @@ class LibreViewUploader(
         s: LvSettings,
         account: LibreViewAccountState,
         st: LvState,
-        r: Role?,
+        r: SourceSpec?,
         behind: Long?,
         other: SourceId?,
     ): UploadStatus =
         when {
-            !s.on || r != Role.Wearer -> {
+            !s.on || r?.owner != true -> {
                 UploadStatus.Off
             }
 

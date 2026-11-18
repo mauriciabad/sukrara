@@ -78,6 +78,12 @@ interface SettingsDeps {
     /** The hub's recent readings, oldest first (the Trend arrow page previews each choice on them). */
     val recent: Flow<List<Reading>> get() = flowOf(emptyList())
 
+    /** What the phone runs on (Settings › Source's overview row; docs/44 Person × Source). */
+    val source: Flow<app.mauri.sukrara.core.model.SourceSpec?> get() = flowOf(null)
+
+    /** The name of the person a Sukrara stream follows (the Source row's summary). */
+    val sourceName: Flow<String?> get() = flowOf(null)
+
     /** Which outputs Share with apps has on (the overview row's summary). */
     val appsShared: Flow<Set<AppOutput>>
 

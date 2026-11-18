@@ -158,7 +158,7 @@ class TreatmentsModule(
     }
 
     /** Whether this phone offers Add treatment right now ([WriterScope]). */
-    fun canAdd(): Boolean = WriterScope.canAdd(glucose.value.role, sync.writer.value)
+    fun canAdd(): Boolean = WriterScope.canAdd(glucose.value.spec, sync.writer.value)
 
     /** Carbs first while the latest fresh reading is low (eating is what's needed), whether or not an alert fired. */
     fun lowNow(): Boolean = hints.lowNow()

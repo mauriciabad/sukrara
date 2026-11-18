@@ -5,7 +5,7 @@ package app.mauri.sukrara.core.model.storage
 
 import app.mauri.sukrara.core.model.GlucoseRange
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.ReadingRank
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -109,9 +109,8 @@ class HistoryImportTest {
 
     @Test fun `every import source has its own reading source and none is the phone's sensor`() {
         assertEquals(SourceId.Imported, ImportSource.entries.map { it.readings }.toSet())
-        assertTrue(SourceId.Imported.none { it in SourceId.Wearer || it in SourceId.Follower })
-        assertTrue(SourceId.Imported.all { it in SourceId.of(Role.Wearer) })
-        assertTrue(SourceId.Imported.all { it in SourceId.notOf(Role.Follower) })
+        assertTrue(SourceId.Imported.none { it in SourceId.FirstHand || it in SourceId.Relayed })
+        assertTrue(SourceId.Imported.all { ReadingRank.of(it) == ReadingRank.Rank.Imported })
     }
 
     // MARK: treatments

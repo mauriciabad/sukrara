@@ -10,7 +10,7 @@ import app.mauri.sukrara.core.model.AlertReadinessSource
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseHub
 import app.mauri.sukrara.core.model.NotificationStyle
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -37,22 +37,32 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 
-/** The phone's role (`AppGraph`'s own `role` store, read by the hub and the alert runtime). */
-interface RoleStore {
-    val role: Flow<Role?>
+/**
+ * Whose glucose and where from (`AppGraph`'s own `source` store, read by the hub and the alert runtime; docs/44
+ * "Person × Source").
+ */
+interface SourcePort {
+    /** The person's answer; null = setup hasn't one yet. */
+    val stored: Flow<SourceSpec?>
 
-    /** What [set] with [role] would delete from this phone; null = nothing (no confirmation needed). */
-    suspend fun loss(role: Role): RoleLoss?
+    /**
+     * What this phone runs on: the answer, else what it is already set up to read (an install updated from before the
+     * question, a damaged file): setup asks once more, preselected with it, and monitoring never stops meanwhile.
+     */
+    val running: Flow<SourceSpec?>
 
-    /** Stores [role]; the other role's readings (and, when the role changed, every treatment) are deleted. */
-    suspend fun set(role: Role)
+    /** What [set] with [spec] would delete (a person change: every reading and treatment); null = nothing. */
+    suspend fun loss(spec: SourceSpec): HistoryLoss?
+
+    /** Stores [spec]; a person change deletes the previous person's readings and treatments, a source change keeps them. */
+    suspend fun set(spec: SourceSpec)
 }
 
 /**
- * The history a role change deletes (the previous person's): [readings] glucose readings and [treatments] logged
- * treatments, together spanning [from]..[to]. The role step asks before deleting it (#125).
+ * The history a person change deletes (the previous person's): [readings] glucose readings and [treatments] logged
+ * treatments, together spanning [from]..[to]. Setup asks before deleting it (#125).
  */
-data class RoleLoss(
+data class HistoryLoss(
     val readings: Int,
     val treatments: Int,
     val from: Instant,
@@ -63,11 +73,11 @@ data class RoleLoss(
         fun of(
             readings: StoredSpan,
             treatments: StoredSpan,
-        ): RoleLoss? {
+        ): HistoryLoss? {
             val firsts = listOfNotNull(readings.first, treatments.first)
             val lasts = listOfNotNull(readings.last, treatments.last)
             if (readings.count + treatments.count == 0 || firsts.isEmpty() || lasts.isEmpty()) return null
-            return RoleLoss(readings.count, treatments.count, firsts.min(), lasts.max())
+            return HistoryLoss(readings.count, treatments.count, firsts.min(), lasts.max())
         }
     }
 }
@@ -105,28 +115,28 @@ interface SharingDeps {
 /**
  * The first-run setup and sharing graph (A4: one line in `AppGraph`). Nothing is read from disk in the constructor.
  *
- * - [setupStore]: typed store `setup` ([SetupRecord]); a damaged file only shows skipped steps again (the role is
- *   in [roles]).
- * - [resetAlerts]: the alert runtime's `AlertsModule.reset()`, called when the role is chosen or changed — before any
- *   monitoring — so no phantom no-data alarm survives. Not on identity "Start fresh": by then the sensor runs, and a
- *   reset stops alerts until the hub reports a role again.
+ * - [setupStore]: typed store `setup` ([SetupRecord]); a damaged file only shows skipped steps again (the source is
+ *   in [sources]).
+ * - [resetAlerts]: the alert runtime's `AlertsModule.reset()`, called when whose glucose (or how it alerts) changes,
+ *   before any monitoring, so no phantom no-data alarm survives. Not on identity "Start fresh": by then the sensor
+ *   runs, and a reset stops alerts until the hub reports a source again.
  * - [readiness]: THE alert checklist, the same instance home's reliability row reads.
  */
 class SetupModule(
     context: Context,
     val setupStore: StateStore<SetupRecord>,
-    val roles: RoleStore,
+    val sources: SourcePort,
     val hub: GlucoseHub,
     val sharing: OwnerSharing,
     val alertSettings: AlertSettingsAccess,
     /** The app's schema settings: setup records `alerts.thresholdsConfirmedAt` (shared with Settings › Alerts). */
     private val settings: SettingsRepository,
     val resetAlerts: suspend () -> Unit,
-    /** Starts monitoring once the role is stored (the monitor decides whether a source exists yet). */
+    /** Starts monitoring once the source is stored (the monitor decides whether it can read anything yet). */
     val startMonitoring: () -> Unit,
     val readiness: AlertReadinessSource,
     val clock: Clock,
-    /** The follower role (join, stop following). */
+    /** A Sukrara stream (join, stop following). */
     val follower: FollowerSharing = FollowerSharing.None,
     /** The updates step's port; null = this build has no updater (Google Play): no step. */
     val updates: SetupUpdates? = null,
@@ -197,13 +207,13 @@ class SetupModule(
     val progress: Flow<SetupProgress> by lazy {
         combine(
             setupStore.data,
-            roles.role,
+            combine(sources.stored, sources.running, ::Pair),
             hub.state,
             combine(sharing.state, follower.state, ::Pair),
             combine(alertsConfirmedAt, readiness.readiness, updateChoice, pensAnswered, rootGranted, ::Answers),
         ) {
             record,
-            role,
+            (spec, running),
             glucose,
             (share, follow),
             (confirmed, checklist, updates, pens, root),
@@ -211,7 +221,8 @@ class SetupModule(
             SetupProgress(
                 record,
                 SetupFacts(
-                    role = role,
+                    spec = spec,
+                    running = running,
                     following = follow.following,
                     ownSensorLive = RestoreGate.ownSensorLive(glucose, clock.now()),
                     hasIdentity = share is OwnerShareState.Sharing || share is OwnerShareState.AnotherAppSharingAsYou,
@@ -233,7 +244,7 @@ class SetupModule(
     /** Settings' *Finish setup*: the walk goes on into the open extras (the app then opens setup). */
     suspend fun continueExtras() = setupStore.update(SetupMachine::continueExtras)
 
-    /** The home "Finish setup" banner ([SetupMachine.card]); null before a role and once nothing is left. */
+    /** The home "Finish setup" banner ([SetupMachine.card]); null before a source and once nothing is left. */
     val card: Flow<SetupCard?> by lazy { progress.map { SetupMachine.card(it.record, it.facts) }.distinctUntilChanged() }
 
     private companion object {

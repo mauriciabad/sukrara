@@ -26,7 +26,7 @@ class SettingsTransferTest {
     private val graphHours = SchemaSettings.number("graph.hours")
     private val side = SchemaSettings.bool("graph.side", default = true)
     private val nostr = SchemaSettings.bool("sharing.nostr", default = true)
-    private val source = SchemaSettings.text("source.source", default = "direct")
+    private val calendar = SchemaSettings.text("sensorCalendar.calendarId", default = "")
     private val alerts = SchemaSettings.text("alerts.on", default = "")
     private val confirmed = SchemaSettings.text("alerts.thresholdsConfirmedAt", default = "")
 
@@ -66,12 +66,12 @@ class SettingsTransferTest {
             a.repo.set(graphHours, 6.0)
             a.repo.set(side, false)
             a.repo.set(nostr, false)
-            a.repo.set(source, "juggluco")
+            a.repo.set(calendar, "42")
             a.repo.set(alerts, """{"on":true,"v":1}""")
             val file = a.transfer.export()
             assertTrue(file.contains("\"kind\": \"sukrara-settings\""))
             assertFalse("sharing is kept", file.contains("relaySharing"))
-            assertFalse("the source is kept", file.contains("juggluco"))
+            assertFalse("the calendar is kept", file.contains("sensorCalendarId"))
 
             val b = setup(backgroundScope, "b")
             b.repo.set(confirmed, "2026-10-01")
@@ -80,7 +80,7 @@ class SettingsTransferTest {
             assertEquals(6.0, b.repo.flow(graphHours).first(), 0.0)
             assertFalse(b.repo.flow(side).first())
             assertTrue(b.repo.flow(nostr).first())
-            assertEquals("direct", b.repo.flow(source).first())
+            assertEquals("", b.repo.flow(calendar).first())
             assertEquals("""{"on":true,"v":1}""", b.repo.flow(alerts).first())
             assertEquals("new alert settings: the threshold review is asked again", "", b.repo.flow(confirmed).first())
         }
@@ -114,12 +114,12 @@ class SettingsTransferTest {
             val s = setup(backgroundScope)
             s.repo.set(graphHours, 3.0)
             s.repo.set(nostr, false)
-            s.repo.set(source, "juggluco")
+            s.repo.set(calendar, "42")
             s.repo.set(confirmed, "2026-10-01")
             s.transfer.reset()
             assertEquals(12.0, s.repo.flow(graphHours).first(), 0.0)
             assertFalse(s.repo.flow(nostr).first())
-            assertEquals("juggluco", s.repo.flow(source).first())
+            assertEquals("42", s.repo.flow(calendar).first())
             assertEquals("", s.repo.flow(confirmed).first())
         }
 }

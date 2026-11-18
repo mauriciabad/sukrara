@@ -12,9 +12,9 @@ import app.mauri.sukrara.core.data.readings.TrendReadings
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.TrendSetting
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.designsystem.alerts.AlertWords
@@ -135,7 +135,7 @@ class TrendEverywhereTest {
     private fun state(): GlucoseState {
         val recent = runBlocking { readings.window(now.minusSeconds(24 * 3600)).first() }
         return GlucoseState.Initial.copy(
-            role = Role.Wearer,
+            spec = SourceSpec.YourSensor,
             latest = recent.last(),
             recent = recent,
             sensor = SensorState.Active(null),

@@ -5,7 +5,7 @@ package app.mauri.sukrara
 
 import android.content.Context
 import app.mauri.sukrara.core.model.Clock
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.feature.settings.sensorend.CalendarChoice
@@ -33,7 +33,7 @@ class AppSensorCalendar(
     private val calendar: SensorCalendar,
     private val record: StateStore<CalendarRecord>,
     private val settings: SettingsRepository,
-    private val role: Flow<Role?>,
+    private val role: Flow<SourceSpec?>,
     private val sensorInfo: Flow<SensorInfo?>,
     private val clock: Clock,
     private val scope: CoroutineScope,
@@ -46,7 +46,7 @@ class AppSensorCalendar(
 
     override val state: Flow<SensorCalendarState?> =
         combine(role, settings.flow(SensorCalendar.On), settings.flow(SensorCalendar.Target), record.data) { r, on, target, rec ->
-            if (r != Role.Wearer) {
+            if (r?.owner != true) {
                 null
             } else {
                 val own = target == SensorCalendar.OWN
@@ -97,7 +97,7 @@ class AppSensorCalendar(
             Triple(if (on) r else null, target, info?.let { SensorCalendar.Sensor(it.serial, it.startEpoch, it.endEpoch) })
         }.collectLatest { (onAs, target, sensor) ->
             if (onAs == null) return@collectLatest
-            if (onAs != Role.Wearer) {
+            if (onAs?.owner != true) {
                 // no longer the wearer (the page is hidden then): what was written goes and the setting turns off
                 if (calendar.granted()) withContext(io) { calendar.removeAll(target) }
                 settings.set(SensorCalendar.On, false)

@@ -33,7 +33,6 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
 import app.mauri.sukrara.core.model.GlucoseUnit
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.graph.A11y
 import app.mauri.sukrara.graph.CardModel
 import app.mauri.sukrara.graph.CardPart
@@ -191,7 +190,7 @@ fun describeCard(
     val name =
         frame.glucose.link
             ?.wearerName
-            ?.takeIf { frame.glucose.role == Role.Follower && it.isNotBlank() }
+            ?.takeIf { frame.glucose.spec?.theirs == true && it.isNotBlank() }
     return if (name != null) context.getString(R.string.widget_desc_follower, name, sentence) else sentence
 }
 
@@ -202,7 +201,7 @@ fun widgetTap(
 ): WidgetTap {
     val model = widgetModel(context, frame)
     return WidgetTap.of(
-        role = frame.glucose.role,
+        spec = frame.glucose.spec,
         look = widgetLook(model, frame.config.unit),
         mgdl = model.latest?.sgv,
         bands = frame.config.bands,

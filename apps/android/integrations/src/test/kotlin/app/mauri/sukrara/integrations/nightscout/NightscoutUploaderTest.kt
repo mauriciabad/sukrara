@@ -4,8 +4,8 @@
 package app.mauri.sukrara.integrations.nightscout
 
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -71,7 +71,7 @@ class NightscoutUploaderTest {
     private val store = InMemoryStateStore(NsState())
     private val readings = InMemoryReadingsRepository()
     private val treatments = InMemoryTreatmentsRepository()
-    private val role = MutableStateFlow<Role?>(Role.Wearer)
+    private val role = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
     private val requests = mutableListOf<RecordedRequest>()
 
     /** The site's sgv entries (date ms → device) the fake serves to the duplicate check. */
@@ -174,7 +174,7 @@ class NightscoutUploaderTest {
             uploader.cycle()
             assertTrue(requests.isEmpty())
             uploader.change { it.copy(on = true) }
-            role.value = Role.Follower
+            role.value = SourceSpec.TheirSukrara
             uploader.cycle()
             assertTrue(requests.isEmpty())
             assertEquals(UploadStatus.Off, uploader.page.first().status)

@@ -70,10 +70,12 @@ class HubReadings(
 
     override suspend fun spanOf(sources: Set<SourceId>): StoredSpan = if (open.value) room.spanOf(sources) else StoredSpan.EMPTY
 
-    override suspend fun deleteFrom(sources: Set<SourceId>): Int =
+    override suspend fun span(): StoredSpan = if (open.value) room.span() else StoredSpan.EMPTY
+
+    override suspend fun deleteAll(): Int =
         mutex.withLock {
-            keep("recent readings") { recent.deleteFrom(sources) }
-            if (open.value) room.deleteFrom(sources) else 0
+            keep("recent readings") { recent.deleteAll() }
+            if (open.value) room.deleteAll() else 0
         }
 
     /**

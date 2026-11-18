@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.designsystem.errors.UserErrors
 import app.mauri.sukrara.designsystem.rows.DangerRow
 import app.mauri.sukrara.designsystem.rows.FooterText
@@ -137,7 +136,7 @@ fun TidepoolContent(
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
     val s = state.settings
-    val follower = state.role == Role.Follower
+    val follower = state.role?.owner == false
     val on = s.on && state.signedIn
     val open = {
         actions.reset()

@@ -13,8 +13,8 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -131,7 +131,7 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
 
     fun wearerState(latest: Reading?, monitoring: Boolean = true) =
         GlucoseState.Initial.copy(
-            role = Role.Wearer,
+            spec = SourceSpec.YourSensor,
             latest = latest,
             monitoringStartedAt = if (monitoring) latest?.t ?: clock.now() else null,
         )
@@ -139,7 +139,7 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
     /** A follower's hub state: the wearer's readings over the follow stream, the link to [wearer]. */
     fun followerState(latest: Reading?, wearer: String = "Ana") =
         GlucoseState.Initial.copy(
-            role = Role.Follower,
+            spec = SourceSpec.TheirSukrara,
             latest = latest?.copy(source = SourceId.Relay),
             link = LinkState(wearer, latest?.t),
             monitoringStartedAt = latest?.t ?: clock.now(),

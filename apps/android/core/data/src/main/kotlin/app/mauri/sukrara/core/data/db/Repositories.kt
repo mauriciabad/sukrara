@@ -4,6 +4,7 @@
 package app.mauri.sukrara.core.data.db
 
 import app.mauri.sukrara.core.model.Reading
+import app.mauri.sukrara.core.model.ReadingRank
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
@@ -17,44 +18,40 @@ import app.mauri.sukrara.core.model.storage.StoredSpan
 import app.mauri.sukrara.core.model.storage.TreatmentDelivery
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Instant
 
 /**
- * Readings in Room. Every read leaves out the [hidden] sources: `DataModule.readingsFor` passes the other role's
- * ([SourceId.notOf]), so the history, the report, the rings, the export and every upload show only the current
- * person's readings, even one of the previous role still on its way when the role changed.
+ * Readings in Room: the current person's (a person change deletes them all). Every store goes through THE rank rule
+ * ([ReadingRank]): one reading per measurement, whichever sources brought it.
  */
-@OptIn(ExperimentalCoroutinesApi::class)
 class RoomReadingsRepository(
     private val dao: ReadingDao,
-    private val hidden: Flow<Set<SourceId>> = flowOf(emptySet()),
 ) : ReadingsRepository {
-    private val hiddenIds = hidden.map { set -> set.map { it.id } }.distinctUntilChanged()
+    override fun window(from: Instant): Flow<List<Reading>> = dao.window(from.toEpochMilli()).map { rows -> rows.map { it.toReading() } }
 
-    override fun window(from: Instant): Flow<List<Reading>> =
-        hiddenIds.flatMapLatest { ids -> dao.window(from.toEpochMilli(), ids) }.map { rows -> rows.map { it.toReading() } }
-
-    override fun latest(): Flow<Reading?> = hiddenIds.flatMapLatest { ids -> dao.latest(ids) }.map { it?.toReading() }
+    override fun latest(): Flow<Reading?> = dao.latest().map { it?.toReading() }
 
     override suspend fun range(
         from: Instant,
         to: Instant,
-    ): List<Reading> = dao.range(from.toEpochMilli(), to.toEpochMilli(), hiddenIds.first()).map { it.toReading() }
+    ): List<Reading> = dao.range(from.toEpochMilli(), to.toEpochMilli()).map { it.toReading() }
 
     override suspend fun spanOf(sources: Set<SourceId>): StoredSpan =
         if (sources.isEmpty()) StoredSpan.EMPTY else dao.span(sources.map { it.id }).toSpan()
 
-    override suspend fun deleteFrom(sources: Set<SourceId>): Int = if (sources.isEmpty()) 0 else dao.deleteFrom(sources.map { it.id })
+    override suspend fun span(): StoredSpan = dao.spanAll().toSpan()
+
+    override suspend fun deleteAll(): Int = dao.deleteAll()
 
     override suspend fun upsert(readings: List<Reading>) {
-        if (readings.isNotEmpty()) dao.upsertOwnFirst(readings.map { it.toEntity() }, IMPORTED, HistoryImport.SAME_READING.toMillis())
+        if (readings.isEmpty()) return
+        val window = ReadingRank.WINDOW.toMillis()
+        dao.upsertRanked(readings.minOf { it.t.toEpochMilli() } - window, readings.maxOf { it.t.toEpochMilli() } + window) { stored ->
+            val plan = ReadingRank.plan(stored.map { it.toReading() }, readings)
+            plan.upsert.map { it.toEntity() } to plan.remove.map { it.toEntity() }
+        }
     }
 
     override suspend fun deleteBefore(cutoff: Instant): Int = dao.deleteBefore(cutoff.toEpochMilli())
@@ -85,9 +82,6 @@ class RoomTreatmentsRepository(private val dao: TreatmentDao) : TreatmentsReposi
 
     override suspend fun deleteAll() = dao.deleteAll()
 }
-
-/** The sources Import history stores readings under. */
-private val IMPORTED = SourceId.Imported.map { it.id }
 
 /**
  * THE import path in Room ([HistoryImportStore]): each batch is compared with everything stored around it (any source;

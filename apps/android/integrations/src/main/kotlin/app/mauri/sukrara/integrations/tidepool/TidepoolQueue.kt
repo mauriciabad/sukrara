@@ -4,7 +4,7 @@
 package app.mauri.sukrara.integrations.tidepool
 
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentOrigin
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
@@ -60,12 +60,15 @@ data class TpState(
     val lastCount: Int = 0,
     val lastError: Trouble? = null,
 ) {
-    fun role(r: Role): TpRoleState = roles[r.name] ?: TpRoleState()
+    fun role(r: SourceSpec): TpRoleState = roles[key(r)] ?: TpRoleState()
 
     fun withRole(
-        r: Role,
+        r: SourceSpec,
         s: TpRoleState,
-    ): TpState = copy(roles = roles + (r.name to s))
+    ): TpState = copy(roles = roles + (key(r) to s))
+
+    /** Your glucose read here, or anyone's relayed or someone else's: two uploads apart on the account. */
+    private fun key(r: SourceSpec) = if (r.owner) "Wearer" else "Follower"
 }
 
 /**
@@ -85,15 +88,18 @@ object TidepoolQueue {
     private const val MINUTE_MS = 60_000L
     const val MAX_BACKOFF_MS = 60 * MINUTE_MS
 
-    /** Who may upload: the wearer always; a follower only once the person chose to upload the one they follow. */
+    /**
+     * Who may upload: your glucose read here always; anyone else's (or a stream's) only once the person chose to upload
+     * it.
+     */
     fun allowed(
-        role: Role?,
+        role: SourceSpec?,
         uploadFollowed: Boolean,
     ): Boolean =
-        when (role) {
-            Role.Wearer -> true
-            Role.Follower -> uploadFollowed
-            null -> false
+        when {
+            role == null -> false
+            role.owner -> true
+            else -> uploadFollowed
         }
 
     /** One cycle's work. */

@@ -8,9 +8,9 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
@@ -38,7 +38,7 @@ class SystemUiTest {
         sensor: SensorState = SensorState.Active(null),
     ): GlucoseState {
         val reading = mgdl?.let { Reading(now.minusSeconds(ageS), it, rate, SourceId.Libre3).trended() }
-        return GlucoseState.Initial.copy(role = Role.Wearer, latest = reading, recent = listOfNotNull(reading), sensor = sensor)
+        return GlucoseState.Initial.copy(spec = SourceSpec.YourSensor, latest = reading, recent = listOfNotNull(reading), sensor = sensor)
     }
 
     /** The app's words (SystemUiWordsTest checks them in English and Spanish). */

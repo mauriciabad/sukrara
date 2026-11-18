@@ -16,7 +16,7 @@ import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -114,7 +114,7 @@ class IntegrationsModule(
     libreLive: Flow<LiveReading>,
     /** THE LibreView account (one per app, signed in once; the sensor uses it too): the upload's and the import's. */
     private val libreViewLogin: LibreViewLogin,
-    role: Flow<Role?>,
+    role: Flow<SourceSpec?>,
     jugglucoIsSource: Flow<Boolean>,
     http: OkHttpClient,
     private val clock: Clock,
@@ -127,7 +127,8 @@ class IntegrationsModule(
     /** How the face is reached: Garmin Connect, or a debug build's Connect IQ simulator. */
     connectIq: ConnectIqPort = ConnectIq(context, log),
 ) {
-    val wearer: Flow<Boolean> = role.map { it == Role.Wearer }
+    /** Your glucose read first-hand here: what uploads and outputs may send (docs/44 keying). */
+    val wearer: Flow<Boolean> = role.map { it?.owner == true }
 
     val exporter =
         Exporter(readings, treatments, sensor, clock, settings.flow(GraphSettings.GlucoseUnitSetting).map(GlucoseUnit::of))

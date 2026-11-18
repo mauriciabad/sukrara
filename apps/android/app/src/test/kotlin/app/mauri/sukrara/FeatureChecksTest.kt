@@ -4,7 +4,7 @@
 package app.mauri.sukrara
 
 import app.mauri.sukrara.core.model.BlockedFeature
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.localserver.LanState
 import app.mauri.sukrara.share.ble.NearbyStatus
@@ -17,17 +17,20 @@ class FeatureChecksTest {
 
     @Test fun bluetoothSharingCountsOnlyWhileTheServerWantsToRunAndLacksThePermission() {
         // the owner's case (#40): Nearby devices granted for the sensor, not for advertising, someone follows
-        assertEquals(listOf(BlockedFeature.BluetoothSharing), blocked(FeatureFacts(Role.Wearer, sharing = NearbyStatus.NeedsPermission)))
+        assertEquals(
+            listOf(BlockedFeature.BluetoothSharing),
+            blocked(FeatureFacts(SourceSpec.YourSensor, sharing = NearbyStatus.NeedsPermission)),
+        )
         // nobody follows yet (the server isn't wanted: Stopped), Bluetooth off (the alert checklist's), all fine
         for (s in listOf(NearbyStatus.Stopped, NearbyStatus.BluetoothOff, NearbyStatus.Searching, NearbyStatus.Unsupported)) {
-            assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(Role.Wearer, sharing = s)))
+            assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(SourceSpec.YourSensor, sharing = s)))
         }
     }
 
     @Test fun eachFeatureOnlyOnItsRole() {
         val all =
             FeatureFacts(
-                Role.Wearer,
+                SourceSpec.YourSensor,
                 sharing = NearbyStatus.NeedsPermission,
                 following = NearbyStatus.NeedsPermission,
                 healthConnect = HcStatus.NeedsPermission,
@@ -37,15 +40,18 @@ class FeatureChecksTest {
             listOf(BlockedFeature.BluetoothSharing, BlockedFeature.HealthConnect, BlockedFeature.HomeNetwork),
             blocked(all),
         )
-        assertEquals(listOf(BlockedFeature.BluetoothFollowing, BlockedFeature.HomeNetwork), blocked(all.copy(role = Role.Follower)))
+        assertEquals(
+            listOf(BlockedFeature.BluetoothFollowing, BlockedFeature.HomeNetwork),
+            blocked(all.copy(role = SourceSpec.TheirSukrara)),
+        )
         assertEquals(listOf(BlockedFeature.HomeNetwork), blocked(all.copy(role = null)))
     }
 
     @Test fun healthConnectAndTheHomeNetworkCountOnlyForTheMissingPermission() {
-        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(Role.Wearer, healthConnect = HcStatus.Off)))
-        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(Role.Wearer, healthConnect = HcStatus.Unavailable)))
-        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(Role.Wearer, homeNetwork = LanState.NoWifi)))
-        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(Role.Wearer, homeNetwork = LanState.OtherWifi)))
+        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(SourceSpec.YourSensor, healthConnect = HcStatus.Off)))
+        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(SourceSpec.YourSensor, healthConnect = HcStatus.Unavailable)))
+        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(SourceSpec.YourSensor, homeNetwork = LanState.NoWifi)))
+        assertEquals(emptyList<BlockedFeature>(), blocked(FeatureFacts(SourceSpec.YourSensor, homeNetwork = LanState.OtherWifi)))
     }
 
     @Test fun everyBlockedFeatureHasAWayOutBesidesAllow() {

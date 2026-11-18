@@ -18,7 +18,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NavTargets
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
@@ -95,7 +95,7 @@ class QuickTreatmentTest {
     @Test
     @Config(qualifiers = "w411dp-h891dp-xxhdpi")
     fun aKeptDraftFillsTheDialogAndSaveOffersUndo() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
         val now = app.treatments.clock.now()
         app.treatments.keepDraft(
             TreatmentDraft("4.5", "", "", "", atMs = now.minusSeconds(300).toEpochMilli(), keptMs = now.toEpochMilli()),
@@ -122,7 +122,7 @@ class QuickTreatmentTest {
     @Test
     @Config(qualifiers = "w411dp-h891dp-xxhdpi")
     fun openSukraraOnlyFromOutsideTheApp() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
         ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Notification)).use {
             compose.waitUntil(5_000) { compose.onAllNodesWithTag("treatment-save").fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText("Open Sukrara").assertExists()
@@ -153,7 +153,7 @@ class QuickTreatmentTest {
     }
 
     @Test fun opensTheDialogWhenThisPhoneCanAdd() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
         val activity =
             Robolectric
                 .buildActivity(
@@ -166,7 +166,7 @@ class QuickTreatmentTest {
 
     /** #194: an alert's *Log carbs* opens the dialog on Carbs and answers that alert on this phone, once (#39). */
     @Test fun anAlertsLogCarbsAnswersTheAlertOnce() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
         app.answers.clear()
         // what the monitor's alert notification posts (the package only, the kind's wire name)
         val fromAlert =
@@ -199,7 +199,7 @@ class QuickTreatmentTest {
     }
 
     @Test fun opensTheAppInsteadWhenThisPhoneCannotAdd() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Follower)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.TheirSukrara)
         val activity =
             Robolectric
                 .buildActivity(
@@ -217,7 +217,7 @@ class QuickTreatmentTest {
     @Test
     @Config(qualifiers = "w411dp-h891dp-xxhdpi")
     fun theLockScreenCountdownKeepsOnlyADoseAsTyped() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
         assertNull(runOutOnTheLockScreen(".243"))
         val kept = runOutOnTheLockScreen("4.5")
         assertEquals("4.5", kept?.rapid)

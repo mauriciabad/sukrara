@@ -59,7 +59,9 @@ class TrendReadings(
 
     override suspend fun spanOf(sources: Set<SourceId>): StoredSpan = base.spanOf(sources)
 
-    override suspend fun deleteFrom(sources: Set<SourceId>): Int = base.deleteFrom(sources)
+    override suspend fun span(): StoredSpan = base.span()
+
+    override suspend fun deleteAll(): Int = base.deleteAll()
 
     private fun annotated(
         readings: List<Reading>,

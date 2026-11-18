@@ -4,7 +4,7 @@
 package app.mauri.sukrara.feature.treatments
 
 import app.mauri.sukrara.core.model.GlucoseState
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
@@ -31,7 +31,7 @@ class QuickSaveTest {
     private val t0 = Instant.parse("2026-06-15T12:00:00Z")
     private val clock = FakeClock(t0)
     private val repo = InMemoryTreatmentsRepository()
-    private val glucose = MutableStateFlow(GlucoseState.Initial.copy(role = Role.Wearer))
+    private val glucose = MutableStateFlow(GlucoseState.Initial.copy(spec = SourceSpec.YourSensor))
     private val notices = mutableListOf<String>()
     private val notice =
         object : DraftNotice {
@@ -81,7 +81,7 @@ class QuickSaveTest {
 
     @Test fun nothingToUndoWhenThisPhoneMayNotAdd() =
         runTest {
-            glucose.value = GlucoseState.Initial.copy(role = Role.Follower)
+            glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.TheirSukrara)
             assertNull(module().save(listOf(NewEntry(TreatmentKind.Carbs, 15.0)), null))
             assertTrue(visible().isEmpty())
         }

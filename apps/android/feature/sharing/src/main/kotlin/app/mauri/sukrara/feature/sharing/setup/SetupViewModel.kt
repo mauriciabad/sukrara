@@ -13,11 +13,12 @@ import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.NotificationStyle
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.Person
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.designsystem.root.AccessProblem
 import app.mauri.sukrara.designsystem.root.AccessRunner
-import app.mauri.sukrara.feature.sharing.RoleLoss
+import app.mauri.sukrara.feature.sharing.HistoryLoss
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.following
 import app.mauri.sukrara.protocol.event.Avatar
@@ -74,12 +75,15 @@ sealed interface JoinUi {
 }
 
 /**
- * A role picked on the role step, waiting for the person's confirmation. [loss] = the history it deletes from this
- * phone (its own dialog, with *Export CSV first*); null = nothing to delete (the plain role confirmation).
+ * A source picked on the source step, waiting for the person's confirmation: [loss] = the history a person change
+ * deletes from this phone (its own dialog, with *Export CSV first*); null = nothing to delete (a plain confirmation of
+ * what changes, or none the first time).
  */
-data class RoleChange(
-    val role: Role,
-    val loss: RoleLoss?,
+data class SourceChange(
+    val spec: SourceSpec,
+    val loss: HistoryLoss?,
+    /** Something is stored already (Settings › Source, or Back in setup): say what changes before it does. */
+    val replaces: SourceSpec? = null,
 )
 
 /** Everything one setup screen shows. [step] null = setup is over: go home. */
@@ -108,8 +112,10 @@ data class SetupUi(
     val single: Boolean,
     /** Back shows the previous step ([SetupMachine.previous]); false = Back leaves setup. */
     val canBack: Boolean,
-    /** The role step's open confirmation (null = none). */
-    val roleChange: RoleChange? = null,
+    /** Whose glucose picked on the person step (null = not picked in this visit: what the phone runs on). */
+    val person: Person? = null,
+    /** The source step's open confirmation (null = none). */
+    val sourceChange: SourceChange? = null,
     /** The root step and the glucose notification step. */
     val root: RootUi = RootUi(),
 )
@@ -159,8 +165,11 @@ class SetupViewModel(
     private val joining = MutableStateFlow<JoinUi>(JoinUi.Idle)
     private val busy = MutableStateFlow(false)
 
-    /** The role step's confirmation; kept while *Export CSV first* is open, so it shows again on the way back. */
-    private val roleChange = MutableStateFlow<RoleChange?>(null)
+    /** The source step's confirmation; kept while *Export CSV first* is open, so it shows again on the way back. */
+    private val sourceChange = MutableStateFlow<SourceChange?>(null)
+
+    /** Whose glucose picked on the person step (screen state: a rotation keeps it); the source step stores it. */
+    private val person = saved.getMutableStateFlow<String?>(PERSON, null)
 
     /** The thresholds being edited on the alert step (null = the stored ones). */
     private val editing = MutableStateFlow<AlertSettings?>(null)
@@ -183,7 +192,7 @@ class SetupViewModel(
     private val inputs =
         combine(
             m.setupStore.data,
-            m.roles.role,
+            combine(m.sources.stored, m.sources.running, ::Pair),
             m.hub.state,
             combine(m.sharing.state, m.follower.state, ::Pair),
             combine(
@@ -195,12 +204,12 @@ class SetupViewModel(
             ) { a, c, u, p, r -> Answers(a, c != null, u, p, r) },
         ) {
             record,
-            role,
+            (spec, running),
             glucose,
             (share, follow),
             answers,
             ->
-            Inputs(record, role, glucose, share, follow, answers)
+            Inputs(record, spec, running, glucose, share, follow, answers)
         }
 
     val ui: StateFlow<SetupUi?> =
@@ -210,14 +219,16 @@ class SetupViewModel(
             m.readiness.readiness,
             combine(mode, alone, shown, ::Triple),
             combine(restore, busy, editing, ::Locals),
-            combine(joining, m.pendingInvite, roleChange, rootUi, ::Others),
-        ) { i, readiness, (modeName, aloneName, backTo), l, (join, invite, change, root) ->
+            combine(joining, m.pendingInvite, combine(sourceChange, person, ::Pair), rootUi, ::Others),
+        ) { i, readiness, (modeName, aloneName, backTo), l, (join, invite, pending, root) ->
+            val (change, picked) = pending
             // opened from home: nothing until the walk-or-finish decision is made (no step flashes, no early "over")
             val mode = modeName?.let(Mode::valueOf) ?: return@combine null
             val now = m.clock.now()
             val facts =
                 SetupFacts(
-                    role = i.role,
+                    spec = i.spec,
+                    running = i.running,
                     following = i.follow.following,
                     ownSensorLive = RestoreGate.ownSensorLive(i.glucose, now),
                     hasIdentity = i.share is OwnerShareState.Sharing || i.share is OwnerShareState.AnotherAppSharingAsYou,
@@ -254,7 +265,8 @@ class SetupViewModel(
                 busy = l.busy,
                 single = single,
                 canBack = !single && step != null && SetupMachine.previous(step, facts) != null,
-                roleChange = change.takeIf { step == SetupStep.Role },
+                person = picked?.let(Person::of),
+                sourceChange = change.takeIf { step == SetupStep.Source },
                 root = root,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -318,45 +330,92 @@ class SetupViewModel(
     fun continueWelcome() = record(SetupMachine::completeWelcome)
 
     /**
-     * Continue on the role step: asks what choosing [role] would delete, then shows its confirmation
-     * ([SetupUi.roleChange]). Nothing changes until the person confirms ([chooseRole]); a failed check leaves the step
-     * as it was.
+     * *Continue* on the person step: whose glucose is picked (nothing stored yet) and the source step shows, in the walk
+     * or on its own (Settings › Source's *Whose glucose*).
      */
-    fun reviewRole(role: Role) {
+    fun choosePerson(picked: Person) {
+        person.value = picked.id
+        if (mode.value == Mode.Walk.name) {
+            shown.value = SetupStep.Source.name
+        } else {
+            alone.value = SetupStep.Source.name
+        }
+    }
+
+    /**
+     * *Continue* on the source step: [spec] stored at once the first time; when something is stored already (or a
+     * person change would delete history) its confirmation shows first ([SetupUi.sourceChange]). Nothing changes until
+     * the person confirms ([chooseSource]); a failed check leaves the step as it was.
+     */
+    fun reviewSource(spec: SourceSpec) {
         if (busy.value) return
         viewModelScope.launch {
             busy.value = true
-            try {
-                roleChange.value = RoleChange(role, m.roles.loss(role))
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                android.util.Log.w("Sukrara.setup", "role check failed: ${e.javaClass.simpleName}")
-            } finally {
-                busy.value = false
+            val change =
+                try {
+                    SourceChange(spec, m.sources.loss(spec), replaces = m.sources.stored.first())
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    android.util.Log.w("Sukrara.setup", "source check failed: ${e.javaClass.simpleName}")
+                    null
+                } finally {
+                    busy.value = false
+                }
+            when {
+                change == null -> Unit
+                change.loss == null && change.replaces == spec -> afterSource(spec)
+                change.loss == null && change.replaces == null -> chooseSource(spec)
+                else -> sourceChange.value = change
             }
         }
     }
 
-    /** Cancel on the role confirmation: the role stays as it was and nothing is deleted. */
-    fun cancelRole() {
-        roleChange.value = null
+    /** Cancel on the source confirmation: the source stays as it was and nothing is deleted. */
+    fun cancelSource() {
+        sourceChange.value = null
     }
 
     /**
-     * P10: called after the person confirmed what the role means (and, when it deletes history, *Delete and
-     * continue*). A changed role resets the alert runtime first.
+     * P10: [spec] is stored (after its confirmation and, when it deletes history, *Delete and continue*). A change of
+     * whose glucose, or of how it alerts (the wearer's own alerts ↔ a stream's), resets the alert runtime first; a source
+     * change for the same person keeps the episodes.
      */
-    fun chooseRole(role: Role) =
+    fun chooseSource(spec: SourceSpec) =
         act {
-            roleChange.value = null
+            sourceChange.value = null
             searching.value = null
-            val facts = ui.value?.facts ?: return@act
-            val chosen = SetupMachine.chooseRole(role, confirmed = true, facts) as? Result.Done ?: return@act
-            if (facts.role != chosen.value) m.resetAlerts()
-            m.roles.set(chosen.value)
+            val before = m.sources.running.first()
+            if (before == null || before.person != spec.person || before.owner != spec.owner ||
+                before.stream != spec.stream
+            ) {
+                m.resetAlerts()
+            }
+            m.sources.set(spec)
+            person.value = null
             m.startMonitoring()
+            afterSource(spec)
         }
+
+    /**
+     * After the source is stored: in the walk, the next unanswered step follows by itself; on its own (Settings ›
+     * Source), a stream not joined yet goes on to the join step, a sensor or app not read yet to the connect step,
+     * otherwise the visit is over.
+     */
+    private suspend fun afterSource(spec: SourceSpec) {
+        person.value = null
+        if (mode.value == Mode.Walk.name) {
+            shown.value = null
+            return
+        }
+        val facts = m.progress.first().facts
+        alone.value =
+            when {
+                spec.stream && !facts.following -> SetupStep.Join.name
+                !spec.stream && !facts.ownSensorLive -> SetupStep.Sensor.name
+                else -> null
+            }
+    }
 
     /** The invite link opened on this phone that was already looked up by itself (not again after a rotation). */
     private var openedLookedUp: String? = null
@@ -700,7 +759,8 @@ class SetupViewModel(
 
     private data class Inputs(
         val record: SetupRecord,
-        val role: Role?,
+        val spec: SourceSpec?,
+        val running: SourceSpec?,
         val glucose: app.mauri.sukrara.core.model.GlucoseState,
         val share: OwnerShareState,
         val follow: FollowState,
@@ -719,7 +779,7 @@ class SetupViewModel(
     private data class Others(
         val join: JoinUi,
         val invite: String?,
-        val change: RoleChange?,
+        val change: Pair<SourceChange?, String?>,
         val root: RootUi,
     )
 
@@ -739,6 +799,7 @@ class SetupViewModel(
         private const val SHOWN = "setup.shown"
         private const val ROOTED = "setup.rooted"
         private const val PICKED = "setup.rootPicked"
+        private const val PERSON = "setup.person"
 
         fun factory(
             module: SetupModule,

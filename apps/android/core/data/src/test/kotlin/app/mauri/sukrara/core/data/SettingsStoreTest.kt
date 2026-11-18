@@ -31,7 +31,7 @@ class SettingsStoreTest {
 
     private val graphHours = SchemaSettings.number("graph.hours")
     private val nostr = SchemaSettings.bool("sharing.nostr", default = true)
-    private val source = SchemaSettings.text("source.source", default = "libre3", allowed = setOf("libre3", "juggluco"))
+    private val source = SchemaSettings.text("general.unit", default = "mgdl", allowed = setOf("mgdl", "mmol"))
 
     @Test
     fun `unset settings read as their defaults`() =
@@ -39,7 +39,7 @@ class SettingsStoreTest {
             val repo = repo(backgroundScope)
             assertEquals(12.0, repo.flow(graphHours).first(), 0.0)
             assertTrue(repo.flow(nostr).first())
-            assertEquals("libre3", repo.flow(source).first())
+            assertEquals("mgdl", repo.flow(source).first())
         }
 
     @Test
@@ -61,7 +61,7 @@ class SettingsStoreTest {
             repo.set(graphHours, 500.0)
             assertEquals(48.0, repo.flow(graphHours).first(), 0.0)
             repo.set(source, "carrier-pigeon")
-            assertEquals("libre3", repo.flow(source).first())
+            assertEquals("mgdl", repo.flow(source).first())
         }
 
     @Test

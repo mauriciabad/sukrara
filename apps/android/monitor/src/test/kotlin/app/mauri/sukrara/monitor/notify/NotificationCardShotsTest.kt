@@ -12,9 +12,9 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.graph.CardWords
 import app.mauri.sukrara.graph.Freshness
 import app.mauri.sukrara.graph.GlucoseCard
@@ -84,7 +84,7 @@ class NotificationCardShotsTest {
             (storedDays * 288 downTo 1).map { i -> Reading(readings.first().t.minusSeconds(i * 300L), 250, null, SYNTH) }
         val g =
             GlucoseState.Initial.copy(
-                role = Role.Wearer,
+                spec = SourceSpec.YourSensor,
                 latest = readings.last(),
                 recent = readings,
                 sensor = SensorState.Active(now.plus(Duration.ofDays(6))),

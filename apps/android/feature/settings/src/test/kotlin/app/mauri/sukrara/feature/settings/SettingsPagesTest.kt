@@ -109,9 +109,10 @@ class SettingsPagesTest {
             "alerts.sounds.shuffle",
             "alerts.separate",
             "alerts.thresholdsConfirmedAt",
-            // Settings › Sensor (the app joins it to the sensor module)
-            "source.source",
-            // Settings › Sensor › Juggluco's web server (the SecureStore, through the sensor module)
+            // Settings › Source (the app joins it: whose glucose and where from, setup's two steps in place)
+            "source.person",
+            "source.kind",
+            // Settings › Source › Juggluco's web server (the SecureStore, through the sensor module)
             "source.jugglucoSecret",
             // Settings › Status bar & notification and Settings › Sensor end
             "statusbar.show",

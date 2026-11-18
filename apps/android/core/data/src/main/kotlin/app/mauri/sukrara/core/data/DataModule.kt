@@ -31,8 +31,6 @@ import app.mauri.sukrara.core.data.settings.SettingsTransfer
 import app.mauri.sukrara.core.data.state.TypedStore
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
-import app.mauri.sukrara.core.model.Role
-import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.storage.HistoryImportStore
 import app.mauri.sukrara.core.model.storage.PenLedgerRepository
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
@@ -45,7 +43,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -177,14 +174,11 @@ class DataModule(
             .build()
     }
 
-    /** Every stored reading, whoever it is from: for the follower engine's own wipes and writes. */
-    val readings: ReadingsRepository by lazy { RoomReadingsRepository(database.readings()) }
-
     /**
-     * The readings as the phone's current [role] sees them: never another role's sources ([SourceId.notOf]). What
-     * the hub, the history, the report, the export and the uploads read.
+     * Every stored reading: the current person's (a person change deletes them). What the hub, the history, the report,
+     * the export and the uploads read.
      */
-    fun readingsFor(role: Flow<Role?>): ReadingsRepository = RoomReadingsRepository(database.readings(), role.map(SourceId::notOf))
+    val readings: ReadingsRepository by lazy { RoomReadingsRepository(database.readings()) }
 
     val treatments: TreatmentsRepository by lazy { RoomTreatmentsRepository(database.treatments()) }
 
@@ -212,13 +206,13 @@ class DataModule(
     private var hub: HubReadings? = null
 
     /**
-     * THE glucose hub's readings ([HubReadings]): the history once it is open ([readingsFor] [role]), this phone's own
-     * recent readings in device-protected storage before. One per process.
+     * THE glucose hub's readings ([HubReadings]): the history once it is open ([readings]), this phone's own recent
+     * readings in device-protected storage before. One per process.
      */
     @Synchronized
-    fun hubReadings(role: Flow<Role?>): HubReadings {
+    fun hubReadings(): HubReadings {
         check(hub == null) { "one hub per process: share the instance" }
-        return HubReadings({ readingsFor(role) }, recentReadings, historyOpen) { diagLog.log("readings", it) }.also { hub = it }
+        return HubReadings({ readings }, recentReadings, historyOpen) { diagLog.log("readings", it) }.also { hub = it }
     }
 
     /**

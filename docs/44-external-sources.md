@@ -431,8 +431,50 @@ re-sharing someone else's glucose (decision 9), a Clarity file import, root read
 
 ## In Sukrara
 
-Nothing is brought in yet: the design waits for the owner's decisions below. The round that builds it fills this
-section with what was added and what was discarded, with the reasons.
+**Step 0, Person × Source (2026-11-18, both apps).**
+
+Added:
+- **The model**: `Person` × `SourceKind` → `SourceSpec` (Android `:core:model` `Source.kt`, Mac `SukraraCore`
+  `Source.swift`), each source declaring persons, first-hand, offline, group, delay, backfill and reading ids in
+  `contracts/sources/sources.json`, which both apps pass (`SourcesContractTest`, `SourcesTests`) with its `keying`
+  table: `owner` (yours, first-hand) keys sharing, uploads, pens, sensor reminders, Import history and the WEARER alert
+  role; `stream` keys the follower engine, *Settings from*, writer scope; `person` keys the words. The role (`Role`,
+  `role.json`, `source.source`, the Mac's `jugglucoLan`) is gone; schema rows `source.person`, `source.kind` (Android:
+  a typed state file with a backup, device-protected, store `state`).
+- **Alerts unchanged**: the alert engine still receives WEARER / FOLLOWER_MIRROR / FOLLOWER_OWN; the runtime maps the pair
+  (`AlertSide`), so no scenario in `contracts/alerts/scenarios` changed.
+- **The rank rule** (`contracts/sources/dedup.json`): one reading per measurement, ±2 min, sensor > phone app > network >
+  online > another Sukrara > imported; Android stores every batch through it in one Room transaction (replacing "the
+  sensor removes imported copies"); a person change deletes every reading and treatment (confirmed, *Export CSV
+  first*), a source change keeps them; the hub drops a reading still arriving from the previous source.
+- **Bluetooth follower readings tagged `nearby`** (`FollowerEngine.heard`), the rank rule keeping one copy.
+- **Setup**: *Whose glucose will Sukrara show?* (two illustrated cards drawn in the theme's colours, lift + one ring
+  breath + tick, reduced motion honoured) → *Where does your glucose come from?* (SPA radio rows grouped *On this phone
+  · works offline* / *From another Sukrara*, the sensor *Recommended*) → Follow someone / Connect Juggluco / Sensor. The
+  wrong "reinstall" copy is gone. Mac: the same two steps (cards side by side, radio rows), *Connect Juggluco* in place
+  of Follow when chosen.
+- **Settings › Source** (Android overview row after Alerts; Mac pane replacing *Following*): whose glucose, where from
+  (each opens the step on its own), *Now*, the source's rows (Sensor link; Juggluco state and secret; the follow and
+  *Settings from*); Settings › Sharing elsewhere says sharing is for your own glucose.
+- **Updates from before the question**: the device keeps reading what it's set up for (`inferSource`: follow → their
+  Sukrara, a sensor pairing → your sensor, Juggluco installed after setup began → Juggluco; Mac: following → their
+  Sukrara) and setup asks once more, preselected.
+
+Discarded or deferred, with reasons:
+- *Your sensor beside the official app*, official app, LibreLinkUp, Dexcom Share, Nightscout as kinds: no data path in
+  step 0 (the brief); `sources.json` grows with steps 1–3.
+- *Two apps, one low*, *How it's going*, the move: need a source beside an official app (steps 3–4).
+- Yours × another Sukrara keeps a stream's behaviour (no pens, reminders or Import history on the second device): the
+  first-hand phone owns them; the table's "person" keying applies to first-hand sources.
+- The Mac's one readings store with `Reading.source`: the Mac reads one source at a time (follow or Juggluco, each its
+  own store, history reloaded on a switch), so nothing can double yet; the rank rule is implemented and contract-tested
+  there (`ReadingRank.merge`) for the step that merges stores (Nightscout on the Mac).
+- On the Mac a person change deletes nothing: its readings are each source's own store (the follow's goes with *Stop
+  following*); it changes the words.
+- The Mac's *Do you have Sukrara on your phone?* first question: with no online source yet the Source step's first
+  choice is that question; it comes with step 1.
+- Juggluco users on the Mac who updated: their old switch isn't read (no back-compat); the Mac asks the source on
+  *Finish Setup…* and doesn't read Juggluco until answered.
 
 ## Decisions for the owner
 

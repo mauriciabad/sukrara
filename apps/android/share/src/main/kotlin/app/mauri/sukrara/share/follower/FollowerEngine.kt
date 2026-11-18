@@ -853,11 +853,11 @@ class FollowerEngine(
                     }
 
                     is Item.Chunk -> {
-                        next = heard(next, item.chunk.readings)
+                        next = heard(next, item.chunk.readings, relay)
                     }
 
                     is Item.Live -> {
-                        item.live.reading?.let { next = heard(next, listOf(it)) }
+                        item.live.reading?.let { next = heard(next, listOf(it), relay) }
                         if (item.sensorChanged) {
                             next = next.copy(sensor = item.live.sensor)
                             _sensor.value = sensorState(item.live.sensor)
@@ -928,10 +928,15 @@ class FollowerEngine(
         }
     }
 
-    /** Readings to the hub (it stores them; the stored history is the source of truth for every surface). */
-    private suspend fun heard(r: FollowerRecord, wire: List<WireReading>): FollowerRecord {
+    /**
+     * Readings to the hub (it stores them; the stored history is the source of truth for every surface), tagged by the
+     * way they came [via]: `nearby` over Bluetooth, `relay` over the internet (one reading per measurement either way:
+     * the rank rule keeps the first copy).
+     */
+    private suspend fun heard(r: FollowerRecord, wire: List<WireReading>, via: String): FollowerRecord {
         if (wire.isEmpty()) return r
-        val batch = wire.sortedBy { it.t }.map { Reading(Instant.ofEpochSecond(it.t), it.sgv, it.rate, SourceId.Relay) }
+        val source = if (via == NEARBY_VIA) SourceId.Nearby else SourceId.Relay
+        val batch = wire.sortedBy { it.t }.map { Reading(Instant.ofEpochSecond(it.t), it.sgv, it.rate, source) }
         sink?.send(batch)
         val newest = batch.last().t
         if (_status.value !is SourceStatus.Live || (_status.value as SourceStatus.Live).lastReadingAt < newest) {

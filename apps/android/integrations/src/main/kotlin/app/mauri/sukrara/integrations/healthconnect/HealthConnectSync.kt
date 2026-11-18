@@ -6,8 +6,8 @@ package app.mauri.sukrara.integrations.healthconnect
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
@@ -125,7 +125,7 @@ sealed interface HcStatus {
 /**
  * Writes the wearer's readings to Health Connect as blood glucose (interstitial fluid), opt-in (`healthConnect.on`,
  * off by default; turning it on asks Health Connect's own permission sheet first). Switched on, the stored history (up
- * to [BACKFILL]) goes in once, then each new reading. Only this phone's own sensor readings ([SourceId.Wearer], by the
+ * to [BACKFILL]) goes in once, then each new reading. Only this phone's own sensor readings ([SourceId.FirstHand], by the
  * reading's stored source, so a follower feed kept from another role never goes in, nor imported history: Health
  * Connect has it already or got it from the same place) and never LO / HI (no number).
  *
@@ -139,7 +139,7 @@ class HealthConnectSync(
     private val settings: SettingsRepository,
     private val store: StateStore<HcState>,
     private val readings: ReadingsRepository,
-    private val role: Flow<Role?>,
+    private val role: Flow<SourceSpec?>,
     private val health: HealthStore,
     private val clock: Clock,
     private val io: CoroutineDispatcher,
@@ -155,7 +155,7 @@ class HealthConnectSync(
     val status: Flow<HcStatus> =
         combine(on, role, store.data, granted) { o, r, st, g ->
             when {
-                r == Role.Follower -> HcStatus.Follower
+                r?.owner == false -> HcStatus.Follower
                 !health.available() -> HcStatus.Unavailable
                 !o -> HcStatus.Off
                 !g -> HcStatus.NeedsPermission
@@ -182,7 +182,7 @@ class HealthConnectSync(
     fun start(scope: CoroutineScope) {
         recheck()
         scope.launch {
-            combine(on, role, granted, recheck) { o, r, g, _ -> o && g && r == Role.Wearer }
+            combine(on, role, granted, recheck) { o, r, g, _ -> o && g && r?.owner == true }
                 .flatMapLatest { active ->
                     if (!active) {
                         emptyFlow()
@@ -311,7 +311,7 @@ class HealthConnectSync(
         ): List<HcGlucose> =
             list
                 .asSequence()
-                .filter { it.source in SourceId.Wearer && !it.isLo && !it.isHi && it.t <= now + MAX_AHEAD }
+                .filter { it.source in SourceId.FirstHand && !it.isLo && !it.isHi && it.t <= now + MAX_AHEAD }
                 .groupBy { it.t.epochSecond / 60 }
                 .values
                 .map { m -> m.maxBy { it.t } }

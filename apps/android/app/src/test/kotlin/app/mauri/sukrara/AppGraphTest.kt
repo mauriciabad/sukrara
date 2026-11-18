@@ -28,7 +28,7 @@ class AppGraphTest {
     @Test fun everyModuleBuilds() {
         listOf(
             graph.data,
-            graph.role,
+            graph.source,
             graph.sensor,
             graph.monitor,
             graph.alerts,

@@ -16,7 +16,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.PenFill
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.TreatmentKind
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -46,7 +46,7 @@ class PenFillTest {
 
     @Before
     fun setUp() {
-        app.glucose.value = GlucoseState.Initial.copy(role = Role.Wearer)
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
     }
 
     private fun saved() = runBlocking { app.repo.changedSince(Instant.EPOCH) }.map { it.treatment }

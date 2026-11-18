@@ -13,9 +13,9 @@ import app.mauri.sukrara.core.model.LockAppearance
 import app.mauri.sukrara.core.model.LockBackground
 import app.mauri.sukrara.core.model.LockLook
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.graph.CardSurface
 import app.mauri.sukrara.graph.GlucoseCard
 import app.mauri.sukrara.graph.GraphConfig
@@ -83,7 +83,7 @@ class WidgetShotsTest {
             }
         val g =
             GlucoseState.Initial.copy(
-                role = Role.Wearer,
+                spec = SourceSpec.YourSensor,
                 latest = readings.last(),
                 recent = readings,
                 sensor = SensorState.Active(now.plus(Duration.ofDays(6))),

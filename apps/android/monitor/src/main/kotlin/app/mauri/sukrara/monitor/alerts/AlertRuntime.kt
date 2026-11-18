@@ -30,9 +30,9 @@ import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SensorTiming
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentQuiet
@@ -87,7 +87,7 @@ class AlertRuntime(
     private var machine: AlertMachine? = null
     private var own = AlertSettings()
     private var wearer: AlertSettings? = null
-    private var role: Role? = null
+    private var role: AlertSide? = null
     private var monitoring = false
     private var doses = Doses()
     private var sensor: SensorWindow? = null
@@ -370,11 +370,11 @@ class AlertRuntime(
         sensor = record.sensor?.window
         val saved = record.machine ?: return emptyList()
         latest = saved.local.last
-        role = if (saved.role == AlertRole.WEARER) Role.Wearer else Role.Follower
+        role = if (saved.role == AlertRole.WEARER) AlertSide.Wearer else AlertSide.Stream
         return startMachine(saved.role, saved, now())
     }
 
-    private suspend fun rebuildOrUpdate(newRole: Role?, now: Long) {
+    private suspend fun rebuildOrUpdate(newRole: AlertSide?, now: Long) {
         val alertRole = newRole?.let(::alertRoleOf)
         role = newRole
         val m = machine
@@ -796,10 +796,10 @@ class AlertRuntime(
         )
     }
 
-    private fun alertRoleOf(r: Role): AlertRole =
+    private fun alertRoleOf(r: AlertSide): AlertRole =
         when {
-            r == Role.Wearer -> AlertRole.WEARER
-            own.source == AlertSource.WEARER -> AlertRole.FOLLOWER_MIRROR
+            r == AlertSide.Wearer -> AlertRole.WEARER
+            r == AlertSide.Stream && own.source == AlertSource.WEARER -> AlertRole.FOLLOWER_MIRROR
             else -> AlertRole.FOLLOWER_OWN
         }
 
@@ -903,18 +903,40 @@ class AlertRuntime(
 }
 
 /**
- * The part of the hub's [GlucoseState] the alert rules read: role, the follower's link name, when monitoring started, the
- * sensor and the newest reading. Never the hub's `alerts` (the runtime's own output), so publishing the alert state
+ * The part of the hub's [GlucoseState] the alert rules read: the alert side, the stream's name, when monitoring started,
+ * the sensor and the newest reading. Never the hub's `alerts` (the runtime's own output), so publishing the alert state
  * doesn't feed back into the runtime (#44).
  */
 internal data class AlertFeed(
-    val role: Role?,
+    val role: AlertSide?,
     val wearerName: String?,
     val monitoringStartedAt: Instant?,
     val sensor: SensorState,
     val latest: Reading?,
 ) {
     companion object {
-        fun of(s: GlucoseState) = AlertFeed(s.role, s.link?.wearerName, s.monitoringStartedAt, s.sensor, s.latest)
+        fun of(s: GlucoseState) = AlertFeed(s.spec?.let(AlertSide::of), s.link?.wearerName, s.monitoringStartedAt, s.sensor, s.latest)
+    }
+}
+
+/**
+ * How a source alerts (contracts/sources/sources.json `keying`, [SourceSpec.alertRole]): your glucose read here as the
+ * wearer; a Sukrara stream mirroring the wearer's alerts or running this phone's rules (*Settings from*); any other
+ * source (someone else's glucose from Juggluco) this phone's rules. The same machine roles the wearer / follower roles
+ * had, so alerts don't change for them.
+ */
+internal enum class AlertSide {
+    Wearer,
+    Stream,
+    Other,
+    ;
+
+    companion object {
+        fun of(spec: SourceSpec): AlertSide =
+            when {
+                spec.owner -> Wearer
+                spec.stream -> Stream
+                else -> Other
+            }
     }
 }

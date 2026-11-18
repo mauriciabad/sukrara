@@ -4,7 +4,6 @@
 package app.mauri.sukrara.integrations.localserver
 
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.graph.TrendAngle
@@ -43,7 +42,7 @@ object NightscoutApi {
         val treatments: List<Treatment>,
         val now: Instant,
         val zone: ZoneId,
-        val role: Role? = Role.Wearer,
+        val relayed: Boolean = false,
     )
 
     const val PORT = 17581
@@ -261,7 +260,7 @@ object NightscoutApi {
                 .filter { !it.deleted && (from == null || it.at.toEpochMilli() >= from) }
                 .sortedByDescending { it.at }
                 .take(count)
-        return JsonArray(rows.map { treatment(it, s.zone, s.role) }).toString()
+        return JsonArray(rows.map { treatment(it, s.zone, s.relayed) }).toString()
     }
 
     /**
@@ -271,9 +270,9 @@ object NightscoutApi {
     fun treatment(
         t: Treatment,
         zone: ZoneId,
-        role: Role? = Role.Wearer,
+        relayed: Boolean = false,
     ): JsonObject {
-        val by = if (role == Role.Follower) FOLLOWING else NsDocs.APP
+        val by = if (relayed) FOLLOWING else NsDocs.APP
         val doc = NsDocs.treatment(t, by, zone, enteredBy = by)
         return JsonObject(doc + mapOf("_id" to JsonPrimitive(sha1(t.id).take(24)), "mills" to JsonPrimitive(t.at.toEpochMilli())))
     }

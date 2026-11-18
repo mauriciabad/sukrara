@@ -76,6 +76,8 @@ class SensorSettingsActions(
     val setJugglucoSecret: (String) -> Unit = {},
     /** Settings › Sensor end (docs/35 §7: its own overview row stays, and Sensor links to it). */
     val openSensorEnd: () -> Unit = {},
+    /** Settings › Source: where the glucose comes from (the sensor read here, or Juggluco) is chosen there. */
+    val openSource: () -> Unit = {},
 )
 
 /** Settings › Sensor with its ViewModel; the "ends in" time moves every minute. */
@@ -87,6 +89,7 @@ fun SensorSettingsScreen(
     onSignIn: () -> Unit,
     onBack: () -> Unit,
     onSensorEnd: () -> Unit = {},
+    onSource: () -> Unit = {},
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     // back from Android's app page (where NFC taps are allowed again): read it again
@@ -114,6 +117,7 @@ fun SensorSettingsScreen(
             viewModel::resume,
             viewModel::setJugglucoSecret,
             onSensorEnd,
+            onSource,
         ),
         onBack,
     )
@@ -143,8 +147,6 @@ fun SensorSettingsContent(
         }
         SensorGroup(state, now, zone, actions)
         if (state.source == SourceChoice.Libre3Direct) ThisPhoneGroup(state, actions)
-        SourceGroup(state.source) { confirming = it }
-        if (state.source == SourceChoice.Juggluco) JugglucoGroup(state.jugglucoSecret == true) { editingSecret = true }
         AccountGroup(state.account, actions)
         if (editingSecret) {
             JugglucoSecretDialog(
@@ -156,6 +158,12 @@ fun SensorSettingsContent(
         FooterText(stringResource(R.string.st_sensor_footer))
         SeeAlso(
             listOf(
+                SeeAlsoLink(
+                    stringResource(R.string.st_source_title),
+                    stringResource(R.string.st_source_summary),
+                    Section.Source,
+                    actions.openSource,
+                ),
                 SeeAlsoLink(
                     stringResource(R.string.st_sensorend_title),
                     stringResource(R.string.st_sensorend_link_summary),
@@ -319,9 +327,10 @@ private fun SensorGroup(
     actions: SensorSettingsActions,
 ) {
     SettingsGroup(title = stringResource(R.string.st_sensor_current)) {
-        // the active source, plainly: what Sukrara reads glucose from right now
-        InfoRow(
+        // the active source, plainly: what Sukrara reads glucose from right now (Settings › Source changes it)
+        NavigationRow(
             stringResource(R.string.st_sensor_reading_from),
+            actions.openSource,
             summary =
                 stringResource(
                     if (state.source ==
@@ -541,9 +550,9 @@ private fun statusText(
     }
 }
 
-/** Juggluco's web-server API secret: *Set* / *Not set* (never shown), the row opens [JugglucoSecretDialog]. */
+/** Juggluco's web-server API secret: *Set* / *Not set* (never shown), the row opens [JugglucoSecretDialog] (Settings › Source). */
 @Composable
-private fun JugglucoGroup(
+internal fun JugglucoGroup(
     isSet: Boolean,
     onEdit: () -> Unit,
 ) {
@@ -563,7 +572,7 @@ private fun JugglucoGroup(
  * *Remove* while one is saved, *Cancel* changes nothing.
  */
 @Composable
-private fun JugglucoSecretDialog(
+internal fun JugglucoSecretDialog(
     isSet: Boolean,
     onSave: (String) -> Unit,
     onClose: () -> Unit,
@@ -607,29 +616,6 @@ private fun JugglucoSecretDialog(
             }
         },
     )
-}
-
-/** Libre 3 direct ↔ Juggluco, SPA's inline radio rows: tapping the other one asks first ([onChoose]); the current one does nothing. */
-@Composable
-private fun SourceGroup(
-    current: SourceChoice,
-    onChoose: (SourceChoice) -> Unit,
-) {
-    SettingsGroup(Modifier.selectableGroup(), title = stringResource(R.string.st_sensor_source)) {
-        for (source in SourceChoice.entries) {
-            val selected = source == current
-            val juggluco = source == SourceChoice.Juggluco
-            // Juggluco's own icon (the PoC's); this phone: the phone symbol
-            RadioRow(
-                stringResource(if (juggluco) R.string.st_sensor_source_juggluco else R.string.st_sensor_source_direct),
-                selected,
-                { if (!selected) onChoose(source) },
-                summary = stringResource(if (juggluco) R.string.st_sensor_source_juggluco_why else R.string.st_sensor_source_direct_why),
-                icon = DsR.drawable.ds_ic_smartphone.takeIf { !juggluco },
-                leading = if (juggluco) ({ ServiceIcon(Service.Juggluco) }) else null,
-            )
-        }
-    }
 }
 
 @Composable

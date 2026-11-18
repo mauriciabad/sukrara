@@ -6,8 +6,8 @@ package app.mauri.sukrara.integrations.libreview
 import app.mauri.sukrara.core.data.libreview.LibreViewAccountState
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -56,7 +56,7 @@ class LibreViewUploaderTest {
     /** THE LibreView account of the app (signed in once on the account screen; the sensor uses it too). */
     private val login = LibreViewLogin(secure)
     private val treatments = InMemoryTreatmentsRepository()
-    private val role = MutableStateFlow<Role?>(Role.Wearer)
+    private val role = MutableStateFlow<SourceSpec?>(SourceSpec.YourSensor)
     private val sensor = MutableStateFlow<CurrentSensor?>(null)
     private val requests = mutableListOf<RecordedRequest>()
 
@@ -490,7 +490,7 @@ class LibreViewUploaderTest {
             assertEquals(0L, store.data.first().glucoseFrom)
             assertEquals(0L, store.data.first().entriesFrom)
             uploader.change { it.copy(on = true) }
-            role.value = Role.Follower
+            role.value = SourceSpec.TheirSukrara
             treatments.upsertIfNewer(treatment("a", 5, modified = clock.now() + Duration.ofSeconds(1)))
             uploader.cycle()
             assertEquals(0, uploads().size)

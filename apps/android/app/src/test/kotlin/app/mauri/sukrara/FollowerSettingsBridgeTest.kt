@@ -10,7 +10,7 @@ import app.mauri.sukrara.alerts.QuietRule
 import app.mauri.sukrara.alerts.SoundSettings
 import app.mauri.sukrara.core.data.settings.MirroredGraph
 import app.mauri.sukrara.core.data.settings.SettingsFrom
-import app.mauri.sukrara.core.model.Role
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.monitor.alerts.AlertMirror
@@ -59,7 +59,7 @@ class FollowerSettingsBridgeTest {
     private fun bridge(
         own: InMemorySettingsRepository,
         alerts: Alerts,
-        role: Role? = Role.Follower,
+        role: SourceSpec? = SourceSpec.TheirSukrara,
         wearer: SettingsPayload? = payload,
     ) = FollowerSettingsBridge(
         own,
@@ -134,7 +134,7 @@ class FollowerSettingsBridgeTest {
                     set(GraphSettings.Bands[1], 65.0)
                     set(SettingsFrom.Stored, SettingsFrom.Default.wire)
                 }
-            val b = bridge(own, Alerts(mine), role = Role.Wearer)
+            val b = bridge(own, Alerts(mine), role = SourceSpec.YourSensor)
             assertEquals(65.0, b.settings.flow(GraphSettings.Bands[1]).first(), 0.0)
             assertNull(b.alertMirror.first())
             assertNull(b.state.first())
@@ -206,7 +206,7 @@ class FollowerSettingsBridgeTest {
             assertEquals("soft", shown.sounds.pack)
             b.choose(SettingsFrom.Custom)
             assertNull(b.alertsInUse.first())
-            assertNull(bridge(own, Alerts(mine), role = Role.Wearer).alertsInUse.first())
+            assertNull(bridge(own, Alerts(mine), role = SourceSpec.YourSensor).alertsInUse.first())
         }
 
     @Test

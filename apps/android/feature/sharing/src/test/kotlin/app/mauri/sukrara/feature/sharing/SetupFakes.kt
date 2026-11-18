@@ -13,33 +13,43 @@ import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.LinkState
 import app.mauri.sukrara.core.model.ModuleState
 import app.mauri.sukrara.core.model.Reading
-import app.mauri.sukrara.core.model.Role
 import app.mauri.sukrara.core.model.RootAccess
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.SystemAccessState
 import app.mauri.sukrara.core.model.UnlockedSound
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.feature.sharing.setup.AlertSettingsAccess
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 
-/** The phone's role store; [events] records each role written. */
+/** The phone's source store; [events] records each source written ("source:yours:sensor"). */
 class FakeRoles(
     private val events: MutableList<String> = mutableListOf(),
-) : RoleStore {
-    override val role = MutableStateFlow<Role?>(null)
+) : SourcePort {
+    /** The stored answer. */
+    val role = MutableStateFlow<SourceSpec?>(null)
 
-    /** What choosing a role would delete (the same for every role here). */
-    var loss: RoleLoss? = null
+    /** What an unanswered install reads (an update from before the question). */
+    val inferred = MutableStateFlow<SourceSpec?>(null)
 
-    override suspend fun loss(role: Role): RoleLoss? = loss
+    override val stored: Flow<SourceSpec?> = role
 
-    override suspend fun set(role: Role) {
-        events += "role:$role"
-        this.role.value = role
+    override val running: Flow<SourceSpec?> = combine(role, inferred) { s, i -> s ?: i }
+
+    /** What a change of whose glucose would delete (the same for every change here). */
+    var loss: HistoryLoss? = null
+
+    override suspend fun loss(spec: SourceSpec): HistoryLoss? = loss
+
+    override suspend fun set(spec: SourceSpec) {
+        events += "source:${spec.person.id}:${spec.kind.id}"
+        role.value = spec
     }
 }
 
