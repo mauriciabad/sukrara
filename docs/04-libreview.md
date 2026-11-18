@@ -46,7 +46,8 @@ Key design decisions:
 - **One LibreView device for both apps.** A login token is tied to a `DeviceId`, and LibreView lists each
   `DeviceId` as a separate device. The phone generates the id and hands it to the Mac over BLE, so phone, Mac
   (and the `lv.py` test tool) are *one* device. That also makes the spike removable in one click (LibreView →
-  My devices).
+  My devices). *Each sign-in ends the other's token; it works because both sign in again when refused. With an
+  official app that doesn't, it stops that app's upload ([45](45-libreview-two-uploaders.md)).*
 - **Deterministic record numbers, one per version.** Treatment `recordNumber = SHA-256("id:version")[0..5] << 8 | type`;
   glucose uses Juggluco's scheme (sensor serial hash `| lifeCount`), checked against Juggluco's own C++. Either app
   uploading the same version produces the same record, so re-uploads are harmless. LibreView keeps the *first*
@@ -65,7 +66,7 @@ Key design decisions:
 | 23:01 | login with `SetDevice:false` | `status 20 wrongDeviceForUser` — the account was bound to Juggluco's device |
 | 23:04 | phone: login with `SetDevice:true` (Juggluco's upload switched off first), upload 2 own entries | `status 0` |
 | 23:09 | phone uploads the Mac's 2 entries after the 2-min grace (one is a delete of a never-uploaded row) | `status 0` |
-| 23:11 | Mac logs in (`SetDevice:false` now succeeds — same DeviceId), uploads its own entry | `status 0`; phone's token kept working |
+| 23:11 | Mac logs in (`SetDevice:false` now succeeds — same DeviceId), uploads its own entry | `status 0`; phone's token kept working *(not so: the Mac's sign-in ended it, and the phone signed in again when refused, [45](45-libreview-two-uploaders.md))* |
 | 23:12 | edit-after-upload (Mac edits a phone entry) — uploaded by **both** Mac and phone 3 s apart | `status 0` ×2 |
 | 23:12 | delete-after-upload (phone deletes a Mac entry) | `status 0` |
 | 23:12 | deliberate duplicate: `lv.py` re-posts two unchanged entries as the same device | `status 0` |
@@ -107,7 +108,10 @@ glucose that reports are built from is the 5-minute history (which trails the li
   `Dalvik/2.1.0 …` User-Agent the phone sends anyway.
 - The account is bound to one "active" device: a new device must log in with `SetDevice:true`, which logs the
   previous one (Juggluco) out of LibreView. Juggluco then re-takes it on its next upload, so **two uploaders with
-  different DeviceIds fight**. Exactly one app may own the LibreView upload.
+  different DeviceIds fight**. Exactly one app may own the LibreView upload. *Refined by
+  [45](45-libreview-two-uploaders.md): one active device and one live session **per app identity** (Libre 3 app,
+  LibreLink). Any sign-in ends the previous token, even with the same DeviceId. Two apps share an account only under
+  different identities.*
 - The first `PUT nisperson` (active-sensor registration) after login answered `status 20 invalid session`; it
   succeeded on the next cycle a minute later.
 - macOS: CoreBluetooth doesn't report the link as dropped when the phone app restarts; the Mac's 150 s silence

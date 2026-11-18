@@ -39,7 +39,7 @@ The owner: "it should not happen to begin with", "Libre 2 glucose should go up".
   [#14](https://github.com/j-kaltes/Juggluco/issues/14): it waits 20 min between uploads).
 - **One device per account**: LibreLink users report that signing in on another phone signs the first one out
   ([diabetes.co.uk forum](https://www.diabetes.co.uk/forum/threads/multiple-phones-for-libre.164308/)). Whether LibreView tracks that per app
-  identity or per account isn't documented anywhere (step 2 of the proof asks).
+  identity or per account isn't documented anywhere (step 2 of the proof asks). *Per app identity: [45](45-libreview-two-uploaders.md).*
 - **Abbott's apps**: one LibreView login for LibreLink, the Libre 3 app and the new *Libre* app
   ([Abbott](https://www.freestyle.abbott/en-us/support/faq/apps/libre-app-login-credentials-for-freestyle-libre-3-users.html)).
   The *Libre* app replaces the Libre 2 and Libre 3 apps ([App Store](https://apps.apple.com/us/app/libre-by-abbott/id6670330506)),
@@ -75,7 +75,7 @@ Sukrara › LibreView › *Take over*; delete `~/.config/sukrara-spike41`.
 | Time (local) | Step | Answer |
 |---|---|---|
 | ≈ 14:55 | 1. Libre 3 identity, spike device, no take-over | `status 20 wrongDeviceForUser`, as expected: Sukrara is the account's uploading device |
-| | 2. LibreLink identity, spike device, no take-over | `status 20 wrongDeviceForUser`: the uploading device is (most likely) one per **account**, not per app. A stale LibreLink device would answer the same, so it isn't conclusive, but either way a second identity next to Sukrara's would have to take over |
+| | 2. LibreLink identity, spike device, no take-over | `status 20 wrongDeviceForUser`: the uploading device is (most likely) one per **account**, not per app. A stale LibreLink device would answer the same, so it isn't conclusive, but either way a second identity next to Sukrara's would have to take over. *[45](45-libreview-two-uploaders.md) settled it: **per app identity**. The LibreLink identity had its own stale device, and taking it over leaves the Libre 3 identity's device and session alone* |
 | | 3. Libre 3 identity, take over | `status 0` |
 | | 4. Register `3MH01GFXNU8` (a Libre 2, whole serial) under the Libre 3 identity | `status 0` |
 | 14:56 | 5. 13 five-minute values, 3 Nov 15:00–16:00 (207 → 150 mg/dL) + `sensorstart` | `status 0`, `UploadId`, `SerialNumber` = the spike DeviceId; every `MeasurementCounts` and `ItemCount` 0. That's the answer the real LibreLink app gets too (xDrip+ #2118), so it says nothing: ingestion is asynchronous |
@@ -105,7 +105,7 @@ Sukrara; `~/.config/sukrara-spike41` and the copy of Juggluco's readings are del
 
 | Discarded | Why |
 |---|---|
-| A second identity (LibreLink) for the Libre 2, as Juggluco does | two tokens, two devices in LibreView, two registrations, and if LibreView tracks the active device per account, the take-over fight inside one app; Abbott's own *Libre* app is one app for both families |
+| A second identity (LibreLink) for the Libre 2, as Juggluco does | two tokens, two devices in LibreView, two registrations, and if LibreView tracks the active device per account, the take-over fight inside one app; Abbott's own *Libre* app is one app for both families. *([45](45-libreview-two-uploaders.md): it is per identity, so no fight; the other reasons stand)* |
 | Turning on Juggluco's *Send to Libreview* next to Sukrara's treatments | Juggluco takes over by itself on `wrongDeviceForUser`; two uploaders on one account is what docs/04 found fighting |
 | Dexcom, SmartGuide, AiDEX, Sibionics glucose | the clinic would read it as Abbott data; Juggluco's author refuses the same (#250) |
 | A Libre 3 read through Juggluco | its serial in Juggluco's `_id` can't be told apart from other families with certainty; a Libre 3 is read by Sukrara itself |
