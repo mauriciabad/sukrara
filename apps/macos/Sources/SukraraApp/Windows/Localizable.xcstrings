@@ -339,6 +339,22 @@
         }
       }
     },
+    "Abbott is servicing LibreView, so LibreLinkUp sends no glucose. It comes back by itself when that ends. To get glucose meanwhile, change the source." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbott is servicing LibreView, so LibreLinkUp sends no glucose. It comes back by itself when that ends. To get glucose meanwhile, change the source."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbott está haciendo mantenimiento de LibreView, así que LibreLinkUp no envía glucosa. Vuelve sola cuando acabe. Para tener glucosa mientras tanto, cambia el origen."
+          }
+        }
+      }
+    },
     "About" : {
       "localizations" : {
         "en" : {
@@ -1071,6 +1087,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Hidratos"
+          }
+        }
+      }
+    },
+    "Change Source…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change Source…"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cambiar Origen…"
           }
         }
       }
@@ -2915,6 +2947,102 @@
         }
       }
     },
+    "LibreView maintenance" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreView maintenance"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenimiento de LibreView"
+          }
+        }
+      }
+    },
+    "LibreView maintenance %@, %@: LibreLinkUp sends no glucose then" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreView maintenance %@, %@: LibreLinkUp sends no glucose then"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenimiento de LibreView %1$@, %2$@: LibreLinkUp no enviará glucosa en ese rato"
+          }
+        }
+      }
+    },
+    "LibreView maintenance at %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreView maintenance at %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenimiento de LibreView a las %@"
+          }
+        }
+      }
+    },
+    "LibreView maintenance until %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreView maintenance until %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenimiento de LibreView hasta las %@"
+          }
+        }
+      }
+    },
+    "LibreView maintenance until %@. LibreLinkUp sends no glucose until then; readings come back by themselves." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreView maintenance until %@. LibreLinkUp sends no glucose until then; readings come back by themselves."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenimiento de LibreView hasta las %@. LibreLinkUp no envía glucosa hasta entonces; las lecturas vuelven solas."
+          }
+        }
+      }
+    },
+    "LibreView maintenance. LibreLinkUp sends no glucose until it ends; readings come back by themselves." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreView maintenance. LibreLinkUp sends no glucose until it ends; readings come back by themselves."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenimiento de LibreView. LibreLinkUp no envía glucosa hasta que acabe; las lecturas vuelven solas."
+          }
+        }
+      }
+    },
     "Live · last reading %@" : {
       "localizations" : {
         "en" : {
@@ -3264,6 +3392,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Sin conexión: no pueden llegar lecturas nuevas"
+          }
+        }
+      }
+    },
+    "No glucose from LibreLinkUp from %@ to %@. Readings come back by themselves after." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No glucose from LibreLinkUp from %@ to %@. Readings come back by themselves after."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "LibreLinkUp no enviará glucosa de %1$@ a %2$@. Las lecturas vuelven solas después."
           }
         }
       }
@@ -4385,6 +4529,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Para volver a seguir necesitas un enlace de invitación nuevo, o su móvil cerca."
+          }
+        }
+      }
+    },
+    "today" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "today"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "hoy"
+          }
+        }
+      }
+    },
+    "tomorrow" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "tomorrow"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "mañana"
           }
         }
       }

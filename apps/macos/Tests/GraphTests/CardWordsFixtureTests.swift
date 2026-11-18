@@ -58,6 +58,8 @@ import Testing
         case "card_ready_at": d.readyAt("X")
         case "card_almost_ready": d.almostReady
         case "card_waiting_reading": d.waitingReading
+        case "card_maintenance": d.maintenance
+        case "card_maintenance_until": d.until("X")
         case "card_range_very_low": w.rangeWord(.veryLow)
         case "card_range_low": w.rangeWord(.low)
         case "card_range_high": w.rangeWord(.high)

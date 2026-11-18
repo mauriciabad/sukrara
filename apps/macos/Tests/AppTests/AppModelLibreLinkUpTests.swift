@@ -158,6 +158,57 @@ import Testing
         #expect(refused.health(at: now) == .signedOut)
     }
 
+    /// LibreView's maintenance (docs/45): an expected wait, not an error, on every Mac surface: the panel's reason with
+    /// its end and the way to another source, the status line with the clock and no Try Again, the no-data alert's
+    /// words, the card's pause, and the warn-ahead line from 12 h before a window.
+    @Test func libreViewMaintenanceIsSaidAsAWaitWithItsEnd() {
+        let now = clock.now
+        let end = now.addingTimeInterval(1800)
+        let window = MaintenanceWindow(start: now.addingTimeInterval(-1800), end: end, live: true)
+        var s = LibreLinkUpSnapshot(
+            email: "alex@example.com", running: true, outcome: .maintenance,
+            readings: [Reading(t: now.addingTimeInterval(-1500), mgdl: 72)], windows: [window])
+        #expect(s.health(at: now) == .maintenance)
+        #expect(AppModel.libreLinkUpWait(s, now: now) == .libreLinkUp(.maintenance(until: end.timeIntervalSince1970)))
+        let ends = Clock.time(end)
+        let text = NoDataText.of(
+            .libreLinkUp(.maintenance(until: end.timeIntervalSince1970)), now: now.timeIntervalSince1970)
+        #expect(text.title == "LibreView maintenance until \(ends)")
+        #expect(text.action == "Change Source…")
+        #expect(NoDataReason.libreLinkUp(.maintenance(until: nil)).action == .libreLinkUp)
+        #expect(NoDataReason.libreLinkUp(.maintenance(until: nil)).isMaintenance)
+        let status = LibreLinkUpStatus.of(s, now: now)
+        #expect(
+            status.text
+                == "LibreView maintenance until \(ends). LibreLinkUp sends no glucose until then; readings come back by themselves."
+        )
+        #expect(status.symbol == "clock" && status.action == nil)
+        // no end known (the status page didn't say): no time made up
+        s.windows = []
+        #expect(AppModel.libreLinkUpWait(s, now: now) == .libreLinkUp(.maintenance(until: nil)))
+        #expect(
+            NoDataText.of(.libreLinkUp(.maintenance(until: nil)), now: now.timeIntervalSince1970).title
+                == "LibreView maintenance")
+        // the alert says why, its end first in the body
+        let firing = AlertFiring(
+            id: "e1", kind: .noData, at: now, reading: GlucoseSample(at: now.addingTimeInterval(-1500), mgdl: 72),
+            threshold: 20, n: 1, treated: 0)
+        let words = AlertText(language: .en)
+        #expect(
+            words.title(firing, escalated: false, why: .maintenance(ends: ends)) == "No data · LibreView maintenance")
+        #expect(words.body(firing, now: now, why: .maintenance(ends: ends)).hasPrefix("Until \(ends) · last reading "))
+        #expect(words.body(firing, now: now, why: .maintenance(ends: nil)).hasPrefix("Last reading "))
+        // a window ahead: Settings › Source once known; the panel from 12 h before its start
+        let tomorrow = MaintenanceWindow(
+            start: now.addingTimeInterval(20 * 3600), end: now.addingTimeInterval(21 * 3600))
+        let ahead = LibreLinkUpSnapshot(email: "alex@example.com", running: true, outcome: .ok, windows: [tomorrow])
+        #expect(ahead.upcoming(at: now) == tomorrow)
+        #expect(MaintenanceAhead.panel(ahead, now: now) == nil)
+        let soon = now.addingTimeInterval(9 * 3600)
+        #expect(MaintenanceAhead.panel(ahead, now: soon)?.hasPrefix("LibreView maintenance ") == true)
+        #expect(MaintenanceAhead.day(now, now: now) == "today")
+    }
+
     /// The owner's test (2026-11-18): a new Libre 3 warming up behind LibreLinkUp, whose newest reading was the old
     /// sensor's, 4 hours old: the status says the warm-up and when it ends, the panel leaves it to the card, and Connect
     /// says no *Reading received*.

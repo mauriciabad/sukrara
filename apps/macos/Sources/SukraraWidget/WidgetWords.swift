@@ -49,6 +49,10 @@ struct WidgetWords: Sendable {
             case .libreLinkUp(.offline): return ("No internet", "Sukrara catches up when you're back")
             case .libreLinkUp(.signedOut):
                 return ("LibreLinkUp refused the password", "Open Sukrara to sign in again")
+            case .libreLinkUp(.maintenance(let until)):
+                return (
+                    "LibreView maintenance", until.map { "Until \(Self.clock($0))" } ?? "Glucose comes back by itself"
+                )
             case .libreLinkUp: return ("No reading from LibreLinkUp", why)
             }
         })
@@ -89,9 +93,17 @@ struct WidgetWords: Sendable {
             case .libreLinkUp(.offline): return ("Sin internet", "Sukrara se pone al día cuando vuelva")
             case .libreLinkUp(.signedOut):
                 return ("LibreLinkUp rechazó la contraseña", "Abre Sukrara para volver a iniciar sesión")
+            case .libreLinkUp(.maintenance(let until)):
+                return (
+                    "Mantenimiento de LibreView",
+                    until.map { "Hasta las \(Self.clock($0))" } ?? "La glucosa vuelve sola"
+                )
             case .libreLinkUp: return ("Sin lecturas de LibreLinkUp", why)
             }
         })
+
+    /// A clock time (epoch s) as THE clock writes it.
+    static func clock(_ t: TimeInterval) -> String { Clock.time(Date(timeIntervalSince1970: t)) }
 
     static var current: WidgetWords {
         Bundle.preferredLocalizations(from: ["en", "es"]).first == "es" ? .es : .en

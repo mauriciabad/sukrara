@@ -89,7 +89,8 @@ struct WidgetEntryView: View {
         let words = WidgetWords.current
         let (title, next) = words.reason(reason)
         return VStack(alignment: .leading, spacing: 4) {
-            Image(systemName: GlucoseCard.noReadingsSymbol)
+            // LibreView's maintenance is a wait with an end, not a missing reading: the clock
+            Image(systemName: reason.isMaintenance ? "clock" : GlucoseCard.noReadingsSymbol)
                 .font(.title3)
                 .foregroundStyle(.secondary)
             Text(title)

@@ -121,7 +121,7 @@ import Testing
         let dir: URL
     }
 
-    func rig(_ server: Server, offline: Bool = false, kept: Bool = false) -> Rig {
+    func rig(_ server: Server, offline: Bool = false, kept: Bool = false, status: FakeLibreLinkUpHTTP? = nil) -> Rig {
         let http = FakeLibreLinkUpHTTP(unanswered: offline ? URLError(.notConnectedToInternet) : URLError(.timedOut)) {
             offline ? nil : server.answer($0)
         }
@@ -135,7 +135,7 @@ import Testing
             sleep: { s in
                 waits.list.withLock { $0.append(s) }
                 try await Task.sleep(for: .seconds(3600))
-            })
+            }, status: status)
         return Rig(source: source, http: http, secrets: secrets, waits: waits, dir: dir)
     }
 
@@ -528,6 +528,53 @@ import Testing
         #expect(back.treatments.map(\.id) == [carbs.id])
         #expect(await r.source.readings(since: .distantPast).allSatisfy { $0.mgdl < 150 })
         #expect(KeptHistory.list(in: kept).map(\.id) == [KeptHistory.id(.libreLinkUp, Self.leo)])
+        await r.source.set(nil)
+    }
+
+    /// LibreView's maintenance (docs/45): the region answers HTTP 911; the source says `maintenance` (not an error),
+    /// keeps the account, asks Abbott's status page at once for the window's end (no account sent), and the first
+    /// normal answer ends it.
+    @Test func libreViewMaintenanceIsAWaitWithItsEndFromTheStatusPage() async throws {
+        let s = server()
+        s.people.withLock { $0 = [(Self.account, "Alex")] }
+        let iso = ISO8601DateFormatter()
+        let end = clock.now.addingTimeInterval(1800)
+        let page = #"""
+            {"components":[{"id":"g1","name":"LibreLinkUp Mobile App","group":true},
+            {"id":"c1","name":"Europe, Middle East, Africa","group":false,"group_id":"g1"}],
+            "scheduled_maintenances":[{"name":"EMEA","status":"in_progress",
+            "scheduled_for":"\#(iso.string(from: clock.now - 1800))","scheduled_until":"\#(iso.string(from: end))",
+            "components":[{"id":"c1","name":"Europe, Middle East, Africa","group_id":"g1"}]},
+            {"name":"EU later","status":"scheduled",
+            "scheduled_for":"\#(iso.string(from: clock.now + 86_400))","scheduled_until":"\#(iso.string(from: clock.now + 90_000))",
+            "components":[{"id":"c1","name":"Europe, Middle East, Africa","group_id":"g1"}]}]}
+            """#
+        let status = FakeLibreLinkUpHTTP(unanswered: URLError(.timedOut)) { r in
+            r.url.host() == "status.freestyle.abbott" ? FakeLibreLinkUpHTTP.json(page) : nil
+        }
+        let r = rig(s, status: status)
+        defer { try? FileManager.default.removeItem(at: r.dir) }
+        _ = await r.source.connect(email: Self.email, password: Self.password)
+        await r.source.set(LibreLinkUpConfig(patient: Self.account))
+        _ = try #require(await wait(r.source) { $0.monitoring })
+        s.graphNext.withLock { $0 = [(911, #"{"status":911}"#)] }
+        await r.source.retry()
+        let snap = try #require(await wait(r.source) { $0.outcome == .maintenance && !$0.windows.isEmpty })
+        #expect(snap.health(at: clock.now) == .maintenance)
+        #expect(snap.maintenanceUntil(at: clock.now) == end)
+        #expect(snap.upcoming(at: clock.now)?.start == clock.now + 86_400)
+        // nothing about the account changes
+        #expect(snap.email == Self.email && !snap.signInAgain)
+        // the status page: GET over https, never the token or the account
+        let asked = try #require(status.requests.first)
+        #expect(asked.url.absoluteString == LibreViewStatus.url.absoluteString)
+        #expect(asked.headers["Authorization"] == nil && asked.headers["Account-Id"] == nil)
+        // gently: the failures' backoff (the window's end is further than a minute away)
+        #expect(await eventually { r.waits.list.withLock { $0.last } == 60 })
+        // the first normal answer ends it
+        await r.source.retry()
+        let back = try #require(await wait(r.source) { $0.outcome == .ok })
+        #expect(back.health(at: clock.now) == .live)
         await r.source.set(nil)
     }
 }

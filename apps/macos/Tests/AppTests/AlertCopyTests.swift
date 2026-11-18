@@ -30,6 +30,10 @@ import Testing
         var es: String
         var en_mac: String?
         var es_mac: String?
+        /// `maintenance`: the no-data alert while LibreLinkUp's region is down for LibreView's maintenance.
+        var why: String?
+        /// The maintenance's end as the clock writes it.
+        var ends: String?
         var testDescription: String { "\(state) \(kind ?? action ?? device ?? "") → \(en)" }
     }
 
@@ -77,10 +81,11 @@ import Testing
                 id: "e1", kind: kind, at: at, reading: reading, threshold: kind == .noData ? 20 : 70, n: 1,
                 treated: c.treated ?? 0)
         }
+        let why: AlertText.Why? = c.why == "maintenance" ? .maintenance(ends: c.ends) : nil
         switch c.state {
-        case "headline": return firing().map(text.title)
+        case "headline": return firing().map { text.title($0, escalated: false, why: why) }
         case "headline_escalated": return firing().map { text.title($0, escalated: true) }
-        case "body": return firing().map { text.body($0, now: at) }
+        case "body": return firing().map { text.body($0, now: at, why: why) }
         case "test_title": return firing().map(text.testTitle)
         case "all_scope": return try catalog("Very low and no data included, on this Mac only", lang.rawValue)
         case "action":

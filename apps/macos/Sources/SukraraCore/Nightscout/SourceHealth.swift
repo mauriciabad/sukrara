@@ -28,6 +28,8 @@ public enum SourceHealth {
         case notShared
         /// LibreLinkUp refuses this client (a version it asks for, an endpoint gone): Abbott changed it.
         case retired
+        /// LibreLinkUp's region answers HTTP 911: LibreView is down for maintenance (docs/45).
+        case maintenance
     }
 
     public enum State: String, CaseIterable, Sendable, Codable {
@@ -37,6 +39,8 @@ public enum SourceHealth {
         /// The source answers and its sensor warms up: nothing new until the warm-up's end (the newest reading is the
         /// old sensor's).
         case warmingUp
+        /// LibreView is down for maintenance: an expected wait, not an error; it ends with the first normal answer.
+        case maintenance
     }
 
     /// Newer than this is live; up to `silentAfter` late (readings come in gaps); older: nothing new reaches the site.
@@ -55,13 +59,14 @@ public enum SourceHealth {
         case .terms: return .actionNeeded
         case .notShared: return .notShared
         case .retired: return .stopped
+        case .maintenance: return .maintenance
         default: break
         }
         guard online else { return .offline }
         switch outcome {
         case nil: return .connecting
         case .network, .server, .notFound: return .unreachable
-        case .ok, .refused, .rateLimited, .terms, .notShared, .retired:
+        case .ok, .refused, .rateLimited, .terms, .notShared, .retired, .maintenance:
             if warmingUp { return .warmingUp }
             guard let age = newestAge else { return .noNewReadings }
             if age <= lateAfter { return .live }

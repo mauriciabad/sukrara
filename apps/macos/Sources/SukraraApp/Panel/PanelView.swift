@@ -48,7 +48,9 @@ struct PanelView: View {
                         text: NoDataText.of(reason, now: context.date.timeIntervalSince1970, lastData: retrying),
                         act: links.flatMap { reasonAction(reason.action, $0) },
                         symbol: reason.action == .follow ? "person.badge.plus" : "gearshape",
-                        icon: retrying ? "arrow.triangle.2.circlepath" : GlucoseCard.noReadingsSymbol)
+                        icon: retrying
+                            ? "arrow.triangle.2.circlepath"
+                            : reason.isMaintenance ? "clock" : GlucoseCard.noReadingsSymbol)
                 }
                 if retrying, let block { block }
                 if model.notMonitoringReason == nil || retrying {
@@ -56,6 +58,8 @@ struct PanelView: View {
                 }
                 // why there's no value and what to do: in the card's place, or under a card whose value is hidden
                 if !retrying, let block { block }
+                // a LibreView maintenance window ahead for LibreLinkUp's region: one quiet line, under the glucose
+                if let ahead = model.maintenanceAhead(at: context.date) { MaintenanceAheadRow(text: ahead) }
                 if let links {
                     // a reason about the link offers its own way out (Follow Someone…, Following Settings…)
                     let linkAction = reason?.action == .follow || reason?.action == .following

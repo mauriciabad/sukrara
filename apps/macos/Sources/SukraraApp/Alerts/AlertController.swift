@@ -266,6 +266,15 @@ final class AlertController {
     /// Settings › Alerts › Send Test Alert: a real notification titled "Test" (the engine and its mutes don't see it).
     func sendTest(_ kind: AlertKind) { notifier.postTest(kind) }
 
+    /// Why no data comes now (LibreView's maintenance, from the app model): the no-data alert's words say it; its
+    /// timing never changes (docs/45).
+    func setWhy(_ why: @escaping () -> AlertText.Why?) { (notifier as? Notifier)?.why = why }
+
+    /// A LibreView maintenance window ahead: its one quiet heads-up an hour before (`Notifier.scheduleMaintenance`).
+    func scheduleMaintenance(_ w: MaintenanceWindow, now: Date) {
+        (notifier as? Notifier)?.scheduleMaintenance(w, now: now)
+    }
+
     /// Monitoring dropped without the person stopping it (the wearer stopped sharing, the follow broke): a passive
     /// notification says why. nil = monitoring is back (or the person ended it): the note goes.
     func monitoringStopped(_ reason: String?) { notifier.monitoringStopped(reason) }

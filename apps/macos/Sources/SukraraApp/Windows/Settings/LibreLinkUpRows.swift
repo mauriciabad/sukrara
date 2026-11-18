@@ -180,6 +180,9 @@ public final class LibreLinkUpModel {
         case .offline: L10n.t("No internet. Connect and try again.")
         case .stopped:
             L10n.t("LibreLinkUp stopped answering Sukrara: Abbott changed it. An update of Sukrara may bring it back.")
+        case .maintenance:
+            L10n.t(
+                "LibreView maintenance. LibreLinkUp sends no glucose until it ends; readings come back by themselves.")
         case .connected, nil: nil
         }
     }
@@ -251,7 +254,70 @@ struct LibreLinkUpStatus: Equatable {
                 symbol: "xmark.octagon", action: .tryAgain)
         case .warmingUp:
             return LibreLinkUpStatus(text: NightscoutStatus.warmup(s.sensor?.sensor, now: now), symbol: "hourglass")
+        case .maintenance:
+            // an expected wait, not an error: what is happening and when it ends, no Try Again
+            return LibreLinkUpStatus(text: Self.maintenance(until: s.maintenanceUntil(at: now)), symbol: "clock")
         }
+    }
+
+    /// LibreView's maintenance in the status line's words, with its end when Abbott's status page gives one.
+    static func maintenance(until: Date?) -> String {
+        guard let until else {
+            return L10n.t(
+                "LibreView maintenance. LibreLinkUp sends no glucose until it ends; readings come back by themselves.")
+        }
+        let end = SukraraCore.Clock.time(until)
+        return L10n.t(
+            "LibreView maintenance until \(end). LibreLinkUp sends no glucose until then; readings come back by themselves."
+        )
+    }
+}
+
+/// A LibreView maintenance window ahead for the account's region (contracts/sources/librelinkup/status.json
+/// `upcoming`): one quiet line, in the secondary colour with the clock symbol, never above the glucose. Settings ›
+/// Source shows it once known, the panel from `LibreViewStatus.warnHome` before its start.
+enum MaintenanceAhead {
+    /// "LibreView maintenance today, 22:00–23:00: LibreLinkUp sends no glucose then".
+    static func text(_ w: MaintenanceWindow, now: Date, calendar: Calendar = .current) -> String {
+        let range = "\(SukraraCore.Clock.time(w.start))–\(SukraraCore.Clock.time(w.end))"
+        return L10n.t(
+            "LibreView maintenance \(day(w.start, now: now, calendar: calendar)), \(range): LibreLinkUp sends no glucose then"
+        )
+    }
+
+    /// "today", "tomorrow", else a short weekday and date ("Thu 3 Dec").
+    static func day(_ d: Date, now: Date, calendar: Calendar = .current) -> String {
+        if calendar.isDate(d, inSameDayAs: now) { return L10n.t("today") }
+        if let next = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(d, inSameDayAs: next) {
+            return L10n.t("tomorrow")
+        }
+        let f = DateFormatter()
+        f.locale = L10n.locale
+        f.calendar = calendar
+        f.timeZone = calendar.timeZone
+        f.setLocalizedDateFormatFromTemplate("EEEdMMM")
+        return f.string(from: d)
+    }
+
+    /// The panel's line: from `warnHome` before the window's start until it starts (nil otherwise).
+    static func panel(_ s: LibreLinkUpSnapshot, now: Date) -> String? {
+        guard let w = s.upcoming(at: now), w.start.timeIntervalSince(now) <= LibreViewStatus.warnHome else {
+            return nil
+        }
+        return text(w, now: now)
+    }
+}
+
+/// The warn-ahead line (`MaintenanceAhead`): secondary text with the clock symbol; VoiceOver reads it as one line.
+struct MaintenanceAheadRow: View {
+    let text: String
+
+    var body: some View {
+        Label(text, systemImage: "clock")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityElement(children: .combine)
     }
 }
 
@@ -433,6 +499,9 @@ struct LibreLinkUpRows: View {
             } else {
                 if !model.patient.isEmpty {
                     LibreLinkUpStatusRow(model: model)
+                    if let w = snap.upcoming(at: model.now()) {
+                        MaintenanceAheadRow(text: MaintenanceAhead.text(w, now: model.now()))
+                    }
                 } else if mode == .problem {
                     Notice(LibreLinkUpModel.problem(.noOne) ?? "") {
                         Button(model.busy ? L10n.t("Trying…") : L10n.t("Try Again")) {

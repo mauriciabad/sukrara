@@ -97,14 +97,14 @@ public enum GlucoseCard {
             // over the plot itself, clear of the % column and the y axis labels; a sensor that ended or is warming up
             // says so instead of the reading's time, which would read as a gap
             drawAgeLabel(
-                ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, sensor: sl, pal, d: d, words: words,
-                rec: rec)
+                ctx, rec.first("chart.plot")?.box ?? chart, latest, now, age, sensor: sl, pause: st.pause, pal, d: d,
+                words: words, rec: rec)
         }
         // a graph-only card without its chart: the value's face alone
         if noChart && !st.value {
             drawValue(
-                ctx, chart, latest, fr, now, bands, pal, d: d, look: nil, sensor: sl, unit: st.unit, words: words,
-                rec: rec)
+                ctx, chart, latest, fr, now, bands, pal, d: d, look: nil, sensor: sl, pause: st.pause, unit: st.unit,
+                words: words, rec: rec)
         }
         if st.value && part != .graph {
             let box = CGRect(x: 0, y: 0, width: valueRight, height: sideBySide ? h : headerH)
@@ -118,7 +118,7 @@ public enum GlucoseCard {
             drawValue(
                 ctx, stacked ? chart : CGRect(x: box.minX, y: box.minY, width: box.width - ringsW, height: box.height),
                 latest, fr, now,
-                bands, pal, d: d, look: look, sensor: sl, unit: st.unit, words: words, rec: rec)
+                bands, pal, d: d, look: look, sensor: sl, pause: st.pause, unit: st.unit, words: words, rec: rec)
         }
         return rec
     }
@@ -243,19 +243,24 @@ public enum GlucoseCard {
     /// pill never grows past it.
     private static func drawAgeLabel(
         _ ctx: CGContext, _ plot: CGRect, _ r: GraphReading, _ now: TimeInterval, _ age: Freshness.AgeMark,
-        sensor: SensorBadge.Look?, _ pal: GraphPalette, d: CGFloat, words w: CardWords, rec: CardLayout
+        sensor: SensorBadge.Look?, pause: CardPause?, _ pal: GraphPalette, d: CGFloat, words w: CardWords,
+        rec: CardLayout
     ) {
         let warmup = sensor?.warmup
         let ended = sensor?.ended == true && warmup == nil
+        // LibreView's maintenance once no reading has come for 20 min: what is happening and until when, not an error
+        let paused = !ended && warmup == nil && age == .noReadings ? pause : nil
         let text =
             if let warmup {
                 sensor?.waiting(now: now) == true ? warmup : "\(w.drawn.warmingUp) · \(warmup)"
             } else if ended {
                 w.drawn.sensorEnded
+            } else if let paused {
+                paused.lines(w).joined(separator: " · ")
             } else {
                 Freshness.timeText(r.t, now: now)
             }
-        let own = warmup != nil || ended
+        let own = warmup != nil || ended || paused != nil
         let hasIcon = own || age == .noReadings
         var size = min(max(10 * d, plot.height * 0.12), 16 * d)
         func width(_ s: CGFloat) -> CGFloat {
@@ -287,7 +292,7 @@ public enum GlucoseCard {
         }
         Ink.draw(ctx, text, x: box.minX + padX + icon + gap, y: box.midY + size * 0.36, font, pal.inkSoft)
         ctx.restoreGState()
-        rec.add("graph.age", box, warmup != nil ? "warmup" : ended ? "ended" : age.rawValue)
+        rec.add("graph.age", box, warmup != nil ? "warmup" : ended ? "ended" : paused != nil ? "pause" : age.rawValue)
         if own { rec.add("graph.age.text", nil, text) } else { rec.add("time.text", nil, text) }
     }
 
@@ -297,7 +302,7 @@ public enum GlucoseCard {
     private static func drawValue(
         _ ctx: CGContext, _ box: CGRect, _ r: GraphReading?, _ fr: Freshness, _ now: TimeInterval,
         _ bands: Bands, _ pal: GraphPalette, d: CGFloat, look: StatusBadge.Look?,
-        sensor: SensorBadge.Look?, unit: GlucoseUnit, words w: CardWords, rec: CardLayout
+        sensor: SensorBadge.Look?, pause: CardPause? = nil, unit: GlucoseUnit, words w: CardWords, rec: CardLayout
     ) {
         let small = Ink.font(max(11 * d, box.height * 0.17), .regular)
         let face = face(r, now: now, sensor: sensor, format: { unit.cardText($0) })
@@ -309,8 +314,12 @@ public enum GlucoseCard {
         guard let r, face.shown, let s = face.text else {
             // Fit the longer line into the space left of the rings; no readings for 20 min: the menubar's "no readings"
             // symbol before the words, as tall as both lines.
+            // LibreView's maintenance: what is happening and until when instead of "No reading since" (an expected
+            // wait, in the same soft ink)
+            let paused = face.state == .noReadings ? pause?.lines(w) : nil
             let lines =
-                r.map { [w.drawn.noReadingSince, Freshness.timeText($0.t, now: now)] } ?? [w.drawn.noReadingsYet]
+                paused ?? r.map { [w.drawn.noReadingSince, Freshness.timeText($0.t, now: now)] }
+                ?? [w.drawn.noReadingsYet]
             var size = min(box.height * 0.26, 20 * d)
             let iconW: (CGFloat) -> CGFloat = { r == nil ? 0 : $0 * 2.1 + $0 * 0.35 }
             let widest = lines.map { Ink.width($0, Ink.font(size, .semibold)) }.max() ?? 0
@@ -327,8 +336,10 @@ public enum GlucoseCard {
             let x = box.minX + iconW(size)
             Ink.draw(ctx, lines[0], x: x, y: y, big, pal.inkSoft)
             if lines.count > 1 {
-                Ink.draw(ctx, lines[1], x: x, y: y + size * 1.25, big, pal.inkSoft); rec.add("time.text", nil, lines[1])
+                Ink.draw(ctx, lines[1], x: x, y: y + size * 1.25, big, pal.inkSoft)
+                if paused == nil { rec.add("time.text", nil, lines[1]) }
             }
+            if let paused { rec.add("value.pause.text", nil, paused.joined(separator: " · ")) }
             rec.add(
                 "value.none",
                 CGRect(x: box.minX, y: y - size, width: box.width, height: size * CGFloat(lines.count) * 1.25),
@@ -691,10 +702,28 @@ public enum GlucoseCard {
 
 /// What a card shows at `now`: the history (oldest first is not required), the treatments, the sensor and what the
 /// alert rules decided. Never made-up data on a release build: the app fills it from its stores only.
+/// The source paused for a known reason that isn't an error: LibreView's maintenance (contracts/sources/health.json
+/// `maintenance`, docs/45), `until` its end (epoch s) when Abbott's status page gives one. Once no reading has come for
+/// 20 min the value's place says it ("LibreView maintenance" / "until 23:00") and a graph-only card's age pill too,
+/// instead of "No reading since" (GlucoseCard.kt `CardPause`).
+public struct CardPause: Sendable, Equatable, Codable {
+    public var until: TimeInterval?
+
+    public init(until: TimeInterval?) { self.until = until }
+
+    /// The value's place's lines: "LibreView maintenance", then "until 23:00" when its end is known.
+    func lines(_ w: CardWords) -> [String] {
+        [w.drawn.maintenance] + (until.map { [w.drawn.until(Clock.time(Date(timeIntervalSince1970: $0)))] } ?? [])
+    }
+}
+
 public struct CardData: Sendable, Equatable, Codable {
     public var readings: [GraphReading]
     public var marks: [GraphMark]
     public var sensor: SensorInfo?
+    /// LibreView's maintenance while LibreLinkUp is the source (nil = none): the card says it instead of "No reading
+    /// since".
+    public var pause: CardPause?
     public var alerts: CardAlerts
     public var now: TimeInterval
     /// The slots' numbers counted over the stored history (`SlotNumbers.of`), so every surface shows the same 7 / 14 /
@@ -703,11 +732,12 @@ public struct CardData: Sendable, Equatable, Codable {
 
     public init(
         readings: [GraphReading], marks: [GraphMark] = [], sensor: SensorInfo? = nil, alerts: CardAlerts = .none,
-        now: TimeInterval, slots: SlotNumbers? = nil
+        now: TimeInterval, slots: SlotNumbers? = nil, pause: CardPause? = nil
     ) {
         self.readings = readings
         self.marks = marks
         self.sensor = sensor
+        self.pause = pause
         self.alerts = alerts
         self.now = now
         self.slots = slots
@@ -800,7 +830,7 @@ extension GlucoseCard {
             tinted
             ? Self.palette(surface, dark: true, contrast: contrast).tinted()
             : Self.palette(surface, dark: dark, contrast: contrast)
-        var style = surface.style(config, overrides, sensor: data.sensor, words: words)
+        var style = surface.style(config, overrides, sensor: data.sensor, pause: data.pause, words: words)
         style.unit = unit
         let img = image(
             size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style, palette,
@@ -828,7 +858,7 @@ extension GlucoseCard {
                 surface: surface, size: size, config: config, overrides: overrides, data: data, unit: unit,
                 dark: dark, tinted: true, scale: scale, overflow: overflow, words: words)
         }
-        var style = surface.style(config, overrides, sensor: data.sensor, words: words)
+        var style = surface.style(config, overrides, sensor: data.sensor, pause: data.pause, words: words)
         style.unit = unit
         return image(
             size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
@@ -892,7 +922,7 @@ extension GlucoseCard {
         surface: CardSurface, size: CGSize, config: GraphConfig, data: CardData, unit: GlucoseUnit, dark: Bool,
         scale: CGFloat = 2, view: ChartView? = nil, contrast: Bool = false, words: CardWords = .current
     ) -> Picture {
-        var style = surface.style(config, PlaceOverrides(), sensor: data.sensor, words: words)
+        var style = surface.style(config, PlaceOverrides(), sensor: data.sensor, pause: data.pause, words: words)
         style.unit = unit
         let r = render(
             size: size, scale: scale, readings: data.readings, marks: data.marks, now: data.now, style,
@@ -924,7 +954,7 @@ extension GlucoseCard {
         overrides: PlaceOverrides = PlaceOverrides(), data: CardData, unit: GlucoseUnit, dark: Bool,
         words: CardWords = .current
     ) {
-        var style = surface.style(config, overrides, sensor: data.sensor, words: words)
+        var style = surface.style(config, overrides, sensor: data.sensor, pause: data.pause, words: words)
         style.unit = unit
         draw(
             ctx, size: size, readings: data.readings, marks: data.marks, now: data.now, style,
@@ -955,6 +985,6 @@ extension GlucoseCard {
     ) -> String {
         A11y.card(
             data, unit: unit, surface: surface,
-            style: surface.style(config, overrides, sensor: data.sensor, words: words), words: words)
+            style: surface.style(config, overrides, sensor: data.sensor, pause: data.pause, words: words), words: words)
     }
 }

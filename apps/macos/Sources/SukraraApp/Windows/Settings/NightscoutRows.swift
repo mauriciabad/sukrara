@@ -198,7 +198,7 @@ struct NightscoutStatus: Equatable {
         case .warmingUp:
             return NightscoutStatus(text: warmup(s.sensor, now: now), symbol: "hourglass")
         // LibreLinkUp's own states: a site never reaches them
-        case .actionNeeded, .notShared, .stopped:
+        case .actionNeeded, .notShared, .stopped, .maintenance:
             return NightscoutStatus(
                 text: L10n.t("No answer from \(s.host). Check the address."), symbol: "network.slash",
                 action: .tryAgain)
@@ -372,7 +372,7 @@ struct NightscoutConnect: View {
         let status = NightscoutStatus.of(s, now: now)
         switch s.health(at: now) {
         case .connecting: return .connecting
-        case .offline, .unreachable, .signedOut, .rateLimited, .actionNeeded, .notShared, .stopped:
+        case .offline, .unreachable, .signedOut, .rateLimited, .actionNeeded, .notShared, .stopped, .maintenance:
             return .failed(status)
         // received: a reading that is now's (an old one, or a sensor warming up, says what it waits for)
         case .live, .late: return .received

@@ -34,6 +34,8 @@ private struct Scene {
     var readings: [GraphReading]
     var marks: [GraphMark]
     var sensor: SensorInfo?
+    /// scenes.json `pause`: LibreView's maintenance, `until` relative to now ({} = no end known).
+    var pause: CardPause?
 }
 
 /// The alert decision the layout scenes are drawn with: the alert engine's default rules (contracts/alerts/SPEC.md §3:
@@ -137,7 +139,10 @@ enum DefaultAlertRules {
         let sensor = (o["sensor"] as? [String: Any]).map {
             SensorInfo(start: now + num($0["start"]), end: now + num($0["end"]), warmupEnd: now + num($0["warmupEnd"]))
         }
-        return Scene(id: o["id"] as? String ?? "?", readings: rs, marks: marks, sensor: sensor)
+        let pause = (o["pause"] as? [String: Any]).map { p in
+            CardPause(until: (p["until"] as? NSNumber).map { now + $0.doubleValue })
+        }
+        return Scene(id: o["id"] as? String ?? "?", readings: rs, marks: marks, sensor: sensor, pause: pause)
     }
 
     private static func config(_ o: [String: Any]) -> GraphConfig {
@@ -215,7 +220,8 @@ enum DefaultAlertRules {
                 alerts: DefaultAlertRules.alerts(sc.readings, sc.marks, now: now), now: now)
             let lay = GlucoseCard.draw(
                 cardContext(size), size: size, readings: data.readings, marks: data.marks, now: now,
-                surface.style(cfg, sensor: sc.sensor, words: .en), GraphPalette.of(dark: false), surface: surface,
+                surface.style(cfg, sensor: sc.sensor, pause: sc.pause, words: .en), GraphPalette.of(dark: false),
+                surface: surface,
                 part: .all, alerts: data.alerts)
             let got: [String: Any] = [
                 "value": lay.first("value.number")?.info ?? NSNull(),
@@ -302,7 +308,7 @@ enum DefaultAlertRules {
                 for sc in scenes {
                     let data = CardData(
                         readings: sc.readings, marks: sc.marks, sensor: sc.sensor,
-                        alerts: DefaultAlertRules.alerts(sc.readings, sc.marks, now: now), now: now)
+                        alerts: DefaultAlertRules.alerts(sc.readings, sc.marks, now: now), now: now, pause: sc.pause)
                     for s in CardSurface.allCases where s != .test {
                         if s.glyph {
                             guard sid == "default" || sid == "mmol" || sid.hasPrefix("clock") else { continue }
@@ -315,7 +321,7 @@ enum DefaultAlertRules {
                             continue
                         }
                         for size in sizes(s) {
-                            var st = s.style(cfg, sensor: sc.sensor, words: words)
+                            var st = s.style(cfg, sensor: sc.sensor, pause: sc.pause, words: words)
                             st.unit = unit
                             let lay = GlucoseCard.draw(
                                 cardContext(size), size: size, readings: data.readings, marks: data.marks, now: now, st,

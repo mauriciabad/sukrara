@@ -12,6 +12,12 @@ struct NoDataText: Equatable {
     var body: String?
     var action: String?
 
+    /// "LibreView maintenance until 23:00" (the end from Abbott's status page), or without an end when none is known.
+    static func maintenanceTitle(until: TimeInterval?) -> String {
+        guard let until else { return L10n.t("LibreView maintenance") }
+        return L10n.t("LibreView maintenance until \(SukraraCore.Clock.time(Date(timeIntervalSince1970: until)))")
+    }
+
     /// `lastData`: the Keychain retrying while the alerts go on over the stored readings (`AppModel.alertingOnLastData`).
     static func of(_ reason: NoDataReason, now: TimeInterval, lastData: Bool = false) -> NoDataText {
         let follow = L10n.t("Follow Someone…")
@@ -175,6 +181,13 @@ struct NoDataText: Equatable {
                 return NoDataText(
                     title: L10n.t("LibreLinkUp stopped answering Sukrara"),
                     body: L10n.t("Abbott changed it. An update of Sukrara may bring it back."), action: settings)
+            case .maintenance(let until):
+                // an expected wait, not an error: what is happening, when it ends, and the other way (another source)
+                return NoDataText(
+                    title: maintenanceTitle(until: until),
+                    body: L10n.t(
+                        "Abbott is servicing LibreView, so LibreLinkUp sends no glucose. It comes back by itself when that ends. To get glucose meanwhile, change the source."
+                    ), action: L10n.t("Change Source…"))
             }
         }
     }

@@ -274,6 +274,7 @@ public final class AppModel {
         self.nightscout = nightscout
         self.libreLinkUp = libreLinkUp
         now = clock.now
+        alerts?.setWhy { [weak self] in self?.alertWhy }
         alerts?.onUIChange = { [weak self] in
             self?.feedWidget()
             self?.restartTicker()  // a mute started or ended: its countdown ticks in the tooltip
@@ -472,6 +473,11 @@ public final class AppModel {
         libreLinkUpSnapshot = snapshot
         monitoringChanged(from: wasMonitoring)
         onLibreLinkUp?(snapshot)
+        // a LibreView maintenance window ahead: its one quiet heads-up an hour before (once per window)
+        if libreLinkUpActive, let w = snapshot.upcoming(at: clock.now), w.start != maintenanceScheduled {
+            maintenanceScheduled = w.start
+            alerts?.scheduleMaintenance(w, now: clock.now)
+        }
         guard libreLinkUpActive || wasMonitoring else { return }
         applyTreatments()
         applySensor()
@@ -817,7 +823,7 @@ public final class AppModel {
         CardData(
             readings: cardReadings,
             marks: marks, sensor: sensor,
-            alerts: cardAlerts, now: now.timeIntervalSince1970, slots: slots)
+            alerts: cardAlerts, now: now.timeIntervalSince1970, slots: slots, pause: cardPause)
     }
 
     /// The card's alert decision: the engine's state, or while mirroring the wearer's alerts the same rules over the
@@ -1025,8 +1031,32 @@ public final class AppModel {
         case .signedOut: .nightscout(.signedOut)
         case .rateLimited: .nightscout(.rateLimited)
         // LibreLinkUp's own states: a site never reaches them
-        case .actionNeeded, .notShared, .stopped: .nightscout(.unreachable(host: snapshot.host))
+        case .actionNeeded, .notShared, .stopped, .maintenance: .nightscout(.unreachable(host: snapshot.host))
         }
+    }
+
+    /// The maintenance window whose heads-up this run has scheduled (its start): once per window.
+    @ObservationIgnored private var maintenanceScheduled: Date?
+
+    /// Why no data comes when it isn't an error (the no-data alert's words, contracts/alerts/copy.json `why`):
+    /// LibreLinkUp is the source and LibreView is down for maintenance, its end when Abbott's status page gives one.
+    var alertWhy: AlertText.Why? {
+        guard libreLinkUpActive, libreLinkUpSnapshot.health(at: clock.now) == .maintenance else { return nil }
+        return .maintenance(
+            ends: libreLinkUpSnapshot.maintenanceUntil(at: clock.now).map { SukraraCore.Clock.time($0) })
+    }
+
+    /// LibreView's maintenance while LibreLinkUp is the source: the card's pause (its value's place and the graph's
+    /// age pill say it instead of "No reading since"), nil otherwise.
+    var cardPause: CardPause? {
+        guard libreLinkUpActive, libreLinkUpSnapshot.health(at: now) == .maintenance else { return nil }
+        return CardPause(until: libreLinkUpSnapshot.maintenanceUntil(at: now)?.timeIntervalSince1970)
+    }
+
+    /// The panel's warn-ahead line: a LibreView maintenance window for LibreLinkUp's region from 12 h before it.
+    func maintenanceAhead(at now: Date) -> String? {
+        guard libreLinkUpActive else { return nil }
+        return MaintenanceAhead.panel(libreLinkUpSnapshot, now: now)
     }
 
     /// Why LibreLinkUp gives no reading now (contracts/sources/health.json with its own states), nil while it is live.
@@ -1045,6 +1075,7 @@ public final class AppModel {
         case .actionNeeded: .libreLinkUp(.terms)
         case .notShared: snapshot.pickedGone ? .libreLinkUp(.pickedGone) : .libreLinkUp(.notShared)
         case .stopped: .libreLinkUp(.stopped)
+        case .maintenance: .libreLinkUp(.maintenance(until: snapshot.maintenanceUntil(at: now)?.timeIntervalSince1970))
         }
     }
 

@@ -61,6 +61,9 @@ final class Notifier: AlertNotifying {
     private let throughFocus: () -> Bool
     /// The glucose unit now (`general.unit`): the body writes the value in it.
     private let unit: () -> GlucoseUnit
+    /// Why no data comes now, when the source knows and it isn't an error (LibreView's maintenance): the no-data
+    /// alert's words say it (contracts/alerts/copy.json `why`); its timing never changes. Set by the app model.
+    var why: () -> AlertText.Why? = { nil }
     private var lastVariant: [AlertKind: Int] = [:]
     /// The bug-report log: which alert was posted or cleared, never a value.
     var eventLog: RotatingFileLog?
@@ -89,10 +92,11 @@ final class Notifier: AlertNotifying {
     func post(_ f: AlertFiring, sound: Bool, category: String, escalated: Bool) {
         let s = settings()
         let content = UNMutableNotificationContent()
-        content.title = text.title(f, escalated: escalated)
+        let why = why()
+        content.title = text.title(f, escalated: escalated, why: why)
         var words = text
         words.unit = unit()
-        content.body = words.body(f, now: clock.now)
+        content.body = words.body(f, now: clock.now, why: why)
         content.categoryIdentifier = category
         content.threadIdentifier = AlertNotificationIDs.alertCategory
         content.userInfo = [Self.sideKey: f.kind.side.rawValue, Self.firingKey: f.id]
@@ -124,10 +128,11 @@ final class Notifier: AlertNotifying {
         _ f: AlertFiring, sound: Bool, escalated: Bool, interruption: UNNotificationInterruptionLevel
     ) {
         let content = UNMutableNotificationContent()
-        content.title = text.title(f, escalated: escalated)
+        let why = why()
+        content.title = text.title(f, escalated: escalated, why: why)
         var words = text
         words.unit = unit()
-        content.body = words.body(f, now: clock.now)
+        content.body = words.body(f, now: clock.now, why: why)
         content.interruptionLevel = interruption
         content.sound = sound ? .default : nil
         let group = f.kind.group
@@ -249,6 +254,34 @@ final class Notifier: AlertNotifying {
     func removeMuted(_ side: AlertSide) {
         center.removeDelivered(ids: [AlertNotificationIDs.mutedNotificationID(side)])
     }
+
+    /// The one quiet heads-up for a LibreView maintenance window ahead (docs/45; contracts/sources/librelinkup/status.json
+    /// `notify_s`): scheduled `LibreViewStatus.notifyBefore` before its start, passive and silent, under an id of its
+    /// own per window so a window learned again replaces it (once per window, across restarts too). Only while that
+    /// time is still ahead: a window learned later shows its line in the panel only. A click opens the panel.
+    func scheduleMaintenance(_ w: MaintenanceWindow, now: Date) {
+        let at = w.start.addingTimeInterval(-LibreViewStatus.notifyBefore)
+        guard at > now else { return }
+        let content = UNMutableNotificationContent()
+        let start = SukraraCore.Clock.time(w.start)
+        let end = SukraraCore.Clock.time(w.end)
+        content.title = L10n.t("LibreView maintenance at \(start)")
+        content.body = L10n.t(
+            "No glucose from LibreLinkUp from \(start) to \(end). Readings come back by themselves after.")
+        content.interruptionLevel = .passive
+        content.sound = nil
+        let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: at)
+        let id = Self.maintenanceID + ".\(Int(w.start.timeIntervalSince1970))"
+        add(
+            UNNotificationRequest(
+                identifier: id, content: content,
+                trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)),
+            "maintenance heads-up")
+        eventLog?.write("maintenance heads-up scheduled")
+    }
+
+    /// The heads-up's ids start with this (one per window, by its start).
+    nonisolated static let maintenanceID = "app.mauri.sukrara.maintenance-ahead"
 
     private func notificationSound(_ kind: AlertKind, _ s: AlertSettings) -> UNNotificationSound? {
         var rng = SystemRandomNumberGenerator()

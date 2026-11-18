@@ -25,8 +25,30 @@ struct AlertText: Equatable {
         return AlertText(language: spoken ?? .en)
     }
 
+    /// Why no data comes, when the source knows it and it isn't an error (contracts/alerts/copy.json `why`): LibreView's
+    /// maintenance, `ends` its end as the clock writes it (nil = none known). The alert still rings on time.
+    enum Why: Equatable, Sendable { case maintenance(ends: String?) }
+
     /// The notification title: the headline only (the same words on every platform, contracts/alerts/SPEC.md §1).
     func title(_ f: AlertFiring) -> String { headline(f) }
+
+    /// The title with why no data comes: "No data · LibreView maintenance".
+    func title(_ f: AlertFiring, escalated: Bool, why: Why?) -> String {
+        guard f.kind == .noData, why != nil else { return title(f, escalated: escalated) }
+        return headline(f) + (language == .en ? " · LibreView maintenance" : " · mantenimiento de LibreView")
+    }
+
+    /// The body with why no data comes: the maintenance's end first when known ("Until 23:00 · last reading 22:04 ·
+    /// 72 mg/dL"), else the usual body.
+    func body(_ f: AlertFiring, now: Date, why: Why?) -> String {
+        guard f.kind == .noData, case .maintenance(let ends?) = why, let r = f.reading else {
+            return body(f, now: now)
+        }
+        let at = Freshness.timeText(r.at.timeIntervalSince1970, now: now.timeIntervalSince1970)
+        return language == .en
+            ? "Until \(ends) · last reading \(at) · \(value(r))"
+            : "Hasta las \(ends) · última lectura \(at) · \(value(r))"
+    }
 
     /// A follower's title for the wearer's very low nobody answered on the wearer's phone (#39).
     func title(_ f: AlertFiring, escalated: Bool) -> String {

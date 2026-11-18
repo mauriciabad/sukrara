@@ -39,6 +39,7 @@ import Testing
             case "rateLimited": #expect(got == .rateLimited(retryAfter: Self.double(e["retryAfter_s"])), "\(name)")
             case "version": #expect(got == .version(minimum: e["minimumVersion"] as? String ?? ""), "\(name)")
             case "retired": #expect(got == .retired, "\(name)")
+            case "maintenance": #expect(got == .maintenance, "\(name)")
             default:
                 if case .failed = got {} else { Issue.record("\(name): \(got)") }
             }
@@ -129,13 +130,15 @@ import Testing
         }
         #expect(Self.double(poll["terms_s"]) == LluPoll.terms)
         #expect(Self.double(poll["retired_s"]) == LluPoll.retired)
+        #expect(Self.double(poll["maintenanceMax_s"]) == LluPoll.maintenanceMax)
+        #expect(Self.double(poll["maintenanceAfterEnd_s"]) == LluPoll.maintenanceAfterEnd)
         // the wait after a round, by its outcome (Android's LluPoll.next passes the same cases)
         for c in try #require(poll["after"] as? [[String: Any]]) {
             let outcome = try (c["outcome"] as? String).map { try #require(SourceHealth.Outcome(rawValue: $0)) }
             let wait = LluPoll.next(
                 outcome: outcome, failures: c["failures"] as? Int ?? 0, retryAfter: Self.double(c["retryAfter_s"]),
                 now: Self.date(c["now"]) ?? Date(timeIntervalSince1970: 0), newest: Self.date(c["newest"]),
-                margin: Self.double(c["margin_s"]) ?? LluPoll.margin)
+                margin: Self.double(c["margin_s"]) ?? LluPoll.margin, until: Self.date(c["until"]))
             #expect(wait == Self.double(c["wait_s"]), "\(c["name"] ?? "")")
         }
     }
@@ -195,6 +198,38 @@ import Testing
                     + g.map { .init(t: $0.t, mgdl: $0.mgdl, source: LibreLinkUp.graphId) }
             ).map { "\($0.t.timeIntervalSince1970) \($0.mgdl)" }
             #expect(fast == rule)
+        }
+    }
+
+    /// LibreView's maintenance windows from Abbott's status page (status.json; Android's `LibreViewStatus` passes the
+    /// same cases): the region's windows, the end of the one it is in, the next one ahead.
+    @Test func theStatusPageGivesTheContractsWindows() throws {
+        let f = try file("status.json")
+        #expect(f["url"] as? String == LibreViewStatus.url.absoluteString)
+        #expect(Self.double(f["every_s"]) == LibreViewStatus.every)
+        #expect(Self.double(f["maintenanceEvery_s"]) == LibreViewStatus.maintenanceEvery)
+        #expect(Self.double(f["timeout_s"]) == LibreViewStatus.timeout)
+        #expect(Self.double(f["warnHome_s"]) == LibreViewStatus.warnHome)
+        #expect(Self.double(f["notify_s"]) == LibreViewStatus.notifyBefore)
+        let regions = try #require(f["regions"] as? [String: [String]])
+        #expect(regions == LibreViewStatus.regions)
+        #expect(f["groups"] as? [String] == LibreViewStatus.groups)
+        for c in try cases("status.json") {
+            let name = c["name"] as? String ?? ""
+            let e = try #require(c["expect"] as? [String: Any])
+            let now = try #require(Self.date(c["now"]))
+            let ws = LibreViewStatus.windows(c["body"] as? [String: Any] ?? [:], region: c["region"] as? String)
+            let want = (e["windows"] as? [[String: Any]] ?? []).map {
+                MaintenanceWindow(
+                    start: Self.date($0["start"]) ?? .distantPast, end: Self.date($0["end"]) ?? .distantPast,
+                    live: $0["live"] as? Bool ?? false)
+            }
+            #expect(ws == want, "\(name)")
+            #expect(LibreViewStatus.until(ws, now: now) == Self.date(e["until"]), "\(name)")
+            let up = e["upcoming"] as? [String: Any]
+            let got = LibreViewStatus.upcoming(ws, now: now)
+            #expect(got?.start == Self.date(up?["start"]), "\(name)")
+            #expect(got?.end == Self.date(up?["end"]), "\(name)")
         }
     }
 }

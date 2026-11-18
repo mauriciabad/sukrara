@@ -314,6 +314,9 @@ struct CardStyle {
     var badge = true
     /// The sensor life badge beside the arrow and the countdown ring over the main ring (nil = nothing known).
     var sensor: SensorInfo? = nil
+    /// LibreView's maintenance (`CardData.pause`): the value's place and the age pill say it once no reading has come
+    /// for 20 min.
+    var pause: CardPause? = nil
     /// The countdown window: the ring shows in the sensor's last N hours (`countdownHours`, 1–24, default 8).
     var countdownHours = SensorLife.defaultCountdownHours
     /// The sensor's time left on this card (`GraphConfig.sensorTime`); warm-up and ended show regardless. No default:

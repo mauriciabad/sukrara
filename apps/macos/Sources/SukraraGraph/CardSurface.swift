@@ -82,7 +82,7 @@ extension CardSurface {
     /// `words` = the language the card draws in (the app and the widget: the person's; the tests: each case's).
     func style(
         _ cfg: GraphConfig, _ overrides: PlaceOverrides = PlaceOverrides(), sensor: SensorInfo?,
-        words: CardWords = .en
+        pause: CardPause? = nil, words: CardWords = .en
     ) -> CardStyle {
         var g = cfg.graphStyle(hours: overrides.hours)
         g.side = overrides.side ?? cfg.side
@@ -100,6 +100,7 @@ extension CardSurface {
         }
         if let n = overrides.slots { st.maxSlots = Swift.max(0, Swift.min(Slots.maxCount, n)) }
         st.sensor = sensor
+        st.pause = pause
         return st.speaking(words)
     }
 }

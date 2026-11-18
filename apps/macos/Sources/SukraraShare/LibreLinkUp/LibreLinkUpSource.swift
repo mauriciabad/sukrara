@@ -26,6 +26,8 @@ public enum LluConnectResult: Equatable, Sendable {
     case offline
     /// LibreLinkUp refuses this client: Abbott changed it.
     case stopped
+    /// LibreView is down for maintenance in the account's region (HTTP 911): nothing to fix, it comes back by itself.
+    case maintenance
 }
 
 /// What the app sees of the LibreLinkUp source (one value, replaced on every change).
@@ -56,12 +58,15 @@ public struct LibreLinkUpSnapshot: Sendable, Equatable {
     public var lastAnswer: Date?
     /// The sensor LibreLinkUp says is running (nil = its life is unknown).
     public var sensor: LluSensor?
+    /// LibreView's maintenance windows for the account's region, from Abbott's status page (the last good answer;
+    /// empty = none known).
+    public var windows: [MaintenanceWindow]
 
     public init(
         email: String = "", signInAgain: Bool = false, people: [LluPerson] = [], patient: String = "",
         name: String = "", running: Bool = false, outcome: SourceHealth.Outcome? = nil, online: Bool = true,
         readings: [Reading] = [], monitoring: Bool = false, treatments: [Treatment] = [], lastAnswer: Date? = nil,
-        sensor: LluSensor? = nil
+        sensor: LluSensor? = nil, windows: [MaintenanceWindow] = []
     ) {
         self.email = email
         self.signInAgain = signInAgain
@@ -76,9 +81,19 @@ public struct LibreLinkUpSnapshot: Sendable, Equatable {
         self.treatments = treatments
         self.lastAnswer = lastAnswer
         self.sensor = sensor
+        self.windows = windows
     }
 
     public static let off = LibreLinkUpSnapshot()
+
+    /// While LibreView is down for maintenance (health `maintenance`): the end Abbott's status page gives, nil = none
+    /// known (contracts/sources/librelinkup/status.json `until`).
+    public func maintenanceUntil(at now: Date) -> Date? {
+        health(at: now) == .maintenance ? LibreViewStatus.until(windows, now: now) : nil
+    }
+
+    /// The next maintenance window that hasn't begun (the warn-ahead), nil = none listed.
+    public func upcoming(at now: Date) -> MaintenanceWindow? { LibreViewStatus.upcoming(windows, now: now) }
 
     /// The person picked no longer shares with the account, others still do (pick again, not "no one shares").
     public var pickedGone: Bool { !patient.isEmpty && !people.isEmpty && !people.contains { $0.id == patient } }
@@ -127,6 +142,10 @@ public protocol LibreLinkUpSourcing: Sendable {
 /// `KeptHistory`). HTTPS only, redirects never followed; nothing is ever uploaded.
 public actor LibreLinkUpSource: LibreLinkUpSourcing {
     private let http: any LibreLinkUpHTTP
+    /// Abbott's status page (nil = never asked: tests, offline runs).
+    private let status: (any LibreLinkUpHTTP)?
+    /// When the status page was last asked (nil = not yet).
+    private var statusAsked: Date?
     private let live: any ReadingsStoring
     private let graph: any ReadingsStoring
     private let state: JSONFileStore<LibreLinkUpState>
@@ -170,9 +189,11 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         http: any LibreLinkUpHTTP, live: any ReadingsStoring, graph: any ReadingsStoring,
         state: JSONFileStore<LibreLinkUpState>, secrets: any SecretStoring, kept: URL? = nil,
         clock: any TimeSource = SystemClock(),
-        sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) }
+        sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) },
+        status: (any LibreLinkUpHTTP)? = nil
     ) {
         self.http = http
+        self.status = status
         self.live = live
         self.graph = graph
         self.state = state
@@ -185,14 +206,15 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     /// The source over the files under `directory` (`readings.csv`, `graph/readings.csv`, `state.json`), the people
     /// it doesn't read now under `kept`.
     public static func files(
-        directory: URL, kept: URL, secrets: any SecretStoring, http: any LibreLinkUpHTTP = URLSessionLibreLinkUpHTTP()
+        directory: URL, kept: URL, secrets: any SecretStoring, http: any LibreLinkUpHTTP = URLSessionLibreLinkUpHTTP(),
+        status: (any LibreLinkUpHTTP)? = URLSessionLibreLinkUpHTTP()
     ) -> LibreLinkUpSource {
         LibreLinkUpSource(
             http: http, live: ReadingsFileStore(directory: directory),
             graph: ReadingsFileStore(
                 directory: directory.appending(path: KeptHistory.graphFolder, directoryHint: .isDirectory)),
             state: JSONFileStore(url: directory.appending(path: KeptHistory.stateFile, directoryHint: .notDirectory)),
-            secrets: secrets, kept: kept)
+            secrets: secrets, kept: kept, status: status)
     }
 
     public func snapshots() async -> AsyncStream<LibreLinkUpSnapshot> {
@@ -231,6 +253,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         stop()
         // a sign-in the person makes ends a wait LibreLinkUp asked for
         holdUntil = nil
+        // the account's region may be another: its windows are asked again
+        statusAsked = nil
         let email = email.trimmingCharacters(in: .whitespacesAndNewlines)
         let saved = try? account()
         let same = saved?.email.caseInsensitiveCompare(email) == .orderedSame
@@ -275,6 +299,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
             case .unreachable: .server
             case .offline: .network
             case .stopped: .retired
+            case .maintenance: .maintenance
             }
         restart(after: outcome.flatMap { LluPoll.next(outcome: $0, failures: 1) } ?? 0)
     }
@@ -294,6 +319,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         snap.running = false
         snap.outcome = nil
         snap.monitoring = false
+        snap.windows = []
+        statusAsked = nil
         publish(snap)
         publishAccount()
     }
@@ -442,6 +469,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         var newest: Date?
         var timing = LluPoll.Timing()
         while !Task.isCancelled && gen == generation {
+            let before = current.outcome
             let c = await cycle(config.patient, gen: gen)
             guard !Task.isCancelled, gen == generation else { return }
             failures = c.outcome == .ok ? 0 : failures + 1
@@ -453,6 +481,10 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
                 publish(s)
             }
             publishAccount()
+            // LibreView's maintenance windows: at once on entering one (for its end), then now and then
+            let maintenance = c.outcome == .maintenance
+            await askStatus(now: before != .maintenance && maintenance, maintenance: maintenance)
+            guard !Task.isCancelled, gen == generation else { return }
             let now = clock.now
             if c.outcome == .ok {
                 // the margin follows how soon LibreLinkUp has the readings
@@ -461,13 +493,39 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
             }
             let wait = LluPoll.next(
                 outcome: c.outcome, failures: failures, retryAfter: c.retryAfter, now: now, newest: newest,
-                margin: timing.margin)
+                margin: timing.margin, until: LibreViewStatus.until(current.windows, now: now))
             // asked to wait: nothing calls LibreLinkUp before then (each call may lengthen the lockout)
             holdUntil = c.outcome == .rateLimited ? wait.map { clock.now.addingTimeInterval($0) } : nil
             // nil: only the person acts (a refused password: Sign In Again; retries lock the account)
             guard let wait else { return }
             do { try await sleep(wait) } catch { return }
         }
+    }
+
+    /// Abbott's status page for the account's region (contracts/sources/librelinkup/status.json): `now` at once (a
+    /// maintenance just began), else every `maintenanceEvery` while in one, every `every` otherwise. GET only, no
+    /// account, no cookies, redirects never followed; a failure or an answer that isn't the page's keeps what was known
+    /// and says nothing.
+    private func askStatus(now: Bool, maintenance: Bool) async {
+        guard let status else { return }
+        let at = clock.now
+        let every = maintenance ? LibreViewStatus.maintenanceEvery : LibreViewStatus.every
+        if !now, let asked = statusAsked, at.timeIntervalSince(asked) < every { return }
+        statusAsked = at
+        guard let region = (try? account())?.region else { return }
+        var r = URLRequest(
+            url: LibreViewStatus.url, cachePolicy: .reloadIgnoringLocalCacheData,
+            timeoutInterval: LibreViewStatus.timeout)
+        r.setValue("application/json", forHTTPHeaderField: "Accept")
+        guard let a = try? await status.send(r), a.status == 200,
+            let o = (try? JSONSerialization.jsonObject(with: a.body)) as? [String: Any],
+            o["scheduled_maintenances"] is [Any]
+        else { return }
+        let windows = LibreViewStatus.windows(o, region: region)
+        guard windows != current.windows else { return }
+        var snap = current
+        snap.windows = windows
+        publish(snap)
     }
 
     struct Cycle {
@@ -486,6 +544,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         case .version, .retired: .retired
         case .server: .server
         case .network: .network
+        case .maintenance: .maintenance
         }
     }
 
@@ -568,6 +627,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         case .terms: Cycle(outcome: .terms)
         case .rateLimited(let wait): Cycle(outcome: .rateLimited, retryAfter: wait)
         case .retired: Cycle(outcome: .retired)
+        case .maintenance: Cycle(outcome: .maintenance)
         case .failed: Cycle(outcome: .network)
         }
     }
@@ -579,6 +639,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         case .terms: .terms
         case .rateLimited: .rateLimited
         case .retired: .stopped
+        case .maintenance: .maintenance
         case .failed(let offline): offline ? .offline : .unreachable
         }
     }
@@ -594,6 +655,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
                 return .rateLimited
             case .expired: return .badCredentials
             case .retired, .version: return .stopped
+            case .maintenance: return .maintenance
             case .network: return online ? .unreachable : .offline
             default: return .unreachable
             }
@@ -643,6 +705,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         case terms
         case rateLimited(TimeInterval?)
         case retired
+        /// LibreView is down for maintenance (HTTP 911): the account is kept as it is.
+        case maintenance
         /// No answer, or one Sukrara can't read (`offline`: this Mac has no network).
         case failed(offline: Bool)
     }
@@ -743,6 +807,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
             case .terms: return .terms
             case .rateLimited(let wait): return .rateLimited(wait)
             case .retired: return .retired
+            case .maintenance: return .maintenance
             case .failed: return .failed(offline: false)
             }
         }
@@ -774,6 +839,7 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         case .terms: LluCall(.terms)
         case .rateLimited(let wait): LluCall(.rateLimited, retryAfter: wait)
         case .retired: LluCall(.retired)
+        case .maintenance: LluCall(.maintenance)
         case .failed: LluCall(.network)
         }
     }

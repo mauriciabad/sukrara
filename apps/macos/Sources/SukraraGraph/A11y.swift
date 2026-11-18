@@ -33,6 +33,9 @@ public struct CardWords: Sendable {
         let average, gmi, cv: String
         let noReadingsYet, noReadingSince, sensorEnded, warmingUp, almostReady, waitingReading: String
         let readyAt: @Sendable (String) -> String
+        /// LibreView's maintenance in the value's place (`CardPause`): "LibreView maintenance", "until 23:00".
+        let maintenance: String
+        let until: @Sendable (String) -> String
         /// Where a new sensor is started, named on the ended sensor's pill ("Replace in %@", "Ended · Replace in %@")
         /// with the app (`SensorRenew`): the Libre app, Juggluco, a site's uploader ("its app").
         let replaceInApp, sensorEndedInApp: @Sendable (String) -> String
@@ -66,6 +69,9 @@ public struct CardWords: Sendable {
     let range: (veryLow: String, low: String, high: String, veryHigh: String, extremelyHigh: String)
     let noReadings: String
     let noReadingSince: @Sendable (String) -> String
+    /// LibreView's maintenance after "no reading since": with its end, or without one.
+    let maintenanceUntil: @Sendable (String) -> String
+    let maintenance: String
     /// A card without a value: when its data is from (the graph widgets, `Freshness.AgeMark`).
     let lastReading: @Sendable (String) -> String
     /// The time left in a sentence: `one` = it is a single unit ("queda 1 h", "quedan 1 h 30 min").
@@ -75,6 +81,10 @@ public struct CardWords: Sendable {
     let sensorEndedInApp: @Sendable (String) -> String
     /// What VoiceOver says of an ended sensor, with where to replace it.
     func sensorEnded(_ renew: SensorRenew) -> String { drawn.app(renew).map(sensorEndedInApp) ?? sensorEnded }
+    /// LibreView's maintenance as said after "no reading since 22:04": "LibreView maintenance until 23:00".
+    func paused(_ p: CardPause) -> String {
+        p.until.map { maintenanceUntil(Clock.time(Date(timeIntervalSince1970: $0))) } ?? maintenance
+    }
     let sensorEnds: @Sendable (_ left: String) -> String
     let days, hours: @Sendable (Int) -> String
     /// The status pill's sentence: the action an alert asks for, and the mutes with the time left.
@@ -104,7 +114,8 @@ public struct CardWords: Sendable {
             periodDays: { "\($0)d" }, periodHours: { "\($0)h" }, average: "avg", gmi: "GMI", cv: "CV",
             noReadingsYet: "No readings yet", noReadingSince: "No reading since", sensorEnded: "Sensor ended",
             warmingUp: "Warming up", almostReady: "Almost ready", waitingReading: "Waiting for the first reading",
-            readyAt: { "Ready at \($0)" }, replaceInApp: { "Replace in \($0)" },
+            readyAt: { "Ready at \($0)" }, maintenance: "LibreView maintenance", until: { "until \($0)" },
+            replaceInApp: { "Replace in \($0)" },
             sensorEndedInApp: { "Ended · Replace in \($0)" }, appLibre: "Libre app", appJuggluco: "Juggluco",
             appIts: "its app"),
         unit: ("milligrams per decilitre", "millimoles per litre"),
@@ -116,6 +127,7 @@ public struct CardWords: Sendable {
         ),
         range: ("very low", "low", "high", "very high", "extremely high"),
         noReadings: "Glucose: no readings yet", noReadingSince: { "Glucose: no reading since \($0)" },
+        maintenanceUntil: { "LibreView maintenance until \($0)" }, maintenance: "LibreView maintenance",
         lastReading: { "Glucose: last reading \($0)" },
         warmingUp: { left, _ in "Sensor warming up, \(left) left" },
         almostReady: "Sensor almost ready, waiting for the first reading", sensorEnded: "Sensor ended. Replace sensor",
@@ -150,6 +162,7 @@ public struct CardWords: Sendable {
             average: "media", gmi: "GMI", cv: "CV", noReadingsYet: "Aún no hay lecturas",
             noReadingSince: "Sin lecturas desde", sensorEnded: "Sensor terminado", warmingUp: "Calentando",
             almostReady: "Casi listo", waitingReading: "Esperando la primera lectura", readyAt: { "Listo a las \($0)" },
+            maintenance: "Mantenimiento de LibreView", until: { "hasta las \($0)" },
             replaceInApp: { "Cambiar en \($0)" }, sensorEndedInApp: { "Terminado · Cambiar en \($0)" },
             appLibre: "la app Libre", appJuggluco: "Juggluco", appIts: "su app"),
         unit: ("miligramos por decilitro", "milimoles por litro"),
@@ -161,6 +174,7 @@ public struct CardWords: Sendable {
         ),
         range: ("muy baja", "baja", "alta", "muy alta", "extremadamente alta"),
         noReadings: "Glucosa: aún no hay lecturas", noReadingSince: { "Glucosa: sin lecturas desde \($0)" },
+        maintenanceUntil: { "mantenimiento de LibreView hasta las \($0)" }, maintenance: "mantenimiento de LibreView",
         lastReading: { "Glucosa: última lectura \($0)" },
         warmingUp: { "Sensor calentando, \(queda($1)) \($0)" },
         almostReady: "Sensor casi listo, esperando la primera lectura", sensorEnded: "Sensor terminado. Cambiar sensor",
@@ -320,7 +334,9 @@ enum A11y {
         case .ended, .warmingUp: glucose = sensorState(data, words: w)
         case .none: glucose = w.noReadings
         case .noReadings:
-            glucose = w.noReadingSince(data.latest.map { Freshness.timeText($0.t, now: data.now) } ?? "")
+            glucose =
+                w.noReadingSince(data.latest.map { Freshness.timeText($0.t, now: data.now) } ?? "")
+                + (data.pause.map { ", " + w.paused($0) } ?? "")
         case .value:
             guard let r = data.latest else { return w.noReadings }
             let bound = r.sgv < GlucoseRange.floor || r.sgv >= GlucoseRange.hi
@@ -388,7 +404,7 @@ enum A11y {
         case .none: return nil
         case .time: return w.lastReading(time)
         case .dimmed: return "\(w.lastReading(time)), \(w.old)"
-        case .noReadings, .face: return w.noReadingSince(time)
+        case .noReadings, .face: return w.noReadingSince(time) + (data.pause.map { ", " + w.paused($0) } ?? "")
         }
     }
 

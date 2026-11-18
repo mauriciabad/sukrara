@@ -19,6 +19,9 @@ public enum LluLogin: Equatable, Sendable, CustomStringConvertible {
     case version(minimum: String)
     /// The login is gone: Abbott retired the API.
     case retired
+    /// HTTP 911 / status 911: LibreView is down for maintenance in the region (docs/45). Nothing about the account
+    /// changes; asked again gently.
+    case maintenance
     case failed(String)
 
     /// Never the token.
@@ -31,6 +34,7 @@ public enum LluLogin: Equatable, Sendable, CustomStringConvertible {
         case .rateLimited(let wait): "rateLimited(\(wait.map { "\($0)" } ?? "-"))"
         case .version(let minimum): "version(\(minimum))"
         case .retired: "retired"
+        case .maintenance: "maintenance"
         case .failed(let why): "failed(\(why))"
         }
     }
@@ -39,6 +43,8 @@ public enum LluLogin: Equatable, Sendable, CustomStringConvertible {
 /// An authenticated call's outcome (contracts/sources/librelinkup/calls.json).
 public enum LluCallOutcome: String, Sendable, Equatable {
     case ok, expired, rateLimited, terms, version, retired, server, network
+    /// HTTP 911 / status 911: LibreView is down for maintenance in the region (docs/45).
+    case maintenance
 }
 
 /// One authenticated call's answer: its outcome, the body when `ok`.
@@ -154,6 +160,9 @@ public enum LibreLinkUp {
         text(data?["minimumVersion"]).flatMap { isVersion($0) ? $0 : nil }
     }
 
+    /// LibreView's maintenance: every path of the region's host answers HTTP 911 with `{"status": 911}`.
+    public static let maintenanceCode = 911
+
     /// The host of `region` (nil = the global one).
     public static func host(region: String?) -> String { region.map { "api-\($0).libreview.io" } ?? host }
 
@@ -174,6 +183,7 @@ public enum LibreLinkUp {
         let o = object(body)
         let data = o?["data"] as? [String: Any]
         let status = int(o?["status"])
+        if code == maintenanceCode || status == maintenanceCode { return .maintenance }
         if code == 429 || status == 429 {
             let lockout = number((data?["data"] as? [String: Any])?["lockout"])
             return .rateLimited(retryAfter: retryAfter ?? lockout)
@@ -208,6 +218,7 @@ public enum LibreLinkUp {
         let o = object(body)
         let data = o?["data"] as? [String: Any]
         let status = int(o?["status"])
+        if code == maintenanceCode || status == maintenanceCode { return LluCall(.maintenance) }
         if code == 429 || status == 429 { return LluCall(.rateLimited, retryAfter: retryAfter) }
         if code == 401 { return LluCall(.expired) }
         if code == 403, let minimum = minimumVersion(data) {
@@ -347,6 +358,10 @@ public enum LluPoll {
     public static let terms: TimeInterval = 600
     /// Abbott refused this client: asked again rarely.
     public static let retired: TimeInterval = 3600
+    /// LibreView's maintenance: the backoff, at most this far apart.
+    public static let maintenanceMax: TimeInterval = 300
+    /// ... and this long after the window's end when the status page gives one and that is sooner.
+    public static let maintenanceAfterEnd: TimeInterval = 30
 
     /// How late after a reading is due the call goes, and the new readings found in time in a row.
     public struct Timing: Equatable, Sendable {
@@ -388,16 +403,29 @@ public enum LluPoll {
         return backoff[min(max(failures, 1) - 1, backoff.count - 1)]
     }
 
+    /// Seconds to the next call while LibreView is down for maintenance: the failures' backoff, at most
+    /// `maintenanceMax`, and `maintenanceAfterEnd` after the window's end (`until`, Abbott's status page) when that is
+    /// sooner, never sooner than the first backoff step (poll.json `after`).
+    public static func maintenanceWait(failures: Int, now: Date, until: Date?) -> TimeInterval {
+        var w = min(wait(failures: failures) ?? backoff[0], maintenanceMax)
+        if let until, until > now {
+            w = min(w, max(until.timeIntervalSince(now) + maintenanceAfterEnd, backoff[0]))
+        }
+        return w
+    }
+
     /// Seconds to the next call after a round that ended in `outcome` (nil = not set up), the failures in a row and a
     /// 429's wait; nil = only when the person acts (poll.json `after`). An answer: timed to the next reading
     /// (`timed`). Asked to wait without a time: `rateLimitedMin`.
     public static func next(
         outcome: SourceHealth.Outcome?, failures: Int, retryAfter: TimeInterval? = nil,
-        now: Date = Date(timeIntervalSince1970: 0), newest: Date? = nil, margin m: TimeInterval = margin
+        now: Date = Date(timeIntervalSince1970: 0), newest: Date? = nil, margin m: TimeInterval = margin,
+        until: Date? = nil
     ) -> TimeInterval? {
         switch outcome {
         case nil: nil
         case .ok: timed(now: now, newest: newest, margin: m)
+        case .maintenance: maintenanceWait(failures: failures, now: now, until: until)
         case .terms: terms
         case .retired: retired
         case .notShared: connectionsEvery

@@ -88,12 +88,21 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case pickedGone
         /// LibreLinkUp stopped answering Sukrara: Abbott changed it.
         case stopped
+        /// LibreView is down for maintenance in the account's region (HTTP 911): an expected wait, not an error, until
+        /// `until` (epoch s) when Abbott's status page says it (nil = no end known). Its way out: change the source.
+        case maintenance(until: TimeInterval?)
     }
 
     /// What the panel offers for it: follow someone (a new invite), the Following settings (cancel a request, stop
     /// following), Juggluco's settings (address, secret), the Nightscout source's (site, token) or LibreLinkUp's
     /// (sign in, whose glucose).
     public enum Action: Sendable, Equatable { case follow, following, source, juggluco, nightscout, libreLinkUp }
+
+    /// LibreView's maintenance: an expected wait (the clock symbol, never the "no readings" or an error mark).
+    public var isMaintenance: Bool {
+        if case .libreLinkUp(.maintenance) = self { return true }
+        return false
+    }
 
     public var action: Action? {
         switch self {
@@ -106,7 +115,7 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case .nightscout: nil
         case .libreLinkUp(.notSignedIn), .libreLinkUp(.signedOut), .libreLinkUp(.notShared), .libreLinkUp(.pickedGone),
             .libreLinkUp(.terms),
-            .libreLinkUp(.stopped):
+            .libreLinkUp(.stopped), .libreLinkUp(.maintenance):
             .libreLinkUp
         case .libreLinkUp: nil
         case .offlineBuild, .wearerSilent: nil
