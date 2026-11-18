@@ -1600,6 +1600,22 @@ poll as the floor. With each reading's time, the SPEC's trend quiets can hold, u
 
 ## Appendix G: switching sources with a Sukrara link (journey review, 2026-11-18)
 
+**Owner's answers, 2026-11-18** (they settle the decisions below):
+- **D, one person, one link: yes.** A device either follows a Sukrara (recommended, the default) or reads an external
+  source; never both. "If a user picks an external source it has to be because he doesn't want to install Sukrara on
+  his phone"; a phone with no internet while the Mac has it is "an odd edge case, not worth complicating the mental
+  model for", and a different person in the Mac's LibreLinkUp than on the phone would "mess everything up". Sukrara on
+  the phone is the best way to the Mac: the many inputs and outputs exist so Sukrara can fill gaps in people's setups
+  (old sensors through Juggluco, a Nightscout someone keeps, a clinic that sees LibreView), not to run beside itself.
+- **The `leave` message: yes, and hard or impossible to lose on its way.** Check and update the open standard draft
+  (docs/24, 24b, 24c) with it.
+- **Decision 6, the backup source** (an online source used only while the followed phone is silent): **declined** —
+  it serves the same edge case.
+- **Decision 8: acceptable.** Idea to consider: rejoining with the same invite or identity after leaving, instead of a
+  new profile; open to either.
+- Decisions 2, 3 (last-seen later), 4, 5 and 7 weren't answered: the recommendations stand until the owner says
+  otherwise.
+
 *Product / UX / QA journey review of #213 (Person × Source, Nightscout, LibreLinkUp, the polish round), Mac first and
 switching between sources on both apps, after the owner found the Mac on LibreLinkUp still linked to their phone with
 the follow out of reach. Walked on the real apps: the Mac as a dev fixture run driven through Accessibility; Android on
