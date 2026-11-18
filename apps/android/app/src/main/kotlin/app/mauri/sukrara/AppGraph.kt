@@ -912,8 +912,7 @@ class AppGraph(
 
     /**
      * Leaves the Sukrara link: the one call of the follower engine's leave (the record and key go; the PROTOCOL-v2
-     * `leave` that tells the wearer's phone lands in the engine's `unfollow` with #213's leave agent). [keepHistory]:
-     * the readings and treatments stay.
+     * `leave` in the outbox tells the wearer's phone). [keepHistory]: the readings and treatments stay.
      */
     private suspend fun leaveLink(keepHistory: Boolean): Boolean = follower.engine.unfollow(keepHistory = keepHistory)
 
@@ -932,11 +931,9 @@ class AppGraph(
      * wearer's phone is told, the history stays, the settings are untouched (they weren't in use).
      */
     private suspend fun leaveLeftBehindLink() {
-        val stored = source.data.first().spec ?: return
-        if (stored.stream || !follower.engine.isFollowing()) return
-        if (leaveLink(keepHistory = true)) {
-            AppLink.keepHistory(data.treatments)
-            data.diagLog.log("source", "left the follow kept behind ${stored.kind.id}")
+        val stored = source.data.first().spec
+        if (AppLink.leaveLeftBehind(stored, follower.engine::isFollowing, { leaveLink(keepHistory = true) }, data.treatments)) {
+            data.diagLog.log("source", "left the follow kept behind ${stored?.kind?.id}")
         }
     }
 

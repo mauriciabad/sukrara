@@ -114,6 +114,22 @@ class AppLink(
 
     companion object {
         /**
+         * A follow kept behind another source by an earlier version ([stored] isn't the link, yet a follow record is
+         * there: one person, one link can't have it) is left with no question: [leave] (the wearer told, the history
+         * kept), the wearer's entries kept read-only. True when it left one.
+         */
+        suspend fun leaveLeftBehind(
+            stored: SourceSpec?,
+            following: suspend () -> Boolean,
+            leave: suspend () -> Boolean,
+            treatments: TreatmentsRepository,
+        ): Boolean {
+            if (stored == null || stored.stream || !following() || !leave()) return false
+            keepHistory(treatments)
+            return true
+        }
+
+        /**
          * The treatment log a left link leaves behind (Appendix G finding 10): entries that came through it are the
          * wearer's log, kept read-only and never sent anywhere ([TreatmentRecord.fromLink]); this phone's own entries
          * that never reached the wearer (*Sending…*, *Not sent*) become its own, so none waits for a link that is gone.
