@@ -813,6 +813,12 @@ this enough": Appendix E) and needs the owner's answer again. The owner uses onl
 Libre app, no LibreLinkUp). For testing they're fine installing apps on the phone
 or emulators and making accounts, as long as their normal setup ends up Sukrara alone.
 
+**Owner, 2026-11-18, on the Mac: no *Whose glucose* question.** "it is pointless to ask that in mac": the Mac never
+uploads or shares and has no sensor reminders, so the answer only changed words. The card says *glucose*; when a
+name is needed it comes from the source (the Sukrara stream's name, LibreLinkUp's connection, Nightscout's site).
+Readings and treatment logs stay apart per person, keyed by the source's own identity (a step towards showing
+several people later). Android keeps the question: there it decides sharing, uploads, pens and reminders.
+
 Ordered by how much they block.
 
 1. **Person × Source** (*Whose glucose* + *Source*, both changeable) instead of "follower is one more source"?
