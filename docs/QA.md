@@ -1175,6 +1175,17 @@ docs/44 Person × Source; FEATURES.md *Source*. Emulator / a dev Mac with synthe
       → force-stop the Libre app → *Take over* → tap: the source becomes *Sukrara reads your sensor* by itself, the
       graph keeps one line through the switch (no doubles), the sensor's start is unchanged, LibreView offers *Take
       over*. Way back: *Where it comes from* → *LibreLinkUp*, scan the sensor with the Libre app.
+- [ ] Mac with LibreLinkUp (a debug build against a fake LibreLinkUp, or `sukrara-snap windows|shell` with
+      `SUKRARA_SNAP_ONLY=setup-connect-librelinkup,settings-source-librelinkup,panel-librelinkup`; never a real
+      account on a test run): *No · Read it online* → whose glucose → *LibreLinkUp* → *Sign in to LibreLinkUp*: Return
+      signs in, AutoFill offers a saved sign-in, a wrong password says so under the field (reject tap), too many
+      attempts / no answer / no internet / stopped as a notice; several people → *Whose glucose?* → *Choose*; no one →
+      the invite instructions, *Try Again*, *Change Account*; connected → *Signed in as …*, *Reading Ana Example's
+      glucose.*, *Reading received* (tap, VoiceOver hears it) → *Continue*. Settings › Source › LibreLinkUp: status
+      with its exit, *Account* + *Change Account…* (*Keep This Account* back), *Whose glucose* menu (another person
+      with readings here asks first), *Sensor*, *Sign Out of LibreLinkUp…* confirmed. The panel: *LibreLinkUp* path
+      badge; a refused password → *LibreLinkUp refused the password* + *Sign In Again…*; not signed in → *Sign In…*.
+      Add Treatment writes this Mac's own log (nothing uploaded); Spanish and VoiceOver on every step.
 
 ## Q29 Website
 

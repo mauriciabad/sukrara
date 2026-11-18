@@ -824,8 +824,8 @@ min late, backfills; `contracts/sources/sources.json`); its readings are `nights
   *Open Nightscout* (the site in the browser, never the token), *Bring back 90 days* (yours). The token is never shown.
 - **The Mac without Sukrara on the phone**: setup's first question *Do you have Sukrara on your phone?* (two cards, as
   *Whose glucose*): *Yes · Follow it* → whose glucose → *Follow someone*; *No · Read it online* → whose glucose → the
-  sources (*Juggluco on this network*, *Nightscout*) → Connect → alerts. A Mac set up before the question isn't asked
-  it. The Mac keeps its own treatment log with a Nightscout source (`nightscout/state.json`): *Add Treatment*, edit,
+  sources (*Juggluco on this network*, *Nightscout*, *LibreLinkUp*) → Connect → alerts. A Mac set up before the
+  question isn't asked it. The Mac keeps its own treatment log with a Nightscout source (`nightscout/state.json`): *Add Treatment*, edit,
   delete and undo work on it, the site's arrive read-only; the panel shows a *Nightscout* path badge and each state as
   its no-data reason. Reading another site asks first when this Mac's entries haven't reached the old one (*Read another
   site?*), then starts empty (two people's data never mix).
@@ -842,18 +842,18 @@ Nightscout: Settings › Source › *Where it comes from* (the site and token st
 Sukrara on your phone?* → either card → Back → Welcome; Settings › Source changes it later. TalkBack / VoiceOver read
 every field, problem and state; the status lines are live regions.
 
-## LibreLinkUp as a source (Android)
+## LibreLinkUp as a source (both apps)
 
 docs/44 step 2 (#213): LibreLinkUp, Abbott's follower service that the Libre app uploads to each minute, as the
-**Source**: your own glucose (a LibreLinkUp account that follows yourself: in the Libre app, *Menu › Connected apps ›
+**Source**, on Android and on a Mac without Sukrara on the phone: your own glucose (a LibreLinkUp account that follows yourself: in the Libre app, *Menu › Connected apps ›
 LibreLinkUp*, invite your own email) while the Libre app keeps the sensor, or someone else's (a parent's own account
 following a child). `source.kind` `libreLinkUp` (group *Online · needs internet*, about a minute late, backfills about
 12 h); its live readings are `librelinkup` (ranked *online*), the graph's 5-minute points `librelinkup-graph` (ranked
 *onlineHistory*: they only fill gaps between live readings, `contracts/sources/dedup.json`). Its description says it
 *may stop working any day* (Abbott can change or end the API; decision 3).
 
-- **Reading LibreLinkUp** (Android `:core:data` `LibreLinkUp` + `:integrations` `librelinkup/`;
-  `contracts/sources/librelinkup`): the login the LibreView sign-in uses too (`POST /llu/auth/login`, headers
+- **Reading LibreLinkUp** (Android `:core:data` `LibreLinkUp` + `:integrations` `librelinkup/`; Mac
+  `SukraraCore/LibreLinkUp` + `SukraraShare/LibreLinkUp`; `contracts/sources/librelinkup`): the login the LibreView sign-in uses too (`POST /llu/auth/login`, headers
   `product: llu.android`, `version: 4.17.0`; the region's host after a redirect; a 403 naming a newer version sends that
   one once; status 4 = new terms, never accepted for the person), then `GET /llu/connections/<patient>/graph` each
   minute with the token and the account's id (SHA-256): the live reading with its arrow as the sensor's rate, the
@@ -915,6 +915,32 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   finds the Libre app uploading and offers *Take over* (the person chooses). **The way back**: Settings › Source ›
   *Where it comes from* → *LibreLinkUp* (*Sukrara stops reading the sensor and reads LibreLinkUp. To give the sensor
   back to the Libre app, scan it there…*); the account stays saved.
+- **The Mac without Sukrara on the phone** (docs/44 decisions 7 and 9): *No · Read it online* (*LibreLinkUp or
+  Nightscout on this Mac, and your treatments here: no phone app needed*) → whose glucose → *LibreLinkUp* (*Online ·
+  needs internet*) → **Sign in to LibreLinkUp**: the account's text for yours or someone else's (a parent signs in with
+  their own LibreLinkUp account, the one the child's Libre app invited), *Email* and *Password* (AutoFill: `.username`
+  / `.password`, so the Passwords app or a password manager fills them), *Sign In* (Return; *Signing In…* with a
+  spinner); a refused password under the field with a reject tap, the other problems as a notice (new terms, too many
+  attempts, no answer, no internet, stopped); several people → *Whose glucose?* (radio rows, *Choose*); no one →
+  *Signed in as …* with the invite instructions, *Try Again* (no password), *Change Account*; connected → *Signed in
+  as …*, *Reading Ana Example's glucose.*, *Waiting for the first reading from LibreLinkUp…* → *Reading received* (a
+  check that pops in, a trackpad tap, VoiceOver hears it) → *Continue*. A note says LibreLinkUp is Abbott's and may
+  change or stop. The account (email, password, token, region, a raised version) lives only in the Keychain
+  (`source.libreLinkUpSecret`), whom it reads in `source.libreLinkUpPatient`; the same client rules as Android (the
+  token kept until 5 min before it ends, a refused password never retried, terms never accepted, a 429 waits at least
+  10 min). The live readings and the graph's points are stored apart (`librelinkup/readings.csv`,
+  `librelinkup/graph/readings.csv`, 31 days) and merged by the rank rule (a graph point only where no live reading is
+  within 2 min). **This Mac keeps its own treatment log** (`librelinkup/state.json`): *Add Treatment*, edit, delete
+  and undo; LibreLinkUp takes none and the Mac uploads nothing. **Settings › Source › LibreLinkUp**: the status with its
+  exit (*Sign In Again*, *Try Again*), *Account* (the email, *Change Account…*; the form while signed out, *Keep This
+  Account* back), *Whose glucose* (a menu when the account follows several people; another person while this Mac holds
+  someone's readings or log asks first: *Read Leo's glucose?* … *two people's glucose never mix*), *Sensor* (*Started
+  Nov 14, 4:53 PM · 0D00ABC123*), *Sign Out of LibreLinkUp…* (confirmed; the readings and the log stay). The panel: a
+  *LibreLinkUp* path badge and each state as the no-data reason (*Not signed in to LibreLinkUp* · *Sign In…*,
+  *LibreLinkUp refused the password* · *Sign In Again…*, *Nothing new from LibreLinkUp*, *LibreLinkUp needs you*, *No
+  one shares glucose with this account now*, *LibreLinkUp stopped answering Sukrara*: the last three open Settings ›
+  Source), the widgets the same in short. No LibreView rows and no takeover on the Mac (it uploads nothing, it has no
+  NFC).
 
 **States and exits**: Source → *LibreLinkUp* → *Continue* → Connect. Connect: *Sign in as …* / the form → signing in
 (Back leaves, nothing saved) → refused / new terms / too many attempts / no answer / no internet / stopped (the reason;
@@ -927,7 +953,16 @@ from* to leave. Sign out: confirmed; *Account* signs in again. LibreView upload:
 LibreLinkUp is the source; after the takeover *Take over*. Takeover: *Read the sensor in Sukrara* → *Take the sensor
 from the Libre app* → *Take over* / *Open the Libre app's info* / *Cancel* → the tap (the usual new-sensor states) →
 the source switches by itself; back: *Where it comes from* → *LibreLinkUp*, then scan the sensor with the Libre app.
-TalkBack reads every field, problem and state; the status lines are live regions.
+TalkBack reads every field, problem and state; the status lines are live regions. Mac: *No · Read it online* → whose
+glucose → *LibreLinkUp* → *Sign in to LibreLinkUp* → *Sign In* (Back leaves, nothing saved; *Skip* → *Finish
+Setup…*) → refused (under the field) / a notice → fix and *Sign In* again · several → *Choose* (*Change Account* back
+to the form) · no one → *Try Again* / *Change Account* · connected → *Reading received* → *Continue*. Settings ›
+Source: *Sign In Again* (the form, the email kept) / *Try Again*; *Change Account…* → the form → *Sign In* or *Keep
+This Account*; *Whose glucose* → another person (asked first when this Mac holds someone's readings or log: *Cancel*
+keeps them); *Sign Out of LibreLinkUp…* → *Sign Out* / *Cancel* → signed out (the form; the panel says *Not signed in
+to LibreLinkUp* · *Sign In…*). Leaving: *Where it comes from* (the account and the log stay for coming back). The
+panel's reasons open Settings › Source. VoiceOver reads every field, problem and state; the status line is announced
+when it changes.
 
 ## Following (Android)
 

@@ -537,7 +537,7 @@ Discarded or deferred, with reasons:
   doubles; it comes with fallback between sources.
 - **Two apps, one low**: it's for an official app ringing beside Sukrara (step 3); a Nightscout site rings nothing.
 
-**Step 2, LibreLinkUp as a source (2026-11-18, Android).**
+**Step 2, LibreLinkUp as a source (2026-11-18, Android; the Mac the same day).**
 
 Added:
 - **Contracts** (`contracts/sources`): `libreLinkUp` in `sources.json` (both persons, group `online`, 90 s, keyed WEARER
@@ -589,10 +589,43 @@ Discarded or deferred, with reasons:
 - **The full *Move to Sukrara* page and suggestion** (step 4): *Read the sensor in Sukrara* is the page's step 4; the
   checklist, *How it's going* and `MoveSuggestion` need the arrival times step 4 records. Nothing here conflicts with
   them (the page's steps reuse this gate, the switch and *Take over*).
-- **The Mac**: next in this step (standalone, someone else's glucose included).
 - **One LibreLinkUp account signed in on phone and Mac at once** (decision 9's question): unverified; the probe and the
   owner's test will tell. Each device keeps its own token.
 - **Battery of a call each minute**: not measured yet (the owner's day with both apps).
+
+Added on the Mac (decisions 7 and 9: the Mac on its own, a parent with their own account):
+- **The same client rules** (`SukraraCore/LibreLinkUp`: login, calls, people, pick, graph, UTC times, arrow → rate,
+  `LluPoll`) passing every `contracts/sources/librelinkup` fixture (`LibreLinkUpContractTests`); `sources.json` lists
+  `libreLinkUp` for both platforms, so `SourcesTests` covers it.
+- **An actor source** (`SukraraShare/LibreLinkUp`, over `LibreLinkUpHTTP`: URLSession, ephemeral, redirects refused;
+  `FakeLibreLinkUpHTTP` in tests): the account in the Keychain, the token kept until 5 min before it ends, a 401 → one
+  new login, a refused password forgotten and never retried, terms never accepted, a 429 ≥ 10 min, connections every
+  30 min, the graph each minute (12 h at first and after a gap). Live readings and graph points in **two stores**
+  merged by the rank rule (`LibreLinkUp.merge`, tested equal to `ReadingRank.merge`): the Mac's readings store keeps
+  no reading id, and a live reading arriving after a nearby graph point must still replace it.
+- **Its own treatment log** (`librelinkup/state.json`, as Nightscout's minus the sync); another person starts readings
+  and log again, asked first in Settings when this Mac holds someone's.
+- **Setup and Settings › Source**: *Sign in to LibreLinkUp* (the form with AutoFill, *Whose glucose?*, no one shared,
+  *Reading received*), the rows (status and exit, account, whose glucose, sensor, *Sign Out of LibreLinkUp…*), the
+  panel's reasons and path badge, the widgets' words.
+- **The UI's choices**: the form inline in the step and in Settings (as Nightscout's, and as the LibreLinkUp Mac apps
+  that put the account in Settings, e.g. [librelink-for-mac](https://github.com/albertgd/librelink-for-mac)), not a
+  sheet: one place to see and fix the account. `.username` / `.password` content types so the Passwords app fills them
+  ([WWDC20 *AutoFill everywhere*](https://developer.apple.com/videos/play/wwdc2020/10115/): AppKit apps get password
+  AutoFill when the fields are tagged; a SwiftUI Mac form without them gets none, [an example
+  issue](https://github.com/tigerduck-app/tigerduck-app/issues/388)). Several people: radio rows in setup (two to a few
+  choices, all visible), a pop-up menu in Settings (the Settings form's own control). Problems said in words with what
+  to do, as [GlucOS](https://github.com/DMayoBiologic/GlucOS) does for terms and *not following anyone*; unlike
+  librelink-for-mac, terms are never auto-accepted.
+- **Found on the way**: switching the Mac's source away from an online one left its readings on the card until the
+  next snapshot (Nightscout too): `sourceKind` now clears them at once.
+
+Discarded or deferred on the Mac, with reasons:
+- **LibreView rows, the takeover, history import**: the Mac uploads nothing and has no NFC; the 12 hours LibreLinkUp
+  gives are the backfill.
+- **Card words with the person's name**: as on Android (Settings and Connect name them).
+- **Android's 429 without Retry-After**: Android's source passes no wait to `LluPoll` then and backs off from 1 min;
+  the Mac waits the contract's 10 min (`poll.json` *asked to wait without a time*). Reported for the Android QA pass.
 
 ## Decisions for the owner
 
