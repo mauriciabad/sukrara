@@ -416,10 +416,10 @@ section with what was added and what was discarded, with the reasons.
 
 ## Decisions for the owner
 
-**Owner, 2026-11-18: all as recommended.** Two are still open: 9 waits on a clearer explanation, and 11 is being
-researched further ("we didn't truly research this enough"). The owner uses only Sukrara with Libre 3 sensors (no Libre
-app, no LibreLinkUp). For testing they're fine installing apps on the phone or emulators and making accounts, as long as
-their normal setup ends up Sukrara alone.
+**Owner, 2026-11-18: all as recommended.** Two are still open: 9 waits on a clearer explanation, and 11 was
+researched further ("we didn't truly research this enough": Appendix E) and needs your answer again. The owner uses
+only Sukrara with Libre 3 sensors (no Libre app, no LibreLinkUp). For testing they're fine installing apps on the phone
+or emulators and making accounts, as long as their normal setup ends up Sukrara alone.
 
 Ordered by how much they block.
 
@@ -442,8 +442,10 @@ Ordered by how much they block.
 9. **Re-sharing someone else's glucose** to Sukrara followers (grandparents via a parent)? *Recommend not now*: nobody
    asked; consent and loops.
 10. **Manual sensor start** for sources without sensor life? *Recommend yes*: small, and reminders work for every source.
-11. **Dexcom / Abbott partner APIs**? *Recommend not planned*: real time needs a commercial partnership, Dexcom's public
-    API is 1–3 h late; an email costs nothing.
+11. **Dexcom / Abbott partner APIs**? *Recommend don't apply; send a Data Act request instead* (Appendix E): real time
+    is Dexcom's invitation-only API for companies with a server holding the secrets, and Abbott has no program; the EU
+    Data Act gives the person their data "continuously and in real-time" where feasible, so one email per maker opens
+    a serverless path or puts a refusal on record.
 
 **What you could test for us**
 
@@ -494,7 +496,7 @@ Fresh = from the sensor reading to Sukrara. Net = needs internet. ✚ = besides 
 | **LibreLinkUp** (all Libre via LibreLink / Libre 3 app / Libre by Abbott) | both | current value in `connections`; LibreLink uploads each minute for Libre 3 ([04](04-libreview.md)); clients poll 60 s ([LibreLinkUpFollowManager.swift#L692](https://github.com/JohanDegraeve/xdripswift/blob/c268542e64626c564e626658fa9a6b90a059ada4/xDrip/Managers/LibreLinkUp/LibreLinkUpFollowManager.swift#L692)) or 5 min (nightscout-connect) | yes | trend, ~12 h graph, sensor serial + start ([LibreLinkUpModels.swift#L227-L262](https://github.com/JohanDegraeve/xdripswift/blob/c268542e64626c564e626658fa9a6b90a059ada4/xDrip/Managers/LibreLinkUp/LibreLinkUpModels.swift#L227-L262)), ~2 weeks of alarms. **No treatments** | a LibreLinkUp account invited by the wearer (own email works: [Abbott](https://www.support.freestyle.abbott/hc/en-us/articles/36336824870545-As-a-parent-guardian-I-used-my-own-email-address-to-create-an-account-for-a-minor-to-use-a-FreeStyle-Libre-systems-Libre-app-Can-I-use-my-same-email-address-to-create-a-LibreLinkUp-app-account-so-we-can-connect)); region redirect; terms step (status 4) | headers `product` / `version` / `Account-Id`: 403 below 4.16.0 since 2025-10-08 ([nightscout-connect #53](https://github.com/nightscout/nightscout-connect/pull/53)); GDH sends 4.17.0 ([LibreLinkSourceTask.kt#L52-L88](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/common/src/main/java/de/michelinside/glucodatahandler/common/tasks/LibreLinkSourceTask.kt#L52-L88)); 429 lockouts ([nightscout-connect #73](https://github.com/nightscout/nightscout-connect/pull/73), [#218](https://github.com/timoschlueter/nightscout-librelink-up/issues/218)). The 5.0 app (2026-04-21) encrypts its traffic; the plain API still answered in October 2026 ([#228](https://github.com/timoschlueter/nightscout-librelink-up/discussions/228), [nightscout-clock #236](https://github.com/ktomy/nightscout-clock/pull/236)) | GDH, xDrip4iOS, nightscout-connect, nightscout-librelink-up, Juggluco ([LibreReceiverApi.java#L41](https://github.com/j-kaltes/Juggluco/blob/a983788a17a35f8e76d9da5c125996b648b4f27a/Common/src/mobile/java/tk/glucodata/LibreReceiverApi.java#L41)), ≥ 10 Mac apps |
 | LibreView (patient site / app API) | both | not live: summaries; CSV behind a captcha ([04](04-libreview.md)) | yes | — | LibreView login | — | YtoTech/libreview-data-export |
 | **Dexcom Share** (G4–G7, G7 15 Day, ONE+?; **not Stelo**) | both | 5 min, last 24 h, 288 readings ([pydexcom](https://gagebenne.github.io/pydexcom/pydexcom.html)) | yes | trend; **no** treatments, sensor start or alarms | the **sharing account's** login, Share on with ≥ 1 follower; regions us / ous / jp; the Dexcom app's id as `applicationId` ([DexcomShareSourceTask.kt#L37-L43](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/common/src/main/java/de/michelinside/glucodatahandler/common/tasks/DexcomShareSourceTask.kt#L37-L43), [ShareConstants.java#L5-L6](https://github.com/NightscoutFoundation/xDrip/blob/8532095b9333ae9939a95e0d116a198f20392617/app/src/main/java/com/eveningoutpost/dexdrip/cgm/sharefollow/ShareConstants.java#L5-L6)) | unofficial; a 2021 server change cut Sugarmate's legacy channel ([Sugarmate FAQ](https://www.loopandlearn.org/wp-content/uploads/2021/11/FAQs-Sugarmate-11.2.21.pdf)); trend moved from a number to text; failed logins lock the account; Stelo unsupported ([HA #128065](https://github.com/home-assistant/core/issues/128065)) | pydexcom, GDH, xDrip+ SHFollow, xDrip4iOS, LoopFollow, nightscout-connect, ≥ 8 Mac apps |
-| Dexcom public API (v3) | both | **1 h late in the US, 3 h elsewhere** ([Mercury](https://mercurydevelopment.com/what-we-do/all-services/articles/dexcom-cgm-api-integration-guide-2026/), [Momentum](https://www.themomentum.ai/blog/dexcom-api-integration-developer-guide); Tidepool's FAQ confirms the hour) | yes | readings, events (carbs / insulin entered in the app), calibrations | OAuth2; sandbox / 5-user limited / partner | official; real time only for partners ([Sugarmate](https://x.com/sugarmateapp/status/1469163420855726080)) | Dexcom-API-Wrapper |
+| Dexcom public API (v3) | both | **1 h late in the US, 3 h elsewhere** ([Mercury](https://mercurydevelopment.com/what-we-do/all-services/articles/dexcom-cgm-api-integration-guide-2026/), [Momentum](https://www.themomentum.ai/blog/dexcom-api-integration-developer-guide); Tidepool's FAQ confirms the hour) | yes | readings, events (carbs / insulin entered in the app), calibrations | OAuth2; sandbox / 5-user limited / partner | official; real time only for invited partners ([Sugarmate](https://x.com/sugarmateapp/status/1469163420855726080), Appendix E) | Dexcom-API-Wrapper |
 | **Nightscout** (self-hosted, T1Pal, Nightscout Pro; fed by xDrip+, AAPS, Loop, Trio, Juggluco, nightscout-connect…) and **Gluroo Global Connect** | both | push via socket.io `dataUpdate` ([websocket.js#L150](https://github.com/nightscout/cgm-remote-monitor/blob/92d0834219aa771b5837dbcbf1baeb839a200cf6/lib/server/websocket.js#L150)) or poll; as fresh as its uploader | yes (or LAN) | **treatments read and write** (deletions in API v3 history), devicestatus (IOB / COB, loop), profile, sensor start | URL + token / API secret | open, stable; no legal risk | GDH `NightscoutSourceTask.kt#L31-L33`, xDrip+ NSFollow, Nightguard, LoopFollow, xDrip4iOS; [Gluroo](https://gluroo.com/blog/glucrew/blood-sugar-readings-smartwatch-gluroo/) |
 | Tidepool | both | not live: Dexcom ≥ 1 h (US), Libre cloud to cloud (US, cadence undocumented) | yes | treatments, pump data | Tidepool account | official | **exists** (Import history, upload) |
 | Medtrum EasyFollow / EasyView | both | ~2 min ([Medtrum FAQ](https://www.medtrum.com/supports/question)) | yes | pump data | a **separate follower account** following one person | unofficial | [MedtrumSourceTask.kt#L46-L51](https://github.com/pachi81/GlucoDataHandler/blob/215b2f071f86942a5b9714cbf88808a71708a33f/common/src/main/java/de/michelinside/glucodatahandler/common/tasks/MedtrumSourceTask.kt#L46-L51), xDrip4iOS, nightscout-clock |
@@ -503,7 +505,7 @@ Fresh = from the sensor reading to Sukrara. Net = needs internet. ✚ = besides 
 | Glooko / diasend | both | batch | yes | pump, Omnipod 5, CamAPS FX | Glooko login | "Experimental"; diasend "obsolete" ([nightscout-connect](https://github.com/nightscout/nightscout-connect)) | nightscout-connect |
 | CareLink | both | live-ish | yes | pump, IOB | | **#216, out for now** | xDrip+, xDrip4iOS, nightscout-connect, `third_party/carelink-bridge` |
 | Tandem Source | both | batch | yes | pump | | unofficial | `third_party/tconnectsync` |
-| Abbott partner API | — | | | | partnership only ([Sequenex](https://sequenex.com/cgm-data-integration/), details unverified) | not for a GPL DIY app (assumed) | — |
+| Abbott partner API (*Libre Data Sharing API*) | — | unpublished | | | partners only, no public program (Appendix E) | partners are companies; no answer to the community (Appendix E) | — |
 
 ### Offline paths per CGM family
 
@@ -734,3 +736,111 @@ Platform and privacy
 38. Cleartext: every source https except loopback and Juggluco on the network; `allow.json` entries per source.
 39. Secrets never in the settings export or logs (`Redact` gains the new keys).
 40. Website and privacy policy list the new hosts; Features tiles en + es.
+
+## Appendix E: partner and official access (decision 11)
+
+*2026-11-18, for the owner's "we didn't truly research this enough". Desk research; Reddit is unreachable from the
+research tools, so developers' accounts come from GitHub and forums.*
+
+**In short.** Real time from a maker exists only as Dexcom's **Partner Web API**: by invitation, every known partner a
+company, and Dexcom requires the client secret and tokens on the partner's server. Abbott has a partner API with no
+public program; the community asked in 2026 and got no answer. Every hub the official apps write to is ≥ 1 h late by
+design. The route that fits Sukrara (no server, no company, the person's own data) is the **EU Data Act**: since
+2025-09-12 the person may ask for their data "continuously and in real-time" where relevant and feasible. Abbott's
+notice offers a CSV; nobody is known to have asked for a live feed.
+
+### What exists, per maker
+
+| Maker | Official access | Fresh | Who gets it |
+|---|---|---|---|
+| Dexcom | **Partner Web API**, cleared with the G6 in July 2021 ([Dexcom](https://investors.dexcom.com/news/news-details/2021/FDA-Clears-Dexcom-Real-Time-APIs-for-Third-Party-Apps-and-Devices/default.aspx)); allowed client uses include "CGM secondary display alarm … and treatment decisions", not AID ([510(k) K201328](https://www.accessdata.fda.gov/cdrh_docs/pdf20/K201328.pdf)). Runs on Share: Happy Bob needs the Dexcom login and Share on ([FAQ](https://happybob.app/user-faq/)) | real time | "invited third-party developers" |
+| Dexcom | **API v3** (OAuth): egvs, events, alerts, calibrations, devices ([docs](https://developer.dexcom.com/docs/)) | 1 h US, 3 h elsewhere (Appendix A) | sandbox: anyone; *Limited*: 5 users, individuals may apply; *Full*: questionnaire, "technical and commercial review", non-negotiable Data Licensing Agreement, a published app with an active user within 60 days; Dexcom "reserves the right to decline" ([Scopes & Access](https://developer.dexcom.com/docs/dexcom/scopes-access)) |
+| Dexcom, Eversense | Apple Health (both), Health Connect (Dexcom) writes | 3 h ([Dexcom](https://www.dexcom.com/en-gb/faqs/how-do-i-share-my-glucose-data-s-health-app), [Eversense](https://www.eversensecgm.com/faq/?page=7)) | anyone |
+| Abbott | **Libre Data Sharing API** (a component on [Abbott's status page](https://status.freestyle.abbott/), Europe included); the Libre app's *Connected Apps* list | unpublished; Happy Bob (US): "slight delay" | partners only: "scopes and onboarding are not public" ([open-wearables #1897](https://github.com/the-momentum/open-wearables/issues/1897)); the [integrations page](https://www.diabetescare.abbott/partnerships/integrations/en.html) gives no process; only LibreLink is "tested" ([Abbott](https://www.freestyle.abbott/en-jo/support/which-apps-are-approved-for-freestyle-libre-sensors-.html)) |
+| Abbott | Apple Health / Health Connect | the Libre apps don't write them ([Sahha](https://sahha.ai/blog/otc-cgm-stelo-vs-lingo/), unverified by Abbott) | — |
+| Medtronic / MiniMed | no public API; a Glooko deal ([2015](https://www.meddeviceonline.com/doc/medtronic-unveils-diabetes-partnerships-with-samsung-glooko-0001)) that Glooko's support later called [not compatible](https://support.glooko.com/hc/en-us/articles/360008951777-Is-Glooko-compatible-with-Medtronic-CareLink-devices-) | — | — |
+| Roche SmartGuide (in mySugr since 2026-06) | "no direct interface … to third-party software" ([Roche](https://www.accu-chek.com.hk/en/support/smartguide-cgm)); platform API "documented but not public" ([Randine 2025](https://pmc.ncbi.nlm.nih.gov/articles/PMC11954377/)); mySugr syncs to Apple Health / Google ([Roche UK](https://www.accu-chek.co.uk/app-switch-mysugr), cadence unverified) | — | — |
+| Sibionics, Medtrum, i-SENS, Ottai | no public API found; follower clouds read only by unofficial clients ([GDH #353](https://github.com/pachi81/GlucoDataHandler/issues/353), [nightscout-clock #106](https://github.com/ktomy/nightscout-clock/discussions/106)); CareSens Air writes Apple Health ([App Store](https://apps.apple.com/au/app/caresens-air/id1605701892)) | — | — |
+| Microtech (Aidex / LinX) | the app's broadcast (a vendor setting, Appendix A) | live | the phone |
+| Tidepool (nonprofit) | Dexcom: US only, newest ≥ 1 h old, polled every 45–75 min ([FAQ](https://support.tidepool.org/hc/en-us/articles/21415013012756-Dexcom-Connection-Frequently-Asked-Questions-FAQs)); Abbott cloud-to-cloud since 2025-07-28, US implied ([blog](https://www.tidepool.org/blog/abbott-freestyle-libre-integration-launched)) | ≥ 1 h | its users; Sukrara imports it already |
+
+A 2025 study of the 16 diabetes devices and apps approved in Norway found one public API among them (Dexcom's,
+delayed) and no real-time access without DIY tools ([Randine 2025](https://pmc.ncbi.nlm.nih.gov/articles/PMC11954377/)).
+
+### Who got access, and how
+
+| Who | From | What | How |
+|---|---|---|---|
+| Garmin | Dexcom | first Partner Web API client (2021-10): values and trend on watches; "intentionally does not include any of its own alerts" ([DiabetesMine](https://www.healthline.com/diabetesmine/garmin-and-dexcom-diabetes-data)) | invited ([MedCity](https://medcitynews.com/2021/10/dexcom-taps-garmin-for-first-real-time-api-integration/)) |
+| Livongo, Welldoc, UnitedHealthcare Level2 | Dexcom | real time in coaching platforms | commercial partners ([MedCity](https://medcitynews.com/2021/10/dexcom-taps-garmin-for-first-real-time-api-integration/)) |
+| **Happy Bob** (Harald AI Oy, a Finnish startup) | Dexcom | real time, G6 / G7 / ONE+ (not Stelo); US 2022-03, Europe and Canada 2022-12 ([Dexcom](https://www.dexcom.com/en-gb/press-releases/happy-bob-expands-to-europe-and-canada)) | Partner Web API; registered as an "FDA Class 2 Exempt device" ([manual](https://happybob.app/user-manual/)) |
+| eddii | Dexcom | real time and low / high alert calls, US ([Dexcom](https://www.dexcom.com/en-us/partnerships/digital-health-apps/eddii)) | partner |
+| Sugarmate (Tandem) | Dexcom | its "legacy channel" cut in 2021-10 outside the US, 2021-11 in it; moved to the Partner API ([FUDiabetes](https://forum.fudiabetes.org/t/sugarmate-losing-dexcom-g6-data-access/11962)); left the App Store outside the US in 2022 ([20](20-publishing.md)) | owned by a pump maker |
+| Oura | Dexcom Stelo | US, latency unpublished ([Oura](https://support.ouraring.com/hc/en-us/articles/41171836791443-Stelo-by-Dexcom-Integration)) | a Dexcom investment ([MD+DI](https://www.mddionline.com/wearable-medical-devices/dexcom-ura-move-into-next-phase-of-partnership)) |
+| One Drop, Tidepool, Rimidi, Evidation, Undermyfork… | Dexcom | the delayed API ([Dexcom, 2017](https://investors.dexcom.com/news/news-details/2017/DexCom-Opens-Data-Platform-and-Launches-Developer-Program-to-Fuel-Diabetes-App-Innovation/default.aspx)) | developer program |
+| Tidepool, Omada, CCN Health, Epic; Thryve, Junction (aggregators) | Abbott | LibreView data, mostly US, latency unpublished ([CCN](https://ccnhealth.com/articles/announcements/ccn-health-freestyle-libre-integration), [Epic](https://abbott.mediaroom.com/2025-04-29-Abbott-Integrates-Libres-Data-with-Epics-Electronic-Health-Record-System,-Providing-Healthcare-Professionals-Seamless-Glucose-Monitoring-Information), [Thryve](https://www.thryve.health/features/connections/abbott-freestyle-libre-integration)) | contracts; Junction joins the person's LibreView as a *practice* ([docs](https://docs.junction.com/wearables/guides/abbott-libreview)) |
+| Tandem, Insulet, Beta Bionics, Ypsomed / CamAPS, MiniMed, twiist | Abbott, Dexcom | the sensor over Bluetooth inside a cleared pump system | device partnerships ([Abbott](https://www.diabetescare.abbott/partnerships/integrations/en.html)) |
+| Gluroo, xDrip+, GDH, LoopFollow, Nightscout tools | — | Share / LibreLinkUp with the person's login; Gluroo calls it the "Follow API" ([Gluroo](https://gluroo.com/support/gluroo-with-diy-loop-artificial-pancreas-system/)) | no partnership found |
+| LibreLinkUp community, 2026-05 | Abbott | asked for third-party API access: the hotline "didn't have any idea what to do", emails unanswered ([#228](https://github.com/timoschlueter/nightscout-librelink-up/discussions/228)) | — |
+
+No individual or open-source project with real-time partner access was found. The only door open to individuals is
+Dexcom's *Limited Access*, on the delayed API.
+
+### What a partnership asks of Sukrara
+
+| Requirement | Evidence | Sukrara |
+|---|---|---|
+| A business that passes a commercial review | Full Access review; "commercial and technical standards" ([Dexcom](https://developer.dexcom.com/docs/dexcom/scopes-access)) | one person, free |
+| A server holding the secret and tokens | "Dexcom requires that partners store tokens (e.g., client secret, access tokens) on their servers"; mobile apps "should not store tokens on the mobile device" ([Dexcom](https://developer.dexcom.com/docs/dexcom/authentication)) | no server, no account; a GPL app can't hide a secret |
+| A non-negotiable licence | the Data Licensing Agreement isn't public | compatibility with GPL redistribution unknown |
+| A regulatory position on alerts | Dexcom's 510(k) names the client uses; Happy Bob is registered under [21 CFR 862.1350](https://www.ecfr.gov/current/title-21/chapter-I/subchapter-H/part-862/subpart-B/section-862.1350) (secondary alarm, class II exempt); in the EU, software whose information drives treatment falls under MDR rule 11 ([MDCG 2019-11](https://health.ec.europa.eu/system/files/2020-09/md_mdcg_2019_11_guidance_en_0.pdf)). What Dexcom asks of a partner: unverified | not a medical device, and says so |
+| Health data on its server | GDPR controller for special-category data | "Data Not Collected" ([20](20-publishing.md)); the privacy policy says no server |
+
+Brand rules, insurance and fees beyond free registration aren't public. The account terms bind every route: Dexcom's
+2025 terms give a "personal, non-commercial, revocable licence to … display in the Dexcom App" and, since at least
+2023, bar enabling "unauthorized third-party applications"; LibreView bars automated access ([Diabettech](https://www.diabettech.com/whose-data-is-it-anyway/)).
+
+### EU law
+
+| Law | Gives the person | Real time | Limits |
+|---|---|---|---|
+| **Data Act** ([2023/2854](https://eur-lex.europa.eu/eli/reg/2023/2854/oj)) art. 4(1), since 2025-09-12; CGMs are connected products, their apps related services ([White & Case](https://www.whitecase.com/insight-alert/eu-data-act-unlocking-data-healthcare-life-sciences-and-beyond)) | readily available data, free, machine-readable, on "a simple request through electronic means" | **"where relevant and technically feasible, continuously and in real-time"** | only where the user can't access the data directly from the product or service; whether an app counts is "debatable" ([Freshfields](https://technologyquotient.freshfields.com/post/102jis5/key-insights-for-businesses-from-the-eu-commissions-faq-on-the-eu-data-act)). Restrictable where access "could undermine security requirements … resulting in a serious adverse effect on the health, safety" (4(2)); trade-secret refusal (4(7)–(8)), which the stalled Digital Omnibus would loosen ([CADChain, 2026-10](https://cadchain.com/tpost/data-act-trade-secrets)); no circumvention (5(5)) |
+| Data Act art. 5–6, 9 | the same, to a third party the person picks | same | the third party may owe "reasonable" compensation, at most cost for an SME (9(4)); it may use the data only as agreed with the person |
+| Data Act art. 3(1) + 50 | design for direct access, for each unit placed on the market from 2026-09-12, so today's sensors ([FAQ v1.3](https://service.betterregulation.com/sites/default/files/2025-09/Frequently%20Asked%20Questions%20-%20Data%20Act%20-%20Version%201.3_3.pdf)) | "where relevant and technically feasible, directly accessible" | |
+| Abbott's [Data Act notice](https://www.freestyle.abbott/ie-en/home/data-act-notice.html) | glucose is product data; sensors send to the app at most once a minute; on request, data "generally … in CSV"; contact: Customer Service by phone | **not offered** | |
+| Dexcom | no Data Act notice found ([Diabettech](https://www.diabettech.com/whose-data-is-it-anyway/)) | | |
+| GDPR ([2016/679](https://eur-lex.europa.eu/eli/reg/2016/679/oj)) art. 15, 20 | a copy; portability of observed device data, sent to another controller where feasible | no: within a month (12(3)); no duty to build compatible systems (recital 68) | |
+| EHDS ([2025/327](https://eur-lex.europa.eu/eli/reg/2025/327/oj)) | access to summaries, prescriptions, images, labs, discharge reports from 2029 / 2031 | no: CGM streams aren't a priority category | |
+
+Enforcement: the national Data Act authority (art. 37), the data protection authority for personal data. No CGM user
+is known to have asked for a live feed under the Data Act.
+
+### Options
+
+| Route | Takes | Likely answer | Verdict |
+|---|---|---|---|
+| Dexcom real-time API | Full Access, then an invitation; a business, a server for secrets and tokens, a licence, a stance on alerts | no or silence | **no**: contradicts "no server" and "not a medical device"; only if Sukrara ever has both |
+| Dexcom API v3 | Limited (5 users) or Full, and a server | likely yes | **no**: 1–3 h late, like Health Connect and Tidepool |
+| Abbott partner access | no channel; partners are companies | silence ([#228](https://github.com/timoschlueter/nightscout-librelink-up/discussions/228)) | **no** |
+| Medtronic, Senseonics, Roche, Sibionics, Medtrum, i-SENS, Ottai | no program found | — | **no**; Aidex's broadcast is already in Appendix A |
+| **Data Act request** from the person (art. 4, with GDPR art. 15 for the one-month clock) | one email from an EU user of the official app: you (Libre sensors, with the Libre app test setup you offered) and a Dexcom tester | Abbott: its CSV, app or LibreView; Dexcom: unknown | **yes**, one per maker: a yes is an official path with the person's own login and no server; a no is a written refusal for a complaint. Nothing changes in Sukrara until then |
+
+**Draft** (Abbott: [EU-dpo@abbott.com](https://www.freestyle.abbott/ie-en/privacy-policy.html), as the notice gives
+only a phone line; Dexcom: the DPO, Dexcom Deutschland GmbH, Mainz, per its [privacy policy](https://www.dexcom.com/en-us/legal/privacy-policy),
+with "G7", "Dexcom app" and "Share").
+
+> **Subject:** Data Act request: continuous access to my FreeStyle Libre data
+>
+> I use FreeStyle Libre 3 sensors in [country]; my LibreView account is [email]. Under the Data Act (Regulation (EU)
+> 2023/2854), article 4(1), I request access to the readily available data from my sensors and the Libre app (glucose
+> readings with their times, trend and sensor state) in a machine-readable format, continuously and in real time. This
+> is relevant and feasible: your Data Act notice says the sensors send data to the app up to once a minute, and
+> LibreLinkUp shows it live to followers. A CSV on request isn't continuous. I ask for an authenticated interface I can
+> call with my own credentials from software I choose, on my own phone and computer, without a third-party server.
+> Please also tell me how I can access the data directly from sensors placed on the market after 12 September 2026
+> (article 3(1)).
+>
+> Please treat this also as a request under GDPR article 15. If you restrict or refuse any part, please give the legal
+> ground in writing (articles 4(2), 4(7)–(8)).
+>
+> [name]
