@@ -1018,4 +1018,6 @@
     <string name="st_source_saved_ns_title">Forget this Nightscout site?</string>
     <string name="st_source_saved_ns_text">Sukrara forgets the site’s address and token on this phone. The site itself stays as it is.</string>
     <string name="st_source_saved_ns_action">Forget</string>
+    <!-- Settings › Metrics: a metric the card doesn't draw for want of readings; %1$s = "12 h", %2$s = "7 days" (its window), %3$s = "42 h" (25 % of it) -->
+    <string name="st_metric_needs">Needs more readings: %1$s of the last %2$s, %3$s needed</string>
 </resources>

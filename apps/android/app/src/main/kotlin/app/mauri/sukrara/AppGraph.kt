@@ -588,6 +588,8 @@ class AppGraph(
                 monitor.hub.state
                     .map { it.recent }
                     .distinctUntilChanged(),
+            // Settings › Metrics' coverage (a metric hidden for want of readings says why)
+            stored = { from -> data.readings.window(from) },
             systemAccess = monitor.root.access,
             distribution = Store.distribution,
             updates = { updates },

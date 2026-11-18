@@ -16,10 +16,14 @@ import app.mauri.sukrara.core.model.SystemAccessPort
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.feature.settings.advanced.AdvancedPort
 import app.mauri.sukrara.feature.settings.follower.SettingsFromPort
+import app.mauri.sukrara.feature.settings.graph.MetricNeed
 import app.mauri.sukrara.feature.settings.search.SearchEntry
 import app.mauri.sukrara.feature.settings.sensorend.SensorCalendarPort
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import java.time.Instant
 
 /**
@@ -70,6 +74,8 @@ class SettingsModule(
     /** What the phone runs on and the name a stream follows ([SettingsDeps.source], [SettingsDeps.sourceName]). */
     source: Flow<app.mauri.sukrara.core.model.SourceSpec?> = flowOf(null),
     sourceName: Flow<String?> = flowOf(null),
+    /** The stored readings from a time on, updated live (Settings › Metrics' coverage, [SettingsDeps.coverage]). */
+    stored: (java.time.Instant) -> Flow<List<Reading>> = { flowOf(emptyList()) },
 ) {
     val deps: SettingsDeps =
         object : SettingsDeps {
@@ -85,6 +91,13 @@ class SettingsModule(
             override val clock = clock
             override val sensor = sensor
             override val recent = recent
+
+            override fun coverage(windowS: Long): Flow<Double?> =
+                flow {
+                    val now = clock.now()
+                    emitAll(stored(now.minusSeconds(windowS)).map { rs -> MetricNeed.coverage(rs, now, windowS) })
+                }
+
             override val appsShared = appsShared
             override val featureChecks: FeatureChecksSource by lazy { featureChecks() }
             override val systemAccess = systemAccess

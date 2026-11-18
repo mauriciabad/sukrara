@@ -188,6 +188,12 @@ data class GlucoseMetrics(
     val empty: Boolean get() = readings == 0
 
     companion object {
+        /**
+         * A metric beside the value is drawn only when its window has at least this much data (the card's rule; Settings
+         * › Metrics says why a metric under it isn't on the card).
+         */
+        const val SLOT_MIN_COVERAGE = 0.25
+
         fun of(
             all: List<GlucosePoint>,
             from: Long,

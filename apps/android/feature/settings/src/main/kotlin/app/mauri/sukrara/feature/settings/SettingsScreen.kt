@@ -71,6 +71,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -483,7 +484,14 @@ private fun SettingsPages(
                     }
 
                     SettingsRoute.Metrics -> {
-                        MetricsContent(it, actions, onBack, readOnly = from.readOnly, preview = withNote)
+                        MetricsContent(
+                            it,
+                            actions,
+                            onBack,
+                            readOnly = from.readOnly,
+                            coverage = rememberCoverage(deps, it),
+                            preview = withNote,
+                        )
                     }
 
                     is SettingsRoute.MetricPage -> {
@@ -725,6 +733,29 @@ private fun SettingsPages(
             }
         }
     }
+}
+
+/**
+ * How much of each metric's window the stored readings cover (window seconds → 0–1), for Settings › Metrics' *Needs
+ * more readings* ([app.mauri.sukrara.feature.settings.graph.MetricNeed]); read again when the windows change.
+ */
+@Composable
+private fun rememberCoverage(
+    deps: SettingsDeps,
+    c: app.mauri.sukrara.graph.GraphConfig,
+): Map<Long, Double> {
+    val windows = (c.slots.take(3) + c.lastElse).filter { it.on }.map { it.windowS }.toSortedSet()
+    val flow =
+        remember(deps, windows) {
+            if (windows.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(emptyMap())
+            } else {
+                kotlinx.coroutines.flow.combine(windows.map { w -> deps.coverage(w).map { w to it } }) { pairs ->
+                    pairs.mapNotNull { (w, v) -> v?.let { w to it } }.toMap()
+                }
+            }
+        }
+    return flow.collectAsStateWithLifecycle(emptyMap()).value
 }
 
 /** The alerts that use the trend arrow (falling fast, rising fast). */

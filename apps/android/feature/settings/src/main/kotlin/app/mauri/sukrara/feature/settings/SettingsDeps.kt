@@ -78,6 +78,12 @@ interface SettingsDeps {
     /** The hub's recent readings, oldest first (the Trend arrow page previews each choice on them). */
     val recent: Flow<List<Reading>> get() = flowOf(emptyList())
 
+    /**
+     * How much of the last [windowS] seconds the stored readings cover (0–1, the renderer's measure: a metric whose
+     * window is under `GlucoseMetrics.SLOT_MIN_COVERAGE` isn't drawn); Settings › Metrics says so. Null = not known.
+     */
+    fun coverage(windowS: Long): Flow<Double?> = flowOf(null)
+
     /** What the phone runs on (Settings › Source's overview row; docs/44 Person × Source). */
     val source: Flow<app.mauri.sukrara.core.model.SourceSpec?> get() = flowOf(null)
 

@@ -24,7 +24,7 @@ import kotlin.math.min
  */
 object GlucoseCard {
     /** A slot is only drawn when its window has at least this much data. */
-    const val MIN_COVERAGE = 0.25
+    const val MIN_COVERAGE = app.mauri.sukrara.graph.stats.GlucoseMetrics.SLOT_MIN_COVERAGE
 
     /** Tests: every [CardLayout] drawn and every [GlucoseLook] decided, as it happens (null in the app). */
     @Volatile var observer: ((CardLayout) -> Unit)? = null

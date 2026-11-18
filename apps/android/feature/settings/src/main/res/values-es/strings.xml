@@ -1025,4 +1025,5 @@
     <string name="st_source_saved_ns_title">¿Olvidar este sitio de Nightscout?</string>
     <string name="st_source_saved_ns_text">Sukrara olvida la dirección del sitio y su token en este móvil. El sitio en sí se queda como está.</string>
     <string name="st_source_saved_ns_action">Olvidar</string>
+    <string name="st_metric_needs">Faltan lecturas: %1$s de los últimos %2$s, se necesitan %3$s</string>
 </resources>

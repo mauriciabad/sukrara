@@ -176,7 +176,8 @@ private fun tirName(r: TirRange): String = stringResource(if (r == TirRange.TIGH
  * Settings › Metrics: the live card on top; the main, second and third metric; the last treatment and what shows in its
  * place while there's none (greyed while the last treatment is off); the time-in-range rings' page; Reset metrics.
  * [readOnly] = a follower not in Custom (*Settings from*): every switch shows the value in use and can't be flipped;
- * the pages open and show it.
+ * the pages open and show it. A metric the card doesn't draw for want of readings says why in its summary ([coverage]:
+ * window seconds → how much of it the readings cover; [MetricNeed]).
  */
 @Composable
 fun MetricsContent(
@@ -185,8 +186,14 @@ fun MetricsContent(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     readOnly: Boolean = false,
+    coverage: Map<Long, Double> = emptyMap(),
     preview: @Composable () -> Unit = {},
 ) {
+    @Composable
+    fun summaryOf(spec: RingSpec): String {
+        val need = MetricNeed.of(coverage[spec.windowS], spec.windowS)?.takeIf { spec.on } ?: return metricSummary(spec)
+        return "${metricSummary(spec)}\n${metricNeedText(need)}"
+    }
     SettingsPage(stringResource(R.string.st_metrics_title), onBack, modifier) {
         PreviewCard(preview)
         SettingsGroup {
@@ -197,7 +204,7 @@ fun MetricsContent(
                     spec.on,
                     { on -> slot.write(actions, c, spec.copy(on = on)) },
                     { actions.openMetric(slot) },
-                    summary = metricSummary(spec),
+                    summary = summaryOf(spec),
                     icon = slot.icon,
                     switchEnabled = !readOnly,
                 )
@@ -220,7 +227,7 @@ fun MetricsContent(
                 other.on,
                 { on -> actions.lastElse(other.copy(on = on)) },
                 { actions.openMetric(MetricSlot.NoRecent) },
-                summary = if (c.lastOn) metricSummary(other) else stringResource(R.string.st_last_else_needs),
+                summary = if (c.lastOn) summaryOf(other) else stringResource(R.string.st_last_else_needs),
                 icon = MetricSlot.NoRecent.icon,
                 enabled = c.lastOn,
                 switchEnabled = c.lastOn && !readOnly,
