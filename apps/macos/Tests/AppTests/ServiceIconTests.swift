@@ -39,3 +39,21 @@ import Testing
         #expect(Set(SourceKind.allCases.map(AppService.of)) == Set(AppService.allCases))
     }
 }
+
+/// A dev run (`swift run`) and `sukrara-snap` aren't the bundle: they take the brand's icon from the checkout, so
+/// *Their Sukrara* shows Sukrara's icon in reviews and screenshots, not a generic one.
+@Suite struct BrandIconTests {
+    @Test func anExecutableInTheCheckoutFindsTheBrandsIcon() throws {
+        let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let found = BrandIcon.file(from: repo.appending(path: "apps/macos/.build/debug/Sukrara"))
+        #expect(found?.standardizedFileURL == repo.appending(path: BrandIcon.path).standardizedFileURL)
+        let image = try #require(BrandIcon.image)
+        #expect(image.size.width > 0 && image.size.width == image.size.height)
+    }
+
+    @Test func outsideACheckoutThereIsNone() {
+        #expect(BrandIcon.file(from: URL(fileURLWithPath: "/usr/bin/true")) == nil)
+        #expect(BrandIcon.file(from: nil) == nil)
+    }
+}

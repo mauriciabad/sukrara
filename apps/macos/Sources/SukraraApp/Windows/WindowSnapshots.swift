@@ -780,13 +780,7 @@
         enum SnapError: Error { case render }
 
         /// The brand's app icon for About (a render isn't the app bundle, whose icon this is).
-        static var brandIcon: NSImage {
-            let repo = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-                .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-                .deletingLastPathComponent()
-            return NSImage(contentsOf: repo.appending(path: "assets/brand/sukrara/macos/AppIcon.icns"))
-                ?? NSApp.applicationIconImage
-        }
+        static var brandIcon: NSImage { BrandIcon.image ?? NSApp.applicationIconImage }
 
     }
 

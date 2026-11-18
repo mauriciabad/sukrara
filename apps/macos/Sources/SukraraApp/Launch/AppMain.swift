@@ -24,6 +24,8 @@ public enum AppMain {
         }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
+        // `swift run` (a dev run) isn't the bundle: the brand's icon, as the installed app has
+        BrandIcon.applyUnbundled(isBundle: currentBuild.isBundle)
         let delegate = AppDelegate(plan: plan, updater: updater)
         app.delegate = delegate
         // NSApplication holds its delegate weakly: keep it alive for the whole run, whatever the optimizer sees

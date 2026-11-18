@@ -3092,7 +3092,9 @@ digit by digit).
   Source) and before setup's connect step titles, 20 pt on Settings › Source's *Site address*, *Account* / *Email* and
   Juggluco's *Address* rows (their neighbours a symbol so titles line up). Another Sukrara (*Their Sukrara* /
   *Sukrara on your phone*, setup's *Follow someone* title) is Sukrara's own app icon, the running app's
-  (`NSApplication.applicationIconImage`, already on the icon grid, so drawn whole, no copy). Not on
+  (`NSApplication.applicationIconImage`, already on the icon grid, so drawn whole, no copy); a run that isn't the
+  bundle (`swift run`, `sukrara-snap`, the tests), which macOS gives a generic icon, takes the brand's `AppIcon.icns`
+  from its checkout at launch (`BrandIcon`, `BrandIconTests`). Not on
   the Mac (Android only): xDrip+, Health Connect, Tidepool, LibreView, Garmin. The panel's *Nightscout* /
   *LibreLinkUp* badge keeps the globe (it says the path, in the text's colour) and the no-data reasons their symbols
   (Android draws no icon there). Test `ServiceIconTests`; renders `sukrara-snap windows` → `settings-source-*`,
