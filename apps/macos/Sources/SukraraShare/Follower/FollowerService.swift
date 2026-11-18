@@ -36,6 +36,8 @@ public struct FollowerSnapshot: Sendable, Equatable {
     /// This Mac stopped following and no relay or the wearer's phone took its `leave` yet: the wearer's name ("" when
     /// unknown), nil when nothing waits (PROTOCOL-v2 "Leave").
     public var untoldLeave: String?
+    /// The wearer's identity key while a follow record exists (whose history the stores hold: `KeptHistory.id`).
+    public var identity: String?
 
     public static let empty = FollowerSnapshot(
         link: .notFollowing, readings: [], sensor: nil, treatments: [], unsentTreatments: 0, deliveries: [:],

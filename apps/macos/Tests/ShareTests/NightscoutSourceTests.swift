@@ -102,14 +102,15 @@ import Testing
         let dir: URL
     }
 
-    func rig(_ site: Site, offline: Bool = false) -> Rig {
+    func rig(_ site: Site, offline: Bool = false, kept: Bool = false) -> Rig {
         let http = FakeNightscoutHTTP(unanswered: offline ? URLError(.notConnectedToInternet) : URLError(.timedOut)) {
             offline ? nil : site.answer($0)
         }
         let dir = FileManager.default.temporaryDirectory.appending(path: "ns-test-\(UUID().uuidString)")
         let store = InMemoryReadingsStore()
         let source = NightscoutSource(
-            http: http, store: store, state: JSONFileStore(url: dir.appending(path: "state.json")), clock: clock,
+            http: http, store: store, state: JSONFileStore(url: dir.appending(path: "state.json")),
+            kept: kept ? dir.appending(path: "kept") : nil, clock: clock,
             sleep: { _ in try await Task.sleep(for: .seconds(3600)) })
         return Rig(source: source, http: http, store: store, dir: dir)
     }
@@ -254,19 +255,39 @@ import Testing
         await r.source.set(nil)
     }
 
-    @Test func anotherSiteStartsANewLogAndHistory() async throws {
+    /// Another site starts a new log and history; the earlier site's are kept apart and come back with it; *Forget*
+    /// keeps the forgotten site's apart too.
+    @Test func anotherSiteIsKeptApartAndComesBack() async throws {
         let site = Site()
         site.entries = [entry(60, 120)]
-        let r = rig(site)
+        let r = rig(site, kept: true)
+        let kept = r.dir.appending(path: "kept")
         defer { try? FileManager.default.removeItem(at: r.dir) }
         await r.source.set(NightscoutConfig(site: Self.site, secret: Self.token, treatments: false))
         _ = await wait(r.source) { $0.readings.count == 1 }
-        #expect(await r.source.write(Treatment(k: .carbs, a: 20, t: 1, u: 1, o: .mac)))
+        let carbs = Treatment(k: .carbs, a: 20, t: 1, u: 1, o: .mac)
+        #expect(await r.source.write(carbs))
+        site.entries = []
         await r.source.set(NightscoutConfig(site: "https://other.example.org", secret: Self.token, treatments: false))
         let other = try #require(await wait(r.source) { $0.host == "other.example.org" })
         #expect(other.readings.isEmpty && other.treatments.isEmpty)
         #expect(await r.store.load(since: .distantPast).isEmpty)
+        let first = KeptHistory.id(.nightscout, "https://ns.example.org")
+        #expect(KeptHistory.list(in: kept).map(\.id) == [first])
+        #expect(KeptHistory.info(first, in: kept)?.name == "ns.example.org")
+        // forgetting is for a site not in use
+        await r.source.forget()
+        #expect(KeptHistory.list(in: kept).count == 1)
+        // the first site again: its readings and log come back
+        await r.source.set(NightscoutConfig(site: Self.site, secret: Self.token, treatments: false))
+        let back = try #require(await wait(r.source) { $0.host == "ns.example.org" })
+        #expect(back.treatments.map(\.id) == [carbs.id] && back.readings.map(\.mgdl) == [120])
+        #expect(KeptHistory.list(in: kept).isEmpty)  // the other site held nothing
+        // Forget with another source: kept apart, listed
         await r.source.set(nil)
+        await r.source.forget()
+        #expect(KeptHistory.list(in: kept).map(\.id) == [first])
+        #expect(await r.store.load(since: .distantPast).isEmpty)
     }
 
     /// The sensor's life comes from the newest Sensor Start / Sensor Change, also with treatments one way only, and is

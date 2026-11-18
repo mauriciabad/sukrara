@@ -308,14 +308,14 @@ struct NightscoutRows: View {
             L10n.t("Read another site?"),
             isPresented: Binding(get: { model.confirmingSite != nil }, set: { if !$0 { model.confirmingSite = nil } })
         ) {
-            Button(L10n.t("Read the New Site"), role: .destructive) {
+            Button(L10n.t("Read the New Site")) {
                 if let root = model.confirmingSite { model.commit(root) }
             }
             Button(L10n.t("Cancel"), role: .cancel) { model.confirmingSite = nil }
         } message: {
             Text(
                 L10n.t(
-                    "Treatments logged on this Mac that \(NightscoutSite.parse(model.site).host) hasn't got yet are deleted with its glucose."
+                    "Treatments logged on this Mac that \(NightscoutSite.parse(model.site).host) hasn't got yet stay here with its glucose, apart, and go to it if it is read again."
                 ))
         }
         Section {

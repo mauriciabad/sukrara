@@ -137,8 +137,17 @@ public final class AppModel {
     /// The last follower snapshot, applied again when the source changes.
     @ObservationIgnored private var lastSnapshot: FollowerSnapshot?
     @ObservationIgnored private var lanTask: Task<Void, Never>?
-    /// Where `history` was loaded from.
+    /// Where `history` was loaded from, and whose it is (`shownIdentity` then).
     @ObservationIgnored private var historySource = HistorySource.none
+    @ObservationIgnored private var historyIdentity: String?
+    /// Where the histories of identities not read now are kept (`SukraraPaths.kept`, `KeptHistory`; nil = none: tests
+    /// and snapshots that don't set one).
+    @ObservationIgnored let kept: URL?
+    /// The kept histories the identity read now continues (a leave with *Keep it*, then this one read), merged, oldest
+    /// first: shown before its own readings (`LinkRules.continuing`), counted in the rings, the report and the export.
+    @ObservationIgnored private var continued: [Reading] = []
+    /// Their treatments (read-only): the chart's marks and the export, never the alert rules.
+    @ObservationIgnored private var continuedTreatments: [Treatment] = []
     private(set) var sensor: SensorInfo?
     /// The wearer's live treatments as the chart's marks, oldest first.
     private(set) var marks: [GraphMark] = []
@@ -251,9 +260,10 @@ public final class AppModel {
         plan: LaunchPlan, clock: any TimeSource = SystemClock(), alerts: AlertController? = nil,
         updates: Updates? = nil, loginItem: LoginItem? = nil, follower: (any FollowerService)? = nil,
         widget: WidgetFeed? = nil, lan: (any LanSourcing)? = nil, nightscout: (any NightscoutSourcing)? = nil,
-        libreLinkUp: (any LibreLinkUpSourcing)? = nil
+        libreLinkUp: (any LibreLinkUpSourcing)? = nil, kept: URL? = nil
     ) {
         self.plan = plan
+        self.kept = kept
         self.clock = clock
         self.alerts = alerts
         self.updates = updates
@@ -350,10 +360,42 @@ public final class AppModel {
 
     /// Leaves the link: THE one place this Mac stops following (the leave sheet's *Stop Following*, a request
     /// withdrawn, a follow left behind another source). `keepHistory`: the readings and treatments received stay as
-    /// the wearer's kept history (`KeptHistory`), else they go with the rest. Today it calls the runtime's
-    /// `unfollow(keepHistory:)`; the PROTOCOL-v2 `leave` message the wearer is told with lands inside it (#213).
-    func leaveLink(keepHistory: Bool) async {
+    /// the wearer's kept history (`KeptHistory`), else they go with the rest; `continues`: the next identity read
+    /// continues it (the leave sheet's *Keep it*: "for when it reads the same person"). The runtime's
+    /// `unfollow(keepHistory:)` tells the wearer (PROTOCOL-v2 `leave`).
+    func leaveLink(keepHistory: Bool, continues: Bool = true) async {
+        let identity = lastSnapshot?.identity
         await follower?.unfollow(keepHistory: keepHistory)
+        if keepHistory, continues, let identity, let kept {
+            KeptHistory.awaitNext(KeptHistory.id(.sukrara, identity), in: kept)
+        }
+    }
+
+    /// Whose history is shown (`KeptHistory.id`): the followed wearer, the LibreLinkUp person, the Nightscout site or
+    /// Juggluco on the network (one identity); nil while nothing is read.
+    var shownIdentity: String? { identity(of: historySource) }
+
+    private func identity(of source: HistorySource) -> String? {
+        switch source {
+        case .follow: lastSnapshot?.identity.map { KeptHistory.id(.sukrara, $0) }
+        case .libreLinkUp:
+            libreLinkUpSnapshot.patient.isEmpty ? nil : KeptHistory.id(.libreLinkUp, libreLinkUpSnapshot.patient)
+        case .nightscout: nightscoutSent.map { KeptHistory.id(.nightscout, NightscoutSite.parse($0.site).root) }
+        case .lan: KeptHistory.id(.lanJuggluco, "network")
+        case .none: nil
+        }
+    }
+
+    /// The kept histories not shown now (Settings › Source's *Also saved on this Mac*), newest first.
+    func keptNotShown() -> [KeptHistory.Info] {
+        guard let kept else { return [] }
+        return KeptHistory.notShown(with: shownIdentity, in: kept)
+    }
+
+    /// Settings › Source's *Delete* on a kept history (confirmed there).
+    func deleteKept(_ id: String) {
+        guard let kept else { return }
+        KeptHistory.delete(id, in: kept)
     }
 
     /// A follow record left behind another source (a Mac updated in the old state: one person, one link says it
@@ -368,7 +410,8 @@ public final class AppModel {
         leavingBehind = true
         AppLog.app.info("a follow kept behind another source: leaving it (history kept)")
         Task { [weak self] in
-            await self?.leaveLink(keepHistory: true)
+            // kept apart: the source in use may read someone else (only a leave the person answered continues it)
+            await self?.leaveLink(keepHistory: true, continues: false)
             self?.leavingBehind = false
         }
     }
@@ -490,14 +533,16 @@ public final class AppModel {
         // the alert rules hear the wearer's treatments as before (also before a reading), Nightscout's while it is
         // the source
         let heard = followsSource ? followed : live
+        // a continued kept history's entries are marks and export lines only: old, read-only, never quiets
+        let shown = continuedTreatments + live
         alerts?.treatments(
             heard.compactMap { t in
                 let kind: TreatmentKind? = t.k == .carbs ? .carbs : t.k == .rapid ? .rapidInsulin : nil
                 guard let kind else { return nil }
                 return AlertTreatment(kind: kind, at: Date(timeIntervalSince1970: TimeInterval(t.t)))
             })
-        marks = CardAlertsMapping.marks(live)
-        treatments = live
+        marks = CardAlertsMapping.marks(shown)
+        treatments = shown
     }
 
     /// The card's sensor life and the alert rules' sensor window follow the monitored source.
@@ -541,9 +586,11 @@ public final class AppModel {
         }
         // the source started: no data counts from now, also before (or without) its first reading
         if monitoring { alerts?.sourceStarted() }
-        guard source != historySource else { return }
+        guard source != historySource || (source != .none && identity(of: source) != historyIdentity) else { return }
         historySource = source
         history = []
+        continued = []
+        continuedTreatments = []
         loadHistory()
     }
 
@@ -691,7 +738,10 @@ public final class AppModel {
     /// New readings (the stored history at launch, then each new one). The alert rules get the newest, also an old
     /// one: "no data" is measured from it.
     func apply(readings new: [Reading]) {
-        let sorted = new.sorted { $0.t < $1.t }
+        // the kept history the identity continues stays where it has a reading (its last 24 hours here)
+        let cutoff = clock.now.addingTimeInterval(-86_400)
+        let keptDay = continued.lastIndex { $0.t < cutoff }.map { Array(continued[($0 + 1)...]) } ?? continued
+        let sorted = LinkRules.continuing(kept: keptDay, current: new.sorted { $0.t < $1.t })
         // readings leaving the last 24 hours join the history, so the month stays whole while the panel stays shut
         if historySource != .none, let first = sorted.first?.t {
             let after = history.last?.t ?? .distantPast
@@ -805,14 +855,18 @@ public final class AppModel {
         if new != slots { slots = new }
     }
 
-    /// Loads the monitored source's stored history (31 days): when monitoring starts and each time the panel opens.
+    /// Loads the monitored source's stored history (31 days) with the kept histories it continues: when monitoring
+    /// starts and each time the panel opens. The identity read now continues a kept history left waiting for it.
     func loadHistory() {
         let source = historySource
+        let identity = shownIdentity
+        historyIdentity = identity
         guard source != .none else {
             history = []
             refreshSlots()
             return
         }
+        let kept = self.kept
         let since = clock.now.addingTimeInterval(-ChartView.maxSpan)
         let follower = self.follower
         let lan = self.lan
@@ -827,16 +881,40 @@ public final class AppModel {
                 case .libreLinkUp: await libreLinkUp?.readings(since: since) ?? []
                 case .none: []
                 }
-            guard let self, self.historySource == source else { return }
+            let (before, marks) = await Self.continuation(of: identity, in: kept)
+            guard let self, self.historySource == source, self.historyIdentity == identity else { return }
+            if before != self.continued || marks != self.continuedTreatments {
+                self.continued = before
+                self.continuedTreatments = marks
+                self.applyTreatments()
+                self.apply(readings: self.monitoredReadings)
+            }
             let setting = self.graph.trend, current = self.history, version = self.historyVersion
-            let sorted = await Self.withTrendInBackground(loaded, setting: setting)
-            guard self.historySource == source, self.historyVersion == version, self.graph.trend == setting,
-                await Self.differ(sorted, current)
+            let sorted = await Self.withTrendInBackground(
+                LinkRules.continuing(kept: before.filter { $0.t >= since }, current: loaded), setting: setting)
+            guard self.historySource == source, self.historyIdentity == identity, self.historyVersion == version,
+                self.graph.trend == setting, await Self.differ(sorted, current)
             else { return }
             self.history = sorted
             self.refreshSlots()
             self.feedWidget()
         }
+    }
+
+    /// The kept histories `identity` continues (binding the one a leave left waiting), merged oldest first, and their
+    /// treatments; read off the main thread.
+    @concurrent nonisolated private static func continuation(of identity: String?, in kept: URL?) async -> (
+        [Reading], [Treatment]
+    ) {
+        guard let identity, let kept else { return ([], []) }
+        KeptHistory.continueAwaiting(by: identity, in: kept)
+        var readings: [Reading] = []
+        var treatments: [Treatment] = []
+        for info in KeptHistory.continuing(identity, in: kept) {
+            readings = LinkRules.continuing(kept: readings, current: await KeptHistory.readings(info.id, in: kept))
+            treatments += await KeptHistory.treatments(info, in: kept)
+        }
+        return (readings, treatments)
     }
 
     /// Whether a freshly loaded month differs from the one shown, compared off the main thread.

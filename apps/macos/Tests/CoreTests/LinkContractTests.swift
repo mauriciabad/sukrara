@@ -63,6 +63,15 @@ import Testing
             let fence = Date(timeIntervalSince1970: c["fence_s"] as? Double ?? 0)
             let kept = LinkRules.merge(stored: readings(c["stored"]), incoming: readings(c["incoming"]), fence: fence)
             #expect(kept == readings(c["kept"]), "\(c["name"]!)")
+            // the shown history (`continuing`) keeps the same readings where every stored one is kept (at or before
+            // the fence: a kept history ends there)
+            let stored = readings(c["stored"])
+            guard stored.allSatisfy({ $0.t <= fence }) else { continue }
+            func plain(_ list: [ReadingRank.Sourced]) -> [Reading] {
+                list.map { Reading(t: $0.t, mgdl: $0.mgdl, sensorRate: nil) }
+            }
+            let shown = LinkRules.continuing(kept: plain(stored), current: plain(readings(c["incoming"])))
+            #expect(shown == plain(readings(c["kept"])), "\(c["name"]!)")
         }
     }
 }

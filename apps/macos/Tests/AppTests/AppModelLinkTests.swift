@@ -184,4 +184,52 @@ actor LinkLeftovers: FollowerService {
         linked = .none
         #expect(leave.pick(.nightscout, from: .setup) && settings.source.stored == SourceSpec(kind: .nightscout))
     }
+
+    /// Appendix G findings 5 and 16: Ana's follow left with *Keep it*, then Juggluco read: Juggluco continues it. The
+    /// shown history, the rings, the report and the export count over both (Ana's readings where she has one, the fence),
+    /// her treatments are marks and export lines but never quiets, and the kept history is no longer listed apart.
+    @Test func theNextIdentityReadContinuesTheKeptHistory() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "continue-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let kept = root.appending(path: "kept")
+        let ana = KeptHistory.id(.sukrara, "ana-key")
+        let folder = KeptHistory.folder(ana, in: kept)
+        let now = clock.now
+        // eight days of Ana's every 5 minutes up to 10 minutes ago
+        let hers = stride(from: 8 * 86_400, through: 600, by: -300).map {
+            Reading(t: now.addingTimeInterval(-Double($0)), mgdl: 100, sensorRate: nil)
+        }
+        try await ReadingsFileStore(directory: folder, clock: clock).merge(hers)
+        var log = FollowedTreatments()
+        log.entries["ana-carbs"] = .init(
+            treatment: Treatment(
+                id: "ana-carbs", k: .carbs, a: 25, t: Int64(now.timeIntervalSince1970) - 3600, u: 1, o: .phone),
+            creator: "ana")
+        try await TreatmentFileStore(directory: folder, clock: clock).save(log)
+        KeptHistory.write(KeptHistory.Info(id: ana, name: "Ana", keptAt: 1), in: kept)
+        KeptHistory.awaitNext(ana, in: kept)
+        let other = KeptHistory.id(.libreLinkUp, "leo")
+        KeptHistory.write(KeptHistory.Info(id: other, name: "Leo", keptAt: 2), in: kept)
+
+        let lan = JugglucoLanSource(
+            http: juggluco(), store: InMemoryReadingsStore(), clock: clock, interfaces: { [] },
+            sleep: { _ in try await Task.sleep(for: .seconds(3600)) })
+        let plan = LaunchPlan(mode: .normal, services: .all, data: .user(home: URL(fileURLWithPath: "/Users/u")))
+        let model = AppModel(plan: plan, clock: clock, lan: lan, kept: kept)
+        model.sourceKind = .lanJuggluco
+        model.lanConfig = LanConfig(address: Self.phone)
+        model.run()
+        await until { model.allReadings.count == hers.count + 1 }
+        #expect(model.allReadings.last?.mgdl == 123 && model.allReadings.first?.mgdl == 100)
+        #expect(KeptHistory.info(ana, in: kept)?.continuedBy == KeptHistory.id(.lanJuggluco, "network"))
+        #expect(KeptHistory.info(ana, in: kept)?.awaitingNext == false)
+        #expect(model.keptNotShown().map(\.id) == [other])
+        // the rings count over eight days: the 7-day one shows
+        #expect(model.slots?.counted == hers.count + 1)
+        // her carbs: a mark and an export line
+        #expect(model.treatments.map(\.id) == ["ana-carbs"] && !model.marks.isEmpty)
+        model.deleteKept(other)
+        #expect(model.keptNotShown().isEmpty)
+        await model.stop()
+    }
 }

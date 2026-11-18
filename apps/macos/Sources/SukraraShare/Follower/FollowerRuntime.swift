@@ -16,11 +16,15 @@ public struct FollowerStores: Sendable {
     /// Moves the wearer's readings and treatments aside as a kept history (`unfollow(keepHistory: true)`): the wearer's
     /// identity and name. nil = nothing to keep them in (they are wiped).
     public var keep: (@Sendable (_ identity: String, _ name: String?) async -> Void)?
+    /// Takes a kept history of the wearer joined back into the (empty) stores: following the same person again shows
+    /// what was kept at the leave (`KeptHistory`). nil = nothing kept.
+    public var restore: (@Sendable (_ identity: String) async -> Void)?
 
     public init(
         readings: any ReadingsStoring, treatments: any TreatmentStoring, sensor: SensorStateStore,
         settings: WearerSettingsStore, leaves: LeaveOutboxStore,
-        keep: (@Sendable (_ identity: String, _ name: String?) async -> Void)? = nil
+        keep: (@Sendable (_ identity: String, _ name: String?) async -> Void)? = nil,
+        restore: (@Sendable (_ identity: String) async -> Void)? = nil
     ) {
         self.readings = readings
         self.treatments = treatments
@@ -28,12 +32,14 @@ public struct FollowerStores: Sendable {
         self.settings = settings
         self.leaves = leaves
         self.keep = keep
+        self.restore = restore
     }
 
     public static func files(_ paths: SukraraPaths, clock: any TimeSource) -> FollowerStores {
-        FollowerStores(
-            readings: ReadingsFileStore(directory: paths.appSupport, clock: clock),
-            treatments: TreatmentFileStore(directory: paths.appSupport, clock: clock),
+        let readings = ReadingsFileStore(directory: paths.appSupport, clock: clock)
+        let treatments = TreatmentFileStore(directory: paths.appSupport, clock: clock)
+        return FollowerStores(
+            readings: readings, treatments: treatments,
             sensor: SensorStateStore(url: paths.sensorFile, clock: clock),
             settings: WearerSettingsStore(url: paths.wearerSettingsFile, clock: clock),
             leaves: LeaveOutboxStore(url: paths.leaveOutboxFile, clock: clock),
@@ -41,6 +47,13 @@ public struct FollowerStores: Sendable {
                 KeptHistory.keep(
                     from: paths.appSupport, files: [ReadingsFileStore.fileName, TreatmentFileStore.fileName],
                     as: KeptHistory.Info(id: KeptHistory.id(.sukrara, identity), name: name), in: paths.kept)
+            },
+            restore: { identity in
+                let id = KeptHistory.id(.sukrara, identity)
+                let log = await TreatmentFileStore(directory: KeptHistory.folder(id, in: paths.kept), clock: clock)
+                    .load()
+                guard await KeptHistory.unshelve(id, readings: [("", readings)], in: paths.kept) != nil else { return }
+                if !log.entries.isEmpty { try? await treatments.save(log) }
             })
     }
 }
@@ -421,6 +434,7 @@ public actor FollowerRuntime: FollowerService {
         }
         generation += 1
         await wipeStores()  // never mix a previous person's history in
+        await stores.restore?(joined.state.identity)  // the same person again: what was kept at the leave
         do {
             try secrets.write(try joined.state.encoded(), account: account)
         } catch {
@@ -851,7 +865,7 @@ public actor FollowerRuntime: FollowerService {
             storeIssues: issues, nearby: nearbyState, relaysConnected: connectedRelays?.count,
             nearbyOffer: canJoin ? nearbyOffer : nil, keychainUnreadable: keychainUnreadable,
             me: session?.state.me ?? me, wearer: session?.state.wearer,
-            untoldLeave: await leaver.outbox().untold.map(\.wearer))
+            untoldLeave: await leaver.outbox().untold.map(\.wearer), identity: session?.state.identity)
         guard snapshot != current else { return }
         current = snapshot
         for continuation in snapshotSubscribers.values { continuation.yield(snapshot) }

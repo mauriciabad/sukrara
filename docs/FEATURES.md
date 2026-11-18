@@ -846,6 +846,18 @@ mirrors the wearer; every other → this device's own rules): today's wearers an
   maintenance included · may stop working any day*: each says what it depends on).
   LibreLinkUp reads every connection, the account's own included: one → it; several → the person picks
   (`connections.json` `mac`; a sign-in of the same account keeps the person it reads while still shared).
+- **The Mac keeps each identity's history apart** (Appendix G findings 5 and 16): the follow by the wearer's key,
+  LibreLinkUp by patient, Nightscout by site, Juggluco on the network as one. The source holds the identity it reads;
+  every other one is kept under `kept/<source>-<identity>/` (`KeptHistory`): a follow left with *Keep it*, the
+  LibreLinkUp person or Nightscout site read before, a site forgotten. Reading a kept identity again takes it back
+  (following the same person again with a new invite too). **Continues**: leaving a link with *Keep it* (the leave
+  sheet's *The next source continues it: for when it reads the same person.*) marks the kept follow; the next identity
+  this Mac reads continues it (`kept.json` `continuedBy`), so the panel's chart, the rings, the report and the CSV export
+  count over the kept readings and then the new source's, merged by the fence (`LinkRules.continuing`: the new source's
+  backfill fills gaps and never replaces a kept reading), and the kept treatments show as marks and export lines
+  (never alert quiets). A follow left at start behind another source (no question asked) is kept but continues nothing:
+  that source may read someone else. Kept histories not shown are listed in Settings › Source (*Also saved on this
+  Mac*).
 
 **States and exits**: *Whose glucose* → pick (either card, any time) → *Continue* → Source; Back → Welcome (setup) or
 Settings › Source unchanged. Source → pick → *Continue* → stored (first time) / *Switch to …?* → *Switch* / *Cancel* /
@@ -944,7 +956,8 @@ min late, backfills; `contracts/sources/sources.json`); its readings are `nights
   question isn't asked it. The Mac keeps its own treatment log with a Nightscout source (`nightscout/state.json`): *Add Treatment*, edit,
   delete and undo work on it, the site's arrive read-only; the panel shows a *Nightscout* path badge and each state as
   its no-data reason. Reading another site asks first when this Mac's entries haven't reached the old one (*Read another
-  site?*), then starts empty (two people's data never mix).
+  site?*), then starts with that site's own history: the earlier site's readings and log are kept apart on this Mac
+  (`kept/`, per site) and come back when it is read again (two people's data never mix, none is lost).
 
 **States and exits**: Source → *Nightscout* → *Continue* → Connect. Connect: typing → *Connect* → connecting (Back
 leaves, nothing saved) → refused / not https / not a Nightscout / no answer / no internet (the reason; fix and
@@ -1046,7 +1059,11 @@ following a child). `source.kind` `libreLinkUp` (group *Online · needs internet
   Leo Example's glucose* / *Cancel*; `ReadAnotherPersonDialog`), on the Person row, setup's list and when a sign-in or
   *Try again* would read someone else (*Cancel* keeps the person read). Reading another person deletes the earlier
   one's readings and treatments first and starts monitoring over (`LluSourceState.held`; an answer for the earlier
-  person still on its way is dropped); for your glucose *The Libre app has the sensor*: *LibreView* (*The Libre app uploads your glucose there. With Share with apps › LibreView on, Sukrara sends only your treatments, as a second device.*) and **Read
+  person still on its way is dropped). Mac: *Read Leo Example's glucose?* (*This Mac then shows Leo Example's glucose
+  and alerts on it instead of Ana Example's. Ana Example's readings and treatments stay here, apart, and come back if Ana
+  Example is read again.*, *Read Leo Example's Glucose* (default) / *Cancel*): it still asks, because the alerts change
+  person, but deletes nothing: each person's readings and log are kept per patient (`kept/`, `KeptHistory`; Appendix G
+  finding 5). For your glucose *The Libre app has the sensor*: *LibreView* (*The Libre app uploads your glucose there. With Share with apps › LibreView on, Sukrara sends only your treatments, as a second device.*) and **Read
   the sensor in Sukrara** (the takeover); *Sign out of LibreLinkUp* (confirmed: *Sukrara gets no glucose until you sign
   in again or choose another source. The readings already here stay.*).
 - **The move: taking the sensor over** (docs/44 "The move", at any point of a sensor's life): *Read the sensor in

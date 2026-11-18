@@ -121,7 +121,7 @@ import Testing
         let dir: URL
     }
 
-    func rig(_ server: Server, offline: Bool = false) -> Rig {
+    func rig(_ server: Server, offline: Bool = false, kept: Bool = false) -> Rig {
         let http = FakeLibreLinkUpHTTP(unanswered: offline ? URLError(.notConnectedToInternet) : URLError(.timedOut)) {
             offline ? nil : server.answer($0)
         }
@@ -130,7 +130,8 @@ import Testing
         let waits = Waits()
         let source = LibreLinkUpSource(
             http: http, live: InMemoryReadingsStore(), graph: InMemoryReadingsStore(),
-            state: JSONFileStore(url: dir.appending(path: "state.json")), secrets: secrets, clock: clock,
+            state: JSONFileStore(url: dir.appending(path: "state.json")), secrets: secrets,
+            kept: kept ? dir.appending(path: "kept") : nil, clock: clock,
             sleep: { s in
                 waits.list.withLock { $0.append(s) }
                 try await Task.sleep(for: .seconds(3600))
@@ -485,10 +486,11 @@ import Testing
         await r.source.set(nil)
     }
 
-    @Test func anotherPersonStartsAgainAndSigningOutKeepsTheReadings() async throws {
+    @Test func anotherPersonIsKeptApartAndSigningOutKeepsTheReadings() async throws {
         let s = server()
         s.people.withLock { $0 = [(Self.ana, "Ana"), (Self.leo, "Leo")] }
-        let r = rig(s)
+        let r = rig(s, kept: true)
+        let kept = r.dir.appending(path: "kept")
         defer { try? FileManager.default.removeItem(at: r.dir) }
         _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.ana))
@@ -506,13 +508,26 @@ import Testing
         #expect(r.secrets.read(account: MacSettings.libreLinkUpSecretAccount) == nil)
         #expect(await !r.source.readings(since: .distantPast).isEmpty)
         #expect(await !r.source.write(carbs))  // off: nothing logged
-        // Leo: Ana's readings and log are gone (two people's data never mix)
+        // Leo: Ana's readings and log are kept apart (two people's data never mix, none is lost)
+        let ana = await r.source.readings(since: .distantPast)
         _ = await r.source.connect(email: Self.email, password: Self.password)
         await r.source.set(LibreLinkUpConfig(patient: Self.leo))
         let leo = try #require(await wait(r.source) { $0.patient == Self.leo && $0.monitoring })
         #expect(leo.treatments.isEmpty)
         #expect(leo.readings.allSatisfy { $0.mgdl >= 150 })
         #expect(await r.source.readings(since: .distantPast).allSatisfy { $0.mgdl >= 150 })
+        let anaID = KeptHistory.id(.libreLinkUp, Self.ana)
+        #expect(
+            KeptHistory.list(in: kept).map(\.id) == [anaID]
+                && KeptHistory.info(anaID, in: kept)?.name?.hasPrefix("Ana") == true)
+        #expect(await KeptHistory.readings(anaID, in: kept) == ana)
+        #expect(await KeptHistory.treatments(try #require(KeptHistory.info(anaID, in: kept)), in: kept).count == 1)
+        // Ana again: hers come back, Leo's are kept apart
+        await r.source.set(LibreLinkUpConfig(patient: Self.ana))
+        let back = try #require(await wait(r.source) { $0.patient == Self.ana && $0.monitoring })
+        #expect(back.treatments.map(\.id) == [carbs.id])
+        #expect(await r.source.readings(since: .distantPast).allSatisfy { $0.mgdl < 150 })
+        #expect(KeptHistory.list(in: kept).map(\.id) == [KeptHistory.id(.libreLinkUp, Self.leo)])
         await r.source.set(nil)
     }
 }

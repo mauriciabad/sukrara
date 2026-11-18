@@ -384,26 +384,31 @@ struct LibreLinkUpPeople: View {
     }
 }
 
-/// The confirmation before another person's glucose replaces the one this Mac holds.
+/// The confirmation before another person's glucose replaces the one this Mac reads: the alerts change person, so it
+/// asks; nothing is deleted (the person read now is kept apart and comes back when picked again: `KeptHistory`).
 struct LibreLinkUpConfirm: ViewModifier {
     @Bindable var model: LibreLinkUpModel
 
     func body(content: Content) -> some View {
         let who = model.confirming.map(LibreLinkUpModel.name) ?? ""
-        let held = model.snapshot().name.isEmpty ? L10n.t("the person read now") : model.snapshot().name
+        let held = model.snapshot().name
         content.confirmationDialog(
             L10n.t("Read \(who)'s glucose?"),
             isPresented: Binding(get: { model.confirming != nil }, set: { if !$0 { model.confirming = nil } })
         ) {
-            Button(L10n.t("Read \(who)'s Glucose"), role: .destructive) {
+            Button(L10n.t("Read \(who)'s Glucose")) {
                 if let id = model.confirming?.id { model.write(id) }
             }
             Button(L10n.t("Cancel"), role: .cancel) { model.confirming = nil }
         } message: {
             Text(
-                L10n.t(
-                    "The readings of \(held) on this Mac and the treatments logged here are deleted: two people's glucose never mix."
-                ))
+                held.isEmpty
+                    ? L10n.t(
+                        "This Mac then shows \(who)'s glucose and alerts on it. The readings and treatments it holds now stay here, apart, and come back if that person is read again."
+                    )
+                    : L10n.t(
+                        "This Mac then shows \(who)'s glucose and alerts on it instead of \(held)'s. \(held)'s readings and treatments stay here, apart, and come back if \(held) is read again."
+                    ))
         }
     }
 }

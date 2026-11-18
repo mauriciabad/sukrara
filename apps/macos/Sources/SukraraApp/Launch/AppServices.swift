@@ -192,11 +192,12 @@ final class AppServices: ServiceStarting {
                     url: juggluco.appending(path: TreatmentFileStore.fileName, directoryHint: .notDirectory)))
         case .nightscout:
             nightscout = NightscoutSource.files(
-                directory: plan.data.paths.appSupport.appending(path: "nightscout", directoryHint: .isDirectory))
+                directory: plan.data.paths.appSupport.appending(path: "nightscout", directoryHint: .isDirectory),
+                kept: plan.data.paths.kept)
         case .libreLinkUp:
             libreLinkUp = LibreLinkUpSource.files(
                 directory: plan.data.paths.appSupport.appending(path: "librelinkup", directoryHint: .isDirectory),
-                secrets: secrets)
+                kept: plan.data.paths.kept, secrets: secrets)
         }
     }
 
@@ -222,7 +223,7 @@ final class AppServices: ServiceStarting {
         #endif
         return AppModel(
             plan: plan, clock: clock, alerts: alerts, updates: updates, loginItem: loginItem, follower: follower,
-            widget: widget, lan: lan, nightscout: nightscout, libreLinkUp: libreLinkUp)
+            widget: widget, lan: lan, nightscout: nightscout, libreLinkUp: libreLinkUp, kept: plan.data.paths.kept)
     }
 }
 

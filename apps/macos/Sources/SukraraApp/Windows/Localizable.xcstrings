@@ -3989,6 +3989,38 @@
         }
       }
     },
+    "This Mac then shows %@'s glucose and alerts on it instead of %@'s. %@'s readings and treatments stay here, apart, and come back if %@ is read again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac then shows %1$@'s glucose and alerts on it instead of %2$@'s. %3$@'s readings and treatments stay here, apart, and come back if %4$@ is read again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este Mac muestra entonces la glucosa de %1$@ y avisa con ella en lugar de la de %2$@. Las lecturas y los tratamientos de %3$@ se quedan aquí, aparte, y vuelven si se lee otra vez a %4$@."
+          }
+        }
+      }
+    },
+    "This Mac then shows %@'s glucose and alerts on it. The readings and treatments it holds now stay here, apart, and come back if that person is read again." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Mac then shows %@'s glucose and alerts on it. The readings and treatments it holds now stay here, apart, and come back if that person is read again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este Mac muestra entonces la glucosa de %@ y avisa con ella. Las lecturas y los tratamientos que tiene ahora se quedan aquí, aparte, y vuelven si se lee otra vez a esa persona."
+          }
+        }
+      }
+    },
     "This Mac's own" : {
       "localizations" : {
         "en" : {
@@ -4101,18 +4133,18 @@
         }
       }
     },
-    "Treatments logged on this Mac that %@ hasn't got yet are deleted with its glucose." : {
+    "Treatments logged on this Mac that %@ hasn't got yet stay here with its glucose, apart, and go to it if it is read again." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Treatments logged on this Mac that %@ hasn't got yet are deleted with its glucose."
+            "value" : "Treatments logged on this Mac that %@ hasn't got yet stay here with its glucose, apart, and go to it if it is read again."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los tratamientos registrados en este Mac que %@ aún no tiene se borran con su glucosa."
+            "value" : "Los tratamientos registrados en este Mac que %@ aún no tiene se quedan aquí con su glucosa, aparte, y le llegan si se vuelve a leer."
           }
         }
       }
@@ -12997,22 +13029,6 @@
         }
       }
     },
-    "The readings of %@ on this Mac and the treatments logged here are deleted: two people's glucose never mix." : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The readings of %@ on this Mac and the treatments logged here are deleted: two people's glucose never mix."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se borran las lecturas de %@ en este Mac y los tratamientos registrados aquí: la glucosa de dos personas nunca se mezcla."
-          }
-        }
-      }
-    },
     "This account follows several people. Pick the one Sukrara shows; you can change it in Settings › Source." : {
       "localizations" : {
         "en" : {
@@ -13089,22 +13105,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "¿La glucosa de quién?"
-          }
-        }
-      }
-    },
-    "the person read now" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "the person read now"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la persona que se lee ahora"
           }
         }
       }

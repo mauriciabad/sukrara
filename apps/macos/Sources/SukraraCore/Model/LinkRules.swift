@@ -90,4 +90,13 @@ public enum LinkRules {
         }
         return ReadingRank.merge(stored: stored, incoming: new)
     }
+
+    /// The history shown when `current` (an identity's readings, oldest first) continues `kept` (oldest first): the
+    /// fence is the last kept reading, so every reading of `current` within the rank window of a kept one is the same
+    /// measurement and the kept one stays; the rest fill the gaps and go on after it (`merge(fence:)` with every kept
+    /// reading at or before the fence, in one pass over two sorted lists: a month each).
+    public static func continuing(kept: [Reading], current: [Reading]) -> [Reading] {
+        guard !kept.isEmpty else { return current }
+        return LibreLinkUp.merge(live: kept, graph: current)
+    }
 }

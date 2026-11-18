@@ -90,17 +90,22 @@ public protocol NightscoutSourcing: Sendable {
     func readings(since: Date) async -> [Reading]
     /// An entry this Mac adds, changes or deletes (a tombstone); false = not taken (read-only from the site, or off).
     func write(_ treatment: Treatment) async -> Bool
+    /// Settings › Source's *Forget* while another source is read: the site's readings and log are kept aside.
+    func forget() async
 }
 
 /// Reads a Nightscout site (docs/44 step 1): the last 24 hours of glucose at first and after a gap, then what's new,
 /// asking again when the next reading is due (`NightscoutPoll`); with *Treatments both ways* the site's treatments
 /// arrive read-only and this Mac's own go up (`NightscoutTreatments.plan`). Every reading goes into its own 31-day
-/// store, the treatment log into `nightscout/state.json`; another site starts both again. HTTPS only (loopback http
+/// store, the treatment log into `nightscout/state.json`; another site's are kept aside under `kept` (per site,
+/// `KeptHistory`) and taken back when it is read again. HTTPS only (loopback http
 /// for a site on this Mac), redirects never followed, the token or secret only ever to the site's own address.
 public actor NightscoutSource: NightscoutSourcing {
     private let http: any NightscoutHTTP
     private let store: any ReadingsStoring
     private let state: JSONFileStore<NightscoutState>
+    /// Where the sites it doesn't read now are kept (`SukraraPaths.kept`; nil = nowhere: they are deleted).
+    private let kept: URL?
     private let clock: any TimeSource
     private let sleep: @Sendable (Double) async throws -> Void
     private static let log = Logger(subsystem: SukraraIDs.appBundleID, category: "nightscout")
@@ -125,23 +130,27 @@ public actor NightscoutSource: NightscoutSourcing {
     static let sensorEvery: TimeInterval = 1800
 
     public init(
-        http: any NightscoutHTTP, store: any ReadingsStoring, state: JSONFileStore<NightscoutState>,
+        http: any NightscoutHTTP, store: any ReadingsStoring, state: JSONFileStore<NightscoutState>, kept: URL? = nil,
         clock: any TimeSource = SystemClock(),
         sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) }
     ) {
         self.http = http
         self.store = store
         self.state = state
+        self.kept = kept
         self.clock = clock
         self.sleep = sleep
     }
 
-    /// The source over the files under `directory` (`readings.csv`, `state.json`).
-    public static func files(directory: URL, http: any NightscoutHTTP = URLSessionNightscoutHTTP()) -> NightscoutSource
-    {
+    /// The source over the files under `directory` (`readings.csv`, `state.json`), the sites it doesn't read now under
+    /// `kept`.
+    public static func files(
+        directory: URL, kept: URL, http: any NightscoutHTTP = URLSessionNightscoutHTTP()
+    ) -> NightscoutSource {
         NightscoutSource(
             http: http, store: ReadingsFileStore(directory: directory),
-            state: JSONFileStore(url: directory.appending(path: "state.json", directoryHint: .notDirectory)))
+            state: JSONFileStore(url: directory.appending(path: KeptHistory.stateFile, directoryHint: .notDirectory)),
+            kept: kept)
     }
 
     public func snapshots() -> AsyncStream<NightscoutSnapshot> {
@@ -229,15 +238,46 @@ public actor NightscoutSource: NightscoutSourcing {
         publish(snap)
     }
 
-    /// The treatment log of `config`'s site, made new (readings too) when it belonged to another site.
+    /// The treatment log of `config`'s site. One that belonged to another site is kept aside with its readings
+    /// (`KeptHistory`, per site), and this site's taken back when kept, else started new.
     private func log(for config: NightscoutConfig) async -> NightscoutState {
         let root = NightscoutSite.parse(config.site).root
-        if let s = await state.load(), s.site == root { return s }
         let old = await state.load()
-        if old != nil { try? await store.removeAll() }
-        let fresh = NightscoutState(site: root, device: old?.device ?? NightscoutTreatments.newDevice())
+        if let old, old.site == root { return old }
+        if let old { await shelve(old) }
+        var fresh = NightscoutState(site: root, device: old?.device ?? NightscoutTreatments.newDevice())
+        if let kept,
+            let data = await KeptHistory.unshelve(
+                KeptHistory.id(.nightscout, root), readings: [("", store)], in: kept),
+            var back = try? JSONDecoder().decode(NightscoutState.self, from: data)
+        {
+            back.device = fresh.device
+            fresh = back
+        }
         try? await state.save(fresh)
         return fresh
+    }
+
+    /// `old`'s site (its readings and log) kept aside; without a kept folder, deleted.
+    private func shelve(_ old: NightscoutState) async {
+        guard let kept, !old.site.isEmpty else {
+            try? await store.removeAll()
+            return
+        }
+        let log = old.entries.isEmpty && old.sensor == nil ? nil : try? JSONEncoder().encode(old)
+        await KeptHistory.shelve(
+            KeptHistory.Info(
+                id: KeptHistory.id(.nightscout, old.site), name: NightscoutSite.parse(old.site).host,
+                keptAt: Int(clock.now.timeIntervalSince1970)),
+            readings: [("", store)], log: log, in: kept)
+    }
+
+    /// Settings › Source's *Forget* (Nightscout not the source): the site's readings and log are kept aside as a kept
+    /// history (listed, with *Delete*); the address and token go with the app's settings.
+    public func forget() async {
+        guard config == nil, let old = await state.load() else { return }
+        await shelve(old)
+        try? await state.save(nil)
     }
 
     private func run(_ config: NightscoutConfig, gen: Int) async {

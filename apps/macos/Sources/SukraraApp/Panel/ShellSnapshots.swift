@@ -44,6 +44,7 @@
             func network(online: Bool) {}
             func readings(since: Date) -> [Reading] { snapshot.readings.filter { $0.t >= since } }
             func write(_ treatment: Treatment) -> Bool { false }
+            func forget() {}
         }
 
         /// A LibreLinkUp source that only ever says `snapshot` (nothing is asked of LibreLinkUp).

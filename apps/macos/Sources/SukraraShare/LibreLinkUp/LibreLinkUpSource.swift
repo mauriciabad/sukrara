@@ -97,7 +97,7 @@ public protocol LibreLinkUpSourcing: Sendable {
     /// Each call is one subscriber: the current snapshot first, then every change (only the newest is buffered).
     func snapshots() async -> AsyncStream<LibreLinkUpSnapshot>
     /// Switches it on with `config`, or off (nil). The same config again changes nothing. Another person than the
-    /// one whose readings and log it holds starts both again.
+    /// one whose readings and log it holds: theirs are kept aside (`KeptHistory.shelve`) and the other's taken back.
     func set(_ config: LibreLinkUpConfig?) async
     /// Signs in (Connect): saved only when LibreLinkUp accepts it; whom the account follows, and whom to read (the
     /// only connection, the account's own included; several: the person picks).
@@ -123,13 +123,16 @@ public protocol LibreLinkUpSourcing: Sendable {
 /// (`source.libreLinkUpSecret`); the token is reused until 5 minutes before it expires (each login counts towards
 /// LibreLinkUp's lockout), a token refused early signs in again once, a refused password is never retried by itself,
 /// new terms are never accepted for the person. Readings go into its own 31-day stores (live and graph apart), this
-/// Mac's treatment log into `state.json`. HTTPS only, redirects never followed; nothing is ever uploaded.
+/// Mac's treatment log into `state.json`; one person's at a time, the others kept aside under `kept` (per patient,
+/// `KeptHistory`). HTTPS only, redirects never followed; nothing is ever uploaded.
 public actor LibreLinkUpSource: LibreLinkUpSourcing {
     private let http: any LibreLinkUpHTTP
     private let live: any ReadingsStoring
     private let graph: any ReadingsStoring
     private let state: JSONFileStore<LibreLinkUpState>
     private let secrets: any SecretStoring
+    /// Where the people it doesn't read now are kept (`SukraraPaths.kept`; nil = nowhere: they are deleted).
+    private let kept: URL?
     private let clock: any TimeSource
     private let sleep: @Sendable (Double) async throws -> Void
     private static let log = Logger(subsystem: SukraraIDs.appBundleID, category: "librelinkup")
@@ -165,7 +168,8 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
 
     public init(
         http: any LibreLinkUpHTTP, live: any ReadingsStoring, graph: any ReadingsStoring,
-        state: JSONFileStore<LibreLinkUpState>, secrets: any SecretStoring, clock: any TimeSource = SystemClock(),
+        state: JSONFileStore<LibreLinkUpState>, secrets: any SecretStoring, kept: URL? = nil,
+        clock: any TimeSource = SystemClock(),
         sleep: @escaping @Sendable (Double) async throws -> Void = { try await Task.sleep(for: .seconds($0)) }
     ) {
         self.http = http
@@ -173,19 +177,22 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         self.graph = graph
         self.state = state
         self.secrets = secrets
+        self.kept = kept
         self.clock = clock
         self.sleep = sleep
     }
 
-    /// The source over the files under `directory` (`readings.csv`, `graph/readings.csv`, `state.json`).
+    /// The source over the files under `directory` (`readings.csv`, `graph/readings.csv`, `state.json`), the people
+    /// it doesn't read now under `kept`.
     public static func files(
-        directory: URL, secrets: any SecretStoring, http: any LibreLinkUpHTTP = URLSessionLibreLinkUpHTTP()
+        directory: URL, kept: URL, secrets: any SecretStoring, http: any LibreLinkUpHTTP = URLSessionLibreLinkUpHTTP()
     ) -> LibreLinkUpSource {
         LibreLinkUpSource(
             http: http, live: ReadingsFileStore(directory: directory),
-            graph: ReadingsFileStore(directory: directory.appending(path: "graph", directoryHint: .isDirectory)),
-            state: JSONFileStore(url: directory.appending(path: "state.json", directoryHint: .notDirectory)),
-            secrets: secrets)
+            graph: ReadingsFileStore(
+                directory: directory.appending(path: KeptHistory.graphFolder, directoryHint: .isDirectory)),
+            state: JSONFileStore(url: directory.appending(path: KeptHistory.stateFile, directoryHint: .notDirectory)),
+            secrets: secrets, kept: kept)
     }
 
     public func snapshots() async -> AsyncStream<LibreLinkUpSnapshot> {
@@ -364,16 +371,13 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
         publishAccount()
     }
 
-    /// The person's readings and log; another person's are dropped first (two people's data never mix).
+    /// The person's readings and log: another person's are kept aside first and this one's taken back when kept
+    /// (`KeptHistory`, per patient: two people's data never mix, and none is lost).
     private func open(_ patient: String) async {
         var s = await log()
         if s.patient != patient {
-            if !s.patient.isEmpty {
-                try? await live.removeAll()
-                try? await graph.removeAll()
-            }
-            s = LibreLinkUpState(
-                patient: patient, name: s.people.first { $0.id == patient }?.name ?? "", people: s.people)
+            await shelve(s)
+            s = await unshelve(patient, people: s.people)
             try? await state.save(s)
         }
         var snap = current
@@ -392,6 +396,42 @@ public actor LibreLinkUpSource: LibreLinkUpSourcing {
     }
 
     private func log() async -> LibreLinkUpState { await state.load() ?? LibreLinkUpState() }
+
+    /// The readings stores as kept (`KeptHistory.Shelf`): the live ones in the folder, the graph's in `graph/`.
+    private var shelves: [KeptHistory.Shelf] { [("", live), (KeptHistory.graphFolder, graph)] }
+
+    /// `s`'s person (their readings, sensor and log; not whom the account follows) kept aside; without a kept folder,
+    /// deleted.
+    private func shelve(_ s: LibreLinkUpState) async {
+        guard !s.patient.isEmpty else { return }
+        guard let kept else {
+            try? await live.removeAll()
+            try? await graph.removeAll()
+            return
+        }
+        let person = LibreLinkUpState(patient: s.patient, name: s.name, sensor: s.sensor, entries: s.entries)
+        let log = s.entries.isEmpty ? nil : try? JSONEncoder().encode(person)
+        await KeptHistory.shelve(
+            KeptHistory.Info(
+                id: KeptHistory.id(.libreLinkUp, s.patient), name: s.name.isEmpty ? nil : s.name,
+                keptAt: Int(clock.now.timeIntervalSince1970)),
+            readings: shelves, log: log, in: kept)
+    }
+
+    /// `patient`'s state: taken back from the kept ones (readings, sensor, log), else new.
+    private func unshelve(_ patient: String, people: [LluPerson]) async -> LibreLinkUpState {
+        let name = people.first { $0.id == patient }?.name
+        var fresh = LibreLinkUpState(patient: patient, name: name ?? "", people: people)
+        guard let kept,
+            let data = await KeptHistory.unshelve(KeptHistory.id(.libreLinkUp, patient), readings: shelves, in: kept)
+        else { return fresh }
+        if let back = try? JSONDecoder().decode(LibreLinkUpState.self, from: data) {
+            fresh.name = name ?? back.name
+            fresh.sensor = back.sensor
+            fresh.entries = back.entries
+        }
+        return fresh
+    }
 
     private func run(_ config: LibreLinkUpConfig, gen: Int, after first: TimeInterval) async {
         if first > 0 {
