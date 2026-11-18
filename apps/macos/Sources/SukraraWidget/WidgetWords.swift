@@ -38,6 +38,10 @@ struct WidgetWords: Sendable {
             case .juggluco(.looking): return ("Looking for Juggluco", "On this network")
             case .juggluco(.firstReading): return ("Waiting for Juggluco's first reading", "On this network")
             case .juggluco: return ("No reading from Juggluco", why)
+            case .nightscout(.connecting): return ("Connecting to Nightscout", "Over the internet")
+            case .nightscout(.offline): return ("No internet", "Sukrara catches up when you're back")
+            case .nightscout(.signedOut): return ("Nightscout refused the token", "Open Sukrara to sign in again")
+            case .nightscout: return ("No reading from Nightscout", why)
             }
         })
 
@@ -64,6 +68,11 @@ struct WidgetWords: Sendable {
             case .juggluco(.looking): return ("Buscando Juggluco", "En esta red")
             case .juggluco(.firstReading): return ("Esperando la primera lectura de Juggluco", "En esta red")
             case .juggluco: return ("Sin lecturas de Juggluco", why)
+            case .nightscout(.connecting): return ("Conectando con Nightscout", "Por internet")
+            case .nightscout(.offline): return ("Sin internet", "Sukrara se pone al día cuando vuelva")
+            case .nightscout(.signedOut):
+                return ("Nightscout rechazó el token", "Abre Sukrara para volver a iniciar sesión")
+            case .nightscout: return ("Sin lecturas de Nightscout", why)
             }
         })
 

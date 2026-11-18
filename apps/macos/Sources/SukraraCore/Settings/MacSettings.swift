@@ -68,6 +68,13 @@ public enum MacSettings {
     public static let jugglucoAddress = SettingSpec(key: SettingsSpec.Keys.jugglucoAddress, defaultValue: "")
     /// The Keychain account of Juggluco's API secret (schema `source.jugglucoSecret`).
     public static let jugglucoSecretAccount = "jugglucoSecret"
+    /// The Nightscout site read as the source (its root, `NightscoutSite`); empty = none yet.
+    public static let nightscoutURL = SettingSpec(key: SettingsSpec.Keys.nightscoutURL, defaultValue: "")
+    /// Treatments both ways with the Nightscout source.
+    public static let nightscoutTreatments = SettingSpec(
+        key: SettingsSpec.Keys.nightscoutTreatments, defaultValue: true)
+    /// The Keychain account of the Nightscout source's token or API secret (schema `source.nightscoutSecret`).
+    public static let nightscoutSecretAccount = "nightscoutSourceSecret"
     /// The alert settings: ONE JSON value (contracts/alerts/SPEC.md §3), owned by the alert settings store.
     public static let alerts = SettingSpec(key: SettingsSpec.Keys.alerts, defaultValue: Data())
     /// The first-run walk's step states (JSON), owned by `SetupFlow`.

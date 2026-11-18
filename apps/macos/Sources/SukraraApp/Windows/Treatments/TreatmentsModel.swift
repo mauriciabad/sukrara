@@ -53,7 +53,12 @@ public final class TreatmentsModel {
     public var isFollowing = false
     /// The wearer's name as the follow shows it (nil = not following): the rows' "Logged on Ana's phone".
     public var wearer: String?
-    @ObservationIgnored private weak var actions: (any TreatmentActions)?
+    /// The entries that came from the Nightscout site (read-only here: *From Nightscout · change it there*).
+    public var pulled: Set<String> = []
+    /// A line under the list about where the entries go (*This token can only read…*), nil = none.
+    public var note: String?
+    /// Where entries go: the follower runtime (the wearer's log) or this Mac's Nightscout log.
+    @ObservationIgnored weak var actions: (any TreatmentActions)?
     @ObservationIgnored private let now: () -> Date
 
     public init(rows: [Row], canWrite: Bool, actions: (any TreatmentActions)?, now: @escaping () -> Date = Date.init) {

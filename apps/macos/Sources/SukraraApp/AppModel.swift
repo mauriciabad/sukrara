@@ -14,8 +14,8 @@ import SukraraShare
 @Observable
 public final class AppModel {
     public let plan: LaunchPlan
-    /// The monitored readings of the last 24 hours, oldest first: the followed wearer's, else Juggluco's on this
-    /// network.
+    /// The monitored readings of the last 24 hours, oldest first: the followed wearer's, Juggluco's on this network or
+    /// the Nightscout site's.
     private(set) var readings: [Reading] = [] {
         didSet {
             cardReadings = Self.graph(readings)
@@ -58,12 +58,37 @@ public final class AppModel {
         }
     }
     @ObservationIgnored private var lanSent: LanConfig?
+    /// The Nightscout source (nil when the plan doesn't allow it: dev, fixture and snapshot runs).
+    @ObservationIgnored let nightscout: (any NightscoutSourcing)?
+    /// What the Nightscout source last said.
+    private(set) var nightscoutSnapshot = NightscoutSnapshot.off
+    /// The site, token and treatments switch while Nightscout is the source (nil otherwise, or no site yet).
+    var nightscoutConfig: NightscoutConfig? {
+        didSet {
+            guard nightscoutConfig != oldValue else { return }
+            let wasMonitoring = monitoring
+            syncNightscout()
+            applyTreatments()
+            guard monitoring != wasMonitoring else { return }
+            monitoringChanged(from: wasMonitoring)
+            applySensor()
+            apply(readings: monitoredReadings)
+            feedWidget()
+        }
+    }
+    @ObservationIgnored private var nightscoutSent: NightscoutConfig?
+    @ObservationIgnored private var nightscoutTask: Task<Void, Never>?
+    /// Every Nightscout snapshot, after the model took its part (the treatment windows).
+    @ObservationIgnored var onNightscout: ((NightscoutSnapshot) -> Void)?
     /// Where the glucose comes from as answered (`source.kind`, docs/44); nil = not answered yet: the Mac reads what it
     /// is set up to read (following someone wins, Juggluco while nobody is followed, as before the question).
     var sourceKind: SourceKind? {
         didSet {
             guard sourceKind != oldValue else { return }
             if let last = lastSnapshot { apply(last) } else { syncLan() }
+            syncNightscout()
+            applyTreatments()
+            onNightscout?(nightscoutSnapshot)
         }
     }
     /// The last follower snapshot, applied again when the source changes.
@@ -99,7 +124,21 @@ public final class AppModel {
     @ObservationIgnored private var followerKnown = false
     /// Juggluco's readings feed the card and the alert rules: switched on, not following, and reached at least once.
     private var lanMonitoring: Bool { !followMonitoring && lanSent != nil && lanSnapshot.monitoring }
-    private var monitoring: Bool { followMonitoring || lanMonitoring }
+    /// Nightscout's readings feed the card and the alert rules: the source, and the site answered at least once.
+    private var nightscoutMonitoring: Bool {
+        !followMonitoring && nightscoutSent != nil && nightscoutSnapshot.monitoring
+    }
+    /// Nightscout is the source with a site: its log is the treatment log, its state the no-data reason.
+    var nightscoutActive: Bool { !followMonitoring && nightscoutSent != nil }
+    private var monitoring: Bool { followMonitoring || lanMonitoring || nightscoutMonitoring }
+    /// How Nightscout's readings come (the panel's badge): over the internet, or none while offline; nil when it isn't
+    /// the source.
+    var nightscoutPath: LinkPath? {
+        guard nightscoutActive, nightscoutSnapshot.outcome != nil else { return nil }
+        return nightscoutSnapshot.online ? .internet : .offline
+    }
+    /// The source reads a stream from another Sukrara (or nothing is answered yet: what the Mac follows).
+    private var followsSource: Bool { sourceKind == nil || sourceKind == .sukrara }
     var unit: GlucoseUnit = .mgdl
     /// The card's settings (bands, hours…): this Mac's, or the wearer's mirrored ones (`GraphConfig.load`).
     var graph = GraphConfig() {
@@ -141,7 +180,7 @@ public final class AppModel {
     init(
         plan: LaunchPlan, clock: any TimeSource = SystemClock(), alerts: AlertController? = nil,
         updates: Updates? = nil, loginItem: LoginItem? = nil, follower: (any FollowerService)? = nil,
-        widget: WidgetFeed? = nil, lan: (any LanSourcing)? = nil
+        widget: WidgetFeed? = nil, lan: (any LanSourcing)? = nil, nightscout: (any NightscoutSourcing)? = nil
     ) {
         self.plan = plan
         self.clock = clock
@@ -151,6 +190,7 @@ public final class AppModel {
         self.follower = follower
         self.widget = widget
         self.lan = lan
+        self.nightscout = nightscout
         now = clock.now
         alerts?.onUIChange = { [weak self] in
             self?.feedWidget()
@@ -165,6 +205,12 @@ public final class AppModel {
             feeds.append(
                 Task { [weak self] in
                     for await snapshot in await lan.snapshots() { self?.apply(lan: snapshot) }
+                })
+        }
+        if let nightscout {
+            feeds.append(
+                Task { [weak self] in
+                    for await snapshot in await nightscout.snapshots() { self?.apply(nightscout: snapshot) }
                 })
         }
         guard let follower else { return }
@@ -190,25 +236,16 @@ public final class AppModel {
         // an unreadable Keychain (retrying) still follows the wearer: keep alerting on their readings, no-data included
         // Juggluco chosen as the source: the follow stays (switching back needs no new invite) but isn't read
         followMonitoring =
-            sourceKind != .lanJuggluco
-            && (link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty))
+            followsSource && (link.isFollowing || (snapshot.keychainUnreadable && !snapshot.readings.isEmpty))
         followReadings = followMonitoring ? snapshot.readings : []
         followSensor = snapshot.sensor
         wearerName = Profile.shownName(snapshot.wearer?.name)
         followerKnown = true
         syncLan()
+        syncNightscout()
         monitoringChanged(from: wasMonitoring)
-        if let alerts {
-            alerts.setMirroring(followMonitoring && alerts.settings.source == .wearer)
-            alerts.treatments(
-                snapshot.treatments.compactMap { t in
-                    let kind: TreatmentKind? = t.k == .carbs ? .carbs : t.k == .rapid ? .rapidInsulin : nil
-                    guard !t.del, let kind else { return nil }
-                    return AlertTreatment(kind: kind, at: Date(timeIntervalSince1970: TimeInterval(t.t)))
-                })
-        }
-        marks = followMonitoring ? CardAlertsMapping.marks(snapshot.treatments) : []
-        treatments = followMonitoring ? snapshot.treatments.filter { !$0.del } : []
+        if let alerts { alerts.setMirroring(followMonitoring && alerts.settings.source == .wearer) }
+        applyTreatments()
         applySensor()
         // only a followed wearer's (or, not following, Juggluco's) readings are shown or alerted on
         apply(readings: monitoredReadings)
@@ -236,14 +273,54 @@ public final class AppModel {
         feedWidget()
     }
 
-    /// The readings the card and the alert rules use: following wins over Juggluco (never two people's mixed).
-    private var monitoredReadings: [Reading] {
-        followMonitoring ? followReadings : lanMonitoring ? lanSnapshot.readings : []
+    /// What the Nightscout source said: its readings feed the card and the alerts while it is the source, its
+    /// treatment log the marks, the quiets and the export.
+    func apply(nightscout snapshot: NightscoutSnapshot) {
+        let wasMonitoring = monitoring
+        nightscoutSnapshot = snapshot
+        monitoringChanged(from: wasMonitoring)
+        onNightscout?(snapshot)
+        guard nightscoutActive else { return }
+        applyTreatments()
+        applySensor()
+        apply(readings: monitoredReadings)
+        feedWidget()
     }
 
-    /// The sensor of the same source: the wearer's, else the one Juggluco reads.
+    /// The readings the card and the alert rules use: following wins over Juggluco and Nightscout (never two people's
+    /// mixed; only one of them is ever the source).
+    private var monitoredReadings: [Reading] {
+        followMonitoring
+            ? followReadings
+            : lanMonitoring ? lanSnapshot.readings : nightscoutMonitoring ? nightscoutSnapshot.readings : []
+    }
+
+    /// The sensor of the same source: the wearer's, the one Juggluco reads, or the one the Nightscout site's newest
+    /// Sensor Start / Sensor Change started (with the default warm-up and wear): the card's warm-up and time left, and
+    /// the alert rules' sensor window (no data stays quiet once it ended). Your glucose or someone else's alike.
     private var monitoredSensor: WearerSensor? {
-        followMonitoring ? followSensor : lanMonitoring ? lanSnapshot.sensor : nil
+        if followMonitoring { return followSensor }
+        if lanMonitoring { return lanSnapshot.sensor }
+        return nightscoutMonitoring ? nightscoutSnapshot.sensor : nil
+    }
+
+    /// The treatments of the source: the followed wearer's log, or this Mac's own with Nightscout (the site's
+    /// read-only among them): the chart's marks, the alert rules' treatment quiets and the CSV export.
+    private func applyTreatments() {
+        let followed = (lastSnapshot?.treatments ?? []).filter { !$0.del }
+        let live: [Treatment] =
+            followMonitoring ? followed : nightscoutActive ? nightscoutSnapshot.treatments.filter { !$0.del } : []
+        // the alert rules hear the wearer's treatments as before (also before a reading), Nightscout's while it is
+        // the source
+        let heard = followsSource ? followed : live
+        alerts?.treatments(
+            heard.compactMap { t in
+                let kind: TreatmentKind? = t.k == .carbs ? .carbs : t.k == .rapid ? .rapidInsulin : nil
+                guard let kind else { return nil }
+                return AlertTreatment(kind: kind, at: Date(timeIntervalSince1970: TimeInterval(t.t)))
+            })
+        marks = CardAlertsMapping.marks(live)
+        treatments = live
     }
 
     /// The card's sensor life and the alert rules' sensor window follow the monitored source.
@@ -265,7 +342,8 @@ public final class AppModel {
     /// is loaded from the new one.
     private func monitoringChanged(from wasMonitoring: Bool) {
         if monitoring && !wasMonitoring { alerts?.monitoringStopped(nil) }  // back: the "stopped" note goes
-        let source: HistorySource = followMonitoring ? .follow : lanMonitoring ? .lan : .none
+        let source: HistorySource =
+            followMonitoring ? .follow : lanMonitoring ? .lan : nightscoutMonitoring ? .nightscout : .none
         // stopped, or straight from Juggluco to a wearer (or back): the episodes were about the other readings
         if wasMonitoring && (!monitoring || (historySource != .none && source != historySource)) {
             alerts?.resetMonitoring()
@@ -288,6 +366,39 @@ public final class AppModel {
         guard want != lanSent else { return }
         lanSent = want
         toLan { await $0.set(want) }
+    }
+
+    /// Hands Nightscout's config to its source while it is the source (and nobody followed is read), else off; waits
+    /// for the follower's first snapshot like Juggluco.
+    private func syncNightscout() {
+        guard nightscout != nil else { return }
+        let waiting = follower != nil && !followerKnown && sourceKind != .nightscout
+        let want = followMonitoring || waiting || sourceKind != .nightscout ? nil : nightscoutConfig
+        guard want != nightscoutSent else { return }
+        nightscoutSent = want
+        toNightscout { await $0.set(want) }
+    }
+
+    /// Runs `step` on the Nightscout source after every earlier one.
+    private func toNightscout(_ step: @escaping @Sendable (any NightscoutSourcing) async -> Void) {
+        guard let nightscout else { return }
+        let previous = nightscoutTask
+        nightscoutTask = Task {
+            await previous?.value
+            await step(nightscout)
+        }
+    }
+
+    /// Try Again on the Nightscout source.
+    func retryNightscout() {
+        guard nightscoutSent != nil else { return }
+        toNightscout { await $0.retry() }
+    }
+
+    /// Writes one of this Mac's treatments into Nightscout's log (the Treatments window and Add Treatment).
+    func writeNightscout(_ treatment: Treatment) async -> Bool {
+        guard nightscoutActive, let nightscout else { return false }
+        return await nightscout.write(treatment)
     }
 
     /// Runs `step` on the Juggluco source after every earlier one (switching, Try Again and stop stay in order).
@@ -461,11 +572,13 @@ public final class AppModel {
         let since = clock.now.addingTimeInterval(-ChartView.maxSpan)
         let follower = self.follower
         let lan = self.lan
+        let nightscout = self.nightscout
         Task { [weak self] in
             let loaded: [Reading] =
                 switch source {
                 case .follow: await follower?.readings(since: since) ?? []
                 case .lan: await lan?.readings(since: since) ?? []
+                case .nightscout: await nightscout?.readings(since: since) ?? []
                 case .none: []
                 }
             guard let self, self.historySource == source else { return }
@@ -515,14 +628,16 @@ public final class AppModel {
         if plan.isOffline && plan.mode != .fixture { return .offlineBuild }
         // shown over the stored readings too: with the Keychain unreadable no new reading can arrive, and the alerts
         // go on over the last ones (no data included) while the runtime retries
-        if keychainUnreadable, !lanMonitoring { return .broken(.keyUnreadable) }
-        if case .broken(let why) = link, !lanMonitoring { return .broken(why) }
+        if keychainUnreadable, !lanMonitoring, !nightscoutActive { return .broken(.keyUnreadable) }
+        if case .broken(let why) = link, !lanMonitoring, !nightscoutActive { return .broken(why) }
         guard readings.isEmpty else {
             guard look.state == .noReadings else { return nil }
             if followMonitoring { return .wearerSilent(since: readings.last?.t.timeIntervalSince1970) }
+            if nightscoutMonitoring { return Self.nightscoutWait(nightscoutSnapshot, now: clock.now) }
             return lanMonitoring ? Self.lanWait(lanSnapshot.state) : nil
         }
         if !followMonitoring, lanSent != nil, let wait = Self.lanWait(lanSnapshot.state) { return wait }
+        if nightscoutActive, let wait = Self.nightscoutWait(nightscoutSnapshot, now: clock.now) { return wait }
         switch link {
         case .notFollowing, .joining: return .notFollowing
         case .requested: return .waitingApproval
@@ -547,6 +662,21 @@ public final class AppModel {
         // the Keychain retrying over stored readings: the line says so above the card (`alertingOnLastData`)
         return replacesCard
             ? NoDataText.of(reason, now: now.timeIntervalSince1970, lastData: alertingOnLastData).title : nil
+    }
+
+    /// Why the Nightscout site gives no reading now (contracts/sources/health.json), nil while it is live.
+    static func nightscoutWait(_ snapshot: NightscoutSnapshot, now: Date) -> NoDataReason? {
+        switch snapshot.health(at: now) {
+        case .connecting: .nightscout(.connecting)
+        case .live, .late: nil
+        case .noNewReadings:
+            snapshot.readings.last.map { .nightscout(.silent(since: $0.t.timeIntervalSince1970)) }
+                ?? .nightscout(.noGlucose)
+        case .offline: .nightscout(.offline)
+        case .unreachable: .nightscout(.unreachable(host: snapshot.host))
+        case .signedOut: .nightscout(.signedOut)
+        case .rateLimited: .nightscout(.rateLimited)
+        }
     }
 
     /// Why Juggluco gives no reading (nil when it is off).
@@ -614,6 +744,12 @@ public final class AppModel {
     func networkCameBack() {
         if let follower { Task { await follower.reconnect() } }
         retryLan()  // Juggluco's stream died with the network too: look again now, not after the backoff
+        retryNightscout()
+    }
+
+    /// The Mac's network path changed: Nightscout says *No internet* while it is down and asks again when it's back.
+    func network(online: Bool) {
+        toNightscout { await $0.network(online: online) }
     }
 
     /// The clock changed (also small NTP corrections): re-read the time and re-check the alerts; the connections stay.
@@ -644,12 +780,15 @@ public final class AppModel {
         alerts?.stop()
         lanSent = nil
         toLan { await $0.set(nil) }
+        nightscoutSent = nil
+        toNightscout { await $0.set(nil) }
         await lanTask?.value
+        await nightscoutTask?.value
         await follower?.stop()
     }
 }
 
 /// Where the history was loaded from.
 private enum HistorySource {
-    case none, follow, lan
+    case none, follow, lan, nightscout
 }

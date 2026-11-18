@@ -19,11 +19,14 @@ final class WindowCoordinator {
     let report: ReportModel
     private let model: AppModel
     private let adapter: FollowerAdapter?
+    /// The treatment windows' actions while Nightscout is the source: this Mac's own log.
+    private let nightscoutActions: NightscoutTreatmentActions
 
     init(model: AppModel, store: any SettingsStoring, requestNotifications: @escaping () async -> Bool) {
         self.model = model
         let adapter = model.follower.map(FollowerAdapter.init(follower:))
         self.adapter = adapter
+        nightscoutActions = NightscoutTreatmentActions(model: model)
         follow = FollowModel(status: .notFollowing, actions: adapter)
         settings = SettingsModel(
             store: store, follow: follow, version: Self.version, distribution: model.plan.distribution,
@@ -64,12 +67,34 @@ final class WindowCoordinator {
         // the How You Appear row only while a follow exists (the runtime's own profile is just a default before)
         follow.me = snapshot.link == .notFollowing ? nil : snapshot.me
         settings.wearer = Self.wearerSettings(snapshot)
+        // Nightscout as the source: the treatment windows show this Mac's own log (`apply(nightscout:)`)
+        guard model.sourceKind != .nightscout else { return }
         let canWrite = if case .following(_, true) = snapshot.link { true } else { false }
+        treatments.actions = adapter
+        treatments.pulled = []
+        treatments.note = nil
         treatments.isFollowing = snapshot.link.isFollowing
         treatments.wearer = snapshot.link.isFollowing ? FollowerAdapter.wearerName(snapshot.link) : nil
         treatments.sync(
             snapshot.treatments, deliveries: snapshot.deliveries.compactMapValues(FollowerAdapter.delivery),
             canWrite: canWrite)
+    }
+
+    /// A Nightscout snapshot while it is the source: the treatment windows show this Mac's log, the site's entries
+    /// read-only, and what a token that can only read means.
+    func apply(nightscout snapshot: NightscoutSnapshot) {
+        guard model.sourceKind == .nightscout else { return }
+        treatments.actions = nightscoutActions
+        treatments.isFollowing = false
+        treatments.wearer = nil
+        treatments.pulled = snapshot.pulled
+        treatments.note =
+            snapshot.treatmentsOn && snapshot.readOnly
+            ? L10n.t("This token can only read: your treatments stay on this Mac") : nil
+        let own = snapshot.treatments.filter { !snapshot.pulled.contains($0.id) }
+        treatments.sync(
+            snapshot.treatments, deliveries: Dictionary(uniqueKeysWithValues: own.map { ($0.id, .sent) }),
+            canWrite: model.nightscoutActive)
     }
 
     /// The wearer's mirrored settings while following (nil otherwise: this Mac's own values apply).

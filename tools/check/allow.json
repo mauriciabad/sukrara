@@ -94,6 +94,26 @@
       "reason": "Nightscout API on the home Wi-Fi (opt-in, warned as unencrypted): the address other devices on this Wi-Fi use, with the Wi-Fi secret only (never the phone apps' secret), shown as text for copying; the app opens nothing"
     },
     {
+      "path": "apps/macos/Sources/SukraraCore/Nightscout/NightscoutSite.swift",
+      "contains": "scheme == \"https\" || scheme == \"http\", let rawHost = c.host",
+      "reason": "Mac Nightscout source address parsing (contracts/sources/nightscout/sites.json): an http address is parsed only to be refused with 'Use https://' unless it is this Mac's loopback (a local test site)"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraCore/Nightscout/NightscoutSite.swift",
+      "contains": "(scheme == \"http\" && $0 == 80)",
+      "reason": "Mac Nightscout source address parsing: an http address's default port is dropped from its root before it is refused (sites.json)"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraCore/Nightscout/NightscoutSite.swift",
+      "contains": "let problem: Problem? = scheme == \"http\" && !isLoopback(host)",
+      "reason": "Mac Nightscout source is https only, the home network too (#93): plain http only to this Mac's loopback (localhost / 127.0.0.1), anything else is refused with 'Use https://'"
+    },
+    {
+      "path": "apps/macos/Sources/SukraraApp/Windows/WindowSnapshots.swift",
+      "contains": "m.settings.nightscout.siteDraft = \"http://ns.example.org\"",
+      "reason": "snapshot runs only (synthetic, offline): the Connect step showing its 'Use https://' refusal for a typed http address; nothing is opened"
+    },
+    {
       "path": "apps/macos/Sources/SukraraShare/Lan/JugglucoApi.swift",
       "contains": "URL(string: \"http://\\(address):\\(port)\")",
       "reason": "Mac Juggluco on this network (opt-in switch, off by default; Settings says it is plain http): built only from a LanAddress that isPrivate (10/8, 172.16/12, 192.168/16), never a public address or a name"
@@ -154,6 +174,10 @@
       "reason": "debug builds only (GARMIN_SIM): a server socket on 127.0.0.1:7381 the Connect IQ simulator joins through adb forward (Garmin's tethered mode); compiled out of release"
     },
     {
+      "path": "apps/macos/Sources/SukraraShare/Nightscout/NightscoutApi.swift",
+      "reason": "Mac Nightscout source (Settings › Source): URLSessionNightscoutHTTP's GET / POST / DELETE to the site the person connected (NightscoutSite: https only, loopback http for a local test site), redirects refused, an ephemeral session; tests use FakeNightscoutHTTP; dev, fixture and snapshot runs never start it (LaunchMode)"
+    },
+    {
       "path": "apps/macos/Sources/SukraraShare/Lan/JugglucoLanSource.swift",
       "reason": "Mac Juggluco on this network (opt-in): URLSessionLanHTTP's GETs and live stream; every URL is built by JugglucoApi.base (private IPv4 addresses only); tests use a fake LanHTTP"
     },
@@ -179,6 +203,7 @@
     "apps/macos/Sources/SukraraCore/Stores/ReadingsFileStore.swift": "storage: readings.csv keeps the sensor's own rate",
     "apps/macos/Sources/SukraraCore/Export/GlucoseCsv.swift": "a device record: the CSV's rate column is the sensor's own (contracts/export)",
     "apps/macos/Sources/SukraraShare/Lan/JugglucoApi.swift": "an input: Juggluco's rate is the sensor's own",
+    "apps/macos/Sources/SukraraCore/Nightscout/NightscoutEntries.swift": "an input: a Nightscout entry's 5-minute delta / 5 is its uploader's rate (contracts/sources/nightscout/entries.json)",
     "apps/macos/Sources/SukraraShare/Follower/FollowerRuntime.swift": "the wire: a follower decodes the wearer's r / rate100 as the sensor's own rate",
     "apps/macos/Sources/SukraraApp/Launch/FixtureFollower.swift": "synthetic fixture readings for snapshots and tests, built with a sensor rate",
     "apps/macos/Sources/SukraraApp/Panel/ShellSnapshots.swift": "synthetic snapshot readings, built with a sensor rate",

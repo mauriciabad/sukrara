@@ -37,6 +37,8 @@ public enum Service: CaseIterable, Sendable {
     case notifications, ble, relays, alerts, widgetFeed, updater, loginItem
     /// Juggluco's web server on the home network (created idle; it connects only while the person's switch is on).
     case lan
+    /// A Nightscout site over the internet (created idle; it calls the site only while it is the person's source).
+    case nightscout
     /// The Mac's camera for the follow step's QR scanner (nothing opens at launch: the camera runs only while the
     /// scanner is on screen).
     case camera
@@ -45,11 +47,11 @@ public enum Service: CaseIterable, Sendable {
 /// The services a launch MAY start: an upper limit. The app ANDs it with the user's settings
 /// (`limited(by:)`) and starts services only through `ServicesPlan.start(using:)`.
 public struct ServicesPlan: Equatable, Sendable {
-    public var ble, relays, alerts, widgetFeed, notifications, updater, loginItem, lan, camera: Bool
+    public var ble, relays, alerts, widgetFeed, notifications, updater, loginItem, lan, nightscout, camera: Bool
 
     public init(
         ble: Bool, relays: Bool, alerts: Bool, widgetFeed: Bool, notifications: Bool, updater: Bool = false,
-        loginItem: Bool = false, lan: Bool = false, camera: Bool = false
+        loginItem: Bool = false, lan: Bool = false, nightscout: Bool = false, camera: Bool = false
     ) {
         self.ble = ble
         self.relays = relays
@@ -59,12 +61,13 @@ public struct ServicesPlan: Equatable, Sendable {
         self.updater = updater
         self.loginItem = loginItem
         self.lan = lan
+        self.nightscout = nightscout
         self.camera = camera
     }
 
     public static let all = ServicesPlan(
         ble: true, relays: true, alerts: true, widgetFeed: true, notifications: true, updater: true,
-        loginItem: true, lan: true, camera: true)
+        loginItem: true, lan: true, nightscout: true, camera: true)
     /// Everything the installed app of `distribution` starts: all, except the updater in the App Store version
     /// (only the store updates it).
     public static func all(for distribution: Distribution) -> ServicesPlan {
@@ -85,6 +88,7 @@ public struct ServicesPlan: Equatable, Sendable {
         case .updater: updater
         case .loginItem: loginItem
         case .lan: lan
+        case .nightscout: nightscout
         case .camera: camera
         }
     }
@@ -103,6 +107,7 @@ public struct ServicesPlan: Equatable, Sendable {
             updater: updater && wanted.updater,
             loginItem: loginItem && wanted.loginItem,
             lan: lan && wanted.lan,
+            nightscout: nightscout && wanted.nightscout,
             camera: camera && wanted.camera
         )
     }

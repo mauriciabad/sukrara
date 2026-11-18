@@ -25,6 +25,8 @@ final class AppServices: ServiceStarting {
     private(set) var follower: FollowerRuntime?
     /// Juggluco on the home network: created idle, switched on and off by `AppModel` from the person's setting.
     private(set) var lan: JugglucoLanSource?
+    /// A Nightscout site: created idle, switched on and off by `AppModel` while it is the person's source.
+    private(set) var nightscout: NightscoutSource?
     /// Hands the card to the widgets (App Group file + timeline reloads). Fed by `AppModel` on every change.
     private(set) var widget: WidgetFeed?
     /// Makes the Mac's camera for the QR scanner (`SystemCamera`; it opens the camera only while the scanner is on
@@ -42,7 +44,8 @@ final class AppServices: ServiceStarting {
     /// What this build's provisioning profile grants (none without one): Time Sensitive alarms and the
     /// data-protection keychain.
     let entitlements: Entitlements
-    /// The follower key and Juggluco's secret, in the keychain this build may use (`KeychainStore.secrets`).
+    /// The follower key, Juggluco's secret and Nightscout's token, in the keychain this build may use
+    /// (`KeychainStore.secrets`).
     let secrets: any SecretStoring
 
     /// `widget`: creates the widget feed when the plan allows it (tests write to a scratch file). `updater`: makes the
@@ -183,6 +186,9 @@ final class AppServices: ServiceStarting {
                 http: URLSessionLanHTTP(),
                 store: ReadingsFileStore(
                     directory: plan.data.paths.appSupport.appending(path: "juggluco", directoryHint: .isDirectory)))
+        case .nightscout:
+            nightscout = NightscoutSource.files(
+                directory: plan.data.paths.appSupport.appending(path: "nightscout", directoryHint: .isDirectory))
         }
     }
 
@@ -208,7 +214,7 @@ final class AppServices: ServiceStarting {
         #endif
         return AppModel(
             plan: plan, clock: clock, alerts: alerts, updates: updates, loginItem: loginItem, follower: follower,
-            widget: widget, lan: lan)
+            widget: widget, lan: lan, nightscout: nightscout)
     }
 }
 

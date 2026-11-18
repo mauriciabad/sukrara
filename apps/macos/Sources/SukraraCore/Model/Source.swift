@@ -10,8 +10,8 @@ public enum Person: String, CaseIterable, Sendable, Codable {
 }
 
 /// How the source picker groups a source (contracts/sources/sources.json `group`).
-public enum SourceGroup: String, Sendable {
-    case offline, network, sukrara
+public enum SourceGroup: String, Sendable, CaseIterable {
+    case offline, network, online, sukrara
 }
 
 /// Where the glucose comes from (schema `source.kind`), with what it declares in contracts/sources/sources.json: the
@@ -23,14 +23,28 @@ public enum SourceKind: String, CaseIterable, Sendable, Codable {
     case sukrara
     /// Juggluco's web server on the home network (plain http, private addresses).
     case lanJuggluco
+    /// A Nightscout site (https): glucose and treatments both ways, about 2 minutes late.
+    case nightscout
 
     public var persons: Set<Person> { [.yours, .theirs] }
-    public var firstHand: Bool { self == .lanJuggluco }
+    public var firstHand: Bool { self != .sukrara }
     public var offline: Bool { self == .lanJuggluco }
-    public var group: SourceGroup { self == .lanJuggluco ? .network : .sukrara }
-    public var delaySeconds: Int { 60 }
+    public var group: SourceGroup {
+        switch self {
+        case .sukrara: .sukrara
+        case .lanJuggluco: .network
+        case .nightscout: .online
+        }
+    }
+    public var delaySeconds: Int { self == .nightscout ? 120 : 60 }
     public var backfill: Bool { true }
-    public var readings: Set<String> { self == .lanJuggluco ? ["juggluco-lan"] : ["relay", "nearby"] }
+    public var readings: Set<String> {
+        switch self {
+        case .sukrara: ["relay", "nearby"]
+        case .lanJuggluco: ["juggluco-lan"]
+        case .nightscout: ["nightscout"]
+        }
+    }
 
     /// The sources the picker offers for `person`, in the picker's order.
     public static func forPerson(_ person: Person) -> [SourceKind] { allCases.filter { $0.persons.contains(person) } }
@@ -44,7 +58,8 @@ public enum SourceAlertRole: String, Sendable {
 }
 
 /// THE choice that replaced "this Mac follows" (docs/44): whose glucose × where it comes from, keyed as
-/// contracts/sources/sources.json `keying` says. `owner`: your glucose read first-hand (Juggluco on the network);
+/// contracts/sources/sources.json `keying` says. `owner`: your glucose read first-hand (Juggluco on the network, a
+/// Nightscout site);
 /// `stream`: another Sukrara (*Settings from*, the follow); `person`: the words and what a change deletes.
 public struct SourceSpec: Equatable, Sendable {
     public let person: Person
@@ -107,7 +122,8 @@ public enum ReadingRank {
 
     private static let ranks: [String: Rank] = [
         "libre3": .sensor, "dexcom-g7": .sensor, "dexcom-g6": .sensor, "accu-chek-smartguide": .sensor,
-        "aidex-x": .sensor, "juggluco": .phoneApp, "juggluco-lan": .network, "relay": .sukrara, "nearby": .sukrara,
+        "aidex-x": .sensor, "juggluco": .phoneApp, "juggluco-lan": .network, "nightscout": .online, "relay": .sukrara,
+        "nearby": .sukrara,
         "import-libreview": .imported, "import-tidepool": .imported, "import-file": .imported,
     ]
 

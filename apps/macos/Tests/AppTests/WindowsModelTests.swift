@@ -356,14 +356,16 @@ private extension DateComponents {
         #expect(f.current == nil && f.isComplete && !f.needsFinishing)
     }
 
-    /// docs/44: a Mac that finished setup before Whose glucose and Source existed has them left: Finish Setup… asks
-    /// them, first.
+    /// docs/44: a Mac that finished setup before the phone question, Whose glucose and Source existed has them left:
+    /// Finish Setup… asks them, first.
     @Test func aMacFromBeforeTheQuestionIsAskedItOnce() {
         var f = SetupFlow(states: [
             .welcome: .done, .follow: .done, .alerts: .done, .notifications: .done, .openAtLogin: .done,
         ])
-        #expect(f.needsFinishing && f.unfinished == [.person, .source])
+        #expect(f.needsFinishing && f.unfinished == [.phone, .person, .source])
         f.reopen()
+        #expect(f.current == .phone)
+        f.complete(.phone)
         #expect(f.current == .person)
         f.complete(.person)
         #expect(f.current == .source)
@@ -374,6 +376,7 @@ private extension DateComponents {
     @Test func skippingLeavesFinishSetup() {
         var f = SetupFlow()
         f.complete(.welcome)
+        f.complete(.phone)
         f.complete(.person)
         f.complete(.source)
         f.skip(.follow)
@@ -396,6 +399,7 @@ private extension DateComponents {
     @Test func finishSetupReopensWhereTheWalkWasLeft() {
         var f = SetupFlow()
         f.complete(.welcome)
+        f.complete(.phone)
         f.complete(.person)
         f.complete(.source)
         f.skip(.follow)
@@ -439,6 +443,7 @@ private extension DateComponents {
         var f = SetupFlow(store: store)
         #expect(f.isFirstRun)
         f.complete(.welcome)
+        f.complete(.phone)
         f.complete(.person)
         f.complete(.source)
         f.skip(.follow)

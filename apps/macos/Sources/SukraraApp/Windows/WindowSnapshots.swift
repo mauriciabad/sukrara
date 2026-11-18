@@ -29,14 +29,19 @@
 
         /// Scenes drawn in their real window (title bar and toolbar, e.g. the Treatments window's "+"), by window title.
         static var windowed: [String: String] {
-            ["treatments": L10n.t("Treatments"), "treatments-empty": L10n.t("Treatments")]
+            [
+                "treatments": L10n.t("Treatments"), "treatments-empty": L10n.t("Treatments"),
+                "treatments-nightscout": L10n.t("Treatments"),
+            ]
         }
 
         public static func render(to dir: URL) throws -> Int {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             var n = 0
             let windowed = Self.windowed
-            for (name, view) in scenes() {
+            // `SUKRARA_SNAP_ONLY=setup-phone,settings-source-nightscout`: only the scenes whose names start so
+            let only = ProcessInfo.processInfo.environment["SUKRARA_SNAP_ONLY"]?.split(separator: ",").map(String.init)
+            for (name, view) in scenes() where only.map({ $0.contains { name.hasPrefix($0) } }) ?? true {
                 for dark in [false, true] {
                     for large in [false, true] {
                         let v =
@@ -521,6 +526,100 @@
                     version: "0.12.0", build: "12000", distribution: distribution, appBuild: .release, icon: brandIcon)
                 out.append((name, AnyView(about.aboutWindow())))
             }
+            out += nightscoutScenes(suite: suite, follow: follow(.notFollowing))
+            return out
+        }
+
+        /// Nightscout as the source (#213 step 1): setup's first question, the online sources, Connect in each state,
+        /// Settings › Source in each health state, and the treatment log with the site's read-only entries.
+        private static func nightscoutScenes(suite: String, follow: FollowModel) -> [(String, AnyView)] {
+            var out: [(String, AnyView)] = []
+            let now = Date()
+            func scratch(_ kind: SourceKind?) -> DefaultsSettingsStore {
+                let s = DefaultsSettingsStore(defaults: UserDefaults(suiteName: "\(suite).\(UUID().uuidString)")!)
+                if let kind {
+                    s.set(Person.yours.rawValue, for: MacSettings.sourcePerson)
+                    s.set(kind.rawValue, for: MacSettings.sourceKind)
+                }
+                return s
+            }
+            func readings(_ ages: [TimeInterval]) -> [Reading] {
+                ages.map { Reading(t: now.addingTimeInterval(-$0), mgdl: 118) }
+            }
+            func snap(_ outcome: SourceHealth.Outcome?, _ ages: [TimeInterval], readOnly: Bool = false)
+                -> NightscoutSnapshot
+            {
+                NightscoutSnapshot(
+                    outcome: outcome, host: "ns.example.org", readings: readings(ages), monitoring: outcome == .ok,
+                    readOnly: readOnly)
+            }
+            // the first question: nothing picked, then "No · Read it online"
+            for (name, picked) in [("setup-phone-no", false as Bool?)] {
+                let m = SetupModel(settings: SettingsModel(store: scratch(nil), follow: follow, version: "0.12.0"))
+                m.pickedPhone = picked
+                m.flow.open(.phone)
+                out.append((name, AnyView(SetupView(model: m, close: {}))))
+            }
+            // the sources this Mac reads itself, Nightscout picked
+            let online = SetupModel(settings: SettingsModel(store: scratch(nil), follow: follow, version: "0.12.0"))
+            online.pickedPhone = false
+            online.pickedPerson = .yours
+            online.pickedKind = .nightscout
+            online.flow.open(.source)
+            out.append(("setup-source-online", AnyView(SetupView(model: online, close: {}))))
+            // Connect: the form with a pasted address's problem, connecting, refused, waiting, received
+            let connects: [(String, String, NightscoutSnapshot, NightscoutSite.Problem?)] = [
+                ("form", "", .off, nil), ("problem", "", .off, .https), ("connecting", "x", snap(nil, []), nil),
+                ("refused", "x", snap(.refused, []), nil), ("unreachable", "x", snap(.server, []), nil),
+                ("waiting", "x", snap(.ok, []), nil), ("received", "x", snap(.ok, [60]), nil),
+            ]
+            for (name, site, snapshot, problem) in connects {
+                let store = scratch(.nightscout)
+                if !site.isEmpty { store.set("https://ns.example.org", for: MacSettings.nightscoutURL) }
+                let m = SetupModel(settings: SettingsModel(store: store, follow: follow, version: "0.12.0"))
+                m.settings.nightscout.snapshot = { snapshot }
+                m.settings.nightscout.available = { true }
+                m.flow.open(.follow)
+                if problem != nil {
+                    m.settings.nightscout.siteDraft = "http://ns.example.org"
+                    m.settings.nightscout.connect()
+                }
+                out.append(("setup-connect-nightscout-\(name)", AnyView(SetupView(model: m, close: {}))))
+            }
+            // Settings › Source: live, late, signed out, nothing new, a token that can only read
+            let states: [(String, NightscoutSnapshot)] = [
+                ("live", snap(.ok, [120, 420])), ("late", snap(.ok, [600])), ("signedout", snap(.refused, [1500])),
+                ("silent", snap(.ok, [1500])), ("readonly", snap(.ok, [60], readOnly: true)),
+            ]
+            for (name, snapshot) in states {
+                let store = scratch(.nightscout)
+                store.set("https://ns.example.org", for: MacSettings.nightscoutURL)
+                let m = SettingsModel(store: store, follow: follow, version: "0.12.0")
+                m.nightscout.snapshot = { snapshot }
+                m.nightscout.available = { true }
+                m.nightscout.hasSecret = true
+                m.pane = .source
+                out.append(
+                    (
+                        "settings-source-nightscout-\(name)",
+                        AnyView(
+                            SettingsView(
+                                model: m, loginItem: nil, updates: Self.updates, openFollow: {}, openAbout: {}
+                            ).settingsWindow(m, width: 560, height: 980))
+                    ))
+            }
+            // the treatment log: this Mac's own and the site's, read-only
+            let t0 = Int64(now.timeIntervalSince1970)
+            let own = Treatment(id: "o1", k: .rapid, a: 3.5, t: t0 - 900, u: 1, o: .mac)
+            let site = [
+                Treatment(id: "s1", k: .carbs, a: 45, t: t0 - 1800, u: 1, o: .phone),
+                Treatment(id: "s2", k: .rapid, a: 4.5, t: t0 - 1800, n: "", u: 1, o: .phone),
+            ]
+            let tm = TreatmentsModel(rows: [], canWrite: true, actions: nil)
+            tm.pulled = Set(site.map(\.id))
+            tm.sync([own] + site, deliveries: ["o1": .sent], canWrite: true)
+            out.append(
+                ("treatments-nightscout", AnyView(TreatmentsView(model: tm, add: {}).frame(width: 460, height: 380))))
             return out
         }
 

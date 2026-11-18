@@ -15,7 +15,9 @@
         public static func render(to dir: URL) throws -> Int {
             try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
             var n = 0
-            for (name, scene) in scenes() {
+            // `SUKRARA_SNAP_ONLY=panel-nightscout`: only the scenes whose names start so
+            let only = ProcessInfo.processInfo.environment["SUKRARA_SNAP_ONLY"]?.split(separator: ",").map(String.init)
+            for (name, scene) in scenes() where only.map({ $0.contains { name.hasPrefix($0) } }) ?? true {
                 for dark in [false, true] {
                     let view = scene.view
                         .environment(\.colorScheme, dark ? .dark : .light)
@@ -29,6 +31,20 @@
         }
 
         private struct Scene { var view: AnyView }
+
+        /// A Nightscout source that only ever says `snapshot` (nothing is asked of any site).
+        private actor StillNightscout: NightscoutSourcing {
+            let snapshot: NightscoutSnapshot
+            init(_ snapshot: NightscoutSnapshot) { self.snapshot = snapshot }
+            func snapshots() -> AsyncStream<NightscoutSnapshot> {
+                AsyncStream { $0.yield(snapshot) }
+            }
+            func set(_ config: NightscoutConfig?) {}
+            func retry() {}
+            func network(online: Bool) {}
+            func readings(since: Date) -> [Reading] { snapshot.readings.filter { $0.t >= since } }
+            func write(_ treatment: Treatment) -> Bool { false }
+        }
 
         private static func scenes() -> [(String, Scene)] {
             let now = Date()
@@ -55,7 +71,7 @@
                 setup: SetupFlow = done, permission: NotificationPermission = .allowed,
                 mode: LaunchMode = .normal, scroll: ChartScroll = ChartScroll(),
                 keychainUnreadable: Bool = false, update: Updates.Reminder = .none, nearby: NearbyState? = nil,
-                relays: Int? = 3, act: (AlertController) -> Void = { _ in }
+                relays: Int? = 3, nightscout: NightscoutSnapshot? = nil, act: (AlertController) -> Void = { _ in }
             ) -> Scene {
                 var own = AlertSettings()
                 own.source = .own
@@ -69,7 +85,15 @@
                     data: .isolated(root: FileManager.default.temporaryDirectory.appending(path: suite)))
                 let updates = Updates(engine: StillUpdater())
                 if case .available(let version, let ready) = update { updates.found(version: version, ready: ready) }
-                let model = AppModel(plan: plan, alerts: controller, updates: updates)
+                let model = AppModel(
+                    plan: plan, alerts: controller, updates: updates, nightscout: nightscout.map(StillNightscout.init))
+                if let nightscout {
+                    // a Nightscout site as the source: its readings and its Sensor Start's life
+                    model.sourceKind = .nightscout
+                    model.nightscoutConfig = NightscoutConfig(site: "https://ns.example.org", secret: "")
+                    model.apply(FollowerSnapshot.empty)
+                    model.apply(nightscout: nightscout)
+                }
                 var snapshot = FollowerSnapshot.empty
                 snapshot.link = link
                 snapshot.readings = readings
@@ -78,7 +102,7 @@
                 snapshot.relaysConnected = relays
                 let start = Int(now.timeIntervalSince1970) - 6 * 86400
                 snapshot.sensor = WearerSensor(start: start, end: start + 14 * 86400, warmupEnd: start + 3600)
-                model.apply(snapshot)
+                if nightscout == nil { model.apply(snapshot) }
                 act(controller)
                 controller.refreshUI()
                 model.notificationPermission = permission
@@ -132,7 +156,35 @@
                         }
                     }))
 
-            return [
+            // Nightscout as the source: a sensor its site started 30 min ago (warming, no reading since), and one that
+            // started 16 days ago (ended a day ago; its last readings from before)
+            func site(sensorAgo: TimeInterval, readings: [Reading]) -> NightscoutSnapshot {
+                let start = Int(now.timeIntervalSince1970 - sensorAgo)
+                return NightscoutSnapshot(
+                    outcome: .ok, host: "ns.example.org", readings: readings, monitoring: true,
+                    sensor: WearerSensor(start: start, end: start + 15 * 86_400, warmupEnd: start + 3600))
+            }
+            let nightscout: [(String, Scene)] = [
+                (
+                    "panel-nightscout-warming",
+                    scene(
+                        link: .notFollowing, readings: [],
+                        nightscout: site(sensorAgo: 30 * 60, readings: ending(131, rate: 0, age: 45 * 60)))
+                ),
+                (
+                    "panel-nightscout-ended",
+                    scene(
+                        link: .notFollowing, readings: [],
+                        nightscout: site(sensorAgo: 16 * 86_400, readings: ending(140, rate: 0, age: 26 * 3600)))
+                ),
+                (
+                    "panel-nightscout-live",
+                    scene(
+                        link: .notFollowing, readings: [],
+                        nightscout: site(sensorAgo: 3 * 86_400, readings: ending(112, rate: -0.4, age: 120)))
+                ),
+            ]
+            return nightscout + [
                 // in range, low, high and stale on the bar, over a wallpaper and with Reduce Transparency
                 ("menubar-inks", inks),
                 ("panel-following", scene(readings: ending(112, rate: -0.4))),

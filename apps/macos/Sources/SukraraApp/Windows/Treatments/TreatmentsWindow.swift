@@ -378,6 +378,13 @@ public struct TreatmentsView: View {
                 }
                 .id(model.clockStyle)
             }
+            if let note = model.note {
+                Label(note, systemImage: "lock")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(10)
+            }
             if !model.canWrite {
                 Label(
                     model.isFollowing
@@ -432,7 +439,11 @@ public struct TreatmentsView: View {
     /// and Delete as its actions); the doses, the delivery's Retry and the glucose then stay elements of their own.
     private func rowView(_ row: TreatmentsModel.Row, now: Date) -> some View {
         TreatmentRow(
-            row: row, now: now, loggedBy: Self.loggedBy(row.treatment, mine: model.isMine(row), wearer: model.wearer),
+            row: row, now: now,
+            loggedBy: model.pulled.contains(row.id)
+                ? L10n.t("From Nightscout · change it there")
+                : Self.loggedBy(row.treatment, mine: model.isMine(row), wearer: model.wearer),
+            elsewhere: model.pulled.contains(row.id) ? L10n.t("From Nightscout · change it there") : nil,
             canChange: model.canChange(row), shown: model.shown(row), glucose: model.glucoseThen(row),
             unit: model.unit(),
             edit: { editing = row },

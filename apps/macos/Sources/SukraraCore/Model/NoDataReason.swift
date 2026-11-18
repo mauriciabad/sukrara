@@ -28,6 +28,8 @@ public enum NoDataReason: Codable, Sendable, Equatable {
     case wearerSilent(since: TimeInterval?)
     /// Juggluco on this network gives no reading.
     case juggluco(JugglucoWait)
+    /// The Nightscout site gives no reading (contracts/sources/health.json in the panel's words).
+    case nightscout(NightscoutWait)
 
     /// Why Juggluco gives no reading (`LanState` in words the widget can carry).
     public enum JugglucoWait: Codable, Sendable, Equatable {
@@ -36,9 +38,27 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case notHomeNetwork(typed: String)
     }
 
+    /// Why the Nightscout site gives no reading.
+    public enum NightscoutWait: Codable, Sendable, Equatable {
+        /// The first call is on its way.
+        case connecting
+        /// The site answers but has no glucose at all.
+        case noGlucose
+        /// The site answers, nothing new since `since` (epoch s): the uploader is the place to look.
+        case silent(since: TimeInterval)
+        /// No network on this Mac: it catches up when it's back.
+        case offline
+        /// A network, but no answer from the site.
+        case unreachable(host: String)
+        /// The site refused the token or API secret.
+        case signedOut
+        /// The site asked to wait.
+        case rateLimited
+    }
+
     /// What the panel offers for it: follow someone (a new invite), the Following settings (cancel a request, stop
-    /// following), or Juggluco's settings (address, secret).
-    public enum Action: Sendable, Equatable { case follow, following, juggluco }
+    /// following), Juggluco's settings (address, secret) or the Nightscout source's (site, token).
+    public enum Action: Sendable, Equatable { case follow, following, juggluco, nightscout }
 
     public var action: Action? {
         switch self {
@@ -46,6 +66,8 @@ public enum NoDataReason: Codable, Sendable, Equatable {
         case .waitingApproval, .broken: .following
         case .juggluco(.looking), .juggluco(.firstReading): nil
         case .juggluco: .juggluco
+        case .nightscout(.unreachable), .nightscout(.signedOut): .nightscout
+        case .nightscout: nil
         case .offlineBuild, .wearerSilent: nil
         }
     }

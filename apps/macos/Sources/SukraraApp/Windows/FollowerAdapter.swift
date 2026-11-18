@@ -5,6 +5,16 @@ import Foundation
 import SukraraCore
 import SukraraShare
 
+/// The treatment windows' actions while Nightscout is the source: each entry goes into this Mac's own log (and from
+/// there to the site, with *Treatments both ways*).
+final class NightscoutTreatmentActions: TreatmentActions {
+    private weak var model: AppModel?
+
+    init(model: AppModel) { self.model = model }
+
+    func send(_ treatment: Treatment) async -> Bool { await model?.writeNightscout(treatment) ?? false }
+}
+
 /// The windows' follow and treatment actions over the follower runtime (`FollowerService`), and the runtime's
 /// snapshot in the windows' words. The only place the window layer meets SukraraShare's types.
 final class FollowerAdapter: FollowActions, TreatmentActions {

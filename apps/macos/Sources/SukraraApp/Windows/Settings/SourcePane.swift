@@ -49,6 +49,17 @@ public final class SourceChoiceModel {
         switch s.kind {
         case .sukrara: s.person == .yours ? L10n.t("Sukrara on your phone") : L10n.t("Their Sukrara")
         case .lanJuggluco: L10n.t("Juggluco on this network")
+        case .nightscout: "Nightscout"
+        }
+    }
+
+    /// How the picker groups the sources: by what the person feels (docs/44 "Setup").
+    static func groupName(_ g: SourceGroup) -> String {
+        switch g {
+        case .offline: L10n.t("On this Mac · works offline")
+        case .network: L10n.t("On this network · works offline")
+        case .online: L10n.t("Online · needs internet")
+        case .sukrara: L10n.t("From another Sukrara")
         }
     }
 
@@ -59,7 +70,11 @@ public final class SourceChoiceModel {
                 ? L10n.t("Your phone reads your sensor and shares it with this Mac · internet or Bluetooth nearby")
                 : L10n.t("Their phone shares it with this Mac after an invite · internet or Bluetooth nearby")
         case .lanJuggluco:
-            L10n.t("Juggluco on a phone on this Wi-Fi reads the sensor; Sukrara reads Juggluco · no internet needed")
+            L10n.t("Juggluco on a phone on this Wi-Fi reads the sensor; Sukrara reads Juggluco")
+        case .nightscout:
+            s.person == .yours
+                ? L10n.t("Glucose and treatments from your site · about 2 min late")
+                : L10n.t("Glucose and treatments from their site · about 2 min late")
         }
     }
 }
@@ -223,35 +238,50 @@ struct PersonArt: View {
     }
 }
 
-/// The sources for `person`, one radio choice each with what it brings (setup's source step and Settings › Source).
+/// The sources for `person`, one radio choice each with what it brings, grouped by what the person feels (*On this
+/// network · works offline*, *Online · needs internet*, *From another Sukrara*): setup's source step (without another
+/// Sukrara when the Mac reads it online) and Settings › Source.
 struct SourceKindChoice: View {
     let person: Person
     @Binding var selected: SourceKind
+    /// The sources offered (nil = every one for `person`).
+    var only: Set<SourceKind>? = nil
 
     var body: some View {
-        Picker(selection: $selected) {
-            ForEach(SourceKind.forPerson(person), id: \.self) { kind in
-                if let spec = SourceSpec(person: person, kind: kind) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(SourceChoiceModel.title(spec))
-                        Text(SourceChoiceModel.means(spec)).font(.caption).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+        let kinds = SourceKind.forPerson(person).filter { only?.contains($0) ?? true }
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(SourceGroup.allCases.filter { g in kinds.contains { $0.group == g } }, id: \.self) { group in
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(SourceChoiceModel.groupName(group).uppercased())
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .accessibilityAddTraits(.isHeader)
+                    Picker(selection: $selected) {
+                        ForEach(kinds.filter { $0.group == group }, id: \.self) { kind in
+                            if let spec = SourceSpec(person: person, kind: kind) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(SourceChoiceModel.title(spec))
+                                    Text(SourceChoiceModel.means(spec)).font(.caption).foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                                .padding(.vertical, 3)
+                                .tag(kind)
+                            }
+                        }
+                    } label: {
+                        EmptyView()
                     }
-                    .padding(.vertical, 3)
-                    .tag(kind)
+                    .pickerStyle(.radioGroup)
+                    .labelsHidden()
                 }
             }
-        } label: {
-            EmptyView()
         }
-        .pickerStyle(.radioGroup)
-        .labelsHidden()
     }
 }
 
 /// Settings › Source: whose glucose (two cards), where it comes from (radio rows), then that source's own rows: the
-/// person this Mac follows (Follow…, the waiting code, Stop following…, Reconnect Now) or Juggluco on this network
-/// (its state, address and secret). A change applies at once (nothing to delete on the Mac: the readings are each
+/// person this Mac follows (Follow…, the waiting code, Stop following…, Reconnect Now), Juggluco on this network
+/// (its state, address and secret) or a Nightscout site (how it's going, site, token, treatments both ways). A change applies at once (nothing to delete on the Mac: the readings are each
 /// source's own store); Back is just another pick.
 struct SourcePane: View {
     @Bindable var model: SettingsModel
@@ -342,6 +372,9 @@ struct SourcePane: View {
                         model.juggluco.saveAddress()
                         model.juggluco.saveSecret()
                     }
+                case .nightscout:
+                    NightscoutRows(model: model.nightscout)
+                        .onAppear(perform: model.nightscout.load)
                 }
             }
         }

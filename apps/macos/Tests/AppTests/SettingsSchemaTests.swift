@@ -52,6 +52,8 @@ import Testing
             t("setup.steps", MacSettings.setupSteps), t("source.person", MacSettings.sourcePerson),
             t("source.kind", MacSettings.sourceKind),
             t("source.jugglucoAddress", MacSettings.jugglucoAddress), t("settings.pane", MacSettings.settingsPane),
+            t("source.nightscoutUrl", MacSettings.nightscoutURL),
+            t("source.nightscoutTreatments", MacSettings.nightscoutTreatments),
             t("report.days", MacSettings.reportDays),
             t("general.readAloudShortcut", MacSettings.readAloudShortcut), t(json, MacSettings.alerts),
             t("alerts.throughFocus", MacSettings.throughFocus),
@@ -225,9 +227,13 @@ import Testing
 
     @Test func secretsLiveInTheKeychainNeverInDefaults() {
         let secrets = SettingsSpec.settings.filter { $0.type == "secret" }
-        #expect(secrets.map(\.id) == ["source.jugglucoSecret"])
-        for info in secrets { #expect(info.mac == "keychain:\(MacSettings.jugglucoSecretAccount)", "\(info.id)") }
-        #expect(!Self.typed.contains { $0.key == MacSettings.jugglucoSecretAccount })
+        let accounts = [
+            "source.jugglucoSecret": MacSettings.jugglucoSecretAccount,
+            "source.nightscoutSecret": MacSettings.nightscoutSecretAccount,
+        ]
+        #expect(Set(secrets.map(\.id)) == Set(accounts.keys))
+        for info in secrets { #expect(info.mac == "keychain:\(accounts[info.id] ?? "")", "\(info.id)") }
+        #expect(!Self.typed.contains { accounts.values.contains($0.key) })
     }
 
     /// The schema's `mirror` / `mirrorExcept`: a follower reads the wearer's per-kind rows for every kind but no

@@ -94,6 +94,31 @@ struct NoDataText: Equatable {
                 return NoDataText(
                     title: L10n.t("Not monitoring: \(typed) isn't an address on your home network"), action: settings)
             }
+        case .nightscout(let wait):
+            let upload = L10n.t("Check the app that uploads to it.")
+            switch wait {
+            case .connecting:
+                return NoDataText(title: L10n.t("Connecting to Nightscout…"))
+            case .noGlucose:
+                return NoDataText(title: L10n.t("Nightscout has no glucose yet"), body: upload)
+            case .silent(let since):
+                let ago = NightscoutStatus.ago(max(1, Int(now - since) / 60))
+                return NoDataText(
+                    title: L10n.t("Nothing new from Nightscout"),
+                    body: L10n.t("Its last reading was \(ago).") + " " + upload)
+            case .offline:
+                return NoDataText(title: L10n.t("No internet"), body: L10n.t("Sukrara catches up when you're back."))
+            case .unreachable(let host):
+                return NoDataText(
+                    title: L10n.t("No answer from \(host)"), body: L10n.t("Check the address."),
+                    action: L10n.t("Nightscout Settings…"))
+            case .signedOut:
+                return NoDataText(
+                    title: L10n.t("Nightscout refused the token"), action: L10n.t("Sign In Again…"))
+            case .rateLimited:
+                return NoDataText(
+                    title: L10n.t("Nightscout asked Sukrara to wait"), body: L10n.t("It tries again by itself."))
+            }
         }
     }
 }

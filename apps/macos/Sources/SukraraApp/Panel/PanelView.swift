@@ -70,7 +70,12 @@ struct PanelView: View {
                         alerts: alerts, now: context.date, custom: $customMute,
                         path: model.linkPath.map {
                             PathBadge(path: $0, open: links.map { l in { l.openSettingsPane(.source) } })
-                        })
+                        }
+                            ?? model.nightscoutPath.map {
+                                PathBadge(
+                                    path: $0, site: "Nightscout",
+                                    open: links.map { l in { l.openSettingsPane(.source) } })
+                            })
                 }
                 if let updates = model.updates { UpdateRow(updates: updates) }
                 if let links {
@@ -89,7 +94,7 @@ struct PanelView: View {
         case nil: nil
         case .follow: links.openFollow
         case .following: { links.openSettingsPane(.source) }
-        case .juggluco: { links.openSettingsPane(.source) }
+        case .juggluco, .nightscout: { links.openSettingsPane(.source) }
         }
     }
 
@@ -444,8 +449,12 @@ enum AddTreatmentAvailability: Equatable {
     /// The Keychain won't read the follower key (retrying): nothing can be signed until it does.
     case keyUnreadable
 
-    /// The panel's: the link, or the Keychain retrying.
+    /// The panel's: this Mac's own log with Nightscout, else the link, or the Keychain retrying.
     init(_ model: AppModel) {
+        if model.nightscoutActive {
+            self = .available
+            return
+        }
         self = model.keychainUnreadable ? .keyUnreadable : AddTreatmentAvailability(link: model.link)
     }
 
@@ -698,6 +707,8 @@ private struct AlertBlocks: View {
 /// › Following, where the Bluetooth line and its fixes are; VoiceOver reads it in words.
 struct PathBadge: View {
     let path: LinkPath
+    /// The site the readings come from (Nightscout), said in place of *Internet*.
+    var site: String? = nil
     var open: (() -> Void)?
 
     var body: some View {
@@ -722,7 +733,7 @@ struct PathBadge: View {
     private var word: String {
         switch path {
         case .nearby: L10n.t("Nearby")
-        case .internet: L10n.t("Internet")
+        case .internet: site ?? L10n.t("Internet")
         case .offline: L10n.t("Offline")
         }
     }
@@ -730,7 +741,9 @@ struct PathBadge: View {
     private var help: String {
         switch path {
         case .nearby: L10n.t("Readings come over Bluetooth from their phone nearby")
-        case .internet: L10n.t("Readings come over the internet")
+        case .internet:
+            site.map { L10n.t("Readings come from \($0) over the internet") }
+                ?? L10n.t("Readings come over the internet")
         case .offline: L10n.t("No connection: new readings can't arrive")
         }
     }

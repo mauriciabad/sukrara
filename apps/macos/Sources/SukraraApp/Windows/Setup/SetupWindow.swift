@@ -19,6 +19,8 @@ public final class SetupModel {
     var pickedPerson: Person?
     /// The source picked on the source step.
     var pickedKind: SourceKind = .sukrara
+    /// *Do you have Sukrara on your phone?*: yes = follow it, no = read it online (nil = not answered here yet).
+    var pickedPhone: Bool?
     @ObservationIgnored let store: any SettingsStoring
     /// Asks for notification permission; true = granted.
     @ObservationIgnored var requestNotifications: () async -> Bool = { false }
@@ -28,9 +30,39 @@ public final class SetupModel {
     public init(settings: SettingsModel) {
         self.settings = settings
         self.store = settings.store
-        self.flow = SetupFlow(store: settings.store)
+        var flow = SetupFlow(store: settings.store)
+        // a Mac set up before the first question: its source answers it
+        if !flow.isFirstRun, flow.states[.phone] == nil, SourceSpec.stored(in: settings.store) != nil {
+            var states = flow.states
+            states[.phone] = .done
+            flow = SetupFlow(states: states)
+            flow.save(to: settings.store)
+        }
+        self.flow = flow
         self.follow = settings.follow
     }
+
+    /// The first question's answer as shown: picked here, else what the Mac runs on (a stream = yes).
+    var phone: Bool? { pickedPhone ?? settings.source.running.map { $0.kind == .sukrara } }
+
+    /// *Do you have Sukrara on your phone?*'s Continue: yes goes to Whose glucose and then Follow (the source is the
+    /// phone); no to Whose glucose and the sources this Mac reads itself.
+    func choosePhone() {
+        guard let yes = phone else { return }
+        pickedPhone = yes
+        if yes {
+            pickedKind = .sukrara
+        } else if pickedKind == .sukrara {
+            pickedKind = settings.source.running.map(\.kind).flatMap { $0 == .sukrara ? nil : $0 } ?? .nightscout
+        }
+        complete(.phone)
+    }
+
+    /// Back, over the source step when the phone is followed (it was answered by the first question).
+    func back() { flow.back(over: phone == true ? [.source] : []) }
+
+    /// The sources the source step offers: those this Mac reads itself (another Sukrara is the first question's yes).
+    var onlineKinds: Set<SourceKind> { Set(SourceKind.allCases.filter { $0 != .sukrara }) }
 
     func complete(_ s: SetupFlow.Step) { flow.complete(s); flow.save(to: store) }
 
@@ -38,7 +70,16 @@ public final class SetupModel {
     func choosePerson() {
         guard let p = pickedPerson ?? settings.source.running?.person else { return }
         pickedPerson = p
-        if let running = settings.source.running, running.person == p { pickedKind = running.kind }
+        if phone == true {
+            // the phone is the source: stored with the person, straight on to Follow
+            if let spec = SourceSpec(person: p, kind: .sukrara) { settings.source.choose(spec) }
+            complete(.person)
+            complete(.source)
+            return
+        }
+        if let running = settings.source.running, running.person == p, running.kind != .sukrara {
+            pickedKind = running.kind
+        }
         complete(.person)
     }
 
@@ -120,6 +161,12 @@ public struct SetupView: View {
             Group {
                 switch model.flow.current {
                 case .welcome: welcome
+                case .phone:
+                    page(.phone, L10n.t("Do you have Sukrara on your phone?")) {
+                        PhoneChoice(selected: Binding(get: { model.phone }, set: { model.pickedPhone = $0 }))
+                        Text(L10n.t("You can change it any time in Settings › Source.")).font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
                 case .person: personPage
                 case .source:
                     if let person = model.sourcePerson {
@@ -129,13 +176,19 @@ public struct SetupView: View {
                                 ? L10n.t("Where does your glucose come from?")
                                 : L10n.t("Where does their glucose come from?")
                         ) {
-                            SourceKindChoice(person: person, selected: $model.pickedKind)
+                            SourceKindChoice(
+                                person: person, selected: $model.pickedKind,
+                                only: model.phone == false ? model.onlineKinds : nil)
                         }
                     } else {
                         personPage
                     }
                 case .follow:
-                    if model.runningKind == .lanJuggluco {
+                    if model.runningKind == .nightscout {
+                        page(.follow, L10n.t("Connect Nightscout")) {
+                            NightscoutConnect(model: model.settings.nightscout)
+                        }
+                    } else if model.runningKind == .lanJuggluco {
                         page(.follow, L10n.t("Connect Juggluco")) {
                             Form { JugglucoRows(model: model.settings.juggluco) }.formStyle(.grouped)
                                 .onAppear(perform: model.settings.juggluco.load)
@@ -273,7 +326,7 @@ public struct SetupView: View {
             Text(title).font(.title.bold())
             content()
             HStack {
-                Button(L10n.t("Back")) { model.flow.back() }
+                Button(L10n.t("Back")) { model.back() }
                 Spacer()
                 // whose glucose and its source can't be skipped (Android's rule too): without them Sukrara reads
                 // nothing; closing the window leaves them on Finish Setup…
@@ -287,13 +340,18 @@ public struct SetupView: View {
                     .disabled(
                         (step == .follow && !followDone) || (step == .openAtLogin && model.loginItem == nil)
                             || (step == .alerts && !model.thresholdsInOrder)
-                            || (step == .person && model.pickedPerson == nil && model.settings.source.running == nil))
+                            || (step == .person && model.pickedPerson == nil && model.settings.source.running == nil)
+                            || (step == .phone && model.phone == nil))
             }
         }
     }
 
     private var followDone: Bool {
         if model.runningKind == .lanJuggluco { return true }
+        if model.runningKind == .nightscout {
+            // connected: the site answered (Waiting for the first reading may take a few minutes)
+            return model.settings.nightscout.snapshot().monitoring
+        }
         switch model.follow.status {
         case .following, .waiting: return true
         default: return false
@@ -315,6 +373,7 @@ public struct SetupView: View {
             if await model.requestNotifications() { model.complete(s) } else { model.skip(s) }
         case .openAtLogin: model.openAtLogin()
         case .alerts: model.confirmThresholds()
+        case .phone: model.choosePhone()
         case .person: model.choosePerson()
         case .source: model.chooseSource()
         default: model.complete(s)
@@ -333,6 +392,68 @@ public struct SetupView: View {
                 Button(L10n.t("Done"), action: close).keyboardShortcut(.defaultAction)
             }
         }
+    }
+}
+
+/// *Do you have Sukrara on your phone?*: two big choices side by side, picked like Whose glucose (tonal fill, a
+/// stronger outline, a spring, a trackpad tap; Reduce Motion: at once). VoiceOver: two buttons with the selected trait.
+struct PhoneChoice: View {
+    @Binding var selected: Bool?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            card(
+                true, symbol: "iphone.radiowaves.left.and.right", title: L10n.t("Yes · Follow it"),
+                means: L10n.t(
+                    "Follow the phone that reads your sensor: alerts, treatments and settings come with it"))
+            card(
+                false, symbol: "globe", title: L10n.t("No · Read it online"),
+                means: L10n.t("Nightscout on this Mac: glucose and treatments, no phone app needed"))
+        }
+        .animation(reduceMotion ? nil : .spring(duration: 0.35, bounce: 0.25), value: selected)
+    }
+
+    private func card(_ value: Bool, symbol: String, title: String, means: String) -> some View {
+        let on = selected == value
+        return Button {
+            if !on { NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .now) }
+            selected = value
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(alignment: .top) {
+                    Image(systemName: symbol)
+                        .font(.system(size: 30, weight: .regular))
+                        .foregroundStyle(on ? Color.accentColor : .secondary)
+                        .symbolEffect(.bounce, value: on && !reduceMotion)
+                        .frame(height: 40)
+                    Spacer()
+                    Image(systemName: on ? "checkmark.circle.fill" : "circle")
+                        .foregroundStyle(on ? Color.accentColor : .secondary)
+                        .font(.title3)
+                }
+                Text(title).font(.title3.bold())
+                Text(means).font(.callout).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, minHeight: 170, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(on ? Color.accentColor.opacity(0.14) : Color(nsColor: .controlBackgroundColor))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(on ? Color.accentColor : Color.secondary.opacity(0.3), lineWidth: on ? 2 : 1)
+            )
+            .shadow(color: .black.opacity(on ? 0.12 : 0), radius: on ? 6 : 0, y: on ? 2 : 0)
+            .scaleEffect(on && !reduceMotion ? 1.01 : 1)
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(on ? [.isSelected, .isButton] : .isButton)
     }
 }
 

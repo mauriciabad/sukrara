@@ -14,6 +14,8 @@ struct TreatmentRow: View {
     let row: TreatmentsModel.Row
     let now: Date
     let loggedBy: String
+    /// Where a read-only entry lives (*From Nightscout · change it there*), shown under its time; nil = none.
+    var elsewhere: String? = nil
     let canChange: Bool
     let shown: TreatmentsModel.Shown?
     let glucose: Reading?
@@ -46,6 +48,9 @@ struct TreatmentRow: View {
                     Text(Clock.time(at) + " · " + TreatmentsView.since(at, now: now))
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                    if let elsewhere {
+                        Label(elsewhere, systemImage: "globe").font(.callout).foregroundStyle(.secondary)
+                    }
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityHint(loggedBy)
