@@ -59,7 +59,8 @@ What others do, and what people say:
 
 Companion SDK: `com.garmin.connectiq:ciq-companion-app-sdk:2.4.0` (2026-03) is under Garmin's proprietary SDK licence
 ([POM](https://repo1.maven.org/maven2/com/garmin/connectiq/ciq-companion-app-sdk/2.4.0/ciq-companion-app-sdk-2.4.0.pom)):
-not linkable into a GPL app without an exception, and not allowed on F-Droid ([Inclusion Policy](https://f-droid.org/docs/Inclusion_Policy/)).
+F-Droid refuses it ([Inclusion Policy](https://f-droid.org/docs/Inclusion_Policy/)) and a GPL app needs a linking
+exception from its copyright holders; other free apps do ship it ([appendix](#appendix-the-companion-sdk-and-free-software)).
 What it does is small: bind `com.garmin.android.apps.connectmobile/.connectiq.ConnectIQService`, call its interface by
 transaction number with plain parcels, serialize the message in Monkey C's format, read the answers Garmin Connect
 broadcasts back; in "tethered" mode the phone listens on 7381 and the simulator joins through `adb forward`.
@@ -171,7 +172,8 @@ Added:
 - `contracts/watchface/payload` (README, schema, cases, Garmin's bytes); parity group `watchface-link`.
 
 Discarded, and why:
-- **Garmin's companion SDK**: proprietary; Sukrara is GPL and ships the same APK to F-Droid.
+- **Garmin's companion SDK**: F-Droid refuses it (non-free), and Sukrara ships one APK to GitHub, Obtainium and
+  F-Droid; being GPL alone would only take a linking exception ([appendix](#appendix-the-companion-sdk-and-free-software)).
 - **Direct BLE**: not documented for faces, would compete with Garmin Connect's own connection, and Juggluco's
   reverse-engineered protocol is for a different app type.
 - **A push that only says "fetch now"** (Pwb0186, AAPS): it would make every update depend on the HTTP path, which has
@@ -216,3 +218,43 @@ Aura" is one face of several, three "minutes ago" that look alike, *Send now* no
   shows it.
 - Whether a face's phone-message registration survives a watch reboot on the Descent (the face registers again on
   every start).
+- Whether Sukrara's own link to Garmin Connect (no Garmin library) is fine under Garmin's agreement, which forbids
+  reverse engineering the SDK ([appendix](#appendix-the-companion-sdk-and-free-software)).
+
+## Appendix: the companion SDK and free software
+
+*Rechecked 2026-11-20.* The discard read as "no free app can use Garmin's companion SDK". Free apps use it; what rules
+it out for Sukrara is F-Droid with one APK.
+
+| Question | Finding |
+|---|---|
+| Licence | Proprietary. The [POM](https://repo1.maven.org/maven2/com/garmin/connectiq/ciq-companion-app-sdk/2.4.0/ciq-companion-app-sdk-2.4.0.pom) names Garmin's two old developer agreements; the [Connect IQ Agreement](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html) (updated 2024-08-06) replaces them, covers the "Companion SDK" (§IX e) and licenses it "for the sole purpose of developing and testing Applications" (§I a). [garmin/connectiq-android-sdk](https://github.com/garmin/connectiq-android-sdk) is Apache-2.0 for its sample only: its README puts the SDK under the agreement |
+| Against open source? | The agreement has no clause about open source or copyleft |
+| Free apps that ship it | [AAPS](https://github.com/nightscout/AndroidAPS/blob/master/gradle/libs.versions.toml) (AGPL-3.0); [Juggluco](https://github.com/j-kaltes/Juggluco/blob/primary/Common/build.gradle), [watchdrip](https://github.com/bigdigital/watchdrip), [qdomyos-zwift](https://github.com/cagnulein/qdomyos-zwift), [WheelLog](https://github.com/Wheellog/Wheellog.Android), [TAKWatch](https://github.com/TDF-PL/TAKWatch), [wormnav](https://github.com/andan67/wormnav) (GPL-3.0); [gexporter](https://github.com/gimportexportdevs/gexporter) (Apache-2.0); [Unquestionify](https://github.com/starryalley/Unquestionify-android) (MIT). Each one's Gradle file declares `ciq-companion-app-sdk` (2.0.3–2.4.0) |
+| GPL | Linking a non-free library takes an additional permission (GPLv3 §7) from the copyright holders, and "you cannot authorize the exception for" other authors' code ([FSF FAQ](https://www.gnu.org/licenses/gpl-faq.html#GPLIncompatibleLibs)). Sukrara is the owner's code plus Juggluco's (`AidexX`, ported from its `aidexx`; the security core, [20](20-publishing.md)), so Juggluco's author would have to agree too. Juggluco links the SDK under plain GPL-3.0, with no exception in its licence. A permissive licence needs nothing |
+| F-Droid main repo | Refused: binaries from Maven Central "must still be freely licensed, simply being included in one of those repositories is not enough" ([Inclusion Policy](https://f-droid.org/docs/Inclusion_Policy/)); fdroidserver's scanner lists `com.garmin.connectiq:ciq-companion-app-sdk` as NonFree ([scanner.py](https://github.com/f-droid/fdroidserver/blob/master/fdroidserver/scanner.py)). None of the apps above is on F-Droid. Talking to Garmin Connect without the library is allowed, with at most *NonFreeDep* ("needs a non-libre app to work", [Anti-Features](https://f-droid.org/docs/Anti-Features/)). Sukrara's release APK passes the scanner's class check: its dex has no `com/garmin` class, only the service's name as a string (dexdump, 2026-11-20) |
+| IzzyOnDroid | Proprietary components only if "essential for the app's core functionality", marked *NonFreeComp* ([policy](https://izzyondroid.org/docs/general/AppInclusionPolicy/)); the Garmin link is one feature of many, so not a safe bet |
+
+**Sukrara's own link and Garmin's agreement.** The owner accepted the agreement to publish Sukrara Aura. It forbids to
+"decompile, reverse engineer, disassemble, attempt to derive the source code of" the Program Materials (§I b; the SDK,
+the Companion SDK included) and counts "the functional or technical design, logic or other internal routines or
+workings of the Garmin SDK" as Confidential Information (§IX f), not to be disclosed (§IV d) unless publicly known
+through no fault of yours, received from a third party without restriction, or developed independently. `ConnectIq`
+uses the service's name and its calls' transaction numbers in Garmin's declaration order, and `MonkeyC` was checked
+against Garmin's serializer (Proof). Copies of the interface were public before, e.g. `IConnectIQService.java` in
+[NavigationIQ](https://github.com/dangphuc2470/NavigationIQ) (apparently from the SDK's own code). In the EU,
+decompiling for interoperability with an independently created program is allowed when the information "has not
+previously been readily available", and a contract term against it is null and void
+([Directive 2009/24/EC](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32009L0024) Art. 6, 8); whether that
+holds when Garmin offers the interface inside a non-free library is a legal question, not answered here. Garmin may
+remove an app from its store "for any reason" (§II 5) and end the agreement for a breach not cured within 30 days
+(§III b 2).
+
+| | Sukrara's own link (today) | Garmin's SDK |
+|---|---|---|
+| F-Droid main repo | Yes, one APK everywhere | Only a separate build without the Garmin link; the owner chose one APK ([20](20-publishing.md)) |
+| GPL | Nothing to do | A §7 exception from the owner and Juggluco's author |
+| Garmin's agreement | The reverse-engineering clause above | Complies |
+| Upkeep | Breaks if Garmin Connect changes its service (apps on older SDK versions rely on it too) | Garmin updates the library |
+
+Sukrara's own link stays while F-Droid with one APK is the plan; the agreement question is in Open.
