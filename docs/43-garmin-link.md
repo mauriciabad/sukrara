@@ -18,7 +18,7 @@ When the link fails in real life, and what they see:
 |---|---|---|---|
 | Phone in another room, out of Bluetooth range | Nothing arrives | The value ages from its own time: late (reading time shown) → struck and grey → *No reading since 10:09*; Garmin's *No phone* takes the first bottom field | Back in range: the phone sends the current reading on reconnect (checked every minute) |
 | Garmin Connect stopped by battery saving (Samsung, Xiaomi; xDrip+ users report the same [#3060](https://github.com/NightscoutFoundation/xDrip/discussions/3060), [swissalpine FAQ](https://github.com/swissalpine/GARMIN-xDrip-Spike-Nightscout-Watchface)) | Neither path works | Same aging; phone: Share with apps › *Sukrara Aura* "Garmin Connect isn't answering · open it" | *Open Garmin Connect*; the footer says it must run in the background |
-| Garmin Connect's messaging bug ([CIQQA-4631](https://forums.garmin.com/developer/connect-iq/i/bug-reports/gcm-5-27-3-android-accepts-communications-transmit-messages-from-watch-app-but-never-delivers-them-to-the-companion-app), acknowledged, open since mid-2026: messages silently vanish on some Garmin Connect / Android versions) | Push lost; the face's 5-minute fetch still works | The face lags up to 5 min (late → shows the reading time); phone: "Garmin Connect loses messages · the face asked 3 min ago, so it updates every 5 minutes" | Nothing needed; restarting the watch / Garmin Connect may bring push back |
+| Garmin Connect's messaging bug ([CIQQA-4631](https://forums.garmin.com/developer/connect-iq/i/bug-reports/gcm-5-27-3-android-accepts-communications-transmit-messages-from-watch-app-but-never-delivers-them-to-the-companion-app), acknowledged, open since mid-2026: messages silently vanish on some Garmin Connect / Android versions) | Push lost; the face's 5-minute fetch still works | The face lags up to 5 min (late → shows the reading time); phone: "Garmin Connect loses messages · the face asked 3 min ago, so it updates every 5 minutes"; after 15 min without one, "messages stopped getting through · restart the watch" | Short stalls end by themselves within 5 min (Garmin Connect resets its link); a stuck link (#242: a day) ended only when the watch reconnected, so the page asks for a watch restart; Sukrara tries every 5 min meanwhile |
 | Bluetooth off on the phone | Nothing arrives | Aging + *No phone*; phone: "<watch> isn't connected" | Bluetooth on: current within a minute |
 | Phone or watch restart | Watch: the stored payload survives (it ages right away); phone: Sukrara's service restarts | No blank face, an aging value | Next reading pushes (≤ 1 min), or the 5-minute fetch |
 | Travel, time zones | Times are absolute epoch seconds: ages never jump; today's time in range ends with the *phone's* day | Correct ages; TIR disappears at the phone's midnight until the next message | — |
@@ -116,6 +116,23 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
     its permission check); the two unplanned disconnections above showed the aging and the page's "isn't connected",
     but also that the watch may need its *Phone* control toggled to come back after the phone's Bluetooth returns
     (Garmin's link, not Sukrara's).
+- The owner's phone and watch, 2026-11-20 → 22 ([#242](https://github.com/mauriciabad/sukrara/issues/242), Garmin
+  Connect 5.31.1, Android 17; Sukrara's diag log, Garmin Connect's own logcat captures and the phone's battery history,
+  read with root):
+  - **Push works, and Garmin Connect's link to the watch stalls now and then**: delivered about once a minute all day
+    (the face got 520 in 542 min), with two short stalls that ended when Garmin Connect reset its Bluetooth link
+    (14:05, 16:23).
+  - **Once the link stayed stuck for 26 h**: on 11-20 at 18:30 the link went silent (fetches too); Garmin Connect's
+    reset at 18:41 didn't recover it: `Failed` ×476, then `NoAnswer` ×3,010, the link timing out (GATT 147) again and
+    again, mostly at the face's fetch times. The fetches kept the face within 5 min; only 38 pushes reached it, each
+    13–90 s after a reconnect. It ended when the watch went on USB and came back (11-21 23:57: every push delivered).
+  - Not the cause: the payload (452 bytes, the same shape delivered 500+ times), Garmin Connect's update (pushes worked
+    under it all day), waking the watch (2 of 228 wrist raises in the stuck stretch were followed by a push). The
+    stuck stretch began 20 s after the phone entered deep Doze, but pushes had worked through 4 h of deep Doze that
+    day (Garmin Connect and Sukrara are exempt from battery optimisation): a possible trigger, not shown.
+  - Changed: after 15 min without a delivery the watch's line says "messages stopped getting through · restart the
+    watch", and Sukrara tries every 5 min instead of about twice a minute (at once on *Send now* or a reconnect); the
+    log names Garmin's status for a failure (`Failed FAILURE_DURING_TRANSFER`).
 - **Seeing the watch without looking at it**: Garmin's ways are `System.println` to `GARMIN/APPS/LOGS/<app>.TXT`
   (when that file exists) and crash reports in `GARMIN/APPS/LOGS/CIQ_LOG.YML`
   ([FAQ](https://forums.garmin.com/developer/connect-iq/w/wiki/4/new-developer-faq),
@@ -214,8 +231,8 @@ Aura" is one face of several, three "minutes ago" that look alike, *Send now* no
 
 ## Open
 
-- Whether push works on the owner's Garmin Connect / Android 17 (CIQQA-4631): the device check tells, and the page
-  shows it.
+- What leaves Garmin Connect's link to the watch stuck (#242: seen once, 26 h) and whether a watch restart
+  always ends it (seen: the watch's USB session did; Garmin Connect's own link resets didn't).
 - Whether a face's phone-message registration survives a watch reboot on the Descent (the face registers again on
   every start).
 - Whether Sukrara's own link to Garmin Connect (no Garmin library) is fine under Garmin's agreement, which forbids

@@ -2766,8 +2766,10 @@ ages by itself from its own time with the phone away.
   `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face now, its data field and app when they come):
   **pushed** through Garmin Connect's Connect IQ service to every connected watch with the face on
   each change (a new reading, a status, a treatment, a setting), within seconds; a message Garmin Connect fails or
-  never confirms is sent again after 15 s, 30 s, 60 s, then every 2 min until a newer one replaces it; a watch that
-  reconnects gets the current one at once (checked every minute). The face also **fetches** the same payload every
+  never confirms is sent again after 15 s, 30 s, 60 s, then every 2 min until a newer one replaces it. Once none has got
+  through for 15 min (**stuck**: Garmin Connect's link to the watch can stay so for a day, until the watch reconnects,
+  #242), one try every 5 min instead of every reading, until one arrives. A watch that reconnects gets the current one
+  at once (checked every minute), stuck or not, as does *Send now*. The face also **fetches** the same payload every
   5 min from `http://127.0.0.1:17582/sukrara/aura` (Garmin Connect's web proxy; the bounded `LocalHttpServer`,
   loopback only), so a lost message or Garmin Connect's messaging bug costs at most 5 min. **The fetch port opens only
   while a watch is known to have the face** (Garmin Connect says Sukrara Aura is installed on it, or a push reached it;
@@ -2780,7 +2782,8 @@ ages by itself from its own time with the phone away.
 - **The face reports back** with every fetch: its last 10 deliveries (push or fetch, the watch's time, which payload,
   which reading) and the reading it draws since when. While one watch has the face, its line says the newer of the
   reading Garmin Connect delivered and the one the face says it keeps (the fetch doesn't say which watch asked); logcat
-  `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer) and each report, times
+  `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer, a failure with Garmin's
+  status: `Failed FAILURE_DURING_TRANSFER`) and each report, times
   only. So an agent or the person can see what the watch got without looking at it.
 - Settings › Share with apps › *Watches* › **Garmin** (Garmin Connect's icon; settings search "watch", "watch face",
   "data field", "Connect IQ", "Sukrara Aura"), its line saying what the link does now ("Descent Mk3i 43mm has the 14:21
@@ -2793,7 +2796,8 @@ ages by itself from its own time with the phone away.
     haptic) and *Open Garmin Connect*; without Garmin Connect, *Get Garmin Connect* (its store page);
   - *Watches*: every watch Garmin Connect knows, by its own name, one line each, one time on it, a clock time to
     compare with the phone's: "Connected · has the 14:21 reading", "Not connected · has the 13:52 reading",
-    "Connected · Sukrara Aura isn't on it", "… · Garmin Connect loses messages, so it updates every 5 minutes",
+    "Connected · Sukrara Aura isn't on it", "… · messages stopped getting through · restart the watch" (stuck),
+    "… · Garmin Connect loses messages, so it updates every 5 minutes",
     "… · Garmin Connect doesn't confirm messages, trying again", "… · the last message didn't arrive, trying again",
     "Connected · waiting for a reading"; "No watch · Pair your watch in Garmin Connect" when it knows none. A list of
     things of one kind: no icons;
@@ -2835,7 +2839,10 @@ watch* ("Sukrara Aura isn't on your watch", error colour; each watch's line says
 installed"; out: install the face, or the switch); *watch away* ("Descent Mk3i 43mm isn't connected"; its line "Not
 connected · has the 13:52 reading"; out: bring it near, Bluetooth, *Open Garmin Connect*; it resumes by itself on
 reconnect); *sent* ("Descent Mk3i 43mm has the 14:21 reading"); *messages lost, the face fetching* ("Updates every 5
-minutes · Garmin Connect loses messages"; out: *Open Garmin Connect*, restart the watch; it keeps working meanwhile);
+minutes · Garmin Connect loses messages"; out: *Open Garmin Connect*, restart the watch; it keeps working meanwhile;
+after 15 min without one, *stuck*: the watch's line "… · messages stopped getting through · restart the watch", es
+"… · los mensajes ya no llegan · reinicia el reloj"; out: restart the watch, or it ends by itself at the first message
+that arrives);
 *messages lost, nothing fetched* ("Messages don't reach Descent Mk3i 43mm · open Garmin Connect", error colour; out:
 those, *Send now*); *waiting* ("Waiting for the next reading"). The face's own states are on its row: *in use*, *not in
 use* (out: pick it as the watch face on the watch), *not installed*, *port taken* (out: stop the other app). Back

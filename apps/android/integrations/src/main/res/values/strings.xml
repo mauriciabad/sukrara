@@ -54,6 +54,7 @@
     <string name="in_garmin_not_connected">Not connected</string>
     <string name="in_garmin_has_reading">has the %1$s reading</string>
     <string name="in_garmin_watch_no_face">Sukrara Aura isn\'t on it</string>
+    <string name="in_garmin_watch_stuck">messages stopped getting through · restart the watch</string>
     <string name="in_garmin_watch_slow">Garmin Connect loses messages, so it updates every 5 minutes</string>
     <string name="in_garmin_watch_no_answer">Garmin Connect doesn\'t confirm messages, trying again</string>
     <string name="in_garmin_watch_failed">the last message didn\'t arrive, trying again</string>

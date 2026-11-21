@@ -65,7 +65,15 @@ data class AuraWatch(
     val noAnswer: Boolean = false,
     /** The time of the reading the last delivered message carried (null = none yet, or it carried none). */
     val reading: Instant? = null,
-)
+    /** The first message that didn't arrive since the last one that did. */
+    val failingSince: Instant? = null,
+) {
+    /**
+     * No message has arrived for [AuraLink.STUCK]: Garmin Connect's link to the watch is stuck (#242: it can stay so for
+     * a day, until the watch reconnects). Longer than the stalls Garmin Connect ends itself (within 5 min).
+     */
+    fun stuck(now: Instant) = failingSince != null && now >= failingSince + AuraLink.STUCK
+}
 
 /**
  * One background delivery as the face saw it: [kind] `p` (a push), `f` (its fetch), `e<code>` (a fetch that failed),
@@ -184,6 +192,11 @@ class AuraLink(
 
     fun sendNow() = kick.update { it + 1 }
 
+    /** The last *Send now* / reconnect the push saw, and whether a try is owed for a newer one (even while stuck). */
+    private var trigger: Pair<Int, Int>? = null
+
+    @Volatile private var force = false
+
     private val server =
         LocalHttpServer(fetchPort, ::answer, onRequest = { req, a ->
             if (req.path == PATH && a.status.startsWith("200")) {
@@ -236,7 +249,13 @@ class AuraLink(
         scope.launch {
             combine(on, payloads.debounce(SETTLE_MS), kick, watchTick()) { o, p, k, t -> Triple(o, p, k to t) }
                 .distinctUntilChanged { a, b -> a.first == b.first && same(a.second, b.second) && a.third == b.third }
-                .collectLatest { (o, p, _) -> if (o) withContext(io) { push(p) } }
+                .collectLatest { (o, p, t) ->
+                    if (t != trigger) {
+                        trigger = t
+                        force = true
+                    }
+                    if (o) withContext(io) { push(p) }
+                }
         }
     }
 
@@ -307,17 +326,23 @@ class AuraLink(
 
     private fun startOfDay(at: Instant): Instant = LocalDate.ofInstant(at, clock.zone).atStartOfDay(clock.zone).toInstant()
 
-    /** Sends [p] to every connected watch with the face, retrying the ones that failed until a newer payload comes. */
+    /**
+     * Sends [p] to every connected watch with the face, retrying the ones that failed until a newer payload comes. A
+     * watch whose messages are [AuraWatch.stuck] gets one try every [PROBE] (and at once on *Send now* or when it
+     * reconnects): retrying every reading into a stuck Garmin Connect only wakes it, and the face fetches meanwhile.
+     */
     private suspend fun push(p: Map<String, Any?>) {
         var wait = RETRY_FIRST_MS
         while (true) {
             val devices = port.devices()
             _state.update { it.copy(garminConnect = port.installed(), answering = devices != null) }
             if (devices == null) return
+            val forced = force
             val sent = clock.now().epochSecond.toInt()
             val bytes = MonkeyC.encode(p + ("sent" to sent))
             val readingAt = (p["g"] as? Map<*, *>)?.get("t")
             var retry = false
+            var untilProbe: Long? = null
             val watches =
                 devices.map { d ->
                     val before = _state.value.watches.firstOrNull { it.id == d.id }
@@ -332,39 +357,49 @@ class AuraLink(
                             before?.failed,
                             before?.noAnswer ?: false,
                             before?.reading,
+                            before?.failingSince,
                         )
-                    if (d.connected && installed != false) {
+                    val now = clock.now()
+                    val probe = w.failed?.plus(PROBE)?.takeIf { w.stuck(now) && !forced && now < it }
+                    if (d.connected && installed != false && probe != null) {
+                        // stuck: the next try comes with the probe
+                        val ms = Duration.between(now, probe).toMillis()
+                        untilProbe = minOf(untilProbe ?: ms, ms)
+                    } else if (d.connected && installed != false) {
                         val result = port.send(d, APP_ID, bytes)
                         trace("push sent $sent reading $readingAt: $result")
+                        val at = clock.now()
                         w =
                             when (result) {
                                 IqSend.Delivered -> {
                                     w.copy(
-                                        delivered = clock.now(),
+                                        delivered = at,
                                         failed = null,
                                         noAnswer = false,
                                         installed = true,
                                         reading = (readingAt as? Int)?.let { Instant.ofEpochSecond(it.toLong()) },
+                                        failingSince = null,
                                     )
                                 }
 
-                                IqSend.Failed -> {
+                                is IqSend.Failed -> {
                                     retry = true
-                                    w.copy(failed = clock.now())
+                                    w.copy(failed = at, failingSince = w.failingSince ?: at)
                                 }
 
                                 IqSend.NoAnswer -> {
                                     retry = true
-                                    w.copy(failed = clock.now(), noAnswer = true)
+                                    w.copy(failed = at, noAnswer = true, failingSince = w.failingSince ?: at)
                                 }
                             }
                     }
                     w
                 }
+            if (forced) force = false
             _state.update { it.copy(watches = watches) }
-            if (!retry) return
-            delay(wait)
-            wait = (wait * 2).coerceAtMost(RETRY_MAX_MS)
+            // a failed send backs off; a stuck watch waits for its probe
+            delay(listOfNotNull(wait.takeIf { retry }, untilProbe).minOrNull() ?: return)
+            if (retry) wait = (wait * 2).coerceAtMost(RETRY_MAX_MS)
         }
     }
 
@@ -424,6 +459,12 @@ class AuraLink(
         private const val RETRY_FIRST_MS = 15_000L
         private const val RETRY_MAX_MS = 120_000L
         private const val RECHECK_MS = 30 * 60_000L
+
+        /** No message through for this long: stuck ([AuraWatch.stuck]). */
+        val STUCK: Duration = Duration.ofMinutes(15)
+
+        /** While stuck, one try this often (the face's fetch rhythm). */
+        val PROBE: Duration = Duration.ofMinutes(5)
 
         /** Today's time in range only with data for a quarter of the day so far (as the card's rings ask). */
         const val TIR_COVERAGE = 0.25

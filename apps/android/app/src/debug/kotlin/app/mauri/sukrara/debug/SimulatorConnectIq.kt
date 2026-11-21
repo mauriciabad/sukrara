@@ -66,7 +66,7 @@ class SimulatorConnectIq(
         app: String,
         message: ByteArray,
     ): IqSend {
-        val s = client ?: return IqSend.Failed
+        val s = client ?: return IqSend.Failed(IqSend.DEVICE_NOT_CONNECTED)
         return try {
             s.getOutputStream().apply {
                 write(message)
@@ -75,7 +75,7 @@ class SimulatorConnectIq(
             IqSend.Delivered
         } catch (e: IOException) {
             client = null
-            IqSend.Failed
+            IqSend.Failed(IqSend.DURING_TRANSFER)
         }
     }
 

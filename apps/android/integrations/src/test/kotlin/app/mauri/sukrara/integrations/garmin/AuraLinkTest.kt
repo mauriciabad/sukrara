@@ -41,6 +41,9 @@ class AuraLinkTest {
         var face = true
         var version: Int? = 3
         var answers = ArrayDeque<IqSend>()
+
+        /** What a send ends in once [answers] runs out. */
+        var otherwise: IqSend = IqSend.Delivered
         val sent = ArrayList<Map<*, *>>()
 
         override fun installed() = gcm
@@ -58,7 +61,7 @@ class AuraLinkTest {
             message: ByteArray,
         ): IqSend {
             sent += MonkeyCDecode.decode(message) as Map<*, *>
-            return answers.removeFirstOrNull() ?: IqSend.Delivered
+            return answers.removeFirstOrNull() ?: otherwise
         }
     }
 
@@ -148,7 +151,8 @@ class AuraLinkTest {
     @Test
     fun aLostMessageIsRetriedWithBackoffUntilItArrives() =
         runTest {
-            val port = FakePort().apply { answers.addAll(listOf(IqSend.NoAnswer, IqSend.Failed, IqSend.Delivered)) }
+            val port =
+                FakePort().apply { answers.addAll(listOf(IqSend.NoAnswer, IqSend.Failed(IqSend.DURING_TRANSFER), IqSend.Delivered)) }
             val link = link(port, MutableStateFlow(state(-30L to 112)))
             settle()
             assertEquals(1, port.sent.size)
@@ -174,6 +178,55 @@ class AuraLinkTest {
             assertFalse(w.noAnswer)
             assertTrue(w.delivered != null)
         }
+
+    @Test
+    fun stuckMessagesAreTriedEveryFiveMinutesUntilOneArrives() =
+        runTest {
+            val port = FakePort().apply { otherwise = IqSend.NoAnswer }
+            val glucose = MutableStateFlow(state(-30L to 112))
+            val link = link(port, glucose)
+            val watch = {
+                link.state.value.watches
+                    .single()
+            }
+            settle()
+            assertEquals(1, port.sent.size)
+            // 16 min later it is stuck, but its last try was long ago: this reading goes
+            clock.advance(Duration.ofMinutes(16))
+            glucose.value = state(-30L to 113)
+            settle()
+            assertEquals(2, port.sent.size)
+            assertTrue(watch().stuck(clock.now()))
+            // a minute later: no try for this reading, nor retries
+            clock.advance(Duration.ofMinutes(1))
+            glucose.value = state(-30L to 114)
+            settle()
+            advanceTimeBy(30_000)
+            assertEquals(2, port.sent.size)
+            // Send now tries at once
+            link.sendNow()
+            runCurrent()
+            assertEquals(3, port.sent.size)
+            // 5 min after the last try the next reading goes; once one arrives, every reading goes again
+            port.otherwise = IqSend.Delivered
+            clock.advance(Duration.ofMinutes(5))
+            glucose.value = state(-30L to 115)
+            settle()
+            assertEquals(4, port.sent.size)
+            assertFalse(watch().stuck(clock.now()))
+            clock.advance(Duration.ofMinutes(1))
+            glucose.value = state(-30L to 116)
+            settle()
+            assertEquals(5, port.sent.size)
+        }
+
+    @Test
+    fun theLogNamesGarminsFailure() {
+        assertEquals("Failed FAILURE_DURING_TRANSFER", IqSend.Failed(5).toString())
+        assertEquals("Failed FAILURE_DEVICE_NOT_CONNECTED", IqSend.Failed(IqSend.DEVICE_NOT_CONNECTED).toString())
+        assertEquals("Failed -1", IqSend.Failed(-1).toString())
+        assertEquals("NoAnswer", IqSend.NoAnswer.toString())
+    }
 
     @Test
     fun aWatchWithoutTheFaceGetsNothing() =

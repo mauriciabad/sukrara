@@ -25,15 +25,36 @@ data class IqDevice(
 )
 
 /** What sending one message ended in. */
-enum class IqSend {
+sealed interface IqSend {
     /** Garmin Connect says it reached the watch. */
-    Delivered,
+    data object Delivered : IqSend
 
-    /** Garmin Connect says it failed (the watch out of reach, a transfer error). */
-    Failed,
+    /** Garmin Connect says it failed: [status] is its code ([STATUS]: the watch out of reach, a transfer error…). */
+    data class Failed(
+        val status: Int,
+    ) : IqSend {
+        override fun toString() = "Failed ${STATUS.getOrNull(status) ?: status}"
+    }
 
     /** Garmin Connect never answered (its known bug: messages vanish; or it was stopped). */
-    NoAnswer,
+    data object NoAnswer : IqSend
+
+    companion object {
+        /** Garmin's message status by its number, as Garmin Connect broadcasts it (the companion SDK's IQMessageStatus). */
+        val STATUS =
+            listOf(
+                "SUCCESS",
+                "FAILURE_UNKNOWN",
+                "FAILURE_INVALID_FORMAT",
+                "FAILURE_MESSAGE_TOO_LARGE",
+                "FAILURE_UNSUPPORTED_TYPE",
+                "FAILURE_DURING_TRANSFER",
+                "FAILURE_INVALID_DEVICE",
+                "FAILURE_DEVICE_NOT_CONNECTED",
+            )
+        const val DURING_TRANSFER = 5
+        const val DEVICE_NOT_CONNECTED = 7
+    }
 }
 
 /**
@@ -78,7 +99,7 @@ class ConnectIq(
     @Volatile private var binder: IBinder? = null
     private var bound = false
 
-    @Volatile private var pendingSend: CompletableDeferred<Boolean>? = null
+    @Volatile private var pendingSend: CompletableDeferred<Int>? = null
 
     @Volatile private var pendingInfo: CompletableDeferred<Int?>? = null
 
@@ -90,7 +111,7 @@ class ConnectIq(
             ) {
                 // only the plain extras: the device / app parcelables stay unread (Android's lazy bundles)
                 when (intent.action) {
-                    ACTION_STATUS -> pendingSend?.complete(intent.getIntExtra(EXTRA_STATUS, -1) == 0)
+                    ACTION_STATUS -> pendingSend?.complete(intent.getIntExtra(EXTRA_STATUS, -1))
                     ACTION_INFO -> pendingInfo?.complete(intent.getIntExtra(EXTRA_VERSION, NOT_INSTALLED).takeIf { it != NOT_INSTALLED })
                 }
             }
@@ -194,7 +215,7 @@ class ConnectIq(
     ): IqSend =
         lock.withLock {
             val b = service() ?: return IqSend.NoAnswer
-            val answer = CompletableDeferred<Boolean>().also { pendingSend = it }
+            val answer = CompletableDeferred<Int>().also { pendingSend = it }
             val sent =
                 oneway(b, TX_SEND) { p ->
                     // IQMessage: the data's length, the data, where to send the status
@@ -208,7 +229,8 @@ class ConnectIq(
                 }
             if (!sent) return IqSend.NoAnswer
             try {
-                if (withTimeout(ANSWER_TIMEOUT_MS) { answer.await() }) IqSend.Delivered else IqSend.Failed
+                val status = withTimeout(ANSWER_TIMEOUT_MS) { answer.await() }
+                if (status == 0) IqSend.Delivered else IqSend.Failed(status)
             } catch (_: TimeoutCancellationException) {
                 IqSend.NoAnswer
             } finally {

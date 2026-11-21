@@ -65,6 +65,21 @@ class GarminStatusTest {
     }
 
     @Test
+    fun stuckMessages() {
+        val fetching = { w: AuraWatch -> base.copy(watches = listOf(w), fetched = ago(3)) }
+        // Garmin Connect ends its own stalls within minutes: still "loses messages"
+        val failing = watch.copy(failed = ago(1), noAnswer = true, failingSince = ago(14))
+        assertEquals(WatchLine.Problem.Slow, line(failing, fetching(failing)).problem)
+        // nothing through for 15 min (#242): say so and what brings them back, whether or not the face fetches
+        val stuck = failing.copy(failingSince = ago(15))
+        assertEquals(WatchLine.Problem.Stuck, line(stuck, fetching(stuck)).problem)
+        assertEquals(WatchLine.Problem.Stuck, line(stuck).problem)
+        // a delivery ends it; away, there's nothing to say about messages
+        assertEquals(null, line(stuck.copy(delivered = now, failed = null, failingSince = null)).problem)
+        assertEquals(null, line(stuck.copy(connected = false)).problem)
+    }
+
+    @Test
     fun aWatchWithUnknownInstallStillCounts() {
         val w = watch.copy(installed = null, delivered = ago(2), reading = ago(2))
         assertEquals(AuraStatus.Sent("Descent", ago(2)), of(base.copy(watches = listOf(w))))

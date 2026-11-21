@@ -166,6 +166,9 @@ data class WatchLine(
         /** Sukrara Aura isn't installed on it. */
         NoFace,
 
+        /** No message has got through for 15 min ([AuraWatch.stuck]): restarting the watch brings them back (#242). */
+        Stuck,
+
         /** Garmin Connect loses the messages; the face keeps up by fetching every 5 min. */
         Slow,
 
@@ -190,6 +193,7 @@ data class WatchLine(
                 when {
                     w.installed == false -> Problem.NoFace
                     !w.connected || w.delivered() -> null
+                    w.stuck(now) -> Problem.Stuck
                     w.failed != null && fresh(s.fetched, now) != null -> Problem.Slow
                     w.failed != null && w.noAnswer -> Problem.NoAnswer
                     w.failed != null -> Problem.Failed
@@ -419,6 +423,10 @@ internal fun watchText(
     when (line.problem) {
         WatchLine.Problem.NoFace -> {
             parts += stringResource(R.string.in_garmin_watch_no_face)
+        }
+
+        WatchLine.Problem.Stuck -> {
+            parts += stringResource(R.string.in_garmin_watch_stuck)
         }
 
         WatchLine.Problem.Slow -> {
