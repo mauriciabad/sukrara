@@ -1,15 +1,19 @@
 # 46 — Sugar Sense: every feature, how it's built, and how it compares
 
-*2026-11-21 · investigation report for [#241](https://github.com/mauriciabad/sukrara/issues/241) · desk research
-(website, stores, version histories, the in-app What's New, GitHub, press, reviews, the Alexa skill's store page as the
-owner saw it) and hands-on use with the owner's account (Premium trial, FreeStyle Libre through LibreLinkUp) and a
-second account kept on the free plan: Android 2.7.0 on two emulators (walked and decompiled, the two accounts sharing
-with each other) and on the owner's Pixel 10 Pro with root (network capture per app, the app's files, logcat), the three
-Garmin apps on the owner's Descent Mk3i, the web dashboard, the iPhone app 2.7 running on a Mac and its App Store bundle
-read (Apple Watch, CarPlay, Siri, widgets, Live Activity), the Mac menu bar app 1.3 with its widgets and Safari
-extension, Windows 1.2.1 in a Windows 11 VM, the AI connector with Claude Code and ChatGPT, and the Home Assistant
-integration 1.0.0 · a third round (live Nightscout scenarios) is still running: its gaps are marked **Round 3
-pending** · "unverified" = no primary source found · nothing built, no Sukrara code changed*
+*2026-11-21 · investigation report for [#241](https://github.com/mauriciabad/sukrara/issues/241) · three rounds ·
+**desk research** (website, stores and their screenshots, version histories, the in-app What's New, GitHub, press,
+reviews, the Alexa skill's store page as the owner saw it) · **hands-on** with the owner's account (Premium trial,
+FreeStyle Libre through LibreLinkUp, in round 3 a test Nightscout site) and a second account on the free plan: Android
+2.7.0 on two emulators (walked and decompiled, the two accounts sharing with each other) and on the owner's Pixel 10 Pro
+with root (network capture per app, the app's files, logcat), the three Garmin apps on the owner's Descent Mk3i, the web
+dashboard and the invite page, the iPhone app 2.7 running on a Mac and its App Store bundle read (Apple Watch, CarPlay,
+Siri, widgets, Live Activity), the Mac menu bar app 1.3 with its widgets and Safari extension, Windows 1.2.1 in a
+Windows 11 VM, the AI connector with Claude Code and ChatGPT, and the Home Assistant integration 1.0.0 · **round 3**:
+two throwaway Nightscout sites fed one scripted reading a minute to the two accounts (alert timings, the follower's
+side, Call for Low with real calls to the owner's phone, treatments both ways, the bridge, switching source, deleting
+the second account), and Wear OS 2.7.0 on a Wear OS 6 emulator paired with the phone emulator · how each claim is known:
+*seen*, *read* (code, bundle, strings) or *claimed* (their site, store or policy); "unverified" = no primary source
+found · nothing built, no Sukrara code changed*
 
 Sources are cited by key (`ios`, `play`…, listed in [Sources](#sources)); screenshots by file name, without `.png`,
 under their folder (`android/home-20-chart-scrub`). The screenshots stay on the owner's Mac
@@ -31,22 +35,27 @@ The owner's words (the issue), condensed:
 - After the first round, "still missing details": treatments not saved; whether insulin reaches LibreView or
   Nightscout; the sharing functions; the free state and paywall; Wear OS, Apple Watch, CarPlay, Safari extension, Mac
   widgets, Windows, AI connectors, Garmin; the promoted Live Update chip and the lock screen.
+- After the second round: are treatments saved and does insulin reach LibreView or Nightscout; can it really read
+  Juggluco or xDrip+; was all of sharing checked; the free state and paywall; Wear OS, Apple Watch, CarPlay, Alexa
+  (skipped), Safari's extension, Mac widgets, Windows; did the Live Update chip and the lock screen work. Answered in
+  [The owner's questions](#the-owners-questions).
 
 ## Short answer
 
 - **What it is**: a cloud CGM companion by Sugar Sense OÜ (Tallinn; a founder with type 1 diabetes). Its servers sign in
   to the person's **LibreLinkUp, Dexcom Share or Nightscout** and poll them around the clock (LibreLinkUp every 2–3 min:
-  a reading reaches the phone 21–24 s after its LibreLinkUp time); they run **every alert on the server** and push
-  alerts and readings together to phones, which then feed widgets, Live Activities and Live Updates. Every other
-  surface (watch, Mac, Windows, browser, web, Alexa, Home Assistant, Garmin, a DIY display, AI assistants) is a
-  **read-only view without alerts of its own** (CarPlay repeats the phone's). A free tier with every alert, sharing and
-  Copy for AI; Premium ($39.99/yr, €41.99 on a Spanish device) for glanceables, watches, AI, PDF, 30 / 90 days, call
-  for low, more than two reminders.
+  a reading reaches the phone 21–24 s after its LibreLinkUp time; a Nightscout site every 10–35 s: alerts 23–55 s after
+  the reading); they run **every alert on the server** and push alerts and readings to phones, which then feed widgets,
+  Live Activities and Live Updates. Every other surface (watches, Mac, Windows, browser, web, Alexa, Home Assistant,
+  Garmin, a DIY display, AI assistants) is a **read-only view without alerts of its own** (CarPlay repeats the phone's;
+  the Wear OS app has no notification permission). A free tier with every alert, sharing and Copy for AI; Premium
+  ($39.99/yr, €41.99 on a Spanish device) for glanceables, watches, AI, PDF, 30 / 90 days, call for low, more than two
+  reminders.
 - **Their log stays with them**: meals, insulin, medication, activity and notes go only to their server (and, on iOS,
-  meals and insulin to Apple Health). **Nothing reaches LibreView** (none of the first round's test entries is in the
-  owner's LibreView export, taken hours later) **or Nightscout** (the app has no LibreView, Dexcom or Nightscout
-  address; the server reads those logins, "used only to read", and a read-only Nightscout token is enough; **Round 3
-  pending**: a Nightscout source's treatments). Health Connect gets glucose only.
+  meals and insulin to Apple Health, *claimed*). **Nothing reaches LibreView** (none of the first round's test entries
+  is in the owner's LibreView export, taken hours later) **or Nightscout** (with a Nightscout source every request to
+  the site was a read, and a meal with insulin logged in the app sent nothing; the site's own treatments never came in
+  either, only its sensor start). Health Connect gets glucose only.
 - **Pace**: relaunched as 2.0 on 2026-07-02; a feature release every 2–3 weeks since, and more than a dozen surfaces
   added in those five months.
 - **Where it leads Sukrara**: breadth of surfaces (iPhone, Apple Watch, CarPlay, Wear OS, Windows, browsers, web,
@@ -58,23 +67,56 @@ The owner's words (the issue), condensed:
   status page).
 - **Where Sukrara leads**: it reads the sensor itself and alerts **without internet or any server**; sharing is
   end-to-end encrypted with no account, nearby over Bluetooth; the Mac **alerts**; alert rules are deeper (night rules,
-  waits near a threshold, Remind less, treatments that quiet alerts, escalation when the wearer doesn't answer);
-  glucose **and treatments** go to LibreView, Tidepool and Nightscout, a local Nightscout / xDrip+ API, insulin pens; the
-  live notification stays on the lock screen (theirs vanishes where silent notifications are hidden); free and open
-  source.
+  waits near a threshold, Remind less, treatments that quiet alerts, escalation when the wearer doesn't answer) and a
+  very low rings on the first reading (theirs waited for the third); glucose **and treatments** go to LibreView,
+  Tidepool and Nightscout, a local Nightscout / xDrip+ API, insulin pens; the live notification stays on the lock screen
+  (theirs vanishes where silent notifications are hidden); free and open source.
 - **Their architecture's limits** are also their weak spots: no alerts when their server, the maker's cloud or the
-  phone's internet fails; Apple Health and Health Connect sources get no alerts; companions never alert; sharing
-  controls that failed silently in the test (pause, the access log). They have planned for Abbott ending LibreLinkUp (a
-  ready page, and an Android bridge from Juggluco and xDrip+ already in 2.7.0).
+  phone's internet fails; Apple Health and Health Connect sources get no alerts; companions never alert on their own (a
+  watch at most shows the phone's notifications); sharing controls that failed silently in the test (pause, the access
+  log). They have planned for Abbott ending LibreLinkUp (a ready page, and an Android bridge from Juggluco and xDrip+
+  built into 2.7.0 but switched off by a server flag).
+
+### The owner's questions
+
+- **Are treatments saved, and does insulin reach LibreView or Nightscout?** Saved on their server only (the web LogBook
+  within seconds, the PDF, Copy for AI, the AI connector), *seen*. Not LibreView: round 1's entries are not in the
+  owner's export. Not Nightscout: in round 3 every request to the test site was a read, and a meal with 2 u logged in
+  the app sent nothing; the site's boluses, carbs, notes and exercise didn't come in either, only its sensor start
+  ([Where entries go](#logbook)).
+- **Can it really read Juggluco or xDrip+?** Not today. 2.7.0 holds a receiver for both apps' standard glucose
+  broadcasts that would forward each reading to their server (*read*), but its source row shows only when a server flag
+  is on, and it is off: neither account's chooser offered it, and broadcasts sent to the app were taken in and dropped
+  (*seen*). Their Libre-shutdown page sends Android users through Juggluco → Nightscout instead
+  ([Phone bridge](#sources-and-sensor)).
+- **Was all of sharing checked?** Nearly all, live, on two accounts in both directions: invites (every mode, length
+  and scope), joining by link and by code, the invite's web page, approval, scopes, adding to the LogBook and stopping
+  it, pause, time limits, the access log, stopping from either side, relations and nicknames, the test alert, real
+  follower alerts, *I'm on it*, following while sharing, and an account deleted while linked. Not reached: the Care
+  Board and the person switcher (two people followed), "Mom is responding" (two followers), a per-follower unit and
+  language (no control in 2.7.0), the Family plan, the follower's quiet hours ([Care Circle](#care-circle-sharing),
+  [Not reached](#not-reached)).
+- **Free state and paywall?** Every alert, sharing, the LogBook and 14 days of stats are free; glanceables, watches, AI,
+  PDF, 30 / 90 days and Call for Low are Premium, behind one paywall with a 7-day trial on the yearly plan
+  ([Free plan and paywalls](#free-plan-and-paywalls)).
+- **The other surfaces?** **Wear OS** *seen* on an emulator watch paired with the phone: a glance-only app, tile and
+  complications, no alerts of its own. **Apple Watch** *read* in the bundle and *seen* in the App Store's nine watch
+  screenshots, not run. **CarPlay** *read* in the bundle only. **Alexa** from the skill's store page (skipped by the
+  owner, no Echo linked). **Safari's extension**, **Mac widgets** and **Windows** *seen*, used on the Mac and in a VM
+  ([Platforms](#platforms)).
+- **Did the Live Update chip and the lock screen work?** *Seen* on the owner's Pixel 10 Pro: the System style is a real
+  promoted Live Update, with the chip "153 →" beside the clock. The lock screen and always-on display don't show it on
+  the owner's phone: its channel is silent and the phone hides silent notifications there; with that setting changed it
+  showed ([Live Updates](#glanceables-on-the-phone)).
 
 ## Platforms
 
 | Surface | What it shows and does | Plan | Sukrara counterpart | Source |
 |---|---|---|---|---|
 | iPhone (iOS 18.6+) | The full app: sources, alerts, Care Circle, LogBook, stats, AI, widgets, Live Activity, Siri, CarPlay. The bundle (`Sugar Tracker`) holds the app with a CarPlay scene, a WidgetKit extension (widgets, Live Activity), a notification service (draws the contact photo, clears alert cards), the Watch app and its complications; 2,653 strings in 7 languages. On Apple Silicon Macs it runs as a fixed 1024×800 window, and its widgets and 4 Shortcuts actions work in macOS | Free + Premium | No iPhone app | `ios`, `ios-bundle/`, `iphone-on-mac/` |
-| Android (min SDK 26) | The same as the iPhone, plus Live Updates, a floating capsule, Health Connect, voice alerts in the background, the Juggluco / xDrip+ bridge; 5K+ installs. No reading database: the last 3 h in one preferences file, the rest fetched | Free + Premium | The Android app | `play`, `android/`, `phone` |
-| Apple Watch | App opening on a chosen face (Character, Big Number, Gauge, Halo), swipe for the chart, the Digital Crown switches 3 / 6 / 12 / 24 h; complications (Big Number, Graph) with the reading's age, grey after 30 min ("Apple refreshes complications about every 15-20 minutes"); the Live Activity in the Smart Stack; wrist alerts; Watch Siri; the person followed on the wrist; *Sync Now* pushes unit, limits and readings; "glucose as a contact photo" for any face | Premium | No | `ios`, `ios-bundle/` |
-| Wear OS | Tile (value, arrow, 3 h graph), complications (grey after 30 min), watch app (crown switches 3/6/12/24 h), faces Character / Big Number / Gauge / Halo; shows a person followed (a Family seat covers it); fed by the phone app over the Wear data layer on every push, and the watch can ask the phone to refresh; free plan: "Open Sugar Sense on your phone and subscribe" | Premium | Alerts reach the watch as notifications ([Alerts](FEATURES.md#alerts)) | `play`, `android/int-01…06`, `phone` |
+| Android (min SDK 26) | The same as the iPhone, plus Live Updates, a floating capsule, Health Connect, voice alerts in the background, a Juggluco / xDrip+ bridge (built, switched off); 5K+ installs. No reading database: the last 3 h in one preferences file, the rest fetched | Free + Premium | The Android app | `play`, `android/`, `phone`, `android-r3` |
+| Apple Watch | *Read* in the bundle, not run: app opening on a chosen face (Character, Big Number, Gauge, Halo), swipe for the chart, the Digital Crown switches 3 / 6 / 12 / 24 h; complications (Big Number, Graph) with the reading's age, grey after 30 min ("Apple refreshes complications about every 15-20 minutes"); the Live Activity in the Smart Stack; wrist alerts; Watch Siri; the person followed on the wrist; *Sync Now* pushes unit, limits and readings; "glucose as a contact photo" for any face. *Seen* in the App Store's nine watch screenshots: Character (the background in the zone colour, the mascot, a range bar), Gauge (a ring in the zone colour on black) and the chart page ("3H", axis 0–200 or 0–300), the reading's age top left, a Sync button on every page, five page dots (Character first, chart second, Gauge fifth). No screenshot shows Big Number, Halo, complications, an alert or the follower view | Premium | No | `ios`, `ios-bundle/`, `apple-watch/store-watch-01…09` |
+| Wear OS | *Seen* on an emulator watch paired with the phone emulator. Installed from the watch's Play Store ("Requires mobile app"), it opens straight on the glucose: no sign-in, setup or permission. Two pages, nothing tappable, no settings: the face (Character, Big Number, Gauge or Halo, picked on the phone and applied in ~2 s: the reading's age counting up, value, arrow, 5-min change, a range bar) and a chart (the crown switches 3 / 6 / 12 / 24 h, but only ~70 min ever shows: the phone sends the newest 72 points). A tile (value, arrow, change since the previous reading, sparkline, age; opens the app); complications from one source (value, age, an arc, no arrow; text and image kinds in the code). Updated on each push, 20 s to 2.5 min after the reading, also over Google's cloud route when Bluetooth is gone; opening the app asks the phone for 3 h. **No alerts on the watch**: at 76 ↓ the face stayed "IN RANGE" while the phone alerted *rapidly dropping*; at the low it turned orange, nothing buzzed (the phone's notifications should mirror to a real paired watch: not seen). A follower's watch would show the person followed with no name; free: "Open Sugar Sense on your phone and subscribe" (both *read*) | Premium | No watch app; with *Separate alert notifications* on, each alert is a notification of its own, which Wear OS mirrors ([Alerts](FEATURES.md#alerts)) | `play`, `wear`, `wear/wear-10…29`, `android/int-01…06` |
 | CarPlay | A Driving Task list: the reading drawn as an image, its age, in range or not, the last hour (the strings also say a 3 h graph), a note while alerts are paused, Refresh; "No Data" past 15 min; **the phone's alerts on the car screen** (low and heading low, or all five kinds, with snooze); **readings spoken** on leaving range or at every reading; the Live Activity on the CarPlay dashboard; calendar sync as the fallback for cars without it | Premium | No | `ios`, `ios-bundle/` |
 | Android Auto | Built (car-app library, strings, a Settings row) but **not shipped**: no car service in the 2.7.0 manifest, its remote flag off; one review lists it (unverified) | — | No (planned) | `android` decompiled, `phone`, `ds` |
 | Web dashboard (PWA) | Home, Statistics, Insights, LogBook (add, edit; the phone's entries within seconds), Care Circle, a bedside full-screen view, printable report, pairing and AI-consent pages for every companion, partner dashboard; "Alerts and calls run on your phone, not in the browser" | Free | No | `web`, `web/` |
@@ -98,12 +140,12 @@ The owner's words (the issue), condensed:
 |---|---|---|---|---|---|
 | FreeStyle Libre (LibreLinkUp) | The person's LibreLinkUp email and password; the server polls every 2–3 min and pushes at once (measured on the owner's phone: readings 2–3 min apart, each on the phone 21–24 s after its LibreLinkUp time; the assistant instructions call 1–4 min the Libre cadence); errors in plain words ("No patients shared with that account", re-accept Abbott's terms); Libre 3 → 3 Plus needs no reconnect | F | all (server) | **Yes**, on the device, about 10 s late, Android and Mac ([LibreLinkUp as a source](FEATURES.md#librelinkup-as-a-source-both-apps)); also the Libre 3 read directly. Side by side on the owner's phone Sugar Sense was at times a reading behind (153 → while Sukrara showed 157 ↗; 159 / 161; 162 / 162) | `libre`, `5kr1`, `phone` |
 | Dexcom (Share) | The sharer's login (username, email or phone with country code), region US / APAC / worldwide (US picked by itself since 2.4, Japan / Singapore since iOS 2.6); needs ≥ 1 follower in Dexcom's app. Dexcom ONE: the store says ONE+ works, two reviews say ONE doesn't (unverified) | F | all | **No** (planned, [44](44-external-sources.md)); Dexcom sensors read directly, untested | `dex`, `ios`, `changelog` |
-| Nightscout | URL (`http` upgraded to `https`, `/api/v1` and a trailing slash ignored) and one field for the API secret or a token (≥ 12 characters); public https only. Their server (DigitalOcean) sends the credential as the `api-secret` header and on connecting reads the site's auth, the newest reading, up to 288 readings since a time, and the newest *Sensor Start* / *Sensor Change* treatment (the sensor's age); a read-only token is enough. **Round 3 pending**: how often it reads, and alert delays from a Nightscout source | F | all | **Yes**, treatments both ways ([Nightscout as a source](FEATURES.md#nightscout-as-a-source-both-apps)) | `ns`, `android-r3` |
+| Nightscout | URL (`http` upgraded to `https`, `/api/v1` and a trailing slash ignored) and one field for the API secret or a token (≥ 12 characters, so a site open to reading still needs some text there); public https only. Their server (DigitalOcean) sends the credential as the `api-secret` header; on connecting it reads the site's auth, the newest reading, up to 288 readings since a time, and the newest *Sensor Start* / *Sensor Change* treatment (the sensor's age); then only new readings, **every ~10–35 s** (every few seconds while one is late), each fetched 2–30 s after it lands, and the sensor treatment about hourly. It never writes and reads no other treatment; a read-only token is enough (*seen* in the test sites' request logs). Past 15 min without readings: a Home banner and a sheet with the checks (address, secret or token), their troubleshooting guide and their Facebook group | F | all | **Yes**, treatments both ways; asks again right after the next reading is due ([Nightscout as a source](FEATURES.md#nightscout-as-a-source-both-apps)) | `ns`, `android-r3`, `android/r3-st-01`, `-02` |
 | Apple Health / Health Connect as the source | For meters and over-the-counter sensors; readings are uploaded but get **no server alerts or calls**; a home banner says so | F | phones | **No** (Sukrara writes glucose to Health Connect only) | `priv`, `android` |
 | Manual entry | No sensor: typed readings (mg/dL or mmol/L; onboarding asks for the latest one), graphs, stats, LogBook, no alerts. Home: "Manual mode: we watch only the readings you log. No overnight alerts.", a 24 h chart, no Live Updates or Snooze buttons. Settings drops Call for low, Voice alerts, Live Updates, Widgets, Care Circle and Wear OS, but keeps the whole alert list; Add offers *Add a glucose reading* instead of Meter check; a reading isn't a LogBook row; a typed low gets advice ("Treat it right away and recheck in about 15 minutes"); such an account can't share ("no live sensor for a follower to be alerted on") | F | phones, web | **No** | `web`, `android/r2-free-01…40` |
-| Phone bridge (Juggluco / xDrip+) | Android listens for Juggluco's and xDrip+'s glucose broadcasts and forwards each reading to the server, so server alerts, watches and followers keep working; a row in the source chooser ("In Juggluco open Settings › Exchange data › Glucodata broadcast"). **Round 3 pending**: the bridge with real broadcasts | F | Android | **Yes**, Juggluco read on the device ([Source](FEATURES.md#source-whose-glucose-and-where-it-comes-from-both-apps)) | `android` decompiled |
-| Change source | An intro dialog, then a chooser: Libre / Dexcom / Nightscout / Health Connect / Manual / Phone bridge; the switch happens on the server. **Round 3 pending**: a live account switched to Nightscout and back | F | phones | **Yes**, Settings › Source, whose glucose × source | `android/settings-11` |
-| Sensor age | "Day 3 of 15" with a progress bar, start, end, serial with Copy; "Remind me before it ends" ("The morning of the last day and at expiry. Not an alert."), Show on Home; **Sensor support**: Request a replacement, call Abbott support (the number picked by country and kept on the phone), the Libre 3 safety notice; Dexcom: a sensor-code scanner and a start set by hand; Nightscout: from its sensor treatments | F | phones | **Yes**, deeper (start and length when the source doesn't say, a new-sensor flow, the end in the calendar); **no** maker support links ([Sensor life](FEATURES.md#sensor-life), [Sensor reminders and countdowns](FEATURES.md#sensor-reminders-and-countdowns)) | `android/settings-10`, `ios`, `phone` |
+| Phone bridge (Juggluco / xDrip+) | **Built, not available in 2.7.0.** A receiver for Juggluco's and xDrip+'s standard glucose broadcasts (value, time, rate or slope, serial or source; kept when 20–600 mg/dL and timed from 24 h ago to 5 min ahead; the arrow from the rate: ≥ 2 ↑, ≥ 1 ↗) that, with the bridge as the source, forwards each reading to the server, so server alerts, watches and followers keep working; a setup page ("In Juggluco open Settings, then Exchange data, turn on Glucodata broadcast and add this app", the last reading received, *Use as my glucose source*) (*read*). The row shows only when the remote flag `phoneBridgeEnabledAndroid` is on: neither account's chooser had it, also after broadcasts arrived, and those were taken in and dropped (*seen*). Round 1 listed the row from the strings; no user can pick it today | F (off) | Android | **Yes**, Juggluco's local web server read on the device ([Source](FEATURES.md#source-whose-glucose-and-where-it-comes-from-both-apps)) | `android` decompiled, `android/r3-ns-03-chooser`, `-ns-08-chooser-after-bridge-broadcast` |
+| Change source | An intro dialog, then a chooser: Libre / Dexcom / Nightscout / Health Connect / Manual; the switch happens on the server. *Seen* switching both accounts to Nightscout: the earlier history stays, the new source is read only from the newest stored reading on (the site's earlier 3 h never came in), and the first new reading shows a jump in the change (+1.3 mmol/L); after the second account switched from Manual, its follow of the owner had gone from its own side only (re-inviting fixed it) | F | phones | **Yes**, Settings › Source, whose glucose × source; a Nightscout site read 24 h back | `android/settings-11`, `android/r3-ns-02…09` |
+| Sensor age | "Day 3 of 15" with a progress bar, start, end, serial with Copy; "Remind me before it ends" ("The morning of the last day and at expiry. Not an alert."), Show on Home; **Sensor support**: Request a replacement, call Abbott support (the number picked by country and kept on the phone), the Libre 3 safety notice; Dexcom: a sensor-code scanner and a start set by hand; Nightscout: the newest *Sensor Change* / *Sensor Start*, read about hourly, with a 10-day life assumed ("Nightscout · Day 3 of 10"; one 5 days old wasn't found, outside Nightscout's default window) | F | phones | **Yes**, deeper (start and length when the source doesn't say, a new-sensor flow, the end in the calendar); **no** maker support links ([Sensor life](FEATURES.md#sensor-life), [Sensor reminders and countdowns](FEATURES.md#sensor-reminders-and-countdowns)) | `android/settings-10`, `ios`, `phone`, `android/r3-tr-06-e1-sensor-day3of10` |
 | Provider outage | Home banner "{provider} outage: not your phone or sensor" (confirmed / suspected), from their own monitoring (banner texts in Firestore); a public status page | F | phones, web | **Partly**: LibreLinkUp maintenance says until when, from Abbott's status page ([LibreLinkUp as a source](FEATURES.md#librelinkup-as-a-source-both-apps)) | `web`, `status`, `phone` |
 | Not supported | Stelo, Lingo (closed platforms) | — | — | Stelo read directly, untested | `cmp` |
 
@@ -138,17 +180,17 @@ The owner's words (the issue), condensed:
 
 | Feature | What it does · how | Plan | Where | Sukrara today | Source |
 |---|---|---|---|---|---|
-| Kinds and defaults | Very low 55 (Critical, every 15 min, Classic Alarm), Low 70 (Time Sensitive, 30 min), High 180 (Regular, 2 h), Very high 250 (Time Sensitive, 30 min), Heading low (Time Sensitive, 30 min), Big drop (on) / Big rise (off) (Regular, 30 min, **no rate setting**), Missed readings after 20 min (Never / 5 / 10 / 15 / 20) with an optional escalation (30 / 45 / 60 min); Reset all to defaults. **Round 3 pending**: when each kind fires on scripted Nightscout readings, and the escalation | F | phones | **Yes**: 7 kinds incl. extremely high 300, rates at 2 mg/dL/min held 5 min, LO / HI ([Alerts](FEATURES.md#alerts)) | `android/settings-12`, `alerts-10…36` |
-| Delivery | Alerts come with the reading pushes: on the owner's phone a real *Glucose high · 185 → (+13)* arrived in the same second as the push carrying the reading, ~21 s after its LibreLinkUp time, on the first reading over 180; a custom view on the kind's own channel, cleared by a tap | F | phones | **Yes**, worked out on the device at each reading, as the live notification itself ([Live notification](FEATURES.md#live-notification)) | `phone` |
+| Kinds and defaults | Very low 55 (Critical, every 15 min, Classic Alarm), Low 70 (Time Sensitive, 30 min), High 180 (Regular, 2 h), Very high 250 (Time Sensitive, 30 min), Heading low (Time Sensitive, 30 min), Big drop (on) / Big rise (off) (Regular, 30 min, **no rate setting**), Missed readings after 20 min (Never / 5 / 10 / 15 / 20) with an optional escalation (30 / 45 / 60 min); Reset all to defaults. *Seen* on scripted Nightscout readings, one a minute: Low and High on the first reading past the line (180 itself counts), 31–36 s after it; **Very low only on the third reading in a row past its line** (3 min; 55 then 53 then up never alerted), Very high on the second ≥ 250; Big drop 55 s after the drop began; Missed readings at 19 min, the escalation at 30–31 min (the free account got only the escalation); a late batch of readings removed both cards within seconds; Very low repeated after 18 min | F | phones | **Yes**: 7 kinds incl. extremely high 300, rates at 2 mg/dL/min held 5 min, LO / HI; very low and extremely high ring on their first reading ([Alerts](FEATURES.md#alerts)) | `android/settings-12`, `alerts-10…36`, `android/r3-sc-*`, `android/r3-st-10` |
+| Delivery | Alerts come in pushes of their own: on the owner's phone a real *Glucose high · 185 → (+13)* arrived ~21 s after its LibreLinkUp time, on the first reading over 180; from Nightscout, 23–55 s after the reading. The readings for the screen come every 1–4 min, so the app can trail its own alerts: during the test low it still showed 59 while the server had 55 and 53, until Refresh. A custom view on the kind's own channel, cleared by a tap; a new kind clears the card before it | F | phones | **Yes**, worked out on the device at each reading, as the live notification itself ([Live notification](FEATURES.md#live-notification)) | `phone`, `android/r3-sc-12-e1-after-call` |
 | Per-alert page | Enable (the emergency ones confirm turning off: "you may not be alerted in an emergency"), threshold, **Priority** Regular / Time Sensitive / Critical with plain bullets, **Repeat** every reading / 15 / 30 min / 1 / 2 h / custom 1–120 min, **Tone** | F | phones | **Yes**: threshold, remind every, sound, volume ("like an alarm"), test | `android/alerts-10…26` |
 | Tones | 22 in three length groups (short, medium, long: up to "Emergency Siren"), Silent, Vibration only, ▶ preview | F | phones | **Yes**, sound packs at discreet intensities, any phone sound | `android/alerts-24…26` |
-| Heading low (predictive) | About 15–20 min ahead to the very-low line; on by default; no settings beyond on, priority, repeat, tone; computed on the server; "Now 95 ↘ may reach 55 mg/dL in ~15 min. Have fast-acting carbs ready." Users praise it ("saved me about 7 times"). **Round 3 pending**: its lead time on a scripted fall, on the wearer's and the follower's phone | F | phones | **No** (planned) | `pred`, `home`, `reviews` |
+| Heading low (predictive) | About 15–20 min ahead to the very-low line; on by default; no settings beyond on, priority, repeat, tone; computed on the server; "Now 95 ↘ may reach 55 mg/dL in ~15 min. Have fast-acting carbs ready." Users praise it ("saved me about 7 times"). *Seen* on a steady fall of 2 a minute from 113: it fired 23 s after the first falling reading, "Now 111 — may reach 55 mg/dL in ~9 min", the time taken from one pair of readings 16 s apart (55 came 28 min later); buttons 30 Min / 1 Hour / 2 Hours; the follower got "{name} may be heading low" the same second, without buttons; the card cleared itself at the low | F | phones | **No** (planned) | `pred`, `home`, `reviews`, `android/r3-sc-01…03` |
 | Test this alert | A real push through the server: "Lock the phone. Sending in 3…", then "Delivered as Critical with the Classic Alarm tone" or a diagnosis (channel off / silent, Do Not Disturb, notifications off); rate-limited. Followers: "Test alert · This is a test. Real alerts about {name} will look and sound like this." (3 a day) | F | phones | **Partly**: play the sound and vibration, send a test alert ([Settings](FEATURES.md#settings)) | `android` strings, `android/r2-share-45` |
-| Snooze | **Pause low & high** / **Pause everything**: 15 / 30 min, 1 / 2 h, custom (a −/+ stepper and chips 15–120); "How does it work?": very low and very high still ring under Pause low & high, the emergency call and followers ring under both. A follower: Pause warnings / Pause everything, 15 min to 2 h, no custom | F | phones | **Yes**, per alert (Mute, Remind less, in the notification) and Mute all 30 min–8 h, until turned off, custom 5 min–24 h ([Alerts](FEATURES.md#alerts)) | `android/home-26…28`, `android/r2-share-88` |
-| Quiet hours | A list; each: days (default Mon–Fri), 9:00–17:00 by default, mode **Softer alerts** (default) / Pause low & high / Pause all (confirmed); may cross midnight; "End for today"; stored on the server and the phone | F | phones | **Partly**: Night alerts, a second set of rules 22:00–07:00 (very low always on); no per-day schedules | `android/alerts-01`, `-02`, `phone` |
-| Self-tidying alerts | An alert clears itself back in range; a new one replaces older cards of its kind even with the app closed; a high ends a low's card | F | phones | **Yes**: one at a time, the most severe wins, cleared once back by the margin | `ios`, `ios-bundle/` |
-| Very low on the lock screen | Android: a full-screen alarm activity over the lock screen with Do Not Disturb access; iOS Critical Alerts (asked again in 2.7) | F | phones | **Yes**, alarm-volume channels and a full-screen alert | `android` decompiled |
-| Call for Low | A phone call (Twilio) at 50–70 mg/dL (default 60) "the moment your glucose drops to it"; "press 1 to confirm you're okay"; after several unanswered calls it calls an **emergency contact**; snooze and quiet hours don't stop it; retries are server-side; the emergency contact is cached on the phone. **Round 3 pending**: a real call, the emergency contact's call, the free plan's gate | P | phones | **No**; nearest: followers told when a very low gets no answer for 5 min ([Alerts](FEATURES.md#alerts)) | `android/settings-20`, `priv`, `phone` |
+| Snooze | **Pause low & high** / **Pause everything**: 15 / 30 min, 1 / 2 h, custom (a −/+ stepper and chips 15–120); "How does it work?": very low and very high still ring under Pause low & high (*seen*), the emergency call and followers ring under both. From an alert: 30 Min / 1 Hour / 2 Hours; Home's Snooze button then shows the countdown, and one tap on it ends the snooze at once. A follower: Pause warnings / Pause everything, 15 min to 2 h, no custom | F | phones | **Yes**, per alert (Mute, Remind less, in the notification) and Mute all 30 min–8 h, until turned off, custom 5 min–24 h ([Alerts](FEATURES.md#alerts)) | `android/home-26…28`, `android/r2-share-88`, `android/r3-sn-01…05` |
+| Quiet hours | A list; each: days (default Mon–Fri), 9:00–17:00 by default, mode **Softer alerts** (default; nothing overrides Silent) / **Pause low & high** (low, high, rapid change, heading low, missed readings; very low and very high still come) / Pause all (confirmed); may cross midnight; "End for today"; while on, Home's Snooze reads "Until 7:40 PM"; stored on the server and the phone. *Seen* under Pause low & high: a fall of 5 a minute raised no Big drop, but a minute after the end a held Big drop arrived about the last reading, by then 9 min old; deleting a schedule asks nothing | F | phones | **Partly**: Night alerts, a second set of rules 22:00–07:00 (very low always on); no per-day schedules | `android/alerts-01`, `-02`, `phone`, `android/r3-qh-01…08` |
+| Self-tidying alerts | An alert clears itself back in range; a new one replaces older cards of its kind even with the app closed; a high ends a low's card (*seen* on Android: heading low cleared at the low, the low by a Big drop, the very low by a fast rise, missed readings by late readings) | F | phones | **Yes**: one at a time, the most severe wins, cleared once back by the margin | `ios`, `ios-bundle/` |
+| Very low on the lock screen | Android: the code has a full-screen alarm activity (shows when locked, turns the screen on), but the very lows seen came as a Critical notification without it: through Do Not Disturb, alarm sound and usage, vibration, and the locked screen stayed dark (full-screen and Do Not Disturb access granted); iOS Critical Alerts (asked again in 2.7) | F | phones | **Yes**, alarm-volume channels and a full-screen alert | `android` decompiled, `android/r3-sc-24`, `-26` |
+| Call for Low | A phone call (Twilio) at 50–70 mg/dL (default 60; 2.8–3.9 mmol/L) "the moment your glucose drops to it"; after several unanswered calls it calls an **emergency contact**; snooze and quiet hours don't stop it. Setup: your number with a country picker, the level, *Call my emergency contact* and its number; **neither number is checked** (no test call, no code). *Seen* with the owner's own number in both: the first call came 24 s after the first reading ≤ 60, from an Estonian number (+372 6692182), a synthetic voice: "Sugar Sense alert. Your glucose is low, 59. If you are okay, press 1 now. Otherwise we will alert your emergency contact."; 1 → "Thank you. Please treat your low glucose now. Goodbye." In a second low the call came with the very-low alert, 4 min after the first reading ≤ 60; unanswered, it called again 5 min later, then the emergency contact 9.5 min after that: "Emergency alert from Sugar Sense. Someone who added you as their emergency contact has low glucose, 49, and is not responding to calls. Please check on them now." (no name, no key to answer). No call shows in the app, the wearer's or a follower's, and followers aren't told. Free: a paywall headed "UNLOCK CALL FOR LOW" | P | phones | **No**; nearest: followers told when a very low gets no answer for 5 min ([Alerts](FEATURES.md#alerts)) | `android/settings-20`, `priv`, `phone`, `android/r3-cfl-01…24`, `android-r3` |
 | Voice alerts | Speak **all new readings** or **only alerts**; Android in the background (text to speech, the app's language when a voice exists); iOS only while the app is open with auto-lock off (tip: Announce Notifications); CarPlay speaks on leaving range or every reading. A blind reviewer relies on it and asks for voice choice | F | phones | **Partly**: *Read glucose aloud* on demand, Android and Mac | `android/settings-21`, `reviews`, `ios-bundle/` |
 | Alert reliability | "Keep alerts reliable": battery optimisation; Notifications, Full-screen alarm and Do Not Disturb access checks, each opening its system page; steps per phone maker (Samsung, Xiaomi, Huawei, OnePlus / Oppo / Realme, Vivo) | F | Android | **Yes**, with Allow and Turn off ([Blocked features](FEATURES.md#blocked-features-both-apps)) | `android/settings-41…44` |
 | Medication reminders | Insulin (basal) or medication: name, time, days, units / dose, alert style, sound; exact alarms on the phone (a new phone shows *Allow exact reminders*), kept on that phone; the notification says "Time to take your {name}." without the dose, with ✓ I took it / Skip today / Remind in 1 h (a different amount in the app); *I took it* from the shade logs the dose at the reminder's time without opening the app; "Still pending: X"; two free, "+" for a third opens the paywall | F / P | phones | **No** (sensor reminders only) | `android/settings-22…26`, `notif-05`, `android/r2-log-27…31`, `r2-free-21…22` |
@@ -159,21 +201,21 @@ The owner's words (the issue), condensed:
 | Feature | What it does · how | Plan | Where | Sukrara today | Source |
 |---|---|---|---|---|---|
 | Care Circle page | "…They see your glucose, alerts and LogBook. They can add to your LogBook only if you allow it. Always free…"; Invite someone to follow you; People I follow › Follow someone (code or scan: "The person you follow can see when you last checked on them and whether alerts reach you."); My followers; *Share sleep and heart data* for the whole circle; *Stop everyone adding to my LogBook*; *Who saw my data*; a Family Plan card. A manual account has no Care Circle row and no Invite | F | phones, web | **Yes**: Settings › Share with followers ([Share with followers](FEATURES.md#share-with-followers-wearer)) | `android/r2-share-01`, `-14`, `-15`, `-100`, `web/care-*` |
-| Invite | Three sheets in a row: **Share openly** / **Require my approval**; **Permanent / 48 hours / 1 week / Custom end date**; **Everything / Glucose and emergencies only / Everything, plus adding to LogBook**; then a one-time 8-character code with QR (72 h to redeem), Copy code, *Share invite* (the system sheet), what the invite grants in words, "Keep this open until they're in" (the sheet doesn't change when they join) | F | phones, web | **Yes**: invite link or QR, each request reviewed | `android/care-03`, `android/r2-share-02…05`, `-93` |
-| Join | The invite link (an App Link) opens straight to "Request sent · We've asked them to approve you…", with no name of who invited and no confirm step; or the code typed or scanned; a used code: "That invite is invalid, already used, or expired. Ask them to send a fresh one." A new follower's setup: "Following a family member? … You don't need your own sensor", the alert permission, *Try a test alert*, then the wearer's Home | F | phones | **Yes**, showing who invites with their picture, *Follow* / *Cancel*, and a match code when two devices tried the same link ([Following (Android)](FEATURES.md#following-android)) | `android/r2-share-10`, `-21`, `-41…46`, `-94` |
+| Invite | Three sheets in a row: **Share openly** / **Require my approval**; **Permanent / 48 hours / 1 week / Custom end date**; **Everything / Glucose and emergencies only / Everything, plus adding to LogBook**; then a one-time 8-character code with QR (72 h to redeem), Copy code, *Share invite* (the system sheet), what the invite grants in words, "Keep this open until they're in" (the sheet doesn't change when they join). An invite that allows adding always needs approval, even *Share openly* ("You'll approve them before they see anything.") | F | phones, web | **Yes**: invite link or QR, each request reviewed | `android/care-03`, `android/r2-share-02…05`, `-93`, `android/r3-care-02…07` |
+| Join | The invite link (an App Link) opens straight to "Request sent · We've asked them to approve you…", with no name of who invited and no confirm step; or the code typed or scanned; a used code: "That invite is invalid, already used, or expired. Ask them to send a fresh one." A new follower's setup: "Following a family member? … You don't need your own sensor", the alert permission, *Try a test alert*, then the wearer's Home. Without the app, the invite page `api.sugarsense.io/api/v1/care/join?code=…` (*seen*, English, light or dark): "You've been invited to follow a loved one's glucose…", the code in large type with *Copy code*, *Open in Sugar Sense* (the `sugarsense://` scheme), both stores, "It works once and expires within 72 hours"; the page doesn't check the code (any value shows the same); with no code, "This invite link looks incomplete" and where to make a new one. The shorter `/care/join`, which the app also claims as an App Link, has no web page (a bare error) | F | phones, web | **Yes**, showing who invites with their picture, *Follow* / *Cancel*, and a match code when two devices tried the same link ([Following (Android)](FEATURES.md#following-android)) | `android/r2-share-10`, `-21`, `-41…46`, `-94`, `care-join`, `web/care-join-*` |
 | Approval | A notification "New follow request · {name} asked to follow your glucose. Approve or decline in Care Circle." with no buttons; the row "Wants to follow you — tap to approve"; a sheet naming what the invite grants (adding to the LogBook) with Approve / Decline; open invites skip it | F | phones | **Yes**: the wearer allows or denies each device | `android/r2-share-11…14` |
 | What followers see | A scope per follower, changeable later: Everything / Everything, without sleep and heart data / Glucose and emergencies only; history, stats and streaks, Insights, a sleep / heart card; the wearer's unit (a per-follower unit and language exist in the API, behind a flag) | F | phones, web | **Partly**: glucose, treatments and alerts; *Can add treatments* | `android/r2-share-31`, `priv` |
 | The follower's app | Home is the wearer's: "Following · can add" (or "read-only") with their name and initials, their value, chart with entries, time in range, an AI card ("Unlock AI to see why 🔒" when free), Live Updates and Snooze; Settings gains *Alerts for {name}* and Wear OS; Statistics with export; the Care Circle lists who you follow with ••• *Alert settings / Rename / Relationship / Stop following*. Glucose-only: no entries or AI card, "Readings in Range 210 of 371" | F | phones, web | **Yes**: the follower's home, widgets and live notification show the wearer ([Following (Android)](FEATURES.md#following-android)) | `android/r2-share-47…59`, `-66`, `-97` |
 | Caregiver logging | Followers with adding allowed write into the wearer's LogBook: "Add to {name}'s day" with the whole sheet (food scanning included), "For {name}" on the form, a first-save notice ("Your name, {name}, will appear on entries you add…"), then "Logged by {name} (Partner)" on both sides, with no notification to the wearer; a duplicate-insulin guard ("You logged 4 units at 12:10 · Add anyway?"); the wearer can stop one follower or everyone adding | F | phones, web | **Yes**: writers add treatments, *Sending… / Not sent · Retry*; a duplicate guard for pen doses ([Insulin pens](FEATURES.md#insulin-pens-docs29)) | `android/log-12`, `android/r2-share-61…65`, `-80`, `-86`, `-87`, `reviews` |
-| Follower alerts | Per person, *Alerts for {name}*: **Wake me for emergencies** (off by default: urgent low and high through silent and Do Not Disturb), *Send a test alert*, and under *Advanced*: Very low (Time Sensitive, every 30 min), Very high (Time Sensitive, no repeat setting), Heading low and Missed readings (every 30 min), quiet hours that hold heading-low and readings-stopped notices for one summary (urgent low and high always come through); the wearer's limits, no plain low / high or rapid-change alerts. **Round 3 pending**: real follower alerts and their delay | F | phones | **Yes**, differently: the follower runs the wearer's rules or its own (*Settings from*), every kind, and gets *Very low · no response* | `android/r2-share-52…55`, `web`, `priv` |
-| "I'm on it" | A follower acknowledges an alert; the others see "Mom is responding", with 5 s undo. **Round 3 pending** | F | phones | **No** | `android` strings |
+| Follower alerts | Per person, *Alerts for {name}*: **Wake me for emergencies** (off by default: urgent low and high through silent and Do Not Disturb; turning it on asks for Do Not Disturb access), *Send a test alert*, and under *Advanced*: Very low (Time Sensitive, every 30 min), Very high (Time Sensitive, no repeat setting), Heading low and Missed readings (every 30 min), quiet hours that hold heading-low and readings-stopped notices for one summary (urgent low and high always come through); the wearer's limits, no plain low / high or rapid-change alerts. *Seen* on the follower: heading low ("{name} may be heading low · {name}'s glucose is dropping (111 mg/dL)…") the same second as the wearer's; very low ("{name} is very low · … They may need help right now.") 32 s after the wearer's and very high 1 s after, both with *I'm on it*; "{name}'s readings stopped" at 15–19 min; "{name} is back in range" 12–14 min after; "Readings from {name} are back: 6.7" (the wearer's unit, no unit word). Nothing about lows, highs, fast changes or calls; {name} is the follower's private nickname | F | phones | **Yes**, differently: the follower runs the wearer's rules or its own (*Settings from*), every kind, and gets *Very low · no response* | `android/r2-share-52…55`, `web`, `priv`, `android/r3-sc-21…23`, `-st-11`, `android/r3-care-19…21` |
+| "I'm on it" | A follower acknowledges a very low or very high; the strings say the other followers then see "Mom is responding" (*read*; with one follower, not seen). *Seen*: the alert turns into "You're on it" with Undo and goes after about a minute; Undo (used 21 s later) withdrew it but didn't bring the alert back. The wearer got "{name} saw your alert · {name} (Partner) saw your alert and is responding." 3 min later, and nothing on Home or in the Care Circle | F | phones | **No**; a follower's history says when the wearer answered a very low | `android` strings, `android/r3-ack-03…23` |
 | Receipts to the wearer | "Checked on you today / this week" on the follower's row, "Hasn't been able to receive alerts since {date}"; the follower is told this is visible | F | phones, web | **Partly**: past followers with the date they left, who is nearby | `web`, `android/r2-share-14`, `-100` |
 | Pause, time limits, stop | Pause sharing per follower: 2 hours / Until tomorrow at 08:00 / Custom, then "Keep emergency alerts / Pause everything" (it didn't take in the test: [bugs](#their-weak-spots)); access that ends ("Ends 23 Nov" on both sides); *Stop sharing with them* ends it at once, with no confirmation, and the follower sees "Following ended · You no longer have access to {name}'s glucose…"; the follower's *Stop following* asks first; access stops within about a minute | F | phones | **Partly**: remove a follower, sharing over the internet on / off; no pause or time limit | `android/r2-share-30…35`, `-90…92`, `-102`, `priv` |
 | Who saw my data | "Who checked on you over the last 7 days, and any files they exported in the last 30 days. Sugar Sense shows when someone looked, never how many times."; AI assistants included; a 90-day audit kept on the server; never loaded in the test ("Couldn't load right now") | F | phones | **No** | `android/r2-share-82`, `priv` |
 | Labels and nicknames | The follower picks the relation (Mom, Dad, Guardian, Partner, Sibling, Grandparent, Child, Friend, Caregiver, School nurse, Other), shown "on their follower list and in their notifications about you"; private nicknames (*Rename*); a new follower introduces itself with a name and a relation | F | phones, web | **Partly**: the wearer's name and picture, the follower's name | `android/r2-share-58`, `-59`, `-95`, `web` |
 | Follower glanceables | A "mirror" Live Activity / Live Update, widgets and watch of the person followed (the same 5 styles, no capsule); a free follower, even of a Premium wearer, gets the **Sugar Sense Family** paywall | P | phones | **Yes**, free: a follower's notification and widgets show the wearer | `priv`, `android/r2-share-70…72` |
 | Family plan | Premium for up to 6 people in the circle ($59.99 / yr; €64.99 / yr or €5.42 / mo on a Spanish device): live notification, watch, widgets, insights, AI scanning for everyone | P | phones | n/a (free) | `ios`, `android/care-05`, `android/r2-share-71` |
-| Follow several people | Follow ≤ 10 people; ≤ 10 followers each; **Care Board** shows everyone at once (reorderable); every companion has a person switcher; the display shows up to 4 tiles; Alexa "how is everyone"; you can follow while you share. **Round 3 pending**: following while sharing, the switcher, the Care Board | F | all | **No**: one person per device ([Source](FEATURES.md#source-whose-glucose-and-where-it-comes-from-both-apps)) | `web`, `gh-disp`, `alexa` |
+| Follow several people | Follow ≤ 10 people; ≤ 10 followers each; **Care Board** shows everyone at once (reorderable); every companion has a person switcher; the display shows up to 4 tiles; Alexa "how is everyone" (*claimed*, *read*). You can follow while you share; *seen* with one person each way, it is a side view: no switcher and no board; Settings › Care Circle › "Tap to view glucose" opens a bare card (name, "Following · read-only", value, arrow, unit, "Updated just now", Refresh; no chart or history), in the followed person's unit; alerts about them come as above | F | all | **No**: one person per device ([Source](FEATURES.md#source-whose-glucose-and-where-it-comes-from-both-apps)) | `web`, `gh-disp`, `alexa`, `android/r3-care-13…17` |
 
 ### LogBook
 
@@ -188,7 +230,7 @@ The owner's words (the issue), condensed:
 | Note and tags | 140 characters; tags 🤒 Sick, 😰 Stress, 🍷 Alcohol, ✈️ Travel, 🌙 Late night, kept out of insights so unusual days don't skew them | F | phones (web: 4 tags) | **Partly**: notes, no tags | `android/log-17`, `android/r2-log-13` |
 | Day view | Day with a calendar, filter chips with counts, day sums ("In Range 58% · Carbs 143 g · Insulin 25 u · Activity 27 m"), Morning / Afternoon groups; each row with the glucose at entry and its arrow; tap to edit (the same form); swipe to delete, confirmed, **no undo** | F | phones, web | **Partly**: 24 h on home and a 31-day Treatments page, glucose and trend at logging, swipe to delete with Undo | `android/log-10`, `log-30…31`, `android/r2-log-17`, `-18` |
 | Meal response | Under each entry: "Peaked 154 mg/dL, +5 in 39 min · back in 14 min"; activity: "Dropped Δ to x" | F | phones, web | **No** | `android/log-10`, `android/r2-log-17` |
-| Where entries go | **Their server only**: the web LogBook within seconds, the PDF, Copy for AI, the AI connector, Sense Check's ring; on iOS meals and insulin also go to Apple Health (since 2.3). **Not Health Connect** (glucose is the one record it writes), **not LibreView** (the first round's carbs, scanned meal, reminder insulin and note are absent from the owner's LibreView export taken hours later, which has no food or note record after 13 Nov and only another app's insulin), **not Nightscout** (no LibreView, Dexcom or Nightscout address in the app, no outside write among its requests; the server holds those logins "used only to read"). Statistics and insights ignore entries (their patterns are glucose-only). **Round 3 pending**: entries with a Nightscout source, and Nightscout treatments coming in | F | phones, web | **Yes**: insulin, carbs and notes to LibreView, Tidepool and Nightscout when turned on, treatments both ways with a Nightscout source ([LibreView upload](FEATURES.md#libreview-upload), [Tidepool upload](FEATURES.md#tidepool-upload-docs27), [Nightscout upload](FEATURES.md#nightscout-upload-docs25)) | `android/r2-*`, `web/r2-logbook-01-owner-entries`, `lv`, `changelog` |
+| Where entries go | **Their server only**: the web LogBook within seconds, the PDF, Copy for AI, the AI connector, Sense Check's ring; on iOS meals and insulin also go to Apple Health (since 2.3). **Not Health Connect** (glucose is the one record it writes), **not LibreView** (the first round's carbs, scanned meal, reminder insulin and note are absent from the owner's LibreView export taken hours later, which has no food or note record after 13 Nov and only another app's insulin), **not Nightscout** (no LibreView, Dexcom or Nightscout address in the app, no outside write among its requests; the server holds those logins "used only to read"). With a Nightscout source (*seen*): a meal with 2 u logged in the app caused no request to the site (every request was a read), and the site's Meal Bolus, Correction Bolus, Carb Correction, Note and Exercise never reached the LogBook or the chart: only *Sensor Start* / *Sensor Change* is read. Statistics and insights ignore entries (their patterns are glucose-only) | F | phones, web | **Yes**: insulin, carbs and notes to LibreView, Tidepool and Nightscout when turned on, treatments both ways with a Nightscout source ([LibreView upload](FEATURES.md#libreview-upload), [Tidepool upload](FEATURES.md#tidepool-upload-docs27), [Nightscout upload](FEATURES.md#nightscout-upload-docs25)) | `android/r2-*`, `web/r2-logbook-01-owner-entries`, `lv`, `changelog`, `android/r3-tr-04-e1-logbook` |
 | Health imports | Apple Health: meals, insulin, workouts, sleep, resting HR, HRV in; glucose, carbs, insulin out (edits and deletes follow). Health Connect: the same in; **glucose out only** (from the server's graph, not while viewing someone followed) | F | phones | **Partly**: glucose out to Health Connect (carbs and insulin left out on purpose, [Not included](FEATURES.md#not-included)) | `priv`, `android` decompiled |
 
 ### Food and AI
@@ -224,7 +266,7 @@ The owner's words (the issue), condensed:
 
 | Feature | What it does · how | Plan | Where | Sukrara today | Source |
 |---|---|---|---|---|---|
-| Account | Sign in with Apple, Google or email; three consents at sign-up (terms and privacy, the medical disclaimer, health-data processing; marketing email optional); the same account on every device; companions sign in through the web; delete in the app; raw readings pruned after ~365 days. **Round 3 pending**: deleting an account | F | all | **No account**: a sharing identity with a recovery code; data on the device ([Share with followers](FEATURES.md#share-with-followers-wearer)) | `priv`, `del`, `android/r2-onb-12` |
+| Account | Sign in with Apple, Google or email; three consents at sign-up (terms and privacy, the medical disclaimer, health-data processing; marketing email optional); the same account on every device; companions sign in through the web; raw readings pruned after ~365 days. **Delete account** (Settings › Terms & account, *seen* on the second account): one dialog, "This permanently deletes your Sugar Sense account and all of its data. Glucose syncing, alerts and emergency calls will stop. This cannot be undone."; no new sign-in, no export offer, no word on a subscription; 2 s later the Welcome screen; the server stopped reading its Nightscout site 21 s later; the owner's Care Circle lost both links (the person followed and the follower) with no notice | F | all | **No account**: a sharing identity with a recovery code; data on the device ([Share with followers](FEATURES.md#share-with-followers-wearer)) | `priv`, `del`, `android/r2-onb-12`, `android/r3-del-01…10` |
 | Profile | Name (live check, ≥ 3 characters), avatars (memoji) | F | phones | **Yes**, name and picture | `android/home-06`, `-07` |
 | Settings tree | Glucose source · Alerts (Notifications, Call for low, Voice, Reminders, Live Updates, Widgets, Alert reliability) · Display (hide Home cards, app lock) · General (unit, language, graph, dark mode) · Integrations · Support · Terms & account | F | phones | **Yes**, organised differently, with search ([Settings](FEATURES.md#settings)) | `android/settings-01…06` |
 | App lock | Fingerprint / screen lock (Android), Touch ID (Mac) | F | phones | **No** | `android/settings-*` |
@@ -238,17 +280,17 @@ The owner's words (the issue), condensed:
 
 | Who | Free | Premium (where the paywall showed) |
 |---|---|---|
-| Wearer with a sensor | Live readings, every alert (heading low, quiet hours, tests), the Care Circle ("Always free": invite, approval, scopes, time limits, pause, adding, the access log, stopping), the LogBook with My Foods and Your Usual, 3 food scans, stats for today / 7 / 14 days, CSV, the Morning Report, Copy for AI, two reminders, Alexa voice, Siri, Health Connect / Apple Health, web, Mac, Windows, extensions, Home Assistant, the display | AI explanations, scans after 3, the AI connector ("🔒 Premium feature"), 30 / 90 days (lock badges) and the Daily Pattern, PDF, Night in detail, Call for low, a third reminder, widgets, Live Updates / Live Activity, the capsule, CarPlay, Apple Watch, Wear OS, Garmin (pairing still offered under a 🔒 PRO chip), the Echo Show widget, the contact photo, calendar sync |
+| Wearer with a sensor | Live readings, every alert (heading low, quiet hours, tests; in round 3 the free account got the missed-readings escalation but not the 20-min alert before it, cause not found), the Care Circle ("Always free": invite, approval, scopes, time limits, pause, adding, the access log, stopping), the LogBook with My Foods and Your Usual, 3 food scans, stats for today / 7 / 14 days, CSV, the Morning Report, Copy for AI, two reminders, Alexa voice, Siri, Health Connect / Apple Health, web, Mac, Windows, extensions, Home Assistant, the display | AI explanations, scans after 3, the AI connector ("🔒 Premium feature"), 30 / 90 days (lock badges) and the Daily Pattern, PDF, Night in detail, Call for low, a third reminder, widgets, Live Updates / Live Activity, the capsule, CarPlay, Apple Watch, Wear OS (the watch: "Open Sugar Sense on your phone and subscribe", *read*), Garmin (pairing still offered under a 🔒 PRO chip), the Echo Show widget, the contact photo, calendar sync |
 | Free follower of a Premium wearer | Live glucose, chart, LogBook (by scope), stats 7 / 14 days, alerts and their settings, the test alert, snooze, CSV, adding entries, scanning food for the wearer | AI explanations, 30 / 90 days, PDF ("Pro"), Live Updates, widgets, the watch: the **Family** paywall |
 | Manual (no sensor) | Typed readings, the LogBook, stats, CSV, reminders | The same gates; no sharing |
 
-- **One paywall for every gate** (the Settings header card, 30 / 90 days, a third reminder, the fourth scan), with no word on
-  what was tapped: "How your 7-day free trial works" (today full access, a reminder on day 6, charged on day 7), four
-  benefits (AI meal scanning, AI insights, ChatGPT / Claude & more, watch + live notification + widgets), **Yearly**
-  "Start for free" €41.99 ("€3.50/mo", struck €119.88, "SAVE 65%") and **Monthly** €9.99, which has **no trial**
-  ("Unlock Sugar Sense Pro"); Restore, Terms, Privacy. Closing it the first time: "Start your 7-day free trial · No
-  payment now · … We'll remind you before your free trial ends · Start my free week / I don't want it"
-  (`android/r2-free-11…13`).
+- **One paywall for every gate** (the Settings header card, 30 / 90 days, a third reminder, the fourth scan), with no
+  word on what was tapped (except Call for Low's, headed "UNLOCK CALL FOR LOW", `android/r3-cfl-06`): "How your 7-day
+  free trial works" (today full access, a reminder on day 6, charged on day 7), four benefits (AI meal scanning, AI
+  insights, ChatGPT / Claude & more, watch + live notification + widgets), **Yearly** "Start for free" €41.99
+  ("€3.50/mo", struck €119.88, "SAVE 65%") and **Monthly** €9.99, which has **no trial** ("Unlock Sugar Sense Pro");
+  Restore, Terms, Privacy. Closing it the first time: "Start your 7-day free trial · No payment now · … We'll remind you
+  before your free trial ends · Start my free week / I don't want it" (`android/r2-free-11…13`).
 - Followers get *Sugar Sense Family* instead (€5.42/mo, €64.99/yr). The sensor path through onboarding ends on the
   paywall; the meter path ends on a Free vs Premium table ("Your safety net stays free, always. Premium is free for your
   first 7 days") with no paywall (`android/r2-onb-23`).
@@ -272,12 +314,16 @@ The owner's words (the issue), condensed:
 ## How it's built
 
 - **Cloud polling**: their servers hold the person's LibreLinkUp, Dexcom Share or Nightscout credentials (encrypted,
-  AES-256-GCM) and poll them around the clock (LibreLinkUp every 2–3 min, from the readings' times). The chain for one
-  reading: sensor → the maker's app → the maker's cloud → Sugar Sense's server → push → phone, 21–24 s after the
-  reading reached LibreLinkUp.
+  AES-256-GCM) and poll them around the clock (LibreLinkUp every 2–3 min, from the readings' times; a Nightscout site
+  every ~10–35 s, from its request log). The chain for one reading: sensor → the maker's app → the maker's cloud → Sugar
+  Sense's server → push → phone, 21–24 s after the reading reached LibreLinkUp.
 - **Server-side alerts**: low, high, rapid change, missed readings and the prediction are worked out on the server and
-  sent by APNs / FCM with their priority, tone and channel, in the same push as the reading; the Android app has **no
-  glucose logic** (none in the APK). Followers' copies, the phone call and quiet hours run there too.
+  sent by APNs / FCM in pushes of their own, with their priority, tone and channel (from LibreLinkUp, in the same second
+  as the reading's push; from Nightscout, 23–55 s after the reading while the readings' pushes came every 1–4 min); the
+  Android app has **no glucose logic** (none in the APK). Low and high alert on the first reading past the line, very
+  high on the second, very low on the third; the very low goes out Critical (through Do Not Disturb, alarm usage) with
+  no full-screen intent. Followers' copies, *I'm on it*, the phone call (two calls ~5 min apart, then the emergency
+  contact) and quiet hours run there too; an alert held by quiet hours is sent when they end.
 - **The phone** (the owner's Pixel, root): no reading database. One preferences file holds the last 72 readings (3 h),
   the profile (limits, each alert's settings, the emergency contact), the sensor (serial, start, length, the country's
   Abbott support), quiet hours, recent foods, the onboarding answers and the sign-in tokens; a Firestore cache holds
@@ -296,8 +342,14 @@ The owner's words (the issue), condensed:
   follower only / no source*.
 - **Watches**: Garmin's apps call their server through **Garmin Connect on the phone** (one kept-alive HTTP/2
   connection), one background run per app every 5 min (~300 B up, ~750 B down), the Sugar Sense phone app not involved;
-  the widget keeps running for its glance after the face is switched off. Wear OS is fed by the phone app over the Wear
-  data layer on each push. The Apple Watch has a *Sync Now* from the iPhone (unit, limits, readings).
+  the widget keeps running for its glance after the face is switched off. **Wear OS** (*read* in the watch APK, not
+  obfuscated, and *seen*): on each push the phone app writes three data items to every connected watch: the glucose (the
+  newest 72 points, unit, the four limits, colour style; ~3 KB of JSON), Premium on or off, the face style; the watch
+  asks for a refresh with a message, which the phone serves at most once a minute with the last 3 h from their server.
+  The watch app declares only vibration, wake lock and the Play licence check: no internet, no notifications, no
+  sensors; its complications carry a timeline that turns them stale 30 min after the reading without waking the app;
+  two more complication sources pack zone and arrow for an unpublished Sugar Sense watch face. The Apple Watch has a
+  *Sync Now* from the iPhone (unit, limits, readings).
 - **One pairing pattern for four devices**: the device shows a 6-character code (10 min) and a QR; the person confirms
   on the phone or a signed-in web page; the device polls and gets a read-only session token; unpairing revokes it
   (Garmin, each app on its own; Home Assistant; the display). The extension, Mac and Windows apps sign in on the web
@@ -307,12 +359,14 @@ The owner's words (the issue), condensed:
 - **Shared rules**: one fixture (the change rule) tested by iOS, Android, web, Home Assistant, the display and the
   extension; an open-source units package (npm and Ruby gem) with conversion, zones, TIR and GMI.
 - **Remote control**: about 60 remote flags (each feature, a kill switch per source, forced and soft updates, What's
-  New, the review-prompt numbers, onboarding social proof, Android Auto off, Samsung's Now Bar on).
+  New, the review-prompt numbers, onboarding social proof, Android Auto off, Samsung's Now Bar on, the phone bridge
+  `phoneBridgeEnabledAndroid` off).
 - **The LibreLinkUp shutdown plan**: a page ready at `app.sugarsense.io/app/libre` behind a flag (off on 2026-11-21):
-  "Abbott has switched off the LibreLinkUp connection…"; Android → Juggluco → Nightscout (full alerts) or Health
-  Connect (no alerts); iPhone → xDrip4iOS → Nightscout, a spare Android, or Dexcom; refunds for Pro; "building a direct
-  bridge from Juggluco into the Android app" and "asking Abbott for official access". The bridge is already in Android
-  2.7.0. No public sign that Abbott plans it (unverified); Abbott's status page lists a new "Libre Data Sharing API".
+  "Abbott has switched off the LibreLinkUp connection…"; Android → Juggluco → Nightscout (full alerts) or Health Connect
+  (no alerts); iPhone → xDrip4iOS → Nightscout, a spare Android, or Dexcom; refunds for Pro; "building a direct bridge
+  from Juggluco into the Android app" and "asking Abbott for official access". The bridge's code is in Android 2.7.0,
+  switched off. No public sign that Abbott plans it (unverified); Abbott's status page lists a new "Libre Data Sharing
+  API".
 - **Stack**: native Kotlin + Jetpack Compose on Android (Hilt, Room, Glance, CameraX, WorkManager, ML Kit, Play
   Integrity); a native iOS app (WidgetKit, ActivityKit, CarPlay templates, App Intents; entitlements for Critical
   Alerts, Time Sensitive, HealthKit background delivery, CarPlay driving task); a React web app; on Windows **.NET 8
@@ -330,10 +384,10 @@ The owner's words (the issue), condensed:
 | Where glucose comes from | Their server polls the maker's cloud | The phone reads the sensor (Libre 3), Juggluco, or polls LibreLinkUp / Nightscout itself |
 | Where alerts run | Their server, pushed | Each device, one rules spec with shared timeline scenarios on Android and Mac |
 | Without internet | No alerts, no glanceables | The direct sensor, alerts and widgets keep working; followers nearby over Bluetooth |
-| Delay | LibreLinkUp every 2–3 min, then 21–24 s to the phone | LibreLinkUp about 10 s; the sensor every minute |
+| Delay | LibreLinkUp every 2–3 min, then 21–24 s to the phone; Nightscout read every 10–35 s, alerts 23–55 s after the reading, the screen's readings every 1–4 min | LibreLinkUp about 10 s; Nightscout asked again right after the next reading is due; the sensor every minute |
 | Sharing | An account graph on their server | End-to-end encrypted over Nostr relays, or Bluetooth; no account, no server |
 | Companions | Read-only, never alert | The Mac alerts; the Garmin face shows alert state |
-| Watches | Garmin fetches from their server through Garmin Connect; Wear OS fed by the phone app | The Garmin face pulls from Sukrara on the phone, never the internet |
+| Watches | Garmin fetches from their server through Garmin Connect; Wear OS fed by the phone app (the newest 72 points), never alerting on the wrist | The Garmin face pulls from Sukrara on the phone, never the internet; alerts reach a Wear OS watch as separate notifications |
 | Data | On their server (raw readings ~365 days); the phone keeps 3 h | On the device; export, import, uploads the person chooses |
 | Outputs | Glucose to Health Connect and Apple Health; meals and insulin to Apple Health; nothing to LibreView or Nightscout | Glucose and treatments to LibreView, Tidepool, Nightscout; a local Nightscout / xDrip+ API; broadcasts |
 | Changing the app's behaviour | Remote flags, any day | Releases |
@@ -342,17 +396,18 @@ The owner's words (the issue), condensed:
 ## Where Sukrara differs
 
 **They have, Sukrara doesn't:**
-- Surfaces: iPhone, Apple Watch, CarPlay (alerts and spoken readings in the car), Wear OS app, Windows (tray badge, a
-  capsule on the taskbar), browser extensions, web dashboard, Alexa, Siri and Shortcuts, Home Assistant, MCP (Claude,
-  ChatGPT), a DIY display, a Garmin widget and a data field that records glucose into activities; full-screen Day /
-  Night / Car views; a floating capsule; the glucose as a contact photo; readings in a calendar.
+- Surfaces: iPhone, Apple Watch, CarPlay (alerts and spoken readings in the car), a Wear OS app (face, chart, tile,
+  complications; no setup on the watch), Windows (tray badge, a capsule on the taskbar), browser extensions, web
+  dashboard, Alexa, Siri and Shortcuts, Home Assistant, MCP (Claude, ChatGPT), a DIY display, a Garmin widget and a data
+  field that records glucose into activities; full-screen Day / Night / Car views; a floating capsule; the glucose as a
+  contact photo; readings in a calendar.
 - Sources: Dexcom Share, Apple Health / Health Connect, manual entry.
 - Alerts: heading low (predictive), a phone call with an emergency contact, voice on every reading, priority per
   alert, quiet hours by days, medication reminders that log the dose from the notification, a delivery diagnosis when
   testing an alert.
-- Care: several people at once (Care Board, switchers), a scope per follower, approval optional per invite,
-  time-limited access, pause with or without emergencies, "I'm on it", check-in receipts, who saw my data, relations
-  chosen by the follower, a first-save notice that the follower's name shows.
+- Care: several people at once (Care Board, switchers), a scope per follower, approval optional per invite, time-limited
+  access, pause with or without emergencies, "I'm on it" with a notice back to the wearer, check-in receipts, who saw my
+  data, relations chosen by the follower, a first-save notice that the follower's name shows.
 - Log and AI: meal names, insulin names, My Foods with portions and each food's response, Your Usual, medication,
   activity and imported workouts, meter checks, context tags, meal response, food photo and barcode scanning, AI
   insights, Morning Report, Copy for AI, the AI connector.
@@ -365,10 +420,11 @@ The owner's words (the issue), condensed:
 - The sensor read directly (Libre 3; Dexcom, Accu-Chek SmartGuide, Aidex untested), alerts and glanceables without
   internet, before the first unlock after a restart ([Before the first unlock](FEATURES.md#before-the-first-unlock-android)).
 - Sharing end-to-end encrypted with no account; followers nearby over Bluetooth; escalation to followers when a very
-  low gets no answer; a join that shows who invites before anything is asked.
+  low gets no answer; a join that shows who invites before anything is asked; the wearer told when a follower leaves.
 - Alerts on the Mac; treatments on the Mac.
-- Alert depth: extremely high, LO / HI, night rules, waits near a threshold, Remind less, a treatment that quiets the
-  alert it answers, the badge as an action (*Eat carbs*), sound packs, rules checked by shared timeline scenarios.
+- Alert depth: extremely high, LO / HI, a very low that rings on its first reading, night rules, waits near a threshold,
+  Remind less, a treatment that quiets the alert it answers, the badge as an action (*Eat carbs*), sound packs, rules
+  checked by shared timeline scenarios.
 - Outputs: glucose and treatments to LibreView, Tidepool and Nightscout, a local Nightscout / xDrip+ API, broadcasts
   to AAPS and other apps ([Share with apps on this phone](FEATURES.md#share-with-apps-on-this-phone-investigation-22));
   Import history.
@@ -389,6 +445,8 @@ The owner's words (the issue), condensed:
 | Ranges | 4 limits, a value on a limit is out of range | 6 ranges, low below its threshold, very low at or below, highs at or above |
 | Following | Up to 10 people, a board, scopes, pause, time limits; approval optional; four kinds of alert at the wearer's limits | One person per device, the wearer's rules or its own, every kind; every device approved |
 | Joining | The link goes straight to a request, nothing shown | The invite's name and picture, *Follow* / *Cancel*, a match code |
+| No answer to a very low | Calls to the wearer's phone (two, ~5 min apart), then one to an emergency contact's number, ~14 min after the first unanswered call; nothing shown in either app | The followers' phones get *Very low · no response* after 5 min (5–30 min) with no answer on the wearer's phone; in the history on both sides |
+| Nightscout as the source | Their server reads every 10–35 s, never writes; alerts reach the phone in 23–55 s | The phone (or Mac) reads the site itself right after a reading is due; treatments both ways |
 | Caregiver logging | Into the LogBook, named, no notice to the wearer | Writers add treatments, with delivery state |
 | Garmin | 3 apps, Premium; Garmin Connect fetches from their server every 5 min | 1 face, free; pulls from Sukrara on the phone every 5 min |
 | Mac | A read-only menu bar glance and a widget | Menu bar, panel, widgets, alarms, treatments, report, read aloud |
@@ -430,6 +488,16 @@ The owner's words (the issue), condensed:
   one (iOS wording).
 - The privacy policy names Sentry; the Android app has none. Android Auto is listed by a review but not shipped.
   Dexcom ONE support is contradicted between the store and reviews.
+- Call for Low is described as a call on a *confirmed* low (`priv`, `ds`); the first call came on the first reading
+  ≤ 60, while the very-low alert waits for a third reading past 55, so a call can come before the very-low alert, or
+  with it.
+- A Big drop read "Glucose normal, rapidly dropping · 76 ↓ (+23)": the change is against 5 min earlier, when glucose
+  was still rising. The missed-readings alert says "You didn't have new readings since 20 minutes" at 19 min.
+- Wear OS: the tile's change is since the previous reading (0, +12) and the app's over 5 min (−13, +60); at one moment
+  the age read 01:59 in the app, "now" on the tile and "3M" on the complications; the app, chart and tile go stale at
+  15 min, the complications at 30, and then only lose a colour a monochrome face never drew (*seen*: "31M 122" looked
+  fresh). The store's Wear OS text promises a tile with a 3 h graph: it drew a sparkline of what the phone sent (~70 min
+  on this 1-min feed).
 
 **Bugs seen:**
 - iPhone app on the Mac: a new meal's time defaults to "1/1/2001, 2:00 AM"; VoiceOver hears unnamed groups.
@@ -455,6 +523,13 @@ The owner's words (the issue), condensed:
   a grant too: unverified).
 - Garmin: installing the face makes it the watch's face at once, and Garmin Connect can't switch this watch back; the widget checks
   its pairing code only while open, and reopening it drops a code already claimed (three codes for one pairing).
+- Android, round 3: *I'm on it*'s Undo withdrew it but didn't bring the alert back; after a source switch, a follow
+  vanished from one side only; the wearer's Care Circle list still didn't refresh after a request; deleting a
+  quiet-hours schedule asks nothing.
+- Wear OS (emulator): the 12 h and 24 h charts show ~70 min; the chart's numbers cover its time labels; the ranged
+  complication has no arrow; nothing on the watch says the phone is out of reach, and once, after reconnecting, it kept
+  122 "IN RANGE" for 6 min while the phone alerted high (likely the emulator's link; restarting the watch's services
+  cleared it); the phone's *Sync now to your watch* gives no feedback.
 
 **By design:**
 - No alert when their server, the maker's cloud or the phone's internet fails; Apple Health / Health Connect sources and
@@ -466,30 +541,78 @@ The owner's words (the issue), condensed:
 - Every push wakes a connection to the subscription service and the Wear data layer: battery and data at every reading.
 - The connector can only ask assistants not to dose: ChatGPT asked for a carb ratio and correction factor anyway.
 
+**Lessons for Sukrara** (the mistake, then what Sukrara does instead):
+- **Glucose taken from any app** (the phone bridge; off in 2.7.0). The receiver for Juggluco's and xDrip+'s broadcasts
+  accepts them from every app on the phone, with range checks only; switched on, any installed app could feed the
+  readings that drive alerts, followers and calls. Sukrara takes no glucose broadcasts: it reads Juggluco from
+  Juggluco's own web server on the phone, with an optional API secret (which proves Sukrara to Juggluco, not the
+  reverse: an app holding Juggluco's port could still answer, a gap noted in [Sensor life](FEATURES.md#sensor-life)),
+  and sends its own broadcasts only to the apps the person allowed, each by package. Any new input: readings only from
+  the app the person picked (its package and signing certificate, or a permission it must hold), and its name shown
+  where the reading is.
+- **Phone numbers saved unchecked** (Call for Low). Neither the person's number nor the emergency contact's is
+  confirmed, so a typo leaves the safety net silently broken, and the contact never agrees to be called. Sukrara has no
+  calls: its escalation goes only to followers whose device the wearer approved. If calls or texts come: confirm each
+  number (a code, or a test call that must be answered), let the contact accept, and show the state in the app.
+- **An emergency message nobody can act on.** The emergency contact hears "Someone who added you as their emergency
+  contact…": no name, no next step, no key to answer; no app shows that calls happened. Sukrara's escalation is a
+  follower alert about the named wearer, and both sides' history says it was sent (*Very low: no answer for 5 min,
+  your followers were told*).
+- **A very low that waits.** Very low needed a third reading in a row past 55 (3 min on a 1-min feed; 55 then 53
+  never alerted).
+  Sukrara's very low, extremely high, LO and HI never wait ([SPEC §1](../contracts/alerts/SPEC.md)); the optional waits
+  near a threshold are for the milder kinds.
+- **Old news delivered late.** A Big drop held by quiet hours arrived when they ended, about a reading 9 min old, the
+  fall long over. Sukrara: when Mute all ends, whatever still matches the newest readings alerts at once, and nothing
+  else.
+- **A forecast from one pair of readings.** Heading low took its "~9 min" from two readings 16 s apart (55 came 28 min
+  later). The early warning is the valuable part, and users praise it; for Sukrara's planned prediction: the rate over
+  several minutes, as its fast alerts already use (a trend held for 5 min), and a loose time.
+- **A watch that only mirrors.** The Wear OS app can't alert, has three freshness rules, three changes and three ages,
+  sends a count of points (72 points: 6 h of 5-min data, 72 min of 1-min data), and never says the phone is out of
+  reach. Sukrara has one freshness rule for every surface ([Freshness](FEATURES.md#freshness-every-glucose-surface)) and
+  separate alert notifications for watches; its own Wear OS app should alert on the wrist, keep the card's one
+  freshness, change and age, send a time window, and show the link's state. Worth copying: no setup on the watch, the
+  face picked on the phone, a refresh on opening, Google's cloud route when Bluetooth is gone, complications that grey
+  on a timeline.
+- **Leaving without a word.** A deleted account vanished from the other person's Care Circle with no notice, and
+  *Stop sharing* has no confirmation. Sukrara tells the wearer when a follower leaves.
+- **An App Link with no page.** The app claims `/care/join` and `/api/v1/care/join`; only the second has a web page,
+  so the first opens the app when it is installed and a bare error page when it isn't (round 2 opened the short one;
+  which one the share text and QR carry wasn't checked). Sukrara's website check fails when a URL the apps open is
+  missing from the site.
+
 ## Not reached
 
-- **Round 3 pending** (running with two test Nightscout sites fed scripted readings): alert timings (heading low,
-  rapid change, missed readings and the escalation), real follower alerts and "I'm on it", following while sharing with
-  the person switcher and the Care Board, Call for Low with a real call and the emergency contact, the Juggluco /
-  xDrip+ bridge, entries and treatments with Nightscout both ways, switching sources, deleting an account.
+- **Alerts**: the very-low full-screen alarm (the server's pushes never asked for it); the Softer alerts and Pause all
+  modes; whether pressing 1 quiets later calls (the second low's call waited for the very low: that, or the episode
+  counted as one); why the free account got no 20-min missed-readings alert; heading low and Call for Low on a real
+  sensor (the scenarios used one scripted reading a minute).
+- **Sharing**: the Care Board and the person switcher (they need two people followed), "Mom is responding" (two
+  followers), a per-follower unit and language (no control in 2.7.0, behind a flag), the follower's quiet hours, what
+  *Who saw my data* lists and what a pause does (both failed in round 2), buying Family.
+- **Phone bridge** end to end: switched off by a server flag; Juggluco and xDrip+ not installed.
+- **Wear OS on a real watch**: the phone's alerts mirrored to the wrist (the emulator pairing had no notification
+  bridge), the text and image complications live, the open app's buzz on a zone change, the free and follower states.
 - **Apple Watch, CarPlay, Live Activity and Dynamic Island running**: no simulator runs the App Store build and the Mac
-  copy has no watch code; described from the bundle's strings, entitlements and images.
-- **Wear OS**: no watch; a Wear OS emulator paired with a phone emulator wasn't tried.
+  copy has no watch code; described from the bundle's strings, entitlements and images, and for the watch from the
+  App Store's screenshots (none shows Big Number, Halo, a complication, an alert or the follower view).
 - **Garmin**: the data field during an activity, the face's always-on look, the locked state on the watch, what the
   watch's requests contain (encrypted between Garmin Connect and their server).
 - **Windows**: following someone, live low / high / stale / paused states (seen only in the app's own renders),
   Narrator and the panel's accessibility tree, the x64 build and Windows 10, sign-in with Apple or email.
-- **Alexa and the DIY display**: no Echo or display linked; the skill from its store page.
+- **Alexa and the DIY display**: no Echo or display linked (Alexa skipped by the owner); the skill from its store page.
 - **AI**: Gemini, Grok, the claude.ai web connector; several people through one connection; ChatGPT's plan limits.
-- **Free plan**: the winback offer, the creator paywall, buying Family, Home Assistant's Premium state.
-- **Sharing**: a per-follower unit and language (behind a flag), what *Who saw my data* lists and what a pause does (both
-  failed).
+- **Free plan**: the winback offer, the creator paywall, Home Assistant's Premium state.
+- **Account**: signing in again after deleting (it would make a new account).
+- **The invite page**: other languages (it varies by the browser's language), and which path the share text and QR
+  carry.
 - **Food**: barcode scanning (the emulator's camera has nothing to scan).
 - **Messages to their team**: Suggest a feature, Help & Feedback, insight feedback, partner application, store
   reviews: not sent.
-- **Desk**: the Facebook group (login wall), App Store screenshot captions, Play's history before 2.7 (the in-app notes
-  cover Android 1.0, 2.3.2 and 2.7), two press profiles (blocked), Product Hunt (no listing); the server's LibreLinkUp
-  poll is inferred from reading times. Android Auto and calendar sync are off in 2.7.0.
+- **Desk**: the Facebook group (login wall), the iPhone and iPad screenshots' captions, Play's history before 2.7 (the
+  in-app notes cover Android 1.0, 2.3.2 and 2.7), two press profiles (blocked), Product Hunt (no listing); the server's
+  LibreLinkUp poll is inferred from reading times. Android Auto and calendar sync are off in 2.7.0.
 
 ## Sources
 
@@ -525,7 +648,10 @@ The owner's words (the issue), condensed:
 | `win-app` | Windows 1.2.1 (Arm64) in a Windows 11 VM: used, its package, strings and metadata read, its own renders |
 | `changelog` | the in-app What's New from Remote Config (Android 1.0–2.7, iOS 2.0–2.7) and the Garmin apps' store notes |
 | `lv` | the owner's LibreView export (CSV, read only, 2026-11-21) |
-| `android-r3` | round 3's notes so far (two test Nightscout sites, their request logs) |
+| `android-r3` | round 3 on the two emulators: two throwaway Nightscout sites fed one scripted reading a minute (their request logs), the app's notifications and logcat, real calls to the owner's phone (recorded and transcribed); screenshots `android/r3-*` |
+| `wear` | Wear OS 2.7.0 on a Wear OS 6 emulator paired with the phone emulator (the owner's account on a test Nightscout feed), the watch APK read; screenshots `wear/`, the phone's `android/r4-*` |
+| `apple-watch` | the App Store listing's nine Apple Watch screenshots and the website's watch images (`apple-watch/store-watch-*`, `site-*`) |
+| `care-join` | the invite page, https://api.sugarsense.io/api/v1/care/join, with a code, without one and with a made-up one (`web/care-join-*`) |
 | `5kr1` / `5kr2` | https://the5krunner.com/2026/09/02/sugar-sense-libre-dexcom-and-nightscout-glucose-on-garmin/ · https://the5krunner.com/2026/09/21/libre-3-plus-review/ |
 | `ds` | https://diabetesstrong.com/sugar-sense-app-review/ (sponsored) |
 | `yt` / `fb` / `ig` / `tt` / `li` | https://www.youtube.com/@sugarsenseapp · https://www.facebook.com/sugarsenseapp · https://www.instagram.com/sugarsenseapp · https://www.tiktok.com/@sugar.sense · https://www.linkedin.com/company/sugarsenseapp |
