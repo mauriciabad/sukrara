@@ -4,6 +4,10 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
+- **Sukrara Aura, when Garmin Connect stops passing messages** (#242): after 15 minutes without one, the watch's line
+  on Settings › Share with apps › Garmin says "messages stopped getting through · restart the watch". Meanwhile the
+  phone tries every 5 minutes instead of every reading, and the face keeps asking the phone every 5 minutes.
+
 ## 0.16.0 — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 
 - **Where your glucose comes from** (#213, docs/44): Settings › Source picks one of these, and changing it never needs
