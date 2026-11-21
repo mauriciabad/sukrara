@@ -66,6 +66,7 @@ commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`)
   `~/.apple-dev/profiles` when they're there (Developer ID, Time Sensitive, data-protection keychain, universal links:
   docs/20-publishing.md); such a test build also claims `https://sukrara.mauri.app/join`, so unregister it after
   testing (`lsregister -u <app>`, `pluginkit -r <appex>`).
+- **Windows**: the VM `sukrara-win11` on the Mac ([Windows VM](#windows-vm)); shut down when not in use (6 GB RAM).
 
 ## Install (one build line)
 
@@ -475,6 +476,132 @@ runs there under Xvfb (`xvfb-run`, Pillow 9+, ImageMagick's `import` for the scr
   [forum](https://forums.garmin.com/developer/connect-iq/f/discussion/260362/how-can-i-get-the-user-s-configured-alternate-timezone-s-from-the-sdk)).
 - *Screenshots*: the SDK has no command for them; `screencapture -l` of the window, as
   [garmin-simulator-crossplatform-mcp](https://github.com/wroblisko/garmin-simulator-crossplatform-mcp) does.
+
+## Windows VM
+
+A Windows 11 VM on the Mac for testing Windows apps (first used for Sugar Sense's tray app,
+[docs/46](46-sugar-sense.md)) and, later, building one. Set up on 2026-11-21 (Apple silicon, 10 cores, 16 GB).
+
+**Why UTM.** [UTM](https://docs.getutm.app/guides/windows/) 5 (QEMU on Apple's Hypervisor.framework): free, open
+source, no account, a Homebrew cask, scriptable (`utmctl`, and AppleScript with screen capture and keyboard / mouse
+input). VMware Fusion, free for any use since November 2024, was the first choice: Broadcom's portal holds a new
+account's download at "Screening Required" (export-compliance screening; with the profile completed the button stayed
+disabled and the terms box couldn't be ticked), and Homebrew removed its cask. Once screening clears it's My Downloads ›
+Free Software Downloads › VMware Fusion
+([KB 315638](https://knowledge.broadcom.com/external/article/315638/download-and-install-vmware-fusion.html)).
+Parallels Desktop is the paid step up if UTM is too slow for daily work: the only hypervisor Microsoft names for
+Windows 11 Arm on Apple silicon
+([Microsoft](https://support.microsoft.com/en-us/windows/options-for-using-windows-11-with-mac-computers-with-apple-m1-m2-and-m3-chips-cd15fd62-9b34-4b78-b0bc-121baa3c568c)),
+with DirectX 11 graphics, clipboard and drag and drop, and Coherence; the CPU is as fast (the same Hypervisor.framework,
+the same Prism emulation for x64 apps).
+
+| | |
+|---|---|
+| UTM | 5.0.9 (`brew install --cask utm`); CLI `/Applications/UTM.app/Contents/MacOS/utmctl` |
+| VM | `sukrara-win11`: QEMU, Apple Hypervisor, machine `virt`, 4 vCPU, 6 GB RAM (+ balloon); lives in `~/Library/Containers/com.utmapp.UTM/Data/Documents/sukrara-win11.utm` (a terminal needs Full Disk Access to list it) |
+| Firmware | UEFI, TPM 2.0 (UTM's software TPM), Secure Boot on: Windows 11 installed without bypasses |
+| Disk | NVMe, 80 GB thin qcow2 (~20.5 GB used): it grows into the Mac's free space, 80 GB is only the ceiling |
+| Network, display | virtio-net, Shared (NAT): `utmctl ip-address sukrara-win11` prints the guest's address; virtio-ramfb at 1440×900, no 3D |
+| Windows | 11 Pro ARM64 26H2 (build 26300), en-US, computer name `SUKRARA-WIN11`; ISO from [Microsoft](https://www.microsoft.com/en-us/software-download/windows11arm64) (SHA-256 checked, deleted after the install) |
+| Guest tools | UTM Guest Tools: VirtIO drivers, SPICE agent, `spice-webdavd` (the shared folder), QEMU guest agent (`utmctl exec / file / ip-address`) |
+| Extras | OpenSSH Server (key login, PowerShell as the shell), Developer Mode on, never sleeps or blanks, hibernation off |
+
+**Account.** Local administrator `dev`, no Microsoft account, automatic logon (so automation finds a desktop). The
+password is in the login Keychain, item `sukrara-win11 VM (Windows local account dev)`
+(`security find-generic-password -s "sukrara-win11 VM (Windows local account dev)" -w`), and in no file. Since 26H2
+Windows setup offers no local account (`bypassnro` and `ms-cxh:localonly` are gone); Microsoft's supported way is an
+answer file, `autounattend.xml` with `LocalAccounts` and `HideOnlineAccountScreens`, used here. The Store and winget's
+`msstore` source work without a Microsoft account; only rating an app asks for one. Not activated (installed with
+Microsoft's generic Pro key, which never activates): a watermark and no personalisation, everything else works; a
+Windows 11 Pro licence activates the Arm edition.
+
+**How it was installed** (unattended, about 20 min): a setup CD built with `hdiutil makehybrid -iso -joliet` holding
+`autounattend.xml` (the password filled in from the Keychain at build time; it wipes disk 0, installs Pro, hides the
+EULA / online-account / Wi-Fi screens, creates `dev` with auto-logon), `firstlogon.ps1` (Developer Mode, power
+settings, deletes Windows' copies of the answer file in `C:\Windows\Panther`, installs the guest tools silently, then
+OpenSSH Server with the Mac's public key in `administrators_authorized_keys` and a firewall rule), the guest tools and
+the Mac's SSH public key; the VM made by AppleScript (two CD drives, the 80 GB disk, WebDAV sharing), started, and a few
+keystrokes for "press any key". Afterwards the CDs became one empty removable drive and the ISOs were deleted. The
+answer-file template, the scripts and the helpers below aren't in the repo yet (they're with the docs/46 notes on the
+owner's Mac, `~/Documents/sugar-sense-241/findings/windows-vm-files/`): they move to `tools/windows/` with the first
+Windows work.
+
+**Daily use.**
+- Start: `open -a UTM && /Applications/UTM.app/Contents/MacOS/utmctl start sukrara-win11`; Windows logs in by itself in
+  about a minute.
+- Stop cleanly: `utmctl stop --request sukrara-win11`, or `Stop-Computer -Force` over SSH. A plain `utmctl stop` is a
+  **power-off** (its default is `--force`). Stop it whenever Android emulators need the RAM: it holds 6 GB while
+  running.
+- Shell: `ssh -i ~/.ssh/sukrara-win11_ed25519 dev@<guest address>` (key only, PowerShell; the host key is in
+  `~/.ssh/known_hosts`); files with `scp -i …` (paths relative to `C:\Users\dev`). Without network or SSH:
+  `utmctl exec sukrara-win11 --cmd powershell.exe -NoProfile -Command "…"` (the guest agent, as SYSTEM, ~2 s, outside
+  the desktop session).
+- Shared folder: Mac `~/WindowsShare` ↔ guest `Z:` (SPICE WebDAV from `spice-webdavd` at `http://localhost:9843/` in
+  the guest, mapped at every logon by `map-mac-share.cmd` in the Startup folder), while the VM runs from UTM. Slow for
+  large trees: build on `C:\` and copy results out (or `scp`). VirtFS would be faster (WinFsp + VirtIO-FS; not set
+  up).
+- Snapshots: `utmctl snapshot` works for QEMU VMs; none taken (disk space).
+
+**Developing for Windows there.** Everything below runs natively on Windows 11 Arm64, and the Arm64 tools build x64
+and arm64; x64 builds run in the VM under Prism, drivers don't
+([Windows on Arm](https://learn.microsoft.com/en-us/windows/arm/overview),
+[Visual Studio on Arm](https://learn.microsoft.com/en-us/visualstudio/install/visual-studio-on-arm-devices)).
+
+| Stack | Needs | Notes |
+|---|---|---|
+| WinUI 3 / Windows App SDK 2.x (C#) | .NET 10 SDK + the [winapp CLI](https://learn.microsoft.com/en-us/windows/apps/dev-tools/winapp-cli/) (`winapp new / run / pack`), or Visual Studio 2026 with "WinUI application development" | Microsoft's [quick start](https://learn.microsoft.com/en-us/windows/apps/get-started/start-here) offers the CLI path "for agentic coding" |
+| .NET 10 (WinForms, WPF, console) | .NET 10 SDK (`-r win-x64`, `-r win-arm64`) | self-contained output ≈ 200 MB (Sugar Sense's: 209 MB), framework-dependent a few MB |
+| C++ / Win32 | Visual Studio 2026 "Desktop development with C++" | the Arm64-hosted MSVC targets arm64 / x64 / x86 |
+| MSIX | `winapp pack`, or the Windows SDK's MakeAppx / SignTool | one `.msix` per architecture ([single-project MSIX](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/single-project-msix)); a bundle is a separate step (`winapp pack` since [0.3.2](https://devblogs.microsoft.com/ifdef-windows/windows-app-development-cli-v0-3-2-bundling-support-smarter-initialization-and-more/), or MakeAppx) |
+| Microsoft Store | a Partner Center account, [free for individuals](https://blogs.windows.com/windowsdeveloper/2025/09/10/free-developer-registration-for-individual-developers-on-microsoft-store/) | the Store re-signs (no code-signing certificate for Store builds) and serves Arm64 to Arm PCs when the package has it |
+| CI | GitHub's `windows-11-arm` and `windows-latest` (x64) runners | the VM stays for UI work and debugging |
+
+Installed later, not now (disk): start with the .NET 10 SDK, the winapp CLI and Git (about 2–3 GB); Visual Studio only
+for the XAML designer or the debugger.
+
+| What | Command | Disk (approx.) |
+|---|---|---|
+| .NET 10 SDK (arm64) | `winget install --id Microsoft.DotNet.SDK.10 -e` | ~0.8 GB |
+| winapp CLI | `winget install --id Microsoft.WinAppCli -e` | ~50 MB, plus the SDK packages it restores per project (~1–2 GB) |
+| Git for Windows | `winget install --id Git.Git -e` | ~0.4 GB |
+| VS Code (Arm64) | `winget install --id Microsoft.VisualStudioCode -e` | ~0.4 GB |
+| Visual Studio 2026 Community + WinUI workload | `winget configure -f https://aka.ms/winui-config` | Microsoft: 20–50 GB typical ([requirements](https://learn.microsoft.com/en-us/visualstudio/releases/2026/vs-system-requirements)); WinUI alone roughly 10–20 GB |
+| Claude Code (native Arm64) | `winget install Anthropic.ClaudeCode` | ~0.2 GB |
+
+**Driving the VM from Claude Code** (what the docs/46 study used):
+
+| Need | How | Worked |
+|---|---|---|
+| Commands, files | SSH + PowerShell (key login) | very well: the main channel |
+| Commands without network / SSH | `utmctl exec` (guest agent, as SYSTEM) | well; slow, not in the desktop session |
+| Screenshots | AppleScript `tell application "UTM" to capture screen (virtual machine id …) to POSIX file "….png"` (`cap.sh`) | very well: full-resolution PNG in ~0.3 s, no host window or focus needed |
+| Clicks and keys | AppleScript `input mouse click … at {x, y}` (`with mouse button right`), `input keystroke … text "…" with modifiers {…}`, `input scan code … codes {…}` (`in.sh`); coordinates are the screenshot's pixels | well; no hover or wheel (submenus by click, PageDown by scan code) |
+| Drag, hover, exact cursor | a PowerShell `SetCursorPos` / `mouse_event` script run in the desktop session (`drag.ps1`) | well |
+| Anything in the logged-in desktop (UI Automation, launching apps, the resolution) | a scheduled task `uirun` (interactive, as `dev`) that runs `C:\Users\dev\auto\job.ps1`; `ui.ps.sh` copies a script over, runs the task, waits and prints the output | well: SSH sessions are session 0 and can't see the desktop |
+| Reading the UI | a .NET `System.Windows.Automation` tree dump (`uia-lib.ps1`, `dump-app.ps1`) | good for standard controls, poor for hand-painted UI and WebView2 (nameless panes); it takes focus, which closes flyouts |
+
+Not set up, and what would make it easier:
+- **Claude Code inside the VM** (`winget install Anthropic.ClaudeCode`, its own sign-in there,
+  [overview](https://code.claude.com/docs/en/overview)): it works on the files where they build, with no SSH round
+  trips; the Mac session keeps screenshots and the overall view.
+- **[Windows-MCP](https://github.com/CursorTouch/Windows-MCP)** (MIT, Python 3.12+, `uvx windows-mcp serve`): UI-tree,
+  click, type, scroll, screenshot and shell tools in the user session; served over HTTP (`--transport streamable-http
+  --host 0.0.0.0`) the Mac's Claude Code can add it as a remote MCP server at `http://<guest address>:<port>`, replacing
+  `uirun` and `in.sh`. Its app tool needs Windows' display language in English.
+- **UI tests for a Sukrara Windows app**: [FlaUI](https://github.com/FlaUI/FlaUI) (.NET, MIT) in xUnit / NUnit, or
+  [FlaUI.WebDriver](https://github.com/FlaUI/FlaUI.WebDriver). WinAppDriver is unmaintained (last release 2020) and
+  Appium's Windows driver was [archived](https://github.com/appium/appium-windows-driver) on 2026-11-07. Real UI
+  Automation names (`AutomationProperties`) make these tools, Narrator and agents work; Sugar Sense's hand-painted panel
+  is the counter-example. A `--render` mode like theirs (every state × language × theme to PNG) lets agents check the
+  UI without driving it; the winapp CLI also has `winapp ui` and Windows Sandbox runs
+  ([announcement](https://blogs.windows.com/windowsdeveloper/2026/01/22/announcing-winapp-the-windows-app-development-cli/)).
+- `utmctl` covers start / stop / exec / file / ip-address / snapshot but not screenshots or input: those stay on
+  AppleScript ([UTM scripting](https://docs.getutm.app/scripting/scripting/)).
+
+**State (2026-11-21).** The VM is shut down, with Sugar Sense 1.2.1 installed and signed in to the owner's account
+(signing out is local; reconnecting is one click). In the guest: the `uirun` task, `C:\Users\dev\auto\` (the job
+runner, `uia-lib.ps1`), `map-mac-share.cmd`. On the Mac: the SSH key `~/.ssh/sukrara-win11_ed25519` (+ `.pub`), the
+Keychain item, `~/WindowsShare` (empty), UTM. Nothing from VMware or Broadcom is installed.
 
 ## Orchestration that worked
 
