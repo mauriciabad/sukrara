@@ -7,6 +7,9 @@ Sukrara's releases. 0.x versions are previews.
 - **Sukrara Aura, when Garmin Connect stops passing messages** (#242): after 15 minutes without one, the watch's line
   on Settings › Share with apps › Garmin says "messages stopped getting through · restart the watch". Meanwhile the
   phone tries every 5 minutes instead of every reading, and the face keeps asking the phone every 5 minutes.
+- **Sukrara Aura keeps up when Garmin doesn't hand a reading to the face** (#244): after a watch restart, the watch
+  got every reading but the face showed none for 16 minutes. The face now also picks them up itself at every draw, and
+  the Garmin page says what the face really has, or "the watch face isn't taking new readings · restart the watch".
 
 ## 0.16.0 — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 

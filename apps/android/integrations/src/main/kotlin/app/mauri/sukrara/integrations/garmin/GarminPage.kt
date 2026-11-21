@@ -57,14 +57,40 @@ private fun fresh(
 /**
  * The newest reading [w] is known to have: the last one Garmin Connect delivered to it, or the one the face says it
  * keeps (its report comes with the fetch, which doesn't say which watch asked: it counts only while one watch has the
- * face).
+ * face). When the face [missed] what was delivered, only the face's own counts.
  */
 internal fun shows(
     w: AuraWatch,
     s: AuraLinkState,
 ): Instant? {
-    val only = s.watches.count { it.installed != false } == 1 && w.installed != false
-    return listOfNotNull(w.reading, s.report?.has?.takeIf { only }).maxOrNull()
+    if (missed(w, s)) return s.report?.has
+    return listOfNotNull(w.reading, s.report?.has?.takeIf { only(w, s) }).maxOrNull()
+}
+
+private fun only(
+    w: AuraWatch,
+    s: AuraLinkState,
+) = s.watches.count { it.installed != false } == 1 && w.installed != false
+
+/** A report this long after a delivery has had time to count it. */
+private val REPORT_AFTER: Duration = Duration.ofSeconds(30)
+
+/** The face this far behind what was delivered didn't take it (more than one reading's gap). */
+private val BEHIND: Duration = Duration.ofMinutes(2)
+
+/**
+ * The watch took what Garmin Connect delivered, but the face didn't (#244: after a watch restart Garmin didn't hand
+ * its background's data to the face for 16 min): its report, sent well after the delivery, still has a reading
+ * [BEHIND] or more older than the delivered one. Only while one watch has the face.
+ */
+internal fun missed(
+    w: AuraWatch,
+    s: AuraLinkState,
+): Boolean {
+    val r = s.report ?: return false
+    val delivered = w.delivered ?: return false
+    val reading = w.reading ?: return false
+    return only(w, s) && r.at >= delivered + REPORT_AFTER && (r.has ?: Instant.EPOCH) <= reading - BEHIND
 }
 
 /**
@@ -166,6 +192,9 @@ data class WatchLine(
         /** Sukrara Aura isn't installed on it. */
         NoFace,
 
+        /** The watch takes the messages but the face doesn't ([missed]): restart the watch (#244). */
+        NotTaking,
+
         /** No message has got through for 15 min ([AuraWatch.stuck]): restarting the watch brings them back (#242). */
         Stuck,
 
@@ -192,7 +221,9 @@ data class WatchLine(
             val problem =
                 when {
                     w.installed == false -> Problem.NoFace
-                    !w.connected || w.delivered() -> null
+                    !w.connected -> null
+                    missed(w, s) -> Problem.NotTaking
+                    w.delivered() -> null
                     w.stuck(now) -> Problem.Stuck
                     w.failed != null && fresh(s.fetched, now) != null -> Problem.Slow
                     w.failed != null && w.noAnswer -> Problem.NoAnswer
@@ -423,6 +454,10 @@ internal fun watchText(
     when (line.problem) {
         WatchLine.Problem.NoFace -> {
             parts += stringResource(R.string.in_garmin_watch_no_face)
+        }
+
+        WatchLine.Problem.NotTaking -> {
+            parts += stringResource(R.string.in_garmin_watch_not_taking)
         }
 
         WatchLine.Problem.Stuck -> {

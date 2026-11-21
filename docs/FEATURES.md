@@ -2780,8 +2780,11 @@ ages by itself from its own time with the phone away.
   sent once it settles (3 s). Each watch remembers the time of the reading its last delivered message carried. Tests:
   `AuraLinkTest`, `GarminStatusTest`.
 - **The face reports back** with every fetch: its last 10 deliveries (push or fetch, the watch's time, which payload,
-  which reading) and the reading it draws since when. While one watch has the face, its line says the newer of the
-  reading Garmin Connect delivered and the one the face says it keeps (the fetch doesn't say which watch asked); logcat
+  which reading; `s` when the face picked it up from storage because Garmin didn't hand it over: every background run
+  also leaves its result there, read at each draw, #244) and the reading it draws since when. While one watch has the
+  face, its line says the newer of the reading Garmin Connect delivered and the one the face says it keeps (the fetch
+  doesn't say which watch asked), and only the face's when its report, sent well after a delivery, is still 2 min or
+  more behind it ("the watch face isn't taking new readings · restart the watch"); logcat
   `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer, a failure with Garmin's
   status: `Failed FAILURE_DURING_TRANSFER`) and each report, times
   only. So an agent or the person can see what the watch got without looking at it.
@@ -2796,7 +2799,8 @@ ages by itself from its own time with the phone away.
     haptic) and *Open Garmin Connect*; without Garmin Connect, *Get Garmin Connect* (its store page);
   - *Watches*: every watch Garmin Connect knows, by its own name, one line each, one time on it, a clock time to
     compare with the phone's: "Connected · has the 14:21 reading", "Not connected · has the 13:52 reading",
-    "Connected · Sukrara Aura isn't on it", "… · messages stopped getting through · restart the watch" (stuck),
+    "Connected · Sukrara Aura isn't on it", "… · the watch face isn't taking new readings · restart the watch",
+    "… · messages stopped getting through · restart the watch" (stuck),
     "… · Garmin Connect loses messages, so it updates every 5 minutes",
     "… · Garmin Connect doesn't confirm messages, trying again", "… · the last message didn't arrive, trying again",
     "Connected · waiting for a reading"; "No watch · Pair your watch in Garmin Connect" when it knows none. A list of
@@ -2842,7 +2846,10 @@ reconnect); *sent* ("Descent Mk3i 43mm has the 14:21 reading"); *messages lost, 
 minutes · Garmin Connect loses messages"; out: *Open Garmin Connect*, restart the watch; it keeps working meanwhile;
 after 15 min without one, *stuck*: the watch's line "… · messages stopped getting through · restart the watch", es
 "… · los mensajes ya no llegan · reinicia el reloj"; out: restart the watch, or it ends by itself at the first message
-that arrives);
+that arrives); *the face not taking readings* (the watch takes them, the face's report stays 2 min or
+more behind, #244: "… · the watch face isn't taking new readings · restart the watch", es "… · la esfera no recibe las
+lecturas nuevas · reinicia el reloj"; the line's reading is the face's; out: restart the watch, or it ends by itself
+at the face's next report with the new reading);
 *messages lost, nothing fetched* ("Messages don't reach Descent Mk3i 43mm · open Garmin Connect", error colour; out:
 those, *Send now*); *waiting* ("Waiting for the next reading"). The face's own states are on its row: *in use*, *not in
 use* (out: pick it as the watch face on the watch), *not installed*, *port taken* (out: stop the other app). Back

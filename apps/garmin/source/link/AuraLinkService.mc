@@ -17,6 +17,10 @@ import Toybox.Time;
 module AuraLinkBackground {
     const FETCH_URL = "http://127.0.0.1:17582/sukrara/aura";
     const FETCH_EVERY_S = 300;
+    // Every background run's result, also left in the face's storage (AuraLinkService.hand): the face picks it up at
+    // its next draw when Garmin doesn't call onBackgroundData (2026-11-22, #244: after a watch restart it didn't for 16
+    // min while this background kept running; only the face's next start brought the data).
+    const HANDOFF = "auraHandoff";
 
     // The newer of two payloads by `sent` (an invalid one loses).
     function newer(a, b) {
@@ -65,7 +69,19 @@ class AuraLinkService extends System.ServiceDelegate {
             // called at once for each waiting message
             Communications.registerForPhoneAppMessages(method(:onWaiting));
         }
-        Background.exit({"k" => "push", "d" => _newest, "n" => _waiting});
+        hand({"k" => "push", "d" => _newest, "n" => _waiting});
+    }
+
+    // Hands [data] to the face both ways: in its storage ([AuraLinkBackground.HANDOFF], read at every draw) and through
+    // Garmin (Background.exit → onBackgroundData, at once). [id] tells the face it is the same run when both arrive.
+    function hand(data as Dictionary) as Void {
+        data.put("id", Time.now().value().toString() + "." + System.getTimer().toString());
+        try {
+            Application.Storage.setValue(AuraLinkBackground.HANDOFF, data);
+        } catch (e) {
+            // a watch whose background can't write storage: Garmin's hand-over only
+        }
+        Background.exit(data);
     }
 
     function onWaiting(msg as Communications.PhoneAppMessage) as Void {
@@ -94,6 +110,6 @@ class AuraLinkService extends System.ServiceDelegate {
     }
 
     function onFetched(code as Number, data as Dictionary or String or Null) as Void {
-        Background.exit({"k" => "fetch", "c" => code, "d" => code == 200 ? data : null});
+        hand({"k" => "fetch", "c" => code, "d" => code == 200 ? data : null});
     }
 }

@@ -133,6 +133,14 @@ The payload is a versioned contract: [contracts/watchface/payload](../contracts/
   - Changed: after 15 min without a delivery the watch's line says "messages stopped getting through · restart the
     watch", and Sukrara tries every 5 min instead of about twice a minute (at once on *Send now* or a reconnect); the
     log names Garmin's status for a failure (`Failed FAILURE_DURING_TRANSFER`).
+- The owner's watch, 2026-11-22 01:05–01:24 ([#244](https://github.com/mauriciabad/sukrara/issues/244)): after a
+  watch restart the face got nothing from its background for 16 min, although the watch took every push (Garmin
+  Connect's log: every chunk acknowledged) and the background kept fetching. Garmin didn't call `onBackgroundData`;
+  no crash (no new `CIQ_LOG.YML`). It ended when the face started again (back from the watch's menus). Not Sleep Mode,
+  Do Not Disturb or Battery Saver (each on at other times with the face updating). Changed: every background run also
+  leaves its result in the face's storage (`auraHandoff`, Connect IQ 3.2+), which the face picks up at every draw
+  (runs marked `s` in the report); the phone's line shows the face's own reading when its report stays behind a
+  delivery ("the watch face isn't taking new readings · restart the watch").
 - **Seeing the watch without looking at it**: Garmin's ways are `System.println` to `GARMIN/APPS/LOGS/<app>.TXT`
   (when that file exists) and crash reports in `GARMIN/APPS/LOGS/CIQ_LOG.YML`
   ([FAQ](https://forums.garmin.com/developer/connect-iq/w/wiki/4/new-developer-faq),

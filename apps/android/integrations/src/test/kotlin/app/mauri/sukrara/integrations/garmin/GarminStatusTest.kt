@@ -65,6 +65,25 @@ class GarminStatusTest {
     }
 
     @Test
+    fun theFaceDidntTakeWhatTheWatchGot() {
+        // #244: Garmin Connect delivered the reading of a minute ago, but the face's report since still has one of 6 min
+        val w = watch.copy(delivered = ago(1), reading = ago(1))
+        val report = AuraReport(now, emptyList(), drawn = ago(6), drawnSince = ago(3))
+        val s = base.copy(watches = listOf(w), report = report)
+        assertEquals(WatchLine(true, ago(6), WatchLine.Problem.NotTaking), line(w, s))
+        // the row says what the face has, not what was delivered
+        assertEquals(AuraStatus.Sent("Descent", ago(6)), of(s))
+        // a report right after the delivery may not count it yet; a face one reading behind is fine
+        assertEquals(WatchLine(true, ago(1), null), line(w, s.copy(report = report.copy(at = ago(1) + Duration.ofSeconds(10)))))
+        assertEquals(null, line(w, s.copy(report = report.copy(drawn = ago(2) + Duration.ofSeconds(1)))).problem)
+        // two watches with the face: the report doesn't say which one asked
+        val other = watch.copy(id = 8, name = "Forerunner")
+        assertEquals(null, line(w, s.copy(watches = listOf(w, other))).problem)
+        // away: nothing to say
+        assertEquals(null, line(w.copy(connected = false), s).problem)
+    }
+
+    @Test
     fun stuckMessages() {
         val fetching = { w: AuraWatch -> base.copy(watches = listOf(w), fetched = ago(3)) }
         // Garmin Connect ends its own stalls within minutes: still "loses messages"

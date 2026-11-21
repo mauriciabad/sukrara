@@ -31,9 +31,10 @@ class AuraApp extends Application.AppBase {
         return [new AuraLinkService()];
     }
 
-    // a payload from the background (contracts/watchface/payload)
+    // a payload from the background (contracts/watchface/payload), through Garmin; the same run also waits in storage
+    // (AuraLink.pickUp at every draw), whichever comes first
     function onBackgroundData(data as Application.PersistableType) as Void {
-        if (AuraLink.receive(data, Toybox.Time.now().value())) {
+        if (AuraLink.take(data, Toybox.Time.now().value(), false)) {
             AuraData.changed();
         }
     }

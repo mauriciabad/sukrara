@@ -21,12 +21,15 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the fa
    treatment, a setting), to the face's app id. Wire format: Garmin's Monkey C serialization (string block
    `0xABCDABCD`, data block `0xDA7ADA7A`, big-endian; Android writes it itself, `MonkeyC`). The face's background
    wakes on it (`registerForPhoneAppMessageEvent`), hands it to the face (`Background.exit`, well under its ~8 KB).
+   Every background run (push or fetch) also leaves its result in the face's storage (`auraHandoff`, with a run id),
+   which the face picks up at its next draw when Garmin doesn't call `onBackgroundData` (#244); the id makes a run count
+   once.
 2. **Fetch**: the face's background asks `GET http://127.0.0.1:17582/sukrara/aura` every 5 minutes (a temporal
    event; Garmin Connect makes the request, plain http only to loopback). The answer is the same payload as JSON.
 
 The fetch carries the face's own report back as its query (`AuraLink.mc` `saveReport`, Android `AuraReport.parse`):
 `r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `p<n>` a push that took n older waiting messages with it, `f` a fetch,
-`e<code>` a failed fetch, `x` appended when the face kept the older payload; `at` the watch clock; the last 10, oldest
+`e<code>` a failed fetch, `s` appended when the face picked it up from storage (Garmin didn't hand it over), `x` appended when the face kept the older payload; `at` the watch clock; the last 10, oldest
 first) and `d` the reading the face draws (its time on the watch clock) and since when. Times only, never a value. The
 phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with each push's `sent` and result).
 

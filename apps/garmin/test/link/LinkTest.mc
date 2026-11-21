@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import Toybox.Application;
 import Toybox.Lang;
 import Toybox.Test;
 
@@ -98,6 +99,32 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
         }
     }
     return ok;
+}
+
+// A background run counts once, whichever way comes first (Garmin's onBackgroundData or the pickup from storage at a
+// draw), and the pickup brings what Garmin didn't hand over (#244).
+(:test)
+function linkHandOverCountsOnce(logger as Logger) as Boolean {
+    var now = LinkCases.NOW;
+    AuraLink.reset();
+    var a = {"k" => "push", "d" => {"v" => AuraLink.VERSION, "sent" => now}, "n" => 0, "id" => "a"};
+    Application.Storage.setValue(AuraLinkBackground.HANDOFF, a);
+    Test.assertMessage(AuraLink.take(a, now, false), "Garmin's hand-over");
+    AuraLink.pickUp(now + 20);
+    var runs = AuraLink.stored("Runs");
+    Test.assertEqualMessage(runs.size(), 1, "the same run from storage doesn't count again");
+    // Garmin doesn't hand over the next run: the next draw picks it up from storage, once
+    var b = {"k" => "push", "d" => {"v" => AuraLink.VERSION, "sent" => now + 60}, "n" => 0, "id" => "b"};
+    Application.Storage.setValue(AuraLinkBackground.HANDOFF, b);
+    AuraLink.pickUp(now + 65);
+    Test.assertEqualMessage((AuraLink.payload() as Dictionary).get("sent"), now + 60, "picked up");
+    runs = AuraLink.stored("Runs");
+    Test.assertMessage((runs[runs.size() - 1] as String).find("ps.") == 0, "a push from storage: ps");
+    Test.assertMessage(!AuraLink.take(b, now + 66, false), "Garmin's late hand-over of the same run");
+    AuraLink.pickUp(now + 80);
+    Test.assertEqualMessage(AuraLink.stored("Runs").size(), 2, "two runs, each once");
+    AuraLink.reset();
+    return true;
 }
 
 // A push run keeps the newest of the waiting messages.

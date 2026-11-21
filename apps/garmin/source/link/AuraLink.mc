@@ -34,8 +34,44 @@ module AuraLink {
         }
     }
 
-    // The face's onBackgroundData: a push or a fetch from AuraLinkService. True when the face has something new.
-    function receive(data, now as Number) as Boolean {
+    // A background run's result (AuraLinkService.hand), through Garmin's onBackgroundData or picked up from storage
+    // ([stored]); each run counts once, whichever way comes first (its id, kept across restarts). True when the face
+    // has something new.
+    const TAKEN = "auraTaken";
+    // storage is read at most this often (a draw is 1 Hz for ~10 s after a wrist raise)
+    const PICKUP_S = 10;
+    var _taken = null;
+    var _pickedAt as Number = 0;
+
+    function take(data, now as Number, stored as Boolean) as Boolean {
+        if (!(data instanceof Dictionary)) {
+            return false;
+        }
+        if (_taken == null) {
+            _taken = Application.Storage.getValue(TAKEN);
+        }
+        var id = data.get("id");
+        if (id instanceof String) {
+            if (id.equals(_taken)) {
+                return false;
+            }
+            _taken = id;
+            Application.Storage.setValue(TAKEN, id);
+        }
+        return receive(data, now, stored);
+    }
+
+    // The face's draw: the background's last result, when Garmin didn't hand it over.
+    function pickUp(now as Number) as Void {
+        if (now >= _pickedAt && now < _pickedAt + PICKUP_S) {
+            return;
+        }
+        _pickedAt = now;
+        take(Application.Storage.getValue(AuraLinkBackground.HANDOFF), now, true);
+    }
+
+    // A push or a fetch from AuraLinkService ([stored]: picked up from storage, `s` in the report).
+    function receive(data, now as Number, stored as Boolean) as Boolean {
         if (!(data instanceof Dictionary)) {
             return false;
         }
@@ -48,10 +84,10 @@ module AuraLink {
         var sent = valid(d) ? (d as Dictionary).get("sent") : 0;
         var g = valid(d) ? (d as Dictionary).get("g") : null;
         // what arrived, when (the report the phone shows): p / f, or the fetch's error code
-        // p<n>: a push, n older messages taken with it
+        // p<n>: a push, n older messages taken with it; s: picked up from storage (Garmin didn't hand it over)
         var n = data.get("n");
         var kind = fetch ? (data.get("c") == 200 ? "f" : "e" + data.get("c")) : "p" + (n instanceof Number && n > 0 ? n : "");
-        note(kind + (kept ? "" : "x"), now, sent, g instanceof Dictionary ? g.get("t") : 0);
+        note(kind + (stored ? "s" : "") + (kept ? "" : "x"), now, sent, g instanceof Dictionary ? g.get("t") : 0);
         return kept;
     }
 
@@ -151,7 +187,11 @@ module AuraLink {
         _runs = null;
         _screen = null;
         _drawn = "";
+        _taken = null;
+        _pickedAt = 0;
         Application.Storage.deleteValue(STORE);
+        Application.Storage.deleteValue(TAKEN);
+        Application.Storage.deleteValue(AuraLinkBackground.HANDOFF);
     }
 
     function valid(p) as Boolean {
