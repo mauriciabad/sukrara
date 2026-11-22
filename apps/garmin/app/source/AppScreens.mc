@@ -748,6 +748,23 @@ module AppScreens {
         g.t(x0 + fs + 4, y, s, fs, 600, AppMath.SOFT, START);
     }
 
+    // a centred text kept inside the screen (SPEC §14.1): the first of [sizes] (units, largest first; sizes the class's
+    // fonts carry) at which it fits between the rims at its line. The font-resource watches (no tinted bitmaps) draw
+    // their glyphs about 12 % wider than the atlases' widths (AppMath.tw)
+    function fitT(g as AppG, y as Numeric, s as String, sizes as Array<Number>, fw as Number, col as Number) as Void {
+        var fs = sizes[0];
+        for (var i = 0; i < sizes.size(); i++) {
+            fs = sizes[i];
+            var top = y - fs * 0.75;
+            var e = AppMath.abs(top) > AppMath.abs(y) ? top : y;
+            var half = AppFontTable.RECT ? hw() - 8 : Math.sqrt(186 * 186 - e * e);
+            if (AppMath.tw(s, fs) * (AppFontTable.PLAIN ? 1.12 : 1.0) <= 2 * half) {
+                break;
+            }
+        }
+        g.t(0, y, s, fs, fw, col, MIDDLE);
+    }
+
     function pageDots(g as AppG, n as Number, i as Number) as Void {
         for (var k = 0; k < n; k++) {
             var o = (k - (n - 1) / 2.0) * 13;

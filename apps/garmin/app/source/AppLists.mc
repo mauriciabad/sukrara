@@ -85,7 +85,7 @@ module AppLists {
         g.t(L[0], L[1], AppWords.s(Rez.Strings.AppName), 20, 600, AppMath.SOFT, L[2]);
         var ys = ys();
         if (items.size() == 1) {
-            g.t(0, (ys[1] as Numeric) - 84, AppWords.s(Rez.Strings.LogOff), 17, 500, AppMath.DIM, 0);
+            AppScreens.fitT(g, (ys[1] as Numeric) - 84, AppWords.s(Rez.Strings.LogOff), [17, 15, 14], 500, AppMath.DIM);
         }
         var y0 = items.size() == 1 ? 3 : 0;
         for (var i = 0; i < items.size() && i < 4; i++) {
