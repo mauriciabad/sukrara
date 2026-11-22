@@ -1,0 +1,965 @@
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Sukrara on Garmin: the watch app, its glance, the data field, the complications as other faces show them.
+// The design reference (contracts/watchface/app/SPEC.md), as tools/watchface/aura.js is for Sukrara Aura: where the
+// SPEC and this code disagree, the code wins (and the SPEC gets fixed). Approved by the owner on the design canvases
+// (round 2, 2026-11-22): https://claude.ai/code/artifact/e53c8936-3c98-4978-90e2-797751ca0507
+//
+// Pure: screen(cfg) -> { els, bez, vb, label, d }. `els` is a display list (paths, circles, rects, texts; origin at the
+// screen's centre, y down, 1 unit = 1 px of the 390 × 390 Descent Mk3i 43 mm), drawn in order: the shape of a
+// Monkey C draw loop. `data(cfg)` makes the INPUT (a made-up day ending 20:41) from a scenario; every screen
+// function draws only from that input `d`, so the port replaces data() with the payload and keeps the rest.
+// Colours, type and the arrow are Aura's (aura.js pal(), widths(), the arrow path). Known approximations, to be
+// done right in the port from the widget's renderer (the owner, 2026-11-22): the % column's dots and the way they
+// mask the line.
+var WL = (function () {
+  var PAL = {
+    ink: '#FFFFFF', soft: '#A3A3A8', dim: '#6E6E73', faint: '#3A3A3E', grid: '#26262A', band: '#38383E', band2: '#4E4E55',
+    grey: '#8E8E93', veryLow: '#C2413B', low: '#F0524F', tight: '#3DD47A', target: '#8CC63F', high: '#F5A524',
+    veryHigh: '#FF7A45', extremelyHigh: '#E35BD0', now: '#C6F432', rapid: '#8AB4FF', long: '#C9B0FF', carbs: '#FFB74D',
+    note: '#B4B4B4', on: '#1C1C1E', card: '#141416', card2: '#1C1C1F'
+  };
+  var FAM = "'Atkinson Hyperlegible Next', system-ui, sans-serif";
+  var KEYS = ' 0123456789.:·ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ';
+  var WV = [0.28, 0.648, 0.407, 0.548, 0.576, 0.614, 0.588, 0.598, 0.51, 0.615, 0.595, 0.21, 0.21, 0.24, 0.626, 0.613, 0.645, 0.669, 0.569, 0.552, 0.694, 0.694, 0.392, 0.512, 0.631, 0.541, 0.824, 0.693, 0.714, 0.592, 0.724, 0.614, 0.592, 0.558, 0.69, 0.593, 0.856, 0.623, 0.575, 0.607, 0.525, 0.566, 0.485, 0.564, 0.538, 0.314, 0.558, 0.55, 0.252, 0.245, 0.492, 0.262, 0.845, 0.55, 0.548, 0.566, 0.574, 0.349, 0.471, 0.326, 0.54, 0.461, 0.684, 0.481, 0.449, 0.46, 0.525, 0.538, 0.252, 0.548, 0.54, 0.55, 0.626, 0.569, 0.392, 0.714, 0.69, 0.693];
+  var WM = {};
+  for (var i = 0; i < KEYS.length; i++) WM[KEYS[i]] = WV[i];
+  // the big numbers: Atkinson's own figures at weight 600 (SPEC.md §2)
+  var BIG = { '0': 0.656, '1': 0.43, '2': 0.569, '3': 0.592, '4': 0.621, '5': 0.602, '6': 0.617, '7': 0.529, '8': 0.621, '9': 0.578, ':': 0.253, '.': 0.253, 'L': 0.548, 'O': 0.737, 'H': 0.699, 'I': 0.415 };
+  function tw(s, fs) { var t = 0; s = String(s); for (var k = 0; k < s.length; k++) t += WM[s[k]] !== undefined ? WM[s[k]] : 0.6; return t * fs * 1.03; }
+  function bw(s, fs) { var t = 0; s = String(s); for (var k = 0; k < s.length; k++) t += BIG[s[k]] !== undefined ? BIG[s[k]] : 0.6; return t * fs; }
+  function r1(x) { return Math.round(x * 10) / 10; }
+  function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+  // Kovatchev's risk transform (Diabetes Care 1997), g in mg/dL; 0 at 112.5
+  function K(g) { return 1.509 * (Math.pow(Math.log(g), 1.084) - 5.381); }
+  function P(r, a) { var t = a * Math.PI / 180; return [r1(r * Math.sin(t)), r1(-r * Math.cos(t))]; }
+  function arc(r, a0, a1, cx, cy) {
+    cx = cx || 0; cy = cy || 0;
+    var p0 = P(r, a0), p1 = P(r, a1), large = Math.abs(a1 - a0) > 180 ? 1 : 0, sweep = a1 > a0 ? 1 : 0;
+    return 'M' + r1(cx + p0[0]) + ' ' + r1(cy + p0[1]) + 'A' + r + ' ' + r + ' 0 ' + large + ' ' + sweep + ' ' + r1(cx + p1[0]) + ' ' + r1(cy + p1[1]);
+  }
+
+  var ICON = {
+    rapid: { d: 'M2 4.2H22L12 20.9Z', s: false },
+    long: { d: 'M3.5 5.4H20.5L12 19.6Z', s: true, sw: 2.8 },
+    carbs: { d: 'M20 12a8 8 0 1 1-16 0a8 8 0 1 1 16 0z', s: false },
+    sensor: { d: 'M21.3 12a9.3 9.3 0 1 1-18.6 0a9.3 9.3 0 1 1 18.6 0zM18.7 12a6.7 6.7 0 1 0-13.4 0a6.7 6.7 0 1 0 13.4 0zM15 12a3 3 0 1 1-6 0a3 3 0 1 1 6 0z', s: false },
+    bell: { d: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2zM10 20.5a2 2 0 0 0 4 0', s: true },
+    bellOff: { d: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2zM10 20.5a2 2 0 0 0 4 0M3 3l18 18', s: true },
+    bellPause: { d: 'M6 16.5V11a6 6 0 0 1 12 0v5.5l1.8 1.8H4.2zM10 20.5a2 2 0 0 0 4 0M10.4 9.5v4.2M13.6 9.5v4.2', s: true },
+    heart: { d: 'M12 20.5s-7.5-4.6-7.5-10.4A4.1 4.1 0 0 1 12 7.6a4.1 4.1 0 0 1 7.5 2.5c0 5.8-7.5 10.4-7.5 10.4z', s: false },
+    drop: { d: 'M12 2.5C12 2.5 5 10.2 5 14.6a7 7 0 0 0 14 0C19 10.2 12 2.5 12 2.5z', s: false },
+    bolt: { d: 'M13.5 2L5.5 13.5h5.2L9.8 22l8.2-12h-5.3z', s: false },
+    sun: { d: 'M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1M16 12a4 4 0 1 1-8 0a4 4 0 1 1 8 0', s: true },
+    check: { d: 'M4.5 12.5l4.8 4.8L19.5 7', s: true, sw: 3 },
+    plus: { d: 'M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18M12 7.5v9M7.5 12h9', s: true, sw: 2.4 },
+    // the app's insulin pen (Android ds_ic_dia_pen: 960-unit grid ÷ 40, moved down 2 to centre)
+    pen: { d: 'M18.43 8.43L9.93 16.93A2 2 0 0 1 7.08 14.08L15.58 5.58A2 2 0 0 1 18.43 8.43ZM14 9.5L11.75 11.75M18 6L20 4M7.25 16.75L4.25 19.75', s: true, sw: 2.3 },
+    phone: { d: 'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z', s: true },
+    warn: { d: 'M12 3L22 20H2ZM12 9.5v5M12 17v.6', s: true, sw: 2.2 },
+    chart: { d: 'M3 17l5-6 4 3 5-7 4 4', s: true },
+    clock: { d: 'M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18M12 7v5l3 2', s: true },
+    gear: { d: 'M12 8.5a3.5 3.5 0 1 1 0 7a3.5 3.5 0 1 1 0-7M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1', s: true },
+    steps: { d: 'M4.6 8.5a3.4 5.3 0 1 0 6.8 0a3.4 5.3 0 1 0-6.8 0zM5.8 16.6a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0zM12.6 11.5a3.4 5.3 0 1 0 6.8 0a3.4 5.3 0 1 0-6.8 0zM13.8 19.6a2.2 2.2 0 1 0 4.4 0a2.2 2.2 0 1 0-4.4 0z', s: false }
+  };
+
+  function bandOf(v) {
+    if (v < 55) return 'veryLow';
+    if (v < 70) return 'low';
+    if (v <= 140) return 'tight';
+    if (v < 180) return 'target';
+    if (v < 250) return 'high';
+    if (v < 300) return 'veryHigh';
+    return 'extremelyHigh';
+  }
+
+  // ---- the made-up day (clock hours -> mg/dL) -------------------------------------------------------------------
+  var BASE = [[8.0, 108], [8.6, 112], [9.15, 150], [9.6, 168], [10.3, 130], [11, 112], [12, 110], [12.7, 96], [13.4, 62], [13.8, 74], [14.3, 104], [14.7, 110], [15.25, 198], [15.6, 206], [16.2, 162], [16.9, 134], [17.4, 149], [17.8, 130], [18.5, 120], [19.2, 114], [19.55, 120]];
+  var TAIL = {
+    day: [[20.1, 186], [20.35, 190], [20.68, 175]],
+    low: [[19.8, 146], [20.1, 118], [20.4, 84], [20.68, 62]],
+    veryLow: [[19.8, 140], [20.1, 108], [20.4, 72], [20.68, 49]],
+    high: [[19.9, 176], [20.3, 222], [20.68, 252]],
+    inRange: [[19.9, 138], [20.3, 126], [20.68, 112]]
+  };
+  var TREAT = {
+    day: [[8.75, 'long', 14], [9.0, 'rapid', 4], [9.0, 'carbs', 40], [13.45, 'carbs', 15], [14.85, 'rapid', 5], [14.85, 'carbs', 60], [19.6, 'rapid', 4.5], [19.6, 'carbs', 50]],
+    low: [[8.75, 'long', 14], [9.0, 'rapid', 4], [9.0, 'carbs', 40], [13.45, 'carbs', 15], [14.85, 'rapid', 5], [14.85, 'carbs', 60], [19.6, 'rapid', 6], [19.6, 'carbs', 50]],
+    high: [[8.75, 'long', 14], [9.0, 'rapid', 4], [9.0, 'carbs', 40], [13.45, 'carbs', 15], [14.85, 'rapid', 5], [14.85, 'carbs', 60], [19.6, 'carbs', 70]]
+  };
+  TREAT.veryLow = TREAT.low; TREAT.inRange = TREAT.day;
+
+  function data(c) {
+    var scn = TAIL[c.scenario] ? c.scenario : 'day';
+    var kf = BASE.concat(TAIL[scn]);
+    if (scn === 'inRange') kf = kf.map(function (p) { return [p[0], p[1] > 150 ? 150 - (p[1] - 150) * 0.15 : p[1] < 80 ? 80 + (p[1] - 80) * 0.3 : p[1]]; });
+    var nowH = 20 + 41 / 60;
+    function at(h) {
+      if (h <= kf[0][0]) return kf[0][1];
+      for (var k = 1; k < kf.length; k++) {
+        if (h <= kf[k][0]) {
+          var a = kf[k - 1], b = kf[k], u = (h - a[0]) / (b[0] - a[0]);
+          var s = (1 - Math.cos(Math.PI * u)) / 2;
+          return a[1] + (b[1] - a[1]) * s + 1.6 * Math.sin(h * 9.1) + 1.1 * Math.sin(h * 23.7);
+        }
+      }
+      return kf[kf.length - 1][1];
+    }
+    var hist = [];
+    for (var n = 288; n >= 0; n--) hist.push({ m: n * 5, v: Math.round(at(nowH - n * 5 / 60)) });
+    var g = TAIL[scn][TAIL[scn].length - 1][1];
+    hist[hist.length - 1].v = g;
+    var rate = { day: -1.1, low: -1.6, veryLow: -2.2, high: 1.7, inRange: 0.2 }[scn];
+    if (Number.isFinite(c.rate)) rate = c.rate;
+    if (Number.isFinite(c.age) && c.age >= 5) hist = hist.filter(function (p) { return p.m >= Math.floor(c.age / 5) * 5; });
+    var tr = (TREAT[scn] || []).map(function (t) { return { m: Math.round((nowH - t[0]) * 60), k: t[1], a: t[2] }; });
+    var pill = null;
+    if (scn === 'low') pill = { k: 'carbs', text: c.lang === 'es' ? 'Hidratos' : 'Carbs', filled: true };
+    if (scn === 'veryLow') pill = { k: 'carbs', text: c.lang === 'es' ? 'Hidratos' : 'Carbs', filled: true };
+    if (scn === 'high') pill = { k: 'rapid', text: c.lang === 'es' ? 'Insulina' : 'Insulin', filled: true };
+    if (c.pill === 'quiet') pill = { k: 'rapid', text: '44m', filled: false, icon: 'bellPause' };
+    if (c.pill === 'muted') pill = { k: 'note', text: '1h 20m', filled: false, icon: 'bellOff' };
+    if (c.pill === 'none') pill = null;
+    var age = Number.isFinite(c.age) ? c.age : 0.5;
+    var rm = 20 * 60 + 41 - Math.floor(age), readAt = Math.floor(rm / 60) + ':' + String(rm % 60).padStart(2, '0');
+    return {
+      scn: scn, g: c.glucose || g, rate: rate, age: age, hist: hist, tr: tr, pill: pill, unit: c.unit || 'mgdl',
+      clock: '20:41', clockH: nowH, sensorDays: 11, readAt: readAt, sensorState: c.sensor || 'ok',
+      tir1: { pct: 89, split: [0, 4, 58, 31, 7, 0, 0] },
+      tir7: { pct: 85, split: [1, 3, 52, 33, 9, 2, 0] },
+      last: lastTreatment(tr), lang: c.lang || 'en',
+      slot: watchLast(tr, c), order: kindOrder(scn, c)
+    };
+  }
+  function lastTreatment(tr) {
+    var r = null;
+    tr.forEach(function (t) { if (t.k === 'rapid' && t.m <= 240 && (!r || t.m < r.m)) r = t; });
+    return r;
+  }
+  // the watch's last treatment: ONE, by priority: rapid still active > long-acting still active > carbs still active >
+  // rapid > long > carbs (within 12 h) > none. Active: rapid 4 h, long-acting 24 h, carbs 3 min per gram (30 min – 3 h).
+  function watchLast(tr, c) {
+    if (c.last === false) return null;
+    var cases = {
+      long: { k: 'long', m: 130, a: 14 }, carbs: { k: 'carbs', m: 25, a: 30 }, old: { k: 'rapid', m: 420, a: 4 }
+    };
+    if (c.lastCase && cases[c.lastCase]) return cases[c.lastCase];
+    var act = { rapid: function (t) { return 240; }, long: function () { return 1440; }, carbs: function (t) { return Math.min(180, Math.max(30, 3 * t.a)); } };
+    var newest = {};
+    tr.forEach(function (t) { if (!newest[t.k] || t.m < newest[t.k].m) newest[t.k] = t; });
+    var order = ['rapid', 'long', 'carbs'];
+    for (var i = 0; i < 3; i++) { var t = newest[order[i]]; if (t && t.m <= act[t.k](t)) return { k: t.k, m: t.m, a: t.a }; }
+    for (var j = 0; j < 3; j++) { var u = newest[order[j]]; if (u && u.m <= 720) return { k: u.k, m: u.m, a: u.a }; }
+    return null;
+  }
+  // the kinds' order: ONE rule on the phone (the treatment dialog's focus), sent to the watch: the focused kind first,
+  // then the dialog's order Rapid · Long · Carbs
+  function kindOrder(scn, c) {
+    var focus = c.focus || ((scn === 'low' || scn === 'veryLow') ? 'carbs' : 'rapid');
+    return [focus].concat(['rapid', 'long', 'carbs'].filter(function (k) { return k !== focus; }));
+  }
+  function ago(m) { return m < 1 ? 'now' : m < 60 ? m + 'm' : m < 360 ? Math.floor(m / 60) + 'h' + (m % 60 ? ' ' + (m % 60) + 'm' : '') : Math.round(m / 60) + 'h'; }
+  function amt(t) { return (t.k === 'carbs' ? t.a + 'g' : t.a + 'u'); }
+  function fmtG(v, unit) {
+    if (v < 40) return 'LO';
+    if (v > 400) return 'HI';
+    return unit === 'mmol' ? (v / 18.0182).toFixed(1) : String(Math.round(v));
+  }
+
+  // ---- the display list ------------------------------------------------------------------------------------------
+  function G() { this.els = []; }
+  G.prototype.p = function (d, o) {
+    o = o || {};
+    this.els.push({ isP: true, isC: false, isR: false, isT: false, d: d, fill: o.fill || 'none', stroke: o.stroke || 'none', sw: o.sw || 0, op: o.op === undefined ? 1 : o.op, cap: o.cap || 'round', join: o.join || 'round', dash: o.dash || 'none', tf: o.tf || '' });
+  };
+  G.prototype.c = function (cx, cy, r, o) {
+    o = o || {};
+    this.els.push({ isP: false, isC: true, isR: false, isT: false, cx: r1(cx), cy: r1(cy), r: r1(r), fill: o.fill || 'none', stroke: o.stroke || 'none', sw: o.sw || 0, op: o.op === undefined ? 1 : o.op, dash: o.dash || 'none' });
+  };
+  G.prototype.r = function (x, y, w, h, rx, o) {
+    o = o || {};
+    this.els.push({ isP: false, isC: false, isR: true, isT: false, x: r1(x), y: r1(y), w: r1(Math.max(0, w)), h: r1(Math.max(0, h)), rx: rx || 0, fill: o.fill || 'none', stroke: o.stroke || 'none', sw: o.sw || 0, op: o.op === undefined ? 1 : o.op });
+  };
+  G.prototype.t = function (x, y, s, o) {
+    o = o || {};
+    this.els.push({ isP: false, isC: false, isR: false, isT: true, x: r1(x), y: r1(y), s: [String(s)], fs: o.fs || 20, fw: o.fw || 500, fill: o.fill || PAL.ink, anchor: o.anchor || 'middle', ls: o.ls || 0, op: o.op === undefined ? 1 : o.op, fam: FAM, tf: o.tf || '' });
+  };
+  G.prototype.icon = function (name, cx, cy, size, col) {
+    var ic = ICON[name];
+    if (!ic) return;
+    var s = size / 24, tf = 'translate(' + r1(cx - size / 2) + ' ' + r1(cy - size / 2) + ') scale(' + r1(s * 1000) / 1000 + ')';
+    if (ic.s) this.p(ic.d, { stroke: col, sw: (ic.sw || 2.2), tf: tf });
+    else this.p(ic.d, { fill: col, tf: tf });
+  };
+  // Sukrara's arrow (aura.js): pointing right, turned by the rate; doubled from 3 mg/dL/min
+  G.prototype.arrow = function (cx, cy, box, rate, col) {
+    var s = box * 1.05, q = function (x) { return r1(x * s); };
+    var d = 'M' + q(-0.42) + ' ' + q(-0.07) + 'H' + q(0.25) + 'V' + q(0.07) + 'H' + q(-0.42) + 'Z' +
+      'M' + q(0.46) + ' 0L' + q(0.06) + ' ' + q(0.3) + 'L' + q(0.16) + ' 0L' + q(0.06) + ' ' + q(-0.3) + 'Z';
+    if (Math.abs(rate) >= 3) d += 'M' + q(0.12) + ' 0L' + q(-0.28) + ' ' + q(0.3) + 'L' + q(-0.18) + ' 0L' + q(-0.28) + ' ' + q(-0.3) + 'Z';
+    var deg = r1(-clamp(rate / 3, -1, 1) * 90);
+    this.p(d, { fill: col, tf: 'translate(' + r1(cx) + ' ' + r1(cy) + ') rotate(' + deg + ')' });
+  };
+
+  function valColour(d, opts) {
+    if (d.age >= 5) return PAL.grey;
+    if (opts && opts.inverted) return '#FFFFFF';
+    return PAL[bandOf(d.g)];
+  }
+  // the value and its arrow as one group; returns its box
+  function value(g, d, x, y, fs, o) {
+    o = o || {};
+    var str = fmtG(d.g, d.unit), vw = bw(str, fs), cap = fs * 0.668, box = cap * 0.78, gap = fs * 0.1;
+    var showArrow = o.arrow !== false && Number.isFinite(d.rate) && str !== 'LO' && str !== 'HI';
+    var w = vw + (showArrow ? gap + box : 0);
+    var x0 = o.anchor === 'start' ? x : o.anchor === 'end' ? x - w : x - w / 2;
+    var col = o.col || valColour(d, o);
+    g.t(x0, y, str, { fs: fs, fw: 700, fill: col, anchor: 'start' });
+    if (d.age >= 5) g.p('M' + r1(x0 - 4) + ' ' + r1(y - cap / 2) + 'H' + r1(x0 + vw + 4), { stroke: PAL.grey, sw: Math.max(3, fs * 0.05) });
+    if (showArrow) {
+      if (d.age >= 5) g.c(x0 + vw + gap + box / 2, y - cap / 2, box * 0.28, { stroke: PAL.grey, sw: box * 0.1 });
+      else g.arrow(x0 + vw + gap + box / 2, y - cap / 2, box, d.rate, o.arrowCol || col);
+    }
+    return { x0: x0, x1: x0 + w, w: w, top: y - cap, bottom: y, cap: cap };
+  }
+
+  // a time-in-range ring (the card's): segments clockwise from 12 in the ring order, the number inside
+  function ring(g, cx, cy, r, sw, tir, cap, o) {
+    o = o || {};
+    var order = ['tight', 'target', 'high', 'veryHigh', 'extremelyHigh', 'veryLow', 'low'];
+    var idx = { veryLow: 0, low: 1, tight: 2, target: 3, high: 4, veryHigh: 5, extremelyHigh: 6 };
+    var tot = 0; order.forEach(function (k) { tot += tir.split[idx[k]] || 0; });
+    var a = 0, gapDeg = 4;
+    g.c(cx, cy, r, { stroke: PAL.grid, sw: sw });
+    order.forEach(function (k) {
+      var v = tir.split[idx[k]] || 0;
+      if (!v) return;
+      var span = v / tot * 360;
+      var a0 = a + gapDeg / 2, a1 = a + span - gapDeg / 2;
+      if (a1 > a0) g.p(arc(r, a0, a1, cx, cy), { stroke: o.dim ? PAL.dim : PAL[k], sw: sw, cap: 'butt' });
+      a += span;
+    });
+    var nf = o.nfs || r * 0.82;
+    g.t(cx, cy + (cap ? nf * 0.18 : nf * 0.34), tir.pct, { fs: nf, fw: 700, fill: o.dim ? PAL.soft : PAL.ink });
+    if (cap) g.t(cx, cy + nf * 0.18 + r * 0.5, cap, { fs: r * 0.42, fw: 600, fill: PAL.soft });
+  }
+
+  function timeSince(m) {
+    if (m < 1) return ['now'];
+    if (m < 60) return [m + 'm'];
+    if (m < 360) return m % 60 ? [Math.floor(m / 60) + 'h', (m % 60) + 'm'] : [Math.floor(m / 60) + 'h'];
+    if (m < 2880) return [Math.round(m / 60) + 'h'];
+    return [Math.round(m / 1440) + 'd'];
+  }
+  function lastStack(g, cx, cy, size, t) {
+    var parts = timeSince(t.m), col = PAL[t.k], ms = size * 0.3;
+    var two = parts.length === 2, f1 = size * (two ? 0.4 : 0.46), f2 = size * 0.32;
+    var h = ms + 4 + f1 * 0.72 + (two ? 4 + f2 * 0.72 : 0), y0 = cy - h / 2;
+    if (t.k === 'carbs') g.c(cx, y0 + ms / 2, ms * 0.4, { fill: col });
+    else g.p('M' + r1(cx - ms / 2) + ' ' + r1(y0 + ms * 0.08) + 'H' + r1(cx + ms / 2) + 'L' + r1(cx) + ' ' + r1(y0 + ms * 0.92) + 'Z', t.k === 'long' ? { stroke: col, sw: 2 } : { fill: col });
+    var yb = y0 + ms + 4 + f1 * 0.72;
+    g.t(cx, yb, parts[0], { fs: f1, fw: 700, fill: PAL.ink });
+    if (two) g.t(cx, yb + 4 + f2 * 0.72, parts[1], { fs: f2, fw: 600, fill: PAL.soft });
+  }
+  // the card's places in priority: main, last treatment (never dimmed), second (dimmed), third
+  function metricSlots(d, c) {
+    var list = [{ kind: 'ring', tir: d.tir1 }];
+    if (d.slot) list.push({ kind: 'last', slot: d.slot });
+    list.push({ kind: 'ring', tir: d.tir7, dim: true });
+    return list;
+  }
+  function drawSlot(g, m, cx, cy, r, sw, nfs) {
+    if (m.kind === 'last') lastStack(g, cx, cy, 2 * r + sw, m.slot);
+    else ring(g, cx, cy, r, sw, m.tir, '', { dim: m.dim, nfs: nfs });
+  }
+  function pill(g, x, y, p, o) {
+    o = o || {};
+    var fs = o.fs || 22, h = fs * 1.36, iw = fs * 0.78, padL = fs * 0.5, padR = fs * 0.6;
+    var w = padL + iw + fs * 0.3 + tw(p.text, fs) + padR;
+    var x0 = o.anchor === 'start' ? x : o.anchor === 'end' ? x - w : x - w / 2;
+    var col = PAL[p.k] || PAL.note;
+    g.r(x0, y - h / 2, w, h, h / 2, { fill: col, op: p.filled ? 1 : 0.24 });
+    var fg = p.filled ? PAL.on : col;
+    g.icon(p.icon || p.k, x0 + padL + iw / 2, y, iw, fg);
+    g.t(x0 + padL + iw + fs * 0.3, y + fs * 0.35, p.text, { fs: fs, fw: 600, fill: fg, anchor: 'start' });
+    return w;
+  }
+
+  // the chart: bands, the line in its range colours, the now bead, the treatment marks and the hours
+  function chart(g, d, bx, o) {
+    o = o || {};
+    // the height is Kovatchev's symmetrised scale (as Sukrara Aura's rail) over 40–300, where it is symmetric: lows
+    // 27 %, the range 47 %, highs 26 %, 70 and 180 equally far from the middle; above 300 pins to the top
+    var hours = o.hours || 12, lo = 40, hi = 300;
+    var pts = d.hist.filter(function (p) { return p.m <= hours * 60; });
+    var X = function (m) { return bx.x1 - (m / (hours * 60)) * (bx.x1 - bx.x0); };
+    var Y = o.linear
+      ? function (v) { return bx.y1 - (clamp(v, 40, 260) - 40) / 220 * (bx.y1 - bx.y0); }
+      : function (v) { return bx.y1 - (K(clamp(v, lo, hi)) - K(lo)) / (K(hi) - K(lo)) * (bx.y1 - bx.y0); };
+    g.r(bx.x0, Y(140), bx.x1 - bx.x0, Y(70) - Y(140), 0, { fill: PAL.tight, op: 0.13 });
+    g.r(bx.x0, Y(180), bx.x1 - bx.x0, Y(140) - Y(180), 0, { fill: PAL.target, op: 0.075 });
+    if (o.grid !== false) {
+      [70, 180].forEach(function (v) { g.p('M' + r1(bx.x0) + ' ' + r1(Y(v)) + 'H' + r1(bx.x1), { stroke: PAL.faint, sw: 1, dash: '3 4' }); });
+    }
+    if (o.yLabels !== false) {
+      [70, 180].forEach(function (v) { g.t(bx.x1 + 5, Y(v) + 5, d.unit === 'mmol' ? (v / 18.0182).toFixed(1) : v, { fs: o.lfs || 15, fw: 500, fill: PAL.dim, anchor: 'start' }); });
+    }
+    if (o.under) o.under({ X: X, Y: Y });
+    // the line: one path per run of one colour
+    var runs = [], cur = null;
+    for (var k = 1; k < pts.length; k++) {
+      var a = pts[k - 1], b = pts[k], col = PAL[bandOf((a.v + b.v) / 2)];
+      if (!cur || cur.col !== col) { cur = { col: col, d: 'M' + r1(X(a.m)) + ' ' + r1(Y(a.v)) }; runs.push(cur); }
+      cur.d += 'L' + r1(X(b.m)) + ' ' + r1(Y(b.v));
+    }
+    var lw = o.lw || 3.4;
+    runs.forEach(function (rn) { g.p(rn.d, { stroke: d.age >= 5 ? PAL.grey : rn.col, sw: lw }); });
+    var last = pts[pts.length - 1];
+    if (o.bead !== false && last) g.c(X(last.m), Y(last.v), lw * 1.9, { fill: d.age >= 5 ? '#000000' : PAL[bandOf(last.v)], stroke: d.age >= 5 ? PAL.grey : '#000000', sw: d.age >= 5 ? 2 : 2.4 });
+    // treatments
+    var marks = [];
+    if (o.marks !== false) {
+      d.tr.filter(function (t) { return t.m <= hours * 60; }).forEach(function (t) {
+        var x = X(t.m), y = bx.y1 - 7, col = PAL[t.k], ms = o.ms || 11;
+        if (t.k === 'rapid') g.p('M' + r1(x - ms / 2) + ' ' + r1(y - ms * 0.42) + 'H' + r1(x + ms / 2) + 'L' + r1(x) + ' ' + r1(y + ms * 0.45) + 'Z', { fill: col });
+        if (t.k === 'long') g.p('M' + r1(x - ms / 2) + ' ' + r1(y - ms * 0.42) + 'H' + r1(x + ms / 2) + 'L' + r1(x) + ' ' + r1(y + ms * 0.45) + 'Z', { stroke: col, sw: 2 });
+        if (t.k === 'carbs') g.c(x - (d.tr.some(function (u) { return u.k !== 'carbs' && u.m === t.m; }) ? -0 : 0), y - (d.tr.some(function (u) { return u.k !== 'carbs' && u.m === t.m; }) ? ms * 1.3 : 0), ms * 0.4, { fill: col });
+        if (t.k !== 'carbs' && o.markLabels !== false) marks.push({ x: x, t: t });
+      });
+    }
+    // hour labels (24 h), skipping the ones a treatment label touches
+    var lfs = o.lfs || 15, ly = bx.y1 + lfs + 5;
+    var labels = [];
+    marks.sort(function (a, b) { return b.x - a.x; }).forEach(function (mk) {
+      var s = amt(mk.t), w = tw(s, lfs), L = { x0: mk.x - w / 2, x1: mk.x + w / 2 };
+      if (labels.some(function (o) { return L.x1 + 4 > o.x0 && L.x0 - 4 < o.x1; })) return;
+      labels.push(L);
+      g.t(mk.x, ly, s, { fs: lfs, fw: 600, fill: PAL[mk.t.k] });
+    });
+    if (o.hoursRow !== false) {
+      var step = hours >= 12 ? 3 : hours >= 6 ? 2 : 1;
+      var nowH = d.clockH;
+      for (var hh = Math.ceil(nowH - hours); hh <= nowH; hh++) {
+        if (((hh % 24) + 24) % 24 % step) continue;
+        var m = (nowH - hh) * 60, x = X(m);
+        if (x < bx.x0 + 8 || x > bx.x1 - 8) continue;
+        var s = String(((hh % 24) + 24) % 24), w = tw(s, lfs);
+        if (labels.some(function (L) { return x + w / 2 + 4 > L.x0 && x - w / 2 - 4 < L.x1; })) continue;
+        g.t(x, ly, s, { fs: lfs, fw: 500, fill: PAL.dim });
+      }
+    }
+    return { X: X, Y: Y, lo: lo, hi: hi };
+  }
+
+  // the % column: the chart window's readings by value, drawn inside the plot from its left edge, under the line (as
+  // the widget's dot histogram), the share above / in / below the range left of the plot
+  function pctColumn(g, d, sc, bx, o) {
+    o = o || {};
+    var hours = o.hours || 12, pts = d.hist.filter(function (p) { return p.m <= hours * 60; });
+    var bins = {}, max = 0, n = pts.length, above = 0, below = 0, maxLen = (bx.x1 - bx.x0) * (o.share || 0.22);
+    pts.forEach(function (p) {
+      var b = Math.floor(clamp(p.v, 40, 299) / 10) * 10;
+      bins[b] = (bins[b] || 0) + 1; if (bins[b] > max) max = bins[b];
+      if (p.v >= 180) above++; else if (p.v < 70) below++;
+    });
+    Object.keys(bins).forEach(function (k) {
+      var v = Number(k), y0 = sc.Y(v + 10), y1 = sc.Y(v), len = (bins[k] / max) * maxLen;
+      if (o.mask) {
+        // the row's own background over the line: black, then the band's tint where the row lies in a band
+        var mx1 = bx.x0 + Math.ceil(len / (o.dot || 5)) * (o.dot || 5) + 1.5;
+        g.r(bx.x0, y0, mx1 - bx.x0, y1 - y0, 0, { fill: '#000000' });
+        [[70, 140, PAL.tight, 0.13], [140, 180, PAL.target, 0.075]].forEach(function (bd) {
+          var t0 = Math.max(y0, sc.Y(bd[1])), t1 = Math.min(y1, sc.Y(bd[0]));
+          if (t1 > t0) g.r(bx.x0, t0, mx1 - bx.x0, t1 - t0, 0, { fill: bd[2], op: bd[3] });
+        });
+      }
+      // dots, as the widget draws them: a row per bin, one dot per step
+      var step = o.dot || 5, r = Math.min(step * 0.36, Math.max(0.8, (y1 - y0) * 0.42)), cy = (y0 + y1) / 2;
+      var dd = '';
+      for (var x = bx.x0 + step / 2; x <= bx.x0 + len; x += step) dd += 'M' + r1(x - r) + ' ' + r1(cy) + 'a' + r1(r) + ' ' + r1(r) + ' 0 1 0 ' + r1(2 * r) + ' 0a' + r1(r) + ' ' + r1(r) + ' 0 1 0 ' + r1(-2 * r) + ' 0';
+      if (dd) g.p(dd, { fill: PAL[bandOf(v + 5)], op: 0.95 });
+    });
+    var pa = Math.round(above / n * 100), pb = Math.round(below / n * 100), pin = 100 - pa - pb;
+    var lfs = o.lfs || 15, lx = bx.x0 - 5;
+    if (pa) g.t(lx, Math.min(sc.Y(230), sc.Y(180) - 2) + lfs * 0.35, pa + '%', { fs: lfs, fw: 600, fill: PAL.soft, anchor: 'end' });
+    g.t(lx, (sc.Y(70) + sc.Y(180)) / 2 + lfs * 0.35, pin + '%', { fs: lfs + 1, fw: 700, fill: PAL.ink, anchor: 'end' });
+    if (pb || o.always) g.t(lx, Math.max(sc.Y(55), sc.Y(70) + lfs * 0.6) + lfs * 0.35, pb + '%', { fs: lfs, fw: 600, fill: PAL.soft, anchor: 'end' });
+  }
+
+  // Sukrara Aura's sparkline (SPEC §6.5), scaled by sc: a log time axis (the newest 10 min ≈ 36 px, up to 3 h as the
+  // width allows), a fixed 0.6 px per mg/dL that never rescales, the window panning on the last hour, overflow fading,
+  // the limits dotted with the very-good band between, the trend ray and the end dot
+  function auraSpark(g, d, bx, o) {
+    o = o || {};
+    var sc = o.sc || 1, K = 100 / Math.log(7) * sc, SH = bx.y1 - bx.y0, ppm = 0.6 * sc, L = 70, H = 180;
+    var spanMin = Math.min(180, 10 * (Math.exp((bx.x1 - bx.x0 - 24 * sc) / K) - 1));
+    var xNow = bx.x1 - 24 * sc;
+    var X = function (age) { return xNow - K * Math.log(1 + age / 10); };
+    var pts = d.hist.filter(function (p) { return p.m <= spanMin; }), last = pts[pts.length - 1].v;
+    var hour = d.hist.filter(function (p) { return p.m <= 60; }), hLo = 999, hHi = 0;
+    hour.forEach(function (p) { hLo = Math.min(hLo, p.v); hHi = Math.max(hHi, p.v); });
+    var span = SH / ppm, mid;
+    if (Math.max(hHi, H) - Math.min(hLo, L) <= span) mid = (Math.max(hHi, H) + Math.min(hLo, L)) / 2;
+    else mid = clamp((hLo + hHi) / 2, last - 0.4 * span, last + 0.4 * span);
+    var y0 = function (v) { return bx.y0 + SH / 2 - (v - mid) * ppm; };
+    var B = 12 * sc;
+    var Y = function (v) {
+      var y = y0(v);
+      if (y < bx.y0) return bx.y0 - B * (1 - Math.exp((y - bx.y0) / B));
+      if (y > bx.y1) return bx.y1 + B * (1 - Math.exp((bx.y1 - y) / B));
+      return y;
+    };
+    var OP = function (v) {
+      var y = y0(v), out = y < bx.y0 ? bx.y0 - y : y > bx.y1 ? y - bx.y1 : 0;
+      if (out <= 0) return 1;
+      if (out <= 6 * sc) return 1 - 0.55 * out / (6 * sc);
+      return Math.max(0.15, 0.45 - 0.3 * (out - 6 * sc) / (6 * sc));
+    };
+    var x0 = X(spanMin);
+    // band and limits
+    var yH = Y(H), yL = Y(L);
+    g.r(x0, Math.min(yH, yL), xNow - x0, Math.abs(yL - yH), 0, { fill: o.white ? '#FFFFFF' : PAL.tight, op: o.white ? 0.07 : 0.09 });
+    g.p('M' + r1(x0) + ' ' + r1(yH) + 'H' + r1(xNow), { stroke: '#5C5C62', sw: 1.4 * sc, dash: r1(1.5 * sc) + ' ' + r1(4.5 * sc), op: OP(H) });
+    g.p('M' + r1(x0) + ' ' + r1(yL) + 'H' + r1(xNow), { stroke: '#5C5C62', sw: 1.4 * sc, dash: r1(1.5 * sc) + ' ' + r1(4.5 * sc), op: OP(L) });
+    // the line, a piece per pair so each fades by its height
+    var old = d.age >= 5, lcol = o.white ? 'rgba(255,255,255,0.85)' : old ? PAL.dim : PAL.soft;
+    for (var k = 1; k < pts.length; k++) {
+      var a = pts[k - 1], b = pts[k], op = Math.min(OP(a.v), OP(b.v));
+      g.p('M' + r1(X(a.m + d.age)) + ' ' + r1(Y(a.v)) + 'L' + r1(X(b.m + d.age)) + ' ' + r1(Y(b.v)), { stroke: lcol, sw: 5.4 * sc, op: op });
+    }
+    var ex = X(d.age), ey = Y(last), col = valColour(d, {});
+    if (!old && Number.isFinite(d.rate)) {
+      var ang = -clamp(d.rate / 3, -1, 1) * Math.PI / 2, len = 22 * sc;
+      g.p('M' + r1(ex) + ' ' + r1(ey) + 'L' + r1(ex + len * Math.cos(ang)) + ' ' + r1(ey + len * Math.sin(ang)), { stroke: o.white ? '#FFFFFF' : bandOf(d.g) === 'veryLow' ? PAL.veryLow : col, sw: 3.4 * sc, dash: r1(4.5 * sc) + ' ' + r1(4.5 * sc), cap: 'butt' });
+    }
+    if (!old) g.c(ex, ey, 7.5 * sc, { fill: o.white ? '#FFFFFF' : PAL[bandOf(d.g)] });
+    else g.c(ex, ey, 7.5 * sc, { fill: '#000000', stroke: PAL.grey, sw: 3 * sc });
+  }
+
+  function sparkline(g, d, bx, o) {
+    o = o || {};
+    var hours = o.hours || 3, pts = d.hist.filter(function (p) { return p.m <= hours * 60; });
+    var lo = 40, hi = 260;
+    var X = function (m) { return bx.x1 - (m / (hours * 60)) * (bx.x1 - bx.x0); };
+    var Y = function (v) { return bx.y1 - (clamp(v, lo, hi) - lo) / (hi - lo) * (bx.y1 - bx.y0); };
+    g.r(bx.x0, Y(180), bx.x1 - bx.x0, Y(70) - Y(180), 3, { fill: PAL.tight, op: 0.12 });
+    var dd = '';
+    pts.forEach(function (p, i) { dd += (i ? 'L' : 'M') + r1(X(p.m)) + ' ' + r1(Y(p.v)); });
+    g.p(dd, { stroke: d.age >= 5 ? PAL.grey : (o.col || PAL.soft), sw: o.sw || 3 });
+    var l = pts[pts.length - 1];
+    g.c(X(l.m), Y(l.v), (o.sw || 3) * 1.8, { fill: d.age >= 5 ? '#000' : PAL[bandOf(l.v)], stroke: d.age >= 5 ? PAL.grey : '#000', sw: 2 });
+  }
+
+  function clock(g, d, y, o) { o = o || {}; g.t(o.x || 0, y, d.clock, { fs: o.fs || 24, fw: 600, fill: o.fill || PAL.soft }); }
+  function sensorTag(g, d, x, y, o) {
+    o = o || {}; var fs = o.fs || 18, s = d.sensorDays + 'd', w = fs + 4 + tw(s, fs);
+    var x0 = o.anchor === 'end' ? x - w : o.anchor === 'start' ? x : x - w / 2;
+    g.icon('sensor', x0 + fs / 2, y - fs * 0.34, fs, PAL.soft);
+    g.t(x0 + fs + 4, y, s, { fs: fs, fw: 600, fill: PAL.soft, anchor: 'start' });
+    return w;
+  }
+  function lastTag(g, d, x, y, o) {
+    o = o || {}; var t = d.last; if (!t) return 0;
+    var fs = o.fs || 18, a = amt(t), s = ago(t.m), w = fs * 0.8 + 4 + tw(a, fs) + 6 + tw(s, fs);
+    var x0 = o.anchor === 'end' ? x - w : o.anchor === 'start' ? x : x - w / 2;
+    g.icon(t.k, x0 + fs * 0.4, y - fs * 0.34, fs * 0.8, PAL[t.k]);
+    g.t(x0 + fs * 0.8 + 4, y, a, { fs: fs, fw: 600, fill: PAL[t.k], anchor: 'start' });
+    g.t(x0 + fs * 0.8 + 4 + tw(a, fs) + 6, y, s, { fs: fs, fw: 500, fill: PAL.soft, anchor: 'start' });
+    return w;
+  }
+  function pageDots(g, n, i) {
+    for (var k = 0; k < n; k++) g.c((k - (n - 1) / 2) * 13, 180, k === i ? 4 : 3, { fill: k === i ? PAL.ink : PAL.dim });
+  }
+  // a hint at a button: a short arc on the rim at its angle (START 60°, BACK 120°, DOWN 240°, UP 270°, LIGHT 300°)
+  function btnHint(g, ang, label, o) {
+    o = o || {}; var col = o.col || PAL.ink;
+    g.p(arc(190, ang - 9, ang + 9), { stroke: col, sw: 5, op: o.op || 0.9 });
+    if (label) {
+      var p = P(o.r || 160, ang), fs = o.fs || 18;
+      g.t(p[0] + (o.dx || 0), p[1] + fs * 0.35 + (o.dy || 0), label, { fs: fs, fw: 600, fill: col, anchor: o.anchor || (ang < 180 ? 'end' : 'start') });
+    }
+  }
+
+  // ---- the screens --------------------------------------------------------------------------------------------
+  var S = {};
+
+  // A · the widget, one screen: rings flank the value, the chart with its % column, sensor and last treatment below
+  // the app's message where the value would be (no value): Aura's words
+  function noValue(g, d, y) {
+    if (d.sensorState === 'warmup') {
+      var tw0 = tw('Warming up', 26), tot = 34 + 12 + tw0, mx = -tot / 2;
+      g.c(mx + 17, y - 12, 17, { stroke: PAL.soft, sw: 2.5 });
+      g.p('M' + r1(mx + 17) + ' ' + r1(y - 12) + 'L' + r1(mx + 17) + ' ' + r1(y - 24.5) + arc(12.5, 0, 0.6 * 360, mx + 17, y - 12).replace('M' + r1(mx + 17) + ' ' + r1(y - 24.5), '') + 'Z', { fill: PAL.soft });
+      g.t(mx + 46, y - 3, 'Warming up', { fs: 26, fw: 600, fill: PAL.ink, anchor: 'start' });
+      g.t(0, y + 30, 'Ready at 21:20', { fs: 20, fw: 500, fill: PAL.soft });
+      return;
+    }
+    g.t(0, y - 26, 'No reading since', { fs: 22, fw: 600, fill: PAL.soft });
+    g.t(0, y + 20, '20:12', { fs: 48, fw: 600, fill: PAL.ink });
+  }
+  function chipRow(g, d, y, o) {
+    o = o || {};
+    var fs = o.fs || 20, late = d.age >= 1.5 && d.age < 20, ageS = late ? d.readAt : '', aw = late ? tw(ageS, fs) : 0;
+    var pw = 0, pillOn = d.pill && d.age < 5;
+    if (pillOn) { var fs2 = fs, h = fs2 * 1.36, iw = fs2 * 0.78; pw = fs2 * 0.5 + iw + fs2 * 0.3 + tw(d.pill.text, fs2) + fs2 * 0.6; }
+    var gap = late && pillOn ? 12 : 0, tot = aw + gap + pw, x0 = -tot / 2;
+    if (late) g.t(x0, y + fs * 0.35, ageS, { fs: fs, fw: 500, fill: PAL.soft, anchor: 'start' });
+    if (pillOn) pill(g, x0 + aw + gap, y, d.pill, { fs: fs, anchor: 'start' });
+    return tot > 0;
+  }
+  S.appA = function (g, d, c) {
+    clock(g, d, -150, { fs: 22 });
+    if (d.age >= 20 || d.sensorState === 'warmup') noValue(g, d, -66);
+    else value(g, d, 0, -58, 88);
+    var ms = metricSlots(d, c);
+    drawSlot(g, ms[1], -142, -82, 25, 6, 22);
+    drawSlot(g, ms[0], 142, -82, 25, 6, 22);
+    var bx = { x0: -134, x1: 146, y0: -22, y1: 88 };
+    var sc0 = null;
+    var sc = chart(g, d, bx, { hours: c.hours || 12, lfs: 14, ms: 10 });
+    // the % column over the line's start, masking it (the widget's)
+    if (c.dist !== false) pctColumn(g, d, sc, bx, { lfs: 14, hours: c.hours || 12, dot: 4.6, mask: true });
+    // the bottom row: Sukrara's pill (or the reading's time), else the sensor's days (the last treatment is in its ring)
+    if (!chipRow(g, d, 146, { fs: 19 })) sensorTag(g, d, 0, 152, { fs: 17 });
+    if (c.dots !== false) pageDots(g, 2, 0);
+  };
+
+  // the numbers: the phone's Glucose report, simplified (one period, the three shares with their goals, average, GMI, CV)
+  S.appNums = function (g, d, c) {
+    var per = c.period || '14d', pers = ['1d', '7d', '14d', '30d'];
+    var cw = 50, gp = 6, x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2;
+    pers.forEach(function (p, i) {
+      var on = p === per, x = x0 + i * (cw + gp);
+      g.r(x, -152, cw, 30, 15, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
+      g.t(x + cw / 2, -131, p, { fs: 17, fw: on ? 700 : 500, fill: on ? PAL.ink : PAL.soft });
+    });
+    var R = { above: 14, inR: 85, good: 64, below: 0.1, split: [0, 0.1, 64, 21, 14, 0.8, 0] };
+    // the stacked bar (the six bands, very high on top)
+    var bx = -142, by0 = -112, by1 = 64, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
+    R.split.forEach(function (v) { tot += v; });
+    var y = by1;
+    keys.forEach(function (k, i) {
+      var v = R.split[i]; if (!v) return;
+      var h = v / tot * (by1 - by0);
+      g.r(bx, y - h + (h > 3 ? 1 : 0), 12, Math.max(1.5, h - (h > 3 ? 2 : 0)), 2, { fill: PAL[k] });
+      y -= h;
+    });
+    function goal(x, yy, text, met) {
+      var w = 26 + tw(text, 14), col = met ? PAL.tight : PAL.high;
+      g.r(x, yy - 15, w, 22, 11, { fill: met ? '#173A27' : '#3D2A10' });
+      if (met) g.p('M' + r1(x + 8) + ' ' + r1(yy - 4.5) + 'l3.5 3.5l6 -7', { stroke: col, sw: 2 });
+      else g.p('M' + r1(x + 9) + ' ' + r1(yy - 9) + 'l7 7M' + r1(x + 16) + ' ' + r1(yy - 9) + 'l-7 7', { stroke: col, sw: 2 });
+      g.t(x + 21, yy + 1, text, { fs: 14, fw: 600, fill: col, anchor: 'start' });
+    }
+    function row(yy, label, pct, gtext, big, sub) {
+      g.t(-116, yy, label, { fs: big ? 22 : 19, fw: big ? 700 : 600, fill: PAL.ink, anchor: 'start' });
+      g.t(152, yy + (big ? 4 : 0), pct, { fs: big ? 32 : 22, fw: 700, fill: PAL.ink, anchor: 'end' });
+      if (gtext) goal(-116, yy + 22, gtext, true);
+      if (sub) g.t(-116 + 26 + tw(gtext, 14) + 10, yy + 23, sub, { fs: 15, fw: 500, fill: PAL.soft, anchor: 'start' });
+    }
+    row(-96, 'Above range', R.above + ' %', '< 25%');
+    row(-30, 'In range', R.inR + ' %', '> 70%', true, 'very good ' + R.good + ' %');
+    row(38, 'Below range', R.below + ' %', '< 4%');
+    g.p('M-140 80H140', { stroke: PAL.grid, sw: 1.5 });
+    [['136', 'Average'], ['6.6 %', 'GMI'], ['27 %', 'CV']].forEach(function (m, i) {
+      var x = -92 + i * 92;
+      g.t(x, 114, m[0], { fs: 24, fw: 700, fill: PAL.ink });
+      var lw = tw(m[1], 15) + 18;
+      g.p('M' + r1(x - lw / 2) + ' 131l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
+      g.t(x - lw / 2 + 14, 137, m[1], { fs: 15, fw: 600, fill: PAL.soft, anchor: 'start' });
+    });
+    if (c.dots !== false) pageDots(g, 2, 1);
+  };
+
+  // ---- the glance, in the glance loop --------------------------------------------------------------------------
+  // The Descent Mk3 43's glance: the app's icon in a 60 × 60 area (drawn by the watch), the app's own content in
+  // 248 × 103 to its right. On screen (centre origin): icon centred at (−125, 0), content x −83…165, y −51…52.
+  function appIcon(g, cx, cy, r, op) {
+    g.c(cx, cy, r, { fill: '#127C95', op: op === undefined ? 1 : op });
+    var s = (r * 2) / 49.64 * 0.78, ox = cx - (27.61 + 24.82) * s, oy = cy - (31.36 + 24.82) * s;
+    var tf = 'translate(' + r1(ox) + ' ' + r1(oy) + ') scale(' + r1(s * 1000) / 1000 + ')';
+    g.p('M45.09,45.19Q47.00,44.09 48.91,45.19L57.93,50.40Q59.83,51.50 57.93,52.60L48.91,57.81Q47.00,58.91 45.09,57.81L36.07,52.60Q34.17,51.50 36.07,50.40ZM32.36,56.84Q32.36,54.63 34.26,55.73L43.28,60.95Q45.19,62.05 45.19,64.25L45.19,74.66Q45.19,76.86 43.28,75.77L34.26,70.55Q32.36,69.45 32.36,67.25ZM48.81,64.25Q48.81,62.05 50.72,60.95L59.74,55.73Q61.64,54.63 61.64,56.84L61.64,67.25Q61.64,69.45 59.74,70.55L50.72,75.77Q48.81,76.86 48.81,74.66Z', { fill: '#FFFFFF', tf: tf, op: op === undefined ? 1 : op });
+    g.p('M59.50,42.00A6.50,6.50 0 1,0 72.50,42.00A6.50,6.50 0 1,0 59.50,42.00Z', { fill: PAL.now, tf: tf, op: op === undefined ? 1 : op });
+  }
+  function glanceLoop(g, d, draw, o) {
+    o = o || {};
+    // the neighbours, as the watch's own list draws them (dimmed: not selected)
+    g.c(-118, -136, 22, { fill: '#3A1416' }); g.icon('heart', -118, -136, 22, PAL.low);
+    g.t(-84, -142, 'Heart Rate', { fs: 17, fw: 600, fill: PAL.dim, anchor: 'start' });
+    g.t(-84, -116, '62 bpm', { fs: 24, fw: 700, fill: PAL.soft, anchor: 'start' });
+    g.c(-118, 136, 22, { fill: '#14213A' }); g.icon('bolt', -118, 136, 22, PAL.rapid);
+    g.t(-84, 130, 'Body Battery', { fs: 17, fw: 600, fill: PAL.dim, anchor: 'start' });
+    g.t(-84, 156, '64', { fs: 24, fw: 700, fill: PAL.soft, anchor: 'start' });
+    g.p('M-150 -84H150M-150 84H150', { stroke: PAL.grid, sw: 1.5 });
+    appIcon(g, -125, 0, 30);
+    if (o.frame) g.r(-83, -51.5, 248, 103, 4, { stroke: PAL.now, sw: 1, dash: '4 4', op: 0.5 });
+    draw();
+  }
+  // The glance: the widget's top row (as the collapsed notification): the value and its arrow, then as many of the
+  // person's metrics as fit, in the card's priority (main, last treatment, second…), the rings without their period
+  // label and with a bigger number. A pill or the reading's time sits under the value.
+  S.glance = function (g, d, c) {
+    glanceLoop(g, d, function () {
+      var X0 = -83, X1 = 165, R = 23, SW = 5, gapR = 6;
+      var under = (d.pill && d.age < 5) || d.age >= 1.5;
+      var vy = under ? 4 : 20, fs = under ? 54 : 58;
+      if (d.age >= 20 || d.sensorState === 'warmup') {
+        if (d.sensorState === 'warmup') {
+          g.c(X0 + 14, -14, 14, { stroke: PAL.soft, sw: 2.2 });
+          g.p('M' + r1(X0 + 14) + ' -14L' + r1(X0 + 14) + ' -24' + arc(10, 0, 216, X0 + 14, -14).replace(/^M[^A]+/, '') + 'Z', { fill: PAL.soft });
+          g.t(X0 + 36, -6, 'Warming up', { fs: 24, fw: 600, fill: PAL.ink, anchor: 'start' });
+          g.t(X0, 28, 'Ready at 21:20', { fs: 18, fw: 500, fill: PAL.soft, anchor: 'start' });
+        } else {
+          g.t(X0, -14, 'No reading since', { fs: 18, fw: 600, fill: PAL.soft, anchor: 'start' });
+          g.t(X0, 26, '20:12', { fs: 38, fw: 600, fill: PAL.ink, anchor: 'start' });
+        }
+        return;
+      }
+      var v = value(g, d, X0, vy, fs, { anchor: 'start' });
+      // metrics from the right edge leftwards while they fit
+      var room = X1 - (v.x1 + 10), x = X1, mets = metricSlots(d, c);
+      mets.forEach(function (m) {
+        var w = 2 * R + SW;
+        if (room < w) { room = -1; return; }
+        drawSlot(g, m, x - w / 2, 0, R, SW, 23);
+        x -= w + gapR; room -= w + gapR;
+      });
+      if (under) {
+        var cy = 34, late = d.age >= 1.5, ax = X0;
+        if (late) { g.t(ax, cy + 6, d.readAt, { fs: 17, fw: 500, fill: PAL.soft, anchor: 'start' }); ax += tw(d.readAt, 17) + 10; }
+        if (d.pill && d.age < 5) pill(g, ax, cy, d.pill, { fs: 15, anchor: 'start' });
+      }
+    }, c);
+  };
+
+  // ---- the data field, in an activity's data screen ---------------------------------------------------------------
+  function dfLabel(g, x, y, s, o) { o = o || {}; g.t(x, y, s, { fs: o.fs || 17, fw: 600, fill: o.fill || PAL.soft, ls: 1.2, anchor: o.anchor || 'middle' }); }
+  function otherField(g, x, y, label, val, fs) { dfLabel(g, x, y - fs * 0.78, label); g.t(x, y, val, { fs: fs, fw: 700, fill: PAL.ink }); }
+  function dfBlock(g, d, x0, y0, x1, y1) {
+    // low / very low: the field's own block in the range's colour, the value white (Aura's very-low block)
+    var b = bandOf(d.g);
+    if (d.age < 5 && (b === 'veryLow' || b === 'low')) { g.r(x0, y0, x1 - x0, y1 - y0, 0, { fill: PAL[b], op: b === 'veryLow' ? 1 : 0.85 }); return true; }
+    return false;
+  }
+  S.df1 = function (g, d) {
+    var inv = dfBlock(g, d, -200, -200, 200, 200);
+    dfLabel(g, 0, -128, 'GLUCOSE', { fill: inv ? '#FFFFFF' : PAL.soft });
+    value(g, d, 0, -8, 116, { inverted: inv, col: inv ? '#FFFFFF' : undefined });
+    if (!inv) { var scl = 1.4, Wd = 100 / Math.log(7) * scl * Math.log(19) + 24 * scl; auraSpark(g, d, { x0: -Wd / 2, x1: Wd / 2, y0: 26, y1: 110 }, { sc: scl }); }
+    if (d.age >= 1.5) g.t(0, 150, d.readAt, { fs: 20, fw: 500, fill: inv ? '#FFFFFF' : PAL.soft });
+  };
+  S.df2 = function (g, d) {
+    var inv = dfBlock(g, d, -200, -200, 200, -1);
+    dfLabel(g, 0, -134, 'GLUCOSE', { fill: inv ? '#FFFFFF' : PAL.soft });
+    if (inv) value(g, d, 0, -30, 92, { inverted: true, col: '#FFFFFF' });
+    else {
+      var vw = bw(fmtG(d.g, d.unit), 84), W = 150, gw = vw + 14 + W, x0 = -gw / 2;
+      value(g, d, x0, -34, 84, { anchor: 'start', arrow: false });
+      auraSpark(g, d, { x0: x0 + vw + 14, x1: x0 + vw + 14 + W, y0: -100, y1: -30 }, { sc: 0.95 });
+    }
+    if (d.age >= 1.5) g.t(0, -8, d.readAt, { fs: 17, fw: 500, fill: inv ? '#FFFFFF' : PAL.soft });
+    g.p('M-200 0H200', { stroke: PAL.faint, sw: 2 });
+    otherField(g, 0, 92, 'HEART RATE', '142', 84);
+  };
+  S.df3 = function (g, d) {
+    otherField(g, 0, -86, 'TIMER', '32:10', 62);
+    g.p('M-200 -64H200M-200 64H200', { stroke: PAL.faint, sw: 2 });
+    var inv = dfBlock(g, d, -200, -63, 200, 63);
+    if (inv) { dfLabel(g, -150, -38, 'GLUCOSE', { anchor: 'start', fill: '#FFFFFF' }); value(g, d, -150, 44, 76, { anchor: 'start', inverted: true, col: '#FFFFFF' }); }
+    else {
+      var vw = bw(fmtG(d.g, d.unit), 76), W = 150, gw = vw + 14 + W, x0 = -gw / 2;
+      dfLabel(g, x0, -38, 'GLUCOSE', { anchor: 'start' });
+      value(g, d, x0, 40, 76, { anchor: 'start', arrow: false });
+      auraSpark(g, d, { x0: x0 + vw + 14, x1: x0 + vw + 14 + W, y0: -22, y1: 40 }, { sc: 0.85 });
+    }
+    otherField(g, 0, 138, 'PACE', '5:12', 62);
+  };
+  S.df4 = function (g, d) {
+    otherField(g, 0, -86, 'DISTANCE', '6.42', 62);
+    g.p('M-200 -64H200M-200 64H200M0 -64V64', { stroke: PAL.faint, sw: 2 });
+    var inv = dfBlock(g, d, -200, -63, -1, 63);
+    dfLabel(g, -100, -34, 'GLUCOSE', { fill: inv ? '#FFFFFF' : PAL.soft, fs: 15 });
+    value(g, d, -96, 34, 60, { inverted: inv, col: inv ? '#FFFFFF' : undefined });
+    otherField(g, 100, 34, 'HR', '142', 60);
+    otherField(g, 0, 138, 'PACE', '5:12', 62);
+  };
+  S.df4small = function (g, d) {
+    var inv = dfBlock(g, d, -200, -200, 200, -65);
+    dfLabel(g, 0, -136, 'GLUCOSE', { fs: 14, fill: inv ? '#FFFFFF' : PAL.soft });
+    value(g, d, 0, -78, 50, { inverted: inv, col: inv ? '#FFFFFF' : undefined });
+    g.p('M-200 -64H200M-200 64H200M0 -64V64', { stroke: PAL.faint, sw: 2 });
+    otherField(g, -100, 34, 'TIMER', '32:10', 50);
+    otherField(g, 100, 34, 'HR', '142', 60);
+    otherField(g, 0, 138, 'PACE', '5:12', 62);
+  };
+
+  // ---- complications in another face -----------------------------------------------------------------------------
+  S.faceCx = function (g, d, c) {
+    // any face: the face draws each complication from what Sukrara publishes (a String, a fixed icon); here a plain
+    // face with four slot styles
+    var old = d.age >= 5, v = old ? '---' : fmtG(d.g, d.unit);
+    g.t(0, 22, '10:09', { fs: 108, fw: 600, fill: PAL.ink });
+    g.t(0, -64, 'MON 16', { fs: 22, fw: 600, fill: PAL.soft, ls: 2 });
+    // top: a round slot, icon above the value (Sukrara glucose)
+    g.c(0, -122, 38, { stroke: PAL.faint, sw: 2 });
+    g.icon('drop', 0, -140, 16, PAL.soft);
+    g.t(0, -106, v, { fs: 26, fw: 700, fill: PAL.ink });
+    g.t(0, -92, 'CGM', { fs: 10, fw: 600, fill: PAL.soft, ls: 1 });
+    // bottom left: icon + text (Sukrara glucose again, in another face's style)
+    g.icon('drop', -110, 85, 20, PAL.soft);
+    g.t(-96, 93, v, { fs: 26, fw: 700, fill: PAL.ink, anchor: 'start' });
+    // bottom right: the Log slot: a generic icon, the last treatment as text (u = rapid, g = carbs)
+    // the Log value, as the watch's setting says: the time since (default), the amount, or both; the label is fixed
+    var show = c.logShow || 'time', lv = 'Log';
+    if (d.slot) {
+      var am = d.slot.a + (d.slot.k === 'carbs' ? 'g' : 'u'), tm = timeSince(d.slot.m);
+      lv = show === 'amount' ? am : show === 'both' ? am + ' ' + tm.join('') : tm.join(' ');
+    }
+    var lfs = lv.length > 7 ? 20 : 24;
+    g.icon('pen', 34, 85, 22, PAL.soft);
+    g.t(50, 93, lv, { fs: lfs, fw: 700, fill: PAL.ink, anchor: 'start' });
+    g.t(50, 70, 'LOG', { fs: 12, fw: 600, fill: PAL.soft, anchor: 'start', ls: 1 });
+    // bottom: a CGM+ GB face's own graph and arrow from CGM-GB-data
+    if (!old) sparkline(g, d, { x0: -60, x1: 60, y0: 114, y1: 150 }, { hours: 3, sw: 2.5 });
+    else g.t(0, 140, 'old', { fs: 15, fw: 600, fill: PAL.dim });
+  };
+
+  // ---- logging -----------------------------------------------------------------------------------------------------
+  S.logAmount = function (g, d, c) {
+    var k = c.kind || 'rapid', col = PAL[k], label = { rapid: 'Rapid insulin', carbs: 'Carbs', long: 'Long insulin' }[k];
+    var a = c.amount !== undefined ? c.amount : (k === 'carbs' ? 50 : k === 'long' ? 14 : 4.5), unit = k === 'carbs' ? 'g' : 'u';
+    var lw = tw(label, 22) + 30;
+    g.icon(k, -lw / 2 + 10, -129, 18, col);
+    g.t(-lw / 2 + 26, -122, label, { fs: 22, fw: 600, fill: col, anchor: 'start' });
+    var s = String(a), fs = 128, w = bw(s, fs), uw = tw(unit, 50);
+    var x0 = -(w + 8 + uw) / 2;
+    g.t(x0, 22, s, { fs: fs, fw: 700, fill: PAL.ink, anchor: 'start' });
+    g.t(x0 + w + 8, 22, unit, { fs: 50, fw: 600, fill: PAL.soft, anchor: 'start' });
+    // up / down: chevrons above and below the number (touch: tap or drag; buttons: UP / DOWN)
+    g.p('M-16 -76L0 -90L16 -76', { stroke: PAL.dim, sw: 4 });
+    g.p('M-16 42L0 56L16 42', { stroke: PAL.dim, sw: 4 });
+    // the usual amounts
+    var chips = k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6'];
+    var cw = 64, gap = 10, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2;
+    chips.forEach(function (ch, i) {
+      var on = ch === s, x = cx0 + i * (cw + gap);
+      g.r(x, 76, cw, 36, 18, { fill: on ? col : PAL.card2, op: 1 });
+      g.t(x + cw / 2, 101, ch, { fs: 20, fw: 700, fill: on ? PAL.on : PAL.soft });
+    });
+    g.t(0, 146, 'Now', { fs: 20, fw: 600, fill: PAL.soft });
+    btnHint(g, 60, '', {});
+    btnHint(g, 270, '+', { fs: 26, r: 170, anchor: 'start', dx: -4 });
+    btnHint(g, 240, '−', { fs: 26, r: 166, anchor: 'start', dx: -4 });
+  };
+  S.logConfirm = function (g, d, c) {
+    var k = c.kind || 'rapid', col = PAL[k], a = c.amount !== undefined ? c.amount : (k === 'carbs' ? 50 : 4.5), unit = k === 'carbs' ? 'g' : 'u';
+    var word = { rapid: 'rapid insulin', carbs: 'carbs', long: 'long insulin' }[k];
+    if (c.dup) {
+      g.icon('warn', -96, -132, 22, PAL.high);
+      g.t(-80, -125, (k === 'carbs' ? '50g' : '4.5u') + ' 3 min ago', { fs: 20, fw: 600, fill: PAL.high, anchor: 'start' });
+    } else g.t(0, -124, 'Log', { fs: 22, fw: 600, fill: PAL.soft });
+    var wN = bw(String(a), 96), wU = tw(unit, 96) * 0.97, tot = 30 + 12 + wN + wU, x0 = -tot / 2;
+    g.icon(k, x0 + 15, -40, 30, col);
+    g.t(x0 + 42, -8, String(a) + unit, { fs: 96, fw: 700, fill: col, anchor: 'start' });
+    g.t(0, 30, word + ' · now', { fs: 22, fw: 600, fill: PAL.ink });
+    g.t(0, 62, k === 'carbs' ? 'Lows quiet for 15 min' : k === 'rapid' ? 'Highs quiet for 1 h' : 'Nothing goes quiet', { fs: 18, fw: 500, fill: PAL.soft });
+    // hold to confirm: the rim fills from START; the words say how
+    var p = c.progress === undefined ? 0.45 : c.progress;
+    g.p(arc(189, 0, 359.9), { stroke: PAL.grid, sw: 8 });
+    if (p > 0) g.p(arc(189, 60, 60 + 359.9 * p), { stroke: col, sw: 8, cap: 'round' });
+    g.r(-92, 102, 184, 44, 22, { fill: PAL.card2 });
+    g.t(0, 131, 'Hold to log', { fs: 20, fw: 700, fill: PAL.ink });
+    btnHint(g, 60, '', { col: col });
+  };
+  S.logSending = function (g, d, c) {
+    var k = c.kind || 'rapid', col = PAL[k];
+    g.p(arc(189, 0, 359.9), { stroke: col, sw: 8 });
+    g.c(0, -36, 46, { stroke: PAL.grid, sw: 6 });
+    g.p(arc(46, 20, 130, 0, -36), { stroke: col, sw: 6 });
+    g.icon('phone', 0, -36, 30, PAL.soft);
+    g.t(0, 46, '4.5u rapid', { fs: 30, fw: 700, fill: PAL.ink });
+    g.t(0, 80, 'Sending to your phone', { fs: 20, fw: 500, fill: PAL.soft });
+  };
+  S.logDone = function (g, d, c) {
+    var k = c.kind || 'rapid', col = PAL[k];
+    g.c(0, -46, 50, { fill: col });
+    g.p('M-22 -46l14 14l30 -30', { stroke: PAL.on, sw: 8 });
+    g.t(0, 40, 'Logged 4.5u rapid', { fs: 28, fw: 700, fill: PAL.ink });
+    g.t(0, 72, 'Highs quiet for 1 h', { fs: 20, fw: 500, fill: PAL.soft });
+    g.r(-64, 98, 128, 42, 21, { fill: PAL.card2 });
+    g.t(-8, 126, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
+    g.c(40, 119, 10, { stroke: PAL.grid, sw: 3 });
+    g.p(arc(10, 0, 220, 40, 119), { stroke: PAL.soft, sw: 3 });
+    btnHint(g, 60, '', {});
+  };
+  S.logQueued = function (g, d, c) {
+    g.icon('phone', 0, -60, 46, PAL.high);
+    g.p('M-24 -84L24 -36', { stroke: PAL.high, sw: 4 });
+    g.t(0, 10, 'Saved on the watch', { fs: 26, fw: 700, fill: PAL.ink });
+    g.t(0, 42, '4.5u rapid · 20:41', { fs: 20, fw: 600, fill: PAL.rapid });
+    g.t(0, 76, 'Goes to your phone', { fs: 18, fw: 500, fill: PAL.soft });
+    g.t(0, 100, 'when it’s near', { fs: 18, fw: 500, fill: PAL.soft });
+  };
+
+  // ---- alerts -------------------------------------------------------------------------------------------------------
+  S.alert = function (g, d, c) {
+    var b = bandOf(d.g), low = b === 'low' || b === 'veryLow', very = b === 'veryLow' || b === 'extremelyHigh';
+    var col = PAL[b], word = { veryLow: 'VERY LOW', low: 'LOW', high: 'HIGH', veryHigh: 'VERY HIGH', extremelyHigh: 'EXTREMELY HIGH', tight: 'FALLING FAST', target: 'RISING FAST' }[b];
+    if (very) g.r(-200, -200, 400, 400, 0, { fill: col });
+    else g.p(arc(189, 0, 359.9), { stroke: col, sw: 10 });
+    var ink = very ? '#FFFFFF' : col;
+    g.icon('bell', -tw(word, 20) / 2 - 16, -140, 20, ink);
+    g.t(12, -133, word, { fs: 20, fw: 700, fill: ink, ls: 1.5 });
+    var spark = c.spark !== false;
+    if (spark) {
+      var str = fmtG(d.g, d.unit), vw = bw(str, 84), W = 132, gw = vw + 12 + W, x0 = -gw / 2;
+      value(g, d, x0, -54, 84, { anchor: 'start', arrow: false, col: very ? '#FFFFFF' : undefined, inverted: very });
+      if (very) {
+        // on the very-low block the sparkline draws in white
+        var dd = Object.assign({}, d);
+        auraSpark(g, dd, { x0: x0 + vw + 12, x1: x0 + vw + 12 + W, y0: -112, y1: -56 }, { sc: 0.8, white: true });
+      } else auraSpark(g, d, { x0: x0 + vw + 12, x1: x0 + vw + 12 + W, y0: -112, y1: -56 }, { sc: 0.8 });
+    } else value(g, d, 0, -44, 100, { col: very ? '#FFFFFF' : undefined, inverted: very });
+    var tk = low ? 'carbs' : 'rapid';
+    var relaxed = c.relaxed;
+    var rows = [
+      { t: 'Treatment', fill: very ? '#FFFFFF' : PAL[tk], fg: PAL.on, icon: tk },
+      { t: relaxed ? 'Remind as usual' : 'Remind less', fill: very ? 'rgba(0,0,0,0.28)' : PAL.card2, fg: very ? '#FFFFFF' : PAL.ink },
+      { t: 'Mute', fill: very ? 'rgba(0,0,0,0.28)' : PAL.card2, fg: very ? '#FFFFFF' : PAL.ink, icon: 'bellOff' }
+    ];
+    var ys = [-6, 50, 106], ws = [236, 236, 196];
+    rows.forEach(function (r, i) {
+      var y = ys[i], w = ws[i];
+      g.r(-w / 2, y - 23, w, 46, 23, { fill: r.fill });
+      var tw0 = tw(r.t, 20) + (r.icon ? 26 : 0), x0 = -tw0 / 2;
+      if (r.icon) g.icon(r.icon, x0 + 9, y, 18, r.fg);
+      g.t(x0 + (r.icon ? 26 : 0), y + 7, r.t, { fs: 20, fw: 700, fill: r.fg, anchor: 'start' });
+    });
+    if (relaxed) g.t(0, 150, 'Reminders every 30 min', { fs: 15, fw: 500, fill: very ? '#FFFFFF' : PAL.soft });
+    btnHint(g, 60, '', { col: very ? '#FFFFFF' : PAL[tk] });
+  };
+  S.remindDone = function (g, d, c) {
+    g.c(0, -56, 46, { fill: PAL.low, op: 0.24 });
+    g.icon('bellPause', 0, -56, 44, PAL.low);
+    g.t(0, 28, 'Lows: remind less', { fs: 28, fw: 700, fill: PAL.ink });
+    g.t(0, 60, 'Reminders every 30 min', { fs: 20, fw: 500, fill: PAL.soft });
+    g.r(-64, 92, 128, 42, 21, { fill: PAL.card2 });
+    g.t(-8, 120, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
+    g.c(40, 113, 10, { stroke: PAL.grid, sw: 3 });
+    g.p(arc(10, 0, 220, 40, 113), { stroke: PAL.soft, sw: 3 });
+    btnHint(g, 60, '', {});
+  };
+  S.wake = function (g, d) {
+    // Garmin's full-screen notification, sent by the app's background (API 5.1+): title, subtitle, icon, actions.
+    // Every action opens the app with that action; Remind less and Mute send it and close again at once.
+    appIcon(g, 0, -140, 20);
+    g.t(0, -96, 'Low 62', { fs: 32, fw: 700, fill: PAL.ink });
+    g.t(0, -68, 'Falling · 20:41', { fs: 19, fw: 500, fill: PAL.soft });
+    var rows = [['carbs', 'Treatment', PAL.carbs], ['bellPause', 'Remind less', PAL.soft], ['bellOff', 'Mute lows 30m', PAL.soft]];
+    rows.forEach(function (r, i) {
+      var y = -26 + i * 56, w = i === 2 ? 220 : 240;
+      g.r(-w / 2, y - 23, w, 46, 23, { fill: PAL.card2 });
+      var tw0 = tw(r[1], 20) + 26, x0 = -tw0 / 2;
+      g.icon(r[0], x0 + 9, y, 18, r[2]);
+      g.t(x0 + 26, y + 7, r[1], { fs: 20, fw: 700, fill: PAL.ink, anchor: 'start' });
+    });
+    g.t(0, 152, 'Garmin draws this', { fs: 14, fw: 500, fill: PAL.dim });
+  };
+  // START in the app: one list, the kinds in the phone's order (the focused one first and selected), then mute
+  S.actions = function (g, d, c) {
+    var last = { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' };
+    var name = { rapid: 'Rapid', carbs: 'Carbs', long: 'Long' };
+    var items = d.order.map(function (k) { return { label: name[k], icon: k, col: PAL[k], sub: last[k] }; });
+    items.push(c.muted ? { label: 'Muted', icon: 'bellOff', col: PAL.note, sub: '1h 20m', subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
+    g.t(0, -138, 'Sukrara', { fs: 20, fw: 600, fill: PAL.soft });
+    var ys = [-74, -12, 44, 100];
+    items.forEach(function (it, i) {
+      var y = ys[i], on = i === 0, fs = on ? 30 : 23;
+      if (on) g.r(-166, y - 32, 332, 64, 32, { fill: PAL.card2 });
+      g.icon(it.icon, -128, y, on ? 26 : 21, it.col);
+      g.t(-104, y + fs * 0.35, it.label, { fs: fs, fw: on ? 700 : 600, fill: on ? PAL.ink : PAL.soft, anchor: 'start' });
+      if (it.sub) g.t(150, y + 7, it.sub, { fs: on ? 18 : 16, fw: 600, fill: it.subCol || (on ? PAL.soft : PAL.dim), anchor: 'end' });
+    });
+    btnHint(g, 60, '', {});
+  };
+  S.muteLengths = function (g, d, c) {
+    var side = c.side;
+    g.t(0, -140, side === 'low' ? 'Mute lows' : side === 'high' ? 'Mute highs' : 'Mute all alerts', { fs: 22, fw: 700, fill: PAL.ink });
+    g.t(0, -114, side ? 'on your phone and this watch' : 'very low and no data too', { fs: 16, fw: 500, fill: PAL.soft });
+    var items = ['15 min', '30 min', '1 h', '2 h', side ? '' : 'Until I unmute'].filter(Boolean), sel = 1;
+    var ys = [-62, -8, 46, 100, 150];
+    items.slice(0, 5).forEach(function (it, i) {
+      var y = ys[i], on = i === sel, fs = on ? 30 : 24;
+      if (on) g.r(-150, y - 28, 300, 56, 28, { fill: PAL.card2 });
+      g.t(0, y + fs * 0.35, it, { fs: fs, fw: on ? 700 : 600, fill: on ? PAL.ink : PAL.soft });
+    });
+    btnHint(g, 60, '', {});
+  };
+  S.muteDone = function (g, d, c) {
+    g.c(0, -56, 46, { fill: PAL.note, op: 0.24 });
+    g.icon('bellOff', 0, -56, 44, PAL.note);
+    g.t(0, 28, c.side === 'low' ? 'Lows muted' : 'Alerts muted', { fs: 30, fw: 700, fill: PAL.ink });
+    g.t(0, 60, 'for 30 min · until 21:11', { fs: 20, fw: 500, fill: PAL.soft });
+    g.r(-64, 92, 128, 42, 21, { fill: PAL.card2 });
+    g.t(-8, 120, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
+    g.c(40, 113, 10, { stroke: PAL.grid, sw: 3 });
+    g.p(arc(10, 0, 220, 40, 113), { stroke: PAL.soft, sw: 3 });
+    btnHint(g, 60, '', {});
+  };
+  S.muted = function (g, d, c) {
+    g.icon('bellOff', 0, -118, 30, PAL.note);
+    g.t(0, -70, 'Alerts muted', { fs: 28, fw: 700, fill: PAL.ink });
+    g.t(0, -40, '1h 20m left · until 22:01', { fs: 19, fw: 500, fill: PAL.soft });
+    var ys = [10, 70], items = ['Unmute', 'Change time'];
+    items.forEach(function (it, i) {
+      var y = ys[i], on = i === 0;
+      g.r(-130, y - 26, 260, 52, 26, { fill: on ? PAL.note : PAL.card2 });
+      g.t(0, y + 8, it, { fs: 22, fw: 700, fill: on ? PAL.on : PAL.ink });
+    });
+    g.t(0, 134, 'Very low and no data too', { fs: 16, fw: 500, fill: PAL.dim });
+    btnHint(g, 60, '', {});
+  };
+
+  // the data field's own alert during an activity (DataField.showAlert; the person turns it on in the activity's
+  // Alerts › Connect IQ): a full page for a few seconds, with a vibration
+  S.dfAlert = function (g, d) {
+    var b = bandOf(d.g), col = PAL[b], very = b === 'veryLow';
+    g.r(-200, -200, 400, 400, 0, { fill: col });
+    g.icon('bell', -tw('LOW', 24) / 2 - 18, -96, 24, '#FFFFFF');
+    g.t(12, -88, very ? 'VERY LOW' : 'LOW', { fs: 24, fw: 700, fill: '#FFFFFF', ls: 1.5 });
+    value(g, d, 0, 30, 116, { col: '#FFFFFF', inverted: true });
+    g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { fs: 20, fw: 600, fill: '#FFFFFF' });
+  };
+
+  // ---- the watch around it ---------------------------------------------------------------------------------------
+  function bezel(metal) {
+    var b = new G();
+    var m = metal === 'bronze' ? { a: '#7A4F35', b: '#4B2F20', edge: '#B98260', screw: '#C99272' } : { a: '#3D3F44', b: '#232528', edge: '#6B6E74', screw: '#7D8086' };
+    [60, 120, 240, 270, 300].forEach(function (a) { b.r(-14, -288, 28, 22, 5, { fill: '#8A8C91' }); b.els[b.els.length - 1].tf = 'rotate(' + a + ')'; });
+    b.c(0, 0, 271, { fill: '#141518' });
+    b.c(0, 0, 252.5, { stroke: m.b, sw: 31 });
+    b.c(0, 0, 258, { stroke: m.a, sw: 12, op: 0.8 });
+    b.c(0, 0, 267.5, { stroke: m.edge, sw: 1 });
+    [45, 135, 225, 315].forEach(function (a) { var p = P(252, a); b.c(p[0], p[1], 6.5, { fill: '#1E1F22', stroke: m.screw, sw: 1.3 }); });
+    b.c(0, 0, 216, { stroke: '#08080A', sw: 42 });
+    var nums = [[0, '24'], [60, '04'], [90, '06'], [120, '08'], [150, '10'], [210, '14'], [240, '16'], [270, '18'], [300, '20'], [330, '22']];
+    nums.forEach(function (n) { var p = P(214, n[0]); b.t(p[0], p[1] + 6, n[1], { fs: 17, fw: 600, fill: '#E2E2E5', tf: 'rotate(' + (n[0] > 90 && n[0] < 270 ? n[0] - 180 : n[0]) + ' ' + p[0] + ' ' + p[1] + ')' }); });
+    return b.els;
+  }
+  // rect elements carry a transform too
+  G.prototype.rt = function () {};
+
+  function screen(c) {
+    c = c || {};
+    var d = data(c), g = new G();
+    var f = S[c.screen] || S.appA;
+    f(g, d, c);
+    var bez = c.bezel ? bezel(c.metal) : [];
+    bez.forEach(function (e) { if (e.tf === undefined) e.tf = ''; });
+    g.els.forEach(function (e) { if (e.tf === undefined) e.tf = ''; });
+    return { els: g.els, bez: bez, vb: c.bezel ? '-292 -292 584 584' : '-195 -195 390 390', label: 'Sukrara on Garmin: ' + (c.screen || 'appA'), d: d };
+  }
+  return { screen: screen, PAL: PAL, bandOf: bandOf, fmtG: fmtG };
+})();
+if (typeof module !== 'undefined') module.exports = WL;
