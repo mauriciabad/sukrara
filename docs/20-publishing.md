@@ -1718,7 +1718,7 @@ During the activity
 • An optional alert: when Sukrara's alert rings on your phone, the field shows a full-page alert. Turn it on in the activity's settings › Alerts › Connect IQ. It shows the phone's alerts and does not replace them: keep the phone's alerts on.
 
 In the activity
-• Your glucose is saved with the activity, so Garmin Connect charts it beside your other data. A setting of the field turns it off.
+• Your glucose is saved with the activity, so Garmin Connect charts it beside your other data. Its setting Record glucose turns it off.
 
 Watches
 Every watch with Connect IQ 5 or newer: the store lists them on this page.
@@ -1750,7 +1750,7 @@ Durante la actividad
 • Una alerta opcional: cuando la alerta de Sukrara suena en tu móvil, el campo muestra una alerta a pantalla completa. Actívala en los ajustes de la actividad › Alertas › Connect IQ. Muestra las alertas del móvil y no las sustituye: deja activadas las alertas del móvil.
 
 En la actividad
-• Tu glucosa se guarda con la actividad, así que Garmin Connect la dibuja junto a tus otros datos. Un ajuste del campo lo desactiva.
+• Tu glucosa se guarda con la actividad, así que Garmin Connect la dibuja junto a tus otros datos. Su ajuste Registrar la glucosa lo desactiva.
 
 Relojes
 Cualquier reloj con Connect IQ 5 o más nuevo: la tienda los lista en esta página.

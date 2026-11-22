@@ -79,7 +79,7 @@ each goal is met, so the watch holds no threshold of its own). Very high / very 
 
 ## 5. The one list (`S.actions`)
 
-START in the app (or holding the Log complication on a face): the three kinds **in the phone's order**, the first
+START in the app (or a tap on the Log complication, on a face of a touch watch): the three kinds **in the phone's order**, the first
 selected, each with its last entry and how long ago ("4.5u · 1h"), then *Mute alerts* (or *Muted* + time left).
 The order is one rule on the phone (`TreatmentOrder`, cases in `contracts/treatments/kind-order.json`, the treatment
 dialog's focus too): carbs when low, the other insulin after a pen dose, else rapid; then Rapid · Long · Carbs. The
@@ -159,9 +159,9 @@ Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *G
 
 *Same as the app* until the watch gets its own value, set on the phone (Share with apps › Watches › Garmin › Sukrara on
 your watch); the phone resolves and sends them: metrics (main / second / third, last treatment, no recent treatment, ring
-order, number in the ring, rewards), the chart's time, treatment marks, the % column, green in range, the report period
+order, number in the ring, rewards), the chart's time, treatment marks, the % column, the report period
 (switchable on the watch, not saved). Watch-only: *Sparkline on alerts* (on), *Log complication shows* (time since);
-the data field's *Glucose in the activity* (on: its value every reading in the activity's file, Garmin Connect's chart).
+the data field's *Record glucose* (on: its value every reading in the activity's file, Garmin Connect's chart).
 Never per watch: unit, limits, alerts.
 
 ## 12. States and exits (for FEATURES.md)
