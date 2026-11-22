@@ -163,6 +163,7 @@ order, number in the ring, rewards), the chart's time, treatment marks, the % co
 (switchable on the watch, not saved). Watch-only: *Sparkline on alerts* (on), *Log complication shows* (time since);
 the data field's *Record glucose* (on: its value every reading in the activity's file, Garmin Connect's chart).
 Never per watch: unit, limits, alerts.
+The phone tells the watches apart by the payload's `w` (push only), which the app sends back on its fetch (`&w=`).
 
 ## 12. States and exits (for FEATURES.md)
 

@@ -968,6 +968,11 @@
           "pattern": "^[0-9a-f]{64}$",
           "description": "push only, never the fetch"
         },
+        "w": {
+          "type": "string",
+          "pattern": "^[0-9]{1,20}$",
+          "description": "push only: this watch's id on the phone, sent back as the fetch's w= query"
+        },
         "ds": {
           "type": "object",
           "additionalProperties": false,

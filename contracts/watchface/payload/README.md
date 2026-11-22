@@ -62,6 +62,8 @@ The fetch carries the app's own report back as its query (`apps/garmin/shared/li
 `r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `p<n>` a push that took n older waiting messages with it, `f` a fetch,
 `e<code>` a failed fetch, `s` appended when it picked it up from storage (Garmin didn't hand it over), `x` appended when it kept the older payload; `at` the watch clock; the last 10, oldest
 first) and `d` the reading it draws (its time on the watch clock) and since when. Times only, never a value. The
+app adds `&w=<w>`, the watch's id from its last push: the phone answers with that watch's own display settings (a
+fetch without `w`, before any push arrived: the one watch with the app, else the phone app's own values). The
 phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with each push's app, `sent` and result).
 
 ## Profiles
@@ -74,7 +76,7 @@ phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with 
 | `last`, `sensor` | ✓ | ✓ | — |
 | `tir` (today) | ✓ | — | — |
 | `tx`, `ranges`, `m`, `else`, `ro`, `log`, `ds`, `rep`, `repD` | — | ✓ | — |
-| `key` | — | **push only** | — |
+| `key`, `w` | — | **push only** | — |
 
 ## The payload
 
@@ -123,10 +125,11 @@ The app only:
 | `else` | what the card's last-treatment slot shows while there is no last treatment (`graph.lastElse`; the watch shows it once no step of `last` is still ahead), the shape of an `m` item; null when off or when the card has no last-treatment place; a `v` of null shows nothing, as on the card |
 | `ro` | the rings' band order clockwise from 12 o'clock, as band indexes into `b` (`graph.ringOrder`; default `[2, 3, 1, 0, 4, 5]`: very good, in range, low, very low, high, very high) |
 | `log` | what logging offers, or null when this phone takes no entries now (not monitoring, setup not done, a follower the wearer doesn't let add entries): `{order, rapid, long, carbs}`: `order` = THE kinds' order at `sent` (`../../treatments/kind-order.json`, Sukrara's `KindOrder` over the same facts the phone's Add treatment focuses from: carbs first while low, long-acting for 2 h after a rapid pen's read, else rapid), the log list's order, its first the one to offer first; each kind `{last, usual}`: `last` = that kind's newest amount of the last 30 days (null = none), `usual` = up to three amounts logged most often in the last 30 days (ties: the most recently logged), smallest first |
-| `ds` | the display settings the app follows, each the phone's own value resolved for the watch (one place, `GarminDisplay.resolve`: a watch's own values, docs/38's place overrides, will resolve there and travel the same way): `hours` the chart's window (`graph.hours`; the app's own zoom starts there), `marks` per kind (`rapid`, `long`, `carbs`, `note`) the parts shown (`point`, `line` the mute line, `amount`, `time`; `graph.marks`), `side` the distribution and % column beside the chart (`graph.side`), `crown` its crown at 100 % (`graph.columnCrown`). No green-in-range setting on the phone: the value and line always take the band's colour there (the face's *green in range* is a watch setting, `garmin.aura.rangeColour`) |
+| `ds` | the display settings the app follows, each the phone's own value resolved for the watch (one place, `GarminDisplay.resolve`: a watch's own values, docs/38's place overrides, resolve there): `hours` the chart's window (`graph.hours`; the app's own zoom starts there), `marks` per kind (`rapid`, `long`, `carbs`, `note`) the parts shown (`point`, `line` the mute line, `amount`, `time`; `graph.marks`), `side` the distribution and % column beside the chart (`graph.side`), `crown` its crown at 100 % (`graph.columnCrown`). No green-in-range setting on the phone: the value and line always take the band's colour there (the face's *green in range* is a watch setting, `garmin.aura.rangeColour`) |
 | `rep` | the Numbers page for every period the phone's report offers (`reportPeriod`: 1, 7, 14, 30 days, rolling), so the watch switches period without the phone: each `{d, cov, b, avg, gmi, cv}` or null without a reading in it: `cov` the share of the period with data in per mille (under 700 the report says so), `b` per mille per band as in `ranges`, `avg` mg/dL, `gmi` % with one decimal (mmol/mol = (gmi − 2.152) × 10.929), `cv` % with one decimal |
-| `repD` | the period the Numbers page opens on: 14 (the phone's report card starts there; the Mac's remembers its own, `report.days`) |
+| `repD` | the period the Numbers page opens on: 14 (the phone's report card starts there; the Mac's remembers its own, `report.days`), or the watch's own *Report period* |
 | `key` | **push only**: the phone's signing key for entries and mutes, 64 hex characters (32 bytes). The fetch never carries it |
+| `w` | **push only**: this watch's id on the phone (Garmin Connect's id for it, decimal digits), so the watch's fetch says which watch asks (`&w=`, above) and `m`, `else`, `ro`, `ds`, `repD` come resolved for that watch (its own values, `../app/SPEC.md` §11) |
 
 ## On the watch
 
@@ -151,8 +154,8 @@ its inputs from the payload and the watch clock `now` (`cases.json` `watch` chec
 - `ring` counts only while `g` is fresh or `ring` says `no_data`: a payload that has aged past fresh rings nothing
   (the phone's next message says what rings).
 - **Order**: keep the stored payload when an incoming one has an older `sent`, unless the stored one is more than
-  5 minutes ahead of the watch clock (the phone's clock was wrong, then fixed). The app keeps the newest `key` it was
-  pushed (a fetch has none and leaves it).
+  5 minutes ahead of the watch clock (the phone's clock was wrong, then fixed). The app keeps the newest `key` and `w` it
+  was pushed (a fetch has neither and leaves them).
 
 ## Entries from the watch
 
