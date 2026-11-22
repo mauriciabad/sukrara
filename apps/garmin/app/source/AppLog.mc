@@ -240,7 +240,7 @@ module AppLog {
     function pen(g as AppG, k as String, pen as String, sel as Number) as Void {
         var col = AppMath.pal(k);
         g.icon("pen", 0, -118, 30, col);
-        AppScreens.fitT(g, -70, AppWords.s(Rez.Strings.PenAsk), [24, 22, 20], 700, AppMath.INK);
+        AppScreens.fitT(g, -70, AppWords.s(Rez.Strings.PenAsk), [24, 22, 20], 700, AppMath.INK, 186);
         g.t(0, -40, pen, 20, 500, AppMath.SOFT, MIDDLE);
         var items = [AppWords.s(Rez.Strings.Cancel), AppWords.s(Rez.Strings.LogAnyway)];
         var ys = [10, 70];

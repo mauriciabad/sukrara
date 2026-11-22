@@ -750,14 +750,14 @@ module AppScreens {
 
     // a centred text kept inside the screen (SPEC §14.1) on the font-resource watches (no tinted bitmaps: their glyphs
     // draw about 12 % wider than the atlases' widths, AppMath.tw): the first of [sizes] (units, largest first; sizes the
-    // class's fonts carry) at which it fits inside the rim's hints at its line, else two lines at the last. The atlas
+    // class's fonts carry) at which it fits inside [rim] at its line, else two lines at the last. The atlas
     // watches draw it at the first, as designed
-    function fitT(g as AppG, y as Numeric, s as String, sizes as Array<Number>, fw as Number, col as Number) as Void {
+    function fitT(g as AppG, y as Numeric, s as String, sizes as Array<Number>, fw as Number, col as Number, rim as Number) as Void {
         var fs = sizes[0];
         if (AppFontTable.PLAIN) {
             for (var i = 0; i < sizes.size(); i++) {
                 fs = sizes[i];
-                if (AppMath.tw(s, fs) * 1.12 <= 2 * room(y, fs)) {
+                if (AppMath.tw(s, fs) * 1.12 <= 2 * room(y, fs, rim)) {
                     g.t(0, y, s, fs, fw, col, MIDDLE);
                     return;
                 }
@@ -779,14 +779,15 @@ module AppScreens {
         g.t(0, y, s, fs, fw, col, MIDDLE);
     }
 
-    // the half width a line of [fs] at baseline [y] has inside the screen and clear of the rim's hints (units)
-    function room(y as Numeric, fs as Numeric) as Float {
+    // the half width a line of [fs] at baseline [y] has inside the circle of radius [rim] (units: 176 clears the rim's
+    // button hints) or the rectangle
+    function room(y as Numeric, fs as Numeric, rim as Number) as Float {
         if (AppFontTable.RECT) {
             return hw() - 8;
         }
         var top = y - fs * 0.75;
         var e = AppMath.abs(top) > AppMath.abs(y) ? top : y;
-        var q = 176 * 176 - e * e;
+        var q = rim * rim - e * e;
         return q > 0 ? Math.sqrt(q).toFloat() : 0.0;
     }
 
