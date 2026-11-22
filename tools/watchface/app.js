@@ -763,12 +763,20 @@ var WL = (function () {
   // ---- the glance, in the glance loop --------------------------------------------------------------------------
   // The Descent Mk3 43's glance: the app's icon in a 60 × 60 area (drawn by the watch), the app's own content in
   // 248 × 103 to its right. On screen (centre origin): icon centred at (−125, 0), content x −83…165, y −51…52.
-  function appIcon(g, cx, cy, r, op) {
-    g.c(cx, cy, r, { fill: '#127C95', op: op === undefined ? 1 : op });
+  // Sukrara's launcher icon on the watch (apps/garmin/tools/launcher_icons.py), where Garmin draws it (the glance list,
+  // its notification): the brand glyph alone in Garmin's theme Cyan, no disc (#55AAFF on the 64-colour MIP watches).
+  // phoneIcon(): Sukrara for Android's own icon (the disc, the white cube, the green dot), where the watch points at
+  // the phone's app (Waiting for your phone: the owner, 2026-11-22: the app that needs to be open, big enough to read).
+  // r = half the icon's side, the glyph 78 % of it.
+  function appIcon(g, cx, cy, r, op) { brandIcon(g, cx, cy, r, op, false); }
+  function phoneIcon(g, cx, cy, r, op) { brandIcon(g, cx, cy, r, op, true); }
+  function brandIcon(g, cx, cy, r, op, phone) {
+    var cyan = KC && KC.mip ? '#55AAFF' : '#75C7F4';
+    if (phone) g.c(cx, cy, r, { fill: '#127C95', op: op === undefined ? 1 : op });
     var s = (r * 2) / 49.64 * 0.78, ox = cx - (27.61 + 24.82) * s, oy = cy - (31.36 + 24.82) * s;
     var tf = 'translate(' + r1(ox) + ' ' + r1(oy) + ') scale(' + r1(s * 1000) / 1000 + ')';
-    g.p('M45.09,45.19Q47.00,44.09 48.91,45.19L57.93,50.40Q59.83,51.50 57.93,52.60L48.91,57.81Q47.00,58.91 45.09,57.81L36.07,52.60Q34.17,51.50 36.07,50.40ZM32.36,56.84Q32.36,54.63 34.26,55.73L43.28,60.95Q45.19,62.05 45.19,64.25L45.19,74.66Q45.19,76.86 43.28,75.77L34.26,70.55Q32.36,69.45 32.36,67.25ZM48.81,64.25Q48.81,62.05 50.72,60.95L59.74,55.73Q61.64,54.63 61.64,56.84L61.64,67.25Q61.64,69.45 59.74,70.55L50.72,75.77Q48.81,76.86 48.81,74.66Z', { fill: '#FFFFFF', tf: tf, op: op === undefined ? 1 : op });
-    g.p('M59.50,42.00A6.50,6.50 0 1,0 72.50,42.00A6.50,6.50 0 1,0 59.50,42.00Z', { fill: PAL.now, tf: tf, op: op === undefined ? 1 : op });
+    g.p('M45.09,45.19Q47.00,44.09 48.91,45.19L57.93,50.40Q59.83,51.50 57.93,52.60L48.91,57.81Q47.00,58.91 45.09,57.81L36.07,52.60Q34.17,51.50 36.07,50.40ZM32.36,56.84Q32.36,54.63 34.26,55.73L43.28,60.95Q45.19,62.05 45.19,64.25L45.19,74.66Q45.19,76.86 43.28,75.77L34.26,70.55Q32.36,69.45 32.36,67.25ZM48.81,64.25Q48.81,62.05 50.72,60.95L59.74,55.73Q61.64,54.63 61.64,56.84L61.64,67.25Q61.64,69.45 59.74,70.55L50.72,75.77Q48.81,76.86 48.81,74.66Z', { fill: phone ? '#FFFFFF' : cyan, tf: tf, op: op === undefined ? 1 : op });
+    g.p('M59.50,42.00A6.50,6.50 0 1,0 72.50,42.00A6.50,6.50 0 1,0 59.50,42.00Z', { fill: phone ? PAL.now : cyan, tf: tf, op: op === undefined ? 1 : op });
   }
   // The glance row as the watch lays it out (KC.gi / KC.ga: the icon and content areas of the device file, centred on
   // the screen as the selected glance). The content is drawn in its own units: the 390's glance (248 × 103) scaled to
@@ -1121,7 +1129,7 @@ var WL = (function () {
   // and Open on phone (Garmin Connect opens the setup link there; Sukrara for Android takes it as an App Link). After
   // the press (c.opened): Look at your phone for 5 s. No dots, no list. Never a phone screen or setting's name.
   S.setup = function (g, d, c) {
-    appIcon(g, 0, -92, 30);
+    phoneIcon(g, 0, -92, 30);
     g.t(0, -26, c.title || 'Waiting for your phone', { fs: 26, fw: 700, fill: PAL.ink });
     var lines = c.lines || ['Sukrara for Android sends', 'your glucose here'];
     g.t(0, 8, lines[0], { fs: 18, fw: 500, fill: PAL.soft });
