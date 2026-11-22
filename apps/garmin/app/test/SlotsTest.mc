@@ -64,10 +64,13 @@ function slotsDataAndGraph(logger as Logger) as Boolean {
     Test.assertEqualMessage(d[0], 0.0, "mg/dL");
     Test.assertEqualMessage(d[1], 3.0, "band 1: forty-five up");
     Test.assertEqualMessage(([d[2], d[3], d[4], d[5]]).toString(), ([70.0, 180.0, 55.0, 250.0]).toString(), "low, high, very low, very high");
-    Test.assertEqualMessage(d[6], (T - 60).toFloat(), "the reading's time");
-    // Floats, as CGM+ GB's ranges are: an epoch second is exact only to 128 s there
-    Test.assertMessage((d[7] - d[6] - 300.0).abs() <= 128, "old");
-    Test.assertMessage((d[8] - d[6] - 1200.0).abs() <= 128, "too old");
+    // Floats, as CGM+ GB's ranges are: each time the largest Float not after the true one (128 s steps there)
+    var times = [T - 60, T - 60 + Slots.OLD_S, T - 60 + Slots.TOO_OLD_S];
+    for (var i = 0; i < 3; i++) {
+        var f = d[6 + i] as Float;
+        Test.assertMessage(f.toLong() <= times[i].toLong(), "time " + i + ": never later");
+        Test.assertMessage(times[i].toLong() - f.toLong() < 128, "time " + i + ": under 128 s earlier");
+    }
     var g = Slots.graph(Link.payload());
     Test.assertEqual(g.size(), 288);
     Test.assertEqualMessage(([g[0], g[1], g[2], g[3]]).toString(), ([175.0, 110.0, 0.0, 100.0]).toString(), "newest first, a gap is 0");
@@ -146,5 +149,18 @@ function slotsAlertChoices(logger as Logger) as Boolean {
     Test.assertEqualMessage((Ring.kinds(Alerts.news(T + 60))).toString(), (["low"]).toString(), "rings again: new");
     Application.Storage.deleteValue(Alerts.RUNG);
     Link.reset();
+    return true;
+}
+
+// CGM-GB-data's times round toward earlier: 2^30 + 100 is nearest the Float 2^30 + 128 (later); it gives 2^30
+(:test)
+function slotsTimesNeverLater(logger as Logger) as Boolean {
+    var b = 1073741824;
+    Test.assertMessage((b + 100).toFloat().toLong() > (b + 100).toLong(), "a plain toFloat rounds this one later");
+    Test.assertMessage(Slots.earlier(b + 100).toLong() == b.toLong(), "earlier: the step before");
+    Test.assertMessage(Slots.earlier(b + 128).toLong() == (b + 128).toLong(), "a Float time stays");
+    Test.assertMessage(Slots.earlier(1794825276).toLong() <= 1794825276l, "today's times: never later");
+    Test.assertMessage(1794825276l - Slots.earlier(1794825276).toLong() < 128, "under 128 s earlier");
+    Test.assertMessage(Slots.earlier(1000).toLong() == 1000l, "small numbers exact");
     return true;
 }

@@ -80,10 +80,22 @@ module Slots {
         var unit = unitOf(p);
         var b = p != null && p.get("bands") instanceof Array ? p.get("bands") as Array : [55, 70, 140, 180, 250, 300];
         var at = readAt(p);
-        var t = at != null ? at.toFloat() : 0.0;
         return [unit.equals("mmol") ? 1.0 : 0.0, trend(p != null ? p.get("g") as Dictionary? : null).toFloat(),
             Glucose.inUnit(b[1] as Number, unit), Glucose.inUnit(b[3] as Number, unit), Glucose.inUnit(b[0] as Number, unit),
-            Glucose.inUnit(b[4] as Number, unit), t, at != null ? t + OLD_S : 0.0, at != null ? t + TOO_OLD_S : 0.0] as Array<Float>;
+            Glucose.inUnit(b[4] as Number, unit), at != null ? earlier(at) : 0.0, at != null ? earlier(at + OLD_S) : 0.0,
+            at != null ? earlier(at + TOO_OLD_S) : 0.0] as Array<Float>;
+    }
+
+    // An epoch second as CGM+ GB's Float: the largest 32-bit Float not after [t] (exact only to 128 s there), so a
+    // face marks a value old early, never late, and its age is never younger than the truth (never old as current).
+    function earlier(t as Number) as Float {
+        var e = 0;
+        var v = t;
+        while (v >= 16777216) {
+            v = v >> 1;
+            e += 1;
+        }
+        return ((t >> e) << e).toFloat();
     }
 
     // the last 24 h every 5 min, newest first: the reading, then the history from its end; 0 = no reading there
