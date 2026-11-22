@@ -110,6 +110,9 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
 
     /** The monotonic clock the runtime reads (s; null = none, as a test that never moves the wall clock back). */
     var elapsed: Long? = null
+
+    /** Whether the phone is locked (the runtime reads it at every ring, #248); it starts so, in a pocket. */
+    var locked = true
     private var ids = 0
 
     fun runtime() =
@@ -125,6 +128,7 @@ class AlertRig(val clock: FakeClock = FakeClock(Instant.ofEpochSecond(1_760_000_
             lockedBoot = { lockedBoot = it },
             elapsed = { elapsed },
             zone = { ZoneOffset.UTC },
+            locked = { locked },
         )
 
     fun reading(mgdl: Int, at: Instant = clock.now()) = Reading(at, mgdl, null, SourceId.Libre3)

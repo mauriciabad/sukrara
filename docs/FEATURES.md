@@ -2992,14 +2992,17 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   what rings.
 - **Each app fetches** its own every 5 min (`/sukrara/app`, `/sukrara/field`) on the same loopback port, open while a
   watch has any Sukrara app.
-- **Wrist alerts only while the phone can't say them** (#248, the owner: alarm fatigue; contracts/alerts SPEC §1 "On
-  the wrist", scenarios `wrist.txt`): the app and the data field get an alert (`ring`) only while **both** hold: its
-  notification is up on this phone (rung or shown again; not swiped or tapped away) and the phone is locked (screen off
-  or the lock screen up; `PhoneLock`). With the phone in hand the phone alone says it and the watch stays quiet, still
-  showing the value, its colour and the pill. A lock, an unlock, a swipe, a Mute or a clear while an alert rings is
-  pushed within seconds; with nothing ringing a lock sends nothing. One rule on the phone (`AlertUiState.wrist`, from
-  the runtime's `shownKinds`); a follower's phone applies it to its own notifications and its own lock
-  (`GarminLinkTest`, `WatchPayloadFixtureTest`, `AlertRuntimeTest`).
+- **Wrist alerts only while the phone can't say them** (#248, the owner: alarm fatigue, and "simply a better styled
+  notification that my phone sent to the garmin while the screen was locked"; contracts/alerts SPEC §1 "On the wrist",
+  scenarios `wrist.txt`): the app and the data field get an alert (`ring`) when it **rings with the phone locked**
+  (screen off or the lock screen up; `PhoneLock`, read at the ring), while its notification is up on this phone (not
+  swiped or tapped away). A ring with the phone in hand stays on the phone, also once the phone is locked again;
+  unlocking takes it off the wrist (seen), and locking again brings back nothing: only the alert's next ring (a repeat,
+  a reminder) does, if the phone is locked then. The watch keeps showing the value, its colour and the pill. An unlock,
+  a swipe, a Mute or a clear is pushed within seconds; a lock sends nothing. A restart is no ring: what is on the wrist
+  stays (saved with the runtime's record). One rule on the phone (the runtime's `AlertUiState.wristKinds`); a
+  follower's phone applies it to its own rings and its own lock (`GarminLinkTest`, `WatchPayloadFixtureTest`,
+  `AlertRuntimeTest`).
 - **Logging from the watch** (`garmin/WatchWrites`, `POST /sukrara/entries`; `WatchWritesTest`): rapid, long-acting,
   carbs, each signed (HMAC-SHA256) and with the watch's own id, which becomes the entry's id: a retry or replay is
   answered with the stored entry, never stored twice. It goes through the phone's own Add treatment
@@ -3071,8 +3074,10 @@ watch's settings* lets them go and leaves. The two-buzz line goes once no watch 
 phone's log like any other: edit, delete and undo it there (home's list), or *Undo* it on the watch for 10 s after
 *Logged* (the phone's delete; to have it back, log it again); a deleted one is never brought back by a
 retry. A mute from the watch is the phone's mute: its pill, *Unmute* and *Mute all*'s switch on the phone end it, as
-the watch does. Turning the main switch off stops pushes, fetches, entries and mutes at once (the port closes); on
-again resumes them. TalkBack reads each row as a plain row with its text.
+the watch does. An alert on the wrist (it rang with the phone locked) leaves it when the phone is unlocked (seen: a
+relock doesn't bring it back), swiped, muted, treated or over; its next ring with the phone locked puts it back.
+Turning the main switch off stops pushes, fetches, entries and mutes at once (the port closes); on again resumes them.
+TalkBack reads each row as a plain row with its text.
 
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 
@@ -3114,10 +3119,9 @@ both drawn from `app.js` on every screen class, SPEC §14). Every watch with API
   dropped and said; no phone: kept (*Waiting for the phone*). An entry the next push lists by id leaves the outbox
   even if its answer was lost. Kept while the phone is away and sent when it is back (the owner's call; one switch in
   code, `Outbox.SEND_LATE`).
-- **A new alert from the phone, on the wrist** (`Ring`, `Alerts`): the phone says what the wrist says (what rings with
-  its notification up, only while the phone is locked: the phone's side above, #248); while the reading is fresh (or
-  for no data), a kind that appears is announced once (again after an unlock and a lock with it still up, or after a
-  swipe at its next ring). The app's background shows Garmin's
+- **A new alert from the phone, on the wrist** (`Ring`, `Alerts`): the phone says what the wrist says (what rang with
+  the phone locked and is still up, unseen: the phone's side above, #248); while the reading is fresh (or for no data),
+  a kind that appears is announced once (again at its next ring with the phone locked, after an unlock or a swipe). The app's background shows Garmin's
   notification (API 5.1+; 5.0 watches keep Garmin Connect's forwarded one): the alert's word and value, the reading's
   time, *Treatment* (the side's kind: carbs for lows, rapid insulin for highs), *Remind less* when it would slow it or
   *Remind as usual* once relaxed, *Mute lows / highs 30m*. The data field shows its own alert page (on per activity:
@@ -3181,8 +3185,8 @@ to page 1; BACK: dismiss, kept); BACK on the lengths: the list. *Muted* → *Unm
 (the lengths; BACK: back to *Muted*) / BACK (the list). The app's alert → *Treatment* (the amount; done or BACK: back
 to the alert) / *Remind less* ↔ *Remind as usual* (done, *Undo* 10 s) / *Mute* (that side's lengths) / BACK (the alert
 stays on the phone; it comes back only as a new kind). Unlocking the phone (or answering, swiping or muting there)
-closes it within 10 s and keeps the watch quiet while the phone is in hand; locking the phone with the alert still up
-brings it back as a new alert. Garmin's notification: an action opens the app with it (the
+closes it within 10 s; locking the phone again keeps the watch quiet, and only the alert's next ring with the phone
+locked brings it back, as a new alert. Garmin's notification: an action opens the app with it (the
 body: the app's alert), or dismiss it (Garmin's button); a new kind notifies again, the same one not. The data field takes no input (Garmin reserves it for the activity): it is added, moved and removed in the
 activity's data screens; each of its states (setup, value, late, old, no reading, low block) ends by itself with the
 next message from the phone or the reading's age. The field's alert dismisses as Garmin's alerts do (it also times

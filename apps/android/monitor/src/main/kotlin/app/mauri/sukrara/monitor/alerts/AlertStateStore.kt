@@ -37,6 +37,8 @@ data class AlertRecord(
     val muteAllUntil: Long = 0,
     /** #195: the groups whose alert the person swiped or tapped away: they stay away until a ring, also after a restart. */
     val dismissed: Set<AlertGroup> = emptySet(),
+    /** #248: the groups on the wrist (their last ring found the phone locked, no unlock since), also after a restart. */
+    val wrist: Set<AlertGroup> = emptySet(),
 )
 
 /** [SensorWindow] as saved. */

@@ -1,7 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
-package app.mauri.sukrara.integrations.garmin
+package app.mauri.sukrara.monitor.alerts
 
 import android.app.KeyguardManager
 import android.content.BroadcastReceiver
@@ -16,11 +16,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * Whether the phone is locked, for the wrist (#248, contracts/alerts/SPEC.md §1 "On the wrist"): the watches say an
- * alert only while the phone isn't in the person's hand. Locked = the screen is off or the lock screen is up (Android's
- * own *user present*, as its notification cooldown counts it: false from SCREEN_OFF, true from USER_PRESENT), so a
- * phone without a lock screen counts as locked with its screen off. Read again on screen off, screen on and unlock
- * (they can't be declared in the manifest: registered while [locked] is collected), so the payload, and with it the
- * push, follows within the link's settle time.
+ * alert only when it rang with the phone out of the person's hand, until they unlock it. Locked = the screen is off or
+ * the lock screen is up (Android's own *user present*, as its notification cooldown counts it: false from SCREEN_OFF,
+ * true from USER_PRESENT), so a phone without a lock screen counts as locked with its screen off. The runtime reads
+ * [now] at every ring; [locked] is read again on screen off, screen on and unlock (they can't be declared in the
+ * manifest: registered while it is collected, by the monitoring service), so an unlock takes the alert off the wrist
+ * within the link's settle time.
  */
 class PhoneLock(
     context: Context,

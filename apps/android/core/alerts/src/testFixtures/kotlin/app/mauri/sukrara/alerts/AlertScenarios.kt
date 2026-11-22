@@ -25,10 +25,13 @@ interface ScenarioDevice {
     fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long, elapsed: Long): List<AlertEffect>
 
     /**
-     * What the device's watches say while the phone is [locked] or not (SPEC §1 "On the wrist"): the kinds, from the
-     * device's own state; null = the driver works it out from the effects (the bare machine has no notifications).
+     * What the device's watches say (SPEC §1 "On the wrist"): the kinds, from the device's own state; null = the driver
+     * works it out from the effects and the lock (the bare machine has no notifications).
      */
-    fun wrist(locked: Boolean): Set<String>? = null
+    fun wrist(): Set<String>? = null
+
+    /** The phone was locked or unlocked (SPEC §1 "On the wrist"; it starts locked). */
+    fun lock(locked: Boolean) {}
 
     /** The person swiped the alert of [kind] away on the phone (#195): it stays away until the next ring. */
     fun swiped(kind: AlertKind) {}
@@ -320,16 +323,19 @@ object AlertScenarios {
         val wearer = device(s, t0)
 
         // SPEC §1 "On the wrist", per device: the alerts up on its phone (by group), the ones swiped away until their next
-        // ring, whether the phone is locked (it starts so: in a pocket) and what its watches were last told
+        // ring, the ones whose last ring found the phone locked with no unlock since, whether the phone is locked (it
+        // starts so: in a pocket) and what its watches were last told. A restart changes none of it (a resume is no ring).
         class Wrist {
             val up = LinkedHashMap<AlertGroup, AlertKind>()
             val swiped = HashSet<AlertGroup>()
+            val onWrist = HashSet<AlertGroup>()
             var locked = true
             var said = emptySet<String>()
 
             fun rang(f: Firing) {
                 swiped -= f.kind.group
                 up[f.kind.group] = f.kind
+                if (locked) onWrist += f.kind.group else onWrist -= f.kind.group
             }
 
             fun shown(f: Firing) {
@@ -338,14 +344,26 @@ object AlertScenarios {
 
             fun gone(kind: AlertKind) {
                 up.remove(kind.group)
+                onWrist -= kind.group
             }
 
             fun swipe(kind: AlertKind) {
                 swiped += kind.group
                 up.remove(kind.group)
+                onWrist -= kind.group
             }
 
-            fun now(): Set<String> = if (locked) up.values.map { it.wire }.toSet() else emptySet()
+            fun lock(on: Boolean) {
+                locked = on
+                if (!on) onWrist.clear() // unlocked: the person saw it
+            }
+
+            fun now(): Set<String> =
+                up
+                    .filterKeys { it in onWrist }
+                    .values
+                    .map { it.wire }
+                    .toSet()
         }
         val wristOf = mapOf("" to Wrist(), "follower " to Wrist())
 
@@ -353,7 +371,7 @@ object AlertScenarios {
             if (!sc.wrist) return
             for ((prefix, w) in wristOf) {
                 if (prefix.isNotEmpty() && !sc.mirror) continue
-                val now = (if (prefix.isEmpty()) wearer.wrist(w.locked) else null) ?: w.now()
+                val now = (if (prefix.isEmpty()) wearer.wrist() else null) ?: w.now()
                 if (now == w.said) continue
                 w.said = now
                 val kinds = AlertKind.entries.filter { it.wire in now }.joinToString("+") { it.wire }
@@ -593,7 +611,8 @@ object AlertScenarios {
 
                     // the wearer's phone locks or unlocks; the person swipes its alert away (SPEC §1 "On the wrist")
                     "lock", "unlock" -> {
-                        wristOf.getValue("").locked = w[0] == "lock"
+                        wristOf.getValue("").lock(w[0] == "lock")
+                        wearer.lock(w[0] == "lock")
                     }
 
                     "swipe" -> {
@@ -610,7 +629,7 @@ object AlertScenarios {
                         require(sc.mirror) { "follower event without mirror: $ev" }
                         when (w[1]) {
                             "lock", "unlock" -> {
-                                wristOf.getValue("follower ").locked = w[1] == "lock"
+                                wristOf.getValue("follower ").lock(w[1] == "lock")
                                 return@forEach
                             }
 

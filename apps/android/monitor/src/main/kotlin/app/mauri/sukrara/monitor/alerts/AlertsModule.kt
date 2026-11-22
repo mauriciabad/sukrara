@@ -173,6 +173,7 @@ class AlertsModule(
             log = log,
             lockedBoot = LockedBootStore.of(ctx)::write,
             elapsed = { android.os.SystemClock.elapsedRealtime() / 1000 },
+            locked = { runCatching { PhoneLock.now(ctx) }.getOrDefault(true) },
         )
     val controls: AlertControls get() = runtime
 
@@ -256,7 +257,8 @@ class AlertsModule(
     /** Called by the monitoring service once it runs (cancelled with its [scope]). */
     fun attach(scope: CoroutineScope) {
         AlertChannels.ensure(ctx)
-        runtime.observe(scope, hub.state, wearerSettings, remoteEvents)
+        // the wrist (#248): an unlock takes what is up off the watches
+        runtime.observe(scope, hub.state, wearerSettings, remoteEvents, PhoneLock(ctx).locked)
         scope.launch {
             // *Separate alert notifications* switched: what is up shows again, silently, on the other side
             separateNow.drop(1).distinctUntilChanged().collect {

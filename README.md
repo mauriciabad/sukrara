@@ -79,8 +79,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Falling fast / rising fast alerts on the readings' trend, once the fast move has lasted 5 minutes.
 - Unacknowledged very lows can alert the people who follow you.
 - Quick actions in notifications: Treatment, Remind less, Mute (15 min to 2 h, or a length you type).
-- On a Garmin watch with the Sukrara watch app: the alert on your wrist with the same three actions while the phone
-  is locked (never twice with the phone in your hand), and Mute all alerts from the watch.
+- On a Garmin watch with the Sukrara watch app: the alert on your wrist with the same three actions when it rings on
+  your locked phone (never twice with the phone in your hand, nor again once you've seen it), and Mute all alerts from
+  the watch.
 - [Planned]: Predictions, more and cooler sound packs...
 
 ### Ready in a few steps

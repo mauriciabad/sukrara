@@ -61,8 +61,14 @@ class AlertRuntimeTest(private val name: String, private val sc: AlertScenarios.
                 runtime.start()
             }
 
-        // the runtime's own account of what its notifications show, through the one rule the watches get (#248)
-        override fun wrist(locked: Boolean): Set<String> = rig.published.wrist(locked)
+        // the runtime's own account of what its watches say (#248), as the watches get it
+        override fun wrist(): Set<String> = rig.published.wristKinds
+
+        override fun lock(locked: Boolean) =
+            runBlocking {
+                rig.locked = locked
+                if (!locked) runtime.unlocked()
+            }
 
         override fun swiped(kind: AlertKind) =
             runBlocking {

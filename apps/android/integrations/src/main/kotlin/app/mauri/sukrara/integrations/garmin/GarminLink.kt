@@ -326,8 +326,6 @@ class GarminLink(
     alerts: app.mauri.sukrara.core.model.AlertControls? = null,
     /** Each watch's own display settings for the app ([WatchSettingsStore]); a watch not listed follows the app. */
     private val watchDisplays: Flow<Map<Long, WatchDisplay>> = flowOf(emptyMap()),
-    /** Whether the phone is locked ([PhoneLock]): the wrist says an alert only then (#248); unknown here = not locked. */
-    private val phoneLocked: Flow<Boolean> = flowOf(false),
 ) {
     private val _state = MutableStateFlow(GarminLinkState())
     val state: StateFlow<GarminLinkState> = _state.asStateFlow()
@@ -484,13 +482,11 @@ class GarminLink(
             combine(unit, bands, hours) { u, b, h -> Triple(u, b, h) },
             today,
             combine(graph, own, metrics, this.entries.open) { g, w, m, o -> Display(g, w, m, o) },
-            // a lock or an unlock while an alert rings changes what the wrist says: pushed within the settle time
-            phoneLocked.distinctUntilChanged(),
-        ) { (g, t, life), (u, b, h), day, d, locked ->
+        ) { (g, t, life), (u, b, h), day, d ->
             // THE kinds' order from the phone's own facts at this moment (a reading, a ring, a pen read's entry rebuild it)
             val kinds = if (d.open) runCatching { this.entries.facts() }.getOrDefault(KindFacts.NONE) else KindFacts.NONE
             val quiet = if (d.open) runCatching { this.entries.quiet() }.getOrDefault(WatchQuiet.NONE) else WatchQuiet.NONE
-            build(g, t, u, b, h, day.map { it.toPoint() }, life, d, kinds, quiet, locked)
+            build(g, t, u, b, h, day.map { it.toPoint() }, life, d, kinds, quiet)
         }.distinctUntilChanged(::same)
     }
 
@@ -532,7 +528,6 @@ class GarminLink(
         d: Display,
         kinds: KindFacts,
         quiet: WatchQuiet,
-        locked: Boolean,
     ): Payloads {
         val now = clock.now()
         val from = startOfDay(now)
@@ -555,7 +550,6 @@ class GarminLink(
                 d.open,
                 kinds,
                 quiet = quiet,
-                phoneLocked = locked,
             )
         return Payloads(
             WatchProfile.entries.associateWith { WatchPayload.of(it, i) },

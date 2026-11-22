@@ -1,6 +1,7 @@
-# What a phone's watches say (#248; SPEC §1 "On the wrist"): an alert whose notification is up on that phone, and only
-# while the phone is locked. `wrist` compares it (`wrist <kinds>` / `wrist none` when it changes); every phone starts
-# locked, `lock` / `unlock` / `swipe <kind>` (and `follower …`) change it. Format: SPEC §7.
+# What a phone's watches say (#248; SPEC §1 "On the wrist"): an alert whose notification is up on that phone and whose
+# last ring found the phone locked, until the person unlocks it (seen). Each ring is judged by the lock at that moment.
+# `wrist` compares it (`wrist <kinds>` / `wrist none` when it changes); every phone starts locked, `lock` / `unlock` /
+# `swipe <kind>` (and `follower …`) change it. Format: SPEC §7.
 
 scenario Locked with the alert's notification up: the wrist says it, and stops when it ends
 wrist
@@ -14,14 +15,20 @@ wrist
  5                       => Low glucose
  6
 
-scenario A lock or an unlock mid-alert reaches the wrist at once
+scenario Unlocking takes the alert off the wrist: locking again brings back only its next ring
 wrist
- 0  unlock, glucose 65   => Low glucose
- 2  lock                 => wrist low       # the phone back in the pocket, the alert still up
- 4  unlock               => wrist none
- 5                       => Low glucose     # the repeat on the phone in the hand: the wrist stays quiet
- 7  lock                 => wrist low
- 8
+ 0  glucose 65   => Low glucose; wrist low
+ 2  unlock       => wrist none              # seen on the phone
+ 3  lock                                    # back in the pocket, the alert still up: the wrist stays quiet
+ 5               => Low glucose; wrist low  # the repeat, a new notification with the phone locked
+ 6
+
+scenario Rung with the phone in the hand, then locked: the wrist stays quiet until the next ring
+wrist
+ 0  unlock, glucose 65   => Low glucose     # seen as it rang
+ 1  lock                                    # the phone put away: nothing on the wrist
+ 5                       => Low glucose; wrist low   # the repeat finds the phone locked: on the wrist
+ 6
 
 scenario Locked, but the alert swiped away: off the wrist until its next ring
 wrist
@@ -36,6 +43,16 @@ settings falling_fast=on trend=sensor
  0  glucose 65 rate -2.5   => Low glucose; Falling fast; wrist low+falling_fast
  1  swipe low              => wrist falling_fast
  2
+
+scenario A restart is no ring: what is on the wrist stays, what was seen stays off
+wrist
+ 0  glucose 65   => Low glucose; wrist low
+ 1  restart      => resume low              # still on the wrist
+ 2  unlock       => wrist none
+ 3  lock
+ 4  restart      => resume low              # seen before the restart: still off the wrist
+ 5               => Low glucose; wrist low
+ 6
 
 scenario A restart keeps a swiped alert off the wrist
 wrist
@@ -58,12 +75,12 @@ wrist
 12                   => Low glucose; wrist low   # Mute all ends: the alert still up rings
 13
 
-scenario A follower's watch follows the follower's phone: its own lock, its own notification
+scenario A follower's watch follows the follower's phone: its own lock at each ring, its own notification
 wrist
 mirror
  0  follower unlock, glucose 65   => Low glucose; follower Low glucose; wrist low
- 2  follower lock                 => follower wrist low
- 3  follower swipe low            => follower wrist none
+ 2  follower lock                                 # seen on the follower's phone: its watch stays quiet
  4  unlock                        => wrist none
- 5                                => Low glucose; follower Low glucose; follower wrist low
- 6
+ 5                                => Low glucose; follower Low glucose; follower wrist low   # the repeat: only the follower's phone is locked
+ 6  follower swipe low            => follower wrist none
+ 7

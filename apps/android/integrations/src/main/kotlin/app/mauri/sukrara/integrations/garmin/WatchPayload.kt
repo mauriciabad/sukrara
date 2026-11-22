@@ -64,8 +64,6 @@ data class PayloadInputs(
     val watch: WatchDisplay = WatchDisplay(),
     /** How long an entry logged now quiets the alerts (the phone's Add treatment's quiet line). */
     val quiet: WatchQuiet = WatchQuiet.NONE,
-    /** The phone is locked ([PhoneLock]): only then does `ring` carry anything (#248, `AlertUiState.wrist`). */
-    val phoneLocked: Boolean = false,
 )
 
 /**
@@ -142,8 +140,8 @@ object WatchPayload {
         if (profile !=
             WatchProfile.Face
         ) {
-            // what the wrist says: what rings with its notification up, only while the phone is locked (#248)
-            p["ring"] = if (monitoring) ring(state.alerts.wrist(i.phoneLocked), state.alerts.quiet) else emptyList<Any?>()
+            // what the wrist says: what rang with the phone locked and is still up, unseen (#248, the runtime's wristKinds)
+            p["ring"] = if (monitoring) ring(state.alerts.wristKinds, state.alerts.quiet) else emptyList<Any?>()
         }
         if (profile == WatchProfile.Field) return p
         if (profile == WatchProfile.Face) {

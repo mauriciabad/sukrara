@@ -41,6 +41,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -81,6 +83,8 @@ class AlertRuntime(
     private val elapsed: () -> Long? = { null },
     /** The phone's time zone now (it changes when travelling): the night alerts' window is read in it (#38). */
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
+    /** Whether the phone is locked now ([PhoneLock]): read at every ring, for the wrist (#248); unknown = locked. */
+    private val locked: () -> Boolean = { true },
 ) : AlertControls {
     private val mutex = Mutex()
     private var started = false
@@ -140,6 +144,13 @@ class AlertRuntime(
     private val rangAt = HashMap<AlertGroup, Long>()
     private val dismissed = HashSet<AlertGroup>()
 
+    /**
+     * #248, SPEC §1 "On the wrist": the groups whose last ring found the phone locked, with no unlock since (the person
+     * saw it). Only a ring puts one here; a ring with the phone in the hand, an unlock, a swipe or the alert's end take it
+     * away; a restart keeps it (saved: a resume is no ring).
+     */
+    private val onWrist = HashSet<AlertGroup>()
+
     /** When each group's alert was last posted (a notification Android hasn't listed yet isn't gone). */
     private val postedAt = HashMap<AlertGroup, Long>()
 
@@ -157,6 +168,7 @@ class AlertRuntime(
         state: Flow<GlucoseState>,
         wearerSettings: Flow<AlertSettings?>,
         remoteEvents: Flow<AlertEvent>,
+        phoneLocked: Flow<Boolean> = emptyFlow(),
     ) {
         scope.launch { store.settings.collect { safely { onSettings(it) } } }
         scope.launch { wearerSettings.collect { safely { onWearerSettings(it) } } }
@@ -165,6 +177,7 @@ class AlertRuntime(
         // observing the whole state took the mutex again after every publish (#44)
         scope.launch { state.map(AlertFeed::of).distinctUntilChanged().collect { safely { onFeed(it) } } }
         scope.launch { remoteEvents.collect { safely { process(AlertInput.Remote(it)) } } }
+        scope.launch { phoneLocked.filter { !it }.collect { safely { unlocked() } } }
     }
 
     /**
@@ -372,6 +385,9 @@ class AlertRuntime(
         muteAllSeen = record.muteAllUntil
         dismissed.clear()
         dismissed += record.dismissed
+        onWrist.clear()
+        // unlocked meanwhile (the process was dead): seen
+        if (locked()) onWrist += record.wrist
         sensor = record.sensor?.window
         val saved = record.machine ?: return emptyList()
         latest = saved.local.last
@@ -476,6 +492,7 @@ class AlertRuntime(
                         firing.remove(group)
                         unposted.remove(group)
                         shownLook.remove(group)
+                        onWrist.remove(group)
                         attempt(Step.Notify, group) { presenter.clear(group) }
                     }
                 }
@@ -536,6 +553,8 @@ class AlertRuntime(
         if (!silent) {
             dismissed.remove(group)
             rangAt[group] = now
+            // a new notification, judged by the lock at this moment (#248): on the wrist only with the phone locked
+            if (locked()) onWrist += group else onWrist -= group
         }
         val settings = m.settingsAt(now)
         val who = whoFor(m)
@@ -721,6 +740,7 @@ class AlertRuntime(
         shownLook.clear()
         rangAt.clear()
         dismissed.clear()
+        onWrist.clear()
         postedAt.clear()
     }
 
@@ -734,8 +754,22 @@ class AlertRuntime(
             // the swipe of an older notification (a new ring replaced it meanwhile) changes nothing
             if (firingId == null || firing[group]?.id != firingId) return
             dismissed += group
+            onWrist -= group
             attempt(Step.Save) { save() }
             // the watches stop saying it at once (#248: the wrist says only what the phone shows)
+            attempt(Step.Publish) { publishUi(now()) }
+        }
+    }
+
+    /**
+     * The phone was unlocked (#248): the person saw what is up, so it leaves the wrist, and locking again doesn't bring
+     * it back: only its next ring with the phone locked does.
+     */
+    suspend fun unlocked() {
+        mutex.withLock {
+            if (onWrist.isEmpty()) return
+            onWrist.clear()
+            attempt(Step.Save) { save() }
             attempt(Step.Publish) { publishUi(now()) }
         }
     }
@@ -761,6 +795,7 @@ class AlertRuntime(
                 notes = notes,
                 muteAllUntil = muteAllSeen,
                 dismissed = dismissed.toSet(),
+                wrist = onWrist.toSet(),
             )
         }
         // the machine's settings already have no data off before monitoring started
@@ -775,10 +810,11 @@ class AlertRuntime(
         publish(
             AlertUiState(
                 firingKinds = firing.values.map { it.kind.wire }.toSet(),
-                // what the wrist may say (#248): an alert whose notification is up, its own or a stand-in that rang
-                shownKinds =
+                // what the wrist says (#248): an alert whose notification is up, its own or a stand-in that rang, and
+                // whose ring found the phone locked, with no unlock since
+                wristKinds =
                     firing
-                        .filter { (g, _) -> g !in dismissed && unposted[g] != false }
+                        .filter { (g, _) -> g in onWrist && g !in dismissed && unposted[g] != false }
                         .values
                         .map { it.kind.wire }
                         .toSet(),

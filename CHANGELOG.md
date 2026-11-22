@@ -11,10 +11,11 @@ Sukrara's releases. 0.x versions are previews.
   with *Turn on*. On the Garmin page each app your watch doesn't have is a row that opens it on the store; About has
   one *Sukrara for Garmin* row, the website's Garmin page, and its *Sukrara for Mac* row shows the Apple logo. The
   phone names each app with its kind (*watch face*, *watch app*, *data field*) and shows Connect IQ's own icon for it.
-- **Garmin alerts only while your phone is locked** (#248): the Sukrara watch app and data field now alert only when
-  the phone is locked and showing that alert's notification. With the phone in your hand, it alone alerts and the
-  watch stays quiet (no double alert); unlock it and an alert screen open on the watch closes, lock it again with the
-  alert still up and the watch alerts within seconds. Swiping the alert away on the phone, muting it or treating it
+- **Garmin alerts only while your phone is locked** (#248): the Sukrara watch app and data field now alert only for
+  an alert that rang while the phone was locked, like a better-looking copy of the phone's notification. With the phone
+  in your hand, it alone alerts and the watch stays quiet (no double alert), also after you lock it again; unlock it
+  and an alert screen open on the watch closes, since you've seen it. The alert's next reminder reaches the watch
+  again if the phone is locked by then. Swiping the alert away on the phone, muting it or treating it
   takes it off the watch too. Followers' watches follow their own phone. The watch keeps showing your glucose, its
   colour and the pill.
 - **Sukrara on Garmin watches, the watch side** (#199, not released yet): the Sukrara app publishes four complications

@@ -132,9 +132,10 @@ watch never decides it (payload `log.order`).
   / *Change time*.
 - **Only while the phone can't say it** (#248; the owner, 2026-11-23: "only … if the phone is locked and at the same
   time i get the phone notification. otherwise it makes alarm fatigue"): every alert on the watch (Garmin's
-  notification, the app's alert, the data field's) is for an alert whose notification is up on the phone while the
-  phone is locked. The phone decides it (the payload's `ring`, contracts/alerts SPEC §1 "On the wrist") and pushes at
-  once on a lock or an unlock; the watch only obeys `ring`. With the phone in hand the watch stays quiet: the value,
+  notification, the app's alert, the data field's) is for an alert that rang with the phone locked and is still up
+  there, unseen (an unlock takes it off; a relock brings it back only with its next ring). The phone decides it (the
+  payload's `ring`, contracts/alerts SPEC §1 "On the wrist") and pushes at once on an unlock; the watch only obeys
+  `ring`. With the phone in hand the watch stays quiet: the value,
   its colour and the pill as always, no buzz, no alert screen (one open closes, the alert stays on the phone).
 - **Garmin's notification** (`S.wake`, the background's `showNotification`, `dismissPrevious`): Sukrara's icon, "Low 62",
   "Falling · 20:41", three actions: *Treatment*, *Remind less*, *Mute lows 30m*. Each opens the app with the action;
@@ -230,8 +231,9 @@ Decided (the owner, 2026-11-22):
    none of the system font files of the fēnix 8 47, Venu 3 and FR 265S contains them. The trend stays in CGM-GB-data.
    The number-only fonts also draw "LO" / "HI" as boxes ("---" and "5.4" render): a face that draws a complication in
    one shows those as boxes; Sukrara keeps the honest words.
-6. **The watch alerts only while the phone can't** (the owner, 2026-11-23, #248): the phone locked and the alert's
-   notification up on it, else quiet on the wrist (no double alert in the hand: alarm fatigue). Decided on the phone,
+6. **The watch alerts only while the phone can't** (the owner, 2026-11-23, #248): the alert rang with the phone locked
+   and its notification is still up on it, unseen (no unlock since), else quiet on the wrist (no double alert in the
+   hand: alarm fatigue). Decided on the phone,
    carried by `ring` (its meaning, not its format: payload version 5 unchanged); the app and the field react to `ring`
    as before. A follower's watch follows the follower's phone.
 

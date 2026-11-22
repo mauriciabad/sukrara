@@ -110,26 +110,37 @@ struct Scenario: CustomTestStringConvertible, Sendable {
 }
 
 /// SPEC §1 "On the wrist", for one phone: the alerts up on it (by group), the ones swiped away until their next ring,
-/// whether it is locked (it starts so: in a pocket) and what its watches were last told. The Mac has no watch link of its
+/// the ones whose last ring found it locked with no unlock since, whether it is locked (it starts so: in a pocket) and
+/// what its watches were last told. A restart changes none of it (a resume is no ring). The Mac has no watch link of its
 /// own; the timelines hold the rule every phone's watches follow.
 final class WristShade {
     var up: [AlertGroup: AlertKind] = [:]
     var swiped: Set<AlertGroup> = []
+    var onWrist: Set<AlertGroup> = []
     var locked = true
     var said: Set<AlertKind> = []
 
     func rang(_ k: AlertKind) {
         swiped.remove(k.group)
         up[k.group] = k
+        if locked { onWrist.insert(k.group) } else { onWrist.remove(k.group) }
     }
     func shown(_ k: AlertKind) { if !swiped.contains(k.group) { up[k.group] = k } }
-    func gone(_ k: AlertKind) { up[k.group] = nil }
-    func gone(side: AlertSide) { up = up.filter { $0.value.side != side } }
+    func gone(_ k: AlertKind) { gone(group: k.group) }
+    func gone(group g: AlertGroup) {
+        up[g] = nil
+        onWrist.remove(g)
+    }
+    func gone(side: AlertSide) { for (g, k) in up where k.side == side { gone(group: g) } }
     func swipe(_ k: AlertKind) {
         swiped.insert(k.group)
-        up[k.group] = nil
+        gone(group: k.group)
     }
-    var now: Set<AlertKind> { locked ? Set(up.values) : [] }
+    func lock(_ on: Bool) {
+        locked = on
+        if !on { onWrist = [] }  // unlocked: the person saw it
+    }
+    var now: Set<AlertKind> { Set(up.filter { onWrist.contains($0.key) }.values) }
 }
 
 enum ScenarioError: Error, CustomStringConvertible {
@@ -459,7 +470,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 }
             case "unrelax": wearerDo(.remindAsUsual(try side(w[1])), answer: try side(w[1]) == .low)
             // the wearer's phone locks or unlocks; the person swipes its alert away (SPEC §1 "On the wrist")
-            case "lock", "unlock": wearerWrist.locked = w[0] == "lock"
+            case "lock", "unlock": wearerWrist.lock(w[0] == "lock")
             case "swipe":
                 guard w.count > 1, let k = AlertKind(rawValue: w[1]) else {
                     throw ScenarioError.bad("unknown event: \(ev)")
@@ -469,13 +480,13 @@ func runScenario(_ sc: Scenario) throws -> [String] {
             case "ack": share([], answer: try side(w[1]) == .low)
             case "follower":
                 switch (w[1], w.count > 2 ? w[2] : "") {
-                case ("lock", _), ("unlock", _): followerWrist.locked = w[1] == "lock"
+                case ("lock", _), ("unlock", _): followerWrist.lock(w[1] == "lock")
                 case ("swipe", let k):
                     guard let kind = AlertKind(rawValue: k) else { throw ScenarioError.bad("unknown event: \(ev)") }
                     followerWrist.swipe(kind)
                 case ("mute", "all"):
                     for g in follower.muteAll(until: try allEnd(w, 3, from: real)) {
-                        followerWrist.up[g] = nil
+                        followerWrist.gone(group: g)
                         record("follower clear \(newestKind(g)?.rawValue ?? g.rawValue)")
                     }
                 case ("mute", let k):

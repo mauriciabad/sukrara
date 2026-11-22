@@ -434,23 +434,37 @@ the phone would push only what changes each minute and leave the full day to the
 **Wrist alerts only while the phone can't say them** (2026-11-23, #248; the owner: "I only want the garmin glucose
 alerts to show up if the phone is locked and at the same time i get the phone notification. otherwise it makes alarm
 fatigue"). Added:
-- **The rule on the phone, in one place**: `AlertUiState.wrist(locked)` (`:core:model`) = the runtime's `shownKinds`
-  (what rings with its notification up: posted or its stand-in, not swiped away, #195) while the phone is locked;
-  `WatchPayload` puts only that in `ring` for the app and the data field. `PhoneLock` (`:integrations`) reads the lock
-  as Android's notification cooldown counts *user present* (screen off or the lock screen up = locked; a phone without
-  a lock screen counts with its screen off) on screen off / screen on / unlock, and the link's payload flow takes it:
-  a lock or an unlock while an alert rings changes the payload and is pushed within the settle time (3 s); with
-  nothing ringing it changes nothing and sends nothing. The runtime also publishes a swipe at once.
+- **The rule on the phone, in one place**: the runtime's `AlertUiState.wristKinds` (`:core:model`) = what is up
+  (posted or its stand-in, not swiped away, #195) and whose last ring found the phone locked, with no unlock since;
+  `WatchPayload` puts only that in `ring` for the app and the data field. `PhoneLock` (`:monitor`) reads the lock as
+  Android's notification cooldown counts *user present* (screen off or the lock screen up = locked; a phone without a
+  lock screen counts with its screen off): the runtime reads it at every ring, and the monitoring service collects it
+  (screen off / screen on / unlock) so an unlock clears the wrist and is pushed within the settle time (3 s). A lock
+  changes nothing. The runtime also publishes a swipe at once.
+- **Seen on the phone stays off the wrist** (the owner, 2026-11-23, answering the first version's relock question: "if
+  the phone was unlocked when i got the notification, i already saw it, so no need to show it again. the goal of
+  having alarms on the watch is only to see them if your phone is away, in the pocket, or not conveniently in reach
+  (like while sleeping) […] i just expect the alerts in garmin to be simply a better styled notification that my phone
+  sent to the garmin while the screen was locked"): each ring is a new notification, judged by the lock at that moment.
+  An unlock is the person seeing it: off the wrist, and locking again doesn't bring it back; the next ring (a repeat,
+  a reminder) does, if the phone is locked then. A restart is no ring: the runtime saves the wrist set with its record
+  (`AlertRecord.wrist`) and resumes it as it was (an unlock while the process was dead clears it at the start).
+  Accepted gap: a locked phone on the table in view still rings the wrist (nothing tells the two apart).
 - **Contract**: alerts SPEC §1 "On the wrist" and the scenario format's `wrist` / `lock` / `unlock` / `swipe`
-  (`scenarios/wrist.txt`, 9 timelines: locked with the notification, unlocked, swiped, two alerts one swiped, restart,
-  Mute, Mute all, lock / unlock mid-alert, a follower's own lock); both drivers and the Android runtime run them (the
-  runtime answers with its own `shownKinds`). Payload cases: the very low unlocked, the very low swiped (only falling
-  fast on the wrist), the field's very high unlocked; app SPEC §7 / §9 / §13 decided 6.
+  (`scenarios/wrist.txt`, 11 timelines: locked with the notification, unlocked, an unlock then a relock (quiet until
+  the repeat), rung unlocked then locked (quiet until the repeat), swiped, two alerts one swiped, a restart kept and
+  after an unlock, a swiped one across a restart, Mute, Mute all, a follower's own lock at each ring); both drivers
+  and the Android runtime run them (the runtime answers with its own `wristKinds`). Payload cases: the very low
+  unlocked (seen), the very low swiped (only falling fast on the wrist), the field's very high unlocked; app SPEC §7 /
+  §9 / §13 decided 6.
 - **Followers** follow the same rule: their runtime and their lock, their own notifications.
 
 Discarded, and why:
 - **A separate `buzz` flag beside `ring`**: the watch uses `ring` only to alert (Garmin's notification, the app's alert
   screen, the data field's alert); the value, its colour and the pill come from `g` and `st`. Gating `ring` keeps
   every screen right with no watch change and no new payload version, so a phone update alone is enough.
-- **Keeping the wrist's "already said" across an unlock**: an alert locked again with its notification up is said
-  again on the wrist (the owner's rule: both hold), which is also what tells a person who put the phone away unanswered.
+- **The wrist following the lock live** (the first version: a lock with the alert up said it on the wrist again, so
+  unlocking, not answering and locking again alerted the watch within seconds): the person had already seen it on the
+  phone (the owner's decision above). A phone put away unanswered is told again by the alert's next repeat.
+- **A resume putting the alert on the wrist, or taking it off**: a restart isn't a notification; the wrist stays as it
+  was.
