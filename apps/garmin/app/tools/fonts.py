@@ -16,7 +16,6 @@ Every size is app.js's at the 390 px reference, rounded to a whole px; the app p
 Every text is an atlas drawn glyph by glyph like Aura's (white glyphs, 8-bit alpha, tinted): Connect IQ's own font
 resources draw the same glyphs visibly heavier (their antialiasing), so none is used. The glance's fonts and icons are scoped to the glance (its 64 KB): `G` below.
 """
-import base64
 import importlib.util
 import io
 import json
@@ -109,12 +108,16 @@ def build_fonts():
             files[key + ".fnt"] = ("\n".join(lines) + "\n").encode()
             table.append((key, base, False))
             continue
-        bs = []
+        # two Numbers a glyph, read as they load (no decoding: the glance has 64 KB, and a base64 table and its bytes
+        # held together ran it out of memory on a Descent Mk3 43, #217): x | y << 9 | w << 17 | h << 24, then
+        # xo + 128 | (yo + 128) << 8 | advance·16 << 16
+        ns = []
         for ch, px, py, w, h, xo, yo, adv in metrics:
             a = int(round(adv * 16))
-            assert 0 <= w < 256 and 0 <= h < 256 and -128 <= xo < 128 and -128 <= yo < 128, (key, ch)
-            bs += [px >> 8, px & 255, py >> 8, py & 255, w, h, xo & 255, yo & 255, a >> 8, a & 255]
-        files[key + ".json"] = (json.dumps([chars, base64.b64encode(bytes(bs)).decode(), base], ensure_ascii=False) + "\n").encode()
+            assert 0 <= px < 512 and 0 <= py < 256 and 0 <= w < 128 and 0 <= h < 128, (key, ch)
+            assert -128 <= xo < 128 and -128 <= yo < 128 and 0 <= a < 32768, (key, ch)
+            ns += [px | py << 9 | w << 17 | h << 24, (xo + 128) | (yo + 128) << 8 | a << 16]
+        files[key + ".json"] = (json.dumps([chars, ns, base], ensure_ascii=False, separators=(",", ":")) + "\n").encode()
         table.append((key, base, True))
     xml = ['<!-- Sukrara — https://github.com/mauriciabad/sukrara -->',
            '<!-- Copyright (C) 2026 Maurici Abad -->',
@@ -194,7 +197,7 @@ def table_src(module, annotation, entries, sheet_ids, boxes, what):
         out.append(annotation)
     out += [
         "module %s {" % module,
-        "    // key → [atlas bitmap, glyph table (jsonData: [glyphs, metrics in base64, baseline])], or [font resource,",
+        "    // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,",
         "    // baseline px from the line's top]; [] = not here",
         "    function atlas(key as String) as Array {",
     ]

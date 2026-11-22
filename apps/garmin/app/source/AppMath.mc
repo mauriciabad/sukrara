@@ -19,18 +19,15 @@ module AppMath {
     const CARD2 = 0x1C1C1F;
     const BLACK = 0x000000;
 
-    var _pal as Dictionary? = null;
-
+    // compared, not a dictionary kept in memory (the glance's 64 KB, #217)
     function pal(k as String?) as Number {
-        if (_pal == null) {
-            _pal = {
-                "veryLow" => 0xC2413B, "low" => 0xF0524F, "tight" => 0x3DD47A, "target" => 0x8CC63F, "high" => 0xF5A524,
-                "veryHigh" => 0xFF7A45, "extremelyHigh" => 0xE35BD0, "now" => 0xC6F432, "rapid" => 0x8AB4FF,
-                "long" => 0xC9B0FF, "carbs" => 0xFFB74D, "note" => 0xB4B4B4
-            };
+        if (k == null) {
+            return 0xB4B4B4;
         }
-        var c = k != null ? (_pal as Dictionary).get(k) : null;
-        return c != null ? c as Number : 0xB4B4B4;
+        var ks = ["veryLow", "low", "tight", "target", "high", "veryHigh", "extremelyHigh", "now", "rapid", "long", "carbs"];
+        var i = ks.indexOf(k);
+        return i < 0 ? 0xB4B4B4 : [0xC2413B, 0xF0524F, 0x3DD47A, 0x8CC63F, 0xF5A524, 0xFF7A45, 0xE35BD0, 0xC6F432, 0x8AB4FF,
+            0xC9B0FF, 0xFFB74D][i] as Number;
     }
 
     function r1(x as Numeric) as Float {
@@ -59,16 +56,16 @@ module AppMath {
 
     // Atkinson's advances per em (app.js WV, aura.js widths()); an unknown glyph counts 0.6
     const WK = " 0123456789.:·ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ";
-    const WV = [
-        0.28, 0.648, 0.407, 0.548, 0.576, 0.614, 0.588, 0.598, 0.51, 0.615, 0.595, 0.21, 0.21, 0.24, 0.626, 0.613, 0.645,
-        0.669, 0.569, 0.552, 0.694, 0.694, 0.392, 0.512, 0.631, 0.541, 0.824, 0.693, 0.714, 0.592, 0.724, 0.614, 0.592,
-        0.558, 0.69, 0.593, 0.856, 0.623, 0.575, 0.607, 0.525, 0.566, 0.485, 0.564, 0.538, 0.314, 0.558, 0.55, 0.252,
-        0.245, 0.492, 0.262, 0.845, 0.55, 0.548, 0.566, 0.574, 0.349, 0.471, 0.326, 0.54, 0.461, 0.684, 0.481, 0.449,
-        0.46, 0.525, 0.538, 0.252, 0.548, 0.54, 0.55, 0.626, 0.569, 0.392, 0.714, 0.69, 0.693,
-    ];
+    // three digits each, the advance × 1000: a string, not an array of 78 kept in memory (the glance's 64 KB, #217)
+    const WV = "280648407548576614588598510615595210210240626613645669569552694694392512631541824693714592724614592558690593856623575607525566485564538314558550252245492262845550548566574349471326540461684481449460525538252548540550626569392714690693";
     // the big numbers: Atkinson's figures at weight 600 (app.js BIG)
     const BK = "0123456789:.LOHI";
-    const BV = [0.656, 0.43, 0.569, 0.592, 0.621, 0.602, 0.617, 0.529, 0.621, 0.578, 0.253, 0.253, 0.548, 0.737, 0.699, 0.415];
+    const BV = "656430569592621602617529621578253253548737699415";
+
+    // the advance [k] of a WV / BV string
+    function adv(v as String, k as Number) as Float {
+        return ((v.substring(3 * k, 3 * k + 3) as String).toNumber() as Number) / 1000.0;
+    }
 
     // a label's width at [fs] (app.js tw)
     function tw(s as String, fs as Numeric) as Float {
@@ -76,7 +73,7 @@ module AppMath {
         var cs = s.toCharArray();
         for (var i = 0; i < cs.size(); i++) {
             var k = WK.find(cs[i].toString());
-            t += k != null ? WV[k] : 0.6;
+            t += k != null ? adv(WV, k) : 0.6;
         }
         return (t * fs * 1.03).toFloat();
     }
@@ -87,7 +84,7 @@ module AppMath {
         var cs = s.toCharArray();
         for (var i = 0; i < cs.size(); i++) {
             var k = BK.find(cs[i].toString());
-            t += k != null ? BV[k] : 0.6;
+            t += k != null ? adv(BV, k) : 0.6;
         }
         return (t * fs).toFloat();
     }

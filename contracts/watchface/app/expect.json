@@ -4922,35 +4922,13 @@
        ],
        "dim": true,
        "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 82,
-       "w": 86400
+       "v": 82
       }
      ],
      [
       "last",
       "rapid",
       35
-     ],
-     [
-      "ring",
-      {
-       "b": [
-        4,
-        30,
-        480,
-        300,
-        160,
-        26
-       ],
-       "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 78,
-       "w": 604800
-      }
      ]
     ],
     "tra": [],
@@ -5028,35 +5006,13 @@
        ],
        "dim": true,
        "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 82,
-       "w": 86400
+       "v": 82
       }
      ],
      [
       "last",
       "rapid",
       35
-     ],
-     [
-      "ring",
-      {
-       "b": [
-        4,
-        30,
-        480,
-        300,
-        160,
-        26
-       ],
-       "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 78,
-       "w": 604800
-      }
      ]
     ],
     "tra": [],
@@ -5142,35 +5098,13 @@
        ],
        "dim": true,
        "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 82,
-       "w": 86400
+       "v": 82
       }
      ],
      [
       "last",
       "rapid",
       35
-     ],
-     [
-      "ring",
-      {
-       "b": [
-        4,
-        30,
-        480,
-        300,
-        160,
-        26
-       ],
-       "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 78,
-       "w": 604800
-      }
      ]
     ],
     "tra": [],
@@ -5248,35 +5182,13 @@
        ],
        "dim": true,
        "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 82,
-       "w": 86400
+       "v": 82
       }
      ],
      [
       "last",
       "rapid",
       35
-     ],
-     [
-      "ring",
-      {
-       "b": [
-        4,
-        30,
-        480,
-        300,
-        160,
-        26
-       ],
-       "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": 78,
-       "w": 604800
-      }
      ]
     ],
     "tra": [],
@@ -8922,25 +8834,15 @@
      [
       "ring",
       {
-       "b": null,
        "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": null,
-       "w": 86400
+       "k": "tir"
       }
      ],
      [
       "ring",
       {
-       "b": null,
        "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": null,
-       "w": 604800
+       "k": "tir"
       }
      ]
     ],
@@ -9696,25 +9598,15 @@
      [
       "ring",
       {
-       "b": null,
        "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": null,
-       "w": 86400
+       "k": "tir"
       }
      ],
      [
       "ring",
       {
-       "b": null,
        "dim": true,
-       "k": "tir",
-       "mark": "none",
-       "r": "in",
-       "v": null,
-       "w": 604800
+       "k": "tir"
       }
      ]
     ],
@@ -10675,19 +10567,14 @@
        ],
        "dim": false,
        "k": "tir",
-       "mark": "none",
-       "r": "tight",
-       "v": 39,
-       "w": 86400
+       "v": 39
       }
      ],
      [
       "ring",
       {
        "dim": true,
-       "k": "avg",
-       "v": null,
-       "w": 1209600
+       "k": "avg"
       }
      ]
     ],

@@ -353,3 +353,15 @@ Connect IQ 6.0.4) logged both; reproduced in the simulator with a full day from 
   a watch allows few) and the line from a table of the scale: the layout is 40 000–50 000 (12 h) and 50 000–60 000
   (24 h), under the paint (60 000–75 000, unchanged). The first frame after opening shows no column; it appears
   within a few callbacks.
+- **The glance again, from its second draw** (2026-11-22, #217): the watch logged *Out Of Memory* in `AppDraw.loadFont`
+  every ~15 s. Measured in the simulator's glance (logged `getSystemStats` per step, then a ballast held through every
+  draw: the free memory at the real peak, transients included): 2.4 KB of the glance's first draw stays (modules and
+  classes loaded once), so later draws start at 50.6 KB of 61 248 B; three glyph tables (each a base64 string decoded
+  into bytes, ~1.8 KB held + 1.5 KB while decoding) were held with the display list, 58.8 KB at the third. Now: glyph
+  tables are two Numbers a glyph read as they load (`tools/fonts.py`), the glance holds one font at a time and drops
+  each display-list element as it paints it, its copy goes before the layout, the copy keeps only what the glance draws
+  (no null entries, the ring's four keys, the second metric only without `else`, one item a treatment step), the input
+  reads only the link's status and sensor (`Link.inputs`' 20-entry dictionary was 1.3 KB), the palette and the label
+  widths are no longer arrays and dictionaries kept in memory, and the app no longer builds `shared/plain` and
+  `shared/input` (2 KB of code the glance loaded). 47.4 KB between draws; a 9 KB ballast passes every draw, 10 KB
+  doesn't (before: 2–3 KB). `MemoryTest.memGlanceDraw` holds each step to its budget.

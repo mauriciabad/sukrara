@@ -36,19 +36,24 @@ class AppGlance extends WatchUi.GlanceView {
         WatchUi.requestUpdate();
     }
 
+    // One thing at a time (the glance has 61 KB, its code and data take 47 before it draws): the copy, then the input
+    // built from it, then the display list, then each text's atlas; nothing kept after the draw (#217)
     function onUpdate(dc as Graphics.Dc) as Void {
         var now = Time.now().value();
         Link.pickUp(now);
-        // its own small copy, never the full payload (GlanceCopy: 64 KB)
+        // its own small copy, never the full payload (GlanceCopy)
         Link.use(GlanceCopy.load());
+        var d = AppInput.build(now, false);
+        // the input holds what the layout needs: the copy goes before the display list is made
+        Link.use(null);
         AppDraw.glance = true;
+        AppDraw.once = true;
         AppDraw.s = dc.getHeight() / 103.0;
         AppDraw.ox = 83 * AppDraw.s - 0.5;
         AppDraw.oy = dc.getHeight() / 2.0 - 0.5;
         var g = new AppG();
-        AppParts.glance(g, AppInput.build(now, false));
-        // the input went with the layout; the copy goes too, so the paint (its atlases) has the room
-        Link.use(null);
+        AppParts.glance(g, d);
+        d = null;
         AppDraw.paint(dc, g);
         // and its atlases after it: kept, the next draw (every 30 s, a new reading) ran out of memory
         AppDraw.release();

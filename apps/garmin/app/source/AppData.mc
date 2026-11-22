@@ -70,11 +70,15 @@ module AppInput {
         var c = Gregorian.info(new Time.Moment(now), Time.FORMAT_SHORT);
         d.clock = (c.hour as Number) + ":" + (c.min as Number).format("%02d");
         d.clockH = (c.hour as Number) + (c.min as Number) / 60.0 + (c.sec as Number) / 3600.0;
-        var x = Link.inputs(now);
         var p = Link.payload();
-        if (x == null || p == null) {
+        if (p == null) {
             return d;
         }
+        // of the link's inputs (Link.inputs) only the status and the sensor's, not its whole dictionary (1.3 KB: the
+        // glance's 64 KB, #217)
+        var x = {} as Dictionary;
+        Link.status(p.get("st"), now + Link.skew, x);
+        Link.sensor(p.get("sensor"), p.get("g"), now + Link.skew, x);
         d.sent = true;
         var t = now + Link.skew;
         var u = p.get("unit");
@@ -91,7 +95,9 @@ module AppInput {
             d.rate = r != null && (d.g as Number) >= 40 && (d.g as Number) <= 400 ? (r as Numeric).toFloat() : null;
             var deg = g.get("deg");
             d.deg = deg != null ? (deg as Numeric).toFloat() : 0.0;
-            d.doubled = x.get("double") == true;
+            // doubled at the steepest bands, as Link.inputs' double
+            var band = g.get("band");
+            d.doubled = band instanceof Number && (band == 3 || band == -3);
             d.age = ((t - gt) < 0 ? 0 : (t - gt)) / 60.0;
             d.readAt = hm(gt - Link.skew);
             var h = hist ? p.get("hist") : null;

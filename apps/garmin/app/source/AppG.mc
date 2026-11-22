@@ -4,7 +4,6 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
-import Toybox.StringUtil;
 import Toybox.System;
 import Toybox.WatchUi;
 
@@ -109,6 +108,8 @@ module AppDraw {
     var fonts as Dictionary = {};
     var sheets as Dictionary = {}; // the icon sheets loaded, by index
     var glance as Boolean = false;
+    // the glance paints its display list once: each element goes as it's painted, room for the atlases (#217)
+    var once as Boolean = false;
     // the foreground's tables (AppFontTable): set by the app's view, so the glance's code never names them
     var table as Method? = null;
     var iconAt as Method? = null;
@@ -137,10 +138,15 @@ module AppDraw {
         sheets = {};
     }
 
+    // a font's atlas and glyph table, loaded once a page (AppDraw.release); the glance holds one at a time (its 64 KB:
+    // three glyph tables held together ran it out of memory on a Descent Mk3 43, #217)
     function loadFont(key as String) as Array {
         var a = fonts[key];
         if (a != null) {
             return a as Array;
+        }
+        if (glance) {
+            fonts = {};
         }
         var t = GlanceFontTable.atlas(key);
         if (t.size() == 0 && table != null) {
@@ -152,12 +158,9 @@ module AppDraw {
         if (t[1] instanceof Number) {
             a = [WatchUi.loadResource(t[0]), t[1]];
         } else {
+            // [glyphs, two Numbers a glyph (tools/fonts.py), baseline]: used as it loads, nothing decoded
             var j = WatchUi.loadResource(t[1]) as Array;
-            var m = StringUtil.convertEncodedString(j[1], {
-                :fromRepresentation => StringUtil.REPRESENTATION_STRING_BASE64,
-                :toRepresentation => StringUtil.REPRESENTATION_BYTE_ARRAY,
-            });
-            a = [WatchUi.loadResource(t[0]), j[0], m, j[2]];
+            a = [WatchUi.loadResource(t[0]), j[0], j[1], j[2]];
         }
         fonts[key] = a;
         return a as Array;
@@ -210,6 +213,9 @@ module AppDraw {
                 icon(dc, e);
             } else if (k == 7) {
                 bitmap(dc, e);
+            }
+            if (once) {
+                els[i] = null;
             }
         }
     }
@@ -347,7 +353,7 @@ module AppDraw {
             return;
         }
         var chars = a[1] as String;
-        var m = a[2] as ByteArray;
+        var m = a[2] as Array<Number>;
         var ls = e.size() > 7 ? (e[7] as Numeric) * s : 0;
         if (anchor >= 0) {
             var w = width(a, s0) + ls * s0.length();
@@ -361,31 +367,33 @@ module AppDraw {
             if (k == null) {
                 continue;
             }
-            var o = k * 10;
-            var gw = m[o + 4];
-            var gh = m[o + 5];
+            // x | y << 9 | w << 17 | h << 24, then xo + 128 | (yo + 128) << 8 | advance·16 << 16
+            var p = m[k * 2];
+            var q = m[k * 2 + 1];
+            var gw = (p >> 17) & 127;
+            var gh = (p >> 24) & 127;
             if (gw > 1 || gh > 1) {
-                var xo = m[o + 6] > 127 ? m[o + 6] - 256 : m[o + 6];
-                var yo = m[o + 7] > 127 ? m[o + 7] - 256 : m[o + 7];
-                var gx = (m[o] << 8) | m[o + 1];
-                var gy = (m[o + 2] << 8) | m[o + 3];
+                var gx = p & 511;
+                var gy = (p >> 9) & 255;
+                var xo = (q & 255) - 128;
+                var yo = ((q >> 8) & 255) - 128;
                 dc.drawBitmap2(Math.floor(x + xo + 0.5) - gx, Math.floor(top + yo + 0.5) - gy, bm, {
                     :bitmapX => gx, :bitmapY => gy, :bitmapWidth => gw, :bitmapHeight => gh, :tintColor => col,
                 });
             }
-            x += ((m[o + 8] << 8) | m[o + 9]) / 16.0 + ls;
+            x += (q >> 16) / 16.0 + ls;
         }
     }
 
     function width(a as Array, s0 as String) as Float {
         var chars = a[1] as String;
-        var m = a[2] as ByteArray;
+        var m = a[2] as Array<Number>;
         var w = 0.0;
         var cs = s0.toCharArray();
         for (var i = 0; i < cs.size(); i++) {
             var k = chars.find(cs[i].toString());
             if (k != null) {
-                w += ((m[k * 10 + 8] << 8) | m[k * 10 + 9]) / 16.0;
+                w += (m[k * 2 + 1] >> 16) / 16.0;
             }
         }
         return w;

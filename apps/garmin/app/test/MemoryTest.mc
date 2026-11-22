@@ -14,8 +14,8 @@ import Toybox.Test;
 (:test)
 module MemCases {
     // what the glance's data may hold: the simulator's glance on the Descent Mk3 43 has 61248 B; its code, data and
-    // view take 48.5 KB when it starts to draw, 58 KB at the end of a draw from its copy (2026-11-22). 12.7 KB for the
-    // copy, the hand-off, the input built from them and the draw (~3 KB): the full payload alone is 12.9 KB
+    // view take 47.4 KB between draws (memGlanceDraw). The copy, the hand-off and the input built from them: the full
+    // payload alone is 12.9 KB
     const GLANCE_DATA = 9216;
     // what a background run may hold beyond the payload it got: its glance copy and hand-off, never the stored
     // payload (46 KB used at the hand-off in the simulator, of 61248 B)
@@ -41,9 +41,60 @@ module MemCases {
         return p;
     }
 
-    // the glance's two places
-    function two(a as Array) as Array {
-        return a.size() > 2 ? a.slice(0, 2) : a;
+    // the glance's two places as it draws them: a ring's kind, number, dimming and bands; the last treatment's kind
+    // and minutes
+    function two(a as Array) as String {
+        var s = "";
+        for (var i = 0; i < a.size() && i < 2; i++) {
+            var x = a[i] as Array;
+            if ("ring".equals(x[0])) {
+                var m = x[1] as Dictionary;
+                s += "ring " + m.get("k") + " " + m.get("v") + " " + (m.get("dim") == true) + " " + m.get("b") + "; ";
+            } else {
+                s += x.toString() + "; ";
+            }
+        }
+        return s;
+    }
+
+    // the glance's draw (AppGlance.onUpdate, in its order): what it holds at each step, in bytes. [copy + input] the
+    // copy read and the input built from it; [list] the input and the display list; [font] the most one text's atlas
+    // and glyph table add while it paints
+    const GLANCE_STEPS = 3840;
+    const GLANCE_LIST = 1600;
+    const GLANCE_FONT = 1792;
+
+    function glanceDraw(T as Number) as Array<Number> {
+        var m0 = used();
+        Link.use(GlanceCopy.load());
+        var d = AppInput.build(T + 60, false);
+        var steps = used() - m0;
+        Link.use(null);
+        AppDraw.glance = true;
+        AppDraw.once = false;
+        AppDraw.table = null;
+        AppDraw.s = 1.0;
+        AppDraw.ox = 82.5;
+        AppDraw.oy = 51.0;
+        var g = new AppG();
+        AppParts.glance(g, d);
+        d = null;
+        var list = used() - m0;
+        // each text's font, one at a time as the glance holds them
+        var font = 0;
+        for (var i = 0; i < g.els.size(); i++) {
+            var e = g.els[i] as Array;
+            if ((e[0] as Number) == 5) {
+                AppDraw.release();
+                var f0 = used();
+                AppDraw.loadFont(e[4] as String);
+                var f = used() - f0;
+                font = f > font ? f : font;
+            }
+        }
+        AppDraw.release();
+        AppDraw.glance = false;
+        return [steps, list, font];
     }
 
     function used() as Number {
@@ -115,9 +166,42 @@ function memGlanceCopyDrawsTheSame(logger as Logger) as Boolean {
         Test.assertEqualMessage("" + b.sensorState, "" + a.sensorState, what);
         Test.assertEqualMessage("" + b.sensorDays, "" + a.sensorDays, what);
         Test.assertEqualMessage("" + b.pill, "" + a.pill, what);
-        Test.assertEqualMessage("" + MemCases.two(b.slots), "" + MemCases.two(a.slots), what);
+        Test.assertEqualMessage(MemCases.two(b.slots), MemCases.two(a.slots), what);
         Test.assertEqualMessage("" + b.ro, "" + a.ro, what);
         Test.assertEqualMessage("" + b.unit, "" + a.unit, what);
+    }
+    Link.reset();
+    return true;
+}
+
+// The glance's draw, over several draws of the heaviest payload: the Descent Mk3 43's glance has 61248 B and its code,
+// data and view take 47.4 KB between draws (simulator, release build, 2026-11-22); a draw held 2–3 KB free at its
+// peak, the copy and three glyph tables decoded from base64 together, and ran out of memory on the watch from its
+// second draw (#217). Held free with a ballast through every draw in the simulator: 9 KB passes, 10 KB doesn't. The
+// steps' budgets keep that: each is what its step held then (3472, 1432, 1712 B), with a little to spare; a glyph table
+// decoded from base64 again held 1832.
+(:test)
+function memGlanceDraw(logger as Logger) as Boolean {
+    var T = 1794823776;
+    Link.reset();
+    MemCases.run(MemCases.heavy(T));
+    MemCases.fresh();
+    // the first draw also loads what stays for the next ones (modules, classes): the glance's 47.4 KB between draws
+    MemCases.glanceDraw(T);
+    var first = null;
+    for (var n = 1; n < 4; n++) {
+        var r = MemCases.glanceDraw(T + 30 * n);
+        logger.debug("glance draw " + n + ": copy + input " + r[0] + " B (budget " + MemCases.GLANCE_STEPS + "), input + list "
+            + r[1] + " (" + MemCases.GLANCE_LIST + "), a font " + r[2] + " (" + MemCases.GLANCE_FONT + ")");
+        Test.assertMessage(r[0] <= MemCases.GLANCE_STEPS, "the copy and the input over their budget");
+        Test.assertMessage(r[1] <= MemCases.GLANCE_LIST, "the input and the display list over their budget");
+        Test.assertMessage(r[2] <= MemCases.GLANCE_FONT, "a text's font over its budget (a glyph table decoded?)");
+        if (first == null) {
+            first = r;
+        } else {
+            // nothing kept from one draw to the next
+            Test.assertMessage(r[0] <= (first as Array)[0] + 64, "a draw kept something");
+        }
     }
     Link.reset();
     return true;

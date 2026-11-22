@@ -7,7 +7,7 @@ import Toybox.WatchUi;
 
 (:glance)
 module GlanceFontTable {
-    // key → [atlas bitmap, glyph table (jsonData: [glyphs, metrics in base64, baseline])], or [font resource,
+    // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
         var i = ["a15s", "a16s", "a17m", "a18m", "a18s", "a20b", "a23b", "a24s", "a24b", "a38s", "n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58"].indexOf(key);

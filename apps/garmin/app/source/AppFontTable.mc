@@ -6,7 +6,7 @@ import Toybox.Lang;
 import Toybox.WatchUi;
 
 module AppFontTable {
-    // key → [atlas bitmap, glyph table (jsonData: [glyphs, metrics in base64, baseline])], or [font resource,
+    // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
         var i = ["a14m", "a14s", "a15m", "a15b", "a16m", "a17s", "a17b", "a19m", "a19s", "a20m", "a20s", "a22s", "a22b", "a23s", "a26s", "a26b", "a28b", "a30b", "a32b", "a48s", "a50s", "a96b", "n84", "n88", "n96", "n100", "n116", "n128"].indexOf(key);
