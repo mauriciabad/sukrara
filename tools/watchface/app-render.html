@@ -46,8 +46,8 @@
       document.getElementById('out').innerHTML = WL.svg(cfgOf(JSON.parse(params.get('cfg') || '{}')));
     }
   };
-  draw();
-  document.fonts.load("700 20px 'Atkinson Hyperlegible Next'").then(draw);
+  // drawn once, after the font: a draw before it and another after raced the screenshot (pictures not byte-stable)
+  document.fonts.load("700 20px 'Atkinson Hyperlegible Next'").then(() => document.fonts.ready).then(draw, draw);
 </script>
 </body>
 </html>
