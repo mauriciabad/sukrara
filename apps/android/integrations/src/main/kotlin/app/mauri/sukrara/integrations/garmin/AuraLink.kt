@@ -15,6 +15,7 @@ import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
+import app.mauri.sukrara.graph.WatchDisplay
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucoseMetrics
 import app.mauri.sukrara.graph.stats.toPoint
@@ -233,8 +234,22 @@ data class AuraLinkState(
     val fetchedBy: Map<GarminApp, Instant> = emptyMap(),
 )
 
-/** Every profile's payload from one snapshot of the phone. */
-typealias Payloads = Map<GarminApp, Map<String, Any?>>
+/**
+ * Every profile's payload from one snapshot of the phone ([apps]), and the app's for each watch with its own display
+ * settings ([watches], by Garmin Connect's id for it: SPEC §11).
+ */
+data class Payloads(
+    val apps: Map<GarminApp, Map<String, Any?>>,
+    val watches: Map<Long, Map<String, Any?>> = emptyMap(),
+) {
+    operator fun get(app: GarminApp) = apps[app]
+
+    /** What [app] gets on watch [watch] (null = not known which): the app's profile with that watch's own values. */
+    fun of(
+        app: GarminApp,
+        watch: Long?,
+    ): Map<String, Any?>? = watch?.takeIf { app == GarminApp.App }?.let { watches[it] } ?: apps[app]
+}
 
 /**
  * The phone → Sukrara's Connect IQ apps link (docs/43, docs/47): each app's payload ([AuraPayload], its own profile of
@@ -269,6 +284,8 @@ class AuraLink(
     private val key: WatchKey? = null,
     /** The alert runtime's actions, for the app's mutes; null = none taken. */
     alerts: app.mauri.sukrara.core.model.AlertControls? = null,
+    /** Each watch's own display settings for the app ([WatchSettingsStore]); a watch not listed follows the app. */
+    private val watchDisplays: Flow<Map<Long, WatchDisplay>> = flowOf(emptyMap()),
 ) {
     private val _state = MutableStateFlow(AuraLinkState())
     val state: StateFlow<AuraLinkState> = _state.asStateFlow()
@@ -391,6 +408,7 @@ class AuraLink(
             ) { v -> v.map(Double::toInt).let { Bands(it[0], it[1], it[2], it[3], it[4], it[5]) } }
         val hours = settings.flow(SurfaceSettings.CountdownHours).map { it.toInt() }
         val graph = GraphSettings.config(settings).distinctUntilChanged()
+        val own = watchDisplays.distinctUntilChanged()
         // today's readings (for time in range) and the last month's treatments (the app's usual amounts), the windows
         // moving on every 10 min
         val since = ticks(TEN_MIN)
@@ -399,18 +417,18 @@ class AuraLink(
         // the app's report numbers: only while a watch has the app, every 10 min (they move slowly; a month of readings)
         val hasApp = _state.map { s -> s.watches.any { it.has(GarminApp.App) == true } }.distinctUntilChanged()
         val metrics =
-            combine(hasApp, graph) { a, g -> a to g }.flatMapLatest { (a, g) ->
-                if (!a) flowOf(emptyMap()) else ticks(TEN_MIN).map { withContext(io) { metrics(g, it) } }
+            combine(hasApp, graph, own) { a, g, w -> Triple(a, g, w) }.flatMapLatest { (a, g, w) ->
+                if (!a) flowOf(emptyMap()) else ticks(TEN_MIN).map { withContext(io) { metrics(g, w.values, it) } }
             }
         return combine(
             combine(glucose, entries, sensor) { g, t, life -> Triple(g, t, life) },
             combine(unit, bands, hours) { u, b, h -> Triple(u, b, h) },
             today,
-            combine(graph, metrics, this.entries.open) { g, m, o -> Triple(g, m, o) },
-        ) { (g, t, life), (u, b, h), day, (gc, m, o) ->
+            combine(graph, own, metrics, this.entries.open) { g, w, m, o -> Display(g, w, m, o) },
+        ) { (g, t, life), (u, b, h), day, d ->
             // THE kinds' order from the phone's own facts at this moment (a reading, a ring, a pen read's entry rebuild it)
-            val kinds = if (o) runCatching { this.entries.facts() }.getOrDefault(KindFacts.NONE) else KindFacts.NONE
-            build(g, t, u, b, h, day.map { it.toPoint() }, life, gc, m, o, kinds)
+            val kinds = if (d.open) runCatching { this.entries.facts() }.getOrDefault(KindFacts.NONE) else KindFacts.NONE
+            build(g, t, u, b, h, day.map { it.toPoint() }, life, d, kinds)
         }.distinctUntilChanged(::same)
     }
 
@@ -422,11 +440,20 @@ class AuraLink(
             }
         }
 
+    /** The settings the app's payloads are built from: the app's [graph], each watch's [own], the [metrics], [open]. */
+    private data class Display(
+        val graph: GraphConfig,
+        val own: Map<Long, WatchDisplay>,
+        val metrics: Map<Long, GlucoseMetrics>,
+        val open: Boolean,
+    )
+
     private suspend fun metrics(
         g: GraphConfig,
+        watches: Collection<WatchDisplay>,
         at: Instant,
     ): Map<Long, GlucoseMetrics> {
-        val windows = AuraPayload.windows(g)
+        val windows = AuraPayload.windows(g, watches)
         val nowS = at.epochSecond
         val points = readings.range(at - Duration.ofSeconds(windows.max()), at.plusSeconds(1)).map { it.toPoint() }
         return windows.associateWith { w -> GlucoseMetrics.of(points, nowS - w, nowS, g.bands.sane()) }
@@ -440,9 +467,7 @@ class AuraLink(
         hours: Int,
         day: List<app.mauri.sukrara.graph.stats.GlucosePoint>,
         life: CurrentSensor?,
-        graph: GraphConfig,
-        metrics: Map<Long, GlucoseMetrics>,
-        open: Boolean,
+        d: Display,
         kinds: KindFacts,
     ): Payloads {
         val now = clock.now()
@@ -450,8 +475,11 @@ class AuraLink(
         val end = from.atZone(clock.zone).plusDays(1).toInstant()
         val tir = GlucoseMetrics.of(day, from.epochSecond, now.epochSecond, bands.sane()).tir
         val share = tir.inRange.takeIf { tir.coverage >= TIR_COVERAGE }
-        val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, graph, metrics, open, kinds)
-        return GarminApp.entries.associateWith { AuraPayload.of(it, i) }
+        val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, d.graph, d.metrics, d.open, kinds)
+        return Payloads(
+            GarminApp.entries.associateWith { AuraPayload.of(it, i) },
+            d.own.mapValues { (_, own) -> AuraPayload.of(GarminApp.App, i.copy(watch = own)) },
+        )
     }
 
     private fun startOfDay(at: Instant): Instant = LocalDate.ofInstant(at, clock.zone).atStartOfDay(clock.zone).toInstant()
@@ -479,7 +507,8 @@ class AuraLink(
                     val before = _state.value.watches.firstOrNull { it.id == d.id }
                     val links = LinkedHashMap(before?.links.orEmpty())
                     for (app in GarminApp.entries) {
-                        val payload = p[app] ?: continue
+                        // the app with this watch's own display settings (SPEC §11)
+                        val payload = p.of(app, d.id) ?: continue
                         for (id in app.ids) {
                             var l = links[id] ?: AppLink()
                             val installed = installed(d, id, before, l)
@@ -497,6 +526,8 @@ class AuraLink(
                             } else {
                                 var out = payload + ("sent" to sent)
                                 if (app.logs && secret != null) out = out + ("key" to secret)
+                                // which watch this is: its fetch sends it back (`&w=`) for its own values
+                                if (app == GarminApp.App) out = out + ("w" to d.id.toString())
                                 val result = port.send(d, id, MonkeyC.encode(out))
                                 val readingAt = (payload["g"] as? Map<*, *>)?.get("t")
                                 trace("push ${app.key}${if (id == app.beta) " beta" else ""} sent $sent reading $readingAt: $result")
@@ -565,12 +596,19 @@ class AuraLink(
 
     /**
      * The fetch: `GET /sukrara/<app>` → that app's payload as JSON, `sent` now (the watch reads it like a push), never the
-     * key; the writes go to [writes].
+     * key; the app's with the asking watch's own values (`w`, from its push; without it the one watch with the app); the
+     * writes go to [writes].
      */
     internal fun answer(req: HttpRequest): HttpAnswer {
         if (req.method == "POST") return writes.answer(req)
         val app = GarminApp.ofPath(req.path) ?: return HttpAnswer.NOT_FOUND
-        val p = current?.get(app) ?: return HttpAnswer("503 Service Unavailable", "{}")
+        val watch =
+            req.query["w"]?.toLongOrNull()
+                ?: _state.value.watches
+                    .filter { it.has(GarminApp.App) == true }
+                    .singleOrNull()
+                    ?.id
+        val p = current?.of(app, watch) ?: return HttpAnswer("503 Service Unavailable", "{}")
         return HttpAnswer("200 OK", json(p + ("sent" to clock.now().epochSecond.toInt())).toString())
     }
 
@@ -618,6 +656,11 @@ class AuraLink(
         internal fun same(
             a: Payloads,
             b: Payloads,
+        ) = same(a.apps, b.apps) && same(a.watches, b.watches)
+
+        private fun <K> same(
+            a: Map<K, Map<String, Any?>>,
+            b: Map<K, Map<String, Any?>>,
         ) = a.keys == b.keys && a.all { (k, v) -> v - "sent" == b[k]?.minus("sent") }
 
         /** The payload as JSON for the fetch: Garmin Connect parses it into the same dictionary a push gives. */

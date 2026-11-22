@@ -268,6 +268,13 @@ Changed from "Choice" / §6, and why:
   on Android and the Mac), from the same facts the phone's Add treatment focuses from, so every dialog and the watch
   agree; the scattered focus decisions (the notification, the alert's button, the widgets, the pill, the pen notice,
   the Mac's own) are gone.
+- **The watch as a place** (SPEC §11): `WatchDisplay` (`:core:graph`, each field null = Same as the app) over the
+  app's `GraphConfig` in `GarminDisplay.resolve`, the one place; stored per watch by Garmin Connect's id
+  (`WatchSettingsStore`, typed state `watches`, schema `apps.garmin.watch`, Android only: the Mac sends nothing to a
+  watch). The fetch can't say which watch asks (Garmin Connect makes it), so the app's push carries `w` and the app
+  sends it back as `&w=`; without it, the one watch with the app, else the app's values. The metrics' windows are
+  every watch's together.
+- **`rep.ok`**: the report card's goals met per period, one bit per `Goal`, so the watch holds no thresholds.
 - **Undo from the watch** (`POST /sukrara/undo`, SPEC §6's *Undo*): by the entry's id, signed over `id|s` with the
   same key and send-time window; the phone runs its own delete (`TreatmentLog.delete`, home's), so sync, the Nightscout
   delete, LibreView / Tidepool retraction and the quiet rules follow without a path of their own. Only an entry stored

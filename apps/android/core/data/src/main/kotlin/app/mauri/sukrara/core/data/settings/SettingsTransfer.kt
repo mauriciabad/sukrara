@@ -208,6 +208,7 @@ class SettingsTransfer(
                 "sensorCalendar.calendarId" to "a calendar of this phone",
                 "healthConnect.on" to "needs this phone's Health Connect permissions",
                 "widget.overrides" to "per widget placed on this phone's home screen",
+                "apps.garmin.watch" to "per watch paired with this phone in Garmin Connect",
                 "pens.pen" to "the pens this phone has read",
             )
 

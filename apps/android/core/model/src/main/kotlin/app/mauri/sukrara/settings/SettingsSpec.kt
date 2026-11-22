@@ -245,6 +245,7 @@ object SettingsSpec {
         SettingInfo("apps.nightscoutUpload", "group", null, false, null, "integrations:nightscoutUpload", "", null, "android", "Only the wearer's phone uploads", listOf()),
         SettingInfo("apps.broadcasts", "group", null, false, null, "integrations:broadcastApps", "", null, "android", "Android inter-app broadcasts and Health Connect", listOf()),
         SettingInfo("sensor.reminders", "group", null, false, null, "sensor:sensorReminders", "", null, "android", "The wearer's phone owns the sensor and reminds its wearer; a Mac follower shows the sensor's time left and countdown ring only", listOf()),
+        SettingInfo("apps.garmin.watch", "group", null, false, null, "watches:watchSlots,watchLast,watchLastElse,watchRingOrder,watchRingRange,watchRingMarks,watchHours,watchMarks,watchSide,watchReportDays", "", null, "android", "Garmin Connect, the only way to a Garmin watch, runs on the phone the watch is paired to: the Mac sends nothing to a watch", listOf()),
         SettingInfo("widget.overrides", "group", null, false, null, "widgets:widgetHours,widgetSlots,widgetRingRange,widgetSide,widgetSensor", "", null, "android", "Android widgets are configured per placement (Reconfigure); Mac widgets follow the Widgets place's settings", listOf()),
         SettingInfo("pens.reading", "enum", null, false, null, "pens:penReading", "", null, "android", "Only the wearer's phone reads insulin pens over NFC; the Mac shows the entries it gets (pen keys pr, pen, pd)", listOf()),
         SettingInfo("pens.primeBelow", "number", "penPrimeBelow", false, null, "pens:penPrimeBelow", "", null, "android", "Only the wearer's phone reads insulin pens over NFC; the Mac shows the entries it gets (pen keys pr, pen, pd)", listOf()),
@@ -273,6 +274,7 @@ object SettingsSpec {
         const val STATUSBAR = "statusbar"
         const val LOCK = "lock"
         const val INTEGRATIONS = "integrations"
+        const val WATCHES = "watches"
         const val WIDGETS = "widgets"
         const val PENS = "pens"
     }
@@ -350,6 +352,16 @@ object SettingsSpec {
         const val NIGHTSCOUT_UPLOAD = "nightscoutUpload"
         const val BROADCAST_APPS = "broadcastApps"
         const val SENSOR_REMINDERS = "sensorReminders"
+        const val WATCH_SLOTS = "watchSlots"
+        const val WATCH_LAST = "watchLast"
+        const val WATCH_LAST_ELSE = "watchLastElse"
+        const val WATCH_RING_ORDER = "watchRingOrder"
+        const val WATCH_RING_RANGE = "watchRingRange"
+        const val WATCH_RING_MARKS = "watchRingMarks"
+        const val WATCH_HOURS = "watchHours"
+        const val WATCH_MARKS = "watchMarks"
+        const val WATCH_SIDE = "watchSide"
+        const val WATCH_REPORT_DAYS = "watchReportDays"
         const val WIDGET_HOURS = "widgetHours"
         const val WIDGET_SLOTS = "widgetSlots"
         const val WIDGET_RING_RANGE = "widgetRingRange"

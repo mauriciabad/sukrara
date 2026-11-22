@@ -2927,8 +2927,10 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
 - **The app's payload** (`garmin/AuraPayload`, `GarminDisplay`; `AuraPayloadFixtureTest`): 24 h of readings at 5 min
   (the app zooms 3 / 6 / 12 / 24 h itself), the day's treatments (with their ids), time in range per band over a day
   and a week, the card's metrics as the person set them (`graph.slots`, the fallback, the ring order), the Numbers
-  page for 1 / 7 / 14 / 30 days, the display settings it follows (`graph.hours`, `graph.marks`, `graph.side`,
-  `graph.columnCrown`, resolved in one place for a watch's own values later), the last treatment (each item with its mute's end, for the card's double ring) and sensor as the
+  page for 1 / 7 / 14 / 30 days with which of the report card's goals each meets (`ok`, `Goal.met`: the watch keeps no
+  threshold), the display settings it follows (`graph.hours`, `graph.marks`, `graph.side`, `graph.columnCrown`, the
+  metrics, ring order and report period: each watch's own values, schema `apps.garmin.watch`, over the app's in one
+  place, `GarminDisplay.resolve`; the push says which watch it is, `w`, and the fetch sends it back, `&w=`), the last treatment (each item with its mute's end, for the card's double ring) and sensor as the
   face has them, what the alert runtime rings now, and for logging THE kinds' order (`log.order`, the same `KindOrder` over the same
   facts as the phone's Add treatment: Carbs first while low…) and each kind's last amount and three usual ones; under
   6 KB with a full day. Its push carries the key its writes are signed with (`WatchKey`: 32 random bytes made once,

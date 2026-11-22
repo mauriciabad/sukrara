@@ -22,12 +22,15 @@ import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.graph.LastTreatment
+import app.mauri.sukrara.graph.RingSpec
+import app.mauri.sukrara.graph.WatchDisplay
 import app.mauri.sukrara.graph.id
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.integrations.localserver.HttpAnswer
 import app.mauri.sukrara.integrations.localserver.HttpRequest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -102,11 +105,69 @@ class AuraLinkTest {
         settings: InMemorySettingsRepository = InMemorySettingsRepository(),
         treatments: InMemoryTreatmentsRepository = InMemoryTreatmentsRepository(),
         key: WatchKey? = null,
+        own: Map<Long, WatchDisplay> = emptyMap(),
     ): AuraLink {
         val d = StandardTestDispatcher(testScheduler)
-        return AuraLink(settings, glucose, treatments, InMemoryReadingsRepository(), port, clock, d, {}, fetchPort = 0, key = key)
-            .also { it.start(backgroundScope) }
+        return AuraLink(
+            settings,
+            glucose,
+            treatments,
+            InMemoryReadingsRepository(),
+            port,
+            clock,
+            d,
+            {},
+            fetchPort = 0,
+            key = key,
+            watchDisplays = flowOf(own),
+        ).also { it.start(backgroundScope) }
     }
+
+    @Test
+    fun eachWatchGetsTheAppWithItsOwnValuesAndItsId() =
+        runTest {
+            val port =
+                FakePort().apply {
+                    watches = listOf(IqDevice(7, "Descent Mk3i 43mm", true), IqDevice(8, "Venu 3", true))
+                    apps = mutableSetOf(GarminApp.App.id)
+                }
+            val own = WatchDisplay(hours = 3, side = false, reportDays = 7, ringOrder = RingSpec.DEFAULT_RING_ORDER.reversed())
+            val link = link(port, MutableStateFlow(state(-30L to 112)), own = mapOf(8L to own))
+            settle()
+            val byWatch = port.sent.associateBy { it["w"] }
+            assertEquals(setOf("7", "8"), byWatch.keys)
+            val ds7 = byWatch.getValue("7")["ds"] as Map<*, *>
+            val ds8 = byWatch.getValue("8")["ds"] as Map<*, *>
+            // watch 7 follows the app; watch 8 has its own chart time, % column, report period and ring order
+            assertEquals(12, ds7["hours"])
+            assertEquals(true, ds7["side"])
+            assertEquals(14, byWatch.getValue("7")["repD"])
+            assertEquals(3, ds8["hours"])
+            assertEquals(false, ds8["side"])
+            assertEquals(7, byWatch.getValue("8")["repD"])
+            assertEquals(RingSpec.DEFAULT_RING_ORDER.reversed().map { it.ordinal }, byWatch.getValue("8")["ro"])
+
+            // the fetch: the asking watch's own values by its w; never w itself
+            fun fetch(w: String?) =
+                link.answer(HttpRequest("GET", "sukrara/app", w?.let { mapOf("w" to it) } ?: emptyMap(), emptyMap())).body
+            assertTrue(fetch("8").contains("\"repD\":7"))
+            assertTrue(fetch("7").contains("\"repD\":14"))
+            assertFalse(fetch("8").contains("\"w\":\"8\""))
+            // without w and two watches with the app: the app's own values
+            assertTrue(fetch(null).contains("\"repD\":14"))
+            link.stop()
+        }
+
+    @Test
+    fun aFetchWithoutItsIdIsTheOneWatchWithTheApp() =
+        runTest {
+            val port = FakePort().apply { apps = mutableSetOf(GarminApp.App.id) }
+            val link = link(port, MutableStateFlow(state(-30L to 112)), own = mapOf(7L to WatchDisplay(reportDays = 30)))
+            settle()
+            val body = link.answer(HttpRequest("GET", "sukrara/app", emptyMap(), emptyMap())).body
+            assertTrue(body.contains("\"repD\":30"))
+            link.stop()
+        }
 
     @Test
     fun eachSukraraAppGetsItsOwnProfileAndOnlyTheAppTheKey() =

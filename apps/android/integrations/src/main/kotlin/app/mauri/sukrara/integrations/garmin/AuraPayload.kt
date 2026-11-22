@@ -22,6 +22,7 @@ import app.mauri.sukrara.graph.RingSpec
 import app.mauri.sukrara.graph.SlotKind
 import app.mauri.sukrara.graph.TirMark
 import app.mauri.sukrara.graph.TrendAngle
+import app.mauri.sukrara.graph.WatchDisplay
 import app.mauri.sukrara.graph.cardInfo
 import app.mauri.sukrara.graph.id
 import app.mauri.sukrara.graph.muteRuleOf
@@ -59,6 +60,8 @@ data class PayloadInputs(
     val metrics: Map<Long, GlucoseMetrics> = emptyMap(),
     val logOpen: Boolean = false,
     val kinds: KindFacts = KindFacts.NONE,
+    /** The watch's own values for the app (the app profile only; nothing own = the app's). */
+    val watch: WatchDisplay = WatchDisplay(),
 )
 
 /**
@@ -101,12 +104,15 @@ object AuraPayload {
     /** A metric shows a number with this much of its window covered (the card's `GlucoseCard.MIN_COVERAGE`). */
     const val METRIC_COVERAGE = 0.25
 
-    /** The windows the app's metrics need, for [settings]' slots. */
-    fun windows(settings: GraphConfig): Set<Long> =
-        (
-            RANGES + settings.rings().map { it.windowS } + listOfNotNull(settings.lastElseRing()?.windowS) +
-                REPORT_DAYS.map { it * 86_400L }
-        ).toSet()
+    /** The windows the app's metrics need, for [settings]' slots and every watch's own ([watches]). */
+    fun windows(
+        settings: GraphConfig,
+        watches: Collection<WatchDisplay> = emptyList(),
+    ): Set<Long> =
+        (listOf(settings) + watches.map { it.applyTo(settings) })
+            .flatMap { g -> g.rings().map { it.windowS } + listOfNotNull(g.lastElseRing()?.windowS) }
+            .plus(RANGES + REPORT_DAYS.map { it * 86_400L })
+            .toSet()
 
     /** The payload [app] gets from [i] at [PayloadInputs.now] (the app's push adds `key`: [AuraLink]). */
     fun of(
@@ -138,25 +144,26 @@ object AuraPayload {
             return p
         }
         val metrics = if (monitoring) i.metrics else emptyMap()
+        // the display settings as this watch shows them, resolved in one place
+        val d = GarminDisplay.resolve(i.graph, i.watch)
         p["tx"] = tx(if (monitoring) i.treatments else emptyList(), nowS)
         p["ranges"] = RANGES.map { w -> metrics[w]?.takeIf { it.tir.coverage >= METRIC_COVERAGE }?.let { range(w, it) } }
-        p["m"] = i.graph.rings().map { metric(it, metrics[it.windowS]) }
+        p["m"] = d.graph.rings().map { metric(it, metrics[it.windowS]) }
         p["else"] =
-            i.graph
+            d.graph
                 .lastElseRing()
-                ?.takeIf { i.graph.lastPlace != LastPlace.OFF }
+                ?.takeIf { d.graph.lastPlace != LastPlace.OFF }
                 ?.let { metric(it, metrics[it.windowS]) }
-        p["ro"] = i.graph.ringOrder.map { it.ordinal }
+        p["ro"] = d.graph.ringOrder.map { it.ordinal }
         p["log"] = if (monitoring && i.logOpen) log(i.treatments, i.kinds, nowS) else null
-        p["ds"] = display(GarminDisplay.resolve(i.graph))
+        p["ds"] = display(d)
         p["rep"] = REPORT_DAYS.map { d -> metrics[d * 86_400L]?.takeIf { !it.empty }?.let { report(d, it) } }
-        p["repD"] = REPORT_START
+        p["repD"] = d.reportDays
         return p
     }
 
     /** The Numbers page's periods (days) and the one it opens on (Android's report card: 1 / 7 / 14 / 30, from 14). */
     val REPORT_DAYS: List<Long> = SettingsSpec.OPTIONS.getValue("reportPeriod").map(String::toLong)
-    const val REPORT_START = 14
 
     private fun display(d: GarminDisplay): Map<String, Any?> =
         linkedMapOf(

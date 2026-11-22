@@ -43,8 +43,10 @@ import app.mauri.sukrara.integrations.garmin.AuraLink
 import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
 import app.mauri.sukrara.integrations.garmin.GarminViewModel
+import app.mauri.sukrara.integrations.garmin.GarminWatches
 import app.mauri.sukrara.integrations.garmin.WatchEntries
 import app.mauri.sukrara.integrations.garmin.WatchKey
+import app.mauri.sukrara.integrations.garmin.WatchSettingsStore
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectSync
@@ -87,6 +89,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import okhttp3.OkHttpClient
 
@@ -167,6 +170,8 @@ class IntegrationsModule(
     watchEntries: WatchEntries = WatchEntries.None,
     /** The alert runtime's actions, for mutes from Sukrara on the watch. */
     alertControls: AlertControls? = null,
+    /** Each watch's own display settings for Sukrara on the watch (`apps.garmin.watch`). */
+    garminWatches: StateStore<GarminWatches>? = null,
 ) {
     /** Your glucose read first-hand here: what uploads and outputs may send (docs/44 keying). */
     val wearer: Flow<Boolean> = role.map { it?.owner == true }
@@ -306,6 +311,10 @@ class IntegrationsModule(
 
     private val installedApps = PlatformApps(context)
 
+    /** Each watch's own values for Sukrara on the watch (the watch as a place, SPEC §11); null in tests: none. */
+    val watchSettings: WatchSettingsStore? =
+        garminWatches?.let { WatchSettingsStore(it) }
+
     /** Sukrara on Garmin watches (the face, the app, the data field): pushed through Garmin Connect, fetched and written on loopback (docs/43, docs/47). */
     val aura =
         AuraLink(
@@ -321,6 +330,7 @@ class IntegrationsModule(
             entries = watchEntries,
             key = WatchKey(secure),
             alerts = alertControls,
+            watchDisplays = watchSettings?.displays ?: flowOf(emptyMap()),
         )
 
     val broadcasts = Broadcaster(settings, broadcastState, libreLive, sensor, role, installedApps, clock, dispatchers.io, log)

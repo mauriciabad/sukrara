@@ -75,6 +75,7 @@ import app.mauri.sukrara.integrations.IntegrationsModule
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
 import app.mauri.sukrara.integrations.garmin.ConnectIq
+import app.mauri.sukrara.integrations.garmin.GarminWatches
 import app.mauri.sukrara.integrations.garmin.WatchEntries
 import app.mauri.sukrara.integrations.garmin.WatchEntry
 import app.mauri.sukrara.integrations.garmin.WatchLogged
@@ -792,6 +793,8 @@ class AppGraph(
                 BuildVariant.connectIq(app) { data.diagLog.log("integrations", it) }
                     ?: ConnectIq(app) { data.diagLog.log("integrations", it) },
             libreLinkUpServer = BuildVariant.libreLinkUpServer(app),
+            // a lost one only makes each watch follow the app's settings again
+            garminWatches = data.typedStore("watches", GarminWatches.serializer(), GarminWatches(), whenCorrupt = GarminWatches()),
             // the one heads-up an hour before LibreView's maintenance stops LibreLinkUp (docs/45)
             maintenanceAhead = { w -> MaintenanceNotice.post(app, w.start, w.end) },
             // Sukrara on the watch logs through the phone's own Add treatment (the treatments module is built later)
