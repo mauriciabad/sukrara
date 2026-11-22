@@ -208,7 +208,7 @@ button angles); `tools/watchface/app-build.mjs` renders every screen of §1 on e
 | Class | Reference watch (cls) | Same screen | Pictures |
 |---|---|---|---|
 | Round AMOLED 360 | FR 265S (`r360`) | Venu 2S | `round-360/` |
-| Round AMOLED 390 | Descent Mk3 43 (`r390`, the design) | §1's 19 | `round-390/` |
+| Round AMOLED 390 | Descent Mk3 43 (`r390`, the design) | docs/47 §9's 19 | `round-390/` |
 | Round AMOLED 416 | fēnix 8 43 (`r416`) | epix 2 / Pro 47, fēnix 9 43 / Pro 43, fēnix E, FR 265, Venu 2 / 2 Plus, D2 Air X10, D2 Mach 1, Approach S72 43, Instinct 3 AMOLED 50 | `round-416/` |
 | Round AMOLED 454 | fēnix 8 47 / 51 (`r454`) | fēnix 8 Pro, fēnix 9 47 / Pro 47, Descent Mk3 51, epix Pro 51, FR 965 / 970 / 570 47, Venu 3, Venu 4 45, MARQ 3, D2 Mach 2, Approach S70 47 / S72 47 | `round-454/` |
 | Round AMOLED 466 | fēnix 9 Pro 51 (`r466`) | — | `round-466/` |
@@ -288,7 +288,7 @@ The 390 scaled. Only the glance and the data field take their device's own geome
   chart's 70 / 180 labels (≤ 240: the dashed lines stay, the plot takes their width), then the clock (218). Never: the
   value, the arrow, the two places, the chart, the pill, the page dots.
 - **Glance**: content only 63 px high on the fēnix 7 family (151 / 171 / 191 wide), 93 on FR 255 / 955, 81 – 88 on fēnix
-  8 Solar / enduro, 140 × 79 on FR 255S: the 390 glance at 0.56 – 0.77; value 32 – 42 px (28 – 32 on the FR 255S),
+  8 Solar / enduro, 140 × 79 on FR 255S: the 390 glance at 0.56 – 0.79; value 32 – 42 px (28 – 32 on the FR 255S),
   rings r 13 – 16 px with 12 – 16 px numbers; both places on every one.
 - **FR 255 / 255S**: buttons only (as the Instinct AMOLEDs).
 
@@ -308,7 +308,7 @@ Their own layouts in `R` (`R.appA`, `R.appNums`, `R.actions`, `R.logAmount`), th
 rectangle's edge (`rim`, `full`):
 - **Glance**: full-width rows, the icon at the left edge (Sq 2: 40 px at x 0; X1 65 px), content 254 × 114 / 314 × 150.
 - **Page 1**: the corners hold the two places (main right, the next left) beside the clock; the value + arrow gets the
-  whole width (96 units); the chart runs edge to edge (x −116 … 126 on the Sq 2, 170 units high), the % column and its
+  whole width (96 units); the chart runs edge to edge (x −116 … 126 on the Sq 2, 120 units high; the X1's 295 × 165), the % column and its
   shares on the left, 70 / 180 on the right; the pill / sensor row at the bottom; the page dots in the bottom-left
   corner.
 - **Page 2**: chips across the top, the stacked bar down the left edge, the three shares with their goals, then
