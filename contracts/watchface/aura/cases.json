@@ -907,6 +907,267 @@
    }
   },
   {
+   "id": "fields-top-two",
+   "group": "fields",
+   "title": "Two fields on top",
+   "expect": "Two top fields side by side under the date, one run centred, 26 apart: ♥ 64 and ⚡ 62.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "heart",
+    "topField2": "bodyBattery"
+   }
+  },
+  {
+   "id": "fields-top-second-only",
+   "group": "fields",
+   "title": "Only the second top field",
+   "expect": "The first top field off and the second on: it shows alone, centred, as one field would.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "none",
+    "topField2": "spo2",
+    "fields": [
+     "sleep",
+     "treatment"
+    ]
+   }
+  },
+  {
+   "id": "fields-top-too-long",
+   "group": "fields",
+   "title": "Two top fields too long",
+   "expect": "With a pill the top row is narrower: tomorrow's forecast and a half-marathon prediction don't fit side by side (wider than the circle at the row's cap height), so the second goes and the forecast stays, centred.",
+   "cfg": {
+    "glucose": 205,
+    "rate": 1.2,
+    "status": "auto",
+    "topField": "forecast1",
+    "topField2": "raceHalf"
+   }
+  },
+  {
+   "id": "fields-top-meal",
+   "group": "fields",
+   "title": "A meal on top beside steps",
+   "expect": "Steps and a meal don't fit side by side on top: steps goes (the least important), the meal stays, centred.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "steps",
+    "topField2": "treatment",
+    "last": {
+     "items": [
+      {
+       "k": "rapid",
+       "a": "4.5"
+      },
+      {
+       "k": "carbs",
+       "a": "45"
+      }
+     ],
+     "ago": 35
+    }
+   }
+  },
+  {
+   "id": "fields-health",
+   "group": "fields",
+   "title": "Health fields",
+   "expect": "Stress and respiration on top; pulse ox and sleep score at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "stress",
+    "topField2": "respiration",
+    "fields": [
+     "spo2",
+     "sleep"
+    ]
+   }
+  },
+  {
+   "id": "fields-weather",
+   "group": "fields",
+   "title": "Weather fields",
+   "expect": "Rain now (its icon) and today's high and low on top; sunrise and the forecast for the day after tomorrow (Wed, snow) at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "weather",
+    "topField2": "highLow",
+    "fields": [
+     "sunrise",
+     "forecast2"
+    ],
+    "vals": {
+     "weather": {
+      "t": 9,
+      "sky": "rain"
+     },
+     "forecast2": {
+      "hi": 3,
+      "lo": -2,
+      "sky": "snow"
+     }
+    }
+   }
+  },
+  {
+   "id": "fields-weather-skies",
+   "group": "fields",
+   "title": "Storm and fog",
+   "expect": "Each sky its own icon: a storm now beside the pressure on top; fog tomorrow and the sunset at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "weather",
+    "topField2": "pressure",
+    "fields": [
+     "forecast1",
+     "sunset"
+    ],
+    "vals": {
+     "weather": {
+      "t": 22,
+      "sky": "storm"
+     },
+     "forecast1": {
+      "hi": 15,
+      "lo": 11,
+      "sky": "fog"
+     }
+    }
+   }
+  },
+  {
+   "id": "fields-training",
+   "group": "fields",
+   "title": "Training fields",
+   "expect": "The 5K prediction and the recovery time on top; the 10K pace and VO2 max at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "race5k",
+    "topField2": "recovery",
+    "fields": [
+     "pace10k",
+     "vo2Run"
+    ]
+   }
+  },
+  {
+   "id": "fields-activity",
+   "group": "fields",
+   "title": "The day's activity",
+   "expect": "Calories and intensity minutes on top; this week's running and cycling at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "calories",
+    "topField2": "intensity",
+    "fields": [
+     "runWeek",
+     "bikeWeek"
+    ]
+   }
+  },
+  {
+   "id": "fields-watch",
+   "group": "fields",
+   "title": "The watch's own",
+   "expect": "The watch battery and its solar input on top; the weekday and the training status in the watch's words at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "battery",
+    "topField2": "solar",
+    "fields": [
+     "weekday",
+     "training"
+    ]
+   }
+  },
+  {
+   "id": "fields-day",
+   "group": "fields",
+   "title": "Date, events, golf, pushes",
+   "expect": "The date and the next calendar event on top; wheelchair pushes and the last golf round at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "date",
+    "topField2": "events",
+    "fields": [
+     "pushes",
+     "golf"
+    ]
+   }
+  },
+  {
+   "id": "fields-unknown",
+   "group": "fields",
+   "title": "Fields the watch hasn't",
+   "expect": "A field the watch has no value for (or no such complication) says --: stress and pulse ox on top, the 10K prediction and the training status below.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "topField": "stress",
+    "topField2": "spo2",
+    "fields": [
+     "race10k",
+     "training"
+    ],
+    "vals": {
+     "stress": null,
+     "spo2": null,
+     "race10k": null,
+     "training": null
+    }
+   }
+  },
+  {
+   "id": "fields-spanish",
+   "group": "fields",
+   "title": "Fields in Spanish",
+   "expect": "Spanish words and numbers: the forecast in three days (jue, cloud) beside the notifications on top; 24,6 km of running and calories with a dot (1.840) at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "lang": "es",
+    "topField": "forecast3",
+    "topField2": "notifications",
+    "fields": [
+     "runWeek",
+     "calories"
+    ]
+   }
+  },
+  {
+   "id": "fields-statute",
+   "group": "fields",
+   "title": "Miles and feet",
+   "expect": "A watch in statute units: the marathon pace per mile beside the floors on top; the altitude in ft and this week's running in mi at the bottom.",
+   "cfg": {
+    "glucose": 118,
+    "rate": 0.3,
+    "statute": true,
+    "topField": "paceMarathon",
+    "topField2": "floors",
+    "fields": [
+     "altitude",
+     "runWeek"
+    ],
+    "vals": {
+     "altitude": 4068,
+     "paceMarathon": 507,
+     "runWeek": 15.3
+    }
+   }
+  },
+  {
    "id": "fields-green-off",
    "group": "fields",
    "title": "Green in range: off",

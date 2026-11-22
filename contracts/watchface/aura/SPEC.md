@@ -21,7 +21,7 @@ seconds as a faint sweep at the rim.
 | File | What it is | Use it to |
 |---|---|---|
 | [`tools/watchface/aura.js`](../../../tools/watchface/aura.js) | **The reference implementation**: one pure function, `layout(cfg)`, giving every value of the face, and `svg(cfg)` drawing it. Where this text and the code disagree, the code wins (and this text gets fixed). | Read the exact formula of anything; port it |
-| [`cases.json`](cases.json) | 158 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
+| [`cases.json`](cases.json) | 193 states (every state of §9), each with its inputs and **what must be true, in words** | Acceptance, state by state |
 | [`expect.json`](expect.json) | Every value `layout()` returns for each case (positions, sizes, colours, texts, angles) | Unit-test the port's numbers (§10) |
 | [`docs/img/aura/ref/<case>.png`](../../../docs/img/aura/ref/) | Each case drawn at **390 × 390, the screen 1:1**, no bezel | Compare with the simulator's screenshot (§10) |
 | [`docs/img/aura/store/*.png`](../../../docs/img/aura/store/) | 10 renders on the Descent, 1168 px, transparent | Connect IQ store, website (§12) |
@@ -162,7 +162,33 @@ round caps and joins), otherwise filled (even-odd). Path data (exact, also in `i
 | rapid ▼ (Sukrara's insulin mark) | f | `M2 4.2H22L12 20.9Z` |
 | long ▽ | s, width 2.8 | `M3.5 5.4H20.5L12 19.6Z` |
 | carbs ● | f | `M20 12a8 8 0 1 1-16 0a8 8 0 1 1 16 0z` |
-| battery (the battery label's mark, §6.9) | f | `M7 5h10a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5v-14A1.5 1.5 0 0 1 7 5zM8.1 7.1v12.8h7.8V7.1zM9.5 2.5h5v2.5h-5zM9.7 12h4.6v6.3H9.7z` |
+| battery (the battery label's mark, §6.9; the watch battery field) | f | `M7 5h10a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5v-14A1.5 1.5 0 0 1 7 5zM8.1 7.1v12.8h7.8V7.1zM9.5 2.5h5v2.5h-5zM9.7 12h4.6v6.3H9.7z` |
+| flame (calories) | f | `M12 2.5c.7 3.3 2.7 5 4.4 7 1.6 1.9 2.6 3.8 2.6 6a7 7 0 0 1-14 0c0-2.4 1.1-4.3 2.6-5.9.2 1.8 1 3 2.4 3.6-.6-3.9.4-7.4 2-10.7z` |
+| stopwatch (intensity minutes) | s | `M19.5 13.5a7.5 7.5 0 1 1-15 0a7.5 7.5 0 1 1 15 0M12 13.5V9.5M9.5 2.5h5M12 2.5V6M18.2 6.8l1.4-1.4` |
+| wheelchair (pushes) | s | `M11.6 4a1.6 1.6 0 1 1-3.2 0a1.6 1.6 0 1 1 3.2 0M10 8v6h5.5l2.5 5.5M10 11h4.5M7.4 11.6a5.6 5.6 0 1 0 7.9 6.4` |
+| calendar (date, weekday) | s | `M5 5.5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1zM4 10h16M8.5 3v4.5M15.5 3v4.5` |
+| event (next calendar event) | s | `M5 5.5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1zM4 10h16M8.5 3v4.5M15.5 3v4.5M13.5 13.5h3v3h-3z` |
+| sunrise | s | `M3 18h18M7 18a5 5 0 0 1 10 0M12 10.5V3.5M9 6.5l3-3 3 3` |
+| cloud (sky) | s | `M7 18.5h10.5a3.9 3.9 0 0 0 .6-7.8A6 6 0 0 0 6.6 10.6a4 4 0 0 0 .4 7.9z` |
+| cloudSun (sky) | s | `M8.5 2.5V4M3 8h1.5M4.6 4.1l1 1M12.4 4.1l-1 1M11.7 8.6A3.4 3.4 0 0 0 5.3 9.7M9.5 20h8.5a3.4 3.4 0 0 0 .5-6.8A5 5 0 0 0 9 13.2a3.4 3.4 0 0 0 .5 6.8z` |
+| rain (sky) | s | `M7 14.5h10.5a3.6 3.6 0 0 0 .6-7.2A5.6 5.6 0 0 0 7 7.2a3.7 3.7 0 0 0 0 7.3zM8.5 17.5l-1 3M12.5 17.5l-1 3M16.5 17.5l-1 3` |
+| snow (sky) | s | `M7 14.5h10.5a3.6 3.6 0 0 0 .6-7.2A5.6 5.6 0 0 0 7 7.2a3.7 3.7 0 0 0 0 7.3zM8 17.5v3M6.5 19h3M15.5 17.5v3M14 19h3` |
+| storm (sky) | s | `M7 14.5h10.5a3.6 3.6 0 0 0 .6-7.2A5.6 5.6 0 0 0 7 7.2a3.7 3.7 0 0 0 0 7.3zM13 15.5l-2.5 3.5h3.5L11.5 22` |
+| fog (sky) | s | `M3.5 8h17M6 12h14M3.5 16h17M8 20h9` |
+| thermo (temperature, high / low) | s | `M10 13.7V5a2 2 0 0 1 4 0v8.7a4 4 0 1 1-4 0zM12 9v8` |
+| gauge (pressure) | s | `M4.8 17.5a8.5 8.5 0 1 1 14.4 0M12 13.5l3.5-4.5M7.5 17.5h9` |
+| run (weekly running) | s | `M17.8 4.5a1.8 1.8 0 1 1-3.6 0a1.8 1.8 0 1 1 3.6 0M13.5 8L11 13.5M13.5 8l3 3 2.5-.5M13.5 8l-3.5 1-2.5 2.5M11 13.5l3 2.5-1 4.5M11 13.5l-2.5 3-3.5 1` |
+| bike (weekly cycling) | s | `M9.8 16a3.8 3.8 0 1 1-7.6 0a3.8 3.8 0 1 1 7.6 0M21.8 16a3.8 3.8 0 1 1-7.6 0a3.8 3.8 0 1 1 7.6 0M6 16l3.5-6.5H16L18 16M9.5 9.5L13 16H6M16 9.5l-1-3h2.5M8 7h3` |
+| hourglass (recovery) | s | `M7 3.5h10M7 20.5h10M8 3.5c0 4.5 4 5.5 4 8.5s-4 4-4 8.5M16 3.5c0 4.5-4 5.5-4 8.5s4 4 4 8.5` |
+| stress | s | `M2.5 13h4l2-5 3.5 10 3-8 2 3h4.5` |
+| drop (pulse ox) | s | `M12 3.5s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11zM14 14.5a2 2 0 1 1-4 0a2 2 0 1 1 4 0` |
+| breath (respiration) | s | `M3 9h10.5A2.5 2.5 0 1 0 11 6.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7` |
+| lungs (VO2 max) | s | `M12 3.5v7.5M12 11c-1.6 0-3-1-3-2.5M12 11c1.6 0 3-1 3-2.5M8.5 7C5.5 8 4 12 4 16.5c0 2 1 3 2.5 3s3-1 3-3V9M15.5 7c3 1 4.5 5 4.5 9.5 0 2-1 3-2.5 3s-3-1-3-3V9` |
+| solar (solar input) | s | `M5 21l2-7h10l2 7zM6 17.5h12M12 14v7M12 2.5V4M5.8 5.3l1.1 1.1M18.2 5.3l-1.1 1.1M8.5 10.5a3.5 3.5 0 0 1 7 0` |
+| moon (sleep score) | f | `M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z` |
+| trend (training status) | s | `M3.5 17.5l5.5-5.5 4 4 7-7M15 9h5v5` |
+| flag (race predictions and paces) | f | `M5 21V3h1.6v18zM6.6 4h12v9h-12zM6.6 4h3v3h-3zM12.6 4h3v3h-3zM9.6 7h3v3h-3zM15.6 7h3v3h-3zM6.6 10h3v3h-3zM12.6 10h3v3h-3z` |
+| golf (last round) | s | `M10 20V3.5l7 3-7 3M5.5 20.5h9M19.5 18a1.5 1.5 0 1 1-3 0a1.5 1.5 0 1 1 3 0` |
 
 Bells in the pills are Material Symbols (Apache 2.0, the same Sukrara's card uses), 960 box, `transform:
 translate(cx − 11.8, cy − 11.8) scale(0.0246) translate(0 960)`: **paused** (quiet / a side muted)
@@ -193,7 +219,7 @@ default is the reference's (every case starts from it):
 | privacy | `privacy`: `open`, `private`, `revealed` (held); `reveal`: the fraction of the 5 s left | open, 0.6 | the setting + touch-and-hold (§8) |
 | phone connected | `phone`: true/false | true | watch |
 | colour check | `filter`: `none`, `redshift`, `grey` | none | reference only (§8) |
-| field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); others fixed in the reference: 14°, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8 | 6420, 82 | watch / Sukrara (time in range, until the end of the phone's day) |
+| field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); `vals`: `{field: value}` for any other field of §6.10 (`null` = the watch hasn't it), over the reference's fixed values (`fieldData()`: 14° sun, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8, …); `statute`: the watch's units are statute (ft, mi; the values come in the watch's unit); `tz2Label`: the second zone's city | 6420, 82, none, false, NYC | watch (its complications, §6.10) / Sukrara (time in range, until the end of the phone's day) |
 | settings | §11 | | |
 | side elements | `sideL`, `sideR`: `battery`, `sensor`, `level`, `none` | battery, level | the settings (§11) |
 | mockup only | `size` (px), `bezel`, `metal`: `carbon`/`bronze` | 584, true, carbon | not the face's |
@@ -203,7 +229,7 @@ default is the reference's (every case starts from it):
 The face is a stack of rows, **centred between the date and the bottom fields, as large as the circle allows**. When
 the row under the value is empty, everything re-centres and grows; when it holds something, the numbers step down.
 
-**Rows** (top to bottom): top field (if a top field is chosen) · time · value (or a message) · chip row (if any).
+**Rows** (top to bottom): top fields (if either top field is chosen) · time · value (or a message) · chip row (if any).
 Gaps: top field → time 20, time → value 22, value → chip row 18.
 
 **Chip row kind**: `pill` when a pill shows (§6.6) · `age` when only the reading's time shows (late / old), or the
@@ -307,10 +333,18 @@ Text on the arc **r = 160 from 300° to 60°** (clockwise, so it reads left to r
 (startOffset 50 %), font 26, weight 500, letter-spacing 2: `WEEKDAY␣` (soft) `DAY` (weight 700, ink) `␣MONTH` (soft);
 ␣ = no-break space. Always-on: weekday/month dim, day soft.
 
-### 6.2 Top field
-One field (§6.10) centred on the baseline **tfBase**, font TF (24–26), icon size `round(TF·0.83)` centred at
-(x, tfBase − TF·0.334), runs laid left to right (icon, gap, text), the whole centred on x = 0. Icon soft, text ink.
-Hidden in always-on (its row stays). `none` removes the row (and the layout re-centres).
+### 6.2 Top fields
+Two settings, *Top field 1* and *Top field 2* (§11), any field of §6.10. The fields chosen are one run on the baseline
+**tfBase**, font TF (24–26), icon size `round(TF·0.83)` centred at (x, tfBase − TF·0.334), runs laid left to right
+(icon, gap, text), **fields 26 apart** as at the bottom, the whole run centred on x = 0: one field alone (either one) is
+centred as before, two sit side by side under the date (`fields-top-two`, `fields-top-second-only`). Icon soft, text
+ink (a treatment in its colours, as at the bottom).
+- **Too long**: the run's room is the circle's width at the row's cap height, `2·halfAt(tfBase − TF·0.668)` (§4, the
+  time's rule: 258 px with the chip row empty, 221 with a pill). Wider: the less important field goes, by the bottom's
+  rule (§6.10: the treatment 2 > the others 1; of two alike, the second), and the other is centred alone
+  (`fields-top-too-long`, `fields-top-meal`). The row's height and the size set (§4) never depend on it.
+- A field with nothing to show (the treatment with none) takes no room; the other is centred.
+- Hidden in always-on (its row stays). Both `none` removes the row (and the layout re-centres).
 
 ### 6.3 Time
 `H:MM`, no leading zero on the hour, 24 h or 12 h as the watch is set (no AM/PM mark). Font px = T / 0.668, weight
@@ -503,24 +537,55 @@ fixed gaps (the numbers in the table); fields 26 apart. The line starts at `s₀
 arc (centred). A text piece starting at arc length s sits on the arc from there (glyphs follow the curve, upright to
 it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s + 10)/172 rad, rotated by a − 180°.
 
-| Field | Pieces |
-|---|---|
-| steps (default top field) | steps icon (soft), 5, `6,420` (ink) |
-| treatment (default 2nd) | per item: its mark (▼ rapid / ● carbs, in its colour), 4, amount in its colour weight 600 (`4.5u`, `45g`); items 8 apart; then 9, time since (soft): `▼ 4.5u ● 45g 35m` |
-| weather | sun, 6, `14°` |
-| sunset | sunset, 6, `17:42` |
-| body battery | bolt, 4, `62` |
-| altitude | mountain, 6, `1,240 m` |
-| heart rate | heart, 5, `64` |
-| notifications | bell, 5, `3` |
-| time in range (Sukrara, today; default 1st) | ring, 5, `82%` (`--` when not known, `fields-tir-unknown`) |
-| second time zone | globe, 6, the city's code and its time: `NYC 4:09` (the city: §11) |
-| floors | stairs, 5, `8` |
-| sensor ending (automatic) | sensor, 5, hours left (`5h`) |
-| no phone (automatic) | phoneOff, 5, `No phone` |
+Every field can go in every slot (top 1, top 2, bottom 1, bottom 2; §11). Each is its icon (soft), a gap, its text
+(ink) (`fields()` in aura.js: key → icon, gap, format; `fieldData()` the reference's values):
 
-- **No value**: a field whose value the watch doesn't have (no weather yet, no altitude fix, time in range not known)
-  shows `--`; the treatment field with no last treatment is left out (`fields-no-treatment`); `none` shows nothing.
+| Field (key) | Pieces (reference value) | From (the watch: `Toybox.Complications` type, or what the face reads) |
+|---|---|---|
+| time in range (`tir`; Sukrara, today; default bottom 1) | ring, 5, `82%` (`--` when not known, `fields-tir-unknown`) | Sukrara |
+| treatment (`treatment`; default bottom 2) | per item: its mark (▼ rapid / ● carbs, in its colour), 4, amount in its colour weight 600 (`4.5u`, `45g`); items 8 apart; then 9, time since (soft): `▼ 4.5u ● 45g 35m` | Sukrara |
+| steps (`steps`; default top 1) | steps, 5, `6,420` | STEPS |
+| floors (`floors`) | stairs, 5, `8` | FLOORS_CLIMBED |
+| calories (`calories`) | flame, 5, `1,840` | CALORIES |
+| intensity minutes (`intensity`; this week) | stopwatch, 5, `95` | INTENSITY_MINUTES |
+| wheelchair pushes (`pushes`) | wheelchair, 5, `3,120` | WHEELCHAIR_PUSHES |
+| heart rate (`heart`) | heart, 5, `64` | HEART_RATE |
+| Body Battery (`bodyBattery`) | bolt, 4, `62` | BODY_BATTERY |
+| stress (`stress`) | stress, 5, `28` | STRESS |
+| pulse ox (`spo2`) | drop, 5, `97%` | PULSE_OX |
+| respiration (`respiration`) | breath, 5, `14` | RESPIRATION_RATE |
+| sleep score (`sleep`) | moon, 5, `84` | SLEEP_SCORE |
+| recovery time (`recovery`) | hourglass, 5, `18h` (Sukrara's compact duration) | RECOVERY_TIME |
+| weather (`weather`) | its sky's icon (sun, cloudSun, cloud, rain, snow, storm, fog; sun while not known), 6, `14°` | Weather.getCurrentConditions (condition, temperature) |
+| temperature (`temperature`) | thermo, 4, `21°` | CURRENT_TEMPERATURE |
+| today's high and low (`highLow`) | thermo, 4, `18°/9°` | Weather.getDailyForecast, today |
+| forecast tomorrow, in 2 days, in 3 days (`forecast1` … `forecast3`) | its sky's icon, 6, the day and its high / low: `Tue 19°/10°` | Weather.getDailyForecast (FORECAST_WEATHER_1DAY … 3DAY's days) |
+| sunrise, sunset (`sunrise`, `sunset`) | sunrise / sunset, 6, `7:51` / `17:42` | SUNRISE, SUNSET |
+| pressure (`pressure`; at sea level) | gauge, 5, `1013 hPa` | SEA_LEVEL_PRESSURE |
+| altitude (`altitude`) | mountain, 6, `1,240 m` (`ft` in statute) | ALTITUDE |
+| date (`date`), weekday (`weekday`) | calendar, 5, `16 Nov` / `Mon 16` (the face's words) | the clock (DATE, WEEKDAY_MONTHDAY) |
+| second time zone (`tz2`) | globe, 6, the city's code and its time: `NYC 4:09` (the city: §11) | the clock and the city |
+| next calendar event (`events`) | event, 5, `14:30` (the watch's text) | CALENDAR_EVENTS |
+| watch battery (`battery`) | battery, 3, `86%` | the watch (BATTERY) |
+| solar input (`solar`) | solar, 5, `40%` | SOLAR_INPUT |
+| notifications (`notifications`) | bell, 5, `3` | NOTIFICATION_COUNT |
+| training status (`training`) | trend, 5, `Productive` (the watch's words) | TRAINING_STATUS |
+| VO2 max running, cycling (`vo2Run`, `vo2Bike`) | lungs, 5, `52` / `48` | VO2MAX_RUN, VO2MAX_BIKE |
+| weekly running, cycling (`runWeek`, `bikeWeek`) | run / bike, 5, `24.6 km` / `142 km` (one decimal under 100; `mi` in statute) | WEEKLY_RUN_DISTANCE, WEEKLY_BIKE_DISTANCE |
+| race predictions (`race5k`, `race10k`, `raceHalf`, `raceMarathon`) | flag, 5, the distance and the time: `5K 22:41`, `21K 1:45:12` | RACE_PREDICTOR_* |
+| race paces (`pace5k` … `paceMarathon`) | flag, 5, the distance and the pace: `10K 4:45/km` (`/mi` in statute) | RACE_PACE_PREDICTOR_* |
+| last golf round (`golf`) | golf, 5, `84(+12)` (the watch's text) | LAST_GOLF_ROUND_SCORE |
+| sensor ending (automatic) | sensor, 5, hours left (`5h`) | Sukrara |
+| no phone (automatic) | phoneOff, 5, `No phone` | the watch |
+
+Every complication type of SDK 9.3 is a field or part of one (DATE / WEEKDAY_MONTHDAY are drawn from the clock in the
+face's words; the forecast complications' days are drawn from the weather's daily forecast, which also has their high
+and low). Spanish: the face's words (`mar 19°/10°`, `lun 16`), thousands with `.` and decimals with `,` (`1.840`,
+`24,6 km`); the watch's own texts (events, training status, golf) as the watch gives them.
+
+- **No value**: a field whose value the watch doesn't have (no weather yet, no altitude fix, time in range not known,
+  a complication this watch doesn't publish) shows `--`, with its label where it has one (`Tue --`, `10K --`,
+  `fields-unknown`); the treatment field with no last treatment is left out (`fields-no-treatment`); `none` shows nothing.
 - **Automatic**: in Sukrara's sensor countdown (default the last 8 h) the first field becomes *sensor ending*, **unless a
   sensor rail is on either side** (it already counts the hours, in amber); with the phone out of reach it becomes *no
   phone*, whatever the sides (in the countdown too: the phone out of reach is the more urgent). The edge cases, each a
@@ -537,7 +602,7 @@ it). An icon piece starting at s is centred at P(164, a) with a = 232° − (s +
     (`sensor-rail-ending-same-fields`), and go through the overflow rule below (`sensor-rail-ending-meal`); without a
     rail *sensor ending* (priority 3) keeps its place beside a meal.
 - **Too long for the arc** (> 304 px): drop the least important field until it fits (sensor / no phone 3 > treatment 2
-  > others 1). A meal next to steps drops steps (`fields-meal-steps`); time in range (the default 1st) is short enough
+  > others 1; of two alike, the second). A meal next to steps drops steps (`fields-meal-steps`); time in range (the default 1st) is short enough
   to stay beside a meal.
 - Hidden in always-on.
 
@@ -586,7 +651,7 @@ The dial stops short of every text, so no dial line reads as a strike-through (w
   6.5 px (the glyphs stroked 13 px, round joins). The smaller texts are cut by their line grown 5.5 px (at 24 px the
   grown glyphs would merge into it anyway): the line's box is from Atkinson's ascender 0.73 em over the baseline to its
   descender 0.2 em under it, and the top field's reaches up to its icon (max(0.73·TF, icon/2 + 0.334·TF)):
-  - the top field: (−w/2 − 5.5, tfBase − up − 5.5, w + 11, up + 0.2·TF + 11), rx 5.5;
+  - the top fields (w the whole run): (−w/2 − 5.5, tfBase − up − 5.5, w + 11, up + 0.2·TF + 11), rx 5.5;
   - the side labels (battery, sensor), each line with its mark: on the left (−171.5, baseline − 0.73·fs − 5.5,
     its width + 11, 0.93·fs + 11), on the right mirrored (ending at 171.5), rx 5.5;
   - the date: a band along its arc, centre r 169.5, 30 wide, over its width (each glyph + its letter-spacing 2) + 5.5 at
@@ -659,7 +724,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 | alerts | low, very-low, low-carbs-taken, muted-low, muted-in-range, muted-forever, muted-long, high, high-insulin-taken, quiet-ended, very-high, extremely-high, falling-fast-in-range | every band and pill, durations, a countdown run out |
 | sensor | warmup, almost, ending, ended-sending, ended, none, phone-lost, battery-low, none-es, ended-es, rail-days, rail-last-day, rail-ending, rail-ending-aod, rail-ending-night, rail-ending-private, rail-both-ending, rail-ended-sending, rail-ended, rail-warmup, rail-almost, rail-ending-no-phone, rail-none, rail-ending-same-fields, rail-ending-meal, rail-no-dates, rail-g7 | sensor, phone, battery states; Spanish messages under the one-line battery label; the sensor rail through its life and every edge case of the automatic *sensor ending* field (§6.10) |
 | modes | awake, aod, night, night-low, night-dial-high, private, private-held, private-act, private-old, redshift, grey, spanish | modes and the colour checks |
-| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, heart-rate, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off, spark-clear-label, spark-steep-rise, spark-steep-drop, spark-rise-then-fall, spark-centred-pill, spark-centred-mmol-pill, spark-centred-age, spark-centred-late-pill, spark-ray-up-level, spark-ray-down-battery, spark-ray-up-sensor, spark-ray-flat-none | fields and settings, missing values and readings |
+| fields | default, meal, meal-steps, no-treatment, hiking, sukrara, tir-unknown, heart-rate, green-off, green-very-good, green-good, battery-both, battery-percent, battery-both-spark, trend-arrow, trend-spark, spark-turning, spark-old, spark-gap, spark-panned, spark-overflow, spark-wide-range, spark-short-value, spark-old-gap, seconds-off, spark-clear-label, spark-steep-rise, spark-steep-drop, spark-rise-then-fall, spark-centred-pill, spark-centred-mmol-pill, spark-centred-age, spark-centred-late-pill, spark-ray-up-level, spark-ray-down-battery, spark-ray-up-sensor, spark-ray-flat-none, top-two, top-second-only, top-too-long, top-meal, health, weather, weather-skies, training, activity, watch, day, unknown, spanish, statute | fields and settings, missing values and readings; two top fields, every kind of field |
 | sides | mirrored, battery-sensor, sensor-battery-high, battery-low-sensor-ending, battery-both-right, level-sensor-warmup, none-level, none-none, battery-twice, level-twice, level-twice-high, level-twice-contours, level-twice-glow, level-left-contours, level-left-lasers, level-left-glow, level-twice-aod-very-low, level-left-aod, level-left-night-low, private-no-rail, private-no-rail-needed, private-no-rail-quiet, mmol-widest-right, lo-es, ended-es, labels-above-pill | the side elements on either side, both, none; marks; the dial's focus; private, always-on and night with them |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
@@ -687,7 +752,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 - A mute with no end (`alerts-muted-forever`), Mute all while out of range (the side's pill with its time).
 - Phone out of reach: the value ages by itself (late → old → no readings) from the reading's own time.
 - A new sensor mid-warm-up after a gap; sensor ended while the phone is away.
-- The top field set to none; both bottom fields the same kind is allowed.
+- Both top fields set to none; any two fields the same kind is allowed.
 
 **Also check against docs/42 §11**: the 2-second glance (time, value, direction, current); nothing moves, flashes or
 turns saturated in range except the slow sweep; night stays dim and calm (the dial at 65 %, no sweep); every state can be left.
@@ -719,8 +784,8 @@ All user settings (the Garmin face's own, set on the watch and in the Connect IQ
 | Trend (`trendStyle`) | arrow (`arrow`), sparkline (`spark`) | sparkline |
 | Seconds sweep (`seconds`) | on, off | on |
 | Green in range (`rangeColour`) | on, off | on |
-| Top field (`topField`) | weather, steps, sunset (`sunset`), body battery (`bodyBattery`), altitude, notifications, time in range (`tir`), second time zone (`tz2`), floors, heart rate (`heart`), none | steps |
-| Bottom fields (`fields`: two keys) | the same list + treatment (`treatment`) | time in range, treatment |
+| Top field 1, Top field 2 (`topField`, `topField2`) | every field of §6.10: time in range (`tir`), last treatment (`treatment`), steps, floors, calories, intensity minutes (`intensity`), wheelchair pushes (`pushes`), heart rate (`heart`), Body Battery (`bodyBattery`), stress, pulse ox (`spo2`), respiration, sleep score (`sleep`), recovery time (`recovery`), weather, temperature, today's high and low (`highLow`), forecast tomorrow / in 2 days / in 3 days (`forecast1`–`forecast3`), sunrise, sunset, pressure, altitude, date, weekday, second time zone (`tz2`), next calendar event (`events`), watch battery (`battery`), solar input (`solar`), notifications, training status (`training`), VO2 max running / cycling (`vo2Run`, `vo2Bike`), weekly running / cycling (`runWeek`, `bikeWeek`), race prediction 5K / 10K / half / marathon (`race5k` …), race pace 5K / 10K / half / marathon (`pace5k` …), last golf round (`golf`), none | steps, none |
+| Bottom field 1, Bottom field 2 (`fields`: two keys) | the same list | time in range, treatment |
 | Left side (`sideL`), right side (`sideR`) | watch battery (`battery`), sensor days (`sensor`), glucose rail (`level`), nothing (`none`); the same on both is allowed | left battery, right glucose rail |
 | Battery label (`battLabel`) | days, percent, both | days |
 | Private (`privacy`) | on (`private`), off (`open`) | off |

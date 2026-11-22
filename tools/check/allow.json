@@ -44,7 +44,7 @@
   ],
   "images_extra": [],
   "large_bytes": 2000000,
-  "large_ok": [],
+  "large_ok": ["contracts/watchface/aura/expect.json"],
   "secret_ok": [
     "contracts/protocol/identity/vectors.json",
     "contracts/protocol/ogs/*",
