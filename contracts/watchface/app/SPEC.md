@@ -118,12 +118,15 @@ watch never decides it (payload `log.order`).
 
 ## 8. The watch's last treatment
 
-**One** treatment, never the amount: rapid still working (4 h) > long-acting still working (24 h unless the phone knows
-better) > carbs still working (3 min per gram, 30 min – 3 h) > the newest rapid > long > carbs (within 12 h) > none (the
-slot shows the second metric). The phone sends the newest of each kind with its time and its active end; the watch
-picks at every draw (`contracts/watchface/payload/watch-last.json`). Drawn as a stack the size of a ring
-(`lastStack`): the kind's mark (▼ rapid filled, ▽ long-acting outlined, ● carbs) in its colour, then the time since in
-Sukrara's short durations, split over two lines from 1 h ("1h" / "5m").
+**The widget's**, one source of truth (the owner, 2026-11-22: "follow whatever app settings does for the widget… a
+single source of truth, so they are synced"): the card's last treatment (`LastTreatment`, the payload's `last` chain:
+running rapid insulin, the one covering the alert, else the newest rapid (4 h) or carbs (3 min per gram, 30 min – 3 h);
+never long-acting or notes) and the phone's settings for it as resolved for the watch (`graph.last` on / off,
+`graph.lastElse` = what the slot shows meanwhile, the payload's `else`). The watch shows **one** treatment, never the
+amount: the first item of the first step of `last` whose end is still ahead at every draw (so it goes on time with the
+phone away). Drawn as a stack the size of a ring (`lastStack`): the kind's mark (▼ rapid filled, ● carbs) in its
+colour, then the time since in Sukrara's short durations, split over two lines from 1 h ("1h" / "5m"). Long-acting
+shows on the watch when it shows on the widget: a change to the rule changes both.
 
 ## 9. Data field (`S.df*`)
 
@@ -156,7 +159,8 @@ Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *G
 *Same as the app* until the watch gets its own value, set on the phone (Share with apps › Watches › Garmin › Sukrara on
 your watch); the phone resolves and sends them: metrics (main / second / third, last treatment, no recent treatment, ring
 order, number in the ring, rewards), the chart's time, treatment marks, the % column, green in range, the report period
-(switchable on the watch, not saved). Watch-only: *Sparkline on alerts* (on), *Log complication shows* (time since).
+(switchable on the watch, not saved). Watch-only: *Sparkline on alerts* (on), *Log complication shows* (time since);
+the data field's *Glucose in the activity* (on: its value every reading in the activity's file, Garmin Connect's chart).
 Never per watch: unit, limits, alerts.
 
 ## 12. States and exits (for FEATURES.md)
@@ -167,19 +171,23 @@ amount → hold to log (let go: back to the amount; BACK: the list) → logged (
 Treatment (the amount) / Remind less / Mute (toast, close) / dismiss. The app's alert → Treatment / Remind less ↔ Remind as
 usual / Mute (lengths) / BACK (the alert stays on the phone). Data field: no input; its alert dismisses as Garmin's do.
 
-## 13. Open (decide with the owner)
+## 13. Decided, and open
 
-1. **Logging with the phone out of reach**: keep the entry and send it later (`S.logQueued`), or never send late
-   (research: Trio sent old doses minutes later; "Not sent, nothing saved" after ~2 min).
-2. **Two buzzes**: if Garmin Connect also forwards Sukrara's phone notifications, an alert buzzes twice; the phone can't
-   know. The Garmin page says which to keep (proposal: Sukrara's own, with its buttons, and Sukrara off in Garmin
-   Connect's notifications). Words to design.
-3. The name **CGM-GB-value** in the fēnix 8's own face editor.
-4. **Arrows in complication values**: the code session's simulator test of Garmin's system fonts (Descent, fēnix 8, Venu
-   3, FR 265S, fēnix 7); if they draw → / ↗ / ↘ / ↑ / ↓, the arrow goes after the number with a watch setting to turn
-   it off. Face It and the fēnix 8 editor need a real watch.
-5. The data field writing glucose into the activity file (Garmin Connect charts it): on by default?
-6. 12 h for "nothing for hours" (§8).
+Decided (the owner, 2026-11-22):
+1. **Logging with the phone out of reach**: the watch keeps the entry with its own time and sends it when the phone is
+   back (`S.logQueued`, "Waiting for the phone"); the phone's same-kind check runs when it arrives.
+2. **Two buzzes**: Sukrara's own alert on the watch (with its buttons); the Garmin page tells the person to switch
+   Sukrara off in Garmin Connect's notifications. Watches without `showNotification` (API 5.0: Venu 2 family, Venu
+   Sq 2, D2 Air X10) keep Garmin Connect's forwarded one.
+3. **The data field writes glucose into the activity file** (Garmin Connect charts it), on by default; a data-field
+   setting turns it off.
+4. **The last treatment** follows the widget (§8): no rule or duration of the watch's own.
+
+Open:
+1. The name **CGM-GB-value** in the fēnix 8's own face editor (a real fēnix 8-class watch).
+2. **Arrows in complication values**: the simulator test of Garmin's system fonts (Descent, fēnix 8, Venu 3, FR 265S,
+   fēnix 7); if they draw → / ↗ / ↘ / ↑ / ↓, the arrow goes after the number with a watch setting to turn it off. Face
+   It and the fēnix 8 editor need a real watch.
 
 **Not designed yet**: round MIP (64 colours, 218–280 px), rectangular (Venu Sq 2, Venu X1) and Instinct mono layouts
 (#221); Aura's two top fields and more field options (#240, design-first in `aura.js`); the phone's Garmin page rows for
