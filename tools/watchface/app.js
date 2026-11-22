@@ -20,6 +20,71 @@ var WL = (function () {
     veryHigh: '#FF7A45', extremelyHigh: '#E35BD0', now: '#C6F432', rapid: '#8AB4FF', long: '#C9B0FF', carbs: '#FFB74D',
     note: '#B4B4B4', on: '#1C1C1E', card: '#141416', card2: '#1C1C1F'
   };
+  var PAL_AMOLED = PAL;
+  // Round MIP, 64 colours (every channel 00 / 55 / AA / FF), no alpha: each token picked by hand from the 64 for its hue
+  // and for sunlight (bright and saturated; nothing darker than 55 carries meaning). `card2` (a selected row, a chip, a
+  // secondary button) becomes an outline (CARD); `grid` (unlit tracks) a 50 % dither of 555555. Contrast: SPEC §14.
+  var PAL_MIP = {
+    ink: '#FFFFFF', soft: '#AAAAAA', dim: '#555555', faint: '#555555', grid: 'DITHER:#555555:50', band: '#555555', band2: '#555555',
+    grey: '#AAAAAA', veryLow: '#FF0000', low: '#FF5555', tight: '#00FF55', target: '#AAFF00', high: '#FFAA00',
+    veryHigh: '#FF5500', extremelyHigh: '#FF55FF', now: '#AAFF00', rapid: '#55AAFF', long: '#AAAAFF', carbs: '#FFAA55',
+    note: '#AAAAAA', on: '#000000', card: '#000000', card2: 'CARD'
+  };
+  // ---- screen classes (SPEC §14) ------------------------------------------------------------------------------------
+  // One reference watch per class, from its device files (SDK 9.3 compiler.json / simulator.json / personality.mss):
+  // the screen, the panel, touch, the glance's icon and content areas (px, in the glance row), the data-field slots
+  // used for the references, the buttons (round: the angle of each, clockwise from 12; rect: the y of each on the
+  // right edge, px from the top). `s` = layout units → px: round layouts are drawn in the 390's units (s = W / 390),
+  // rectangular ones in the Venu Sq 2's (s = 1 there, 1.2 on the Venu X1, whose extra room goes to the layout).
+  var CLS = {
+    r390: { dev: 'descentmk343mm', name: 'Descent Mk3 43 mm', w: 390, h: 390, ppi: 325, touch: true, keys: { start: 60, back: 120, up: 270, down: 240 }, gi: [40, 34, 60, 60], ga: [112, 13, 248, 103] },
+    r360: { dev: 'fr265s', name: 'Forerunner 265S', w: 360, h: 360, ppi: 327, touch: true, keys: { start: 63, back: 119, up: 270, down: 241 }, gi: [42, 28, 50, 50], ga: [102, 0, 240, 104] },
+    r416: { dev: 'fenix843mm', name: 'fēnix 8 43 mm', w: 416, h: 416, ppi: 326, touch: true, keys: { start: 60, back: 119, up: 270, down: 242 }, gi: [16, 49, 40, 40], ga: [74, 8, 325, 122] },
+    r454: { dev: 'fenix847mm', name: 'fēnix 8 47 / 51 mm', w: 454, h: 454, ppi: 326, touch: true, keys: { start: 60, back: 121, up: 269, down: 240 }, gi: [17, 53, 45, 45], ga: [82, 11, 349, 130] },
+    r466: { dev: 'fenix9pro51mm', name: 'fēnix 9 Pro 51 mm', w: 466, h: 466, ppi: 310, touch: true, keys: { start: 61, back: 121, up: 268, down: 240 }, gi: [16, 55, 45, 45], ga: [84, 10, 359, 130] },
+    m218: { dev: 'fr255s', name: 'Forerunner 255S', w: 218, h: 218, ppi: 202, mip: true, touch: false, keys: { start: 60, back: 119, up: 270, down: 241 }, gi: [22, 16, 40, 40], ga: [69, 0, 140, 79] },
+    m240: { dev: 'fenix7s', name: 'fēnix 7S', w: 240, h: 240, ppi: 202, mip: true, touch: true, keys: { start: 60, back: 118, up: 271, down: 242 }, gi: [25, 20, 40, 40], ga: [70, 9, 151, 63] },
+    m260: { dev: 'fenix7', name: 'fēnix 7', w: 260, h: 260, ppi: 202, mip: true, touch: true, keys: { start: 61, back: 119, up: 269, down: 240 }, gi: [25, 24, 40, 40], ga: [70, 13, 171, 63] },
+    m280: { dev: 'fenix7x', name: 'fēnix 7X', w: 280, h: 280, ppi: 202, mip: true, touch: true, keys: { start: 62, back: 122, up: 268, down: 238 }, gi: [25, 27, 40, 40], ga: [70, 16, 191, 63] },
+    sq2: { dev: 'venusq2', name: 'Venu Sq 2', w: 320, h: 360, ppi: 326, rect: true, touch: true, keys: { start: 114, back: 331 }, gi: [0, 45, 40, 40], ga: [66, 8, 254, 114] },
+    x1: { dev: 'venux1', name: 'Venu X1', w: 448, h: 486, ppi: 326, rect: true, touch: true, keys: { start: 130, back: 375 }, gi: [34, 56, 65, 65], ga: [112, 14, 314, 150] }
+  };
+  // the data-field slots of the references, from each watch's own layouts ([x, y, w, h, obscured sides] px): half = the
+  // top of 2 Fields, band = the middle of 3 Fields, quarter = the left of a 4-field layout's middle row, cap = that
+  // layout's top (on the rectangles a plain band: nothing is obscured). `i` = Sukrara's slot.
+  var DFS = {
+    r390: { half: { i: 0, f: [[0, 0, 390, 194, 'LTR'], [0, 195, 390, 194, 'LRB']] }, band: { i: 1, f: [[0, 0, 390, 124, 'LTR'], [0, 125, 390, 138, 'LR'], [0, 266, 390, 124, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 390, 139, 'LTR'], [0, 140, 194, 108, 'L'], [195, 140, 194, 108, 'R'], [0, 251, 390, 139, 'LRB']] }, cap: { i: 0, f: [[0, 0, 390, 139, 'LTR'], [0, 140, 194, 108, 'L'], [195, 140, 194, 108, 'R'], [0, 251, 390, 139, 'LRB']] } },
+    r360: { half: { i: 0, f: [[0, 0, 360, 179, 'LTR'], [0, 181, 360, 179, 'LRB']] }, band: { i: 1, f: [[0, 0, 360, 116, 'LTR'], [0, 118, 360, 125, 'LR'], [0, 245, 360, 115, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 360, 128, 'LTR'], [0, 130, 179, 107, 'L'], [181, 130, 179, 107, 'R'], [0, 239, 360, 121, 'LRB']] }, cap: { i: 0, f: [[0, 0, 360, 128, 'LTR'], [0, 130, 179, 107, 'L'], [181, 130, 179, 107, 'R'], [0, 239, 360, 121, 'LRB']] } },
+    r416: { half: { i: 0, f: [[0, 0, 416, 206, 'LTR'], [0, 209, 416, 207, 'LRB']] }, band: { i: 1, f: [[0, 0, 416, 134, 'LTR'], [0, 137, 416, 144, 'LR'], [0, 284, 416, 132, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 416, 148, 'LTR'], [0, 151, 206, 123, 'L'], [209, 151, 206, 123, 'R'], [0, 277, 416, 139, 'LRB']] }, cap: { i: 0, f: [[0, 0, 416, 148, 'LTR'], [0, 151, 206, 123, 'L'], [209, 151, 206, 123, 'R'], [0, 277, 416, 139, 'LRB']] } },
+    r454: { half: { i: 0, f: [[0, 0, 454, 225, 'LTR'], [0, 228, 454, 226, 'LRB']] }, band: { i: 1, f: [[0, 0, 454, 146, 'LTR'], [0, 149, 454, 157, 'LR'], [0, 309, 454, 145, 'LRB']] }, quarter: { i: 2, f: [[0, 0, 454, 161, 'LTR'], [228, 164, 225, 135, 'R'], [0, 164, 225, 135, 'L'], [0, 302, 454, 152, 'LRB']] }, cap: { i: 0, f: [[0, 0, 454, 161, 'LTR'], [228, 164, 225, 135, 'R'], [0, 164, 225, 135, 'L'], [0, 302, 454, 152, 'LRB']] } },
+    r466: { half: { i: 0, f: [[0, 0, 466, 231, 'LTR'], [0, 234, 466, 232, 'LRB']] }, band: { i: 1, f: [[0, 0, 466, 150, 'LTR'], [0, 153, 466, 162, 'LR'], [0, 318, 466, 148, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 466, 165, 'LTR'], [0, 168, 231, 139, 'L'], [234, 168, 231, 139, 'R'], [0, 310, 466, 156, 'LRB']] }, cap: { i: 0, f: [[0, 0, 466, 165, 'LTR'], [0, 168, 231, 139, 'L'], [234, 168, 231, 139, 'R'], [0, 310, 466, 156, 'LRB']] } },
+    m218: { half: { i: 0, f: [[0, 0, 218, 108, 'LTR'], [0, 110, 218, 108, 'LRB']] }, band: { i: 1, f: [[0, 0, 218, 70, 'LTR'], [0, 72, 218, 75, 'LR'], [0, 149, 218, 69, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 218, 77, 'LTR'], [0, 79, 108, 65, 'L'], [110, 79, 108, 65, 'R'], [0, 146, 218, 72, 'LRB']] }, cap: { i: 0, f: [[0, 0, 218, 77, 'LTR'], [0, 79, 108, 65, 'L'], [110, 79, 108, 65, 'R'], [0, 146, 218, 72, 'LRB']] } },
+    m240: { half: { i: 0, f: [[0, 0, 240, 119, 'LTR'], [0, 122, 240, 119, 'LRB']] }, band: { i: 1, f: [[0, 0, 240, 76, 'LTR'], [0, 78, 240, 84, 'LR'], [0, 164, 240, 76, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 240, 85, 'LTR'], [0, 87, 119, 66, 'L'], [121, 87, 119, 66, 'R'], [0, 156, 240, 85, 'LRB']] }, cap: { i: 0, f: [[0, 0, 240, 85, 'LTR'], [0, 87, 119, 66, 'L'], [121, 87, 119, 66, 'R'], [0, 156, 240, 85, 'LRB']] } },
+    m260: { half: { i: 0, f: [[0, 0, 260, 129, 'LTR'], [0, 131, 260, 129, 'LRB']] }, band: { i: 1, f: [[0, 0, 260, 82, 'LTR'], [0, 84, 260, 92, 'LR'], [0, 178, 260, 82, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 260, 92, 'LTR'], [0, 94, 129, 72, 'L'], [131, 94, 129, 72, 'R'], [0, 168, 260, 92, 'LRB']] }, cap: { i: 0, f: [[0, 0, 260, 92, 'LTR'], [0, 94, 129, 72, 'L'], [131, 94, 129, 72, 'R'], [0, 168, 260, 92, 'LRB']] } },
+    m280: { half: { i: 0, f: [[0, 0, 280, 139, 'LTR'], [0, 141, 280, 139, 'LRB']] }, band: { i: 1, f: [[0, 0, 280, 89, 'LTR'], [0, 91, 280, 98, 'LR'], [0, 191, 280, 89, 'LRB']] }, quarter: { i: 1, f: [[0, 0, 280, 99, 'LTR'], [0, 101, 139, 78, 'L'], [141, 101, 139, 78, 'R'], [0, 181, 280, 99, 'LRB']] }, cap: { i: 0, f: [[0, 0, 280, 99, 'LTR'], [0, 101, 139, 78, 'L'], [141, 101, 139, 78, 'R'], [0, 181, 280, 99, 'LRB']] } },
+    sq2: { half: { i: 0, f: [[7, 30, 313, 132, ''], [7, 211, 313, 132, '']] }, band: { i: 1, f: [[0, 17, 320, 97, ''], [0, 132, 320, 97, ''], [0, 248, 320, 97, '']] }, quarter: { i: 1, f: [[0, 17, 320, 97, ''], [0, 139, 157, 97, ''], [160, 139, 160, 97, ''], [0, 256, 320, 97, '']] }, cap: { i: 0, f: [[0, 17, 320, 97, ''], [0, 139, 157, 97, ''], [160, 139, 160, 97, ''], [0, 256, 320, 97, '']] } },
+    x1: { half: { i: 0, f: [[0, 0, 448, 241, ''], [0, 244, 448, 242, '']] }, band: { i: 1, f: [[0, 0, 448, 156, ''], [0, 159, 448, 169, ''], [0, 331, 448, 155, '']] }, quarter: { i: 1, f: [[0, 0, 448, 173, ''], [0, 176, 222, 144, ''], [225, 176, 222, 144, ''], [0, 323, 448, 163, '']] }, cap: { i: 0, f: [[0, 0, 448, 173, ''], [0, 176, 222, 144, ''], [225, 176, 222, 144, ''], [0, 323, 448, 163, '']] } }
+  };
+  // the atlas set: the font sizes (px) a class may use. The 390 keeps its approved sizes exactly; every other class
+  // snaps each size (390 size × s) to the nearest of its set, never under the floor (14 px AMOLED, 12 px MIP)
+  var ATLAS = {
+    amoled: [14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 80, 88, 96, 104, 112, 120, 128, 136, 148],
+    mip: [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88]
+  };
+  var KC = null, SE = 1;
+  function snapFont(px) {
+    if (!KC || KC.id === 'r390') return px;
+    var set = KC.mip ? ATLAS.mip : ATLAS.amoled, best = set[0];
+    for (var i = 0; i < set.length; i++) if (Math.abs(set[i] - px) < Math.abs(best - px) || (Math.abs(set[i] - px) === Math.abs(best - px) && set[i] > best)) best = set[i];
+    return best;
+  }
+  function fe(fs) { return snapFont(fs * SE) / SE; }
+  // stroke widths: AMOLED scales them (never under 1 px); MIP draws whole pixels: hairlines 1, anything else ≥ 2
+  function snapStroke(px, w390) {
+    if (!KC || KC.id === 'r390') return px;
+    if (!KC.mip) return Math.max(1, Math.round(px * 2) / 2);
+    return w390 <= 1.6 ? 1 : Math.max(2, Math.round(px));
+  }
   var FAM = "'Atkinson Hyperlegible Next', system-ui, sans-serif";
   var KEYS = ' 0123456789.:·ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzáéíóúñÁÉÍÓÚÑ';
   var WV = [0.28, 0.648, 0.407, 0.548, 0.576, 0.614, 0.588, 0.598, 0.51, 0.615, 0.595, 0.21, 0.21, 0.24, 0.626, 0.613, 0.645, 0.669, 0.569, 0.552, 0.694, 0.694, 0.392, 0.512, 0.631, 0.541, 0.824, 0.693, 0.714, 0.592, 0.724, 0.614, 0.592, 0.558, 0.69, 0.593, 0.856, 0.623, 0.575, 0.607, 0.525, 0.566, 0.485, 0.564, 0.538, 0.314, 0.558, 0.55, 0.252, 0.245, 0.492, 0.262, 0.845, 0.55, 0.548, 0.566, 0.574, 0.349, 0.471, 0.326, 0.54, 0.461, 0.684, 0.481, 0.449, 0.46, 0.525, 0.538, 0.252, 0.548, 0.54, 0.55, 0.626, 0.569, 0.392, 0.714, 0.69, 0.693];
@@ -27,8 +92,9 @@ var WL = (function () {
   for (var i = 0; i < KEYS.length; i++) WM[KEYS[i]] = WV[i];
   // the big numbers: Atkinson's own figures at weight 600 (SPEC.md §2)
   var BIG = { '0': 0.656, '1': 0.43, '2': 0.569, '3': 0.592, '4': 0.621, '5': 0.602, '6': 0.617, '7': 0.529, '8': 0.621, '9': 0.578, ':': 0.253, '.': 0.253, 'L': 0.548, 'O': 0.737, 'H': 0.699, 'I': 0.415 };
-  function tw(s, fs) { var t = 0; s = String(s); for (var k = 0; k < s.length; k++) t += WM[s[k]] !== undefined ? WM[s[k]] : 0.6; return t * fs * 1.03; }
-  function bw(s, fs) { var t = 0; s = String(s); for (var k = 0; k < s.length; k++) t += BIG[s[k]] !== undefined ? BIG[s[k]] : 0.6; return t * fs; }
+  // widths are measured at the font size the watch really draws (fe: the class's atlas size, in layout units)
+  function tw(s, fs) { var t = 0; s = String(s); fs = fe(fs); for (var k = 0; k < s.length; k++) t += WM[s[k]] !== undefined ? WM[s[k]] : 0.6; return t * fs * 1.03; }
+  function bw(s, fs) { var t = 0; s = String(s); fs = fe(fs); for (var k = 0; k < s.length; k++) t += BIG[s[k]] !== undefined ? BIG[s[k]] : 0.6; return t * fs; }
   function r1(x) { return Math.round(x * 10) / 10; }
   function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
   // Kovatchev's risk transform (Diabetes Care 1997), g in mg/dL; 0 at 112.5
@@ -168,28 +234,90 @@ var WL = (function () {
   }
 
   // ---- the display list ------------------------------------------------------------------------------------------
-  function G() { this.els = []; }
+  // The display list. Layouts are written in layout units (the 390's px on round screens, the Venu Sq 2's on
+  // rectangles); each element keeps them and carries the transform to the screen's px (`gt`), so a port reads the
+  // same numbers × s. Font sizes go to the class's atlas size, strokes to whole px on MIP (snapFont, snapStroke), and
+  // on MIP every colour goes through col(): the 64 colours, no alpha (solid, outline or dither, SPEC §14).
+  function G() { this.els = []; this.T = [{ s: SE, x: 0, y: 0 }]; this.pats = {}; }
+  G.prototype.gt = function () {
+    var t = this.T[this.T.length - 1];
+    return 'translate(' + r1(t.x) + ' ' + r1(t.y) + ') scale(' + Math.round(t.s * 10000) / 10000 + ')';
+  };
+  // a nested area (the glance's content box): its own origin and scale, in the current units
+  G.prototype.push = function (s, x, y) { var t = this.T[this.T.length - 1]; this.T.push({ s: t.s * s, x: t.x + x * t.s, y: t.y + y * t.s }); SE = t.s * s; };
+  G.prototype.pop = function () { this.T.pop(); SE = this.T[this.T.length - 1].s; };
+  G.prototype.sw = function (w, raw) { return raw || !w ? w : snapStroke(w * SE, w) / SE; };
+  // MIP: one colour of the 64 for a fill / stroke / text with an opacity; returns [colour, opacity, outline]
+  G.prototype.col = function (c, op, role) {
+    if (!KC || !KC.mip || !c || c === 'none' || c.indexOf('url(') === 0) return [c, op];
+    if (c === 'CARD') return ['#000000', 1, '#AAAAAA'];
+    if (c.indexOf('DITHER:') === 0) { var q = c.split(':'); return [this.dither(q[1], Number(q[2])), 1]; }
+    var rgb = parseCol(c), a = rgb[3] * (op === undefined ? 1 : op);
+    if (rgb[0] + rgb[1] + rgb[2] === 0) return ['#000000', 1];
+    var full = near64(rgb);
+    // a tint (a fill under 60 %): a dither of the tint's colour at 3× its opacity; a checkerboard from 10 %, else one
+    // pixel in four (the chart's very-good band 13 %: 005500 50 %; good 7.5 %: 005500 25 %)
+    if (role === 'fill' && a < 0.6) {
+      var t = near64([rgb[0] * Math.min(1, a * 3), rgb[1] * Math.min(1, a * 3), rgb[2] * Math.min(1, a * 3)]);
+      if (t === '#000000') t = near64(rgb.slice(0, 3).map(function (v) { return v === Math.max(rgb[0], rgb[1], rgb[2]) ? 85 : 0; }));
+      return [this.dither(t, a >= 0.1 ? 50 : 25), 1];
+    }
+    if (a >= 0.5) return [role === 'text' && full === '#555555' ? '#AAAAAA' : full, 1];
+    var dark = near64([rgb[0] * 0.55, rgb[1] * 0.55, rgb[2] * 0.55]);
+    return [dark === '#000000' ? '#555555' : dark, 1];
+  };
+  // an ordered dither in screen px: 50 % = a checkerboard, 25 % = one pixel in four
+  G.prototype.dither = function (hex, pct) {
+    var id = 'd' + hex.slice(1) + pct + '_' + Math.round(SE * 1000);
+    this.pats[id] = { hex: hex, pct: pct, u: 1 / SE };
+    return 'url(#' + id + ')';
+  };
+  G.prototype.add = function (e) {
+    var f = this.col(e.fill, e.op, e.isT ? 'text' : 'fill'), st = this.col(e.stroke, e.op, 'stroke');
+    e.fill = f[0]; e.stroke = st[0];
+    if (KC && KC.mip) e.op = 1;
+    if (f[2]) { e.stroke = f[2]; e.sw = snapStroke(2, 2) / SE; }
+    e.gt = this.gt();
+    this.els.push(e);
+  };
   G.prototype.p = function (d, o) {
     o = o || {};
-    this.els.push({ isP: true, isC: false, isR: false, isT: false, d: d, fill: o.fill || 'none', stroke: o.stroke || 'none', sw: o.sw || 0, op: o.op === undefined ? 1 : o.op, cap: o.cap || 'round', join: o.join || 'round', dash: o.dash || 'none', tf: o.tf || '' });
+    this.add({ isP: true, isC: false, isR: false, isT: false, d: d, fill: o.fill || 'none', stroke: o.stroke || 'none', sw: this.sw(o.sw || 0, o.raw), op: o.op === undefined ? 1 : o.op, cap: o.cap || 'round', join: o.join || 'round', dash: o.dash || 'none', tf: o.tf || '', rule: o.rule || 'evenodd' });
   };
   G.prototype.c = function (cx, cy, r, o) {
     o = o || {};
-    this.els.push({ isP: false, isC: true, isR: false, isT: false, cx: r1(cx), cy: r1(cy), r: r1(r), fill: o.fill || 'none', stroke: o.stroke || 'none', sw: o.sw || 0, op: o.op === undefined ? 1 : o.op, dash: o.dash || 'none' });
+    this.add({ isP: false, isC: true, isR: false, isT: false, cx: r1(cx), cy: r1(cy), r: r1(r), fill: o.fill || 'none', stroke: o.stroke || 'none', sw: this.sw(o.sw || 0), op: o.op === undefined ? 1 : o.op, dash: o.dash || 'none', tf: '' });
   };
   G.prototype.r = function (x, y, w, h, rx, o) {
     o = o || {};
-    this.els.push({ isP: false, isC: false, isR: true, isT: false, x: r1(x), y: r1(y), w: r1(Math.max(0, w)), h: r1(Math.max(0, h)), rx: rx || 0, fill: o.fill || 'none', stroke: o.stroke || 'none', sw: o.sw || 0, op: o.op === undefined ? 1 : o.op });
+    this.add({ isP: false, isC: false, isR: true, isT: false, x: r1(x), y: r1(y), w: r1(Math.max(0, w)), h: r1(Math.max(0, h)), rx: rx || 0, fill: o.fill || 'none', stroke: o.stroke || 'none', sw: this.sw(o.sw || 0), op: o.op === undefined ? 1 : o.op, tf: '' });
   };
   G.prototype.t = function (x, y, s, o) {
     o = o || {};
-    this.els.push({ isP: false, isC: false, isR: false, isT: true, x: r1(x), y: r1(y), s: [String(s)], fs: o.fs || 20, fw: o.fw || 500, fill: o.fill || PAL.ink, anchor: o.anchor || 'middle', ls: o.ls || 0, op: o.op === undefined ? 1 : o.op, fam: FAM, tf: o.tf || '' });
+    this.add({ isP: false, isC: false, isR: false, isT: true, x: r1(x), y: r1(y), s: [String(s)], fs: Math.round(fe(o.fs || 20) * 1000) / 1000, fw: o.fw || 500, fill: o.fill || PAL.ink, anchor: o.anchor || 'middle', ls: o.ls || 0, op: o.op === undefined ? 1 : o.op, fam: FAM, tf: o.tf || '' });
   };
+  function parseCol(c) {
+    var m = /^rgba?\(([^)]+)\)/.exec(c);
+    if (m) { var v = m[1].split(',').map(Number); return [v[0], v[1], v[2], v.length > 3 ? v[3] : 1]; }
+    var h = c.replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 1];
+  }
+  // the nearest of the 64 (each channel to 00 / 55 / AA / FF)
+  function near64(rgb) {
+    return '#' + rgb.slice(0, 3).map(function (v) { var q = Math.round(clamp(v, 0, 255) / 85) * 85; return (q < 16 ? '0' : '') + q.toString(16).toUpperCase(); }).join('');
+  }
+  // WCAG 2 contrast of two colours
+  function lum(c) { var v = parseCol(c).slice(0, 3).map(function (x) { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; }
+  function contrast(a, b) { var x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  // the ink on a block of colour: white on AMOLED (Aura's very-low block); on MIP white or black, whichever reads
+  // better (black on the light 64-colour reds and pinks: FF5555 white 3.1:1, black 6.7:1)
+  function inkOn(col) { if (!KC || !KC.mip) return '#FFFFFF'; return contrast('#FFFFFF', col) >= contrast('#000000', col) ? '#FFFFFF' : '#000000'; }
   G.prototype.icon = function (name, cx, cy, size, col) {
     var ic = ICON[name];
     if (!ic) return;
     var s = size / 24, tf = 'translate(' + r1(cx - size / 2) + ' ' + r1(cy - size / 2) + ') scale(' + r1(s * 1000) / 1000 + ')';
-    if (ic.s) this.p(ic.d, { stroke: col, sw: (ic.sw || 2.2), tf: tf });
+    if (ic.s) this.p(ic.d, { stroke: col, sw: (ic.sw || 2.2), tf: tf, raw: true });
     else this.p(ic.d, { fill: col, tf: tf });
   };
   // Sukrara's arrow (aura.js): pointing right, turned by the rate; doubled from 3 mg/dL/min
@@ -199,13 +327,18 @@ var WL = (function () {
       'M' + q(0.46) + ' 0L' + q(0.06) + ' ' + q(0.3) + 'L' + q(0.16) + ' 0L' + q(0.06) + ' ' + q(-0.3) + 'Z';
     if (Math.abs(rate) >= 3) d += 'M' + q(0.12) + ' 0L' + q(-0.28) + ' ' + q(0.3) + 'L' + q(-0.18) + ' 0L' + q(-0.28) + ' ' + q(-0.3) + 'Z';
     var deg = r1(-clamp(rate / 3, -1, 1) * 90);
-    this.p(d, { fill: col, tf: 'translate(' + r1(cx) + ' ' + r1(cy) + ') rotate(' + deg + ')' });
+    this.p(d, { fill: col, tf: 'translate(' + r1(cx) + ' ' + r1(cy) + ') rotate(' + deg + ')', rule: 'nonzero' });
   };
 
   function valColour(d, opts) {
     if (d.age >= 5) return PAL.grey;
     if (opts && opts.inverted) return '#FFFFFF';
     return PAL[bandOf(d.g)];
+  }
+  // the value group's width at a size (as value() lays it out)
+  function valueWidth(d, fs) {
+    var str = fmtG(d.g, d.unit), arrow = Number.isFinite(d.rate) && str !== 'LO' && str !== 'HI';
+    return bw(str, fs) + (arrow ? fs * 0.1 + fs * 0.668 * 0.78 : 0);
   }
   // the value and its arrow as one group; returns its box
   function value(g, d, x, y, fs, o) {
@@ -280,7 +413,9 @@ var WL = (function () {
     var w = padL + iw + fs * 0.3 + tw(p.text, fs) + padR;
     var x0 = o.anchor === 'start' ? x : o.anchor === 'end' ? x - w : x - w / 2;
     var col = PAL[p.k] || PAL.note;
-    g.r(x0, y - h / 2, w, h, h / 2, { fill: col, op: p.filled ? 1 : 0.24 });
+    // tonal on AMOLED (the kind's colour at 24 %); MIP has no tint that keeps the text readable: an outline
+    if (KC && KC.mip && !p.filled) g.r(x0, y - h / 2, w, h, h / 2, { stroke: col, sw: 2 });
+    else g.r(x0, y - h / 2, w, h, h / 2, { fill: col, op: p.filled ? 1 : 0.24 });
     var fg = p.filled ? PAL.on : col;
     g.icon(p.icon || p.k, x0 + padL + iw / 2, y, iw, fg);
     g.t(x0 + padL + iw + fs * 0.3, y + fs * 0.35, p.text, { fs: fs, fw: 600, fill: fg, anchor: 'start' });
@@ -420,11 +555,12 @@ var WL = (function () {
     var x0 = X(spanMin);
     // band and limits
     var yH = Y(H), yL = Y(L);
-    g.r(x0, Math.min(yH, yL), xNow - x0, Math.abs(yL - yH), 0, { fill: o.white ? '#FFFFFF' : PAL.tight, op: o.white ? 0.07 : 0.09 });
+    var WI = o.ink || '#FFFFFF';
+    if (!(o.white && WI === '#000000')) g.r(x0, Math.min(yH, yL), xNow - x0, Math.abs(yL - yH), 0, { fill: o.white ? WI : PAL.tight, op: o.white ? 0.07 : 0.09 });
     g.p('M' + r1(x0) + ' ' + r1(yH) + 'H' + r1(xNow), { stroke: '#5C5C62', sw: 1.4 * sc, dash: r1(1.5 * sc) + ' ' + r1(4.5 * sc), op: OP(H) });
     g.p('M' + r1(x0) + ' ' + r1(yL) + 'H' + r1(xNow), { stroke: '#5C5C62', sw: 1.4 * sc, dash: r1(1.5 * sc) + ' ' + r1(4.5 * sc), op: OP(L) });
     // the line, a piece per pair so each fades by its height
-    var old = d.age >= 5, lcol = o.white ? 'rgba(255,255,255,0.85)' : old ? PAL.dim : PAL.soft;
+    var old = d.age >= 5, lcol = o.white ? (o.ink === '#000000' ? '#000000' : 'rgba(255,255,255,0.85)') : old ? PAL.dim : PAL.soft;
     for (var k = 1; k < pts.length; k++) {
       var a = pts[k - 1], b = pts[k], op = Math.min(OP(a.v), OP(b.v));
       g.p('M' + r1(X(a.m + d.age)) + ' ' + r1(Y(a.v)) + 'L' + r1(X(b.m + d.age)) + ' ' + r1(Y(b.v)), { stroke: lcol, sw: 5.4 * sc, op: op });
@@ -432,9 +568,9 @@ var WL = (function () {
     var ex = X(d.age), ey = Y(last), col = valColour(d, {});
     if (!old && Number.isFinite(d.rate)) {
       var ang = -clamp(d.rate / 3, -1, 1) * Math.PI / 2, len = 22 * sc;
-      g.p('M' + r1(ex) + ' ' + r1(ey) + 'L' + r1(ex + len * Math.cos(ang)) + ' ' + r1(ey + len * Math.sin(ang)), { stroke: o.white ? '#FFFFFF' : bandOf(d.g) === 'veryLow' ? PAL.veryLow : col, sw: 3.4 * sc, dash: r1(4.5 * sc) + ' ' + r1(4.5 * sc), cap: 'butt' });
+      g.p('M' + r1(ex) + ' ' + r1(ey) + 'L' + r1(ex + len * Math.cos(ang)) + ' ' + r1(ey + len * Math.sin(ang)), { stroke: o.white ? WI : bandOf(d.g) === 'veryLow' ? PAL.veryLow : col, sw: 3.4 * sc, dash: r1(4.5 * sc) + ' ' + r1(4.5 * sc), cap: 'butt' });
     }
-    if (!old) g.c(ex, ey, 7.5 * sc, { fill: o.white ? '#FFFFFF' : PAL[bandOf(d.g)] });
+    if (!old) g.c(ex, ey, 7.5 * sc, { fill: o.white ? WI : PAL[bandOf(d.g)] });
     else g.c(ex, ey, 7.5 * sc, { fill: '#000000', stroke: PAL.grey, sw: 3 * sc });
   }
 
@@ -469,18 +605,60 @@ var WL = (function () {
     g.t(x0 + fs * 0.8 + 4 + tw(a, fs) + 6, y, s, { fs: fs, fw: 500, fill: PAL.soft, anchor: 'start' });
     return w;
   }
+  // the page dots: at the bottom on round screens; on rectangles in the bottom-left corner (the bottom row's middle is
+  // the pill's)
   function pageDots(g, n, i) {
-    for (var k = 0; k < n; k++) g.c((k - (n - 1) / 2) * 13, 180, k === i ? 4 : 3, { fill: k === i ? PAL.ink : PAL.dim });
+    for (var k = 0; k < n; k++) {
+      var o = (k - (n - 1) / 2) * 13, r = k === i ? 4 : 3, st = { fill: k === i ? PAL.ink : PAL.dim };
+      if (KC && KC.rect) g.c(-KC.hw + 24 + o, KC.hh - 9, r, st); else g.c(o, 180, r, st);
+    }
   }
-  // a hint at a button: a short arc on the rim at its angle (START 60°, BACK 120°, DOWN 240°, UP 270°, LIGHT 300°)
+  // a hint at a button. Round: a short arc on the rim at the button's angle (the 390: START 60°, BACK 120°, DOWN 240°,
+  // UP 270°; every class takes its own angles from its device file). Rectangles: a bar on the right edge at the
+  // button's height (START top, BACK bottom; no UP / DOWN there). `cfg.buttons: 'two'` (the Venu / vívoactive /
+  // Approach S50 / S72 / D2 Air X10 rounds) has no UP / DOWN either.
   function btnHint(g, ang, label, o) {
     o = o || {}; var col = o.col || PAL.ink;
+    var name = { 60: 'start', 120: 'back', 270: 'up', 240: 'down' }[ang];
+    if (KC && (KC.rect || KC.two) && (name === 'up' || name === 'down')) return;
+    if (KC && KC.rect) {
+      var y = KC.keys[name] / KC.s - KC.hh;
+      g.p('M' + r1(KC.hw - 3) + ' ' + r1(y - 20) + 'V' + r1(y + 20), { stroke: col, sw: 5, op: o.op || 0.9 });
+      return;
+    }
+    if (KC && KC.keys[name] !== undefined) ang = KC.keys[name];
     g.p(arc(190, ang - 9, ang + 9), { stroke: col, sw: 5, op: o.op || 0.9 });
     if (label) {
       var p = P(o.r || 160, ang), fs = o.fs || 18;
       g.t(p[0] + (o.dx || 0), p[1] + fs * 0.35 + (o.dy || 0), label, { fs: fs, fw: 600, fill: col, anchor: o.anchor || (ang < 180 ? 'end' : 'start') });
     }
   }
+  // the screen's edge: a ring on round screens; on rectangles a rounded rectangle 6 units in. `p` < 1 draws that share
+  // of it clockwise from START (hold to log fills from the button that is held)
+  function rim(g, col, sw, p) {
+    KC.rimPx = Math.max(KC.rimPx || 0, (6 + sw / 2) * KC.s);
+    if (!KC.rect) {
+      var a0 = KC.keys.start;
+      if (p >= 1) g.p(arc(189, 0, 359.9), { stroke: col, sw: sw });
+      else g.p(arc(189, a0, a0 + 359.9 * p), { stroke: col, sw: sw, cap: 'round' });
+      return;
+    }
+    var i = 6, x0 = -KC.hw + i, x1 = KC.hw - i, y0 = -KC.hh + i, y1 = KC.hh - i, rc = 22, ys = KC.keys.start / KC.s - KC.hh;
+    var d = 'M' + r1(x1) + ' ' + r1(ys) + 'V' + r1(y1 - rc) + 'A' + rc + ' ' + rc + ' 0 0 1 ' + r1(x1 - rc) + ' ' + r1(y1) + 'H' + r1(x0 + rc) +
+      'A' + rc + ' ' + rc + ' 0 0 1 ' + r1(x0) + ' ' + r1(y1 - rc) + 'V' + r1(y0 + rc) + 'A' + rc + ' ' + rc + ' 0 0 1 ' + r1(x0 + rc) + ' ' + r1(y0) +
+      'H' + r1(x1 - rc) + 'A' + rc + ' ' + rc + ' 0 0 1 ' + r1(x1) + ' ' + r1(y0 + rc) + 'V' + r1(ys);
+    var L = 2 * (x1 - x0 + y1 - y0) - 8 * rc + 2 * Math.PI * rc;
+    g.p(d, { stroke: col, sw: sw, cap: p >= 1 ? 'butt' : 'round', dash: p >= 1 ? 'none' : r1(L * p) + ' ' + r1(L) });
+  }
+  // does a box (layout units) sit inside the screen, clear of the rim, 2 px in?
+  function inside(x0, y0, x1, y1) {
+    var m = ((KC.rimPx || 0) + 2) / KC.s;
+    if (KC.rect) return x0 >= -KC.hw + m && x1 <= KC.hw - m && y0 >= -KC.hh + m && y1 <= KC.hh - m;
+    var R = 195 - m;
+    return [[x0, y0], [x1, y0], [x0, y1], [x1, y1]].every(function (q) { return q[0] * q[0] + q[1] * q[1] <= R * R; });
+  }
+  // the whole screen in one colour (the very-low block, the field's alert)
+  function full(g, col, op) { g.r(-KC.hw - 2, -KC.hh - 2, 2 * KC.hw + 4, 2 * KC.hh + 4, 0, { fill: col, op: op }); }
 
   // ---- the screens --------------------------------------------------------------------------------------------
   var S = {};
@@ -510,19 +688,20 @@ var WL = (function () {
     return tot > 0;
   }
   S.appA = function (g, d, c) {
-    clock(g, d, -150, { fs: 22 });
+    var dr = drops();
+    if (!dr.clock) clock(g, d, -150, { fs: 22 });
     if (d.age >= 20 || d.sensorState === 'warmup') noValue(g, d, -66);
     else value(g, d, 0, -58, 88);
     var ms = metricSlots(d, c);
     drawSlot(g, ms[1], -142, -82, 25, 6, 22);
     drawSlot(g, ms[0], 142, -82, 25, 6, 22);
-    var bx = { x0: -134, x1: 146, y0: -22, y1: 88 };
-    var sc0 = null;
-    var sc = chart(g, d, bx, { hours: c.hours || 12, lfs: 14, ms: 10 });
+    // without the % column and the 70 / 180 labels the plot takes their room
+    var bx = { x0: dr.dist ? -150 : -134, x1: dr.yLabels ? 158 : 146, y0: -22, y1: 88 };
+    var sc = chart(g, d, bx, { hours: c.hours || 12, lfs: 14, ms: 10, yLabels: !dr.yLabels });
     // the % column over the line's start, masking it (the widget's)
-    if (c.dist !== false) pctColumn(g, d, sc, bx, { lfs: 14, hours: c.hours || 12, dot: 4.6, mask: true });
+    if (c.dist !== false && !dr.dist) pctColumn(g, d, sc, bx, { lfs: 14, hours: c.hours || 12, dot: 4.6, mask: true });
     // the bottom row: Sukrara's pill (or the reading's time), else the sensor's days (the last treatment is in its ring)
-    if (!chipRow(g, d, 146, { fs: 19 })) sensorTag(g, d, 0, 152, { fs: 17 });
+    if (!chipRow(g, d, 146, { fs: 19 }) && !dr.sensor) sensorTag(g, d, 0, 152, { fs: 17 });
     if (c.dots !== false) pageDots(g, 2, 0);
   };
 
@@ -586,26 +765,49 @@ var WL = (function () {
     g.p('M45.09,45.19Q47.00,44.09 48.91,45.19L57.93,50.40Q59.83,51.50 57.93,52.60L48.91,57.81Q47.00,58.91 45.09,57.81L36.07,52.60Q34.17,51.50 36.07,50.40ZM32.36,56.84Q32.36,54.63 34.26,55.73L43.28,60.95Q45.19,62.05 45.19,64.25L45.19,74.66Q45.19,76.86 43.28,75.77L34.26,70.55Q32.36,69.45 32.36,67.25ZM48.81,64.25Q48.81,62.05 50.72,60.95L59.74,55.73Q61.64,54.63 61.64,56.84L61.64,67.25Q61.64,69.45 59.74,70.55L50.72,75.77Q48.81,76.86 48.81,74.66Z', { fill: '#FFFFFF', tf: tf, op: op === undefined ? 1 : op });
     g.p('M59.50,42.00A6.50,6.50 0 1,0 72.50,42.00A6.50,6.50 0 1,0 59.50,42.00Z', { fill: PAL.now, tf: tf, op: op === undefined ? 1 : op });
   }
+  // The glance row as the watch lays it out (KC.gi / KC.ga: the icon and content areas of the device file, centred on
+  // the screen as the selected glance). The content is drawn in its own units: the 390's glance (248 × 103) scaled to
+  // the content's height or width, whichever is tighter (the 390's own glance stays 1:1).
+  function glanceBox() {
+    var ga = KC.ga, gi = KC.gi, sc = Math.min(ga[3] / 103, ga[2] / 248) / KC.s;
+    var x0 = (ga[0] - KC.w / 2) / KC.s, cy = 0;
+    var icon = gi ? { x: (gi[0] + gi[2] / 2 - KC.w / 2) / KC.s, y: (gi[1] + gi[3] / 2 - (ga[1] + ga[3] / 2)) / KC.s, r: gi[2] / 2 / KC.s } : null;
+    return { sc: sc, x0: x0, cy: cy, w: ga[2] / KC.s / sc, h: ga[3] / KC.s / sc, rowH: ga[3] / KC.s, icon: icon };
+  }
   function glanceLoop(g, d, draw, o) {
     o = o || {};
-    // the neighbours, as the watch's own list draws them (dimmed: not selected)
-    g.c(-118, -136, 22, { fill: '#3A1416' }); g.icon('heart', -118, -136, 22, PAL.low);
-    g.t(-84, -142, 'Heart Rate', { fs: 17, fw: 600, fill: PAL.dim, anchor: 'start' });
-    g.t(-84, -116, '62 bpm', { fs: 24, fw: 700, fill: PAL.soft, anchor: 'start' });
-    g.c(-118, 136, 22, { fill: '#14213A' }); g.icon('bolt', -118, 136, 22, PAL.rapid);
-    g.t(-84, 130, 'Body Battery', { fs: 17, fw: 600, fill: PAL.dim, anchor: 'start' });
-    g.t(-84, 156, '64', { fs: 24, fw: 700, fill: PAL.soft, anchor: 'start' });
-    g.p('M-150 -84H150M-150 84H150', { stroke: PAL.grid, sw: 1.5 });
-    appIcon(g, -125, 0, 30);
-    if (o.frame) g.r(-83, -51.5, 248, 103, 4, { stroke: PAL.now, sw: 1, dash: '4 4', op: 0.5 });
-    draw();
+    var B = glanceBox(), gap = 65;
+    // the neighbours, as the watch's own list draws them (dimmed: not selected), in the content's units
+    g.push(B.sc, B.x0, B.cy);
+    var ny = B.h / 2 + 84.5, ic = B.icon ? (B.icon.x - B.x0) / B.sc + 7 : -40;
+    [[-ny, '#3A1416', 'heart', PAL.low, 'Heart Rate', '62 bpm'], [ny, '#14213A', 'bolt', PAL.rapid, 'Body Battery', '64']].forEach(function (n) {
+      // on a round screen the row moves in as the circle narrows
+      var dx = 0;
+      if (!KC.rect) { var ys = Math.abs(n[0]) * B.sc, ch = Math.sqrt(Math.max(0, 195 * 195 - ys * ys)); dx = Math.max(0, (-ch + 30 - B.x0) / B.sc - (ic - 24)); }
+      // a row the screen would cut is left out (the mock never shows a clipped row)
+      if (!KC.rect) {
+        var tx1 = B.x0 + (dx + Math.max(tw(n[4], 17), tw(n[5], 24)) + 4) * B.sc, ty0 = (n[0] - 22) * B.sc, ty1 = (n[0] + 26) * B.sc, ix0 = B.x0 + (ic + dx - 22) * B.sc, Rr = 191;
+        if ([[ix0, ty0], [ix0, ty1], [tx1, ty0], [tx1, ty1]].some(function (q) { return q[0] * q[0] + q[1] * q[1] > Rr * Rr; })) return;
+      }
+      g.c(ic + dx, n[0], 22, { fill: n[1] }); g.icon(n[2], ic + dx, n[0], 22, n[3]);
+      g.t(-1 + dx, n[0] - 6, n[4], { fs: 17, fw: 600, fill: PAL.dim, anchor: 'start' });
+      g.t(-1 + dx, n[0] + 20, n[5], { fs: 24, fw: 700, fill: PAL.soft, anchor: 'start' });
+    });
+    g.p('M' + r1(ic - 25) + ' ' + r1(-B.h / 2 - gap / 2) + 'H' + r1(B.w - 15) + 'M' + r1(ic - 25) + ' ' + r1(B.h / 2 + gap / 2) + 'H' + r1(B.w - 15), { stroke: PAL.grid, sw: 1.5 });
+    g.pop();
+    // Sukrara's icon (drawn by the watch; none on the Instinct AMOLEDs' glances)
+    if (B.icon) appIcon(g, B.icon.x, B.icon.y, B.icon.r);
+    g.push(B.sc, B.x0, B.cy);
+    if (o.frame) g.r(0, -B.h / 2, B.w, B.h, 4, { stroke: PAL.now, sw: 1, dash: '4 4', op: 0.5 });
+    draw(B);
+    g.pop();
   }
   // The glance: the widget's top row (as the collapsed notification): the value and its arrow, then as many of the
   // person's metrics as fit, in the card's priority (main, last treatment, second…), the rings without their period
   // label and with a bigger number. A pill or the reading's time sits under the value.
   S.glance = function (g, d, c) {
-    glanceLoop(g, d, function () {
-      var X0 = -83, X1 = 165, R = 23, SW = 5, gapR = 6;
+    glanceLoop(g, d, function (B) {
+      var X0 = 0, X1 = B.w, R = 23, SW = 5, gapR = 6;
       var under = (d.pill && d.age < 5) || d.age >= 1.5;
       var vy = under ? 4 : 20, fs = under ? 54 : 58;
       if (d.age >= 20 || d.sensorState === 'warmup') {
@@ -620,9 +822,15 @@ var WL = (function () {
         }
         return;
       }
+      // the same two places as page 1 (main, then the last treatment or else the second metric), from the right edge.
+      // The places are decided per class with the widest value (288 and its arrow) at the smallest size (58 → 46; 54 →
+      // 42 with a row under it), so they never change with the reading; a glance too narrow even then shows the main
+      // place only, always. The value then takes the largest size that fits beside them (SPEC §14.1)
+      var mets = metricSlots(d, c).slice(0, 2), need = 2 * (2 * R + SW) + gapR + 10, floor = fs - 12;
+      if (X1 - (X0 + valueWidth({ g: 288, unit: d.unit, rate: 1 }, floor)) < need) { mets = mets.slice(0, 1); need = 2 * R + SW + 10; }
+      while (fs > floor && X1 - (X0 + valueWidth(d, fs)) < need) fs -= 2;
       var v = value(g, d, X0, vy, fs, { anchor: 'start' });
-      // metrics from the right edge leftwards while they fit
-      var room = X1 - (v.x1 + 10), x = X1, mets = metricSlots(d, c);
+      var room = X1 - (v.x1 + 10), x = X1;
       mets.forEach(function (m) {
         var w = 2 * R + SW;
         if (room < w) { room = -1; return; }
@@ -770,8 +978,8 @@ var WL = (function () {
     g.t(0, 62, k === 'carbs' ? 'Lows quiet for 15 min' : k === 'rapid' ? 'Highs quiet for 1 h' : 'Nothing goes quiet', { fs: 18, fw: 500, fill: PAL.soft });
     // hold to confirm: the rim fills from START; the words say how
     var p = c.progress === undefined ? 0.45 : c.progress;
-    g.p(arc(189, 0, 359.9), { stroke: PAL.grid, sw: 8 });
-    if (p > 0) g.p(arc(189, 60, 60 + 359.9 * p), { stroke: col, sw: 8, cap: 'round' });
+    rim(g, PAL.grid, 8, 1);
+    if (p > 0) rim(g, col, 8, p);
     g.r(-92, 102, 184, 44, 22, { fill: PAL.card2 });
     g.t(0, 131, 'Hold to log', { fs: 20, fw: 700, fill: PAL.ink });
     btnHint(g, 60, '', { col: col });
@@ -783,7 +991,7 @@ var WL = (function () {
   }
   S.logSending = function (g, d, c) {
     var k = c.kind || 'rapid', col = PAL[k];
-    g.p(arc(189, 0, 359.9), { stroke: col, sw: 8 });
+    rim(g, col, 8, 1);
     g.c(0, -36, 46, { stroke: PAL.grid, sw: 6 });
     g.p(arc(46, 20, 130, 0, -36), { stroke: col, sw: 6 });
     g.icon('phone', 0, -36, 30, PAL.soft);
@@ -815,38 +1023,48 @@ var WL = (function () {
   S.alert = function (g, d, c) {
     var b = bandOf(d.g), low = b === 'low' || b === 'veryLow', very = b === 'veryLow' || b === 'extremelyHigh';
     var col = PAL[b], word = { veryLow: 'VERY LOW', low: 'LOW', high: 'HIGH', veryHigh: 'VERY HIGH', extremelyHigh: 'EXTREMELY HIGH', tight: 'FALLING FAST', target: 'RISING FAST' }[b];
-    if (very) g.r(-200, -200, 400, 400, 0, { fill: col });
-    else g.p(arc(189, 0, 359.9), { stroke: col, sw: 10 });
-    var ink = very ? '#FFFFFF' : col;
+    if (very) full(g, col);
+    else rim(g, col, 10, 1);
+    // on the block: white (MIP: white or black, whichever reads better on the 64-colour block, inkOn)
+    var W0 = inkOn(col), ink = very ? W0 : col;
     g.icon('bell', -tw(word, 20) / 2 - 16, -140, 20, ink);
     g.t(12, -133, word, { fs: 20, fw: 700, fill: ink, ls: 1.5 });
     var spark = c.spark !== false;
     if (spark) {
-      var str = fmtG(d.g, d.unit), vw = bw(str, 84), W = 132, gw = vw + 12 + W, x0 = -gw / 2;
-      value(g, d, x0, -54, 84, { anchor: 'start', arrow: false, col: very ? '#FFFFFF' : undefined, inverted: very });
+      // value + sparkline inside the rim: the sparkline gives way first (132 → 96), then the value (84 → 68)
+      var str = fmtG(d.g, d.unit), vfs = 84, vw = bw(str, vfs), W = 132, gw = vw + 12 + W, x0 = -gw / 2;
+      while (!inside(x0, -54 - fe(vfs) * 0.7, x0 + gw, -54) && (W > 96 || vfs > 68)) {
+        if (W > 96) W -= 4; else vfs -= 4;
+        vw = bw(str, vfs); gw = vw + 12 + W; x0 = -gw / 2;
+      }
+      value(g, d, x0, -54, vfs, { anchor: 'start', arrow: false, col: very ? W0 : undefined, inverted: very });
       if (very) {
         // on the very-low block the sparkline draws in white
         var dd = Object.assign({}, d);
-        auraSpark(g, dd, { x0: x0 + vw + 12, x1: x0 + vw + 12 + W, y0: -112, y1: -56 }, { sc: 0.8, white: true });
+        auraSpark(g, dd, { x0: x0 + vw + 12, x1: x0 + vw + 12 + W, y0: -112, y1: -56 }, { sc: 0.8, white: true, ink: W0 });
       } else auraSpark(g, d, { x0: x0 + vw + 12, x1: x0 + vw + 12 + W, y0: -112, y1: -56 }, { sc: 0.8 });
-    } else value(g, d, 0, -44, 100, { col: very ? '#FFFFFF' : undefined, inverted: very });
+    } else value(g, d, 0, -44, 100, { col: very ? W0 : undefined, inverted: very });
     var tk = low ? 'carbs' : 'rapid';
     var relaxed = c.relaxed;
+    // the secondary buttons on the block: darker (AMOLED); MIP: black, or an outline in the ink when the ink is black
+    var sec = !very ? PAL.card2 : !KC.mip ? 'rgba(0,0,0,0.28)' : W0 === '#000000' ? 'none' : '#000000';
     var rows = [
-      { t: 'Treatment', fill: very ? '#FFFFFF' : PAL[tk], fg: PAL.on, icon: tk },
-      { t: relaxed ? 'Remind as usual' : 'Remind less', fill: very ? 'rgba(0,0,0,0.28)' : PAL.card2, fg: very ? '#FFFFFF' : PAL.ink },
-      { t: 'Mute', fill: very ? 'rgba(0,0,0,0.28)' : PAL.card2, fg: very ? '#FFFFFF' : PAL.ink, icon: 'bellOff' }
+      { t: 'Treatment', fill: very ? W0 : PAL[tk], fg: very && W0 === '#000000' ? '#FFFFFF' : PAL.on, icon: tk },
+      { t: relaxed ? 'Remind as usual' : 'Remind less', fill: sec, fg: very ? W0 : PAL.ink, line: very && KC.mip && W0 === '#000000' },
+      { t: 'Mute', fill: sec, fg: very ? W0 : PAL.ink, icon: 'bellOff', line: very && KC.mip && W0 === '#000000' }
     ];
-    var ys = [-6, 50, 106], ws = [236, 236, 196];
+    var ys = [-6, 50, 106], ws = KC.rect ? [2 * KC.hw - 36, 2 * KC.hw - 36, 2 * KC.hw - 36] : [236, 236, 196];
     rows.forEach(function (r, i) {
       var y = ys[i], w = ws[i];
-      g.r(-w / 2, y - 23, w, 46, 23, { fill: r.fill });
+      g.r(-w / 2, y - 23, w, 46, 23, { fill: r.fill, stroke: r.line ? W0 : 'none', sw: 2 });
       var tw0 = tw(r.t, 20) + (r.icon ? 26 : 0), x0 = -tw0 / 2;
       if (r.icon) g.icon(r.icon, x0 + 9, y, 18, r.fg);
       g.t(x0 + (r.icon ? 26 : 0), y + 7, r.t, { fs: 20, fw: 700, fill: r.fg, anchor: 'start' });
     });
-    if (relaxed) g.t(0, 150, 'Reminders every 30 min', { fs: 15, fw: 500, fill: very ? '#FFFFFF' : PAL.soft });
-    btnHint(g, 60, '', { col: very ? '#FFFFFF' : PAL[tk] });
+    // the relaxed interval under the buttons, where it fits inside the rim (else the button's words say it: SPEC §14.1)
+    var rw = tw('Reminders every 30 min', 15);
+    if (relaxed && inside(-rw / 2, 150 - fe(15) * 0.7, rw / 2, 150 + fe(15) * 0.22)) g.t(0, 150, 'Reminders every 30 min', { fs: 15, fw: 500, fill: very ? W0 : PAL.soft });
+    btnHint(g, 60, '', { col: very ? W0 : PAL[tk] });
   };
   S.remindDone = function (g, d, c) {
     g.c(0, -56, 46, { fill: PAL.low, op: 0.24 });
@@ -934,11 +1152,12 @@ var WL = (function () {
   // Alerts › Connect IQ): a full page for a few seconds, with a vibration
   S.dfAlert = function (g, d) {
     var b = bandOf(d.g), col = PAL[b], very = b === 'veryLow';
-    g.r(-200, -200, 400, 400, 0, { fill: col });
-    g.icon('bell', -tw('LOW', 24) / 2 - 18, -96, 24, '#FFFFFF');
-    g.t(12, -88, very ? 'VERY LOW' : 'LOW', { fs: 24, fw: 700, fill: '#FFFFFF', ls: 1.5 });
-    value(g, d, 0, 30, 116, { col: '#FFFFFF', inverted: true });
-    g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { fs: 20, fw: 600, fill: '#FFFFFF' });
+    full(g, col);
+    var W0 = inkOn(col);
+    g.icon('bell', -tw('LOW', 24) / 2 - 18, -96, 24, W0);
+    g.t(12, -88, very ? 'VERY LOW' : 'LOW', { fs: 24, fw: 700, fill: W0, ls: 1.5 });
+    value(g, d, 0, 30, 116, { col: W0, inverted: true });
+    g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { fs: 20, fw: 600, fill: W0 });
   };
 
   // ---- the watch around it ---------------------------------------------------------------------------------------
@@ -959,18 +1178,288 @@ var WL = (function () {
   // rect elements carry a transform too
   G.prototype.rt = function () {};
 
-  // c.input: another input `d` in data()'s shape (the port's, tools/watchface/app-input.js), drawn instead of the
-  // made-up day
+  // ---- the data field in any slot of any class (S.dfSlot; SPEC §14.4) ------------------------------------------------
+  // cfg.form: whole | half | band | quarter | cap (the slots of DFS). The form is chosen by the room, never by the class:
+  // value + sparkline side by side when a box of 260 × 100 units (× s px) fits inside the slot and the screen; else the
+  // value + arrow alone, the largest atlas size that fits. The other slots show placeholder fields.
+  var OTHER = [['HEART RATE', '142'], ['TIMER', '32:10'], ['PACE', '5:12'], ['DISTANCE', '6.42']];
+  function slotBox(r) {
+    return { x0: (r[0] - KC.w / 2) / KC.s, y0: (r[1] - KC.h / 2) / KC.s, x1: (r[0] + r[2] - KC.w / 2) / KC.s, y1: (r[1] + r[3] - KC.h / 2) / KC.s, obs: r[4] || '' };
+  }
+  // a box of height h inside the slot and the screen, at the slot's side toward the centre, as wide as the circle allows
+  function fitBox(b, h, pad) {
+    var top = b.obs.indexOf('T') >= 0, bot = b.obs.indexOf('B') >= 0, y0, y1, mid = (b.y0 + b.y1) / 2;
+    if (top && !bot) { y1 = b.y1 - pad; y0 = y1 - h; } else if (bot && !top) { y0 = b.y0 + pad; y1 = y0 + h; } else { y0 = mid - h / 2; y1 = mid + h / 2; }
+    if (y0 < b.y0 + pad - 0.01 || y1 > b.y1 - pad + 0.01) return null;
+    var x0 = b.x0 + pad, x1 = b.x1 - pad;
+    if (!KC.rect) {
+      var R = 195 - pad, ym = Math.max(Math.abs(y0), Math.abs(y1));
+      if (y0 < 0 && y1 > 0) ym = Math.max(-y0, y1);
+      if (ym >= R) return null;
+      var hc = Math.sqrt(R * R - ym * ym);
+      x0 = Math.max(x0, -hc); x1 = Math.min(x1, hc);
+    }
+    return x1 - x0 > 0 ? { x0: x0, x1: x1, y0: y0, y1: y1, w: x1 - x0, h: h } : null;
+  }
+  // the largest value (em width `em`, cap 0.668) that fits in the slot, with its label row when there is room
+  function fitValue(b, em, max) {
+    var best = null;
+    for (var h = b.y1 - b.y0 - 8; h >= 24; h -= 2) {
+      var bx = fitBox(b, h, 4); if (!bx) continue;
+      var lab = h >= 64, fsH = (h - (lab ? 24 : 0) - 6) / 0.668, fsW = bx.w * 0.9 / em, fs = Math.min(fsH, fsW, max);
+      if (!best || fs > best.fs + 0.5) best = { box: bx, fs: fs, lab: lab };
+    }
+    if (!best) return null;
+    // the content (label row + value) keeps to the box's side toward the screen's centre: no gap inside it
+    var ch = (best.lab ? 24 : 0) + fe(best.fs) * 0.668 + 6, bb = best.box, top = b.obs.indexOf('T') >= 0, bot = b.obs.indexOf('B') >= 0;
+    var y0 = top && !bot ? bb.y1 - ch : bot && !top ? bb.y0 : (bb.y0 + bb.y1) / 2 - ch / 2;
+    best.box = { x0: bb.x0, x1: bb.x1, y0: y0, y1: y0 + ch, w: bb.w, h: ch };
+    return best;
+  }
+  function emOf(str, arrow) { var t = 0; for (var k = 0; k < str.length; k++) t += BIG[str[k]] !== undefined ? BIG[str[k]] : 0.6; return t + (arrow ? 0.1 + 0.668 * 0.78 : 0); }
+  function dfField(g, d, b, whole) {
+    var band = bandOf(d.g), inv = d.age < 5 && (band === 'veryLow' || band === 'low');
+    if (inv) g.r(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0, 0, { fill: PAL[band], op: band === 'veryLow' ? 1 : 0.85 });
+    var W0 = inv ? inkOn(PAL[band]) : null, lab = inv ? W0 : PAL.soft, str = fmtG(d.g, d.unit), late = d.age >= 1.5;
+    if (whole) {
+      var top = KC.rect ? -KC.hh + 40 : -128;
+      dfLabel(g, 0, top, 'GLUCOSE', { fill: lab });
+      value(g, d, 0, -8, 116, { inverted: inv, col: inv ? W0 : undefined });
+      if (!inv) { var scl = 1.4, Wd = 100 / Math.log(7) * scl * Math.log(19) + 24 * scl; auraSpark(g, d, { x0: -Wd / 2, x1: Wd / 2, y0: 26, y1: 110 }, { sc: scl }); }
+      if (late) g.t(0, 150, d.readAt, { fs: 20, fw: 500, fill: inv ? W0 : PAL.soft });
+      return 'whole';
+    }
+    // value + sparkline side by side (the 390's half and band)
+    if (!inv) {
+      for (var h = Math.min(170, b.y1 - b.y0 - 12); h >= 100; h -= 2) {
+        var sb = fitBox(b, h, 6);
+        if (!sb || sb.w < 260) continue;
+        var fs = Math.min(92, (sb.h - 30) * 0.8), vw = bw(str, fs), Wsp = Math.min(170, sb.w - vw - 14 - 16);
+        if (Wsp < 90) break;
+        var gw = vw + 14 + Wsp, x0 = (sb.x0 + sb.x1) / 2 - gw / 2, yb = sb.y1 - 16, cap = fs * 0.668;
+        dfLabel(g, x0, sb.y0 + 20, 'GLUCOSE', { anchor: 'start' });
+        if (late) g.t(x0 + gw, sb.y0 + 20, d.readAt, { fs: 17, fw: 500, fill: PAL.soft, anchor: 'end' });
+        value(g, d, x0, yb, fs, { anchor: 'start', arrow: false });
+        auraSpark(g, d, { x0: x0 + vw + 14, x1: x0 + gw, y0: yb - cap - 8, y1: yb }, { sc: Math.min(1, fs / 88) });
+        return 'side by side';
+      }
+    }
+    // the value and its arrow, as big as the slot allows
+    var fv = fitValue(b, emOf(str, Number.isFinite(d.rate)), 116);
+    if (!fv) return 'none';
+    var bx = fv.box, cx = (bx.x0 + bx.x1) / 2;
+    if (fv.lab) dfLabel(g, cx, bx.y0 + 16, 'GLUCOSE', { fill: lab, fs: 15 });
+    value(g, d, cx, bx.y1 - 4, fv.fs, { inverted: inv, col: inv ? W0 : undefined });
+    return 'value';
+  }
+  function otherSlot(g, b, i) {
+    var o = OTHER[i % OTHER.length], fv = fitValue(b, emOf(o[1], false), 84);
+    if (!fv) return;
+    var bx = fv.box, cx = (bx.x0 + bx.x1) / 2;
+    if (fv.lab) dfLabel(g, cx, bx.y0 + 16, o[0], { fs: 15 });
+    g.t(cx, bx.y1 - 4, o[1], { fs: fv.fs, fw: 700, fill: PAL.ink });
+  }
+  S.dfSlot = function (g, d, c) {
+    var form = c.form || 'whole';
+    var L = form === 'whole' ? { i: 0, f: [[0, 0, KC.w, KC.h, 'LTRB']] } : DFS[KC.id][form], other = 0;
+    L.f.forEach(function (r, i) {
+      var b = slotBox(r);
+      if (i === L.i) dfField(g, d, b, form === 'whole'); else otherSlot(g, b, other++);
+    });
+    // the slots' borders, as the watch draws them
+    L.f.forEach(function (r) {
+      var b = slotBox(r);
+      if (r[1] > 2) g.p('M' + r1(-KC.hw) + ' ' + r1(b.y0 - 1 / KC.s) + 'H' + r1(KC.hw), { stroke: PAL.faint, sw: 2 });
+      if (r[0] > 2) g.p('M' + r1(b.x0 - 1 / KC.s) + ' ' + r1(b.y0) + 'V' + r1(b.y1), { stroke: PAL.faint, sw: 2 });
+    });
+  };
+
+  // ---- the rectangles' own layouts (Venu Sq 2, Venu X1; SPEC §14.3) ---------------------------------------------------
+  // Drawn in the Venu Sq 2's px (KC.s = 1; the X1 1.2), the screen ±KC.hw × ±KC.hh. The corners are room a round screen
+  // doesn't have: the widget's two places move up into them beside the clock, and the value gets the whole width.
+  var R = {};
+  R.appA = function (g, d, c) {
+    var hw = KC.hw, hh = KC.hh;
+    clock(g, d, -hh + 34, { fs: 22 });
+    var ms = metricSlots(d, c), rr = 24, sw = 6, sy = -hh + 34;
+    drawSlot(g, ms[1], -hw + 14 + rr + sw / 2, sy, rr, sw, 22);
+    drawSlot(g, ms[0], hw - 14 - rr - sw / 2, sy, rr, sw, 22);
+    var vy = -hh + 150;
+    if (d.age >= 20 || d.sensorState === 'warmup') noValue(g, d, vy - 34);
+    else value(g, d, 0, vy, 96);
+    var bx = { x0: -hw + 44, x1: hw - 34, y0: vy + 26, y1: hh - 64 };
+    var sc = chart(g, d, bx, { hours: c.hours || 12, lfs: 14, ms: 10 });
+    if (c.dist !== false) pctColumn(g, d, sc, bx, { lfs: 14, hours: c.hours || 12, dot: 4.6, mask: true });
+    if (!chipRow(g, d, hh - 22, { fs: 19 })) sensorTag(g, d, 0, hh - 16, { fs: 17 });
+    if (c.dots !== false) pageDots(g, 2, 0);
+  };
+  R.appNums = function (g, d, c) {
+    var hw = KC.hw, hh = KC.hh, per = c.period || '14d', pers = ['1d', '7d', '14d', '30d'];
+    var cw = Math.min(64, (2 * hw - 32 - 18) / 4), gp = 6, x0 = -(pers.length * cw + (pers.length - 1) * gp) / 2, cyy = -hh + 16;
+    pers.forEach(function (p, i) {
+      var on = p === per, x = x0 + i * (cw + gp);
+      g.r(x, cyy, cw, 32, 16, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
+      g.t(x + cw / 2, cyy + 22, p, { fs: 17, fw: on ? 700 : 500, fill: on ? PAL.ink : PAL.soft });
+    });
+    var Rr = { above: 14, inR: 85, good: 64, below: 0.1, split: [0, 0.1, 64, 21, 14, 0.8, 0] };
+    var top = cyy + 52, bot = hh - 86, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
+    Rr.split.forEach(function (v) { tot += v; });
+    var y = bot;
+    keys.forEach(function (k, i) {
+      var v = Rr.split[i]; if (!v) return;
+      var h = v / tot * (bot - top);
+      g.r(bxx, y - h + (h > 3 ? 1 : 0), 12, Math.max(1.5, h - (h > 3 ? 2 : 0)), 2, { fill: PAL[k] });
+      y -= h;
+    });
+    var lx = bxx + 26, rx = hw - 12, step = (bot - top) / 3;
+    function goal(x, yy, text) {
+      var w = 26 + tw(text, 14);
+      g.r(x, yy - 15, w, 22, 11, { fill: '#173A27' });
+      g.p('M' + r1(x + 8) + ' ' + r1(yy - 4.5) + 'l3.5 3.5l6 -7', { stroke: PAL.tight, sw: 2 });
+      g.t(x + 21, yy + 1, text, { fs: 14, fw: 600, fill: PAL.tight, anchor: 'start' });
+      return w;
+    }
+    [['Above range', Rr.above + ' %', '< 25%'], ['In range', Rr.inR + ' %', '> 70%', 'very good ' + Rr.good + ' %'], ['Below range', Rr.below + ' %', '< 4%']].forEach(function (r, i) {
+      var yy = top + 22 + i * step, big = i === 1;
+      g.t(lx, yy, r[0], { fs: big ? 22 : 19, fw: big ? 700 : 600, fill: PAL.ink, anchor: 'start' });
+      g.t(rx, yy + (big ? 4 : 0), r[1], { fs: big ? 32 : 22, fw: 700, fill: PAL.ink, anchor: 'end' });
+      var w = goal(lx, yy + 24, r[2]);
+      if (r[3]) g.t(lx + w + 10, yy + 25, r[3], { fs: 15, fw: 500, fill: PAL.soft, anchor: 'start' });
+    });
+    g.p('M' + r1(-hw + 12) + ' ' + r1(bot + 14) + 'H' + r1(hw - 12), { stroke: PAL.grid, sw: 1.5 });
+    [['136', 'Average', false], ['6.6 %', 'GMI', true], ['27 %', 'CV', true]].forEach(function (m, i) {
+      var x = (i - 1) * (2 * hw - 40) / 3;
+      g.t(x, bot + 48, m[0], { fs: 24, fw: 700, fill: PAL.ink });
+      var lw = tw(m[1], 15) + 18;
+      g.p('M' + r1(x - lw / 2) + ' ' + r1(bot + 65) + 'l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
+      g.t(x - lw / 2 + 14, bot + 71, m[1], { fs: 15, fw: 600, fill: PAL.soft, anchor: 'start' });
+    });
+    if (c.dots !== false) pageDots(g, 2, 1);
+  };
+  R.actions = function (g, d, c) {
+    var hw = KC.hw, hh = KC.hh;
+    var last = { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' }, name = { rapid: 'Rapid', carbs: 'Carbs', long: 'Long' };
+    var items = d.order.map(function (k) { return { label: name[k], icon: k, col: PAL[k], sub: last[k] }; });
+    items.push(c.muted ? { label: 'Muted', icon: 'bellOff', col: PAL.note, sub: '1h 20m', subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
+    g.t(-hw + 18, -hh + 34, 'Sukrara', { fs: 20, fw: 600, fill: PAL.soft, anchor: 'start' });
+    var y0 = -hh + 86, step = (2 * hh - 86 - 40) / 4 + 2;
+    items.forEach(function (it, i) {
+      var y = y0 + i * step, on = i === 0, fs = on ? 30 : 23;
+      if (on) g.r(-hw + 8, y - 32, 2 * hw - 16, 64, 20, { fill: PAL.card2 });
+      g.icon(it.icon, -hw + 38, y, on ? 26 : 21, it.col);
+      g.t(-hw + 62, y + fs * 0.35, it.label, { fs: fs, fw: on ? 700 : 600, fill: on ? PAL.ink : PAL.soft, anchor: 'start' });
+      if (it.sub) g.t(hw - 20, y + 7, it.sub, { fs: on ? 18 : 16, fw: 600, fill: it.subCol || (on ? PAL.soft : PAL.dim), anchor: 'end' });
+    });
+    btnHint(g, 60, '', {});
+  };
+  // the amount: no UP / DOWN on the rectangles, so the chevrons are the buttons (tap; swipe up / down too)
+  R.logAmount = function (g, d, c) {
+    var hw = KC.hw, hh = KC.hh, k = c.kind || 'rapid', col = PAL[k], label = { rapid: 'Rapid insulin', carbs: 'Carbs', long: 'Long insulin' }[k];
+    var a = c.amount !== undefined ? c.amount : (k === 'carbs' ? 50 : k === 'long' ? 14 : 4.5), unit = k === 'carbs' ? 'g' : 'u';
+    var lw = tw(label, 22) + 30;
+    g.icon(k, -lw / 2 + 10, -hh + 33, 18, col);
+    g.t(-lw / 2 + 26, -hh + 40, label, { fs: 22, fw: 600, fill: col, anchor: 'start' });
+    var s = String(a), fs = 120, w = bw(s, fs), uw = tw(unit, 48), yU = -hh + 82, ay = yU + 112, yD = ay + 34, x0 = -(w + 8 + uw) / 2;
+    g.t(x0, ay, s, { fs: fs, fw: 700, fill: PAL.ink, anchor: 'start' });
+    g.t(x0 + w + 8, ay, unit, { fs: 48, fw: 600, fill: PAL.soft, anchor: 'start' });
+    [[yU, -1], [yD, 1]].forEach(function (cv) {
+      var cy = cv[0], dir = cv[1];
+      g.r(-hw + 40, cy - 20, 2 * hw - 80, 40, 20, { fill: PAL.card2 });
+      g.p('M-16 ' + r1(cy - 6 * dir) + 'L0 ' + r1(cy + 6 * dir) + 'L16 ' + r1(cy - 6 * dir), { stroke: PAL.soft, sw: 4 });
+    });
+    var chips = k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6'];
+    var cw = 72, gap = 12, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2, cy0 = hh - 92;
+    chips.forEach(function (ch, i) {
+      var on = ch === s, x = cx0 + i * (cw + gap);
+      g.r(x, cy0, cw, 38, 19, { fill: on ? col : PAL.card2 });
+      g.t(x + cw / 2, cy0 + 26, ch, { fs: 20, fw: 700, fill: on ? PAL.on : PAL.soft });
+    });
+    g.t(0, hh - 22, 'Now', { fs: 20, fw: 600, fill: PAL.soft });
+    btnHint(g, 60, '', {});
+  };
+
+  // ---- round screens smaller than the 390 (SPEC §14.2): what goes first ----------------------------------------------
+  // the widget's page on the MIP sizes keeps value, arrow, the two places, the chart, the pill and the page dots; the
+  // sensor's days go first (≤ 260), then the % column and the chart's 70 / 180 labels (≤ 240), then the clock (218)
+  function drops() {
+    var w = KC.w;
+    return { sensor: KC.mip && w <= 260, dist: w <= 240, yLabels: w <= 240, clock: w <= 218 };
+  }
+
+  // ---- the class and the renderer ------------------------------------------------------------------------------------
+  function setClass(id) {
+    var key = CLS[id] ? id : 'r390';
+    KC = Object.assign({ id: key }, CLS[key]);
+    KC.s = KC.rect ? (KC.w > 320 ? 1.2 : 1) : KC.w / 390;
+    KC.hw = KC.w / 2 / KC.s; KC.hh = KC.h / 2 / KC.s;
+    SE = KC.s; PAL = KC.mip ? PAL_MIP : PAL_AMOLED;
+  }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  function elSvg(e) {
+    var tf = (e.gt || '') + (e.tf ? ' ' + e.tf : ''), op = e.op !== 1 ? ' opacity="' + e.op + '"' : '';
+    var paint = ' fill="' + e.fill + '" stroke="' + e.stroke + '"' + (e.sw ? ' stroke-width="' + r1(e.sw * 1000) / 1000 + '"' : '') + op + ' transform="' + tf + '"';
+    var dash = e.dash && e.dash !== 'none' ? ' stroke-dasharray="' + e.dash + '"' : '';
+    if (e.isP) return '<path d="' + e.d + '"' + paint + dash + ' stroke-linecap="' + e.cap + '" stroke-linejoin="' + e.join + '" fill-rule="' + (e.rule || 'evenodd') + '"/>';
+    if (e.isC) return '<circle cx="' + e.cx + '" cy="' + e.cy + '" r="' + e.r + '"' + paint + dash + '/>';
+    if (e.isR) return '<rect x="' + e.x + '" y="' + e.y + '" width="' + e.w + '" height="' + e.h + '" rx="' + e.rx + '"' + paint + '/>';
+    return '<text x="' + e.x + '" y="' + e.y + '" font-family="' + esc(e.fam) + '" font-size="' + e.fs + '" font-weight="' + e.fw + '" text-anchor="' + e.anchor + '"' +
+      (e.ls ? ' letter-spacing="' + e.ls + '"' : '') + ' fill="' + e.fill + '"' + op + ' transform="' + tf + '">' + esc(e.s[0]) + '</text>';
+  }
+  // svg(cfg): the screen at 1:1 (cfg.bezel: the 390 in its bezel). MIP: the whole screen through a filter that rounds
+  // every pixel to the 64 colours, as the panel shows it (anti-aliased edges included)
+  function svg(c) {
+    c = c || {};
+    var r = screen(c), W = r.w, H = r.h, bez = r.bez.length > 0, o = [];
+    var vb = bez ? '-292 -292 584 584' : (-W / 2) + ' ' + (-H / 2) + ' ' + W + ' ' + H, size = c.size || (bez ? 584 : W);
+    o.push('<svg xmlns="http://www.w3.org/2000/svg" width="' + (bez ? size : W) + '" height="' + (bez ? size : H) + '" viewBox="' + vb + '" role="img" aria-label="' + esc(r.label) + '">');
+    o.push('<defs>' + (r.rect ? '<clipPath id="scr"><rect x="' + (-W / 2) + '" y="' + (-H / 2) + '" width="' + W + '" height="' + H + '" rx="' + (r.cls === 'x1' ? 34 : 18) + '"/></clipPath>' : '<clipPath id="scr"><circle cx="0" cy="0" r="' + W / 2 + '"/></clipPath>'));
+    Object.keys(r.pats).forEach(function (id) {
+      var p = r.pats[id], u = r1(p.u * 1000) / 1000;
+      o.push('<pattern id="' + id + '" patternUnits="userSpaceOnUse" width="' + 2 * u + '" height="' + 2 * u + '"><rect width="' + u + '" height="' + u + '" fill="' + p.hex + '"/>' + (p.pct >= 50 ? '<rect x="' + u + '" y="' + u + '" width="' + u + '" height="' + u + '" fill="' + p.hex + '"/>' : '') + '</pattern>');
+    });
+    if (r.mip) o.push('<filter id="q64" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB"><feComponentTransfer>' + ['R', 'G', 'B'].map(function (ch) { return '<feFunc' + ch + ' type="discrete" tableValues="0 .3333 .3333 .6667 .6667 1"/>'; }).join('') + '</feComponentTransfer></filter>');
+    o.push('</defs>');
+    r.bez.forEach(function (e) { o.push(elSvg(e)); });
+    o.push('<g clip-path="url(#scr)"' + (r.mip ? ' filter="url(#q64)"' : '') + '><rect x="' + (-W / 2 - 2) + '" y="' + (-H / 2 - 2) + '" width="' + (W + 4) + '" height="' + (H + 4) + '" fill="#000000"/>');
+    r.els.forEach(function (e) { o.push(elSvg(e)); });
+    o.push('</g></svg>');
+    return o.join('\n');
+  }
+
+  // every text the screen would cut, or that runs into the rim: its box (Atkinson's widths, cap 0.7, descenders 0.22)
+  // must lie 2 px inside the screen, and inside the rim where the screen draws one. The build lists them (none allowed)
+  function clippedTexts(els) {
+    var bad = [], m0 = (KC.rimPx || 0) + 2, W = KC.w, H = KC.h;
+    els.forEach(function (e) {
+      if (!e.isT || e.tf) return;
+      var m = /translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)/.exec(e.gt), tx = +m[1], ty = +m[2], sc = +m[3], str = e.s[0], w = 0;
+      for (var i = 0; i < str.length; i++) w += (e.fs >= 40 && BIG[str[i]] !== undefined ? BIG[str[i]] : WM[str[i]] !== undefined ? WM[str[i]] : 0.6);
+      w = w * e.fs * (e.fs >= 40 ? 1 : 1.03) + (e.ls || 0) * str.length;
+      var x0 = e.anchor === 'start' ? e.x : e.anchor === 'end' ? e.x - w : e.x - w / 2;
+      var X0 = tx + x0 * sc, X1 = tx + (x0 + w) * sc, Y0 = ty + (e.y - 0.7 * e.fs) * sc, Y1 = ty + (e.y + (/[gjpqy,]/.test(str) ? 0.22 : 0.02) * e.fs) * sc;
+      var out = KC.rect ? (X0 < -W / 2 + m0 || X1 > W / 2 - m0 || Y0 < -H / 2 + m0 || Y1 > H / 2 - m0)
+        : [[X0, Y0], [X1, Y0], [X0, Y1], [X1, Y1]].some(function (q) { return Math.sqrt(q[0] * q[0] + q[1] * q[1]) > W / 2 - m0; });
+      if (out) bad.push(str);
+    });
+    return bad;
+  }
+  // screen(cfg): cfg.cls picks the screen class (CLS; the 390 by default), cfg.screen the screen (S, or the
+  // rectangles' own R where they have one), the rest is the scenario (data()). Returns the display list in layout
+  // units with each element's transform to the screen's px, and the screen's size in px. c.input: another input `d` in
+  // data()'s shape (the port's, tools/watchface/app-input.js), drawn instead of the made-up day.
   function screen(c) {
     c = c || {};
+    setClass(c.cls);
+    KC.two = c.buttons === 'two';
     var d = c.input || data(c), g = new G();
-    var f = S[c.screen] || S.appA;
+    var f = (KC.rect && R[c.screen]) || S[c.screen] || S.appA;
     f(g, d, c);
-    var bez = c.bezel ? bezel(c.metal) : [];
-    bez.forEach(function (e) { if (e.tf === undefined) e.tf = ''; });
-    g.els.forEach(function (e) { if (e.tf === undefined) e.tf = ''; });
-    return { els: g.els, bez: bez, vb: c.bezel ? '-292 -292 584 584' : '-195 -195 390 390', label: 'Sukrara on Garmin: ' + (c.screen || 'appA'), d: d };
+    var clipped = clippedTexts(g.els);
+    var bez = c.bezel && KC.id === 'r390' ? bezel(c.metal) : [];
+    var out = { els: g.els, bez: bez, pats: g.pats, w: KC.w, h: KC.h, cls: KC.id, mip: !!KC.mip, rect: !!KC.rect, s: KC.s, vb: c.bezel ? '-292 -292 584 584' : '-195 -195 390 390', label: 'Sukrara on Garmin (' + KC.name + '): ' + (c.screen || 'appA'), d: d, clipped: clipped };
+    KC = null; SE = 1; PAL = PAL_AMOLED;
+    return out;
   }
-  return { screen: screen, PAL: PAL, bandOf: bandOf, fmtG: fmtG };
+  return { screen: screen, svg: svg, CLS: CLS, PAL: PAL_AMOLED, PAL_MIP: PAL_MIP, bandOf: bandOf, fmtG: fmtG, contrast: contrast, near64: near64 };
 })();
 if (typeof module !== 'undefined') module.exports = WL;

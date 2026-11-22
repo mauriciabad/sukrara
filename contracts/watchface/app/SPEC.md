@@ -7,7 +7,8 @@
 
 **How to use it.** The reference is [`tools/watchface/app.js`](../../../tools/watchface/app.js): `screen(cfg)` returns
 every screen as a display list (origin at the screen's centre, y down, 1 unit = 1 px of the 390 × 390 Descent Mk3i 43 mm,
-drawn in order), from one input `d` (§2). Where this text and the code disagree, the code wins and the text gets fixed,
+drawn in order), from one input `d` (§2). Every other screen class (round 360 – 466 AMOLED, round MIP 218 – 280, the Venu Sq 2
+and X1) is `cfg.cls` on the same code (§14). Where this text and the code disagree, the code wins and the text gets fixed,
 as with Aura. The round-2 canvas draws every state from the same code (board → section below). Two known
 approximations, to be done right in the port from the phone widget's renderer (the owner): the % column's dots and the
 way they mask the line (§4.1).
@@ -26,7 +27,7 @@ every draw); never an old value as current; never colour alone; Aura's palette, 
 | One list (log kinds + mute), amount, hold to log, sending, logged, queued | same | `S.actions`, `S.logAmount`, `S.logConfirm`, `S.logSending`, `S.logDone`, `S.logQueued` | Logging |
 | Mute: lengths, muted (undo), unmute / change time | same | `S.muteLengths`, `S.muteDone`, `S.muted` | Mute |
 | Alerts: Garmin's notification, the app's alert, remind less | same | `S.wake`, `S.alert`, `S.remindDone` | Alerts |
-| Data field: whole / half / band / quarter / cap, its own alert | a separate data-field app | `S.df1` … `S.df4small`, `S.dfAlert` | Data field |
+| Data field: whole / half / band / quarter / cap, its own alert | a separate data-field app | `S.df1` … `S.df4small` (any class: `S.dfSlot`, §14.4), `S.dfAlert` | Data field |
 | Complications as other faces draw them | the watch app publishes 4 | `S.faceCx` | Complications |
 
 ## 2. The input (what the payload must give each screen)
@@ -193,6 +194,147 @@ Decided (the owner, 2026-11-22):
 Open:
 1. The name **CGM-GB-value** in the fēnix 8's own face editor, and Face It's rendering (a real watch).
 
-**Not designed yet**: round MIP (64 colours, 218–280 px), rectangular (Venu Sq 2, Venu X1) and Instinct mono layouts
-(#221); Aura's two top fields and more field options (#240, design-first in `aura.js`); the phone's Garmin page rows for
-the per-watch settings and the two-buzz line.
+**Not designed yet**: the Instinct 3 Solar / Instinct E mono layouts (1 bit, 32 KB glance and field; #221); Aura's
+two top fields and more field options (#240, design-first in `aura.js`); the phone's Garmin page rows for the per-watch
+settings and the two-buzz line.
+
+## 14. Screen classes
+
+The 390 × 390 design (§1–§12) on every screen the manifests target (docs/47 §9: 73 products, API 5+, all but the 1-bit
+Instinct 3 Solar / E). The reference is `app.js` with `cfg.cls` (its table `CLS`: one watch per class, read from that
+watch's SDK 9.3 device files: screen, panel, touch, the glance's icon and content areas, the data-field slots, the
+button angles); `tools/watchface/app-build.mjs` renders every screen of §1 on each into `docs/img/app/ref/<class>/`.
+
+| Class | Reference watch (cls) | Same screen | Pictures |
+|---|---|---|---|
+| Round AMOLED 360 | FR 265S (`r360`) | Venu 2S | `round-360/` |
+| Round AMOLED 390 | Descent Mk3 43 (`r390`, the design) | §1's 19 | `round-390/` |
+| Round AMOLED 416 | fēnix 8 43 (`r416`) | epix 2 / Pro 47, fēnix 9 43 / Pro 43, fēnix E, FR 265, Venu 2 / 2 Plus, D2 Air X10, D2 Mach 1, Approach S72 43, Instinct 3 AMOLED 50 | `round-416/` |
+| Round AMOLED 454 | fēnix 8 47 / 51 (`r454`) | fēnix 8 Pro, fēnix 9 47 / Pro 47, Descent Mk3 51, epix Pro 51, FR 965 / 970 / 570 47, Venu 3, Venu 4 45, MARQ 3, D2 Mach 2, Approach S70 47 / S72 47 | `round-454/` |
+| Round AMOLED 466 | fēnix 9 Pro 51 (`r466`) | — | `round-466/` |
+| Round MIP 218 | FR 255S (`m218`, no touch) | FR 255S Music | `mip-218/` |
+| Round MIP 240 | fēnix 7S (`m240`) | fēnix 7S Pro | `mip-240/` |
+| Round MIP 260 | fēnix 7 (`m260`) | fēnix 7 Pro, FR 255 / 955, fēnix 8 Solar 47, fēnix 9 Pro Solar 47 | `mip-260/` |
+| Round MIP 280 | fēnix 7X (`m280`) | fēnix 7X Pro, enduro 3 / 4, fēnix 8 Solar 51, fēnix 9 Pro Solar 51 | `mip-280/` |
+| Rectangle 320 × 360 | Venu Sq 2 (`sq2`) | Venu Sq 2 Music | `rect-venu-sq2/` |
+| Rectangle 448 × 486 | Venu X1 (`x1`) | — | `rect-venu-x1/` |
+
+### 14.1 What scales and what doesn't (every class)
+- **Layout units.** Round classes draw the 390's layout × s (s = W / 390: 0.56 – 1.19). Rectangles have their own
+  layouts in the Venu Sq 2's px (s = 1; Venu X1 1.2, its extra room going to the layout, §14.5).
+- **Type: the atlas set.** Every size snaps to the class's atlas set (`ATLAS`, `snapFont`): AMOLED 14, 16 … 32 (every
+  2), 36, 40 … 64 (every 4), 72 … 136 (every 8), 148; MIP 12, 14 … 24, 28, 32 … 48, 56 … 88. Floor: 14 px AMOLED, 12 px
+  MIP (the 390's 14–15 px labels stay 14 on the 360; on MIP they are 12, the smallest Atkinson that keeps 1 / 7 / 3 /
+  8 apart on a 202 ppi panel). Big sizes are digits-only atlases. The 390 keeps its approved sizes. Widths are
+  measured at the snapped size (`tw` / `bw`), so nothing collides when a size rounds up.
+- **Strokes**: AMOLED × s to the half px, never under 1; MIP whole px, hairlines (≤ 1.6 at 390) 1 px, everything else
+  ≥ 2 px (rings 4, the chart's line 2 – 3, the rims 5 – 7).
+- **Physical size**: the AMOLEDs are 310 – 327 ppi, the MIPs 202 ppi, so a MIP pixel is 1.6× larger: the 260's
+  layout is 0.67× the 390's in px but 1.07× in mm. The MIP floors are about px, not legibility.
+- **The glance's places** (`S.glance`): the same two as page 1, the main metric's ring and then the last treatment
+  (else the second metric, dimmed); never a third. They are decided per class, never per reading: a class keeps both
+  when the widest value (288 and its arrow) fits beside them at the smallest value size (58 → 46; 54 → 42 with a row
+  under it); otherwise it shows the main ring only, always. Every class keeps both today. The value then takes the
+  largest size that fits beside them (the 390: 58 for 175, 52 for 288).
+- **Text stays inside the screen and clear of the rim**: every text's box lies 2 px inside the screen's shape, and
+  inside the rim where the screen draws one (`clippedTexts`; `app-build.mjs --check` lists any, and the build fails on
+  one). Where a screen can't fit something, it gives way by a rule: the alert's value + sparkline narrows the
+  sparkline (132 → 96 units), then the value (84 → 68); the alert's *Reminders every 30 min* line under the buttons is
+  left out where it would reach the rim (the 218, 240 and 260 MIPs; the button's *Remind as usual* already says it); the
+  glance mock's Garmin rows (Heart Rate, Body Battery) are left out where the circle would cut them.
+- **The chart's height** scales with s; the hours row and the % labels don't (floors), so on MIP the plot is 6 – 8 px
+  shorter than s says. The drop rules (§14.3) give it back its width.
+
+### 14.2 Round AMOLED 360 / 416 / 454 / 466
+The 390 scaled. Only the glance and the data field take their device's own geometry:
+- **Glance**: the device's content area (`ga`) with the 390's glance (248 × 103) scaled to the tighter of its height
+  and width: FR 265S 240 × 104 (scale 0.97), fēnix 8 43 325 × 122 (1.18), fēnix 8 47 349 × 130 (1.26), fēnix 9 Pro 51
+  359 × 130 (1.26); the icon area (`gi`) is the device's (40 – 60 px). The epix / FR 265 / Venu style 416 glances
+  (274 × 103) take the same rule. Value 50 – 68 px, both places on every one.
+- **Data field**: by slot room (§14.4), from the device's own layouts.
+- **Buttons**: the class's angles (START 60 – 63°, BACK 118 – 122°, UP 268 – 271°, DOWN 238 – 242°).
+- **Two-button rounds** (Venu 2 / 2S / 2 Plus / 3 / 3S / 4, vívoactive 5 / 6, Approach S50 / S72, D2 Air X10; Approach
+  S70 has MENU too): no UP / DOWN. Page 1 ↔ 2 and the amount by swipe and tap (the chevrons are the targets; the + / −
+  hints go, `cfg.buttons: 'two'`). The D2 Air X10's top button sends no onSelect (device file): hold to log is a touch
+  hold there.
+- **Buttons only**: Instinct 3 AMOLED 45 / 50 and Crossover AMOLED (390 / 416) have no touch: everything already works
+  with buttons (UP / DOWN pages and amounts, START opens and holds to log, BACK leaves). Their glances have no icon
+  area (320 × 99, 340 × 92): the content starts at the left. Hold to log starts at their START (69°).
+
+### 14.3 Round MIP, 64 colours (218 / 240 / 260 / 280)
+- **Palette** (`PAL_MIP`), each AMOLED token to one of the 64 (channels 00 / 55 / AA / FF), picked for hue and
+  sunlight, not nearest: ink FFFFFF, soft AAAAAA, dim / faint 555555 (dim is never text: text in dim draws AAAAAA),
+  grid 555555 dithered 50 %, grey AAAAAA (old is also struck / hollow), very low FF0000, low FF5555, tight 00FF55,
+  target AAFF00, high FFAA00, very high FF5500, extremely high FF55FF, rapid 55AAFF, long AAAAFF, carbs FFAA55, note
+  AAAAAA, on-colour 000000.
+- **No alpha**: every tint becomes one of three things. A solid where the tint is ≥ 60 % (the low block 85 % → FF5555);
+  an **outline** where text sits on it (the tonal pill → a 2 px outline in the kind's colour; `card2`, a selected row /
+  chip / secondary button → black with a 2 px AAAAAA outline); a **dither** where it's a background area (the chart's
+  very-good band 13 % → 005500 checkerboard, good 7.5 % → 005500 one pixel in four, the sparkline's band, the remind /
+  mute discs, the % column's mask). Partial strokes (the sparkline's overflow fade) step to the colour × 0.55 (555555
+  at least). The references run the whole screen through a 64-colour filter, so anti-aliased edges show as the panel
+  shows them.
+- **Blocks**: the ink on a colour block is white or black, whichever has the higher contrast (`inkOn`): very low
+  FF0000 → black 5.3 : 1 (white 4.0); low FF5555 → black 6.7 (white 3.1); extremely high FF55FF → black 8.0 (white
+  2.6). The block's secondary buttons become outlines in that ink.
+- **No always-on dimming**: MIP is always on in full colour; no AOD palette, no luminance budget. (AMOLED: the data
+  field keeps Aura's always-on palette while the activity screen dims.)
+- **Contrast** (WCAG, on black): ink 21, soft / grey / note 9.0, low 6.7, very high 6.6, very low 5.3, extremely high
+  8.0, rapid 8.6, long 9.9, carbs 11.1, high 11.0, tight 15.4, target 17.0; dim 2.8 (marks only, never text). On the
+  very-good band's dither (005500 at most): ink 9.1, every band colour ≥ 2.8, the line drawn over it in full. Pairs that
+  are close in colour carry a second cue, as on AMOLED: tight / target (1.1, hue) sit in the same band anyway; high /
+  carbs (1.0) — carbs always has its ● mark; low / very high (1.0) sit at opposite ends of the chart and carry words.
+- **Smaller screens, what goes first** (`drops()`), page 1: the sensor's days (≤ 260, MIP), then the % column and the
+  chart's 70 / 180 labels (≤ 240: the dashed lines stay, the plot takes their width), then the clock (218). Never: the
+  value, the arrow, the two places, the chart, the pill, the page dots.
+- **Glance**: content only 63 px high on the fēnix 7 family (151 / 171 / 191 wide), 93 on FR 255 / 955, 81 – 88 on fēnix
+  8 Solar / enduro, 140 × 79 on FR 255S: the 390 glance at 0.56 – 0.77; value 32 – 42 px (28 – 32 on the FR 255S),
+  rings r 13 – 16 px with 12 – 16 px numbers; both places on every one.
+- **FR 255 / 255S**: buttons only (as the Instinct AMOLEDs).
+
+### 14.4 The data field: the form by slot room
+One rule on every class (`S.dfSlot`, `fitBox`): **whole** when the slot is the screen (the 390's whole page);
+**value + sparkline** when a box of **260 × 100 units** (× s px) fits inside the slot and the screen (the box sits at
+the slot's side toward the centre, as wide as the circle allows there); otherwise **value + arrow**, the largest atlas
+size that fits (label row when ≥ 64 units high). The 390's half and band are side by side, its quarter and cap
+value-only, and so on every round class, AMOLED and MIP (the thresholds are in units, so the MIP slots, 0.56 – 0.72×
+in px, keep the 390's forms). Rectangles have no obscured edges: the Venu Sq 2's 97 px slots are under 100 (band and
+the 4-field top value-only, half side by side); the Venu X1's 169 / 173 px band and top go side by side. Low / very
+low: the slot is the band's block with `inkOn`, cut by the screen's shape like every slot (the field's text keeps
+inside it, §14.1).
+
+### 14.5 Rectangles (Venu Sq 2, Venu X1)
+Their own layouts in `R` (`R.appA`, `R.appNums`, `R.actions`, `R.logAmount`), the rest the round screens with the
+rectangle's edge (`rim`, `full`):
+- **Glance**: full-width rows, the icon at the left edge (Sq 2: 40 px at x 0; X1 65 px), content 254 × 114 / 314 × 150.
+- **Page 1**: the corners hold the two places (main right, the next left) beside the clock; the value + arrow gets the
+  whole width (96 units); the chart runs edge to edge (x −116 … 126 on the Sq 2, 170 units high), the % column and its
+  shares on the left, 70 / 180 on the right; the pill / sensor row at the bottom; the page dots in the bottom-left
+  corner.
+- **Page 2**: chips across the top, the stacked bar down the left edge, the three shares with their goals, then
+  average / GMI / CV across the bottom.
+- **The list**: full-width rows (selected 64 high), the last entry right-aligned; Sukrara top-left.
+- **Amount**: no UP / DOWN: the chevrons are full-width buttons above and below the number (tap; swipe up / down too),
+  the usual amounts, *Now*.
+- **Hold to log / sending / logged / alerts / mute**: the round screens; the rim is the screen's rounded rectangle and
+  hold to log fills it clockwise from START (the top-right button). Alert buttons widen to the screen.
+- **Data field**: §14.4.
+- **Buttons**: START top right, BACK bottom right; the hints are bars on the right edge at the button's height (Garmin's
+  `hint_button_right_top / bottom`). Swipes: up / down pages, right = BACK. The Venu Sq 2's top button has no onSelect
+  in the device file: hold to log is a touch hold there (test on the watch).
+
+### 14.6 Every screen per class
+| Screen (§1) | Round AMOLED 360 – 466 | Round MIP 218 – 280 | Rectangles |
+|---|---|---|---|
+| Glance | the device's content area (§14.2), both places | 63 – 93 px high, both places | full-width row, both places |
+| Page 1 | scaled | scaled, drops (§14.3) | own (§14.5) |
+| Page 2 | scaled | scaled | own |
+| The list | scaled | scaled, selected row outlined | own |
+| Amount | scaled (two-button: no + / −) | scaled | own, chevron buttons |
+| Hold to log, sending, logged, queued | scaled, rim from START | scaled | rounded-rect rim from START |
+| Mute: lengths, muted, undo | scaled | scaled, outlines | the round ones, full width |
+| Garmin's notification | Garmin's (illustrative) | Garmin's | Garmin's (none on the Sq 2, API 5.0: §13 decided 2) |
+| The app's alert | scaled | block ink by `inkOn` | full-width buttons |
+| Data field | by room (§14.4) | by room | by room |
+| Complications | the face's | the face's | the face's |
+
