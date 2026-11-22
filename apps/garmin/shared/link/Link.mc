@@ -8,22 +8,23 @@ import Toybox.Math;
 import Toybox.Time;
 
 // What an app knows from Sukrara (every Sukrara Garmin app, apps/garmin/README.md): the newest payload
-// (contracts/watchface/payload, version 4, the app's own profile), kept in storage so a restart shows it at once, the
+// (contracts/watchface/payload, version 5, the app's own profile), kept in storage so a restart shows it at once, the
 // order rule, the phone's clock lead, the run report the fetch carries back, and the inputs (SPEC §3 names) worked out
 // from the payload and the watch clock at every draw (README "On the watch"). Sukrara decides; this only counts time.
 // (:glance): the app's glance reads it too; (:background): the app's background keeps the newest payload itself (its
 // complications and alerts, AppService).
 (:background :glance)
 module Link {
-    const VERSION = 4;
-    // the app's profile (contracts/watchface/payload/apps.json): its jungle excludes the other apps' annotations
-    (:aura)
-    const PROFILE = "aura";
+    const VERSION = 5;
+    // the app's profile (contracts/watchface/payload/apps.json): its jungle excludes the other profiles' annotations;
+    // every watch face is (:face)
+    (:face)
+    const PROFILE = "face";
     (:app)
     const PROFILE = "app";
     (:field)
     const PROFILE = "field";
-    const STORE = "auraLink";
+    const STORE = "link";
     // the watch's id on the phone (the app profile's push only, README `w`): its fetch says it (&w=)
     const WATCH = "linkW";
     // a stored payload this far ahead of the watch clock gives way to any new one (the phone's clock was wrong)
@@ -50,7 +51,7 @@ module Link {
     // A background run's result (LinkService.hand), through Garmin's onBackgroundData or picked up from storage
     // ([stored]); each run counts once, whichever way comes first (its id, kept across restarts). True when the app
     // has something new.
-    const TAKEN = "auraTaken";
+    const TAKEN = "linkTaken";
     // storage is read at most this often (a draw is 1 Hz for ~10 s after a wrist raise)
     const PICKUP_S = 10;
     var _taken = null;
@@ -108,7 +109,7 @@ module Link {
     // deliveries (kind, watch time, the payload's sent, its reading's time) and since when the app draws which reading.
     // After the deliveries, r carries the screen's last events in the same shape: <event>.<watch time>.<display mode>.0
     // (docs/43 "The screen"; times and modes only).
-    const REPORT = "auraReport";
+    const REPORT = "linkReport";
     const RUNS = 10;
     const SCREEN = 12;
     var _runs as Array<String>? = null;

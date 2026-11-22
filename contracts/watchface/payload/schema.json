@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sukrara.mauri.app/contracts/watchface/payload/schema.json",
-  "title": "Sukrara's watch payload, version 4",
-  "description": "What the phone sends Sukrara's Connect IQ apps, one branch per profile (README.md). Times are absolute epoch seconds.",
+  "title": "Sukrara's watch payload, version 5",
+  "description": "What the phone sends Sukrara's Connect IQ apps, one branch per profile (README.md): face (every watch face), app, field. Times are absolute epoch seconds.",
   "$defs": {
     "time": {
       "type": "integer",
@@ -316,10 +316,10 @@
       ],
       "properties": {
         "v": {
-          "const": 4
+          "const": 5
         },
         "p": {
-          "const": "aura"
+          "const": "face"
         },
         "sent": {
           "$ref": "#/$defs/time"
@@ -603,7 +603,7 @@
       ],
       "properties": {
         "v": {
-          "const": 4
+          "const": 5
         },
         "p": {
           "const": "app"
@@ -1165,7 +1165,7 @@
       ],
       "properties": {
         "v": {
-          "const": 4
+          "const": 5
         },
         "p": {
           "const": "field"

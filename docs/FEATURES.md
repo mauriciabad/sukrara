@@ -2809,15 +2809,15 @@ ages by itself from its own time with the phone away.
   face back from a menu or a notification, is simply drawn in place.
 
 **From the phone** (docs/43).
-- Sukrara Aura (the Garmin watch face, `contracts/watchface/aura`) shows what this phone's card and glucose
-  notification show: the phone builds one payload from THE glucose state (the hub: THE trend with its doubling, the
+- Sukrara's watch faces (Sukrara Aura, `contracts/watchface/aura`, the one so far) show what this phone's card and
+  glucose notification show: the phone builds one payload from THE glucose state (the hub: THE trend with its doubling, the
   alert runtime's pill, the sensor with its life's start and end from the sensor screen's dates (the sensor rail), the
   card's last treatment with when it ends and what it gives way to, today's time in range, the person's unit and
   limits), with absolute times so the watch keeps every age and countdown right between messages (`:integrations`
-  `garmin/WatchPayload`; format and fixtures `contracts/watchface/payload`, version 4, the face's profile `aura`; tests
+  `garmin/WatchPayload`; format and fixtures `contracts/watchface/payload`, version 5, the face profile `face`, every watch face's; tests
   `WatchPayloadFixtureTest`).
 - **Two ways, nothing to set up** (`garmin/GarminLink`, on by default whenever Garmin Connect is installed; schema
-  `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face, the app and the data field):
+  `apps.garmin`, the one switch for Sukrara's own Garmin apps: the watch faces, the app and the data field):
   **pushed** through Garmin Connect's Connect IQ service to each Sukrara app on every connected watch (each its own
   profile and app id, a beta's id too; retries and the stuck rule per app) on
   each change (a new reading, a status, a treatment, a setting), within seconds; a message Garmin Connect fails or
@@ -2825,11 +2825,13 @@ ages by itself from its own time with the phone away.
   through for 15 min (**stuck**: Garmin Connect's link to the watch can stay so for a day, until the watch reconnects,
   #242), one try every 5 min instead of every reading, until one arrives. A watch that reconnects gets the current one
   at once (checked every minute), stuck or not, as does *Send now*. The face also **fetches** the same payload every
-  5 min from `http://127.0.0.1:17582/sukrara/aura` (Garmin Connect's web proxy; the bounded `LocalHttpServer`,
+  5 min from `http://127.0.0.1:17582/sukrara/face` (every watch face's one path; Garmin Connect's web proxy; the bounded `LocalHttpServer`,
   loopback only), so a lost message or Garmin Connect's messaging bug costs at most 5 min. **The fetch port opens only
   while a watch is known to have a Sukrara app** (Garmin Connect says one is installed on it, or a push reached it;
   checked when the watch connects and every 30 min) and closes when the switch goes off, Garmin Connect goes or the face
-  is gone: on a phone without the face nothing listens. A watch Garmin Connect doesn't answer about still gets pushes.
+  is gone: on a phone without a Sukrara app nothing listens. Another Connect IQ face may read the face profile on the
+  same path while it is open (payload README *Other watch faces*); a face fetch counts on the page only with Sukrara's
+  report (`r`), so another face's never shows as Aura in use. A watch Garmin Connect doesn't answer about still gets pushes.
   Sukrara talks to Garmin Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free
   software). One message per change: a reading that changes the payload in steps (the hub, then today's readings) is
   sent once it settles (3 s). Each watch remembers the time of the reading its last delivered message carried. Tests:
@@ -2842,8 +2844,8 @@ ages by itself from its own time with the phone away.
   at least 30 s before it (each app link keeps its last 8 deliveries: pushes go every minute, reports every 5, so the
   newest delivery is usually after the report) ("the watch face isn't taking new readings · restart the watch"); when
   every message in its report was kept back (`px` / `fx`: it can't read this phone's payload version) and none taken,
-  "the watch face can't read this phone's messages · update Sukrara Aura" and the row "Sukrara Aura on Descent needs an
-  update" (error colour), never the delivered reading; the app's and the field's rows say "can't read this phone's
+  "the watch face can't read this phone's messages · update it in the Connect IQ app" and the row "The watch face on
+  Descent needs an update" (error colour), never the delivered reading; the app's and the field's rows say "can't read this phone's
   messages · update it in the Connect IQ app" by the same rule from their own reports; logcat
   `Sukrara.Garmin` has each push (when it was built, for which reading, Garmin Connect's answer, a failure with Garmin's
   status: `Failed FAILURE_DURING_TRANSFER`) and each report, times
@@ -2865,12 +2867,15 @@ ages by itself from its own time with the phone away.
     "… · Garmin Connect doesn't confirm messages, trying again", "… · the last message didn't arrive, trying again",
     "Connected · waiting for a reading"; "No watch · Pair your watch in Garmin Connect" when it knows none. A list of
     things of one kind: no icons;
-  - *Sukrara on your watch*: *Sukrara Aura* "Watch face · in use, asked this phone at 14:23" (its fetch within 11 min:
-    it is the face in use), "… · not in use (it asks this phone every 5 minutes while it's the watch face)", "… · not
-    installed", "… · another app uses port 17582, so only Garmin Connect's messages reach it"; *Sukrara* "Watch app,
-    glance and complications · asked this phone at 14:23" / "… · hasn't asked this phone lately (it asks every 5
-    minutes)" / "… · not installed"; *Sukrara data field* "Data field · …" the same, idle "(it asks during an
-    activity)";
+  - *Sukrara on your watch*: *Sukrara* "Watch app, glance and complications · asked this phone at 14:23" / "… · hasn't
+    asked this phone lately (it asks every 5 minutes)" / "… · not installed" (it opens the watch's settings);
+    *Sukrara data field* "Data field · …" the same, idle "(it asks during an activity)";
+  - *Watch faces* (es *Esferas*): each of Sukrara's faces, one row each (`GarminApp.faces`: Sukrara Aura so far),
+    "in use, asked this phone at 14:23" (a face fetch within 11 min: it is the face in use; counted for a face while
+    no other Sukrara face may be on a watch, the path being the faces' one), "not in use (it asks this phone every 5
+    minutes while it's the watch face)", "not installed", "another app uses port 17582, so only Garmin Connect's
+    messages reach it". With two or more watches each watch has both groups, *Sukrara on Descent* and *Watch faces on
+    Descent*;
   - *Other watch faces and data fields*: the *xDrip+ server* row (its own page, below);
   - a footer: Garmin Connect must run in the background; while a watch has a Sukrara app any app on this phone can
     read what it reads (up to the last 24 hours); only Sukrara on the watch can log or mute here (signed).
@@ -2916,21 +2921,21 @@ that arrives); *the face not taking readings* (the watch takes them, the face's 
 more behind, #244: "… · the watch face isn't taking new readings · restart the watch", es "… · la esfera no recibe las
 lecturas nuevas · reinicia el reloj"; the line's reading is the face's; out: restart the watch, or it ends by itself
 at the face's next report with the new reading); *the face can't read the phone's messages* (its report has only kept-back
-messages: "… · the watch face can't read this phone's messages · update Sukrara Aura", es "… · la esfera no puede leer
-los mensajes de este móvil · actualiza Sukrara Aura"; out: update it from Connect IQ, it ends at the next report with
+messages: "… · the watch face can't read this phone's messages · update it in the Connect IQ app", es "… · la esfera no
+puede leer los mensajes de este móvil · actualízala en la app Connect IQ"; out: update it from Connect IQ, it ends at the next report with
 a message taken);
 *messages lost, nothing fetched* ("Messages don't reach Descent Mk3i 43mm · open Garmin Connect", error colour; out:
-those, *Send now*); *waiting* ("Waiting for the next reading"). The face's own states are on its row: *in use*, *not in
-use* (out: pick it as the watch face on the watch), *not installed*, *port taken* (out: stop the other app). Back
+those, *Send now*); *waiting* ("Waiting for the next reading"). Each face's own states are on its row under *Watch faces*: *in use*, *not
+in use* (out: pick it as the watch face on the watch), *not installed*, *port taken* (out: stop the other app). Back
 leaves the page. On the watch the face never shows an old value as current: every state there ages by itself and
 Garmin's *No phone* shows the link is down. Every row is a plain TalkBack row with its text; each action button reads
 as a button named by its label.
 
 ## Sukrara on Garmin watches: the app and the data field (the phone's side)
 
-Beside Sukrara Aura, two more Connect IQ apps get what this phone shows (docs/47; their watch side and look come in
+Beside the watch faces, two more Connect IQ apps get what this phone shows (docs/47; their watch side and look come in
 their own rounds): **Sukrara** (a watch app with a glance and complications) and the **Sukrara data field**. Each gets
-its own payload from THE glucose state, with only what it draws (`contracts/watchface/payload`, version 4: profile
+its own payload from THE glucose state, with only what it draws (`contracts/watchface/payload`, version 5: profile
 `app` and `field`; the registry of every app id and beta id, `apps.json`, `GarminAppsTest`).
 - **The app's payload** (`garmin/WatchPayload`, `GarminDisplay`; `WatchPayloadFixtureTest`): 24 h of readings at 5 min
   (the app zooms 3 / 6 / 12 / 24 h itself), the day's treatments (with their ids), time in range per band over a day

@@ -55,9 +55,9 @@
     <string name="in_garmin_has_reading">has the %1$s reading</string>
     <string name="in_garmin_watch_no_face">no Sukrara app on it</string>
     <string name="in_garmin_watch_not_taking">the watch face isn\'t taking new readings · restart the watch</string>
-    <string name="in_garmin_watch_outdated">the watch face can\'t read this phone\'s messages · update Sukrara Aura</string>
+    <string name="in_garmin_watch_outdated">the watch face can\'t read this phone\'s messages · update it in the Connect IQ app</string>
     <string name="in_garmin_app_outdated">can\'t read this phone\'s messages · update it in the Connect IQ app</string>
-    <string name="in_garmin_outdated">Sukrara Aura on %1$s needs an update</string>
+    <string name="in_garmin_outdated">The watch face on %1$s needs an update</string>
     <string name="in_garmin_watch_stuck">messages stopped getting through · restart the watch</string>
     <string name="in_garmin_watch_slow">Garmin Connect loses messages, so it updates every 5 minutes</string>
     <string name="in_garmin_watch_no_answer">Garmin Connect doesn\'t confirm messages, trying again</string>
@@ -75,7 +75,8 @@
     <string name="in_garmin_watch_gone">Garmin Connect no longer knows this watch</string>
     <string name="in_garmin_watch_unnamed">a watch</string>
     <string name="in_garmin_aura">Sukrara Aura</string>
-    <string name="in_garmin_face_kind">Watch face</string>
+    <string name="in_garmin_faces_group">Watch faces</string>
+    <string name="in_garmin_faces_on">Watch faces on %1$s</string>
     <string name="in_garmin_face_not_installed">not installed</string>
     <string name="in_garmin_face_port_busy">another app uses port 17582, so only Garmin Connect\'s messages reach it</string>
     <string name="in_garmin_face_in_use">in use, asked this phone at %1$s</string>

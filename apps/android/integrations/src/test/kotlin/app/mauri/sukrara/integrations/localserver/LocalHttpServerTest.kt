@@ -116,7 +116,7 @@ class LocalHttpServerTest {
             val ok = send("POST /sukrara/entries HTTP/1.1\r\nHost: 127.0.0.1:17582\r\nContent-Length: 7\r\n\r\n{\"a\":1}")
             assertTrue(ok, ok.startsWith("HTTP/1.1 200"))
             assertEquals("POST sukrara/entries {\"a\":1}", body(ok))
-            assertTrue(send("POST /sukrara/aura HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}").startsWith("HTTP/1.1 405"))
+            assertTrue(send("POST /sukrara/face HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}").startsWith("HTTP/1.1 405"))
             assertTrue(send("POST /sukrara/entries HTTP/1.1\r\n\r\n").startsWith("HTTP/1.1 411"))
             val big = LocalHttpServer.MAX_BODY + 1
             assertTrue(send("POST /sukrara/entries HTTP/1.1\r\nContent-Length: $big\r\n\r\n" + "a".repeat(big)).startsWith("HTTP/1.1 413"))

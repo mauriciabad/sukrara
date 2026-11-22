@@ -39,12 +39,12 @@ import app.mauri.sukrara.integrations.export.ExportData
 import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportUi
 import app.mauri.sukrara.integrations.garmin.GarminActions
-import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminContent
 import app.mauri.sukrara.integrations.garmin.GarminLinkState
 import app.mauri.sukrara.integrations.garmin.GarminUi
 import app.mauri.sukrara.integrations.garmin.GarminWatch
 import app.mauri.sukrara.integrations.garmin.LinkReport
+import app.mauri.sukrara.integrations.garmin.WatchProfile
 import app.mauri.sukrara.integrations.healthconnect.HcActions
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HcUi
@@ -127,7 +127,7 @@ class IntegrationsGallery {
                     ),
                 ),
             fetched = now - Duration.ofMinutes(3),
-            fetchedBy = mapOf(GarminApp.Aura to now - Duration.ofMinutes(3)),
+            fetchedBy = mapOf(WatchProfile.Face to now - Duration.ofMinutes(3)),
             fetchOpen = true,
         )
 
@@ -199,7 +199,7 @@ class IntegrationsGallery {
                                     ),
                                 ),
                             fetched = now - Duration.ofMinutes(2),
-                            fetchedBy = mapOf(GarminApp.Aura to now - Duration.ofMinutes(2)),
+                            fetchedBy = mapOf(WatchProfile.Face to now - Duration.ofMinutes(2)),
                             report =
                                 LinkReport(
                                     now - Duration.ofMinutes(2),

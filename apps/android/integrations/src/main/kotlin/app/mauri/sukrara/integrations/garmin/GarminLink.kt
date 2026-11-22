@@ -126,9 +126,9 @@ data class GarminWatch(
                 ?: l.firstOrNull()
         }
 
-    /** Whether [app] is on this watch (true / false / unknown); a watch known only by [installed] has the face. */
+    /** Whether [app] is on this watch (true / false / unknown); a watch known only by [installed] has the faces. */
     fun has(app: GarminApp): Boolean? {
-        if (links.isEmpty()) return if (app == GarminApp.Aura) installed else null
+        if (links.isEmpty()) return if (app.isFace) installed else null
         val l = app.ids.map { links[it]?.installed }
         return when {
             true in l -> true
@@ -220,7 +220,7 @@ data class LinkReport(
                 ?: drawn
 
     companion object {
-        /** `r=p.<at>.<sent>.<readingAt>_f.…&d=<readingAt>.<since>` (AuraLink.mc saveReport); null when there is none. */
+        /** `r=p.<at>.<sent>.<readingAt>_f.…&d=<readingAt>.<since>` (shared/link Link.mc saveReport); null when there is none. */
         fun parse(
             query: Map<String, String>,
             at: Instant,
@@ -255,30 +255,31 @@ data class GarminLinkState(
     val portBusy: Boolean = false,
     /** The fetch port is open (only while a watch is known to have a Sukrara app). */
     val fetchOpen: Boolean = false,
-    /** What the face said it got and draws, with its last fetch. */
+    /** What the watch face in use said it got and draws, with its last fetch (the face profile's). */
     val report: LinkReport? = null,
-    /** Each app's own account with its last fetch (the face's is also [report]). */
-    val reports: Map<GarminApp, LinkReport> = emptyMap(),
-    val fetchedBy: Map<GarminApp, Instant> = emptyMap(),
+    /** Each profile's own account with its last fetch (the faces' is also [report]). */
+    val reports: Map<WatchProfile, LinkReport> = emptyMap(),
+    /** Each profile's last fetch: a watch face's, the watch app's, the data field's. */
+    val fetchedBy: Map<WatchProfile, Instant> = emptyMap(),
     /** When the watch app on each watch last fetched (by the `w` its fetch sends back). */
     val appFetchedOn: Map<Long, Instant> = emptyMap(),
 )
 
 /**
- * Every profile's payload from one snapshot of the phone ([apps]), and the app's for each watch with its own display
+ * Every profile's payload from one snapshot of the phone ([profiles]), and the app's for each watch with its own display
  * settings ([watches], by Garmin Connect's id for it: SPEC §11).
  */
 data class Payloads(
-    val apps: Map<GarminApp, Map<String, Any?>>,
+    val profiles: Map<WatchProfile, Map<String, Any?>>,
     val watches: Map<Long, Map<String, Any?>> = emptyMap(),
 ) {
-    operator fun get(app: GarminApp) = apps[app]
+    operator fun get(profile: WatchProfile) = profiles[profile]
 
-    /** What [app] gets on watch [watch] (null = not known which): the app's profile with that watch's own values. */
+    /** What [profile] gets on watch [watch] (null = not known which): the app's profile with that watch's own values. */
     fun of(
-        app: GarminApp,
+        profile: WatchProfile,
         watch: Long?,
-    ): Map<String, Any?>? = watch?.takeIf { app == GarminApp.App }?.let { watches[it] } ?: apps[app]
+    ): Map<String, Any?>? = watch?.takeIf { profile == WatchProfile.App }?.let { watches[it] } ?: profiles[profile]
 }
 
 /**
@@ -343,27 +344,30 @@ class GarminLink(
             fetchPort,
             ::answer,
             onRequest = { req, a ->
-                val app = GarminApp.ofPath(req.path)
-                if (app != null && a.status.startsWith("200")) {
-                    val at = clock.now()
-                    val report = LinkReport.parse(req.query, at)
+                val profile = WatchProfile.ofPath(req.path)
+                val at = clock.now()
+                val report = LinkReport.parse(req.query, at)
+                // another watch face may read the face profile too (payload README "Other watch faces"): only a fetch
+                // with Sukrara's report is one of Sukrara's faces
+                val ours = profile != WatchProfile.Face || report != null
+                if (profile != null && ours && a.status.startsWith("200")) {
                     _state.update {
                         it.copy(
                             fetched = at,
-                            fetchedBy = it.fetchedBy + (app to at),
+                            fetchedBy = it.fetchedBy + (profile to at),
                             appFetchedOn =
                                 req.query["w"]
                                     ?.toLongOrNull()
-                                    ?.takeIf { app == GarminApp.App }
+                                    ?.takeIf { profile == WatchProfile.App }
                                     ?.let { w -> it.appFetchedOn + (w to at) } ?: it.appFetchedOn,
-                            report = if (app == GarminApp.Aura) report ?: it.report else it.report,
-                            reports = report?.let { r -> it.reports + (app to r) } ?: it.reports,
+                            report = if (profile == WatchProfile.Face) report ?: it.report else it.report,
+                            reports = report?.let { r -> it.reports + (profile to r) } ?: it.reports,
                         )
                     }
                     // times only (never a value): what the app got and when, for adb logcat -s Sukrara.Garmin
                     report?.let { r ->
                         val runs = r.runs.joinToString(" ") { "${it.kind}@${it.at}/sent ${it.sent}/reading ${it.readingAt}" }
-                        trace("${app.key} report: drawn ${r.drawn?.epochSecond} since ${r.drawnSince?.epochSecond}; runs $runs")
+                        trace("${profile.key} report: drawn ${r.drawn?.epochSecond} since ${r.drawnSince?.epochSecond}; runs $runs")
                     }
                 }
             },
@@ -515,8 +519,8 @@ class GarminLink(
         val share = tir.inRange.takeIf { tir.coverage >= TIR_COVERAGE }
         val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, d.graph, d.metrics, d.open, kinds, quiet = quiet)
         return Payloads(
-            GarminApp.entries.associateWith { WatchPayload.of(it, i) },
-            d.own.mapValues { (_, own) -> WatchPayload.of(GarminApp.App, i.copy(watch = own)) },
+            WatchProfile.entries.associateWith { WatchPayload.of(it, i) },
+            d.own.mapValues { (_, own) -> WatchPayload.of(WatchProfile.App, i.copy(watch = own)) },
         )
     }
 
@@ -531,7 +535,7 @@ class GarminLink(
     private suspend fun push(p: Payloads) {
         var wait = RETRY_FIRST_MS
         val done = HashSet<Pair<Long, String>>()
-        val secret = p[GarminApp.App]?.let { key?.get()?.let(WatchKey::hex) }
+        val secret = p[WatchProfile.App]?.let { key?.get()?.let(WatchKey::hex) }
         while (true) {
             val devices = port.devices()
             _state.update { it.copy(garminConnect = port.installed(), answering = devices != null) }
@@ -546,7 +550,7 @@ class GarminLink(
                     val links = LinkedHashMap(before?.links.orEmpty())
                     for (app in GarminApp.entries) {
                         // the app with this watch's own display settings (SPEC §11)
-                        val payload = p.of(app, d.id) ?: continue
+                        val payload = p.of(app.profile, d.id) ?: continue
                         for (id in app.ids) {
                             var l = links[id] ?: AppLink()
                             val installed = installed(d, id, before, l)
@@ -565,7 +569,7 @@ class GarminLink(
                                 var out = payload + ("sent" to sent)
                                 if (app.logs && secret != null) out = out + ("key" to secret)
                                 // which watch this is: its fetch sends it back (`&w=`) for its own values
-                                if (app == GarminApp.App) out = out + ("w" to d.id.toString())
+                                if (app.profile == WatchProfile.App) out = out + ("w" to d.id.toString())
                                 val result = port.send(d, id, MonkeyC.encode(out))
                                 val readingAt = (payload["g"] as? Map<*, *>)?.get("t")
                                 trace("push ${app.key}${if (id == app.beta) " beta" else ""} sent $sent reading $readingAt: $result")
@@ -641,14 +645,14 @@ class GarminLink(
      */
     internal fun answer(req: HttpRequest): HttpAnswer {
         if (req.method == "POST") return writes.answer(req)
-        val app = GarminApp.ofPath(req.path) ?: return HttpAnswer.NOT_FOUND
+        val profile = WatchProfile.ofPath(req.path) ?: return HttpAnswer.NOT_FOUND
         val watch =
             req.query["w"]?.toLongOrNull()
                 ?: _state.value.watches
                     .filter { it.has(GarminApp.App) == true }
                     .singleOrNull()
                     ?.id
-        val p = current?.of(app, watch) ?: return HttpAnswer("503 Service Unavailable", "{}")
+        val p = current?.of(profile, watch) ?: return HttpAnswer("503 Service Unavailable", "{}")
         return HttpAnswer("200 OK", json(p + ("sent" to clock.now().epochSecond.toInt())).toString())
     }
 
@@ -696,7 +700,7 @@ class GarminLink(
         internal fun same(
             a: Payloads,
             b: Payloads,
-        ) = same(a.apps, b.apps) && same(a.watches, b.watches)
+        ) = same(a.profiles, b.profiles) && same(a.watches, b.watches)
 
         private fun <K> same(
             a: Map<K, Map<String, Any?>>,

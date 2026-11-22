@@ -15,7 +15,7 @@ simulator and sideloading in [docs/DEVELOPMENT.md › Garmin](../../../docs/DEVE
 | `source/AuraData.mc` | **The seam**: `AuraReading` (what Sukrara on the phone sent) and `AuraData.current()`, the one place the face reads it; `AuraData.reading(now)` fills it from the shared link |
 | `source/AuraWatch.mc` | Fills the input model at every draw: the clock, mode, battery, fields' data, settings, and the seam's reading aged by the watch clock |
 | `source/AuraFields.mc` | Every field a slot can show (aura.js `fields()`): its icon, gap, format and the complication type it comes from |
-| `source/AuraComp.mc` | The watch's complications the four fields need: subscribed to those only, their newest values (the face only, `(:face)`: the case loader, a watch-app, can't subscribe and has `source-cases/AuraCompStub.mc`) |
+| `source/AuraComp.mc` | The watch's complications the four fields need: subscribed to those only, their newest values (the face only, `(:complications)`: the case loader, a watch-app, can't subscribe and has `source-cases/AuraCompStub.mc`) |
 | `source/AuraModel.mc` | **The layout**: every value of the face, a pure function of the input (aura.js `renderVals()`) |
 | `source/AuraDraw.mc` | Paints the model (every glyph from the fonts' atlases) |
 | `source/AuraDial.mc` | **The aura** (SPEC.md §6.12): `AuraDial`, a dial's numbers and its painting; `AuraDials`, the dial's cached bitmap (painted again only when its inputs change) and the seconds sweep (§6.11) |

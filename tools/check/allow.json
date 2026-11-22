@@ -187,11 +187,11 @@
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/GarminLink.kt",
-      "reason": "Sukrara Aura's fetch: the bounded LocalHttpServer on 127.0.0.1:17582 only (loopback: Garmin Connect's web proxy for the face; nothing off the phone reaches it), GET /sukrara/aura, open only while a watch is known to have the face; opens no outgoing connection"
+      "reason": "The Garmin apps' fetch: the bounded LocalHttpServer on 127.0.0.1:17582 only (loopback: Garmin Connect's web proxy for the watch faces, the app and the data field; nothing off the phone reaches it), GET /sukrara/face|app|field and the signed POSTs, open only while a watch is known to have a Sukrara app; opens no outgoing connection"
     },
     {
       "path": "apps/android/integrations/src/main/kotlin/app/mauri/sukrara/integrations/garmin/ConnectIq.kt",
-      "reason": "Sukrara Aura's push: binds Garmin Connect's Connect IQ service (explicit component in com.garmin.android.apps.connectmobile) and hands it the payload for the watch; no socket, no URL"
+      "reason": "The Garmin apps' push: binds Garmin Connect's Connect IQ service (explicit component in com.garmin.android.apps.connectmobile) and hands it each app's payload for the watch; no socket, no URL"
     },
     {
       "path": "apps/android/app/src/debug/kotlin/app/mauri/sukrara/debug/SimulatorConnectIq.kt",
@@ -309,7 +309,7 @@
     "package:com.google.android.healthconnect.controller": "Health Connect's own icon on its row (Google's builds; :core:designsystem AppIcons)",
     "package:com.android.healthconnect.controller": "Health Connect's own icon on its row (AOSP builds; :core:designsystem AppIcons)",
     "package:org.nativescript.LibreLinkUp": "LibreLinkUp's own icon on the LibreLinkUp source's rows when the app is installed (:core:designsystem AppIcons)",
-    "package:com.garmin.android.apps.connectmobile": "Sukrara Aura: binding Garmin Connect's Connect IQ service to push to the face; Share with apps: Garmin Connect reads the xDrip+ server (:integrations)",
+    "package:com.garmin.android.apps.connectmobile": "Sukrara on Garmin watches: binding Garmin Connect's Connect IQ service to push to the watch faces, the app and the data field; Share with apps: Garmin Connect reads the xDrip+ server (:integrations)",
     "package:com.garmin.connectiq": "Share with apps: Connect IQ reads the xDrip+ server (:integrations)",
     "package:com.google.android.wearable.app": "Settings › Alerts suggests Alerts on my watch when the Wear OS app is on the phone (docs/36; :feature:settings)",
     "package:com.google.android.apps.wear.companion": "Settings › Alerts suggests Alerts on my watch when the Pixel Watch app is on the phone (docs/36; :feature:settings)",

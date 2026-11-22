@@ -14,7 +14,7 @@
 
 Sukrara shows your continuous glucose monitor (CGM) readings live on your **Android phone**, at a glance: in the status
 bar, home screen widgets, lock screen and notifications, so you rarely need to open the app, and on your **Garmin
-watch**: the Sukrara Aura watch face, a watch app you log from and a data field for workouts. It reads a **FreeStyle Libre 3** straight from the sensor, and [other
+watch**: watch faces (Sukrara Aura so far, and any Connect IQ face can read Sukrara's glucose), a watch app you log from and a data field for workouts. It reads a **FreeStyle Libre 3** straight from the sensor, and [other
 sensors](#compatible-cgm-sensors) directly or through Juggluco. It alerts you when glucose goes low or high or stops
 arriving, with minimal alarm fatigue thanks to smart features and discreet sound packs, and lets you log insulin and
 carbs in seconds. The people who look after you see your glucose live on their Android phone or in their **Mac menu
@@ -211,9 +211,9 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
   updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
   works).
-- **Garmin**: on their way to the Connect IQ store, all three needing Sukrara for Android and Garmin Connect on the
+- **Garmin**: on their way to the Connect IQ store, all needing Sukrara for Android and Garmin Connect on the
   phone:
-  - Sukrara Aura, the watch face (round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm,
+  - Watch faces: Sukrara Aura (round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm,
     vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm).
   - Sukrara, the watch app, and Sukrara data field (every watch with Connect IQ 5 or newer: fēnix 7, 8, 9 and E,
     epix (Gen 2) and epix Pro, enduro 3 and 4, Forerunner 70, 165, 170, 255, 265, 570, 955, 965 and 970, Venu 2,

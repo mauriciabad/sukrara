@@ -2,12 +2,12 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 """A stand-in for Sukrara on the phone, for the Connect IQ simulator on this Mac: answers each app's 5-minute fetch
-(GET http://127.0.0.1:17582/sukrara/<aura|app|field>) with a payload of contracts/watchface/payload/cases.json, its
+(GET http://127.0.0.1:17582/sukrara/<face|app|field>) with a payload of contracts/watchface/payload/cases.json, its
 times moved so it was sent now. Never on the phone or the watch: the simulator's web requests go to this Mac.
 
   python3 apps/garmin/tools/fake_phone.py [--case N] [--app-case N] [--field-case N]
 
-N: the case's index in cases.json's `cases` (the face), `app`, `field` (default 0). The simulator fires the background's
+N: the case's index in cases.json's `cases` (the face profile, every watch face), `app`, `field` (default 0). The simulator fires the background's
 temporal event 5 minutes after the app registers it (or Simulation › Background Events); the app then draws the case.
 Stop it with Ctrl-C.
 """
@@ -39,7 +39,7 @@ def main():
     ap.add_argument("--app-case", type=int, default=0)
     ap.add_argument("--field-case", type=int, default=0)
     a = ap.parse_args()
-    pick = {"aura": CASES["cases"][a.case], "app": CASES["app"][a.app_case], "field": CASES["field"][a.field_case]}
+    pick = {"face": CASES["cases"][a.case], "app": CASES["app"][a.app_case], "field": CASES["field"][a.field_case]}
 
     class Handler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):

@@ -23,8 +23,8 @@ size, the Venu Sq 2 and Venu X1), not yet the Instinct 3 Solar / Instinct E (1-b
 `shared/` is one source tree, split by what an app uses, and each app's `monkey.jungle` names the folders it needs
 (`base.sourcePath = source;../shared/link;…`): no barrel (docs/47 §2). A folder an app doesn't name never lands in its
 build (the face's 128 KB are nearly full, #217: it takes `link` only). Where the apps differ inside a shared file (the
-fetch URL, the payload profile), the code carries an annotation per app (`(:aura)`, `(:app)`, `(:field)`) and each
-jungle excludes the others' (`base.excludeAnnotations`), so no app carries another's.
+fetch URL, the payload profile), the code carries an annotation per payload profile (`(:face)` for every watch face, `(:app)`, `(:field)`) and
+each jungle excludes the others' (`base.excludeAnnotations`), so no app carries another's.
 
 | Folder | What | Used by |
 |---|---|---|

@@ -68,7 +68,7 @@ data class PayloadInputs(
 
 /**
  * What Sukrara's Connect IQ apps get from the phone, contracts/watchface/payload (version [VERSION]), one profile per
- * app ([GarminApp]): the same decisions the card and the glucose notification draw (the hub's [GlucoseState]: THE
+ * kind of app ([WatchProfile]: every watch face, the watch app, the data field): the same decisions the card and the glucose notification draw (the hub's [GlucoseState]: THE
  * trend, the alert runtime's status and what it rings, the sensor, the card's last treatment and metrics), with
  * absolute times so the watch keeps every age and countdown right between messages, and only what that app draws (the
  * face is nearly full; the app's background has 64 KB). Pure: [of] builds the Monkey C value tree (maps with string
@@ -76,14 +76,14 @@ data class PayloadInputs(
  */
 object WatchPayload {
     /** The format's version (`v`); an app ignores a message of another version or another profile (`p`). */
-    const val VERSION = 4
+    const val VERSION = 5
 
     /** History slots before the newest reading, per profile: the face and the field 3 h (their sparklines), the app 24 h. */
-    fun history(app: GarminApp) =
-        when (app) {
-            GarminApp.Aura -> 36
-            GarminApp.App -> 288
-            GarminApp.Field -> 36
+    fun history(profile: WatchProfile) =
+        when (profile) {
+            WatchProfile.Face -> 36
+            WatchProfile.App -> 288
+            WatchProfile.Field -> 36
         }
 
     /** History step and the tolerance a reading may be off its slot (s). */
@@ -116,9 +116,9 @@ object WatchPayload {
             .plus(RANGES + REPORT_DAYS.map { it * 86_400L })
             .toSet()
 
-    /** The payload [app] gets from [i] at [PayloadInputs.now] (the app's push adds `key`: [GarminLink]). */
+    /** The payload of [profile] from [i] at [PayloadInputs.now] (the app's push adds `key`: [GarminLink]). */
     fun of(
-        app: GarminApp,
+        profile: WatchProfile,
         i: PayloadInputs,
     ): Map<String, Any?> {
         val state = i.state
@@ -129,17 +129,21 @@ object WatchPayload {
         val p =
             linkedMapOf(
                 "v" to VERSION,
-                "p" to app.key,
+                "p" to profile.key,
                 "sent" to nowS.toInt(),
                 "unit" to i.unit.key,
                 "bands" to listOf(b.veryLow, b.low, b.tight, b.high, b.veryHigh, b.extremelyHigh),
                 "g" to latest?.let(::glucose),
-                "hist" to (latest?.let { history(it, state.recent, history(app)) } ?: emptyList<Int?>()),
+                "hist" to (latest?.let { history(it, state.recent, history(profile)) } ?: emptyList<Int?>()),
                 "st" to status(state.alerts.status).takeIf { monitoring },
             )
-        if (app != GarminApp.Aura) p["ring"] = if (monitoring) ring(state.alerts.firingKinds, state.alerts.quiet) else emptyList<Any?>()
-        if (app == GarminApp.Field) return p
-        if (app == GarminApp.Aura) {
+        if (profile !=
+            WatchProfile.Face
+        ) {
+            p["ring"] = if (monitoring) ring(state.alerts.firingKinds, state.alerts.quiet) else emptyList<Any?>()
+        }
+        if (profile == WatchProfile.Field) return p
+        if (profile == WatchProfile.Face) {
             // the face's treatment field is its own: always the card's rule, whatever the card's place says
             p["last"] = last(state, i.treatments, nowS).takeIf { monitoring }
             p["sensor"] = sensor(state, i.countdownHours, i.sensor)

@@ -6,8 +6,8 @@ import Toybox.Lang;
 
 // The watch's complications the shown fields need (Toybox.Complications, SPEC.md §6.10): subscribed to those only,
 // their newest values kept by type. A complication this watch hasn't stays null (the field says --). The face's only
-// ((:face)): a watch-app may not subscribe, so the debug case loader builds without it (cases.jungle) and has its stub.
-(:face)
+// ((:complications)): a watch-app may not subscribe, so the debug case loader builds without it (cases.jungle) and has its stub.
+(:complications)
 module AuraComp {
     var vals as Dictionary = {} as Dictionary;
     var _subs as String = "";

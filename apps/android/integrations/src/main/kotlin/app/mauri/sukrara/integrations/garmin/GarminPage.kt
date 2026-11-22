@@ -49,7 +49,7 @@ import java.time.Duration
 import java.time.Instant
 import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** A fetch this recent means the face runs and reads this phone (it fetches every 5 min). */
+/** A fetch this recent means the app runs and reads this phone (it fetches every 5 min). */
 private val FETCH_FRESH: Duration = Duration.ofMinutes(11)
 
 private fun fresh(
@@ -58,9 +58,9 @@ private fun fresh(
 ) = at?.takeIf { Duration.between(it, now) <= FETCH_FRESH }
 
 /**
- * The newest reading [w] is known to have: the last one Garmin Connect delivered to it, or the one the face says it
- * keeps (its report comes with the fetch, which doesn't say which watch asked: it counts only while one watch has the
- * face). When the face [missed] what was delivered, only the face's own counts.
+ * The newest reading [w] is known to have: the last one Garmin Connect delivered to it, or the one its watch face says
+ * it keeps (the face profile's report comes with the fetch, which doesn't say which watch asked: it counts only while
+ * one watch may have a Sukrara face). When the face [missed] what was delivered, only the face's own counts.
  */
 internal fun shows(
     w: GarminWatch,
@@ -70,13 +70,45 @@ internal fun shows(
     return listOfNotNull(w.reading, s.report?.has?.takeIf { only(w, s) }).maxOrNull()
 }
 
+/** Whether a Sukrara watch face is on this watch (true / false / unknown): any of [GarminApp.faces]. */
+internal fun GarminWatch.hasFace(): Boolean? {
+    val l = GarminApp.faces.map { has(it) }
+    return when {
+        true in l -> true
+        l.all { it == false } -> false
+        else -> null
+    }
+}
+
 private fun only(
     w: GarminWatch,
     s: GarminLinkState,
-) = s.watches.count { it.has(GarminApp.Aura) != false } == 1 && w.has(GarminApp.Aura) != false
+) = s.watches.count { it.hasFace() != false } == 1 && w.hasFace() != false
 
-/** The face's own link on [this] (a watch known only by its line: that line). */
-private fun GarminWatch.face(): AppLink = link(GarminApp.Aura) ?: AppLink(installed, delivered, failed, noAnswer, reading, failingSince)
+/** The faces' link on [this]: the one Garmin Connect says is there, else the first known (a watch known only by its line: that line). */
+private fun GarminWatch.face(): AppLink =
+    GarminApp.faces.mapNotNull { link(it) }.let { l -> l.firstOrNull { it.installed == true } ?: l.firstOrNull() }
+        ?: AppLink(installed, delivered, failed, noAnswer, reading, failingSince)
+
+/**
+ * The face profile's fetch and report count for [face]: no other Sukrara face may be on a watch (the fetch path is the
+ * faces' one, so it can't say which face asks).
+ */
+private fun soleFace(
+    face: GarminApp,
+    s: GarminLinkState,
+) = GarminApp.faces.none { f -> f != face && (s.watches.isEmpty() || s.watches.any { it.has(f) != false }) }
+
+/** [app]'s last fetch: its profile's, a face's only while it is the [soleFace]. */
+private fun fetchedBy(
+    app: GarminApp,
+    s: GarminLinkState,
+) = s.fetchedBy[app.profile]?.takeIf { !app.isFace || soleFace(app, s) }
+
+private fun reportOf(
+    app: GarminApp,
+    s: GarminLinkState,
+) = s.reports[app.profile]?.takeIf { !app.isFace || soleFace(app, s) }
 
 /** The face on [w] keeps every message it gets and takes none: it can't read this phone's (it needs updating). */
 internal fun rejected(
@@ -214,7 +246,7 @@ data class WatchLine(
     val problem: Problem?,
 ) {
     enum class Problem {
-        /** Sukrara Aura isn't installed on it. */
+        /** No Sukrara app is installed on it. */
         NoFace,
 
         /** The face keeps every message it gets and takes none: it can't read this phone's, it needs updating. */
@@ -301,7 +333,7 @@ sealed interface AppLine {
             s: GarminLinkState,
             now: Instant,
         ): AppLine {
-            val fetched = fresh(s.fetchedBy[app], now)
+            val fetched = fresh(fetchedBy(app, s), now)
             return when {
                 s.watches.isNotEmpty() && s.watches.all { it.has(app) == false } && fetched == null -> NotInstalled
                 s.portBusy -> PortBusy
@@ -324,19 +356,17 @@ sealed interface AppLine {
             val only = w.has(app) != false && s.watches.count { it.has(app) != false } == 1
             val asked =
                 fresh(
-                    if (app ==
-                        GarminApp.App
-                    ) {
-                        s.appFetchedOn[w.id] ?: s.fetchedBy[app]?.takeIf { only }
+                    if (app == GarminApp.App) {
+                        s.appFetchedOn[w.id] ?: fetchedBy(app, s)?.takeIf { only }
                     } else {
-                        s.fetchedBy[app]?.takeIf { only }
+                        fetchedBy(app, s)?.takeIf { only }
                     },
                     now,
                 )
             val got = w.link(app)?.delivered?.takeIf { w.has(app) != false }
             return when {
                 w.has(app) == false && asked == null -> NotInstalled
-                only && s.reports[app]?.rejected == true -> Outdated
+                only && reportOf(app, s)?.rejected == true -> Outdated
                 s.portBusy -> PortBusy
                 asked != null -> InUse(asked)
                 got != null -> Got(got)
@@ -447,8 +477,9 @@ private const val TICK_MS = 30_000L
  * Settings › Share with apps › *Garmin*, built like a stock device page: the main switch for Sukrara's own link (on by
  * default) with what stops it under it; the actions as stock action buttons (*Send now*, *Open Garmin Connect*, or *Get
  * Garmin Connect*); *Watches* (every watch Garmin Connect knows, by its own name, one line each: connected or not, the
- * reading it has as a clock time, what goes wrong); *Sukrara on your watch* (the face, the app and the data field:
- * each on a watch or not, and whether it asks this phone); and the xDrip+ server for other faces and data fields, which has its own switch and page.
+ * reading it has as a clock time, what goes wrong); *Sukrara on your watch* (the watch app and the data field: each on
+ * a watch or not, and whether it asks this phone); *Watch faces* (each of Sukrara's faces, the same way); and the xDrip+
+ * server for other faces and data fields, which has its own switch and page.
  */
 @Composable
 fun GarminContent(
@@ -499,38 +530,61 @@ fun GarminContent(
                     InfoRow(w.name, summary = watchText(WatchLine.of(w, s, now), now))
                 }
             }
-            // Sukrara's own Connect IQ apps, one row each per watch (one watch: Sukrara on your watch); the watch app's
-            // opens that watch's settings. While Garmin Connect hasn't said which watches it knows, nothing is known
-            // about them
+            // Sukrara's own Connect IQ apps per watch (one watch: Sukrara on your watch): the watch app (it opens that
+            // watch's settings) and the data field, then the watch faces, a list of one kind (no icons). With several
+            // watches each lists the same apps: no icons either. While Garmin Connect hasn't said which watches it
+            // knows, nothing is known about them
+            val apps = GarminApp.entries.filterNot { it.isFace }
+            val icons = s.watches.size <= 1
             if (s.watches.isEmpty() && s.answering != false) {
                 SettingsGroup(title = stringResource(R.string.in_garmin_sukrara_group)) {
-                    for (app in GarminApp.entries) {
+                    for (app in apps) {
                         InfoRow(stringResource(appName(app)), summary = appText(app, AppLine.of(app, s, now), now), icon = appIcon(app))
+                    }
+                }
+                SettingsGroup(title = stringResource(R.string.in_garmin_faces_group)) {
+                    for (face in GarminApp.faces) {
+                        InfoRow(stringResource(appName(face)), summary = appText(face, AppLine.of(face, s, now), now))
                     }
                 }
             }
             for (w in s.watches) {
-                val title =
-                    if (s.watches.size ==
-                        1
-                    ) {
-                        stringResource(R.string.in_garmin_sukrara_group)
+                val one = s.watches.size == 1
+                val appsTitle =
+                    if (one) {
+                        stringResource(
+                            R.string.in_garmin_sukrara_group,
+                        )
                     } else {
                         stringResource(R.string.in_garmin_sukrara_on, w.name)
                     }
-                SettingsGroup(title = title) {
-                    for (app in GarminApp.entries) {
+                SettingsGroup(title = appsTitle) {
+                    for (app in apps) {
                         val text = appText(app, AppLine.on(app, w, s, now), now)
+                        val icon = appIcon(app).takeIf { icons }
                         if (app == GarminApp.App) {
                             NavigationRow(
                                 stringResource(appName(app)),
                                 { actions.openWatch(w.id, w.name) },
-                                summary = "$text\n${ownText(ui.own[w.id])}",
-                                icon = appIcon(app),
+                                summary = listOfNotNull(text, ownText(ui.own[w.id])).joinToString("\n"),
+                                icon = icon,
                             )
                         } else {
-                            InfoRow(stringResource(appName(app)), summary = text, icon = appIcon(app))
+                            InfoRow(stringResource(appName(app)), summary = text, icon = icon)
                         }
+                    }
+                }
+                val facesTitle =
+                    if (one) {
+                        stringResource(
+                            R.string.in_garmin_faces_group,
+                        )
+                    } else {
+                        stringResource(R.string.in_garmin_faces_on, w.name)
+                    }
+                SettingsGroup(title = facesTitle) {
+                    for (face in GarminApp.faces) {
+                        InfoRow(stringResource(appName(face)), summary = appText(face, AppLine.on(face, w, s, now), now))
                     }
                 }
             }
@@ -543,7 +597,6 @@ fun GarminContent(
                             stringResource(appName(GarminApp.App)),
                             { actions.openWatch(id, name) },
                             summary = "${stringResource(R.string.in_garmin_watch_gone)}\n${ownText(d)}",
-                            icon = appIcon(GarminApp.App),
                         )
                     }
                 }
@@ -623,10 +676,10 @@ private fun appName(app: GarminApp) =
     }
 
 private fun appIcon(app: GarminApp) =
-    when (app) {
-        GarminApp.Aura -> DsR.drawable.ds_ic_wallpaper
-        GarminApp.App -> DsR.drawable.ds_ic_apps
-        GarminApp.Field -> DsR.drawable.ds_ic_timer
+    when (app.profile) {
+        WatchProfile.Face -> null
+        WatchProfile.App -> DsR.drawable.ds_ic_apps
+        WatchProfile.Field -> DsR.drawable.ds_ic_timer
     }
 
 /** "Settings: same as the app" / "Settings: 3 of its own": the watch app's own settings on this watch. */
@@ -635,13 +688,16 @@ private fun ownText(d: WatchDisplay?): String =
     d?.ownCount?.takeIf { it > 0 }?.let { n -> pluralStringResource(R.plurals.in_garmin_watch_own, n, n) }
         ?: stringResource(R.string.in_garmin_watch_same)
 
-/** "Watch face · in use, asked this phone at 14:21": what it is, then whether it is there and runs. */
+/**
+ * "Data field · hasn't asked this phone lately": what it is (a face's group says it), then whether it is there and runs;
+ * null = nothing to say.
+ */
 @Composable
 private fun appText(
     app: GarminApp,
     line: AppLine,
     now: Instant,
-): String {
+): String? {
     val detail =
         when (line) {
             AppLine.NotInstalled -> {
@@ -657,24 +713,15 @@ private fun appText(
             }
 
             is AppLine.InUse -> {
-                stringResource(
-                    if (app ==
-                        GarminApp.Aura
-                    ) {
-                        R.string.in_garmin_face_in_use
-                    } else {
-                        R.string.in_garmin_app_in_use
-                    },
-                    since(line.at, now),
-                )
+                stringResource(if (app.isFace) R.string.in_garmin_face_in_use else R.string.in_garmin_app_in_use, since(line.at, now))
             }
 
             AppLine.Idle -> {
                 stringResource(
-                    when (app) {
-                        GarminApp.Aura -> R.string.in_garmin_face_idle
-                        GarminApp.App -> R.string.in_garmin_app_idle
-                        GarminApp.Field -> R.string.in_garmin_field_idle
+                    when (app.profile) {
+                        WatchProfile.Face -> R.string.in_garmin_face_idle
+                        WatchProfile.App -> R.string.in_garmin_app_idle
+                        WatchProfile.Field -> R.string.in_garmin_field_idle
                     },
                 )
             }
@@ -687,13 +734,14 @@ private fun appText(
                 null
             }
         }
+    // a face's group already says what it is
     val kind =
-        when (app) {
-            GarminApp.Aura -> R.string.in_garmin_face_kind
-            GarminApp.App -> R.string.in_garmin_app_kind
-            GarminApp.Field -> R.string.in_garmin_field_kind
+        when (app.profile) {
+            WatchProfile.Face -> null
+            WatchProfile.App -> R.string.in_garmin_app_kind
+            WatchProfile.Field -> R.string.in_garmin_field_kind
         }
-    return listOfNotNull(stringResource(kind), detail).joinToString(" · ")
+    return listOfNotNull(kind?.let { stringResource(it) }, detail).joinToString(" · ").ifEmpty { null }?.replaceFirstChar { it.uppercase() }
 }
 
 /** The Garmin row's line on Share with apps. */

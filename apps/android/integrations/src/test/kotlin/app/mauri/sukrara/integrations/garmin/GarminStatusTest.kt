@@ -133,7 +133,7 @@ class GarminStatusTest {
         // the watch line counts any Sukrara app
         assertEquals(true, w.installed)
         assertEquals(ago(1), w.delivered)
-        val s = base.copy(watches = listOf(w), fetchedBy = mapOf(GarminApp.App to ago(2)))
+        val s = base.copy(watches = listOf(w), fetchedBy = mapOf(WatchProfile.App to ago(2)))
         assertEquals(AppLine.NotInstalled, AppLine.of(GarminApp.Aura, s, now))
         assertEquals(AppLine.InUse(ago(2)), AppLine.of(GarminApp.App, s, now))
         assertEquals(AppLine.NotInstalled, AppLine.of(GarminApp.Field, s, now))
@@ -170,7 +170,7 @@ class GarminStatusTest {
                     watches = w,
                     fetched = ago(3),
                     fetchedBy =
-                        mapOf(GarminApp.Aura to ago(3)),
+                        mapOf(WatchProfile.Face to ago(3)),
                 ),
                 now,
             ),
@@ -183,7 +183,7 @@ class GarminStatusTest {
                     watches = w,
                     fetched = ago(30),
                     fetchedBy =
-                        mapOf(GarminApp.Aura to ago(30)),
+                        mapOf(WatchProfile.Face to ago(30)),
                 ),
                 now,
             ),
@@ -197,7 +197,7 @@ class GarminStatusTest {
         fun links(app: AppLink) = mapOf(GarminApp.App.id to app, GarminApp.Aura.id to AppLink(installed = true, delivered = ago(4)))
         val descent = GarminWatch.of(7, "Descent", true, links(AppLink(installed = true, delivered = ago(1))))
         val venu = GarminWatch.of(8, "Venu 3", true, links(AppLink(installed = false)) + (GarminApp.App.beta to AppLink(installed = false)))
-        val s = base.copy(watches = listOf(descent, venu), fetchedBy = mapOf(GarminApp.App to ago(2), GarminApp.Aura to ago(3)))
+        val s = base.copy(watches = listOf(descent, venu), fetchedBy = mapOf(WatchProfile.App to ago(2), WatchProfile.Face to ago(3)))
         // the watch app only on the Descent: its fetch is the Descent's; none lately: what reached it
         assertEquals(AppLine.InUse(ago(2)), AppLine.on(GarminApp.App, descent, s, now))
         assertEquals(AppLine.Got(ago(1)), AppLine.on(GarminApp.App, descent, s.copy(fetchedBy = emptyMap()), now))
@@ -219,7 +219,7 @@ class GarminStatusTest {
         // the face on both: its fetch can't tell them apart, each says what reached it
         assertEquals(AppLine.Got(ago(4)), AppLine.on(GarminApp.Aura, venu, s, now))
         // one watch: its fetch is that watch's
-        val one = base.copy(watches = listOf(descent), fetchedBy = mapOf(GarminApp.Aura to ago(3)))
+        val one = base.copy(watches = listOf(descent), fetchedBy = mapOf(WatchProfile.Face to ago(3)))
         assertEquals(AppLine.InUse(ago(3)), AppLine.on(GarminApp.Aura, descent, one, now))
         assertEquals(AppLine.Unknown, AppLine.on(GarminApp.Field, descent, one, now))
         assertEquals(AppLine.PortBusy, AppLine.on(GarminApp.App, descent, one.copy(portBusy = true), now))
@@ -263,7 +263,7 @@ class GarminStatusTest {
         val r = LinkReport(now, runs, drawn = null, drawnSince = null)
         assertEquals(
             AppLine.Outdated,
-            AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app), reports = mapOf(GarminApp.App to r)), now),
+            AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app), reports = mapOf(WatchProfile.App to r)), now),
         )
         assertEquals(AppLine.Got(ago(1)), AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app)), now))
     }

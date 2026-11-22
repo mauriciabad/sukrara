@@ -23,10 +23,11 @@ class GarminAppsTest {
         assertEquals(apps.map { it.getValue("app").jsonPrimitive.content }, GarminApp.entries.map { it.key })
         for ((a, app) in apps.zip(GarminApp.entries)) {
             fun s(k: String) = a.getValue(k).jsonPrimitive.content
-            assertEquals(app.key, s("profile"))
+            assertEquals(app.profile.key, s("profile"))
+            assertEquals(app.isFace, s("type") == "watchface")
             assertEquals(app.id, s("id"))
             assertEquals(app.beta, s("beta"))
-            assertEquals(app.path, s("fetch"))
+            assertEquals(app.profile.path, s("fetch"))
             assertEquals(app.logs, a.getValue("logs").jsonPrimitive.boolean)
         }
         assertEquals(GarminLink.PORT, file.getValue("port").jsonPrimitive.int)

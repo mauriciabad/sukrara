@@ -1,5 +1,5 @@
 {
-  "about": "The watch payload, version 4 (README.md), one list per profile: 'cases' (Sukrara Aura), 'app' (Sukrara, the watch app) and 'field' (Sukrara data field). Each case is a phone state ('phone', times in seconds relative to 'now'; the app's 'metrics' = the report numbers per window, as GlucoseMetrics gives them, 'slots' / 'lastElse' / 'ringRange' / 'lastPlace' = the person's metric settings, 'alerts' = the kinds Sukrara's alert runtime rings, 'open' = whether this phone takes entries now, 'addQuiet' = the minutes its Add treatment's quiet line says (rapid: highs, carbs: lows; absent = off), 'kinds' = what THE kinds' order is decided from, in contracts/treatments/kind-order.json's shape) → the exact payload the phone sends ('payload', absolute epoch seconds; the app's push adds 'key', README) → for the face, what it makes of it at a watch time ('watch': 'at' = the watch clock relative to 'now', 'received' = the watch clock when the message arrived, default 'now'; 'expect' = the face's inputs, README 'On the watch'). Run by AuraPayloadFixtureTest (Android: phone → payload for every profile, and the payload through MonkeyC and back) and the face's link test (Garmin: 'cases' → watch; the app's and the data field's watch side comes with their builds). 'bytes' is a payload as Garmin's own serializer (ciq-companion-app-sdk 2.4.0) wrote it, kept from version 1 (the serialization doesn't change with the payload's version): every reader must decode it to 'bytes.payload'.",
+  "about": "The watch payload, version 5 (README.md), one list per profile: 'cases' (the face profile, every watch face's), 'app' (Sukrara, the watch app) and 'field' (Sukrara data field). Each case is a phone state ('phone', times in seconds relative to 'now'; the app's 'metrics' = the report numbers per window, as GlucoseMetrics gives them, 'slots' / 'lastElse' / 'ringRange' / 'lastPlace' = the person's metric settings, 'alerts' = the kinds Sukrara's alert runtime rings, 'open' = whether this phone takes entries now, 'addQuiet' = the minutes its Add treatment's quiet line says (rapid: highs, carbs: lows; absent = off), 'kinds' = what THE kinds' order is decided from, in contracts/treatments/kind-order.json's shape) → the exact payload the phone sends ('payload', absolute epoch seconds; the app's push adds 'key', README) → for the face, what it makes of it at a watch time ('watch': 'at' = the watch clock relative to 'now', 'received' = the watch clock when the message arrived, default 'now'; 'expect' = the face's inputs, README 'On the watch'). Run by WatchPayloadFixtureTest (Android: phone → payload for every profile, and the payload through MonkeyC and back) and the face's link test (Garmin: 'cases' → watch; the app's and the data field's watch side comes with their builds). 'bytes' is a payload as Garmin's own serializer (ciq-companion-app-sdk 2.4.0) wrote it, kept from version 1 (the serialization doesn't change with the payload's version): every reader must decode it to 'bytes.payload'.",
   "now": 1794823776,
   "cases": [
     {
@@ -25,7 +25,7 @@
         "dayEnd": 49824
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 112, "rate": 0.4, "band": 0, "deg": -12.0},
         "hist": [94, 96, 100, 106, 114, 123, 132, 140, 146, 150, 151, 149,
           145, 139, 132, 124, 117, 111, 106, 102, 99, 97, 95, 95,
@@ -49,7 +49,7 @@
       "name": "LO: no number and no trend",
       "phone": {"readings": [{"t": -60, "mgdl": 39}], "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823716, "v": 39, "rate": null, "band": null, "deg": null},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -64,7 +64,7 @@
       "name": "HI: a rate the sensor sent is dropped (LO / HI have no trend)",
       "phone": {"readings": [{"t": -60, "mgdl": 401, "rate": 2.0, "band": 2}], "status": {"k": "needed", "low": false}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823716, "v": 401, "rate": null, "band": null, "deg": null},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -79,7 +79,7 @@
       "name": "low and falling, nothing logged: eat carbs",
       "phone": {"readings": [{"t": -20, "mgdl": 65, "rate": -1.2, "band": -1}], "status": {"k": "needed", "low": true}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823756, "v": 65, "rate": -1.2, "band": -1, "deg": 36.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -100,7 +100,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823736, "v": 236, "rate": 0.9, "band": 0, "deg": -27.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -120,7 +120,7 @@
       "name": "Mute all until turned off, in range",
       "phone": {"readings": [{"t": -30, "mgdl": 128, "rate": 0.2, "band": 0}], "status": {"k": "muted", "until": "never"}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 128, "rate": 0.2, "band": 0, "deg": -6.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -135,7 +135,7 @@
       "name": "low muted from the notification, 10 min left, flat",
       "phone": {"readings": [{"t": -30, "mgdl": 65, "rate": 0.0, "band": 0}], "status": {"k": "paused", "low": true, "until": 600}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 65, "rate": 0.0, "band": 0, "deg": 0.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -155,7 +155,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -181,7 +181,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -201,7 +201,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -227,7 +227,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -249,7 +249,7 @@
       "name": "warming up, 18 min in: no reading yet",
       "phone": {"readings": [], "sensor": {"state": "warmup", "start": -1080, "ready": 2520, "lifeEnd": 1294920}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": null, "hist": [], "st": null, "last": null,
         "sensor": {"s": "warmup", "start": 1794822696, "ready": 1794826296, "hold": 1794827196, "end": 1796118696},
         "tir": null
@@ -264,7 +264,7 @@
       "name": "the warm-up is over, no reading yet: almost ready",
       "phone": {"readings": [], "sensor": {"state": "warmup", "start": -3660, "ready": -60, "lifeEnd": 1292340}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": null, "hist": [], "st": null, "last": null,
         "sensor": {"s": "warmup", "start": 1794820116, "ready": 1794823716, "hold": 1794824616, "end": 1796116116},
         "tir": null
@@ -275,7 +275,7 @@
       "name": "sensor ended but still sending",
       "phone": {"readings": [{"t": -30, "mgdl": 104, "rate": -0.1, "band": 0}], "sensor": {"state": "ended"}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 104, "rate": -0.1, "band": 0, "deg": 3.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -288,7 +288,7 @@
       "name": "sensor ending: its last 8 h (the countdown setting), 5 h left",
       "phone": {"readings": [{"t": -30, "mgdl": 118, "rate": -0.2, "band": 0}], "sensor": {"state": "active", "start": -1278000, "end": 18000}},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": -0.2, "band": 0, "deg": 6.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -307,7 +307,7 @@
       "name": "nothing paired (not monitoring): no value, nothing else from Sukrara",
       "phone": {"monitoring": false, "readings": [], "treatments": [{"id": "r3", "k": "rapid", "a": 2, "t": -600}], "sensor": {"state": "none"}, "tir": 0.9, "dayEnd": 49824},
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": null, "hist": [], "st": null, "last": null, "sensor": {"s": "none"}, "tir": null
       },
       "watch": [{"at": 0, "expect": {"glucose": null, "sensor": "none", "last": null, "tir": null}}]
@@ -320,7 +320,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mmol", "bands": [60, 75, 150, 200, 260, 320],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mmol", "bands": [60, 75, 150, 200, 260, 320],
         "g": {"t": 1794823731, "v": 160, "rate": 3.2, "band": 3, "deg": -90.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -341,7 +341,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 5, "p": "face", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823056, "v": 150, "rate": 0.5, "band": 0, "deg": -15.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -458,7 +458,7 @@
         "kinds": {"reading": 120, "lowBelow": 70, "ringing": [], "pen": {"k": "rapid", "ago_s": 2100}}
       },
       "payload": {
-        "v": 4,
+        "v": 5,
         "p": "app",
         "sent": 1794823776,
         "unit": "mgdl",
@@ -522,7 +522,7 @@
         "sides": [{"kind": "very_low", "relaxMin": 0, "canLess": true}]
       },
       "payload": {
-        "v": 4,
+        "v": 5,
         "p": "app",
         "sent": 1794823776,
         "unit": "mgdl",
@@ -578,7 +578,7 @@
         ]
       },
       "payload": {
-        "v": 4,
+        "v": 5,
         "p": "app",
         "sent": 1794823776,
         "unit": "mgdl",
@@ -632,7 +632,7 @@
         "open": true
       },
       "payload": {
-        "v": 4,
+        "v": 5,
         "p": "app",
         "sent": 1794823776,
         "unit": "mgdl",
@@ -678,7 +678,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 4,
+        "v": 5,
         "p": "field",
         "sent": 1794823776,
         "unit": "mgdl",
@@ -704,7 +704,7 @@
         "sides": [{"kind": "very_high", "relaxMin": 30, "canLess": false}, {"kind": "rising_fast", "relaxMin": 0, "canLess": true}]
       },
       "payload": {
-        "v": 4,
+        "v": 5,
         "p": "field",
         "sent": 1794823776,
         "unit": "mgdl",
@@ -723,7 +723,7 @@
         "alerts": ["no_data"]
       },
       "payload": {
-        "v": 4,
+        "v": 5,
         "p": "field",
         "sent": 1794823776,
         "unit": "mgdl",
@@ -745,8 +745,8 @@
     ]
   },
   "versions": {
-    "about": "A payload whose 'v' isn't 4 or whose 'p' isn't the app's own profile is ignored (the stored one stays and ages); one that isn't a dictionary or lacks 'v' / 'p' / 'sent' too. The list is the face's ('aura'); each app reads it with its own profile.",
-    "ignored": [{"v": 3, "p": "aura", "sent": 1794823776}, {"v": 4, "sent": 1794823776}, {"v": 4, "p": "app", "sent": 1794823776}, {"p": "aura", "sent": 1794823776}, {"v": 4, "p": "aura"}, "hello", [1, 2]]
+    "about": "A payload whose 'v' isn't 5 or whose 'p' isn't the app's own profile is ignored (the stored one stays and ages); one that isn't a dictionary or lacks 'v' / 'p' / 'sent' too (version 4's 'aura' profile among them). The list is the face profile's ('face'); each app reads it with its own profile.",
+    "ignored": [{"v": 4, "p": "face", "sent": 1794823776}, {"v": 4, "p": "aura", "sent": 1794823776}, {"v": 5, "sent": 1794823776}, {"v": 5, "p": "app", "sent": 1794823776}, {"p": "face", "sent": 1794823776}, {"v": 5, "p": "face"}, "hello", [1, 2]]
   },
   "bytes": {"payload": {"v": 1, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300], "g": {"t": 1794823746, "v": 112, "rate": 0.4, "band": 0, "deg": -12.0}, "hist": [96, 97, 98, 99, 100, 101, 103, 104, 105, 107, 108, 110], "st": null, "last": {"t": 1794818976, "items": [{"k": "rapid", "a": 2.0}]}, "sensor": {"s": "active", "end": 1795255776, "warn": 1795226976}, "tir": {"pct": 82, "until": 1794873600}}, "by": "Garmin's Serializer.serialize, ciq-companion-app-sdk 2.4.0 (maps come out in hash order, strings depth first: a reader follows the offsets, not an order)",
     "hex": "abcdabcd0000009f000573656e740000056c6173740000066974656d730000026b0000067261706964000002610000027400000276000002670000046465670000057261746500000562616e64000005756e69740000056d67646c00000773656e736f72000002730000076163746976650000057761726e000004656e6400000662616e6473000004746972000004706374000006756e74696c00000373740000056869737400da7ada7a000001500b0000000a0300000000016afad66003000000070b00000002030000002a0100000001030000002e0b000000050300000046030000004d03000000540b0000000303000000770500000006030000007f0b000000020300000093000300000098050000000c030000000e05000000010300000026016afac3a00300000026016afad642030000003202c1400000030000002a01000000700300000038023ecccccd030000003f0100000000030000005d0300000061030000006a016b00fd600300000071016b016de001000000370100000046010000008c01000000b401000000fa010000012c03000000850100000052030000008b016afb9900010000006001000000610100000062010000006301000000640100000065010000006701000000680100000069010000006b010000006c010000006e0b000000020300000016030000001a03000000220240000000"}

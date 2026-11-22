@@ -1082,8 +1082,8 @@ watch; the watch shows the real value: check it against the phone, never photogr
       `adb forward tcp:7381 tcp:7381` and `adb forward tcp:17582 tcp:17582`; run the face in the Connect IQ simulator
       (`descentmk343mm`), *adb Connection › Start* (and *Settings › Use Device HTTPS Requirements* off for the fetch; put
       it back after). Within a minute the face shows the emulator's value and trend;
-      *Simulation › Background Events › Temporal* makes it fetch (Share with apps › Garmin: *Sukrara Aura* "Watch face ·
-      in use, asked this phone at <now>"). Stop the emulator's app: the face's value goes late, struck, then *No reading since*,
+      *Simulation › Background Events › Temporal* makes it fetch (Share with apps › Garmin › *Watch faces*: *Sukrara Aura*
+      "in use, asked this phone at <now>"). Stop the emulator's app: the face's value goes late, struck, then *No reading since*,
       counting from the reading's time.
 - [ ] **Phone + watch**: Share with apps › *Garmin* says "<watch> has the <time> reading" within a minute of a reading,
       the time matching the phone's newest reading; the page's watch line says the same, with Garmin Connect's name for
@@ -1106,7 +1106,8 @@ watch; the watch shows the real value: check it against the phone, never photogr
       nothing clipped.
 - [ ] A low with the pill, a mute, a treatment: the face's pill and treatment field change within seconds of the
       phone's card.
-- [ ] *Sukrara on your watch* has three rows (Sukrara Aura, Sukrara, Sukrara data field), each "not installed" until
+- [ ] *Sukrara on your watch* has two rows (Sukrara, Sukrara data field) and *Watch faces* one per face (Sukrara
+      Aura), each "not installed" until
       its app is on a watch; with an app on the watch (once built), its row says "asked this phone at <time>" after its
       fetch, and an entry or a mute it sends shows on the phone's home (the entry in the list, editable and deletable;
       the pill) as one the phone made. An entry sent twice is in the list once.

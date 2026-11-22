@@ -13,13 +13,13 @@ import Toybox.Time;
 // Garmin Connect, to the app's own id) and every 5 minutes fetches the same payload from the phone (the app's
 // LinkBackground.FETCH_URL on http://127.0.0.1:17582, Garmin Connect's web proxy). Either way the payload goes to the app's
 // foreground as it came (Background.exit); the foreground checks and keeps it (Link.receive).
-// contracts/watchface/payload. The storage keys are the face's first names: storage is per app, so each app has its own.
+// contracts/watchface/payload. Storage is per app, so each app has its own under the same keys.
 (:background :glance)
 module LinkBackground {
-    // each app's own fetch: its jungle excludes the other apps' annotations (a module per app would cost the face
-    // 44 bytes, #217)
-    (:aura)
-    const FETCH_URL = "http://127.0.0.1:17582/sukrara/aura";
+    // each profile's own fetch (every watch face the face profile's): its jungle excludes the other profiles'
+    // annotations (a module per app would cost the face 44 bytes, #217)
+    (:face)
+    const FETCH_URL = "http://127.0.0.1:17582/sukrara/face";
     (:app)
     const FETCH_URL = "http://127.0.0.1:17582/sukrara/app";
     (:field)
@@ -28,7 +28,7 @@ module LinkBackground {
     // Every background run's result, also left in the app's storage (LinkService.hand): the foreground picks it up at
     // its next draw when Garmin doesn't call onBackgroundData (2026-11-22, #244: after a watch restart it didn't for 16
     // min while this background kept running; only the face's next start brought the data).
-    const HANDOFF = "auraHandoff";
+    const HANDOFF = "linkHandoff";
 
     // The newer of two payloads by `sent` (an invalid one loses).
     function newer(a, b) {
@@ -108,7 +108,7 @@ class LinkService extends System.ServiceDelegate {
         var report = null;
         var w = null;
         try {
-            report = Application.Storage.getValue("auraReport");
+            report = Application.Storage.getValue("linkReport");
             w = Application.Storage.getValue(Link.WATCH);
         } catch (e) {
             report = null;

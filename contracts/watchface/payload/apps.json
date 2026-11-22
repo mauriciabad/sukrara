@@ -1,5 +1,5 @@
 {
-  "about": "Sukrara's Connect IQ apps, the one registry the phone (Android :integrations GarminApp, GarminAppsTest) and the watch builds (apps/garmin manifests and fetch paths, checked by apps/garmin/tools/link_cases.py --check; build.sh reads the beta ids from here) are tested against. Each app has its own Connect IQ app id (storage and phone messages are per app id, README 'Profiles'), a beta id (a Connect IQ beta app needs its own id; docs/20-publishing.md), the payload profile it gets and the path of its 5-minute fetch on 127.0.0.1:<port>. The phone pushes to the public and the beta id alike, whichever Garmin Connect says is installed. 'logs' = it writes entries, their undo and mutes (POST <entries>, POST <undo>, POST <mute>). 'manifest' = where its manifest lives (an app not built yet is a pending file).",
+  "about": "Sukrara's Connect IQ apps, the one registry the phone (Android :integrations GarminApp, GarminAppsTest) and the watch builds (apps/garmin manifests and fetch paths, checked by apps/garmin/tools/link_cases.py --check; build.sh reads the beta ids from here) are tested against. Each app has its own Connect IQ app id (storage and phone messages are per app id, README 'Profiles'), a beta id (a Connect IQ beta app needs its own id; docs/20-publishing.md), the payload profile it gets and the path of its 5-minute fetch on 127.0.0.1:<port>. Every watch face (type watchface) gets the one face profile and fetches sukrara/face: a new face is one more entry here; there is one watch app and one data field. The phone pushes to the public and the beta id alike, whichever Garmin Connect says is installed. 'logs' = it writes entries, their undo and mutes (POST <entries>, POST <undo>, POST <mute>). 'manifest' = where its manifest lives (an app not built yet is a pending file).",
   "port": 17582,
   "entries": "sukrara/entries",
   "mute": "sukrara/mute",
@@ -11,8 +11,8 @@
       "type": "watchface",
       "id": "9ace188f-9a3a-42d6-9f7d-1afd4ce93293",
       "beta": "635140ec-f724-44fb-bc08-976fa9111250",
-      "profile": "aura",
-      "fetch": "sukrara/aura",
+      "profile": "face",
+      "fetch": "sukrara/face",
       "logs": false,
       "manifest": "apps/garmin/aura/manifest.xml"
     },

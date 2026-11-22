@@ -49,7 +49,7 @@ module LinkTest {
 // the face's cases: what it makes of each payload at each watch time (the app and the field: linkOwnProfile)
 (:test)
 function linkEveryCase(logger as Logger) as Boolean {
-    if (!Link.PROFILE.equals("aura")) {
+    if (!Link.PROFILE.equals("face")) {
         return true;
     }
     var ok = true;
@@ -99,7 +99,7 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
     var ignored = LinkCases.ignored();
     for (var i = 0; i < ignored.size(); i++) {
         var x = ignored[i];
-        if (x instanceof Dictionary && Link.PROFILE.equals(x.get("p")) && !Link.PROFILE.equals("aura")) {
+        if (x instanceof Dictionary && Link.PROFILE.equals(x.get("p")) && !Link.PROFILE.equals("face")) {
             continue;
         }
         Link.reset();
@@ -155,7 +155,7 @@ function linkNewestOfTheQueue(logger as Logger) as Boolean {
 (:test)
 function linkOwnProfile(logger as Logger) as Boolean {
     var ok = true;
-    var all = {"aura" => LinkCases.cases(), "app" => LinkCases.app(), "field" => LinkCases.field()};
+    var all = {"face" => LinkCases.cases(), "app" => LinkCases.app(), "field" => LinkCases.field()};
     var profiles = all.keys();
     for (var p = 0; p < profiles.size(); p++) {
         var list = all.get(profiles[p]) as Array;

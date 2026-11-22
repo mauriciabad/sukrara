@@ -312,4 +312,21 @@ Discarded, and why:
 - Keeping version 3 beside 4: no backwards compatibility (CLAUDE.md); the face reads 4.
 - A secret for the fetch: docs/43's reason stands (it must work while push is broken); the writes carry the key.
 - Renaming `AuraLink` / `AuraPayload` to app-neutral names: a rename across the module and docs with no behaviour
-  change; left for when the watch apps land.
+  change; left for when the watch apps land (done in version 5, below).
+
+**Version 5: watch faces, a list** (2026-11-22, the owner: "Aura is one of many watchfaces sukrara will have"). Added:
+- The face profile `face` at `GET /sukrara/face` (was `aura`, `/sukrara/aura`): the one profile of every watch face.
+  `apps.json` lists Aura as one face; Android holds the faces as a list (`GarminApp.faces`, `WatchProfile`), pushes the
+  profile to every registered face Garmin Connect says is installed, and the Garmin page has a *Watch faces* group.
+  Watch side: `(:face)` in `shared/link` (Aura's own complications annotation became `(:complications)`), storage
+  keys `link*`.
+- Names: `GarminLink`, `WatchPayload`, `GarminStatus`, `GarminWatch`, `LinkReport`; logcat `Sukrara.Garmin`.
+- The face profile is documented as open to any Connect IQ face (payload README *Other watch faces*, the website's
+  developer page): read only, fetch only, while a watch has a Sukrara app. A fetch without Sukrara's report doesn't
+  count as a Sukrara face on the page.
+
+Discarded, and why:
+- A query parameter naming which Sukrara face fetched: costs every face bytes (#217) for a case that needs two
+  Sukrara faces on one watch; until then the faces' fetch counts for a face while no other Sukrara face may be there.
+- Pushes to other faces: Garmin Connect delivers only to the app ids the phone names, so it needs a registration the
+  person allows; not built (proposal in #199).

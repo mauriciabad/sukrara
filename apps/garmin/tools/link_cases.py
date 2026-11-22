@@ -8,7 +8,7 @@ registry (contracts/watchface/payload/apps.json).
   python3 apps/garmin/tools/link_cases.py           writes apps/garmin/shared/test/link/LinkCases.mc
   python3 apps/garmin/tools/link_cases.py --check   fails if the committed file differs from a fresh one, or if an
                                                     app's manifest (where apps.json says) has another id or type, or
-                                                    its jungle another fetch path's profile
+                                                    its code another fetch path for its profile
 
 apps/garmin/tools/link-test.sh runs it (with --check) before every run of the test; build.sh reads the beta ids from
 apps.json itself.
@@ -95,7 +95,7 @@ def registry():
             bad.append("%s: the id isn't apps.json's %s" % (a["manifest"], a["id"]))
         if 'type="%s"' % a["type"] not in app:
             bad.append("%s: the type isn't apps.json's %s" % (a["manifest"], a["type"]))
-        want = '(:%s)\n    const FETCH_URL = "http://127.0.0.1:%d/%s";' % (a["app"], reg["port"], a["fetch"])
+        want = '(:%s)\n    const FETCH_URL = "http://127.0.0.1:%d/%s";' % (a["profile"], reg["port"], a["fetch"])
         if want not in service:
             bad.append("apps/garmin/shared/link/LinkService.mc: no %s" % want.replace("\n    ", " "))
     return bad

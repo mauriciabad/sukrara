@@ -63,10 +63,10 @@ class WatchPayloadFixtureTest {
 
     @Test
     fun everyCase() {
-        val profiles = mapOf("cases" to GarminApp.Aura, "app" to GarminApp.App, "field" to GarminApp.Field)
+        val profiles = mapOf("cases" to WatchProfile.Face, "app" to WatchProfile.App, "field" to WatchProfile.Field)
         for ((list, app) in profiles) {
             val cases = file.getValue(list).jsonArray
-            assertTrue(cases.size >= if (app == GarminApp.Aura) 10 else 3)
+            assertTrue(cases.size >= if (app == WatchProfile.Face) 10 else 3)
             for (c in cases.map { it.jsonObject }) {
                 val name = "$list: " + c.getValue("name").jsonPrimitive.content
                 val payload = build(c.getValue("phone").jsonObject, app)
@@ -108,7 +108,7 @@ class WatchPayloadFixtureTest {
                             )
                     ),
             )
-        val p = build(heavy, GarminApp.App) + ("key" to "0".repeat(64))
+        val p = build(heavy, WatchProfile.App) + ("key" to "0".repeat(64))
         val size = MonkeyC.encode(p).size
         assertTrue("$size bytes", size < 6 * 1024)
     }
@@ -133,14 +133,14 @@ class WatchPayloadFixtureTest {
                     .jsonObject
                     .getValue("phone")
                     .jsonObject,
-                GarminApp.Aura,
+                WatchProfile.Face,
             )
         assertTrue(MonkeyC.encode(full).size < 1024)
     }
 
     private fun build(
         p: JsonObject,
-        profile: GarminApp,
+        profile: WatchProfile,
     ): Map<String, Any?> {
         fun at(e: JsonElement?) = Instant.ofEpochSecond(now + e!!.jsonPrimitive.long)
         val readings =

@@ -1,4 +1,4 @@
-# Sukrara's watch payload (version 4)
+# Sukrara's watch payload (version 5)
 
 What the phone sends Sukrara's Connect IQ apps, and what they send back: everything a watch shows from Sukrara
 (`../aura/SPEC.md` §3 for the face, `../app/SPEC.md` for the app once designed), decided by Sukrara exactly as the card
@@ -27,14 +27,17 @@ every fetch path to `apps.json`; `apps/garmin/build.sh` takes the beta ids from 
 
 | App | Connect IQ type | Profile | Fetch | Writes |
 |---|---|---|---|---|
-| **Sukrara Aura** | watch face (128 KB, background 64 KB) | `aura` | `GET /sukrara/aura` | no |
+| **Every watch face**: Sukrara Aura, and any other face (below, *Other watch faces*) | watch face (128 KB, background 64 KB) | `face` | `GET /sukrara/face` | no |
 | **Sukrara** | watch app: glance, app, background, complications (app 768 KB, glance and background 64 KB) | `app` | `GET /sukrara/app` | `POST /sukrara/entries`, `POST /sukrara/undo`, `POST /sukrara/mute` |
 | **Sukrara data field** | data field (128–256 KB) | `field` | `GET /sukrara/field` | no (a data field has no input) |
 
 Each app is its own Connect IQ app id, so each has its own storage and its own phone messages; a data field can't read
 another app's storage or complications (docs/47 §2). So every app gets its own push and makes its own fetch, and
 **each profile carries only what that app draws**: the face is nearly full (#217), and the app's glance and background
-have 64 KB to decode a message in.
+have 64 KB to decode a message in. **Every watch face gets the one face profile**: Sukrara Aura is one face in
+`apps.json`, and a new Sukrara face is one more entry there with profile `face` (its jungle excludes `app` and
+`field`); the phone pushes it to every face in the registry Garmin Connect says is installed. There is one watch app
+and one data field.
 
 Every app also has a **beta id** (a Connect IQ beta app is a separate id, docs/20-publishing.md). The phone treats the
 beta like the public app: a push to whichever of the two Garmin Connect says is installed, the same profile, the same
@@ -49,7 +52,7 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the ap
    Wire format: Garmin's Monkey C serialization (string block `0xABCDABCD`, data block `0xDA7ADA7A`, big-endian;
    Android writes it itself, `MonkeyC`). The app's background wakes on it (`registerForPhoneAppMessageEvent`) and
    hands it on (`Background.exit`, under its ~8 KB; the app profile stays under 6 KB with a full day and 64 entries, `theAppsDayFitsItsBackground`). Every background run
-   (push or fetch) also leaves its result in the app's storage (the face's `auraHandoff`, with a run id), picked up at
+   (push or fetch) also leaves its result in the app's storage (`linkHandoff`, with a run id), picked up at
    the next draw when Garmin doesn't call `onBackgroundData` (#244); the id makes a run count once. Retries and the
    stuck rule (docs/43) hold **per app on each watch**: one app's failed message is sent again without sending the
    others' again.
@@ -68,7 +71,7 @@ phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Garmin`, wit
 
 ## Profiles
 
-| Key | `aura` | `app` | `field` |
+| Key | `face` | `app` | `field` |
 |---|---|---|---|
 | `v`, `p`, `sent`, `unit`, `bands`, `g`, `st` | ✓ | ✓ | ✓ |
 | `hist` | 36 (3 h) | 288 (24 h: the app zooms 3 / 6 / 12 / 24 h itself, 12 h by default) | 36 (3 h: its sparkline, up to 3 h as the slot's width allows) |
@@ -87,8 +90,8 @@ Every profile:
 
 | Key | Value |
 |---|---|
-| `v` | `4`. An app ignores any other version, any other profile, and anything that isn't a dictionary with `v`, `p` and `sent` |
-| `p` | the profile: `aura` / `app` / `field` |
+| `v` | `5`. An app ignores any other version, any other profile, and anything that isn't a dictionary with `v`, `p` and `sent` |
+| `p` | the profile: `face` (every watch face) / `app` / `field` |
 | `sent` | the phone's clock when it was built |
 | `unit` | `mgdl` / `mmol` (the watch converts: mg/dL ÷ 18.0182, one decimal) |
 | `bands` | the person's limits, mg/dL: `[veryLow, low, tight, high, veryHigh, extremelyHigh]` (Sukrara's `Bands`, in order) |
@@ -261,9 +264,33 @@ minutes (a retry, a replay: done once); `done` = the runtime ran it: *Mute all* 
 the side's mute for `min` minutes, *Unmute* of the side (it also ends a quiet after a treatment, as the phone's button
 does), the end of *Mute all*, or the side's *Remind less* / *Remind as usual* (its `relaxMin`).
 
+## Other watch faces
+
+The face profile is open: **any Connect IQ watch face can read it** with the same fetch Sukrara's faces make,
+`GET http://127.0.0.1:17582/sukrara/face` from its background every 5 minutes (`Communications.makeWebRequest`,
+`HTTP_RESPONSE_CONTENT_TYPE_JSON`; Garmin Connect makes the request on the phone, plain http only to loopback). The
+answer is the face profile above as JSON, `sent` = now; the face reads it as *On the watch* says (the clock skew, the
+freshness steps, never an old value as current, `LO` / `HI`, the countdowns). The query is optional: `r` and `d` are
+Sukrara's own report, and a face that sends none is simply not shown on the phone. Developer page:
+[sukrara.mauri.app/garmin/developers/](https://sukrara.mauri.app/garmin/developers/).
+
+What a face gets and when:
+- **Only the fetch, no push**: Garmin Connect delivers a phone message only to an app id the phone sends to, and the
+  phone sends only to `apps.json`'s ids (a third face's push needs its id: not built).
+- **Only while the port is open**: while the Garmin switch is on and a watch is known to have a Sukrara app (Garmin
+  Connect says one is installed, or a push reached it). A watch with only another face gets nothing: the person
+  installs Sukrara's watch app or data field too.
+- **Read only**: the fetch never carries `key`, so another face can't log entries, undo or mute (`POST` answers `sig`).
+- **What it exposes**: the face profile (the reading, 3 h, the status, the last treatment, the sensor's dates, today's
+  time in range) is what any app on the phone can already read on this port while it is open (the app profile has the
+  24 h, the treatments and the numbers): the privacy policy says so (*Sukrara on your Garmin watch*), and the Garmin
+  page's footer too. A face's fetch adds nothing to that.
+
 ## Changing it
 
 A change lands with the phone and every app in the same change (parity group `watchface-link`), with `v` raised when
 an older app would misread it (CLAUDE.md: the wire formats are versioned; every app speaks the same version). A key
 an older app ignores needs no raise. Version 4 (#199): the profiles and `p`, the app's and the data field's keys, the
-entries, undo and mute endpoints; the face's keys as in version 3.
+entries, undo and mute endpoints; the face's keys as in version 3. Version 5 (#199): the face profile is `face` (was
+`aura`) at `GET /sukrara/face` (was `/sukrara/aura`), the one profile of every watch face, Sukrara's or another's;
+its keys as in version 4. Another face reads `v` too: a raise is said on the developer page.

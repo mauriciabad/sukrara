@@ -189,7 +189,7 @@ class GarminLinkTest {
             assertNull(off.appLast("7"))
             assertEquals(listOf("rapid"), ((off.appLast("8") as Map<*, *>)["items"] as List<*>).map { (it as Map<*, *>)["k"] })
             // the face's treatment field is its own: it travels whatever the card's switch says
-            assertTrue(off.sent.filter { it["p"] == GarminApp.Aura.key }.all { it["last"] != null })
+            assertTrue(off.sent.filter { it["p"] == GarminApp.Aura.profile.key }.all { it["last"] != null })
         }
 
     @Test
@@ -221,7 +221,7 @@ class GarminLinkTest {
             settle()
             // the field's beta id is the one on the watch: it is pushed to, its public id isn't
             assertEquals(listOf(GarminApp.Aura.id, GarminApp.App.id, GarminApp.Field.beta), port.sentTo)
-            assertEquals(listOf("aura", "app", "field"), port.sent.map { it["p"] })
+            assertEquals(listOf("face", "app", "field"), port.sent.map { it["p"] })
             assertTrue(port.sent.all { it["v"] == WatchPayload.VERSION })
             assertEquals(WatchKey.hex(key.get()!!), port.sent[1]["key"])
             assertNull(port.sent[0]["key"])
@@ -240,6 +240,9 @@ class GarminLinkTest {
             assertTrue(app.body.contains("\"p\":\"app\""))
             assertFalse(app.body.contains("\"key\""))
             assertTrue(link.answer(HttpRequest("GET", "sukrara/field", emptyMap(), emptyMap())).body.contains("\"p\":\"field\""))
+            // every watch face, Sukrara's or another's, fetches the one face profile
+            assertTrue(link.answer(HttpRequest("GET", "sukrara/face", emptyMap(), emptyMap())).body.contains("\"p\":\"face\""))
+            assertEquals(HttpAnswer.NOT_FOUND, link.answer(HttpRequest("GET", "sukrara/aura", emptyMap(), emptyMap())))
             assertEquals(HttpAnswer.NOT_FOUND, link.answer(HttpRequest("GET", "sukrara/other", emptyMap(), emptyMap())))
             link.stop()
         }
