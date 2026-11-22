@@ -686,7 +686,7 @@
    }
   },
   "alert-high": {
-   "budget": 5627,
+   "budget": 4575,
    "input": {
     "age": 0.5,
     "bands": [
@@ -902,7 +902,7 @@
    }
   },
   "alert-high-relaxed": {
-   "budget": 5898,
+   "budget": 4846,
    "input": {
     "age": 0.5,
     "bands": [
@@ -4858,7 +4858,7 @@
    }
   },
   "day-glance": {
-   "budget": 4426,
+   "budget": 1940,
    "input": {
     "age": 0.5,
     "bands": [
@@ -4940,7 +4940,7 @@
    }
   },
   "glance-ask": {
-   "budget": 5026,
+   "budget": 2539,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5029,7 +5029,7 @@
    }
   },
   "glance-high": {
-   "budget": 4874,
+   "budget": 2387,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5116,7 +5116,7 @@
    }
   },
   "glance-waiting": {
-   "budget": 5077,
+   "budget": 2591,
    "input": {
     "age": 0.5,
     "bands": [
@@ -6012,7 +6012,7 @@
    }
   },
   "log-queued": {
-   "budget": 2944,
+   "budget": 2976,
    "input": {
     "age": 0.5,
     "bands": [
@@ -6143,7 +6143,7 @@
    }
   },
   "log-sending": {
-   "budget": 2818,
+   "budget": 2800,
    "input": {
     "age": 0.5,
     "bands": [
@@ -8780,7 +8780,7 @@
    }
   },
   "no-data-glance": {
-   "budget": 4281,
+   "budget": 1795,
    "input": {
     "age": 25.0,
     "bands": [
@@ -9100,7 +9100,7 @@
    }
   },
   "setup": {
-   "budget": 8370,
+   "budget": 5138,
    "input": {
     "age": 0.0,
     "bands": [
@@ -9156,7 +9156,7 @@
    }
   },
   "setup-glance": {
-   "budget": 4408,
+   "budget": 1922,
    "input": {
     "age": 0.0,
     "bands": [
@@ -9214,7 +9214,7 @@
    }
   },
   "setup-opened": {
-   "budget": 8203,
+   "budget": 4998,
    "input": {
     "age": 0.0,
     "bands": [
@@ -10498,7 +10498,7 @@
    }
   },
   "very-low-glance": {
-   "budget": 4342,
+   "budget": 1856,
    "input": {
     "age": 0.5,
     "bands": [
