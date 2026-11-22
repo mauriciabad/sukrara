@@ -91,4 +91,25 @@
     <string id="opt_since">Time since</string>
     <string id="opt_amount">Amount</string>
     <string id="opt_both">Both</string>
+    <string id="WNow" scope="glance">now</string>
+    <string id="WCarbs" scope="glance">Carbs</string>
+    <string id="WInsulin" scope="glance">Insulin</string>
+    <string id="WMuted" scope="glance">Muted</string>
+    <string id="WWarming" scope="glance">Warming up</string>
+    <string id="WNoSince" scope="glance">No reading since</string>
+    <string id="WReadyAt" scope="glance">Ready at %1$</string>
+    <string id="RepAbove">Above range</string>
+    <string id="RepIn">In range</string>
+    <string id="RepBelow">Below range</string>
+    <string id="RepVeryGood">very good %1$</string>
+    <string id="RepAverage">Average</string>
+    <string id="RepGmi">GMI</string>
+    <string id="RepCv">CV</string>
+    <string id="RepNone">No readings in this period</string>
+    <string id="KRapid">Rapid</string>
+    <string id="KLong">Long</string>
+    <string id="KCarbs">Carbs</string>
+    <string id="Done">Done</string>
+    <string id="LowsMuted30">Lows muted for 30 min</string>
+    <string id="HighsMuted30">Highs muted for 30 min</string>
 </strings>

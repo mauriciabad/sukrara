@@ -7,8 +7,9 @@ import Toybox.Time;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
-// The glance: the value, the arrow and the age from the app's stored payload (ReadingInput), on the one seam
-// layout(input) → model, draw(model).
+// The glance (S.glance): the widget's top row in the glance's area right of Sukrara's icon, on the seam
+// AppInput.build → AppParts.glance (the display list) → AppDraw. The area is app.js's x −83 … 165, y −51.5 … 51.5
+// (248 × 103 on the Descent Mk3 43), scaled by its height.
 (:glance)
 class AppGlance extends WatchUi.GlanceView {
     var _timer as Timer.Timer?;
@@ -28,6 +29,7 @@ class AppGlance extends WatchUi.GlanceView {
             (_timer as Timer.Timer).stop();
             _timer = null;
         }
+        AppDraw.release();
     }
 
     function tick() as Void {
@@ -37,26 +39,12 @@ class AppGlance extends WatchUi.GlanceView {
     function onUpdate(dc as Graphics.Dc) as Void {
         var now = Time.now().value();
         Link.pickUp(now);
-        PlainDraw.draw(dc, GlanceLayout.layout(Readings.input(now), dc.getWidth(), dc.getHeight()));
-    }
-}
-
-(:glance)
-module GlanceLayout {
-    // The glance's slot [w] × [h]: the value (or the message) left on the upper half, the age under it.
-    function layout(input as ReadingInput, w as Number, h as Number) as PlainModel {
-        var m = new PlainModel();
-        PlainLayout.fill(m, input, WatchUi.loadResource(Rez.Strings.NoReadings) as String,
-            WatchUi.loadResource(Rez.Strings.Waiting) as String);
-        m.bg = Graphics.COLOR_TRANSPARENT;
-        m.just = Graphics.TEXT_JUSTIFY_LEFT;
-        m.valueFont = Graphics.FONT_GLANCE_NUMBER;
-        m.valueX = 0;
-        m.valueY = m.age != null ? h * 3 / 8 : h / 2;
-        m.ageFont = Graphics.FONT_GLANCE;
-        m.ageX = 0;
-        m.ageY = h * 13 / 16;
-        m.arrowSize = h / 4;
-        return m;
+        AppDraw.glance = true;
+        AppDraw.s = dc.getHeight() / 103.0;
+        AppDraw.ox = 83 * AppDraw.s - 0.5;
+        AppDraw.oy = dc.getHeight() / 2.0 - 0.5;
+        var g = new AppG();
+        AppParts.glance(g, AppInput.build(now));
+        AppDraw.paint(dc, g);
     }
 }

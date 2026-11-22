@@ -84,4 +84,25 @@
     <string id="opt_since">Tiempo desde</string>
     <string id="opt_amount">Cantidad</string>
     <string id="opt_both">Ambos</string>
+    <string id="WNow" scope="glance">ahora</string>
+    <string id="WCarbs" scope="glance">Hidratos</string>
+    <string id="WInsulin" scope="glance">Insulina</string>
+    <string id="WMuted" scope="glance">Silenciadas</string>
+    <string id="WWarming" scope="glance">Calentando</string>
+    <string id="WNoSince" scope="glance">Sin lecturas desde</string>
+    <string id="WReadyAt" scope="glance">Listo a las %1$</string>
+    <string id="RepAbove">Por encima del rango</string>
+    <string id="RepIn">En rango</string>
+    <string id="RepBelow">Por debajo del rango</string>
+    <string id="RepVeryGood">muy bien %1$</string>
+    <string id="RepAverage">Media</string>
+    <string id="RepGmi">GMI</string>
+    <string id="RepCv">CV</string>
+    <string id="RepNone">Sin lecturas en este periodo</string>
+    <string id="KRapid">Rápida</string>
+    <string id="KLong">Lenta</string>
+    <string id="KCarbs">Hidratos</string>
+    <string id="Done">Hecho</string>
+    <string id="LowsMuted30">Bajas silenciadas 30 min</string>
+    <string id="HighsMuted30">Altas silenciadas 30 min</string>
 </strings>
