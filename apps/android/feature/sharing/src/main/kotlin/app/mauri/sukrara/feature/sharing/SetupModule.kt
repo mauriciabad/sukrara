@@ -4,6 +4,8 @@
 package app.mauri.sukrara.feature.sharing
 
 import android.content.Context
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import app.mauri.sukrara.core.data.settings.NotificationStyleSettings
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.AlertReadinessSource
@@ -108,6 +110,33 @@ class SetupPens(
 )
 
 /**
+ * Sukrara's Garmin apps as setup's optional *Garmin* step sees them (the integrations' Garmin link, #199).
+ */
+class SetupGarmin(
+    /** Garmin Connect is on this phone or a watch has one of Sukrara's apps: the step is offered. */
+    val offered: Flow<Boolean>,
+    /** *Send to Sukrara on your watch* (`apps.garmin`, on by default). */
+    val on: Flow<Boolean>,
+    val setOn: suspend (Boolean) -> Unit,
+    /** Each of Sukrara's watch apps, in the registry's order. */
+    val apps: Flow<List<SetupWatchApp>>,
+)
+
+/**
+ * One of Sukrara's watch apps on setup's Garmin step: its [name] and what it gives in one line ([what]; the
+ * integrations' strings), its row [icon] (null = none), its Connect IQ store listing for a language ([url]; null while
+ * it isn't published: no link, #247) and whether a watch has it already ([onWatch]).
+ */
+data class SetupWatchApp(
+    val key: String,
+    @param:StringRes val name: Int,
+    @param:StringRes val what: Int,
+    @param:DrawableRes val icon: Int?,
+    val url: ((language: String) -> String)?,
+    val onWatch: Boolean,
+)
+
+/**
  * What the setup flow and the sharing screens need from the app: `AppGraph` implements it by returning its
  * [SetupModule]. Navigation to other features (the sensor flow) goes through callbacks the app passes to the screens.
  */
@@ -145,6 +174,8 @@ class SetupModule(
     val updates: SetupUpdates? = null,
     /** The insulin pens step's port; null = a build without pens (no step). */
     val pens: SetupPens? = null,
+    /** The Garmin step's port; null = none in this build or test (no step). */
+    val garmin: SetupGarmin? = null,
     /** Root and the LSPosed module (the root step, the status bar text). */
     val systemAccess: SystemAccessPort,
     /** The online source's site (Connect, *Bring back 90 days*); none in a build or test without one. */
@@ -174,6 +205,11 @@ class SetupModule(
 
     /** Pens on this phone ([SetupFacts.pens]); null = it can't read them. */
     val pensAnswered: Flow<Boolean?> by lazy { pens?.answered ?: flowOf(null) }
+
+    /** The Garmin step's fact ([SetupFacts.garmin]): the switch while the step is offered, else null. */
+    val garminFact: Flow<Boolean?> by lazy {
+        garmin?.let { g -> combine(g.offered, g.on) { offered, on -> on.takeIf { offered } }.distinctUntilChanged() } ?: flowOf(null)
+    }
 
     /** The daily update check's answer ([SetupFacts.updates]); null = no updater in this build. */
     val updateChoice: Flow<UpdateChoice?> by lazy { updates?.choice ?: flowOf(null) }
@@ -211,6 +247,9 @@ class SetupModule(
     /** The database was replaced by an empty one (a version change): offer Import history again. */
     suspend fun offerHistoryAgain() = setupStore.update { SetupMachine.reopen(it, SetupStep.History) }
 
+    /** The Garmin step's apps (none without the port). */
+    val garminApps: Flow<List<SetupWatchApp>> by lazy { garmin?.apps ?: flowOf(emptyList()) }
+
     /** Home and setup call this on resume: permissions change in the system's settings. */
     fun refresh() {
         readiness.refresh()
@@ -226,14 +265,23 @@ class SetupModule(
             combine(sources.stored, sources.running, ::Pair),
             hub.state,
             combine(sharing.state, follower.state, ::Pair),
-            combine(alertsConfirmedAt, readiness.readiness, updateChoice, pensAnswered, rootGranted, ::Answers),
+            combine(combine(alertsConfirmedAt, readiness.readiness, ::Pair), updateChoice, pensAnswered, rootGranted, garminFact) {
+                (c, r),
+                u,
+                p,
+                root,
+                g,
+                ->
+                Answers(c, r, u, p, root, g)
+            },
         ) {
             record,
             (spec, running),
             glucose,
             (share, follow),
-            (confirmed, checklist, updates, pens, root),
+            answers,
             ->
+            val (confirmed, checklist, updates, pens, root) = answers
             SetupProgress(
                 record,
                 SetupFacts(
@@ -247,6 +295,7 @@ class SetupModule(
                     updates = updates,
                     pens = pens,
                     root = root,
+                    garmin = answers.garmin,
                 ),
             )
         }
@@ -268,13 +317,14 @@ class SetupModule(
     }
 }
 
-/** The answers kept elsewhere that setup's facts read (thresholds, checklist, updates, pens, root). */
+/** The answers kept elsewhere that setup's facts read (thresholds, checklist, updates, pens, root, Garmin). */
 private data class Answers(
     val confirmed: Instant?,
     val checklist: app.mauri.sukrara.core.model.AlertReadiness,
     val updates: UpdateChoice?,
     val pens: Boolean?,
     val root: Boolean,
+    val garmin: Boolean?,
 )
 
 /** The setup record and the facts it is read against, at one moment ([SetupModule.progress]). */

@@ -3,15 +3,35 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
- * Where Garmin's Connect IQ store badge goes: "coming soon" until Sukrara Aura's listing is public (its app id in
- * site.ts). Then the badge and its link come back (the revert of this change).
- *   <ConnectIqBadge />
+ * Garmin's "Available on the Connect IQ Store" badge (black, from Garmin's Connect IQ brand assets, unmodified; English
+ * only, as Garmin gives it), linking one of Sukrara's apps' listing (default Sukrara Aura) in the page's language. Until
+ * that listing is published (its `store` id in contracts/watchface/payload/apps.json is null, #247) it says "coming
+ * soon" instead: never a link that goes nowhere. Its SVG keeps a transparent margin for its shadow, so it's drawn a
+ * little taller than the other stores' 40 px badges to look the same size.
+ *   <ConnectIqBadge />  <ConnectIqBadge app="field" />
  */
+import connectIq from '../assets/badges/connect-iq-black.svg?url';
+import { STORES } from '../site';
 
+interface Props {
+	app?: 'aura' | 'app' | 'field';
+}
+
+const { app = 'aura' } = Astro.props;
 const t = Astro.locals.t;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+const href = STORES.connectIq(lang, app);
 ---
 
-<span class="sk-ciq-soon not-content">{t('site.garmin.soon')}</span>
+{
+	href ? (
+		<a class="sk-ciq not-content" href={href}>
+			<img src={connectIq} alt={t('site.store.connectIq')} width="129" height="44" />
+		</a>
+	) : (
+		<span class="sk-ciq-soon not-content">{t('site.garmin.soon')}</span>
+	)
+}
 
 <style>
 	.sk-ciq-soon {

@@ -903,7 +903,12 @@ object SettingsIndex {
                 updaterOnly = true,
             )
             rows(about, null, R.string.st_about_versions to R.string.st_about_versions_summary)
-            rows(about, R.string.st_other_devices, R.string.st_device_mac to R.string.st_device_mac_summary)
+            rows(
+                about,
+                R.string.st_other_devices,
+                R.string.st_device_mac to R.string.st_device_mac_summary,
+                R.string.st_device_garmin to R.string.st_device_garmin_summary,
+            )
             rows(
                 about,
                 null,

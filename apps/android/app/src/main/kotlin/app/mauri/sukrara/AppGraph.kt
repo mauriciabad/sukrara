@@ -52,6 +52,7 @@ import app.mauri.sukrara.feature.settings.OverviewSharing
 import app.mauri.sukrara.feature.settings.SettingsModule
 import app.mauri.sukrara.feature.settings.sensor.LifeRows
 import app.mauri.sukrara.feature.sharing.EngineOwnerSharing
+import app.mauri.sukrara.feature.sharing.SetupGarmin
 import app.mauri.sukrara.feature.sharing.SetupModule
 import app.mauri.sukrara.feature.sharing.SetupPens
 import app.mauri.sukrara.feature.sharing.SharingDeps
@@ -75,6 +76,7 @@ import app.mauri.sukrara.integrations.IntegrationsModule
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
 import app.mauri.sukrara.integrations.garmin.ConnectIq
+import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminWatches
 import app.mauri.sukrara.integrations.garmin.WatchEntries
 import app.mauri.sukrara.integrations.garmin.WatchEntry
@@ -160,6 +162,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
@@ -629,6 +632,8 @@ class AppGraph(
             sensorCalendar = { sensorCalendar },
             // Share with apps' rows, which the settings search finds too (their strings are :integrations')
             moreSearch = AppsSearch.entries,
+            // About's Connect IQ store rows: only the published listings
+            watchStore = AppGarmin.storeLinks(garminStore),
             source = spec,
             sourceName = flow { emitAll(monitor.hub.state) }.map { it.name }.distinctUntilChanged(),
             advanced = {
@@ -703,6 +708,9 @@ class AppGraph(
             settingsFrom = followerSettings,
         )
     }
+
+    /** Sukrara's watch apps' Connect IQ store listings: the registry's (none yet, #247), or a debug build's stand-ins. */
+    private val garminStore by lazy { BuildVariant.garminStore(app) ?: ConnectIqStore() }
 
     /** Uploads, the local xDrip+ server and export (each off until switched on in Settings › Share with apps). */
     val integrations by lazy {
@@ -796,6 +804,7 @@ class AppGraph(
             libreLinkUpServer = BuildVariant.libreLinkUpServer(app),
             // a lost one only makes each watch follow the app's settings again
             garminWatches = data.typedStore("watches", GarminWatches.serializer(), GarminWatches(), whenCorrupt = GarminWatches()),
+            garminStore = garminStore,
             // the one heads-up an hour before LibreView's maintenance stops LibreLinkUp (docs/45)
             maintenanceAhead = { w -> MaintenanceNotice.post(app, w.start, w.end) },
             // Sukrara on the watch logs through the phone's own Add treatment (the treatments module is built later)
@@ -909,6 +918,17 @@ class AppGraph(
             updates = updateSuggestion?.setup(),
             // the optional insulin pens step (a phone with NFC)
             pens = SetupPens(pens.setupAnswer, pens::turnOnReading),
+            // the optional Garmin step (Garmin Connect on this phone, or a watch with one of Sukrara's apps)
+            garmin =
+                SetupGarmin(
+                    offered =
+                        integrations.aura.state
+                            .map(AppGarmin::offered)
+                            .distinctUntilChanged(),
+                    on = integrations.aura.on,
+                    setOn = integrations.aura::setOn,
+                    apps = integrations.aura.state.map { AppGarmin.apps(it, garminStore) },
+                ),
             // the root step and the status bar text
             systemAccess = monitor.root.access,
             // the Nightscout source's Connect step and *Bring back 90 days*
@@ -1298,6 +1318,12 @@ class AppGraph(
                 combine(spec, integrations.libreLinkUpSource.testedFamily) { s, tested -> s?.officialAppUploads == true && tested }
             },
             loopAppInstalled = { MoveRules.LOOP_APPS.any { appInstalled(it) } },
+            // one of Sukrara's apps on a watch while sending to it is off
+            garminOff = {
+                integrations.aura.state
+                    .map(AppGarmin::tip)
+                    .distinctUntilChanged()
+            },
         )
     }
 
@@ -1568,6 +1594,24 @@ class AppGraph(
             step("integrations") {
                 integrations.load()
                 integrations.start(scope)
+            }
+            // sending to the watch turned off (the Garmin page, setup): the Garmin tip is closed for the apps found then,
+            // as turning the update check off closes its tip; another app turning up on a watch shows it again
+            step("garmin tip") {
+                scope.launch {
+                    integrations.aura.on
+                        .distinctUntilChanged()
+                        .drop(1)
+                        .filter { !it }
+                        .collect {
+                            val tip =
+                                AppGarmin.tip(
+                                    integrations.aura.state.value
+                                        .copy(on = false),
+                                ) ?: return@collect
+                            home.bannerMemory.update { m -> m.dismissKeys(tip.keys, clock.now()) }
+                        }
+                }
             }
             // the name LibreLinkUp gives the person it reads: the hub shows it only while LibreLinkUp is the source
             step("source name") {

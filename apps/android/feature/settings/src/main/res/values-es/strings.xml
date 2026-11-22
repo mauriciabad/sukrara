@@ -247,6 +247,9 @@
     <string name="st_other_devices">Sukrara en otros dispositivos</string>
     <string name="st_device_mac">Sukrara para Mac</string>
     <string name="st_device_mac_summary">Glucosa y alertas en la barra de menús del Mac · abre su página en la web</string>
+    <string name="st_device_garmin">Sukrara para Garmin</string>
+    <string name="st_device_garmin_summary">Esferas, una app y un campo de datos · abre su página en la web</string>
+    <string name="st_device_store">Reloj Garmin · abre la tienda Connect IQ</string>
     <string name="st_report_problem">Informar de un problema</string>
     <string name="st_report_problem_summary">Abre las incidencias del proyecto en GitHub</string>
     <string name="st_source_code">Código fuente</string>

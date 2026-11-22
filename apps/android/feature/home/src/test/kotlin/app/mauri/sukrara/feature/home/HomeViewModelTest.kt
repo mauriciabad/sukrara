@@ -17,12 +17,15 @@ import app.mauri.sukrara.core.testing.InMemoryStateStore
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
+import app.mauri.sukrara.feature.home.banners.GarminTip
+import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.graph.GraphConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -474,6 +477,66 @@ class HomeViewModelTest {
             runCurrent()
             assertEquals(BannerKind.DataProblem, vm.state.value.banner)
         }
+
+    @Test fun `the Garmin tip shows while a watch has an app and sending is off, closes per app and goes with sending on`() =
+        runTest(dispatcher) {
+            val deps = Deps()
+            val vm = HomeViewModel(deps)
+            backgroundScope.launch { vm.state.collect {} }
+            runCurrent()
+            assertNull(vm.state.value.banner)
+            // Aura on the watch, sending off: the tip, naming the app and the watch
+            val aura = GarminTip("Forerunner 265", listOf("aura"), 42)
+            deps.environment.value = HomeEnvironment(garminOff = aura)
+            runCurrent()
+            assertEquals(BannerKind.GarminOff, vm.state.value.banner)
+            assertEquals(aura, vm.state.value.garminTip)
+            // closed: gone, and it stays closed for Aura
+            vm.dismiss(BannerKind.GarminOff)
+            runCurrent()
+            assertNull(vm.state.value.banner)
+            assertEquals(
+                1,
+                deps.bannerMemory.data
+                    .first()
+                    .closed,
+            )
+            // the data field turns up on the watch too: back, naming both (no single name)
+            deps.environment.value = HomeEnvironment(garminOff = GarminTip("Forerunner 265", listOf("aura", "field"), null))
+            runCurrent()
+            assertEquals(BannerKind.GarminOff, vm.state.value.banner)
+            // Undo on the snackbar brings a closed one back; Show closed tips does too
+            vm.dismiss(BannerKind.GarminOff)
+            runCurrent()
+            assertNull(vm.state.value.banner)
+            vm.restore(BannerKind.GarminOff)
+            runCurrent()
+            assertEquals(BannerKind.GarminOff, vm.state.value.banner)
+            // sending on (or no app on any watch): no tip
+            deps.environment.value = HomeEnvironment(garminOff = null)
+            runCurrent()
+            assertNull(vm.state.value.banner)
+        }
+
+    @Test fun `the Garmin tip sits below the safety banners and the updates tip, above the other tips`() {
+        val env =
+            HomeEnvironment(
+                garminOff = GarminTip("Venu 3", listOf("app"), 1),
+                updateChecksOff = true,
+                backedUp = false,
+                clinicUploadSet = false,
+            )
+        val memory = BannerMemory()
+        assertEquals(BannerKind.TurnOnUpdates, HomeBanners.pick(null, env, false, 0, memory, Samples.NOW))
+        assertEquals(BannerKind.GarminOff, HomeBanners.pick(null, env.copy(updateChecksOff = false), false, 0, memory, Samples.NOW))
+        val closed = memory.dismissKeys(GarminTip("Venu 3", listOf("app"), 1).keys, Samples.NOW)
+        assertEquals(BannerKind.NotBackedUp, HomeBanners.pick(null, env.copy(updateChecksOff = false), false, 0, closed, Samples.NOW))
+        // Show closed tips brings it back
+        assertEquals(
+            BannerKind.GarminOff,
+            HomeBanners.pick(null, env.copy(updateChecksOff = false), false, 0, closed.restoreAll(), Samples.NOW),
+        )
+    }
 
     @Test fun `the Treatments page lists 31 days with the same marks, pens and delete as home's 24 h (#207)`() =
         runTest(dispatcher) {

@@ -32,6 +32,7 @@ import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.feature.home.banners.BannerKind
 import app.mauri.sukrara.feature.home.banners.BannerMemory
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
+import app.mauri.sukrara.feature.home.banners.GarminTip
 import app.mauri.sukrara.feature.home.banners.HomeBanners
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.graph.GlucoseLook
@@ -269,6 +270,8 @@ data class HomeUiState(
     val clinicBehind: Instant? = null,
     /** The sign-in after which the Libre app stopped uploading ([BannerKind.LibreAppStopped]). */
     val libreAppStopped: Instant? = null,
+    /** The watch and the apps the Garmin tip names ([BannerKind.GarminOff]). */
+    val garminTip: GarminTip? = null,
     /**
      * The next LibreView maintenance window of LibreLinkUp's region while it begins within
      * [MAINTENANCE_AHEAD] (contracts/sources/librelinkup/status.json `warnHome_s`): home's quiet line under the card.
@@ -356,6 +359,7 @@ class HomeViewModel(
                 blockedFeature = env.blockedShown(memory),
                 clinicBehind = env.clinicBehind,
                 libreAppStopped = env.libreAppStopped,
+                garminTip = env.garminShown(memory),
                 dataProblems = problems,
                 treatments = listed,
                 history = history,
@@ -408,6 +412,14 @@ class HomeViewModel(
         if (kind == BannerKind.ClinicUploadBehind) {
             val key = deps.environment.value.behindKey ?: return
             viewModelScope.launch { deps.bannerMemory.update { it.dismissKey(key, deps.clock.now()) } }
+            return
+        }
+        // every app the tip names: another one turning up on a watch shows it again
+        if (kind == BannerKind.GarminOff) {
+            val keys =
+                deps.environment.value.garminOff
+                    ?.keys ?: return
+            viewModelScope.launch { deps.bannerMemory.update { it.dismissKeys(keys, deps.clock.now()) } }
             return
         }
         // only a feature without a switch is closed, that one alone

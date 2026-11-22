@@ -229,6 +229,34 @@ class SetupMachineTest {
     }
 
     @Test
+    fun `the Garmin step - only with Garmin Connect or a Sukrara app on a watch, before the history, Continue or Skip both final`() {
+        // neither: no step
+        assertTrue(SetupStep.Garmin !in m.steps(facts))
+        // Garmin Connect on the phone (the switch on by default): after the pens, before the history
+        val garmin = facts.copy(pens = false, garmin = true)
+        assertEquals(listOf(Identity, Pens, SetupStep.Garmin, History), m.steps(garmin).takeLast(4))
+        assertTrue(SetupStep.Garmin.extra)
+        val r = m.completePens(m.completeIdentity(m.completeNotification(m.continueExtras(essentials())), garmin.copy(hasIdentity = true)))
+        val shared = garmin.copy(hasIdentity = true)
+        assertEquals(SetupStep.Garmin, m.next(r, shared))
+        // the switch off is still the step's (it shows the switch off); only an answer moves on
+        assertEquals(SetupStep.Garmin, m.next(r, shared.copy(garmin = false)))
+        assertEquals(History, m.next(m.completeGarmin(r), shared))
+        // Skip is final: never on Settings' Finish setup again
+        val skipped = m.skip(r, SetupStep.Garmin)
+        assertEquals(History, m.next(skipped, shared))
+        assertTrue(SetupStep.Garmin !in m.extrasLeft(skipped, shared))
+        assertTrue(SetupStep.Garmin !in m.extrasLeft(m.continueExtras(skipped), shared))
+        assertTrue(m.answers(SetupStep.Garmin, m::completeGarmin))
+        // a follower sees it too, last
+        val follower = none.copy(spec = SourceSpec.TheirSukrara, following = true, garmin = true)
+        assertEquals(SetupStep.Garmin, m.steps(follower).last())
+        // an install whose walk went past it before it existed isn't sent back for it
+        val pastIt = m.skip(r, History)
+        assertNull(m.next(pastIt, shared))
+    }
+
+    @Test
     fun `a follower on Google Play - the essentials, then only root and the glucose notification`() {
         val follower = none.copy(spec = SourceSpec.TheirSukrara, following = true)
         val r = m.confirmAlerts(m.completePermissions(m.completeJoin(wearer(), follower)))

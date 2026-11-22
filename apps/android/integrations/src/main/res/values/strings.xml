@@ -88,6 +88,10 @@
     <string name="in_garmin_field">Sukrara data field</string>
     <string name="in_garmin_field_kind">Data field</string>
     <string name="in_garmin_field_idle">hasn\'t asked this phone lately (it asks during an activity)</string>
+    <string name="in_garmin_aura_what">A watch face: your glucose, and how far out of range you are, at a glance</string>
+    <string name="in_garmin_app_what">Your glucose in the glance list and complications; log treatments and answer alerts from your wrist</string>
+    <string name="in_garmin_field_what">Your glucose on screen during a workout</string>
+    <string name="in_garmin_store_group">Connect IQ store</string>
     <string name="in_garmin_other_group">Other watch faces and data fields</string>
     <string name="in_garmin_footer">Garmin Connect must be allowed to run in the background. While a watch has a Sukrara app, any app on this phone can read what it reads (up to the last 24 hours, on 127.0.0.1:17582). Only Sukrara on your watch can log entries or mute alerts here: each one is signed with a key only Garmin Connect delivers to it.</string>
     <string name="in_garmin_off">Off</string>

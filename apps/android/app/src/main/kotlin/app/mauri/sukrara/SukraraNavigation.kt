@@ -1150,6 +1150,11 @@ private fun route(
             context.graph.updateSuggestion?.turnOn()
         }
 
+        HomeAction.TurnOnGarmin -> {
+            val graph = context.graph
+            graph.scope.launch { graph.integrations.aura.setOn(true) }
+        }
+
         HomeAction.AllowTaps -> {
             TagIntents.openAllow(context)
         }

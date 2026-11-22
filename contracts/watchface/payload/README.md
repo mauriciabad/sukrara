@@ -8,7 +8,7 @@ and the glucose notification decide it (SPEC ground rule 1). Why it travels the 
 
 | File | What |
 |---|---|
-| `apps.json` | **the registry**: every Sukrara Connect IQ app, its app id and beta id, its profile, its fetch path; the port and the entries path |
+| `apps.json` | **the registry**: every Sukrara Connect IQ app, its app id and beta id, its profile, its fetch path, its store listing id (`store`, null until published: no link shows; #247); the port and the entries path |
 | `cases.json` | phone state → exact payload, per profile (`cases` the face, `app`, `field`); for the face also what it makes of it at a given watch time, the message order rule, versions it ignores; a payload as Garmin's own serializer writes it |
 | `entries.json` | entries from the watch: request → the phone's answer → what it stores |
 | `undos.json` | *Undo* of an entry the watch logged: request → the phone's answer → the entry its delete removes |

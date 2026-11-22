@@ -126,7 +126,8 @@ fun SetupScreen(
     val search by viewModel.nearbySearch.collectAsStateWithLifecycle()
     val site by viewModel.site.collectAsStateWithLifecycle()
     val llu by viewModel.llu.collectAsStateWithLifecycle()
-    val u = ui?.copy(nearby = search, site = site, llu = llu) ?: return
+    val garminApps by viewModel.garminApps.collectAsStateWithLifecycle()
+    val u = ui?.copy(nearby = search, site = site, llu = llu, garminApps = garminApps) ?: return
     val haptics = rememberHaptics()
     // nothing left to show (the view model decides: the walk's end, the last Finish-setup step, the one step answered)
     if (u.step == null) {
@@ -237,6 +238,9 @@ data class SetupActions(
     /** The glucose notification step shows (with root: the status bar text is picked once). */
     val notificationShown: () -> Unit = {},
     val completeNotification: () -> Unit = {},
+    /** The Garmin step's switch (stored at once) and its *Continue*. */
+    val setGarmin: (Boolean) -> Unit = {},
+    val completeGarmin: () -> Unit = {},
 )
 
 @Composable
@@ -307,6 +311,8 @@ private fun SetupViewModel.actions(
             chooseNotification = ::chooseNotification,
             notificationShown = ::notificationShown,
             completeNotification = ::completeNotification,
+            setGarmin = ::setGarmin,
+            completeGarmin = ::completeGarmin,
         )
     }
 }
@@ -412,6 +418,10 @@ fun SetupContent(
 
                         SetupStep.Pens -> {
                             PensStep(u, actions)
+                        }
+
+                        SetupStep.Garmin -> {
+                            GarminStep(u, actions)
                         }
 
                         SetupStep.History -> {
@@ -1007,13 +1017,14 @@ private val SetupStep.icon: Int
             SetupStep.Notification -> DsR.drawable.ds_ic_status_bar_notification
             SetupStep.Identity -> DsR.drawable.ds_ic_group
             SetupStep.Pens -> DsR.drawable.ds_ic_dia_pen
+            SetupStep.Garmin -> DsR.drawable.ds_ic_watch
             SetupStep.History -> DsR.drawable.ds_ic_history
             else -> DsR.drawable.ds_ic_check
         }
 
 /** A step's icon in a tonal circle, above its title. */
 @Composable
-private fun StepCircle(icon: Int) {
+internal fun StepCircle(icon: Int) {
     Box(
         Modifier.size(56.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
         contentAlignment = Alignment.Center,

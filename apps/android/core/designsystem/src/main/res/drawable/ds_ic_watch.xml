@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Material Symbols Outlined "watch" (Apache 2.0, fonts.google.com/icons), 24 dp: the Garmin tip and setup's Garmin step -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp"
+    android:viewportWidth="960" android:viewportHeight="960" android:autoMirrored="false">
+    <group android:translateY="960">
+        <path android:fillColor="@android:color/white" android:pathData="M360-80l-54-182q-48-38-77-95t-29-123q0-66 29-123t77-95l54-182h240l54 182q48 38 77 95t29 123q0 66-29 123t-77 95L600-80H360Zm120-200q83 0 141.5-58.5T680-480q0-83-58.5-141.5T480-680q-83 0-141.5 58.5T280-480q0 83 58.5 141.5T480-280Zm-60-450q15-5 30-7.5t30-2.5q15 0 30 2.5t30 7.5l-12-50h-96l-12 50Zm12 570h96l12-50q-15 5-30 7.5t-30 2.5q-15 0-30-2.5t-30-7.5l12 50Zm-12-620h120-120Zm12 670h-12 120-108Z"/>
+    </group>
+</vector>

@@ -36,6 +36,7 @@ import app.mauri.sukrara.feature.home.PhoneAppProblem
 import app.mauri.sukrara.feature.home.UploadMarks
 import app.mauri.sukrara.feature.home.banners.BannerMemory
 import app.mauri.sukrara.feature.home.banners.BlockedTaps
+import app.mauri.sukrara.feature.home.banners.GarminTip
 import app.mauri.sukrara.feature.home.banners.HomeEnvironment
 import app.mauri.sukrara.feature.treatments.TreatmentLog
 import app.mauri.sukrara.graph.GraphConfig
@@ -124,6 +125,8 @@ class HomeModule(
     private val moveFamily: () -> Flow<Boolean> = { flowOf(false) },
     /** A loop or pump app that may hold the CGM is installed ([MoveRules.LOOP_APPS]; re-read on every resume). */
     private val loopAppInstalled: () -> Boolean = { true },
+    /** Sukrara's apps on a watch while sending to it is off (the Garmin tip); a function: integrations start later. */
+    private val garminOff: () -> Flow<GarminTip?> = { flowOf(null) },
 ) : HomeDeps {
     override val treatments: TreatmentsRepository get() = data.treatments
 
@@ -182,6 +185,7 @@ class HomeModule(
         scope.launch { featureChecks.blocked.collect { b -> env.update { it.copy(blocked = b) } } }
         scope.launch { followPath().collect { p -> env.update { it.copy(followPath = p) } } }
         scope.launch { maintenanceAhead().collect { w -> env.update { it.copy(maintenanceAhead = w) } } }
+        scope.launch { garminOff().collect { t -> env.update { it.copy(garminOff = t) } } }
         // LibreView maintenance's *Read the sensor in Sukrara*: only where MoveRules allow it
         scope.launch {
             combine(moveFamily(), loopApp) { family, loop -> MoveRules.mayOffer(yours = family, testedFamily = family, loopApp = loop) }

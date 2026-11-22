@@ -87,6 +87,10 @@
     <string name="in_garmin_field">Sukrara campo de datos</string>
     <string name="in_garmin_field_kind">Campo de datos</string>
     <string name="in_garmin_field_idle">no ha preguntado a este móvil últimamente (pregunta durante una actividad)</string>
+    <string name="in_garmin_aura_what">Una esfera: tu glucosa, y cuánto te alejas del rango, de un vistazo</string>
+    <string name="in_garmin_app_what">Tu glucosa en los vistazos y las complicaciones; registra tratamientos y responde a las alertas desde la muñeca</string>
+    <string name="in_garmin_field_what">Tu glucosa en pantalla durante un entrenamiento</string>
+    <string name="in_garmin_store_group">Tienda Connect IQ</string>
     <string name="in_garmin_other_group">Otras esferas y campos de datos</string>
     <string name="in_garmin_footer">Garmin Connect debe poder funcionar en segundo plano. Mientras un reloj tenga una app de Sukrara, cualquier app de este móvil puede leer lo que ella lee (hasta las últimas 24 horas, en 127.0.0.1:17582). Solo Sukrara en tu reloj puede registrar entradas o silenciar alertas aquí: cada una va firmada con una clave que solo Garmin Connect le entrega.</string>
     <string name="in_garmin_off">Desactivado</string>

@@ -72,6 +72,14 @@ enum class SetupStep {
     Pens,
 
     /**
+     * Only while Garmin Connect is on this phone or a watch has one of Sukrara's apps (null [SetupFacts.garmin]: no
+     * step), wearer and follower alike: *Your Garmin watch*, *Send to Sukrara on your watch* (on by default, the same
+     * switch as Settings › Share with apps › Garmin), each of Sukrara's watch apps in one line with its Connect IQ store
+     * link (while published), *Continue* or *Skip*, both final; the Garmin page keeps all of it.
+     */
+    Garmin,
+
+    /**
      * Wearer only, last: *Bring your history back* (Import history: LibreView, Tidepool or a file). Offered once: done
      * or skipped, it never comes back; Settings › Share with apps › Import history stays. Offered on its own at launch
      * when it is the only step left (`historyDue`: setup finished before it existed, or an update replaced the
@@ -90,7 +98,7 @@ enum class SetupStep {
     val extra: Boolean get() = ordinal > Ready.ordinal
 
     /** An extra whose skip is a final answer (*Not now*, *Start empty*): it leaves *Finish setup* like an answer. */
-    internal val skipIsFinal: Boolean get() = this == Updates || this == History
+    internal val skipIsFinal: Boolean get() = this == Updates || this == Garmin || this == History
 }
 
 /**
@@ -133,6 +141,11 @@ data class SetupFacts(
     val pens: Boolean? = null,
     /** Sukrara has root (the root step is then done by itself). */
     val root: Boolean = false,
+    /**
+     * *Send to Sukrara on your watch* while the Garmin step is offered (Garmin Connect on this phone, or a watch with
+     * one of Sukrara's apps); null = neither: no step.
+     */
+    val garmin: Boolean? = null,
 )
 
 /** Where the GitHub version's daily update check stands (it is opt-in: off until the person turns it on). */
@@ -191,6 +204,7 @@ object SetupMachine {
                         SetupStep.Updates,
                         SetupStep.Root,
                         SetupStep.Notification,
+                        SetupStep.Garmin,
                     )
                 }
 
@@ -204,7 +218,8 @@ object SetupMachine {
                 }
             }.filter {
                 (it != SetupStep.Updates || facts.updates != null) &&
-                    (it != SetupStep.Pens || facts.pens != null)
+                    (it != SetupStep.Pens || facts.pens != null) &&
+                    (it != SetupStep.Garmin || facts.garmin != null)
             }
         // nothing optional on this phone: the essentials end setup
         return if (all.none { it.extra }) all - SetupStep.Ready else all
@@ -346,7 +361,7 @@ object SetupMachine {
             step in record.completed || passed(step, record, facts)
         } else if (step == SetupStep.Root) {
             step in record.completed || facts.root || passed(step, record, facts)
-        } else if (step == SetupStep.Notification) {
+        } else if (step == SetupStep.Notification || step == SetupStep.Garmin) {
             step in record.completed || passed(step, record, facts)
         } else if (step == SetupStep.Pens) {
             step in record.completed || facts.pens == true
@@ -360,7 +375,7 @@ object SetupMachine {
 
     /**
      * The walk already went past [step]: a later step was answered. Only for a step added to the walk after people
-     * finished it (*Keep Sukrara up to date*, [SetupStep.Ready], [SetupStep.Root], [SetupStep.Notification]): an install from before it isn't sent back into setup
+     * finished it (*Keep Sukrara up to date*, [SetupStep.Ready], [SetupStep.Root], [SetupStep.Notification], [SetupStep.Garmin]): an install from before it isn't sent back into setup
      * for it.
      */
     private fun passed(
@@ -385,6 +400,9 @@ object SetupMachine {
 
     /** *Continue* on the glucose notification step: the choice made there stays. */
     fun completeNotification(record: SetupRecord): SetupRecord = record.done(SetupStep.Notification)
+
+    /** *Continue* on the Garmin step: the switch stays as set there (it is stored as it is turned). */
+    fun completeGarmin(record: SetupRecord): SetupRecord = record.done(SetupStep.Garmin)
 
     /**
      * The source picker's choice for [person] before the person picks one: what this phone runs on when it brings that

@@ -6,6 +6,8 @@ package app.mauri.sukrara.integrations.garmin
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.DrawableRes
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -385,6 +387,8 @@ data class GarminUi(
     /** Each watch's own settings for the watch app (a watch not listed follows the app), and its name when they were set. */
     val own: Map<Long, WatchDisplay> = emptyMap(),
     val ownNames: Map<Long, String> = emptyMap(),
+    /** Sukrara's apps' store listings: only the ones with an id get a row (#247). */
+    val store: ConnectIqStore = ConnectIqStore(),
 )
 
 class GarminViewModel(
@@ -393,14 +397,15 @@ class GarminViewModel(
     context: Context,
     io: CoroutineDispatcher,
     watches: WatchSettingsStore? = null,
+    private val store: ConnectIqStore = ConnectIqStore(),
 ) : ViewModel() {
     private val app = context.applicationContext
     private val readers = MutableStateFlow<List<ServerReader>>(emptyList())
     private val own = watches?.displays ?: flowOf(emptyMap())
     private val names = watches?.names ?: flowOf(emptyMap())
     val ui: StateFlow<GarminUi> =
-        combine(combine(link.state, xdrip.state, readers, ::Triple), own, names) { (l, x, r), o, n -> GarminUi(l, x, r, o, n) }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GarminUi(link.state.value))
+        combine(combine(link.state, xdrip.state, readers, ::Triple), own, names) { (l, x, r), o, n -> GarminUi(l, x, r, o, n, store) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GarminUi(link.state.value, store = store))
 
     init {
         viewModelScope.launch { readers.value = withContext(io) { ServerReaders.installed(app) } }
@@ -421,6 +426,17 @@ class GarminViewModel(
     /** Garmin Connect's page in the phone's app store. */
     fun getGarminConnect(): Boolean = start(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=${ConnectIq.GCM}")))
 
+    /** [app]'s Connect IQ store listing in the phone's language (Garmin Connect or the browser opens it). */
+    fun openStore(watchApp: GarminApp): Boolean {
+        val url =
+            store.url(
+                watchApp,
+                app.resources.configuration.locales[0]
+                    .language,
+            ) ?: return false
+        return start(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+    }
+
     private fun start(i: Intent) = runCatching { app.startActivity(i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess
 }
 
@@ -432,6 +448,8 @@ class GarminActions(
     val openXdrip: () -> Unit = {},
     /** A watch's *Sukrara* settings (its id and name). */
     val openWatch: (Long, String) -> Unit = { _, _ -> },
+    /** An app's Connect IQ store listing. */
+    val openStore: (GarminApp) -> Unit = {},
 )
 
 @Composable
@@ -453,6 +471,7 @@ fun GarminPage(
             { viewModel.getGarminConnect() },
             openXdrip,
             openWatch,
+            { viewModel.openStore(it) },
         ),
         modifier,
     )
@@ -539,12 +558,12 @@ fun GarminContent(
             if (s.watches.isEmpty() && s.answering != false) {
                 SettingsGroup(title = stringResource(R.string.in_garmin_sukrara_group)) {
                     for (app in apps) {
-                        InfoRow(stringResource(appName(app)), summary = appText(app, AppLine.of(app, s, now), now), icon = appIcon(app))
+                        InfoRow(stringResource(app.nameRes), summary = appText(app, AppLine.of(app, s, now), now), icon = appIcon(app))
                     }
                 }
                 SettingsGroup(title = stringResource(R.string.in_garmin_faces_group)) {
                     for (face in GarminApp.faces) {
-                        InfoRow(stringResource(appName(face)), summary = appText(face, AppLine.of(face, s, now), now))
+                        InfoRow(stringResource(face.nameRes), summary = appText(face, AppLine.of(face, s, now), now))
                     }
                 }
             }
@@ -564,13 +583,13 @@ fun GarminContent(
                         val icon = appIcon(app).takeIf { icons }
                         if (app == GarminApp.App) {
                             NavigationRow(
-                                stringResource(appName(app)),
+                                stringResource(app.nameRes),
                                 { actions.openWatch(w.id, w.name) },
                                 summary = listOfNotNull(text, ownText(ui.own[w.id])).joinToString("\n"),
                                 icon = icon,
                             )
                         } else {
-                            InfoRow(stringResource(appName(app)), summary = text, icon = icon)
+                            InfoRow(stringResource(app.nameRes), summary = text, icon = icon)
                         }
                     }
                 }
@@ -584,7 +603,7 @@ fun GarminContent(
                     }
                 SettingsGroup(title = facesTitle) {
                     for (face in GarminApp.faces) {
-                        InfoRow(stringResource(appName(face)), summary = appText(face, AppLine.on(face, w, s, now), now))
+                        InfoRow(stringResource(face.nameRes), summary = appText(face, AppLine.on(face, w, s, now), now))
                     }
                 }
             }
@@ -594,7 +613,7 @@ fun GarminContent(
                     val name = ui.ownNames[id] ?: stringResource(R.string.in_garmin_watch_unnamed)
                     SettingsGroup(title = stringResource(R.string.in_garmin_sukrara_on, name)) {
                         NavigationRow(
-                            stringResource(appName(GarminApp.App)),
+                            stringResource(GarminApp.App.nameRes),
                             { actions.openWatch(id, name) },
                             summary = "${stringResource(R.string.in_garmin_watch_gone)}\n${ownText(d)}",
                         )
@@ -607,6 +626,21 @@ fun GarminContent(
                     RowButton(stringResource(R.string.in_garmin_get_gcm), DsR.drawable.ds_ic_download, onClick = actions.getGarminConnect),
                 ),
             )
+        }
+    }
+    // each of Sukrara's apps on the Connect IQ store, whatever the switch: only the ones whose listing is published
+    // (an app without a store id has no row, the group none at all: never a broken link, #247)
+    val listed = ui.store.apps
+    if (listed.isNotEmpty()) {
+        SettingsGroup(title = stringResource(R.string.in_garmin_store_group)) {
+            for (app in listed) {
+                NavigationRow(
+                    stringResource(app.nameRes),
+                    { actions.openStore(app) },
+                    summary = stringResource(app.whatRes),
+                    icon = app.storeIconRes,
+                )
+            }
         }
     }
     SettingsGroup(title = stringResource(R.string.in_garmin_other_group)) {
@@ -668,19 +702,38 @@ internal fun watchText(
     return parts.joinToString(" · ")
 }
 
-private fun appName(app: GarminApp) =
-    when (app) {
-        GarminApp.Aura -> R.string.in_garmin_aura
-        GarminApp.App -> R.string.in_garmin_app
-        GarminApp.Field -> R.string.in_garmin_field
-    }
+/** Its name, as the Garmin page, setup's Garmin step, About and home's banner say it. */
+val GarminApp.nameRes: Int
+    @StringRes get() =
+        when (this) {
+            GarminApp.Aura -> R.string.in_garmin_aura
+            GarminApp.App -> R.string.in_garmin_app
+            GarminApp.Field -> R.string.in_garmin_field
+        }
 
-private fun appIcon(app: GarminApp) =
-    when (app.profile) {
-        WatchProfile.Face -> null
-        WatchProfile.App -> DsR.drawable.ds_ic_apps
-        WatchProfile.Field -> DsR.drawable.ds_ic_timer
-    }
+/** What it gives the person, in one line (setup's Garmin step, the store links). */
+val GarminApp.whatRes: Int
+    @StringRes get() =
+        when (this) {
+            GarminApp.Aura -> R.string.in_garmin_aura_what
+            GarminApp.App -> R.string.in_garmin_app_what
+            GarminApp.Field -> R.string.in_garmin_field_what
+        }
+
+/** Its row icon: the watch app's and the data field's (a face's group needs none). */
+val GarminApp.iconRes: Int?
+    @DrawableRes get() =
+        when (profile) {
+            WatchProfile.Face -> null
+            WatchProfile.App -> DsR.drawable.ds_ic_apps
+            WatchProfile.Field -> DsR.drawable.ds_ic_timer
+        }
+
+/** Its icon where every app has one (the store rows: a face's is the wallpaper symbol). */
+val GarminApp.storeIconRes: Int
+    @DrawableRes get() = iconRes ?: DsR.drawable.ds_ic_wallpaper
+
+private fun appIcon(app: GarminApp) = app.iconRes
 
 /** "Settings: same as the app" / "Settings: 3 of its own": the watch app's own settings on this watch. */
 @Composable

@@ -290,7 +290,7 @@ Debug commands that replace the sensor or make up data live only in `src/debug` 
 `verify-app.sh`). Test with synthetic data on the emulator, never the owner's devices or real relays.
 
 The Android commands are `DebugFakes`' actions, `adb shell am broadcast -n app.mauri.sukrara/.debug.DebugReceiver -a
-app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS`, `UPDATES`, `GARMIN_SIM` and `LIBRELINKUP` (their
+app.mauri.sukrara.debug.<NAME> …`: `SYNTHETIC`, `ALERTS`, `PEN_READ`, `PEN_TAGS`, `PEN_JUGGLUCO`, `RELAYS`, `UPDATES`, `GARMIN_SIM`, `GARMIN_FAKE` (a made-up Garmin Connect: `--es apps aura,app,field|none|off`, `--ez store true` for stand-in store links) and `LIBRELINKUP` (their
 extras: docs/FEATURES.md "Sensor reminders and countdowns", "Insulin pens", "Sukrara Aura"; docs/QA.md "Emulator", Q27). The Mac's:
 `sukrara-snap card|windows|shell <dir>` (`-es` for Spanish) and `SUKRARA_DEV=1 SUKRARA_FIXTURE=1` (a debug dev run's
 QR scanner reads the made-up `SyntheticCamera` feed, never the Mac's camera; its *Stop Following* with *Keep it* writes

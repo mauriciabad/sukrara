@@ -12,6 +12,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import app.mauri.sukrara.core.model.AppBuild
@@ -93,7 +94,19 @@ data class OtherDevice(
 val OTHER_DEVICES =
     listOf(
         OtherDevice(R.string.st_device_mac, R.string.st_device_mac_summary, DsR.drawable.ds_ic_open_in_new, "$SITE_URL/mac/"),
+        OtherDevice(R.string.st_device_garmin, R.string.st_device_garmin_summary, DsR.drawable.ds_ic_watch, "$SITE_URL/garmin/"),
     )
+
+/**
+ * One of Sukrara's watch apps on the Connect IQ store (About, under *Sukrara on other devices*): its [name] (the
+ * integrations' string) and its listing for a language ([url]). Only apps whose listing is published get one (#247).
+ */
+class StoreLink(
+    @param:StringRes val name: Int,
+    /** Its own row icon (what kind of app it is): no two rows of a page share one. */
+    @param:DrawableRes val icon: Int,
+    val url: (language: String) -> String,
+)
 
 /** About's updater (the GitHub version, #188): its actions and its two switches (schema `update.*`). */
 class AboutUpdates(
@@ -121,6 +134,8 @@ fun AboutContent(
     build: AppBuild,
     update: UpdateState?,
     updates: AboutUpdates?,
+    /** Sukrara's watch apps on the Connect IQ store (only the published ones). */
+    watchStore: List<StoreLink> = emptyList(),
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -167,6 +182,16 @@ fun AboutContent(
                 NavigationRow(stringResource(device.name), {
                     context.openUrl(device.url)
                 }, summary = stringResource(device.summary), icon = device.icon)
+            }
+            // the watch apps' store listings, under the Garmin row (none until a listing is published)
+            val language = LocalConfiguration.current.locales[0].language
+            for (link in watchStore) {
+                NavigationRow(
+                    stringResource(link.name),
+                    { context.openUrl(link.url(language)) },
+                    summary = stringResource(R.string.st_device_store),
+                    icon = link.icon,
+                )
             }
         }
         SettingsGroup {

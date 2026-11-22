@@ -71,10 +71,16 @@ class GarminLinkTest {
 
         override suspend fun devices() = watches
 
+        /** How many app-info questions Garmin Connect was asked. */
+        var asked = 0
+
         override suspend fun appVersion(
             device: IqDevice,
             app: String,
-        ): Int? = if (face && app in apps) version else null
+        ): Int? {
+            asked++
+            return if (face && app in apps) version else null
+        }
 
         override suspend fun send(
             device: IqDevice,
@@ -600,6 +606,53 @@ class GarminLinkTest {
             assertEquals(2, port.sent.size)
             assertTrue(link.state.value.fetchOpen)
             link.stop()
+        }
+
+    @Test
+    fun withTheSwitchOffTheAppsOnAWatchAreKnownAndNothingIsSent() =
+        runTest {
+            val port = FakePort().apply { apps = mutableSetOf(GarminApp.Aura.beta, GarminApp.Field.id) }
+            val settings = InMemorySettingsRepository().apply { set(GarminLink.SETTING, false) }
+            val link = link(port, MutableStateFlow(state(-30L to 112)), settings)
+            settle()
+            val s = link.state.value
+            assertTrue(port.sent.isEmpty())
+            assertFalse(s.fetchOpen)
+            assertTrue(s.garminConnect)
+            assertEquals(listOf(GarminApp.Aura, GarminApp.Field), s.found)
+            assertEquals("Descent Mk3i 43mm", s.foundOn?.name)
+            // asked once per app id, not again a minute later (only after a reconnect or half an hour)
+            val asked = port.asked
+            advanceTimeBy(Duration.ofMinutes(3).toMillis())
+            runCurrent()
+            assertEquals(asked, port.asked)
+            assertEquals(GarminApp.entries.size * 2, asked)
+            link.stop()
+        }
+
+    @Test
+    fun withTheSwitchOffAndNoSukraraAppOrNoGarminConnectNothingIsFound() =
+        runTest {
+            val none = FakePort().apply { apps = mutableSetOf() }
+            val off = InMemorySettingsRepository().apply { set(GarminLink.SETTING, false) }
+            val a = link(none, MutableStateFlow(state(-30L to 112)), off)
+            settle()
+            assertEquals(emptyList<GarminApp>(), a.state.value.found)
+            assertNull(a.state.value.foundOn)
+            val noGcm = FakePort().apply { gcm = false }
+            val b = link(noGcm, MutableStateFlow(state(-30L to 112)), InMemorySettingsRepository().apply { set(GarminLink.SETTING, false) })
+            settle()
+            assertFalse(b.state.value.garminConnect)
+            assertEquals(emptyList<GarminApp>(), b.state.value.found)
+            assertEquals(0, noGcm.asked)
+            // a watch that isn't connected can't be asked: nothing known
+            val away = FakePort().apply { watches = listOf(IqDevice(7, "Venu 3", false)) }
+            val c = link(away, MutableStateFlow(state(-30L to 112)), InMemorySettingsRepository().apply { set(GarminLink.SETTING, false) })
+            settle()
+            assertEquals(emptyList<GarminApp>(), c.state.value.found)
+            a.stop()
+            b.stop()
+            c.stop()
         }
 
     @Test

@@ -80,9 +80,13 @@ class SetupFlowTest {
             clock = clock,
             updates = updates,
             pens = pens,
+            garmin = garmin,
             systemAccess = access,
         )
     }
+
+    /** Sukrara's Garmin apps (null [garmin] = no Garmin step, as in a test without the port). */
+    private var garmin: SetupGarmin? = null
 
     private val settings = InMemorySettingsRepository()
 
@@ -285,6 +289,50 @@ class SetupFlowTest {
         tap("I don't use a smart pen")
         shows("Bring your history back")
         assertEquals(true, SetupStep.Pens in recorded().completed)
+    }
+
+    @Test
+    fun `the Garmin step - shown with Garmin Connect, its switch is the Garmin one, no store link before a listing, Skip goes on`() {
+        val offered = MutableStateFlow(true)
+        val on = MutableStateFlow(true)
+        val apps =
+            MutableStateFlow(
+                listOf(
+                    // stand-in names (the real ones are the integrations' strings)
+                    SetupWatchApp("aura", R.string.sh_setup_pens_title, R.string.sh_setup_pens_on, null, null, onWatch = true),
+                    SetupWatchApp("field", R.string.sh_setup_root_yes, R.string.sh_setup_root_no, null, null, onWatch = false),
+                ),
+            )
+        garmin = SetupGarmin(offered, on, { on.value = it }, apps)
+        sharing.state.value = OwnerShareState.Sharing(1, emptyList(), emptyList(), emptyMap(), 0, 0)
+        host(open = true)
+        walkTheEssentials()
+        shows("Your Garmin watch")
+        tap("Set up the rest")
+        tap("It isn't rooted")
+        tap("Continue")
+        shows("Sukrara can show your glucose on a Garmin watch", substring = true)
+        // what is on a watch says so; no listing published: no Get, where they will be instead
+        shows("On your watch")
+        compose.onNodeWithText("Get").assertDoesNotExist()
+        shows("Coming soon to the Connect IQ store.")
+        // the switch is THE Garmin switch, stored at once
+        tap("Send to Sukrara on your watch")
+        compose.waitUntil(2_000) { !on.value }
+        // Skip: final, the walk goes on, the switch as it was left
+        tap("Skip")
+        shows("Bring your history back")
+        assertEquals(true, SetupStep.Garmin in recorded().skipped)
+        assertEquals(false, on.value)
+        assertEquals(false, SetupStep.Garmin in runBlocking { module.extrasLeft.first() })
+    }
+
+    @Test
+    fun `the Garmin step - not offered without Garmin Connect or a Sukrara app on a watch`() {
+        garmin = SetupGarmin(MutableStateFlow(false), MutableStateFlow(true), {}, MutableStateFlow(emptyList()))
+        host(open = true)
+        walkTheEssentials()
+        compose.onNodeWithText("Your Garmin watch").assertDoesNotExist()
     }
 
     @Test

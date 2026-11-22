@@ -22,7 +22,9 @@ Roborazzi goldens: verified on CI only, re-recorded by `gh workflow run goldens.
   "Insulin pens"), `RELAYS --es urls ws://10.0.2.2:7447|public|off` (where the debug build's relays go; nothing chosen
   = no relay: Q22), `UPDATES --es server http://10.0.2.2:8765/|off [--es cert <sha256>]` (the updater reads a local
   test release and trusts the debug key: Q25), `GARMIN_SIM --ez on true|false` (Sukrara Aura's push goes to the
-  Connect IQ simulator instead of Garmin Connect: Q27), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp,
+  Connect IQ simulator instead of Garmin Connect: Q27), `GARMIN_FAKE --es apps aura,app,field|none|off [--ez store true]` (a
+  made-up Garmin Connect with one connected watch that has those Sukrara apps; `store` stands in Connect IQ store ids:
+  home's Garmin tip, setup's Garmin step, the store links, #199), `LIBRELINKUP --es server http://127.0.0.1:8766|off` (LibreLinkUp,
   the LibreView sign-in and the LibreView upload go to the local fake `tools/librelinkup-probe/fake.py`: Q30). No other commands or extras (`tools/check` rule `debug-docs`). Treatments are added in the app; a
   stage, sensor family or pen model is reached through the app's own flows.
   **These fake commands exist only in the emulator's debug build**: the release app never shows a glucose value, an

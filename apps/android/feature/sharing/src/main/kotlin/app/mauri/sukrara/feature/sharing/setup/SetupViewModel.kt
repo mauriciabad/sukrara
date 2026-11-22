@@ -24,6 +24,7 @@ import app.mauri.sukrara.feature.sharing.HistoryLoss
 import app.mauri.sukrara.feature.sharing.LeaveAnswers
 import app.mauri.sukrara.feature.sharing.LeaveFacts
 import app.mauri.sukrara.feature.sharing.SetupModule
+import app.mauri.sukrara.feature.sharing.SetupWatchApp
 import app.mauri.sukrara.feature.sharing.ended
 import app.mauri.sukrara.feature.sharing.following
 import app.mauri.sukrara.protocol.event.Avatar
@@ -144,6 +145,8 @@ data class SetupUi(
     val llu: LluUi = LluUi(),
     /** A follow this phone left whose wearer hasn't been told yet (their name, "" = unknown); null = none. */
     val untold: String? = null,
+    /** The Garmin step's apps: what each gives, its store link (once published), whether a watch has it. */
+    val garminApps: List<SetupWatchApp> = emptyList(),
 )
 
 /** The root step's and the glucose notification step's state. */
@@ -227,12 +230,12 @@ class SetupViewModel(
             m.hub.state,
             combine(m.sharing.state, m.follower.state, ::Pair),
             combine(
-                m.alertSettings.settings,
-                m.alertsConfirmedAt,
+                combine(m.alertSettings.settings, m.alertsConfirmedAt, ::Pair),
                 m.updateChoice,
                 m.pensAnswered,
                 m.rootGranted,
-            ) { a, c, u, p, r -> Answers(a, c != null, u, p, r) },
+                m.garminFact,
+            ) { (a, c), u, p, r, g -> Answers(a, c != null, u, p, r, g) },
         ) {
             record,
             (spec, running),
@@ -268,6 +271,7 @@ class SetupViewModel(
                     updates = i.answers.updates,
                     pens = i.answers.pens,
                     root = i.answers.root,
+                    garmin = i.answers.garmin,
                 )
             val steps = SetupMachine.steps(facts)
             val single = mode != Mode.Walk
@@ -880,6 +884,22 @@ class SetupViewModel(
     /** *Continue* on the glucose notification step. */
     fun completeNotification() = record(SetupMachine::completeNotification)
 
+    /** The Garmin step's switch: *Send to Sukrara on your watch*, stored at once (the step stays open). */
+    fun setGarmin(on: Boolean) {
+        viewModelScope.launch { m.garmin?.setOn?.invoke(on) }
+    }
+
+    /** *Continue* on the Garmin step: the switch stays as set, the walk goes on. */
+    fun completeGarmin() = record(SetupMachine::completeGarmin)
+
+    /** Sukrara's watch apps on the Garmin step. */
+    val garminApps: StateFlow<List<SetupWatchApp>> =
+        m.garminApps.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            emptyList(),
+        )
+
     /** *Turn on* (or *Keep it on*) on the updates step: the daily check is on, then the walk goes on. */
     fun turnOnUpdates() =
         act {
@@ -967,13 +987,14 @@ class SetupViewModel(
         val answers: Answers,
     )
 
-    /** The answers kept elsewhere: the thresholds, whether they were confirmed, updates, pens and root. */
+    /** The answers kept elsewhere: the thresholds, whether they were confirmed, updates, pens, root and Garmin. */
     private data class Answers(
         val alerts: AlertSettings,
         val confirmed: Boolean,
         val updates: UpdateChoice?,
         val pens: Boolean?,
         val root: Boolean,
+        val garmin: Boolean?,
     )
 
     private data class Others(

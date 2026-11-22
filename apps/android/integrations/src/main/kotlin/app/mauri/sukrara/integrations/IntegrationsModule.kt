@@ -41,6 +41,7 @@ import app.mauri.sukrara.integrations.export.ExportViewModel
 import app.mauri.sukrara.integrations.export.Exporter
 import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
+import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminLink
 import app.mauri.sukrara.integrations.garmin.GarminViewModel
 import app.mauri.sukrara.integrations.garmin.GarminWatches
@@ -172,6 +173,8 @@ class IntegrationsModule(
     alertControls: AlertControls? = null,
     /** Each watch's own display settings for Sukrara on the watch (`apps.garmin.watch`). */
     garminWatches: StateStore<GarminWatches>? = null,
+    /** Sukrara's apps' Connect IQ store listings (the registry's; a debug build may stand some in). */
+    val garminStore: ConnectIqStore = ConnectIqStore(),
 ) {
     /** Your glucose read first-hand here: what uploads and outputs may send (docs/44 keying). */
     val wearer: Flow<Boolean> = role.map { it?.owner == true }
@@ -412,7 +415,7 @@ class IntegrationsModule(
         get() = viewModelFactory { initializer { BroadcastsViewModel(broadcasts, installedApps, wearer, dispatchers.io) } }
 
     val garminViewModels: ViewModelProvider.Factory
-        get() = viewModelFactory { initializer { GarminViewModel(aura, xdrip, context, dispatchers.io, watchSettings) } }
+        get() = viewModelFactory { initializer { GarminViewModel(aura, xdrip, context, dispatchers.io, watchSettings, garminStore) } }
 
     val xdripViewModels: ViewModelProvider.Factory
         get() = viewModelFactory { initializer { XdripViewModel(xdrip, context, dispatchers.io) } }

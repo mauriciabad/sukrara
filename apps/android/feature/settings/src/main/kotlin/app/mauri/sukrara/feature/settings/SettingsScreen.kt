@@ -684,6 +684,7 @@ private fun SettingsPages(
                         setAutomaticInstall = { on -> scope.launch { deps.settings.set(UpdateSettings.AutomaticInstall, on) } },
                     )
                 },
+                deps.watchStore,
                 onBack,
             )
         }

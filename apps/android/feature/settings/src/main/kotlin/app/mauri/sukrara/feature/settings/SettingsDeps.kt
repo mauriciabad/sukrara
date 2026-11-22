@@ -152,6 +152,9 @@ interface SettingsDeps {
      * lists them, with those modules' strings, and checks them against the pages).
      */
     val moreSearch: List<SearchEntry> get() = emptyList()
+
+    /** About's Connect IQ store rows: Sukrara's watch apps whose listing is published (none yet: #247). */
+    val watchStore: List<StoreLink> get() = emptyList()
 }
 
 /**

@@ -60,6 +60,7 @@ object DebugFakes {
             PREFIX + "RELAYS" to ::relays,
             PREFIX + "UPDATES" to ::updates,
             PREFIX + "GARMIN_SIM" to ::garminSim,
+            PREFIX + "GARMIN_FAKE" to ::garminFake,
             PREFIX + "LIBRELINKUP" to ::libreLinkUp,
         )
 
@@ -156,6 +157,22 @@ object DebugFakes {
         val on = intent.getBooleanExtra("on", true)
         SimulatorConnectIq.set(context, on)
         Log.i("SukraraDebug", "GARMIN_SIM: $on from the next start; ending the app process now")
+        android.os.Process.killProcess(android.os.Process.myPid())
+    }
+
+    /**
+     * `GARMIN_FAKE --es apps aura,app,field|none|off [--ez store true]`: a made-up Garmin Connect with one connected
+     * watch that has those Sukrara apps ([FakeGarminConnect]); `store` stands in Connect IQ store ids (links that lead
+     * nowhere). Saved, then the app process ends: open the app. Release builds have no such choice.
+     */
+    private fun garminFake(
+        context: Context,
+        intent: Intent,
+    ) {
+        val apps = intent.getStringExtra("apps")
+        val store = intent.getBooleanExtra("store", false)
+        FakeGarminConnect.set(context, apps, store)
+        Log.i("SukraraDebug", "GARMIN_FAKE: apps $apps, store $store from the next start; ending the app process now")
         android.os.Process.killProcess(android.os.Process.myPid())
     }
 

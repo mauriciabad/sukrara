@@ -135,6 +135,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server, and any Connect IQ watch face can
   read Sukrara's own watch-face data (the developer page: sukrara.mauri.app/developers/garmin-faces/, with a sample
   face in `apps/garmin/sample`).
+- Getting the Garmin apps going from the phone: a setup step when Garmin Connect is on the phone (what each app gives,
+  sending on or off, each one's Connect IQ store link once it's listed), and a home tip with *Turn on* when a watch has
+  one of Sukrara's apps but sending is off.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
 - [Planned]: Android Auto, Home Assistant, Pebble...

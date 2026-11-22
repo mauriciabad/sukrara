@@ -263,7 +263,16 @@ data class GarminLinkState(
     val fetchedBy: Map<WatchProfile, Instant> = emptyMap(),
     /** When the watch app on each watch last fetched (by the `w` its fetch sends back). */
     val appFetchedOn: Map<Long, Instant> = emptyMap(),
-)
+) {
+    /**
+     * Sukrara's apps Garmin Connect says are on a watch, in the registry's order (known with the switch off too:
+     * [GarminLink.detect]); empty while none is known.
+     */
+    val found: List<GarminApp> get() = GarminApp.entries.filter { a -> watches.any { it.has(a) == true } }
+
+    /** The first watch with one of [found] (home's banner names it). */
+    val foundOn: GarminWatch? get() = watches.firstOrNull { w -> GarminApp.entries.any { w.has(it) == true } }
+}
 
 /**
  * Every profile's payload from one snapshot of the phone ([profiles]), and the app's for each watch with its own display
@@ -406,9 +415,17 @@ class GarminLink(
                     }
                 }
         }
+        val reconnects = watchTick().shareIn(scope, SharingStarted.Eagerly, 1)
+        // the switch off: nothing goes to any watch, but Garmin Connect is still asked which of Sukrara's apps each
+        // watch has, at start and when a watch connects (home's banner, setup's Garmin step); on, the push asks
+        scope.launch {
+            combine(on, reconnects) { o, t -> o to t }
+                .distinctUntilChanged()
+                .collectLatest { (o, _) -> if (!o) withContext(io) { detect() } }
+        }
         // the push: every new payload (or a kick, or a watch coming back) to every Sukrara app on every watch
         scope.launch {
-            combine(on, payloads.debounce(SETTLE_MS), kick, watchTick()) { o, p, k, t -> Triple(o, p, k to t) }
+            combine(on, payloads.debounce(SETTLE_MS), kick, reconnects) { o, p, k, t -> Triple(o, p, k to t) }
                 .distinctUntilChanged { a, b -> a.first == b.first && same(a.second, b.second) && a.third == b.third }
                 .collectLatest { (o, p, t) ->
                     if (t != trigger) {
@@ -612,6 +629,31 @@ class GarminLink(
             delay(listOfNotNull(wait.takeIf { retry }, untilProbe).minOrNull() ?: return)
             if (retry) wait = (wait * 2).coerceAtMost(RETRY_MAX_MS)
         }
+    }
+
+    /**
+     * Which of Sukrara's apps each connected watch has, asked of Garmin Connect without sending anything (the switch is
+     * off): one app-info question per app id and watch, again only after [RECHECK_MS] or a reconnect ([installed]). A
+     * watch that isn't connected stays as it was known (Garmin Connect answers only for a connected one).
+     */
+    internal suspend fun detect() {
+        val gcm = port.installed()
+        _state.update { it.copy(garminConnect = gcm) }
+        if (!gcm) return
+        val devices = port.devices()
+        _state.update { it.copy(answering = devices != null) }
+        if (devices == null) return
+        val watches =
+            devices.map { d ->
+                val before = _state.value.watches.firstOrNull { it.id == d.id }
+                val links = LinkedHashMap(before?.links.orEmpty())
+                for (id in GarminApp.entries.flatMap { it.ids }) {
+                    val l = links[id] ?: AppLink()
+                    links[id] = l.copy(installed = installed(d, id, before, l))
+                }
+                GarminWatch.of(d.id, d.name, d.connected, links)
+            }
+        _state.update { it.copy(watches = watches) }
     }
 
     /** Whether app id [app] is on [d], asked again every [RECHECK_MS] or when the watch reconnects; null = unknown. */

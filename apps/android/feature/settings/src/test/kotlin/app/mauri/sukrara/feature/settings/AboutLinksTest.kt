@@ -28,6 +28,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * About's links (#179): *Sukrara on other devices* opens each app's page on the website (never a download), whatever
@@ -75,12 +76,38 @@ class AboutLinksTest {
 
     @Test
     fun `other devices open the website's page per app`() {
-        assertEquals(listOf("https://sukrara.mauri.app/mac/"), OTHER_DEVICES.map { it.url })
+        assertEquals(listOf("https://sukrara.mauri.app/mac/", "https://sukrara.mauri.app/garmin/"), OTHER_DEVICES.map { it.url })
         show()
         for (state in listOf(UpdateState.UpToDate, UpdateState.Checking, UpdateState.Offline, null)) {
             update = state
             assertEquals("$state", "https://sukrara.mauri.app/mac/", open(R.string.st_device_mac))
+            assertEquals("$state", "https://sukrara.mauri.app/garmin/", open(R.string.st_device_garmin))
         }
+        // no store listing published: no store row (never a broken link, #247)
+        compose.onNodeWithText(app.getString(R.string.st_device_store)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a watch app with a store listing opens it in the phone's language`() {
+        compose.setContent {
+            SukraraTheme(dark = false, dynamic = false) {
+                AboutContent(
+                    "0.12.0",
+                    Distribution.GooglePlay,
+                    AppBuild.Release,
+                    null,
+                    null,
+                    listOf(StoreLink(R.string.st_device_mac, DsR.drawable.ds_ic_apps) { "https://apps.garmin.com/$it/apps/x" }),
+                ) {}
+            }
+        }
+        compose
+            .onNodeWithText(app.getString(R.string.st_device_store))
+            .performScrollTo()
+            .assertIsDisplayed()
+            .performClick()
+        val intent = checkNotNull(shadowOf(app).nextStartedActivity)
+        assertEquals("https://apps.garmin.com/en/apps/x", intent.dataString)
     }
 
     @Test

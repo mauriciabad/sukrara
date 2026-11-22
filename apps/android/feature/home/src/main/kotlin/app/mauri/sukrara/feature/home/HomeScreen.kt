@@ -256,6 +256,7 @@ fun HomeContent(
     val scope = rememberCoroutineScope()
     val closedText = stringResource(R.string.home_tip_closed)
     val updatesOnText = stringResource(R.string.banner_updates_on)
+    val garminOnText = stringResource(R.string.banner_garmin_on)
     val shownBanner =
         banner(
             state,
@@ -275,6 +276,11 @@ fun HomeContent(
                 callbacks.onAction(HomeAction.TurnOnUpdates)
                 // the banner leaves: say what is on now and where it changes
                 scope.launch { snackbar.showSnackbar(updatesOnText, withDismissAction = true, duration = SnackbarDuration.Short) }
+            },
+            onTurnOnGarmin = {
+                haptics.toggle(true)
+                callbacks.onAction(HomeAction.TurnOnGarmin)
+                scope.launch { snackbar.showSnackbar(garminOnText, withDismissAction = true, duration = SnackbarDuration.Short) }
             },
         )
     // a safety banner sits right under the card (seen without scrolling); a tip goes below the glucose block
@@ -1150,6 +1156,8 @@ private fun banner(
     onDismiss: (BannerKind) -> Unit,
     /** *Turn on* on the updates suggestion (the screen confirms it: haptic and snackbar). */
     onTurnOnUpdates: () -> Unit = {},
+    /** *Turn on* on the Garmin tip (the screen confirms it the same way). */
+    onTurnOnGarmin: () -> Unit = {},
 ): Banner? {
     val kind = state.banner ?: return null
     val dismiss: (() -> Unit)? =
@@ -1352,6 +1360,22 @@ private fun banner(
                         BannerChoice(stringResource(R.string.banner_updates_turn_on), null, onTurnOnUpdates),
                         BannerChoice(stringResource(R.string.banner_updates_not_now), null, dismiss ?: {}),
                     ),
+            )
+        }
+
+        // one tap turns sending on (the tip leaves, the snackbar says where it changes); the close is remembered per app
+        BannerKind.GarminOff -> {
+            val tip = state.garminTip ?: return null
+            Banner(
+                kind.name,
+                DsR.drawable.ds_ic_watch,
+                stringResource(R.string.banner_garmin_title),
+                tip.name?.let { stringResource(R.string.banner_garmin_text_one, stringResource(it), tip.watch) }
+                    ?: stringResource(R.string.banner_garmin_text_many, tip.watch),
+                stringResource(R.string.banner_garmin_turn_on),
+                onTurnOnGarmin,
+                dismiss,
+                severity,
             )
         }
 

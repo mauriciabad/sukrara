@@ -40,6 +40,7 @@ val SetupStep.title: Int
             SetupStep.Notification -> R.string.sh_setup_notification_title
             SetupStep.Identity -> R.string.sh_identity_title
             SetupStep.Pens -> R.string.sh_setup_pens_title
+            SetupStep.Garmin -> R.string.sh_setup_garmin_title
             SetupStep.History -> R.string.sh_setup_history_title
         }
 

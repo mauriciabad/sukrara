@@ -71,6 +71,8 @@ class SettingsModule(
     featureChecks: () -> FeatureChecksSource = { FeatureChecksSource.None },
     /** Other features' rows the settings search finds ([SettingsDeps.moreSearch]). */
     moreSearch: List<SearchEntry> = emptyList(),
+    /** About's Connect IQ store rows ([SettingsDeps.watchStore]). */
+    watchStore: List<StoreLink> = emptyList(),
     /** What the phone runs on and the name a stream follows ([SettingsDeps.source], [SettingsDeps.sourceName]). */
     source: Flow<app.mauri.sukrara.core.model.SourceSpec?> = flowOf(null),
     sourceName: Flow<String?> = flowOf(null),
@@ -132,6 +134,7 @@ class SettingsModule(
             override val overviewSharing = overviewSharing
             override val settingsFrom = settingsFrom
             override val moreSearch = moreSearch
+            override val watchStore = watchStore
             override val sensorCalendar by lazy { sensorCalendar() }
             override val source = source
             override val sourceName = sourceName

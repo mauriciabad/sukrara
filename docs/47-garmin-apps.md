@@ -365,3 +365,33 @@ Connect IQ 6.0.4) logged both; reproduced in the simulator with a full day from 
   widths are no longer arrays and dictionaries kept in memory, and the app no longer builds `shared/plain` and
   `shared/input` (2 KB of code the glance loaded). 47.4 KB between draws; a 9 KB ballast passes every draw, 10 KB
   doesn't (before: 2–3 KB). `MemoryTest.memGlanceDraw` holds each step to its budget.
+
+**Getting the apps going, from the phone** (2026-11-22, #199; the owner: a banner like LibreView's when a watch has an
+app but the switch is off, a setup step, store links on the Garmin page and in About). Added:
+- **Knowing with the switch off** (`GarminLink.detect`): Garmin Connect's Connect IQ service answers whatever
+  Sukrara's switch says (the link already asked it for the watches every minute), so with the switch off the link
+  asks only its app-info question, per app id and connected watch, at start and when a watch connects (cached 30 min
+  as the push's own check). No message is sent and the port stays closed. A watch that isn't connected can't be
+  asked, so it stays unknown.
+- **Home's tip** `BannerKind.GarminOff` (*Your watch gets no glucose*, *Turn on*, close), under *Keep Sukrara up to
+  date*. Closing is remembered per app (`GarminTip.keys`), so a newly installed app shows it again; turning sending off
+  yourself closes it for the apps found then (as About's update switch closes the updates tip).
+- **Setup's *Your Garmin watch*** (`SetupStep.Garmin`, optional, before *Bring your history back*, wearer and
+  follower): offered while Garmin Connect is installed or a watch has an app; the switch, one line per app with *Get*
+  or *On your watch*, *Continue* / *Skip* (final). An install whose walk went past it isn't sent back for it.
+- **Store ids in the registry**: `apps.json` `store` (null), read by the phone (`GarminApp.store`, `ConnectIqStore`,
+  `GarminAppsTest`) and the website (`CONNECT_IQ_STORE` replaced the placeholder `CONNECT_IQ_APP_ID`; the badge links
+  only a published listing). The Garmin page's *Connect IQ store* group and About's rows show only apps with an id.
+  #247 fills them in once Garmin publishes the listings.
+- **A debug fake** (`GARMIN_FAKE`, `FakeGarminConnect`): a made-up connected watch with the given apps and stand-in
+  store ids, for the emulator.
+
+Discarded, and why:
+- **Guessing the store URLs**: a listing's id is given when it is published and isn't the app id, so a guessed URL
+  would be a broken link (#247 instead).
+- **Opening the Garmin page from the tip**: one tap that turns sending on does what the person needs; the page is one
+  row away in Settings, and the snackbar says where.
+- **Asking Garmin Connect on every resume**: the question goes through Garmin Connect's service and its broadcasts;
+  start and reconnects are when a new app can have appeared without the phone knowing.
+- **A step that blocks setup until an app is installed**: installing happens in Garmin's store, on its own time;
+  nothing waits for it.

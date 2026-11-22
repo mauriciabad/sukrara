@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.home.banners
 
+import androidx.annotation.StringRes
 import app.mauri.sukrara.core.model.AlertReadiness
 import app.mauri.sukrara.core.model.BlockedFeature
 import app.mauri.sukrara.core.model.LinkPath
@@ -70,6 +71,13 @@ enum class BannerKind(val safety: Boolean) {
      * equal. Above the other tips: an old version can stop sharing, and one tap answers it for good.
      */
     TurnOnUpdates(safety = false),
+
+    /**
+     * One of Sukrara's apps is on a watch but *Send to Sukrara on your watch* is off ([HomeEnvironment.garminOff]): the
+     * watch shows nothing from this phone. *Turn on* turns sending on (the tip goes with it); closing it is remembered
+     * per app, so it comes back only when another of Sukrara's apps turns up on a watch.
+     */
+    GarminOff(safety = false),
     NotBackedUp(safety = false),
     AddWidget(safety = false),
     ShareWithClinic(safety = false),
@@ -106,7 +114,12 @@ data class HomeEnvironment(
     val maintenanceAhead: MaintenanceWindow? = null,
     /** Reading the sensor in Sukrara may be offered ([app.mauri.sukrara.core.model.MoveRules]). */
     val moveOffered: Boolean = false,
+    /** Sukrara's apps on a watch while sending to it is off; null = none known, or sending is on. */
+    val garminOff: GarminTip? = null,
 ) {
+    /** The Garmin tip while one of the apps found isn't closed ([GarminTip.keys]). */
+    fun garminShown(memory: BannerMemory): GarminTip? = garminOff?.takeIf { t -> t.keys.any { !memory.dismissedKey(it) } }
+
     /** What a closed Libre-app-stopped banner is remembered under: that stop (its sign-in). */
     val stoppedKey: String? get() = libreAppStopped?.let { "${BannerKind.LibreAppStopped.name}:${it.epochSecond}" }
 
@@ -123,6 +136,19 @@ data class HomeEnvironment(
         /** What a closed blocked-feature banner is remembered under: the feature. */
         fun blockedKey(feature: BlockedFeature): String = "${BannerKind.FeatureBlocked.name}:${feature.name}"
     }
+}
+
+/**
+ * What the Garmin tip names: the first [watch] with one of Sukrara's apps, the [apps] found there and elsewhere (their
+ * registry keys: `aura`, `app`, `field`), and [name] = that app's name when only one is found (null = several).
+ */
+data class GarminTip(
+    val watch: String,
+    val apps: List<String>,
+    @param:StringRes val name: Int?,
+) {
+    /** What a close remembers: each app found, so another one turning up shows the tip again. */
+    val keys: List<String> get() = apps.map { "${BannerKind.GarminOff.name}:$it" }
 }
 
 /**
@@ -152,6 +178,12 @@ data class BannerMemory(
         val prefix = key.substringBefore(':') + ":"
         return copy(dismissedAtMs = dismissedAtMs.filterKeys { !it.startsWith(prefix) } + (key to now.toEpochMilli()))
     }
+
+    /** Closes a card remembered under several keys at once (the Garmin tip: each app it named), keeping older ones. */
+    fun dismissKeys(
+        keys: Collection<String>,
+        now: Instant,
+    ): BannerMemory = copy(dismissedAtMs = dismissedAtMs + keys.associateWith { now.toEpochMilli() })
 
     fun dismissed(
         kind: BannerKind,
@@ -196,6 +228,7 @@ private val KEYED =
         BannerKind.LibreAppStopped,
         BannerKind.ClinicUploadBehind,
         BannerKind.RestartSystemUi,
+        BannerKind.GarminOff,
     )
 
 /** "Later" on Finish setup: it comes back after a day until setup is done. */
@@ -227,6 +260,7 @@ object HomeBanners {
                     BannerKind.RestartSystemUi -> env.restartKey?.let { !memory.dismissedKey(it) } == true
                     BannerKind.FinishSetup -> env.nextSetupStep != null
                     BannerKind.TurnOnUpdates -> env.updateChecksOff == true
+                    BannerKind.GarminOff -> env.garminShown(memory) != null
                     BannerKind.NotBackedUp -> env.backedUp == false
                     BannerKind.AddWidget -> env.widgetPlaced == false
                     BannerKind.ShareWithClinic -> env.clinicUploadSet == false

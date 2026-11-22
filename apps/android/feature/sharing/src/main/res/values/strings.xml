@@ -677,6 +677,14 @@
     <string name="sh_setup_pens_on">Read my pens</string>
     <string name="sh_setup_pens_none">I don\'t use a smart pen</string>
     <string name="sh_setup_pens_done">Pens are read. Hold one to the back of the phone, unlocked, from any app.</string>
+    <string name="sh_setup_garmin_title">Your Garmin watch</string>
+    <string name="sh_setup_garmin_body">Sukrara can show your glucose on a Garmin watch, through Garmin Connect, seconds after each reading.</string>
+    <string name="sh_setup_garmin_switch">Send to Sukrara on your watch</string>
+    <string name="sh_setup_garmin_get">Get</string>
+    <string name="sh_setup_garmin_get_description">Get %1$s on the Connect IQ store</string>
+    <string name="sh_setup_garmin_on_watch">On your watch</string>
+    <string name="sh_setup_garmin_soon">Coming soon to the Connect IQ store.</string>
+    <string name="sh_setup_garmin_later">Settings › Share with apps › Garmin keeps all of this.</string>
     <string name="sh_setup_ready_title_pending">Some essentials are left for later</string>
     <string name="sh_setup_ready_pending">Still to do: %1$s. Home\'s Finish setup banner brings you back to them.</string>
     <string name="sh_setup_source_group_online">Online · needs internet</string>

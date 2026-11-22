@@ -354,6 +354,9 @@ sealed interface HomeAction {
     /** *Turn on* on the updates suggestion: the GitHub version's daily update check goes on. */
     data object TurnOnUpdates : HomeAction
 
+    /** *Turn on* on the Garmin tip: *Send to Sukrara on your watch* goes on. */
+    data object TurnOnGarmin : HomeAction
+
     /** NFC taps blocked by Android: its screen that allows them. */
     data object AllowTaps : HomeAction
 
