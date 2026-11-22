@@ -10,6 +10,7 @@ Setup, keys, simulator and sideloading: [docs/DEVELOPMENT.md › Garmin](../../d
 | [`aura/`](aura/README.md) | **Sukrara Aura**, the watch face (`watchface`, the round 390 × 390 AMOLED watches) |
 | `app/` | **Sukrara**, the watch app (`watch-app`): a glance, the app's view, its background, the complication hook. Placeholder look |
 | `field/` | **Sukrara data field** (`datafield`): the value with Aura's sparkline or its arrow in any data-field slot, its own alert, glucose in the activity's file, its own background (the design's port: `contracts/watchface/app/SPEC.md` §9, §14) |
+| `sample/` | A sample watch face that reads Sukrara, for other developers: the example of [docs/GARMIN-FACES.md](../../docs/GARMIN-FACES.md) (the website's check holds the two equal; CI builds it). Not one of Sukrara's apps: not in `apps.json`, never released |
 | `shared/` | What more than one app needs, compiled into each app that names it (below) |
 | `tools/` | The tools every app uses: `link-test.sh`, `link_cases.py`, `icons.py`, `launcher_icons.py`, `verify_prg.sh`, `sideload.py`, `simshot.py`, `fake_phone.py` |
 | `fonts/` | Atkinson Hyperlegible Next (OFL), the source of the face's atlases (`aura/tools/fonts.py`) |
@@ -60,6 +61,7 @@ font resources drawn with drawText. The field's stack is small: keep its call ch
 ```sh
 apps/garmin/build.sh <app> [release]   # <app>: aura, app, field → apps/garmin/bin/{SukraraAura,Sukrara,SukraraField}.prg
 apps/garmin/build.sh <app> debug       # with debug code → bin/<Name>-debug.prg
+apps/garmin/build.sh sample            # the sample face for other developers → bin/SukraraSample.prg
 apps/garmin/build.sh <app> export      # the store package (every product) → bin/<Name>.iq; export-beta: the beta id (apps.json)
 apps/garmin/build.sh aura cases        # the face's debug case loader (app, field: theirs; CIQ_DEVICE picks the watch)
 uv run apps/garmin/field/tools/fonts.py   # the field's fonts per screen class (--check: up to date)

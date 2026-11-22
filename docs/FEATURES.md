@@ -2830,7 +2830,8 @@ ages by itself from its own time with the phone away.
   while a watch is known to have a Sukrara app** (Garmin Connect says one is installed on it, or a push reached it;
   checked when the watch connects and every 30 min) and closes when the switch goes off, Garmin Connect goes or the face
   is gone: on a phone without a Sukrara app nothing listens. Another Connect IQ face may read the face profile on the
-  same path while it is open (payload README *Other watch faces*); a face fetch counts on the page only with Sukrara's
+  same path while it is open (payload README *Other watch faces*, the developer page `docs/GARMIN-FACES.md` with its
+  sample face `apps/garmin/sample`); a face fetch counts on the page only with Sukrara's
   report (`r`), so another face's never shows as Aura in use. A watch Garmin Connect doesn't answer about still gets pushes.
   Sukrara talks to Garmin Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free
   software). One message per change: a reading that changes the payload in steps (the hub, then today's readings) is

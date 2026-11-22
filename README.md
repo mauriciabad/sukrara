@@ -123,8 +123,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   shows; alerts and anything that needs you stay.
 - Persistent notification with the widget.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
-- Watch face for Garmin watches with a round 390 × 390 AMOLED screen (Venu 3S, vívoactive 6, Forerunner 570,
-  Descent Mk3i 43 mm …), with four fields of your choice: time in range, your last treatment or anything the watch
+- Watch faces for Garmin: Sukrara Aura, for watches with a round 390 × 390 AMOLED screen (Venu 3S, vívoactive 6,
+  Forerunner 570, Descent Mk3i 43 mm …), with four fields of your choice: time in range, your last treatment or anything the watch
   has (steps, heart rate, weather, sleep, training…).
 - Sukrara, the watch app for Garmin: your glucose in the watch's glance list, a page with the value, rings and a chart
   of the last hours, a page with the glucose report (time in ranges, average, GMI, CV over 1 to 30 days), and
@@ -132,7 +132,9 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   them.
 - Sukrara data field for Garmin: your glucose and its recent line on an activity's data screen, a full-page alert
   during the activity if you turn it on, and your glucose saved in the activity, charted in Garmin Connect.
-- Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server.
+- Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server, and any Connect IQ watch face can
+  read Sukrara's own watch-face data (the developer page: sukrara.mauri.app/developers/garmin-faces/, with a sample
+  face in `apps/garmin/sample`).
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
 - [Planned]: Android Auto, Home Assistant, Pebble...
@@ -232,7 +234,7 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
 apps/
   android/       Sukrara for Android (Kotlin, Compose; Gradle root)               → apps/android/README.md
   macos/         Sukrara for Mac (Swift 6, SwiftPM; menu bar app + widget)         → apps/macos/README.md
-  garmin/        Sukrara on Garmin (Monkey C, Connect IQ): the face, the app, the field → apps/garmin/README.md
+  garmin/        Sukrara on Garmin (Monkey C, Connect IQ): the faces, the app, the field → apps/garmin/README.md
 contracts/       what every app agrees on: alert rules + scenarios, card fixtures, settings schema, protocol,
                  treatments, export, sensor traces (every app's tests read it)      → contracts/README.md
 assets/brand/    app icons and brand art

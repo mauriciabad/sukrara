@@ -39,6 +39,8 @@ export default defineConfig({
 			},
 			customCss: ['@fontsource-variable/nunito', './src/styles/theme.css'],
 			markdown: { processedDirs: ['../docs/'] },
+			// Monkey C (docs/GARMIN-FACES.md) has no grammar of its own: TypeScript's keywords and literals are its own
+			expressiveCode: { shiki: { langAlias: { monkeyc: 'typescript' } } },
 			routeMiddleware: './src/route-data.ts',
 			components: {
 				Banner: './src/components/overrides/Banner.astro',

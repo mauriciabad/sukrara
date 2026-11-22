@@ -11,6 +11,7 @@
  *     app's setup link) must exist, with its #anchor
  *     (an invite's #code excepted). GitHub Pages redirects /privacy to /privacy/, so an app's URL may leave the
  *     slash out;
+ *   - docs/GARMIN-FACES.md's sample face differing from apps/garmin/sample's source (which CI compiles);
  *   - the files other systems read: App Links (assetlinks.json with Sukrara's release key, tools/release/android-cert.sha256),
  *     universal links (apple-app-site-association for /join), the Mac update feed (appcast.xml), the sitemap, the 404;
  *   - a link to another site, in the page's language, that this site has in that language: a Spanish page links the
@@ -130,6 +131,13 @@ for (const file of appFiles) {
 }
 for (const [path, file] of appUrls) {
 	checkLink(`${file} → `, SITE + path, { lenient: true, anchors: !path.startsWith('/join') });
+}
+
+// The Garmin developer page's sample face is the one CI builds (apps/garmin/sample), so the page's example compiles.
+const sample = readFileSync(join(ROOT, 'apps/garmin/sample/source/SampleFace.mc'), 'utf8').split('\n').slice(3).join('\n');
+const facesDoc = readFileSync(join(ROOT, 'docs/GARMIN-FACES.md'), 'utf8');
+if (!facesDoc.includes('```monkeyc\n' + sample + '```')) {
+	fail('docs/GARMIN-FACES.md: its sample face isn’t apps/garmin/sample/source/SampleFace.mc (without the licence header)');
 }
 
 // Files other systems read.

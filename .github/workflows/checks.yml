@@ -296,6 +296,10 @@ jobs:
             apps/garmin/build.sh "$app" release
             apps/garmin/build.sh "$app" export
           done
+      # The developer page's sample face (sukrara.mauri.app/developers/garmin-faces/), so the example there still compiles
+      - name: The sample face that reads Sukrara
+        if: steps.sdk.outputs.ready == 'true'
+        run: apps/garmin/build.sh sample release
       # SPEC.md §10 on a fixed set of cases, so the gate stays inside its timeout (the full set takes 1–2 h: garmin-all):
       # the safety states, one case per dial, always-on, private, Spanish. Their numbers against expect.json (fails the
       # job), the battery label against every row, a screenshot of each diffed with docs/img/aura/ref (the artifact).

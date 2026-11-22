@@ -30,6 +30,7 @@ const DEVELOPERS: Record<string, string> = {
 	'ARCHITECTURE.md': 'Architecture',
 	'DEVELOPMENT.md': 'Development',
 	'QA.md': 'Manual QA',
+	'GARMIN-FACES.md': 'Garmin watch faces',
 };
 
 export interface RepoDoc {

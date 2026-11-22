@@ -5,7 +5,8 @@
 # Builds one of Sukrara's Garmin apps (apps/garmin/README.md). Headless: needs only the Connect IQ SDK, the device files
 # of the app's manifest.xml products (export builds every one; the others one, CIQ_DEVICE) and a JDK 17+.
 #   apps/garmin/build.sh <app> [<mode>]   <app>: aura (Sukrara Aura, the face), app (Sukrara, the watch app), field
-#                                         (Sukrara data field); every output in apps/garmin/bin/<Name>…
+#                                         (Sukrara data field), sample (the sample face that reads Sukrara, for other
+#                                         developers: release and debug only); every output in apps/garmin/bin/<Name>…
 #   release (default)  the release .prg (debug code compiled out)   → bin/<Name>.prg
 #   debug              the app with debug code                     → bin/<Name>-debug.prg
 #   export             the store package (monkeyc -e -r)            → bin/<Name>.iq
@@ -14,7 +15,7 @@
 #   cases | test       the debug case loader (every case of its cases.json in turn, printing its layout or input): the
 #                      picture diffs' build → bin/<Name>-cases.prg (aura/tools/garmin_test.py run, app/tools/app_test.py
 #                      run, field/tools/field_test.py run build and run it)
-# <Name>: SukraraAura, Sukrara, SukraraField. Environment: CIQ_SDK (default: the SDK Manager's current SDK), CIQ_KEY
+# <Name>: SukraraAura, Sukrara, SukraraField, SukraraSample. Environment: CIQ_SDK (default: the SDK Manager's current SDK), CIQ_KEY
 # (default ~/.connectiq/sukrara-developer-key.der), JAVA_HOME (default: Homebrew's openjdk@17 when present), CIQ_DEVICE
 # (default descentmk343mm).
 set -eu
@@ -26,7 +27,10 @@ case "$APP" in
   aura) NAME=SukraraAura ;;
   app) NAME=Sukrara ;;
   field) NAME=SukraraField ;;
-  *) echo "usage: build.sh <aura|app|field> [release|debug|export|export-beta|cases|test]" >&2; exit 2 ;;
+  sample)
+    NAME=SukraraSample
+    case "$MODE" in release | debug) ;; *) echo "build.sh: the sample builds release or debug" >&2; exit 2 ;; esac ;;
+  *) echo "usage: build.sh <aura|app|field|sample> [release|debug|export|export-beta|cases|test]" >&2; exit 2 ;;
 esac
 DEVICE=${CIQ_DEVICE:-descentmk343mm}
 KEY=${CIQ_KEY:-$HOME/.connectiq/sukrara-developer-key.der}

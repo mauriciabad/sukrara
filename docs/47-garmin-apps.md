@@ -329,4 +329,8 @@ Discarded, and why:
 - A query parameter naming which Sukrara face fetched: costs every face bytes (#217) for a case that needs two
   Sukrara faces on one watch; until then the faces' fetch counts for a face while no other Sukrara face may be there.
 - Pushes to other faces: Garmin Connect delivers only to the app ids the phone names, so it needs a registration the
-  person allows; not built (proposal in #199).
+  person allows; not built. Proposal (#199): a face sends its app id in the fetch (`GET /sukrara/face?app=<uuid>`);
+  the Garmin page lists an unknown id under *Watch faces* as *Another face asks for your glucose* with Allow / Ignore
+  (TalkBack-readable, undone from the same row); an allowed id is stored (an Android-only schema setting), pushed the
+  face profile like Sukrara's faces, keeps the port open by itself (no Sukrara app needed) and is named on the page.
+  The developer page is [GARMIN-FACES.md](GARMIN-FACES.md).

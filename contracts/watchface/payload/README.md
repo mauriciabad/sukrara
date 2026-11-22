@@ -272,7 +272,7 @@ The face profile is open: **any Connect IQ watch face can read it** with the sam
 answer is the face profile above as JSON, `sent` = now; the face reads it as *On the watch* says (the clock skew, the
 freshness steps, never an old value as current, `LO` / `HI`, the countdowns). The query is optional: `r` and `d` are
 Sukrara's own report, and a face that sends none is simply not shown on the phone. Developer page:
-[sukrara.mauri.app/garmin/developers/](https://sukrara.mauri.app/garmin/developers/).
+[sukrara.mauri.app/developers/garmin-faces/](https://sukrara.mauri.app/developers/garmin-faces/).
 
 What a face gets and when:
 - **Only the fetch, no push**: Garmin Connect delivers a phone message only to an app id the phone sends to, and the
