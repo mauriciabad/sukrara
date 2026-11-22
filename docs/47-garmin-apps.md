@@ -274,6 +274,19 @@ Changed from "Choice" / §6, and why:
   watch). The fetch can't say which watch asks (Garmin Connect makes it), so the app's push carries `w` and the app
   sends it back as `&w=`; without it, the one watch with the app, else the app's values. The metrics' windows are
   every watch's together.
+- **The watch's settings page** (Share with apps › Garmin › a watch's *Sukrara*; `:feature:settings`
+  `WatchSettingsContent` / `WatchValueContent`, routed in the app as `GarminWatchRoute`): every value a row with *Same
+  as the app*; simple ones in docs/38's place dialogs, compound ones on the app's own pages (`MetricContent`,
+  `GraphMarksContent`, the colour order of `TirRingsContent`) bound to the watch's values under a *Same as the app*
+  switch (read-only while on). Each metric follows on its own (`watchSlots` = three parts, an empty one Same as the
+  app): one metric of its own doesn't freeze the other two. The app's `last` follows the watch's *Last treatment* as
+  `else` did (off: no `last`); the face's treatment field stays its own. The store keeps each watch's name with its
+  values, so a watch Garmin Connect no longer knows is listed and its values can be let go.
+- **The Garmin page per watch**: one group per watch (two or more), each app's line from that watch's link
+  (`AppLine.on`): the app's fetch counted per watch by `&w=`, Garmin Connect's delivery when it hasn't asked. The
+  two-buzz line (SPEC §13 decided 2) is a question ("Two buzzes for one alert?"), never a plain "switch it off": 5.0
+  watches can't ring on their own and some 5.x ones ring without vibrating.
+- **The data field gets 3 h** (SPEC §9: its sparkline goes up to 3 h as the slot allows), 36 readings as the face.
 - **`rep.ok`**: the report card's goals met per period, one bit per `Goal`, so the watch holds no thresholds.
 - **Undo from the watch** (`POST /sukrara/undo`, SPEC §6's *Undo*): by the entry's id, signed over `id|s` with the
   same key and send-time window; the phone runs its own delete (`TreatmentLog.delete`, home's), so sync, the Nightscout

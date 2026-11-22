@@ -61,6 +61,16 @@
     <string name="in_garmin_watch_failed">the last message didn\'t arrive, trying again</string>
     <string name="in_garmin_watch_waiting">waiting for a reading</string>
     <string name="in_garmin_sukrara_group">Sukrara on your watch</string>
+    <string name="in_garmin_sukrara_on">Sukrara on %1$s</string>
+    <string name="in_garmin_two_buzz">Two buzzes for one alert? Switch Sukrara off in Garmin Connect\'s notifications.</string>
+    <string name="in_garmin_app_got">got this phone\'s message at %1$s</string>
+    <string name="in_garmin_watch_same">Settings: same as the app</string>
+    <plurals name="in_garmin_watch_own">
+        <item quantity="one">Settings: %1$d of its own</item>
+        <item quantity="other">Settings: %1$d of its own</item>
+    </plurals>
+    <string name="in_garmin_watch_gone">Garmin Connect no longer knows this watch</string>
+    <string name="in_garmin_watch_unnamed">a watch</string>
     <string name="in_garmin_aura">Sukrara Aura</string>
     <string name="in_garmin_face_kind">Watch face</string>
     <string name="in_garmin_face_not_installed">not installed</string>

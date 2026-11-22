@@ -458,6 +458,17 @@
     <!-- a setting the app sets that the notification and the widgets can change (docs/38) -->
     <string name="st_same_as_app">Same as the app</string>
     <string name="st_same_as_app_value">Same as the app (%1$s)</string>
+    <!-- Share with apps › Garmin › a watch's Sukrara: the watch as a place (docs/38, the Garmin app's SPEC §11) -->
+    <string name="st_watch_title">Sukrara on %1$s</string>
+    <string name="st_watch_intro">%1$s shows what the app shows. A setting you change here changes only this watch.</string>
+    <string name="st_watch_gone">Garmin Connect no longer knows %1$s. Its own settings stay until you forget them.</string>
+    <string name="st_watch_chart">Chart</string>
+    <string name="st_watch_numbers">Numbers page</string>
+    <string name="st_watch_report">Opens on</string>
+    <string name="st_watch_order_own">Its own order</string>
+    <string name="st_watch_all_same">Same as the app for everything</string>
+    <string name="st_watch_forget">Forget this watch\'s settings</string>
+    <string name="st_watch_footer">The unit, the ranges and the alerts are always the app\'s. Sparkline on alerts and Log complication shows are set in the Connect IQ app.</string>
     <string name="st_where_app">in the app</string>
     <string name="st_where_notification">in the notification</string>
     <string name="st_where_widgets">on widgets</string>

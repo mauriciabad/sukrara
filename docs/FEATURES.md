@@ -2953,12 +2953,30 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   off, a side for 15 / 30 / 60 / 120 min, unmute either, *Remind less* / *Remind as usual* on a side, through the
   alert runtime's own actions (`AlertControls`); the next push's pill shows it, and what rings says per side whether
   it reminds less now and whether *Remind less* would slow it (the watch offers the button only then).
-- The Garmin page lists both under *Sukrara on your watch* (above).
+- **The Garmin page, per watch**: *Sukrara on your watch* (one group per watch with two or more, *Sukrara on Venu 3*):
+  the face, the app and the field on that watch (`AppLine.on`; `GarminStatusTest`): *not installed*, *asked this phone
+  at 14:23* (the app's fetch says which watch, `&w=`; the face's and the field's count while one watch may have them),
+  *got this phone's message at 14:21* (Garmin Connect's delivery to it), *hasn't asked lately*, *port taken*. Under
+  *Open Garmin Connect*, while a watch has the app: "Two buzzes for one alert? Switch Sukrara off in Garmin Connect's
+  notifications." (the app rings its own alert; 5.0 watches and some 5.x ones rely on Garmin Connect's, so the line is
+  only for who feels both).
+- **Each watch's own settings** (the watch as a place, docs/38; `WatchSettingsContent`, `WatchPagesTest`): the app's
+  row opens *Sukrara on Venu 3*: the three metrics, the last treatment, no recent treatment, the ring's number, rewards
+  and colour order, the chart's time, treatments and % column, the period the Numbers page opens on; each row its own
+  value or *Same as the app*, its summary *Settings: same as the app* / *Settings: 3 of its own*. A simple value is
+  chosen in the place dialog (*Same as the app (On)* first, as a widget's own settings); a metric, the colour order and
+  the treatments open the app's own page for them bound to the watch's values, under a *Same as the app* switch (on:
+  the app's, read-only; off: the watch's own, starting from the app's). The watch gets them on the next push.
 
-**States and exits**: on the phone, each app's row under *Sukrara on your watch*: *not installed* (out: install it
-from Connect IQ), *asked this phone at 14:23* (it runs), *hasn't asked lately* (out: open the app, or start an
-activity with the field), *port taken* (out: stop the other app); every watch state of the link is the face's above
-(off, no Garmin Connect, not answering, away, stuck…, with the same exits). An entry logged on the watch is in the
+**States and exits**: on the phone, each app's row under *Sukrara on your watch* (per watch): *not installed* (out:
+install it from Connect IQ), *asked this phone at 14:23* (it runs), *got this phone's message at 14:21*, *hasn't asked
+lately* (out: open the app, or start an activity with the field), *port taken* (out: stop the other app); every watch
+state of the link is the face's above (off, no Garmin Connect, not answering, away, stuck…, with the same exits). A
+watch's settings: every value *Same as the app* until changed; each one back by choosing *Same as the app* (dialog) or
+switching *Same as the app* on (a value's page), all at once by *Same as the app for everything* (shown while any value
+is its own); back leaves the page, the values kept. A watch Garmin Connect no longer knows keeps its row while it has
+values of its own (*Garmin Connect no longer knows this watch*, by the name it had): its page says so and *Forget this
+watch's settings* lets them go and leaves. The two-buzz line goes once no watch has the app. An entry logged on the watch is in the
 phone's log like any other: edit, delete and undo it there (home's list), or *Undo* it on the watch for 10 s after
 *Logged* (the phone's delete; to have it back, log it again); a deleted one is never brought back by a
 retry. A mute from the watch is the phone's mute: its pill, *Unmute* and *Mute all*'s switch on the phone end it, as

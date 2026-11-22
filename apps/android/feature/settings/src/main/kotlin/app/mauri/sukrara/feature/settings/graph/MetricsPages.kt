@@ -147,7 +147,7 @@ private fun metricKindSummary(kind: SlotKind): String =
 
 /** "Time in range · 1 day", or "Off". */
 @Composable
-private fun metricSummary(spec: RingSpec): String =
+internal fun metricSummary(spec: RingSpec): String =
     if (spec.on) {
         stringResource(R.string.st_metric_summary, metricKindName(spec.kind), periodLabeler()(spec.windowS.toDouble()))
     } else {
@@ -159,7 +159,7 @@ private fun lastWhereName(p: LastPlace): String = stringResource(if (p == LastPl
 
 /** "70–179 mg/dL": the values a time-in-range ring's number counts. */
 @Composable
-private fun tirSpan(
+internal fun tirSpan(
     r: TirRange,
     c: GraphConfig,
 ): String {
@@ -170,7 +170,7 @@ private fun tirSpan(
 }
 
 @Composable
-private fun tirName(r: TirRange): String = stringResource(if (r == TirRange.TIGHT) R.string.st_tir_tight else R.string.st_tir_in_range)
+internal fun tirName(r: TirRange): String = stringResource(if (r == TirRange.TIGHT) R.string.st_tir_tight else R.string.st_tir_in_range)
 
 /**
  * Settings › Metrics: the live card on top; the main, second and third metric; the last treatment and what shows in its
@@ -419,7 +419,7 @@ fun TirRingsContent(
 
 /** The ring's segments clockwise from 12 o'clock, each with its colour and range. */
 @Composable
-private fun RingOrderList(
+internal fun RingOrderList(
     c: GraphConfig,
     onOrder: (List<Band>) -> Unit,
     editable: Boolean,

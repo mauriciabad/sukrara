@@ -12,8 +12,8 @@ import app.mauri.sukrara.settings.SettingsSpec
  * the watch is a place, docs/38); null = Same as the app. The unit, the limits and the alerts are never per watch.
  */
 data class WatchDisplay(
-    /** The main, second and third metric (`graph.slots`). */
-    val slots: List<RingSpec>? = null,
+    /** The main, second and third metric (`graph.slots`), each its own or null (Same as the app). */
+    val slots: List<RingSpec?> = SAME_SLOTS,
     /** The last treatment beside the value (`graph.last`). */
     val lastOn: Boolean? = null,
     /** No recent treatment (`graph.lastElse`). */
@@ -35,10 +35,16 @@ data class WatchDisplay(
     /** Whether every value follows the app. */
     val same: Boolean get() = this == WatchDisplay()
 
+    /** How many values are this watch's own (each metric counts as one). */
+    val ownCount: Int
+        get() =
+            slots.count { it != null } +
+                listOf(lastOn, lastElse, ringOrder, ringRange, ringMarks, hours, marks, side, reportDays).count { it != null }
+
     /** [c] as this watch shows it: each own value in place of the app's. */
     fun applyTo(c: GraphConfig): GraphConfig =
         c.copy(
-            slots = slots ?: c.slots,
+            slots = c.slots.mapIndexed { i, s -> slots.getOrNull(i) ?: s },
             lastOn = lastOn ?: c.lastOn,
             lastElse = lastElse ?: c.lastElse,
             ringOrder = ringOrder ?: c.ringOrder,
@@ -49,7 +55,16 @@ data class WatchDisplay(
             side = side ?: c.side,
         )
 
+    /** [slot] (0 main, 1 second, 2 third) as its own [spec], or Same as the app (null). */
+    fun withSlot(
+        slot: Int,
+        spec: RingSpec?,
+    ) = copy(slots = slots.toMutableList().also { it[slot] = spec })
+
     companion object {
+        /** Every metric Same as the app. */
+        val SAME_SLOTS: List<RingSpec?> = listOf(null, null, null)
+
         /** The report periods the watch can open on (days), as the phone's report offers them. */
         val REPORT_DAYS: List<Int> = SettingsSpec.OPTIONS.getValue("reportPeriod").map(String::toInt)
 

@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.MarkShow
 import app.mauri.sukrara.graph.RingSpec
+import app.mauri.sukrara.graph.SlotKind
 import app.mauri.sukrara.graph.WatchDisplay
 import app.mauri.sukrara.graph.stats.TirRange
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +26,7 @@ import org.junit.Test
 class WatchSettingsTest {
     private val own =
         WatchDisplay(
-            slots = GraphConfig.DEFAULT_SLOTS.map { it.copy(on = false) },
+            slots = listOf(null) + GraphConfig.DEFAULT_SLOTS.drop(1).map { it.copy(on = false) },
             lastOn = false,
             lastElse = GraphConfig.DEFAULT_LAST_ELSE.copy(on = false),
             ringOrder = RingSpec.DEFAULT_RING_ORDER.reversed(),
@@ -70,18 +71,23 @@ class WatchSettingsTest {
     fun storedAndReadBackTheSame() =
         runBlocking {
             val store = WatchSettingsStore(Memory(GarminWatches()))
-            store.set(7, own)
-            store.set(8, WatchDisplay(hours = 3))
+            store.set(7, own, "Descent Mk3i 43mm")
+            store.set(8, WatchDisplay(hours = 3), "Venu 3")
             assertEquals(mapOf(7L to own, 8L to WatchDisplay(hours = 3)), store.displays.first())
-            // every value back to Same as the app: the watch has no entry
+            assertEquals(mapOf(7L to "Descent Mk3i 43mm", 8L to "Venu 3"), store.names.first())
+            // every value back to Same as the app: the watch has no entry, nor its name
             store.set(8, WatchDisplay())
             assertEquals(setOf(7L), store.displays.first().keys)
+            assertEquals(setOf(7L), store.names.first().keys)
         }
 
     @Test
     fun aStoredValueOutOfItsFormatFollowsTheApp() {
         val d = WatchOverrides(slots = "nonsense", hours = 400, reportDays = 5).toDisplay()
         assertTrue(d.same)
+        // one part that doesn't parse: that metric follows the app, the others keep theirs
+        val one = WatchOverrides(slots = "nonsense,GMI:1209600:1:1,").toDisplay()
+        assertEquals(listOf(null, RingSpec(1_209_600, kind = SlotKind.GMI, faded = true), null), one.slots)
     }
 
     @Test
@@ -98,7 +104,8 @@ class WatchSettingsTest {
         assertEquals(TirRange.TIGHT, d.graph.ringRange)
         assertEquals(own.ringOrder, d.graph.ringOrder)
         assertEquals(false, d.graph.lastOn)
-        assertTrue(d.graph.rings().isEmpty())
+        // the main metric follows the app, the second and third are off on this watch
+        assertEquals(listOf(app.slots[0].windowS), d.graph.rings().map { it.windowS })
         // never per watch: the unit and the limits stay the app's
         assertEquals(app.unit, d.graph.unit)
         assertEquals(app.bands, d.graph.bands)

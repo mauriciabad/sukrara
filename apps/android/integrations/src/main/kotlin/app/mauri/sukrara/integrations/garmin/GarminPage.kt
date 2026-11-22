@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +27,7 @@ import app.mauri.sukrara.designsystem.rows.NavigationRow
 import app.mauri.sukrara.designsystem.rows.RowButton
 import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
+import app.mauri.sukrara.graph.WatchDisplay
 import app.mauri.sukrara.integrations.R
 import app.mauri.sukrara.integrations.localserver.ServerReader
 import app.mauri.sukrara.integrations.localserver.ServerReaders
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -255,6 +258,11 @@ sealed interface AppLine {
         val at: Instant,
     ) : AppLine
 
+    /** It hasn't asked lately, but Garmin Connect said this phone's message reached it at [at]. */
+    data class Got(
+        val at: Instant,
+    ) : AppLine
+
     /** On a watch, but it hasn't asked this phone lately. */
     data object Idle : AppLine
 
@@ -276,6 +284,39 @@ sealed interface AppLine {
                 else -> Unknown
             }
         }
+
+        /**
+         * [app] on watch [w]: the watch app's fetch says which watch asks (`w`); the face's and the field's count only
+         * while [w] is the one watch that may have it.
+         */
+        fun on(
+            app: GarminApp,
+            w: AuraWatch,
+            s: AuraLinkState,
+            now: Instant,
+        ): AppLine {
+            val only = w.has(app) != false && s.watches.count { it.has(app) != false } == 1
+            val asked =
+                fresh(
+                    if (app ==
+                        GarminApp.App
+                    ) {
+                        s.appFetchedOn[w.id] ?: s.fetchedBy[app]?.takeIf { only }
+                    } else {
+                        s.fetchedBy[app]?.takeIf { only }
+                    },
+                    now,
+                )
+            val got = w.link(app)?.delivered?.takeIf { w.has(app) != false }
+            return when {
+                w.has(app) == false && asked == null -> NotInstalled
+                s.portBusy -> PortBusy
+                asked != null -> InUse(asked)
+                got != null -> Got(got)
+                w.has(app) == true -> Idle
+                else -> Unknown
+            }
+        }
     }
 }
 
@@ -284,6 +325,9 @@ data class GarminUi(
     val link: AuraLinkState,
     val xdrip: XdripState = XdripState.Off,
     val readers: List<ServerReader> = emptyList(),
+    /** Each watch's own settings for the watch app (a watch not listed follows the app), and its name when they were set. */
+    val own: Map<Long, WatchDisplay> = emptyMap(),
+    val ownNames: Map<Long, String> = emptyMap(),
 )
 
 class GarminViewModel(
@@ -291,11 +335,14 @@ class GarminViewModel(
     xdrip: XdripServer,
     context: Context,
     io: CoroutineDispatcher,
+    watches: WatchSettingsStore? = null,
 ) : ViewModel() {
     private val app = context.applicationContext
     private val readers = MutableStateFlow<List<ServerReader>>(emptyList())
+    private val own = watches?.displays ?: flowOf(emptyMap())
+    private val names = watches?.names ?: flowOf(emptyMap())
     val ui: StateFlow<GarminUi> =
-        combine(link.state, xdrip.state, readers, ::GarminUi)
+        combine(combine(link.state, xdrip.state, readers, ::Triple), own, names) { (l, x, r), o, n -> GarminUi(l, x, r, o, n) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), GarminUi(link.state.value))
 
     init {
@@ -326,6 +373,8 @@ class GarminActions(
     val openGarminConnect: () -> Unit = {},
     val getGarminConnect: () -> Unit = {},
     val openXdrip: () -> Unit = {},
+    /** A watch's *Sukrara* settings (its id and name). */
+    val openWatch: (Long, String) -> Unit = { _, _ -> },
 )
 
 @Composable
@@ -333,6 +382,7 @@ fun GarminPage(
     viewModel: GarminViewModel,
     now: () -> Instant,
     openXdrip: () -> Unit,
+    openWatch: (Long, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
@@ -345,6 +395,7 @@ fun GarminPage(
             { viewModel.openGarminConnect() },
             { viewModel.getGarminConnect() },
             openXdrip,
+            openWatch,
         ),
         modifier,
     )
@@ -407,6 +458,9 @@ fun GarminContent(
                     ),
                 ),
             )
+            // the watch app rings each alert itself, and Garmin Connect may forward the phone's too (SPEC §13 decided
+            // 2): only who feels both acts on it (5.0 watches, and some 5.x ones, rely on Garmin Connect's)
+            if (s.watches.any { it.has(GarminApp.App) == true }) FooterText(stringResource(R.string.in_garmin_two_buzz))
             SettingsGroup(title = stringResource(R.string.in_garmin_watches)) {
                 if (s.answering == true && s.watches.isEmpty()) {
                     InfoRow(
@@ -418,15 +472,51 @@ fun GarminContent(
                     InfoRow(w.name, summary = watchText(WatchLine.of(w, s, now), now))
                 }
             }
-            // Sukrara's own Connect IQ apps, one row each. While Garmin Connect hasn't said which watches it knows,
-            // nothing is known about them
-            if (s.answering != false || s.watches.isNotEmpty()) {
+            // Sukrara's own Connect IQ apps, one row each per watch (one watch: Sukrara on your watch); the watch app's
+            // opens that watch's settings. While Garmin Connect hasn't said which watches it knows, nothing is known
+            // about them
+            if (s.watches.isEmpty() && s.answering != false) {
                 SettingsGroup(title = stringResource(R.string.in_garmin_sukrara_group)) {
                     for (app in GarminApp.entries) {
-                        InfoRow(
-                            stringResource(appName(app)),
-                            summary = appText(app, AppLine.of(app, s, now), now),
-                            icon = appIcon(app),
+                        InfoRow(stringResource(appName(app)), summary = appText(app, AppLine.of(app, s, now), now), icon = appIcon(app))
+                    }
+                }
+            }
+            for (w in s.watches) {
+                val title =
+                    if (s.watches.size ==
+                        1
+                    ) {
+                        stringResource(R.string.in_garmin_sukrara_group)
+                    } else {
+                        stringResource(R.string.in_garmin_sukrara_on, w.name)
+                    }
+                SettingsGroup(title = title) {
+                    for (app in GarminApp.entries) {
+                        val text = appText(app, AppLine.on(app, w, s, now), now)
+                        if (app == GarminApp.App) {
+                            NavigationRow(
+                                stringResource(appName(app)),
+                                { actions.openWatch(w.id, w.name) },
+                                summary = "$text\n${ownText(ui.own[w.id])}",
+                                icon = appIcon(app),
+                            )
+                        } else {
+                            InfoRow(stringResource(appName(app)), summary = text, icon = appIcon(app))
+                        }
+                    }
+                }
+            }
+            // a watch Garmin Connect no longer knows that kept its own settings: its row lets them go (once it answered)
+            if (s.answering == true) {
+                for ((id, d) in ui.own.filterKeys { id -> s.watches.none { it.id == id } }) {
+                    val name = ui.ownNames[id] ?: stringResource(R.string.in_garmin_watch_unnamed)
+                    SettingsGroup(title = stringResource(R.string.in_garmin_sukrara_on, name)) {
+                        NavigationRow(
+                            stringResource(appName(GarminApp.App)),
+                            { actions.openWatch(id, name) },
+                            summary = "${stringResource(R.string.in_garmin_watch_gone)}\n${ownText(d)}",
+                            icon = appIcon(GarminApp.App),
                         )
                     }
                 }
@@ -508,6 +598,12 @@ private fun appIcon(app: GarminApp) =
         GarminApp.Field -> DsR.drawable.ds_ic_timer
     }
 
+/** "Settings: same as the app" / "Settings: 3 of its own": the watch app's own settings on this watch. */
+@Composable
+private fun ownText(d: WatchDisplay?): String =
+    d?.ownCount?.takeIf { it > 0 }?.let { n -> pluralStringResource(R.plurals.in_garmin_watch_own, n, n) }
+        ?: stringResource(R.string.in_garmin_watch_same)
+
 /** "Watch face · in use, asked this phone at 14:21": what it is, then whether it is there and runs. */
 @Composable
 private fun appText(
@@ -546,6 +642,10 @@ private fun appText(
                         GarminApp.Field -> R.string.in_garmin_field_idle
                     },
                 )
+            }
+
+            is AppLine.Got -> {
+                stringResource(R.string.in_garmin_app_got, since(line.at, now))
             }
 
             AppLine.Unknown -> {

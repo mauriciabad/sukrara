@@ -232,6 +232,8 @@ data class AuraLinkState(
     /** What the face said it got and draws, with its last fetch. */
     val report: AuraReport? = null,
     val fetchedBy: Map<GarminApp, Instant> = emptyMap(),
+    /** When the watch app on each watch last fetched (by the `w` its fetch sends back). */
+    val appFetchedOn: Map<Long, Instant> = emptyMap(),
 )
 
 /**
@@ -321,6 +323,11 @@ class AuraLink(
                         it.copy(
                             fetched = at,
                             fetchedBy = it.fetchedBy + (app to at),
+                            appFetchedOn =
+                                req.query["w"]
+                                    ?.toLongOrNull()
+                                    ?.takeIf { app == GarminApp.App }
+                                    ?.let { w -> it.appFetchedOn + (w to at) } ?: it.appFetchedOn,
                             report = if (app == GarminApp.Aura) report ?: it.report else it.report,
                         )
                     }

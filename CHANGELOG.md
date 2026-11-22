@@ -10,6 +10,11 @@ Sukrara's releases. 0.x versions are previews.
   *Mute 30m*; the data field shows its own alert and records glucose into the activity. Entries and mutes from the
   watch wait until the phone has them. *Undo* after *Logged* on the watch deletes that entry on the phone, as a
   delete on the phone does (LibreView, Nightscout and Tidepool too).
+- **Each Garmin watch can show Sukrara its own way** (#199, not released yet): Settings › Share with apps › Garmin ›
+  *Sukrara* opens that watch's settings: its metrics, last treatment, rings, chart time, treatment marks, % column and
+  the period its Numbers page opens on. Each says *Same as the app* until you change it, and goes back the same way.
+  With two watches, each has its own rows on the Garmin page. Feeling two buzzes for one alert? The page says how to
+  switch Garmin Connect's off.
 - **Sukrara Aura: two fields on top, and every field your watch has** (#240): a second top field sits beside the first
   (one alone stays centred). Every field slot now offers everything Garmin gives a watch face (calories, stress, pulse
   ox, sleep score, weather and the next three days' forecast, sunrise, pressure, your next event, training status, race
@@ -24,7 +29,7 @@ Sukrara's releases. 0.x versions are previews.
   carbs 3 min per gram (30 min to 3 h), never long-acting insulin. It goes on time with the phone out of reach too. It
   used to keep the newest treatment of the last 24 hours.
 - **The phone is ready for Sukrara's own Garmin app and data field** (#199): it sends each Sukrara app on your watch
-  only what it shows (the app a whole day, its numbers and what to log; the data field the last hour and what rings),
+  only what it shows (the app a whole day, its numbers and what to log; the data field the last 3 hours and what rings),
   takes entries and mutes from the watch through its own Add treatment and alert actions, each signed and never logged
   twice, and Settings › Share with apps › Garmin lists the app and the data field. The watch apps themselves come next.
   Sukrara Aura needs this version of the phone.

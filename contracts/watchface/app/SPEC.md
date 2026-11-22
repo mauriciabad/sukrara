@@ -176,8 +176,8 @@ Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *G
 
 ## 11. Settings (the watch is a place, docs/38)
 
-*Same as the app* until the watch gets its own value, set on the phone (Share with apps › Watches › Garmin › Sukrara on
-your watch); the phone resolves and sends them: metrics (main / second / third, last treatment, no recent treatment, ring
+*Same as the app* until the watch gets its own value, set on the phone (Share with apps › Garmin › *Sukrara on your
+watch* › *Sukrara*); the phone resolves and sends them: metrics (main / second / third, last treatment, no recent treatment, ring
 order, number in the ring, rewards), the chart's time, treatment marks, the % column, the report period
 (switchable on the watch, not saved). Watch-only: *Sparkline on alerts* (on), *Log complication shows* (time since);
 the data field's *Record glucose* (on: its value every reading in the activity's file, Garmin Connect's chart).
@@ -214,8 +214,7 @@ Open:
 1. The name **CGM-GB-value** in the fēnix 8's own face editor, and Face It's rendering (a real watch).
 
 **Not designed yet**: the Instinct 3 Solar / Instinct E mono layouts (1 bit, 32 KB glance and field; #221); Aura's
-two top fields and more field options (#240, design-first in `aura.js`); the phone's Garmin page rows for the per-watch
-settings and the two-buzz line.
+two top fields and more field options (#240, design-first in `aura.js`).
 
 ## 14. Screen classes
 

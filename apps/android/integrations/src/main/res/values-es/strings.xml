@@ -60,6 +60,16 @@
     <string name="in_garmin_watch_failed">el último mensaje no llegó, se vuelve a intentar</string>
     <string name="in_garmin_watch_waiting">esperando una lectura</string>
     <string name="in_garmin_sukrara_group">Sukrara en tu reloj</string>
+    <string name="in_garmin_sukrara_on">Sukrara en %1$s</string>
+    <string name="in_garmin_two_buzz">¿Dos vibraciones por una alerta? Desactiva Sukrara en las notificaciones de Garmin Connect.</string>
+    <string name="in_garmin_app_got">recibió el mensaje de este móvil a las %1$s</string>
+    <string name="in_garmin_watch_same">Ajustes: igual que la app</string>
+    <plurals name="in_garmin_watch_own">
+        <item quantity="one">Ajustes: %1$d propio</item>
+        <item quantity="other">Ajustes: %1$d propios</item>
+    </plurals>
+    <string name="in_garmin_watch_gone">Garmin Connect ya no conoce este reloj</string>
+    <string name="in_garmin_watch_unnamed">un reloj</string>
     <string name="in_garmin_aura">Sukrara Aura</string>
     <string name="in_garmin_face_kind">Esfera</string>
     <string name="in_garmin_face_not_installed">no instalada</string>
@@ -70,7 +80,7 @@
     <string name="in_garmin_app_kind">App del reloj, vistazo y complicaciones</string>
     <string name="in_garmin_app_in_use">preguntó a este móvil a las %1$s</string>
     <string name="in_garmin_app_idle">no ha preguntado a este móvil últimamente (pregunta cada 5 minutos)</string>
-    <string name="in_garmin_field">Campo de datos de Sukrara</string>
+    <string name="in_garmin_field">Sukrara campo de datos</string>
     <string name="in_garmin_field_kind">Campo de datos</string>
     <string name="in_garmin_field_idle">no ha preguntado a este móvil últimamente (pregunta durante una actividad)</string>
     <string name="in_garmin_other_group">Otras esferas y campos de datos</string>

@@ -315,6 +315,9 @@ class IntegrationsModule(
     val watchSettings: WatchSettingsStore? =
         garminWatches?.let { WatchSettingsStore(it) }
 
+    /** The app's settings Sukrara on a watch follows where it has no value of its own (the watch's settings page). */
+    val watchAppConfig: Flow<app.mauri.sukrara.graph.GraphConfig> = GraphSettings.config(settings)
+
     /** Sukrara on Garmin watches (the face, the app, the data field): pushed through Garmin Connect, fetched and written on loopback (docs/43, docs/47). */
     val aura =
         AuraLink(
@@ -409,7 +412,7 @@ class IntegrationsModule(
         get() = viewModelFactory { initializer { BroadcastsViewModel(broadcasts, installedApps, wearer, dispatchers.io) } }
 
     val garminViewModels: ViewModelProvider.Factory
-        get() = viewModelFactory { initializer { GarminViewModel(aura, xdrip, context, dispatchers.io) } }
+        get() = viewModelFactory { initializer { GarminViewModel(aura, xdrip, context, dispatchers.io, watchSettings) } }
 
     val xdripViewModels: ViewModelProvider.Factory
         get() = viewModelFactory { initializer { XdripViewModel(xdrip, context, dispatchers.io) } }

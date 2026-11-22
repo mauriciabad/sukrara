@@ -70,6 +70,9 @@ import app.mauri.sukrara.feature.settings.SettingsScreen
 import app.mauri.sukrara.feature.settings.TestAlert
 import app.mauri.sukrara.feature.settings.graph.MetricSlot
 import app.mauri.sukrara.feature.settings.graph.PlaceSetting
+import app.mauri.sukrara.feature.settings.graph.WatchPage
+import app.mauri.sukrara.feature.settings.graph.WatchSettingsContent
+import app.mauri.sukrara.feature.settings.graph.WatchValueContent
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsScreen
 import app.mauri.sukrara.feature.settings.sensor.SensorSettingsViewModel
 import app.mauri.sukrara.feature.sharing.backup.BackupViewModel
@@ -89,6 +92,7 @@ import app.mauri.sukrara.feature.sharing.share.ProfilePage
 import app.mauri.sukrara.feature.sharing.share.ShareScreen
 import app.mauri.sukrara.feature.sharing.share.SharingScreen
 import app.mauri.sukrara.feature.sharing.share.SharingViewModel
+import app.mauri.sukrara.graph.WatchDisplay
 import app.mauri.sukrara.integrations.AppsPage
 import app.mauri.sukrara.integrations.DataFileRows
 import app.mauri.sukrara.integrations.broadcasts.BroadcastsPage
@@ -104,6 +108,7 @@ import app.mauri.sukrara.integrations.nightscout.NightscoutPage
 import app.mauri.sukrara.integrations.tidepool.TidepoolPage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -210,6 +215,17 @@ data object BroadcastsRoute : NavKey
 /** Settings › Share with apps › Garmin (Sukrara's link to the watch: the face, later its data field and app). */
 @Serializable
 data object GarminRoute : NavKey
+
+/**
+ * Settings › Share with apps › Garmin › a watch's *Sukrara*: that watch's own settings (the watch as a place, docs/38);
+ * [page] = one value's page ([WatchPage] by name), null = the watch's page. [name] = Garmin Connect's name for it.
+ */
+@Serializable
+data class GarminWatchRoute(
+    val watch: Long,
+    val name: String,
+    val page: String? = null,
+) : NavKey
 
 /** Settings › Share with apps › xDrip+ server (also from the Garmin page, for other faces and data fields). */
 @Serializable
@@ -792,9 +808,46 @@ fun SukraraNavigation(
                     }
                     entry<GarminRoute> {
                         SettingsPage(stringResource(IntegrationsR.string.in_garmin_title), { backStack.pop(GarminRoute) }) {
-                            GarminPage(viewModel(factory = graph.integrations.garminViewModels), graph.clock::now, openXdrip = {
-                                backStack.push(XdripRoute)
-                            })
+                            GarminPage(
+                                viewModel(factory = graph.integrations.garminViewModels),
+                                graph.clock::now,
+                                openXdrip = { backStack.push(XdripRoute) },
+                                openWatch = { id, name -> backStack.push(GarminWatchRoute(id, name)) },
+                            )
+                        }
+                    }
+                    entry<GarminWatchRoute> { r ->
+                        val store = graph.integrations.watchSettings
+                        val app by graph.integrations.watchAppConfig.collectAsStateWithLifecycle(null)
+                        val own by remember(r.watch) {
+                            store?.displays?.map { it[r.watch] ?: WatchDisplay() } ?: flowOf(WatchDisplay())
+                        }.collectAsStateWithLifecycle(null)
+                        val link by graph.integrations.aura.state
+                            .collectAsStateWithLifecycle()
+                        // Garmin Connect answered and no longer lists it: its page offers to let its values go
+                        val gone = link.answering == true && link.watches.none { it.id == r.watch }
+                        val set: (WatchDisplay) -> Unit = { d -> navScope.launch { store?.set(r.watch, d, r.name) } }
+                        val back = { backStack.pop(r) }
+                        val a = app
+                        val o = own
+                        if (a != null && o != null) {
+                            when (val p = r.page?.let(WatchPage::valueOf)) {
+                                null -> {
+                                    WatchSettingsContent(
+                                        r.name,
+                                        a,
+                                        o,
+                                        set,
+                                        { backStack.push(r.copy(page = it.name)) },
+                                        back,
+                                        gone = gone,
+                                    )
+                                }
+
+                                else -> {
+                                    WatchValueContent(p, a, o, set, back)
+                                }
+                            }
                         }
                     }
                     entry<XdripRoute> {

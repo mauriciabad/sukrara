@@ -458,6 +458,17 @@
     <!-- un ajuste que fija la app y que la notificación y los widgets pueden cambiar (docs/38) -->
     <string name="st_same_as_app">Igual que la app</string>
     <string name="st_same_as_app_value">Igual que la app (%1$s)</string>
+    <!-- Compartir con apps › Garmin › Sukrara de un reloj: el reloj como lugar (docs/38, SPEC §11 de la app de Garmin) -->
+    <string name="st_watch_title">Sukrara en %1$s</string>
+    <string name="st_watch_intro">%1$s muestra lo mismo que la app. Lo que cambies aquí cambia solo en este reloj.</string>
+    <string name="st_watch_gone">Garmin Connect ya no conoce %1$s. Sus ajustes propios siguen aquí hasta que los olvides.</string>
+    <string name="st_watch_chart">Gráfica</string>
+    <string name="st_watch_numbers">Página de números</string>
+    <string name="st_watch_report">Abre con</string>
+    <string name="st_watch_order_own">Orden propio</string>
+    <string name="st_watch_all_same">Todo igual que la app</string>
+    <string name="st_watch_forget">Olvidar los ajustes de este reloj</string>
+    <string name="st_watch_footer">La unidad, los rangos y las alertas son siempre los de la app. Minigráfica en las alertas y La complicación Registrar muestra se eligen en la app Connect IQ.</string>
     <string name="st_where_app">en la app</string>
     <string name="st_where_notification">en la notificación</string>
     <string name="st_where_widgets">en los widgets</string>

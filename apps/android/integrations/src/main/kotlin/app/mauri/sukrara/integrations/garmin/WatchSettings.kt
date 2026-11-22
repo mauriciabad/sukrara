@@ -6,6 +6,7 @@ package app.mauri.sukrara.integrations.garmin
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.graph.GraphText
 import app.mauri.sukrara.graph.MarkShow
+import app.mauri.sukrara.graph.RingSpec
 import app.mauri.sukrara.graph.WatchDisplay
 import app.mauri.sukrara.graph.stats.TirRange
 import app.mauri.sukrara.settings.SettingsSpec
@@ -17,7 +18,7 @@ import kotlinx.serialization.Serializable
 /**
  * One watch's own values as stored (settings.json `apps.garmin.watch`), each field under its schema key, the compound
  * ones in the app's own text formats (`graph.slots`, `graph.lastElse`, `graph.ringOrder`, `graph.marks`); null = Same
- * as the app.
+ * as the app. The metrics are three comma-separated parts, an empty one Same as the app (",TIR:604800:1:1,").
  */
 @Serializable
 data class WatchOverrides(
@@ -35,7 +36,7 @@ data class WatchOverrides(
     /** As the watch gets them: a stored value that no longer parses or is out of its format follows the app. */
     fun toDisplay() =
         WatchDisplay(
-            slots = slots?.let(GraphText::parseSlots),
+            slots = slots?.let(::parseSlots) ?: WatchDisplay.SAME_SLOTS,
             lastOn = last,
             lastElse = lastElse?.let(GraphText::parseSlot),
             ringOrder = ringOrder?.let(GraphText::parseRingOrder),
@@ -48,9 +49,16 @@ data class WatchOverrides(
         )
 
     companion object {
+        /** Three parts, each a metric or empty; anything else (or a part that doesn't parse) follows the app. */
+        private fun parseSlots(text: String): List<RingSpec?>? =
+            text
+                .split(",")
+                .takeIf { it.size == 3 }
+                ?.map { p -> p.takeIf { it.isNotBlank() }?.let(GraphText::parseSlot) }
+
         fun of(d: WatchDisplay) =
             WatchOverrides(
-                d.slots?.let(GraphText::slotsText),
+                d.slots.takeIf { s -> s.any { it != null } }?.joinToString(",") { it?.let(GraphText::slotText).orEmpty() },
                 d.lastOn,
                 d.lastElse?.let(GraphText::slotText),
                 d.ringOrder?.let(GraphText::ringOrderText),
@@ -64,10 +72,14 @@ data class WatchOverrides(
     }
 }
 
-/** Every watch's own values by Garmin Connect's id for it (the typed state file `watches`). */
+/**
+ * Every watch's own values by Garmin Connect's id for it (the typed state file `watches`), and its name when they were
+ * set ([names]: the page lists a watch Garmin Connect no longer knows by it, so its values can be let go).
+ */
 @Serializable
 data class GarminWatches(
     val byId: Map<Long, WatchOverrides> = emptyMap(),
+    val names: Map<Long, String> = emptyMap(),
 )
 
 /** Reads and writes [GarminWatches]; a watch whose values all follow the app has no entry. */
@@ -78,10 +90,22 @@ class WatchSettingsStore(
     val displays: Flow<Map<Long, WatchDisplay>> =
         store.data.map { w -> w.byId.mapValues { it.value.toDisplay() }.filterValues { !it.same } }
 
+    /** The name each watch with its own values had when they were set. */
+    val names: Flow<Map<Long, String>> = store.data.map { w -> w.names.filterKeys { it in w.byId } }
+
+    /** [watch]'s own values ([name]: Garmin Connect's name for it); all Same as the app removes its entry. */
     suspend fun set(
         watch: Long,
         display: WatchDisplay,
+        name: String? = null,
     ) = store.update { w ->
-        w.copy(byId = if (display.same) w.byId - watch else w.byId + (watch to WatchOverrides.of(display)))
+        if (display.same) {
+            w.copy(byId = w.byId - watch, names = w.names - watch)
+        } else {
+            w.copy(
+                byId = w.byId + (watch to WatchOverrides.of(display)),
+                names = name?.let { w.names + (watch to it) } ?: w.names,
+            )
+        }
     }
 }

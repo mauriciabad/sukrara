@@ -191,4 +191,37 @@ class GarminStatusTest {
         assertEquals(AppLine.Unknown, AppLine.of(GarminApp.Aura, base.copy(watches = listOf(watch.copy(installed = null))), now))
         assertEquals(AppLine.PortBusy, AppLine.of(GarminApp.Aura, base.copy(watches = w, portBusy = true), now))
     }
+
+    @Test
+    fun eachWatchHasItsOwnRows() {
+        fun links(app: AppLink) = mapOf(GarminApp.App.id to app, GarminApp.Aura.id to AppLink(installed = true, delivered = ago(4)))
+        val descent = AuraWatch.of(7, "Descent", true, links(AppLink(installed = true, delivered = ago(1))))
+        val venu = AuraWatch.of(8, "Venu 3", true, links(AppLink(installed = false)) + (GarminApp.App.beta to AppLink(installed = false)))
+        val s = base.copy(watches = listOf(descent, venu), fetchedBy = mapOf(GarminApp.App to ago(2), GarminApp.Aura to ago(3)))
+        // the watch app only on the Descent: its fetch is the Descent's; none lately: what reached it
+        assertEquals(AppLine.InUse(ago(2)), AppLine.on(GarminApp.App, descent, s, now))
+        assertEquals(AppLine.Got(ago(1)), AppLine.on(GarminApp.App, descent, s.copy(fetchedBy = emptyMap()), now))
+        // its fetch says which watch asked (w)
+        assertEquals(
+            AppLine.InUse(ago(5)),
+            AppLine.on(
+                GarminApp.App,
+                descent,
+                s.copy(
+                    fetchedBy = emptyMap(),
+                    appFetchedOn =
+                        mapOf(7L to ago(5)),
+                ),
+                now,
+            ),
+        )
+        assertEquals(AppLine.NotInstalled, AppLine.on(GarminApp.App, venu, s, now))
+        // the face on both: its fetch can't tell them apart, each says what reached it
+        assertEquals(AppLine.Got(ago(4)), AppLine.on(GarminApp.Aura, venu, s, now))
+        // one watch: its fetch is that watch's
+        val one = base.copy(watches = listOf(descent), fetchedBy = mapOf(GarminApp.Aura to ago(3)))
+        assertEquals(AppLine.InUse(ago(3)), AppLine.on(GarminApp.Aura, descent, one, now))
+        assertEquals(AppLine.Unknown, AppLine.on(GarminApp.Field, descent, one, now))
+        assertEquals(AppLine.PortBusy, AppLine.on(GarminApp.App, descent, one.copy(portBusy = true), now))
+    }
 }
