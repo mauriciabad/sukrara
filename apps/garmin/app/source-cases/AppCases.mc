@@ -9,7 +9,7 @@ import Toybox.Timer;
 import Toybox.WatchUi;
 
 // THE DEBUG CASE LOADER: the app showing every case of contracts/watchface/app/cases.json in turn (a screen drawn from
-// one phone state's payload at a watch time), PERIOD_MS each, after a calibration frame, printing each case's input
+// one phone state's payload at a watch time), each PERIOD_MS after it is out, after a calibration frame, printing each case's input
 // (AppData) once as JSON ("IN|<id>|<json>") for tools/watchface/app.js's reference and the case's frame cost and memory
 // ("PERF|…"). Only in the 'cases' build (build/cases/cases.jungle, from apps/garmin/app/tools/cases.py): the release
 // app never has it, and every symbol here is (:debug).
@@ -30,6 +30,8 @@ class AppCasesView extends WatchUi.View {
     var start as Number = 0;
     var built as Number = -1; // the case whose display list is ready
     var painted as Number = -1; // the case on screen
+    var shownAt as Number = 0; // when its input was out
+    var finished as Boolean = false;
     var dumped as Number = -1; // the case whose input is printed
     var frames as Timer.Timer? = null;
     var g as AppG? = null;
@@ -50,16 +52,21 @@ class AppCasesView extends WatchUi.View {
     }
 
     // each step in its own callback (the watchdog counts each): the case's display list, its paint, its input printed
+    // A case stays PERIOD_MS after its paint and its input are out, however slow the simulator is (a busy Mac made
+    // cases go by unseen); the calibration frame the same after the start.
     function frame() as Void {
-        var k = (System.getTimer() - start) / PERIOD_MS;
-        var i = k - 1;
-        if (i >= 0 && i < AppCaseTable.COUNT && i != built) {
-            build(i);
+        var now = System.getTimer();
+        var next = built < 0 ? (now - start >= PERIOD_MS ? 0 : -1) : (dumped == built && now - shownAt >= PERIOD_MS ? built + 1 : -1);
+        if (next >= 0 && next < AppCaseTable.COUNT) {
+            build(next);
+        } else if (next >= AppCaseTable.COUNT) {
+            finished = true;
         } else if (painted == built && built >= 0 && dumped != built) {
             dumped = built;
             System.print("IN|" + id + "|");
             AppCaseDump.input(d as AppData, scr, days, sel, cfg, xs);
             System.println("");
+            shownAt = System.getTimer();
         }
         WatchUi.requestUpdate();
     }
@@ -199,10 +206,9 @@ class AppCasesView extends WatchUi.View {
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
-        var k = (System.getTimer() - start) / PERIOD_MS;
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
-        if (k == 0) {
+        if (built < 0) {
             // the calibration frame: four 2 x 2 white squares at known pixels (tools/simshot.py finds the screen with them)
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
             dc.fillRectangle(100, 100, 2, 2);
@@ -215,7 +221,7 @@ class AppCasesView extends WatchUi.View {
             }
             return;
         }
-        if (k > AppCaseTable.COUNT) {
+        if (finished) {
             if (painted != -3) {
                 painted = -3;
                 System.println("DONE");

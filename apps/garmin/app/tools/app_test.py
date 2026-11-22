@@ -76,7 +76,7 @@ def simulate(outdir):
                                  DEVICE], stdout=lf, stderr=subprocess.STDOUT, env=e, start_new_session=True)
     shots, offset = {}, None
     try:
-        deadline = time.time() + 3.2 * len(ids) + 90
+        deadline = time.time() + 8 * len(ids) + 120  # each case 3 s once out, however slow the simulator is
         while time.time() < deadline and proc.poll() is None and len(shots) < len(ids):
             time.sleep(0.2)
             if offset is None:

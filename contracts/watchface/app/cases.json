@@ -576,8 +576,16 @@
   {
    "id": "alert-no-data-old",
    "state": 2,
-   "at": -600,
-   "screen": "alert"
+   "screen": "alert",
+   "set": {
+    "g": {
+     "t": 1794823176,
+     "v": 141,
+     "rate": null,
+     "band": null,
+     "deg": null
+    }
+   }
   }
  ]
 }
