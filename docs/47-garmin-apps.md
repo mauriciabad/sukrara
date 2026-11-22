@@ -286,6 +286,10 @@ Changed from "Choice" / §6, and why:
   (`AppLine.on`): the app's fetch counted per watch by `&w=`, Garmin Connect's delivery when it hasn't asked. The
   two-buzz line (SPEC §13 decided 2) is a question ("Two buzzes for one alert?"), never a plain "switch it off": 5.0
   watches can't ring on their own and some 5.x ones ring without vibrating.
+- **The setup link** (SPEC §4.3): the watch app's *Open on phone* opens `https://sukrara.mauri.app/garmin/setup/`
+  through Garmin Connect; Android claims `/garmin/setup` and `/es/garmin/setup` as App Links and opens the Garmin page
+  (setup while it isn't done); the website has both pages for a phone without Sukrara. The site check now also reads
+  the Garmin apps' Monkey C for the URLs they open.
 - **The data field gets 3 h** (SPEC §9: its sparkline goes up to 3 h as the slot allows), 36 readings as the face.
 - **`log.<kind>.q`**: what an entry logged now quiets (side and minutes), from the rules the phone's Add treatment
   says its quiet line from (`AlertHints.quiet`: nothing on a follower mirroring the wearer's alerts), so the watch's

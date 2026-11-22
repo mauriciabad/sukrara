@@ -433,6 +433,19 @@ fun isInviteLink(uri: Uri?): Boolean =
     uri != null &&
         (uri.scheme == "sukrara" || (uri.scheme == "https" && uri.host == "sukrara.mauri.app" && uri.path.orEmpty().startsWith("/join")))
 
+/**
+ * The Garmin watch app's *Open on phone* (contracts/watchface/app SPEC §4.3): [GARMIN_SETUP_URL] (or its Spanish
+ * `/es/garmin/setup/`) opens Settings › Share with apps › Garmin.
+ */
+fun isGarminSetupLink(uri: Uri?): Boolean =
+    uri != null &&
+        uri.scheme == "https" &&
+        uri.host == "sukrara.mauri.app" &&
+        uri.path.orEmpty().let { it.startsWith("/garmin/setup") || it.startsWith("/es/garmin/setup") }
+
+/** The page the watch app opens on the phone (the website says how to get here without Sukrara). */
+const val GARMIN_SETUP_URL = "https://sukrara.mauri.app/garmin/setup/"
+
 @Composable
 fun SukraraNavigation(
     graph: AppGraph,
@@ -526,6 +539,15 @@ fun SukraraNavigation(
     var handledLink by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(deepLink) {
         val link = deepLink?.toString()
+        if (link != null && isGarminSetupLink(deepLink) && link != handledLink) {
+            handledLink = link
+            // the Garmin page works for a wearer and a follower alike; before setup is done, setup is where to act
+            if (graph.spec.first() == null) {
+                if (SetupRoute !in backStack) backStack.add(SetupRoute)
+            } else if (backStack.lastOrNull() != GarminRoute) {
+                backStack.push(GarminRoute)
+            }
+        }
         if (link != null && isInviteLink(deepLink) && link != handledLink) {
             handledLink = link
             val spec = graph.spec.first()

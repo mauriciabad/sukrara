@@ -7,7 +7,8 @@
  *   - an internal link or picture that leads nowhere: every href / src of every page must be a file of the build,
  *     with a trailing slash for pages (trailingSlash: 'always'), and its #anchor must be an id on that page;
  *   - a page the apps open that the site doesn't have: every https://sukrara.mauri.app/… URL written in the apps'
- *     code (Android Kotlin, also as "$SITE_URL/…", Mac Swift and its bundle files) must exist, with its #anchor
+ *     code (Android Kotlin, also as "$SITE_URL/…", Mac Swift and its bundle files, the Garmin apps' Monkey C: the watch
+ *     app's setup link) must exist, with its #anchor
  *     (an invite's #code excepted). GitHub Pages redirects /privacy to /privacy/, so an app's URL may leave the
  *     slash out;
  *   - the files other systems read: App Links (assetlinks.json with Sukrara's release key, tools/release/android-cert.sha256),
@@ -117,6 +118,7 @@ const appFiles = [
 	...sources(join(ROOT, 'apps/android'), /\/src\/main\/.*\.(kt|xml)$/),
 	...sources(join(ROOT, 'apps/macos/Sources'), /\.swift$/),
 	...sources(join(ROOT, 'apps/macos/Bundle'), /\.(plist|in|entitlements)$/),
+	...sources(join(ROOT, 'apps/garmin'), /\/source\/.*\.mc$/),
 ];
 const appUrls = new Map();
 for (const file of appFiles) {

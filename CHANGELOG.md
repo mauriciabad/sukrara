@@ -14,7 +14,8 @@ Sukrara's releases. 0.x versions are previews.
   *Sukrara* opens that watch's settings: its metrics, last treatment, rings, chart time, treatment marks, % column and
   the period its Numbers page opens on. Each says *Same as the app* until you change it, and goes back the same way.
   With two watches, each has its own rows on the Garmin page. Feeling two buzzes for one alert? The page says how to
-  switch Garmin Connect's off.
+  switch Garmin Connect's off. The watch app's *Open on phone* opens Sukrara's Garmin page on the phone (or the
+  website's steps when Sukrara isn't installed).
 - **The Garmin page no longer says the face has the latest reading when it can't read the phone's messages** (#199):
   a face older than the phone kept every message back for hours while the page showed the reading delivered. Now it
   says "the watch face can't read this phone's messages · update Sukrara Aura" (the watch app and the data field the

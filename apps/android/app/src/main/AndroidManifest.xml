@@ -62,6 +62,17 @@
                 <data android:host="sukrara.mauri.app" />
                 <data android:pathPrefix="/join" />
             </intent-filter>
+            <!-- the Garmin watch app's Open on phone (its SPEC §4.3): https://sukrara.mauri.app/garmin/setup/ (or /es/…)
+                 opens Settings › Share with apps › Garmin; without Sukrara the website's page says how to get there -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="sukrara.mauri.app" />
+                <data android:pathPrefix="/garmin/setup" />
+                <data android:pathPrefix="/es/garmin/setup" />
+            </intent-filter>
         </activity>
         <!-- The new-sensor flow from Sukrara's own notifications, widgets and sensor taps (NavTargets.SENSOR_SETUP_ACTIVITY):
              not exported, so no other app can open the flow; it signs the request for MainActivity (SensorSetupGate). -->

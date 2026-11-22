@@ -2969,6 +2969,12 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   *Open Garmin Connect*, while a watch has the app: "Two buzzes for one alert? Switch Sukrara off in Garmin Connect's
   notifications." (the app rings its own alert; 5.0 watches and some 5.x ones rely on Garmin Connect's, so the line is
   only for who feels both).
+- **The watch app's *Open on phone*** (its SPEC §4.3, *Not set up*): `https://sukrara.mauri.app/garmin/setup/` (or
+  `/es/garmin/setup/`) is an App Link (the manifest's second verified filter, beside `/join`; `isGarminSetupLink`):
+  Sukrara opens Settings › Share with apps › Garmin on top of what is open (a wearer and a follower alike), or setup
+  while it isn't done. Without Sukrara the website's page says it in three steps: get Sukrara for Android, check *Send
+  to Sukrara on your watch* in Share with apps › Garmin, keep Garmin Connect running (en / es; `npm run check` holds
+  the URL to the site, the Garmin apps' Monkey C too).
 - **Each watch's own settings** (the watch as a place, docs/38; `WatchSettingsContent`, `WatchPagesTest`): the app's
   row opens *Sukrara on Venu 3*: the three metrics, the last treatment, no recent treatment, the ring's number, rewards
   and colour order, the chart's time, treatments and % column, the period the Numbers page opens on; each row its own

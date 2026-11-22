@@ -31,7 +31,10 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-/** The one activity: launcher, invite links (`sukrara:` / `https://sukrara.mauri.app/join`). */
+/**
+ * The one activity: launcher, invite links (`sukrara:` / `https://sukrara.mauri.app/join`), the Garmin watch app's setup
+ * link (`https://sukrara.mauri.app/garmin/setup/`).
+ */
 class MainActivity : ComponentActivity() {
     private var deepLink by mutableStateOf<Uri?>(null)
 
