@@ -5389,7 +5389,7 @@
    }
   },
   "log-amount-carbs": {
-   "budget": 11874,
+   "budget": 2535,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5515,11 +5515,17 @@
     ],
     "unit": "mgdl",
     "warm": 0.0,
-    "x": {}
+    "x": {
+     "amount": "45",
+     "usual": [
+      "30",
+      "45"
+     ]
+    }
    }
   },
   "log-amount-rapid": {
-   "budget": 6828,
+   "budget": 2728,
    "input": {
     "age": 0.5,
     "bands": [
@@ -5645,7 +5651,14 @@
     ],
     "unit": "mgdl",
     "warm": 0.0,
-    "x": {}
+    "x": {
+     "amount": "4.5",
+     "usual": [
+      "2",
+      "3",
+      "4.5"
+     ]
+    }
    }
   },
   "log-confirm": {
@@ -9296,7 +9309,7 @@
    }
   },
   "setup": {
-   "budget": 6349,
+   "budget": 8370,
    "input": {
     "age": 0.0,
     "bands": [
@@ -9410,7 +9423,7 @@
    }
   },
   "setup-opened": {
-   "budget": 6182,
+   "budget": 8203,
    "input": {
     "age": 0.0,
     "bands": [
