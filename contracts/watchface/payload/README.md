@@ -11,12 +11,13 @@ and the glucose notification decide it (SPEC ground rule 1). Why it travels the 
 | `apps.json` | **the registry**: every Sukrara Connect IQ app, its app id and beta id, its profile, its fetch path; the port and the entries path |
 | `cases.json` | phone state → exact payload, per profile (`cases` the face, `app`, `field`); for the face also what it makes of it at a given watch time, the message order rule, versions it ignores; a payload as Garmin's own serializer writes it |
 | `entries.json` | entries from the watch: request → the phone's answer → what it stores |
+| `undos.json` | *Undo* of an entry the watch logged: request → the phone's answer → the entry its delete removes |
 | `mutes.json` | mutes from the watch: request → the phone's answer → the alert runtime's action |
 | `schema.json` | the payload's JSON Schema, one branch per profile |
 
 Run by `AuraPayloadFixtureTest` (Android `:integrations`: phone → payload for every profile, through the wire format
 and back, Garmin's bytes), `GarminAppsTest` (the registry against the phone's `GarminApp`), `WatchWritesTest` (the
-entries and mute endpoints) and `WatchEntryTest` (`:feature:treatments`: the phone's entry path), and `LinkTest` (the watch's
+entries, undo and mute endpoints) and `WatchEntryTest` (`:feature:treatments`: the phone's entry and delete paths), and `LinkTest` (the watch's
 shared link, `apps/garmin/tools/link-test.sh <app>`: payload → the face's inputs, each app its own profile; the cases
 reach Monkey C through `apps/garmin/tools/link_cases.py`, whose `--check` also holds every manifest's id and type and
 every fetch path to `apps.json`; `apps/garmin/build.sh` takes the beta ids from it). Parity group
@@ -27,7 +28,7 @@ every fetch path to `apps.json`; `apps/garmin/build.sh` takes the beta ids from 
 | App | Connect IQ type | Profile | Fetch | Writes |
 |---|---|---|---|---|
 | **Sukrara Aura** | watch face (128 KB, background 64 KB) | `aura` | `GET /sukrara/aura` | no |
-| **Sukrara** | watch app: glance, app, background, complications (app 768 KB, glance and background 64 KB) | `app` | `GET /sukrara/app` | `POST /sukrara/entries`, `POST /sukrara/mute` |
+| **Sukrara** | watch app: glance, app, background, complications (app 768 KB, glance and background 64 KB) | `app` | `GET /sukrara/app` | `POST /sukrara/entries`, `POST /sukrara/undo`, `POST /sukrara/mute` |
 | **Sukrara data field** | data field (128–256 KB) | `field` | `GET /sukrara/field` | no (a data field has no input) |
 
 Each app is its own Connect IQ app id, so each has its own storage and its own phone messages; a data field can't read
@@ -204,6 +205,38 @@ negative one), or from a `clock` answer's `now`.
 when the card's rule picks it, in `log` (`last`, `usual`; `order` as the phone's facts now say), and the alert
 runtime's quiet in `st` / `ring`.
 
+## Undo from the watch
+
+*Undo* (10 s after *Logged*, `../app/SPEC.md` §6) deletes the entry the watch just logged, by its id, with
+`POST http://127.0.0.1:17582/sukrara/undo`: the same channel as entries (the same key, body encodings, send-time window
+and answer shape; `undos.json`). The phone deletes it through **its own delete** (home's, `TreatmentLog.delete`): a
+newer deleted version, synced to followers and the Mac, deleted from Nightscout, retracted from LibreView and Tidepool
+by their uploads, and the alert runtime's quiet rules no longer count it. The watch keeps the undo in its outbox until
+an answer below drops it (a lost answer: it sends it again, and `gone` says it is done), and sends it only after its
+entry's `stored` or `known`.
+
+| Field | Value |
+|---|---|
+| `id` | the entry's id, the UUID v4 the watch made for it (`Entries from the watch`) |
+| `s` | when this try is sent, epoch s on the phone's clock, new on every try |
+| `mac` | HMAC-SHA256 with the key over `id|s`, lowercase hex |
+
+**Answer**: HTTP 200 with `{id, r, …}`, checked in this order:
+
+| `r` | When | Changes | The watch |
+|---|---|---|---|
+| `sig`, `clock`, `id` | as for entries (`clock` has `now`) | nothing | as for entries |
+| `unknown` | no entry with this id in the log (it never reached the phone) | nothing | drops it |
+| `foreign` | the entry wasn't logged from the watch (the phone's own, a pen's, a follower's): the watch only takes back its own | nothing | drops it (a bug) |
+| `gone` | it is deleted already (on the phone, or a retry whose answer was lost) | nothing | as `done` |
+| `off` | this phone may not change it now (as `log` null, or it is no longer this phone's to change) | nothing | drops it, says *Not undone* |
+| `done` | everything else: the phone's own delete ran | the entry is deleted | removes it from the outbox, says *Undone* |
+
+An entry logged from the watch is one the phone stored from `POST /sukrara/entries` (it keeps that with the entry,
+Android `TreatmentRecord.fromWatch`); an edit on another device (a follower's) makes it that device's, and it is
+`foreign` from then on. A deleted id stays known: the same entry sent again is `known` with `e` null, never logged
+again. The next payload no longer has it in `tx`, `last` or `log`.
+
 ## Mute from the watch
 
 The app mutes, unmutes and changes how often a side reminds with `POST http://127.0.0.1:17582/sukrara/mute`, the same channel as entries (the same key,
@@ -230,4 +263,4 @@ does), the end of *Mute all*, or the side's *Remind less* / *Remind as usual* (i
 A change lands with the phone and every app in the same change (parity group `watchface-link`), with `v` raised when
 an older app would misread it (CLAUDE.md: the wire formats are versioned; every app speaks the same version). A key
 an older app ignores needs no raise. Version 4 (#199): the profiles and `p`, the app's and the data field's keys, the
-entries and mute endpoints; the face's keys as in version 3.
+entries, undo and mute endpoints; the face's keys as in version 3.
