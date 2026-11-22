@@ -25,6 +25,7 @@ module Link {
     (:field)
     const PROFILE = "field";
     const STORE = "link";
+    const SENT = "linkSent"; // the stored payload's sent (the order rule reads only this)
     // the watch's id on the phone (the app profile's push only, README `w`): its fetch says it (&w=)
     const WATCH = "linkW";
     // a stored payload this far ahead of the watch clock gives way to any new one (the phone's clock was wrong)
@@ -94,15 +95,25 @@ module Link {
             _fetchedAt = now;
         }
         var d = data.get("d");
-        var kept = accept(d, now);
-        var sent = valid(d) ? (d as Dictionary).get("sent") : 0;
-        var g = valid(d) ? (d as Dictionary).get("g") : null;
+        // the app's background keeps the payload itself and hands over only what came (AppService: its glance has
+        // 64 KB): the stored one is read again when next needed
+        var kept = data.get("kept");
+        var sent = data.get("sent");
+        var gt = data.get("gt");
+        if (kept == null) {
+            kept = accept(d, now);
+            var g = valid(d) ? (d as Dictionary).get("g") : null;
+            sent = valid(d) ? (d as Dictionary).get("sent") : 0;
+            gt = g instanceof Dictionary ? g.get("t") : 0;
+        } else if (kept) {
+            _loaded = false;
+        }
         // what arrived, when (the report the phone shows): p / f, or the fetch's error code
         // p<n>: a push, n older messages taken with it; s: picked up from storage (Garmin didn't hand it over)
         var n = data.get("n");
         var kind = fetch ? (data.get("c") == 200 ? "f" : "e" + data.get("c")) : "p" + (n instanceof Number && n > 0 ? n : "");
-        note(kind + (stored ? "s" : "") + (kept ? "" : "x"), now, sent, g instanceof Dictionary ? g.get("t") : 0);
-        return kept;
+        note(kind + (stored ? "s" : "") + (kept ? "" : "x"), now, sent, gt);
+        return kept as Boolean;
     }
 
     // The watch's own account of the link, sent to the phone with every fetch (?r=…&d=…): the last background
@@ -174,24 +185,25 @@ module Link {
 
     // Keeps [p] when it is a payload of this version and the app's profile, no older than the stored one (README "Order").
     function accept(p, now as Number) as Boolean {
-        load();
         if (!valid(p)) {
             return false;
         }
+        // the stored one's time alone ([SENT]), never the stored payload itself: a background run that read it beside
+        // the new one held two (64 KB, #217)
         var sent = (p as Dictionary).get("sent") as Number;
-        if (_payload != null) {
-            var stored = _payload.get("sent") as Number;
-            if (sent < stored && stored - now <= AHEAD_S) {
-                return false;
-            }
+        var stored = _loaded && _payload != null ? _payload.get("sent") : Application.Storage.getValue(SENT);
+        if (stored instanceof Number && sent < stored && stored - now <= AHEAD_S) {
+            return false;
         }
         _payload = p as Dictionary;
+        _loaded = true;
         skew = sent > now ? sent - now : 0;
         var w = (p as Dictionary).get("w");
         if (w instanceof String) {
             Application.Storage.setValue(WATCH, w);
         }
         Application.Storage.setValue(STORE, {"p" => _payload, "skew" => skew});
+        Application.Storage.setValue(SENT, sent);
         return true;
     }
 
@@ -207,6 +219,7 @@ module Link {
         _taken = null;
         _pickedAt = 0;
         Application.Storage.deleteValue(STORE);
+        Application.Storage.deleteValue(SENT);
         Application.Storage.deleteValue(TAKEN);
         Application.Storage.deleteValue(LinkBackground.HANDOFF);
         Application.Storage.deleteValue(WATCH);
@@ -225,6 +238,18 @@ module Link {
     function payload() as Dictionary? {
         load();
         return _payload;
+    }
+
+    // The app's glance: its small copy of the payload (GlanceCopy) in place of the stored one, never loaded there
+    (:app)
+    function use(c) as Void {
+        _loaded = true;
+        _payload = null;
+        if (c instanceof Dictionary && valid(c.get("p"))) {
+            _payload = c.get("p") as Dictionary;
+            var k = c.get("skew");
+            skew = k instanceof Number ? k : 0;
+        }
     }
 
     // The app's inputs (SPEC §3 names) at the watch time [now] (epoch s); null without any payload.

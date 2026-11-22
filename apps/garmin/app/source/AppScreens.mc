@@ -58,16 +58,69 @@ module AppScreens {
         g.t(0, y + 20, d.readAt, 48, 600, AppMath.INK, MIDDLE);
     }
 
+    // Kovatchev's scale at its ends, K(LO) and K(HI) − K(LO): once (every point of the chart takes them)
+    var _k0 as Float? = null;
+    var _kspan as Float = 1.0;
+
+    function k0() as Float {
+        if (_k0 == null) {
+            _k0 = AppMath.K(LO);
+            _kspan = AppMath.K(HI) - (_k0 as Float);
+        }
+        return _k0 as Float;
+    }
+
+    // the first of [hm] (minutes before now, oldest first) inside the window's [span] minutes; hm.size() if none
+    function first(hm as Array, span as Number) as Number {
+        var lo = 0;
+        var hi = hm.size();
+        while (lo < hi) {
+            var mid = (lo + hi) / 2;
+            if ((hm[mid] as Float) > span) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        return lo;
+    }
+
+    // Y of every whole mg/dL from LO to HI in [bx]: once per plot
+    var _yl as Array? = null;
+    var _ylKey as String = "";
+
+    function yTable(bx as Array) as Array {
+        var key = bx.toString();
+        if (_yl == null || !key.equals(_ylKey)) {
+            // Y(bx, v) inlined (Kovatchev's K): 261 calls of it took a sixth of a callback
+            var t = new [HI - LO + 1];
+            var k = k0();
+            var f = (bx[3] - bx[2]) / _kspan;
+            var y0 = bx[3] + k * f;
+            for (var v = LO; v <= HI; v++) {
+                t[v - LO] = (y0 - 1.509 * (Math.pow(Math.ln(v.toFloat()), 1.084) - 5.381) * f).toFloat();
+            }
+            _yl = t;
+            _ylKey = key;
+        }
+        return _yl as Array;
+    }
+
+    // the bands' colours by index (veryLow … extremelyHigh)
+    function bandPals() as Array {
+        return [AppMath.pal("veryLow"), AppMath.pal("low"), AppMath.pal("tight"), AppMath.pal("target"),
+            AppMath.pal("high"), AppMath.pal("veryHigh"), AppMath.pal("extremelyHigh")];
+    }
+
     // the chart's scale: Kovatchev's symmetrised risk over 40–300 (app.js chart(): above 300 pins to the top)
     function Y(bx as Array, v as Numeric) as Float {
-        var k0 = AppMath.K(LO);
-        return (bx[3] - (AppMath.K(AppMath.clamp(v, LO, HI)) - k0) / (AppMath.K(HI) - k0) * (bx[3] - bx[2])).toFloat();
+        var k = k0();
+        return (bx[3] - (AppMath.K(v < LO ? LO : v > HI ? HI : v) - k) / _kspan * (bx[3] - bx[2])).toFloat();
     }
 
     // its inverse: the mg/dL at a height
     function G(bx as Array, y as Numeric) as Float {
-        var k0 = AppMath.K(LO);
-        var k = k0 + (bx[3] - y) / (bx[3] - bx[2]).toFloat() * (AppMath.K(HI) - k0);
+        var k = k0() + (bx[3] - y) / (bx[3] - bx[2]).toFloat() * _kspan;
         return Math.pow(Math.E, Math.pow(k / 1.509 + 5.381, 1 / 1.084)).toFloat();
     }
 
@@ -95,7 +148,9 @@ module AppScreens {
             var lab = d.unit.equals("mmol") ? ((lims[i] as Number) / 18.0182).format("%.1f") : lims[i].toString();
             g.t(bx[1] + 5, y + 5, lab, lfs, 500, AppMath.DIM, START);
         }
-        // the line: one polyline per run of one colour; a gap breaks it
+        // the line: one polyline per run of one colour; a gap breaks it. Up to 288 readings in the callback that lays
+        // the page out (the watchdog counts it, #217): the scale from a table of whole mg/dL, each segment's band (of
+        // its two readings' mean) by comparing their sum with the doubled limits
         var old = d.age >= 5;
         var lw = 3.4;
         var run = [] as Array;
@@ -103,36 +158,52 @@ module AppScreens {
         var lastX = null;
         var lastY = null;
         var lastV = null;
-        for (var k = 1; k < d.hm.size(); k++) {
-            var va = d.hv[k - 1];
-            var vb = d.hv[k];
-            var ma = d.hm[k - 1] as Float;
-            if (va == null || vb == null || ma > hours * 60) {
-                if (run.size() > 0) {
+        var yl = yTable(bx);
+        var pals = bandPals();
+        var c0 = 2 * b[0];
+        var c1 = 2 * b[1];
+        var c2 = 2 * b[2];
+        var c3 = 2 * b[3];
+        var c4 = 2 * b[4];
+        var c5 = 2 * b[5];
+        var span = hours * 60;
+        var sx = (bx[1] - bx[0]) / (hours * 60.0);
+        var xr = bx[1];
+        var hm = d.hm;
+        var hv = d.hv;
+        var n = hm.size();
+        var on = false; // a run is open
+        for (var k = first(hm, span) + 1; k < n; k++) {
+            var va = hv[k - 1];
+            var vb = hv[k];
+            if (va == null || vb == null) {
+                if (on) {
                     g.l(run, old ? AppMath.GREY : col, 1.0, lw, null);
+                    run = [];
+                    on = false;
                 }
-                run = [];
                 continue;
             }
-            var c = AppMath.pal(d.band(((va as Number) + (vb as Number)) / 2.0));
-            var xa = X(bx, hours, ma);
-            var ya = Y(bx, va as Number);
-            if (c != col && run.size() > 0) {
+            var sum = (va as Number) + (vb as Number);
+            var c = pals[sum <= c0 ? 0 : sum < c1 ? 1 : sum <= c2 ? 2 : sum < c3 ? 3 : sum < c4 ? 4 : sum < c5 ? 5 : 6];
+            if (on && c != col) {
                 g.l(run, old ? AppMath.GREY : col, 1.0, lw, null);
                 run = [];
+                on = false;
             }
-            if (run.size() == 0) {
-                run.add(xa);
-                run.add(ya);
+            if (!on) {
+                run.add(xr - (hm[k - 1] as Float) * sx);
+                run.add(yl[va < LO ? 0 : va > HI ? HI - LO : va - LO]);
+                on = true;
             }
             col = c;
-            lastX = X(bx, hours, d.hm[k] as Float);
-            lastY = Y(bx, vb as Number);
+            lastX = xr - (hm[k] as Float) * sx;
+            lastY = yl[vb < LO ? 0 : vb > HI ? HI - LO : vb - LO];
             lastV = vb;
             run.add(lastX);
             run.add(lastY);
         }
-        if (run.size() > 0) {
+        if (on) {
             g.l(run, old ? AppMath.GREY : col, 1.0, lw, null);
         }
         // the bead on the newest reading in the window, a lone one too
@@ -155,10 +226,16 @@ module AppScreens {
         // the treatments, their labels in the hours' row (an overlapping one is dropped)
         var ly = bx[3] + lfs + 5;
         var labels = [] as Array;
+        var shown = {} as Dictionary; // per kind: [point, amount]
         for (var i = d.trm.size() - 1; i >= 0; i--) {
             var m = d.trm[i] as Float;
             var k = d.trk[i] as String;
-            if (m > hours * 60 || m < 0 || !marks(d, k, "point")) {
+            var mk = shown.get(k);
+            if (mk == null) {
+                mk = [marks(d, k, "point"), marks(d, k, "amount")];
+                shown.put(k, mk);
+            }
+            if (m > hours * 60 || m < 0 || !(mk[0] as Boolean)) {
                 continue;
             }
             var x = X(bx, hours, m);
@@ -166,10 +243,11 @@ module AppScreens {
             var c = AppMath.pal(k);
             if (k.equals("carbs")) {
                 var with = false;
-                for (var j = 0; j < d.trm.size(); j++) {
-                    if (!"carbs".equals(d.trk[j]) && AppMath.abs((d.trm[j] as Float) - m) < 0.5) {
-                        with = true;
-                    }
+                for (var j = i - 1; j >= 0 && (d.trm[j] as Float) - m < 0.5; j--) {
+                    with = with || !"carbs".equals(d.trk[j]);
+                }
+                for (var j = i + 1; j < d.trm.size() && m - (d.trm[j] as Float) < 0.5; j++) {
+                    with = with || !"carbs".equals(d.trk[j]);
                 }
                 g.c(x, y - (with ? ms * 1.3 : 0), ms * 0.4, c, 1.0, 0);
                 continue;
@@ -180,7 +258,7 @@ module AppScreens {
             } else {
                 g.p(tri, c, 1.0);
             }
-            if (marks(d, k, "amount")) {
+            if (mk[1] as Boolean) {
                 var s = AppMath.amt(k, d.tra[i] as Numeric);
                 var tw = AppMath.tw(s, lfs);
                 var x0 = x - tw / 2;
@@ -232,98 +310,177 @@ module AppScreens {
     const CUT = 3.83; // 3 dp
     const MIN_MG = 40; // the plot's range (above 300 pins to the top)
     const MAX_MG = 300;
-    var _prof as Array? = null;
-    var _profKey as String = "";
+    // The column's work (the profile over 261 levels, then each row's dots) is too much for the callback that lays the
+    // page out: the watchdog stopped a Descent Mk3 43 there (#217). So it is done once per payload, window and plot,
+    // in steps, each in a callback of its own (AppView.prep, after the layout asked for it: [want]), and kept: [key,
+    // rows' dots, rows' colours, the three shares, the plot, the payload's history it came from]. Meanwhile the page
+    // shows the column it has for the same plot (the reading before), or none on the very first frame.
+    var _col as Array? = null;
+    // the column being prepared: [d, bx, hours, history, key, step, levels, shares, next reading, the one before]
+    var want as Array? = null;
 
-    // the time at each level (index mg/dL − MIN_MG): followed level by level between readings ≤ 15 min apart,
-    // smoothed by 4 mg/dL, each band rescaled to its share; [3] = the shares below / in / above (whole %, largest
-    // remainder)
-    function profile(d as AppData, hours as Number) as Array {
-        var key = d.hm.size() + ":" + hours + ":" + (d.hm.size() > 0 ? d.hm[d.hm.size() - 1] : 0) + ":" + d.hv.size();
-        if (_prof != null && key.equals(_profKey)) {
-            return _prof as Array;
+    // what the column depends on besides the payload's history: the window and the readings in it, the limits, the plot
+    function colKey(d as AppData, bx as Array, hours as Number) as String {
+        return "" + hours + ":" + first(d.hm, hours * 60) + ":" + d.hm.size() + ":" + d.bands + ":" + bx;
+    }
+
+    // the payload's history, the column's own (its identity: a new payload is a new array)
+    function hist() {
+        var p = Link.payload();
+        return p != null ? p.get("hist") : null;
+    }
+
+    // one step of the column's work ([want]); true once the column is ready
+    function prepare() as Boolean {
+        var w = want;
+        if (w == null) {
+            return true;
         }
+        var d = w[0] as AppData;
+        var bx = w[1] as Array;
+        var hours = w[2] as Number;
+        var st = w[5] as Number;
+        var b = d.bands;
         var n = MAX_MG - MIN_MG + 1;
-        var occ = new [n];
-        for (var i = 0; i < n; i++) {
-            occ[i] = 0.0;
-        }
-        var prev = null;
-        var share = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        var bandIx = {"veryLow" => 0, "low" => 1, "tight" => 2, "target" => 3, "high" => 4, "veryHigh" => 5, "extremelyHigh" => 6};
-        for (var k = 0; k < d.hm.size(); k++) {
-            var v = d.hv[k];
-            if (v == null || (d.hm[k] as Float) > hours * 60) {
-                prev = null;
-                continue;
-            }
-            var vv = (v as Number) < MIN_MG ? MIN_MG : (v as Number) > MAX_MG ? MAX_MG : v as Number;
-            share[bandIx.get(d.band(v as Number)) as Number] += 1.0;
-            if (prev != null) {
-                var pv = prev as Number;
-                var lo = pv < vv ? pv : vv;
-                var hi = pv < vv ? vv : pv;
-                var lv = hi - lo + 1;
-                for (var gg = lo; gg <= hi; gg++) {
-                    occ[gg - MIN_MG] += 300.0 / lv;
+        if (st == 0) {
+            // the time at each level (index mg/dL − MIN_MG), followed level by level between readings ≤ 15 min apart,
+            // and the readings per band; up to 96 readings a callback ([8] the next one, [9] the one before it)
+            var occ = w[6];
+            var share = w[7];
+            if (occ == null) {
+                occ = new [n];
+                for (var i = 0; i < n; i++) {
+                    occ[i] = 0.0;
                 }
+                share = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+                w[6] = occ;
+                w[7] = share;
+                w[8] = first(d.hm, hours * 60);
+                w[9] = null;
             }
-            prev = vv;
-        }
-        if (prev != null) {
-            occ[(prev as Number) - MIN_MG] += 60.0;
-        }
-        // smoothed by about 4 mg/dL: two running box sums of 9 and 11 (a Gaussian's σ 4.1: the watchdog allows no
-        // 25-tap kernel)
-        var sm = occ;
-        var widths = [9, 11];
-        for (var p = 0; p < 2; p++) {
-            var hw = (widths[p] as Number) / 2;
-            var out = new [n];
-            var acc = 0.0;
-            var cnt = 0;
-            for (var j = 0; j < hw && j < n; j++) {
-                acc += sm[j];
-                cnt++;
+            var prev = w[9];
+            var k = w[8] as Number;
+            var end = k + 96 < d.hm.size() ? k + 96 : d.hm.size();
+            for (; k < end; k++) {
+                var v = d.hv[k];
+                if (v == null) {
+                    prev = null;
+                    continue;
+                }
+                var vv = v < MIN_MG ? MIN_MG : v > MAX_MG ? MAX_MG : v as Number;
+                var si = v <= b[0] ? 0 : v < b[1] ? 1 : v <= b[2] ? 2 : v < b[3] ? 3 : v < b[4] ? 4 : v < b[5] ? 5 : 6;
+                share[si] = share[si] + 1.0;
+                if (prev != null) {
+                    var pv = prev as Number;
+                    var lo = pv < vv ? pv : vv;
+                    var hi = pv < vv ? vv : pv;
+                    var each = 300.0 / (hi - lo + 1);
+                    for (var gg = lo - MIN_MG; gg <= hi - MIN_MG; gg++) {
+                        occ[gg] += each;
+                    }
+                }
+                prev = vv;
             }
-            for (var i = 0; i < n; i++) {
-                if (i + hw < n) {
-                    acc += sm[i + hw];
+            w[8] = k;
+            w[9] = prev;
+            if (k < d.hm.size()) {
+                return false;
+            }
+            if (prev != null) {
+                occ[(prev as Number) - MIN_MG] += 60.0;
+            }
+        } else if (st == 1) {
+            // smoothed by about 4 mg/dL: two running box sums of 9 and 11 (a Gaussian's σ 4.1)
+            var sm = w[6] as Array;
+            var widths = [9, 11];
+            for (var p = 0; p < 2; p++) {
+                var hw = (widths[p] as Number) / 2;
+                var out = new [n];
+                var acc = 0.0;
+                var cnt = 0;
+                for (var j = 0; j < hw && j < n; j++) {
+                    acc += sm[j];
                     cnt++;
                 }
-                if (i - hw - 1 >= 0) {
-                    acc -= sm[i - hw - 1];
-                    cnt--;
+                for (var i = 0; i < n; i++) {
+                    if (i + hw < n) {
+                        acc += sm[i + hw];
+                        cnt++;
+                    }
+                    if (i - hw - 1 >= 0) {
+                        acc -= sm[i - hw - 1];
+                        cnt--;
+                    }
+                    out[i] = acc / cnt;
                 }
-                out[i] = acc / cnt;
+                sm = out;
             }
-            sm = out;
-        }
-        var tot = 0.0;
-        for (var i = 0; i < 7; i++) {
-            tot += share[i];
-        }
-        // each level's band, by the person's limits (level i is MIN_MG + i mg/dL)
-        var bix = new [n];
-        var b = d.bands;
-        for (var i = 0; i < n; i++) {
-            var v = MIN_MG + i;
-            bix[i] = v <= b[0] ? 0 : v < b[1] ? 1 : v <= b[2] ? 2 : v < b[3] ? 3 : v < b[4] ? 4 : v < b[5] ? 5 : 6;
-        }
-        var area = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-        for (var i = 0; i < n; i++) {
-            area[bix[i] as Number] += sm[i];
-        }
-        for (var i = 0; i < n && tot > 0; i++) {
-            var bi = bix[i] as Number;
-            if (area[bi] > 0) {
-                sm[i] = sm[i] * (share[bi] / tot) / area[bi];
+            w[6] = sm;
+        } else if (st == 2) {
+            // each band rescaled to its share of the readings (level i is MIN_MG + i mg/dL, its band by the limits)
+            var sm = w[6] as Array;
+            var share = w[7] as Array;
+            var tot = 0.0;
+            for (var i = 0; i < 7; i++) {
+                tot += share[i];
             }
+            var bix = new [n];
+            var area = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+            for (var i = 0; i < n; i++) {
+                var v = MIN_MG + i;
+                var bi = v <= b[0] ? 0 : v < b[1] ? 1 : v <= b[2] ? 2 : v < b[3] ? 3 : v < b[4] ? 4 : v < b[5] ? 5 : 6;
+                bix[i] = bi;
+                area[bi] += sm[i];
+            }
+            for (var i = 0; i < n && tot > 0; i++) {
+                var bi = bix[i] as Number;
+                if (area[bi] > 0) {
+                    sm[i] = sm[i] * (share[bi] / tot) / area[bi];
+                }
+            }
+            // [7]: the shares below / in / above (whole %, largest remainder)
+            w[7] = tot > 0 ? pct3((share[0] + share[1]) / tot, (share[2] + share[3]) / tot, (share[4] + share[5] + share[6]) / tot) : [0, 0, 0];
+        } else {
+            // each row's dots and colour
+            var prof = w[6] as Array;
+            var sideW = (bx[1] - bx[0]) * 0.22;
+            var maxDots = Math.floor(sideW * 0.9 / PITCH).toNumber();
+            var rows = Math.floor((bx[3] - bx[2]) / PITCH).toNumber();
+            var mass = new [rows];
+            var peak = 0.0;
+            for (var i = 0; i < rows; i++) {
+                var yb = bx[3] - i * PITCH;
+                var g0 = G(bx, yb);
+                var g1 = G(bx, yb - PITCH);
+                var s = 0.0;
+                for (var gg = Math.floor(g0).toNumber(); gg < g1; gg++) {
+                    var k = gg - MIN_MG;
+                    var ov = (gg + 1 < g1 ? gg + 1 : g1) - (gg > g0 ? gg : g0);
+                    if (k >= 0 && k < n && ov > 0) {
+                        s += (prof[k] as Float) * ov;
+                    }
+                }
+                mass[i] = s;
+                if (s > peak) {
+                    peak = s;
+                }
+            }
+            var nds = new [rows];
+            var cols = new [rows];
+            for (var i = 0; i < rows; i++) {
+                var nd = peak > 0 ? Math.round(mass[i] / peak * maxDots).toNumber() : 0;
+                if (nd == 0 && peak > 0 && mass[i] > peak * 0.004) {
+                    nd = 1;
+                }
+                nds[i] = nd;
+                cols[i] = nd > 0 ? AppMath.pal(d.band(G(bx, bx[3] - i * PITCH - PITCH / 2))) : 0;
+            }
+            _col = [w[4], nds, cols, w[7], bx.toString(), w[3]];
+            want = null;
+            return true;
         }
-        var three = tot > 0 ? pct3((share[0] + share[1]) / tot, (share[2] + share[3]) / tot, (share[4] + share[5] + share[6]) / tot) : [0, 0, 0];
-        _prof = [sm, three];
-        _profKey = key;
-        return _prof as Array;
+        w[5] = st + 1;
+        return false;
     }
 
     // three shares as whole percentages adding up to 100 (largest remainder; GlucoseGraph.pct3)
@@ -345,67 +502,49 @@ module AppScreens {
         return base;
     }
 
+    // the % column from its prepared rows (prepare); asks for them when they are not this payload's yet
     function pctColumn(g as AppG, d as AppData, bx as Array, hours as Number, lfs as Number) as Void {
-        var pr = profile(d, hours);
-        var prof = pr[0] as Array;
-        var three = pr[1] as Array;
-        var sideW = (bx[1] - bx[0]) * 0.22;
-        var maxDots = Math.floor(sideW * 0.9 / PITCH).toNumber();
-        var rows = Math.floor((bx[3] - bx[2]) / PITCH).toNumber();
-        var mass = new [rows];
-        var peak = 0.0;
+        var key = colKey(d, bx, hours);
+        var c = _col;
+        var h0 = hist();
+        var w = want;
+        if ((c == null || !key.equals(c[0]) || c[5] != h0) && (w == null || w[3] != h0 || !key.equals(w[4]))) {
+            want = [d, bx, hours, h0, key, 0, null, null, 0, null];
+        }
+        if (c == null || !bx.toString().equals(c[4])) {
+            return;
+        }
+        var nds = c[1] as Array;
+        var cols = c[2] as Array;
+        var three = c[3] as Array;
+        var rows = nds.size();
+        var tint = [[Y(bx, d.bands[2]), Y(bx, d.bands[1]), AppMath.pal("tight"), 0.13],
+            [Y(bx, d.bands[3]), Y(bx, d.bands[2]), AppMath.pal("target"), 0.075]];
+        var h = R + CUT;
         for (var i = 0; i < rows; i++) {
-            var yb = bx[3] - i * PITCH;
-            var g0 = G(bx, yb);
-            var g1 = G(bx, yb - PITCH);
-            var s = 0.0;
-            for (var gg = Math.floor(g0).toNumber(); gg < g1; gg++) {
-                var k = gg - MIN_MG;
-                var ov = (gg + 1 < g1 ? gg + 1 : g1) - (gg > g0 ? gg : g0);
-                if (k >= 0 && k < prof.size() && ov > 0) {
-                    s += (prof[k] as Float) * ov;
-                }
+            var nd = nds[i] as Number;
+            if (nd == 0) {
+                continue;
             }
-            mass[i] = s;
-            if (s > peak) {
-                peak = s;
+            var cy = bx[3] - i * PITCH - PITCH / 2;
+            var endX = bx[0] + PITCH / 2 + (nd - 1) * PITCH + R;
+            // the mask: the plot's background over the line (black, then the band's tint where the row lies in one)
+            var y0 = cy - h;
+            var y1 = cy + h;
+            g.r(bx[0], y0, endX + CUT - bx[0], y1 - y0, h, AppMath.BLACK, 1.0, 0);
+            for (var t = 0; t < 2; t++) {
+                var t0 = y0 > tint[t][0] ? y0 : tint[t][0];
+                var t1 = y1 < tint[t][1] ? y1 : tint[t][1];
+                if (t1 > t0) {
+                    g.r(bx[0], t0, endX + CUT - bx[0], t1 - t0, 0, tint[t][2], tint[t][3], 0);
+                }
             }
         }
-        if (peak > 0) {
-            var tint = [[d.bands[1], d.bands[2], AppMath.pal("tight"), 0.13], [d.bands[2], d.bands[3], AppMath.pal("target"), 0.075]];
-            var h = R + CUT;
-            for (var i = 0; i < rows; i++) {
-                var nd = Math.round(mass[i] / peak * maxDots).toNumber();
-                if (nd == 0 && mass[i] > peak * 0.004) {
-                    nd = 1;
-                }
-                if (nd == 0) {
-                    continue;
-                }
-                var cy = bx[3] - i * PITCH - PITCH / 2;
-                var endX = bx[0] + PITCH / 2 + (nd - 1) * PITCH + R;
-                // the mask: the plot's background over the line (black, then the band's tint where the row lies in one)
-                var y0 = cy - h;
-                var y1 = cy + h;
-                g.r(bx[0], y0, endX + CUT - bx[0], y1 - y0, h, AppMath.BLACK, 1.0, 0);
-                for (var t = 0; t < 2; t++) {
-                    var t0 = y0 > Y(bx, tint[t][1]) ? y0 : Y(bx, tint[t][1]);
-                    var t1 = y1 < Y(bx, tint[t][0]) ? y1 : Y(bx, tint[t][0]);
-                    if (t1 > t0) {
-                        g.r(bx[0], t0, endX + CUT - bx[0], t1 - t0, 0, tint[t][2], tint[t][3], 0);
-                    }
-                }
-            }
-            for (var i = 0; i < rows; i++) {
-                var nd = Math.round(mass[i] / peak * maxDots).toNumber();
-                if (nd == 0 && mass[i] > peak * 0.004) {
-                    nd = 1;
-                }
-                var cy = bx[3] - i * PITCH - PITCH / 2;
-                var c = AppMath.pal(d.band(G(bx, cy)));
-                for (var k = 0; k < nd; k++) {
-                    g.c(bx[0] + PITCH * (k + 0.5), cy, R, c, 1.0, 0);
-                }
+        for (var i = 0; i < rows; i++) {
+            var nd = nds[i] as Number;
+            var cy = bx[3] - i * PITCH - PITCH / 2;
+            for (var k = 0; k < nd; k++) {
+                g.c(bx[0] + PITCH * (k + 0.5), cy, R, cols[i] as Number, 1.0, 0);
             }
         }
         var lx = bx[0] - 5;

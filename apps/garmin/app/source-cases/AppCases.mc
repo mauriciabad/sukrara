@@ -32,6 +32,10 @@ class AppCasesView extends WatchUi.View {
     var painted as Number = -1; // the case on screen
     var shownAt as Number = 0; // when its input was out
     var finished as Boolean = false;
+    var again as Boolean = false; // the case is laid out again once its % column is prepared
+    var laying as Number = -1; // the case loaded, to lay out in the next callback
+    var cp as Dictionary? = null; // its payload
+    var cnow as Number = 0; // its watch time
     var dumped as Number = -1; // the case whose input is printed
     var frames as Timer.Timer? = null;
     var g as AppG? = null;
@@ -57,7 +61,18 @@ class AppCasesView extends WatchUi.View {
     function frame() as Void {
         var now = System.getTimer();
         var next = built < 0 ? (now - start >= PERIOD_MS ? 0 : -1) : (dumped == built && now - shownAt >= PERIOD_MS ? built + 1 : -1);
-        if (next >= 0 && next < AppCaseTable.COUNT) {
+        if (AppScreens.want != null) {
+            // the % column's work, a step per callback, then the case laid out again with it (as AppView does)
+            again = AppScreens.prepare();
+        } else if (again) {
+            // the widget page (the only screen with the column) again, from the same input
+            again = false;
+            var gg = new AppG();
+            AppScreens.appA(gg, d as AppData);
+            g = AppScreens.want != null ? null : gg;
+        } else if (laying >= 0) {
+            lay();
+        } else if (next >= 0 && next < AppCaseTable.COUNT) {
             build(next);
         } else if (next >= AppCaseTable.COUNT) {
             finished = true;
@@ -78,8 +93,9 @@ class AppCasesView extends WatchUi.View {
         Outbox.reset();
         var p = c["payload"] as Dictionary;
         var now = (p["sent"] as Number) + (c["at"] as Number);
-        if (p["none"] != true) {
-            Link.accept(p, now);
+        Application.Storage.deleteValue(GlanceCopy.STORE);
+        if (p["none"] != true && Link.accept(p, now)) {
+            GlanceCopy.save(p, Link.skew);
         }
         cfg = c["cfg"] as Dictionary;
         xs = {};
@@ -99,7 +115,24 @@ class AppCasesView extends WatchUi.View {
         AppDraw.s = w / 390.0;
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
+        // nothing painted until it is laid out (the last case's list would paint with this one's tables)
+        g = null;
+        cp = p;
+        cnow = now;
+        laying = i;
+    }
+
+    // the case's screen from its payload, in a callback of its own as the app's (AppView.build: the input, the layout)
+    function lay() as Void {
+        var i = laying;
+        laying = -1;
+        var p = cp as Dictionary;
+        var now = cnow;
         var t0 = System.getTimer();
+        if (scr.equals("glance")) {
+            // the glance draws from its own copy only (AppGlance)
+            Link.use(GlanceCopy.load());
+        }
         d = AppInput.build(now, scr.equals("appA") || scr.equals("alert"));
         var gg = new AppG();
         if (scr.equals("glance")) {
@@ -146,7 +179,8 @@ class AppCasesView extends WatchUi.View {
             }
         }
         layoutMs = System.getTimer() - t0;
-        g = gg;
+        // not shown before its % column is in (want: prepared in the next callback)
+        g = AppScreens.want != null ? null : gg;
         built = i;
     }
 

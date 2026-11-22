@@ -97,11 +97,16 @@ class SukraraApp extends Application.AppBase {
         return [new AppService()];
     }
 
-    // a payload from the background, through Garmin (the glance's or the app's process); the same run also waits in
-    // storage (Link.pickUp at every draw), whichever comes first. The complications follow it.
+    // a background run's result, through Garmin (the glance's or the app's process): what came, the payload already
+    // kept by the background (AppService.hand); the same run also waits in storage (Link.pickUp at every draw),
+    // whichever comes first. The glance redraws from its copy; the app's views from the payload.
     function onBackgroundData(data as Application.PersistableType) as Void {
         var now = Time.now().value();
         if (Link.take(data, now, false)) {
+            if (!_fg) {
+                WatchUi.requestUpdate();
+                return;
+            }
             if (AppNav.current != null) {
                 (AppNav.current as AppView).refresh();
             }
@@ -215,6 +220,7 @@ module AppNav {
     function fetched(code as Number, data as Dictionary or String or Null) as Void {
         var now = Time.now().value();
         if (code == 200 && Link.take({"k" => "fetch", "c" => code, "d" => data}, now, false)) {
+            GlanceCopy.save(data as Dictionary, Link.skew);
             Outbox.received(data as Dictionary, now);
             if (current != null) {
                 (current as AppView).refresh();

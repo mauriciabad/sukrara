@@ -36,8 +36,8 @@ class AppView extends WatchUi.View {
     function onShow() as Void {
         AppNav.current = self;
         _timer = new Timer.Timer();
-        (_timer as Timer.Timer).start(method(:refresh), 10000, true);
         build();
+        arm();
         if (notSetUp) {
             AppNav.fetch(); // a working phone fills it in seconds
         }
@@ -88,6 +88,28 @@ class AppView extends WatchUi.View {
             opened = null;
         }
         _g = layout(d);
+        if (AppScreens.want != null) {
+            arm();
+        }
+    }
+
+    // the view's one timer (a watch allows few): the 10 s tick, or while the % column is prepared a step every 50 ms
+    // (AppScreens.prepare: its work in callbacks of its own, then the page again with it)
+    function arm() as Void {
+        var t = _timer;
+        if (t != null) {
+            t.stop();
+            t.start(method(:tick), AppScreens.want != null ? 50 : 10000, false);
+        }
+    }
+
+    function tick() as Void {
+        if (AppScreens.want != null && !AppScreens.prepare()) {
+            arm();
+            return;
+        }
+        refresh();
+        arm();
     }
 
     // the app's drawing: its own font and icon tables, the screen's scale and centre

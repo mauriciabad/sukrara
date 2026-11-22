@@ -51,7 +51,11 @@ payload and the clock → app.js's input `d`) → a screen pushes its display li
 text an atlas (`app/tools/fonts.py`). The screens: `AppGlance.mc` / `AppParts.glance`, `AppView.mc` + `AppScreens.mc`
 (page 1, page 2), `AppLists.mc` (the one list), `AppLog.mc` (logging), `AppMute.mc` (mute, Remind less),
 `AppAlert.mc` (the app's alert, Aura's sparkline); `SukraraApp.mc` (`AppNav`: the routes in, the alert while open),
-`AppService.mc` (the background: the shared link, the complications, Garmin's notification), `Outbox.mc`.
+`AppService.mc` (the background: the shared link, the complications, Garmin's notification; it keeps the payload
+itself and hands the foreground only what came), `GlanceCopy.mc` (the glance's small copy of the payload: the glance
+never reads the full one, its 64 KB don't hold it twice), `Outbox.mc`. The widget page's % column is worked out once per
+payload in steps, each in a callback of its own (`AppScreens.prepare`): the watchdog counts each callback (docs/47,
+*The app on a Descent Mk3 43*).
 The field: `field/source/FieldApp.mc` (the field, its alert, the activity's file),
 `FieldLayout.mc` (app.js `S.dfSlot` / `S.dfAlert` → `FieldG`, the slot from its size and obscured sides), `FieldG.mc`
 (the display list and its painter: Atkinson atlases tinted, the MIP watches' 64 colours and dithers). Each watch builds

@@ -39,12 +39,18 @@ class AppGlance extends WatchUi.GlanceView {
     function onUpdate(dc as Graphics.Dc) as Void {
         var now = Time.now().value();
         Link.pickUp(now);
+        // its own small copy, never the full payload (GlanceCopy: 64 KB)
+        Link.use(GlanceCopy.load());
         AppDraw.glance = true;
         AppDraw.s = dc.getHeight() / 103.0;
         AppDraw.ox = 83 * AppDraw.s - 0.5;
         AppDraw.oy = dc.getHeight() / 2.0 - 0.5;
         var g = new AppG();
         AppParts.glance(g, AppInput.build(now, false));
+        // the input went with the layout; the copy goes too, so the paint (its atlases) has the room
+        Link.use(null);
         AppDraw.paint(dc, g);
+        // and its atlases after it: kept, the next draw (every 30 s, a new reading) ran out of memory
+        AppDraw.release();
     }
 }

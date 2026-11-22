@@ -27,23 +27,42 @@ class AppService extends LinkService {
         LinkService.onTemporalEvent();
     }
 
-    // every run's result: kept, worked on, then the outbox, then Background.exit (which ends the run)
+    // every run's result: kept here (AppRun.keep), worked on, then the outbox, then Background.exit (which ends the run)
     function hand(data as Dictionary) as Void {
-        keep(data);
         var now = Time.now().value();
         var p = data.get("d");
-        if (Link.accept(p, now)) {
+        var out = AppRun.keep(data, now);
+        keep(out);
+        if (out.get("kept") == true) {
             Outbox.received(p as Dictionary, now);
             Expiry.schedule(now);
             Alerts.notify(now);
         }
         Slots.publish(now);
-        _data = data;
+        _data = out;
         Outbox.flush(method(:sent));
     }
 
     function sent() as Void {
         Background.exit(_data);
+    }
+}
+
+// A background run's result kept by the background itself: the payload (Link) and the glance's copy (GlanceCopy). The
+// app's foreground gets only what came (Link.receive "kept"), never the payload: the glance that takes it has 64 KB,
+// and the stored payload read beside a handed one ran it out of memory on a Descent Mk3 43 (#217).
+(:background)
+module AppRun {
+    function keep(data as Dictionary, now as Number) as Dictionary {
+        var p = data.get("d");
+        var kept = Link.accept(p, now);
+        if (kept) {
+            GlanceCopy.save(p as Dictionary, Link.skew);
+        }
+        var ok = Link.valid(p);
+        var g = ok ? (p as Dictionary).get("g") : null;
+        return {"k" => data.get("k"), "c" => data.get("c"), "n" => data.get("n"), "kept" => kept,
+            "sent" => ok ? (p as Dictionary).get("sent") : 0, "gt" => g instanceof Dictionary ? g.get("t") : 0};
     }
 }
 

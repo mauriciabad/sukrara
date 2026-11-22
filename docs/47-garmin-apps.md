@@ -334,3 +334,22 @@ Discarded, and why:
   (TalkBack-readable, undone from the same row); an allowed id is stored (an Android-only schema setting), pushed the
   face profile like Sukrara's faces, keeps the port open by itself (no Sukrara app needed) and is named on the page.
   The developer page is [GARMIN-FACES.md](GARMIN-FACES.md).
+
+**The app on a Descent Mk3 43: out of memory, the watchdog** (2026-11-22, #217). The owner's watch (firmware 28.04,
+Connect IQ 6.0.4) logged both; reproduced in the simulator with a full day from `fake_phone.py` (glance mode,
+*Background Events*), then measured with `System.getSystemStats` and the device file's `watchdogCount`:
+- **The glance ran out of memory**: it has 61 248 B, its code, data and view take 48.5 KB before it draws; a full app
+  payload is 12.9 KB in memory (24 h, 64 treatments, reports) and the glance held two (the one Garmin handed to
+  `onBackgroundData` and the stored one `Link.accept` read and wrote back). Now the background keeps the payload and
+  writes the glance's copy (`GlanceCopy`: what the glance draws, 3.4 KB), hands the foreground only what came
+  (`kept`, `sent`, the reading's time) and the glance reads only its copy (`Link.use`): 58 KB at the end of a draw.
+  `Link.accept` reads the stored payload's time alone (`linkSent`), so a background run holds one payload (46 KB used
+  at the hand-off, 37 KB after). `MemoryTest` holds the copy, the hand-off and the glance's input to 9 KB and a run to
+  its payload + 2 KB.
+- **The watchdog stopped page 1** in the % column's smoothing: the layout did the chart, the profile over 261 levels
+  and the rows in one callback, 200 000–240 000 of the simulator's 240 000 (a 24 h window over it); the simulator stops
+  at the same line between 120 000 and 160 000, about where the watch's limit lies. Now the column is worked out
+  once per payload and window in steps of under 25 000 (each its own 50 ms callback of the view's one timer:
+  a watch allows few) and the line from a table of the scale: the layout is 40 000–50 000 (12 h) and 50 000–60 000
+  (24 h), under the paint (60 000–75 000, unchanged). The first frame after opening shows no column; it appears
+  within a few callbacks.
