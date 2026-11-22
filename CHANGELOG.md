@@ -27,7 +27,9 @@ Sukrara's releases. 0.x versions are previews.
   usual*, with *Undo*) and *Mute*. The glance says when an entry is waiting for the phone. Before the phone has
   sent anything, the app says *Waiting for your phone* and *Open on phone* opens Sukrara on the phone; the hold and
   *Logged* screens say what the entry quiets ("Highs quiet for 1 h"). *Undo* after *Logged* on the watch deletes that entry on the phone, as a
-  delete on the phone does (LibreView, Nightscout and Tidepool too).
+  delete on the phone does (LibreView, Nightscout and Tidepool too). The app is drawn for every Garmin screen it runs on: round AMOLED and MIP
+  (in the MIP watches' 64 colours), the Venu Sq 2 and Venu X1 with their own layouts, and watches without UP / DOWN
+  change pages and amounts with a swipe or a tap. *Waiting for your phone* shows Sukrara for Android's icon.
 - **The Sukrara data field, designed** (#199, not released yet): during an activity your glucose sits in any slot of a
   data screen, with Sukrara Aura's sparkline of the last hours where the slot is wide enough and the trend arrow where
   it isn't. Lows turn the slot red, an old value is struck through and grey, and before the phone's first message it

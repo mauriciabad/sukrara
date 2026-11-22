@@ -65,13 +65,16 @@ def device():
     """the watch's screen class (app.js CLS), screen, glance content area and whether it has UP / DOWN"""
     c = json.load(open(os.path.join(DEVICES_DIR, DEVICE, "compiler.json"), encoding="utf-8"))
     sim = json.load(open(os.path.join(DEVICES_DIR, DEVICE, "simulator.json"), encoding="utf-8"))
-    fonts = load("app_fonts_cls", os.path.join(HERE, "fonts.py"))
     keys = [k.get("id") for k in sim.get("keys", [])]
-    return {"cls": fonts.FAMILY[c["deviceFamily"]], "w": c["resolution"]["width"], "h": c["resolution"]["height"],
+    return {"cls": FAMILY[c["deviceFamily"]], "w": c["resolution"]["width"], "h": c["resolution"]["height"],
             "ga": sim["glance"]["contentArea"], "two": "up" not in keys}
 
 
 DEV = None
+# the screen class of each deviceFamily (app.js CLS; tools/fonts.py's)
+FAMILY = {"round-360x360": "r360", "round-390x390": "r390", "round-416x416": "r416", "round-454x454": "r454",
+          "round-466x466": "r466", "round-218x218": "m218", "round-240x240": "m240", "round-260x260": "m260",
+          "round-280x280": "m280", "rectangle-320x360": "sq2", "rectangle-448x486": "x1"}
 
 
 def dev():
