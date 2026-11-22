@@ -503,6 +503,8 @@ module AppDraw {
             dc.setAntiAlias(false);
         }
         dc.setColor(c, Graphics.COLOR_TRANSPARENT);
+        // a point is drawn at the pen's width
+        dc.setPenWidth(1);
         var cx = x + w / 2.0;
         var cy = y + h / 2.0;
         var half = pct >= 50;
