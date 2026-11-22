@@ -112,7 +112,7 @@ def main():
         if key == "base.resourcePath":
             val += ";resources"
         if key == "base.excludeAnnotations":
-            val = "aura;app;fieldrun"
+            val = "face;app;fieldrun"
         jungle.append("%s = %s" % (key, val))
     with open(os.path.join(OUT, "cases.jungle"), "w", encoding="utf-8") as f:
         f.write("\n".join(jungle) + "\n")
