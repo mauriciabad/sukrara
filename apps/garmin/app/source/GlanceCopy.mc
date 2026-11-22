@@ -80,4 +80,23 @@ module GlanceCopy {
         var s = Application.Storage.getValue(STORE);
         return s instanceof Array && s.size() == 2 ? {"p" => s[0], "skew" => s[1]} : null;
     }
+
+    // The copy written again from the kept payload [p] when it isn't [p]'s: by whoever holds [p] anyway (the app's
+    // view, the background's 5-minute run). An install over another build's storage keeps the payload but not a copy
+    // this build reads, and only a new payload wrote one: the glance said "Waiting for your phone" until then
+    // (2026-11-22, a Descent Mk3 43, #217). Checked once per payload.
+    var _healed = null;
+
+    function heal(p, skew as Number) as Void {
+        var sent = p instanceof Dictionary ? p.get("sent") : null;
+        if (!(sent instanceof Number) || sent == _healed) {
+            return;
+        }
+        _healed = sent;
+        var s = Application.Storage.getValue(STORE);
+        var c = s instanceof Array && s.size() == 2 ? s[0] : null;
+        if (!(c instanceof Dictionary) || c.get("sent") != sent || (s as Array)[1] != skew) {
+            save(p as Dictionary, skew);
+        }
+    }
 }

@@ -24,6 +24,8 @@ class AppService extends LinkService {
 
     function onTemporalEvent() as Void {
         Expiry.schedule(Time.now().value());
+        // the payload kept, read for the expiry: the glance's copy of it, when it lacks one (GlanceCopy.heal)
+        GlanceCopy.heal(Link.payload(), Link.skew);
         LinkService.onTemporalEvent();
     }
 

@@ -41,11 +41,8 @@ class AppGlance extends WatchUi.GlanceView {
     function onUpdate(dc as Graphics.Dc) as Void {
         var now = Time.now().value();
         Link.pickUp(now);
-        // its own small copy, never the full payload (GlanceCopy)
-        Link.use(GlanceCopy.load());
-        var d = AppInput.build(now, false);
-        // the input holds what the layout needs: the copy goes before the display list is made
-        Link.use(null);
+        // from its own small copy, never the full payload (AppInput.glance)
+        var d = AppInput.glance(now);
         AppDraw.glance = true;
         AppDraw.once = true;
         AppDraw.s = dc.getHeight() / 103.0;

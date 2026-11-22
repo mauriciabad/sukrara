@@ -81,6 +81,8 @@ class AppView extends WatchUi.View {
     function build() as Void {
         var now = Time.now().value();
         Link.pickUp(now);
+        // the glance's copy of what this view shows, when it lacks one
+        GlanceCopy.heal(Link.payload(), Link.skew);
         AppView.setup();
         var d = AppInput.build(now, kind.equals("pages") && page == 0);
         notSetUp = !d.sent;

@@ -57,9 +57,9 @@ module MemCases {
         return s;
     }
 
-    // the glance's draw (AppGlance.onUpdate, in its order): what it holds at each step, in bytes. [copy + input] the
-    // copy read and the input built from it; [list] the input and the display list; [font] the most one text's atlas
-    // and glyph table add while it paints
+    // the glance's draw (AppGlance.onUpdate, AppInput.glance, in its order): what it holds at each step, in bytes.
+    // [copy + input] the copy read and the input built from it; [list] the input and the display list; [font] the most
+    // one text's atlas and glyph table add while it paints
     const GLANCE_STEPS = 3840;
     const GLANCE_LIST = 1600;
     const GLANCE_FONT = 1792;
@@ -229,5 +229,57 @@ function memBackgroundRun(logger as Logger) as Boolean {
     Test.assertEqual(MemCases.run(MemCases.heavy(T + 100)).get("kept"), false);
     Link.reset();
     Application.Storage.deleteValue(GlanceCopy.STORE);
+    return true;
+}
+
+// An install over another build's storage (2026-11-22: cc0468726 over c5c3c558b on a Descent Mk3 43, #217): the
+// payload kept, the glance's copy in the other build's form, which this one doesn't read. The glance never says
+// "Waiting for your phone" while a payload is kept; the background's next 5-minute run or the app's view writes the
+// copy again (GlanceCopy.heal), and the glance then draws what the payload says.
+(:test)
+function memGlanceCopyHeals(logger as Logger) as Boolean {
+    var p = (LinkCases.app()[0] as Dictionary).get("payload") as Dictionary;
+    var T = p.get("sent") as Number;
+    Link.reset();
+    MemCases.run(p);
+    var full = AppInput.build(T + 90, false);
+    // the copy as c5c3c558b wrote it: a dictionary around it
+    Application.Storage.setValue(GlanceCopy.STORE, {"p" => {"v" => 5, "p" => "app", "sent" => T}, "skew" => 0});
+    MemCases.fresh();
+    var d = AppInput.glance(T + 90);
+    Test.assertMessage(d.sent, "a payload is kept: not Waiting for your phone");
+    Test.assertMessage(d.g == null, "no value without the copy");
+    // the background's run (or the app's view) holds the kept payload: the copy again
+    MemCases.fresh();
+    GlanceCopy._healed = null;
+    GlanceCopy.heal(Link.payload(), Link.skew);
+    MemCases.fresh();
+    d = AppInput.glance(T + 90);
+    Test.assertEqual(d.g, full.g);
+    Test.assertEqual(d.readAt, full.readAt);
+    Test.assertEqual(MemCases.two(d.slots), MemCases.two(full.slots));
+    // a copy that is the payload's stays as it is (once per payload)
+    var s = Application.Storage.getValue(GlanceCopy.STORE);
+    MemCases.fresh();
+    GlanceCopy._healed = null;
+    GlanceCopy.heal(Link.payload(), Link.skew);
+    Test.assertMessage(s instanceof Array, "the copy in this build's form");
+    // the copy of an older payload: written again from the newer one
+    var q = (LinkCases.app()[1] as Dictionary).get("payload") as Dictionary;
+    q.put("sent", T + 60);
+    MemCases.run(q);
+    GlanceCopy.save(p, 0);
+    MemCases.fresh();
+    GlanceCopy._healed = null;
+    GlanceCopy.heal(Link.payload(), Link.skew);
+    d = AppInput.glance(T + 90);
+    Test.assertEqual(d.g, 52);
+    // nothing from the phone ever (a fresh install): Waiting for your phone
+    Link.reset();
+    Application.Storage.deleteValue(GlanceCopy.STORE);
+    MemCases.fresh();
+    d = AppInput.glance(T + 90);
+    Test.assertMessage(!d.sent, "nothing kept: Waiting for your phone");
+    GlanceCopy._healed = null;
     return true;
 }

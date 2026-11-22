@@ -62,6 +62,21 @@ module AppInput {
         return (c.hour as Number) + ":" + (c.min as Number).format("%02d");
     }
 
+    // The glance's input (AppGlance): from its own copy alone (GlanceCopy), never the full payload. Without a copy (an
+    // install over another build's storage, until the background's next run or the app's view writes one:
+    // GlanceCopy.heal) the phone has still sent before when the link keeps its time: "No readings" until then, not
+    // "Waiting for your phone".
+    function glance(now as Number) as AppData {
+        Link.use(GlanceCopy.load());
+        var d = build(now, false);
+        // the input holds what the layout needs: the copy goes before the display list is made
+        Link.use(null);
+        if (!d.sent && Application.Storage.getValue(Link.SENT) instanceof Number) {
+            d.sent = true;
+        }
+        return d;
+    }
+
     // [hist]: with the history (the widget page's chart and % column; the glance and the lists leave it out: the
     // glance has 64 KB)
     function build(now as Number, hist as Boolean) as AppData {
