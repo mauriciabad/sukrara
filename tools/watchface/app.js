@@ -72,13 +72,16 @@ var WL = (function () {
     mip: [12, 14, 16, 18, 20, 22, 24, 28, 32, 36, 40, 44, 48, 56, 64, 72, 80, 88]
   };
   var KC = null, SE = 1;
-  function snapFont(px) {
-    if (!KC || KC.id === 'r390') return px;
+  function snapFont(px, any) {
+    if (!KC || (KC.id === 'r390' && !any)) return px;
     var set = KC.mip ? ATLAS.mip : ATLAS.amoled, best = set[0];
     for (var i = 0; i < set.length; i++) if (Math.abs(set[i] - px) < Math.abs(best - px) || (Math.abs(set[i] - px) === Math.abs(best - px) && set[i] > best)) best = set[i];
     return best;
   }
   function fe(fs) { return snapFont(fs * SE) / SE; }
+  // a size the layout computes (the data field's value as big as fits): an atlas size on every class, the 390 too (its
+  // approved sizes are fixed ones; a computed one can only be drawn at a size the watch has)
+  function feFit(fs) { return snapFont(fs * SE, true) / SE; }
   // stroke widths: AMOLED scales them (never under 1 px); MIP draws whole pixels: hairlines 1, anything else ≥ 2
   function snapStroke(px, w390) {
     if (!KC || KC.id === 'r390') return px;
@@ -1152,13 +1155,19 @@ var WL = (function () {
 
   // the data field's own alert during an activity (DataField.showAlert; the person turns it on in the activity's
   // Alerts › Connect IQ): a full page for a few seconds, with a vibration
-  S.dfAlert = function (g, d) {
-    var b = bandOf(d.g), col = PAL[b], very = b === 'veryLow';
+  // cfg.kind: the alert that rings (the phone's kinds; default the value's low / very low); its level's colour (a rate
+  // alert: the value's band; no data: grey), the ink white on the low side (Aura's very-low block), else white or
+  // black, whichever reads better on the colour
+  var DF_WORD = { very_low: 'VERY LOW', low: 'LOW', high: 'HIGH', very_high: 'VERY HIGH', extremely_high: 'EXTREMELY HIGH', falling_fast: 'FALLING FAST', rising_fast: 'RISING FAST', no_data: 'NO DATA' };
+  var DF_BAND = { very_low: 'veryLow', low: 'low', high: 'high', very_high: 'veryHigh', extremely_high: 'extremelyHigh' };
+  S.dfAlert = function (g, d, c) {
+    var kind = (c && c.kind) || (bandOf(d.g) === 'veryLow' ? 'very_low' : 'low');
+    var b = kind === 'no_data' ? 'grey' : DF_BAND[kind] || bandOf(d.g), col = PAL[b], word = (c && c.word) || DF_WORD[kind];
     full(g, col);
-    var W0 = inkOn(col), word = very ? 'VERY LOW' : 'LOW';
-    g.icon('bell', -tw(word, 24) / 2 - 18, -96, 24, W0);
+    var W0 = b === 'veryLow' || b === 'low' ? inkOn(col) : contrast('#FFFFFF', col) >= contrast('#000000', col) ? '#FFFFFF' : '#000000';
+    g.icon('bell', 12 - tw(word, 24) / 2 - 30, -96, 24, W0);
     g.t(12, -88, word, { fs: 24, fw: 700, fill: W0, ls: 1.5 });
-    value(g, d, 0, 30, 116, { col: W0, inverted: true });
+    if (d.g !== null && d.g !== undefined) value(g, d, 0, 30, 116, { col: W0, inverted: true });
     g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { fs: 20, fw: 600, fill: W0 });
   };
 
@@ -1212,6 +1221,7 @@ var WL = (function () {
       if (!best || fs > best.fs + 0.5) best = { box: bx, fs: fs, lab: lab };
     }
     if (!best) return null;
+    best.fs = feFit(best.fs);
     // the content (label row + value) keeps to the box's side toward the screen's centre: no gap inside it
     var ch = (best.lab ? 24 : 0) + fe(best.fs) * 0.668 + 6, bb = best.box, top = b.obs.indexOf('T') >= 0, bot = b.obs.indexOf('B') >= 0;
     var y0 = top && !bot ? bb.y1 - ch : bot && !top ? bb.y0 : (bb.y0 + bb.y1) / 2 - ch / 2;
@@ -1219,7 +1229,48 @@ var WL = (function () {
     return best;
   }
   function emOf(str, arrow) { var t = 0; for (var k = 0; k < str.length; k++) t += BIG[str[k]] !== undefined ? BIG[str[k]] : 0.6; return t + (arrow ? 0.1 + 0.668 * 0.78 : 0); }
-  function dfField(g, d, b, whole) {
+  // not set up (SPEC §4.3: no message from the phone yet): GLUCOSE and "Waiting for phone" (soft) in every slot, on two
+  // lines where one doesn't fit; the label row where the slot has room for it. c.setup: the two lines' words
+  function dfSetup(g, b, whole, words) {
+    var w = words || ['Waiting', 'for phone'], one = w.join(' '), fs = 20, lh = 26;
+    if (whole) {
+      dfLabel(g, 0, KC.rect ? -KC.hh + 40 : -128, 'GLUCOSE');
+      g.t(0, 8, one, { fs: 24, fw: 600, fill: PAL.soft });
+      return 'setup-whole';
+    }
+    // the label and one line, the label and two, then without the label: the first whose box fits the slot inside the
+    // screen (at the slot's side toward the centre, as fitBox places it)
+    var tries = [[true, [one]], [true, w], [false, [one]], [false, w]];
+    for (var k = 0; k < tries.length; k++) {
+      var lab = tries[k][0], lines = tries[k][1], ch = (lab ? 24 : 0) + lines.length * lh, bx = fitBox(b, ch, 4);
+      if (!bx || Math.max.apply(null, lines.map(function (t) { return tw(t, fs); })) > bx.w * 0.92) continue;
+      var cx = (bx.x0 + bx.x1) / 2;
+      if (lab) dfLabel(g, cx, bx.y0 + 16, 'GLUCOSE', { fs: 15 });
+      lines.forEach(function (t, i) { g.t(cx, bx.y0 + (lab ? 24 : 0) + lh * (i + 1) - 6, t, { fs: fs, fw: 600, fill: PAL.soft }); });
+      return 'setup';
+    }
+    return 'none';
+  }
+  // no value to show (no reading for 20 min, or none: not monitoring): "---" in grey where the value goes; the whole
+  // page also says since when
+  function dfNone(g, d, b, whole) {
+    var why = d.g === null || d.g === undefined ? 'No readings' : 'No reading since ' + d.readAt;
+    if (whole) {
+      dfLabel(g, 0, KC.rect ? -KC.hh + 40 : -128, 'GLUCOSE');
+      g.t(0, -8, '---', { fs: 116, fw: 700, fill: PAL.grey });
+      g.t(0, 60, why, { fs: 20, fw: 500, fill: PAL.soft });
+      return 'none-whole';
+    }
+    var fv = fitValue(b, emOf('---', false), 116);
+    if (!fv) return 'none';
+    var bx = fv.box, cx = (bx.x0 + bx.x1) / 2;
+    if (fv.lab) dfLabel(g, cx, bx.y0 + 16, 'GLUCOSE', { fs: 15 });
+    g.t(cx, bx.y1 - 4, '---', { fs: fv.fs, fw: 700, fill: PAL.grey });
+    return 'none-value';
+  }
+  function dfField(g, d, b, whole, c) {
+    if (d.noPhone) return dfSetup(g, b, whole, c && c.setup);
+    if (d.g === null || d.g === undefined || d.age >= 20) return dfNone(g, d, b, whole);
     var band = bandOf(d.g), inv = d.age < 5 && (band === 'veryLow' || band === 'low');
     if (inv) g.r(b.x0, b.y0, b.x1 - b.x0, b.y1 - b.y0, 0, { fill: PAL[band], op: band === 'veryLow' ? 1 : 0.85 });
     var W0 = inv ? inkOn(PAL[band]) : null, lab = inv ? W0 : PAL.soft, str = fmtG(d.g, d.unit), late = d.age >= 1.5;
@@ -1236,7 +1287,7 @@ var WL = (function () {
       for (var h = Math.min(170, b.y1 - b.y0 - 12); h >= 100; h -= 2) {
         var sb = fitBox(b, h, 6);
         if (!sb || sb.w < 260) continue;
-        var fs = Math.min(92, (sb.h - 30) * 0.8), vw = bw(str, fs), Wsp = Math.min(170, sb.w - vw - 14 - 16);
+        var fs = feFit(Math.min(92, (sb.h - 30) * 0.8)), vw = bw(str, fs), Wsp = Math.min(170, sb.w - vw - 14 - 16);
         if (Wsp < 90) break;
         var gw = vw + 14 + Wsp, x0 = (sb.x0 + sb.x1) / 2 - gw / 2, yb = sb.y1 - 16, cap = fs * 0.668;
         dfLabel(g, x0, sb.y0 + 20, 'GLUCOSE', { anchor: 'start' });
@@ -1262,11 +1313,13 @@ var WL = (function () {
     g.t(cx, bx.y1 - 4, o[1], { fs: fv.fs, fw: 700, fill: PAL.ink });
   }
   S.dfSlot = function (g, d, c) {
+    // c.slots: a layout of the watch's own ({i, f} as DFS), c.others false: the other slots left empty (the field's
+    // case loader draws only its own)
     var form = c.form || 'whole';
-    var L = form === 'whole' ? { i: 0, f: [[0, 0, KC.w, KC.h, 'LTRB']] } : DFS[KC.id][form], other = 0;
+    var L = c.slots || (form === 'whole' ? { i: 0, f: [[0, 0, KC.w, KC.h, 'LTRB']] } : DFS[KC.id][form]), other = 0;
     L.f.forEach(function (r, i) {
       var b = slotBox(r);
-      if (i === L.i) dfField(g, d, b, form === 'whole'); else otherSlot(g, b, other++);
+      if (i === L.i) dfField(g, d, b, form === 'whole', c); else if (c.others !== false) otherSlot(g, b, other++);
     });
     // the slots' borders, as the watch draws them
     L.f.forEach(function (r) {
@@ -1275,6 +1328,9 @@ var WL = (function () {
       if (r[0] > 2) g.p('M' + r1(b.x0 - 1 / KC.s) + ' ' + r1(b.y0) + 'V' + r1(b.y1), { stroke: PAL.faint, sw: 2 });
     });
   };
+
+  // the data field before the phone's first message (SPEC §4.3), in any slot (cfg.form) of any class
+  S.dfSetup = function (g, d, c) { S.dfSlot(g, Object.assign({}, d, { noPhone: true, g: null }), c); };
 
   // ---- the rectangles' own layouts (Venu Sq 2, Venu X1; SPEC §14.3) ---------------------------------------------------
   // Drawn in the Venu Sq 2's px (KC.s = 1; the X1 1.2), the screen ±KC.hw × ±KC.hh. The corners are room a round screen
@@ -1462,6 +1518,6 @@ var WL = (function () {
     KC = null; SE = 1; PAL = PAL_AMOLED;
     return out;
   }
-  return { screen: screen, svg: svg, CLS: CLS, PAL: PAL_AMOLED, PAL_MIP: PAL_MIP, bandOf: bandOf, fmtG: fmtG, contrast: contrast, near64: near64 };
+  return { screen: screen, svg: svg, CLS: CLS, DFS: DFS, ATLAS: ATLAS, PAL: PAL_AMOLED, PAL_MIP: PAL_MIP, bandOf: bandOf, fmtG: fmtG, contrast: contrast, near64: near64 };
 })();
 if (typeof module !== 'undefined') module.exports = WL;

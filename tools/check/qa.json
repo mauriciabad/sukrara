@@ -2,6 +2,7 @@
   "_about": "Changed path -> docs/QA.md sections to check by hand (printed by tools/check/run.sh). Globs: fnmatch ('*' crosses '/'). App paths only (not poc/).",
   "map": [
     {"paths": ["apps/garmin/aura/*", "apps/garmin/shared/*", "apps/garmin/tools/*", "apps/garmin/build.sh", "contracts/watchface/*"], "qa": ["Q28 Garmin watch face (Sukrara Aura)"]},
+    {"paths": ["apps/garmin/field/*", "apps/garmin/shared/*", "contracts/watchface/field/*", "tools/watchface/field-input.js"], "qa": ["Q31 Garmin data field"]},
     {"paths": ["apps/android/core/graph/*", "apps/macos/Sources/SukraraGraph/*", "contracts/graph/*"],
      "qa": ["Q2 Graph and value card", "Q3 Android widgets", "Q5 Status bar & notification", "Q6 Mac menubar panel", "Q7 Mac widgets"]},
     {"paths": ["apps/macos/Sources/SukraraApp/*"], "qa": ["Q6 Mac menubar panel"]},

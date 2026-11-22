@@ -1,0 +1,21 @@
+info face="AtkinsonHyperlegibleNext-700" size=18 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1
+common lineHeight=23 base=18 scaleW=512 scaleH=15 pages=1 packed=0
+page id=0 file="n18.png"
+chars count=17
+char id=48 x=0 y=0 width=12 height=14 xoffset=0 yoffset=5 xadvance=12 page=0 chnl=15
+char id=49 x=13 y=0 width=7 height=13 xoffset=0 yoffset=5 xadvance=8 page=0 chnl=15
+char id=50 x=21 y=0 width=10 height=13 xoffset=0 yoffset=5 xadvance=10 page=0 chnl=15
+char id=51 x=32 y=0 width=10 height=14 xoffset=0 yoffset=5 xadvance=11 page=0 chnl=15
+char id=52 x=43 y=0 width=11 height=13 xoffset=0 yoffset=5 xadvance=11 page=0 chnl=15
+char id=53 x=55 y=0 width=11 height=14 xoffset=0 yoffset=5 xadvance=11 page=0 chnl=15
+char id=54 x=67 y=0 width=11 height=14 xoffset=0 yoffset=5 xadvance=11 page=0 chnl=15
+char id=55 x=79 y=0 width=10 height=13 xoffset=0 yoffset=5 xadvance=10 page=0 chnl=15
+char id=56 x=90 y=0 width=11 height=14 xoffset=0 yoffset=5 xadvance=11 page=0 chnl=15
+char id=57 x=102 y=0 width=10 height=13 xoffset=0 yoffset=5 xadvance=10 page=0 chnl=15
+char id=46 x=113 y=0 width=5 height=5 xoffset=0 yoffset=14 xadvance=5 page=0 chnl=15
+char id=58 x=119 y=0 width=5 height=11 xoffset=0 yoffset=8 xadvance=5 page=0 chnl=15
+char id=76 x=125 y=0 width=9 height=13 xoffset=1 yoffset=5 xadvance=10 page=0 chnl=15
+char id=79 x=135 y=0 width=13 height=14 xoffset=0 yoffset=5 xadvance=13 page=0 chnl=15
+char id=72 x=149 y=0 width=11 height=13 xoffset=1 yoffset=5 xadvance=13 page=0 chnl=15
+char id=73 x=161 y=0 width=7 height=13 xoffset=0 yoffset=5 xadvance=8 page=0 chnl=15
+char id=45 x=169 y=0 width=7 height=3 xoffset=0 yoffset=12 xadvance=7 page=0 chnl=15

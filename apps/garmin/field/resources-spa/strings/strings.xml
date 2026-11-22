@@ -5,9 +5,12 @@
 <strings>
     <string id="AppName">Sukrara campo de datos</string>
     <string id="NoReadings">Sin lecturas</string>
-    <string id="Waiting">Abre Sukrara en el móvil</string>
+    <string id="Setup1">Esperando</string>
+    <string id="Setup2">al móvil</string>
     <string id="Glucose">GLUCOSA</string>
     <string id="Now">Sukrara · ahora</string>
+    <string id="MinAgo">Sukrara · hace $1$ min</string>
+    <string id="NoReadingSince">Sin lecturas desde $1$</string>
     <string id="AlertVeryLow">Muy baja</string>
     <string id="AlertLow">Baja</string>
     <string id="AlertHigh">Alta</string>

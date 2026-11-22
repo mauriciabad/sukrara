@@ -1148,6 +1148,28 @@ watch; the watch shows the real value: check it against the phone, never photogr
       never the always-on look. After the next fetch, `adb logcat -s Sukrara.Aura` shows each `X@<t>` followed by
       `Dw@<t>` within a second (docs/43 "The screen").
 
+## Q31 Garmin data field
+
+- [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/field/tools/field_test.py run <dir>` with
+      `CIQ_DEVICE` = `descentmk343mm`, `fenix7`, `fr255s` (simulator, ~4 min each): OK, no case over its budget. Open
+      `pairs/` (simulator | app.js): every form (whole, half, band, quarter, cap) the same as the reference, the value
+      and arrow where the reference has them, the sparkline only where it has it; every red pixel in `diff/` a glyph's
+      or a line's edge, never a moved, missing or wrong-coloured element. A new or changed case: `--update`, look at
+      every pair, commit the references and `expect.json` together.
+- [ ] The safety states in `pairs/`: low and very low a block in the band's colour (white on AMOLED, black on the MIP
+      reds), late with the reading's time, old grey and struck with a hollow end and no arrow, "---" from 20 min,
+      *Waiting for phone* before the first message, LO / HI without an arrow.
+- [ ] `apps/garmin/tools/link-test.sh field`: every test passes (the place from the obscured sides, the activity's
+      file, the forms).
+- [ ] On the watch (`tools/install.sh watch`): add the field to an activity's data screen in a 1-, 2-, 3- and 4-field
+      layout; each slot shows the form the reference has for that room, the value the phone's, the sparkline moving
+      with each reading. Start the activity with the phone away for 6 minutes: the value turns grey and struck, never
+      current.
+- [ ] Alerts › Connect IQ on for that activity, then a low on the phone: the field's alert page (red, the bell, *LOW*,
+      the value) and a vibration, once per new kind; it dismisses as Garmin's do. Off: only the vibration.
+- [ ] *Record glucose* on (Connect IQ app): after the activity, Garmin Connect charts *Glucose* in the person's unit,
+      with a gap where the reading was older than 5 minutes. Off: no glucose chart.
+
 ## Q20 The person and the feel
 
 Every app change (CLAUDE.md *Design from the person's life first*, *Make it juicy*; user, 2026-10-23).

@@ -3001,7 +3001,7 @@ again resumes them. TalkBack reads each row as a plain row with its text.
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 
 The watch side of the two apps above (`apps/garmin/app`, `apps/garmin/field`; design `contracts/watchface/app/SPEC.md`,
-drawn plainly until its port). Every watch with API 5 or newer except the 1-bit Instinct 3 Solar / Instinct E.
+the app drawn plainly until its port; the data field ported). Every watch with API 5 or newer except the 1-bit Instinct 3 Solar / Instinct E.
 - **Complications** (`Slots`, SPEC §10; any face, Face It): four, published by the app's background on every push and
   fetch, so faces update with the app closed. *CGM-GB-value* (Face It "Sukrara glucose", the glance folder's preview):
   "175", "9.7", "LO", "HI", or "---" from 5 min old, with no reading or while the sensor warms up; *CGM-GB-data*: the
@@ -3012,6 +3012,16 @@ drawn plainly until its port). Every watch with API 5 or newer except the 1-bit 
   watches' fonts draw no arrows). **Never old as current**: the next background run is set at the reading's time +
   5 min (never sooner than Garmin's 5 min after the last run, never later than 5 min after this one), so "---"
   appears on time with the phone away.
+- **The data field** (`apps/garmin/field`, SPEC §9, §14.4; drawn from `app.js` `S.dfSlot` on every screen class): in
+  any slot of an activity's data screen, *GLUCOSE* and the value in its band's colour with **Aura's sparkline** (up to
+  the last 3 h as the width allows, the trend ray, the end dot) where a 260 × 100 box fits in the slot inside the
+  screen, else the value and its arrow as big as the slot allows (the label where there is room); the whole page: the
+  value over the sparkline. **Low / very low**: the slot is a block in the band's colour, the value white (black on the
+  MIP watches' light reds). Late (from 90 s): the reading's time beside it; old (from 5 min): grey and struck through,
+  a hollow end; from 20 min (or not monitoring) "---" in grey, the whole page saying *No reading since 20:21* / *No
+  readings*. **Not set up** (no message from the phone yet): *GLUCOSE* and *Waiting for phone*, no alert, nothing
+  recorded. The field draws its own black ground (the design's) whatever the activity's colours; where the slot sits
+  comes from the sides the screen cuts (Connect IQ gives a field its size, not its place).
 - **The watch's last treatment** is the card's: the first step of the phone's `last` chain still ahead, its first
   item (kind and time; long-acting never, as on the card).
 - **Logging and mutes wait in an outbox** (`Outbox`, contracts/watchface/payload "Entries from the watch"): each with
@@ -3027,18 +3037,26 @@ drawn plainly until its port). Every watch with API 5 or newer except the 1-bit 
   notification (API 5.1+; 5.0 watches keep Garmin Connect's forwarded one): the alert's word and value, the reading's
   time, *Treatment* (the side's kind: carbs for lows, rapid insulin for highs), *Remind less* when it would slow it or
   *Remind as usual* once relaxed, *Mute lows / highs 30m*. The data field shows its own alert page (on per activity:
-  its Alerts › Connect IQ) and vibrates.
+  its Alerts › Connect IQ; `S.dfAlert`): the whole page in the alert's colour (a rate alert: the value's band; no data:
+  grey), the bell and the word, the value and its arrow, *Sukrara · now* / *3 min ago*; and vibrates.
 - **The data field records glucose** into the activity's file (*Record glucose*, on by default; one field in the
-  person's unit, charted by Garmin Connect), each new reading once while it is fresh.
+  person's unit, charted by Garmin Connect), each new reading once while it is fresh; once it is 5 min old (or gone)
+  the field's invalid value, so the file never carries an old value as current.
 - Watch settings (`contracts/settings/settings.json`, `only` garmin; the Connect IQ app): the app's *Sparkline on
   alerts* (on) and *Log complication shows* (time since), the field's *Record glucose* (on).
 - Tests in the simulator (`apps/garmin/tools/link-test.sh app | field`): the outbox against `entries.json` /
-  `mutes.json` (every signature, every answer), the complications per state, the expiry, the ring decision.
+  `mutes.json` (every signature, every answer), the complications per state, the expiry, the ring decision; the
+  field's place from its obscured sides, what it records, its form by slot room. The field's screens against the
+  reference (`apps/garmin/field/tools/field_test.py`: every form and state of `contracts/watchface/field/cases.json`
+  per watch, pictures in `docs/img/field/ref/<watch>/`, budgets in `expect.json`).
 
 **States and exits**: a complication is placed and removed in the face's own editor; holding one opens the app. Garmin's
 notification: an action opens the app with it, or dismiss it (Garmin's button); a new kind notifies again, the same one
-not. The field's alert dismisses as Garmin's alerts do; it is off until turned on in the activity's Alerts › Connect IQ;
-the field's *Record glucose* is switched in the Connect IQ app. An outbox entry leaves on the phone's answer; one the
+not. The data field takes no input (Garmin reserves it for the activity): it is added, moved and removed in the
+activity's data screens; each of its states (setup, value, late, old, no reading, low block) ends by itself with the
+next message from the phone or the reading's age. The field's alert dismisses as Garmin's alerts do (it also times
+out); it is off until turned on in the activity's Alerts › Connect IQ; the field's *Record glucose* is switched in the
+Connect IQ app. An outbox entry leaves on the phone's answer; one the
 phone asks about stays until the person answers *Log anyway* or *Cancel*. Every setting is changed back in the Connect
 IQ app. TalkBack / VoiceOver: the watch's own screen reader isn't offered by Garmin for Connect IQ apps.
 

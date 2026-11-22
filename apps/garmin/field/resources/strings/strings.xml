@@ -1,13 +1,16 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara -->
 <!-- Copyright (C) 2026 Maurici Abad -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Sukrara data field's words, English (resources-spa: Spanish); the placeholder look's (shared/plain) until the design. -->
+<!-- Sukrara data field's words, English (resources-spa: Spanish); the design's (contracts/watchface/app/SPEC.md §9). -->
 <strings>
     <string id="AppName">Sukrara data field</string>
     <string id="NoReadings">No readings</string>
-    <string id="Waiting">Open Sukrara on the phone</string>
+    <string id="Setup1">Waiting</string>
+    <string id="Setup2">for phone</string>
     <string id="Glucose">GLUCOSE</string>
     <string id="Now">Sukrara · now</string>
+    <string id="MinAgo">Sukrara · $1$ min ago</string>
+    <string id="NoReadingSince">No reading since $1$</string>
     <string id="AlertVeryLow">Very low</string>
     <string id="AlertLow">Low</string>
     <string id="AlertHigh">High</string>

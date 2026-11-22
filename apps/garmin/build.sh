@@ -11,9 +11,9 @@
 #   export             the store package (monkeyc -e -r)            → bin/<Name>.iq
 #   export-beta        the same app under its beta app id           → bin/<Name>-beta.iq
 #                      (a Connect IQ *beta app* needs its own id: docs/20-publishing.md › Connect IQ store)
-#   cases | test       aura, app: the debug case loader (every case of its cases.json in turn, printing its layout or
-#                      input): the picture diffs' build → bin/<Name>-cases.prg (aura/tools/garmin_test.py run,
-#                      app/tools/app_test.py run build and run it)
+#   cases | test       the debug case loader (every case of its cases.json in turn, printing its layout or input): the
+#                      picture diffs' build → bin/<Name>-cases.prg (aura/tools/garmin_test.py run, app/tools/app_test.py
+#                      run, field/tools/field_test.py run build and run it)
 # <Name>: SukraraAura, Sukrara, SukraraField. Environment: CIQ_SDK (default: the SDK Manager's current SDK), CIQ_KEY
 # (default ~/.connectiq/sukrara-developer-key.der), JAVA_HOME (default: Homebrew's openjdk@17 when present), CIQ_DEVICE
 # (default descentmk343mm).
@@ -51,7 +51,7 @@ case "$MODE" in
     case "$APP" in
       aura) JUNGLE=aura/cases.jungle; python3 aura/tools/cases.py ;;
       app) JUNGLE=app/build/cases/cases.jungle; python3 app/tools/cases.py ;;
-      *) echo "build.sh: the case loaders are the face's and the app's" >&2; exit 2 ;;
+      field) JUNGLE=field/build/cases/cases.jungle; CIQ_DEVICE=$DEVICE python3 field/tools/cases.py ;;
     esac
     OUT=bin/$NAME-cases.prg; FLAGS="" ;;
   export) OUT=bin/$NAME.iq; FLAGS="-e -r" ;;

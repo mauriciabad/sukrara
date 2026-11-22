@@ -80,13 +80,13 @@ def capture(device):
 MARKS = ((100, 100), (288, 100), (100, 288), (288, 288))
 
 
-def calibrate(device="descentmk343mm"):
+def calibrate(device="descentmk343mm", marks=MARKS):
     """The offset (points) of the display against simulator.json's place, from the calibration frame: the white squares'
-    centres found within 8 points of where they should be."""
+    centres found within 8 points of where they should be ([marks]: the frame's squares, default MARKS)."""
     im, scale, loc = capture(device)
     px = im.load()
     offs = []
-    for mx, my in MARKS:
+    for mx, my in marks:
         cx, cy = (loc["x"] + mx + 1) * scale, (loc["y"] + TITLE + my + 1) * scale
         sx = sy = n = 0
         for y in range(int(cy - 8 * scale), int(cy + 8 * scale)):

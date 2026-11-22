@@ -7,14 +7,16 @@ import Toybox.Attention;
 import Toybox.FitContributor;
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.Math;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.WatchUi;
 
-// Sukrara data field (docs/47 §8, apps/garmin/README.md): the value and its age in whatever slot of an activity's data
-// screen it gets, and its own background on the shared link (Sukrara's push to this app's id, the 5-minute fetch of
-// /sukrara/field): a data field can't read another app's storage (docs/47 §2). Loaded by its background too.
-(:background)
+// Sukrara data field (docs/47 §8, contracts/watchface/app/SPEC.md §9, §14.4): the value with Aura's sparkline or its
+// arrow in whatever slot of an activity's data screen it gets, its own alert, glucose in the activity's file; its own
+// background on the shared link (Sukrara's push to this app's id, the 5-minute fetch of /sukrara/field): a data field
+// can't read another app's storage (docs/47 §2). Loaded by its background too.
+(:background :fieldrun)
 class FieldApp extends Application.AppBase {
     function initialize() {
         AppBase.initialize();
@@ -37,14 +39,15 @@ class FieldApp extends Application.AppBase {
     }
 }
 
-// The field: redrawn every second by the activity; on the one seam layout(input) → model, draw(model). Every second it
-// also says a new alert from the phone again (its own alert, SPEC §9) and, with Record glucose on, writes the fresh
-// value into the activity's file.
+// The field: redrawn every second by the activity; on the one seam input → FieldLayout → FieldG → FieldDraw. Every
+// second it also says a new alert from the phone again (its own alert, SPEC §9) and, with Record glucose on, writes the
+// fresh value into the activity's file.
+(:fieldrun)
 class FieldView extends WatchUi.DataField {
     var _seen as Array = [] as Array; // the kinds this field has announced
     var _fit as FitContributor.Field? = null;
     var _fitMmol as Boolean = false;
-    var _fitAt as Number = 0;
+    var _fitAt as Number = 0; // the reading last written (its time), -1 = the invalid value written (no fresh reading)
 
     function initialize() {
         DataField.initialize();
@@ -62,11 +65,14 @@ class FieldView extends WatchUi.DataField {
         var now = Time.now().value();
         Link.pickUp(now);
         var p = Link.payload();
+        if (p == null) {
+            return null; // not set up (SPEC §4.3): no alert, nothing in the activity's file
+        }
         var items = Ring.now(p, now, Link.skew);
         var fresh = Ring.fresh(items, _seen);
         _seen = Ring.kinds(items);
         if (fresh.size() > 0) {
-            alert(fresh[0], p as Dictionary, now);
+            alert(fresh[0], now);
         }
         record(p, now);
         return null;
@@ -74,10 +80,10 @@ class FieldView extends WatchUi.DataField {
 
     // a new alert: the field's own full page (on per activity: its Alerts › Connect IQ) and a vibration; it says again
     // what Sukrara rings on the phone
-    function alert(it as Dictionary, p as Dictionary, now as Number) as Void {
+    function alert(it as Dictionary, now as Number) as Void {
         if (WatchUi.DataField has :showAlert) {
             try {
-                showAlert(new FieldAlert(it, p, now));
+                showAlert(new FieldAlert(it.get("k") as String, now));
             } catch (e) {
                 // an alert already shown: the vibration says it
             }
@@ -88,60 +94,68 @@ class FieldView extends WatchUi.DataField {
         }
     }
 
-    // the value into the activity's file once per new reading while it is fresh (never an old value as current)
+    // the value into the activity's file once per new reading while it is fresh; once it is older (or gone) the field's
+    // invalid value, so the file never carries an old value as current (FieldRecord.value)
     function record(p as Dictionary?, now as Number) as Void {
-        var g = p != null ? p.get("g") : null;
-        if (_fit == null || !(g instanceof Dictionary)) {
+        if (_fit == null) {
             return;
         }
-        var t = g.get("t") as Number;
-        if (t == _fitAt || now + Link.skew - t > Glucose.STRUCK_S) {
+        var v = FieldRecord.value(p, now + Link.skew, _fitMmol);
+        var at = v != null ? (p as Dictionary).get("g") as Dictionary : null;
+        var t = at != null ? at.get("t") as Number : -1;
+        if (t == _fitAt) {
             return;
         }
         _fitAt = t;
-        var v = g.get("v") as Number;
-        (_fit as FitContributor.Field).setData(_fitMmol ? Glucose.inUnit(v, "mmol") : v);
+        try {
+            (_fit as FitContributor.Field).setData(v != null ? v : FieldRecord.invalid(_fitMmol));
+        } catch (e) {
+            // a value the field's type refuses: the file keeps the last one
+        }
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
         var now = Time.now().value();
         Link.pickUp(now);
-        PlainDraw.draw(dc, FieldLayout.layout(Readings.input(now), dc.getWidth(), dc.getHeight(),
-            getBackgroundColor() == Graphics.COLOR_BLACK));
+        var ds = System.getDeviceSettings();
+        var W = ds.screenWidth;
+        var H = ds.screenHeight;
+        var w = dc.getWidth();
+        var h = dc.getHeight();
+        var obs = getObscurityFlags();
+        var at = FieldPlace.of(w, h, W, H, obs);
+        var g = FieldLayout.field(new FieldInput().from(Readings.input(now)), new FieldSlot(at[0], at[1], w, h, W, H, obs));
+        FieldPlace.paint(dc, g, at[0], at[1], W, H);
     }
 }
 
-module FieldLayout {
-    // The slot [w] × [h] (one of 1–10 fields; [dark]: the activity's dark background): the value centred with the
-    // largest number font that fits about half the slot's height, the age under it when there is room.
-    function layout(input as ReadingInput, w as Number, h as Number, dark as Boolean) as PlainModel {
-        var m = new PlainModel();
-        PlainLayout.fill(m, input, WatchUi.loadResource(Rez.Strings.NoReadings) as String,
-            WatchUi.loadResource(Rez.Strings.Waiting) as String);
-        m.fg = dark ? Graphics.COLOR_WHITE : Graphics.COLOR_BLACK;
-        m.bg = dark ? Graphics.COLOR_BLACK : Graphics.COLOR_WHITE;
-        var fonts = [Graphics.FONT_NUMBER_THAI_HOT, Graphics.FONT_NUMBER_HOT, Graphics.FONT_NUMBER_MEDIUM,
-            Graphics.FONT_NUMBER_MILD, Graphics.FONT_MEDIUM, Graphics.FONT_SMALL] as Array<Graphics.FontDefinition>;
-        var ageH = Graphics.getFontHeight(Graphics.FONT_XTINY);
-        var room = m.age != null && h >= 3 * ageH ? h - ageH : h;
-        var font = Graphics.FONT_XTINY;
-        for (var i = 0; i < fonts.size(); i++) {
-            if (Graphics.getFontHeight(fonts[i]) <= room * 0.9) {
-                font = fonts[i];
-                break;
-            }
-        }
-        m.valueFont = font;
-        m.valueX = w / 2;
-        m.valueY = room / 2;
-        m.ageFont = Graphics.FONT_XTINY;
-        m.ageX = w / 2;
-        m.ageY = room + ageH / 2;
-        if (room == h) {
-            m.age = null; // no room for it: the value alone (the struck look still says it's old)
-        }
-        m.arrowSize = Graphics.getFontHeight(font) / 3;
-        return m;
+// Where the slot is on the screen: Connect IQ gives a field its size and the sides the screen cuts (getObscurityFlags),
+// not its place. A slot cut at the top starts at the screen's top, one cut at the bottom ends at its bottom, else it is
+// centred; the same left to right.
+module FieldPlace {
+    function of(w as Number, h as Number, W as Number, H as Number, obs as Number) as Array<Number> {
+        // DataField.OBSCURE_LEFT 1, OBSCURE_TOP 2, OBSCURE_RIGHT 4, OBSCURE_BOTTOM 8
+        var l = (obs & 1) != 0;
+        var r = (obs & 4) != 0;
+        var t = (obs & 2) != 0;
+        var b = (obs & 8) != 0;
+        var x = l ? 0 : r ? W - w : (W - w) / 2;
+        var y = t ? 0 : b ? H - h : (H - h) / 2;
+        return [x, y];
+    }
+
+    // the model onto the slot's Dc at [x, y] on the [W] × [H] screen: black (the design's ground), then the field
+    function paint(dc as Graphics.Dc, g as FieldG, x as Number, y as Number, W as Number, H as Number) as Void {
+        FieldDraw.W = W;
+        FieldDraw.H = H;
+        FieldDraw.s = FieldFontTable.S;
+        FieldDraw.ox = W / 2.0 - 0.5 - x;
+        FieldDraw.oy = H / 2.0 - 0.5 - y;
+        FieldDraw.px0 = W / 2 - x;
+        FieldDraw.py0 = H / 2 - y;
+        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
+        dc.clear();
+        FieldDraw.paint(dc, g);
     }
 }
 
@@ -156,38 +170,55 @@ module FieldRecord {
         }
         return v instanceof Boolean ? v : SettingsSpec.RECORD[2] as Boolean;
     }
+
+    // what the file gets at the phone's time [t]: the reading in the person's unit while it is fresh (5 min), else
+    // null
+    function value(p as Dictionary?, t as Number, mmol as Boolean) as Numeric? {
+        var g = p != null ? p.get("g") : null;
+        if (!(g instanceof Dictionary) || t - (g.get("t") as Number) > Glucose.STRUCK_S) {
+            return null;
+        }
+        var v = g.get("v") as Number;
+        return mmol ? Glucose.inUnit(v, "mmol") : v;
+    }
+
+    // the FIT invalid value of the field's type (no reading): UINT16 0xFFFF, FLOAT a NaN
+    function invalid(mmol as Boolean) as Numeric {
+        return mmol ? Math.acos(2.0) : 0xFFFF;
+    }
 }
 
-// The field's own alert (SPEC §9, DataField.showAlert): the whole page in the band's colour, the alert's word, the value
-// white, "Sukrara · now". Placeholder look until the design's port.
+// The field's own alert (SPEC §9, DataField.showAlert): the whole page in the alert's colour, the bell and the word,
+// the value + arrow, "Sukrara · now" (app.js S.dfAlert).
+(:fieldrun)
 class FieldAlert extends WatchUi.DataFieldAlert {
-    var _word as String;
-    var _value as String;
-    var _colour as Number;
+    var _kind as String;
+    var _at as Number;
 
-    function initialize(it as Dictionary, p as Dictionary, now as Number) {
+    function initialize(kind as String, now as Number) {
         DataFieldAlert.initialize();
-        var words = {"very_low" => Rez.Strings.AlertVeryLow, "low" => Rez.Strings.AlertLow, "high" => Rez.Strings.AlertHigh,
-            "very_high" => Rez.Strings.AlertVeryHigh, "extremely_high" => Rez.Strings.AlertExtremelyHigh,
-            "falling_fast" => Rez.Strings.AlertFallingFast, "rising_fast" => Rez.Strings.AlertRisingFast};
-        var w = words.get(it.get("k"));
-        _word = WatchUi.loadResource(w != null ? w as ResourceId : Rez.Strings.AlertNoData) as String;
-        var g = p.get("g");
-        var unit = p.get("unit");
-        _value = g instanceof Dictionary ? Glucose.value(g.get("v") as Number, unit instanceof String ? unit : "mgdl") : "";
-        var side = it.get("side");
-        _colour = "low".equals(side) ? Graphics.COLOR_DK_RED : ("high".equals(side) ? Graphics.COLOR_ORANGE
-            : Graphics.COLOR_DK_GRAY);
+        _kind = kind;
+        _at = now;
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
-        var w = dc.getWidth();
-        var h = dc.getHeight();
-        dc.setColor(Graphics.COLOR_WHITE, _colour);
-        dc.clear();
-        dc.drawText(w / 2, h / 4, Graphics.FONT_MEDIUM, _word, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-        dc.drawText(w / 2, h / 2, Graphics.FONT_NUMBER_HOT, _value, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
-        dc.drawText(w / 2, h * 3 / 4, Graphics.FONT_XTINY, WatchUi.loadResource(Rez.Strings.Now) as String,
-            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        var now = Time.now().value();
+        var d = new FieldInput().from(Readings.input(now));
+        FieldPlace.paint(dc, FieldWords.alert(d, _kind), 0, 0, dc.getWidth(), dc.getHeight());
+    }
+}
+
+// The alert's words in the person's language (resources: en, es)
+module FieldWords {
+    function alert(d as FieldInput, kind as String) as FieldG {
+        var words = {"very_low" => Rez.Strings.AlertVeryLow, "low" => Rez.Strings.AlertLow, "high" => Rez.Strings.AlertHigh,
+            "very_high" => Rez.Strings.AlertVeryHigh, "extremely_high" => Rez.Strings.AlertExtremelyHigh,
+            "falling_fast" => Rez.Strings.AlertFallingFast, "rising_fast" => Rez.Strings.AlertRisingFast};
+        var w = words.get(kind);
+        var word = (WatchUi.loadResource(w != null ? w as ResourceId : Rez.Strings.AlertNoData) as String).toUpper();
+        var m = Math.round(d.age).toNumber();
+        var line = d.age < 1 ? WatchUi.loadResource(Rez.Strings.Now) as String
+            : Lang.format(WatchUi.loadResource(Rez.Strings.MinAgo) as String, [m]);
+        return FieldLayout.alert(d, kind, word, line);
     }
 }

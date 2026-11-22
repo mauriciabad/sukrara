@@ -1,0 +1,1272 @@
+{
+ "about": "The data field's screens (contracts/watchface/app/SPEC.md §9, §14.4; tools/watchface/app.js S.dfSlot, S.dfAlert): each case draws one form (whole, half, band, quarter, cap: the slots of the reference's DFS, on the watch's own screen class) or the field's alert from a phone state (`states`: a payload of the field profile) at `at` seconds after it was sent. `state` null: the phone never sent anything (not set up, SPEC §4.3). apps/garmin/field/tools/field_test.py runs them in the simulator against the reference; expect.json holds the pictures' budgets.",
+ "states": {
+  "steady": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 112,
+    "rate": 0.4,
+    "band": 0,
+    "deg": -12.0
+   },
+   "hist": [
+    96,
+    95,
+    94,
+    93,
+    93,
+    92,
+    92,
+    92,
+    92,
+    92,
+    93,
+    93,
+    94,
+    95,
+    97,
+    98,
+    99,
+    101,
+    102,
+    104,
+    105,
+    107,
+    108,
+    109,
+    109,
+    110,
+    110,
+    111,
+    111,
+    110,
+    110,
+    109,
+    108,
+    107,
+    106,
+    105
+   ],
+   "st": null,
+   "ring": []
+  },
+  "high": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 252,
+    "rate": 1.7,
+    "band": 2,
+    "deg": -51.0
+   },
+   "hist": [
+    120,
+    120,
+    120,
+    120,
+    120,
+    120,
+    121,
+    127,
+    133,
+    139,
+    145,
+    150,
+    155,
+    159,
+    163,
+    166,
+    168,
+    171,
+    173,
+    175,
+    178,
+    181,
+    185,
+    190,
+    195,
+    201,
+    207,
+    213,
+    219,
+    225,
+    230,
+    235,
+    239,
+    242,
+    245,
+    248
+   ],
+   "st": null,
+   "ring": [
+    {
+     "k": "high",
+     "side": "high",
+     "relaxed": false,
+     "less": true
+    }
+   ]
+  },
+  "low": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 62,
+    "rate": -1.6,
+    "band": -2,
+    "deg": 48.0
+   },
+   "hist": [
+    150,
+    148,
+    146,
+    145,
+    143,
+    141,
+    139,
+    137,
+    135,
+    133,
+    131,
+    129,
+    127,
+    125,
+    123,
+    120,
+    118,
+    116,
+    113,
+    111,
+    108,
+    106,
+    103,
+    101,
+    98,
+    96,
+    93,
+    90,
+    88,
+    85,
+    82,
+    79,
+    76,
+    73,
+    70,
+    67
+   ],
+   "st": null,
+   "ring": [
+    {
+     "k": "low",
+     "side": "low",
+     "relaxed": false,
+     "less": true
+    }
+   ]
+  },
+  "veryLow": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 49,
+    "rate": -2.2,
+    "band": -2,
+    "deg": 66.0
+   },
+   "hist": [
+    143,
+    141,
+    140,
+    138,
+    136,
+    135,
+    133,
+    131,
+    129,
+    127,
+    125,
+    123,
+    121,
+    119,
+    117,
+    114,
+    112,
+    110,
+    107,
+    105,
+    102,
+    99,
+    97,
+    94,
+    91,
+    88,
+    85,
+    82,
+    79,
+    76,
+    73,
+    69,
+    66,
+    63,
+    59,
+    56
+   ],
+   "st": null,
+   "ring": [
+    {
+     "k": "very_low",
+     "side": "low",
+     "relaxed": false,
+     "less": false
+    }
+   ]
+  },
+  "mmol": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mmol",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 175,
+    "rate": 1.1,
+    "band": 1,
+    "deg": -33.0
+   },
+   "hist": [
+    100,
+    103,
+    106,
+    109,
+    111,
+    113,
+    115,
+    116,
+    117,
+    118,
+    119,
+    120,
+    121,
+    121,
+    122,
+    124,
+    125,
+    127,
+    129,
+    132,
+    134,
+    137,
+    140,
+    143,
+    147,
+    150,
+    153,
+    156,
+    159,
+    161,
+    163,
+    165,
+    166,
+    167,
+    168,
+    169
+   ],
+   "st": null,
+   "ring": []
+  },
+  "lo": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 39,
+    "rate": null,
+    "band": null,
+    "deg": null
+   },
+   "hist": [
+    96,
+    94,
+    93,
+    92,
+    90,
+    88,
+    87,
+    86,
+    84,
+    82,
+    81,
+    80,
+    78,
+    76,
+    75,
+    74,
+    72,
+    70,
+    69,
+    68,
+    66,
+    64,
+    63,
+    62,
+    60,
+    58,
+    57,
+    56,
+    54,
+    52,
+    51,
+    50,
+    48,
+    46,
+    45,
+    44
+   ],
+   "st": null,
+   "ring": []
+  },
+  "hi": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 401,
+    "rate": null,
+    "band": null,
+    "deg": null
+   },
+   "hist": [
+    316,
+    318,
+    320,
+    322,
+    325,
+    327,
+    329,
+    331,
+    333,
+    336,
+    338,
+    340,
+    342,
+    344,
+    347,
+    349,
+    351,
+    353,
+    355,
+    358,
+    360,
+    362,
+    364,
+    366,
+    369,
+    371,
+    373,
+    375,
+    377,
+    380,
+    382,
+    384,
+    386,
+    388,
+    391,
+    393
+   ],
+   "st": null,
+   "ring": []
+  },
+  "doubled": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 180,
+    "rate": 3.4,
+    "band": 3,
+    "deg": -90.0
+   },
+   "hist": [
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    100,
+    102,
+    107,
+    112,
+    117,
+    122,
+    127,
+    132,
+    137,
+    142,
+    147,
+    152,
+    157,
+    162,
+    167
+   ],
+   "st": null,
+   "ring": [
+    {
+     "k": "rising_fast",
+     "side": "high",
+     "relaxed": false,
+     "less": true
+    }
+   ]
+  },
+  "notrend": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 140,
+    "rate": null,
+    "band": null,
+    "deg": null
+   },
+   "hist": [
+    142,
+    142,
+    141,
+    141,
+    140,
+    140,
+    139,
+    139,
+    138,
+    138,
+    137,
+    137,
+    137,
+    137,
+    137,
+    137,
+    138,
+    138,
+    139,
+    139,
+    140,
+    140,
+    141,
+    142,
+    142,
+    142,
+    143,
+    143,
+    143,
+    143,
+    143,
+    143,
+    142,
+    142,
+    141,
+    141
+   ],
+   "st": null,
+   "ring": []
+  },
+  "hour": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 112,
+    "rate": 0.4,
+    "band": 0,
+    "deg": -12.0
+   },
+   "hist": [
+    109,
+    110,
+    110,
+    111,
+    111,
+    110,
+    110,
+    109,
+    108,
+    107,
+    106,
+    105
+   ],
+   "st": null,
+   "ring": []
+  },
+  "gaps": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 112,
+    "rate": 0.4,
+    "band": 0,
+    "deg": -12.0
+   },
+   "hist": [
+    96,
+    95,
+    94,
+    null,
+    null,
+    null,
+    92,
+    92,
+    92,
+    92,
+    93,
+    93,
+    94,
+    95,
+    97,
+    98,
+    99,
+    101,
+    102,
+    104,
+    null,
+    107,
+    108,
+    109,
+    109,
+    110,
+    110,
+    111,
+    111,
+    110,
+    110,
+    null,
+    108,
+    107,
+    106,
+    105
+   ],
+   "st": null,
+   "ring": []
+  },
+  "none": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": null,
+   "hist": [],
+   "st": null,
+   "ring": []
+  },
+  "extreme": {
+   "v": 4,
+   "p": "field",
+   "sent": 1794823776,
+   "unit": "mgdl",
+   "bands": [
+    55,
+    70,
+    140,
+    180,
+    250,
+    300
+   ],
+   "g": {
+    "t": 1794823746,
+    "v": 330,
+    "rate": 0.8,
+    "band": 1,
+    "deg": -24.0
+   },
+   "hist": [
+    266,
+    268,
+    269,
+    270,
+    272,
+    274,
+    275,
+    276,
+    278,
+    280,
+    281,
+    282,
+    284,
+    286,
+    287,
+    288,
+    290,
+    292,
+    293,
+    294,
+    296,
+    298,
+    299,
+    300,
+    302,
+    304,
+    305,
+    306,
+    308,
+    310,
+    311,
+    312,
+    314,
+    316,
+    317,
+    318
+   ],
+   "st": null,
+   "ring": [
+    {
+     "k": "extremely_high",
+     "side": "high",
+     "relaxed": false,
+     "less": false
+    }
+   ]
+  }
+ },
+ "cases": [
+  {
+   "id": "whole-steady",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "steady",
+   "at": 0
+  },
+  {
+   "id": "half-steady",
+   "screen": "dfSlot",
+   "form": "half",
+   "state": "steady",
+   "at": 0
+  },
+  {
+   "id": "band-steady",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "steady",
+   "at": 0
+  },
+  {
+   "id": "quarter-steady",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "steady",
+   "at": 0
+  },
+  {
+   "id": "cap-steady",
+   "screen": "dfSlot",
+   "form": "cap",
+   "state": "steady",
+   "at": 0
+  },
+  {
+   "id": "whole-high",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "high",
+   "at": 0
+  },
+  {
+   "id": "half-high",
+   "screen": "dfSlot",
+   "form": "half",
+   "state": "high",
+   "at": 0
+  },
+  {
+   "id": "band-high",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "high",
+   "at": 0
+  },
+  {
+   "id": "quarter-high",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "high",
+   "at": 0
+  },
+  {
+   "id": "cap-high",
+   "screen": "dfSlot",
+   "form": "cap",
+   "state": "high",
+   "at": 0
+  },
+  {
+   "id": "whole-low",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "low",
+   "at": 0
+  },
+  {
+   "id": "half-low",
+   "screen": "dfSlot",
+   "form": "half",
+   "state": "low",
+   "at": 0
+  },
+  {
+   "id": "band-low",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "low",
+   "at": 0
+  },
+  {
+   "id": "quarter-low",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "low",
+   "at": 0
+  },
+  {
+   "id": "cap-low",
+   "screen": "dfSlot",
+   "form": "cap",
+   "state": "low",
+   "at": 0
+  },
+  {
+   "id": "whole-very-low",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "veryLow",
+   "at": 0
+  },
+  {
+   "id": "half-very-low",
+   "screen": "dfSlot",
+   "form": "half",
+   "state": "veryLow",
+   "at": 0
+  },
+  {
+   "id": "band-very-low",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "veryLow",
+   "at": 0
+  },
+  {
+   "id": "quarter-very-low",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "veryLow",
+   "at": 0
+  },
+  {
+   "id": "cap-very-low",
+   "screen": "dfSlot",
+   "form": "cap",
+   "state": "veryLow",
+   "at": 0
+  },
+  {
+   "id": "whole-late",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "steady",
+   "at": 150
+  },
+  {
+   "id": "half-late",
+   "screen": "dfSlot",
+   "form": "half",
+   "state": "steady",
+   "at": 150
+  },
+  {
+   "id": "band-late",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "steady",
+   "at": 150
+  },
+  {
+   "id": "quarter-late",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "steady",
+   "at": 150
+  },
+  {
+   "id": "cap-late",
+   "screen": "dfSlot",
+   "form": "cap",
+   "state": "steady",
+   "at": 150
+  },
+  {
+   "id": "whole-old",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "steady",
+   "at": 450
+  },
+  {
+   "id": "half-old",
+   "screen": "dfSlot",
+   "form": "half",
+   "state": "steady",
+   "at": 450
+  },
+  {
+   "id": "band-old",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "steady",
+   "at": 450
+  },
+  {
+   "id": "quarter-old",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "steady",
+   "at": 450
+  },
+  {
+   "id": "cap-old",
+   "screen": "dfSlot",
+   "form": "cap",
+   "state": "steady",
+   "at": 450
+  },
+  {
+   "id": "whole-setup",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": null,
+   "at": 0
+  },
+  {
+   "id": "half-setup",
+   "screen": "dfSlot",
+   "form": "half",
+   "state": null,
+   "at": 0
+  },
+  {
+   "id": "band-setup",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": null,
+   "at": 0
+  },
+  {
+   "id": "quarter-setup",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": null,
+   "at": 0
+  },
+  {
+   "id": "cap-setup",
+   "screen": "dfSlot",
+   "form": "cap",
+   "state": null,
+   "at": 0
+  },
+  {
+   "id": "whole-gone",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "steady",
+   "at": 1470
+  },
+  {
+   "id": "band-gone",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "steady",
+   "at": 1470
+  },
+  {
+   "id": "quarter-gone",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "steady",
+   "at": 1470
+  },
+  {
+   "id": "whole-none",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "none",
+   "at": 0
+  },
+  {
+   "id": "band-none",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "none",
+   "at": 0
+  },
+  {
+   "id": "quarter-none",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "none",
+   "at": 0
+  },
+  {
+   "id": "whole-mmol",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "mmol",
+   "at": 0
+  },
+  {
+   "id": "band-mmol",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "mmol",
+   "at": 0
+  },
+  {
+   "id": "quarter-mmol",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "mmol",
+   "at": 0
+  },
+  {
+   "id": "whole-lo",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "lo",
+   "at": 0
+  },
+  {
+   "id": "band-lo",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "lo",
+   "at": 0
+  },
+  {
+   "id": "quarter-lo",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "lo",
+   "at": 0
+  },
+  {
+   "id": "whole-hi",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "hi",
+   "at": 0
+  },
+  {
+   "id": "band-hi",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "hi",
+   "at": 0
+  },
+  {
+   "id": "quarter-hi",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "hi",
+   "at": 0
+  },
+  {
+   "id": "whole-doubled",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "doubled",
+   "at": 0
+  },
+  {
+   "id": "band-doubled",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "doubled",
+   "at": 0
+  },
+  {
+   "id": "quarter-doubled",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "doubled",
+   "at": 0
+  },
+  {
+   "id": "whole-no-trend",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "notrend",
+   "at": 0
+  },
+  {
+   "id": "band-no-trend",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "notrend",
+   "at": 0
+  },
+  {
+   "id": "quarter-no-trend",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "notrend",
+   "at": 0
+  },
+  {
+   "id": "whole-hour",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "hour",
+   "at": 0
+  },
+  {
+   "id": "band-hour",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "hour",
+   "at": 0
+  },
+  {
+   "id": "quarter-hour",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "hour",
+   "at": 0
+  },
+  {
+   "id": "whole-gaps",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "gaps",
+   "at": 0
+  },
+  {
+   "id": "band-gaps",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "gaps",
+   "at": 0
+  },
+  {
+   "id": "quarter-gaps",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "gaps",
+   "at": 0
+  },
+  {
+   "id": "whole-low-late",
+   "screen": "dfSlot",
+   "form": "whole",
+   "state": "low",
+   "at": 150
+  },
+  {
+   "id": "band-low-late",
+   "screen": "dfSlot",
+   "form": "band",
+   "state": "low",
+   "at": 150
+  },
+  {
+   "id": "quarter-low-late",
+   "screen": "dfSlot",
+   "form": "quarter",
+   "state": "low",
+   "at": 150
+  },
+  {
+   "id": "alert-low",
+   "screen": "dfAlert",
+   "state": "low",
+   "at": 0,
+   "kind": "low"
+  },
+  {
+   "id": "alert-very-low",
+   "screen": "dfAlert",
+   "state": "veryLow",
+   "at": 0,
+   "kind": "very_low"
+  },
+  {
+   "id": "alert-high",
+   "screen": "dfAlert",
+   "state": "high",
+   "at": 0,
+   "kind": "high"
+  },
+  {
+   "id": "alert-extremely-high",
+   "screen": "dfAlert",
+   "state": "extreme",
+   "at": 0,
+   "kind": "extremely_high"
+  },
+  {
+   "id": "alert-falling-fast",
+   "screen": "dfAlert",
+   "state": "low",
+   "at": 30,
+   "kind": "falling_fast"
+  },
+  {
+   "id": "alert-rising-fast",
+   "screen": "dfAlert",
+   "state": "doubled",
+   "at": 0,
+   "kind": "rising_fast"
+  },
+  {
+   "id": "alert-no-data",
+   "screen": "dfAlert",
+   "state": "steady",
+   "at": 1470,
+   "kind": "no_data"
+  }
+ ]
+}

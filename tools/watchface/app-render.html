@@ -4,8 +4,8 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Sukrara on Garmin: one screen from the reference (app.js) at 1:1. app-render.html#cfg=<url-encoded JSON>: cls (the
      screen class, SPEC §14), screen and the scenario, or {"watch": <the watch's input, as its case loader prints it>}
-     to draw what the watch drew (app-input.js, on black like the simulator's screenshot); #sheet=<url-encoded JSON> draws a contact sheet instead
-     ({title, sub, items: [{id, cfg}]}). Used by app-build.mjs (the PNGs) and apps/garmin/app/tools/app_test.py. -->
+     to draw what the watch drew (app-input.js; the data field's, field: true, field-input.js; on black like the simulator's screenshot); #sheet=<url-encoded JSON> draws a contact sheet instead
+     ({title, sub, items: [{id, cfg}]}). Used by app-build.mjs (the PNGs), apps/garmin/app/tools/app_test.py and apps/garmin/field/tools/field_test.py. -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -24,6 +24,7 @@
 </style>
 <script src="app.js"></script>
 <script src="app-input.js"></script>
+<script src="field-input.js"></script>
 </head>
 <body>
 <div id="out"></div>
@@ -32,7 +33,7 @@
   const cfgOf = (c) => {
     if (!c.watch) return c;
     document.body.className = 'watch';
-    const w = AppInput.fromWatch(c.watch);
+    const w = (c.watch.field ? FieldInput : AppInput).fromWatch(c.watch);
     return Object.assign(w.cfg, { input: w.input }, c.extra || {});
   };
   const draw = () => {

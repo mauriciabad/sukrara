@@ -10,6 +10,11 @@ Sukrara's releases. 0.x versions are previews.
   *Mute 30m*; the data field shows its own alert and records glucose into the activity. Entries and mutes from the
   watch wait until the phone has them. *Undo* after *Logged* on the watch deletes that entry on the phone, as a
   delete on the phone does (LibreView, Nightscout and Tidepool too).
+- **The Sukrara data field, designed** (#199, not released yet): during an activity your glucose sits in any slot of a
+  data screen, with Sukrara Aura's sparkline of the last hours where the slot is wide enough and the trend arrow where
+  it isn't. Lows turn the slot red, an old value is struck through and grey, and before the phone's first message it
+  says *Waiting for phone*. Its alert page carries the alert's colour and word; glucose goes into the activity's file
+  only while it is fresh. Every round and rectangular Garmin screen, AMOLED and MIP.
 - **Each Garmin watch can show Sukrara its own way** (#199, not released yet): Settings › Share with apps › Garmin ›
   *Sukrara* opens that watch's settings: its metrics, last treatment, rings, chart time, treatment marks, % column and
   the period its Numbers page opens on. Each says *Same as the app* until you change it, and goes back the same way.

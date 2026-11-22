@@ -69,6 +69,10 @@ export const CASES = [
   ['field-band-very-low', { screen: 'dfSlot', form: 'band', scenario: 'veryLow' }],
   ['field-quarter-low', { screen: 'dfSlot', form: 'quarter', scenario: 'low' }],
   ['field-alert', { screen: 'dfAlert', scenario: 'low' }],
+  ['field-alert-high', { screen: 'dfAlert', scenario: 'high', kind: 'high' }],
+  ['field-old', { screen: 'dfSlot', form: 'band', age: 8 }],
+  ['field-setup', { screen: 'dfSetup', form: 'band' }],
+  ['field-setup-quarter', { screen: 'dfSetup', form: 'quarter' }],
   ['complications', { screen: 'faceCx' }],
 ];
 
