@@ -145,6 +145,7 @@ class MonitorModule(
             )
         }.combine(settings.flow(SurfaceSettings.LockScreen)) { inputs, lock -> inputs.copy(lockScreen = lock) }
             .combine(settings.flow(SurfaceSettings.Colorize)) { inputs, on -> inputs.copy(colorize = on) }
+            .combine(SurfaceSettings.lockHide(settings)) { inputs, hide -> inputs.copy(lockHide = hide) }
             .combine(storedHistory.onStart { emit(emptyList()) }) { inputs, stored -> inputs.copy(stored = stored) }
             .distinctUntilChanged()
             // a failing store must never stop the foreground notification: it goes on with the defaults
@@ -253,6 +254,8 @@ data class NotificationInputs(
     val rootValue: Boolean = false,
     /** *Nothing* is the choice: while Android still shows the notification, it shows no glucose in the bar. */
     val off: Boolean = false,
+    /** The lock-screen widget may take the notification's place on the lock screen ([SurfaceSettings.lockHide]). */
+    val lockHide: Boolean = false,
 )
 
 /** The `Application` gives the monitor's Android components (service, receivers) their module. */

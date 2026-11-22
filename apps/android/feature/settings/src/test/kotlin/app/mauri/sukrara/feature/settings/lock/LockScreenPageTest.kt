@@ -119,6 +119,35 @@ class LockScreenPageTest {
         )
     }
 
+    @Test fun `hiding the glucose notification is on by default, its own switch, unavailable while the widget is off`() =
+        runTest {
+            assertEquals(R.string.st_lock_hide_on, lockHideSummary(LockWidgetUi(true, LockLook())))
+            assertEquals(R.string.st_lock_hide_off, lockHideSummary(LockWidgetUi(true, LockLook(), hide = false)))
+            assertEquals(R.string.st_lock_unavailable, lockHideSummary(LockWidgetUi(false, LockLook())))
+            val settings = InMemorySettingsRepository()
+            val vm = LockScreenViewModel(settings, FakeAccess(ModuleState.Active))
+            compose.setContent {
+                SukraraTheme {
+                    val ui by vm.widget.collectAsState()
+                    ui?.let { LockScreenContent(20.0, {}, {}, it, vm.actions) }
+                }
+            }
+            compose.onNodeWithText(text(R.string.st_lock_hide_on)).assertExists()
+            compose.onNodeWithText(text(R.string.st_lock_hide)).assertIsEnabled().performClick()
+            compose.waitForIdle()
+            assertEquals(false, settings.flow(SurfaceSettings.LockHideNotification).first())
+            compose.onNodeWithText(text(R.string.st_lock_hide_off)).assertExists()
+            compose.onNodeWithText(text(R.string.st_lock_hide)).performClick()
+            compose.waitForIdle()
+            assertEquals(true, settings.flow(SurfaceSettings.LockHideNotification).first())
+            // the widget off: the row stays, greyed, saying why; the setting keeps its value for when it's back
+            compose.onNodeWithText(text(R.string.st_lock_widget)).performClick()
+            compose.waitForIdle()
+            compose.onNodeWithText(text(R.string.st_lock_hide)).assertIsNotEnabled()
+            compose.onAllNodesWithText(text(R.string.st_lock_unavailable)).assertCountEquals(3)
+            assertEquals(true, settings.flow(SurfaceSettings.LockHideNotification).first())
+        }
+
     @Test fun `on by default with frosted glass, chosen in dialogs, turned off with the switch`() =
         runTest {
             val settings = InMemorySettingsRepository()

@@ -2318,6 +2318,11 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   *Replace sensor* / *Set up sensor* stay). Until the quick-treatment dialog is in the build the tap opens the app.
 - Swiped away (Android 14+ lets the person dismiss a foreground notification): it is posted again (delete intent); with
   an alert up the swipe is the alert's answer and seen (below).
+- **Under the lock-screen widget** (root + the module; Settings › Lock screen › *Hide the glucose notification*, on by
+  default): a post that says nothing the widget doesn't carries the extra `app.mauri.sukrara.lockHide`, and the module
+  keeps it off the lock screen while the widget shows there with the screen on; an alert, a muted note, a sensor
+  button or a line of its own keeps it there ([Lock screen widget](#lock-screen-widget) has the list). The always-on
+  display, the unlocked shade and watch bridges always get it.
 - **It is the alert too** (docs/36, [Alerts](#alerts) › *What stays on screen*): one Sukrara notification on the phone.
   While an alert is up it carries its title (*Low · eat carbs* in the Live Update, *Low* over the card),
   its buttons *Treatment* · *Remind less* · *Mute* and its swipe; each ring re-posts it on the kind's channel
@@ -2434,7 +2439,9 @@ Android (`:monitor`, `LiveNotification` = registered surface `notification-text`
   is how to hide it). *Value on the lock screen* (default) ↔ *Monitoring only* → *Glucose on the lock screen*, either
   way at any time (TalkBack reads the switch and its summary); the next post follows it. *Not monitoring* → *Set up
   sensor* (notification action, home) → sensor setup; leaves on the first reading. *Sensor ended* → *Replace sensor*.
-  *Bluetooth off* → turn Bluetooth on (Quick Settings) → readings resume on their own. TalkBack reads the title (value,
+  *Bluetooth off* → turn Bluetooth on (Quick Settings) → readings resume on their own. *Hidden on the lock screen under
+  the widget* → shown again by an alert or muted note on it, a sensor button or line, the screen going off (always-on
+  display), unlocking, the widget gone, or Settings › Lock screen › *Hide the glucose notification* off. TalkBack reads the title (value,
   arrow; the alert's title while one is up) and the text; the card reads its one sentence after the alert's title; the
   *Root* label is read with its row.
 
@@ -2565,6 +2572,27 @@ icon, above the shortcuts) shows the glucose card: the value and its arrow left 
   fingerprint icon (System UI lets it hang beside the icon, where the value is): the module hooks
   `NotificationStackSizeCalculator.computeMaxKeyguardNotifications` and takes the shelf's extra space off; at worst one
   more notification goes into the shelf.
+- **The glucose notification steps aside** (Settings › Lock screen › *Hide the glucose notification*,
+  `lock.hideNotification`, on by default; the owner, 2026-11-22: "I see the same data twice"). The app marks each post
+  of the glucose notification that says nothing the widget doesn't (`LiveNotificationContent.hideUnderWidget` +
+  `LockHide.marks`, extra `app.mauri.sukrara.lockHide`): a value (fresh, late, struck), *No readings since*, warming up,
+  a follower's ended sensor, whatever the sub text says (followers, the Nightscout API) and with *Glucose on the lock
+  screen* off. The module hides only a marked post of the glucose notification (this app, its id, no tag), only while
+  the widget is on the lock screen (`LockWidgetHost.shown`: on, its view in System UI's window with room for it, the
+  app's picture in it, the scene readable), the screen is on and the phone locked (the lock screen, the shade pulled
+  over it, the bouncer), through System UI's own lock-screen filter (`KeyguardNotificationVisibilityProviderImpl
+  .shouldHideNotification`: its own answer always stands); it filters again with the provider's `notifyStateChanged`
+  when the widget comes or goes and on screen on / off (`LockHide.hides`, `lockWidgetShown`, `LockWidgetHostTest`).
+  **It stays** with an alert or a muted note on it (the ring, the 10 s after it, the silent alert, *Lows muted* with
+  its countdown, *Treatment* and *Unmute*), *Set up sensor*, *Replace sensor* (the wearer's ended sensor, also a value
+  from one), *Bluetooth is off*, the sensor app missing, LibreView's maintenance, a follower's value whose sensor ended
+  (its line), *Waiting for glucose…* and *Not monitoring* (`LiveNotificationContentTest`, `OneNotificationTest`). Never
+  touched: Sukrara's other notifications (the separate alerts, the INFO / ALERTS groups, notices), the always-on display
+  (the widget isn't drawn there), the unlocked shade, notification listeners (watch bridges) and the foreground service.
+  Fail-safe: no module, the widget not on screen, a failing hook (it turns itself off) or the kill switch → the
+  notification shows as before. On the Pixel 10 Pro (Android 17) the screen-on broadcast reaches System UI 169 ms after
+  the wake key, before the display shows its first frame (+191 ms) and 123 ms before the AOD → lock screen transition
+  starts (2026-11-22, logcat): the notification is filtered out before the stack unfolds.
 - **Touches** (`LockTouches`): the lock screen keeps every gesture (swipe up to unlock, pull down, long press to
   customise, the fingerprint). The widget only gets copies of taps that start on it, outside the fingerprint's column
   (the icon ± 24 dp, top to bottom of the widget); a move beyond the touch slop, a press held past the long-press
@@ -2587,11 +2615,14 @@ icon, above the shortcuts) shows the glucose card: the value and its arrow left 
 - **TalkBack** (glyph surface `lock-description`): the card's sentence (`A11y.card`; a follower's widget starts with
   the wearer's name), then *Add treatment* when that is what a tap does.
 - **Settings › Lock screen** (`:feature:settings` `lock/LockScreenPage.kt`): group *With root* with *Lock screen
-  widget* (`lock.widget`, on by default as in the PoC: it does nothing without the module), *Background* and
-  *Appearance* (SPA list dialogs with a line under each choice; *Unavailable while the widget is off* while off), a
+  widget* (`lock.widget`, on by default as in the PoC: it does nothing without the module), *Hide the glucose
+  notification* (a switch; *While the widget shows. Alerts and anything that needs you still show* / *It shows under the
+  widget too*; es *Ocultar la notificación de glucosa*), *Background* and
+  *Appearance* (SPA list dialogs with a line under each choice; *Unavailable while the widget is off* while off, the
+  hide switch too, keeping its value), a
   footer on what it needs and who can add treatments; then *Add treatment over the lock screen* › *Time to save*
   (`lock.treatmentTime`). The overview's *Lock screen* row reads *Widget around the
-  fingerprint, time to save a treatment*. Search finds the three rows.
+  fingerprint, time to save a treatment*. Search finds the four rows.
 - **The module's state** (`SystemAccess`): the switch's line says *Your glucose and graph around the fingerprint icon.
   Tap it to add a treatment without unlocking* while the module runs, *On. Shows once the Sukrara LSPosed module runs
   in System UI* otherwise. While it's on, the page shows the module's step that it can fix as the same card as
@@ -2619,7 +2650,17 @@ shade, the bouncer and the unlock and comes back with the lock screen; the finge
 it; a tap opens *Add treatment* over the lock screen (*Cancel*, the countdown, *Unlock*) or, without a value, asks to
 unlock and opens the app. *Stale* (5 min+, struck), *no readings* (20 min+), *sensor ended*, *warming up* → the card's
 own faces, the tap goes to the app where the reason and its fix are. *Look* → *Background* / *Appearance* dialogs
-(*Cancel* or back keeps it). Turn it off: Settings › Lock screen › the switch (the module removes it at once), or
+(*Cancel* or back keeps it). *The glucose notification under it*: hidden on the lock screen while the widget shows
+(default) ↔ shown too → Settings › Lock screen › *Hide the glucose notification*, either way at any time (TalkBack: a
+switch with its line), the next post follows it; with the widget off the row is greyed with its value kept. *An alert
+arriving on the lock screen* → it rings in the glucose notification, which is back on the lock screen at once (the
+ring's post isn't marked) with its buttons and swipe; it stays through the ring window, silent, and while muted (*Unmute*
+and the countdown on it); back in range, answered by the swipe or *Unmute* → the next post is marked and it steps aside
+again. *A sensor button or a line the widget doesn't say* (*Set up sensor*, *Replace sensor*, *Bluetooth is off*,
+maintenance) → it stays until that's resolved. *Screen off (always-on display)* → it shows there; screen on → hidden
+before the lock screen unfolds. *Shade pulled over the lock screen* → still hidden (System UI counts it as locked);
+unlocked → the shade shows it. *Widget gone* (turned off, no room, the module off or failing, no picture yet) → the
+notification is back on the lock screen at once. Turn it off: Settings › Lock screen › the switch (the module removes it at once), or
 disable the module in LSPosed (gone after the next System UI restart), or the kill switch.
 
 ## Mac widgets

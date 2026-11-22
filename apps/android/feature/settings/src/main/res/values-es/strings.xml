@@ -525,6 +525,9 @@
     <string name="st_lock_widget_off">Tu glucosa y la gráfica alrededor del icono de huella digital, con root</string>
     <string name="st_lock_widget_needs_module">Activado. Aparece cuando el módulo LSPosed de Sukrara funcione en System UI</string>
     <string name="st_lock_unavailable">No disponible con el widget desactivado</string>
+    <string name="st_lock_hide">Ocultar la notificación de glucosa</string>
+    <string name="st_lock_hide_on">Mientras se ve el widget. Las alertas y lo que necesite tu atención siguen apareciendo</string>
+    <string name="st_lock_hide_off">También se ve debajo del widget</string>
     <string name="st_lock_background">Fondo</string>
     <string name="st_lock_appearance">Aspecto</string>
     <string name="st_lock_bg_none">Ninguno</string>

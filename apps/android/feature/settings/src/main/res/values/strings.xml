@@ -524,6 +524,9 @@
     <string name="st_lock_widget_off">Your glucose and graph around the fingerprint icon, with root</string>
     <string name="st_lock_widget_needs_module">On. Shows once the Sukrara LSPosed module runs in System UI</string>
     <string name="st_lock_unavailable">Unavailable while the widget is off</string>
+    <string name="st_lock_hide">Hide the glucose notification</string>
+    <string name="st_lock_hide_on">While the widget shows. Alerts and anything that needs you still show</string>
+    <string name="st_lock_hide_off">It shows under the widget too</string>
     <string name="st_lock_background">Background</string>
     <string name="st_lock_appearance">Appearance</string>
     <string name="st_lock_bg_none">None</string>

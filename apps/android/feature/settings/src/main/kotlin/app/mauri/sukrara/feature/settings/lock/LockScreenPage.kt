@@ -59,11 +59,14 @@ data class LockWidgetUi(
     val access: SystemAccessState = SystemAccessState(),
     val busy: Boolean = false,
     val problem: AccessProblem? = null,
+    /** *Hide the glucose notification* (`lock.hideNotification`): it steps aside on the lock screen while the widget shows. */
+    val hide: Boolean = true,
 )
 
 /** What the widget's rows and its access card do. */
 class LockWidgetActions(
     val setOn: (Boolean) -> Unit = {},
+    val setHide: (Boolean) -> Unit = {},
     val setBackground: (LockBackground) -> Unit = {},
     val setAppearance: (LockAppearance) -> Unit = {},
     val requestScope: () -> Unit = {},
@@ -82,17 +85,18 @@ class LockScreenViewModel(
 
     val widget: StateFlow<LockWidgetUi?> =
         combine(
-            settings.flow(SurfaceSettings.LockWidget),
+            combine(settings.flow(SurfaceSettings.LockWidget), settings.flow(SurfaceSettings.LockHideNotification), ::Pair),
             SurfaceSettings.lockLook(settings),
             systemAccess.state,
             runner.busy,
             runner.problem,
-            ::LockWidgetUi,
-        ).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        ) { (on, hide), look, access, busy, problem -> LockWidgetUi(on, look, access, busy, problem, hide) }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val actions =
         LockWidgetActions(
             setOn = { on -> viewModelScope.launch { settings.set(SurfaceSettings.LockWidget, on) } },
+            setHide = { hide -> viewModelScope.launch { settings.set(SurfaceSettings.LockHideNotification, hide) } },
             setBackground = { b -> viewModelScope.launch { settings.set(SurfaceSettings.LockWidgetBackground, b.key) } },
             setAppearance = { a -> viewModelScope.launch { settings.set(SurfaceSettings.LockWidgetAppearance, a.key) } },
             requestScope = { runner.run { systemAccess.requestScope() } },
@@ -160,6 +164,15 @@ fun lockWidgetSummary(ui: LockWidgetUi): Int =
         else -> R.string.st_lock_widget_needs_module
     }
 
+/** *Hide the glucose notification*'s summary: what it does while on, that it doesn't while off, or why it's unavailable. */
+@StringRes
+fun lockHideSummary(ui: LockWidgetUi): Int =
+    when {
+        !ui.on -> R.string.st_lock_unavailable
+        ui.hide -> R.string.st_lock_hide_on
+        else -> R.string.st_lock_hide_off
+    }
+
 private enum class LockDialog { Background, Appearance, Time }
 
 /** The module's missing step with its fix, as a notice on the page. */
@@ -181,8 +194,8 @@ private fun LockAccessBanner(
 }
 
 /**
- * Settings › Lock screen: the lock-screen widget (*Lock screen widget*, *Background*, *Appearance*, the module's
- * missing step as a card above them) and *Add treatment over the lock screen* (*Time to save*: 10 / 20 / 30 / 60 s or
+ * Settings › Lock screen: the lock-screen widget (*Lock screen widget*, *Hide the glucose notification*, *Background*,
+ * *Appearance*, the module's missing step as a card above them) and *Add treatment over the lock screen* (*Time to save*: 10 / 20 / 30 / 60 s or
  * a custom 10–120 s).
  */
 @Composable
@@ -206,6 +219,15 @@ fun LockScreenContent(
                 actions.setOn,
                 summary = stringResource(lockWidgetSummary(widget)),
                 icon = DsR.drawable.ds_ic_widgets,
+            )
+            SwitchRow(
+                stringResource(R.string.st_lock_hide),
+                widget.on && widget.hide,
+                actions.setHide,
+                summary = stringResource(lockHideSummary(widget)),
+                // hidden, not muted (notifications_off is the app's Mute)
+                icon = DsR.drawable.ds_ic_visibility_off,
+                enabled = widget.on,
             )
             ValueRow(
                 stringResource(R.string.st_lock_background),

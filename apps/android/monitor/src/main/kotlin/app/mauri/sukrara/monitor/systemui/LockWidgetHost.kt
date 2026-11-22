@@ -29,6 +29,7 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.view.WindowManager
 import android.widget.FrameLayout
+import android.widget.RemoteViews
 import androidx.core.graphics.ColorUtils
 import app.mauri.sukrara.core.model.LockBackground
 import app.mauri.sukrara.core.model.LockLook
@@ -56,6 +57,7 @@ import kotlin.math.hypot
  *  - **Touches** stay the lock screen's (swipe up, long press, the fingerprint): the widget only gets copies of taps
  *    that start on it, outside the fingerprint's column ([LockTouches]).
  *  - **Background** ([LockBackground]): card, frosted glass and dim are drawn here, the shadow by the widget.
+ *  - **The glucose notification** steps aside while it is [shown] ([LockHide]: the module's lock-screen filter).
  * Every entry point catches everything: a failure here is logged and the lock screen stays as System UI draws it.
  */
 internal class LockWidgetHost(
@@ -83,6 +85,12 @@ internal class LockWidgetHost(
     /** Where the lock icon (the fingerprint sensor) is, from the last [place]. */
     private var lockRect = Rect()
 
+    /** The last [place] found room for the widget ([LockGeometry.place] not null). */
+    @Volatile private var placed = false
+
+    /** System UI's scene state could be read (the widget fades with the lock screen); false = it never shows. */
+    @Volatile private var scenesReadable = false
+
     /** A new one on every System UI start and every ask from the app: the provider hears of the widget again. */
     private var stamp = SystemClock.elapsedRealtime()
     private var sentOptions: Options? = null
@@ -93,6 +101,8 @@ internal class LockWidgetHost(
     /** The scene interactor (Lockscreen / Shade / Bouncer / Gone …), captured when Dagger creates it. */
     fun onScenes(o: Any) {
         scenes = o
+        // resolved now, not on the first frame: whether the widget can show is known before the screen first comes on
+        safe("scenes") { scenesReadable = reflect(o) != null }
     }
 
     /** AuthController: knows the under-display fingerprint sensor's bounds, where the lock icon sits. */
@@ -151,6 +161,32 @@ internal class LockWidgetHost(
     /** While on, the notification shelf must fit above the lock icon (the widget's value sits beside it). */
     val reservesShelf: Boolean get() = enabled && view != null
 
+    /**
+     * The widget is on the lock screen for the person to read ([lockWidgetShown]): on, its view in System UI's window
+     * with room for it, the app's picture in it (not the loading or error view) and the lock-screen scene readable (its
+     * fading works). Read by the lock-screen filter ([LockHide]) on System UI's main thread; the screen being on and the
+     * phone locked are the filter's own checks.
+     */
+    val shown: Boolean
+        get() {
+            val v = view
+            val attached = v != null && v.parent != null && v.parent === root?.get()
+            return lockWidgetShown(enabled, attached, placed, (v as? GuardedView)?.content == true, scenesReadable)
+        }
+
+    /** Called on the main thread when [shown] changes: System UI filters its lock-screen notifications again. */
+    var onShownChanged: ((Boolean) -> Unit)? = null
+
+    private var lastShown = false
+
+    private fun checkShown() {
+        val now = shown
+        if (now == lastShown) return
+        lastShown = now
+        log("lock screen widget: ${if (now) "shown" else "not shown"}")
+        onShownChanged?.invoke(now)
+    }
+
     // --- the hosted widget --------------------------------------------------------------------------------------
 
     private fun ensureView(r: ViewGroup) {
@@ -176,6 +212,7 @@ internal class LockWidgetHost(
         val info = mgr.getAppWidgetInfo(id) ?: return log("lock screen widget: no provider info")
         val v = h.createView(ctx, id, info)
         (v as? GuardedView)?.onConfig = { safe("config") { if (drawnDark != dark(v.context)) applyBackground() } }
+        (v as? GuardedView)?.onContent = { safe("content") { checkShown() } }
         // the widget owns its content: no host padding or background
         v.setPadding(0, 0, 0, 0)
         // the window's bottom: under every lock-screen layer (the fingerprint icon, the shortcuts and the indication
@@ -186,6 +223,7 @@ internal class LockWidgetHost(
         lastAlpha = -1f
         applyBackground()
         log("lock screen widget: view added")
+        checkShown()
     }
 
     /** Off in the app: the view goes and System UI lets go of the widget (the app stops drawing it). */
@@ -201,6 +239,8 @@ internal class LockWidgetHost(
         scrim?.let { (it.parent as? ViewGroup)?.removeView(it) }
         scrim = null
         blur = null
+        placed = false
+        checkShown()
     }
 
     private fun dark(c: Context) =
@@ -325,7 +365,10 @@ internal class LockWidgetHost(
         if (lock != lockRect) log("lock screen widget: lock icon at $lock")
         lockRect = lock
         val shortcutsTop = r.height - dimen("keyguard_affordance_vertical_offset", 32f) - dimen("keyguard_affordance_fixed_height", 48f)
-        val p = LockGeometry.place(r.width, lock.left, lock.top, lock.right, lock.bottom, shortcutsTop, d) ?: return
+        val p = LockGeometry.place(r.width, lock.left, lock.top, lock.right, lock.bottom, shortcutsTop, d)
+        placed = p != null
+        checkShown()
+        if (p == null) return
         val lp = v.layoutParams as FrameLayout.LayoutParams
         if (lp.width != p.width || lp.height != p.height || lp.leftMargin != p.left || lp.topMargin != p.top) {
             lp.width = p.width
@@ -391,6 +434,8 @@ internal class LockWidgetHost(
     private fun follow() {
         val v = view ?: return
         val a = if (enabled && interactive(v.context)) lockscreenAlpha() else 0f
+        if (scenesReflect != null) scenesReadable = true
+        checkShown()
         // mid-transition: look again next frame, so the widget never stays half faded when System UI's last frame of
         // the transition came before the scene settled
         if (a > 0f && a < 1f && !recheck) {
@@ -553,7 +598,29 @@ internal class LockWidgetHost(
         /** The dark theme may have flipped: an automatic appearance redoes its tint. */
         var onConfig: (() -> Unit)? = null
 
+        /** The app's picture is in the view (false: nothing yet, the default view, or the error view after a failure). */
+        @Volatile var content = false
+            private set
+
+        /** [content] may have changed. */
+        var onContent: (() -> Unit)? = null
+
         override fun dispatchTouchEvent(ev: MotionEvent) = allow && super.dispatchTouchEvent(ev)
+
+        override fun updateAppWidget(remoteViews: RemoteViews?) {
+            // set first: a picture that fails to apply asks for the error view inside, which takes it back
+            content = remoteViews != null
+            try {
+                super.updateAppWidget(remoteViews)
+            } finally {
+                onContent?.invoke()
+            }
+        }
+
+        override fun getErrorView(): View {
+            content = false
+            return super.getErrorView()
+        }
 
         override fun onConfigurationChanged(newConfig: Configuration?) {
             super.onConfigurationChanged(newConfig)
@@ -597,6 +664,19 @@ internal class LockWidgetHost(
         val LIGHT: Int = GraphPalette.of(false).bg
     }
 }
+
+/**
+ * The widget is on the lock screen ([LockWidgetHost.shown]): [enabled] in the app, its view [attached] to System UI's
+ * window, [placed] with room for it, the app's picture in it ([content]) and the lock-screen scene readable
+ * ([scenesReadable], else it never fades in). Pure: tested.
+ */
+internal fun lockWidgetShown(
+    enabled: Boolean,
+    attached: Boolean,
+    placed: Boolean,
+    content: Boolean,
+    scenesReadable: Boolean,
+): Boolean = enabled && attached && placed && content && scenesReadable
 
 /** The lock-screen widget's place in System UI's window (px), from System UI's geometry. Pure: tested. */
 internal object LockGeometry {

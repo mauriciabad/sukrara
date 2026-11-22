@@ -12,6 +12,7 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.PowerManager
 import android.os.SystemClock
 import android.text.SpannableString
@@ -61,6 +62,7 @@ import app.mauri.sukrara.monitor.notify.PostGate
 import app.mauri.sukrara.monitor.notify.ShadeColor
 import app.mauri.sukrara.monitor.notify.SharingLine
 import app.mauri.sukrara.monitor.notify.UiText
+import app.mauri.sukrara.monitor.systemui.LockHide
 import kotlinx.coroutines.flow.StateFlow
 import java.time.Instant
 import java.util.concurrent.Executors
@@ -90,6 +92,10 @@ import java.util.concurrent.TimeUnit
  * channel would stop the sound), then it goes back to the silent channel still showing the alert. A mute, a clear or
  * a swipe posts on the silent channel at once (the sound stops). Every post builds and notifies under one lock, so a
  * post built before a ring can never land after it.
+ *
+ * **Under the lock-screen widget** a post that says nothing the widget doesn't (no alert, no button, no extra line:
+ * [LiveNotificationContent.hideUnderWidget]) carries [LockHide.EXTRA]; the System UI module then keeps it off the lock
+ * screen while the widget shows there with the screen on.
  */
 class LiveNotification(
     private val context: Context,
@@ -306,6 +312,9 @@ class LiveNotification(
         } else {
             builder.setVisibility(Notification.VISIBILITY_PRIVATE).setPublicVersion(publicVersion(alert, channel))
         }
+        // the lock-screen widget says all of it: the System UI module may keep it off the lock screen while the widget
+        // shows (never with an alert or a muted note on it: its ring, the window after it, its buttons stay)
+        if (LockHide.marks(content.hideUnderWidget, alert != null)) builder.addExtras(Bundle().apply { putBoolean(LockHide.EXTRA, true) })
         // never a full-screen intent: Android starts one only for a notification it adds, and this one is always
         // there (Android 16 ignores it on an update); an alarm-level ring that opens full screen is its own
         // notification for its ring window (GlucoseAlertPresenter)

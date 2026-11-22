@@ -231,6 +231,37 @@ Not verified on a device in this round: the emulators have no LSPosed (as for do
 touches, scene alpha, the shelf hook and the backgrounds were checked only by tests and the PoC's measurements above;
 docs/QA.md Q4 lists the checks on a rooted phone.
 
+### The glucose notification steps aside (2026-11-22)
+
+The owner: "when I have enabled the widget in lockscreen, the permanent notification hides? because I see the same
+data twice. but … the alerts (and other notifications) that get merged still show and stay there."
+
+| Added | Where |
+|---|---|
+| The app marks each post of the glucose notification that says nothing the widget doesn't: a state the card draws, no button, no line of its own, no alert or muted note (extra `app.mauri.sukrara.lockHide`) | `LiveNotificationContent.hideUnderWidget`, `LiveNotification.build`, `systemui/LockHide.marks`; `LiveNotificationContentTest`, `OneNotificationTest` |
+| The module hides a marked post of the glucose notification (package, id 1, no tag) only while the widget is on the lock screen, the screen on and the phone locked: an extra answer in System UI's own lock-screen filter, `KeyguardNotificationVisibilityProviderImpl.shouldHideNotification` (KeyguardCoordinator's finalize filter; AOSP `android16-release` and `main` alike), whose `true` always stands and whose `isLockedOrLocking()` says locked | `SystemUiHook.hookLockHide`, `LockHide.hides` / `ours`; `LockWidgetHostTest` |
+| "On the lock screen" = on, the view in System UI's window, room for it, the app's picture applied (not the loading / error view: `GuardedView.updateAppWidget` / `getErrorView`), the scene readable | `LockWidgetHost.shown`, `lockWidgetShown` |
+| Re-filtering through the provider's own `notifyStateChanged(reason)` when that changes and on `SCREEN_ON` / `SCREEN_OFF` | `SystemUiHook.lockHideChanged`, `watchScreen` |
+| Settings › Lock screen › *Hide the glucose notification* (`lock.hideNotification`, on by default), in the *With root* group under the widget's switch; greyed with the widget off | `contracts/settings/settings.json`, `SurfaceSettings.lockHide`, `LockScreenPage`, `SettingsIndex` |
+
+Checked on the owner's Pixel 10 Pro (SystemUIGoogle, Android 17, read-only): the provider keeps its names
+(`shouldHideNotification(NotificationEntry)Z`, `isLockedOrLocking()Z`, `notifyStateChanged(String)V`, field
+`onStateChangedListeners`), its only callers are KeyguardCoordinator's filter and `AlertKeyguardVisibilitySuppressor`
+(heads-up / pulse of a hidden post: our marked posts never alert); `NotificationEntry.getSbn()` exists. Wake timing from
+the always-on display (logcat): wake key 0 ms, `SCREEN_ON` received in System UI's process +169 ms, the display shows its
+first frame +191 ms, DOZING → LOCKSCREEN starts +292 ms and ends +813 ms: the filter runs before the stack unfolds, so
+the notification never appears and jumps away on wake. Going to sleep it comes back during the fade to the always-on
+display.
+
+| Left out | Why |
+|---|---|
+| The app posting with `VISIBILITY_SECRET` while the widget is on | fails unsafe (a module broken by a System UI update would leave no glucose on the lock screen at all) and also drops it from the always-on display |
+| Hiding on the always-on display too | the widget isn't drawn there: the notification is the only glucose there |
+| Showing it again while the shade is pulled over the lock screen | System UI counts that as locked, and putting it back mid-pull would make the list jump (the owner accepted) |
+| Keeping it for the sub text (followers, Nightscout API on Wi-Fi) | the owner, 2026-11-22: "I don't care about that info" |
+| A *Root* label on the row | the row sits in the *With root* group under the widget's switch, which says it already; its availability follows the widget (#236: a widget without root would keep the row, though hiding without the module needs another way) |
+| Hooking System UI's wakefulness for an earlier re-filter | the screen-on broadcast already lands before the first frame; one hook less |
+
 ## Code
 
 - `poc/spikes/showcase-android/app/src/main/kotlin/app/mauri/sukrara/hook/LockscreenWidgetHost.kt` — host, placement,

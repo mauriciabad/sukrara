@@ -58,6 +58,46 @@ class LockWidgetHostTest {
         assertEquals("overshoot is clamped", 0f, sceneAlpha(idle = false, from = true, progress = 1.3f))
     }
 
+    @Test fun `the widget is on the lock screen only when on, attached, placed, drawn and able to fade in`() {
+        assertTrue(lockWidgetShown(enabled = true, attached = true, placed = true, content = true, scenesReadable = true))
+        assertFalse("off in the app", lockWidgetShown(false, true, true, true, true))
+        assertFalse("its view not in System UI's window", lockWidgetShown(true, false, true, true, true))
+        assertFalse("no room above the shortcuts", lockWidgetShown(true, true, false, true, true))
+        assertFalse("no picture yet, or the error view", lockWidgetShown(true, true, true, false, true))
+        assertFalse("the scene unreadable: it never fades in", lockWidgetShown(true, true, true, true, false))
+    }
+
+    /** docs/17 › In Sukrara: System UI's lock-screen answer with ours on top, fail-safe in every other case. */
+    @Test fun `the glucose notification hides only marked, ours, under the shown widget, screen on and locked`() {
+        fun hides(
+            system: Boolean = false,
+            ours: Boolean = true,
+            marked: Boolean = true,
+            shown: Boolean = true,
+            screenOn: Boolean = true,
+            locked: Boolean = true,
+        ) = LockHide.hides(system, ours, marked, shown, screenOn, locked)
+        assertTrue(hides())
+        assertTrue("the lock screen's own answer always stands", hides(system = true, ours = false, marked = false, shown = false))
+        assertFalse("another notification", hides(ours = false))
+        assertFalse("an alert, a button or a line of its own on it", hides(marked = false))
+        assertFalse("the widget not on screen (no module piece, no picture, off)", hides(shown = false))
+        assertFalse("the always-on display: the widget isn't drawn there", hides(screenOn = false))
+        assertFalse("unlocked: the shade keeps it", hides(locked = false))
+    }
+
+    @Test fun `only the glucose notification of this app is ours, and only a post without an alert is marked`() {
+        val pkg = "app.mauri.sukrara"
+        assertTrue(LockHide.ours(pkg, 1, null, pkg))
+        assertFalse("another app's", LockHide.ours("com.example", 1, null, pkg))
+        assertFalse("the separate alerts, the notices", LockHide.ours(pkg, 2, null, pkg))
+        assertFalse("a tagged post of the same id", LockHide.ours(pkg, 1, "x", pkg))
+        assertFalse("the debug build's package is its own", LockHide.ours("$pkg.debug", 1, null, pkg))
+        assertTrue(LockHide.marks(covered = true, alert = false))
+        assertFalse("an alert or muted note on it", LockHide.marks(covered = true, alert = true))
+        assertFalse("the setting off or a state the widget doesn't say", LockHide.marks(covered = false, alert = false))
+    }
+
     @Test fun `a touch on the widget counts, never in the fingerprint's column`() {
         val m = 24 * d
         // widget 42..1038 × 1666..2169, the icon 441..639

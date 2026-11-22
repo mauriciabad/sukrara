@@ -44,6 +44,11 @@ data class NotificationPrefs(
     val unit: GlucoseUnit = GlucoseUnit.MGDL,
     /** The value shows on the lock screen (`statusbar.lockScreen`, #94); off = private, a public "Monitoring" there. */
     val lockScreen: Boolean = true,
+    /**
+     * The lock-screen widget is on and *Hide the notification* too (`lock.widget`, `lock.hideNotification`): the posts
+     * the widget covers are marked for the System UI module ([LiveNotificationContent.hideUnderWidget]).
+     */
+    val lockHide: Boolean = false,
 )
 
 /**
@@ -100,6 +105,14 @@ data class LiveNotificationContent(
     val rangeWords: UiText? = null,
     /** [NotificationPrefs.colorize]: the card in the range colour, else the system's notification colour. */
     val colorize: Boolean = false,
+    /**
+     * The lock-screen widget says all of it ([NotificationPrefs.lockHide] on): a state the card draws (a value, struck
+     * or late, no readings, a follower's ended sensor, warming up), no button (*Set up sensor*, *Replace sensor*) and
+     * no line the card doesn't say (Bluetooth off, the sensor app missing, LibreView's maintenance, a value's ended
+     * sensor). The post is then marked for the System UI module ([app.mauri.sukrara.monitor.systemui.LockHide]) unless
+     * an alert is on it. The sub text (followers, the Nightscout API) never keeps it (the owner, 2026-11-22).
+     */
+    val hideUnderWidget: Boolean = false,
 ) {
     /** [TREND] = the renderer's arrow for [trendRate]; [NUMBER] = the value and its trend, [VALUE] = the value alone; the others are the states' icons. */
     enum class Icon { TREND, NO_TREND, NUMBER, VALUE, NO_READINGS, SENSOR_ENDED, APP }
@@ -153,8 +166,16 @@ data class LiveNotificationContent(
                     val line = if (state.spec?.owner == true) s else s.copy(followers = 0, nearby = 0)
                     line.takeIf { state.spec != null && (it.followers > 0 || it.nearby > 0 || it.wifi) }
                 }
-            return content(state, now, face, prefs).copy(sharing = sharing, lockScreen = prefs.lockScreen)
+            val c = content(state, now, face, prefs)
+            return c.copy(sharing = sharing, lockScreen = prefs.lockScreen, hideUnderWidget = prefs.lockHide && covered(c))
         }
+
+        /**
+         * The widget says everything [c] says: a state the card draws ([hideUnderWidget] as the state set it), no button
+         * and no second line but the late reading's time (the card's freshness says it).
+         */
+        private fun covered(c: LiveNotificationContent): Boolean =
+            c.hideUnderWidget && c.actions.isEmpty() && (c.text == null || c.text.res == R.string.monitor_notif_reading_at)
 
         private fun content(
             state: GlucoseState,
@@ -177,11 +198,12 @@ data class LiveNotificationContent(
                             } else {
                                 emptyList()
                             },
-                    )
+                    ).copy(hideUnderWidget = true)
                 }
 
                 GlucoseLook.State.WARMING_UP -> {
                     plain(UiText(R.string.monitor_notif_warming_up, listOf(look.warmup.orEmpty())), detail, Icon.APP, Target.OpenApp)
+                        .copy(hideUnderWidget = true)
                 }
 
                 GlucoseLook.State.NONE -> {
@@ -203,6 +225,7 @@ data class LiveNotificationContent(
                         readingAt = at,
                         tap = quickTreatment(state),
                         actions = emptyList(),
+                        hideUnderWidget = true,
                     )
                 }
 
@@ -286,6 +309,7 @@ data class LiveNotificationContent(
                 cardKey = if (live) null else prefs.cardKey,
                 rangeWords = UiText(range?.words ?: R.string.monitor_range_in_range),
                 colorize = prefs.colorize,
+                hideUnderWidget = true,
             )
         }
 

@@ -761,6 +761,7 @@ object SettingsIndex {
                 lock,
                 R.string.st_root_group,
                 R.string.st_lock_widget to R.string.st_lock_widget_on,
+                R.string.st_lock_hide to R.string.st_lock_hide_on,
                 R.string.st_lock_background to null,
                 R.string.st_lock_appearance to null,
             )

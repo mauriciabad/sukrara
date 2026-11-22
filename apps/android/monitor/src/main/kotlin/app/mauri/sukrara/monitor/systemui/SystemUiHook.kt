@@ -17,8 +17,10 @@ import android.graphics.PixelFormat
 import android.graphics.drawable.Drawable
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
+import android.service.notification.StatusBarNotification
 import android.text.format.DateFormat
 import android.util.Log
 import android.util.TypedValue
@@ -37,6 +39,7 @@ import io.github.libxposed.api.XposedModule
 import io.github.libxposed.api.XposedModuleInterface.PackageReadyParam
 import java.lang.ref.WeakReference
 import java.lang.reflect.Executable
+import java.lang.reflect.Method
 import java.util.Collections
 import java.util.WeakHashMap
 
@@ -48,7 +51,8 @@ import java.util.WeakHashMap
  *  - keeps our system icons ([SlotIcons], set by the root [SlotDaemon]) together and where the person placed them, in
  *    their range colour, and first in line for the row's space ([IconFit]: glucose wins over other icons);
  *  - drops Sukrara's own notification icon from the status bar while the value shows there;
- *  - hosts the lock-screen widget around the fingerprint icon ([LockWidgetHost], #66).
+ *  - hosts the lock-screen widget around the fingerprint icon ([LockWidgetHost], #66), and while it shows keeps the
+ *    glucose notification's marked posts off the lock screen ([LockHide]).
  * The app feeds it [HookState] broadcasts only the app can send.
  *
  * Safety: System UI is sent into rescue mode if it crashes 5× in a minute, so the whole entry and every hook body
@@ -80,6 +84,7 @@ class SystemUiHook : XposedModule() {
             safe("hook icon tint") { hookIconTint(cl) }
             safe("hook notification icons") { hookNotificationIcons(cl) }
             safe("hook lock screen widget") { hookLockWidget(cl) }
+            safe("hook lock screen hide") { hookLockHide(cl) }
         } catch (t: Throwable) {
             log("module off: $t")
         }
@@ -146,6 +151,111 @@ class SystemUiHook : XposedModule() {
             }
         log("lock screen widget hooks: ok")
     }
+
+    // --- the glucose notification under the lock-screen widget --------------------------------------------------------
+
+    /** System UI's lock-screen visibility provider (its finalize filter's), captured when Dagger creates it. */
+    @Volatile private var keyguardVisibility: WeakReference<Any>? = null
+
+    /** The provider's `notifyStateChanged(reason)`: System UI filters its lock-screen notifications again. */
+    private var keyguardChanged: Method? = null
+
+    /** [hookLockHide] is in: [ensureReceiver] listens for the screen going on and off. */
+    @Volatile private var lockHideHooked = false
+
+    /** A piece of it failed: System UI's own answer from now on (the notification shows as always). */
+    @Volatile private var lockHideBroken = false
+
+    /** What the filter last answered for the glucose notification (the log says each change once). */
+    @Volatile private var lockHid = false
+
+    @Volatile private var power: PowerManager? = null
+
+    /**
+     * The glucose notification off the lock screen while the widget shows the same ([LockHide]). System UI's lock-screen
+     * filter (KeyguardCoordinator's finalize filter) asks `KeyguardNotificationVisibilityProviderImpl.shouldHideNotification`
+     * for every notification while the phone is locked; its answer stands, and on top of it a marked post of the
+     * glucose notification is hidden while [LockWidgetHost.shown], the screen is on and the provider says locked
+     * (`isLockedOrLocking`: the lock screen, the shade over it, the bouncer). When one of those changes the provider's
+     * own `notifyStateChanged` makes System UI filter again ([lockHideChanged]). Every other notification, the unlocked
+     * shade, the always-on display, the heads-up decisions of other posts and notification listeners are untouched.
+     */
+    private fun hookLockHide(cl: ClassLoader) {
+        val host = lockWidget ?: return log("lock screen hide: no lock screen widget")
+        val impl = cl.loadClass("com.android.systemui.statusbar.notification.interruption.KeyguardNotificationVisibilityProviderImpl")
+        val entryClass = cl.loadClass("com.android.systemui.statusbar.notification.collection.NotificationEntry")
+        val should = impl.getDeclaredMethod("shouldHideNotification", entryClass)
+        val locked = impl.getDeclaredMethod("isLockedOrLocking").apply { isAccessible = true }
+        keyguardChanged = impl.getDeclaredMethod("notifyStateChanged", String::class.java).apply { isAccessible = true }
+        val getSbn = runCatching { entryClass.getMethod("getSbn") }.getOrNull()
+        val sbnField = if (getSbn == null) entryClass.getDeclaredField("mSbn").apply { isAccessible = true } else null
+        for (c in impl.declaredConstructors) {
+            after(c) { keyguardVisibility = WeakReference(checkNotNull(it.thisObject)) }
+        }
+        hook(should).setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE).intercept { chain ->
+            val system = chain.proceed()
+            if (system != false || lockHideBroken) return@intercept system
+            try {
+                val entry = chain.getArg(0)
+                val sbn = (getSbn?.invoke(entry) ?: sbnField?.get(entry)) as? StatusBarNotification
+                if (sbn == null || !LockHide.ours(sbn.packageName, sbn.id, sbn.tag, ourPkg)) return@intercept system
+                val provider = checkNotNull(chain.thisObject)
+                if (keyguardVisibility?.get() == null) keyguardVisibility = WeakReference(provider)
+                val hide =
+                    LockHide.hides(
+                        systemHides = false,
+                        ours = true,
+                        marked = sbn.notification.extras.getBoolean(LockHide.EXTRA, false),
+                        widgetShown = host.shown,
+                        screenOn = power?.isInteractive == true,
+                        locked = locked.invoke(provider) == true,
+                    )
+                if (hide != lockHid) {
+                    lockHid = hide
+                    log("glucose notification: ${if (hide) "hidden on the lock screen (the widget shows it)" else "not hidden"}")
+                }
+                hide
+            } catch (t: Throwable) {
+                lockHideBroken = true
+                log("lock screen hide failed, System UI's own answer from now on: $t")
+                system
+            }
+        }
+        host.onShownChanged = { lockHideChanged(if (it) "widget shown" else "widget gone") }
+        lockHideHooked = true
+        log("lock screen hide hook: ok")
+    }
+
+    /** System UI filters its lock-screen notifications again (on its main thread), for [reason]. */
+    private fun lockHideChanged(reason: String) {
+        if (lockHideBroken) return
+        main.post {
+            try {
+                keyguardVisibility?.get()?.let { keyguardChanged?.invoke(it, "Sukrara: $reason") }
+            } catch (t: Throwable) {
+                lockHideBroken = true
+                log("lock screen hide: refilter failed, System UI's own answer from now on: $t")
+            }
+        }
+    }
+
+    /** The screen on (the lock screen) or off (the always-on display keeps the notification): filter again at once. */
+    private fun watchScreen(app: Context) =
+        safe("watch screen") {
+            power = app.getSystemService(PowerManager::class.java)
+            app.registerReceiver(
+                object : BroadcastReceiver() {
+                    override fun onReceive(
+                        c: Context,
+                        i: Intent,
+                    ) = safe("screen") { lockHideChanged(if (i.action == Intent.ACTION_SCREEN_ON) "screen on" else "screen off") }
+                },
+                IntentFilter(Intent.ACTION_SCREEN_ON).apply { addAction(Intent.ACTION_SCREEN_OFF) },
+                null,
+                main,
+                Context.RECEIVER_NOT_EXPORTED,
+            )
+        }
 
     // --- the notification icon ---------------------------------------------------------------------------------
 
@@ -784,6 +894,7 @@ class SystemUiHook : XposedModule() {
             Context.RECEIVER_EXPORTED,
         )
         hello(app)
+        if (lockHideHooked) watchScreen(app)
         // re-render every 30 s so the value ages (struck, no readings) even when no data arrives
         main.postDelayed(
             object : Runnable {

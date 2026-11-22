@@ -231,6 +231,7 @@ object SettingsSpec {
         SettingInfo("statusbar.hookColor", "bool", null, false, null, "statusbar:statusHookColor", "", null, "android", "Android status bar (LSPosed); the Mac menu bar colours by range always", listOf()),
         SettingInfo("lock.widget", "bool", null, false, null, "lock:lockWidget", "", null, "android", "Android lock screen (LSPosed); macOS has no lock screen widgets", listOf()),
         SettingInfo("lock.background", "enum", null, false, null, "lock:lockBackground", "", null, "android", "Android lock screen (LSPosed)", listOf()),
+        SettingInfo("lock.hideNotification", "bool", null, false, null, "lock:lockHideNotification", "", null, "android", "Android lock screen (LSPosed); macOS has no lock screen widgets", listOf()),
         SettingInfo("lock.appearance", "enum", null, false, null, "lock:lockAppearance", "", null, "android", "Android lock screen (LSPosed)", listOf()),
         SettingInfo("lock.treatmentTime", "number", "lockTreatmentTime", false, null, "lock:lockTreatmentTime", "", null, "android", "The treatment dialog over the Android lock screen; the Mac has no lock screen entry", listOf()),
         SettingInfo("apps.garmin", "bool", null, false, null, "integrations:garmin", "", null, "android", "Garmin Connect, the only way to a Garmin watch, runs on the phone the watch is paired to", listOf()),
@@ -335,6 +336,7 @@ object SettingsSpec {
         const val STATUS_HOOK_COLOR = "statusHookColor"
         const val LOCK_WIDGET = "lockWidget"
         const val LOCK_BACKGROUND = "lockBackground"
+        const val LOCK_HIDE_NOTIFICATION = "lockHideNotification"
         const val LOCK_APPEARANCE = "lockAppearance"
         const val LOCK_TREATMENT_TIME = "lockTreatmentTime"
         const val GARMIN = "garmin"

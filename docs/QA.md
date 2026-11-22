@@ -107,6 +107,19 @@ restarted after the install): the emulators have no LSPosed. Synthetic data or c
 - [ ] After an update that changes System UI's code: Settings › Lock screen shows *Restart System UI* (the widget keeps
       showing meanwhile); *Restart* → the card goes.
 - [ ] TalkBack on the lock screen: the widget reads the card's sentence and *Add treatment*.
+- [ ] *Hide the glucose notification* on (the default): locked with the screen on, the glucose notification isn't in
+      the lock screen's list (other apps' notifications are); waking from the always-on display it never shows and then
+      jumps away; on the always-on display it shows; pull the shade over the lock screen: still hidden; unlock and pull
+      the shade: there. `adb shell dumpsys activity service com.android.systemui/.SystemUIService ShadeListBuilder` lists
+      `0|app.mauri.sukrara|1|…` only while unlocked or the screen is off; LSPosed's log says *glucose notification:
+      hidden on the lock screen*.
+- [ ] An alert while locked (Settings › Alerts › test alert, or a real low): it rings in the glucose notification on the
+      lock screen with its buttons, stays after the ring, stays muted (*Lows muted*, *Unmute*); swipe or *Unmute* → it
+      steps aside again within a second. *Separate alert notifications* on: the separate alert shows, the glucose one
+      stays hidden. *Bluetooth is off*, *Replace sensor*: it stays.
+- [ ] Turn the switch off: the notification is back on the lock screen with the next post; turn the widget off: back at
+      once, the hide row greyed (*Unavailable while the widget is off*). Disable the module + restart System UI: the
+      notification shows as before.
 - [ ] Settings › Lock screen in Spanish at 360 dp (the footer, the dialogs' lines); a phone or emulator without LSPosed:
       the switch says what it waits for, no card, nothing on the lock screen.
 - [ ] A device whose lock screen hosts widgets (tablet hub): the home widgets are offered there (not the lock-screen

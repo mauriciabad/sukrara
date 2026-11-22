@@ -68,6 +68,16 @@ object SurfaceSettings {
      */
     val LockWidget = SchemaSettings.bool("lock.widget", default = true)
 
+    /**
+     * The glucose notification steps aside on the lock screen while the widget shows there (the module hides the posts
+     * the app marks: nothing the widget doesn't say). On by default (the owner, 2026-11-22: "I see the same data twice").
+     */
+    val LockHideNotification = SchemaSettings.bool("lock.hideNotification", default = true)
+
+    /** The widget is on and the notification steps aside under it ([LockWidget], [LockHideNotification]). */
+    fun lockHide(settings: SettingsRepository): Flow<Boolean> =
+        combine(settings.flow(LockWidget), settings.flow(LockHideNotification)) { widget, hide -> widget && hide }.distinctUntilChanged()
+
     /** What is behind the lock-screen widget ([LockBackground]). */
     val LockWidgetBackground =
         SchemaSettings.text("lock.background", LockBackground.DEFAULT.key, LockBackground.entries.map { it.key }.toSet())

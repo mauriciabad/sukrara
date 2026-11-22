@@ -46,6 +46,12 @@ class LockWidgetSettingsTest {
         runTest {
             val settings = InMemorySettingsRepository()
             assertEquals(true, settings.flow(SurfaceSettings.LockWidget).first())
+            assertEquals("the notification steps aside under it by default", true, SurfaceSettings.lockHide(settings).first())
+            settings.set(SurfaceSettings.LockWidget, false)
+            assertEquals("never without the widget", false, SurfaceSettings.lockHide(settings).first())
+            settings.set(SurfaceSettings.LockWidget, true)
+            settings.set(SurfaceSettings.LockHideNotification, false)
+            assertEquals(false, SurfaceSettings.lockHide(settings).first())
             assertEquals(LockLook(LockBackground.FROSTED, LockAppearance.AUTO), SurfaceSettings.lockLook(settings).first())
             settings.set(SurfaceSettings.LockWidgetBackground, "card")
             settings.set(SurfaceSettings.LockWidgetAppearance, "dark")

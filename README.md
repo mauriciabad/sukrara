@@ -114,7 +114,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
   to the signal icons), its notification optional: one choice in setup and in Settings › Status bar & notification,
   root checked and picked for you when the phone has it. Or nothing at all: monitoring and every alert keep working.
 - Home screen widget. You never need to open the app.
-- Lock screen widget with root. No need to unlock or touch the phone.
+- Lock screen widget with root. No need to unlock or touch the phone. The glucose notification steps aside while it
+  shows; alerts and anything that needs you stay.
 - Persistent notification with the widget.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
 - Watch face for Garmin watches with a round 390 × 390 AMOLED screen (Venu 3S, vívoactive 6, Forerunner 570,

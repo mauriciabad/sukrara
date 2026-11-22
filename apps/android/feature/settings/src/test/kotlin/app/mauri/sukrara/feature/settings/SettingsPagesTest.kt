@@ -167,6 +167,7 @@ class SettingsPagesTest {
             "alerts.v",
             // the LSPosed lock-screen widget, not ported from the PoC yet (#66)
             "lock.widget",
+            "lock.hideNotification",
             "lock.background",
             "lock.appearance",
         )

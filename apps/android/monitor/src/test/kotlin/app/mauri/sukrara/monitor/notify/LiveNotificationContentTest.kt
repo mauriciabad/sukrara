@@ -10,7 +10,9 @@ import app.mauri.sukrara.core.model.NotificationIcon
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
+import app.mauri.sukrara.core.model.SourceProblem
 import app.mauri.sukrara.core.model.SourceSpec
+import app.mauri.sukrara.core.model.SourceStatus
 import app.mauri.sukrara.core.testing.Contracts
 import app.mauri.sukrara.core.testing.trended
 import app.mauri.sukrara.graph.CardSurface
@@ -302,5 +304,49 @@ class LiveNotificationContentTest {
         assertEquals(SharingLine(0, 0, wifi = true), content(state(role = SourceSpec.TheirSukrara), prefs).sharing)
         assertEquals(SharingLine(0, 0, wifi = true), content(state(), prefs.copy(sharing = SharingLine(0, 0, wifi = true))).sharing)
         assertNull(content(state(role = null), prefs).sharing)
+    }
+
+    /**
+     * Under the lock-screen widget (docs/17 › In Sukrara): a post is marked only when the widget says all of it (the card
+     * draws the state, no button, no line of its own); an alert on it is OneNotificationTest's.
+     */
+    @Test
+    fun `under the lock-screen widget only what the widget says is marked, the rest keeps the notification`() {
+        val on = NotificationPrefs(chip = true, promotionAllowed = true, lockHide = true)
+        val their = SourceSpec.TheirSukrara
+
+        fun marked(
+            s: GlucoseState,
+            p: NotificationPrefs = on,
+        ) = content(s, p).hideUnderWidget
+        // the card draws it
+        assertTrue("a fresh value", marked(state()))
+        assertTrue("the card with the graph too", marked(state(), on.copy(chip = false, icon = NotificationIcon.ValueTrend)))
+        assertTrue("late: the card's freshness says the time", marked(state(ageS = 3 * 60)))
+        assertTrue("struck through", marked(state(ageS = 10 * 60)))
+        assertTrue("no readings since", marked(state(ageS = 25 * 60)))
+        assertTrue("LO", marked(state(mgdl = 39)))
+        assertTrue("out of range (the alert is what keeps it)", marked(state(mgdl = 62, firing = setOf("low"))))
+        assertTrue("a follower's ended sensor", marked(state(ageS = 6 * 60, sensor = SensorState.Ended, role = their)))
+        assertTrue("warming up", marked(state(mgdl = null, sensor = SensorState.WarmingUp(now + Duration.ofMinutes(30)))))
+        assertTrue("the sub text doesn't keep it", marked(state(), on.copy(sharing = SharingLine(2, 1, wifi = true))))
+        assertTrue("private on the lock screen", marked(state(), on.copy(lockScreen = false)))
+        // a button or a line only the notification has
+        assertFalse("Replace sensor", marked(state(ageS = 6 * 60, sensor = SensorState.Ended)))
+        assertFalse("a value from an ended sensor: Replace sensor", marked(state(sensor = SensorState.Ended)))
+        assertFalse("a follower's value from an ended sensor: the line under it", marked(state(sensor = SensorState.Ended, role = their)))
+        assertFalse("Set up sensor", marked(state(mgdl = null, started = false)))
+        assertFalse("a follower not monitoring yet", marked(state(mgdl = null, started = false, role = their)))
+        assertFalse("setup not done", marked(state(role = null)))
+        assertFalse("waiting for glucose", marked(state(mgdl = null)))
+        assertFalse("Bluetooth is off", marked(state(sensor = SensorState.BluetoothOff)))
+        assertFalse("Bluetooth is off, no readings", marked(state(ageS = 25 * 60, sensor = SensorState.BluetoothOff)))
+        assertFalse("the sensor app is missing", marked(state(sensor = SensorState.CoreMissing)))
+        val maintenance = SourceStatus.Interrupted(now, SourceProblem.Maintenance, now + Duration.ofHours(1))
+        assertFalse("LibreView's maintenance", marked(state().copy(source = maintenance)))
+        // the setting off, or the widget off (MonitorModule: lockHide = widget && hide): never
+        for (s in listOf(state(), state(ageS = 25 * 60), state(ageS = 6 * 60, sensor = SensorState.Ended, role = their))) {
+            assertFalse(marked(s, on.copy(lockHide = false)))
+        }
     }
 }

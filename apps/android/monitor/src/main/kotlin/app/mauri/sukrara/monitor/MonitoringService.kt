@@ -197,6 +197,7 @@ class MonitoringService : Service() {
                 bands = inputs.config.bands,
                 unit = inputs.config.unit,
                 lockScreen = inputs.lockScreen,
+                lockHide = inputs.lockHide,
             )
         m.notification.post(m.notification.content(state, now, prefs), now, frame, force)
     }

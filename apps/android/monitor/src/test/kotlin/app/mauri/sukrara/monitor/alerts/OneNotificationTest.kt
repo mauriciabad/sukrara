@@ -30,6 +30,7 @@ import app.mauri.sukrara.monitor.notify.Channels
 import app.mauri.sukrara.monitor.notify.LiveNotificationContent
 import app.mauri.sukrara.monitor.notify.NotificationIds
 import app.mauri.sukrara.monitor.notify.NotificationPrefs
+import app.mauri.sukrara.monitor.systemui.LockHide
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -294,6 +295,48 @@ class OneNotificationTest {
         assertEquals("the mute stops the sound at once", Channels.GLUCOSE, n.channelId)
         assertFalse(ringing(n))
         assertEquals(listOf(label(R.string.alert_action_treatment), label(R.string.alert_action_unmute)), titles(n))
+    }
+
+    /**
+     * Under the lock-screen widget (docs/17 › In Sukrara) the System UI module hides only a post the app marked: never
+     * while an alert or a muted note is on the glucose notification (its ring, the ring window, the silent alert, the
+     * mute's countdown and *Unmute*); once it goes the mark is back. The separate alerts are never marked.
+     */
+    @Test fun `the lock-screen mark is on only while no alert or muted note is on the glucose notification`() {
+        val prefs = NotificationPrefs(chip = false, lockHide = true)
+        val content = LiveNotificationContent.from(state(), now, LiveNotification::face, prefs)
+
+        fun marked(n: Notification) = n.extras.getBoolean(LockHide.EXTRA, false)
+
+        // a clear of a group that isn't ringing goes through the post gate: wait for it to land
+        fun markedSoon(): Boolean {
+            val until = System.currentTimeMillis() + 3_000
+            while (!marked(posted()) && System.currentTimeMillis() < until) Thread.sleep(10)
+            return marked(posted())
+        }
+        serviceShows(prefs)
+        assertTrue("nothing but the value: marked", marked(posted()))
+        assertFalse("the setting off", marked(live.build(content.copy(hideUnderWidget = false), now)))
+
+        val p = presenter()
+        p.show(fire(AlertKind.LOW), settings, silent = false, who = null, relaxedMin = 0)
+        assertFalse("the ring", marked(posted()))
+        assertFalse("a post in the ring window", marked(live.build(content, now)))
+        p.show(fire(AlertKind.LOW), settings, silent = true, who = null, relaxedMin = 0)
+        assertFalse("the alert, silent", marked(live.build(content, now)))
+        p.showMuted(AlertGroup.LEVEL, Side.LOW, AlertKind.LOW, now.epochSecond + 1800, settings, now.epochSecond)
+        assertFalse("the muted note: its countdown and Unmute", marked(posted()))
+        p.clear(AlertGroup.LEVEL)
+        assertTrue("back in range: marked again", markedSoon())
+
+        p.show(fire(AlertKind.LOW, id = "b"), settings, silent = false, who = null, relaxedMin = 0)
+        nm.cancel(NotificationIds.GLUCOSE) // the swipe
+        p.swiped(AlertKind.LOW, "b")
+        assertTrue("seen with the swipe: marked again", markedSoon())
+
+        val watch = presenter(watch = true)
+        watch.show(fire(AlertKind.LOW, id = "c"), settings, silent = false, who = null, relaxedMin = 0)
+        assertFalse("a separate alert is never marked", marked(separate()!!))
     }
 
     @Test fun `two groups ringing on one reading, the one that must be heard stays in front and keeps its channel`() {

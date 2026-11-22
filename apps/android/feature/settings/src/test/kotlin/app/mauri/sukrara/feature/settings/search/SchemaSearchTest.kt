@@ -124,6 +124,7 @@ class SchemaSearchTest {
             put("statusbar.hookPosition", R.string.st_root_placement to page(SettingsRoute.StatusBar))
             put("statusbar.hookColor", R.string.st_root_colour to page(SettingsRoute.StatusBar))
             put("lock.widget", R.string.st_lock_widget to page(SettingsRoute.LockScreen))
+            put("lock.hideNotification", R.string.st_lock_hide to page(SettingsRoute.LockScreen))
             put("lock.background", R.string.st_lock_background to page(SettingsRoute.LockScreen))
             put("lock.appearance", R.string.st_lock_appearance to page(SettingsRoute.LockScreen))
             put("lock.treatmentTime", R.string.st_lock_time to page(SettingsRoute.LockScreen))
