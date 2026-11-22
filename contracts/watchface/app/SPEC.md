@@ -152,7 +152,7 @@ Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *G
 
 - Glucose keeps CGM+ GB's name so it is the generic one and CGM+ GB faces find it too (their code reads only the value).
 - **Never old as current**: the background republishes at the reading's time + 5 min, phone or not.
-- The trend: in CGM-GB-data only, unless the arrow test (§11.4) shows Garmin's system fonts draw arrows.
+- The trend: in CGM-GB-data only; Garmin's system fonts don't draw arrows (§13, decided 5).
 
 ## 11. Settings (the watch is a place, docs/38)
 
@@ -182,12 +182,14 @@ Decided (the owner, 2026-11-22):
 3. **The data field writes glucose into the activity file** (Garmin Connect charts it), on by default; a data-field
    setting turns it off.
 4. **The last treatment** follows the widget (§8): no rule or duration of the watch's own.
+5. **No arrows in complication values** (tested 2026-11-22): in the simulator (Descent Mk3 43, SDK 9.3.0) every one of
+   Garmin's 29 system fonts draws → ↗ ↘ ↑ ↓ as the replacement diamond (text fonts) or a box (number-only fonts), and
+   none of the system font files of the fēnix 8 47, Venu 3 and FR 265S contains them. The trend stays in CGM-GB-data.
+   The number-only fonts also draw "LO" / "HI" as boxes ("---" and "5.4" render): a face that draws a complication in
+   one shows those as boxes; Sukrara keeps the honest words.
 
 Open:
-1. The name **CGM-GB-value** in the fēnix 8's own face editor (a real fēnix 8-class watch).
-2. **Arrows in complication values**: the simulator test of Garmin's system fonts (Descent, fēnix 8, Venu 3, FR 265S,
-   fēnix 7); if they draw → / ↗ / ↘ / ↑ / ↓, the arrow goes after the number with a watch setting to turn it off. Face
-   It and the fēnix 8 editor need a real watch.
+1. The name **CGM-GB-value** in the fēnix 8's own face editor, and Face It's rendering (a real watch).
 
 **Not designed yet**: round MIP (64 colours, 218–280 px), rectangular (Venu Sq 2, Venu X1) and Instinct mono layouts
 (#221); Aura's two top fields and more field options (#240, design-first in `aura.js`); the phone's Garmin page rows for
