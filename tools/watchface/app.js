@@ -125,7 +125,9 @@ var WL = (function () {
     plus: { d: 'M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18M12 7.5v9M7.5 12h9', s: true, sw: 2.4 },
     // the app's insulin pen (Android ds_ic_dia_pen: 960-unit grid ÷ 40, moved down 2 to centre)
     pen: { d: 'M18.43 8.43L9.93 16.93A2 2 0 0 1 7.08 14.08L15.58 5.58A2 2 0 0 1 18.43 8.43ZM14 9.5L11.75 11.75M18 6L20 4M7.25 16.75L4.25 19.75', s: true, sw: 2.3 },
-    phone: { d: 'M8 3h8a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z', s: true },
+    // a phone: its body filled, the screen cut out, the bezels below and above it (an outline alone read as a missing
+    // glyph's box on the watch, the owner 2026-11-22)
+    phone: { d: 'M8.5 2h7a2.5 2.5 0 0 1 2.5 2.5v15a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 6 19.5v-15A2.5 2.5 0 0 1 8.5 2zM8 4.6v12.6h8V4.6z', s: false },
     warn: { d: 'M12 3L22 20H2ZM12 9.5v5M12 17v.6', s: true, sw: 2.2 },
     chart: { d: 'M3 17l5-6 4 3 5-7 4 4', s: true },
     clock: { d: 'M12 3a9 9 0 1 1 0 18a9 9 0 1 1 0-18M12 7v5l3 2', s: true },
