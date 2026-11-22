@@ -1,5 +1,5 @@
 {
-  "about": "Mutes from the watch (README 'Mute from the watch'): each case, in order, is a POST to /sukrara/mute ('body', every value a string; 'encoding' as entries.json) at the phone's clock 'now' with entries.json's key; 'signed' = the text the HMAC-SHA256 covers; 'answer' = the JSON the phone answers (HTTP 200); 'calls' = the alert runtime action it runs (AlertControls: muteAll(minutes or null), mute(side,minutes), unmute(side), unmuteAll()), or null (none). The cases run in order on one phone: a repeated id is known. Run by WatchWritesTest (Android :integrations).",
+  "about": "Mutes from the watch (README 'Mute from the watch'): each case, in order, is a POST to /sukrara/mute ('body', every value a string; 'encoding' as entries.json) at the phone's clock 'now' with entries.json's key; 'signed' = the text the HMAC-SHA256 covers; 'answer' = the JSON the phone answers (HTTP 200); 'calls' = the alert runtime action it runs (AlertControls: muteAll(minutes or null), mute(side,minutes), unmute(side), unmuteAll(), remindLess(side), remindAsUsual(side)), or null (none). The cases run in order on one phone: a repeated id is known. Run by WatchWritesTest (Android :integrations).",
   "now": 1794823776,
   "cases": [
     {
@@ -112,6 +112,38 @@
       "body": {"id": "not-a-uuid", "do": "mute", "side": "all", "min": "30", "s": "1794823776", "mac": "2a183f2d41f01791d0215f5d7733082d2ac3816ddf00338903344bb7b257d69f"},
       "signed": "not-a-uuid|mute|all|30|1794823776",
       "answer": {"id": "not-a-uuid", "r": "id"},
+      "calls": null
+    },
+    {
+      "name": "Remind less on the low side (the alert keeps ringing, less often: the phone's Remind less)",
+      "encoding": "json",
+      "body": {"id": "5e3ff1cd-82e2-41fa-8f00-3bdeeffaabc2", "do": "less", "side": "low", "min": "0", "s": "1794823776", "mac": "fb8142b9d52dca648e4d77141f3c8d3cd58283586863125ec96e925735a35141"},
+      "signed": "5e3ff1cd-82e2-41fa-8f00-3bdeeffaabc2|less|low|0|1794823776",
+      "answer": {"id": "5e3ff1cd-82e2-41fa-8f00-3bdeeffaabc2", "r": "done"},
+      "calls": "remindLess(low)"
+    },
+    {
+      "name": "Remind as usual on the high side",
+      "encoding": "json",
+      "body": {"id": "6f40a2de-93f3-420b-9011-4ceffaabbcd3", "do": "usual", "side": "high", "min": "0", "s": "1794823776", "mac": "203f386a3c99482d0ae9529da032659f71c7528afca4a778b9d89b9c34c597db"},
+      "signed": "6f40a2de-93f3-420b-9011-4ceffaabbcd3|usual|high|0|1794823776",
+      "answer": {"id": "6f40a2de-93f3-420b-9011-4ceffaabbcd3", "r": "done"},
+      "calls": "remindAsUsual(high)"
+    },
+    {
+      "name": "Remind less for Mute all: no such action",
+      "encoding": "json",
+      "body": {"id": "7051b3ef-a404-431c-8122-5dfaabbccde4", "do": "less", "side": "all", "min": "0", "s": "1794823776", "mac": "f491539008c7d74ed457930d02cb954bcb1831322dd9d3261c2f381f900e9bce"},
+      "signed": "7051b3ef-a404-431c-8122-5dfaabbccde4|less|all|0|1794823776",
+      "answer": {"id": "7051b3ef-a404-431c-8122-5dfaabbccde4", "r": "action"},
+      "calls": null
+    },
+    {
+      "name": "Remind less with a length: no such action",
+      "encoding": "json",
+      "body": {"id": "8162c4f0-b515-442d-9233-6eabbccddef5", "do": "less", "side": "low", "min": "30", "s": "1794823776", "mac": "9e06a8f1b82e1dad23f4455f1a7488801c1343ef670d5687354c35af6eb92a59"},
+      "signed": "8162c4f0-b515-442d-9233-6eabbccddef5|less|low|30|1794823776",
+      "answer": {"id": "8162c4f0-b515-442d-9233-6eabbccddef5", "r": "action"},
       "calls": null
     }
   ]

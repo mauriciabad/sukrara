@@ -201,9 +201,13 @@ class WatchWritesTest {
                     calls += "unmute($kind)"
                 }
 
-                override suspend fun remindLess(kind: String) = error("not a watch action")
+                override suspend fun remindLess(kind: String) {
+                    calls += "remindLess($kind)"
+                }
 
-                override suspend fun remindAsUsual(kind: String) = error("not a watch action")
+                override suspend fun remindAsUsual(kind: String) {
+                    calls += "remindAsUsual($kind)"
+                }
 
                 override suspend fun muteAll(minutes: Int?) {
                     calls += "muteAll($minutes)"

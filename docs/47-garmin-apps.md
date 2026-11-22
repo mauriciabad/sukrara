@@ -259,8 +259,11 @@ Changed from "Choice" / §6, and why:
   entries) at 8.9 KB, over `Background.exit`'s ~8 KB; now under 6 KB (`theAppsDayFitsItsBackground`).
 - **Time in range has six bands, not seven**: the phone's time in range has no extremely-high share (that limit only
   colours the line and the number, `Bands`); the watch gets the phone's six.
-- **`ring` carries kind and side**; its value is `g` (the alert is about the newest reading).
-- **Mute from the watch** (the owner's addition): the alert runtime's own actions. *Until turned off* is Mute all's
+- **`ring` carries kind, side, `relaxed` and `less`** (whether *Remind less* would slow it: the SPEC shows the button
+  only then); its value is `g` (the alert is about the newest reading).
+- **`last` items carry their own time and mute end** (round 2): the watch draws the card's double ring
+  (`LastTreatment.Info.left`) at every draw without the phone.
+- **Mute from the watch** (the owner's addition): the alert runtime's own actions, with *Remind less* / *Remind as usual* (round 2). *Until turned off* is Mute all's
   only: a side's mute always ends on the phone (contracts/alerts SPEC, 1–720 min), so the watch doesn't offer it.
 - **Display settings in `ds`, the Numbers page in `rep`** (the design's addition): resolved on the phone in one place
   for a watch's own values later (docs/38 places). There is no green-in-range setting on the phone (the face's is a

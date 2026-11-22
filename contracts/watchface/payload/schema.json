@@ -55,7 +55,9 @@
                 "additionalProperties": false,
                 "required": [
                   "k",
-                  "a"
+                  "a",
+                  "t",
+                  "m"
                 ],
                 "properties": {
                   "k": {
@@ -67,6 +69,13 @@
                   "a": {
                     "type": "number",
                     "minimum": 0
+                  },
+                  "t": {
+                    "$ref": "#/$defs/time"
+                  },
+                  "m": {
+                    "$ref": "#/$defs/until",
+                    "description": "its mute's end, -1 = its kind mutes nothing"
                   }
                 }
               }
@@ -106,7 +115,9 @@
         "additionalProperties": false,
         "required": [
           "k",
-          "side"
+          "side",
+          "relaxed",
+          "less"
         ],
         "properties": {
           "k": {
@@ -127,6 +138,12 @@
               "high",
               "none"
             ]
+          },
+          "relaxed": {
+            "type": "boolean"
+          },
+          "less": {
+            "type": "boolean"
           }
         }
       }

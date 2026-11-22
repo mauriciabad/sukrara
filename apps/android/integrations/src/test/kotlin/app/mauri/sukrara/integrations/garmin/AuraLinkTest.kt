@@ -263,7 +263,7 @@ class AuraLinkTest {
             link(port, MutableStateFlow(state(-30L to 180).copy(alerts = quiet)), treatments = treatments)
             settle()
             val last = port.sent.single()["last"] as Map<*, *>
-            assertEquals(listOf(mapOf("k" to "rapid", "a" to 3.0f)), last["items"])
+            assertEquals(listOf("rapid" to 3.0f), (last["items"] as List<*>).map { (it as Map<*, *>)["k"] to it["a"] })
             // the card keeps rapid insulin 4 h: the watch lets it go then by itself
             assertEquals((clock.now().epochSecond - 600 + 4 * 3600).toInt(), last["until"])
             assertNull(last["next"])

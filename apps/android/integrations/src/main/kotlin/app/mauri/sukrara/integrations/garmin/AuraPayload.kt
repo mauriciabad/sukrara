@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.garmin
 
+import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
@@ -123,7 +124,7 @@ object AuraPayload {
                 "hist" to (latest?.let { history(it, state.recent, history(app)) } ?: emptyList<Int?>()),
                 "st" to status(state.alerts.status).takeIf { monitoring },
             )
-        if (app != GarminApp.Aura) p["ring"] = if (monitoring) ring(state.alerts.firingKinds) else emptyList<Any?>()
+        if (app != GarminApp.Aura) p["ring"] = if (monitoring) ring(state.alerts.firingKinds, state.alerts.quiet) else emptyList<Any?>()
         if (app == GarminApp.Field) return p
         p["last"] = last(state, i.treatments, nowS).takeIf { monitoring }
         p["sensor"] = sensor(state, i.countdownHours, i.sensor)
@@ -174,8 +175,15 @@ object AuraPayload {
         )
 
     /** What the alert runtime rings, in the kinds' order, each with its side. */
-    internal fun ring(firing: Set<String>): List<Map<String, Any?>> =
-        RING_KINDS.filter { it.first in firing }.map { (k, side) -> linkedMapOf("k" to k, "side" to side) }
+    internal fun ring(
+        firing: Set<String>,
+        sides: List<AlertQuietSide>,
+    ): List<Map<String, Any?>> =
+        RING_KINDS.filter { it.first in firing }.map { (k, side) ->
+            val q = sides.firstOrNull { it.kind == k }
+            // relaxed: it reminds less often now (Remind as usual undoes it); less: Remind less would slow it
+            linkedMapOf("k" to k, "side" to side, "relaxed" to ((q?.relaxMin ?: 0) > 0), "less" to (q?.canRemindLess == true))
+        }
 
     private val RING_KINDS =
         listOf(
@@ -378,10 +386,21 @@ object AuraPayload {
         fun at(s: Long): Map<String, Any?>? {
             val st = if (taken != null && s >= taken.until) CardStatus.None else status
             val info = LastTreatment.of(logged, rule, st, s) ?: return null
-            val items = listOfNotNull(info.tr, info.carbs?.tr)
+            val items = listOfNotNull(info, info.carbs)
             return linkedMapOf(
-                "t" to items.maxOf { it.at.epochSecond }.toInt(),
-                "items" to items.map { linkedMapOf("k" to it.kind.id, "a" to round2(it.amount)) },
+                "t" to items.maxOf { it.tr.at.epochSecond }.toInt(),
+                // each with its own time and its mute's end: the card's double ring (Info.left) at every draw
+                "items" to
+                    items.map {
+                        linkedMapOf(
+                            "k" to it.tr.kind.id,
+                            "a" to round2(it.tr.amount),
+                            "t" to
+                                it.tr.at.epochSecond
+                                    .toInt(),
+                            "m" to (it.until?.toInt() ?: NEVER),
+                        )
+                    },
             )
         }
         val ends =

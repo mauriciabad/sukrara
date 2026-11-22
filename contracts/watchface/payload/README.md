@@ -96,7 +96,7 @@ The face and the app:
 
 | Key | Value |
 |---|---|
-| `last` | the treatment field, null = none: `{t, items: [{k: rapid / carbs, a}], until, next}`, exactly the card's slot beside the value (Sukrara's one rule, `LastTreatment`: running insulin with the carbs riding along, the one covering the alert, or the newest rapid insulin (4 h) / carbs (3 min per gram, 30 min to 3 h); never long-acting or notes) at `sent`; `t` = its newest item's time; `until` = when that answer ends with nothing new logged (−1 = no end), `next` = the answer from then on, the same shape (null = none), so the watch moves on by itself with the phone out of reach |
+| `last` | the treatment field, null = none: `{t, items: [{k: rapid / carbs, a, t, m}], until, next}`, exactly the card's slot beside the value (Sukrara's one rule, `LastTreatment`: running insulin with the carbs riding along, the one covering the alert, or the newest rapid insulin (4 h) / carbs (3 min per gram, 30 min to 3 h); never long-acting or notes) at `sent`; `t` = its newest item's time; each item's own `t` and `m`, its mute's end (`LastTreatment.Info.until`; −1 = its kind mutes nothing with this phone's rules), so the watch draws the card's double ring at every draw: each kind's share left = `(m − now) / (m − t)`, 0 to 1 (`Info.left`); `until` = when that answer ends with nothing new logged (−1 = no end), `next` = the answer from then on, the same shape (null = none), so the watch moves on by itself with the phone out of reach |
 | `sensor` | `{s: none}` (not monitoring: nothing paired) · `{s: warmup, start, ready, hold, end?}` · `{s: active, start?, end?, warn?}` (`warn` = the start of the person's countdown, *Sensor countdown*, default the last 8 h) · `{s: ended}`. `start` (active) and `end` (warm-up) are the sensor's life as the phone's sensor screen has it (the wearer's paired sensor; not on a follower): the face's sensor rail (`../aura/SPEC.md` §6.9b), the app's days left |
 
 The face only:
@@ -109,7 +109,7 @@ The app and the data field:
 
 | Key | Value |
 |---|---|
-| `ring` | what Sukrara's alert runtime rings now on this phone, `[{k, side}]` in the kinds' order (`very_low`, `low`, `high`, `very_high`, `extremely_high`, `falling_fast`, `rising_fast`, `no_data`; at most one level, one rate and the no-data alert at once), `side` `low` / `high` / `none` (no data); `[]` = nothing rings (and while not monitoring). The value it rings about is `g`. A kind that appears is a new alert; one that goes was answered, muted or ended |
+| `ring` | what Sukrara's alert runtime rings now on this phone, `[{k, side, relaxed, less}]` in the kinds' order (`very_low`, `low`, `high`, `very_high`, `extremely_high`, `falling_fast`, `rising_fast`, `no_data`; at most one level, one rate and the no-data alert at once), `side` `low` / `high` / `none` (no data); `relaxed` = it reminds less often now (the person's *Remind less*: *Remind as usual* undoes it), `less` = *Remind less* would slow it down (contracts/alerts SPEC "Remind less": the watch offers the button only then); `[]` = nothing rings (and while not monitoring). The value it rings about is `g`. A kind that appears is a new alert; one that goes was answered, muted or ended |
 
 The app only:
 
@@ -118,7 +118,7 @@ The app only:
 | `tx` | the treatments of the 24 h before `sent`, oldest first, at most the newest 64, as four lists side by side (a dictionary per entry would be twice the bytes): `{t: [times], k: [rapid / long / carbs], a: [amounts], i: [ids]}`, `i` = the first 8 characters of the entry's id in the log (an entry from the watch has the watch's id: its outbox finds it by them); notes and deleted entries never |
 | `ranges` | time in range over the last day and the last 7 days (rolling, as the card's rings count them), `[day, week]`, each `{w, pct, b}` or null with under a quarter of the window covered: `w` the window (s), `pct` the in-range share as a whole percent (100 only when every reading was in range), `b` the share per band in per mille, `[veryLow, low, tight, target, high, veryHigh]` (Sukrara's six time-in-range bands; `extremelyHigh` colours the line only and has no time-in-range share) |
 | `m` | the card's metrics beside the value as the person set them (`graph.slots`, the ones that are on, the main one first), each `{k, w, v, dim}`: `k` `tir` / `gmi` / `avg` / `cv`, `w` its window (s), `dim` = drawn dimmed where it isn't the main one, `v` its number or null under a quarter of the window covered (`tir` the share of its range as a whole percent, `gmi` % with one decimal, `avg` mg/dL (the watch converts), `cv` whole %); a `tir` one also has `r` (`in` = in range, `tight` = the very good range: the person's *ring range*), `b` (per mille per band as in `ranges`, null without data) and `mark` (`none` / `laurel` / `flowers` / `crown`: the card's reward, with 70 % of the window covered) |
-| `else` | what the last-treatment place shows while `last` is none (`graph.lastElse`), the shape of an `m` item; null when off or when the card has no last-treatment place |
+| `else` | what the card's last-treatment slot shows while there is no last treatment (`graph.lastElse`; the watch shows it once no step of `last` is still ahead), the shape of an `m` item; null when off or when the card has no last-treatment place; a `v` of null shows nothing, as on the card |
 | `ro` | the rings' band order clockwise from 12 o'clock, as band indexes into `b` (`graph.ringOrder`; default `[2, 3, 1, 0, 4, 5]`: very good, in range, low, very low, high, very high) |
 | `log` | what logging offers, or null when this phone takes no entries now (not monitoring, setup not done, a follower the wearer doesn't let add entries): `{rapid, long, carbs}`, each `{last, usual}`: `last` = that kind's newest amount of the last 30 days (null = none), `usual` = up to three amounts logged most often in the last 30 days (ties: the most recently logged), smallest first |
 | `ds` | the display settings the app follows, each the phone's own value resolved for the watch (one place, `GarminDisplay.resolve`: a watch's own values, docs/38's place overrides, will resolve there and travel the same way): `hours` the chart's window (`graph.hours`; the app's own zoom starts there), `marks` per kind (`rapid`, `long`, `carbs`, `note`) the parts shown (`point`, `line` the mute line, `amount`, `time`; `graph.marks`), `side` the distribution and % column beside the chart (`graph.side`), `crown` its crown at 100 % (`graph.columnCrown`). No green-in-range setting on the phone: the value and line always take the band's colour there (the face's *green in range* is a watch setting, `garmin.aura.rangeColour`) |
@@ -204,16 +204,16 @@ when the card's rule picks it, in `log` (`last`, `usual`), and the alert runtime
 
 ## Mute from the watch
 
-The app mutes and unmutes with `POST http://127.0.0.1:17582/sukrara/mute`, the same channel as entries (the same key,
+The app mutes, unmutes and changes how often a side reminds with `POST http://127.0.0.1:17582/sukrara/mute`, the same channel as entries (the same key,
 body encodings, send-time window and answer shape; `mutes.json`). It runs **the alert runtime's own actions**, the ones
 the alert notification and home offer (`AlertControls`), never a rule of its own; `st` in the next push shows the result.
 
 | Field | Value |
 |---|---|
 | `id` | a lowercase UUID v4 per action (a retry of the same action keeps it) |
-| `do` | `mute` / `unmute` |
+| `do` | `mute` / `unmute` / `less` (*Remind less*) / `usual` (*Remind as usual*) |
 | `side` | `all` (*Mute all*), `low` or `high` (that side's alerts) |
-| `min` | for `mute`: `15`, `30`, `60`, `120`, or `0` = until turned off (`all` only: a side's mute always ends, contracts/alerts SPEC); for `unmute`: `0` |
+| `min` | for `mute`: `15`, `30`, `60`, `120`, or `0` = until turned off (`all` only: a side's mute always ends, contracts/alerts SPEC); for `unmute`, `less`, `usual`: `0` (`less` and `usual` take `low` or `high` only) |
 | `s` | when this try is sent, epoch s on the phone's clock |
 | `mac` | HMAC-SHA256 with the key over `id|do|side|min|s`, lowercase hex |
 
@@ -221,7 +221,7 @@ Answers (HTTP 200, `{id, r, …}`), checked in this order: `sig`, `clock` (with 
 one of the combinations above (nothing changes; the watch drops it); `known` = this action id was done in the last 10
 minutes (a retry, a replay: done once); `done` = the runtime ran it: *Mute all* for `min` minutes or until turned off,
 the side's mute for `min` minutes, *Unmute* of the side (it also ends a quiet after a treatment, as the phone's button
-does), or the end of *Mute all*.
+does), the end of *Mute all*, or the side's *Remind less* / *Remind as usual* (its `relaxMin`).
 
 ## Changing it
 

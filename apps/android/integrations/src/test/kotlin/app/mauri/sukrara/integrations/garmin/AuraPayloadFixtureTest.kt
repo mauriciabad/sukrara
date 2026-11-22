@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.integrations.garmin
 
+import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseState
@@ -197,7 +198,7 @@ class AuraPayloadFixtureTest {
         return AuraPayload.of(
             profile,
             PayloadInputs(
-                state.copy(alerts = state.alerts.copy(firingKinds = firing)),
+                state.copy(alerts = state.alerts.copy(firingKinds = firing, quiet = sides(p))),
                 treatments,
                 Instant.ofEpochSecond(now),
                 GlucoseUnit.entries.first { it.key == (p["unit"]?.jsonPrimitive?.content ?: "mgdl") },
@@ -216,6 +217,19 @@ class AuraPayloadFixtureTest {
             ),
         )
     }
+
+    /** What the alert runtime says per side the person can act on (relaxed, whether Remind less would slow it). */
+    private fun sides(p: JsonObject): List<AlertQuietSide> =
+        p["sides"]?.jsonArray.orEmpty().map { it.jsonObject }.map { s ->
+            AlertQuietSide(
+                s.getValue("kind").jsonPrimitive.content,
+                matching = true,
+                reason = null,
+                until = null,
+                relaxMin = s.getValue("relaxMin").jsonPrimitive.int,
+                canRemindLess = s.getValue("canLess").jsonPrimitive.booleanOrNull!!,
+            )
+        }
 
     /** The person's metric and chart settings as the case gives them (README "The app only"). */
     private fun graph(

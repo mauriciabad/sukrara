@@ -2917,7 +2917,7 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   (the app zooms 3 / 6 / 12 / 24 h itself), the day's treatments (with their ids), time in range per band over a day
   and a week, the card's metrics as the person set them (`graph.slots`, the fallback, the ring order), the Numbers
   page for 1 / 7 / 14 / 30 days, the display settings it follows (`graph.hours`, `graph.marks`, `graph.side`,
-  `graph.columnCrown`, resolved in one place for a watch's own values later), the last treatment and sensor as the
+  `graph.columnCrown`, resolved in one place for a watch's own values later), the last treatment (each item with its mute's end, for the card's double ring) and sensor as the
   face has them, what the alert runtime rings now, and for logging each kind's last amount and three usual ones; under
   6 KB with a full day. Its push carries the key its writes are signed with (`WatchKey`: 32 random bytes made once,
   kept in the secure store, never in the fetch nor a log line). **The data field's**: the last hour, the pill and
@@ -2931,8 +2931,9 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   whole grams, never rounded), a time the dialog could pick, *Already logged by your pen?* (the watch asks, then *Log
   anyway*), then the log, sync, uploads and the alert runtime's quiet rules like any entry. The next push shows it.
 - **Mute from the watch** (`POST /sukrara/mute`, the same key): Mute all for 15 / 30 / 60 / 120 min or until turned
-  off, a side for 15 / 30 / 60 / 120 min, unmute either, through the alert runtime's own actions (`AlertControls`);
-  the next push's pill shows it.
+  off, a side for 15 / 30 / 60 / 120 min, unmute either, *Remind less* / *Remind as usual* on a side, through the
+  alert runtime's own actions (`AlertControls`); the next push's pill shows it, and what rings says per side whether
+  it reminds less now and whether *Remind less* would slow it (the watch offers the button only then).
 - The Garmin page lists both under *Sukrara on your watch* (above).
 
 **States and exits**: on the phone, each app's row under *Sukrara on your watch*: *not installed* (out: install it

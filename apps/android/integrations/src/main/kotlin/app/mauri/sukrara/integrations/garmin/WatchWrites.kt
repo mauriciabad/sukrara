@@ -192,6 +192,9 @@ class WatchWrites(
 
                     "unmute" -> min == "0"
 
+                    // Remind less / Remind as usual: one side's reminders (relaxMin), never Mute all
+                    "less", "usual" -> min == "0" && side != "all"
+
                     else -> false
                 }
         if (!valid) return ok(id, "action")
@@ -204,6 +207,8 @@ class WatchWrites(
             when {
                 act == "unmute" && side == "all" -> controls.unmuteAll()
                 act == "unmute" -> controls.unmute(side)
+                act == "less" -> controls.remindLess(side)
+                act == "usual" -> controls.remindAsUsual(side)
                 side == "all" -> controls.muteAll(minutes.takeIf { it != 0 })
                 else -> controls.mute(side, minutes!!)
             }
