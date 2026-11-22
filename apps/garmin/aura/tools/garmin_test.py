@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Sukrara Aura's tests (SPEC.md §10). Python 3.9 stdlib only for the numbers; the pictures need Pillow (uv run).
 
-  python3 apps/garmin/tools/garmin_test.py words              the face's words against contracts/graph/words/words.json
-  python3 apps/garmin/tools/garmin_test.py numbers LOG        a case-loader log (D|case|path|value lines) against expect.json
-  uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run OUTDIR [COREREFS]
+  python3 apps/garmin/aura/tools/garmin_test.py words              the face's words against contracts/graph/words/words.json
+  python3 apps/garmin/aura/tools/garmin_test.py numbers LOG        a case-loader log (D|case|path|value lines) against expect.json
+  uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/aura/tools/garmin_test.py run OUTDIR [COREREFS]
         builds the case loader, runs it in the Connect IQ simulator (started if needed), checks every case's numbers and
         diffs a screenshot of every case with docs/img/aura/ref/<id>.png and, given, the references without the dial
         (core_refs.mjs) (OUTDIR: sim, diff, diff-core images, report.txt). Exit 1 on a number that differs.
@@ -27,7 +27,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP = os.path.dirname(HERE)
-ROOT = os.path.dirname(os.path.dirname(APP))
+GARMIN = os.path.dirname(APP)  # apps/garmin
+ROOT = os.path.dirname(os.path.dirname(GARMIN))
 EXPECT = os.path.join(ROOT, "contracts", "watchface", "aura", "expect.json")
 CASES = os.path.join(ROOT, "contracts", "watchface", "aura", "cases.json")
 REF = os.path.join(ROOT, "docs", "img", "aura", "ref")
@@ -380,11 +381,11 @@ def attempt(outdir, cases, todo, shots, log, simshot):
     e = env()
     if len(todo) < len(cases):
         e["AURA_CASES"] = ",".join(c["id"] for c in todo)
-    subprocess.run([os.path.join(APP, "build.sh"), "cases"], check=True, env=e, stdout=subprocess.DEVNULL)
+    subprocess.run([os.path.join(GARMIN, "build.sh"), "aura", "cases"], check=True, env=e, stdout=subprocess.DEVNULL)
     if not simulator_running():
         start_simulator()
     with open(log, "w") as lf:
-        proc = subprocess.Popen([os.path.join(sdk(), "bin", "monkeydo"), os.path.join(APP, "bin", "SukraraAura-cases.prg"),
+        proc = subprocess.Popen([os.path.join(sdk(), "bin", "monkeydo"), os.path.join(GARMIN, "bin", "SukraraAura-cases.prg"),
                                  DEVICE], stdout=lf, stderr=subprocess.STDOUT, env=env())
     offset = None
     filt_of = {c["id"]: c["cfg"].get("filter", "none") for c in cases}
@@ -442,7 +443,7 @@ def attempt(outdir, cases, todo, shots, log, simshot):
 
 
 def run(outdir, core=None):
-    sys.path.insert(0, HERE)
+    sys.path.insert(0, os.path.join(GARMIN, "tools"))
     import simshot  # noqa: E402
     import cases as case_list  # noqa: E402
     os.makedirs(outdir, exist_ok=True)

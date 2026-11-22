@@ -2,13 +2,14 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-# The Connect IQ SDK and the Garmin face's device files on a CI runner (checks.yml `garmin`, Linux x86_64), pinned by
+# The Connect IQ SDK and the Garmin apps' device files on a CI runner (checks.yml `garmin`, Linux x86_64), pinned by
 # tools/ci/garmin.lock. Writes `key=value` lines to $GITHUB_OUTPUT (and stdout).
 #
-#   tools/ci/garmin-sdk.sh plan  [manifest]   project=true|false, sdk=<zip name>, devices=<ids>, devices-key=<hash>:
-#                                             what the cache steps restore; devices-json=["id",…] (garmin-all's
+#   tools/ci/garmin-sdk.sh plan  [manifest…]  project=true|false, sdk=<zip name>, devices=<ids>, devices-key=<hash>:
+#                                             what the cache steps restore (every manifest's products);
+#                                             devices-json=["id",…]: the FIRST manifest's (the face's: garmin-all's
 #                                             matrix); no network
-#   tools/ci/garmin-sdk.sh setup [manifest]   ready=true|false: the SDK in ~/.Garmin/ConnectIQ/Sdks (bin on
+#   tools/ci/garmin-sdk.sh setup [manifest…]  ready=true|false: the SDK in ~/.Garmin/ConnectIQ/Sdks (bin on
 #                                             $GITHUB_PATH), every manifest device (+ its simulator fonts) in
 #                                             ~/.Garmin/ConnectIQ/Devices, Fonts; downloaded=true when it signed in;
 #                                             $GITHUB_ENV gets CIQ_SDK (the SDK) and CIQ_KEY: a developer key made for
@@ -22,13 +23,20 @@
 # Without both the files and a credential (now, forks, pull requests from outside) it says why, writes ready=false and
 # exits 0: the job skips its steps and `gate` passes. The sign-in token is deleted before the script returns; it is
 # never cached, printed or left for the steps that run the project's code.
-# The manifest defaults to apps/garmin/manifest.xml (no Garmin project yet: project=false / ready=false).
+# The manifests default to every app's: apps/garmin/{aura,app,field}/manifest.xml, those that exist (none: no Garmin
+# project, project=false / ready=false).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # shellcheck source=garmin.lock source-path=SCRIPTDIR
 . "$ROOT/tools/ci/garmin.lock"
 MODE="${1:-}"
-MANIFEST="${2:-$ROOT/apps/garmin/manifest.xml}"
+[ $# -gt 0 ] && shift
+MANIFESTS=()
+if [ $# -gt 0 ]; then
+  for m in "$@"; do [ -f "$m" ] && MANIFESTS+=("$m"); done
+else
+  for a in aura app field; do [ -f "$ROOT/apps/garmin/$a/manifest.xml" ] && MANIFESTS+=("$ROOT/apps/garmin/$a/manifest.xml"); done
+fi
 CIQ="$HOME/.Garmin/ConnectIQ"
 OUT="${GITHUB_OUTPUT:-/dev/null}"
 
@@ -36,8 +44,9 @@ out() { echo "$1=$2" | tee -a "$OUT"; }
 note() { if [ -n "${GITHUB_ACTIONS:-}" ]; then echo "::notice title=Garmin::$1"; else echo "garmin: $1"; fi; }
 fail() { if [ -n "${GITHUB_ACTIONS:-}" ]; then echo "::error title=Garmin::$1"; else echo "garmin: $1" >&2; fi; exit 1; }
 
-# The manifest's products (<iq:product id="…"/>), sorted, one per line.
-devices() { sed -n 's/.*<iq:product[^>]*id="\([^"]*\)".*/\1/p' "$MANIFEST" | sort -u; }
+# Products (<iq:product id="…"/>) of the manifests given (default: all), sorted, one per line.
+products() { sed -n 's/.*<iq:product[^>]*id="\([^"]*\)".*/\1/p' "$@" | sort -u; }
+devices() { products "${MANIFESTS[@]}"; }
 
 missing() {
   local d
@@ -45,17 +54,19 @@ missing() {
 }
 
 plan() {
-  if [ ! -f "$MANIFEST" ]; then
+  if [ ${#MANIFESTS[@]} = 0 ]; then
     out project false
     return
   fi
-  local ids
+  local ids m
+  for m in "${MANIFESTS[@]}"; do
+    [ -n "$(products "$m")" ] || fail "$m names no <iq:product>"
+  done
   ids="$(devices)"
-  [ -n "$ids" ] || fail "$MANIFEST names no <iq:product>"
   out project true
   out sdk "$CIQ_SDK_LINUX_ZIP"
   out devices "$(echo "$ids" | tr '\n' ' ' | sed 's/ $//')"
-  out devices-json "[$(echo "$ids" | sed 's/.*/"&"/' | tr '\n' ',' | sed 's/,$//')]"
+  out devices-json "[$(products "${MANIFESTS[0]}" | sed 's/.*/"&"/' | tr '\n' ',' | sed 's/,$//')]"
   # the device files don't depend on the SDK; a new device (or a new list) is a new cache entry
   out devices-key "$( (echo "$ids"; echo "cli $CIQ_CLI_VERSION") | sha256sum | cut -c1-16)"
 }
@@ -102,14 +113,17 @@ download() {
     GARMIN_USERNAME="$GARMIN_CI_USERNAME" GARMIN_PASSWORD="$GARMIN_CI_PASSWORD" "$cli" login >/dev/null ||
       fail "the CI account's Garmin sign-in failed (wrong GARMIN_CI_USERNAME / GARMIN_CI_PASSWORD, two-step verification on, or Garmin refuses scripted sign-ins: use GARMIN_CI_TOKEN; docs/DEVELOPMENT.md › Garmin face on CI)"
   fi
-  "$cli" device download --manifest="$MANIFEST" --include-fonts ||
-    fail "the device download failed (an expired GARMIN_CI_TOKEN: sign in again and replace it; docs/DEVELOPMENT.md › Garmin face on CI)"
+  local m
+  for m in "${MANIFESTS[@]}"; do
+    "$cli" device download --manifest="$m" --include-fonts ||
+      fail "the device download failed (an expired GARMIN_CI_TOKEN: sign in again and replace it; docs/DEVELOPMENT.md › Garmin face on CI)"
+  done
   forget
 }
 
 setup() {
-  if [ ! -f "$MANIFEST" ]; then
-    note "no Garmin project ($MANIFEST): nothing to build"
+  if [ ${#MANIFESTS[@]} = 0 ]; then
+    note "no Garmin project (no manifest): nothing to build"
     out ready false
     return
   fi

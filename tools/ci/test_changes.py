@@ -19,7 +19,7 @@ DIFFS = {
     "contracts": ["contracts/alerts/SPEC.md"],
     "mac": ["apps/macos/Sources/App.swift"],
     "website": ["website/src/content/docs/android.mdx", ".github/workflows/website.yml"],
-    "garmin": ["apps/garmin/source/AuraView.mc"],
+    "garmin": ["apps/garmin/aura/source/AuraView.mc"],
 }
 
 

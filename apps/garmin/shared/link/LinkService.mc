@@ -9,15 +9,23 @@ import Toybox.Lang;
 import Toybox.System;
 import Toybox.Time;
 
-// Sukrara Aura's background (docs/43): wakes on the phone's push (a Connect IQ message through Garmin Connect) and
-// every 5 minutes fetches the same payload from the phone (http://127.0.0.1:17582/sukrara/aura, Garmin Connect's
-// web proxy). Either way the payload goes to the face as it came (Background.exit); the face checks and keeps it
-// (AuraLink.receive). contracts/watchface/payload.
+// Every Sukrara Garmin app's background (docs/43, docs/47 §2): wakes on the phone's push (a Connect IQ message through
+// Garmin Connect, to the app's own id) and every 5 minutes fetches the same payload from the phone (the app's
+// LinkBackground.FETCH_URL on http://127.0.0.1:17582, Garmin Connect's web proxy). Either way the payload goes to the app's
+// foreground as it came (Background.exit); the foreground checks and keeps it (Link.receive).
+// contracts/watchface/payload. The storage keys are the face's first names: storage is per app, so each app has its own.
 (:background)
-module AuraLinkBackground {
+module LinkBackground {
+    // each app's own fetch: its jungle excludes the other apps' annotations (a module per app would cost the face
+    // 44 bytes, #217)
+    (:aura)
     const FETCH_URL = "http://127.0.0.1:17582/sukrara/aura";
+    (:app)
+    const FETCH_URL = "http://127.0.0.1:17582/sukrara/app";
+    (:field)
+    const FETCH_URL = "http://127.0.0.1:17582/sukrara/field";
     const FETCH_EVERY_S = 300;
-    // Every background run's result, also left in the face's storage (AuraLinkService.hand): the face picks it up at
+    // Every background run's result, also left in the app's storage (LinkService.hand): the foreground picks it up at
     // its next draw when Garmin doesn't call onBackgroundData (2026-11-22, #244: after a watch restart it didn't for 16
     // min while this background kept running; only the face's next start brought the data).
     const HANDOFF = "auraHandoff";
@@ -35,7 +43,7 @@ module AuraLinkBackground {
         return sb > sa ? b : a;
     }
 
-    // Called by the face on every start: a fresh registration each time (a sideload or an update can drop it, and a
+    // Called by the app on every start: a fresh registration each time (a sideload or an update can drop it, and a
     // plain register sometimes does nothing).
     function register() as Void {
         if (Background has :registerForPhoneAppMessageEvent) {
@@ -50,7 +58,7 @@ module AuraLinkBackground {
 }
 
 (:background)
-class AuraLinkService extends System.ServiceDelegate {
+class LinkService extends System.ServiceDelegate {
     function initialize() {
         ServiceDelegate.initialize();
     }
@@ -72,12 +80,12 @@ class AuraLinkService extends System.ServiceDelegate {
         hand({"k" => "push", "d" => _newest, "n" => _waiting});
     }
 
-    // Hands [data] to the face both ways: in its storage ([AuraLinkBackground.HANDOFF], read at every draw) and through
+    // Hands [data] to the face both ways: in its storage ([LinkBackground.HANDOFF], read at every draw) and through
     // Garmin (Background.exit → onBackgroundData, at once). [id] tells the face it is the same run when both arrive.
     function hand(data as Dictionary) as Void {
         data.put("id", Time.now().value().toString() + "." + System.getTimer().toString());
         try {
-            Application.Storage.setValue(AuraLinkBackground.HANDOFF, data);
+            Application.Storage.setValue(LinkBackground.HANDOFF, data);
         } catch (e) {
             // a watch whose background can't write storage: Garmin's hand-over only
         }
@@ -86,12 +94,12 @@ class AuraLinkService extends System.ServiceDelegate {
 
     function onWaiting(msg as Communications.PhoneAppMessage) as Void {
         _waiting += 1;
-        _newest = AuraLinkBackground.newer(_newest, msg.data);
+        _newest = LinkBackground.newer(_newest, msg.data);
     }
 
     // The fetch, every 5 minutes.
     function onTemporalEvent() as Void {
-        // the face's report of what it got and draws (AuraLink.saveReport), so the phone can show and log it
+        // the app's report of what it got and draws (Link.saveReport), so the phone can show and log it
         var report = null;
         try {
             report = Application.Storage.getValue("auraReport");
@@ -99,7 +107,7 @@ class AuraLinkService extends System.ServiceDelegate {
             report = null;
         }
         Communications.makeWebRequest(
-            AuraLinkBackground.FETCH_URL + (report instanceof String ? "?" + report : ""),
+            LinkBackground.FETCH_URL + (report instanceof String ? "?" + report : ""),
             null,
             {
                 :method => Communications.HTTP_REQUEST_METHOD_GET,

@@ -1,12 +1,13 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Copies the face onto the Garmin watch on USB (MTP) as GARMIN/Apps/SUKAURA.PRG; the watch installs it when it's
+"""Copies an app onto the Garmin watch on USB (MTP) as GARMIN/Apps/<NAME>.PRG; the watch installs it when it's
 unplugged (docs/DEVELOPMENT.md › Garmin). Python stdlib (ctypes) over libmtp (brew install libmtp).
 
-  python3 apps/garmin/tools/sideload.py apps/garmin/bin/SukraraAura.prg [--dry-run]
+  python3 apps/garmin/tools/sideload.py apps/garmin/bin/SukraraAura.prg SUKAURA.PRG [--dry-run]
 
-Touches only that one file: an older copy of it in GARMIN/Apps is replaced; nothing else on the watch is read beyond
+<NAME>.PRG: 8.3, upper case, like the watch's own files; each app its own (tools/install.sh watch: SUKAURA, SUKRARA,
+SUKFIELD). Touches only that one file: an older copy of it in GARMIN/Apps is replaced; nothing else on the watch is read beyond
 the folder and file lists (names only), nothing else is written. libmtp's mtp-sendfile can't send to this
 watch (it leaves the storage unset: "Error sending file"), hence the explicit storage here. Close Garmin Express /
 OpenMTP first (one MTP client at a time).
@@ -14,9 +15,9 @@ OpenMTP first (one MTP client at a time).
 import ctypes
 import ctypes.util
 import os
+import re
 import sys
 
-NAME = b"SUKAURA.PRG"  # 8.3, upper case, like the watch's own files
 UNKNOWN = 44  # LIBMTP_FILETYPE_UNKNOWN
 
 
@@ -48,10 +49,11 @@ def libmtp():
 
 
 def main(argv):
-    if not argv:
+    args = [a for a in argv if a != "--dry-run"]
+    if len(args) != 2 or not re.fullmatch(r"[A-Z0-9]{1,8}\.PRG", args[1]):
         print(__doc__)
         return 2
-    prg, dry = argv[0], "--dry-run" in argv
+    prg, name, dry = args[0], args[1].encode(), "--dry-run" in argv
     if not os.path.isfile(prg):
         raise SystemExit("sideload: no %s" % prg)
     lib = libmtp()
@@ -88,19 +90,19 @@ def main(argv):
         old = []
         f = lib.LIBMTP_Get_Filelisting_With_Callback(dev, None, None)
         while f:
-            if f.contents.parent_id == apps[0] and f.contents.filename == NAME:
+            if f.contents.parent_id == apps[0] and f.contents.filename == name:
                 old.append(f.contents.item_id)
             f = f.contents.next
         if dry:
-            print("sideload: would replace %s and send %s to GARMIN/Apps/%s" % (old or "nothing", prg, NAME.decode()))
+            print("sideload: would replace %s and send %s to GARMIN/Apps/%s" % (old or "nothing", prg, name.decode()))
             return 0
         lib.LIBMTP_Delete_Object.argtypes = [ctypes.c_void_p, ctypes.c_uint32]
         for item in old:
-            print("sideload: removing the older %s (object %d)" % (NAME.decode(), item))
+            print("sideload: removing the older %s (object %d)" % (name.decode(), item))
             if lib.LIBMTP_Delete_Object(dev, item) != 0:
                 raise SystemExit("sideload: couldn't remove the older copy")
         new = File()
-        new.filename = NAME
+        new.filename = name
         new.filesize = os.path.getsize(prg)
         new.parent_id, new.storage_id = apps
         new.filetype = UNKNOWN
@@ -109,8 +111,7 @@ def main(argv):
             lib.LIBMTP_Dump_Errorstack.argtypes = [ctypes.c_void_p]
             lib.LIBMTP_Dump_Errorstack(dev)
             raise SystemExit("sideload: sending failed")
-        print("sideload: %s is on the watch (object %d); unplug it to install, then pick the face (hold MENU › Watch face)"
-              % (NAME.decode(), new.item_id))
+        print("sideload: %s is on the watch (object %d); it installs when the watch is unplugged" % (name.decode(), new.item_id))
         return 0
     finally:
         lib.LIBMTP_Release_Device.argtypes = [ctypes.c_void_p]

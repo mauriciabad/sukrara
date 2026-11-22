@@ -1568,15 +1568,15 @@ Sukrara Aura no es un producto sanitario y no diagnostica, trata, cura ni previe
 Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
 ```
 
-Before pasting, check the texts against the approved face: the setting names (`apps/garmin/resources*/strings`), the
+Before pasting, check the texts against the approved face: the setting names (`apps/garmin/aura/resources*/strings`), the
 watch's Customize path and the devices in the manifest. A new device or setting changes both texts.
 
 ### Connect IQ store: the build
 
-- `tools/release/garmin-release.sh --beta` → `apps/garmin/bin/dist/SukraraAura-beta.iq`: `build.sh export-beta`, the
+- `tools/release/garmin-release.sh aura --beta` → `apps/garmin/bin/dist/SukraraAura-beta.iq`: `build.sh aura export-beta`, the
   face under the beta app id `635140ec-f724-44fb-bc08-976fa9111250` (fixed, so every beta upload updates the one beta
   app), signed with the store key.
-- `tools/release/garmin-release.sh <version>` → `SukraraAura-<version>.iq` (the public app id) and each device's
+- `tools/release/garmin-release.sh aura <version>` → `SukraraAura-<version>.iq` (the public app id) and each device's
   `.prg`; needs `tools/release/garmin-key.sha256` (below) and the manifest at that version.
 - Every `.iq` is checked before it is kept: it unpacks (a 7-zip; `bsdtar`), carries the expected app id, version and
   every manifest device, its `dev_key.pub` is the store key's public key, and each device's `.prg` passes
@@ -1600,7 +1600,7 @@ Beta (only the owner's account sees it, no review):
 
 1. **[owner]** Sign in at https://apps-developer.garmin.com/developer/dashboard (done 2026-11-16; developer name
    `mauri.app`).
-2. An agent runs `tools/release/garmin-release.sh --beta` on the release Mac and re-renders the images
+2. An agent runs `tools/release/garmin-release.sh aura --beta` on the release Mac and re-renders the images
    (`node assets/brand/sukrara/connectiq/render.mjs`), both from the approved `next`.
 3. **Upload an App** › *Choose file*: `apps/garmin/bin/dist/SukraraAura-beta.iq`; *App Version*: the manifest's
    (`0.1.0` today); tick **Beta App** (*This app is for testing purposes only*).
@@ -1616,7 +1616,7 @@ Public (reviewed, 7–14 days at the moment):
 
 8. Commit `tools/release/garmin-key.sha256` (above), then build `SukraraAura-<version>.iq`: with the next Sukrara
    release (`release.py`: the gate builds it, the `garmin` step prints the upload) or by hand
-   (`tools/release/garmin-release.sh <the manifest's version>`).
+   (`tools/release/garmin-release.sh aura <the manifest's version>`).
 9. **Upload an App** (not *Upload a new version* of the beta, which has the other id): the `.iq`, the version, **Beta
    App unticked**. **[owner]** **Continue**.
 10. Step 2 as in 5, then **[owner]** **Submit**. Garmin e-mails when it is approved; the face is in the store from

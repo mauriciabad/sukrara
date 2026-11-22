@@ -213,7 +213,7 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
 apps/
   android/       Sukrara for Android (Kotlin, Compose; Gradle root)               → apps/android/README.md
   macos/         Sukrara for Mac (Swift 6, SwiftPM; menu bar app + widget)         → apps/macos/README.md
-  garmin/        Sukrara Aura, the Garmin watch face (Monkey C, Connect IQ)        → apps/garmin/README.md
+  garmin/        Sukrara on Garmin (Monkey C, Connect IQ): the face Sukrara Aura      → apps/garmin/README.md
 contracts/       what every app agrees on: alert rules + scenarios, card fixtures, settings schema, protocol,
                  treatments, export, sensor traces (every app's tests read it)      → contracts/README.md
 assets/brand/    app icons and brand art

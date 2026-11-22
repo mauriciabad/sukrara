@@ -37,7 +37,7 @@ module AuraWatch {
     // the face reports it with the display mode (docs/43 "The screen").
     function screen(event as String, low as Boolean) as Void {
         lowPower = low;
-        AuraLink.screen(event, Time.now().value(), displayMode());
+        Link.screen(event, Time.now().value(), displayMode());
     }
 
     // The mode a draw used (a always-on, n night, w awake), reported when it changes (D<mode>).
@@ -45,13 +45,13 @@ module AuraWatch {
         if (!mode.equals(_drew)) {
             _drew = mode;
             var now = Time.now().value();
-            AuraLink.screen("D" + mode, now, displayMode());
+            Link.screen("D" + mode, now, displayMode());
             var f = facts();
             // the clock part always differs: compare without it
             var key = f.substring(0, f.find("t")) + f.substring(f.find("d"), null);
             if (!key.equals(_facts)) {
                 _facts = key;
-                AuraLink.screen(f, now, displayMode());
+                Link.screen(f, now, displayMode());
             }
         }
     }

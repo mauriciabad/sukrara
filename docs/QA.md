@@ -1114,7 +1114,7 @@ watch; the watch shows the real value: check it against the phone, never photogr
       main switch reads as a switch with its note.
 ## Q28 Garmin watch face (Sukrara Aura)
 
-- [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]`
+- [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/aura/tools/garmin_test.py run <dir> [<core refs>]`
       (simulator, ~8 min): numbers for every case, 0 differences; open the worst `diff-core/` images: every red pixel is a
       glyph's edge (fonts rasterise differently) or a dial's anti-aliasing / its 16-bit colour, never a moved, missing or
       wrong-coloured element. `core_refs.mjs` makes the dial-less references.

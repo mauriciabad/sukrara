@@ -1,9 +1,9 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""contracts/watchface/payload/cases.json as Monkey C, for the face's link test (test/link/LinkTest.mc).
+"""contracts/watchface/payload/cases.json as Monkey C, for the shared link's test (shared/test/link/LinkTest.mc).
 
-  python3 apps/garmin/tools/link_cases.py           writes apps/garmin/test/link/LinkCases.mc
+  python3 apps/garmin/tools/link_cases.py           writes apps/garmin/shared/test/link/LinkCases.mc
   python3 apps/garmin/tools/link_cases.py --check   fails if the committed file differs from a fresh one, or an app id
                                                     (manifest, build.sh's beta) differs from apps.json
 
@@ -16,7 +16,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 CASES = ROOT / "contracts/watchface/payload/cases.json"
-OUT = ROOT / "apps/garmin/test/link/LinkCases.mc"
+OUT = ROOT / "apps/garmin/shared/test/link/LinkCases.mc"
 APPS = ROOT / "contracts/watchface/payload/apps.json"
 
 

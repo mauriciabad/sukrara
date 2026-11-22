@@ -6,8 +6,9 @@
 #   tools/install.sh phone [--dry-run]   apps/android release APK → verify-apk.sh → adb install -r (keeps data)
 #   tools/install.sh mac   [--dry-run]   apps/macos bundle.sh → verify-app.sh → over the installed Sukrara.app
 #                                        (/Applications, else ~/Applications; one copy stays; quit and reopened)
-#   tools/install.sh watch [--dry-run]   apps/garmin release .prg (developer key) → verify_prg.sh → onto the Garmin on
-#                                        USB (MTP, GARMIN/Apps; the watch installs it when unplugged; the owner picks it)
+#   tools/install.sh watch [--dry-run]   every apps/garmin app (Aura, Sukrara, the data field): release .prg (developer
+#                                        key) → verify_prg.sh → onto the Garmin on USB (MTP, GARMIN/Apps; the watch
+#                                        installs them when unplugged; the owner picks the face, adds the glance / field)
 # Refuses unless: the tree is clean, HEAD contains origin/main and every branch in tools/check/integration.txt,
 # HEAD contains the commit installed last time (else features vanish from the device), and tools/check/run.sh passes.
 # Records what it installed in <git common dir>/sukrara-installed-<target> (shared by all worktrees).
@@ -72,13 +73,21 @@ if [ "$TARGET" = phone ]; then
     [ "$GOT" = "$VERSION" ] || die "phone reports versionName '$GOT' for app.mauri.sukrara, expected '$VERSION'."
   fi
 elif [ "$TARGET" = watch ]; then
-  # 2c. The face, a release build signed with the developer key (outside the repo, docs/DEVELOPMENT.md › Garmin),
-  # verified (no debug code, the face's id), copied onto the watch: only its own file in GARMIN/Apps changes.
-  PRG=apps/garmin/bin/SukraraAura.prg
-  run apps/garmin/build.sh release
-  run apps/garmin/tools/verify_prg.sh "$PRG"
-  run python3 apps/garmin/tools/sideload.py "$PRG"
-  GOT="Aura $(sed -n 's/.*iq:application .*version="\([0-9.]*\)".*/\1/p' apps/garmin/manifest.xml)"
+  # 2c. Every Garmin app (apps/garmin/README.md), each a release build signed with the developer key (outside the
+  # repo, docs/DEVELOPMENT.md › Garmin), verified (no debug code, the app's id), copied onto the watch: only the apps'
+  # own files in GARMIN/Apps change. All are built and verified before the first copy.
+  GOT=
+  for a in aura app field; do
+    [ -f "apps/garmin/$a/manifest.xml" ] || continue
+    run apps/garmin/build.sh "$a" release
+  done
+  for a in aura app field; do
+    [ -f "apps/garmin/$a/manifest.xml" ] || continue
+    case $a in aura) N=SukraraAura W=SUKAURA.PRG ;; app) N=Sukrara W=SUKRARA.PRG ;; field) N=SukraraField W=SUKFIELD.PRG ;; esac
+    run apps/garmin/tools/verify_prg.sh "$a" "apps/garmin/bin/$N.prg"
+    run python3 apps/garmin/tools/sideload.py "apps/garmin/bin/$N.prg" "$W"
+    GOT="${GOT:+$GOT, }$N $(sed -n 's/.*iq:application .*version="\([0-9.]*\)".*/\1/p' "apps/garmin/$a/manifest.xml")"
+  done
 else
   # 2b. Team-signed bundle with the widget, replacing the installed copy wherever it is: /Applications (the notarized
   # release from the dmg or the cask) if it's there, else ~/Applications. Exactly one Sukrara stays on the Mac:

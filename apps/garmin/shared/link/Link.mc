@@ -7,10 +7,11 @@ import Toybox.Lang;
 import Toybox.Math;
 import Toybox.Time;
 
-// What the face knows from Sukrara: the newest payload (contracts/watchface/payload, version 4, its profile "aura"), kept in storage so a
-// restart shows it at once, and the face's inputs worked out from it and the watch clock at every draw (README "On
-// the watch"). Sukrara decides; this only counts time.
-module AuraLink {
+// What an app knows from Sukrara (every Sukrara Garmin app, apps/garmin/README.md): the newest payload
+// (contracts/watchface/payload, version 4, the face's profile), kept in storage so a restart shows it at once, the order rule, the phone's
+// clock lead, the run report the fetch carries back, and the inputs (SPEC §3 names) worked out from the payload and the
+// watch clock at every draw (README "On the watch"). Sukrara decides; this only counts time.
+module Link {
     const VERSION = 4;
     const PROFILE = "aura";
     const STORE = "auraLink";
@@ -18,7 +19,7 @@ module AuraLink {
     const AHEAD_S = 300;
 
     var _payload as Dictionary? = null;
-    var _skew as Number = 0;
+    var skew as Number = 0; // how far the phone's clock is ahead of the watch's, s
     var _fetchedAt as Number? = null;
     var _loaded as Boolean = false;
 
@@ -31,12 +32,12 @@ module AuraLink {
         if (s instanceof Dictionary && valid(s.get("p"))) {
             _payload = s.get("p") as Dictionary;
             var k = s.get("skew");
-            _skew = k instanceof Number ? k : 0;
+            skew = k instanceof Number ? k : 0;
         }
     }
 
-    // A background run's result (AuraLinkService.hand), through Garmin's onBackgroundData or picked up from storage
-    // ([stored]); each run counts once, whichever way comes first (its id, kept across restarts). True when the face
+    // A background run's result (LinkService.hand), through Garmin's onBackgroundData or picked up from storage
+    // ([stored]); each run counts once, whichever way comes first (its id, kept across restarts). True when the app
     // has something new.
     const TAKEN = "auraTaken";
     // storage is read at most this often (a draw is 1 Hz for ~10 s after a wrist raise)
@@ -62,16 +63,16 @@ module AuraLink {
         return receive(data, now, stored);
     }
 
-    // The face's draw: the background's last result, when Garmin didn't hand it over.
+    // The app's draw: the background's last result, when Garmin didn't hand it over.
     function pickUp(now as Number) as Void {
         if (now >= _pickedAt && now < _pickedAt + PICKUP_S) {
             return;
         }
         _pickedAt = now;
-        take(Application.Storage.getValue(AuraLinkBackground.HANDOFF), now, true);
+        take(Application.Storage.getValue(LinkBackground.HANDOFF), now, true);
     }
 
-    // A push or a fetch from AuraLinkService ([stored]: picked up from storage, `s` in the report).
+    // A push or a fetch from LinkService ([stored]: picked up from storage, `s` in the report).
     function receive(data, now as Number, stored as Boolean) as Boolean {
         if (!(data instanceof Dictionary)) {
             return false;
@@ -93,7 +94,7 @@ module AuraLink {
     }
 
     // The watch's own account of the link, sent to the phone with every fetch (?r=…&d=…): the last background
-    // deliveries (kind, watch time, the payload's sent, its reading's time) and since when the face draws which reading.
+    // deliveries (kind, watch time, the payload's sent, its reading's time) and since when the app draws which reading.
     // After the deliveries, r carries the screen's last events in the same shape: <event>.<watch time>.<display mode>.0
     // (docs/43 "The screen"; times and modes only).
     const REPORT = "auraReport";
@@ -123,7 +124,7 @@ module AuraLink {
         saveReport();
     }
 
-    // A screen event (the face's foreground): [event] is the callback or the mode drawn (docs/43 "The screen"), [mode]
+    // A screen event (the app's foreground): [event] is the callback or the mode drawn (docs/43 "The screen"), [mode]
     // what System.getDisplayMode() said then (0 high power, 1 low power, 2 off, 9 not on this watch).
     function screen(event as String, at as Number, mode as Number) as Void {
         var e = event + "." + at + "." + mode + ".0";
@@ -131,7 +132,7 @@ module AuraLink {
         saveReport();
     }
 
-    // The reading the face draws now (its time on the watch clock) and since when: written when it changes.
+    // The reading the app draws now (its time on the watch clock) and since when: written when it changes.
     function drawn(readAt as Number, now as Number) as Void {
         var key = readAt.toString();
         if (_drawn.find(key + ".") == 0) {
@@ -173,17 +174,16 @@ module AuraLink {
             }
         }
         _payload = p as Dictionary;
-        _skew = sent > now ? sent - now : 0;
-        Application.Storage.setValue(STORE, {"p" => _payload, "skew" => _skew});
+        skew = sent > now ? sent - now : 0;
+        Application.Storage.setValue(STORE, {"p" => _payload, "skew" => skew});
         return true;
     }
 
     // Forgets everything (the link's tests).
     function reset() as Void {
         _payload = null;
-        _skew = 0;
+        skew = 0;
         _fetchedAt = null;
-        _cache = null;
         _loaded = true;
         _runs = null;
         _screen = null;
@@ -192,14 +192,14 @@ module AuraLink {
         _pickedAt = 0;
         Application.Storage.deleteValue(STORE);
         Application.Storage.deleteValue(TAKEN);
-        Application.Storage.deleteValue(AuraLinkBackground.HANDOFF);
+        Application.Storage.deleteValue(LinkBackground.HANDOFF);
     }
 
     function valid(p) as Boolean {
         return p instanceof Dictionary && p.get("v") == VERSION && PROFILE.equals(p.get("p")) && p.get("sent") instanceof Number;
     }
 
-    // When the face last fetched from the phone (watch clock), null = not since it started.
+    // When the app last fetched from the phone (watch clock), null = not since it started.
     function fetchedAt() as Number? {
         return _fetchedAt;
     }
@@ -209,91 +209,14 @@ module AuraLink {
         return _payload;
     }
 
-    var _cache as AuraReading? = null;
-    var _cacheAt as Number = -1;
-    var _cacheOf as Dictionary? = null;
-
-    // THE SEAM's reading (AuraData.current) at the watch time [now]: what the phone sent, its times moved onto the
-    // watch clock (skew), the time-bound states worked out now (README "On the watch"); null = nothing ever came.
-    // Built at most once a second.
-    function reading(now as Number) as AuraReading? {
-        load();
-        if (_payload == null) {
-            return null;
-        }
-        if (_cache != null && _cacheAt == now && _cacheOf == _payload) {
-            return _cache;
-        }
-        var x = inputs(now) as Dictionary;
-        var p = _payload as Dictionary;
-        var r = new AuraReading();
-        var g = p.get("g");
-        if (g instanceof Dictionary) {
-            r.mgdl = g.get("v") as Number;
-            r.readAt = (g.get("t") as Number) - _skew;
-            var rate = g.get("rate");
-            r.rate = rate != null ? (rate as Numeric).toFloat() : null;
-            r.doubled = x.get("double") as Boolean;
-            var h = p.get("hist");
-            r.history = h instanceof Array && h.size() > 0 ? h : null;
-        }
-        r.status = x.get("status") as String;
-        var st = p.get("st");
-        var left = x.get("left");
-        r.statusUntil = left instanceof Number ? ((st as Dictionary).get("until") as Number) - _skew : null;
-        var last = treatment(p, now + _skew);
-        if (last != null) {
-            var items = last.get("items") as Array;
-            var out = [] as Array;
-            for (var i = 0; i < items.size(); i++) {
-                var it = items[i] as Dictionary;
-                out.add([it.get("k"), (it.get("a") as Numeric).toFloat()]);
-            }
-            r.lastItems = out;
-            r.lastAt = (last.get("t") as Number) - _skew;
-        }
-        var sensor = x.get("sensor") as String;
-        var age = x.get("age");
-        if (sensor.equals("ended") && age != null && (age as Float) <= 5.0) {
-            sensor = "endedSending"; // Sukrara: ended with a fresh or late reading keeps the value, "Ended" beside it
-        } else if (sensor.equals("ok") && !(g instanceof Dictionary)) {
-            sensor = "none"; // monitoring, but no reading ever: "No readings"
-        }
-        r.sensor = sensor;
-        var s = p.get("sensor") as Dictionary;
-        if (s.get("end") instanceof Number) {
-            r.sensorEnds = (s.get("end") as Number) - _skew;
-        }
-        if (s.get("start") instanceof Number) {
-            r.sensorStarts = (s.get("start") as Number) - _skew;
-        }
-        if (s.get("start") instanceof Number && s.get("ready") instanceof Number) {
-            r.warmFrom = (s.get("start") as Number) - _skew;
-            r.warmUntil = (s.get("ready") as Number) - _skew;
-        }
-        r.unit = p.get("unit") as String;
-        var bands = p.get("bands");
-        if (bands instanceof Array && bands.size() == 6) {
-            r.limits = bands;
-        }
-        r.tir = x.get("tir") as Number?;
-        _cache = r;
-        _cacheAt = now;
-        _cacheOf = _payload;
-        if (g instanceof Dictionary) {
-            drawn(r.readAt, now);
-        }
-        return r;
-    }
-
-    // The face's inputs (SPEC §3 names) at the watch time [now] (epoch s); null without any payload.
+    // The app's inputs (SPEC §3 names) at the watch time [now] (epoch s); null without any payload.
     function inputs(now as Number) as Dictionary? {
         load();
         var p = _payload;
         if (p == null) {
             return null;
         }
-        var t = now + _skew;
+        var t = now + skew;
         var out = {
             "unit" => p.get("unit"),
             "bands" => p.get("bands"),

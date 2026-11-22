@@ -191,7 +191,7 @@ again: it skips what's already there):
    *Developer* notary key is `notary-AuthKey_<id>.p8`, notarization reads it from the keychain profile).
 10. `garmin`: the Garmin face, once it is released (`tools/release/garmin-key.sha256` committed: the switch). The
     gate built its store package and sideload builds with `garmin-release.sh` (signed with the store key after
-    checking it is the pinned one; `apps/garmin/build.sh`'s release and export builds, debug code compiled out) and
+    checking it is the pinned one; `apps/garmin/build.sh aura`'s release and export builds, debug code compiled out) and
     `github` put them on the release. The Connect IQ store has no upload API, so this step prints the file, the
     version and the What's New text to upload at https://apps-developer.garmin.com/developer/dashboard; Garmin
     reviews it before the store shows it ([docs/20](20-publishing.md#garmin)). The `version` step sets the manifest's
@@ -207,7 +207,7 @@ Every release goes to both stores' review: Play production and the App Store. Te
 
 Checks' `garmin` job (when `apps/garmin`, `contracts/`, `assets/`, `docs/img/aura/ref`, `tools/watchface` or its
 setup change) checks the face's words (`garmin_test.py words`, no SDK needed) and builds it on Linux (`ubuntu:22.04`:
-the SDK's simulator needs WebKitGTK 4.0) with `apps/garmin/build.sh`. The simulator runs there headless under Xvfb
+the SDK's simulator needs WebKitGTK 4.0) with `apps/garmin/build.sh aura`. The simulator runs there headless under Xvfb
 (`xvfb-run`; tried 2026-11-16 in that image: unit tests `PASSED`, the face drawn), and with no window manager its
 screen sits at `simulator.json`'s display location plus the 26 px menu bar (`import -window root -crop
 390x390+131+237` for the `descentmk343mm`).
@@ -218,7 +218,7 @@ fixed set of 21 (`AURA_CASES` in checks.yml; 2026-11-17: 3.5 min in the simulato
 muted, sensor ended, phone lost), one case per dial, always-on, private and Spanish. It checks their numbers against
 `expect.json`, the battery label against every row, and each case's picture; it also builds the store package, which
 compiles every watch of the manifest. `garmin-all` runs only on `gh workflow run checks.yml --ref next -f full=true`,
-after `garmin` and outside `gate` (180-minute timeout): a matrix with one job per watch of `apps/garmin/manifest.xml`
+after `garmin` and outside `gate` (180-minute timeout): a matrix with one job per watch of `apps/garmin/aura/manifest.xml`
 (`garmin-sdk.sh plan`'s `devices-json`), every case on the Descent, the fixed set (`AURA_GATE_CASES`) on the others
 (artifacts `garmin-test-all-<watch>`). Both jobs start from `.github/actions/garmin` (packages, SDK, device files, cache).
 
@@ -354,8 +354,10 @@ LibreView keeps them, `dtid`, `lvother`, `lvexpire` and `lvmerge` to reach every
 
 ## Garmin (Sukrara Aura)
 
-The watch face is `apps/garmin` (Monkey C, Connect IQ; how the code is laid out and the data seam:
-[apps/garmin/README.md](../apps/garmin/README.md); the design: `contracts/watchface/aura/SPEC.md`).
+The watch face is `apps/garmin/aura` (Monkey C, Connect IQ; how the code is laid out and the data seam:
+[apps/garmin/aura/README.md](../apps/garmin/aura/README.md); the design: `contracts/watchface/aura/SPEC.md`). It shares
+`apps/garmin/shared` (the phone link) and the build with Sukrara's other Garmin apps:
+[apps/garmin/README.md](../apps/garmin/README.md).
 
 **Setup.** `brew install --cask connectiq-sdk-manager`; in the SDK Manager sign in with a Garmin account, install the
 newest SDK (9.3.0 when written) and the *Descent Mk3 43mm / Mk3i 43mm* device (`descentmk343mm`): everything lands in
@@ -370,18 +372,19 @@ face signed with the same key, and the store app is tied to it. `CIQ_KEY` points
 
 | What | Command |
 |---|---|
-| Release `.prg` (no debug code) | `apps/garmin/build.sh` → `apps/garmin/bin/SukraraAura.prg` (`debug`, `cases` for the others) |
-| Store packages (`.iq`, signed with the store key, verified) | `tools/release/garmin-release.sh <version>` (public) or `--beta` (the beta app id) → `apps/garmin/bin/dist/`; uploading: [docs/20 › Connect IQ store](20-publishing.md#connect-iq-store-the-owners-steps-beta-first-then-public) |
-| The face's words against `words.json` | `python3 apps/garmin/tools/garmin_test.py words` |
-| Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/tools/garmin_test.py run <dir> [<core refs>]` |
-| References without the dial, halo, sweep | `node apps/garmin/tools/core_refs.mjs <dir>` (Chrome, like `tools/watchface/build.mjs`) |
-| Fonts and icons | `uv run apps/garmin/tools/fonts.py` (`--check`) |
+| Release `.prg` (no debug code) | `apps/garmin/build.sh aura` → `apps/garmin/bin/SukraraAura.prg` (`aura debug`, `aura cases` for the others) |
+| Store packages (`.iq`, signed with the store key, verified) | `tools/release/garmin-release.sh aura <version>` (public) or `aura --beta` (the beta app id) → `apps/garmin/bin/dist/`; uploading: [docs/20 › Connect IQ store](20-publishing.md#connect-iq-store-the-owners-steps-beta-first-then-public) |
+| The face's words against `words.json` | `python3 apps/garmin/aura/tools/garmin_test.py words` |
+| The phone link's tests (simulator) | `apps/garmin/tools/link-test.sh aura` |
+| Numbers and pictures of every case (simulator) | `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/aura/tools/garmin_test.py run <dir> [<core refs>]` |
+| References without the dial, halo, sweep | `node apps/garmin/aura/tools/core_refs.mjs <dir>` (Chrome, like `tools/watchface/build.mjs`) |
+| Fonts and icons | `uv run apps/garmin/aura/tools/fonts.py` (`--check`) |
 | One screenshot of the simulator | `uv run apps/garmin/tools/simshot.py out.png` |
 | Onto the owner's watch | `tools/install.sh watch` (then the owner picks the face) |
 
 **Simulator.** `"$SDK/bin/connectiq"` opens it, `"$SDK/bin/monkeydo" <prg> descentmk343mm` runs a build in it (the
 simulator must be running). It is one app for every session: don't quit one you didn't start; agents take turns.
-The debug case loader (`build.sh cases`, `manifest-cases.xml` with its own app id) shows a calibration frame, then
+The debug case loader (`build.sh aura cases`, `aura/manifest-cases.xml` with its own app id) shows a calibration frame, then
 every case of `cases.json` for 6 s each at the reference's clock, printing each case's layout; `garmin_test.py run`
 reads the prints (numbers against `expect.json`: positions ±0.5 px, angles ±0.1°, opacities ±0.01, strings and
 colours exact) and screenshots each case (`simshot.py`: `screencapture` of the simulator's window, cropped where the
@@ -402,8 +405,8 @@ triangle): the dial draws such dots as single pixels.
 `compiler.json`; the face needs `Dc.setFill` / `setStroke` and PNG-packed atlases (monkeyc warns "Packing format 'png'
 is not supported" on the others, and they crash at the first `setFill`), and a graphics pool of 3 MB or more
 (`graphicsResourcePoolSize` in its `simulator.json`; the font atlases go there: the Forerunner 170 / 170 Music's 2 MB
-runs out at the first draw). `build.sh export` builds every product,
-`CIQ_DEVICE=<product> build.sh` one; the SDK Manager installs a watch's device files.
+runs out at the first draw). `build.sh aura export` builds every product,
+`CIQ_DEVICE=<product> build.sh aura` one; the SDK Manager installs a watch's device files.
 
 **On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to
 `GARMIN/Apps/SUKAURA.PRG` (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only that file is written; an older copy of it is

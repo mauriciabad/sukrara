@@ -6,7 +6,7 @@
 # signing in as the CI account only for missing devices), both cached before any of the project's code runs.
 # docs/DEVELOPMENT.md › Garmin face on CI.
 name: Garmin SDK on CI
-description: The Connect IQ SDK and the face's device files, ready=true when the face can be built
+description: The Connect IQ SDK and the Garmin apps' device files, ready=true when the apps can be built
 inputs:
   username:
     description: GARMIN_CI_USERNAME (the CI account; empty → a clean skip unless the cache has the files)
@@ -22,7 +22,7 @@ outputs:
     description: true when there is a Garmin project
     value: ${{ steps.plan.outputs.project }}
   devices-json:
-    description: the manifest's products as a JSON list (garmin-all's matrix)
+    description: the face's products (apps/garmin/aura/manifest.xml) as a JSON list (garmin-all's matrix)
     value: ${{ steps.plan.outputs.devices-json }}
   ready:
     description: true when the SDK and every device file are in place (CIQ_SDK, CIQ_KEY in the environment)
@@ -44,7 +44,7 @@ runs:
     - name: Java's home finds ~/.Garmin
       shell: bash
       run: ln -sfn "$HOME/.Garmin" "$(getent passwd "$(id -u)" | cut -d':' -f6)/.Garmin"
-    - name: The devices the face needs
+    - name: The devices the apps need
       id: plan
       shell: bash
       run: tools/ci/garmin-sdk.sh plan

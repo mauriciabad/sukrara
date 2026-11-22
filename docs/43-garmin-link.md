@@ -191,8 +191,9 @@ Added:
   `ConnectIq` (Garmin Connect's service, no SDK), `AuraLink` (push, retry, reconnect, the fetch server on
   127.0.0.1:17582), the page (Share with apps › Garmin since 2026-11-16's redesign: `GarminPage`, en / es); setting
   `apps.garmin` (on).
-- `apps/garmin/source/link`: `AuraLinkService` (the face's background: the push, the 5-minute fetch) and `AuraLink`
-  (the newest payload in storage, the inputs at every draw, THE SEAM's `AuraReading`); `LinkTest` runs every case.
+- `apps/garmin/shared/link` (since #199 shared by every Sukrara Garmin app): `LinkService` (the background: the push, the 5-minute fetch) and `Link`
+  (the newest payload in storage, the inputs at every draw; the face's `AuraData.reading` makes THE SEAM's `AuraReading`);
+  `LinkTest` runs every case.
 - Debug: `GARMIN_SIM` sends to the Connect IQ simulator (tethered mode).
 - `contracts/watchface/payload` (README, schema, cases, Garmin's bytes); parity group `watchface-link`.
 

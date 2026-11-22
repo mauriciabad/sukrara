@@ -32,7 +32,7 @@ import sys
 # - website: it publishes docs/ (the reports and developer docs), shows the Android snapshot goldens and the brand,
 #   reads the alert contracts (the sound test page), draws the watch face with tools/watchface (the playground), and
 #   checks every site URL the apps' code opens and the release key App Links name (tools/release/android-cert.sha256).
-# - garmin: the face (apps/garmin), the contracts its tests read (the watchface spec's cases and expect.json, the
+# - garmin: the Garmin apps (apps/garmin: the face, the watch app, the data field), the contracts their tests read (the watchface spec's cases and expect.json, the
 #   words, settings), the brand assets (its icons), the reference pictures its screenshots are diffed against
 #   (docs/img/aura/ref), the reference renderer (tools/watchface) and the CI setup it runs (tools/ci/garmin*,
 #   .github/actions/garmin).

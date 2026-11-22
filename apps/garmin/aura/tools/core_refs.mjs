@@ -5,7 +5,7 @@
 // The reference pictures without the parts face-aura draws (the dial, the halo, the seconds sweep): every case of
 // contracts/watchface/aura/cases.json drawn by tools/watchface/aura.js with dial black, halo none, seconds off, 390 px,
 // so garmin_test.py can tell a face-core difference from a missing dial. Needs Node and Google Chrome (like build.mjs).
-//   node apps/garmin/tools/core_refs.mjs OUTDIR
+//   node apps/garmin/aura/tools/core_refs.mjs OUTDIR
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';

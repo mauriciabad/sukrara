@@ -575,13 +575,13 @@
         ],
         "spec": "contracts/watchface/aura/SPEC.md",
         "files": [
-          "apps/garmin/source/AuraModel.mc",
-          "apps/garmin/source/AuraDraw.mc",
-          "apps/garmin/source/AuraView.mc"
+          "apps/garmin/aura/source/AuraModel.mc",
+          "apps/garmin/aura/source/AuraDraw.mc",
+          "apps/garmin/aura/source/AuraView.mc"
         ],
         "tests": [
-          "apps/garmin/tools/garmin_test.py",
-          "apps/garmin/source-cases/AuraCases.mc"
+          "apps/garmin/aura/tools/garmin_test.py",
+          "apps/garmin/aura/source-cases/AuraCases.mc"
         ]
       }
     ]

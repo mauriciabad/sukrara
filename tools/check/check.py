@@ -397,9 +397,12 @@ STRING_KEY = re.compile(r'<(string|plurals)\s+name="([^"]+)"([^>]*)>')
 DEBUG_NAMES = re.compile(r"\b(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\b")
 DEBUG_FILE = re.compile(r"(^|/)(DebugReceiver|DebugFakes|DebugRelays|Synthetic\w*)\.kt$")
 MAC_DEBUG_NAMES = re.compile(r"\b(debugsend|DebugFakes|Synthetic\w*)\b")
-# the Garmin face: the release jungle builds apps/garmin/source; the debug case loader is apps/garmin/source-cases
-GARMIN_SOURCE = "apps/garmin/source/"
-GARMIN_DEBUG_SOURCE = "apps/garmin/source-cases/"
+# the Garmin apps (apps/garmin/<app>, apps/garmin/shared): each release jungle builds its app's source/ and the shared
+# folders it names; the face's debug case loader is apps/garmin/aura/source-cases, the tests are test/ folders
+GARMIN_SOURCE = "apps/garmin/"
+GARMIN_DEBUG_SOURCE = "apps/garmin/aura/source-cases/"
+GARMIN_NOT_RELEASE = re.compile(r"^apps/garmin/[^/]+/(source-cases|test|build)/|^apps/garmin/shared/test/")
+GARMIN_JUNGLE = re.compile(r"^apps/garmin/(aura|app|field)/monkey\.jungle$")
 GARMIN_DEBUG_NAMES = re.compile(r"\b(AuraCases\w*|AuraDump|AuraCaseTable)\b")
 ANDROID_DEBUG_DIRS = ("/src/debug/", "/src/test/", "/src/androidTest/", "/src/testDebug/")
 MAC_DEBUG_TARGETS = (MAC + "Tests/", MAC_SOURCES + "sukrara-snap/")
@@ -450,23 +453,25 @@ def check_debug(ch, rep):
                 if m:
                     rep.add("FAIL", "debug", "%s:%d %s outside #if DEBUG: debug commands and fakes are compiled out of release\n"
                             "builds (wrap it in #if DEBUG, or move it to the sukrara-snap / test targets)." % (p, n, m.group(1)))
-        elif p.startswith(GARMIN_SOURCE) and p.endswith(".mc"):
-            for n, l in code_lines(ch.blob(p) or ""):
-                m = GARMIN_DEBUG_NAMES.search(l)
-                if m:
-                    rep.add("FAIL", "debug", "%s:%d names %s: the Garmin face's debug code (the case loader) lives in\n"
-                            "apps/garmin/source-cases/ only, which the release jungle never builds." % (p, n, m.group(1)))
         elif p.startswith(GARMIN_DEBUG_SOURCE) and p.endswith(".mc"):
             text = ch.blob(p) or ""
             for m in re.finditer(r"(?m)^((?:\(:\w+\)\s*\n)*)(?:module|class|function)\s+(\w+)", text):
                 if "(:debug)" not in m.group(1):
-                    rep.add("FAIL", "debug", "%s: %s without (:debug): everything in apps/garmin/source-cases/ is debug-only,\n"
-                            "so a release build strips it even if a jungle ever names the folder." % (p, m.group(2)))
-        elif p == GARMIN + "monkey.jungle":
+                    rep.add("FAIL", "debug", "%s: %s without (:debug): everything in apps/garmin/aura/source-cases/ is\n"
+                            "debug-only, so a release build strips it even if a jungle ever names the folder." % (p, m.group(2)))
+        elif p.startswith(GARMIN_SOURCE) and p.endswith(".mc") and not GARMIN_NOT_RELEASE.search(p):
+            for n, l in code_lines(ch.blob(p) or ""):
+                m = GARMIN_DEBUG_NAMES.search(l)
+                if m:
+                    rep.add("FAIL", "debug", "%s:%d names %s: the Garmin face's debug code (the case loader) lives in\n"
+                            "apps/garmin/aura/source-cases/ only, which no release jungle builds." % (p, n, m.group(1)))
+        elif GARMIN_JUNGLE.search(p):
             text = ch.blob(p) or ""
-            if re.search(r"source-cases|build/cases", text) or not re.search(r"(?m)^base\.sourcePath = source$", text):
-                rep.add("FAIL", "debug", "%s must build source/ only ('base.sourcePath = source': the default takes every\n"
-                        "folder, the debug case loader's source-cases/ and build/ too)." % p)
+            if re.search(r"source-cases|build/cases|test", text) or \
+                    not re.search(r"(?m)^base\.sourcePath = source(;\.\./shared/[a-z]+)*$", text):
+                rep.add("FAIL", "debug", "%s must build source/ and shared folders only ('base.sourcePath = source;\n"
+                        "../shared/<folder>…': the default takes every folder, the debug case loader's source-cases/, the\n"
+                        "tests and build/ too)." % p)
 
 
 # The docs that name debug commands (#111: they listed `cmd sensorEnd`, `--es stage`, … long after the code dropped them).
@@ -689,7 +694,8 @@ def check_card(ch, rep):
         for f in s.get("files", []) + s.get("tests", []):
             rep.pending(files, f, "card-surface", "surface %s (garmin)" % s["id"])
         drawers |= set(s.get("files", []))
-    for p in sorted(f for f in files if f.startswith(GARMIN_SOURCE) and f.endswith(".mc") and f not in drawers):
+    for p in sorted(f for f in files if f.startswith(GARMIN_SOURCE) and f.endswith(".mc") and f not in drawers
+                    and not GARMIN_NOT_RELEASE.search(f)):
         for n, l in code_lines(ch.blob(p) or ""):
             if re.search(r"\bAuraDraw\.draw\(|\bnew AuraModel\(", l):
                 rep.add("FAIL", "card-surface", "%s:%d lays out or draws the face outside its registered files (%s garmin)."
@@ -992,9 +998,9 @@ SETTINGS_SCHEMA = CONTRACTS + "settings/settings.json"
 SETTINGS_KT = ANDROID + "core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt"
 SETTINGS_SWIFT = MAC_SOURCES + "SukraraCore/Settings/SettingsSpec.swift"
 GARMIN = "apps/garmin/"
-SETTINGS_MC = GARMIN + "source/SettingsSpec.mc"
-SETTINGS_PROPS = GARMIN + "resources/settings/properties.xml"
-SETTINGS_XML = GARMIN + "resources/settings/settings.xml"
+SETTINGS_MC = GARMIN + "aura/source/SettingsSpec.mc"
+SETTINGS_PROPS = GARMIN + "aura/resources/settings/properties.xml"
+SETTINGS_XML = GARMIN + "aura/resources/settings/settings.xml"
 ALERT_SPEC = CONTRACTS + "alerts/SPEC.md"
 KEY_NAME = re.compile(r"^[a-z][A-Za-z0-9]*$")
 # a stored key written by hand (keys come from SettingsSpec.Keys)

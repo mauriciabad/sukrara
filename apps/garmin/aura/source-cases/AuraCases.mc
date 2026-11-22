@@ -12,7 +12,7 @@ import Toybox.WatchUi;
 
 // THE DEBUG CASE LOADER (SPEC.md §10): the face showing every case of contracts/watchface/aura/cases.json in turn, 6 s
 // each, the reference's fixed clock (Mon 16 Nov 2026, UTC), and printing each case's layout once (AuraDump) for
-// apps/garmin/tools/garmin_test.py. Only in the 'cases' build (cases.jungle, manifest-cases.xml): the release face
+// apps/garmin/aura/tools/garmin_test.py. Only in the 'cases' build (cases.jungle, manifest-cases.xml): the release face
 // never has it, and every symbol here is (:debug), so a release build of these files strips it too.
 (:debug)
 module AuraCases {

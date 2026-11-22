@@ -13,13 +13,15 @@ printf '#!/bin/sh\necho "curl $*" >> "%s/net.log"; exit 99\n' "$T" > "$T/bin/cur
 chmod +x "$T/bin/curl"
 fails=0
 
-run() { # run <name> <mode> <manifest> [env…] → $T/<name>.{out,log}, the exit code in $T/<name>.rc
-  local name="$1" mode="$2" manifest="$3"
-  shift 3
+run() { # run <name> <mode> <manifest>… [VAR=value…] → $T/<name>.{out,log}, the exit code in $T/<name>.rc
+  local name="$1" mode="$2" a
+  shift 2
+  local manifests=() envs=()
+  for a in "$@"; do case "$a" in *=*) envs+=("$a") ;; *) manifests+=("$a") ;; esac; done
   : > "$T/$name.out"
   env -u GARMIN_CI_USERNAME -u GARMIN_CI_PASSWORD -u GARMIN_CI_TOKEN -u GITHUB_ACTIONS HOME="$T/home-$name" \
-    PATH="$T/bin:$PATH" GITHUB_OUTPUT="$T/$name.out" GITHUB_PATH="$T/$name.path" GITHUB_ENV="$T/$name.env" RUNNER_TEMP="$T" "$@" \
-    "$ROOT/tools/ci/garmin-sdk.sh" "$mode" "$manifest" > "$T/$name.log" 2>&1
+    PATH="$T/bin:$PATH" GITHUB_OUTPUT="$T/$name.out" GITHUB_PATH="$T/$name.path" GITHUB_ENV="$T/$name.env" RUNNER_TEMP="$T" \
+    ${envs[@]+"${envs[@]}"} "$ROOT/tools/ci/garmin-sdk.sh" "$mode" "${manifests[@]}" > "$T/$name.log" 2>&1
   echo $? > "$T/$name.rc"
 }
 expect() { # expect <name> <rc> <out line>…
@@ -55,6 +57,10 @@ M3="$(manifest three descentmk343mm)"
 run plan1 plan "$M1"; run plan2 plan "$M2"; run plan3 plan "$M3"
 expect plan1 0 "project=true" "devices=descentmk343mm fenix847mm" 'devices-json=["descentmk343mm","fenix847mm"]'
 expect plan3 0 'devices-json=["descentmk343mm"]'
+# several apps: the cache holds every manifest's products, the matrix is the first manifest's (the face's)
+M4="$(manifest four fenix847mm venu3)"
+run plan4 plan "$M3" "$M4"
+expect plan4 0 "project=true" "devices=descentmk343mm fenix847mm venu3" 'devices-json=["descentmk343mm"]'
 k1="$(grep '^devices-key=' "$T/plan1.out")"; k2="$(grep '^devices-key=' "$T/plan2.out")"; k3="$(grep '^devices-key=' "$T/plan3.out")"
 if [ -n "$k1" ] && [ "$k1" = "$k2" ] && [ "$k1" != "$k3" ]; then echo "ok   devices-key"; else echo "FAIL devices-key: $k1 / $k2 / $k3"; fails=$((fails + 1)); fi
 

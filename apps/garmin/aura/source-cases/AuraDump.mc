@@ -6,7 +6,7 @@ import Toybox.Math;
 import Toybox.System;
 
 // Prints an AuraModel as the values aura.js layout() returns (contracts/watchface/aura/expect.json, the same names and
-// the same SVG path shapes), one "D|<case>|<path>|<value>" line each; apps/garmin/tools/garmin_test.py compares them
+// the same SVG path shapes), one "D|<case>|<path>|<value>" line each; apps/garmin/aura/tools/garmin_test.py compares them
 // with expect.json (SPEC.md §10: positions ±0.5, angles ±0.1, opacities ±0.01, colours and strings exact). Debug only.
 (:debug)
 module AuraDump {

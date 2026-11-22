@@ -8,7 +8,7 @@ import Toybox.System;
 import Toybox.WatchUi;
 
 // Sukrara Aura: the watch face (contracts/watchface/aura/SPEC.md). Also loaded by its background (the phone link,
-// source/link), hence (:background).
+// apps/garmin/shared/link), hence (:background).
 (:background)
 class AuraApp extends Application.AppBase {
     // The face's process (getInitialView ran), not the background's. The watch calls onDisplayModeChanged (and may call
@@ -22,19 +22,19 @@ class AuraApp extends Application.AppBase {
 
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
         face = true;
-        AuraLinkBackground.register();
+        LinkBackground.register();
         return [new AuraView(), new AuraDelegate()];
     }
 
     // the phone link's background: Sukrara's push and the 5-minute fetch (docs/43)
     function getServiceDelegate() as [System.ServiceDelegate] {
-        return [new AuraLinkService()];
+        return [new LinkService()];
     }
 
     // a payload from the background (contracts/watchface/payload), through Garmin; the same run also waits in storage
-    // (AuraLink.pickUp at every draw), whichever comes first
+    // (Link.pickUp at every draw), whichever comes first
     function onBackgroundData(data as Application.PersistableType) as Void {
-        if (AuraLink.take(data, Toybox.Time.now().value(), false)) {
+        if (Link.take(data, Toybox.Time.now().value(), false)) {
             AuraData.changed();
         }
     }

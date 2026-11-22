@@ -125,7 +125,7 @@ class AuraView extends WatchUi.WatchFace {
 
     function onUpdate(dc as Graphics.Dc) as Void {
         // what the background left in storage, when Garmin didn't hand it over (#244): this draw shows it already
-        AuraLink.pickUp(Time.now().value());
+        Link.pickUp(Time.now().value());
         var m = new AuraModel(input());
         AuraWatch.drew(m.aod ? "a" : m.night ? "n" : "w");
         glide(m);

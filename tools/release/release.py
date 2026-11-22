@@ -16,12 +16,12 @@ left (resume with --from <step>; every step can run again):
                  (apps/android/fastlane/metadata/android/<en-US|es-ES>/changelogs/<versionCode>.txt, at most 500
                  characters) and the App Store notes (apps/macos/AppStore/whats-new/…, see appstore), no tag yet,
                  the keys and gh
-  version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md) and the Garmin face's manifest,
+  version        VERSION, the version in docs (DEVELOPMENT.md, QA.md, FEATURES.md) and the Garmin apps' manifests,
                  CHANGELOG's Unreleased → the version's entry; commit, push to next (fast-forward; its Checks run is
                  awaited before github)
   gate           android-release.sh (verify-apk.sh inside), android-smoke.sh --final --no-build on the emulator,
                  play-bundle.sh, mac-release.sh (notarized, Sparkle-signed, verify-app.sh --notarized inside, writes
-                 website/public/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate), garmin-release.sh (the
+                 website/public/appcast.xml), Bundle/smoke.sh, mac-appstore.sh (build + validate), garmin-release.sh aura (the
                  face's .iq and .prg, store key checked; once the face is released: tools/release/garmin-key.sha256). ./gradlew check and swift test
                  aren't repeated: the release commit's green Checks run ran them (the Mac job on the newest green
                  commit with the same Mac sources: VERSION reaches only the bundle, which this gate builds and smokes).
@@ -81,9 +81,11 @@ ASC_NOTES = "apps/macos/AppStore/whats-new/%s/%d.txt"
 DIST = "apps/android/app/build/dist"
 MAC_BUILD = "apps/macos/build"
 DOCS_WITH_VERSION = ["docs/DEVELOPMENT.md", "docs/QA.md", "docs/FEATURES.md"]
-# The Garmin face (apps/garmin): released once its store key's public SHA-256 is committed (GARMIN_KEY_PIN, the switch;
-# docs/20-publishing.md › Garmin). The manifest's version follows VERSION either way.
-GARMIN_MANIFEST = "apps/garmin/manifest.xml"
+# The Garmin face (apps/garmin/aura): released once its store key's public SHA-256 is committed (GARMIN_KEY_PIN, the
+# switch; docs/20-publishing.md › Garmin). Every Garmin app's manifest version follows VERSION either way (the watch app
+# and the data field have no store listing yet: docs/47).
+GARMIN_MANIFEST = "apps/garmin/aura/manifest.xml"
+GARMIN_MANIFESTS = [GARMIN_MANIFEST, "apps/garmin/app/manifest.xml", "apps/garmin/field/manifest.xml"]
 GARMIN_KEY_PIN = "tools/release/garmin-key.sha256"
 GARMIN_DIST = "apps/garmin/bin/dist"
 GARMIN_DASHBOARD = "https://apps-developer.garmin.com/developer/dashboard"
@@ -261,7 +263,7 @@ def manifest_with_version(manifest, version):
     manifest whose application has no version attribute."""
     new, n = re.subn(r'(<iq:application\b[^>]*?\sversion=")[^"]*(")', r"\g<1>%s\g<2>" % version, manifest, count=1)
     if not n:
-        raise ValueError("%s: <iq:application> has no version attribute" % GARMIN_MANIFEST)
+        raise ValueError("a Garmin manifest's <iq:application> has no version attribute")
     return new
 
 
@@ -535,8 +537,9 @@ class Release:
             files = {"VERSION": self.v + "\n", "CHANGELOG.md": new_changelog}
             for rel in DOCS_WITH_VERSION:
                 files[rel] = bump_docs(rel, self.read(rel), current, self.v)
-            if os.path.exists(self.path(GARMIN_MANIFEST)):
-                files[GARMIN_MANIFEST] = manifest_with_version(self.read(GARMIN_MANIFEST), self.v)
+            for m in GARMIN_MANIFESTS:
+                if os.path.exists(self.path(m)):
+                    files[m] = manifest_with_version(self.read(m), self.v)
             if self.dry:
                 self.changelog = new_changelog
                 for rel, text in files.items():
@@ -563,7 +566,7 @@ class Release:
         # rebuilds build/Sukrara.app as the App Store version; its validated pkg is the one testflight uploads
         self.sh([r + "mac-appstore.sh"], capture=False)
         if self.garmin_on():
-            self.sh([r + "garmin-release.sh", self.v], capture=False)
+            self.sh([r + "garmin-release.sh", "aura", self.v], capture=False)
         if self.dry:
             print("  would check the files it leaves, website/public/appcast.xml's %s item, and that nothing else changed" % self.v)
             return

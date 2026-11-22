@@ -2715,7 +2715,7 @@ Sukrara Aura is a watch face for Garmin watches with a round 390 × 390 AMOLED s
 shows, each reading within seconds through Garmin Connect with nothing to set up, and an old value never looks
 current; its dial is the aura of your glucose. The phone's Settings › Share with apps › Garmin says what each watch has.
 
-**On the watch.** A Connect IQ watch face, `apps/garmin`, drawn to the binding design
+**On the watch.** A Connect IQ watch face, `apps/garmin/aura`, drawn to the binding design
 [`contracts/watchface/aura/SPEC.md`](../contracts/watchface/aura/SPEC.md) (registered surface `garmin-aura`). The phone
 decides the value, the trend, the bands, the pill and the sensor's state; the watch only counts the time, so the reading
 ages by itself from its own time with the phone away.
@@ -2860,13 +2860,13 @@ ages by itself from its own time with the phone away.
   - *Other watch faces and data fields*: the *xDrip+ server* row (its own page, below);
   - a footer: Garmin Connect must run in the background; while a watch has a Sukrara app any app on this phone can
     read what it reads (up to the last 24 hours); only Sukrara on the watch can log or mute here (signed).
-- On the watch (`apps/garmin/source/link`): the face's background wakes on each push and fetches every 5 min; the face
+- On the watch (`apps/garmin/shared/link`): the face's background wakes on each push and fetches every 5 min; the face
   keeps the newest payload (by when the phone built it; a burst of queued ones never puts an older one back) in
   storage, so after a restart it shows the last reading at once, aging. Every draw works the inputs out from the
   payload and the watch clock: with the phone out of reach the reading ages from its own time (late → struck → *No
   reading since*), a quiet or mute that ran out shows no pill, the last treatment moves on and goes when the card's
   slot would, the warm-up and the sensor's end count down by themselves; a watch clock behind the phone's never makes a reading look younger. Garmin's own *No phone* field says
-  the phone is away (`contracts/watchface/aura/SPEC.md` §6.10). Tests: `LinkTest` (`apps/garmin/tools/link-test.sh`).
+  the phone is away (`contracts/watchface/aura/SPEC.md` §6.10). Tests: `LinkTest` (`apps/garmin/tools/link-test.sh aura`).
 - Debug builds: `GARMIN_SIM --ez on true` sends to the Connect IQ simulator instead of Garmin Connect (adb forward
   tcp:7381, simulator › Connection › Start; the fetch through adb forward tcp:17582).
 

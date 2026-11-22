@@ -51,7 +51,7 @@ seconds as a faint sweep at the rim.
   graphics (`enhancedGraphicSupport` in the device's `compiler.json`: `Dc.setFill` / `setStroke`, PNG-packed bitmaps
   for the tinted atlases), API ≥ 5, 128 KB, a graphics pool of 3 MB or more (the font atlases): Approach S70 42 mm,
   Descent Mk3 / Mk3i 43 mm, epix Pro (Gen 2) 42 mm, Forerunner 570 42 mm, MARQ (Gen 2), MARQ (Gen 2) Aviator, Venu 3S,
-  Venu 4 41 mm, vívoactive 6 (`apps/garmin/manifest.xml`). Every one has a touch screen. The others of that screen
+  Venu 4 41 mm, vívoactive 6 (`apps/garmin/aura/manifest.xml`). Every one has a touch screen. The others of that screen
   lack enhanced graphics and crash at the first `setFill` (simulator, 2026-11-17): Approach S50, Descent G2,
   Forerunner 70, 165 / 165 Music, Instinct 3 AMOLED 45 mm (also no touch), vívoactive 5; they need a dial and atlases
   drawn without them. The Forerunner 170 / 170 Music have a 2 MB graphics pool (`graphicsResourcePoolSize`): the

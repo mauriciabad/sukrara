@@ -26,7 +26,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 # The Garmin face's fixed set of cases (SPEC.md §10): the safety states, one case per dial, always-on, private,
 # Spanish. `garmin` runs it on the Descent Mk3i 43 mm inside the gate's timeout, `garmin-all` on every other watch of
-# apps/garmin/manifest.xml (the Descent there runs every case).
+# apps/garmin/aura/manifest.xml (the Descent there runs every case).
 env:
   AURA_GATE_CASES: >-
     glucose-in-range,glucose-lo,glucose-hi,glucose-no-readings,glucose-old,alerts-very-low,
@@ -252,7 +252,7 @@ jobs:
           npm run check
           npm test
 
-  # The Garmin face (apps/garmin; docs/DEVELOPMENT.md › Garmin face on CI). The SDK is public; the device files need a
+  # The Garmin apps (apps/garmin; docs/DEVELOPMENT.md › Garmin face on CI). The SDK is public; the device files need a
   # Garmin sign-in: tools/ci/garmin-sdk.sh signs in as the dedicated CI account (secrets GARMIN_CI_USERNAME +
   # GARMIN_CI_PASSWORD, or GARMIN_CI_TOKEN) only when the cache lacks a device, and deletes the token before any of the
   # project's code runs. Without the files and a credential (before the owner adds them, forks, outside pull requests)
@@ -278,15 +278,15 @@ jobs:
           token: ${{ secrets.GARMIN_CI_TOKEN }}
       # No SDK needed: runs with or without the CI account
       - name: The face's words are words.json's
-        if: hashFiles('apps/garmin/tools/garmin_test.py') != ''
-        run: python3 apps/garmin/tools/garmin_test.py words
+        if: hashFiles('apps/garmin/aura/tools/garmin_test.py') != ''
+        run: python3 apps/garmin/aura/tools/garmin_test.py words
       - name: Release build (debug code compiled out)
         if: steps.sdk.outputs.ready == 'true'
-        run: apps/garmin/build.sh release
+        run: apps/garmin/build.sh aura release
       # Every watch of the manifest compiles (monkeyc builds each product; the simulator runs only the Descent here)
       - name: Store package (every watch)
         if: steps.sdk.outputs.ready == 'true'
-        run: apps/garmin/build.sh export
+        run: apps/garmin/build.sh aura export
       # SPEC.md §10 on a fixed set of cases, so the gate stays inside its timeout (the full set takes 1–2 h: garmin-all):
       # the safety states, one case per dial, always-on, private, Spanish. Their numbers against expect.json (fails the
       # job), the battery label against every row, a screenshot of each diffed with docs/img/aura/ref (the artifact).
@@ -297,7 +297,7 @@ jobs:
         run: |
           AURA_CASES="$(echo "$AURA_CASES" | tr -d ' ')"
           export AURA_CASES
-          xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
+          xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/aura/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
       - name: The face's screenshots and diff images
         if: always() && steps.sdk.outputs.ready == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -306,7 +306,7 @@ jobs:
           path: ${{ runner.temp }}/garmin-test
           if-no-files-found: ignore
 
-  # The face on every watch of apps/garmin/manifest.xml (a matrix, one job per watch): the Descent Mk3i 43 mm every case
+  # The face on every watch of apps/garmin/aura/manifest.xml (a matrix, one job per watch): the Descent Mk3i 43 mm every case
   # (1–2 h: heavy dial cases make monkeydo lose the simulator, and the harness restarts it), the others the gate's fixed
   # set (same 390 × 390 pictures). Only on `workflow_dispatch` with full=true, and outside `gate`: its result is the
   # run's, not a release's. Starts after `garmin`, which keeps the SDK and the device files in the cache.
@@ -337,7 +337,7 @@ jobs:
         run: |
           AURA_CASES="$(echo "$AURA_CASES" | tr -d ' ')"
           if [ -n "$AURA_CASES" ]; then export AURA_CASES; else unset AURA_CASES; fi
-          xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
+          xvfb-run -a -s "-screen 0 1280x1024x24" python3 apps/garmin/aura/tools/garmin_test.py run "$RUNNER_TEMP/garmin-test"
       - name: The face's screenshots and diff images
         if: always() && steps.sdk.outputs.ready == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
