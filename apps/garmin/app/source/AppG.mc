@@ -5,6 +5,7 @@ import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
 import Toybox.StringUtil;
+import Toybox.System;
 import Toybox.WatchUi;
 
 // The model: app.js's display list (G). Every screen function (AppParts, AppScreens, GlanceScreen) pushes elements
@@ -110,6 +111,15 @@ module AppDraw {
         }
         return "a" + px + (fw >= 700 ? "b" : fw >= 600 ? "s" : "m");
     }
+
+    // a font key the tables lack (debug builds say so: add the size to tools/fonts.py)
+    (:debug)
+    function missing(key as String) as Void {
+        System.println("FONT|missing|" + key);
+    }
+
+    (:release)
+    function missing(key as String) as Void {}
 
     function release() as Void {
         fonts = {};
@@ -302,6 +312,7 @@ module AppDraw {
         var s0 = e[3] as String;
         var a = loadFont(e[4] as String);
         if (a.size() == 0) {
+            missing(e[4] as String);
             return;
         }
         var col = e[5] as Number;

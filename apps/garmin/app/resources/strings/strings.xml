@@ -35,26 +35,26 @@
 
     <!-- logging -->
     <string id="Now">Now</string>
-    <string id="MinAgo">%1$ min ago</string>
+    <string id="MinAgo">$1$ min ago</string>
     <string id="HoldToLog">Hold START to log</string>
     <string id="HoldTouch">Hold to log</string>
-    <string id="SameKind">%1$ %2$ ago</string>
+    <string id="SameKind">$1$ $2$ ago</string>
     <string id="Sending">Sending</string>
-    <string id="Logged">Logged %1$</string>
+    <string id="Logged">Logged $1$</string>
     <string id="Undo">Undo</string>
     <string id="Undone">Undone</string>
     <string id="NotLoggedOld">Not logged: too old</string>
     <string id="NotLoggedOff">Not logged: the phone takes no entries now</string>
     <string id="NotSent">Not sent, nothing saved</string>
     <string id="PenAsk">Already logged by your pen?</string>
-    <string id="PenAt">%1$ at %2$</string>
+    <string id="PenAt">$1$ at $2$</string>
     <string id="LogAnyway">Log anyway</string>
     <string id="Cancel">Cancel</string>
     <string id="LogOff">The phone takes no entries now</string>
 
     <!-- mute and alerts -->
     <string id="MuteAlerts">Mute alerts</string>
-    <string id="Muted">Muted %1$</string>
+    <string id="Muted">Muted $1$</string>
     <string id="MutedUntilOff">Muted until you unmute</string>
     <string id="Unmute">Unmute</string>
     <string id="ChangeTime">Change time</string>
@@ -64,7 +64,7 @@
     <string id="Min120">2 h</string>
     <string id="UntilOff">Until I unmute</string>
     <string id="AlertsMuted">Alerts muted</string>
-    <string id="Until">until %1$</string>
+    <string id="Until">until $1$</string>
     <string id="Unmuted">Alerts unmuted</string>
     <string id="Treatment" scope="background">Treatment</string>
     <string id="RemindLess" scope="background">Remind less</string>
@@ -97,11 +97,11 @@
     <string id="WMuted" scope="glance">Muted</string>
     <string id="WWarming" scope="glance">Warming up</string>
     <string id="WNoSince" scope="glance">No reading since</string>
-    <string id="WReadyAt" scope="glance">Ready at %1$</string>
+    <string id="WReadyAt" scope="glance">Ready at $1$</string>
     <string id="RepAbove">Above range</string>
     <string id="RepIn">In range</string>
     <string id="RepBelow">Below range</string>
-    <string id="RepVeryGood">very good %1$</string>
+    <string id="RepVeryGood">very good $1$</string>
     <string id="RepAverage">Average</string>
     <string id="RepGmi">GMI</string>
     <string id="RepCv">CV</string>

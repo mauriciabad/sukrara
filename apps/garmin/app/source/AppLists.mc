@@ -45,7 +45,7 @@ module AppLists {
                 out.add([k, AppWords.s(id as ResourceId), k, AppMath.pal(k), sub, null]);
             }
         }
-        var x = Link.inputs(Time.now().value());
+        var x = Link.inputs(d.now);
         var muted = x != null && "muted".equals(x.get("status")) && x.get("side") == null;
         if (muted) {
             var lf = x.get("left");
@@ -104,7 +104,7 @@ class ListDelegate extends WatchUi.BehaviorDelegate {
     function move(by as Number) as Boolean {
         var n = AppLists.rows(AppInput.build(Time.now().value())).size();
         view.sel = (view.sel + by + n) % n;
-        WatchUi.requestUpdate();
+        view.refresh();
         return true;
     }
 
@@ -114,7 +114,7 @@ class ListDelegate extends WatchUi.BehaviorDelegate {
         for (var i = 0; i < 4; i++) {
             if (y > ys[i] - 30 && y < ys[i] + 28) {
                 view.sel = i;
-                WatchUi.requestUpdate();
+                view.refresh();
                 return true;
             }
         }

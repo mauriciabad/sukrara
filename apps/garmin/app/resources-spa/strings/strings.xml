@@ -30,25 +30,25 @@
     <string id="UnitG">g</string>
 
     <string id="Now">Ahora</string>
-    <string id="MinAgo">hace %1$ min</string>
+    <string id="MinAgo">hace $1$ min</string>
     <string id="HoldToLog">Mantén START para registrar</string>
     <string id="HoldTouch">Mantén para registrar</string>
-    <string id="SameKind">%1$ hace %2$</string>
+    <string id="SameKind">$1$ hace $2$</string>
     <string id="Sending">Enviando</string>
-    <string id="Logged">Registrado %1$</string>
+    <string id="Logged">Registrado $1$</string>
     <string id="Undo">Deshacer</string>
     <string id="Undone">Deshecho</string>
     <string id="NotLoggedOld">No registrado: demasiado antiguo</string>
     <string id="NotLoggedOff">No registrado: el móvil no acepta registros ahora</string>
     <string id="NotSent">No enviado, nada guardado</string>
     <string id="PenAsk">¿Ya registrada por tu pluma?</string>
-    <string id="PenAt">%1$ a las %2$</string>
+    <string id="PenAt">$1$ a las $2$</string>
     <string id="LogAnyway">Registrar igualmente</string>
     <string id="Cancel">Cancelar</string>
     <string id="LogOff">El móvil no acepta registros ahora</string>
 
     <string id="MuteAlerts">Silenciar alertas</string>
-    <string id="Muted">Silenciadas %1$</string>
+    <string id="Muted">Silenciadas $1$</string>
     <string id="MutedUntilOff">Silenciadas hasta que las reactives</string>
     <string id="Unmute">Reactivar</string>
     <string id="ChangeTime">Cambiar tiempo</string>
@@ -58,7 +58,7 @@
     <string id="Min120">2 h</string>
     <string id="UntilOff">Hasta que las reactive</string>
     <string id="AlertsMuted">Alertas silenciadas</string>
-    <string id="Until">hasta las %1$</string>
+    <string id="Until">hasta las $1$</string>
     <string id="Unmuted">Alertas activadas de nuevo</string>
     <string id="Treatment" scope="background">Tratamiento</string>
     <string id="RemindLess" scope="background">Recordar menos</string>
@@ -90,11 +90,11 @@
     <string id="WMuted" scope="glance">Silenciadas</string>
     <string id="WWarming" scope="glance">Calentando</string>
     <string id="WNoSince" scope="glance">Sin lecturas desde</string>
-    <string id="WReadyAt" scope="glance">Listo a las %1$</string>
+    <string id="WReadyAt" scope="glance">Listo a las $1$</string>
     <string id="RepAbove">Por encima del rango</string>
     <string id="RepIn">En rango</string>
     <string id="RepBelow">Por debajo del rango</string>
-    <string id="RepVeryGood">muy bien %1$</string>
+    <string id="RepVeryGood">muy bien $1$</string>
     <string id="RepAverage">Media</string>
     <string id="RepGmi">GMI</string>
     <string id="RepCv">CV</string>

@@ -1,0 +1,85 @@
+{
+ "about": "The watch app's screens (SPEC.md), each drawn from a phone state of contracts/watchface/payload/cases.json's 'app' list ('state': its index) at a watch time ('at': s after its 'now'), with the screen's own inputs ('cfg': 'days' the numbers' period, 'sel' the list's selection). apps/garmin/app's case loader (cases.jungle) shows them in turn; tools/watchface/app.js draws the reference from the same input.",
+ "cases": [
+  {
+   "id": "day-glance",
+   "state": 0,
+   "screen": "glance"
+  },
+  {
+   "id": "day-appA",
+   "state": 0,
+   "screen": "appA"
+  },
+  {
+   "id": "day-appNums",
+   "state": 0,
+   "screen": "appNums"
+  },
+  {
+   "id": "day-actions",
+   "state": 0,
+   "screen": "actions"
+  },
+  {
+   "id": "very-low-glance",
+   "state": 1,
+   "screen": "glance"
+  },
+  {
+   "id": "very-low-appA",
+   "state": 1,
+   "screen": "appA"
+  },
+  {
+   "id": "very-low-appNums",
+   "state": 1,
+   "screen": "appNums"
+  },
+  {
+   "id": "very-low-actions",
+   "state": 1,
+   "screen": "actions"
+  },
+  {
+   "id": "no-data-glance",
+   "state": 2,
+   "screen": "glance"
+  },
+  {
+   "id": "no-data-appA",
+   "state": 2,
+   "screen": "appA"
+  },
+  {
+   "id": "no-data-appNums",
+   "state": 2,
+   "screen": "appNums"
+  },
+  {
+   "id": "no-data-actions",
+   "state": 2,
+   "screen": "actions"
+  },
+  {
+   "id": "unpaired-glance",
+   "state": 3,
+   "screen": "glance"
+  },
+  {
+   "id": "unpaired-appA",
+   "state": 3,
+   "screen": "appA"
+  },
+  {
+   "id": "unpaired-appNums",
+   "state": 3,
+   "screen": "appNums"
+  },
+  {
+   "id": "unpaired-actions",
+   "state": 3,
+   "screen": "actions"
+  }
+ ]
+}

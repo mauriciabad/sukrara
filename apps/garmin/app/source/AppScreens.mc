@@ -135,6 +135,14 @@ module AppScreens {
         if (run.size() > 0) {
             g.l(run, old ? AppMath.GREY : col, 1.0, lw, null);
         }
+        // the bead on the newest reading in the window, a lone one too
+        for (var k = d.hm.size() - 1; k >= 0 && lastX == null; k--) {
+            if (d.hv[k] != null && (d.hm[k] as Float) <= hours * 60) {
+                lastX = X(bx, hours, d.hm[k] as Float);
+                lastY = Y(bx, d.hv[k] as Number);
+                lastV = d.hv[k];
+            }
+        }
         if (lastX != null) {
             if (old) {
                 g.c(lastX, lastY, lw * 1.9, AppMath.BLACK, 1.0, 0);
@@ -222,8 +230,8 @@ module AppScreens {
     const PITCH = 4.6; // the widget's 3.6 dp, at the reference's 4.6 px per row (app.js dot)
     const R = 1.725; // 1.35 dp
     const CUT = 3.83; // 3 dp
-    const MIN_MG = 20;
-    const MAX_MG = 450;
+    const MIN_MG = 40; // the plot's range (above 300 pins to the top)
+    const MAX_MG = 300;
     var _prof as Array? = null;
     var _profKey as String = "";
 
@@ -250,7 +258,7 @@ module AppScreens {
                 continue;
             }
             var vv = (v as Number) < MIN_MG ? MIN_MG : (v as Number) > MAX_MG ? MAX_MG : v as Number;
-            share[bandIx.get(d.band(vv)) as Number] += 1.0;
+            share[bandIx.get(d.band(v as Number)) as Number] += 1.0;
             if (prev != null) {
                 var pv = prev as Number;
                 var lo = pv < vv ? pv : vv;
@@ -265,36 +273,49 @@ module AppScreens {
         if (prev != null) {
             occ[(prev as Number) - MIN_MG] += 60.0;
         }
-        // Gaussian, sigma 4 mg/dL
-        var rr = 12;
-        var ker = new [2 * rr + 1];
-        for (var j = 0; j <= 2 * rr; j++) {
-            var z = (j - rr) / 4.0;
-            ker[j] = Math.pow(Math.E, -0.5 * z * z);
-        }
-        var sm = new [n];
-        for (var i = 0; i < n; i++) {
+        // smoothed by about 4 mg/dL: two running box sums of 9 and 11 (a Gaussian's σ 4.1: the watchdog allows no
+        // 25-tap kernel)
+        var sm = occ;
+        var widths = [9, 11];
+        for (var p = 0; p < 2; p++) {
+            var hw = (widths[p] as Number) / 2;
+            var out = new [n];
             var acc = 0.0;
-            var ws = 0.0;
-            for (var j = -rr; j <= rr; j++) {
-                var ii = i + j;
-                if (ii >= 0 && ii < n) {
-                    acc += occ[ii] * ker[j + rr];
-                    ws += ker[j + rr];
-                }
+            var cnt = 0;
+            for (var j = 0; j < hw && j < n; j++) {
+                acc += sm[j];
+                cnt++;
             }
-            sm[i] = acc / ws;
+            for (var i = 0; i < n; i++) {
+                if (i + hw < n) {
+                    acc += sm[i + hw];
+                    cnt++;
+                }
+                if (i - hw - 1 >= 0) {
+                    acc -= sm[i - hw - 1];
+                    cnt--;
+                }
+                out[i] = acc / cnt;
+            }
+            sm = out;
         }
         var tot = 0.0;
         for (var i = 0; i < 7; i++) {
             tot += share[i];
         }
+        // each level's band, by the person's limits (level i is MIN_MG + i mg/dL)
+        var bix = new [n];
+        var b = d.bands;
+        for (var i = 0; i < n; i++) {
+            var v = MIN_MG + i;
+            bix[i] = v <= b[0] ? 0 : v < b[1] ? 1 : v <= b[2] ? 2 : v < b[3] ? 3 : v < b[4] ? 4 : v < b[5] ? 5 : 6;
+        }
         var area = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
         for (var i = 0; i < n; i++) {
-            area[bandIx.get(d.band(MIN_MG + i)) as Number] += sm[i];
+            area[bix[i] as Number] += sm[i];
         }
         for (var i = 0; i < n && tot > 0; i++) {
-            var bi = bandIx.get(d.band(MIN_MG + i)) as Number;
+            var bi = bix[i] as Number;
             if (area[bi] > 0) {
                 sm[i] = sm[i] * (share[bi] / tot) / area[bi];
             }

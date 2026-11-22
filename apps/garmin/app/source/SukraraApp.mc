@@ -88,8 +88,8 @@ class SukraraApp extends Application.AppBase {
     // storage (Link.pickUp at every draw), whichever comes first. The complications follow it.
     function onBackgroundData(data as Application.PersistableType) as Void {
         var now = Time.now().value();
-        if (Link.take(data, now, false)) {
-            WatchUi.requestUpdate();
+        if (Link.take(data, now, false) && AppNav.current != null) {
+            (AppNav.current as AppView).refresh();
         }
     }
 }
@@ -97,6 +97,7 @@ class SukraraApp extends Application.AppBase {
 // The routes into the app that don't start on page 1.
 module AppNav {
     var _exit as Timer.Timer? = null;
+    var current as AppView? = null; // the view on screen (a new payload rebuilds it)
 
     function pages() as [AppView, AppDelegate] {
         var v = new AppView("pages");

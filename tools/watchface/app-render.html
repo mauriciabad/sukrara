@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Sukrara on Garmin: one screen of the watch app from the reference (app.js) as an SVG at 1:1 (390 x 390).
+     app-render.html#cfg=<url-encoded JSON>: app.js's cfg (screen, scenario …), or {"watch": <the watch's input, as its
+     case loader prints it>} to draw what the watch drew (app-input.js). Used by apps/garmin/app/tools/app_test.py. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sukrara on Garmin · reference render</title>
+<style>
+@font-face{font-family:'Atkinson Hyperlegible Next';src:url('../../apps/garmin/fonts/AtkinsonHyperlegibleNext-wght.ttf') format('truetype');font-weight:200 800;font-display:block}
+html,body{margin:0;background:#000}svg{display:block}
+</style>
+<script src="app.js"></script>
+<script src="app-input.js"></script>
+</head>
+<body>
+<div id="out"></div>
+<script>
+  const params = new URLSearchParams(location.hash.slice(1));
+  let cfg = JSON.parse(params.get('cfg') || '{}');
+  if (cfg.watch) { const w = AppInput.fromWatch(cfg.watch); cfg = Object.assign(w.cfg, { input: w.input }, cfg.extra || {}); }
+  const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  function el(e) {
+    const tf = e.tf ? ' transform="' + e.tf + '"' : '';
+    const op = e.op !== undefined && e.op !== 1 ? ' opacity="' + e.op + '"' : '';
+    const paint = ' fill="' + e.fill + '" stroke="' + e.stroke + '" stroke-width="' + (e.sw || 0) + '"' + (e.dash && e.dash !== 'none' ? ' stroke-dasharray="' + e.dash + '"' : '');
+    if (e.isP) return '<path d="' + e.d + '"' + paint + ' stroke-linecap="' + e.cap + '" stroke-linejoin="' + e.join + '"' + op + tf + '/>';
+    if (e.isC) return '<circle cx="' + e.cx + '" cy="' + e.cy + '" r="' + e.r + '"' + paint + op + '/>';
+    if (e.isR) return '<rect x="' + e.x + '" y="' + e.y + '" width="' + e.w + '" height="' + e.h + '" rx="' + e.rx + '"' + paint + op + tf + '/>';
+    if (e.isT) return '<text x="' + e.x + '" y="' + e.y + '" font-size="' + e.fs + '" font-weight="' + e.fw + '" fill="' + e.fill + '" text-anchor="' + e.anchor + '"' + (e.ls ? ' letter-spacing="' + e.ls + '"' : '') + ' font-family="' + e.fam.replace(/"/g, "'") + '"' + op + tf + '>' + esc(e.s[0]) + '</text>';
+    return '';
+  }
+  function draw() {
+    const r = WL.screen(cfg);
+    document.getElementById('out').innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="390" height="390" viewBox="' + r.vb + '">' + r.els.map(el).join('') + '</svg>';
+  }
+  draw();
+  document.fonts.load("700 20px 'Atkinson Hyperlegible Next'").then(draw);
+</script>
+</body>
+</html>

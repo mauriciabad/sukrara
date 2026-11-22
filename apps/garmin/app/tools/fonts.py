@@ -13,8 +13,8 @@
   uv run apps/garmin/app/tools/fonts.py --check  fails if the committed output differs from a fresh build
 
 Every size is app.js's at the 390 px reference, rounded to a whole px; the app picks the nearest it has (AppDraw.font).
-The big numbers (the value, the amount) are atlases drawn glyph by glyph like Aura's value; every other text is a
-Connect IQ font resource. The glance's fonts and icons are scoped to the glance (its 64 KB): `G` below.
+Every text is an atlas drawn glyph by glyph like Aura's (white glyphs, 8-bit alpha, tinted): Connect IQ's own font
+resources draw the same glyphs visibly heavier (their antialiasing), so none is used. The glance's fonts and icons are scoped to the glance (its 64 KB): `G` below.
 """
 import base64
 import importlib.util
@@ -42,7 +42,7 @@ NUMS = A.DIGITS + ".LOHI-"
 W = {"m": 500, "s": 600, "b": 700}
 # text fonts "a<px><m|s|b>": app.js's sizes (fs) and weights (fw)
 TEXT = ["14m", "14s", "15m", "15s", "15b", "16m", "16s", "17m", "17s", "17b", "18m", "18s", "19m", "19s", "20m", "20s", "20b",
-        "22s", "22b", "23b", "24s", "24b", "26s", "26b", "28b", "30b", "32b", "38s", "48s", "50s"]
+        "22s", "22b", "23s", "23b", "24s", "24b", "26s", "26b", "28b", "30b", "32b", "38s", "48s", "50s"]
 # the big texts that only show a time or a unit: the no-reading time's set (Aura's), the amount's unit
 CHARS = {"38s": A.GAP, "48s": A.GAP, "50s": "ug"}
 # the big numbers "n<px>", weight 700 (app.js value(): fw 700)
@@ -76,7 +76,7 @@ def fonts():
     out = []
     for k in TEXT:
         px, w = int(k[:-1]), k[-1]
-        out.append(("a" + k, px, W[w], CHARS.get(k, A.LATIN), False))
+        out.append(("a" + k, px, W[w], CHARS.get(k, A.LATIN), True))
     for px in BIG:
         out.append(("n%d" % px, px, 700, NUMS, True))
     return out

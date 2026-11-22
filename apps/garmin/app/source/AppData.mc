@@ -11,6 +11,7 @@ import Toybox.WatchUi;
 // reference's data() makes it from a made-up day; here AppInput.build makes it from what the phone sent.
 (:glance)
 class AppData {
+    var now as Number = 0; // the watch clock it was built at (epoch s)
     var sent as Boolean = false; // the phone ever sent this app anything
     var g as Number? = null; // the newest reading, mg/dL (39 LO, 401 HI); null = none
     var rate as Float? = null; // mg/dL/min; null = no trend (and LO / HI)
@@ -63,6 +64,7 @@ module AppInput {
 
     function build(now as Number) as AppData {
         var d = new AppData();
+        d.now = now;
         var c = Gregorian.info(new Time.Moment(now), Time.FORMAT_SHORT);
         d.clock = (c.hour as Number) + ":" + (c.min as Number).format("%02d");
         d.clockH = (c.hour as Number) + (c.min as Number) / 60.0 + (c.sec as Number) / 3600.0;

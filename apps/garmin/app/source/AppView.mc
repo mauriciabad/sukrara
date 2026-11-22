@@ -3,18 +3,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.System;
 import Toybox.Time;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
 // One screen of the app on the seam layout(input) → model → draw: AppInput.build (the payload and the clock) → the
-// screen's function pushes its display list (AppG) → AppDraw paints it. [kind] names the screen (AppScreens).
+// screen's function pushes its display list (AppG) → AppDraw paints it. [kind] names the screen (AppScreens). The
+// display list is built in its own callback (refresh: shown, the 10 s tick, a button, a new payload) and onUpdate only
+// paints it: the watchdog counts each callback, and the widget's chart and % column with their paint don't fit one.
 class AppView extends WatchUi.View {
     var kind as String;
     var page as Number = 0; // the pages: 0 the widget, 1 the numbers
     var days as Number = 14; // the numbers' period (switchable here, never saved)
     var sel as Number = 0; // the list's selection
     var _timer as Timer.Timer?;
+    var _g as AppG? = null;
 
     function initialize(k as String) {
         View.initialize();
@@ -24,10 +28,12 @@ class AppView extends WatchUi.View {
         days = rd instanceof Number ? rd : 14;
     }
 
-    // ages and countdowns move on with nothing new from the phone: a redraw every 10 s while shown
+    // ages and countdowns move on with nothing new from the phone: a new display list every 10 s while shown
     function onShow() as Void {
+        AppNav.current = self;
         _timer = new Timer.Timer();
-        (_timer as Timer.Timer).start(method(:tick), 10000, true);
+        (_timer as Timer.Timer).start(method(:refresh), 10000, true);
+        build();
     }
 
     function onHide() as Void {
@@ -35,26 +41,41 @@ class AppView extends WatchUi.View {
             (_timer as Timer.Timer).stop();
             _timer = null;
         }
+        if (AppNav.current == self) {
+            AppNav.current = null;
+        }
+        _g = null;
         AppDraw.release();
     }
 
-    function tick() as Void {
+    // a new display list, then a paint
+    function refresh() as Void {
+        build();
         WatchUi.requestUpdate();
     }
 
-    function onUpdate(dc as Graphics.Dc) as Void {
+    function build() as Void {
         var now = Time.now().value();
         Link.pickUp(now);
+        var w = System.getDeviceSettings().screenWidth;
+        var h = System.getDeviceSettings().screenHeight;
         AppDraw.glance = false;
         AppDraw.table = new Lang.Method(AppFontTable, :atlas);
         AppDraw.iconAt = new Lang.Method(AppFontTable, :icon);
         AppDraw.sheetId = AppFontTable.sheet();
-        AppDraw.s = dc.getWidth() / 390.0;
-        AppDraw.ox = dc.getWidth() / 2.0 - 0.5;
-        AppDraw.oy = dc.getHeight() / 2.0 - 0.5;
+        AppDraw.s = w / 390.0;
+        AppDraw.ox = w / 2.0 - 0.5;
+        AppDraw.oy = h / 2.0 - 0.5;
+        _g = layout(AppInput.build(now));
+    }
+
+    function onUpdate(dc as Graphics.Dc) as Void {
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
-        AppDraw.paint(dc, layout(AppInput.build(now)));
+        if (_g == null) {
+            build();
+        }
+        AppDraw.paint(dc, _g as AppG);
     }
 
     function layout(d as AppData) as AppG {
@@ -90,7 +111,7 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
 
     function turn() as Boolean {
         view.page = 1 - view.page;
-        WatchUi.requestUpdate();
+        view.refresh();
         return true;
     }
 
@@ -107,7 +128,7 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
         var pers = [1, 7, 14, 30];
         var i = pers.indexOf(view.days);
         view.days = pers[(i + 1) % 4] as Number;
-        WatchUi.requestUpdate();
+        view.refresh();
         return true;
     }
 
@@ -127,7 +148,7 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
             return false;
         }
         view.days = [1, 7, 14, 30][i] as Number;
-        WatchUi.requestUpdate();
+        view.refresh();
         return true;
     }
 }

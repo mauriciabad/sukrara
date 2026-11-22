@@ -9,15 +9,15 @@ module AppFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, metrics in base64, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["n84", "n88", "n96", "n100", "n116", "n128", "a14m", "a14s", "a15m", "a15b", "a16m", "a17s", "a17b", "a19m", "a19s", "a20m", "a20s", "a22s", "a22b", "a26s", "a26b", "a28b", "a30b", "a32b", "a48s", "a50s"].indexOf(key);
+        var i = ["a14m", "a14s", "a15m", "a15b", "a16m", "a17s", "a17b", "a19m", "a19s", "a20m", "a20s", "a22s", "a22b", "a23s", "a26s", "a26b", "a28b", "a30b", "a32b", "a48s", "a50s", "n84", "n88", "n96", "n100", "n116", "n128"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        if (i < 6) {
-            return [[Rez.Drawables.n84, Rez.Drawables.n88, Rez.Drawables.n96, Rez.Drawables.n100, Rez.Drawables.n116, Rez.Drawables.n128][i], [Rez.JsonData.n84_m, Rez.JsonData.n88_m, Rez.JsonData.n96_m, Rez.JsonData.n100_m, Rez.JsonData.n116_m, Rez.JsonData.n128_m][i]];
+        if (i < 27) {
+            return [[Rez.Drawables.a14m, Rez.Drawables.a14s, Rez.Drawables.a15m, Rez.Drawables.a15b, Rez.Drawables.a16m, Rez.Drawables.a17s, Rez.Drawables.a17b, Rez.Drawables.a19m, Rez.Drawables.a19s, Rez.Drawables.a20m, Rez.Drawables.a20s, Rez.Drawables.a22s, Rez.Drawables.a22b, Rez.Drawables.a23s, Rez.Drawables.a26s, Rez.Drawables.a26b, Rez.Drawables.a28b, Rez.Drawables.a30b, Rez.Drawables.a32b, Rez.Drawables.a48s, Rez.Drawables.a50s, Rez.Drawables.n84, Rez.Drawables.n88, Rez.Drawables.n96, Rez.Drawables.n100, Rez.Drawables.n116, Rez.Drawables.n128][i], [Rez.JsonData.a14m_m, Rez.JsonData.a14s_m, Rez.JsonData.a15m_m, Rez.JsonData.a15b_m, Rez.JsonData.a16m_m, Rez.JsonData.a17s_m, Rez.JsonData.a17b_m, Rez.JsonData.a19m_m, Rez.JsonData.a19s_m, Rez.JsonData.a20m_m, Rez.JsonData.a20s_m, Rez.JsonData.a22s_m, Rez.JsonData.a22b_m, Rez.JsonData.a23s_m, Rez.JsonData.a26s_m, Rez.JsonData.a26b_m, Rez.JsonData.a28b_m, Rez.JsonData.a30b_m, Rez.JsonData.a32b_m, Rez.JsonData.a48s_m, Rez.JsonData.a50s_m, Rez.JsonData.n84_m, Rez.JsonData.n88_m, Rez.JsonData.n96_m, Rez.JsonData.n100_m, Rez.JsonData.n116_m, Rez.JsonData.n128_m][i]];
         }
-        i -= 6;
-        return [[Rez.Fonts.a14m, Rez.Fonts.a14s, Rez.Fonts.a15m, Rez.Fonts.a15b, Rez.Fonts.a16m, Rez.Fonts.a17s, Rez.Fonts.a17b, Rez.Fonts.a19m, Rez.Fonts.a19s, Rez.Fonts.a20m, Rez.Fonts.a20s, Rez.Fonts.a22s, Rez.Fonts.a22b, Rez.Fonts.a26s, Rez.Fonts.a26b, Rez.Fonts.a28b, Rez.Fonts.a30b, Rez.Fonts.a32b, Rez.Fonts.a48s, Rez.Fonts.a50s][i], [14, 14, 15, 15, 16, 17, 17, 19, 19, 20, 20, 22, 22, 26, 26, 28, 30, 31, 47, 49][i]];
+        i -= 27;
+        return [[][i], [][i]];
     }
 
     function sheet() as ResourceId {

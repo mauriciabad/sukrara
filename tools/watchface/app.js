@@ -227,7 +227,7 @@ var WL = (function () {
   // a time-in-range ring (the card's): segments clockwise from 12 in the ring order, the number inside
   function ring(g, cx, cy, r, sw, tir, cap, o) {
     o = o || {};
-    var order = ['tight', 'target', 'high', 'veryHigh', 'extremelyHigh', 'veryLow', 'low'];
+    var order = o.order || ['tight', 'target', 'high', 'veryHigh', 'extremelyHigh', 'veryLow', 'low'];
     var idx = { veryLow: 0, low: 1, tight: 2, target: 3, high: 4, veryHigh: 5, extremelyHigh: 6 };
     var tot = 0; order.forEach(function (k) { tot += tir.split[idx[k]] || 0; });
     var a = 0, gapDeg = 4;
@@ -264,6 +264,7 @@ var WL = (function () {
   }
   // the card's places in priority: main, last treatment (never dimmed), second (dimmed), third
   function metricSlots(d, c) {
+    if (d.mets) return d.mets;
     var list = [{ kind: 'ring', tir: d.tir1 }];
     if (d.slot) list.push({ kind: 'last', slot: d.slot });
     list.push({ kind: 'ring', tir: d.tir7, dim: true });
@@ -271,7 +272,7 @@ var WL = (function () {
   }
   function drawSlot(g, m, cx, cy, r, sw, nfs) {
     if (m.kind === 'last') lastStack(g, cx, cy, 2 * r + sw, m.slot);
-    else ring(g, cx, cy, r, sw, m.tir, '', { dim: m.dim, nfs: nfs });
+    else ring(g, cx, cy, r, sw, m.tir, '', { dim: m.dim, nfs: nfs, order: m.order });
   }
   function pill(g, x, y, p, o) {
     o = o || {};
@@ -492,11 +493,11 @@ var WL = (function () {
       g.c(mx + 17, y - 12, 17, { stroke: PAL.soft, sw: 2.5 });
       g.p('M' + r1(mx + 17) + ' ' + r1(y - 12) + 'L' + r1(mx + 17) + ' ' + r1(y - 24.5) + arc(12.5, 0, 0.6 * 360, mx + 17, y - 12).replace('M' + r1(mx + 17) + ' ' + r1(y - 24.5), '') + 'Z', { fill: PAL.soft });
       g.t(mx + 46, y - 3, 'Warming up', { fs: 26, fw: 600, fill: PAL.ink, anchor: 'start' });
-      g.t(0, y + 30, 'Ready at 21:20', { fs: 20, fw: 500, fill: PAL.soft });
+      g.t(0, y + 30, 'Ready at ' + (d.readyAt || '21:20'), { fs: 20, fw: 500, fill: PAL.soft });
       return;
     }
     g.t(0, y - 26, 'No reading since', { fs: 22, fw: 600, fill: PAL.soft });
-    g.t(0, y + 20, '20:12', { fs: 48, fw: 600, fill: PAL.ink });
+    g.t(0, y + 20, d.readAt, { fs: 48, fw: 600, fill: PAL.ink });
   }
   function chipRow(g, d, y, o) {
     o = o || {};
@@ -534,7 +535,9 @@ var WL = (function () {
       g.r(x, -152, cw, 30, 15, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
       g.t(x + cw / 2, -131, p, { fs: 17, fw: on ? 700 : 500, fill: on ? PAL.ink : PAL.soft });
     });
-    var R = { above: 14, inR: 85, good: 64, below: 0.1, split: [0, 0.1, 64, 21, 14, 0.8, 0] };
+    // the report of the period (d.rep: the shares as shown, the bands' split, each goal met or not, the three numbers)
+    var R = d.rep || { above: '14 %', inR: '85 %', good: '64 %', below: '0.1 %', split: [0, 0.1, 64, 21, 14, 0.8, 0], met: [true, true, true],
+      nums: [['136', 'Average', true], ['6.6 %', 'GMI', true], ['27 %', 'CV', true]] };
     // the stacked bar (the six bands, very high on top)
     var bx = -142, by0 = -112, by1 = 64, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
     R.split.forEach(function (v) { tot += v; });
@@ -552,21 +555,22 @@ var WL = (function () {
       else g.p('M' + r1(x + 9) + ' ' + r1(yy - 9) + 'l7 7M' + r1(x + 16) + ' ' + r1(yy - 9) + 'l-7 7', { stroke: col, sw: 2 });
       g.t(x + 21, yy + 1, text, { fs: 14, fw: 600, fill: col, anchor: 'start' });
     }
-    function row(yy, label, pct, gtext, big, sub) {
+    function row(yy, label, pct, gtext, big, sub, met) {
       g.t(-116, yy, label, { fs: big ? 22 : 19, fw: big ? 700 : 600, fill: PAL.ink, anchor: 'start' });
       g.t(152, yy + (big ? 4 : 0), pct, { fs: big ? 32 : 22, fw: 700, fill: PAL.ink, anchor: 'end' });
-      if (gtext) goal(-116, yy + 22, gtext, true);
+      if (gtext) goal(-116, yy + 22, gtext, met !== false);
       if (sub) g.t(-116 + 26 + tw(gtext, 14) + 10, yy + 23, sub, { fs: 15, fw: 500, fill: PAL.soft, anchor: 'start' });
     }
-    row(-96, 'Above range', R.above + ' %', '< 25%');
-    row(-30, 'In range', R.inR + ' %', '> 70%', true, 'very good ' + R.good + ' %');
-    row(38, 'Below range', R.below + ' %', '< 4%');
+    row(-96, 'Above range', R.above, '< 25%', false, '', R.met[0]);
+    row(-30, 'In range', R.inR, '> 70%', true, 'very good ' + R.good, R.met[1]);
+    row(38, 'Below range', R.below, '< 4%', false, '', R.met[2]);
     g.p('M-140 80H140', { stroke: PAL.grid, sw: 1.5 });
-    [['136', 'Average'], ['6.6 %', 'GMI'], ['27 %', 'CV']].forEach(function (m, i) {
+    R.nums.forEach(function (m, i) {
       var x = -92 + i * 92;
       g.t(x, 114, m[0], { fs: 24, fw: 700, fill: PAL.ink });
       var lw = tw(m[1], 15) + 18;
-      g.p('M' + r1(x - lw / 2) + ' 131l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
+      if (m[2]) g.p('M' + r1(x - lw / 2) + ' 131l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
+      else g.p('M' + r1(x - lw / 2 + 1) + ' 127.6l6 6M' + r1(x - lw / 2 + 7) + ' 127.6l-6 6', { stroke: PAL.high, sw: 2 });
       g.t(x - lw / 2 + 14, 137, m[1], { fs: 15, fw: 600, fill: PAL.soft, anchor: 'start' });
     });
     if (c.dots !== false) pageDots(g, 2, 1);
@@ -609,10 +613,10 @@ var WL = (function () {
           g.c(X0 + 14, -14, 14, { stroke: PAL.soft, sw: 2.2 });
           g.p('M' + r1(X0 + 14) + ' -14L' + r1(X0 + 14) + ' -24' + arc(10, 0, 216, X0 + 14, -14).replace(/^M[^A]+/, '') + 'Z', { fill: PAL.soft });
           g.t(X0 + 36, -6, 'Warming up', { fs: 24, fw: 600, fill: PAL.ink, anchor: 'start' });
-          g.t(X0, 28, 'Ready at 21:20', { fs: 18, fw: 500, fill: PAL.soft, anchor: 'start' });
+          g.t(X0, 28, 'Ready at ' + (d.readyAt || '21:20'), { fs: 18, fw: 500, fill: PAL.soft, anchor: 'start' });
         } else {
           g.t(X0, -14, 'No reading since', { fs: 18, fw: 600, fill: PAL.soft, anchor: 'start' });
-          g.t(X0, 26, '20:12', { fs: 38, fw: 600, fill: PAL.ink, anchor: 'start' });
+          g.t(X0, 26, d.readAt, { fs: 38, fw: 600, fill: PAL.ink, anchor: 'start' });
         }
         return;
       }
@@ -868,7 +872,7 @@ var WL = (function () {
   };
   // START in the app: one list, the kinds in the phone's order (the focused one first and selected), then mute
   S.actions = function (g, d, c) {
-    var last = { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' };
+    var last = d.lastBy || { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' };
     var name = { rapid: 'Rapid', carbs: 'Carbs', long: 'Long' };
     var items = d.order.map(function (k) { return { label: name[k], icon: k, col: PAL[k], sub: last[k] }; });
     items.push(c.muted ? { label: 'Muted', icon: 'bellOff', col: PAL.note, sub: '1h 20m', subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
@@ -950,9 +954,11 @@ var WL = (function () {
   // rect elements carry a transform too
   G.prototype.rt = function () {};
 
+  // c.input: another input `d` in data()'s shape (the port's, tools/watchface/app-input.js), drawn instead of the
+  // made-up day
   function screen(c) {
     c = c || {};
-    var d = data(c), g = new G();
+    var d = c.input || data(c), g = new G();
     var f = S[c.screen] || S.appA;
     f(g, d, c);
     var bez = c.bezel ? bezel(c.metal) : [];

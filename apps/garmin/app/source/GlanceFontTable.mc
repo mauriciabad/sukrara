@@ -10,15 +10,15 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, metrics in base64, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["n54", "n58", "a15s", "a16s", "a17m", "a18m", "a18s", "a20b", "a23b", "a24s", "a24b", "a38s"].indexOf(key);
+        var i = ["a15s", "a16s", "a17m", "a18m", "a18s", "a20b", "a23b", "a24s", "a24b", "a38s", "n54", "n58"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        if (i < 2) {
-            return [[Rez.Drawables.n54, Rez.Drawables.n58][i], [Rez.JsonData.n54_m, Rez.JsonData.n58_m][i]];
+        if (i < 12) {
+            return [[Rez.Drawables.a15s, Rez.Drawables.a16s, Rez.Drawables.a17m, Rez.Drawables.a18m, Rez.Drawables.a18s, Rez.Drawables.a20b, Rez.Drawables.a23b, Rez.Drawables.a24s, Rez.Drawables.a24b, Rez.Drawables.a38s, Rez.Drawables.n54, Rez.Drawables.n58][i], [Rez.JsonData.a15s_m, Rez.JsonData.a16s_m, Rez.JsonData.a17m_m, Rez.JsonData.a18m_m, Rez.JsonData.a18s_m, Rez.JsonData.a20b_m, Rez.JsonData.a23b_m, Rez.JsonData.a24s_m, Rez.JsonData.a24b_m, Rez.JsonData.a38s_m, Rez.JsonData.n54_m, Rez.JsonData.n58_m][i]];
         }
-        i -= 2;
-        return [[Rez.Fonts.a15s, Rez.Fonts.a16s, Rez.Fonts.a17m, Rez.Fonts.a18m, Rez.Fonts.a18s, Rez.Fonts.a20b, Rez.Fonts.a23b, Rez.Fonts.a24s, Rez.Fonts.a24b, Rez.Fonts.a38s][i], [15, 16, 17, 18, 18, 20, 23, 24, 24, 37][i]];
+        i -= 12;
+        return [[][i], [][i]];
     }
 
     function sheet() as ResourceId {
