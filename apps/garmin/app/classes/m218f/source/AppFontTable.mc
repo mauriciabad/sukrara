@@ -6,14 +6,21 @@ import Toybox.Lang;
 import Toybox.WatchUi;
 
 module AppFontTable {
+    // the class, m218 (app.js CLS, SPEC §14): layout units → px, a rectangle
+    const S = 0.558974;
+    const RECT = false;
+    const PLAIN = true; // no tinted bitmaps: texts and icons are font resources
+    // the buttons: START, BACK, UP, DOWN (round: degrees clockwise from 12; rectangles: px from the top)
+    const KEYS = [60, 119, 270, 241];
+
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a16b", "a18b", "a28s", "a56b", "n48", "n56", "n64", "n72"].indexOf(key);
+        var i = ["a12b", "a12m", "a12s", "a14b", "a14s", "a16b", "a18b", "a22s", "a28s", "a56b", "n24", "n28", "n32", "n48", "n56", "n64", "n72"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a16b, Rez.Fonts.a18b, Rez.Fonts.a28s, Rez.Fonts.a56b, Rez.Fonts.n48, Rez.Fonts.n56, Rez.Fonts.n64, Rez.Fonts.n72][i], [16, 18, 28, 55, 47, 55, 63, 71][i]];
+        return [[Rez.Fonts.a12b, Rez.Fonts.a12m, Rez.Fonts.a12s, Rez.Fonts.a14b, Rez.Fonts.a14s, Rez.Fonts.a16b, Rez.Fonts.a18b, Rez.Fonts.a22s, Rez.Fonts.a28s, Rez.Fonts.a56b, Rez.Fonts.n24, Rez.Fonts.n28, Rez.Fonts.n32, Rez.Fonts.n48, Rez.Fonts.n56, Rez.Fonts.n64, Rez.Fonts.n72][i], [12, 12, 12, 14, 14, 16, 18, 22, 28, 55, 24, 28, 31, 47, 55, 63, 71][i]];
     }
 
     // the icon font [i]: one per size

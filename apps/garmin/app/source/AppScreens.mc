@@ -18,18 +18,18 @@ module AppScreens {
     // ---- the screen class (SPEC §14, app.js CLS) ---------------------------------------------------------------
     // the screen's half width and height in layout units (round: 195; the Venu Sq 2 160 × 180, the X1 187 × 203)
     function hw() as Float {
-        return System.getDeviceSettings().screenWidth / 2.0 / GlanceFontTable.S;
+        return System.getDeviceSettings().screenWidth / 2.0 / AppFontTable.S;
     }
 
     function hh() as Float {
-        return System.getDeviceSettings().screenHeight / 2.0 / GlanceFontTable.S;
+        return System.getDeviceSettings().screenHeight / 2.0 / AppFontTable.S;
     }
 
     // no UP / DOWN (the Venu, vívoactive, Approach S50 / S72 and D2 Air X10 rounds, the rectangles): pages and amounts
     // by swipe and tap, no + / − hints (SPEC §14.2)
     function two() as Boolean {
         var ds = System.getDeviceSettings();
-        if (GlanceFontTable.RECT) {
+        if (AppFontTable.RECT) {
             return true;
         }
         return ds has :inputButtons && (ds.inputButtons & System.BUTTON_INPUT_UP) == 0;
@@ -39,7 +39,7 @@ module AppScreens {
     // and the chart's 70 / 180 labels (≤ 240), the clock (218); [sensor, dist, yLabels, clock]
     function drops() as Array<Boolean> {
         var w = System.getDeviceSettings().screenWidth;
-        var r = !GlanceFontTable.RECT;
+        var r = !AppFontTable.RECT;
         return [r && GlanceFontTable.MIP && w <= 260, r && w <= 240, r && w <= 240, r && w <= 218];
     }
 
@@ -72,8 +72,8 @@ module AppScreens {
     // the screen's edge (app.js rim()): a ring on round screens, on rectangles a rounded rectangle 6 units in; [p] < 1
     // draws that share of it clockwise from START (hold to log fills from the button that is held)
     function rim(g as AppG, col as Number, sw as Numeric, p as Float) as Void {
-        var a0 = GlanceFontTable.KEYS[0] as Number;
-        if (!GlanceFontTable.RECT) {
+        var a0 = AppFontTable.KEYS[0] as Number;
+        if (!AppFontTable.RECT) {
             if (p >= 1) {
                 g.a(0, 0, 189, 0, 360, col, 1.0, sw, false);
             } else if (p > 0) {
@@ -89,7 +89,7 @@ module AppScreens {
             return;
         }
         // the outline from START (on the right edge) clockwise, as a polyline, [p] of its length
-        var ys = a0 / GlanceFontTable.S - hh();
+        var ys = a0 / AppFontTable.S - hh();
         var pts = [x1, ys];
         var corners = [[x1 - rc, y1 - rc, 0], [-x1 + rc, y1 - rc, 90], [-x1 + rc, -y1 + rc, 180], [x1 - rc, -y1 + rc, 270]];
         for (var c = 0; c < 4; c++) {
@@ -124,7 +124,7 @@ module AppScreens {
 
     // ---- page 1: the widget (S.appA) ---------------------------------------------------------------------------
     function appA(g as AppG, d as AppData) as Void {
-        if (GlanceFontTable.RECT) {
+        if (AppFontTable.RECT) {
             rectA(g, d);
             return;
         }
@@ -753,7 +753,7 @@ module AppScreens {
             var o = (k - (n - 1) / 2.0) * 13;
             var r = k == i ? 4 : 3;
             var c = k == i ? AppMath.INK : AppMath.DIM;
-            if (GlanceFontTable.RECT) {
+            if (AppFontTable.RECT) {
                 g.c(-hw() + 24 + o, hh() - 9, r, c, 1.0, 0);
             } else {
                 g.c(o, 180, r, c, 1.0, 0);
@@ -771,7 +771,7 @@ module AppScreens {
     // [chip w, chips' top, chip h, bar x, bar top, bar bottom, label x, value x, the rows' y (3), the goal's dy,
     //  the rule's y, its half width, the metrics' y, their spacing]
     function numsAt() as Array {
-        if (!GlanceFontTable.RECT) {
+        if (!AppFontTable.RECT) {
             return [50, -152, 30, -142, -112, 64, -116, 152, [-96, -30, 38], 22, 80, 140, 114, 92];
         }
         var w = hw();
@@ -933,9 +933,9 @@ module AppScreens {
         if (i >= 2 && two()) {
             return null;
         }
-        var k = GlanceFontTable.KEYS[i] as Number;
-        if (GlanceFontTable.RECT) {
-            var y = k / GlanceFontTable.S - hh();
+        var k = AppFontTable.KEYS[i] as Number;
+        if (AppFontTable.RECT) {
+            var y = k / AppFontTable.S - hh();
             var x = hw() - 3;
             g.l([x, y - 20, x, y + 20], col, 0.9, 5, null);
             return [x, y];

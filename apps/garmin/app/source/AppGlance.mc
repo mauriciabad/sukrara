@@ -36,12 +36,11 @@ class AppGlance extends WatchUi.GlanceView {
         WatchUi.requestUpdate();
     }
 
-    // the glance's area: the 390's glance (248 × 103 units) scaled to the tighter of the content's height and width
-    // (app.js glanceBox), its width in units the rest (a wider area's value and places have the room)
+    // the glance's area: the 390's glance (248 × 103 units) at the watch's glance scale (app.js glanceBox: the tighter of
+    // its content area's height and width; GlanceFontTable.GS, the scale its fonts are made at, so every size is there),
+    // its width in units the rest (a wider area's value and places have the room)
     static function glanceArea(w as Number, h as Number) as Void {
-        var sh = h / 103.0;
-        var sw = w / 248.0;
-        AppDraw.scale(sh < sw ? sh : sw);
+        AppDraw.scale(GlanceFontTable.GS);
         AppDraw.gw = w / AppDraw.s;
         AppDraw.ox = 83 * AppDraw.s - 0.5;
     }

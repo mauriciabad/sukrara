@@ -6,14 +6,21 @@ import Toybox.Lang;
 import Toybox.WatchUi;
 
 module AppFontTable {
+    // the class, r466 (app.js CLS, SPEC §14): layout units → px, a rectangle
+    const S = 1.194872;
+    const RECT = false;
+    const PLAIN = false; // no tinted bitmaps: texts and icons are font resources
+    // the buttons: START, BACK, UP, DOWN (round: degrees clockwise from 12; rectangles: px from the top)
+    const KEYS = [61, 121, 268, 240];
+
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a16m", "a16s", "a18b", "a18m", "a20b", "a20m", "a24b", "a24m", "a24s", "a26s", "a28b", "a28s", "a32b", "a32s", "a36b", "a40b", "a44s", "a56s", "a60s", "a112b", "n104", "n112", "n120", "n136", "n148"].indexOf(key);
+        var i = ["a16m", "a16s", "a18b", "a18m", "a18s", "a20b", "a20m", "a20s", "a22m", "a22s", "a24b", "a24m", "a24s", "a26b", "a26s", "a28b", "a28s", "a32b", "a32s", "a36b", "a40b", "a44s", "a56s", "a60s", "a112b", "n52", "n56", "n60", "n64", "n72", "n104", "n112", "n120", "n136", "n148"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Drawables.a16m, Rez.Drawables.a16s, Rez.Drawables.a18b, Rez.Drawables.a18m, Rez.Drawables.a20b, Rez.Drawables.a20m, Rez.Drawables.a24b, Rez.Drawables.a24m, Rez.Drawables.a24s, Rez.Drawables.a26s, Rez.Drawables.a28b, Rez.Drawables.a28s, Rez.Drawables.a32b, Rez.Drawables.a32s, Rez.Drawables.a36b, Rez.Drawables.a40b, Rez.Drawables.a44s, Rez.Drawables.a56s, Rez.Drawables.a60s, Rez.Drawables.a112b, Rez.Drawables.n104, Rez.Drawables.n112, Rez.Drawables.n120, Rez.Drawables.n136, Rez.Drawables.n148][i], [Rez.JsonData.a16m_m, Rez.JsonData.a16s_m, Rez.JsonData.a18b_m, Rez.JsonData.a18m_m, Rez.JsonData.a20b_m, Rez.JsonData.a20m_m, Rez.JsonData.a24b_m, Rez.JsonData.a24m_m, Rez.JsonData.a24s_m, Rez.JsonData.a26s_m, Rez.JsonData.a28b_m, Rez.JsonData.a28s_m, Rez.JsonData.a32b_m, Rez.JsonData.a32s_m, Rez.JsonData.a36b_m, Rez.JsonData.a40b_m, Rez.JsonData.a44s_m, Rez.JsonData.a56s_m, Rez.JsonData.a60s_m, Rez.JsonData.a112b_m, Rez.JsonData.n104_m, Rez.JsonData.n112_m, Rez.JsonData.n120_m, Rez.JsonData.n136_m, Rez.JsonData.n148_m][i]];
+        return [[Rez.Drawables.a16m, Rez.Drawables.a16s, Rez.Drawables.a18b, Rez.Drawables.a18m, Rez.Drawables.a18s, Rez.Drawables.a20b, Rez.Drawables.a20m, Rez.Drawables.a20s, Rez.Drawables.a22m, Rez.Drawables.a22s, Rez.Drawables.a24b, Rez.Drawables.a24m, Rez.Drawables.a24s, Rez.Drawables.a26b, Rez.Drawables.a26s, Rez.Drawables.a28b, Rez.Drawables.a28s, Rez.Drawables.a32b, Rez.Drawables.a32s, Rez.Drawables.a36b, Rez.Drawables.a40b, Rez.Drawables.a44s, Rez.Drawables.a56s, Rez.Drawables.a60s, Rez.Drawables.a112b, Rez.Drawables.n52, Rez.Drawables.n56, Rez.Drawables.n60, Rez.Drawables.n64, Rez.Drawables.n72, Rez.Drawables.n104, Rez.Drawables.n112, Rez.Drawables.n120, Rez.Drawables.n136, Rez.Drawables.n148][i], [Rez.JsonData.a16m_m, Rez.JsonData.a16s_m, Rez.JsonData.a18b_m, Rez.JsonData.a18m_m, Rez.JsonData.a18s_m, Rez.JsonData.a20b_m, Rez.JsonData.a20m_m, Rez.JsonData.a20s_m, Rez.JsonData.a22m_m, Rez.JsonData.a22s_m, Rez.JsonData.a24b_m, Rez.JsonData.a24m_m, Rez.JsonData.a24s_m, Rez.JsonData.a26b_m, Rez.JsonData.a26s_m, Rez.JsonData.a28b_m, Rez.JsonData.a28s_m, Rez.JsonData.a32b_m, Rez.JsonData.a32s_m, Rez.JsonData.a36b_m, Rez.JsonData.a40b_m, Rez.JsonData.a44s_m, Rez.JsonData.a56s_m, Rez.JsonData.a60s_m, Rez.JsonData.a112b_m, Rez.JsonData.n52_m, Rez.JsonData.n56_m, Rez.JsonData.n60_m, Rez.JsonData.n64_m, Rez.JsonData.n72_m, Rez.JsonData.n104_m, Rez.JsonData.n112_m, Rez.JsonData.n120_m, Rez.JsonData.n136_m, Rez.JsonData.n148_m][i]];
     }
 
     // the icon sheet [i]: one per size

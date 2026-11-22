@@ -11,36 +11,22 @@
     <jsonData id="a18b_m" filename="a18b.json"/>
     <bitmap id="a18m" filename="a18m.png" dithering="none" packingFormat="png"/>
     <jsonData id="a18m_m" filename="a18m.json"/>
-    <bitmap id="a18s" filename="a18s.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a18s_m" filename="a18s.json" scope="glance"/>
     <bitmap id="a20b" filename="a20b.png" dithering="none" packingFormat="png"/>
     <jsonData id="a20b_m" filename="a20b.json"/>
     <bitmap id="a20m" filename="a20m.png" dithering="none" packingFormat="png"/>
     <jsonData id="a20m_m" filename="a20m.json"/>
-    <bitmap id="a20s" filename="a20s.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a20s_m" filename="a20s.json" scope="glance"/>
-    <bitmap id="a22m" filename="a22m.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a22m_m" filename="a22m.json" scope="glance"/>
-    <bitmap id="a22s" filename="a22s.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a22s_m" filename="a22s.json" scope="glance"/>
     <bitmap id="a24b" filename="a24b.png" dithering="none" packingFormat="png"/>
     <jsonData id="a24b_m" filename="a24b.json"/>
     <bitmap id="a24m" filename="a24m.png" dithering="none" packingFormat="png"/>
     <jsonData id="a24m_m" filename="a24m.json"/>
     <bitmap id="a24s" filename="a24s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a24s_m" filename="a24s.json"/>
-    <bitmap id="a26b" filename="a26b.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a26b_m" filename="a26b.json" scope="glance"/>
     <bitmap id="a26s" filename="a26s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a26s_m" filename="a26s.json"/>
     <bitmap id="a28b" filename="a28b.png" dithering="none" packingFormat="png"/>
     <jsonData id="a28b_m" filename="a28b.json"/>
     <bitmap id="a28s" filename="a28s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a28s_m" filename="a28s.json"/>
-    <bitmap id="a30b" filename="a30b.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a30b_m" filename="a30b.json" scope="glance"/>
-    <bitmap id="a30s" filename="a30s.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a30s_m" filename="a30s.json" scope="glance"/>
     <bitmap id="a32b" filename="a32b.png" dithering="none" packingFormat="png"/>
     <jsonData id="a32b_m" filename="a32b.json"/>
     <bitmap id="a32s" filename="a32s.png" dithering="none" packingFormat="png"/>
@@ -51,24 +37,12 @@
     <jsonData id="a40b_m" filename="a40b.json"/>
     <bitmap id="a44s" filename="a44s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a44s_m" filename="a44s.json"/>
-    <bitmap id="a48s" filename="a48s.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="a48s_m" filename="a48s.json" scope="glance"/>
     <bitmap id="a56s" filename="a56s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a56s_m" filename="a56s.json"/>
     <bitmap id="a60s" filename="a60s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a60s_m" filename="a60s.json"/>
     <bitmap id="a112b" filename="a112b.png" dithering="none" packingFormat="png"/>
     <jsonData id="a112b_m" filename="a112b.json"/>
-    <bitmap id="n52" filename="n52.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="n52_m" filename="n52.json" scope="glance"/>
-    <bitmap id="n56" filename="n56.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="n56_m" filename="n56.json" scope="glance"/>
-    <bitmap id="n60" filename="n60.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="n60_m" filename="n60.json" scope="glance"/>
-    <bitmap id="n64" filename="n64.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="n64_m" filename="n64.json" scope="glance"/>
-    <bitmap id="n72" filename="n72.png" dithering="none" packingFormat="png" scope="glance"/>
-    <jsonData id="n72_m" filename="n72.json" scope="glance"/>
     <bitmap id="n104" filename="n104.png" dithering="none" packingFormat="png"/>
     <jsonData id="n104_m" filename="n104.json"/>
     <bitmap id="n112" filename="n112.png" dithering="none" packingFormat="png"/>

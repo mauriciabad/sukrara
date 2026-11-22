@@ -48,7 +48,8 @@ Every surface draws the same way, so the design's port replaces only the drawing
 
 The app follows the reference (`tools/watchface/app.js`) function by function: `AppInput.build` (`AppData.mc`: the
 payload and the clock → app.js's input `d`) → a screen pushes its display list (`AppG`) → `AppDraw` paints it, every
-text an atlas (`app/tools/fonts.py`). The screens: `AppGlance.mc` / `AppParts.glance`, `AppView.mc` + `AppScreens.mc`
+text an atlas (`app/tools/fonts.py`: each screen class's in `app/classes/<class>`, each glance scale's in
+`app/classes/<class>/g<scale>`, so a glance carries only its own sizes). The screens: `AppGlance.mc` / `AppParts.glance`, `AppView.mc` + `AppScreens.mc`
 (page 1, page 2), `AppLists.mc` (the one list), `AppLog.mc` (logging), `AppMute.mc` (mute, Remind less),
 `AppAlert.mc` (the app's alert, Aura's sparkline); `SukraraApp.mc` (`AppNav`: the routes in, the alert while open),
 `AppService.mc` (the background: the shared link, the complications, Garmin's notification; it keeps the payload

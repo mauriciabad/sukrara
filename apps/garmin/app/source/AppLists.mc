@@ -62,7 +62,7 @@ module AppLists {
     // corner, icon x, label x, the last entry's x, the others' icon size]; round (app.js S.actions) or the rectangles'
     // full-width rows (R.actions)
     function ys() as Array {
-        if (!GlanceFontTable.RECT) {
+        if (!AppFontTable.RECT) {
             return [-74, -12, 44, 100];
         }
         var h = AppScreens.hh();
@@ -71,7 +71,7 @@ module AppLists {
     }
 
     function at() as Array {
-        if (!GlanceFontTable.RECT) {
+        if (!AppFontTable.RECT) {
             return [0, -138, 0, -166, 332, 32, -128, -104, 150, 22];
         }
         var w = AppScreens.hw();

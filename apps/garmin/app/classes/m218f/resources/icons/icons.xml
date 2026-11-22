@@ -9,6 +9,5 @@
     <font id="icons15" filename="icons15.fnt" antialias="true"/>
     <font id="icons17" filename="icons17.fnt" antialias="true"/>
     <font id="icons25" filename="icons25.fnt" antialias="true"/>
-    <font id="gicons8" filename="gicons8.fnt" antialias="true" scope="glance"/>
     <bitmap id="PhoneIcon" filename="phone.png" dithering="none"/>
 </resources>

@@ -99,7 +99,7 @@ class AppG {
 
 // Paints an AppG on a Dc: [ox, oy] the reference's origin in the Dc's pixels (a shape at device x covers x − 0.5 …
 // x + 0.5: on the 390 px screen the origin is 194.5, the edge between pixels 194 and 195; bitmaps sit at + 0.5), [s]
-// the layout units → px (the class's, GlanceFontTable.S; the glance's own). The class's rules (SPEC §14.1, app.js
+// the layout units → px (the class's, AppFontTable.S; the glance's own). The class's rules (SPEC §14.1, app.js
 // snapFont, snapStroke, G.col): every text at the nearest size of the class's atlas set (the 390 keeps its approved
 // sizes), strokes to whole px, and on the 64-colour MIP screens every colour one of the 64, no alpha: a tint becomes a
 // solid, a dither or (a selected row, a chip: card2) black with a 2 px outline.
@@ -108,6 +108,7 @@ module AppDraw {
     var ox as Float = 194.5;
     var oy as Float = 194.5;
     var s as Float = 1.0;
+    (:snap)
     var snapOn as Boolean = false; // sizes snap to the atlas set (all but the 390 at 1:1)
     var gw as Float = 248.0; // the glance's width, units
     var fonts as Dictionary = {};
@@ -119,14 +120,28 @@ module AppDraw {
     var table as Method? = null;
     var iconAt as Method? = null;
     var sheetAt as Method? = null;
+    var bitmapAt as Method? = null; // AppDrawApp.bitmap
 
-    // the scale: the class's (the app's pages) or the glance's
+    // the scale: the class's (the app's pages) or the glance's. A watch whose app and glance both draw the 390's own
+    // sizes (the 390s with the 390's glance: monkey.jungle's screen classes) builds no snapping (:nosnap)
+    (:nosnap)
+    function scale(sc as Float) as Void {
+        s = sc;
+    }
+
+    (:nosnap)
+    function fe(fs as Numeric) as Float {
+        return fs.toFloat();
+    }
+
+    (:snap)
     function scale(sc as Float) as Void {
         s = sc;
         snapOn = !GlanceFontTable.R390 || AppMath.abs(sc - 1.0) > 0.001;
     }
 
     // a size (units) as the class draws it: the nearest of its atlas set (ties: the larger)
+    (:snap)
     function fe(fs as Numeric) as Float {
         if (!snapOn) {
             return fs.toFloat();
@@ -199,24 +214,19 @@ module AppDraw {
     // the MIP code is built only for the MIP watches (:mip; the AMOLEDs build the :amoled stubs: monkey.jungle's
     // screen classes), so it costs the AMOLED glances nothing
     (:mip)
-    var _mip as Dictionary? = null;
     const CARD = -2; // card2 on MIP: black, outlined AAAAAA
+    (:mip)
     const GRID_MIP = -3; // grid on MIP: 555555 dithered 50 %
 
-    // an AMOLED token as its MIP token (app.js PAL_MIP); anything else: the nearest of the 64
+    // an AMOLED token as its MIP token (app.js PAL_MIP); anything else: the nearest of the 64. Compared, not a
+    // dictionary kept in memory (the glance's 64 KB, #217)
     (:mip)
     function mipToken(c as Number) as Number {
-        if (_mip == null) {
-            _mip = {
-                0xA3A3A8 => 0xAAAAAA, 0x6E6E73 => 0x555555, 0x3A3A3E => 0x555555, 0x26262A => GRID_MIP, 0x38383E => 0x555555,
-                0x4E4E55 => 0x555555, 0x8E8E93 => 0xAAAAAA, 0xC2413B => 0xFF0000, 0xF0524F => 0xFF5555, 0x3DD47A => 0x00FF55,
-                0x8CC63F => 0xAAFF00, 0xF5A524 => 0xFFAA00, 0xFF7A45 => 0xFF5500, 0xE35BD0 => 0xFF55FF, 0xC6F432 => 0xAAFF00,
-                0x8AB4FF => 0x55AAFF, 0xC9B0FF => 0xAAAAFF, 0xFFB74D => 0xFFAA55, 0xB4B4B4 => 0xAAAAAA, 0x1C1C1E => 0x000000,
-                0x141416 => 0x000000, 0x1C1C1F => CARD
-            };
-        }
-        var m = (_mip as Dictionary).get(c);
-        return m != null ? m as Number : c;
+        var i = [0xA3A3A8, 0x6E6E73, 0x3A3A3E, 0x26262A, 0x38383E, 0x4E4E55, 0x8E8E93, 0xC2413B, 0xF0524F, 0x3DD47A, 0x8CC63F,
+            0xF5A524, 0xFF7A45, 0xE35BD0, 0xC6F432, 0x8AB4FF, 0xC9B0FF, 0xFFB74D, 0xB4B4B4, 0x1C1C1E, 0x141416, 0x1C1C1F].indexOf(c);
+        return i < 0 ? c : [0xAAAAAA, 0x555555, 0x555555, GRID_MIP, 0x555555, 0x555555, 0xAAAAAA, 0xFF0000, 0xFF5555, 0x00FF55,
+            0xAAFF00, 0xFFAA00, 0xFF5500, 0xFF55FF, 0xAAFF00, 0x55AAFF, 0xAAAAFF, 0xFFAA55, 0xAAAAAA, 0x000000, 0x000000, CARD][i]
+            as Number;
     }
 
     // [colour, dither %] as the class paints [c] at opacity [op]; [role] 0 a stroke, 1 a fill, 2 a text (app.js G.col)
@@ -265,19 +275,26 @@ module AppDraw {
         return v;
     }
 
-    function argb(c as Number, alpha as Float) as Number {
-        if (alpha >= 1.0 || GlanceFontTable.MIP) {
-            var v = 0xFF000000 | c;
-            return v == -1 ? 0xFFFFFFFE : v;
+    // fill and stroke for what comes next: ARGB on the AMOLEDs (they blend)
+    (:amoled)
+    function ink(dc as Dc, c as Number, op as Float) as Void {
+        var v = 0;
+        if (op >= 1.0) {
+            v = 0xFF000000 | c;
+            v = v == -1 ? 0xFFFFFFFE : v;
+        } else {
+            v = Graphics.createColor((AppMath.clamp(op, 0, 1) * 255 + 0.5).toNumber(), (c >> 16) & 255, (c >> 8) & 255, c & 255);
         }
-        var al = (AppMath.clamp(alpha, 0, 1) * 255 + 0.5).toNumber();
-        return Graphics.createColor(al, (c >> 16) & 255, (c >> 8) & 255, c & 255);
+        dc.setFill(v);
+        dc.setStroke(v);
     }
 
-    // fill and stroke for what comes next: ARGB where the watch blends, else its RGB (no alpha: MIP)
+    // the MIP screens: opaque, the 64 colours (no alpha)
+    (:mip)
     function ink(dc as Dc, c as Number, op as Float) as Void {
         if (dc has :setFill) {
-            var v = argb(c, op);
+            var v = 0xFF000000 | c;
+            v = v == -1 ? 0xFFFFFFFE : v;
             dc.setFill(v);
             dc.setStroke(v);
         } else {
@@ -314,8 +331,8 @@ module AppDraw {
                 text(dc, e);
             } else if (k == 6) {
                 icon(dc, e);
-            } else if (k == 7) {
-                bitmap(dc, e);
+            } else if (k == 7 && bitmapAt != null) {
+                (bitmapAt as Method).invoke(dc, e);
             }
             if (once) {
                 els[i] = null;
@@ -333,14 +350,57 @@ module AppDraw {
 
     // a stroke's pen (app.js snapStroke): the 390 as is; AMOLED never under 1 px; MIP hairlines (≤ 1.6 units) 1 px,
     // everything else at least 2
+    (:amoled)
     function px(w as Numeric) as Number {
         var v = Math.round(w.toFloat() * s).toNumber();
-        if (GlanceFontTable.MIP) {
-            return w <= 1.6 ? 1 : v < 2 ? 2 : v;
-        }
         return v < 1 ? 1 : v;
     }
 
+    (:mip)
+    function px(w as Numeric) as Number {
+        var v = Math.round(w.toFloat() * s).toNumber();
+        return w <= 1.6 ? 1 : v < 2 ? 2 : v;
+    }
+
+    // the AMOLEDs' rectangle and circle: the colour as it is, blended
+    (:amoled)
+    function rect(dc as Dc, e as Array) as Void {
+        var x = X(e[1]);
+        var y = Y(e[2]);
+        var w = (e[3] as Numeric) * s;
+        var h = (e[4] as Numeric) * s;
+        var rx = (e[5] as Numeric) * s;
+        if (rx > h / 2) {
+            rx = h / 2;
+        }
+        ink(dc, e[6] as Number, e[7] as Float);
+        if ((e[8] as Numeric) > 0) {
+            dc.setPenWidth(px(e[8] as Numeric));
+            if (rx > 0) {
+                dc.drawRoundedRectangle(x, y, w, h, rx);
+            } else {
+                dc.drawRectangle(x, y, w, h);
+            }
+        } else if (rx > 0) {
+            dc.fillRoundedRectangle(x, y, w, h, rx);
+        } else {
+            dc.fillRectangle(x, y, w, h);
+        }
+    }
+
+    (:amoled)
+    function circle(dc as Dc, e as Array) as Void {
+        ink(dc, e[4] as Number, e[5] as Float);
+        if ((e[6] as Numeric) > 0) {
+            dc.setPenWidth(px(e[6] as Numeric));
+            dc.drawCircle(X(e[1]), Y(e[2]), (e[3] as Numeric) * s);
+        } else {
+            dc.fillCircle(X(e[1]), Y(e[2]), (e[3] as Numeric) * s);
+        }
+    }
+
+    // the MIP screens' (G.col): card2 outlined, a tint dithered
+    (:mip)
     function rect(dc as Dc, e as Array) as Void {
         var x = X(e[1]);
         var y = Y(e[2]);
@@ -352,26 +412,17 @@ module AppDraw {
         }
         var stroke = (e[8] as Numeric) > 0;
         var m = col(e[6] as Number, e[7] as Float, stroke ? 0 : 1);
-        var c = m[0] as Number;
-        if (c == CARD) {
-            ink(dc, 0, 1.0);
-            box(dc, x, y, w, h, rx, false);
-            ink(dc, 0xAAAAAA, 1.0);
-            dc.setPenWidth(2);
-            box(dc, x + 1, y + 1, w - 2, h - 2, rx > 1 ? rx - 1 : 0, true);
+        if (mipFill(dc, m, x, y, w, h, rx, -1.0)) {
             return;
         }
-        if ((m[1] as Number) > 0) {
-            dither(dc, x, y, w, h, -1.0, c, m[1] as Number);
-            return;
-        }
-        ink(dc, c, e[7] as Float);
+        ink(dc, m[0] as Number, e[7] as Float);
         if (stroke) {
             dc.setPenWidth(px(e[8] as Numeric));
         }
         box(dc, x, y, w, h, rx, stroke);
     }
 
+    (:mip)
     function box(dc as Dc, x as Float, y as Float, w as Float, h as Float, rx as Float, stroke as Boolean) as Void {
         if (stroke) {
             if (rx > 0) {
@@ -386,26 +437,17 @@ module AppDraw {
         }
     }
 
+    (:mip)
     function circle(dc as Dc, e as Array) as Void {
         var cx = X(e[1]);
         var cy = Y(e[2]);
         var r = (e[3] as Numeric) * s;
         var stroke = (e[6] as Numeric) > 0;
         var m = col(e[4] as Number, e[5] as Float, stroke ? 0 : 1);
-        var c = m[0] as Number;
-        if (c == CARD) {
-            ink(dc, 0, 1.0);
-            dc.fillCircle(cx, cy, r);
-            ink(dc, 0xAAAAAA, 1.0);
-            dc.setPenWidth(2);
-            dc.drawCircle(cx, cy, r - 1);
+        if (mipFill(dc, m, cx - r, cy - r, 2 * r, 2 * r, 0.0, r)) {
             return;
         }
-        if ((m[1] as Number) > 0) {
-            dither(dc, cx - r, cy - r, 2 * r, 2 * r, r, c, m[1] as Number);
-            return;
-        }
-        ink(dc, c, e[5] as Float);
+        ink(dc, m[0] as Number, e[5] as Float);
         if (stroke) {
             dc.setPenWidth(px(e[6] as Numeric));
             dc.drawCircle(cx, cy, r);
@@ -414,12 +456,37 @@ module AppDraw {
         }
     }
 
+    // [m] (col()'s) as the MIP screens fill it, in the box [x, y, w, h] (corners [rx]) or the circle of radius [r] ≥ 0
+    // filling it: card2 black with a 2 px AAAAAA outline, a tint a dither; false when [m] is a plain colour
+    (:mip)
+    function mipFill(dc as Dc, m as Array, x as Float, y as Float, w as Float, h as Float, rx as Float, r as Float) as Boolean {
+        var c = m[0] as Number;
+        if (c == CARD) {
+            ink(dc, 0, 1.0);
+            if (r >= 0) {
+                dc.fillCircle(x + r, y + r, r);
+            } else {
+                box(dc, x, y, w, h, rx, false);
+            }
+            ink(dc, 0xAAAAAA, 1.0);
+            dc.setPenWidth(2);
+            if (r >= 0) {
+                dc.drawCircle(x + r, y + r, r - 1);
+            } else {
+                box(dc, x + 1, y + 1, w - 2, h - 2, rx > 1 ? rx - 1 : 0, true);
+            }
+            return true;
+        }
+        if ((m[1] as Number) > 0) {
+            dither(dc, x, y, w, h, r, c, m[1] as Number);
+            return true;
+        }
+        return false;
+    }
+
     // an ordered dither in the screen's pixels (app.js G.dither): 50 % a checkerboard (its pixels on every other
     // anti-diagonal, drawn as lines), 25 % one pixel in four; in the box [x, y, w, h], or the circle of radius [r] ≥ 0
     // filling it
-    (:amoled)
-    function dither(dc as Dc, x as Float, y as Float, w as Float, h as Float, r as Float, c as Number, pct as Number) as Void {}
-
     (:mip)
     function dither(dc as Dc, x as Float, y as Float, w as Float, h as Float, r as Float, c as Number, pct as Number) as Void {
         var x0 = Math.round(x + 0.5).toNumber();
@@ -630,23 +697,8 @@ module AppDraw {
         return w;
     }
 
-    function bitmap(dc as Dc, e as Array) as Void {
-        var b = WatchUi.loadResource(e[1] as ResourceId) as BitmapResource;
-        var bw = b.getWidth();
-        var size = (e[4] as Numeric) * s;
-        if (AppMath.abs(size - bw) < 1.5 || !(Graphics has :AffineTransform)) {
-            // drawn at its own size (the class's resource is made at the size it is drawn)
-            dc.drawBitmap(Math.round(X(e[2]) + 0.5 - bw / 2.0), Math.round(Y(e[3]) + 0.5 - b.getHeight() / 2.0), b);
-            return;
-        }
-        var sc = size / bw;
-        var t = new Graphics.AffineTransform();
-        t.scale(sc, sc);
-        dc.drawBitmap2(X(e[2]) - bw * sc / 2, Y(e[3]) - b.getHeight() * sc / 2, b, {
-            :transform => t, :filterMode => Graphics.FILTER_MODE_BILINEAR,
-        });
-    }
-
+    // an icon: an icon font's glyph "A" + index, its tile drawn from its top left (1 px under, as every bitmap font)
+    (:plain)
     function icon(dc as Dc, e as Array) as Void {
         var size = Math.round((e[4] as Numeric) * s).toNumber();
         var b = glance ? GlanceFontTable.icon(e[1] as String, size) : (iconAt as Method).invoke(e[1], size) as Array?;
@@ -659,21 +711,28 @@ module AppDraw {
             sheet = WatchUi.loadResource(glance ? GlanceFontTable.sheet(si) : (sheetAt as Method).invoke(si) as ResourceId);
             sheets[si] = sheet;
         }
-        tile(dc, e, b, sheet, (col(e[5] as Number, 1.0, 1)[0] as Number) & 0xFFFFFF, size);
-    }
-
-    // an icon font: glyph "A" + index, its tile drawn from its top left (1 px under, as every bitmap font)
-    (:plain)
-    function tile(dc as Dc, e as Array, b as Array, sheet, c as Number, size as Number) as Void {
+        var c = (col(e[5] as Number, 1.0, 1)[0] as Number) & 0xFFFFFF;
         var box = b[2] as Number;
         dc.setColor(c, Graphics.COLOR_TRANSPARENT);
         dc.drawText(Math.round(X(e[2]) + 0.5 - box / 2.0), Math.round(Y(e[3]) + 0.5 - box / 2.0) - 1, sheet,
             ((65 + (b[0] as Number)) as Number).toChar().toString(), Graphics.TEXT_JUSTIFY_LEFT);
     }
 
-    // an icon sheet's tile, tinted and scaled to [size]
+    // an icon: its sheet's tile, tinted and scaled to [size]
     (:atlas)
-    function tile(dc as Dc, e as Array, b as Array, sheet, c as Number, size as Number) as Void {
+    function icon(dc as Dc, e as Array) as Void {
+        var size = Math.round((e[4] as Numeric) * s).toNumber();
+        var b = glance ? GlanceFontTable.icon(e[1] as String, size) : (iconAt as Method).invoke(e[1], size) as Array?;
+        if (b == null) {
+            return;
+        }
+        var si = b[3] as Number;
+        var sheet = sheets[si];
+        if (sheet == null) {
+            sheet = WatchUi.loadResource(glance ? GlanceFontTable.sheet(si) : (sheetAt as Method).invoke(si) as ResourceId);
+            sheets[si] = sheet;
+        }
+        var c = (col(e[5] as Number, 1.0, 1)[0] as Number) & 0xFFFFFF;
         var box = b[2] as Number;
         var bs = size.toFloat() / (box - 4);
         var t = new Graphics.AffineTransform();
@@ -682,6 +741,27 @@ module AppDraw {
         dc.drawBitmap2(X(e[2]) + 0.5, Y(e[3]) + 0.5, sheet, {
             :bitmapX => b[0], :bitmapY => b[1], :bitmapWidth => box, :bitmapHeight => box,
             :tintColor => c, :filterMode => Graphics.FILTER_MODE_BILINEAR, :transform => t,
+        });
+    }
+}
+
+// The app's own drawing, out of the glance's code (its 64 KB): a bitmap resource [size] units wide at its centre, drawn
+// at its own size where the class's resource is made at it (AppDraw.bitmapAt)
+module AppDrawApp {
+    function bitmap(dc as Dc, e as Array) as Void {
+        var b = WatchUi.loadResource(e[1] as ResourceId) as BitmapResource;
+        var bw = b.getWidth();
+        var size = (e[4] as Numeric) * AppDraw.s;
+        if (AppMath.abs(size - bw) < 1.5 || !(Graphics has :AffineTransform)) {
+            // drawn at its own size (the class's resource is made at the size it is drawn)
+            dc.drawBitmap(Math.round(AppDraw.X(e[2]) + 0.5 - bw / 2.0), Math.round(AppDraw.Y(e[3]) + 0.5 - b.getHeight() / 2.0), b);
+            return;
+        }
+        var sc = size / bw;
+        var t = new Graphics.AffineTransform();
+        t.scale(sc, sc);
+        dc.drawBitmap2(AppDraw.X(e[2]) - bw * sc / 2, AppDraw.Y(e[3]) - b.getHeight() * sc / 2, b, {
+            :transform => t, :filterMode => Graphics.FILTER_MODE_BILINEAR,
         });
     }
 }

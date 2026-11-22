@@ -73,9 +73,10 @@ module MemCases {
         AppDraw.glance = true;
         AppDraw.once = false;
         AppDraw.table = null;
-        AppDraw.s = 1.0;
-        AppDraw.ox = 82.5;
-        AppDraw.oy = 51.0;
+        // at the watch's glance scale (its fonts are made at it), as AppGlance.glanceArea
+        AppDraw.scale(GlanceFontTable.GS);
+        AppDraw.ox = 83 * AppDraw.s - 0.5;
+        AppDraw.oy = 51.0 * AppDraw.s;
         var g = new AppG();
         AppParts.glance(g, d);
         d = null;

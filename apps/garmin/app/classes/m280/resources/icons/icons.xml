@@ -9,7 +9,5 @@
     <bitmap id="icons19" filename="icons19.png" dithering="none" packingFormat="png"/>
     <bitmap id="icons22" filename="icons22.png" dithering="none" packingFormat="png"/>
     <bitmap id="icons32" filename="icons32.png" dithering="none" packingFormat="png"/>
-    <bitmap id="gicons8" filename="gicons8.png" dithering="none" packingFormat="png" scope="glance"/>
-    <bitmap id="gicons10" filename="gicons10.png" dithering="none" packingFormat="png" scope="glance"/>
     <bitmap id="PhoneIcon" filename="phone.png" dithering="none"/>
 </resources>

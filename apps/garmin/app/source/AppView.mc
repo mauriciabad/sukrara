@@ -122,7 +122,8 @@ class AppView extends WatchUi.View {
         AppDraw.table = new Lang.Method(AppFontTable, :atlas);
         AppDraw.iconAt = new Lang.Method(AppFontTable, :icon);
         AppDraw.sheetAt = new Lang.Method(AppFontTable, :sheet);
-        AppDraw.scale(GlanceFontTable.S);
+        AppDraw.bitmapAt = new Lang.Method(AppDrawApp, :bitmap);
+        AppDraw.scale(AppFontTable.S);
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
     }

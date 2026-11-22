@@ -88,7 +88,7 @@ module AppAlert {
             var vfs = 84;
             var vw = AppMath.bw(str, vfs);
             var sw = 132;
-            var m = (v ? 0 : 11) + 2 / GlanceFontTable.S;
+            var m = (v ? 0 : 11) + 2 / AppFontTable.S;
             var x0 = -(vw + 12 + sw) / 2.0;
             var yt = -54 - AppDraw.fe(vfs) * 0.7;
             while ((sw > 96 || vfs > 68) && !inside(x0, yt, m)) {
@@ -110,7 +110,7 @@ module AppAlert {
         var codes = rows(it);
         // the others: dark (on the block: black at 28 %; MIP black, or an outline in the ink when the ink is black)
         var sec = v ? AppMath.BLACK : AppMath.CARD2;
-        var wide = GlanceFontTable.RECT ? 2 * AppScreens.hw() - 36 : 0;
+        var wide = AppFontTable.RECT ? 2 * AppScreens.hw() - 36 : 0;
         for (var i = 0; i < codes.size(); i++) {
             var c = codes[i];
             var on = i == sel;
@@ -147,7 +147,7 @@ module AppAlert {
     // is the box from [x0, yt] to its mirror (−x0, the value's baseline −54) inside the screen, [m] units clear of
     // its edge (app.js inside())
     function inside(x0 as Float, yt as Float, m as Float) as Boolean {
-        if (GlanceFontTable.RECT) {
+        if (AppFontTable.RECT) {
             return -x0 <= AppScreens.hw() - m && -yt <= AppScreens.hh() - m;
         }
         var r = 195 - m;

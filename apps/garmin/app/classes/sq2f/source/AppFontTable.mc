@@ -6,14 +6,21 @@ import Toybox.Lang;
 import Toybox.WatchUi;
 
 module AppFontTable {
+    // the class, sq2 (app.js CLS, SPEC §14): layout units → px, a rectangle
+    const S = 1.0;
+    const RECT = true;
+    const PLAIN = true; // no tinted bitmaps: texts and icons are font resources
+    // the buttons: START, BACK, UP, DOWN (round: degrees clockwise from 12; rectangles: px from the top)
+    const KEYS = [114, 331, 0, 0];
+
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, two Numbers a glyph, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a14m", "a14s", "a16b", "a16m", "a18b", "a20m", "a20s", "a22b", "a22s", "a26b", "a26s", "a28b", "a30b", "a32b", "a48s", "a52s", "a96b", "n88", "n96", "n104", "n120", "n128"].indexOf(key);
+        var i = ["a14m", "a14s", "a16b", "a16m", "a16s", "a18b", "a18m", "a18s", "a20b", "a20m", "a20s", "a22b", "a22s", "a24b", "a24s", "a26b", "a26s", "a28b", "a30b", "a32b", "a40s", "a48s", "a52s", "a96b", "n44", "n48", "n52", "n56", "n60", "n88", "n96", "n104", "n120", "n128"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        return [[Rez.Fonts.a14m, Rez.Fonts.a14s, Rez.Fonts.a16b, Rez.Fonts.a16m, Rez.Fonts.a18b, Rez.Fonts.a20m, Rez.Fonts.a20s, Rez.Fonts.a22b, Rez.Fonts.a22s, Rez.Fonts.a26b, Rez.Fonts.a26s, Rez.Fonts.a28b, Rez.Fonts.a30b, Rez.Fonts.a32b, Rez.Fonts.a48s, Rez.Fonts.a52s, Rez.Fonts.a96b, Rez.Fonts.n88, Rez.Fonts.n96, Rez.Fonts.n104, Rez.Fonts.n120, Rez.Fonts.n128][i], [14, 14, 16, 16, 18, 20, 20, 22, 22, 26, 26, 28, 30, 31, 47, 51, 94, 87, 94, 102, 118, 126][i]];
+        return [[Rez.Fonts.a14m, Rez.Fonts.a14s, Rez.Fonts.a16b, Rez.Fonts.a16m, Rez.Fonts.a16s, Rez.Fonts.a18b, Rez.Fonts.a18m, Rez.Fonts.a18s, Rez.Fonts.a20b, Rez.Fonts.a20m, Rez.Fonts.a20s, Rez.Fonts.a22b, Rez.Fonts.a22s, Rez.Fonts.a24b, Rez.Fonts.a24s, Rez.Fonts.a26b, Rez.Fonts.a26s, Rez.Fonts.a28b, Rez.Fonts.a30b, Rez.Fonts.a32b, Rez.Fonts.a40s, Rez.Fonts.a48s, Rez.Fonts.a52s, Rez.Fonts.a96b, Rez.Fonts.n44, Rez.Fonts.n48, Rez.Fonts.n52, Rez.Fonts.n56, Rez.Fonts.n60, Rez.Fonts.n88, Rez.Fonts.n96, Rez.Fonts.n104, Rez.Fonts.n120, Rez.Fonts.n128][i], [14, 14, 16, 16, 16, 18, 18, 18, 20, 20, 20, 22, 22, 24, 24, 26, 26, 28, 30, 31, 39, 47, 51, 94, 43, 47, 51, 55, 59, 87, 94, 102, 118, 126][i]];
     }
 
     // the icon font [i]: one per size

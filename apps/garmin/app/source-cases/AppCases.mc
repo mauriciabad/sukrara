@@ -114,7 +114,7 @@ class AppCasesView extends WatchUi.View {
         sel = cfg["sel"] instanceof Number ? cfg["sel"] as Number : 0;
         var w = System.getDeviceSettings().screenWidth;
         var h = System.getDeviceSettings().screenHeight;
-        AppDraw.scale(GlanceFontTable.S);
+        AppDraw.scale(AppFontTable.S);
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
         // nothing painted until it is laid out (the last case's list would paint with this one's tables)
@@ -157,6 +157,7 @@ class AppCasesView extends WatchUi.View {
             AppDraw.table = new Lang.Method(AppFontTable, :atlas);
             AppDraw.iconAt = new Lang.Method(AppFontTable, :icon);
             AppDraw.sheetAt = new Lang.Method(AppFontTable, :sheet);
+            AppDraw.bitmapAt = new Lang.Method(AppDrawApp, :bitmap);
             if (scr.substring(0, 3).equals("log")) {
                 logScreen(gg, scr, cfg, p);
             } else if (scr.equals("muteLengths") || scr.equals("muteDone") || scr.equals("muted") || scr.equals("remindDone")) {

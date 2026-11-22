@@ -68,7 +68,7 @@ module AppLog {
         var at = AppScreens.btnHint(g, ang, col);
         if (label != null && at != null) {
             var i = [60, 120, 270, 240].indexOf(ang);
-            var p = AppMath.P(ang == 270 ? 170 : 166, GlanceFontTable.KEYS[i] as Number);
+            var p = AppMath.P(ang == 270 ? 170 : 166, AppFontTable.KEYS[i] as Number);
             g.t(p[0] - 4, p[1] + 26 * 0.35, label, 26, 600, col, START);
         }
     }
@@ -78,7 +78,7 @@ module AppLog {
     // chevrons full-width buttons above and below the number): [the label's y, number's baseline, its size, the
     // unit's size, the up chevron's y, the down one's, the chips' top, chip w, gap, chip h, the time's y]
     function amountAt() as Array {
-        if (!GlanceFontTable.RECT) {
+        if (!AppFontTable.RECT) {
             return [-122, 22, 128, 50, -83, 49, 76, 64, 10, 36, 146];
         }
         var h = AppScreens.hh();
@@ -86,7 +86,7 @@ module AppLog {
     }
 
     function amount(g as AppG, k as String, a as Float, usual as Array, ago as Number) as Void {
-        if (GlanceFontTable.RECT) {
+        if (AppFontTable.RECT) {
             rectAmount(g, k, a, usual, ago);
             return;
         }
