@@ -5,7 +5,7 @@
 <strings>
     <string id="AppName" scope="background">Sukrara</string>
     <string id="NoReadings" scope="glance">Sin lecturas</string>
-    <string id="Waiting" scope="glance">Abre Sukrara en el móvil</string>
+    <string id="SetupTitle" scope="glance">Esperando a tu móvil</string>
 
     <string id="SendWait" scope="glance">Esperando al móvil</string>
     <string id="SendSent" scope="glance">Enviado</string>
@@ -140,4 +140,10 @@
     <string id="UFallingFast">BAJADA RÁPIDA</string>
     <string id="URisingFast">SUBIDA RÁPIDA</string>
     <string id="UNoData">SIN DATOS</string>
+    <string id="QuietHighs">Altas silenciadas $1$</string>
+    <string id="QuietLows">Bajas silenciadas $1$</string>
+    <string id="SetupLine1">Sukrara para Android envía</string>
+    <string id="SetupLine2">tu glucosa aquí</string>
+    <string id="OpenOnPhone">Abrir en el móvil</string>
+    <string id="LookPhone">Mira tu móvil</string>
 </strings>

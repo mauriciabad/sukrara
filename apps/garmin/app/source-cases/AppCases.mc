@@ -71,7 +71,9 @@ class AppCasesView extends WatchUi.View {
         Outbox.reset();
         var p = c["payload"] as Dictionary;
         var now = (p["sent"] as Number) + (c["at"] as Number);
-        Link.accept(p, now);
+        if (p["none"] != true) {
+            Link.accept(p, now);
+        }
         cfg = c["cfg"] as Dictionary;
         xs = {};
         // the outbox as the case says (the glance's sending line)
@@ -98,6 +100,9 @@ class AppCasesView extends WatchUi.View {
             AppDraw.glance = true;
             AppDraw.table = null;
             AppParts.glance(gg, d as AppData);
+            if (!(d as AppData).sent) {
+                xs = {"setup" => true};
+            }
             var snd = Sending.state(now);
             if (snd != null) {
                 xs = {"sending" => {"text" => AppParts.sendingText(snd), "ask" => snd.equals("ask")}};
@@ -111,6 +116,8 @@ class AppCasesView extends WatchUi.View {
                 logScreen(gg, scr, cfg, p);
             } else if (scr.equals("muteLengths") || scr.equals("muteDone") || scr.equals("muted") || scr.equals("remindDone")) {
                 muteScreen(gg, scr, now);
+            } else if (scr.equals("setup")) {
+                AppScreens.setup(gg, cfg["opened"] == true);
             } else if (scr.equals("alert")) {
                 var items = Ring.now(p, now, Link.skew);
                 var it = items[cfg["item"] instanceof Number ? cfg["item"] as Number : 0];
@@ -177,11 +184,13 @@ class AppCasesView extends WatchUi.View {
             AppLog.amount(g, k, a, usual, 0);
         } else if (scr.equals("logConfirm")) {
             var dup = cfg["dup"] == true ? Lang.format(AppWords.s(Rez.Strings.SameKind), [AppMath.amt(k, a), "3 min"]) : null;
-            AppLog.confirm(g, k, a, 0, dup, cfg["progress"] != null ? (cfg["progress"] as Numeric).toFloat() : 0.45);
+            AppLog.confirm(g, k, a, 0, dup, cfg["progress"] != null ? (cfg["progress"] as Numeric).toFloat() : 0.45, AppLog.quiet(k, 0));
+            xs = {"quiet" => AppLog.quiet(k, 0)};
         } else if (scr.equals("logSending")) {
             AppLog.sending(g, k, a, 0);
         } else if (scr.equals("logDone")) {
-            AppLog.done(g, k, a, cfg["left"] != null ? (cfg["left"] as Numeric).toFloat() : 0.611);
+            AppLog.done(g, k, a, cfg["left"] != null ? (cfg["left"] as Numeric).toFloat() : 0.611, AppLog.quiet(k, 0));
+            xs = {"quiet" => AppLog.quiet(k, 0)};
         } else if (scr.equals("logQueued")) {
             AppLog.queued(g, k, a, (d as AppData).clock);
         } else if (scr.equals("logPen")) {

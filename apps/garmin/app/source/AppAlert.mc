@@ -198,8 +198,9 @@ module AppSpark {
         if (!old) {
             g.c(ex, ey, 7.5 * sc, white ? AppMath.INK : AppMath.pal(d.band(d.g as Number)), 1.0, 0);
         } else {
-            g.c(ex, ey, 7.5 * sc, AppMath.BLACK, 1.0, 0);
-            g.c(ex, ey, 7.5 * sc, AppMath.GREY, 1.0, 3 * sc);
+            // old: a hollow end (on the block, in the line's colour)
+            g.c(ex, ey, 7.5 * sc, white ? bg as Number : AppMath.BLACK, 1.0, 0);
+            g.c(ex, ey, 7.5 * sc, white ? lcol : AppMath.GREY, 1.0, 3 * sc);
         }
     }
 

@@ -45,6 +45,24 @@ module AppLog {
         return Lang.format(AppWords.s(Rez.Strings.MinAgo), [ago]);
     }
 
+    // what an entry of [k] taken [ago] min before now quiets, as the phone's Add treatment says it ("Highs quiet for
+    // 1 h"; payload log.<kind>.q, counted from the entry's time); null when nothing (or no longer anything)
+    function quiet(k as String, ago as Number) as String? {
+        var p = Link.payload();
+        var log = p != null ? p.get("log") : null;
+        var kd = log instanceof Dictionary ? log.get(k) : null;
+        var q = kd instanceof Dictionary ? kd.get("q") : null;
+        if (!(q instanceof Dictionary) || !(q.get("min") instanceof Number)) {
+            return null;
+        }
+        var m = (q.get("min") as Number) - ago;
+        if (m <= 0) {
+            return null;
+        }
+        var len = m < 60 ? m + " min" : m % 60 == 0 ? (m / 60) + " h" : (m / 60) + " h " + (m % 60) + " min";
+        return Lang.format(AppWords.s("low".equals(q.get("side")) ? Rez.Strings.QuietLows : Rez.Strings.QuietHighs), [len]);
+    }
+
     // a hint at a button: a short arc on the rim at its angle, and a label beside it (app.js btnHint)
     function hint(g as AppG, ang as Numeric, label as String?, col as Number) as Void {
         AppScreens.btnHint(g, ang, col);
@@ -88,7 +106,7 @@ module AppLog {
     }
 
     // ---- hold to log (S.logConfirm): [dup] the same kind's entry of the last 15 min ("4.5u 3 min ago"), or null --
-    function confirm(g as AppG, k as String, a as Float, ago as Number, dup as String?, p as Float) as Void {
+    function confirm(g as AppG, k as String, a as Float, ago as Number, dup as String?, p as Float, q as String?) as Void {
         var col = AppMath.pal(k);
         if (dup != null) {
             g.icon("warn", -96, -132, 22, AppMath.pal("high"));
@@ -105,6 +123,9 @@ module AppLog {
         g.n(x0 + 42, -8, s, 96, col, START);
         g.t(x0 + 42 + wN, -8, unit, 96, 700, col, START);
         g.t(0, 30, Lang.format(AppWords.s(Rez.Strings.AmountWhen), [kindWord(k), when(ago, true)]), 22, 600, AppMath.INK, MIDDLE);
+        if (q != null) {
+            g.t(0, 62, q, 18, 500, AppMath.SOFT, MIDDLE);
+        }
         // the rim fills from START while it's held
         g.a(0, 0, 189, 0, 360, AppMath.GRID, 1.0, 8, false);
         if (p > 0) {
@@ -141,11 +162,14 @@ module AppLog {
     }
 
     // ---- logged (S.logDone) -----------------------------------------------------------------------------------
-    function done(g as AppG, k as String, a as Float, left as Float) as Void {
+    function done(g as AppG, k as String, a as Float, left as Float, q as String?) as Void {
         var col = AppMath.pal(k);
         g.c(0, -46, 50, col, 1.0, 0);
         g.l([-22, -46, -8, -32, 22, -62], AppMath.ON, 1.0, 8, null);
         g.t(0, 40, Lang.format(AppWords.s(Rez.Strings.Logged), [what(k, a)]), 28, 700, AppMath.INK, MIDDLE);
+        if (q != null) {
+            g.t(0, 72, q, 20, 500, AppMath.SOFT, MIDDLE);
+        }
         if (left > 0) {
             undo(g, 98, left);
             hint(g, 60, null, AppMath.INK);
@@ -465,12 +489,12 @@ class LogView extends WatchUi.View {
         if (state.equals("amount")) {
             AppLog.amount(g, k, a, usual, ago);
         } else if (state.equals("confirm")) {
-            AppLog.confirm(g, k, a, ago, dup, progress);
+            AppLog.confirm(g, k, a, ago, dup, progress, AppLog.quiet(k, ago));
         } else if (state.equals("sending")) {
             AppLog.sending(g, k, a, _spin);
         } else if (state.equals("done")) {
             var left = 1.0 - (System.getTimer() - _t0).toFloat() / UNDO_MS;
-            AppLog.done(g, k, a, left < 0 ? 0.0 : left);
+            AppLog.done(g, k, a, left < 0 ? 0.0 : left, AppLog.quiet(k, (Time.now().value() - at) / 60));
         } else if (state.equals("queued")) {
             AppLog.queued(g, k, a, AppInput.hm(at));
         } else if (state.equals("pen")) {

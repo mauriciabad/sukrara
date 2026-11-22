@@ -1,5 +1,5 @@
 {
- "about": "The watch app's screens (SPEC.md), each drawn from a phone state of contracts/watchface/payload/cases.json's 'app' list ('state': its index) at a watch time ('at': s after its 'now'), with the screen's own inputs ('set': payload keys replaced, for a watch state the phone's cases lack; 'cfg': 'days' the numbers' period, 'sel' the selection; the logging screens' 'kind', 'amount', 'progress' of the hold, 'dup' the same kind just logged, 'left' the share of Undo's 10 s; the mute screens' 'side', 'min', 'act'; the alert's 'spark' (the watch setting) and 'item' (which ring item); the glance's 'outbox': wait / ask / sent). apps/garmin/app's case loader (cases.jungle) shows them in turn; tools/watchface/app.js draws the reference from the same input.",
+ "about": "The watch app's screens (SPEC.md), each drawn from a phone state of contracts/watchface/payload/cases.json's 'app' list ('state': its index; null: nothing from the phone yet) at a watch time ('at': s after its 'now'), with the screen's own inputs ('set': payload keys replaced, for a watch state the phone's cases lack; 'cfg': 'days' the numbers' period, 'sel' the selection; the logging screens' 'kind', 'amount', 'progress' of the hold, 'dup' the same kind just logged, 'left' the share of Undo's 10 s; the mute screens' 'side', 'min', 'act'; the alert's 'spark' (the watch setting) and 'item' (which ring item); the glance's 'outbox': wait / ask / sent). apps/garmin/app's case loader (cases.jungle) shows them in turn; tools/watchface/app.js draws the reference from the same input.",
  "cases": [
   {
    "id": "day-glance",
@@ -554,6 +554,30 @@
     }
    },
    "screen": "glance"
+  },
+  {
+   "id": "setup",
+   "state": null,
+   "screen": "setup"
+  },
+  {
+   "id": "setup-opened",
+   "state": null,
+   "screen": "setup",
+   "cfg": {
+    "opened": true
+   }
+  },
+  {
+   "id": "setup-glance",
+   "state": null,
+   "screen": "glance"
+  },
+  {
+   "id": "alert-no-data-old",
+   "state": 2,
+   "at": -600,
+   "screen": "alert"
   }
  ]
 }

@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Toybox.Application;
 import Toybox.Attention;
+import Toybox.Communications;
 import Toybox.Lang;
 import Toybox.Notifications;
 import Toybox.System;
@@ -28,7 +29,7 @@ class SukraraApp extends Application.AppBase {
     }
 
     // where it opens (SPEC §5, §10): holding the Log complication → the one list; the glance, the app list and the
-    // other complications → page 1. A notification's action arrives through onNote.
+    // other complications → page 1; not set up (nothing from the phone yet) → the setup page (§4.3). A notification's action arrives through onNote.
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
         start();
         Outbox.flush(null);
@@ -37,7 +38,7 @@ class SukraraApp extends Application.AppBase {
         }
         _fg = true;
         AppNav.begin();
-        if (_from == Slots.LOG) {
+        if (_from == Slots.LOG && Link.payload() != null) {
             var v = new AppView("list");
             return [v, new ListDelegate(v)];
         }
@@ -200,6 +201,25 @@ module AppNav {
             } catch (e) {
                 // the watch keeps its own limit
             }
+        }
+    }
+
+    // the fetch, now (waiting for the phone, SPEC §4.3): the answer as the background's would be taken
+    function fetch() as Void {
+        Communications.makeWebRequest(LinkBackground.FETCH_URL, null, {
+            :method => Communications.HTTP_REQUEST_METHOD_GET,
+            :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
+        }, new Lang.Method(AppNav, :fetched));
+    }
+
+    function fetched(code as Number, data as Dictionary or String or Null) as Void {
+        var now = Time.now().value();
+        if (code == 200 && Link.take({"k" => "fetch", "c" => code, "d" => data}, now, false)) {
+            Outbox.received(data as Dictionary, now);
+            if (current != null) {
+                (current as AppView).refresh();
+            }
+            check(true);
         }
     }
 

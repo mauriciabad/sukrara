@@ -813,6 +813,8 @@ var WL = (function () {
   S.glance = function (g, d, c) {
     glanceLoop(g, d, function (B) {
       var X0 = 0, X1 = B.w, R = 23, SW = 5, gapR = 6;
+      // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page
+      if (c.setup) { g.t(X0, 8, c.setupText || 'Waiting for your phone', { fs: 18, fw: 600, fill: PAL.soft, anchor: 'start' }); return; }
       var under = (d.pill && d.age < 5) || d.age >= 1.5 || !!c.sending;
       var vy = under ? 4 : 20, fs = under ? 54 : 58;
       if (d.age >= 20 || d.sensorState === 'warmup') {
@@ -983,7 +985,9 @@ var WL = (function () {
     g.icon(k, x0 + 15, -40, 30, col);
     g.t(x0 + 42, -8, String(a) + unit, { fs: 96, fw: 700, fill: col, anchor: 'start' });
     g.t(0, 30, word + ' · now', { fs: 22, fw: 600, fill: PAL.ink });
-    g.t(0, 62, k === 'carbs' ? 'Lows quiet for 15 min' : k === 'rapid' ? 'Highs quiet for 1 h' : 'Nothing goes quiet', { fs: 18, fw: 500, fill: PAL.soft });
+    // the quiet line as the phone says it (c.quiet: the watch's, null = nothing goes quiet: no line)
+    var ql = c.quiet !== undefined ? c.quiet : k === 'carbs' ? 'Lows quiet for 15 min' : k === 'rapid' ? 'Highs quiet for 1 h' : null;
+    if (ql) g.t(0, 62, ql, { fs: 18, fw: 500, fill: PAL.soft });
     // hold to confirm: the rim fills from START; the words say how
     var p = c.progress === undefined ? 0.45 : c.progress;
     rim(g, PAL.grid, 8, 1);
@@ -1011,7 +1015,8 @@ var WL = (function () {
     g.c(0, -46, 50, { fill: col });
     g.p('M-22 -46l14 14l30 -30', { stroke: PAL.on, sw: 8 });
     g.t(0, 40, 'Logged ' + what(c), { fs: 28, fw: 700, fill: PAL.ink });
-    g.t(0, 72, 'Highs quiet for 1 h', { fs: 20, fw: 500, fill: PAL.soft });
+    var qd = c.quiet !== undefined ? c.quiet : 'Highs quiet for 1 h';
+    if (qd) g.t(0, 72, qd, { fs: 20, fw: 500, fill: PAL.soft });
     g.r(-64, 98, 128, 42, 21, { fill: PAL.card2 });
     g.t(-8, 126, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
     g.c(40, 119, 10, { stroke: PAL.grid, sw: 3 });
@@ -1111,6 +1116,27 @@ var WL = (function () {
       g.t(x0 + 26, y + 7, r[1], { fs: 20, fw: 700, fill: PAL.ink, anchor: 'start' });
     });
     g.t(0, 152, 'Garmin draws this', { fs: 14, fw: 500, fill: PAL.dim });
+  };
+  // Waiting for the phone (SPEC §4.3): until the phone's first message, one page: Sukrara's mark, what it waits for,
+  // and Open on phone (Garmin Connect opens the setup link there; Sukrara for Android takes it as an App Link). After
+  // the press (c.opened): Look at your phone for 5 s. No dots, no list. Never a phone screen or setting's name.
+  S.setup = function (g, d, c) {
+    appIcon(g, 0, -92, 30);
+    g.t(0, -26, c.title || 'Waiting for your phone', { fs: 26, fw: 700, fill: PAL.ink });
+    var lines = c.lines || ['Sukrara for Android sends', 'your glucose here'];
+    g.t(0, 8, lines[0], { fs: 18, fw: 500, fill: PAL.soft });
+    g.t(0, 33, lines[1], { fs: 18, fw: 500, fill: PAL.soft });
+    if (c.opened) {
+      var look = c.look || 'Look at your phone', lw = tw(look, 22) + 30;
+      g.icon('phone', -lw / 2 + 11, 90, 22, PAL.ink);
+      g.t(-lw / 2 + 30, 98, look, { fs: 22, fw: 700, fill: PAL.ink, anchor: 'start' });
+      return;
+    }
+    var bt = c.button || 'Open on phone', bw0 = tw(bt, 22) + 26, w = bw0 + 56;
+    g.r(-w / 2, 70, w, 52, 26, { fill: PAL.ink });
+    g.icon('phone', -bw0 / 2 + 10, 96, 20, PAL.on);
+    g.t(-bw0 / 2 + 26, 104, bt, { fs: 22, fw: 700, fill: PAL.on, anchor: 'start' });
+    btnHint(g, 60, '', {});
   };
   // START in the app: one list, the kinds in the phone's order (the focused one first and selected), then mute
   S.actions = function (g, d, c) {

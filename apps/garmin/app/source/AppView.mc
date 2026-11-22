@@ -1,6 +1,7 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
+import Toybox.Communications;
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.System;
@@ -17,6 +18,9 @@ class AppView extends WatchUi.View {
     var page as Number = 0; // the pages: 0 the widget, 1 the numbers
     var days as Number = 14; // the numbers' period (switchable here, never saved)
     var sel as Number = 0; // the list's selection
+    var notSetUp as Boolean = false; // waiting for the phone: it never sent anything (SPEC §4.3)
+    var opened as Number? = null; // when Open on phone was pressed (System.getTimer)
+    var _look as Timer.Timer? = null;
     var _timer as Timer.Timer?;
     var _g as AppG? = null;
 
@@ -34,6 +38,9 @@ class AppView extends WatchUi.View {
         _timer = new Timer.Timer();
         (_timer as Timer.Timer).start(method(:refresh), 10000, true);
         build();
+        if (notSetUp) {
+            AppNav.fetch(); // a working phone fills it in seconds
+        }
     }
 
     function onHide() as Void {
@@ -48,6 +55,23 @@ class AppView extends WatchUi.View {
         AppDraw.release();
     }
 
+    const LOOK_MS = 5000;
+    // the setup link (the website's /es/ page for a watch in Spanish)
+    const SETUP = "https://sukrara.mauri.app/garmin/setup/";
+
+    // Open on phone: Garmin Connect opens the setup link on the phone (Sukrara for Android takes it as an App Link and
+    // opens where the person can act; without Sukrara the website says how to get it), then Look at your phone for
+    // 5 s; and the phone is asked at once
+    function openSetup() as Void {
+        var es = System.getDeviceSettings().systemLanguage == System.LANGUAGE_SPA;
+        Communications.openWebPage(es ? SETUP.substring(0, 26) + "es/" + SETUP.substring(26, SETUP.length()) : SETUP, null, null);
+        AppNav.fetch();
+        opened = System.getTimer();
+        _look = new Timer.Timer();
+        (_look as Timer.Timer).start(method(:refresh), LOOK_MS, false);
+        refresh();
+    }
+
     // a new display list, then a paint
     function refresh() as Void {
         build();
@@ -58,7 +82,12 @@ class AppView extends WatchUi.View {
         var now = Time.now().value();
         Link.pickUp(now);
         AppView.setup();
-        _g = layout(AppInput.build(now, kind.equals("pages") && page == 0));
+        var d = AppInput.build(now, kind.equals("pages") && page == 0);
+        notSetUp = !d.sent;
+        if (opened != null && System.getTimer() - (opened as Number) >= LOOK_MS) {
+            opened = null;
+        }
+        _g = layout(d);
     }
 
     // the app's drawing: its own font and icon tables, the screen's scale and centre
@@ -85,7 +114,9 @@ class AppView extends WatchUi.View {
 
     function layout(d as AppData) as AppG {
         var g = new AppG();
-        if (kind.equals("list")) {
+        if (notSetUp) {
+            AppScreens.setup(g, opened != null);
+        } else if (kind.equals("list")) {
             AppLists.actions(g, d, sel);
         } else if (page == 1) {
             AppScreens.appNums(g, d, days);
@@ -115,20 +146,30 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function turn() as Boolean {
+        if (view.notSetUp) {
+            return true;
+        }
         view.page = 1 - view.page;
         AppDraw.release(); // one page's fonts and icons in the graphics pool at a time
         view.refresh();
         return true;
     }
 
+    // START: the one list; not set up: Open on phone (nothing could be signed yet)
     function onSelect() as Boolean {
+        if (view.notSetUp) {
+            if (view.opened == null) {
+                view.openSetup();
+            }
+            return true;
+        }
         AppNav.list(WatchUi.SLIDE_LEFT);
         return true;
     }
 
     // the numbers' period: MENU steps through 1d · 7d · 14d · 30d (the list's Period)
     function onMenu() as Boolean {
-        if (view.page != 1) {
+        if (view.page != 1 || view.notSetUp) {
             return false;
         }
         var pers = [1, 7, 14, 30];
@@ -139,13 +180,19 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onTap(e as WatchUi.ClickEvent) as Boolean {
-        if (view.page != 1) {
-            return false;
-        }
         var c = e.getCoordinates();
         var s = AppDraw.s;
         var y = (c[1] - AppDraw.oy) / s;
         var x = (c[0] - AppDraw.ox) / s;
+        if (view.notSetUp) {
+            if (view.opened == null && y > 64 && y < 128) {
+                view.openSetup();
+            }
+            return true;
+        }
+        if (view.page != 1) {
+            return false;
+        }
         if (y < -160 || y > -114) {
             return false;
         }

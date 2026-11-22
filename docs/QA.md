@@ -1171,6 +1171,29 @@ watch; the watch shows the real value: check it against the phone, never photogr
 - [ ] *Record glucose* on (Connect IQ app): after the activity, Garmin Connect charts *Glucose* in the person's unit,
       with a gap where the reading was older than 5 minutes. Off: no glucose chart.
 
+## Q32 Garmin watch app (Sukrara)
+
+- [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/app/tools/app_test.py run <dir>` (simulator,
+      ~3 min): no FAIL (every case's input as `contracts/watchface/app/expect.json` says, every picture within its
+      budget). Open `pairs/` for the cases you changed: simulator | app.js, the same elements in the same places and
+      colours (fonts edge differently; the % column is app.js's approximation, SPEC §4.1). A NOTE means app.js draws
+      differently now: look, then `app_test.py update <dir>`.
+- [ ] Each screen against SPEC §12 in the simulator (`monkeydo apps/garmin/bin/Sukrara-debug.prg descentmk343mm`, the
+      phone faked by `apps/garmin/tools/fake_phone.py`): glance → page 1 ↔ page 2; START → the list → a kind → amount →
+      hold to log (let go: back) → Logged with Undo; Mute alerts → a length → Alerts muted with Undo → page 1 with the
+      muted pill; Muted → Unmute / Change time (BACK returns to Muted); every BACK as SPEC §12 says.
+- [ ] Waiting for your phone: a fresh install with no payload (Simulation › Delete app storage, no fake phone): the
+      glance and the app say *Waiting for your phone*, START opens nothing but *Open on phone* (→ *Look at your phone*,
+      5 s), the Log complication opens the same page; start `fake_phone.py`: page 1 replaces it within seconds.
+- [ ] The app's alert: with the app open, a payload whose `ring` gains a kind (`fake_phone.py --app-case 1`): the
+      alert screen comes up with the backlight and a vibration (Simulation shows it), no Garmin notification as well;
+      *Treatment* opens the amount on carbs (lows) / rapid (highs); *Remind less* → done with Undo, the button turns to
+      *Remind as usual* on the next payload; *Mute* → that side's lengths; BACK leaves it; a payload with no ring closes it.
+      With *Sparkline on alerts* off (Connect IQ app settings): the value and arrow, bigger.
+- [ ] On the watch (`tools/install.sh watch`): a real low from the phone with the app closed → Garmin's notification
+      (one buzz); tapping it opens the app's alert; with the app open → only the app's alert. Spanish with the watch in
+      Spanish: no text cut, the alert words in capitals with their accents.
+
 ## Q20 The person and the feel
 
 Every app change (CLAUDE.md *Design from the person's life first*, *Make it juicy*; user, 2026-10-23).

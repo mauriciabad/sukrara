@@ -19,6 +19,7 @@ import Toybox.WatchUi;
 //   T [5, x, baseline, s, font, col, anchor, ls?] a text (anchor -1 start, 0 middle, 1 end; font AppDraw.font; ls
 //                                               the letter spacing)
 //   I [6, name, cx, cy, size, col]              an icon of the icon sheet, tinted
+//   B [7, resource, cx, cy, size]               a bitmap resource (Sukrara's mark), [size] wide
 (:glance)
 class AppG {
     var els as Array = [];
@@ -63,6 +64,10 @@ class AppG {
 
     function n(x as Numeric, y as Numeric, s as String, fs as Numeric, col as Number, anchor as Number) as Void {
         els.add([5, x, y, s, AppDraw.font(fs, 700, true), col, anchor]);
+    }
+
+    function bmp(id as ResourceId, cx as Numeric, cy as Numeric, size as Numeric) as Void {
+        els.add([7, id, cx, cy, size]);
     }
 
     function icon(name as String, cx as Numeric, cy as Numeric, size as Numeric, col as Number) as Void {
@@ -203,6 +208,8 @@ module AppDraw {
                 text(dc, e);
             } else if (k == 6) {
                 icon(dc, e);
+            } else if (k == 7) {
+                bitmap(dc, e);
             }
         }
     }
@@ -382,6 +389,16 @@ module AppDraw {
             }
         }
         return w;
+    }
+
+    function bitmap(dc as Dc, e as Array) as Void {
+        var b = WatchUi.loadResource(e[1] as ResourceId) as BitmapResource;
+        var sc = (e[4] as Numeric) * s / b.getWidth();
+        var t = new Graphics.AffineTransform();
+        t.scale(sc, sc);
+        dc.drawBitmap2(X(e[2]) - b.getWidth() * sc / 2, Y(e[3]) - b.getHeight() * sc / 2, b, {
+            :transform => t, :filterMode => Graphics.FILTER_MODE_BILINEAR,
+        });
     }
 
     function icon(dc as Dc, e as Array) as Void {

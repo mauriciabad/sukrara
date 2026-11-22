@@ -18,7 +18,7 @@ module AppScreens {
     function appA(g as AppG, d as AppData) as Void {
         g.t(0, -150, d.clock, 22, 600, AppMath.SOFT, MIDDLE);
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
-            g.t(0, -60, AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.Waiting), 22, 600, AppMath.SOFT, MIDDLE);
+            g.t(0, -60, AppWords.s(Rez.Strings.NoReadings), 22, 600, AppMath.SOFT, MIDDLE);
             pageDots(g, 2, 0);
             return;
         }
@@ -571,6 +571,29 @@ module AppScreens {
         if (sub != null) {
             g.t(-116 + 26 + AppMath.tw(gtext, 14) + 10, yy + 23, sub, 15, 500, AppMath.SOFT, START);
         }
+    }
+
+    // ---- waiting for the phone (S.setup, SPEC §4.3): Sukrara's mark, what it waits for, Open on phone; after the
+    // press ([opened]) Look at your phone. Never a phone screen or setting: those change, the watch app doesn't
+    function setup(g as AppG, opened as Boolean) as Void {
+        g.bmp(Rez.Drawables.LauncherIcon, 0, -92, 60);
+        g.t(0, -26, AppWords.s(Rez.Strings.SetupTitle), 26, 700, AppMath.INK, MIDDLE);
+        g.t(0, 8, AppWords.s(Rez.Strings.SetupLine1), 18, 500, AppMath.SOFT, MIDDLE);
+        g.t(0, 33, AppWords.s(Rez.Strings.SetupLine2), 18, 500, AppMath.SOFT, MIDDLE);
+        if (opened) {
+            var look = AppWords.s(Rez.Strings.LookPhone);
+            var lw = AppMath.tw(look, 22) + 30;
+            g.icon("phone", -lw / 2 + 11, 90, 22, AppMath.INK);
+            g.t(-lw / 2 + 30, 98, look, 22, 700, AppMath.INK, START);
+            return;
+        }
+        var bt = AppWords.s(Rez.Strings.OpenOnPhone);
+        var bw0 = AppMath.tw(bt, 22) + 26;
+        var w = bw0 + 56;
+        g.r(-w / 2, 70, w, 52, 26, AppMath.INK, 1.0, 0);
+        g.icon("phone", -bw0 / 2 + 10, 96, 20, AppMath.ON);
+        g.t(-bw0 / 2 + 26, 104, bt, 22, 700, AppMath.ON, START);
+        btnHint(g, 60, AppMath.INK);
     }
 
     // a hint at a button: a short arc on the rim at its angle (START 60°, BACK 120°, DOWN 240°, UP 270°)

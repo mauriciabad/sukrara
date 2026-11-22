@@ -3052,8 +3052,16 @@ the app drawn plainly until its port; the data field ported). Every watch with A
   column, the pill or the sensor's days), page 2 (the phone's report card, its periods switchable here, never saved),
   the one list (the kinds in the phone's order with their last entry, then *Mute alerts* or *Muted* / *Lows muted*
   with the time left). Logging: the amount (UP / DOWN a step, the three usual amounts, MENU earlier), hold START (or
-  a touch) about 1 s to log (the rim fills; the same kind in the last 15 min said first), *Sending*, *Logged* with
-  *Undo* for 10 s, or *Saved on the watch* while the phone is away; the phone's pen question.
+  a touch) about 1 s to log (the rim fills; the same kind in the last 15 min said first; what it quiets as the phone's
+  Add treatment says it, *Highs quiet for 1 h*, from the payload's `log.<kind>.q`), *Sending*, *Logged* with
+  *Undo* for 10 s (and the quiet line), or *Saved on the watch* while the phone is away; the phone's pen question.
+- **Waiting for your phone** (SPEC §4.3): until the phone's first message reaches the app (a fresh install, Sukrara
+  for Android missing, its Garmin switch off), the glance says *Waiting for your phone* and the app shows one page:
+  Sukrara's mark, *Waiting for your phone*, *Sukrara for Android sends your glucose here* and **Open on phone** (Garmin
+  Connect opens sukrara.mauri.app/garmin/setup/ on the phone, /es/ for a watch in Spanish: Sukrara for Android takes
+  it as an App Link, else the website says how to get it), then *Look at your phone* for 5 s. Opening the page and the
+  press also ask the phone at once; the first message (push or fetch) replaces the page with page 1. START never opens
+  the list there; the Log complication opens this page too. The watch never names a phone screen or setting.
 - **Mute from the watch** (SPEC §7): the list's *Mute alerts* → 15 min · 30 min · 1 h · 2 h · Until I unmute (all
   alerts, very low and no data too, on the phone and the watch) → *Sending* → *Alerts muted · for 30 min · until 21:11*
   with *Undo* for 10 s (sends *Unmute*) and a short buzz → back to page 1, whose pill counts the mute down. *Muted*
@@ -3082,7 +3090,8 @@ the app drawn plainly until its port; the data field ported). Every watch with A
   per watch, pictures in `docs/img/field/ref/<watch>/`, budgets in `expect.json`).
 
 **States and exits**: a complication is placed and removed in the face's own editor; holding one opens the app. Glance →
-select → the app. Page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind → the amount →
+select → the app. *Waiting for your phone* → *Open on phone* (→ *Look at your phone* 5 s → the button again) / the
+first message (→ page 1) / BACK (leaves the app). Page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind → the amount →
 hold to log (let go: back to the amount; BACK: the list) → *Logged* (*Undo* 10 s) or *Saved on the watch* (phone away);
 the pen question → *Log anyway* / *Cancel*. The list's *Mute alerts* → a length → *Alerts muted* (*Undo* 10 s, else back
 to page 1; BACK: dismiss, kept); BACK on the lengths: the list. *Muted* → *Unmute* (→ *Alerts unmuted*) / *Change time*

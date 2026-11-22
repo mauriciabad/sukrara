@@ -6,7 +6,7 @@
 <strings>
     <string id="AppName" scope="background">Sukrara</string>
     <string id="NoReadings" scope="glance">No readings</string>
-    <string id="Waiting" scope="glance">Open Sukrara on the phone</string>
+    <string id="SetupTitle" scope="glance">Waiting for your phone</string>
 
     <!-- the outbox (glance and app) -->
     <string id="SendWait" scope="glance">Waiting for the phone</string>
@@ -147,4 +147,10 @@
     <string id="UFallingFast">FALLING FAST</string>
     <string id="URisingFast">RISING FAST</string>
     <string id="UNoData">NO DATA</string>
+    <string id="QuietHighs">Highs quiet for $1$</string>
+    <string id="QuietLows">Lows quiet for $1$</string>
+    <string id="SetupLine1">Sukrara for Android sends</string>
+    <string id="SetupLine2">your glucose here</string>
+    <string id="OpenOnPhone">Open on phone</string>
+    <string id="LookPhone">Look at your phone</string>
 </strings>

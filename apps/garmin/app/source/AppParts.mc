@@ -32,14 +32,15 @@ module AppParts {
         var x0 = anchor == START ? x : anchor == END ? x - w : x - w / 2;
         var c = col != null ? col : d.valColour();
         g.n(x0, y, str, fs, c, START);
+        // old: struck through and a hollow ring for the arrow, in the value's own colour (grey, or the ink on a block)
         var old = d.age >= 5;
         if (old) {
-            g.line(x0 - 4, y - cap / 2, x0 + vw + 4, y - cap / 2, AppMath.GREY, fs * 0.05 > 3 ? fs * 0.05 : 3);
+            g.line(x0 - 4, y - cap / 2, x0 + vw + 4, y - cap / 2, c, fs * 0.05 > 3 ? fs * 0.05 : 3);
         }
         if (showArrow) {
             var ax = x0 + vw + gap + box / 2;
             if (old) {
-                g.c(ax, y - cap / 2, box * 0.28, AppMath.GREY, 1.0, box * 0.1);
+                g.c(ax, y - cap / 2, box * 0.28, c, 1.0, box * 0.1);
             } else {
                 g.arrow(ax, y - cap / 2, box, d.deg, d.doubled, c);
             }
@@ -168,8 +169,9 @@ module AppParts {
     function glance(g as AppG, d as AppData) as Void {
         var x0 = -83;
         var x1 = 165;
+        // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
-            g.t(x0, 8, AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.Waiting), 18, 600, AppMath.SOFT, START);
+            g.t(x0, 8, AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.SetupTitle), 18, 600, AppMath.SOFT, START);
             return;
         }
         if (d.noValue()) {
