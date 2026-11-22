@@ -25,13 +25,7 @@ module SettingsSpec {
 
     // an option's name (resource string opt_<value>)
     function label(value as String) as ResourceId {
-        if (value.equals("since")) {
-            return Rez.Strings.opt_since;
-        } else if (value.equals("amount")) {
-            return Rez.Strings.opt_amount;
-        } else if (value.equals("both")) {
-            return Rez.Strings.opt_both;
-        }
-        return Rez.Strings.AppName;
+        var i = ["since", "amount", "both"].indexOf(value);
+        return i < 0 ? Rez.Strings.AppName : [Rez.Strings.opt_since, Rez.Strings.opt_amount, Rez.Strings.opt_both][i] as ResourceId;
     }
 }

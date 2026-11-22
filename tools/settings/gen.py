@@ -168,9 +168,18 @@ def monkeyc(schema, app="aura"):
         L.append("(:background :glance)")
     L.append("module SettingsSpec {")
     rows = garmin_rows(schema, app)
+    # an option list several settings share is one array (the face's heap, #217): the fields' 46 options in four slots
+    lists = [s["values"] for s in rows if s["type"] != "bool"]
+    shared = []
+    for v in lists:
+        if lists.count(v) > 1 and v not in shared:
+            shared.append(v)
+    for n, v in enumerate(shared):
+        L.append("    // the options more than one setting offers")
+        L.append("    const OPTIONS_%d = [%s];" % (n, ", ".join(sstr(x) for x in v)))
     for s in rows:
         g = s["garmin"]
-        vals = "null" if s["type"] == "bool" else "[%s]" % ", ".join(sstr(v) for v in s["values"])
+        vals = "null" if s["type"] == "bool" else "OPTIONS_%d" % shared.index(s["values"]) if s["values"] in shared else "[%s]" % ", ".join(sstr(v) for v in s["values"])
         d = ("true" if s["default"] else "false") if s["type"] == "bool" else sstr(s["default"])
         L.append("    // %s" % s["label"])
         L.append("    const %s = [%s, %s, %s];" % (const_mc(g["key"]), sstr(g["key"]), vals, d))
@@ -194,12 +203,8 @@ def monkeyc(schema, app="aura"):
         for v in s.get("values") or []:
             if v not in seen:
                 seen.append(v)
-    for i, v in enumerate(seen):
-        L.append("        %sif (value.equals(%s)) {" % ("" if i == 0 else "} else ", sstr(v)))
-        L.append("            return Rez.Strings.opt_%s;" % v)
-    if seen:
-        L.append("        }")
-    L.append("        return Rez.Strings.AppName;")
+    L.append("        var i = [%s].indexOf(value);" % ", ".join(sstr(v) for v in seen))
+    L.append("        return i < 0 ? Rez.Strings.AppName : [%s][i] as ResourceId;" % ", ".join("Rez.Strings.opt_%s" % v for v in seen))
     L.append("    }")
     L.append("}")
     return "\n".join(L) + "\n"

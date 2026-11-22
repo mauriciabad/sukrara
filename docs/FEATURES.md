@@ -2720,7 +2720,7 @@ current; its dial is the aura of your glucose. The phone's Settings › Share wi
 [`contracts/watchface/aura/SPEC.md`](../contracts/watchface/aura/SPEC.md) (registered surface `garmin-aura`). The phone
 decides the value, the trend, the bands, the pill and the sensor's state; the watch only counts the time, so the reading
 ages by itself from its own time with the phone away.
-- **Rows**, centred and as large as fit: the date along the top, one top field (steps by default), the time, the value
+- **Rows**, centred and as large as fit: the date along the top, up to two top fields (steps by default), the time, the value
   with the recent hours as a sparkline (setting *Trend*: or Sukrara's arrow), and a chip row with the reading's time
   once it is late (from 90 s) and the pill.
   The numbers step down a size when the chip row holds something. Time and value use the font's own figures and
@@ -2762,9 +2762,17 @@ ages by itself from its own time with the phone away.
   (replace it). A quiet or mute that runs out on the watch's clock leaves no pill until the phone says what follows.
 - **Messages** instead of a value: warm-up (a filling disc, "Ready at 10:54" / "Almost ready"), sensor ended (the flag
   + *Ended*, pill *Sensor*), nothing paired ("No readings", no rail).
-- **Fields**: top (weather, steps, sunset, Body Battery, altitude, notifications, time in range, second time zone,
-  floors, heart rate, none) and two along the bottom (the same + last treatment: `▼ 4.5u ● 45g 35m`; by default time in
-  range and the last treatment). Automatic: the
+- **Fields** (#240): two under the date (*Top field 1*, *Top field 2*: one alone is centred, two sit side by side as
+  one centred run; too wide for the circle there, the less important goes and the other is centred) and two along the
+  bottom; by default steps on top, time in range and the last treatment (`▼ 4.5u ● 45g 35m`) below. Every slot offers
+  every field, each with its icon: Sukrara's (time in range, last treatment) and every Garmin complication type (steps,
+  floors, calories, intensity minutes, wheelchair pushes, heart rate, Body Battery, stress, pulse ox, respiration,
+  sleep score, recovery time, weather with its sky's icon, temperature, today's high and low, the forecast for the next
+  three days (`Tue 19°/10°`), sunrise, sunset, pressure, altitude, date, weekday, next calendar event, watch battery,
+  solar input, notifications, training status, VO2 max running / cycling, this week's running / cycling, race
+  predictions and paces 5K / 10K / half / marathon, last golf round) plus a second time zone. The face subscribes only
+  to the complications its four fields show; a complication the watch doesn't have shows `--` (the Connect IQ app's
+  list is the same for every watch). Units follow the watch (ft / mi). Automatic: the
   sensor's countdown (Sukrara's, the last 8 h by default) replaces the first bottom field with its hours left, unless a
   sensor rail is on a side (it already counts down, in amber); the phone out of reach with "No phone" (which wins in
   the countdown too). Too
@@ -2786,8 +2794,8 @@ ages by itself from its own time with the phone away.
   shows the value for 5 s with a shrinking neon line under it. A needed pill (*Carbs* / *Insulin*) shows the value
   anyway; the reading's time, quiet / mute pills and messages always show.
 - **Settings**: on the watch (hold MENU on the face › Watch face › Customize) and in the Connect IQ app (once the face
-  is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field, Bottom field 1 and
-  2, Left side, Right side, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
+  is in the store): Dial, Halo, Trend (arrow / sparkline), Seconds sweep, Green in range, Top field 1 and 2, Bottom field 1
+  and 2, Left side, Right side, Battery label, Private, Second time zone (a city). All in `contracts/settings/settings.json` (`garmin.aura.*`).
 - Words in English and Spanish (the watch's language). Readings come from the phone (below).
 - **The aura** (setting *Dial*; at night in the night palette at 65 %, none in always-on): the dial gathers at your level, spreads the
   further out of range you are, fades heading back to the ideal and strengthens heading away: *grain* (dots, the
@@ -2876,7 +2884,9 @@ with the next reading; nothing to do on the watch. *Warm-up* / *Sensor ended* / 
 sensor state changes on the phone. *Pill* → counts down and leaves at the quiet's or mute's end; mute and unmute are on
 the phone (Alerts › States and exits). *Last treatment* field → leaves by itself when the card's slot does (its keep
 or quiet ends), with the phone away too; editing or deleting the treatment on the phone changes it with the next
-message. *No phone* field → leaves when the phone is back in reach. *Side elements* → Customize › Left side / Right side
+message. *No phone* field → leaves when the phone is back in reach. *Fields* → Customize › Top field 1 / Top field 2 /
+Bottom field 1 / Bottom field 2 (any field, or *None*; both top ones *None* removes the row); a field that doesn't fit
+beside the other comes back when it fits again; `--` leaves when the watch has the value. *Side elements* → Customize › Left side / Right side
 (battery, sensor days, glucose rail, nothing); the sensor rail's states (days left → countdown → ended; warm-up as a
 progress bar; `--` without dates) follow the sensor on the phone, and the automatic *sensor ending* field leaves when a
 sensor rail is chosen (and comes back when it isn't). *Private* → on and

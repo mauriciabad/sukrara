@@ -21,93 +21,14 @@ module AuraFontTable {
         return [[Rez.Fonts.l20s, Rez.Fonts.l20b, Rez.Fonts.l22s, Rez.Fonts.l22b, Rez.Fonts.l25m, Rez.Fonts.l25s, Rez.Fonts.l26m, Rez.Fonts.l30s, Rez.Fonts.l32s][i], [20, 20, 22, 22, 25, 25, 26, 30, 31][i]];
     }
 
-    // icons.png: every icon of SPEC.md §2 at each size, white with alpha, 2 px margin; [x, y, box]
+    // icons.png: every icon of SPEC.md §2, a row each, a column per size (20, 21, 22, 24 px; the bells 24 only), white with
+    // alpha, 2 px margin; [x, y, box]
     function icon(name as String, size as Number) as Array? {
-        if (name.equals("sun")) {
-            if (size <= 20) { return [0, 0, 24]; }
-            else if (size <= 21) { return [25, 0, 25]; }
-            else if (size <= 22) { return [51, 0, 26]; }
-            else if (true) { return [78, 0, 28]; }
-        } else if (name.equals("steps")) {
-            if (size <= 20) { return [107, 0, 24]; }
-            else if (size <= 21) { return [132, 0, 25]; }
-            else if (size <= 22) { return [158, 0, 26]; }
-            else if (true) { return [185, 0, 28]; }
-        } else if (name.equals("sunset")) {
-            if (size <= 20) { return [214, 0, 24]; }
-            else if (size <= 21) { return [0, 29, 25]; }
-            else if (size <= 22) { return [26, 29, 26]; }
-            else if (true) { return [53, 29, 28]; }
-        } else if (name.equals("bolt")) {
-            if (size <= 20) { return [82, 29, 24]; }
-            else if (size <= 21) { return [107, 29, 25]; }
-            else if (size <= 22) { return [133, 29, 26]; }
-            else if (true) { return [160, 29, 28]; }
-        } else if (name.equals("mountain")) {
-            if (size <= 20) { return [189, 29, 24]; }
-            else if (size <= 21) { return [214, 29, 25]; }
-            else if (size <= 22) { return [0, 58, 26]; }
-            else if (true) { return [27, 58, 28]; }
-        } else if (name.equals("heart")) {
-            if (size <= 20) { return [56, 58, 24]; }
-            else if (size <= 21) { return [81, 58, 25]; }
-            else if (size <= 22) { return [107, 58, 26]; }
-            else if (true) { return [134, 58, 28]; }
-        } else if (name.equals("bell")) {
-            if (size <= 20) { return [163, 58, 24]; }
-            else if (size <= 21) { return [188, 58, 25]; }
-            else if (size <= 22) { return [214, 58, 26]; }
-            else if (true) { return [0, 87, 28]; }
-        } else if (name.equals("ring")) {
-            if (size <= 20) { return [29, 87, 24]; }
-            else if (size <= 21) { return [54, 87, 25]; }
-            else if (size <= 22) { return [80, 87, 26]; }
-            else if (true) { return [107, 87, 28]; }
-        } else if (name.equals("globe")) {
-            if (size <= 20) { return [136, 87, 24]; }
-            else if (size <= 21) { return [161, 87, 25]; }
-            else if (size <= 22) { return [187, 87, 26]; }
-            else if (true) { return [214, 87, 28]; }
-        } else if (name.equals("stairs")) {
-            if (size <= 20) { return [0, 116, 24]; }
-            else if (size <= 21) { return [25, 116, 25]; }
-            else if (size <= 22) { return [51, 116, 26]; }
-            else if (true) { return [78, 116, 28]; }
-        } else if (name.equals("phoneOff")) {
-            if (size <= 20) { return [107, 116, 24]; }
-            else if (size <= 21) { return [132, 116, 25]; }
-            else if (size <= 22) { return [158, 116, 26]; }
-            else if (true) { return [185, 116, 28]; }
-        } else if (name.equals("sensor")) {
-            if (size <= 20) { return [214, 116, 24]; }
-            else if (size <= 21) { return [0, 145, 25]; }
-            else if (size <= 22) { return [26, 145, 26]; }
-            else if (true) { return [53, 145, 28]; }
-        } else if (name.equals("rapid")) {
-            if (size <= 20) { return [82, 145, 24]; }
-            else if (size <= 21) { return [107, 145, 25]; }
-            else if (size <= 22) { return [133, 145, 26]; }
-            else if (true) { return [160, 145, 28]; }
-        } else if (name.equals("long")) {
-            if (size <= 20) { return [189, 145, 24]; }
-            else if (size <= 21) { return [214, 145, 25]; }
-            else if (size <= 22) { return [0, 174, 26]; }
-            else if (true) { return [27, 174, 28]; }
-        } else if (name.equals("carbs")) {
-            if (size <= 20) { return [56, 174, 24]; }
-            else if (size <= 21) { return [81, 174, 25]; }
-            else if (size <= 22) { return [107, 174, 26]; }
-            else if (true) { return [134, 174, 28]; }
-        } else if (name.equals("battery")) {
-            if (size <= 20) { return [163, 174, 24]; }
-            else if (size <= 21) { return [188, 174, 25]; }
-            else if (size <= 22) { return [214, 174, 26]; }
-            else if (true) { return [0, 203, 28]; }
-        } else if (name.equals("bell_paused")) {
-            if (true) { return [29, 203, 28]; }
-        } else if (name.equals("bell_off")) {
-            if (true) { return [58, 203, 28]; }
+        var i = ["sun", "steps", "sunset", "bolt", "mountain", "heart", "bell", "ring", "globe", "stairs", "phoneOff", "sensor", "rapid", "long", "carbs", "battery", "flame", "stopwatch", "wheelchair", "calendar", "event", "sunrise", "cloud", "cloudSun", "rain", "snow", "storm", "fog", "thermo", "gauge", "run", "bike", "hourglass", "stress", "drop", "breath", "lungs", "solar", "moon", "trend", "flag", "golf", "bell_paused", "bell_off"].indexOf(name);
+        if (i < 0) {
+            return null;
         }
-        return null;
+        var c = i >= 42 ? 3 : size <= 20 ? 0 : size <= 21 ? 1 : size <= 22 ? 2 : 3;
+        return [[0, 25, 51, 78][c], i * 29, [24, 25, 26, 28][c]];
     }
 }

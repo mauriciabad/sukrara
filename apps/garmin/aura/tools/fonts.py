@@ -49,7 +49,7 @@ LATIN = "".join(chr(c) for c in range(0x20, 0x7F)) + "°·áéíóúñüÁÉÍÓ
 BATTERY = DIGITS + "dhm%·- " + NB + "inowar"  # the side labels: days, hours, percent, the warm-up's minutes (now / ahora), --
 # the atlases' sets (their glyph tables cost the heap): the field texts' letters, digits and marks; the no-reading
 # time's digits and the weekdays and months it may show (Freshness.timeText, en and es)
-FIELDS = "".join(c for c in LATIN if c.isalnum() or c in " ,.:%°·-'/+" + NB)
+FIELDS = "".join(c for c in LATIN if c.isalnum() or c in " ,.:%°·-'/+()" + NB)
 GAP = "".join(sorted(set(DIGITS + ": " + NB + "SunMonTueWedThuFriSatdomlunmarmiéjueviesábJanFebMarAprMayJunJulAugSep"
                          "OctNovDecenefebmarabrmayjunjulagosepoctnovdic")))
 CAP = 0.668
@@ -285,6 +285,32 @@ ICONS = {
     "long": ("M3.5 5.4H20.5L12 19.6Z", 2.8),
     "carbs": ("M20 12a8 8 0 1 1-16 0a8 8 0 1 1 16 0z", 0),
     "battery": ("M7 5h10a1.5 1.5 0 0 1 1.5 1.5v14a1.5 1.5 0 0 1-1.5 1.5H7a1.5 1.5 0 0 1-1.5-1.5v-14A1.5 1.5 0 0 1 7 5zM8.1 7.1v12.8h7.8V7.1zM9.5 2.5h5v2.5h-5zM9.7 12h4.6v6.3H9.7z", 0),
+    "flame": ("M12 2.5c.7 3.3 2.7 5 4.4 7 1.6 1.9 2.6 3.8 2.6 6a7 7 0 0 1-14 0c0-2.4 1.1-4.3 2.6-5.9.2 1.8 1 3 2.4 3.6-.6-3.9.4-7.4 2-10.7z", 0),
+    "stopwatch": ("M19.5 13.5a7.5 7.5 0 1 1-15 0a7.5 7.5 0 1 1 15 0M12 13.5V9.5M9.5 2.5h5M12 2.5V6M18.2 6.8l1.4-1.4", 2),
+    "wheelchair": ("M11.6 4a1.6 1.6 0 1 1-3.2 0a1.6 1.6 0 1 1 3.2 0M10 8v6h5.5l2.5 5.5M10 11h4.5M7.4 11.6a5.6 5.6 0 1 0 7.9 6.4", 2),
+    "calendar": ("M5 5.5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1zM4 10h16M8.5 3v4.5M15.5 3v4.5", 2),
+    "event": ("M5 5.5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-13a1 1 0 0 1 1-1zM4 10h16M8.5 3v4.5M15.5 3v4.5M13.5 13.5h3v3h-3z", 2),
+    "sunrise": ("M3 18h18M7 18a5 5 0 0 1 10 0M12 10.5V3.5M9 6.5l3-3 3 3", 2),
+    "cloud": ("M7 18.5h10.5a3.9 3.9 0 0 0 .6-7.8A6 6 0 0 0 6.6 10.6a4 4 0 0 0 .4 7.9z", 2),
+    "cloudSun": ("M8.5 2.5V4M3 8h1.5M4.6 4.1l1 1M12.4 4.1l-1 1M11.7 8.6A3.4 3.4 0 0 0 5.3 9.7M9.5 20h8.5a3.4 3.4 0 0 0 .5-6.8A5 5 0 0 0 9 13.2a3.4 3.4 0 0 0 .5 6.8z", 2),
+    "rain": ("M7 14.5h10.5a3.6 3.6 0 0 0 .6-7.2A5.6 5.6 0 0 0 7 7.2a3.7 3.7 0 0 0 0 7.3zM8.5 17.5l-1 3M12.5 17.5l-1 3M16.5 17.5l-1 3", 2),
+    "snow": ("M7 14.5h10.5a3.6 3.6 0 0 0 .6-7.2A5.6 5.6 0 0 0 7 7.2a3.7 3.7 0 0 0 0 7.3zM8 17.5v3M6.5 19h3M15.5 17.5v3M14 19h3", 2),
+    "storm": ("M7 14.5h10.5a3.6 3.6 0 0 0 .6-7.2A5.6 5.6 0 0 0 7 7.2a3.7 3.7 0 0 0 0 7.3zM13 15.5l-2.5 3.5h3.5L11.5 22", 2),
+    "fog": ("M3.5 8h17M6 12h14M3.5 16h17M8 20h9", 2),
+    "thermo": ("M10 13.7V5a2 2 0 0 1 4 0v8.7a4 4 0 1 1-4 0zM12 9v8", 2),
+    "gauge": ("M4.8 17.5a8.5 8.5 0 1 1 14.4 0M12 13.5l3.5-4.5M7.5 17.5h9", 2),
+    "run": ("M17.8 4.5a1.8 1.8 0 1 1-3.6 0a1.8 1.8 0 1 1 3.6 0M13.5 8L11 13.5M13.5 8l3 3 2.5-.5M13.5 8l-3.5 1-2.5 2.5M11 13.5l3 2.5-1 4.5M11 13.5l-2.5 3-3.5 1", 2),
+    "bike": ("M9.8 16a3.8 3.8 0 1 1-7.6 0a3.8 3.8 0 1 1 7.6 0M21.8 16a3.8 3.8 0 1 1-7.6 0a3.8 3.8 0 1 1 7.6 0M6 16l3.5-6.5H16L18 16M9.5 9.5L13 16H6M16 9.5l-1-3h2.5M8 7h3", 2),
+    "hourglass": ("M7 3.5h10M7 20.5h10M8 3.5c0 4.5 4 5.5 4 8.5s-4 4-4 8.5M16 3.5c0 4.5-4 5.5-4 8.5s4 4 4 8.5", 2),
+    "stress": ("M2.5 13h4l2-5 3.5 10 3-8 2 3h4.5", 2),
+    "drop": ("M12 3.5s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11zM14 14.5a2 2 0 1 1-4 0a2 2 0 1 1 4 0", 2),
+    "breath": ("M3 9h10.5A2.5 2.5 0 1 0 11 6.5M3 13h15a2.5 2.5 0 1 1-2.5 2.5M3 17h7", 2),
+    "lungs": ("M12 3.5v7.5M12 11c-1.6 0-3-1-3-2.5M12 11c1.6 0 3-1 3-2.5M8.5 7C5.5 8 4 12 4 16.5c0 2 1 3 2.5 3s3-1 3-3V9M15.5 7c3 1 4.5 5 4.5 9.5 0 2-1 3-2.5 3s-3-1-3-3V9", 2),
+    "solar": ("M5 21l2-7h10l2 7zM6 17.5h12M12 14v7M12 2.5V4M5.8 5.3l1.1 1.1M18.2 5.3l-1.1 1.1M8.5 10.5a3.5 3.5 0 0 1 7 0", 2),
+    "moon": ("M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z", 0),
+    "trend": ("M3.5 17.5l5.5-5.5 4 4 7-7M15 9h5v5", 2),
+    "flag": ("M5 21V3h1.6v18zM6.6 4h12v9h-12zM6.6 4h3v3h-3zM12.6 4h3v3h-3zM9.6 7h3v3h-3zM15.6 7h3v3h-3zM6.6 10h3v3h-3zM12.6 10h3v3h-3z", 0),
+    "golf": ("M10 20V3.5l7 3-7 3M5.5 20.5h9M19.5 18a1.5 1.5 0 1 1-3 0a1.5 1.5 0 1 1 3 0", 2),
 }
 BELLS = {
     "paused": "M370-320h220v-72H480l110-136v-72H370v72h110L370-392v72ZM160-200v-80h80v-280q0-83 50-147.5T420-792v-28q0-25 17.5-42.5T480-880q25 0 42.5 17.5T540-820v28q80 20 130 84.5T720-560v280h80v80H160Zm320-300Zm0 420q-33 0-56.5-23.5T400-160h160q0 33-23.5 56.5T480-80ZM320-280h320v-280q0-66-47-113t-113-47q-66 0-113 47t-47 113v280Z",
@@ -321,15 +347,17 @@ def build_icons():
                '<g transform="translate(%s %s) scale(0.0246) translate(0 960)"><path d="%s" fill="#FFFFFF"/></g></svg>'
                % (box, box, box, box, PAD + 0.2, PAD + 0.2, d))
         tiles.append(("bell_" + name, s, Image.open(io.BytesIO(rsvg(svg, box))).convert("RGBA")))
-    x = y = row = 0
+    # one row per icon, a column per size (the bells: the last column only), so a box is found from the name's row
+    cols = [sum(b + 2 * PAD + 1 for b in ICON_SIZES[:i]) for i in range(len(ICON_SIZES))]
+    rowh = max(ICON_SIZES) + 2 * PAD + 1
+    names = []
     pos = []
-    for name, s, img in tiles:
-        if x + img.width > 256:
-            x, y, row = 0, y + row + 1, 0
-        pos.append((x, y))
-        x += img.width + 1
-        row = max(row, img.height)
-    sheet = Image.new("RGBA", (256, y + row + 1), (255, 255, 255, 0))
+    for name, sz, img in tiles:
+        if name not in names:
+            names.append(name)
+        pos.append((cols[ICON_SIZES.index(sz)], names.index(name) * rowh))
+    x, y, row = 0, (len(names) - 1) * rowh, rowh - 1
+    sheet = Image.new("RGBA", (cols[-1] + max(ICON_SIZES) + 2 * PAD, y + row + 1), (255, 255, 255, 0))
     for (name, s, img), (px, py) in zip(tiles, pos):
         # white, the coverage in alpha
         a = img.getchannel("A")
@@ -342,23 +370,24 @@ def build_icons():
 
 def icon_table(boxes):
     names = []
-    for name, s, px, py, w in boxes:
+    for name, sz, px, py, w in boxes:
         if name not in names:
             names.append(name)
-    out = ["", "    // icons.png: every icon of SPEC.md §2 at each size, white with alpha, %d px margin; [x, y, box]" % PAD,
-           "    function icon(name as String, size as Number) as Array? {"]
-    first = True
-    for name in names:
-        out.append("        %sif (name.equals(%s)) {" % ("" if first else "} else ", mc_string(name)))
-        sizes = [(s, px, py, w) for n, s, px, py, w in boxes if n == name]
-        for i, (s, px, py, w) in enumerate(sizes):
-            cond = "size <= %d" % s if i < len(sizes) - 1 else "true"
-            out.append("            %sif (%s) { return [%d, %d, %d]; }" % ("" if i == 0 else "else ", cond, px, py, w))
-        first = False
-    out.append("        }")
-    out.append("        return null;")
-    out.append("    }")
-    return out
+    n_plain = len([n for n in names if not n.startswith("bell_")])
+    cols = [sum(b + 2 * PAD + 1 for b in ICON_SIZES[:i]) for i in range(len(ICON_SIZES))]
+    rowh = max(ICON_SIZES) + 2 * PAD + 1
+    conds = " : ".join("size <= %d ? %d" % (b, i) for i, b in enumerate(ICON_SIZES[:-1])) + " : %d" % (len(ICON_SIZES) - 1)
+    return ["", "    // icons.png: every icon of SPEC.md §2, a row each, a column per size (%s px; the bells %d only), white with" % (
+                ", ".join(str(b) for b in ICON_SIZES), ICON_SIZES[-1]),
+            "    // alpha, %d px margin; [x, y, box]" % PAD,
+            "    function icon(name as String, size as Number) as Array? {",
+            "        var i = [%s].indexOf(name);" % ", ".join(mc_string(n) for n in names),
+            "        if (i < 0) {",
+            "            return null;",
+            "        }",
+            "        var c = i >= %d ? %d : %s;" % (n_plain, len(ICON_SIZES) - 1, conds),
+            "        return [[%s][c], i * %d, [%s][c]];" % (", ".join(str(x) for x in cols), rowh, ", ".join(str(b + 2 * PAD) for b in ICON_SIZES)),
+            "    }"]
 
 
 def outputs():

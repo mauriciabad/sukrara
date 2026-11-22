@@ -9,6 +9,10 @@ Sukrara's releases. 0.x versions are previews.
   reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and
   *Mute 30m*; the data field shows its own alert and records glucose into the activity. Entries and mutes from the
   watch wait until the phone has them.
+- **Sukrara Aura: two fields on top, and every field your watch has** (#240): a second top field sits beside the first
+  (one alone stays centred). Every field slot now offers everything Garmin gives a watch face (calories, stress, pulse
+  ox, sleep score, weather and the next three days' forecast, sunrise, pressure, your next event, training status, race
+  predictions and more) beside Sukrara's time in range and last treatment. A field your watch doesn't have shows `--`.
 - **Sukrara Aura, when Garmin Connect stops passing messages** (#242): after 15 minutes without one, the watch's line
   on Settings › Share with apps › Garmin says "messages stopped getting through · restart the watch". Meanwhile the
   phone tries every 5 minutes instead of every reading, and the face keeps asking the phone every 5 minutes.

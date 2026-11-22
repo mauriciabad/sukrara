@@ -1139,6 +1139,11 @@ watch; the watch shows the real value: check it against the phone, never photogr
 - [ ] On the watch (`tools/install.sh watch`, then the owner selects the face): it draws, Customize opens and every
       setting changes the face; Private hides the value and touch and hold shows it for 5 s; Spanish with the watch in
       Spanish.
+- [ ] On the watch, the fields (#240): Top field 2 set beside Top field 1 sits side by side, alone it's centred; every
+      field in a slot shows the watch's value (the same number as Garmin's own face or widget: steps, heart rate, Body
+      Battery, stress, pulse ox, sleep score, weather and forecast, sunrise, pressure, altitude, calendar event, training
+      status, race predictions) or `--` where the watch has none; a value changes on the face within a minute or two
+      of the watch's own.
 - [ ] On the watch, raise the wrist a few times with Do Not Disturb off: the full face at the panel's brightness,
       never the always-on look. After the next fetch, `adb logcat -s Sukrara.Aura` shows each `X@<t>` followed by
       `Dw@<t>` within a second (docs/43 "The screen").

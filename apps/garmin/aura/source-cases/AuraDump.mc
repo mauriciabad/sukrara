@@ -257,10 +257,10 @@ module AuraDump {
                 nt++;
             }
         }
-        for (; ni < 2; ni++) {
+        for (; ni < 5; ni++) {
             out("tf.i" + ni + ".disp", "none");
         }
-        for (; nt < 3; nt++) {
+        for (; nt < 6; nt++) {
             out("tf.t" + nt + ".disp", "none");
         }
         // time

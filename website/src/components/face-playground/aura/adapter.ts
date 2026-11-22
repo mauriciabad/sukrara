@@ -23,6 +23,27 @@ const opts = (...o: [string, string, string][]) => o.map(([value, en, es]) => ({
 
 const SIDE_OPTIONS = Object.entries(SIDES).map(([value, s]) => ({ value, label: s.name }));
 
+/** Every field a slot can show (SPEC.md §6.10, §11; the watch's own names in its strings.xml), in the settings' order. */
+const FIELD_OPTIONS = opts(
+	['tir', 'Time in range', 'Tiempo en rango'], ['treatment', 'Last treatment', 'Último tratamiento'], ['steps', 'Steps', 'Pasos'],
+	['floors', 'Floors', 'Pisos'], ['calories', 'Calories', 'Calorías'], ['intensity', 'Intensity minutes', 'Minutos de intensidad'],
+	['pushes', 'Wheelchair pushes', 'Impulsos en silla de ruedas'], ['heart', 'Heart rate', 'Pulso'], ['bodyBattery', 'Energy', 'Energía'],
+	['stress', 'Stress', 'Estrés'], ['spo2', 'Pulse Ox', 'Pulsioxímetro'], ['respiration', 'Respiration', 'Respiración'],
+	['sleep', 'Sleep score', 'Puntuación de sueño'], ['recovery', 'Recovery time', 'Tiempo de recuperación'], ['weather', 'Weather', 'Tiempo'],
+	['temperature', 'Temperature', 'Temperatura'], ['highLow', 'Today’s high and low', 'Máxima y mínima de hoy'],
+	['forecast1', 'Forecast tomorrow', 'Previsión de mañana'], ['forecast2', 'Forecast in 2 days', 'Previsión en 2 días'],
+	['forecast3', 'Forecast in 3 days', 'Previsión en 3 días'], ['sunrise', 'Sunrise', 'Amanecer'], ['sunset', 'Sunset', 'Puesta de sol'],
+	['pressure', 'Pressure', 'Presión'], ['altitude', 'Altitude', 'Altitud'], ['date', 'Date', 'Fecha'], ['weekday', 'Weekday', 'Día de la semana'],
+	['tz2', 'Second time zone', 'Segunda zona horaria'], ['events', 'Next event', 'Próximo evento'], ['battery', 'Watch battery', 'Batería del reloj'],
+	['solar', 'Solar input', 'Intensidad solar'], ['notifications', 'Notifications', 'Notificaciones'], ['training', 'Training status', 'Estado de entrenamiento'],
+	['vo2Run', 'VO2 max running', 'VO2 máx. carrera'], ['vo2Bike', 'VO2 max cycling', 'VO2 máx. ciclismo'],
+	['runWeek', 'Running this week', 'Carrera esta semana'], ['bikeWeek', 'Cycling this week', 'Ciclismo esta semana'],
+	['race5k', 'Race prediction 5K', 'Predicción 5K'], ['race10k', 'Race prediction 10K', 'Predicción 10K'],
+	['raceHalf', 'Race prediction half marathon', 'Predicción media maratón'], ['raceMarathon', 'Race prediction marathon', 'Predicción maratón'],
+	['pace5k', 'Race pace 5K', 'Ritmo 5K'], ['pace10k', 'Race pace 10K', 'Ritmo 10K'], ['paceHalf', 'Race pace half marathon', 'Ritmo media maratón'],
+	['paceMarathon', 'Race pace marathon', 'Ritmo maratón'], ['golf', 'Last golf round', 'Última ronda de golf'], ['none', 'None', 'Ninguno'],
+);
+
 const INPUTS: InputSpec[] = [
 	{ key: 'glucose', group: 'reading', kind: 'number', label: L('Glucose', 'Glucosa'), min: 38, max: 420, step: 1, unit: L('mg/dL', 'mg/dL') },
 	{ key: 'rate', group: 'reading', kind: 'number', label: L('Trend', 'Tendencia'), min: -4, max: 4, step: 0.1, unit: L('mg/dL a minute', 'mg/dL por minuto') },
@@ -57,14 +78,8 @@ const INPUTS: InputSpec[] = [
 	},
 	{ key: 'halo', group: 'look', kind: 'select', label: L('Halo', 'Halo'), options: opts(['outline', 'Outline', 'Contorno'], ['box', 'Box', 'Caja'], ['none', 'None', 'Ninguno']) },
 	{ key: 'trendStyle', group: 'look', kind: 'select', label: L('Trend as', 'Tendencia como'), options: opts(['arrow', 'Arrow', 'Flecha'], ['spark', 'Sparkline', 'Gráfica']) },
-	{
-		key: 'topField', group: 'look', kind: 'select', label: L('Top field', 'Campo de arriba'),
-		options: opts(
-			['weather', 'Weather', 'Tiempo'], ['steps', 'Steps', 'Pasos'], ['sunset', 'Sunset', 'Puesta de sol'], ['tir', 'Time in range', 'Tiempo en rango'],
-			['heart', 'Heart rate', 'Pulso'], ['bodyBattery', 'Energy', 'Energía'], ['altitude', 'Altitude', 'Altitud'],
-			['notifications', 'Notifications', 'Notificaciones'], ['tz2', 'Second time zone', 'Segunda zona horaria'], ['floors', 'Floors', 'Pisos'], ['none', 'None', 'Ninguno'],
-		),
-	},
+	{ key: 'topField', group: 'look', kind: 'select', label: L('Top field 1', 'Campo de arriba 1'), options: FIELD_OPTIONS },
+	{ key: 'topField2', group: 'look', kind: 'select', label: L('Top field 2', 'Campo de arriba 2'), options: FIELD_OPTIONS },
 	{ key: 'sideL', group: 'look', kind: 'select', label: L('Left side', 'Lado izquierdo'), options: SIDE_OPTIONS },
 	{ key: 'sideR', group: 'look', kind: 'select', label: L('Right side', 'Lado derecho'), options: SIDE_OPTIONS },
 	{ key: 'seconds', group: 'look', kind: 'toggle', label: L('Seconds sweep', 'Barrido de segundos') },

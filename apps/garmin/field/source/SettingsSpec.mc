@@ -20,6 +20,7 @@ module SettingsSpec {
 
     // an option's name (resource string opt_<value>)
     function label(value as String) as ResourceId {
-        return Rez.Strings.AppName;
+        var i = [].indexOf(value);
+        return i < 0 ? Rez.Strings.AppName : [][i] as ResourceId;
     }
 }

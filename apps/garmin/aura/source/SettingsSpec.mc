@@ -5,6 +5,10 @@
 import Toybox.Lang;
 
 module SettingsSpec {
+    // the options more than one setting offers
+    const OPTIONS_0 = ["tir", "treatment", "steps", "floors", "calories", "intensity", "pushes", "heart", "bodyBattery", "stress", "spo2", "respiration", "sleep", "recovery", "weather", "temperature", "highLow", "forecast1", "forecast2", "forecast3", "sunrise", "sunset", "pressure", "altitude", "date", "weekday", "tz2", "events", "battery", "solar", "notifications", "training", "vo2Run", "vo2Bike", "runWeek", "bikeWeek", "race5k", "race10k", "raceHalf", "raceMarathon", "pace5k", "pace10k", "paceHalf", "paceMarathon", "golf", "none"];
+    // the options more than one setting offers
+    const OPTIONS_1 = ["battery", "sensor", "level", "none"];
     // Sukrara Aura: the dial, the aura of your glucose (SPEC.md §6.12)
     const DIAL = ["dial", ["grain", "black", "map", "contours", "waterline", "lasers", "glow"], "grain"];
     // Sukrara Aura: where the dial stops short of the texts (§6.13)
@@ -15,16 +19,18 @@ module SettingsSpec {
     const SECONDS = ["seconds", null, true];
     // Sukrara Aura: green in range (value, bead, dial)
     const RANGE_COLOUR = ["rangeColour", null, true];
-    // Sukrara Aura: the field under the date (§6.2)
-    const TOP_FIELD = ["topField", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "none"], "steps"];
+    // Sukrara Aura: the first field under the date (§6.2)
+    const TOP_FIELD = ["topField", OPTIONS_0, "steps"];
+    // Sukrara Aura: the second field under the date, beside the first (§6.2)
+    const TOP_FIELD2 = ["topField2", OPTIONS_0, "none"];
     // Sukrara Aura: the first bottom field (§6.10)
-    const FIELD1 = ["field1", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "treatment", "none"], "tir"];
+    const FIELD1 = ["field1", OPTIONS_0, "tir"];
     // Sukrara Aura: the second bottom field (§6.10)
-    const FIELD2 = ["field2", ["weather", "steps", "sunset", "bodyBattery", "altitude", "notifications", "tir", "tz2", "floors", "heart", "treatment", "none"], "treatment"];
+    const FIELD2 = ["field2", OPTIONS_0, "treatment"];
     // Sukrara Aura: the left side element, the watch battery, the sensor's days, the glucose rail or nothing (§6.8-6.9b)
-    const SIDE_L = ["sideL", ["battery", "sensor", "level", "none"], "battery"];
+    const SIDE_L = ["sideL", OPTIONS_1, "battery"];
     // Sukrara Aura: the right side element, the same choices (§6.8-6.9b)
-    const SIDE_R = ["sideR", ["battery", "sensor", "level", "none"], "level"];
+    const SIDE_R = ["sideR", OPTIONS_1, "level"];
     // Sukrara Aura: the battery label, days, percent or both (§6.9)
     const BATT_LABEL = ["battLabel", ["days", "percent", "both"], "days"];
     // Sukrara Aura: private, the value hidden until you touch and hold the face (§8)
@@ -32,7 +38,7 @@ module SettingsSpec {
     // Sukrara Aura: the second time zone's city (the field tz2)
     const TZ2 = ["tz2", ["UTC", "LON", "LIS", "MAD", "PAR", "BER", "ATH", "CAI", "IST", "MOW", "DXB", "DEL", "BKK", "SIN", "HKG", "SHA", "TYO", "SEL", "SYD", "AKL", "HNL", "ANC", "LAX", "DEN", "MEX", "CHI", "NYC", "BOG", "SCL", "BUE", "SAO", "LOS", "JNB"], "NYC"];
 
-    const ALL = [DIAL, HALO, TREND, SECONDS, RANGE_COLOUR, TOP_FIELD, FIELD1, FIELD2, SIDE_L, SIDE_R, BATT_LABEL, PRIVATE, TZ2];
+    const ALL = [DIAL, HALO, TREND, SECONDS, RANGE_COLOUR, TOP_FIELD, TOP_FIELD2, FIELD1, FIELD2, SIDE_L, SIDE_R, BATT_LABEL, PRIVATE, TZ2];
 
     // the setting's title (resource string set_<key>)
     function title(key as String) as ResourceId {
@@ -48,6 +54,8 @@ module SettingsSpec {
             return Rez.Strings.set_rangeColour;
         } else if (key.equals("topField")) {
             return Rez.Strings.set_topField;
+        } else if (key.equals("topField2")) {
+            return Rez.Strings.set_topField2;
         } else if (key.equals("field1")) {
             return Rez.Strings.set_field1;
         } else if (key.equals("field2")) {
@@ -68,131 +76,7 @@ module SettingsSpec {
 
     // an option's name (resource string opt_<value>)
     function label(value as String) as ResourceId {
-        if (value.equals("grain")) {
-            return Rez.Strings.opt_grain;
-        } else if (value.equals("black")) {
-            return Rez.Strings.opt_black;
-        } else if (value.equals("map")) {
-            return Rez.Strings.opt_map;
-        } else if (value.equals("contours")) {
-            return Rez.Strings.opt_contours;
-        } else if (value.equals("waterline")) {
-            return Rez.Strings.opt_waterline;
-        } else if (value.equals("lasers")) {
-            return Rez.Strings.opt_lasers;
-        } else if (value.equals("glow")) {
-            return Rez.Strings.opt_glow;
-        } else if (value.equals("outline")) {
-            return Rez.Strings.opt_outline;
-        } else if (value.equals("box")) {
-            return Rez.Strings.opt_box;
-        } else if (value.equals("none")) {
-            return Rez.Strings.opt_none;
-        } else if (value.equals("arrow")) {
-            return Rez.Strings.opt_arrow;
-        } else if (value.equals("spark")) {
-            return Rez.Strings.opt_spark;
-        } else if (value.equals("weather")) {
-            return Rez.Strings.opt_weather;
-        } else if (value.equals("steps")) {
-            return Rez.Strings.opt_steps;
-        } else if (value.equals("sunset")) {
-            return Rez.Strings.opt_sunset;
-        } else if (value.equals("bodyBattery")) {
-            return Rez.Strings.opt_bodyBattery;
-        } else if (value.equals("altitude")) {
-            return Rez.Strings.opt_altitude;
-        } else if (value.equals("notifications")) {
-            return Rez.Strings.opt_notifications;
-        } else if (value.equals("tir")) {
-            return Rez.Strings.opt_tir;
-        } else if (value.equals("tz2")) {
-            return Rez.Strings.opt_tz2;
-        } else if (value.equals("floors")) {
-            return Rez.Strings.opt_floors;
-        } else if (value.equals("heart")) {
-            return Rez.Strings.opt_heart;
-        } else if (value.equals("treatment")) {
-            return Rez.Strings.opt_treatment;
-        } else if (value.equals("battery")) {
-            return Rez.Strings.opt_battery;
-        } else if (value.equals("sensor")) {
-            return Rez.Strings.opt_sensor;
-        } else if (value.equals("level")) {
-            return Rez.Strings.opt_level;
-        } else if (value.equals("days")) {
-            return Rez.Strings.opt_days;
-        } else if (value.equals("percent")) {
-            return Rez.Strings.opt_percent;
-        } else if (value.equals("both")) {
-            return Rez.Strings.opt_both;
-        } else if (value.equals("UTC")) {
-            return Rez.Strings.opt_UTC;
-        } else if (value.equals("LON")) {
-            return Rez.Strings.opt_LON;
-        } else if (value.equals("LIS")) {
-            return Rez.Strings.opt_LIS;
-        } else if (value.equals("MAD")) {
-            return Rez.Strings.opt_MAD;
-        } else if (value.equals("PAR")) {
-            return Rez.Strings.opt_PAR;
-        } else if (value.equals("BER")) {
-            return Rez.Strings.opt_BER;
-        } else if (value.equals("ATH")) {
-            return Rez.Strings.opt_ATH;
-        } else if (value.equals("CAI")) {
-            return Rez.Strings.opt_CAI;
-        } else if (value.equals("IST")) {
-            return Rez.Strings.opt_IST;
-        } else if (value.equals("MOW")) {
-            return Rez.Strings.opt_MOW;
-        } else if (value.equals("DXB")) {
-            return Rez.Strings.opt_DXB;
-        } else if (value.equals("DEL")) {
-            return Rez.Strings.opt_DEL;
-        } else if (value.equals("BKK")) {
-            return Rez.Strings.opt_BKK;
-        } else if (value.equals("SIN")) {
-            return Rez.Strings.opt_SIN;
-        } else if (value.equals("HKG")) {
-            return Rez.Strings.opt_HKG;
-        } else if (value.equals("SHA")) {
-            return Rez.Strings.opt_SHA;
-        } else if (value.equals("TYO")) {
-            return Rez.Strings.opt_TYO;
-        } else if (value.equals("SEL")) {
-            return Rez.Strings.opt_SEL;
-        } else if (value.equals("SYD")) {
-            return Rez.Strings.opt_SYD;
-        } else if (value.equals("AKL")) {
-            return Rez.Strings.opt_AKL;
-        } else if (value.equals("HNL")) {
-            return Rez.Strings.opt_HNL;
-        } else if (value.equals("ANC")) {
-            return Rez.Strings.opt_ANC;
-        } else if (value.equals("LAX")) {
-            return Rez.Strings.opt_LAX;
-        } else if (value.equals("DEN")) {
-            return Rez.Strings.opt_DEN;
-        } else if (value.equals("MEX")) {
-            return Rez.Strings.opt_MEX;
-        } else if (value.equals("CHI")) {
-            return Rez.Strings.opt_CHI;
-        } else if (value.equals("NYC")) {
-            return Rez.Strings.opt_NYC;
-        } else if (value.equals("BOG")) {
-            return Rez.Strings.opt_BOG;
-        } else if (value.equals("SCL")) {
-            return Rez.Strings.opt_SCL;
-        } else if (value.equals("BUE")) {
-            return Rez.Strings.opt_BUE;
-        } else if (value.equals("SAO")) {
-            return Rez.Strings.opt_SAO;
-        } else if (value.equals("LOS")) {
-            return Rez.Strings.opt_LOS;
-        } else if (value.equals("JNB")) {
-            return Rez.Strings.opt_JNB;
-        }
-        return Rez.Strings.AppName;
+        var i = ["grain", "black", "map", "contours", "waterline", "lasers", "glow", "outline", "box", "none", "arrow", "spark", "tir", "treatment", "steps", "floors", "calories", "intensity", "pushes", "heart", "bodyBattery", "stress", "spo2", "respiration", "sleep", "recovery", "weather", "temperature", "highLow", "forecast1", "forecast2", "forecast3", "sunrise", "sunset", "pressure", "altitude", "date", "weekday", "tz2", "events", "battery", "solar", "notifications", "training", "vo2Run", "vo2Bike", "runWeek", "bikeWeek", "race5k", "race10k", "raceHalf", "raceMarathon", "pace5k", "pace10k", "paceHalf", "paceMarathon", "golf", "sensor", "level", "days", "percent", "both", "UTC", "LON", "LIS", "MAD", "PAR", "BER", "ATH", "CAI", "IST", "MOW", "DXB", "DEL", "BKK", "SIN", "HKG", "SHA", "TYO", "SEL", "SYD", "AKL", "HNL", "ANC", "LAX", "DEN", "MEX", "CHI", "NYC", "BOG", "SCL", "BUE", "SAO", "LOS", "JNB"].indexOf(value);
+        return i < 0 ? Rez.Strings.AppName : [Rez.Strings.opt_grain, Rez.Strings.opt_black, Rez.Strings.opt_map, Rez.Strings.opt_contours, Rez.Strings.opt_waterline, Rez.Strings.opt_lasers, Rez.Strings.opt_glow, Rez.Strings.opt_outline, Rez.Strings.opt_box, Rez.Strings.opt_none, Rez.Strings.opt_arrow, Rez.Strings.opt_spark, Rez.Strings.opt_tir, Rez.Strings.opt_treatment, Rez.Strings.opt_steps, Rez.Strings.opt_floors, Rez.Strings.opt_calories, Rez.Strings.opt_intensity, Rez.Strings.opt_pushes, Rez.Strings.opt_heart, Rez.Strings.opt_bodyBattery, Rez.Strings.opt_stress, Rez.Strings.opt_spo2, Rez.Strings.opt_respiration, Rez.Strings.opt_sleep, Rez.Strings.opt_recovery, Rez.Strings.opt_weather, Rez.Strings.opt_temperature, Rez.Strings.opt_highLow, Rez.Strings.opt_forecast1, Rez.Strings.opt_forecast2, Rez.Strings.opt_forecast3, Rez.Strings.opt_sunrise, Rez.Strings.opt_sunset, Rez.Strings.opt_pressure, Rez.Strings.opt_altitude, Rez.Strings.opt_date, Rez.Strings.opt_weekday, Rez.Strings.opt_tz2, Rez.Strings.opt_events, Rez.Strings.opt_battery, Rez.Strings.opt_solar, Rez.Strings.opt_notifications, Rez.Strings.opt_training, Rez.Strings.opt_vo2Run, Rez.Strings.opt_vo2Bike, Rez.Strings.opt_runWeek, Rez.Strings.opt_bikeWeek, Rez.Strings.opt_race5k, Rez.Strings.opt_race10k, Rez.Strings.opt_raceHalf, Rez.Strings.opt_raceMarathon, Rez.Strings.opt_pace5k, Rez.Strings.opt_pace10k, Rez.Strings.opt_paceHalf, Rez.Strings.opt_paceMarathon, Rez.Strings.opt_golf, Rez.Strings.opt_sensor, Rez.Strings.opt_level, Rez.Strings.opt_days, Rez.Strings.opt_percent, Rez.Strings.opt_both, Rez.Strings.opt_UTC, Rez.Strings.opt_LON, Rez.Strings.opt_LIS, Rez.Strings.opt_MAD, Rez.Strings.opt_PAR, Rez.Strings.opt_BER, Rez.Strings.opt_ATH, Rez.Strings.opt_CAI, Rez.Strings.opt_IST, Rez.Strings.opt_MOW, Rez.Strings.opt_DXB, Rez.Strings.opt_DEL, Rez.Strings.opt_BKK, Rez.Strings.opt_SIN, Rez.Strings.opt_HKG, Rez.Strings.opt_SHA, Rez.Strings.opt_TYO, Rez.Strings.opt_SEL, Rez.Strings.opt_SYD, Rez.Strings.opt_AKL, Rez.Strings.opt_HNL, Rez.Strings.opt_ANC, Rez.Strings.opt_LAX, Rez.Strings.opt_DEN, Rez.Strings.opt_MEX, Rez.Strings.opt_CHI, Rez.Strings.opt_NYC, Rez.Strings.opt_BOG, Rez.Strings.opt_SCL, Rez.Strings.opt_BUE, Rez.Strings.opt_SAO, Rez.Strings.opt_LOS, Rez.Strings.opt_JNB][i] as ResourceId;
     }
 }

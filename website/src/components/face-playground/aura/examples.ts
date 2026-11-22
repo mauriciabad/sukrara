@@ -188,11 +188,16 @@ const GROUPS: Group[] = [
 		id: 'fields',
 		title: L('Your fields and settings', 'Tus campos y ajustes'),
 		lead: L(
-			'One field under the date and two on the bottom curve, from the watch and from Sukrara.',
-			'Un campo bajo la fecha y dos en la curva de abajo, del reloj y de Sukrara.',
+			'Two fields under the date and two on the bottom curve: Sukrara’s, and anything your watch has (all its complications).',
+			'Dos campos bajo la fecha y dos en la curva de abajo: los de Sukrara y lo que tenga tu reloj (todas sus complicaciones).',
 		),
 		examples: [
 			{ case: 'fields-default', title: L('As it comes', 'Tal como viene'), note: L('Steps on top; time in range and the last treatment below.', 'Pasos arriba; tiempo en rango y el último tratamiento abajo.') },
+			{ case: 'fields-top-two', title: L('Two on top', 'Dos arriba'), note: L('Heart rate and Body Battery side by side; one alone sits centred.', 'Pulso y Body Battery uno al lado del otro; uno solo queda centrado.') },
+			{ case: 'fields-health', title: L('Health', 'Salud'), note: L('Stress and respiration; pulse ox and sleep score.', 'Estrés y respiración; pulsioxímetro y puntuación de sueño.') },
+			{ case: 'fields-weather', title: L('Weather', 'Tiempo'), note: L('Rain now, today’s high and low; sunrise and Wednesday’s snow.', 'Lluvia ahora, máxima y mínima de hoy; amanecer y la nieve del miércoles.') },
+			{ case: 'fields-training', title: L('Training', 'Entrenamiento'), note: L('A 5K prediction, recovery time, a 10K pace and VO2 max.', 'Predicción de 5K, tiempo de recuperación, ritmo de 10K y VO2 máx.') },
+			{ case: 'fields-top-too-long', title: L('Too long for two', 'Demasiado largo para dos'), note: L('The second top field gives way; the first stays, centred.', 'El segundo campo de arriba cede; el primero se queda, centrado.') },
 			{ case: 'fields-meal', title: L('After a meal', 'Después de comer'), note: L('Sunset, energy, and insulin and carbs with the time since.', 'Puesta de sol, energía, e insulina e hidratos con el tiempo desde entonces.') },
 			{ case: 'fields-heart-rate', title: L('Heart rate', 'Pulso'), note: L('Heart rate on top; steps and your last treatment below.', 'Pulso arriba; pasos y tu último tratamiento abajo.') },
 			{ case: 'fields-hiking', title: L('Hiking', 'De excursión'), note: L('A second time zone, altitude and floors.', 'Otra zona horaria, altitud y pisos.') },

@@ -29,7 +29,6 @@ class AuraInput {
     var sensorDates as Boolean = true; // false: the phone sent no dates (the sensor rail says --)
     var unit as String = "mgdl"; // mgdl, mmol
     var limits as Array = [55, 70, 140, 180, 250, 300] as Array; // very low, low, very good, high, very high, extreme
-    var tir as Number? = 82; // today's time in range, %
 
     // --- the watch ---
     var now as Number = 0; // epoch s (the clock)
@@ -42,17 +41,13 @@ class AuraInput {
     var privacy as String = "open"; // open, private, revealed (held)
     var reveal as Float = 0.6; // revealed: the fraction of the 5 s left
     var phone as Boolean = true; // the phone in reach
-    var steps as Number? = 6420;
-    var temp as Number? = 14; // weather, degrees in the watch's unit
-    var sunset as Number? = 17 * 60 + 42; // minutes after midnight
-    var bodyBattery as Number? = 62;
-    var altitude as Number? = 1240; // in the watch's unit
-    var altUnit as String = "m"; // m, ft
-    var heart as Number? = 64;
-    var notifications as Number? = 3;
-    var tz2Label as String = "NYC";
-    var tz2Min as Number? = 4 * 60 + 9; // the second zone's time, minutes after midnight
-    var floors as Number? = 8;
+    // the fields' values by field key (SPEC.md §6.10, aura.js fieldData()), the shown fields' only; a key missing or
+    // null = the watch hasn't it (the field says --). In the watch's unit: the weather {"t", "sky"}, a day's high and
+    // low {"hi", "lo", "sky"}, times of day in minutes after midnight, durations in minutes, race times and paces in
+    // seconds, distances in km or mi, the pressure in hPa. Today's time in range (Sukrara's) is "tir".
+    var vals as Dictionary = {} as Dictionary;
+    var statute as Boolean = false; // the watch's units: ft, mi
+    var tz2Label as String = "NYC"; // the second zone's city
 
     // --- the face's settings (SPEC.md §11, SettingsSpec) ---
     var dial as String = "grain"; // grain, black, map, contours, waterline, lasers, glow
@@ -61,6 +56,7 @@ class AuraInput {
     var seconds as Boolean = true;
     var rangeColour as Boolean = true;
     var topField as String = "steps";
+    var topField2 as String = "none";
     var fields as Array = ["tir", "treatment"] as Array;
     var battLabel as String = "days"; // days, percent, both
     var sideL as String = "battery"; // the side elements: battery, sensor, level (the glucose rail), none

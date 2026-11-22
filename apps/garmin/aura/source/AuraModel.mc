@@ -281,7 +281,7 @@ class AuraModel {
         // the reading's time isn't the number: it shows in private too
         timeOn = hasValue && (fr.equals("late") || fr.equals("stale"));
         pillOn = pill != null && (hasValue || s.equals("ended"));
-        topRow = !inp.topField.equals("none");
+        topRow = !inp.topField.equals("none") || !inp.topField2.equals("none");
         topOn = !aod && topRow;
         msgKind = s.equals("warmup") || s.equals("almost") ? "warm" : s.equals("ended") ? "ended" : s.equals("none") ? "none" : !hasValue ? "gap" : null;
         chipKind = pillOn ? "pill" : timeOn || "warm".equals(msgKind) ? "age" : null;
@@ -839,28 +839,7 @@ class AuraModel {
     function fieldRuns(key as String) as Array {
         var ink = c("ink");
         var soft = c("soft");
-        var NB = AuraMath.NB;
-        if (key.equals("steps")) {
-            return [["i", "steps", soft], ["g", 5], ["s", num(inp.steps, true), ink, 500]];
-        } else if (key.equals("weather")) {
-            return [["i", "sun", soft], ["g", 6], ["s", inp.temp != null ? inp.temp.toString() + "°" : "--", ink, 500]];
-        } else if (key.equals("sunset")) {
-            return [["i", "sunset", soft], ["g", 6], ["s", minutes(inp.sunset), ink, 500]];
-        } else if (key.equals("bodyBattery")) {
-            return [["i", "bolt", soft], ["g", 4], ["s", num(inp.bodyBattery, false), ink, 500]];
-        } else if (key.equals("altitude")) {
-            return [["i", "mountain", soft], ["g", 6], ["s", inp.altitude != null ? num(inp.altitude, true) + NB + inp.altUnit : "--", ink, 500]];
-        } else if (key.equals("heart")) {
-            return [["i", "heart", soft], ["g", 5], ["s", num(inp.heart, false), ink, 500]];
-        } else if (key.equals("notifications")) {
-            return [["i", "bell", soft], ["g", 5], ["s", num(inp.notifications, false), ink, 500]];
-        } else if (key.equals("tir")) {
-            return [["i", "ring", soft], ["g", 5], ["s", inp.tir != null ? inp.tir.toString() + "%" : "--", ink, 500]];
-        } else if (key.equals("tz2")) {
-            return [["i", "globe", soft], ["g", 6], ["s", inp.tz2Label + NB + minutes(inp.tz2Min), ink, 500]];
-        } else if (key.equals("floors")) {
-            return [["i", "stairs", soft], ["g", 5], ["s", num(inp.floors, false), ink, 500]];
-        } else if (key.equals("sensor")) {
+        if (key.equals("sensor")) {
             return [["i", "sensor", soft], ["g", 5], ["s", AuraWords.dur(lang, sensLeftH * 60), ink, 500]];
         } else if (key.equals("noPhone")) {
             return [["i", "phoneOff", soft], ["g", 5], ["s", AuraWords.noPhone(lang), ink, 500]];
@@ -885,14 +864,94 @@ class AuraModel {
             r.add(["s", AuraWords.dur(lang, inp.lastAgo), soft, 500]);
             return r;
         }
-        return [];
+        var f = AuraFields.spec(key);
+        if (f == null) {
+            return [];
+        }
+        var v = inp.vals[key];
+        var fm = f[2] as String;
+        var ic = f[0] as String;
+        // the weather's and the forecasts' icon is their sky's (the sun while it isn't known)
+        if ((fm.equals("w") || fm.equals("f")) && v instanceof Dictionary && v["sky"] != null) {
+            ic = v["sky"] as String;
+        }
+        return [["i", ic, soft], ["g", f[1]], ["s", fieldText(key, fm, v), ink, 500]];
     }
 
-    function num(n as Number?, sep as Boolean) as String {
-        if (n == null) {
-            return "--";
+    // a field's text by its format (AuraFields.spec, aura.js fmt())
+    hidden function fieldText(key as String, fm as String, v) as String {
+        var NB = AuraMath.NB;
+        var dow = (nowInfo.day_of_week as Number) - 1;
+        if (fm.equals("D")) {
+            return (nowInfo.day as Number).toString() + NB + AuraWords.monthsShort(lang)[(nowInfo.month as Number) - 1];
+        } else if (fm.equals("W")) {
+            return AuraWords.days(lang)[dow] + NB + (nowInfo.day as Number).toString();
+        } else if (fm.equals("f")) {
+            var n = key.substring(8, 9).toNumber() as Number;
+            return AuraWords.days(lang)[(dow + n) % 7] + NB + (v == null || (v as Dictionary)["hi"] == null ? "--" : highLow(v));
+        } else if (fm.equals("z")) {
+            return inp.tz2Label + NB + (v == null ? "--" : minutes(rnd(v)));
+        } else if (fm.equals("B")) {
+            return battPctT;
         }
-        return sep ? AuraWords.thousands(lang, n) : n.toString();
+        var race = fm.equals("r") || fm.equals("c");
+        var pre = race ? ["5K", "10K", "21K", "42K"][["5k", "10k", "Half", "Marathon"].indexOf(key.substring(4, key.length()))] + NB : "";
+        if (v == null) {
+            return pre + "--";
+        }
+        if (fm.equals("n")) {
+            return AuraWords.thousands(lang, rnd(v));
+        } else if (fm.equals("p")) {
+            return rnd(v).toString();
+        } else if (fm.equals("%")) {
+            return rnd(v).toString() + "%";
+        } else if (fm.equals("d")) {
+            return rnd(v).toString() + "°";
+        } else if (fm.equals("w")) {
+            var t = (v as Dictionary)["t"];
+            return t == null ? "--" : rnd(t).toString() + "°";
+        } else if (fm.equals("h")) {
+            return highLow(v);
+        } else if (fm.equals("t")) {
+            return minutes(rnd(v));
+        } else if (fm.equals("a")) {
+            return AuraWords.thousands(lang, rnd(v)) + NB + (inp.statute ? "ft" : "m");
+        } else if (fm.equals("k")) {
+            var x = (v as Numeric).toFloat();
+            var s = x < 100 ? (Math.floor(x * 10 + 0.5) / 10.0).format("%.1f") : AuraWords.thousands(lang, rnd(x));
+            if (AuraWords.es(lang)) {
+                var i = s.find(".");
+                if (i != null) {
+                    s = s.substring(0, i) + "," + s.substring(i + 1, s.length());
+                }
+            }
+            return s + NB + (inp.statute ? "mi" : "km");
+        } else if (fm.equals("P")) {
+            return rnd(v).toString() + NB + "hPa";
+        } else if (fm.equals("u")) {
+            return AuraWords.dur(lang, (v as Numeric).toFloat());
+        } else if (fm.equals("r")) {
+            var sec = rnd(v);
+            var h = sec / 3600;
+            return pre + (h > 0 ? h.toString() + ":" + (sec / 60 % 60).format("%02d") + ":" + (sec % 60).format("%02d") : mss(sec));
+        } else if (fm.equals("c")) {
+            return pre + mss(rnd(v)) + "/" + (inp.statute ? "mi" : "km");
+        }
+        return v.toString();
+    }
+
+    // a number rounded half up, as the reference's Math.round
+    function rnd(v) as Number {
+        return Math.floor((v as Numeric).toFloat() + 0.5).toNumber();
+    }
+
+    hidden function mss(sec as Number) as String {
+        return (sec / 60).toString() + ":" + (sec % 60).format("%02d");
+    }
+
+    hidden function highLow(v) as String {
+        var d = v as Dictionary;
+        return rnd(d["hi"]).toString() + "°/" + rnd(d["lo"]).toString() + "°";
     }
 
     function minutes(m as Number?) as String {
@@ -914,31 +973,19 @@ class AuraModel {
         return w;
     }
 
-    // the top field's width even where it is hidden (always-on keeps its row; the halo's numbers use it)
+    // the top fields' width even where they are hidden (always-on keeps their row; the halo's numbers use it)
     function topWidth() as Float {
-        return topOn || !topRow ? topW : measure(fieldRuns(inp.topField), TF, tfIcon);
+        return topW;
     }
-
-    hidden function topField() as Void {
-        tfIcon = Math.floor(TF * 0.83 + 0.5).toNumber();
-        topRuns = topOn ? fieldRuns(inp.topField) : [];
-        topW = measure(topRuns, TF, tfIcon);
-        topX = [];
-        var xx = -topW / 2;
-        for (var i = 0; i < topRuns.size(); i++) {
-            topX.add(xx);
-            var rn = topRuns[i] as Array;
-            xx += rn[rn.size() - 1] as Float;
-        }
-    }
-
-    const BL = 172 * (232 - 128) * Math.PI / 180; // the bottom arc's length
 
     function prio(k as String) as Number {
         return k.equals("sensor") || k.equals("noPhone") ? 3 : k.equals("treatment") ? 2 : 1;
     }
 
-    hidden function buildBottom(keys as Array) as Array {
+    var rowW as Float = 0.0; // the last built row's width
+
+    // a row of fields: each field's run, 26 apart (a field with nothing to show takes no room)
+    hidden function buildRow(keys as Array, fs as Number, iw as Number) as Array {
         var r = [];
         for (var i = 0; i < keys.size(); i++) {
             var f = fieldRuns(keys[i] as String);
@@ -950,8 +997,61 @@ class AuraModel {
             }
             r.addAll(f);
         }
+        rowW = measure(r, fs, iw);
         return r;
     }
+
+    // too long for its room: the least important field goes (sensor ending, no phone 3 > the treatment 2 > the others 1;
+    // of two alike, the later) until it fits or one is left (SPEC.md §6.2, §6.10)
+    hidden function fitRow(keys as Array, fs as Number, iw as Number, room as Float) as Array {
+        var r = buildRow(keys, fs, iw);
+        while (keys.size() > 1 && rowW > room) {
+            var drop = 0;
+            for (var n = 1; n < keys.size(); n++) {
+                if (prio(keys[n] as String) <= prio(keys[drop] as String)) {
+                    drop = n;
+                }
+            }
+            var kept = [];
+            for (var n = 0; n < keys.size(); n++) {
+                if (n != drop) {
+                    kept.add(keys[n]);
+                }
+            }
+            keys = kept;
+            r = buildRow(keys, fs, iw);
+        }
+        return r;
+    }
+
+    // the chosen top fields (none, one or two)
+    function topKeys() as Array {
+        var ks = [];
+        if (!inp.topField.equals("none")) {
+            ks.add(inp.topField);
+        }
+        if (!inp.topField2.equals("none")) {
+            ks.add(inp.topField2);
+        }
+        return ks;
+    }
+
+    // one centred run under the date, as wide as the circle at the row's cap height (the time's rule, SPEC.md §4)
+    hidden function topField() as Void {
+        tfIcon = Math.floor(TF * 0.83 + 0.5).toNumber();
+        var runs = fitRow(topKeys(), TF, tfIcon, 2 * halfAt(tfBase - TF * 0.668));
+        topW = rowW;
+        topRuns = topOn ? runs : [];
+        topX = [];
+        var xx = -topW / 2;
+        for (var i = 0; i < topRuns.size(); i++) {
+            topX.add(xx);
+            var rn = topRuns[i] as Array;
+            xx += rn[rn.size() - 1] as Float;
+        }
+    }
+
+    const BL = 172 * (232 - 128) * Math.PI / 180; // the bottom arc's length
 
     hidden function bottomFields() as Void {
         var keys = inp.fields.slice(0, 2);
@@ -963,28 +1063,10 @@ class AuraModel {
         if (!inp.phone) {
             keys = ["noPhone", second];
         }
-        var runs = buildBottom(keys);
-        var w = measure(runs, 24, 20);
-        while (keys.size() > 1 && w > BL - 8) {
-            var drop = 0;
-            for (var n = 1; n < keys.size(); n++) {
-                if (prio(keys[n] as String) < prio(keys[drop] as String)) {
-                    drop = n;
-                }
-            }
-            var kept = [];
-            for (var n = 0; n < keys.size(); n++) {
-                if (n != drop) {
-                    kept.add(keys[n]);
-                }
-            }
-            keys = kept;
-            runs = buildBottom(keys);
-            w = measure(runs, 24, 20);
-        }
+        var runs = fitRow(keys, 24, 20, (BL - 8).toFloat());
         bottomRuns = aod ? [] : runs;
         bottomOff = [];
-        var bs = AuraMath.max(0, (BL - w) / 2);
+        var bs = AuraMath.max(0, (BL - rowW) / 2);
         for (var i = 0; i < runs.size(); i++) {
             bottomOff.add(bs);
             var rn = runs[i] as Array;

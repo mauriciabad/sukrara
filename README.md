@@ -119,7 +119,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Persistent notification with the widget.
 - macOS companion app with glucose in the menu bar, alarms and widgets.
 - Watch face for Garmin watches with a round 390 × 390 AMOLED screen (Venu 3S, vívoactive 6, Forerunner 570,
-  Descent Mk3i 43 mm …).
+  Descent Mk3i 43 mm …), with four fields of your choice: time in range, your last treatment or anything the watch
+  has (steps, heart rate, weather, sleep, training…).
 - Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.

@@ -56,7 +56,21 @@ module AuraCases {
         if (cfg.hasKey("seconds")) { inp.seconds = cfg["seconds"] as Boolean; }
         inp.halo = str(cfg, "halo", inp.halo);
         inp.topField = str(cfg, "topField", inp.topField);
+        inp.topField2 = str(cfg, "topField2", inp.topField2);
         if (cfg.hasKey("fields")) { inp.fields = cfg["fields"] as Array; }
+        // the fields' values: the reference's fixed ones (aura.js fieldData()), steps and time in range, the case's vals
+        inp.vals = fieldData(inp.lang);
+        if (cfg.hasKey("steps")) { inp.vals["steps"] = num(cfg["steps"]).toNumber(); }
+        if (cfg.hasKey("tir")) { inp.vals["tir"] = cfg["tir"] == null ? null : num(cfg["tir"]).toNumber(); }
+        if (cfg.hasKey("vals")) {
+            var v = cfg["vals"] as Dictionary;
+            var ks = v.keys();
+            for (var n = 0; n < ks.size(); n++) {
+                inp.vals[ks[n]] = v[ks[n]];
+            }
+        }
+        if (cfg.hasKey("statute")) { inp.statute = cfg["statute"] as Boolean; }
+        inp.tz2Label = str(cfg, "tz2Label", inp.tz2Label);
         if (cfg.hasKey("last")) {
             var last = cfg["last"] as Dictionary;
             var items = last["items"] as Array;
@@ -70,9 +84,7 @@ module AuraCases {
             inp.lastItems = [[str(cfg, "lastKind", "rapid"), cfg.hasKey("lastAmount") ? cfg["lastAmount"] : 2]];
             if (cfg.hasKey("lastAgo")) { inp.lastAgo = num(cfg["lastAgo"]); }
         }
-        if (cfg.hasKey("steps")) { inp.steps = num(cfg["steps"]).toNumber(); }
         if (cfg.hasKey("limits")) { inp.limits = cfg["limits"] as Array; }
-        if (cfg.hasKey("tir")) { inp.tir = cfg["tir"] == null ? null : num(cfg["tir"]).toNumber(); }
         if (cfg.hasKey("phone")) { inp.phone = cfg["phone"] as Boolean; }
         inp.dial = dial(str(cfg, "dial", "halftone"));
         inp.trendStyle = str(cfg, "trendStyle", inp.trendStyle);
@@ -83,6 +95,23 @@ module AuraCases {
         inp.sideL = str(cfg, "sideL", inp.sideL);
         inp.sideR = str(cfg, "sideR", inp.sideR);
         return inp;
+    }
+
+    // aura.js fieldData(): the fields' values in the reference
+    function fieldData(lang as String) as Dictionary {
+        return {
+            "steps" => 6420, "tir" => 82, "floors" => 8, "calories" => 1840, "intensity" => 95, "pushes" => 3120,
+            "heart" => 64, "bodyBattery" => 62, "stress" => 28, "spo2" => 97, "respiration" => 14, "sleep" => 84,
+            "recovery" => 1080, "weather" => {"t" => 14, "sky" => "sun"}, "temperature" => 21,
+            "highLow" => {"hi" => 18, "lo" => 9}, "forecast1" => {"hi" => 19, "lo" => 10, "sky" => "cloudSun"},
+            "forecast2" => {"hi" => 16, "lo" => 9, "sky" => "rain"}, "forecast3" => {"hi" => 12, "lo" => 6, "sky" => "cloud"},
+            "sunrise" => 7 * 60 + 51, "sunset" => 17 * 60 + 42, "pressure" => 1013, "altitude" => 1240,
+            "tz2" => 4 * 60 + 9, "events" => "14:30", "solar" => 40, "notifications" => 3,
+            "training" => lang.equals("es") ? "Productivo" : "Productive", "vo2Run" => 52, "vo2Bike" => 48,
+            "runWeek" => 24.6, "bikeWeek" => 142.3, "race5k" => 1361, "race10k" => 2850, "raceHalf" => 6312,
+            "raceMarathon" => 13265, "pace5k" => 272, "pace10k" => 285, "paceHalf" => 299, "paceMarathon" => 315,
+            "golf" => "84(+12)",
+        };
     }
 
     function id(i as Number) as String {

@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 /**
  * The settings of Sukrara Aura a person can try on the face tour (contracts/watchface/aura/SPEC.md §11), with a small
- * drawing for each card. Chosen: what changes what the face shows (the sides, how the last hours show, the three fields), Private
+ * drawing for each card. Chosen: what changes what the face shows (the sides, how the last hours show, the four fields), Private
  * (it matters to whoever checks their watch in front of others), and two switches whose effect is plain to see. Left
  * out: the halo and the battery label (small looks of one part), the second time zone's city.
  */
@@ -46,7 +46,7 @@ const sidePicture = (value: string, left: boolean) => (left ? `<g transform="mat
 
 export function tourSettings(inputs: InputSpec[]) {
 	const options = (key: string) => (inputs.find((i) => i.key === key) as Extract<InputSpec, { kind: 'select' }>).options;
-	const fields = [{ value: 'treatment', label: L('Last treatment', 'Último tratamiento') }, ...options('topField')];
+	const fields = options('topField');
 	const sides = (key: string) => options(key).map((o) => ({ ...o, picture: sidePicture(o.value, key === 'sideL') }));
 	const list: TourSetting[] = [
 		{ key: 'sideL', label: L('Left side', 'Lado izquierdo'), kind: 'cards', options: sides('sideL') },
@@ -55,7 +55,8 @@ export function tourSettings(inputs: InputSpec[]) {
 		{ key: 'privacy', label: L('Private', 'Privado'), kind: 'switch', picture: PICTURES.privacy, on: 'private', off: 'open' },
 		{ key: 'rangeColour', label: L('Green in range', 'Verde en rango'), kind: 'switch', picture: PICTURES.rangeColour, on: true, off: false },
 		{ key: 'seconds', label: L('Seconds sweep', 'Barrido de segundos'), kind: 'switch', picture: PICTURES.seconds, on: true, off: false },
-		{ key: 'topField', label: L('Top', 'Arriba'), kind: 'select', options: options('topField') },
+		{ key: 'topField', label: L('Top 1', 'Arriba 1'), kind: 'select', options: fields },
+		{ key: 'topField2', label: L('Top 2', 'Arriba 2'), kind: 'select', options: fields },
 		{ key: 'field1', label: L('Bottom left', 'Abajo a la izquierda'), kind: 'select', options: fields },
 		{ key: 'field2', label: L('Bottom right', 'Abajo a la derecha'), kind: 'select', options: fields },
 	];
@@ -65,9 +66,9 @@ export function tourSettings(inputs: InputSpec[]) {
 			{ id: 'sides', label: L('Sides', 'Lados'), keys: ['sideL', 'sideR'] },
 			{ id: 'trend', label: L('The last hours as', 'Las últimas horas como'), keys: ['trendStyle'] },
 			{ id: 'on', label: L('Turn on', 'Activar'), keys: ['privacy', 'rangeColour', 'seconds'] },
-			{ id: 'fields', label: L('Fields', 'Campos'), keys: ['topField', 'field1', 'field2'] },
+			{ id: 'fields', label: L('Fields', 'Campos'), keys: ['topField', 'topField2', 'field1', 'field2'] },
 		],
-		defaults: { sideL: 'battery', sideR: 'level', trendStyle: 'spark', privacy: 'open', rangeColour: true, seconds: true, topField: 'steps', field1: 'tir', field2: 'treatment' } as Values,
+		defaults: { sideL: 'battery', sideR: 'level', trendStyle: 'spark', privacy: 'open', rangeColour: true, seconds: true, topField: 'steps', topField2: 'none', field1: 'tir', field2: 'treatment' } as Values,
 		/** The face's inputs these settings set. */
 		apply: ({ field1, field2, ...rest }: Values): Values => ({ ...rest, fields: [field1, field2] }),
 	};

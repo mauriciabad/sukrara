@@ -2,12 +2,11 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Toybox.ActivityMonitor;
-import Toybox.Activity;
 import Toybox.Application;
+import Toybox.Complications;
 import Toybox.Lang;
 import Toybox.Math;
 import Toybox.Position;
-import Toybox.SensorHistory;
 import Toybox.System;
 import Toybox.Time;
 import Toybox.Time.Gregorian;
@@ -122,6 +121,7 @@ module AuraWatch {
         i.seconds = AuraSettings.flag(SettingsSpec.SECONDS);
         i.rangeColour = AuraSettings.flag(SettingsSpec.RANGE_COLOUR);
         i.topField = AuraSettings.option(SettingsSpec.TOP_FIELD);
+        i.topField2 = AuraSettings.option(SettingsSpec.TOP_FIELD2);
         i.fields = [AuraSettings.option(SettingsSpec.FIELD1), AuraSettings.option(SettingsSpec.FIELD2)];
         i.battLabel = AuraSettings.option(SettingsSpec.BATT_LABEL);
         i.sideL = AuraSettings.option(SettingsSpec.SIDE_L);
@@ -161,70 +161,89 @@ module AuraWatch {
         }
         i.unit = r.unit;
         i.limits = r.limits;
-        i.tir = r.tir;
+        i.vals["tir"] = r.tir;
     }
 
-    // the fields' data, only what a shown field needs (null = not known: the field says --)
+    // the fields' data, only what a shown field needs (null = not known: the field says --): the watch's complications
+    // for most (AuraComp, subscribed to the shown ones only), the weather and its forecast, the second zone's clock
     function fields(i as AuraInput, now as Number) as Void {
-        var shown = [i.topField, i.fields[0], i.fields[1]];
-        var am = ActivityMonitor.getInfo();
-        i.steps = shown.indexOf("steps") >= 0 && am.steps != null ? am.steps : null;
-        i.floors = shown.indexOf("floors") >= 0 && am has :floorsClimbed && am.floorsClimbed != null ? am.floorsClimbed : null;
+        var shown = [i.topField, i.topField2, i.fields[0], i.fields[1]];
         var ds = System.getDeviceSettings();
-        i.notifications = ds.notificationCount;
-        i.temp = null;
-        i.sunset = null;
-        if (shown.indexOf("weather") >= 0 || shown.indexOf("sunset") >= 0) {
-            var w = Weather.getCurrentConditions();
-            if (w != null && w.temperature != null) {
-                var t = w.temperature;
-                i.temp = (ds.temperatureUnits == System.UNIT_STATUTE ? t * 9 / 5.0 + 32 : t).toFloat().toNumber();
+        // one flag for the units the fields show: ft and mi (the watch's distance setting)
+        i.statute = ds.distanceUnits == System.UNIT_STATUTE;
+        var hotF = ds.temperatureUnits == System.UNIT_STATUTE;
+        var types = [];
+        for (var n = 0; n < shown.size(); n++) {
+            var k = shown[n] as String;
+            var f = AuraFields.spec(k);
+            if (f == null) {
+                continue;
             }
-            if (shown.indexOf("sunset") >= 0 && w != null && w.observationLocationPosition != null) {
-                var s = Weather.getSunset(w.observationLocationPosition, Time.now());
-                if (s != null) {
-                    var si = Gregorian.info(s, Time.FORMAT_SHORT);
-                    i.sunset = (si.hour as Number) * 60 + (si.min as Number);
+            var type = f[3] as Number;
+            if (type > 0) {
+                types.add(type);
+                i.vals[k] = comp(type, AuraComp.vals[type], i.statute, hotF);
+            } else if (k.equals("weather")) {
+                var w = Weather.getCurrentConditions();
+                i.vals[k] = w == null ? null : {"t" => temp(w.temperature, hotF), "sky" => sky(w.condition)};
+            } else if (k.equals("highLow") || k.find("forecast") == 0) {
+                var days = Weather.getDailyForecast();
+                var d = k.equals("highLow") ? 0 : k.substring(8, 9).toNumber() as Number;
+                var fc = days != null && days.size() > d ? days[d] : null;
+                i.vals[k] = fc == null ? null : {"hi" => temp(fc.highTemperature, hotF), "lo" => temp(fc.lowTemperature, hotF), "sky" => sky(fc.condition)};
+            } else if (k.equals("tz2")) {
+                var z = AuraZones.city(AuraSettings.number(SettingsSpec.TZ2));
+                i.tz2Label = z[0] as String;
+                i.vals[k] = null;
+                try {
+                    var loc = new Position.Location({:latitude => z[1], :longitude => z[2], :format => :degrees});
+                    var lm = Gregorian.localMoment(loc, Time.now());
+                    if (lm != null) {
+                        var t = now + lm.getOffset();
+                        i.vals[k] = ((t % 86400) + 86400) % 86400 / 60;
+                    }
+                } catch (e) {
+                    i.vals[k] = null;
                 }
             }
         }
-        var ai = Activity.getActivityInfo();
-        i.heart = null;
-        if (shown.indexOf("heart") >= 0) {
-            if (ai != null && ai.currentHeartRate != null) {
-                i.heart = ai.currentHeartRate;
-            } else {
-                var h = ActivityMonitor.getHeartRateHistory(1, true).next();
-                i.heart = h != null && h.heartRate != ActivityMonitor.INVALID_HR_SAMPLE ? h.heartRate : null;
-            }
+        AuraComp.sync(types);
+    }
+
+    // a complication's value in the field's unit (SPEC.md §6.10): metres → ft, m → km or mi, m/s → s per km or mi,
+    // Pa → hPa, s since midnight → min, °C → °F where the watch says
+    function comp(type as Number, v, statute as Boolean, hotF as Boolean) {
+        if (v == null || v instanceof String) {
+            return v;
         }
-        i.altitude = null;
-        i.altUnit = ds.elevationUnits == System.UNIT_STATUTE ? "ft" : "m";
-        if (shown.indexOf("altitude") >= 0 && ai != null && ai.altitude != null) {
-            var a = ai.altitude;
-            i.altitude = (ds.elevationUnits == System.UNIT_STATUTE ? a * 3.28084 : a).toNumber();
+        var x = (v as Numeric).toFloat();
+        if (type == 15) {
+            return statute ? x * 3.28084 : x;
+        } else if (type == 16) {
+            return x / 100;
+        } else if (type == 19 || type == 20) {
+            return x / (statute ? 1609.344 : 1000.0);
+        } else if (type >= 31 && type <= 34) {
+            return x > 0 ? (statute ? 1609.344 : 1000.0) / x : null;
+        } else if (type == 13 || type == 14) {
+            return x / 60;
+        } else if (type == 38) {
+            return temp(x, hotF);
         }
-        i.bodyBattery = null;
-        if (shown.indexOf("bodyBattery") >= 0 && SensorHistory has :getBodyBatteryHistory) {
-            var b = SensorHistory.getBodyBatteryHistory({:period => 1}).next();
-            i.bodyBattery = b != null && b.data != null ? b.data.toNumber() : null;
+        return v;
+    }
+
+    function temp(t as Numeric?, hotF as Boolean) as Float? {
+        return t == null ? null : hotF ? t * 9 / 5.0 + 32 : t.toFloat();
+    }
+
+    // a Weather.CONDITION_* as the field's icon (SPEC.md §2): S sun, P cloudSun, C cloud, R rain, N snow, T storm, F fog
+    function sky(c as Number?) as String? {
+        if (c == null || c < 0 || c > 52) {
+            return null;
         }
-        i.tz2Min = null;
-        if (shown.indexOf("tz2") >= 0) {
-            var city = AuraSettings.number(SettingsSpec.TZ2);
-            var z = AuraZones.city(city);
-            i.tz2Label = z[0] as String;
-            try {
-                var loc = new Position.Location({:latitude => z[1], :longitude => z[2], :format => :degrees});
-                var lm = Gregorian.localMoment(loc, Time.now());
-                if (lm != null) {
-                    var t = now + lm.getOffset();
-                    i.tz2Min = ((t % 86400) + 86400) % 86400 / 60;
-                }
-            } catch (e) {
-                i.tz2Min = null;
-            }
-        }
+        var k = "SPCRNFTNFFNRTRRRNNNNCNPSRRRRTFFRTFNFTFFFSTTNNRNNNRNNP".substring(c, c + 1);
+        return ["sun", "cloudSun", "cloud", "rain", "snow", "storm", "fog"]["SPCRNTF".find(k) as Number];
     }
 }
 
