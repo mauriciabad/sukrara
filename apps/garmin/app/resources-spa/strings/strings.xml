@@ -118,4 +118,26 @@
     <string id="SLong">lenta</string>
     <string id="SCarbs">hidratos</string>
     <string id="AmountWhen">$1$ · $2$</string>
+    <string id="MuteAllT">Silenciar alertas</string>
+    <string id="MuteLowsT">Silenciar bajas</string>
+    <string id="MuteHighsT">Silenciar altas</string>
+    <string id="MuteAllSub">también muy bajas y sin datos</string>
+    <string id="MuteSideSub">en el móvil y en este reloj</string>
+    <string id="MutedAllSub">También muy bajas y sin datos</string>
+    <string id="LowsMuted">Bajas silenciadas</string>
+    <string id="HighsMuted">Altas silenciadas</string>
+    <string id="ForUntil">durante $1$ · hasta las $2$</string>
+    <string id="UntilYou">hasta que las reactives</string>
+    <string id="LeftUntil">quedan $1$ · hasta las $2$</string>
+    <string id="LowsUnmuted">Bajas activadas de nuevo</string>
+    <string id="HighsUnmuted">Altas activadas de nuevo</string>
+    <string id="NotSentShort">No enviado</string>
+    <string id="UVeryLow">MUY BAJA</string>
+    <string id="ULow">BAJA</string>
+    <string id="UHigh">ALTA</string>
+    <string id="UVeryHigh">MUY ALTA</string>
+    <string id="UExtremelyHigh">EXTREMADAMENTE ALTA</string>
+    <string id="UFallingFast">BAJADA RÁPIDA</string>
+    <string id="URisingFast">SUBIDA RÁPIDA</string>
+    <string id="UNoData">SIN DATOS</string>
 </strings>

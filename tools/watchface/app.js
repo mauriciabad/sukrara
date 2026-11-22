@@ -813,7 +813,7 @@ var WL = (function () {
   S.glance = function (g, d, c) {
     glanceLoop(g, d, function (B) {
       var X0 = 0, X1 = B.w, R = 23, SW = 5, gapR = 6;
-      var under = (d.pill && d.age < 5) || d.age >= 1.5;
+      var under = (d.pill && d.age < 5) || d.age >= 1.5 || !!c.sending;
       var vy = under ? 4 : 20, fs = under ? 54 : 58;
       if (d.age >= 20 || d.sensorState === 'warmup') {
         if (d.sensorState === 'warmup') {
@@ -845,7 +845,10 @@ var WL = (function () {
       if (under) {
         var cy = 34, late = d.age >= 1.5, ax = X0;
         if (late) { g.t(ax, cy + 6, d.readAt, { fs: 17, fw: 500, fill: PAL.soft, anchor: 'start' }); ax += tw(d.readAt, 17) + 10; }
-        if (d.pill && d.age < 5) pill(g, ax, cy, d.pill, { fs: 15, anchor: 'start' });
+        if (d.pill && d.age < 5) ax += pill(g, ax, cy, d.pill, { fs: 15, anchor: 'start' }) + 10;
+        // the outbox (Waiting for the phone, Sent, The phone has a question), where it fits after the rest
+        var snd = c.sending;
+        if (snd && ax + tw(snd.text, 15) <= X1) g.t(ax, cy + 5, snd.text, { fs: 15, fw: 600, fill: snd.ask ? PAL.high : PAL.soft, anchor: 'start' });
       }
     }, c);
   };
@@ -1026,8 +1029,8 @@ var WL = (function () {
 
   // ---- alerts -------------------------------------------------------------------------------------------------------
   S.alert = function (g, d, c) {
-    var b = bandOf(d.g), low = b === 'low' || b === 'veryLow', very = b === 'veryLow' || b === 'extremelyHigh';
-    var col = PAL[b], word = { veryLow: 'VERY LOW', low: 'LOW', high: 'HIGH', veryHigh: 'VERY HIGH', extremelyHigh: 'EXTREMELY HIGH', tight: 'FALLING FAST', target: 'RISING FAST' }[b];
+    var b = bandOf(d.g), low = b === 'low' || b === 'veryLow', very = c.very !== undefined ? c.very : b === 'veryLow' || b === 'extremelyHigh';
+    var col = c.ring || PAL[b], word = c.word || { veryLow: 'VERY LOW', low: 'LOW', high: 'HIGH', veryHigh: 'VERY HIGH', extremelyHigh: 'EXTREMELY HIGH', tight: 'FALLING FAST', target: 'RISING FAST' }[b];
     if (very) full(g, col);
     else rim(g, col, 10, 1);
     // on the block: white (MIP: white or black, whichever reads better on the 64-colour block, inkOn)
@@ -1035,7 +1038,8 @@ var WL = (function () {
     g.icon('bell', -tw(word, 20) / 2 - 16, -140, 20, ink);
     g.t(12, -133, word, { fs: 20, fw: 700, fill: ink, ls: 1.5 });
     var spark = c.spark !== false;
-    if (spark) {
+    if (c.noValue) noValue(g, d, -66);
+    else if (spark) {
       // value + sparkline inside the rim: the sparkline gives way first (132 → 96), then the value (84 → 68)
       var str = fmtG(d.g, d.unit), vfs = 84, vw = bw(str, vfs), W = 132, gw = vw + 12 + W, x0 = -gw / 2;
       while (!inside(x0, -54 - fe(vfs) * 0.7, x0 + gw, -54) && (W > 96 || vfs > 68)) {
@@ -1049,33 +1053,43 @@ var WL = (function () {
         auraSpark(g, dd, { x0: x0 + vw + 12, x1: x0 + vw + 12 + W, y0: -112, y1: -56 }, { sc: 0.8, white: true, ink: W0 });
       } else auraSpark(g, d, { x0: x0 + vw + 12, x1: x0 + vw + 12 + W, y0: -112, y1: -56 }, { sc: 0.8 });
     } else value(g, d, 0, -44, 100, { col: very ? W0 : undefined, inverted: very });
-    var tk = low ? 'carbs' : 'rapid';
-    var relaxed = c.relaxed;
+    var tk = c.tk !== undefined ? c.tk : low ? 'carbs' : 'rapid';
+    var relaxed = c.relaxed || (c.rows && c.rows.indexOf('usual') >= 0);
     // the secondary buttons on the block: darker (AMOLED); MIP: black, or an outline in the ink when the ink is black
     var sec = !very ? PAL.card2 : !KC.mip ? 'rgba(0,0,0,0.28)' : W0 === '#000000' ? 'none' : '#000000';
-    var rows = [
-      { t: 'Treatment', fill: very ? W0 : PAL[tk], fg: very && W0 === '#000000' ? '#FFFFFF' : PAL.on, icon: tk },
-      { t: relaxed ? 'Remind as usual' : 'Remind less', fill: sec, fg: very ? W0 : PAL.ink, line: very && KC.mip && W0 === '#000000' },
-      { t: 'Mute', fill: sec, fg: very ? W0 : PAL.ink, icon: 'bellOff', line: very && KC.mip && W0 === '#000000' }
-    ];
+    // the answers the phone offers (Remind less only when it would slow it down; no Treatment for no data); the selected
+    // one filled (Treatment in its kind's colour, the ink on the block), the others dark
+    var codes = c.rows || ['treat', relaxed ? 'usual' : 'less', 'mute'], sel = c.sel || 0;
+    var names = { treat: 'Treatment', less: 'Remind less', usual: 'Remind as usual', mute: 'Mute' };
+    var rows = codes.map(function (k, i) {
+      var on = i === sel, treat = k === 'treat';
+      return {
+        t: names[k], fill: on ? (treat && !very ? PAL[tk] : W0) : sec,
+        fg: on ? (very && W0 === '#000000' ? '#FFFFFF' : PAL.on) : very ? W0 : PAL.ink,
+        icon: treat ? tk : k === 'mute' ? 'bellOff' : null, iconCol: !on && treat && !very ? PAL[tk] : null,
+        line: !on && very && KC.mip && W0 === '#000000'
+      };
+    });
     var ys = [-6, 50, 106], ws = KC.rect ? [2 * KC.hw - 36, 2 * KC.hw - 36, 2 * KC.hw - 36] : [236, 236, 196];
     rows.forEach(function (r, i) {
       var y = ys[i], w = ws[i];
       g.r(-w / 2, y - 23, w, 46, 23, { fill: r.fill, stroke: r.line ? W0 : 'none', sw: 2 });
       var tw0 = tw(r.t, 20) + (r.icon ? 26 : 0), x0 = -tw0 / 2;
-      if (r.icon) g.icon(r.icon, x0 + 9, y, 18, r.fg);
+      if (r.icon) g.icon(r.icon, x0 + 9, y, 18, r.iconCol || r.fg);
       g.t(x0 + (r.icon ? 26 : 0), y + 7, r.t, { fs: 20, fw: 700, fill: r.fg, anchor: 'start' });
     });
     // the relaxed interval under the buttons, where it fits inside the rim (else the button's words say it: SPEC §14.1)
     var rw = tw('Reminders every 30 min', 15);
-    if (relaxed && inside(-rw / 2, 150 - fe(15) * 0.7, rw / 2, 150 + fe(15) * 0.22)) g.t(0, 150, 'Reminders every 30 min', { fs: 15, fw: 500, fill: very ? W0 : PAL.soft });
-    btnHint(g, 60, '', { col: very ? W0 : PAL[tk] });
+    if (relaxed && c.every !== null && inside(-rw / 2, 150 - fe(15) * 0.7, rw / 2, 150 + fe(15) * 0.22)) g.t(0, 150, 'Reminders every 30 min', { fs: 15, fw: 500, fill: very ? W0 : PAL.soft });
+    btnHint(g, 60, '', { col: very ? W0 : tk ? PAL[tk] : PAL.ink });
   };
+  // c.col: the side (low / high); c.title, c.line (null: none) the watch's words
   S.remindDone = function (g, d, c) {
-    g.c(0, -56, 46, { fill: PAL.low, op: 0.24 });
-    g.icon('bellPause', 0, -56, 44, PAL.low);
-    g.t(0, 28, 'Lows: remind less', { fs: 28, fw: 700, fill: PAL.ink });
-    g.t(0, 60, 'Reminders every 30 min', { fs: 20, fw: 500, fill: PAL.soft });
+    var sc = PAL[c.col === 'high' ? 'high' : 'low'];
+    g.c(0, -56, 46, { fill: sc, op: 0.24 });
+    g.icon(c.icon || 'bellPause', 0, -56, 44, sc);
+    g.t(0, 28, c.title || 'Lows: remind less', { fs: 28, fw: 700, fill: PAL.ink });
+    if (c.line !== null) g.t(0, 60, c.line || 'Reminders every 30 min', { fs: 20, fw: 500, fill: PAL.soft });
     g.r(-64, 92, 128, 42, 21, { fill: PAL.card2 });
     g.t(-8, 120, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
     g.c(40, 113, 10, { stroke: PAL.grid, sw: 3 });
@@ -1103,7 +1117,8 @@ var WL = (function () {
     var last = d.lastBy || { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' };
     var name = { rapid: 'Rapid', carbs: 'Carbs', long: 'Long' };
     var items = d.order.map(function (k) { return { label: name[k], icon: k, col: PAL[k], sub: last[k] }; });
-    items.push(c.muted ? { label: 'Muted', icon: 'bellOff', col: PAL.note, sub: '1h 20m', subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
+    var mr = c.mutedRow || ['Muted', '1h 20m'];
+    items.push(c.muted ? { label: mr[0], icon: 'bellOff', col: PAL.note, sub: mr[1], subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
     g.t(0, -138, 'Sukrara', { fs: 20, fw: 600, fill: PAL.soft });
     var ys = [-74, -12, 44, 100];
     items.forEach(function (it, i) {
@@ -1119,7 +1134,7 @@ var WL = (function () {
     var side = c.side;
     g.t(0, -140, side === 'low' ? 'Mute lows' : side === 'high' ? 'Mute highs' : 'Mute all alerts', { fs: 22, fw: 700, fill: PAL.ink });
     g.t(0, -114, side ? 'on your phone and this watch' : 'very low and no data too', { fs: 16, fw: 500, fill: PAL.soft });
-    var items = ['15 min', '30 min', '1 h', '2 h', side ? '' : 'Until I unmute'].filter(Boolean), sel = 1;
+    var items = c.items || ['15 min', '30 min', '1 h', '2 h', side ? '' : 'Until I unmute'].filter(Boolean), sel = c.sel !== undefined ? c.sel : 1;
     var ys = [-62, -8, 46, 100, 150];
     items.slice(0, 5).forEach(function (it, i) {
       var y = ys[i], on = i === sel, fs = on ? 30 : 24;
@@ -1131,8 +1146,8 @@ var WL = (function () {
   S.muteDone = function (g, d, c) {
     g.c(0, -56, 46, { fill: PAL.note, op: 0.24 });
     g.icon('bellOff', 0, -56, 44, PAL.note);
-    g.t(0, 28, c.side === 'low' ? 'Lows muted' : 'Alerts muted', { fs: 30, fw: 700, fill: PAL.ink });
-    g.t(0, 60, 'for 30 min · until 21:11', { fs: 20, fw: 500, fill: PAL.soft });
+    g.t(0, 28, c.title || (c.side === 'low' ? 'Lows muted' : 'Alerts muted'), { fs: 30, fw: 700, fill: PAL.ink });
+    g.t(0, 60, c.line || 'for 30 min · until 21:11', { fs: 20, fw: 500, fill: PAL.soft });
     g.r(-64, 92, 128, 42, 21, { fill: PAL.card2 });
     g.t(-8, 120, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
     g.c(40, 113, 10, { stroke: PAL.grid, sw: 3 });
@@ -1141,15 +1156,15 @@ var WL = (function () {
   };
   S.muted = function (g, d, c) {
     g.icon('bellOff', 0, -118, 30, PAL.note);
-    g.t(0, -70, 'Alerts muted', { fs: 28, fw: 700, fill: PAL.ink });
-    g.t(0, -40, '1h 20m left · until 22:01', { fs: 19, fw: 500, fill: PAL.soft });
-    var ys = [10, 70], items = ['Unmute', 'Change time'];
+    g.t(0, -70, c.title || 'Alerts muted', { fs: 28, fw: 700, fill: PAL.ink });
+    g.t(0, -40, c.line || '1h 20m left · until 22:01', { fs: 19, fw: 500, fill: PAL.soft });
+    var ys = [10, 70], items = ['Unmute', 'Change time'], sel = c.sel || 0;
     items.forEach(function (it, i) {
-      var y = ys[i], on = i === 0;
+      var y = ys[i], on = i === sel;
       g.r(-130, y - 26, 260, 52, 26, { fill: on ? PAL.note : PAL.card2 });
       g.t(0, y + 8, it, { fs: 22, fw: 700, fill: on ? PAL.on : PAL.ink });
     });
-    g.t(0, 134, 'Very low and no data too', { fs: 16, fw: 500, fill: PAL.dim });
+    if (c.foot !== false) g.t(0, 134, 'Very low and no data too', { fs: 16, fw: 500, fill: PAL.dim });
     btnHint(g, 60, '', {});
   };
 

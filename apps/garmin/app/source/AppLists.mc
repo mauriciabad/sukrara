@@ -22,7 +22,7 @@ module AppLists {
         return ((m + 30) / 60) + "h";
     }
 
-    // the rows: [kind or "mute", label, icon, colour, sub, sub colour]
+    // the rows: [kind, "mute" or "muted", label, icon, colour, sub, sub colour]
     function rows(d as AppData) as Array<Array> {
         var out = [] as Array<Array>;
         var p = Link.payload();
@@ -45,11 +45,12 @@ module AppLists {
                 out.add([k, AppWords.s(id as ResourceId), k, AppMath.pal(k), sub, null]);
             }
         }
+        // Muted (all) or Lows / Highs muted (a side), with the time left: Unmute / Change time
         var x = Link.inputs(d.now);
-        var muted = x != null && "muted".equals(x.get("status")) && x.get("side") == null;
-        if (muted) {
+        if (x != null && "muted".equals(x.get("status"))) {
             var lf = x.get("left");
-            out.add(["mute", AppWords.muted(), "bellOff", AppMath.pal("note"),
+            var s = x.get("side");
+            out.add(["muted", s instanceof String ? AppMute.title(s) : AppWords.muted(), "bellOff", AppMath.pal("note"),
                 lf instanceof Number ? Durations.short(lf, " ") : null, AppMath.pal("note")]);
         } else {
             out.add(["mute", AppWords.s(Rez.Strings.MuteAlerts), "bellOff", AppMath.SOFT, null, null]);
@@ -120,11 +121,11 @@ class ListDelegate extends WatchUi.BehaviorDelegate {
             return;
         }
         var k = rows[i][0] as String;
-        if (!k.equals("mute")) {
+        if (k.equals("mute") || k.equals("muted")) {
+            AppNav.mute(k.equals("muted"));
+        } else {
             var v = new LogView(k, 2);
             WatchUi.pushView(v, new LogDelegate(v), WatchUi.SLIDE_LEFT);
-        } else {
-            AppNav.mute(rows[i][4] != null);
         }
     }
 

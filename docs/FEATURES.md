@@ -3045,6 +3045,31 @@ the app drawn plainly until its port; the data field ported). Every watch with A
   *Remind as usual* once relaxed, *Mute lows / highs 30m*. The data field shows its own alert page (on per activity:
   its Alerts › Connect IQ; `S.dfAlert`): the whole page in the alert's colour (a rate alert: the value's band; no data:
   grey), the bell and the word, the value and its arrow, *Sukrara · now* / *3 min ago*; and vibrates.
+- **The app** (Descent Mk3 43 class first; the other screen classes are designed, SPEC §14, and ported next): the
+  glance (the value, the main metric's ring and the last treatment or second metric, the value shrinking to keep both;
+  the reading's time when late, the pill, then the outbox's line: *Waiting for the phone*, *Sent*, *The phone has a
+  question* in the high colour), page 1 (the widget: clock, value between its two places, 12 h chart with the %
+  column, the pill or the sensor's days), page 2 (the phone's report card, its periods switchable here, never saved),
+  the one list (the kinds in the phone's order with their last entry, then *Mute alerts* or *Muted* / *Lows muted*
+  with the time left). Logging: the amount (UP / DOWN a step, the three usual amounts, MENU earlier), hold START (or
+  a touch) about 1 s to log (the rim fills; the same kind in the last 15 min said first), *Sending*, *Logged* with
+  *Undo* for 10 s, or *Saved on the watch* while the phone is away; the phone's pen question.
+- **Mute from the watch** (SPEC §7): the list's *Mute alerts* → 15 min · 30 min · 1 h · 2 h · Until I unmute (all
+  alerts, very low and no data too, on the phone and the watch) → *Sending* → *Alerts muted · for 30 min · until 21:11*
+  with *Undo* for 10 s (sends *Unmute*) and a short buzz → back to page 1, whose pill counts the mute down. *Muted*
+  (or a side's *Lows muted*) in the list → *Unmute* (filled, selected) / *Change time* (the lengths again). The phone
+  runs every action (its alert runtime's own), so a mute shows only once the phone has answered; no answer: *Waiting
+  for the phone* and the outbox sends it later.
+- **The app's alert** (SPEC §7): while the app is open, a kind that starts to ring opens the alert screen with the
+  backlight and a vibration (longer for very low and extremely high), and the background leaves Garmin's notification
+  out (one buzz); opened while one rings, the app shows it first; tapping Garmin's notification opens it too. The
+  alert's word with the bell, the value with Aura's sparkline (*Sparkline on alerts*; off: the value and arrow,
+  bigger), then the phone's answers: *Treatment* (the amount on the side's kind), *Remind less* only when it would slow
+  the alert down, *Remind as usual* once relaxed, *Mute* (that side's lengths; no data: all alerts'). Very low and
+  extremely high fill the screen in the band's colour, everything white; the others draw a ring in the colour. UP /
+  DOWN choose (the chosen answer is filled), START takes it. *Remind less* / *as usual* → *Lows: remind less* with
+  *Undo* for 10 s (sends the other one). The screen closes once its kind no longer rings (answered, muted, ended); a
+  new kind takes it over.
 - **The data field records glucose** into the activity's file (*Record glucose*, on by default; one field in the
   person's unit, charted by Garmin Connect), each new reading once while it is fresh; once it is 5 min old (or gone)
   the field's invalid value, so the file never carries an old value as current.
@@ -3056,9 +3081,15 @@ the app drawn plainly until its port; the data field ported). Every watch with A
   reference (`apps/garmin/field/tools/field_test.py`: every form and state of `contracts/watchface/field/cases.json`
   per watch, pictures in `docs/img/field/ref/<watch>/`, budgets in `expect.json`).
 
-**States and exits**: a complication is placed and removed in the face's own editor; holding one opens the app. Garmin's
-notification: an action opens the app with it, or dismiss it (Garmin's button); a new kind notifies again, the same one
-not. The data field takes no input (Garmin reserves it for the activity): it is added, moved and removed in the
+**States and exits**: a complication is placed and removed in the face's own editor; holding one opens the app. Glance →
+select → the app. Page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind → the amount →
+hold to log (let go: back to the amount; BACK: the list) → *Logged* (*Undo* 10 s) or *Saved on the watch* (phone away);
+the pen question → *Log anyway* / *Cancel*. The list's *Mute alerts* → a length → *Alerts muted* (*Undo* 10 s, else back
+to page 1; BACK: dismiss, kept); BACK on the lengths: the list. *Muted* → *Unmute* (→ *Alerts unmuted*) / *Change time*
+(the lengths; BACK: back to *Muted*) / BACK (the list). The app's alert → *Treatment* (the amount; done or BACK: back
+to the alert) / *Remind less* ↔ *Remind as usual* (done, *Undo* 10 s) / *Mute* (that side's lengths) / BACK (the alert
+stays on the phone; it comes back only as a new kind). Garmin's notification: an action opens the app with it (the
+body: the app's alert), or dismiss it (Garmin's button); a new kind notifies again, the same one not. The data field takes no input (Garmin reserves it for the activity): it is added, moved and removed in the
 activity's data screens; each of its states (setup, value, late, old, no reading, low block) ends by itself with the
 next message from the phone or the reading's age. The field's alert dismisses as Garmin's alerts do (it also times
 out); it is off until turned on in the activity's Alerts › Connect IQ; the field's *Record glucose* is switched in the

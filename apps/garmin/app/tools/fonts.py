@@ -48,10 +48,10 @@ TEXT = ["14m", "14s", "15m", "15s", "15b", "16m", "16s", "17m", "17s", "17b", "1
 LATIN = A.LATIN + "\u2212\u2019"
 CHARS = {"38s": A.GAP, "48s": A.GAP, "50s": "ug", "96b": "ug"}
 # the big numbers "n<px>", weight 700 (app.js value(): fw 700)
-BIG = [54, 58, 84, 88, 96, 100, 116, 128]
-# the glance's (S.glance at 390): value 58 / 54, ring number 23, last-treatment stack 24 / 20 / 16, the reading's time
+BIG = [42, 44, 46, 48, 50, 52, 54, 56, 58, 84, 88, 96, 100, 116, 128]
+# the glance's (S.glance at 390): value 58 / 54 (down to 46 / 42 to fit its two places), ring number 23, last-treatment stack 24 / 20 / 16, the reading's time
 # 17, the pill 15, warming up 24 / 18, no reading 18 / 38
-G = {"n54", "n58", "a23b", "a24b", "a20b", "a16s", "a17m", "a15s", "a24s", "a18m", "a18s", "a38s"}
+G = {"n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58", "a23b", "a24b", "a20b", "a16s", "a17m", "a15s", "a24s", "a18m", "a18s", "a38s"}
 
 # app.js ICON (24-unit paths; stroke width or 0 = filled)
 ICONS = {

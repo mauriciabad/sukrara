@@ -16,7 +16,8 @@ import Toybox.WatchUi;
 //   L [2, [x, y, x, y, …], col, op, sw, dash]   a polyline, round caps and joins; dash [on, off] or null
 //   P [3, [x, y, x, y, …], col, op]             a filled polygon
 //   A [4, cx, cy, r, a0, a1, col, op, sw, round] an arc, degrees clockwise from 12
-//   T [5, x, baseline, s, font, col, anchor]    a text (anchor -1 start, 0 middle, 1 end; font AppDraw.font)
+//   T [5, x, baseline, s, font, col, anchor, ls?] a text (anchor -1 start, 0 middle, 1 end; font AppDraw.font; ls
+//                                               the letter spacing)
 //   I [6, name, cx, cy, size, col]              an icon of the icon sheet, tinted
 (:glance)
 class AppG {
@@ -53,6 +54,11 @@ class AppG {
     // a text at [fs] px, weight [fw] (500 / 600 / 700); [big] = the big numbers' atlas
     function t(x as Numeric, y as Numeric, s as String, fs as Numeric, fw as Number, col as Number, anchor as Number) as Void {
         els.add([5, x, y, s, AppDraw.font(fs, fw, false), col, anchor]);
+    }
+
+    // a text with letter spacing [ls] (app.js's ls: px after every glyph)
+    function ts(x as Numeric, y as Numeric, s as String, fs as Numeric, fw as Number, col as Number, anchor as Number, ls as Numeric) as Void {
+        els.add([5, x, y, s, AppDraw.font(fs, fw, false), col, anchor, ls]);
     }
 
     function n(x as Numeric, y as Numeric, s as String, fs as Numeric, col as Number, anchor as Number) as Void {
@@ -335,8 +341,9 @@ module AppDraw {
         }
         var chars = a[1] as String;
         var m = a[2] as ByteArray;
+        var ls = e.size() > 7 ? (e[7] as Numeric) * s : 0;
         if (anchor >= 0) {
-            var w = width(a, s0);
+            var w = width(a, s0) + ls * s0.length();
             x -= anchor == 0 ? w / 2.0 : w;
         }
         var top = base - (a[3] as Number);
@@ -359,7 +366,7 @@ module AppDraw {
                     :bitmapX => gx, :bitmapY => gy, :bitmapWidth => gw, :bitmapHeight => gh, :tintColor => col,
                 });
             }
-            x += ((m[o + 8] << 8) | m[o + 9]) / 16.0;
+            x += ((m[o + 8] << 8) | m[o + 9]) / 16.0 + ls;
         }
     }
 

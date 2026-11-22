@@ -8,7 +8,10 @@ Sukrara's releases. 0.x versions are previews.
   for any face (glucose, CGM+ GB's data and graph, and the last treatment as *Log*), turning to "---" on time when the
   reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and
   *Mute 30m*; the data field shows its own alert and records glucose into the activity. Entries and mutes from the
-  watch wait until the phone has them. *Undo* after *Logged* on the watch deletes that entry on the phone, as a
+  watch wait until the phone has them. In the app: *Mute alerts* from its list (15 min to 2 h, or until you unmute,
+  with *Undo*; while muted, *Unmute* or *Change time*), and its own alert screen while it is open: it lights up and
+  vibrates for a new alert, shows the value with its sparkline, and offers *Treatment*, *Remind less* (or *Remind as
+  usual*, with *Undo*) and *Mute*. The glance says when an entry is waiting for the phone. *Undo* after *Logged* on the watch deletes that entry on the phone, as a
   delete on the phone does (LibreView, Nightscout and Tidepool too).
 - **The Sukrara data field, designed** (#199, not released yet): during an activity your glucose sits in any slot of a
   data screen, with Sukrara Aura's sparkline of the last hours where the slot is wide enough and the trend arrow where

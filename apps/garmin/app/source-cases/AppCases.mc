@@ -40,6 +40,7 @@ class AppCasesView extends WatchUi.View {
     var id as String = "";
     var layoutMs as Number = 0;
     var cfg as Dictionary = {};
+    var xs as Dictionary = {}; // the screen's own words, for the reference (app.js's hooks)
 
     function initialize() {
         View.initialize();
@@ -57,7 +58,7 @@ class AppCasesView extends WatchUi.View {
         } else if (painted == built && built >= 0 && dumped != built) {
             dumped = built;
             System.print("IN|" + id + "|");
-            AppCaseDump.input(d as AppData, scr, days, sel, cfg);
+            AppCaseDump.input(d as AppData, scr, days, sel, cfg, xs);
             System.println("");
         }
         WatchUi.requestUpdate();
@@ -67,10 +68,19 @@ class AppCasesView extends WatchUi.View {
         AppDraw.release();
         var c = WatchUi.loadResource(AppCaseTable.res(i)) as Dictionary;
         Link.reset();
+        Outbox.reset();
         var p = c["payload"] as Dictionary;
         var now = (p["sent"] as Number) + (c["at"] as Number);
         Link.accept(p, now);
         cfg = c["cfg"] as Dictionary;
+        xs = {};
+        // the outbox as the case says (the glance's sending line)
+        var ob = cfg["outbox"];
+        if ("sent".equals(ob)) {
+            Application.Storage.setValue(Outbox.SENT, now - 60);
+        } else if (ob != null) {
+            Outbox.save([{"w" => "e", "id" => "c", "st" => "ask".equals(ob) ? "pen" : "new", "c" => now}]);
+        }
         id = c["id"] as String;
         scr = c["screen"] as String;
         days = cfg["days"] instanceof Number ? cfg["days"] as Number : p["repD"] instanceof Number ? p["repD"] as Number : 14;
@@ -81,13 +91,17 @@ class AppCasesView extends WatchUi.View {
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
         var t0 = System.getTimer();
-        d = AppInput.build(now, scr.equals("appA"));
+        d = AppInput.build(now, scr.equals("appA") || scr.equals("alert"));
         var gg = new AppG();
         if (scr.equals("glance")) {
             // the glance's own area at the reference's place on the screen (app.js S.glance: x −83 … 165)
             AppDraw.glance = true;
             AppDraw.table = null;
             AppParts.glance(gg, d as AppData);
+            var snd = Sending.state(now);
+            if (snd != null) {
+                xs = {"sending" => {"text" => AppParts.sendingText(snd), "ask" => snd.equals("ask")}};
+            }
         } else {
             AppDraw.glance = false;
             AppDraw.table = new Lang.Method(AppFontTable, :atlas);
@@ -95,6 +109,20 @@ class AppCasesView extends WatchUi.View {
             AppDraw.sheetAt = new Lang.Method(AppFontTable, :sheet);
             if (scr.substring(0, 3).equals("log")) {
                 logScreen(gg, scr, cfg, p);
+            } else if (scr.equals("muteLengths") || scr.equals("muteDone") || scr.equals("muted") || scr.equals("remindDone")) {
+                muteScreen(gg, scr, now);
+            } else if (scr.equals("alert")) {
+                var items = Ring.now(p, now, Link.skew);
+                var it = items[cfg["item"] instanceof Number ? cfg["item"] as Number : 0];
+                AppAlert.draw(gg, d as AppData, it, cfg["spark"] != false, sel);
+                var labels = [];
+                var codes = AppAlert.rows(it);
+                for (var j = 0; j < codes.size(); j++) {
+                    labels.add(codes[j]);
+                }
+                xs = {"word" => AppAlert.word(it["k"]), "rows" => labels, "tk" => Ring.treatment(it["side"]), "every" => null,
+                    "spark" => cfg["spark"] != false, "noValue" => (d as AppData).noValue(),
+                    "ring" => AppAlert.colour(it["k"], d as AppData), "very" => AppAlert.very(it["k"])};
             } else if (scr.equals("actions")) {
                 AppLists.actions(gg, d as AppData, sel);
             } else if (scr.equals("appNums")) {
@@ -106,6 +134,35 @@ class AppCasesView extends WatchUi.View {
         layoutMs = System.getTimer() - t0;
         g = gg;
         built = i;
+    }
+
+    // a mute screen (AppMute) from the case's cfg: side (all / low / high; muted: the payload's), sel, min, left, act
+    function muteScreen(g as AppG, scr as String, now as Number) as Void {
+        var side = cfg["side"] instanceof String ? cfg["side"] as String : "all";
+        var left = cfg["left"] != null ? (cfg["left"] as Numeric).toFloat() : 0.611;
+        if (scr.equals("muteLengths")) {
+            AppMute.lengths(g, side, sel);
+            var items = [];
+            var ms = AppMute.mins(side);
+            for (var i = 0; i < ms.size(); i++) {
+                items.add(AppMute.length(ms[i]));
+            }
+            xs = {"items" => items, "sel" => sel};
+        } else if (scr.equals("muteDone")) {
+            var min = cfg["min"] instanceof Number ? cfg["min"] as Number : 30;
+            AppMute.done(g, "bellOff", AppMath.pal("note"), AppMute.title(side), AppMute.doneLine(min, now), left);
+            xs = {"title" => AppMute.title(side), "line" => AppMute.doneLine(min, now)};
+        } else if (scr.equals("muted")) {
+            var x = Link.inputs(now) as Dictionary;
+            var s = x["side"] instanceof String ? x["side"] as String : "all";
+            var line = AppMute.leftLine(x["left"], now);
+            AppMute.muted(g, s, line, sel);
+            xs = {"title" => AppMute.title(s), "line" => line, "sel" => sel, "foot" => s.equals("all")};
+        } else {
+            var act = cfg["act"] instanceof String ? cfg["act"] as String : "less";
+            AppMute.done(g, act.equals("less") ? "bellPause" : "bell", AppMath.pal(side), AppMute.remindTitle(act, side), null, left);
+            xs = {"title" => AppMute.remindTitle(act, side), "line" => null, "col" => side, "icon" => act.equals("less") ? "bellPause" : "bell"};
+        }
     }
 
     // a logging screen (AppLog) from the case's cfg: kind, amount (default the kind's last), progress, dup, left, pen
@@ -216,7 +273,7 @@ module AppCaseDump {
         }
     }
 
-    function input(d as AppData, scr as String, days as Number, sel as Number, cfg as Dictionary) as Void {
+    function input(d as AppData, scr as String, days as Number, sel as Number, cfg as Dictionary, xs as Dictionary) as Void {
         var rows = [];
         if (scr.equals("actions")) {
             var rs = AppLists.rows(d);
@@ -231,7 +288,7 @@ module AppCaseDump {
             "pill" => d.pill, "clock" => d.clock, "clockH" => d.clockH, "sensorState" => d.sensorState,
             "sensorDays" => d.sensorDays, "readyAt" => d.readyAt, "warm" => d.warm, "slots" => d.slots,
             "hours" => d.hours, "side" => d.side, "ro" => d.ro, "order" => d.order, "rows" => rows,
-            "rep" => scr.equals("appNums") ? AppScreens.report(days) : null, "cfg" => cfg,
+            "rep" => scr.equals("appNums") ? AppScreens.report(days) : null, "cfg" => cfg, "x" => xs,
         });
     }
 }

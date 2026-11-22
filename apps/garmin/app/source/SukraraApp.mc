@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Toybox.Application;
+import Toybox.Attention;
 import Toybox.Lang;
 import Toybox.Notifications;
 import Toybox.System;
@@ -15,6 +16,7 @@ import Toybox.WatchUi;
 (:background :glance)
 class SukraraApp extends Application.AppBase {
     var _from as Number? = null; // the complication it was opened from
+    var _fg as Boolean = false; // the app's own process (the background's never calls getInitialView)
 
     function initialize() {
         AppBase.initialize();
@@ -33,6 +35,8 @@ class SukraraApp extends Application.AppBase {
         if (Toybox has :Notifications && Notifications has :registerForNotificationMessages) {
             Notifications.registerForNotificationMessages(method(:onNote));
         }
+        _fg = true;
+        AppNav.begin();
         if (_from == Slots.LOG) {
             var v = new AppView("list");
             return [v, new ListDelegate(v)];
@@ -42,7 +46,7 @@ class SukraraApp extends Application.AppBase {
 
     // Garmin's notification (AppService Alerts.notify): an action opens the app with it (SPEC §7). Treatment → the
     // amount on the side's kind; Remind less / as usual and Mute 30 min → sent, said, closed; the notification itself
-    // → the app as it opened.
+    // → the app's alert screen.
     function onNote(msg as Notifications.NotificationMessage) as Void {
         if (msg.type != 2) { // NOTIFICATION_MESSAGE_TYPE_SELECTED (API 5.1)
             return;
@@ -54,7 +58,9 @@ class SukraraApp extends Application.AppBase {
         var a = act.get("a");
         var side = act.get("side");
         var low = "low".equals(side);
-        if (a == Alerts.TREAT) {
+        if (a == 0 && act.get("k") instanceof String) {
+            AppNav.show(act.get("k") as String, false);
+        } else if (a == Alerts.TREAT) {
             AppNav.treat(Ring.treatment(side));
         } else if (a == Alerts.LESS && side instanceof String) {
             AppNav.sendAndClose(Outbox.mute("less", side, 0), low ? Rez.Strings.LowsLess : Rez.Strings.HighsLess);
@@ -80,6 +86,12 @@ class SukraraApp extends Application.AppBase {
         return [new AppGlance()];
     }
 
+    function onStop(state as Dictionary?) as Void {
+        if (_fg) {
+            AppNav.end();
+        }
+    }
+
     function getServiceDelegate() as [System.ServiceDelegate] {
         return [new AppService()];
     }
@@ -88,16 +100,115 @@ class SukraraApp extends Application.AppBase {
     // storage (Link.pickUp at every draw), whichever comes first. The complications follow it.
     function onBackgroundData(data as Application.PersistableType) as Void {
         var now = Time.now().value();
-        if (Link.take(data, now, false) && AppNav.current != null) {
-            (AppNav.current as AppView).refresh();
+        if (Link.take(data, now, false)) {
+            if (AppNav.current != null) {
+                (AppNav.current as AppView).refresh();
+            }
+            if (AppNav.alert != null) {
+                (AppNav.alert as AlertView).refresh();
+            }
+            AppNav.check(true);
         }
     }
 }
 
-// The routes into the app that don't start on page 1.
+// The routes into the app that don't start on page 1, and the app's own alert (SPEC §7): while the app is open, a
+// kind that starts to ring opens the alert screen with a vibration and the backlight (the background then leaves
+// Garmin's notification out: one buzz); opened while one rings, the app shows it first.
 module AppNav {
+    const SEEN = "sukRungApp"; // the kinds the app last showed
+    const FG = "sukFg"; // when the app was last seen open (watch clock): the background's notification waits
+    const FG_S = 45;
     var _exit as Timer.Timer? = null;
+    var _beat as Timer.Timer? = null;
+    var _later as Timer.Timer? = null;
     var current as AppView? = null; // the view on screen (a new payload rebuilds it)
+    var alert as AlertView? = null; // the alert screen while it's open
+
+    // the app opened: the beat (the open flag, a new alert) every 10 s; what rings now shown once the first view is up
+    function begin() as Void {
+        _beat = new Timer.Timer();
+        (_beat as Timer.Timer).start(new Lang.Method(AppNav, :beat), 10000, true);
+        _later = new Timer.Timer();
+        (_later as Timer.Timer).start(new Lang.Method(AppNav, :opened), 300, false);
+        open(Time.now().value());
+    }
+
+    function end() as Void {
+        if (_beat != null) {
+            (_beat as Timer.Timer).stop();
+            _beat = null;
+            Application.Storage.deleteValue(FG);
+        }
+    }
+
+    function opened() as Void {
+        check(false);
+    }
+
+    function beat() as Void {
+        var now = Time.now().value();
+        Link.pickUp(now);
+        open(now);
+        check(true);
+    }
+
+    function open(now as Number) as Void {
+        var fg = Application.Storage.getValue(FG);
+        if (!(fg instanceof Number) || now - fg > FG_S / 2) {
+            Application.Storage.setValue(FG, now);
+        }
+    }
+
+    // the kinds that ring and weren't shown yet: the first one on the alert screen; [buzz] = the app was already open
+    function check(buzz as Boolean) as Void {
+        var items = Ring.now(Link.payload(), Time.now().value(), Link.skew);
+        var seen = Application.Storage.getValue(SEEN);
+        var fresh = Ring.fresh(items, seen instanceof Array ? seen : [] as Array);
+        Application.Storage.setValue(SEEN, Ring.kinds(items));
+        if (fresh.size() > 0) {
+            show(fresh[0].get("k") as String, buzz);
+        }
+    }
+
+    // the alert screen on the kind [k] (over whatever is open; the open one switches to it)
+    function show(k as String, buzz as Boolean) as Void {
+        if (alert != null) {
+            (alert as AlertView).kind = k;
+            (alert as AlertView).sel = 0;
+            (alert as AlertView).refresh();
+        } else {
+            var v = new AlertView(k);
+            alert = v;
+            WatchUi.pushView(v, new AlertDelegate(v), WatchUi.SLIDE_UP);
+        }
+        if (buzz) {
+            ring(k);
+        }
+    }
+
+    // a new alert: the backlight and a vibration (longer for very low and extremely high)
+    function ring(k as String) as Void {
+        if (Attention has :vibrate) {
+            var on = AppAlert.very(k) ? 700 : 450;
+            Attention.vibrate([new Attention.VibeProfile(100, on), new Attention.VibeProfile(0, 250),
+                new Attention.VibeProfile(100, on)]);
+        }
+        if (Attention has :backlight) {
+            try {
+                Attention.backlight(true);
+            } catch (e) {
+                // the watch keeps its own limit
+            }
+        }
+    }
+
+    // a short tap that confirms a done action (muted, remind less)
+    function confirm() as Void {
+        if (Attention has :vibrate) {
+            Attention.vibrate([new Attention.VibeProfile(60, 60)]);
+        }
+    }
 
     function pages() as [AppView, AppDelegate] {
         var v = new AppView("pages");
@@ -119,8 +230,13 @@ module AppNav {
         WatchUi.pushView(v, new LogDelegate(v), WatchUi.SLIDE_IMMEDIATE);
     }
 
-    // the list's Mute alerts (the lengths) or Muted (Unmute / Change time): SPEC §7
+    // the list's Mute alerts (Mute all's lengths) or Muted (Unmute / Change time, for the side that is muted): SPEC §7.
+    // Done, the flow goes back to page 1 (the pill says it).
     function mute(muted as Boolean) as Void {
+        var x = Link.inputs(Time.now().value());
+        var s = x != null ? x.get("side") : null;
+        var v = new MuteView(muted && s instanceof String ? s : "all", muted ? "muted" : "lengths", "mute", 2);
+        WatchUi.pushView(v, new MuteDelegate(v), WatchUi.SLIDE_LEFT);
     }
 
     // a notification's Remind less / as usual / Mute: into the outbox, sent at once, said, and the app closes once the

@@ -10,14 +10,14 @@ module GlanceFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, metrics in base64, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a15s", "a16s", "a17m", "a18m", "a18s", "a20b", "a23b", "a24s", "a24b", "a38s", "n54", "n58"].indexOf(key);
+        var i = ["a15s", "a16s", "a17m", "a18m", "a18s", "a20b", "a23b", "a24s", "a24b", "a38s", "n42", "n44", "n46", "n48", "n50", "n52", "n54", "n56", "n58"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        if (i < 12) {
-            return [[Rez.Drawables.a15s, Rez.Drawables.a16s, Rez.Drawables.a17m, Rez.Drawables.a18m, Rez.Drawables.a18s, Rez.Drawables.a20b, Rez.Drawables.a23b, Rez.Drawables.a24s, Rez.Drawables.a24b, Rez.Drawables.a38s, Rez.Drawables.n54, Rez.Drawables.n58][i], [Rez.JsonData.a15s_m, Rez.JsonData.a16s_m, Rez.JsonData.a17m_m, Rez.JsonData.a18m_m, Rez.JsonData.a18s_m, Rez.JsonData.a20b_m, Rez.JsonData.a23b_m, Rez.JsonData.a24s_m, Rez.JsonData.a24b_m, Rez.JsonData.a38s_m, Rez.JsonData.n54_m, Rez.JsonData.n58_m][i]];
+        if (i < 19) {
+            return [[Rez.Drawables.a15s, Rez.Drawables.a16s, Rez.Drawables.a17m, Rez.Drawables.a18m, Rez.Drawables.a18s, Rez.Drawables.a20b, Rez.Drawables.a23b, Rez.Drawables.a24s, Rez.Drawables.a24b, Rez.Drawables.a38s, Rez.Drawables.n42, Rez.Drawables.n44, Rez.Drawables.n46, Rez.Drawables.n48, Rez.Drawables.n50, Rez.Drawables.n52, Rez.Drawables.n54, Rez.Drawables.n56, Rez.Drawables.n58][i], [Rez.JsonData.a15s_m, Rez.JsonData.a16s_m, Rez.JsonData.a17m_m, Rez.JsonData.a18m_m, Rez.JsonData.a18s_m, Rez.JsonData.a20b_m, Rez.JsonData.a23b_m, Rez.JsonData.a24s_m, Rez.JsonData.a24b_m, Rez.JsonData.a38s_m, Rez.JsonData.n42_m, Rez.JsonData.n44_m, Rez.JsonData.n46_m, Rez.JsonData.n48_m, Rez.JsonData.n50_m, Rez.JsonData.n52_m, Rez.JsonData.n54_m, Rez.JsonData.n56_m, Rez.JsonData.n58_m][i]];
         }
-        i -= 12;
+        i -= 19;
         return [[][i], [][i]];
     }
 

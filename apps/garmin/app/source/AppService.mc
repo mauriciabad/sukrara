@@ -100,6 +100,11 @@ module Alerts {
         if (fresh.size() == 0 || !(Toybox has :Notifications) || !(Notifications has :showNotification)) {
             return;
         }
+        // the app is open: its own alert screen says it (AppNav.check), one buzz
+        var fg = Application.Storage.getValue("sukFg");
+        if (fg instanceof Number && now - fg >= 0 && now - fg < 45) {
+            return;
+        }
         var it = fresh[0];
         var p = Link.payload() as Dictionary;
         var g = p.get("g");

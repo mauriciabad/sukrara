@@ -8,7 +8,7 @@ Setup, keys, simulator and sideloading: [docs/DEVELOPMENT.md › Garmin](../../d
 | Folder | What |
 |---|---|
 | [`aura/`](aura/README.md) | **Sukrara Aura**, the watch face (`watchface`, the round 390 × 390 AMOLED watches) |
-| `app/` | **Sukrara**, the watch app (`watch-app`): a glance, the app's view, its background, the complication hook. Placeholder look |
+| `app/` | **Sukrara**, the watch app (`watch-app`): the glance, the two pages, the one list, logging, mute, its own alert, the background, the four complications. The design's port ([`contracts/watchface/app/SPEC.md`](../../contracts/watchface/app/SPEC.md)), the 390 class so far |
 | `field/` | **Sukrara data field** (`datafield`): the value with Aura's sparkline or its arrow in any data-field slot, its own alert, glucose in the activity's file, its own background (the design's port: `contracts/watchface/app/SPEC.md` §9, §14) |
 | `sample/` | A sample watch face that reads Sukrara, for other developers: the example of [docs/GARMIN-FACES.md](../../docs/GARMIN-FACES.md) (the website's check holds the two equal; CI builds it). Not one of Sukrara's apps: not in `apps.json`, never released. 0BSD, so other faces can copy it (its LICENSE) |
 | `shared/` | What more than one app needs, compiled into each app that names it (below) |
@@ -46,9 +46,13 @@ Every surface draws the same way, so the design's port replaces only the drawing
    `AppLayout`, `FieldLayout` → `PlainModel`; the face's `AuraModel`).
 3. **Draw**: `draw(dc, model)` (`PlainDraw.draw`; the face's `AuraDraw`).
 
-The app's surfaces: `app/source/AppGlance.mc` (the glance: value, arrow, age), `AppView.mc` (the view: value, arrow,
-age, a line of the history), `AppService.mc` (the background: the shared link plus `AppComplications.publish`, the
-hook the complications fill). The field: `field/source/FieldApp.mc` (the field, its alert, the activity's file),
+The app follows the reference (`tools/watchface/app.js`) function by function: `AppInput.build` (`AppData.mc`: the
+payload and the clock → app.js's input `d`) → a screen pushes its display list (`AppG`) → `AppDraw` paints it, every
+text an atlas (`app/tools/fonts.py`). The screens: `AppGlance.mc` / `AppParts.glance`, `AppView.mc` + `AppScreens.mc`
+(page 1, page 2), `AppLists.mc` (the one list), `AppLog.mc` (logging), `AppMute.mc` (mute, Remind less),
+`AppAlert.mc` (the app's alert, Aura's sparkline); `SukraraApp.mc` (`AppNav`: the routes in, the alert while open),
+`AppService.mc` (the background: the shared link, the complications, Garmin's notification), `Outbox.mc`.
+The field: `field/source/FieldApp.mc` (the field, its alert, the activity's file),
 `FieldLayout.mc` (app.js `S.dfSlot` / `S.dfAlert` → `FieldG`, the slot from its size and obscured sides), `FieldG.mc`
 (the display list and its painter: Atkinson atlases tinted, the MIP watches' 64 colours and dithers). Each watch builds
 its screen class's fonts and table (`field/classes/<class>`, `field/tools/fonts.py` from `field_sizes.js`: the sizes
@@ -66,6 +70,8 @@ apps/garmin/build.sh <app> export      # the store package (every product) → b
 apps/garmin/build.sh aura cases        # the face's debug case loader (app, field: theirs; CIQ_DEVICE picks the watch)
 uv run apps/garmin/field/tools/fonts.py   # the field's fonts per screen class (--check: up to date)
 uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/field/tools/field_test.py run DIR   # the field's screens against app.js
+uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/app/tools/app_test.py run OUT
+                                       # the app's screens in the simulator against the reference (app/tools/app_test.py)
 apps/garmin/tools/link-test.sh <app>   # the link's (and the input's) tests in the simulator (build: build only)
 python3 apps/garmin/tools/link_cases.py   # regenerate shared/test/link/LinkCases.mc after cases.json changes
 uv run apps/garmin/tools/launcher_icons.py   # the three apps' launcher icons, one per watch size (--check)

@@ -125,4 +125,26 @@
     <string id="SLong">long-acting</string>
     <string id="SCarbs">carbs</string>
     <string id="AmountWhen">$1$ · $2$</string>
+    <string id="MuteAllT">Mute all alerts</string>
+    <string id="MuteLowsT">Mute lows</string>
+    <string id="MuteHighsT">Mute highs</string>
+    <string id="MuteAllSub">very low and no data too</string>
+    <string id="MuteSideSub">on your phone and this watch</string>
+    <string id="MutedAllSub">Very low and no data too</string>
+    <string id="LowsMuted">Lows muted</string>
+    <string id="HighsMuted">Highs muted</string>
+    <string id="ForUntil">for $1$ · until $2$</string>
+    <string id="UntilYou">until you unmute</string>
+    <string id="LeftUntil">$1$ left · until $2$</string>
+    <string id="LowsUnmuted">Lows unmuted</string>
+    <string id="HighsUnmuted">Highs unmuted</string>
+    <string id="NotSentShort">Not sent</string>
+    <string id="UVeryLow">VERY LOW</string>
+    <string id="ULow">LOW</string>
+    <string id="UHigh">HIGH</string>
+    <string id="UVeryHigh">VERY HIGH</string>
+    <string id="UExtremelyHigh">EXTREMELY HIGH</string>
+    <string id="UFallingFast">FALLING FAST</string>
+    <string id="URisingFast">RISING FAST</string>
+    <string id="UNoData">NO DATA</string>
 </strings>

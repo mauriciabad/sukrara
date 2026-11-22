@@ -1,5 +1,5 @@
 {
- "about": "The watch app's screens (SPEC.md), each drawn from a phone state of contracts/watchface/payload/cases.json's 'app' list ('state': its index) at a watch time ('at': s after its 'now'), with the screen's own inputs ('cfg': 'days' the numbers' period, 'sel' the list's selection; the logging screens' 'kind', 'amount', 'progress' of the hold, 'dup' the same kind just logged, 'left' the share of Undo's 10 s). apps/garmin/app's case loader (cases.jungle) shows them in turn; tools/watchface/app.js draws the reference from the same input.",
+ "about": "The watch app's screens (SPEC.md), each drawn from a phone state of contracts/watchface/payload/cases.json's 'app' list ('state': its index) at a watch time ('at': s after its 'now'), with the screen's own inputs ('set': payload keys replaced, for a watch state the phone's cases lack; 'cfg': 'days' the numbers' period, 'sel' the selection; the logging screens' 'kind', 'amount', 'progress' of the hold, 'dup' the same kind just logged, 'left' the share of Undo's 10 s; the mute screens' 'side', 'min', 'act'; the alert's 'spark' (the watch setting) and 'item' (which ring item); the glance's 'outbox': wait / ask / sent). apps/garmin/app's case loader (cases.jungle) shows them in turn; tools/watchface/app.js draws the reference from the same input.",
  "cases": [
   {
    "id": "day-glance",
@@ -154,6 +154,406 @@
     "kind": "rapid",
     "amount": 4.5
    }
+  },
+  {
+   "id": "mute-lengths",
+   "state": 0,
+   "screen": "muteLengths",
+   "cfg": {
+    "side": "all",
+    "sel": 1
+   }
+  },
+  {
+   "id": "mute-lengths-lows",
+   "state": 1,
+   "screen": "muteLengths",
+   "cfg": {
+    "side": "low",
+    "sel": 0
+   }
+  },
+  {
+   "id": "mute-done",
+   "state": 0,
+   "screen": "muteDone",
+   "cfg": {
+    "side": "all",
+    "min": 30,
+    "left": 0.611
+   }
+  },
+  {
+   "id": "mute-done-lows",
+   "state": 1,
+   "screen": "muteDone",
+   "cfg": {
+    "side": "low",
+    "min": 60,
+    "left": 0.611
+   }
+  },
+  {
+   "id": "muted",
+   "state": 0,
+   "set": {
+    "st": {
+     "k": "muted",
+     "until": 1794828576
+    }
+   },
+   "screen": "muted",
+   "cfg": {
+    "sel": 0
+   }
+  },
+  {
+   "id": "muted-change",
+   "state": 0,
+   "set": {
+    "st": {
+     "k": "muted",
+     "until": 1794828576
+    }
+   },
+   "screen": "muted",
+   "cfg": {
+    "sel": 1
+   }
+  },
+  {
+   "id": "muted-actions",
+   "state": 0,
+   "set": {
+    "st": {
+     "k": "muted",
+     "until": 1794828576
+    }
+   },
+   "screen": "actions"
+  },
+  {
+   "id": "muted-appA",
+   "state": 0,
+   "set": {
+    "st": {
+     "k": "muted",
+     "until": 1794828576
+    }
+   },
+   "screen": "appA"
+  },
+  {
+   "id": "alert-very-low",
+   "state": 1,
+   "screen": "alert"
+  },
+  {
+   "id": "alert-very-low-plain",
+   "state": 1,
+   "screen": "alert",
+   "cfg": {
+    "spark": false
+   }
+  },
+  {
+   "id": "alert-falling-fast",
+   "state": 1,
+   "screen": "alert",
+   "cfg": {
+    "item": 1
+   }
+  },
+  {
+   "id": "alert-high",
+   "state": 0,
+   "set": {
+    "g": {
+     "t": 1794823746,
+     "v": 236,
+     "rate": 1.6,
+     "band": 2,
+     "deg": -48.0
+    },
+    "hist": [
+     120,
+     120,
+     121,
+     122,
+     123,
+     125,
+     127,
+     129,
+     131,
+     133,
+     135,
+     138,
+     140,
+     143,
+     146,
+     149,
+     152,
+     155,
+     159,
+     162,
+     166,
+     169,
+     173,
+     177,
+     181,
+     185,
+     190,
+     194,
+     198,
+     203,
+     208,
+     212,
+     217,
+     222,
+     227
+    ],
+    "ring": [
+     {
+      "k": "high",
+      "side": "high",
+      "relaxed": false,
+      "less": true
+     }
+    ],
+    "st": {
+     "k": "needed",
+     "side": "high"
+    }
+   },
+   "screen": "alert"
+  },
+  {
+   "id": "alert-high-relaxed",
+   "state": 0,
+   "set": {
+    "g": {
+     "t": 1794823746,
+     "v": 236,
+     "rate": 1.6,
+     "band": 2,
+     "deg": -48.0
+    },
+    "hist": [
+     120,
+     120,
+     121,
+     122,
+     123,
+     125,
+     127,
+     129,
+     131,
+     133,
+     135,
+     138,
+     140,
+     143,
+     146,
+     149,
+     152,
+     155,
+     159,
+     162,
+     166,
+     169,
+     173,
+     177,
+     181,
+     185,
+     190,
+     194,
+     198,
+     203,
+     208,
+     212,
+     217,
+     222,
+     227
+    ],
+    "ring": [
+     {
+      "k": "high",
+      "side": "high",
+      "relaxed": true,
+      "less": false
+     }
+    ],
+    "st": {
+     "k": "needed",
+     "side": "high"
+    }
+   },
+   "screen": "alert",
+   "cfg": {
+    "sel": 1
+   }
+  },
+  {
+   "id": "alert-no-data",
+   "state": 2,
+   "screen": "alert"
+  },
+  {
+   "id": "remind-done",
+   "state": 1,
+   "screen": "remindDone",
+   "cfg": {
+    "side": "low",
+    "act": "less",
+    "left": 0.611
+   }
+  },
+  {
+   "id": "remind-usual-done",
+   "state": 0,
+   "set": {
+    "g": {
+     "t": 1794823746,
+     "v": 236,
+     "rate": 1.6,
+     "band": 2,
+     "deg": -48.0
+    },
+    "hist": [
+     120,
+     120,
+     121,
+     122,
+     123,
+     125,
+     127,
+     129,
+     131,
+     133,
+     135,
+     138,
+     140,
+     143,
+     146,
+     149,
+     152,
+     155,
+     159,
+     162,
+     166,
+     169,
+     173,
+     177,
+     181,
+     185,
+     190,
+     194,
+     198,
+     203,
+     208,
+     212,
+     217,
+     222,
+     227
+    ],
+    "ring": [
+     {
+      "k": "high",
+      "side": "high",
+      "relaxed": true,
+      "less": false
+     }
+    ],
+    "st": {
+     "k": "needed",
+     "side": "high"
+    }
+   },
+   "screen": "remindDone",
+   "cfg": {
+    "side": "high",
+    "act": "usual",
+    "left": 0.611
+   }
+  },
+  {
+   "id": "glance-waiting",
+   "state": 0,
+   "screen": "glance",
+   "cfg": {
+    "outbox": "wait"
+   }
+  },
+  {
+   "id": "glance-ask",
+   "state": 0,
+   "screen": "glance",
+   "cfg": {
+    "outbox": "ask"
+   }
+  },
+  {
+   "id": "glance-high",
+   "state": 0,
+   "set": {
+    "g": {
+     "t": 1794823746,
+     "v": 236,
+     "rate": 1.6,
+     "band": 2,
+     "deg": -48.0
+    },
+    "hist": [
+     120,
+     120,
+     121,
+     122,
+     123,
+     125,
+     127,
+     129,
+     131,
+     133,
+     135,
+     138,
+     140,
+     143,
+     146,
+     149,
+     152,
+     155,
+     159,
+     162,
+     166,
+     169,
+     173,
+     177,
+     181,
+     185,
+     190,
+     194,
+     198,
+     203,
+     208,
+     212,
+     217,
+     222,
+     227
+    ],
+    "ring": [
+     {
+      "k": "high",
+      "side": "high",
+      "relaxed": false,
+      "less": true
+     }
+    ],
+    "st": {
+     "k": "needed",
+     "side": "high"
+    }
+   },
+   "screen": "glance"
   }
  ]
 }

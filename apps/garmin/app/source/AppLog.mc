@@ -117,12 +117,16 @@ module AppLog {
 
     // ---- sending (S.logSending): [spin] the arc's turn, degrees ---------------------------------------------------
     function sending(g as AppG, k as String, a as Float, spin as Number) as Void {
-        var col = AppMath.pal(k);
+        sendingAs(g, AppMath.pal(k), what(k, a), spin);
+    }
+
+    // any write on its way to the phone (an entry, a mute, Remind less): [col] its colour, [title] what it is
+    function sendingAs(g as AppG, col as Number, title as String, spin as Number) as Void {
         g.a(0, 0, 189, 0, 360, col, 1.0, 8, false);
         g.c(0, -36, 46, AppMath.GRID, 1.0, 6);
         g.a(0, -36, 46, 20 + spin, 130 + spin, col, 1.0, 6, false);
         g.icon("phone", 0, -36, 30, AppMath.SOFT);
-        g.t(0, 46, what(k, a), 30, 700, AppMath.INK, MIDDLE);
+        g.t(0, 46, title, 30, 700, AppMath.INK, MIDDLE);
         g.t(0, 80, AppWords.s(Rez.Strings.SendingPhone), 20, 500, AppMath.SOFT, MIDDLE);
     }
 
@@ -393,6 +397,7 @@ class LogView extends WatchUi.View {
             state = "said";
         } else {
             state = "done";
+            AppNav.confirm();
         }
         startTimer(100);
         WatchUi.requestUpdate();

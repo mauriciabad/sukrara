@@ -14,6 +14,12 @@ module AppParts {
     const END = 1;
     const BANDS = ["veryLow", "low", "tight", "target", "high", "veryHigh"];
 
+    // the width of a value [str] at [fs] with its arrow when [arrow] (app.js valueWidth())
+    function width(str as String, arrow as Boolean, fs as Numeric) as Float {
+        var cap = fs * 0.668;
+        return (AppMath.bw(str, fs) + (arrow ? fs * 0.1 + cap * 0.78 : 0)).toFloat();
+    }
+
     // the value and its arrow as one group (app.js value()); returns [x0, x1, top]. [col] null = its colour
     function value(g as AppG, d as AppData, x as Numeric, y as Numeric, fs as Numeric, anchor as Number, arrow as Boolean, col as Number?) as Array<Float> {
         var str = AppMath.fmtG(d.g as Number, d.unit);
@@ -154,6 +160,10 @@ module AppParts {
         }
     }
 
+    function sendingText(snd as String) as String {
+        return AppWords.s(snd.equals("ask") ? Rez.Strings.SendAsk : snd.equals("wait") ? Rez.Strings.SendWait : Rez.Strings.SendSent);
+    }
+
     // ---- the glance (S.glance): its own area right of Sukrara's icon, x −83 … 165, y −51.5 … 51.5 -------------
     function glance(g as AppG, d as AppData) as Void {
         var x0 = -83;
@@ -173,16 +183,31 @@ module AppParts {
             }
             return;
         }
-        var under = d.pill != null || d.age >= 1.5;
+        var snd = Sending.state(d.now);
+        var under = d.pill != null || d.age >= 1.5 || snd != null;
         var vy = under ? 4 : 20;
         var fs = under ? 54 : 58;
-        var v = value(g, d, x0, vy, fs, START, true, null);
+        // the same two places as page 1 (main, then the last treatment or the second metric), from the right edge;
+        // decided with the widest value (288 and its arrow) at the smallest size, so they never change with the
+        // reading; the value then takes the largest size that fits beside them (app.js S.glance, SPEC §14.1)
         var rr = 23;
         var sw = 5;
         var w = 2 * rr + sw;
+        var n = d.slots.size() < 2 ? d.slots.size() : 2;
+        var need = 2 * w + 6 + 10;
+        var floor = fs - 12;
+        if (x1 - (x0 + width("288", true, floor)) < need) {
+            n = n < 1 ? n : 1;
+            need = w + 10;
+        }
+        var str = AppMath.fmtG(d.g as Number, d.unit);
+        while (fs > floor && x1 - (x0 + width(str, d.rate != null, fs)) < need) {
+            fs -= 2;
+        }
+        var v = value(g, d, x0, vy, fs, START, true, null);
         var room = x1 - (v[1] + 10);
         var x = x1;
-        for (var i = 0; i < d.slots.size() && room >= w; i++) {
+        for (var i = 0; i < n && room >= w; i++) {
             drawSlot(g, d, d.slots[i] as Array, x - w / 2.0, 0, rr, sw, 23);
             x -= w + 6;
             room -= w + 6;
@@ -195,7 +220,14 @@ module AppParts {
                 ax += AppMath.tw(d.readAt, 17) + 10;
             }
             if (d.pill != null) {
-                pill(g, ax, cy, d.pill as Array, 15, START);
+                ax += pill(g, ax, cy, d.pill as Array, 15, START) + 10;
+            }
+            // the outbox: Waiting for the phone, Sent, The phone has a question; where it fits after the rest
+            if (snd != null) {
+                var s = sendingText(snd);
+                if (ax + AppMath.tw(s, 15) <= x1) {
+                    g.t(ax, cy + 5, s, 15, 600, snd.equals("ask") ? AppMath.pal("high") : AppMath.SOFT, START);
+                }
             }
         }
     }

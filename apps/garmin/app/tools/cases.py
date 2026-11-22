@@ -35,6 +35,7 @@ def cases():
         if only and c["id"] not in only:
             continue
         p = dict(states[c["state"]]["payload"])
+        p.update(c.get("set", {}))  # a watch state the phone's cases don't have (a high, a mute): those keys replaced
         out.append({"id": c["id"], "screen": c["screen"], "at": c.get("at", 0), "cfg": c.get("cfg", {}), "payload": p})
     return out
 

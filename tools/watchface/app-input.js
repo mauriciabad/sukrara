@@ -49,10 +49,13 @@ var AppInput = (function () {
           [x.rep.cv !== null ? Number(x.rep.cv).toFixed(0) + ' %' : '--', 'CV', (x.rep.ok & 128) !== 0]]
       };
     }
-    var cfg = Object.assign({ screen: x.screen, hours: x.hours, dist: x.side, period: x.days + 'd' }, x.cfg || {});
+    // the screen's own words and state as the watch drew them (x.x: the case loader's, for app.js's hooks)
+    var cfg = Object.assign({ screen: x.screen, hours: x.hours, dist: x.side, period: x.days + 'd' }, x.cfg || {}, x.x || {});
+    if (cfg.side === 'all') delete cfg.side; // Mute all: app.js has no side
+    if (typeof cfg.ring === 'number') cfg.ring = '#' + cfg.ring.toString(16).padStart(6, '0'); // the alert's colour
     d.lastBy = {};
     (x.rows || []).forEach(function (r) {
-      if (r[0] === 'mute') { if (r[2] !== null) cfg.muted = true; } else d.lastBy[r[0]] = r[2] || '';
+      if (r[0] === 'muted') { cfg.muted = true; cfg.mutedRow = [r[1], r[2] || '']; } else if (r[0] !== 'mute') d.lastBy[r[0]] = r[2] || '';
     });
     return { input: d, cfg: cfg };
   }
