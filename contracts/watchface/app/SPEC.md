@@ -29,7 +29,7 @@ every draw); never an old value as current; never colour alone; Aura's palette, 
 | Alerts: Garmin's notification, the app's alert, remind less | same | `S.wake`, `S.alert`, `S.remindDone` | Alerts |
 | Data field: whole / half / band / quarter / cap, its own alert | a separate data-field app | `S.df1` … `S.df4small` (any class: `S.dfSlot`, §14.4), `S.dfAlert` | Data field |
 | Complications as other faces draw them | the watch app publishes 4 | `S.faceCx` | Complications |
-| Not set up (no message from the phone yet): app, glance, data field | both | `S.setup`, `S.glanceSetup`, `S.dfSetup` | Not set up |
+| Waiting for the phone (no message yet): app, glance, data field | both | `S.setup`, `S.glanceSetup`, `S.dfSetup` | Waiting for the phone |
 
 ## 2. The input (what the payload must give each screen)
 
@@ -50,7 +50,7 @@ docs/47). No input: selecting it opens the app.
   there is one, else the second metric (dimmed). Rings carry **no period label** and a bigger number (23).
 - **Under the value**, only when needed: the reading's time when late (≥ 90 s), then Sukrara's pill (font 15).
 - **States**: old (≥ 5 min) struck grey with a hollow ring for the arrow; no reading for 20 min → "No reading since" +
-  the time; warming up → the pie + "Warming up" + "Ready at …"; not set up → "Set up on your phone" (§4.3).
+  the time; warming up → the pie + "Warming up" + "Ready at …"; no message from the phone yet → "Waiting for your phone" (§4.3).
 
 ## 4. The app
 
@@ -79,22 +79,27 @@ tapping one switches it here without saving; buttons: the list's Period), the st
 then average, GMI, CV, each with the goal check the phone's report gives it (✓ met / ✕ not: the phone sends whether
 each goal is met, so the watch holds no threshold of its own). Very high / very low rows and the coverage note stay on the phone.
 
-### 4.3 Not set up (`S.setup`)
+### 4.3 Waiting for the phone (`S.setup`)
 
-Until the phone's first message reaches this app (no `key` yet: a fresh install, Sukrara for Android missing, or Garmin
-off on the phone), every surface says so instead of drawing empty values. The watch can't tell those causes apart, so
-it gives the one path that covers them all.
-- **The app**: one page, no dots: Sukrara's mark; *Set up on your phone*; soft, two lines: *Sukrara for Android ›
-  Settings › Share with apps › Garmin*; a button **Open on phone** (START or a tap) →
-  `Communications.openWebPage` with the setup link (`https://sukrara.mauri.app/garmin/setup/`, `/es/garmin/setup/`
-  when the watch's language is Spanish). Garmin Connect shows it on the phone. Sukrara for Android claims the link as
-  an App Link and opens its Garmin page; without Sukrara the website's page says how to get it. After the press:
-  *Look at your phone* for 5 s, then the button again. START never opens the list here (nothing can be signed yet).
-  The first message replaces the page with page 1 by itself; BACK leaves the app.
-- **The glance**: *Set up on your phone* (soft) where the value goes; selecting it opens this page.
+Nothing to set up on the watch (the owner, 2026-11-22: no more configuration than one switch): Sukrara for Android
+sends to every Sukrara app Garmin Connect reports, its one switch (*Send to Sukrara on your watch*) on by default.
+Until the phone's first message reaches this app (a fresh install: up to a minute; Sukrara for Android missing; that
+switch off; Garmin Connect not running), every surface says so instead of drawing empty values. **The watch never names
+a phone screen or setting**: the phone's pages change, the watch app in the store doesn't; the phone and the website
+say where.
+- **The app**: one page, no dots: Sukrara's mark; *Waiting for your phone*; soft: *Sukrara for Android sends your
+  glucose here*; a button **Open on phone** (START or a tap) → `Communications.openWebPage` with the setup link
+  (`https://sukrara.mauri.app/garmin/setup/`, `/es/garmin/setup/` when the watch's language is Spanish). Garmin Connect
+  shows it on the phone; Sukrara for Android claims it as an App Link and opens where the person can act (its Garmin
+  page, or its setup when that isn't done); without Sukrara the website's page says how to get it. After the press:
+  *Look at your phone* for 5 s, then the button again. On opening and after the press the app also asks the phone at
+  once (the fetch), so a working phone fills it in seconds. START never opens the list here. The first message (push or
+  fetch) replaces the page with page 1 by itself; an entry logged before the first push (no `key` yet) waits in the
+  outbox like one with the phone away. BACK leaves the app.
+- **The glance**: *Waiting for your phone* (soft) where the value goes; selecting it opens this page.
 - **Complications**: as with no data ("---", *Log*); selecting one opens this page.
-- **The data field** (`S.dfSetup`): *GLUCOSE* and *Set up on phone* (soft, two lines where narrow); no alert, nothing
-  written to the activity.
+- **The data field** (`S.dfSetup`): *GLUCOSE* and *Waiting for phone* (soft, two lines where narrow); no alert,
+  nothing written to the activity.
 
 ## 5. The one list (`S.actions`)
 
@@ -186,8 +191,8 @@ The phone tells the watches apart by the payload's `w` (push only), which the ap
 
 ## 12. States and exits (for FEATURES.md)
 
-Not set up (§4.3) → *Open on phone* (*Look at your phone*, 5 s) / BACK; it leaves by itself on the phone's first
-message. Glance → select → the app. App page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind →
+Waiting for the phone (§4.3) → *Open on phone* (*Look at your phone*, 5 s) / BACK; it leaves by itself on the
+phone's first message. Glance → select → the app. App page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind →
 amount → hold to log (let go: back to the amount; BACK: the list) → logged (*Undo* 10 s) or OPEN (phone away). The list's
 *Mute alerts* → a length → muted (*Undo* 10 s); *Muted* → *Unmute* / *Change time* / BACK. Garmin's notification →
 Treatment (the amount) / Remind less / Mute (toast, close) / dismiss. The app's alert → Treatment / Remind less ↔ Remind as
