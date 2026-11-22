@@ -74,7 +74,8 @@ UP / DOWN or a swipe between the two pages (dots at the bottom); START opens the
 The phone's Glucose report card, simplified: period chips 1d · 7d · 14d · 30d (the phone's `report.days` by default;
 tapping one switches it here without saving; buttons: the list's Period), the stacked bar of the bands, *Above range*,
 *In range* (with *very good*), *Below range* with their consensus goals as chips (✓ met in green, ✕ not in orange),
-then average, GMI, CV each with its goal check. Very high / very low rows and the coverage note stay on the phone.
+then average, GMI, CV, each with the goal check the phone's report gives it (none for the average: the watch adds no
+goal of its own). Very high / very low rows and the coverage note stay on the phone.
 
 ## 5. The one list (`S.actions`)
 
