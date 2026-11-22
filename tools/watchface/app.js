@@ -349,9 +349,10 @@ var WL = (function () {
     var x0 = o.anchor === 'start' ? x : o.anchor === 'end' ? x - w : x - w / 2;
     var col = o.col || valColour(d, o);
     g.t(x0, y, str, { fs: fs, fw: 700, fill: col, anchor: 'start' });
-    if (d.age >= 5) g.p('M' + r1(x0 - 4) + ' ' + r1(y - cap / 2) + 'H' + r1(x0 + vw + 4), { stroke: PAL.grey, sw: Math.max(3, fs * 0.05) });
+    // struck when old: the line and the hollow ring take the value's own colour (grey, or the ink on an alert's block)
+    if (d.age >= 5) g.p('M' + r1(x0 - 4) + ' ' + r1(y - cap / 2) + 'H' + r1(x0 + vw + 4), { stroke: col, sw: Math.max(3, fs * 0.05) });
     if (showArrow) {
-      if (d.age >= 5) g.c(x0 + vw + gap + box / 2, y - cap / 2, box * 0.28, { stroke: PAL.grey, sw: box * 0.1 });
+      if (d.age >= 5) g.c(x0 + vw + gap + box / 2, y - cap / 2, box * 0.28, { stroke: col, sw: box * 0.1 });
       else g.arrow(x0 + vw + gap + box / 2, y - cap / 2, box, d.rate, o.arrowCol || col);
     }
     return { x0: x0, x1: x0 + w, w: w, top: y - cap, bottom: y, cap: cap };
@@ -571,7 +572,8 @@ var WL = (function () {
       g.p('M' + r1(ex) + ' ' + r1(ey) + 'L' + r1(ex + len * Math.cos(ang)) + ' ' + r1(ey + len * Math.sin(ang)), { stroke: o.white ? WI : bandOf(d.g) === 'veryLow' ? PAL.veryLow : col, sw: 3.4 * sc, dash: r1(4.5 * sc) + ' ' + r1(4.5 * sc), cap: 'butt' });
     }
     if (!old) g.c(ex, ey, 7.5 * sc, { fill: o.white ? WI : PAL[bandOf(d.g)] });
-    else g.c(ex, ey, 7.5 * sc, { fill: '#000000', stroke: PAL.grey, sw: 3 * sc });
+    // old: a hollow end in the line's colour (on an alert's block the block shows through)
+    else g.c(ex, ey, 7.5 * sc, { fill: o.white ? 'none' : '#000000', stroke: o.white ? WI : PAL.grey, sw: 3 * sc });
   }
 
   function sparkline(g, d, bx, o) {
@@ -1153,9 +1155,9 @@ var WL = (function () {
   S.dfAlert = function (g, d) {
     var b = bandOf(d.g), col = PAL[b], very = b === 'veryLow';
     full(g, col);
-    var W0 = inkOn(col);
-    g.icon('bell', -tw('LOW', 24) / 2 - 18, -96, 24, W0);
-    g.t(12, -88, very ? 'VERY LOW' : 'LOW', { fs: 24, fw: 700, fill: W0, ls: 1.5 });
+    var W0 = inkOn(col), word = very ? 'VERY LOW' : 'LOW';
+    g.icon('bell', -tw(word, 24) / 2 - 18, -96, 24, W0);
+    g.t(12, -88, word, { fs: 24, fw: 700, fill: W0, ls: 1.5 });
     value(g, d, 0, 30, 116, { col: W0, inverted: true });
     g.t(0, 92, 'Sukrara · ' + (d.age < 1 ? 'now' : Math.round(d.age) + ' min ago'), { fs: 20, fw: 600, fill: W0 });
   };
