@@ -16,14 +16,15 @@ Garmin's own apps and glances (fēnix 8, Venu 4, Forerunner 970) show a one-colo
 background shape. So Sukrara's is its brand glyph (assets/brand/sukrara/glyph.svg: the cube and the dot) in Garmin's
 theme cyan, the colour of the "Cyan" accent in the SDK's device files (fēnix 8 / 9, epix 2, MARQ, Venu 3 …). Glyph
 fills GLYPH of the icon's side, centred, antialiased (alpha). The small sizes (PIXEL: 38 and 40 px, the MIP watches'
-included) are drawn on the pixel grid instead, no antialias: the cube as an isometric pixel cube (2:1 steps, symmetric,
-2 px gaps between its faces), the dot a pixel circle. The 64-colour MIP watches (no alpha blending) get the nearest
+included) are drawn on the pixel grid instead, no antialias: the cube in the glyph's proportions (30°, as 2-2-1 px steps,
+symmetric, 3 px gaps between its faces), the dot a pixel circle. The 64-colour MIP watches (no alpha blending) get the nearest
 palette colour, so the compiler has nothing to dither. Sizes and screen types come from the SDK's device files
 (compiler.json launcherIcon, displayType).
 
 Sukrara Aura (the face) takes the same icon: Garmin shows a face's launcher icon almost nowhere, but where it does
 (the watch's Connect IQ app list) the three apps read as one family.
 """
+import itertools
 import json
 import os
 import pathlib
@@ -48,9 +49,13 @@ CYAN = (0x75, 0xC7, 0xF4)  # Garmin's theme "Cyan" (Devices/fenix847mm/glance_cy
 MIP_LEVELS = (0x00, 0x55, 0xAA, 0xFF)  # the 64-colour MIP palette: every channel one of these
 GLYPH = 0.78  # the glyph's larger side over the icon's side
 SS = 16  # supersampling for the antialias
-# the pixel-fitted sizes: n → (a, H, t, d, dx, dy): the top face 4a wide and 2a tall (rows of 2 px steps), the side faces
-# H tall below a t-row gap, 2 px apart; the dot d px across, its centre dx right of the cube's axis and dy below its top
-PIXEL = {38: (6, 9, 2, 10, 15, -1), 40: (6, 10, 2, 10, 15, -1)}
+# the pixel-fitted sizes keep the glyph's proportions (an isometric 30° cube about 0.92 as wide as tall, its faces apart
+# by 12 % of its width): the slanted edges step 2-2-1 px per row (31°) out from the axis, the faces GAP px apart
+STEP = (2, 2, 1)
+GAP = 3
+# n → (a, w, h, d, cx, cy): the top face 2a + 1 columns wide, the cube 2w + 1, its side faces' columns h tall; the dot d px
+# across, centred cx px right of the axis column's left edge and cy below the cube's top
+PIXEL = {38: (8, 10, 11, 10, 14, -1), 40: (9, 11, 11, 10, 15, -2)}
 
 
 def nearest_mip(c):
@@ -115,20 +120,25 @@ def coverage(n, fill=GLYPH, sh=None):
 
 def pixels(n):
     """the pixel-fitted glyph on an n × n grid (PIXEL[n]), as coverage (L, 0 / 255), centred on whole pixels"""
-    a, h, t, d, dx, dy = PIXEL[n]
+    a, w, h, d, cx, cy = PIXEL[n]
+    step = []  # step[j]: how many rows the slanted edges have stepped at the j-th column out from the axis
+    for k, run in enumerate(itertools.cycle(STEP)):
+        step += [k] * run
+        if len(step) > w:
+            break
+    last = 2 * step[a] + 1  # the top face's last row: its side corners 2 rows tall
     on = set()
-    for j in range(2 * a):  # j: the column's distance from the axis; its mirror is column -1 - j
-        top, bot = j // 2, 2 * a - 1 - j // 2
-        rows = list(range(top, bot + 1))
-        if j >= 1:  # the side faces, apart by 2 columns at the axis; their first column steps with the next two
-            s0 = 2 * a - 1 - max(j, 2) // 2 + 1 + t
-            rows += range(s0, s0 + h - (1 if j == 2 * a - 1 else 0))  # the outer bottom corner rounded off
+    for j in range(w + 1):  # j: the column's distance from the axis column 0; its mirror is column -j
+        rows = list(range(step[j], last - step[j] + 1)) if j <= a else []
+        if j > GAP // 2:  # the side faces, under the top face's lower edges, GAP rows below and GAP columns apart
+            s = last - step[j] + GAP + 1
+            rows += range(s + (j == w), s + h - (j == w))  # their outer corners rounded off
         for y in rows:
-            on |= {(j, y), (-1 - j, y)}
+            on |= {(j, y), (-j, y)}
     r = d / 2
-    for y in range(dy - d, dy + d):
-        for x in range(dx - d, dx + d):
-            if (x + 0.5 - dx) ** 2 + (y + 0.5 - dy) ** 2 <= (r - 0.05) ** 2:
+    for y in range(cy - d, cy + d):
+        for x in range(cx - d, cx + d):
+            if (x + 0.5 - cx) ** 2 + (y + 0.5 - cy) ** 2 <= (r - 0.05) ** 2:
                 on.add((x, y))
     xs, ys = [p[0] for p in on], [p[1] for p in on]
     ox = (n - (max(xs) - min(xs) + 1)) // 2 - min(xs)
