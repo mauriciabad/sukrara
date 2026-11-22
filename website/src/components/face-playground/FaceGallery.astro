@@ -8,19 +8,25 @@
  * are drawn on the page as they come into view (gallery.ts).
  *   ### What to do now
  *   <FaceGallery group="act" />
+ * Or a few examples from any group, by id, without the lead: <FaceGallery ids={['glucose-in-range', 'alerts-low']} />
  */
 import { aura } from './aura/index.ts';
 import { words } from './strings.ts';
 
-type Props = { group: string; lead?: boolean };
-const { group, lead = true } = Astro.props;
+type Props = { group: string; lead?: boolean; ids?: never } | { ids: string[]; group?: never; lead?: never };
+const { group, lead = true, ids } = Astro.props;
 const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
 const w = words(lang);
-const g = aura.examples.find((x) => x.id === group);
+const example = (id: string) => {
+	const e = aura.examples.flatMap((x) => x.examples).find((x) => x.id === id);
+	if (!e) throw new Error(`FaceGallery: no example ${id}`);
+	return e;
+};
+const g = ids ? { title: aura.name, lead: undefined, examples: ids.map(example) } : aura.examples.find((x) => x.id === group);
 if (!g) throw new Error(`FaceGallery: no example group ${group}`);
 ---
 
-{lead && <p>{g.lead[lang]}</p>}
+{lead && g.lead && <p>{g.lead[lang]}</p>}
 <ul class="fg not-content" data-lang={lang} aria-label={w.examples(g.title[lang])}>
 	{
 		g.examples.map((e) => (

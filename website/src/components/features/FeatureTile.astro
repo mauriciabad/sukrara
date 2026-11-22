@@ -8,6 +8,7 @@
  *   <FeatureTile icon="music_note" title="Discreet sound packs">A different intensity for each alert.</FeatureTile>
  *   <FeatureTile icon="widgets" title="Home screen widgets" shot="widget">Glucose, chart and time in range.</FeatureTile>
  *   <FeatureTile app="tidepool" title="Tidepool">Sends your glucose, insulin, carbs and notes.</FeatureTile>
+ *   <FeatureTile icon="apps" title="A glance and an app" watch="glance">…</FeatureTile>   (a Garmin screen, garmin/screens.ts)
  */
 import type { AppName } from '../../lib/apps';
 import type { LogoName } from '../../lib/logos';
@@ -17,15 +18,27 @@ import DsIcon from '../DsIcon.astro';
 import Logo from '../Logo.astro';
 import Screenshot from '../Screenshot.astro';
 import FaceExample from '../face-playground/FaceExample.astro';
+import FaceScreen from '../face-playground/FaceScreen.astro';
+import { fontFace, screenSvg } from '../garmin/render.ts';
+import { SCREENS, type ScreenId } from '../garmin/screens.ts';
 
-type Props = { title: string; shot?: ScreenName; shotWidth?: number; /** Instead of a picture: one of the watch face's examples, drawn live. */ face?: string } & (
+type Props = {
+	title: string;
+	shot?: ScreenName;
+	shotWidth?: number;
+	/** Instead of a picture: one of the watch face's examples, drawn live. */
+	face?: string;
+	/** Instead of a picture: a screen of the Garmin app or data field (garmin/screens.ts). */
+	watch?: ScreenId;
+} & (
 	| { icon: string }
 	| { app: AppName }
 	| { logo: LogoName }
 );
 const props = Astro.props;
 const t = Astro.locals.t;
-const pic = props.shot ?? (props.face ? `face-${props.face}` : undefined);
+const pic = props.shot ?? (props.face ? `face-${props.face}` : props.watch ? `watch-${props.watch}` : undefined);
+const watchCfg = props.watch ? (SCREENS[props.watch] as { cfg?: Record<string, unknown> }).cfg : undefined;
 const dialogId = pic ? `sk-shot-${pic}` : undefined; // each picture once on the page
 const Tag = pic ? 'button' : 'div';
 ---
@@ -59,7 +72,19 @@ const Tag = pic ? 'button' : 'div';
 					<slot />
 				</p>
 				<div class="sk-fdialog__shot">
-					{props.shot ? <Screenshot name={props.shot} width={props.shotWidth ?? 360} /> : <FaceExample id={props.face!} width={props.shotWidth ?? 300} />}
+					{props.shot ? (
+						<Screenshot name={props.shot} width={props.shotWidth ?? 360} />
+					) : props.watch ? (
+						<>
+							<Fragment set:html={fontFace} />
+							<FaceScreen size={`${props.shotWidth ?? 300}px`} pad="0.5rem">
+								<div set:html={screenSvg(props.watch, watchCfg ?? {})} />
+							</FaceScreen>
+						</>
+
+					) : (
+						<FaceExample id={props.face!} width={props.shotWidth ?? 300} />
+					)}
 				</div>
 			</dialog>
 		)

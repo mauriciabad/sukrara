@@ -1,0 +1,20 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * The sidebar: starlight-sidebar-topics' topic switcher, then Starlight's own sidebar with SidebarList in place of its
+ * list, so a page can also be a group (Sukrara for Garmin over Sukrara Aura).
+ */
+import MobileMenuFooter from 'virtual:starlight/components/MobileMenuFooter';
+import SidebarPersister from '@astrojs/starlight/components/SidebarPersister.astro';
+import Topics from 'starlight-sidebar-topics/components/Sidebar.astro';
+import SidebarList from './SidebarList.astro';
+
+const { sidebar } = Astro.locals.starlightRoute;
+---
+
+<Topics />
+<SidebarPersister><SidebarList sublist={sidebar} /></SidebarPersister>
+
+<div class="md:sl-hidden"><MobileMenuFooter /></div>

@@ -1,0 +1,116 @@
+---
+// Sukrara — https://github.com/mauriciabad/sukrara
+// Copyright (C) 2026 Maurici Abad
+// SPDX-License-Identifier: GPL-3.0-or-later
+/**
+ * A row of Sukrara's Garmin screens (screens.ts), each with its name and one line. The app's and the data field's are
+ * drawn at build time by their reference renderer (tools/watchface/app.js, read through `@repo`, never copied) as
+ * inline SVG, so the page needs no script for them; a watch face's example is drawn on the page by its own code, as
+ * FaceGallery does. The type is the site's own Atkinson Hyperlegible Next.
+ *   <WatchScreens ids={['glance', 'app', 'numbers']} />      <WatchScreens ids={[…]} size="lg" />
+ */
+import { aura } from '../face-playground/aura/index.ts';
+import { fontFace, screenSvg } from './render.ts';
+import { SCREENS, type ScreenId, type WatchScreen } from './screens.ts';
+
+type Props = { ids: ScreenId[]; size?: 'md' | 'lg' };
+const { ids, size = 'md' } = Astro.props;
+const lang = Astro.locals.starlightRoute.lang === 'es' ? 'es' : 'en';
+
+const items = ids.map((id) => {
+	const s: WatchScreen = SCREENS[id];
+	const label = `${s.title[lang]}. ${s.note[lang]}`;
+	if (s.face) {
+		if (!aura.examples.some((g) => g.examples.some((e) => e.id === s.face))) throw new Error(`WatchScreens: no face example ${s.face}`);
+		return { id, s, label, face: s.face };
+	}
+	return { id, s, label, svg: screenSvg(id, s.cfg ?? {}) };
+});
+---
+
+<Fragment set:html={fontFace} />
+<ul class:list={['ws not-content', `ws-${size}`]}>
+	{
+		items.map((i) => (
+			<li class="ws-item">
+				<div class="ws-screen">
+					{i.face ? (
+						<div class="ws-draw" data-example={i.face} role="img" aria-label={i.label} />
+					) : (
+						<div class="ws-draw" role="img" aria-label={i.label} set:html={i.svg} />
+					)}
+				</div>
+				<p class="ws-title">{i.s.href ? <a href={i.s.href[lang]}>{i.s.title[lang]}</a> : i.s.title[lang]}</p>
+				<p class="ws-note">{i.s.note[lang]}</p>
+			</li>
+		))
+	}
+</ul>
+
+<script>
+	// the watch faces' examples, if any (the same script as FaceGallery's: each is mounted once)
+	import { aura } from '../face-playground/aura/index.ts';
+	import { mountGalleries } from '../face-playground/gallery.ts';
+
+	if (document.querySelector('.ws [data-example]')) mountGalleries(aura, document.documentElement.lang.startsWith('es') ? 'es' : 'en');
+</script>
+
+<style>
+	.ws {
+		list-style: none;
+		padding: 0;
+		margin: 1rem 0 2rem;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+		gap: 1.5rem 1rem;
+	}
+	/* one of each, side by side on every width */
+	.ws-lg {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 1.5rem clamp(0.6rem, 3vw, 1.5rem);
+		max-width: 46rem;
+	}
+	.ws-item {
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+	}
+	.ws-screen {
+		border-radius: 50%;
+		background: #0a0a0c;
+		padding: 0.35rem;
+		margin-bottom: 0.35rem;
+		box-shadow: 0 0 0 1px var(--sk-surface-line);
+	}
+	.ws-lg .ws-screen {
+		box-shadow: var(--sk-glow);
+	}
+	.ws-draw {
+		aspect-ratio: 1;
+		width: 100%;
+	}
+	.ws-draw :global(svg) {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	.ws-title {
+		margin: 0;
+		font-weight: 700;
+		line-height: 1.3;
+		color: var(--sl-color-white);
+	}
+	.ws-lg .ws-title {
+		font-size: var(--sl-text-lg);
+	}
+	.ws-title a {
+		color: inherit;
+	}
+	.ws-note {
+		margin: 0;
+		font-size: var(--sl-text-sm);
+		line-height: 1.4;
+		color: var(--sl-color-gray-3);
+	}
+</style>

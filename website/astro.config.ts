@@ -47,6 +47,7 @@ export default defineConfig({
 				Footer: './src/components/overrides/Footer.astro',
 				Hero: './src/components/overrides/Hero.astro',
 				SocialIcons: './src/components/overrides/SocialIcons.astro',
+				Sidebar: './src/components/overrides/Sidebar.astro',
 			},
 			plugins: [
 				starlightSidebarTopics([
@@ -59,12 +60,24 @@ export default defineConfig({
 							{
 								label: 'Apps',
 								translations: { es: 'Apps' },
-								items: ['android', 'mac', { label: 'Garmin', translations: { es: 'Garmin' }, items: ['garmin', 'garmin/aura'] }],
+								// a page that is also a group (overrides/SidebarList.astro): Sukrara for Garmin over its watch faces
+								items: [
+									'android',
+									'mac',
+									{
+										label: 'Sukrara for Garmin',
+										translations: { es: 'Sukrara para Garmin' },
+										items: [
+											{ slug: 'garmin', attrs: { 'data-group-page': '' } },
+											'garmin/aura',
+										],
+									},
+								],
 							},
 							{
 								label: 'More',
 								translations: { es: 'Más' },
-								items: ['open-glucose-stream', 'sounds', 'watch-face', 'privacy'],
+								items: ['open-glucose-stream', 'sounds', 'privacy'],
 							},
 						],
 					},
