@@ -163,8 +163,16 @@ Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *G
   value + arrow only.
 - **Low / very low**: the slot becomes a block in the band's colour, the value white. Old: struck. Late: the reading's
   time.
-- **Its own alert** (`S.dfAlert`, `DataField.showAlert` + vibration; on per activity in its Alerts › Connect IQ): the
-  whole page in the band's colour, the bell and the word, the value + arrow white, "Sukrara · now".
+- **No reading for 20 min**: "---"; on the whole page *No reading since* + the reading's time.
+- **Its own alert** (`S.dfAlert`, `DataField.showAlert` + vibration; on per activity in its Alerts › Connect IQ), for
+  every kind the phone rings: the whole page in the level's colour (a rate alert: the value's band; no data: grey), the
+  bell and the word, the value + arrow, "Sukrara · now". Ink white on the low side, else black or white by contrast
+  (`inkOn`); an old value struck in that ink.
+- **Always its own black ground**, whatever the activity's colours (no light design).
+- **Where the slot is**: Connect IQ gives a field its size, not its place; the field works it out from which edges the
+  screen cuts (`obscurity`).
+- ***Record glucose***: the value into the activity's file at each new reading while it's fresh; from 5 min old,
+  Garmin's "no value", so the file never carries an old value as current.
 
 ## 10. Complications (the watch app publishes four, for any face)
 
@@ -319,7 +327,8 @@ The 390 scaled. Only the glance and the data field take their device's own geome
 One rule on every class (`S.dfSlot`, `fitBox`): **whole** when the slot is the screen (the 390's whole page);
 **value + sparkline** when a box of **260 × 100 units** (× s px) fits inside the slot and the screen (the box sits at
 the slot's side toward the centre, as wide as the circle allows there); otherwise **value + arrow**, the largest atlas
-size that fits (label row when ≥ 64 units high). The 390's half and band are side by side, its quarter and cap
+size that fits (label row when ≥ 64 units high). Every size the layout computes snaps to the class's atlas set, the
+390 included (76.8 → 80); the approved fixed sizes stay. The 390's half and band are side by side, its quarter and cap
 value-only, and so on every round class, AMOLED and MIP (the thresholds are in units, so the MIP slots, 0.56 – 0.72×
 in px, keep the 390's forms). Rectangles have no obscured edges: the Venu Sq 2's 97 px slots are under 100 (band and
 the 4-field top value-only, half side by side); the Venu X1's 169 / 173 px band and top go side by side. Low / very
