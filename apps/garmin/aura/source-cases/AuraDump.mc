@@ -64,7 +64,11 @@ module AuraDump {
         return "M" + pt(AuraMath.P(a, ang)) + "L" + pt(AuraMath.P(b, ang));
     }
 
-    const STROKED = ["sun", "sunset", "bell", "ring", "globe", "stairs", "phoneOff", "long"];
+    const STROKED = [
+        "sun", "sunset", "bell", "ring", "globe", "stairs", "phoneOff", "long", "stopwatch", "wheelchair", "calendar",
+        "event", "sunrise", "cloud", "cloudSun", "rain", "snow", "storm", "fog", "thermo", "gauge", "run", "bike",
+        "hourglass", "stress", "drop", "breath", "lungs", "solar", "trend", "golf",
+    ];
 
     function icon(path as String, key as String, x as Numeric, y as Numeric, rot as Numeric, size as Numeric, c as Number) as Void {
         var k = Math.floor(size / 24.0 * 1000 + 0.5) / 1000.0;
