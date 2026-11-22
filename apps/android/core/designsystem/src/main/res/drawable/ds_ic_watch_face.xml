@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Connect IQ's "Watch Faces" symbol, redrawn (24 dp, 2 dp strokes like Material Symbols): a dial with ticks at 12, 3,
+     6 and 9 and two hands. Sukrara's watch faces wherever the phone lists them; tinted by Compose Icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24" android:autoMirrored="false">
+    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:pathData="M12,3a9,9 0 1,1 0,18a9,9 0 1,1 0,-18Z"/>
+    <path android:strokeColor="@android:color/white" android:strokeWidth="1.6" android:strokeLineCap="round" android:pathData="M12,5.4L12,6.4M18.6,12L17.6,12M12,18.6L12,17.6M5.4,12L6.4,12"/>
+    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:strokeLineCap="round"
+        android:strokeLineJoin="round" android:pathData="M15.54,8.46L12,12L9.06,13.7"/>
+</vector>

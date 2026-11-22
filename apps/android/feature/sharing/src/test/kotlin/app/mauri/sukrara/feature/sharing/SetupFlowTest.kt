@@ -45,6 +45,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * Setup as the person moves through it (#175): the real [SetupScreen] and view model over a home stand-in, with
@@ -299,8 +300,22 @@ class SetupFlowTest {
             MutableStateFlow(
                 listOf(
                     // stand-in names (the real ones are the integrations' strings)
-                    SetupWatchApp("aura", R.string.sh_setup_pens_title, R.string.sh_setup_pens_on, null, null, onWatch = true),
-                    SetupWatchApp("field", R.string.sh_setup_root_yes, R.string.sh_setup_root_no, null, null, onWatch = false),
+                    SetupWatchApp(
+                        "aura",
+                        R.string.sh_setup_pens_title,
+                        R.string.sh_setup_pens_on,
+                        DsR.drawable.ds_ic_watch_face,
+                        null,
+                        onWatch = true,
+                    ),
+                    SetupWatchApp(
+                        "field",
+                        R.string.sh_setup_root_yes,
+                        R.string.sh_setup_root_no,
+                        DsR.drawable.ds_ic_data_field,
+                        null,
+                        onWatch = false,
+                    ),
                 ),
             )
         garmin = SetupGarmin(offered, on, { on.value = it }, apps)

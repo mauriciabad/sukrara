@@ -6,9 +6,11 @@ Sukrara's releases. 0.x versions are previews.
 
 - **Getting Sukrara onto your Garmin watch** (#199, not released yet): setup has a new optional step, *Your Garmin
   watch*, when Garmin Connect is on the phone or a watch already has one of Sukrara's apps: sending on or off, and
-  what Sukrara Aura, the Sukrara app and the data field each give, with a link to each on the Connect IQ store once it
-  is published there. If a watch has one of them while sending is off, home says *Your watch gets no glucose* with
-  *Turn on*. The Garmin page and About link to the store listings too, as soon as they exist.
+  what the Sukrara Aura watch face, the Sukrara watch app and the Sukrara data field each give, with a link to each on
+  the Connect IQ store once it is published there. If a watch has one of them while sending is off, home says *Your
+  watch gets no glucose* with *Turn on*. The Garmin page links to the store listings too, as soon as they exist; About
+  has one *Sukrara for Garmin* row, the website's Garmin page. The phone names each app with its kind (*watch face*,
+  *watch app*, *data field*) and shows Connect IQ's own icon for it.
 - **Sukrara on Garmin watches, the watch side** (#199, not released yet): the Sukrara app publishes four complications
   for any face (glucose, CGM+ GB's data and graph, and the last treatment as *Log*), turning to "---" on time when the
   reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and

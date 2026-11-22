@@ -250,8 +250,7 @@
     <string name="st_device_mac">Sukrara for Mac</string>
     <string name="st_device_mac_summary">Glucose and alerts in the Mac menu bar · opens its page on the website</string>
     <string name="st_device_garmin">Sukrara for Garmin</string>
-    <string name="st_device_garmin_summary">Watch faces, an app and a data field · opens its page on the website</string>
-    <string name="st_device_store">Garmin watch · opens the Connect IQ store</string>
+    <string name="st_device_garmin_summary">Watch faces, a watch app and a data field · opens its page on the website</string>
     <string name="st_report_problem">Report a problem</string>
     <string name="st_report_problem_summary">Opens the project\'s issues on GitHub</string>
     <string name="st_source_code">Source code</string>

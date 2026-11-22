@@ -395,3 +395,11 @@ Discarded, and why:
   start and reconnects are when a new app can have appeared without the phone knowing.
 - **A step that blocks setup until an app is installed**: installing happens in Garmin's store, on its own time;
   nothing waits for it.
+
+After the owner's review of the screenshots (2026-11-23: "just Sukrara is confusing", the icons "completely
+nonsense"): the phone names each app with its kind (*Sukrara Aura watch face*, *Sukrara watch app*, *Sukrara data
+field*; es *Esfera Sukrara Aura*, *App de reloj Sukrara*, *Campo de datos Sukrara*; the watch and the store keep the
+apps' own names), and shows Connect IQ's own symbols for watch faces, device apps and data fields, redrawn as vector
+icons (`ds_ic_watch_face`, `ds_ic_device_app`, `ds_ic_data_field`) instead of Material's watch, grid and stopwatch.
+Discarded: About's three Connect IQ store rows (*Sukrara for Garmin* is enough there; the Garmin page and setup keep
+the store links).

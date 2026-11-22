@@ -550,20 +550,20 @@ fun GarminContent(
                 }
             }
             // Sukrara's own Connect IQ apps per watch (one watch: Sukrara on your watch): the watch app (it opens that
-            // watch's settings) and the data field, then the watch faces, a list of one kind (no icons). With several
-            // watches each lists the same apps: no icons either. While Garmin Connect hasn't said which watches it
+            // watch's settings) and the data field, then the watch faces, each with its kind's Connect IQ icon. With
+            // several watches each lists the same apps: no icons. While Garmin Connect hasn't said which watches it
             // knows, nothing is known about them
             val apps = GarminApp.entries.filterNot { it.isFace }
             val icons = s.watches.size <= 1
             if (s.watches.isEmpty() && s.answering != false) {
                 SettingsGroup(title = stringResource(R.string.in_garmin_sukrara_group)) {
                     for (app in apps) {
-                        InfoRow(stringResource(app.nameRes), summary = appText(app, AppLine.of(app, s, now), now), icon = appIcon(app))
+                        InfoRow(stringResource(app.nameRes), summary = appText(app, AppLine.of(app, s, now), now), icon = app.iconRes)
                     }
                 }
                 SettingsGroup(title = stringResource(R.string.in_garmin_faces_group)) {
                     for (face in GarminApp.faces) {
-                        InfoRow(stringResource(face.nameRes), summary = appText(face, AppLine.of(face, s, now), now))
+                        InfoRow(stringResource(face.nameRes), summary = appText(face, AppLine.of(face, s, now), now), icon = face.iconRes)
                     }
                 }
             }
@@ -580,7 +580,7 @@ fun GarminContent(
                 SettingsGroup(title = appsTitle) {
                     for (app in apps) {
                         val text = appText(app, AppLine.on(app, w, s, now), now)
-                        val icon = appIcon(app).takeIf { icons }
+                        val icon = app.iconRes.takeIf { icons }
                         if (app == GarminApp.App) {
                             NavigationRow(
                                 stringResource(app.nameRes),
@@ -603,7 +603,11 @@ fun GarminContent(
                     }
                 SettingsGroup(title = facesTitle) {
                     for (face in GarminApp.faces) {
-                        InfoRow(stringResource(face.nameRes), summary = appText(face, AppLine.on(face, w, s, now), now))
+                        InfoRow(
+                            stringResource(face.nameRes),
+                            summary = appText(face, AppLine.on(face, w, s, now), now),
+                            icon = face.iconRes.takeIf { icons },
+                        )
                     }
                 }
             }
@@ -638,7 +642,7 @@ fun GarminContent(
                     stringResource(app.nameRes),
                     { actions.openStore(app) },
                     summary = stringResource(app.whatRes),
-                    icon = app.storeIconRes,
+                    icon = app.iconRes,
                 )
             }
         }
@@ -702,13 +706,25 @@ internal fun watchText(
     return parts.joinToString(" · ")
 }
 
-/** Its name, as the Garmin page, setup's Garmin step, About and home's banner say it. */
+/**
+ * Its name as the phone says it, with what kind of app it is ("Sukrara watch app", "Sukrara Aura watch face"): the
+ * Garmin page, setup's Garmin step and the store rows. The watch and the store keep the apps' own names.
+ */
 val GarminApp.nameRes: Int
     @StringRes get() =
         when (this) {
             GarminApp.Aura -> R.string.in_garmin_aura
             GarminApp.App -> R.string.in_garmin_app
             GarminApp.Field -> R.string.in_garmin_field
+        }
+
+/** Its name inside a sentence ("the Sukrara Aura watch face"): home's Garmin tip. */
+val GarminApp.inlineNameRes: Int
+    @StringRes get() =
+        when (this) {
+            GarminApp.Aura -> R.string.in_garmin_aura_inline
+            GarminApp.App -> R.string.in_garmin_app_inline
+            GarminApp.Field -> R.string.in_garmin_field_inline
         }
 
 /** What it gives the person, in one line (setup's Garmin step, the store links). */
@@ -720,20 +736,14 @@ val GarminApp.whatRes: Int
             GarminApp.Field -> R.string.in_garmin_field_what
         }
 
-/** Its row icon: the watch app's and the data field's (a face's group needs none). */
-val GarminApp.iconRes: Int?
+/** Its kind's icon, Connect IQ's own symbols for watch faces, device apps and data fields: every row that names it. */
+val GarminApp.iconRes: Int
     @DrawableRes get() =
         when (profile) {
-            WatchProfile.Face -> null
-            WatchProfile.App -> DsR.drawable.ds_ic_apps
-            WatchProfile.Field -> DsR.drawable.ds_ic_timer
+            WatchProfile.Face -> DsR.drawable.ds_ic_watch_face
+            WatchProfile.App -> DsR.drawable.ds_ic_device_app
+            WatchProfile.Field -> DsR.drawable.ds_ic_data_field
         }
-
-/** Its icon where every app has one (the store rows: a face's is the wallpaper symbol). */
-val GarminApp.storeIconRes: Int
-    @DrawableRes get() = iconRes ?: DsR.drawable.ds_ic_wallpaper
-
-private fun appIcon(app: GarminApp) = app.iconRes
 
 /** "Settings: same as the app" / "Settings: 3 of its own": the watch app's own settings on this watch. */
 @Composable
@@ -742,8 +752,8 @@ private fun ownText(d: WatchDisplay?): String =
         ?: stringResource(R.string.in_garmin_watch_same)
 
 /**
- * "Data field · hasn't asked this phone lately": what it is (a face's group says it), then whether it is there and runs;
- * null = nothing to say.
+ * "Glance and complications · asked this phone at 14:21": where else the watch app shows (the name says what each app
+ * is), then whether it is there and runs; null = nothing to say.
  */
 @Composable
 private fun appText(
@@ -787,13 +797,8 @@ private fun appText(
                 null
             }
         }
-    // a face's group already says what it is
-    val kind =
-        when (app.profile) {
-            WatchProfile.Face -> null
-            WatchProfile.App -> R.string.in_garmin_app_kind
-            WatchProfile.Field -> R.string.in_garmin_field_kind
-        }
+    // its name says what it is; the watch app's line adds where else it shows
+    val kind = if (app.profile == WatchProfile.App) R.string.in_garmin_app_kind else null
     return listOfNotNull(kind?.let { stringResource(it) }, detail).joinToString(" · ").ifEmpty { null }?.replaceFirstChar { it.uppercase() }
 }
 

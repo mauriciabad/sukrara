@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukrara — https://github.com/mauriciabad/sukrara
+     Copyright (C) 2026 Maurici Abad
+     SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Connect IQ's "Device Apps" symbol, redrawn (24 dp): four rounded squares, three filled, one outlined.
+     Sukrara's watch app wherever the phone lists it; tinted by Compose Icon -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24" android:autoMirrored="false">
+    <path android:fillColor="@android:color/white" android:pathData="M5,3h3.5a2,2 0 0,1 2,2v3.5a2,2 0 0,1 -2,2h-3.5a2,2 0 0,1 -2,-2v-3.5a2,2 0 0,1 2,-2ZM15.5,3h3.5a2,2 0 0,1 2,2v3.5a2,2 0 0,1 -2,2h-3.5a2,2 0 0,1 -2,-2v-3.5a2,2 0 0,1 2,-2ZM5,13.5h3.5a2,2 0 0,1 2,2v3.5a2,2 0 0,1 -2,2h-3.5a2,2 0 0,1 -2,-2v-3.5a2,2 0 0,1 2,-2Z"/>
+    <path android:strokeColor="@android:color/white" android:strokeWidth="1.6" android:pathData="M15.5,14.3h3.5a1.2,1.2 0 0,1 1.2,1.2v3.5a1.2,1.2 0 0,1 -1.2,1.2h-3.5a1.2,1.2 0 0,1 -1.2,-1.2v-3.5a1.2,1.2 0 0,1 1.2,-1.2Z"/>
+</vector>

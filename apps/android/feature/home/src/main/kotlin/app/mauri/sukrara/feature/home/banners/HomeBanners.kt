@@ -140,7 +140,8 @@ data class HomeEnvironment(
 
 /**
  * What the Garmin tip names: the first [watch] with one of Sukrara's apps, the [apps] found there and elsewhere (their
- * registry keys: `aura`, `app`, `field`), and [name] = that app's name when only one is found (null = several).
+ * registry keys: `aura`, `app`, `field`), and [name] = that app's name inside a sentence ("the Sukrara Aura watch
+ * face") when only one is found (null = several).
  */
 data class GarminTip(
     val watch: String,

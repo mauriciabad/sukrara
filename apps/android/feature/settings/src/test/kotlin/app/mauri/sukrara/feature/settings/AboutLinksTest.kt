@@ -28,7 +28,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
-import app.mauri.sukrara.core.designsystem.R as DsR
 
 /**
  * About's links (#179): *Sukrara on other devices* opens each app's page on the website (never a download), whatever
@@ -83,31 +82,8 @@ class AboutLinksTest {
             assertEquals("$state", "https://sukrara.mauri.app/mac/", open(R.string.st_device_mac))
             assertEquals("$state", "https://sukrara.mauri.app/garmin/", open(R.string.st_device_garmin))
         }
-        // no store listing published: no store row (never a broken link, #247)
-        compose.onNodeWithText(app.getString(R.string.st_device_store)).assertDoesNotExist()
-    }
-
-    @Test
-    fun `a watch app with a store listing opens it in the phone's language`() {
-        compose.setContent {
-            SukraraTheme(dark = false, dynamic = false) {
-                AboutContent(
-                    "0.12.0",
-                    Distribution.GooglePlay,
-                    AppBuild.Release,
-                    null,
-                    null,
-                    listOf(StoreLink(R.string.st_device_mac, DsR.drawable.ds_ic_apps) { "https://apps.garmin.com/$it/apps/x" }),
-                ) {}
-            }
-        }
-        compose
-            .onNodeWithText(app.getString(R.string.st_device_store))
-            .performScrollTo()
-            .assertIsDisplayed()
-            .performClick()
-        val intent = checkNotNull(shadowOf(app).nextStartedActivity)
-        assertEquals("https://apps.garmin.com/en/apps/x", intent.dataString)
+        // Garmin is one row, its page on the website: no per-app Connect IQ store rows here
+        compose.onNodeWithText("Connect IQ", substring = true).assertDoesNotExist()
     }
 
     @Test

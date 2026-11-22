@@ -632,8 +632,6 @@ class AppGraph(
             sensorCalendar = { sensorCalendar },
             // Share with apps' rows, which the settings search finds too (their strings are :integrations')
             moreSearch = AppsSearch.entries,
-            // About's Connect IQ store rows: only the published listings
-            watchStore = AppGarmin.storeLinks(garminStore),
             source = spec,
             sourceName = flow { emitAll(monitor.hub.state) }.map { it.name }.distinctUntilChanged(),
             advanced = {

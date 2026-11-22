@@ -116,7 +116,7 @@
     <string name="banner_updates_not_now">Not now</string>
     <string name="banner_updates_on">Sukrara checks for updates once a day. Settings › About changes it.</string>
     <string name="banner_garmin_title">Your watch gets no glucose</string>
-    <string name="banner_garmin_text_one">%1$s is on your %2$s, but sending to the watch is off.</string>
+    <string name="banner_garmin_text_one">Your %2$s has %1$s, but sending to the watch is off.</string>
     <string name="banner_garmin_text_many">Sukrara\'s apps are on your %1$s, but sending to the watch is off.</string>
     <string name="banner_garmin_turn_on">Turn on</string>
     <string name="banner_garmin_on">Sending to your watch. Settings › Share with apps › Garmin changes it.</string>

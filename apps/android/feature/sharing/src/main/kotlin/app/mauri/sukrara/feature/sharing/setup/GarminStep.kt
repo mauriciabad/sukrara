@@ -100,9 +100,9 @@ private fun WatchAppRow(app: SetupWatchApp) {
     ) {
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                painterResource(app.icon ?: DsR.drawable.ds_ic_watch),
+                painterResource(app.icon),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = MaterialTheme.colorScheme.onSurface,
             )
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(name, style = MaterialTheme.typography.titleSmall)

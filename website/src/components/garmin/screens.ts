@@ -133,8 +133,8 @@ export const SCREENS = {
 	},
 	heroApp: {
 		cfg: { screen: 'appA' },
-		title: L('The Sukrara app', 'La app Sukrara'),
-		href: L('#the-sukrara-app', '#la-app-sukrara'),
+		title: L('The Sukrara watch app', 'La app de reloj Sukrara'),
+		href: L('#the-sukrara-watch-app', '#la-app-de-reloj-sukrara'),
 		note: L('Glance, chart, logging, alerts.', 'Widget, gráfica, registro, alertas.'),
 	},
 	heroField: {

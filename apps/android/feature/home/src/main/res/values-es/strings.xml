@@ -108,7 +108,7 @@
     <string name="banner_updates_not_now">Ahora no</string>
     <string name="banner_updates_on">Sukrara busca actualizaciones una vez al día. Se cambia en Ajustes › Acerca de.</string>
     <string name="banner_garmin_title">Tu reloj no recibe tu glucosa</string>
-    <string name="banner_garmin_text_one">%1$s está en tu %2$s, pero el envío al reloj está desactivado.</string>
+    <string name="banner_garmin_text_one">Tu %2$s tiene %1$s, pero el envío al reloj está desactivado.</string>
     <string name="banner_garmin_text_many">Las apps de Sukrara están en tu %1$s, pero el envío al reloj está desactivado.</string>
     <string name="banner_garmin_turn_on">Activar</string>
     <string name="banner_garmin_on">Enviando a tu reloj. Se cambia en Ajustes › Compartir con apps › Garmin.</string>

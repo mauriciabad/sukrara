@@ -4,18 +4,17 @@
 package app.mauri.sukrara
 
 import app.mauri.sukrara.feature.home.banners.GarminTip
-import app.mauri.sukrara.feature.settings.StoreLink
 import app.mauri.sukrara.feature.sharing.SetupWatchApp
 import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminLinkState
 import app.mauri.sukrara.integrations.garmin.iconRes
+import app.mauri.sukrara.integrations.garmin.inlineNameRes
 import app.mauri.sukrara.integrations.garmin.nameRes
-import app.mauri.sukrara.integrations.garmin.storeIconRes
 import app.mauri.sukrara.integrations.garmin.whatRes
 
 /**
- * What home, setup and About read from Sukrara's Garmin link (#199): the link knows which of Sukrara's apps each
+ * What home and setup read from Sukrara's Garmin link (#199): the link knows which of Sukrara's apps each
  * watch has with the switch off too (`GarminLink.detect`, at start and when a watch connects).
  */
 internal object AppGarmin {
@@ -27,7 +26,7 @@ internal object AppGarmin {
         if (s.on) return null
         val watch = s.foundOn ?: return null
         val found = s.found
-        return GarminTip(watch.name, found.map { it.key }, found.singleOrNull()?.nameRes)
+        return GarminTip(watch.name, found.map { it.key }, found.singleOrNull()?.inlineNameRes)
     }
 
     /** Setup's Garmin step is offered: Garmin Connect is on this phone, or a watch has one of Sukrara's apps. */
@@ -48,8 +47,4 @@ internal object AppGarmin {
                 onWatch = app in s.found,
             )
         }
-
-    /** About's store rows: only the apps whose listing is published (#247). */
-    fun storeLinks(store: ConnectIqStore): List<StoreLink> =
-        store.apps.map { app -> StoreLink(app.nameRes, app.storeIconRes) { language -> store.url(app, language).orEmpty() } }
 }

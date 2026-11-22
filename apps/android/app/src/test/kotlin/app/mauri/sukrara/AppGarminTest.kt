@@ -14,8 +14,9 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import app.mauri.sukrara.core.designsystem.R as DsR
 
-/** #199: what home's Garmin tip, setup's Garmin step and About read from the Garmin link. */
+/** #199: what home's Garmin tip and setup's Garmin step read from the Garmin link. */
 class AppGarminTest {
     private fun watch(
         name: String,
@@ -34,7 +35,7 @@ class AppGarminTest {
         val tip = AppGarmin.tip(off)!!
         assertEquals("Forerunner 265", tip.watch)
         assertEquals(listOf("aura"), tip.apps)
-        assertEquals(R.string.in_garmin_aura, tip.name)
+        assertEquals(R.string.in_garmin_aura_inline, tip.name)
         assertEquals(listOf("GarminOff:aura"), tip.keys)
         // two apps: no single name
         val two = off.copy(watches = listOf(watch("Forerunner 265", GarminApp.Aura, GarminApp.Field)))
@@ -63,8 +64,10 @@ class AppGarminTest {
         val one = AppGarmin.apps(s, ConnectIqStore(mapOf(GarminApp.Aura to "a1")))
         assertEquals("https://apps.garmin.com/es-ES/apps/a1", one.first { it.key == "aura" }.url!!("es"))
         assertNull(one.first { it.key == "field" }.url)
-        // About: only the published ones; none from the registry yet (#247)
-        assertEquals(GarminApp.entries.count { it.store != null }, AppGarmin.storeLinks(ConnectIqStore()).size)
-        assertEquals(listOf(R.string.in_garmin_aura), AppGarmin.storeLinks(ConnectIqStore(mapOf(GarminApp.Aura to "a1"))).map { it.name })
+        // each with its kind's Connect IQ icon
+        assertEquals(
+            listOf(DsR.drawable.ds_ic_watch_face, DsR.drawable.ds_ic_device_app, DsR.drawable.ds_ic_data_field),
+            none.map { it.icon },
+        )
     }
 }
