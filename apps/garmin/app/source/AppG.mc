@@ -276,7 +276,18 @@ module AppDraw {
     }
 
     // fill and stroke for what comes next: ARGB on the AMOLEDs (they blend)
-    (:amoled)
+    (:amoled :plain)
+    function ink(dc as Dc, c as Number, op as Float) as Void {
+        // the AMOLEDs without enhanced graphics (Venu Sq 2, FR 165, vívoactive 5 …): no setFill, no blending; a tint is
+        // its colour over black (the screens' ground)
+        if (op < 1.0) {
+            var k = AppMath.clamp(op, 0, 1);
+            c = ((((c >> 16) & 255) * k).toNumber() << 16) | ((((c >> 8) & 255) * k).toNumber() << 8) | ((c & 255) * k).toNumber();
+        }
+        dc.setColor(c, Graphics.COLOR_TRANSPARENT);
+    }
+
+    (:amoled :atlas)
     function ink(dc as Dc, c as Number, op as Float) as Void {
         var v = 0;
         if (op >= 1.0) {
