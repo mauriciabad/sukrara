@@ -11,7 +11,7 @@ Setup, keys, simulator and sideloading: [docs/DEVELOPMENT.md › Garmin](../../d
 | `app/` | **Sukrara**, the watch app (`watch-app`): a glance, the app's view, its background, the complication hook. Placeholder look |
 | `field/` | **Sukrara data field** (`datafield`): the value and its age in any data-field slot, its own background. Placeholder look |
 | `shared/` | What more than one app needs, compiled into each app that names it (below) |
-| `tools/` | The tools every app uses: `link-test.sh`, `link_cases.py`, `verify_prg.sh`, `sideload.py`, `simshot.py`, `fake_phone.py` |
+| `tools/` | The tools every app uses: `link-test.sh`, `link_cases.py`, `icons.py`, `launcher_icons.py`, `verify_prg.sh`, `sideload.py`, `simshot.py`, `fake_phone.py` |
 | `fonts/` | Atkinson Hyperlegible Next (OFL), the source of the face's atlases (`aura/tools/fonts.py`) |
 | `build.sh` | The one build entry: `build.sh <app> [<mode>]` |
 
@@ -58,6 +58,7 @@ apps/garmin/build.sh <app> export      # the store package (every product) → b
 apps/garmin/build.sh aura cases        # the face's debug case loader
 apps/garmin/tools/link-test.sh <app>   # the link's (and the input's) tests in the simulator (build: build only)
 python3 apps/garmin/tools/link_cases.py   # regenerate shared/test/link/LinkCases.mc after cases.json changes
+uv run apps/garmin/tools/launcher_icons.py   # the three apps' launcher icons, one per watch size (--check)
 python3 apps/garmin/tools/fake_phone.py   # answers the simulator's fetches with a case of cases.json (--app-case N, …)
 tools/install.sh watch                 # every app onto the owner's watch (USB)
 tools/release/garmin-release.sh <app> <version>   # the store files, signed with the store key

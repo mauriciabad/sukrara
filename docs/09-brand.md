@@ -207,6 +207,9 @@ A `README.md` in the folder says what goes where.
 - **Discarded:** `brand.py`'s own renders of those two, made from the whole 108 canvas: the bleed shrank the glyph to
   2/3 of the launcher's size (#210). And its renderer, `render.swift`, which no longer builds (`TrendArrow.swift`
   needs a `TrendMark` it doesn't list); `tools/brand/svg2png.swift` does the same SVG drawing.
+- **Discarded (#199):** `brand.py`'s Garmin launcher icons (the colour circle and the `_mono` set): Garmin's own apps
+  show a one-colour glyph on black, so `apps/garmin/tools/launcher_icons.py` draws `glyph.svg` in Garmin's theme cyan
+  at every watch's own size (pixel-fitted at 38 / 40 px).
 
 ## Open
 
