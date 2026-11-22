@@ -14,7 +14,7 @@
 
 Sukrara shows your continuous glucose monitor (CGM) readings live on your **Android phone**, at a glance: in the status
 bar, home screen widgets, lock screen and notifications, so you rarely need to open the app, and on your **Garmin
-watch** as the Sukrara Aura watch face. It reads a **FreeStyle Libre 3** straight from the sensor, and [other
+watch**: the Sukrara Aura watch face, a watch app you log from and a data field for workouts. It reads a **FreeStyle Libre 3** straight from the sensor, and [other
 sensors](#compatible-cgm-sensors) directly or through Juggluco. It alerts you when glucose goes low or high or stops
 arriving, with minimal alarm fatigue thanks to smart features and discreet sound packs, and lets you log insulin and
 carbs in seconds. The people who look after you see your glucose live on their Android phone or in their **Mac menu
@@ -79,6 +79,8 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Falling fast / rising fast alerts on the readings' trend, once the fast move has lasted 5 minutes.
 - Unacknowledged very lows can alert the people who follow you.
 - Quick actions in notifications: Treatment, Remind less, Mute (15 min to 2 h, or a length you type).
+- On a Garmin watch with the Sukrara watch app: the alert on your wrist with the same three actions, and Mute all
+  alerts from the watch.
 - [Planned]: Predictions, more and cooler sound packs...
 
 ### Ready in a few steps
@@ -105,7 +107,10 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Your last 24 h of logs on the home screen, and a Treatments page with 31 days: each treatment with its chart marker,
   the glucose and trend when you logged it, and a mark only when it isn't in LibreView yet. Tap a treatment to
   edit it or add a note (pen doses too) in a sheet; swipe it away to delete, with Undo.
-- [Planned]: Garmin watch app, MCP for AI assistants, voice assistants...
+- From a Garmin watch with the Sukrara watch app: rapid or long insulin or carbs in a few presses, your usual amounts
+  a tap away, hold START to log, Undo for 10 s. With the phone out of reach the watch keeps the entry and sends it,
+  with its own time, when the phone is back.
+- [Planned]: MCP for AI assistants, voice assistants...
 
 ### Glucose always at a glance
 
@@ -121,6 +126,12 @@ Every behaviour, with every rule and number, is in [docs/FEATURES.md](docs/FEATU
 - Watch face for Garmin watches with a round 390 × 390 AMOLED screen (Venu 3S, vívoactive 6, Forerunner 570,
   Descent Mk3i 43 mm …), with four fields of your choice: time in range, your last treatment or anything the watch
   has (steps, heart rate, weather, sleep, training…).
+- Sukrara, the watch app for Garmin: your glucose in the watch's glance list, a page with the value, rings and a chart
+  of the last hours, a page with the glucose report (time in ranges, average, GMI, CV over 1 to 30 days), and
+  four complications that put your glucose, its trend and history, or a Log shortcut on any watch face that takes
+  them.
+- Sukrara data field for Garmin: your glucose and its recent line on an activity's data screen, a full-page alert
+  during the activity if you turn it on, and your glucose saved in the activity, charted in Garmin Connect.
 - Other Garmin faces and data fields made for xDrip+ read Sukrara's xDrip+ server.
 - A trend arrow you can trust: worked out from your readings (minutes sooner than the sensor's own arrow), turning
   smoothly with how fast glucose moves, and the same on every screen. Quick, Balanced, Smooth, or the sensor's own.
@@ -200,9 +211,16 @@ and links to the privacy policy ([docs/FEATURES.md › Mac App Store version](do
   bar (no Dock icon). Or with Homebrew: `brew install --cask mauriciabad/tap/sukrara`. Either way Sukrara then
   updates itself (the cask says `auto_updates`, so `brew upgrade` leaves it to the app; `brew upgrade --greedy` still
   works).
-- **Garmin** (round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570
-  42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm): Sukrara
-  Aura is on its way to the Connect IQ store. It needs Sukrara for Android and Garmin Connect on the phone.
+- **Garmin**: on their way to the Connect IQ store, all three needing Sukrara for Android and Garmin Connect on the
+  phone:
+  - Sukrara Aura, the watch face (round 390 × 390 AMOLED: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm,
+    vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm).
+  - Sukrara, the watch app, and Sukrara data field (every watch with Connect IQ 5 or newer: fēnix 7, 8, 9 and E,
+    epix (Gen 2) and epix Pro, enduro 3 and 4, Forerunner 70, 165, 170, 255, 265, 570, 955, 965 and 970, Venu 2,
+    3 and 4, Venu Sq 2, Venu X1, vívoactive 5 and 6, Instinct 3 AMOLED and Instinct Crossover AMOLED, MARQ (Gen 2)
+    and MARQ 3, Descent Mk3 and G2, Approach S50, S70 and S72, D2 Air X10, Mach 1 and Mach 2; their Pro, Solar,
+    S, X, Plus and Music editions too). Alerts on the wrist need Connect IQ 5.1: on the Venu 2 family, Venu Sq 2 and D2 Air
+    X10 the phone's own alert notification, forwarded by Garmin Connect, stays the one you feel.
 - **From this repo** (the owner's devices): `tools/install.sh phone|mac` builds the release, verifies it and installs
   it in place. It refuses a dirty tree, unmerged work or failing checks. On the Mac it makes Sukrara the `sukrara:`
   link handler. Such a build isn't a release and says so: About shows *Development build · 0.14.5 + 23 commits ·

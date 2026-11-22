@@ -1,6 +1,6 @@
 ---
-title: Sukrara Aura for Garmin
-description: A watch face for Garmin watches whose dial is the aura of your glucose. Each reading from Sukrara for Android within seconds, the last hours beside the value, what to do now, and never an old value as current. Free.
+title: Sukrara for Garmin
+description: Your glucose on a Garmin watch, from Sukrara for Android within seconds. A watch face whose dial is the aura of your glucose, a watch app with a glance, complications, logging and alerts on the wrist, and a data field for your workouts. Free.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
@@ -8,14 +8,13 @@ import ConnectIqBadge from '../../components/ConnectIqBadge.astro';
 import FaceGallery from '../../components/face-playground/FaceGallery.astro';
 import FaceTour from '../../components/face-playground/FaceTour.astro';
 
-A watch face whose dial is the aura of your glucose: it gathers at your level and spreads the further out of range you
-are. Each reading comes from [Sukrara for Android](/android/) within seconds.
+Three free apps put Sukrara on your watch, each fed by [Sukrara for Android](/android/) within seconds. Use one, two or
+all three:
 
-Below, the face lives through a made-up day, 600 times faster: a low at night, meals, a high and its correction, a
-sensor running out and a new one warming up, the phone left behind, a mute. Point at a part to see what it is, and pick
-a dial. Or [try it yourself](/watch-face/): pick any state, change the reading, or speed up time.
-
-<FaceTour />
+- **Sukrara Aura**, a watch face whose dial is the aura of your glucose.
+- **Sukrara**, a watch app: your glucose in the glance list and on any watch face that takes complications, insulin
+  and carbs logged from the wrist, alerts you can answer there.
+- **Sukrara data field**, your glucose on the screen of a run, a ride or a hike, and in the activity once it's saved.
 
 ## Get it
 
@@ -24,12 +23,21 @@ a dial. Or [try it yourself](/watch-face/): pick any state, change the reading, 
 <Steps>
 
 1. Install [Sukrara for Android](/android/) and Garmin Connect on your phone.
-2. Install Sukrara Aura from the Connect IQ store (coming soon) and make it your watch face.
-3. That's it: Sukrara sends each reading to the watch by itself.
+2. From the Connect IQ store (coming soon): make Sukrara Aura your watch face, add Sukrara to your glances, and put
+   Sukrara data field on an activity's data screen.
+3. That's it: Sukrara sends each reading to every one of them by itself.
 
 </Steps>
 
-## What it does
+## Sukrara Aura, the watch face
+
+The dial gathers at your level and spreads the further out of range you are.
+
+Below, the face lives through a made-up day, 600 times faster: a low at night, meals, a high and its correction, a
+sensor running out and a new one warming up, the phone left behind, a mute. Point at a part to see what it is, and pick
+a dial. Or [try it yourself](/watch-face/): pick any state, change the reading, or speed up time.
+
+<FaceTour />
 
 Every picture here is the face itself, drawn by its own code from made-up readings. The ones marked *moves* run on a
 clock, so you see a state come and go.
@@ -70,28 +78,103 @@ clock, so you see a state come and go.
 
 <FaceGallery group="dial" />
 
-### On your phone
+## Sukrara, the watch app
+
+For the moments the face isn't on: another face you like, a glance while you scroll, a meal you log without taking out
+the phone.
+
+### At a glance
+
+In the watch's glance list: the value and its arrow, your main ring (time in range, or what you chose on the phone),
+and your last treatment or the second ring. Its time shows when the reading is late, Sukrara's pill when there is
+something to do. Select it to open the app.
+
+### Two pages
+
+- **The card**: the value big, your rings and last treatment beside it, a chart of the last hours with your ranges and
+  treatment marks, and if you want the share of readings above, in and below range.
+- **Your numbers**: time in ranges, average, GMI and variability, each with its goal met or not, over 1, 7, 14 or 30
+  days.
+
+Swipe or press UP / DOWN between them.
+
+### On any watch face
+
+Sukrara's complications go on watch faces that take other apps' (the watch's own face editor on newer watches, Face It,
+faces made for CGM+): your glucose, with its trend and the last 24 hours for faces that draw them, and **Log**, the
+time since your last treatment, which opens logging when you hold it. An old reading shows as `---`, never as
+current.
+
+### Log from your wrist
+
+START, then rapid insulin, long-acting insulin or carbs, already in the order Sukrara would pick (carbs first when
+you're low). Pick the amount with the buttons or one of your three usual amounts, then hold START until the ring
+fills: letting go cancels. *Logged 4.5u rapid*, with **Undo** for 10 seconds, and the same entry is in the phone's log,
+with the phone's quiet rules. The same kind logged in the last 15 minutes is said first.
+
+Phone out of reach? The watch keeps the entry with its own time and sends it when the phone is back.
+
+### Mute, or remind less
+
+From the same list, **Mute alerts** for 15 minutes to 2 hours or until you unmute: the phone's alerts and the watch's,
+with **Undo**. While muted, the time left shows everywhere, with **Unmute** and **Change time**.
+
+### Alerts on your wrist
+
+When Sukrara's alert rings on the phone, the watch shows it too: *Low 62 · Falling*, with the phone's three actions.
+**Treatment** opens logging on carbs for a low, rapid insulin for a high; **Remind less** spaces the reminders, with
+Undo; **Mute** silences that side. A very low fills the screen in its colour.
+
+Garmin Connect also forwards the phone's notification, so you may feel two buzzes. If you do, switch Sukrara off in
+Garmin Connect's notification settings: the watch app's alert stays.
+
+### Its settings
+
+It looks the way your phone does: rings, chart hours, treatment marks, report period. In the Connect IQ app, two of
+its own: the sparkline on alerts, and what the Log complication shows (time since, the amount, or both).
+
+## Sukrara data field
+
+Add it to an activity's data screen and your glucose stays in view while you move: the value and its recent line on a
+whole or half screen, the value and arrow in a small slot. A low turns the slot its colour, an old reading is struck
+through.
+
+- **Its own alert**: a full-page alert during the activity when Sukrara's alert rings. Turn it on in the activity's
+  settings › Alerts › Connect IQ.
+- **Glucose in the activity**: every reading is saved with the activity, so Garmin Connect charts it beside your heart
+  rate and pace. A setting of the field turns it off.
+
+## On your phone
 
 **Settings › Share with apps › Garmin** shows each watch and what it has, in words:
 
 - *Descent Mk3i has the 10:09 reading*, or *waiting for a reading*.
-- *Descent Mk3i isn't connected* when the watch is away, and *Sukrara Aura isn't on your watch* until you install it.
+- *Descent Mk3i isn't connected* when the watch is away, and *No Sukrara app on your watch* until you install one.
+- **Sukrara on your watch** lists the face, the app and the data field, and when each last asked this phone.
 - *Needs Garmin Connect on this phone* or *Garmin Connect isn't answering · open it*, with the button that fixes it.
-- *Updates every 5 minutes · Garmin Connect loses messages* when Garmin Connect drops them: the face asks the phone
+- *Updates every 5 minutes · Garmin Connect loses messages* when Garmin Connect drops them: each app asks the phone
   itself.
-- *Messages stopped getting through · restart the watch* when none has arrived for 15 minutes; the face keeps asking
+- *Messages stopped getting through · restart the watch* when none has arrived for 15 minutes; the apps keep asking
   the phone meanwhile.
 - *The watch face isn't taking new readings · restart the watch* when the watch gets them but the face doesn't show
   them.
 - **Send now** sends the current reading at once.
 
-### In your language
+## In your language
 
 English and Spanish, as your watch is: *Carbs* and *Hidratos*, *No reading since* and *Sin lecturas desde*.
 
 ## Requirements
 
-- A Garmin watch with a round 390 × 390 AMOLED screen: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70 42 mm. More watches will follow.
+- **Sukrara Aura**: a Garmin watch with a round 390 × 390 AMOLED screen: Descent Mk3 / Mk3i 43 mm, Venu 3S, Venu 4
+  41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) and MARQ Aviator, Approach S70
+  42 mm. More watches will follow.
+- **Sukrara and Sukrara data field**: every Garmin watch with Connect IQ 5 or newer: fēnix 7, 8, 9 and E, epix
+  (Gen 2) and epix Pro, enduro 3 and 4, Forerunner 70, 165, 170, 255, 265, 570, 955, 965 and 970, Venu 2, 3 and 4,
+  Venu Sq 2, Venu X1, vívoactive 5 and 6, Instinct 3 AMOLED and Instinct Crossover AMOLED, MARQ (Gen 2) and MARQ 3,
+  Descent Mk3 and G2, Approach S50, S70 and S72, D2 Air X10, Mach 1 and Mach 2, with their Pro, Solar, S, X, Plus and
+  Music editions. On the Venu 2 family, Venu Sq 2 and D2 Air X10 the watch app shows no alerts of its own: keep
+  Sukrara on in Garmin Connect's notifications there.
 - An Android phone with [Sukrara for Android](/android/) and Garmin Connect, running in the background.
 
 ## Questions
@@ -100,7 +183,7 @@ English and Spanish, as your watch is: *Carbs* and *Hidratos*, *No reading since
 <summary>Does it need the internet, an account or another app?</summary>
 
 No. Sukrara on your phone sends each reading through Garmin Connect, which your watch already uses. If a message gets
-lost, the face asks the phone again within 5 minutes.
+lost, each app asks the phone again within 5 minutes.
 
 </details>
 
@@ -108,7 +191,8 @@ lost, the face asks the phone again within 5 minutes.
 <summary>What happens when my phone is out of reach?</summary>
 
 The reading ages by itself on the watch: late, then struck through, then *No reading since* with its time, and the
-watch shows *No phone*. Back in reach, the current reading arrives within a minute.
+watch shows *No phone*. What you log meanwhile waits on the watch. Back in reach, the current reading arrives within a
+minute and your entries reach the phone.
 
 </details>
 
@@ -120,9 +204,17 @@ No. It needs Sukrara for Android on the phone your watch is paired with.
 </details>
 
 <details>
+<summary>Do the alerts on my watch replace the phone's?</summary>
+
+No. The phone decides and rings every alert; the watch shows the ones it rings while the phone is in reach. Keep your
+phone's alerts on.
+
+</details>
+
+<details>
 <summary>I use another Garmin watch face or data field. Can it show Sukrara's glucose?</summary>
 
-Faces and data fields made for xDrip+ can read Sukrara's xDrip+ server: **Settings › Share with apps › Garmin › xDrip+
+A face that takes complications can show Sukrara's, with the watch app installed. Faces and data fields made for xDrip+ can read Sukrara's xDrip+ server: **Settings › Share with apps › Garmin › xDrip+
 server**.
 
 </details>
@@ -130,6 +222,6 @@ server**.
 <details>
 <summary>Is it a medical device?</summary>
 
-No, and no regulator has cleared or approved it. Check your sensor's app or a meter before you decide on a treatment.
+No, and no regulator has cleared or approved them. Check your sensor's app or a meter before you decide on a treatment.
 
 </details>
