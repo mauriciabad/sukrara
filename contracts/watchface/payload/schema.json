@@ -1070,7 +1070,8 @@
                   "b",
                   "avg",
                   "gmi",
-                  "cv"
+                  "cv",
+                  "ok"
                 ],
                 "properties": {
                   "d": {
@@ -1097,6 +1098,12 @@
                   },
                   "cv": {
                     "type": "number"
+                  },
+                  "ok": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 255,
+                    "description": "the report card's goals met, bit i = Goal i: veryHigh, above, inRange, below, veryLow, avg, gmi, cv"
                   }
                 }
               }

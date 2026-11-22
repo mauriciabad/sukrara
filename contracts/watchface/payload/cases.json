@@ -493,7 +493,7 @@
         "ro": [2, 3, 1, 0, 4, 5],
         "log": {"order": ["long", "rapid", "carbs"], "rapid": {"last": 4.5, "usual": [2.0, 3.0, 4.5]}, "long": {"last": 14.0, "usual": [14.0]}, "carbs": {"last": 45.0, "usual": [30.0, 45.0]}},
         "ds": {"hours": 12, "marks": {"rapid": ["point", "line", "amount", "time"], "long": ["point", "amount", "time"], "carbs": ["point"], "note": ["point"]}, "side": true, "crown": true},
-        "rep": [{"d": 1, "cov": 980, "b": [0, 21, 512, 310, 142, 15], "avg": 132, "gmi": 6.5, "cv": 28.7}, {"d": 7, "cov": 910, "b": [4, 30, 480, 300, 160, 26], "avg": 139, "gmi": 6.6, "cv": 31.7}, {"d": 14, "cov": 880, "b": [5, 30, 470, 300, 165, 30], "avg": 141, "gmi": 6.7, "cv": 32.6}, {"d": 30, "cov": 600, "b": [6, 32, 460, 300, 170, 32], "avg": 143, "gmi": 6.7, "cv": 32.9}],
+        "rep": [{"d": 1, "cov": 980, "b": [0, 21, 512, 310, 142, 15], "avg": 132, "gmi": 6.5, "cv": 28.7, "ok": 255}, {"d": 7, "cov": 910, "b": [4, 30, 480, 300, 160, 26], "avg": 139, "gmi": 6.6, "cv": 31.7, "ok": 255}, {"d": 14, "cov": 880, "b": [5, 30, 470, 300, 165, 30], "avg": 141, "gmi": 6.7, "cv": 32.6, "ok": 255}, {"d": 30, "cov": 600, "b": [6, 32, 460, 300, 170, 32], "avg": 143, "gmi": 6.7, "cv": 32.9, "ok": 255}],
         "repD": 14
       }
     },
@@ -509,7 +509,7 @@
         "status": {"k": "needed", "low": true},
         "alerts": ["falling_fast", "very_low"],
         "sensor": {"state": "active", "start": -864000, "end": 432000},
-        "metrics": {"86400": {"tir": [0.0, 0.021, 0.512, 0.31, 0.142, 0.015], "coverage": 0.98, "mean": 132.4, "sd": 38.0}},
+        "metrics": {"86400": {"tir": [0.005, 0.065, 0.39, 0.3, 0.215, 0.025], "coverage": 0.98, "mean": 150.0, "sd": 60.0}},
         "slots": [{"k": "tir", "w": 86400, "dim": false}, {"k": "avg", "w": 1209600, "dim": true}],
         "lastElse": null,
         "ringRange": "tight",
@@ -547,16 +547,16 @@
         "last": null,
         "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
         "tx": {"t": [], "k": [], "a": [], "i": []},
-        "ranges": [{"w": 86400, "pct": 82, "b": [0, 21, 512, 310, 142, 15]}, null],
+        "ranges": [{"w": 86400, "pct": 69, "b": [5, 65, 390, 300, 215, 25]}, null],
         "m": [
-          {"k": "tir", "w": 86400, "v": 51, "dim": false, "r": "tight", "b": [0, 21, 512, 310, 142, 15], "mark": "none"},
+          {"k": "tir", "w": 86400, "v": 39, "dim": false, "r": "tight", "b": [5, 65, 390, 300, 215, 25], "mark": "none"},
           {"k": "avg", "w": 1209600, "v": null, "dim": true}
         ],
         "else": null,
         "ro": [2, 3, 1, 0, 4, 5],
         "log": {"order": ["carbs", "rapid", "long"], "rapid": {"last": null, "usual": []}, "long": {"last": null, "usual": []}, "carbs": {"last": null, "usual": []}},
         "ds": {"hours": 6, "marks": {"rapid": ["point", "amount"], "long": [], "carbs": ["point", "line", "amount", "time"], "note": ["point"]}, "side": false, "crown": false},
-        "rep": [{"d": 1, "cov": 980, "b": [0, 21, 512, 310, 142, 15], "avg": 132, "gmi": 6.5, "cv": 28.7}, null, null, null],
+        "rep": [{"d": 1, "cov": 980, "b": [5, 65, 390, 300, 215, 25], "avg": 150, "gmi": 6.9, "cv": 40.0, "ok": 115}, null, null, null],
         "repD": 14
       }
     },

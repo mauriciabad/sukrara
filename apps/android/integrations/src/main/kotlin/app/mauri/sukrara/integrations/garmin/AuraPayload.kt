@@ -27,6 +27,7 @@ import app.mauri.sukrara.graph.id
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Bands
 import app.mauri.sukrara.graph.stats.GlucoseMetrics
+import app.mauri.sukrara.graph.stats.Goal
 import app.mauri.sukrara.graph.stats.TimeInRange
 import app.mauri.sukrara.graph.stats.TirRange
 import app.mauri.sukrara.integrations.CurrentSensor
@@ -176,6 +177,8 @@ object AuraPayload {
             "avg" to Math.round(m.mean).toInt(),
             "gmi" to (Math.round(m.gmi * 10) / 10.0).toFloat(),
             "cv" to (Math.round(m.cv * 10) / 10.0).toFloat(),
+            // the report card's goals as it decides them, one bit each in Goal's order: the watch holds no thresholds
+            "ok" to Goal.entries.foldIndexed(0) { i, bits, g -> if (g.met(m)) bits or (1 shl i) else bits },
         )
 
     /** What the alert runtime rings, in the kinds' order, each with its side. */
