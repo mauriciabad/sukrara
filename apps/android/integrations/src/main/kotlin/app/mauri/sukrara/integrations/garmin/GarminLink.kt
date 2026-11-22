@@ -73,8 +73,8 @@ data class AppLink(
     /** The last few deliveries, oldest first: a report is judged against the one made before it. */
     val deliveries: List<Delivery> = emptyList(),
 ) {
-    /** No message has arrived for [AuraLink.STUCK] (#242). */
-    fun stuck(now: Instant) = failingSince != null && now >= failingSince + AuraLink.STUCK
+    /** No message has arrived for [GarminLink.STUCK] (#242). */
+    fun stuck(now: Instant) = failingSince != null && now >= failingSince + GarminLink.STUCK
 
     /** [deliveries], or the last delivery alone when only it is known. */
     val recent: List<Delivery> get() = deliveries.ifEmpty { listOfNotNull(delivered?.let { Delivery(it, reading) }) }
@@ -96,7 +96,7 @@ data class Delivery(
  * they add up to: [installed] = a Sukrara app is there (true), none is (false: every one Garmin Connect was asked about),
  * or unknown; the last delivery and failure to any of them; [failingSince] while none of them gets messages.
  */
-data class AuraWatch(
+data class GarminWatch(
     val id: Long,
     val name: String,
     val connected: Boolean,
@@ -114,10 +114,10 @@ data class AuraWatch(
     val links: Map<String, AppLink> = emptyMap(),
 ) {
     /**
-     * No message has arrived for [AuraLink.STUCK]: Garmin Connect's link to the watch is stuck (#242: it can stay so for
+     * No message has arrived for [GarminLink.STUCK]: Garmin Connect's link to the watch is stuck (#242: it can stay so for
      * a day, until the watch reconnects). Longer than the stalls Garmin Connect ends itself (within 5 min).
      */
-    fun stuck(now: Instant) = failingSince != null && now >= failingSince + AuraLink.STUCK
+    fun stuck(now: Instant) = failingSince != null && now >= failingSince + GarminLink.STUCK
 
     /** [app]'s link here: the id Garmin Connect says is installed, else the public one; null = never asked. */
     fun link(app: GarminApp): AppLink? =
@@ -144,7 +144,7 @@ data class AuraWatch(
             name: String,
             connected: Boolean,
             links: Map<String, AppLink>,
-        ): AuraWatch {
+        ): GarminWatch {
             val there = links.values.filter { it.installed != false }
             val installed =
                 when {
@@ -156,7 +156,7 @@ data class AuraWatch(
             val lastFail = there.filter { it.failed != null }.maxByOrNull { it.failed!! }
             val failing = there.filter { it.delivered != null || it.failed != null }
             val since = if (failing.isNotEmpty() && failing.all { it.failingSince != null }) failing.minOf { it.failingSince!! } else null
-            return AuraWatch(
+            return GarminWatch(
                 id,
                 name,
                 connected,
@@ -180,7 +180,7 @@ data class AuraWatch(
  * / `Dw` (it drew always-on / night / awake) or `P…` (the night decision's raw facts), [sent] the display mode then,
  * [readingAt] 0.
  */
-data class AuraRun(
+data class LinkRun(
     val kind: String,
     val at: Long,
     val sent: Long,
@@ -191,16 +191,12 @@ data class AuraRun(
  * The face's own account, sent with each fetch: its last deliveries ([runs], oldest first) and the reading it draws
  * ([drawn], its time on the watch clock) since [drawnSince]; [at] = when the phone got it.
  */
-data class AuraReport(
+data class LinkReport(
     val at: Instant,
-    val runs: List<AuraRun>,
+    val runs: List<LinkRun>,
     val drawn: Instant?,
     val drawnSince: Instant?,
 ) {
-    /**
-     * The newest reading the face kept (its time): what it shows at the next wrist raise. [drawn] only moves while the
-     * screen draws, so a dark screen leaves it behind.
-     */
     /**
      * Every message the app got in [runs] it kept the older payload for (`px` / `fx`: it can't read this phone's, a
      * payload version it doesn't know), and none it took: the app needs updating, not a restart.
@@ -211,6 +207,10 @@ data class AuraReport(
             return got.isNotEmpty() && got.all { it.kind.endsWith("x") }
         }
 
+    /**
+     * The newest reading the face kept (its time): what it shows at the next wrist raise. [drawn] only moves while the
+     * screen draws, so a dark screen leaves it behind.
+     */
     val has: Instant?
         get() =
             runs
@@ -224,17 +224,17 @@ data class AuraReport(
         fun parse(
             query: Map<String, String>,
             at: Instant,
-        ): AuraReport? {
+        ): LinkReport? {
             val r = query["r"] ?: return null
             val runs =
                 r.split('_').mapNotNull { run ->
                     val f = run.split('.')
                     if (f.size != 4) return@mapNotNull null
                     val n = f.drop(1).map { it.toLongOrNull() ?: return@mapNotNull null }
-                    AuraRun(f[0], n[0], n[1], n[2])
+                    LinkRun(f[0], n[0], n[1], n[2])
                 }
             val d = query["d"]?.split('.')?.mapNotNull { it.toLongOrNull() }?.takeIf { it.size == 2 }
-            return AuraReport(at, runs, d?.let { Instant.ofEpochSecond(it[0]) }, d?.let { Instant.ofEpochSecond(it[1]) })
+            return LinkReport(at, runs, d?.let { Instant.ofEpochSecond(it[0]) }, d?.let { Instant.ofEpochSecond(it[1]) })
         }
     }
 }
@@ -244,21 +244,21 @@ data class AuraReport(
  * there and answers, each watch, and when Sukrara's apps last fetched from this phone ([fetched] the newest, [fetchedBy]
  * per app: proof an app runs and the link works).
  */
-data class AuraLinkState(
+data class GarminLinkState(
     val on: Boolean = true,
     val garminConnect: Boolean = false,
     /** Garmin Connect's Connect IQ service answered the last time it was asked; null = not asked yet. */
     val answering: Boolean? = null,
-    val watches: List<AuraWatch> = emptyList(),
+    val watches: List<GarminWatch> = emptyList(),
     val fetched: Instant? = null,
     /** Another app holds the fetch port. */
     val portBusy: Boolean = false,
     /** The fetch port is open (only while a watch is known to have a Sukrara app). */
     val fetchOpen: Boolean = false,
     /** What the face said it got and draws, with its last fetch. */
-    val report: AuraReport? = null,
+    val report: LinkReport? = null,
     /** Each app's own account with its last fetch (the face's is also [report]). */
-    val reports: Map<GarminApp, AuraReport> = emptyMap(),
+    val reports: Map<GarminApp, LinkReport> = emptyMap(),
     val fetchedBy: Map<GarminApp, Instant> = emptyMap(),
     /** When the watch app on each watch last fetched (by the `w` its fetch sends back). */
     val appFetchedOn: Map<Long, Instant> = emptyMap(),
@@ -282,7 +282,7 @@ data class Payloads(
 }
 
 /**
- * The phone → Sukrara's Connect IQ apps link (docs/43, docs/47): each app's payload ([AuraPayload], its own profile of
+ * The phone → Sukrara's Connect IQ apps link (docs/43, docs/47): each app's payload ([WatchPayload], its own profile of
  * the state the card and the glucose notification draw) goes out
  *
  * 1. **pushed** through Garmin Connect to each Sukrara app ([GarminApp], public or beta id) on every connected watch,
@@ -296,7 +296,7 @@ data class Payloads(
  *
  * On by default whenever Garmin Connect is installed: nothing to set up. The switch (`apps.garmin`) stops all of it.
  */
-class AuraLink(
+class GarminLink(
     private val settings: SettingsRepository,
     private val glucose: Flow<GlucoseState>,
     private val treatments: TreatmentsRepository,
@@ -317,8 +317,8 @@ class AuraLink(
     /** Each watch's own display settings for the app ([WatchSettingsStore]); a watch not listed follows the app. */
     private val watchDisplays: Flow<Map<Long, WatchDisplay>> = flowOf(emptyMap()),
 ) {
-    private val _state = MutableStateFlow(AuraLinkState())
-    val state: StateFlow<AuraLinkState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(GarminLinkState())
+    val state: StateFlow<GarminLinkState> = _state.asStateFlow()
 
     val on: Flow<Boolean> = settings.flow(SETTING)
 
@@ -346,7 +346,7 @@ class AuraLink(
                 val app = GarminApp.ofPath(req.path)
                 if (app != null && a.status.startsWith("200")) {
                     val at = clock.now()
-                    val report = AuraReport.parse(req.query, at)
+                    val report = LinkReport.parse(req.query, at)
                     _state.update {
                         it.copy(
                             fetched = at,
@@ -360,7 +360,7 @@ class AuraLink(
                             reports = report?.let { r -> it.reports + (app to r) } ?: it.reports,
                         )
                     }
-                    // times only (never a value): what the app got and when, for adb logcat -s Sukrara.Aura
+                    // times only (never a value): what the app got and when, for adb logcat -s Sukrara.Garmin
                     report?.let { r ->
                         val runs = r.runs.joinToString(" ") { "${it.kind}@${it.at}/sent ${it.sent}/reading ${it.readingAt}" }
                         trace("${app.key} report: drawn ${r.drawn?.epochSecond} since ${r.drawnSince?.epochSecond}; runs $runs")
@@ -449,7 +449,7 @@ class AuraLink(
         // moving on every 10 min
         val since = ticks(TEN_MIN)
         val today = since.flatMapLatest { readings.window(startOfDay(it)) }
-        val entries = since.flatMapLatest { treatments.since(it - Duration.ofDays(AuraPayload.LOG_DAYS + 1)) }
+        val entries = since.flatMapLatest { treatments.since(it - Duration.ofDays(WatchPayload.LOG_DAYS + 1)) }
         // the app's report numbers: only while a watch has the app, every 10 min (they move slowly; a month of readings)
         val hasApp = _state.map { s -> s.watches.any { it.has(GarminApp.App) == true } }.distinctUntilChanged()
         val metrics =
@@ -490,7 +490,7 @@ class AuraLink(
         watches: Collection<WatchDisplay>,
         at: Instant,
     ): Map<Long, GlucoseMetrics> {
-        val windows = AuraPayload.windows(g, watches)
+        val windows = WatchPayload.windows(g, watches)
         val nowS = at.epochSecond
         val points = readings.range(at - Duration.ofSeconds(windows.max()), at.plusSeconds(1)).map { it.toPoint() }
         return windows.associateWith { w -> GlucoseMetrics.of(points, nowS - w, nowS, g.bands.sane()) }
@@ -515,8 +515,8 @@ class AuraLink(
         val share = tir.inRange.takeIf { tir.coverage >= TIR_COVERAGE }
         val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, d.graph, d.metrics, d.open, kinds, quiet = quiet)
         return Payloads(
-            GarminApp.entries.associateWith { AuraPayload.of(it, i) },
-            d.own.mapValues { (_, own) -> AuraPayload.of(GarminApp.App, i.copy(watch = own)) },
+            GarminApp.entries.associateWith { WatchPayload.of(it, i) },
+            d.own.mapValues { (_, own) -> WatchPayload.of(GarminApp.App, i.copy(watch = own)) },
         )
     }
 
@@ -600,7 +600,7 @@ class AuraLink(
                             links[id] = l
                         }
                     }
-                    AuraWatch.of(d.id, d.name, d.connected, links)
+                    GarminWatch.of(d.id, d.name, d.connected, links)
                 }
             if (forced) force = false
             _state.update { it.copy(watches = watches) }
@@ -614,7 +614,7 @@ class AuraLink(
     private suspend fun installed(
         d: IqDevice,
         app: String,
-        before: AuraWatch?,
+        before: GarminWatch?,
         link: AppLink,
     ): Boolean? {
         val last = checked[d.id to app]
@@ -652,7 +652,7 @@ class AuraLink(
         return HttpAnswer("200 OK", json(p + ("sent" to clock.now().epochSecond.toInt())).toString())
     }
 
-    /** A link event in logcat (`Sukrara.Aura`) and the diagnostic log: times, ids and states only, never a value or the key. */
+    /** A link event in logcat (`Sukrara.Garmin`) and the diagnostic log: times, ids and states only, never a value or the key. */
     private fun trace(line: String) {
         runCatching { android.util.Log.i(TAG, line) }
         log(line)
@@ -664,7 +664,7 @@ class AuraLink(
     companion object {
         /** The fetch: http://127.0.0.1:17582/sukrara/<app> (Garmin Connect allows http only to loopback). */
         const val PORT = 17582
-        const val TAG = "Sukrara.Aura"
+        const val TAG = "Sukrara.Garmin"
 
         val SETTING = SchemaSettings.bool("apps.garmin", default = true)
 
@@ -689,7 +689,7 @@ class AuraLink(
         /** Whether the port may be open: on, Garmin Connect installed, a watch known to have a Sukrara app. */
         internal fun fetchOpen(
             on: Boolean,
-            s: AuraLinkState,
+            s: GarminLinkState,
         ) = on && s.garminConnect && s.watches.any { it.installed == true }
 
         /** Two payloads say the same apart from when they were built. */

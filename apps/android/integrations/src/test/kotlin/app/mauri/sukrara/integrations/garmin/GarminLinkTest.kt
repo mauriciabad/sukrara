@@ -47,7 +47,7 @@ import java.time.Duration
 import java.time.Instant
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AuraLinkTest {
+class GarminLinkTest {
     private val clock = FakeClock(Instant.parse("2026-11-16T10:09:36Z"))
 
     /** Garmin Connect as the test sets it: the watches, whether the face is on them, what each send ends in. */
@@ -108,9 +108,9 @@ class AuraLinkTest {
         treatments: InMemoryTreatmentsRepository = InMemoryTreatmentsRepository(),
         key: WatchKey? = null,
         own: Map<Long, WatchDisplay> = emptyMap(),
-    ): AuraLink {
+    ): GarminLink {
         val d = StandardTestDispatcher(testScheduler)
-        return AuraLink(
+        return GarminLink(
             settings,
             glucose,
             treatments,
@@ -222,7 +222,7 @@ class AuraLinkTest {
             // the field's beta id is the one on the watch: it is pushed to, its public id isn't
             assertEquals(listOf(GarminApp.Aura.id, GarminApp.App.id, GarminApp.Field.beta), port.sentTo)
             assertEquals(listOf("aura", "app", "field"), port.sent.map { it["p"] })
-            assertTrue(port.sent.all { it["v"] == AuraPayload.VERSION })
+            assertTrue(port.sent.all { it["v"] == WatchPayload.VERSION })
             assertEquals(WatchKey.hex(key.get()!!), port.sent[1]["key"])
             assertNull(port.sent[0]["key"])
             assertNull(port.sent[2]["key"])
@@ -304,7 +304,7 @@ class AuraLinkTest {
         var step = last
         while (step != null) {
             val until = step["until"] as Int
-            if (until == AuraPayload.NEVER || s < until) {
+            if (until == WatchPayload.NEVER || s < until) {
                 return (step["items"] as List<*>).map { (it as Map<*, *>)["k"] to (it["a"] as Float).toDouble() }
             }
             step = step["next"] as Map<*, *>?
@@ -314,7 +314,7 @@ class AuraLinkTest {
 
     /** Past the link's settle time: a changed payload is sent. */
     private fun TestScope.settle() {
-        advanceTimeBy(AuraLink.SETTLE_MS + 1)
+        advanceTimeBy(GarminLink.SETTLE_MS + 1)
         runCurrent()
     }
 
@@ -406,7 +406,7 @@ class AuraLinkTest {
             )
         for ((q, status, trs) in cases) {
             val state = state(-30L to 120).copy(alerts = AlertUiState(status = status, treatmentQuiet = q))
-            val last = AuraPayload.last(state, trs, now)
+            val last = WatchPayload.last(state, trs, now)
             val ends =
                 generateSequence<Map<*, *>>(
                     last,
@@ -528,7 +528,7 @@ class AuraLinkTest {
                     .single()
                     .installed,
             )
-            assertEquals(AuraStatus.NotInstalled, AuraStatus.of(link.state.value, clock.now()))
+            assertEquals(GarminStatus.NotInstalled, GarminStatus.of(link.state.value, clock.now()))
         }
 
     @Test
@@ -552,12 +552,12 @@ class AuraLinkTest {
     fun offSendsNothing() =
         runTest {
             val settings = InMemorySettingsRepository()
-            settings.set(AuraLink.SETTING, false)
+            settings.set(GarminLink.SETTING, false)
             val port = FakePort()
             val link = link(port, MutableStateFlow(state(-30L to 112)), settings)
             settle()
             assertEquals(0, port.sent.size)
-            assertEquals(AuraStatus.Off, AuraStatus.of(link.state.value, clock.now()))
+            assertEquals(GarminStatus.Off, GarminStatus.of(link.state.value, clock.now()))
         }
 
     @Test
@@ -601,21 +601,21 @@ class AuraLinkTest {
 
     @Test
     fun theFetchRule() {
-        val face = AuraLinkState(garminConnect = true, watches = listOf(AuraWatch(1, "D", true, true)))
-        assertTrue(AuraLink.fetchOpen(true, face))
-        assertFalse(AuraLink.fetchOpen(false, face))
-        assertFalse(AuraLink.fetchOpen(true, face.copy(garminConnect = false)))
-        assertFalse(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", true, null)))))
-        assertFalse(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", true, false)))))
+        val face = GarminLinkState(garminConnect = true, watches = listOf(GarminWatch(1, "D", true, true)))
+        assertTrue(GarminLink.fetchOpen(true, face))
+        assertFalse(GarminLink.fetchOpen(false, face))
+        assertFalse(GarminLink.fetchOpen(true, face.copy(garminConnect = false)))
+        assertFalse(GarminLink.fetchOpen(true, face.copy(watches = listOf(GarminWatch(1, "D", true, null)))))
+        assertFalse(GarminLink.fetchOpen(true, face.copy(watches = listOf(GarminWatch(1, "D", true, false)))))
         // a watch away that has the face keeps it open (the face fetches as soon as it is back)
-        assertTrue(AuraLink.fetchOpen(true, face.copy(watches = listOf(AuraWatch(1, "D", false, true)))))
+        assertTrue(GarminLink.fetchOpen(true, face.copy(watches = listOf(GarminWatch(1, "D", false, true)))))
     }
 
     @Test
     fun theFacesReport() {
         val now = clock.now()
         val r =
-            AuraReport.parse(
+            LinkReport.parse(
                 mapOf(
                     "r" to "p.1794831700.1794831697.1794831696_fx.1794831720.1794831600.1794831590_e-104.1794831800.0.0_bad",
                     "d" to "1794831696.1794831701",
@@ -624,9 +624,9 @@ class AuraLinkTest {
             )!!
         assertEquals(
             listOf(
-                AuraRun("p", 1794831700, 1794831697, 1794831696),
-                AuraRun("fx", 1794831720, 1794831600, 1794831590),
-                AuraRun("e-104", 1794831800, 0, 0),
+                LinkRun("p", 1794831700, 1794831697, 1794831696),
+                LinkRun("fx", 1794831720, 1794831600, 1794831590),
+                LinkRun("e-104", 1794831800, 0, 0),
             ),
             r.runs,
         )
@@ -634,13 +634,13 @@ class AuraLinkTest {
         // the newest it kept: the push, not the older fetch it refused nor the failed one
         assertEquals(Instant.ofEpochSecond(1794831696), r.has)
         assertEquals(Instant.ofEpochSecond(1794831701), r.drawnSince)
-        assertNull(AuraReport.parse(mapOf("x" to "1"), now))
-        assertEquals(null, AuraReport.parse(mapOf("r" to "", "d" to "junk"), now)!!.drawn)
+        assertNull(LinkReport.parse(mapOf("x" to "1"), now))
+        assertEquals(null, LinkReport.parse(mapOf("r" to "", "d" to "junk"), now)!!.drawn)
     }
 
     @Test
     fun theFetchIsThePayloadAsJson() {
         val p = mapOf("v" to 1, "g" to mapOf("rate" to 0.4f, "band" to null), "hist" to listOf(100, null), "ok" to true, "u" to "mgdl")
-        assertEquals("""{"v":1,"g":{"rate":0.4,"band":null},"hist":[100,null],"ok":true,"u":"mgdl"}""", AuraLink.json(p).toString())
+        assertEquals("""{"v":1,"g":{"rate":0.4,"band":null},"hist":[100,null],"ok":true,"u":"mgdl"}""", GarminLink.json(p).toString())
     }
 }

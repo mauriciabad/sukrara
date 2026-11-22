@@ -63,25 +63,25 @@ private fun fresh(
  * face). When the face [missed] what was delivered, only the face's own counts.
  */
 internal fun shows(
-    w: AuraWatch,
-    s: AuraLinkState,
+    w: GarminWatch,
+    s: GarminLinkState,
 ): Instant? {
     if (missed(w, s) || rejected(w, s)) return s.report?.has
     return listOfNotNull(w.reading, s.report?.has?.takeIf { only(w, s) }).maxOrNull()
 }
 
 private fun only(
-    w: AuraWatch,
-    s: AuraLinkState,
+    w: GarminWatch,
+    s: GarminLinkState,
 ) = s.watches.count { it.has(GarminApp.Aura) != false } == 1 && w.has(GarminApp.Aura) != false
 
 /** The face's own link on [this] (a watch known only by its line: that line). */
-private fun AuraWatch.face(): AppLink = link(GarminApp.Aura) ?: AppLink(installed, delivered, failed, noAnswer, reading, failingSince)
+private fun GarminWatch.face(): AppLink = link(GarminApp.Aura) ?: AppLink(installed, delivered, failed, noAnswer, reading, failingSince)
 
 /** The face on [w] keeps every message it gets and takes none: it can't read this phone's (it needs updating). */
 internal fun rejected(
-    w: AuraWatch,
-    s: AuraLinkState,
+    w: GarminWatch,
+    s: GarminLinkState,
 ) = only(w, s) && s.report?.rejected == true
 
 /** A report this long after a delivery has had time to count it. */
@@ -96,8 +96,8 @@ private val BEHIND: Duration = Duration.ofMinutes(2)
  * [BEHIND] or more older than the delivered one. Only while one watch has the face.
  */
 internal fun missed(
-    w: AuraWatch,
-    s: AuraLinkState,
+    w: GarminWatch,
+    s: GarminLinkState,
 ): Boolean {
     val r = s.report ?: return false
     // the delivery made before the report (pushes go every minute, reports every 5: the newest is usually after it)
@@ -116,50 +116,50 @@ internal fun missed(
  * Garmin Connect not answering; no watch in it; the face on no watch; the watch away; a watch has a reading; messages
  * lost but the face fetching every 5 min; messages lost and nothing fetched; waiting for the first one.
  */
-sealed interface AuraStatus {
-    data object Off : AuraStatus
+sealed interface GarminStatus {
+    data object Off : GarminStatus
 
-    data object NoGarminConnect : AuraStatus
+    data object NoGarminConnect : GarminStatus
 
-    data object NotAnswering : AuraStatus
+    data object NotAnswering : GarminStatus
 
-    data object NoWatch : AuraStatus
+    data object NoWatch : GarminStatus
 
-    data object NotInstalled : AuraStatus
+    data object NotInstalled : GarminStatus
 
     /** No watch with the face is connected. */
     data class Away(
         val watch: String,
-    ) : AuraStatus
+    ) : GarminStatus
 
     /** [watch] got the last message; [reading] = the newest reading it has (null = it carried none). */
     data class Sent(
         val watch: String,
         val reading: Instant?,
-    ) : AuraStatus
+    ) : GarminStatus
 
     /** Garmin Connect loses the messages, but the face fetched at [at] (it keeps up every 5 min). */
     data class Fetching(
         val at: Instant,
-    ) : AuraStatus
+    ) : GarminStatus
 
     /** Messages don't arrive and the face hasn't fetched lately. */
     data class Failing(
         val watch: String,
-    ) : AuraStatus
+    ) : GarminStatus
 
-    data object Waiting : AuraStatus
+    data object Waiting : GarminStatus
 
     /** The face on [watch] can't read this phone's messages: it needs updating. */
     data class Outdated(
         val watch: String,
-    ) : AuraStatus
+    ) : GarminStatus
 
     companion object {
         fun of(
-            s: AuraLinkState,
+            s: GarminLinkState,
             now: Instant,
-        ): AuraStatus {
+        ): GarminStatus {
             val fetched = fresh(s.fetched, now)
             val withFace = s.watches.filter { it.installed != false }
             val near = withFace.filter { it.connected }
@@ -205,7 +205,7 @@ sealed interface AuraStatus {
 }
 
 /** The last message reached it and none failed since. */
-private fun AuraWatch.delivered() = delivered != null && (failed == null || failed < delivered)
+private fun GarminWatch.delivered() = delivered != null && (failed == null || failed < delivered)
 
 /** One watch's line on the Garmin page: connected or not, the newest reading it has, and what goes wrong. */
 data class WatchLine(
@@ -223,7 +223,7 @@ data class WatchLine(
         /** The watch takes the messages but the face doesn't ([missed]): restart the watch (#244). */
         NotTaking,
 
-        /** No message has got through for 15 min ([AuraWatch.stuck]): restarting the watch brings them back (#242). */
+        /** No message has got through for 15 min ([GarminWatch.stuck]): restarting the watch brings them back (#242). */
         Stuck,
 
         /** Garmin Connect loses the messages; the face keeps up by fetching every 5 min. */
@@ -241,8 +241,8 @@ data class WatchLine(
 
     companion object {
         fun of(
-            w: AuraWatch,
-            s: AuraLinkState,
+            w: GarminWatch,
+            s: GarminLinkState,
             now: Instant,
         ): WatchLine {
             val reading = shows(w, s)
@@ -298,7 +298,7 @@ sealed interface AppLine {
     companion object {
         fun of(
             app: GarminApp,
-            s: AuraLinkState,
+            s: GarminLinkState,
             now: Instant,
         ): AppLine {
             val fetched = fresh(s.fetchedBy[app], now)
@@ -317,8 +317,8 @@ sealed interface AppLine {
          */
         fun on(
             app: GarminApp,
-            w: AuraWatch,
-            s: AuraLinkState,
+            w: GarminWatch,
+            s: GarminLinkState,
             now: Instant,
         ): AppLine {
             val only = w.has(app) != false && s.watches.count { it.has(app) != false } == 1
@@ -349,7 +349,7 @@ sealed interface AppLine {
 
 /** What the Garmin page shows: Sukrara's own link, and the xDrip+ server for other faces and data fields. */
 data class GarminUi(
-    val link: AuraLinkState,
+    val link: GarminLinkState,
     val xdrip: XdripState = XdripState.Off,
     val readers: List<ServerReader> = emptyList(),
     /** Each watch's own settings for the watch app (a watch not listed follows the app), and its name when they were set. */
@@ -358,7 +358,7 @@ data class GarminUi(
 )
 
 class GarminViewModel(
-    private val link: AuraLink,
+    private val link: GarminLink,
     xdrip: XdripServer,
     context: Context,
     io: CoroutineDispatcher,
@@ -458,7 +458,7 @@ fun GarminContent(
     modifier: Modifier = Modifier,
 ) = Column(modifier) {
     val s = ui.link
-    val status = AuraStatus.of(s, now)
+    val status = GarminStatus.of(s, now)
     SettingsIntro(stringResource(R.string.in_garmin_intro))
     MainSwitchRow(
         stringResource(R.string.in_garmin_switch),
@@ -466,9 +466,9 @@ fun GarminContent(
         actions.setOn,
         note =
             when (status) {
-                AuraStatus.Off -> stringResource(R.string.in_garmin_off_note)
-                AuraStatus.NoGarminConnect -> stringResource(R.string.in_garmin_no_gcm)
-                AuraStatus.NotAnswering -> stringResource(R.string.in_garmin_not_answering)
+                GarminStatus.Off -> stringResource(R.string.in_garmin_off_note)
+                GarminStatus.NoGarminConnect -> stringResource(R.string.in_garmin_no_gcm)
+                GarminStatus.NotAnswering -> stringResource(R.string.in_garmin_not_answering)
                 else -> null
             },
     )
@@ -699,56 +699,56 @@ private fun appText(
 /** The Garmin row's line on Share with apps. */
 @Composable
 fun garminStatusText(
-    status: AuraStatus,
+    status: GarminStatus,
     now: Instant,
 ): String =
     when (status) {
-        AuraStatus.Off -> {
+        GarminStatus.Off -> {
             stringResource(R.string.in_garmin_off)
         }
 
-        AuraStatus.NoGarminConnect -> {
+        GarminStatus.NoGarminConnect -> {
             stringResource(R.string.in_garmin_no_gcm)
         }
 
-        AuraStatus.NotAnswering -> {
+        GarminStatus.NotAnswering -> {
             stringResource(R.string.in_garmin_not_answering)
         }
 
-        AuraStatus.NoWatch -> {
+        GarminStatus.NoWatch -> {
             stringResource(R.string.in_garmin_no_watch_status)
         }
 
-        AuraStatus.NotInstalled -> {
+        GarminStatus.NotInstalled -> {
             stringResource(R.string.in_garmin_not_installed)
         }
 
-        is AuraStatus.Away -> {
+        is GarminStatus.Away -> {
             stringResource(R.string.in_garmin_away, status.watch)
         }
 
-        is AuraStatus.Sent -> {
+        is GarminStatus.Sent -> {
             status.reading?.let { stringResource(R.string.in_garmin_sent, status.watch, since(it, now)) }
                 ?: stringResource(R.string.in_garmin_sent_no_reading, status.watch)
         }
 
-        is AuraStatus.Fetching -> {
+        is GarminStatus.Fetching -> {
             stringResource(R.string.in_garmin_fetching)
         }
 
-        is AuraStatus.Failing -> {
+        is GarminStatus.Failing -> {
             stringResource(R.string.in_garmin_failing, status.watch)
         }
 
-        AuraStatus.Waiting -> {
+        GarminStatus.Waiting -> {
             stringResource(R.string.in_garmin_waiting)
         }
 
-        is AuraStatus.Outdated -> {
+        is GarminStatus.Outdated -> {
             stringResource(R.string.in_garmin_outdated, status.watch)
         }
     }
 
 /** Whether the Garmin row's line is a problem the person fixes outside the app (drawn in the error colour). */
-fun AuraStatus.isProblem() =
-    this is AuraStatus.NotAnswering || this is AuraStatus.Failing || this == AuraStatus.NotInstalled || this is AuraStatus.Outdated
+fun GarminStatus.isProblem() =
+    this is GarminStatus.NotAnswering || this is GarminStatus.Failing || this == GarminStatus.NotInstalled || this is GarminStatus.Outdated

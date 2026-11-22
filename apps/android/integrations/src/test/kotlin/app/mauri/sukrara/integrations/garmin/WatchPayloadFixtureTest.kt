@@ -53,11 +53,11 @@ import org.junit.Test
 import java.time.Instant
 
 /**
- * contracts/watchface/payload/cases.json on Android: each phone state builds exactly its payload ([AuraPayload]), and
+ * contracts/watchface/payload/cases.json on Android: each phone state builds exactly its payload ([WatchPayload]), and
  * the payload survives [MonkeyC] (decoded as the watch reads it); the bytes Garmin's own serializer wrote decode to the
  * same payload.
  */
-class AuraPayloadFixtureTest {
+class WatchPayloadFixtureTest {
     private val file = Json.parseToJsonElement(Contracts.file("watchface/payload/cases.json").readText()).jsonObject
     private val now = file.getValue("now").jsonPrimitive.long
 
@@ -197,7 +197,7 @@ class AuraPayloadFixtureTest {
                 ?.map { it.jsonPrimitive.content }
                 ?.toSet()
                 .orEmpty()
-        return AuraPayload.of(
+        return WatchPayload.of(
             profile,
             PayloadInputs(
                 state.copy(alerts = state.alerts.copy(firingKinds = firing, quiet = sides(p))),

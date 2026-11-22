@@ -139,7 +139,7 @@
       "name": "watchface-link",
       "level": "fail",
       "trigger": ["fixtures"],
-      "why": "Sukrara Aura's payload (contracts/watchface/payload, a versioned wire format): the phone that builds it (Android :integrations garmin, AuraPayloadFixtureTest) and the watch side that reads it (apps/garmin/shared/link, LinkTest; the face's seam, AuraSeamTest) change together",
+      "why": "Sukrara Aura's payload (contracts/watchface/payload, a versioned wire format): the phone that builds it (Android :integrations garmin, WatchPayloadFixtureTest) and the watch side that reads it (apps/garmin/shared/link, LinkTest; the face's seam, AuraSeamTest) change together",
       "sides": {
         "fixtures": ["contracts/watchface/payload/*"],
         "android": [

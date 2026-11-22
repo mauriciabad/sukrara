@@ -39,7 +39,7 @@ import kotlin.math.floor
 
 /**
  * Everything a payload is built from, one snapshot for every profile. [treatments] = the stored entries of the last
- * [AuraPayload.LOG_DAYS] days (any order); [unit], [bands] and [countdownHours] = the person's settings; [tir] = today's
+ * [WatchPayload.LOG_DAYS] days (any order); [unit], [bands] and [countdownHours] = the person's settings; [tir] = today's
  * time in range (share 0…1, null = not enough data) and [dayEnd] = when today ends on this phone (the face drops [tir]
  * then); [sensor] = the wearer's sensor with its life (the sensor screen's: its start and end, null on a follower or
  * before one is paired). The app's: [graph] = the person's metric settings, [metrics] = the report numbers per window
@@ -74,7 +74,7 @@ data class PayloadInputs(
  * face is nearly full; the app's background has 64 KB). Pure: [of] builds the Monkey C value tree (maps with string
  * keys, lists, Int, Float, Boolean, String, null) that [MonkeyC.encode] writes.
  */
-object AuraPayload {
+object WatchPayload {
     /** The format's version (`v`); an app ignores a message of another version or another profile (`p`). */
     const val VERSION = 4
 
@@ -116,7 +116,7 @@ object AuraPayload {
             .plus(RANGES + REPORT_DAYS.map { it * 86_400L })
             .toSet()
 
-    /** The payload [app] gets from [i] at [PayloadInputs.now] (the app's push adds `key`: [AuraLink]). */
+    /** The payload [app] gets from [i] at [PayloadInputs.now] (the app's push adds `key`: [GarminLink]). */
     fun of(
         app: GarminApp,
         i: PayloadInputs,

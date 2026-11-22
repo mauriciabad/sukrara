@@ -39,9 +39,9 @@ import app.mauri.sukrara.integrations.broadcasts.PlatformApps
 import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportViewModel
 import app.mauri.sukrara.integrations.export.Exporter
-import app.mauri.sukrara.integrations.garmin.AuraLink
 import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
+import app.mauri.sukrara.integrations.garmin.GarminLink
 import app.mauri.sukrara.integrations.garmin.GarminViewModel
 import app.mauri.sukrara.integrations.garmin.GarminWatches
 import app.mauri.sukrara.integrations.garmin.WatchEntries
@@ -320,7 +320,7 @@ class IntegrationsModule(
 
     /** Sukrara on Garmin watches (the face, the app, the data field): pushed through Garmin Connect, fetched and written on loopback (docs/43, docs/47). */
     val aura =
-        AuraLink(
+        GarminLink(
             settings,
             glucose,
             treatments,

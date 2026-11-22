@@ -20,9 +20,9 @@ import app.mauri.sukrara.designsystem.rows.SettingsGroup
 import app.mauri.sukrara.designsystem.rows.SettingsIntro
 import app.mauri.sukrara.integrations.broadcasts.BcStatus
 import app.mauri.sukrara.integrations.broadcasts.broadcastStatusText
-import app.mauri.sukrara.integrations.garmin.AuraLinkState
-import app.mauri.sukrara.integrations.garmin.AuraStatus
 import app.mauri.sukrara.integrations.garmin.ConnectIq
+import app.mauri.sukrara.integrations.garmin.GarminLinkState
+import app.mauri.sukrara.integrations.garmin.GarminStatus
 import app.mauri.sukrara.integrations.garmin.garminStatusText
 import app.mauri.sukrara.integrations.garmin.isProblem
 import app.mauri.sukrara.integrations.garmin.ticking
@@ -73,7 +73,7 @@ data class AppsUi(
     /** Import history (wearer only). */
     val history: ImportState = ImportState.Idle,
     /** Sukrara's Garmin link (the face). */
-    val aura: AuraLinkState = AuraLinkState(),
+    val aura: GarminLinkState = GarminLinkState(),
 )
 
 class AppsActions(
@@ -94,7 +94,7 @@ private data class Others(
     val broadcasts: BcStatus,
     val health: HcStatus,
     val history: ImportState = ImportState.Idle,
-    val aura: AuraLinkState = AuraLinkState(),
+    val aura: GarminLinkState = GarminLinkState(),
 )
 
 class AppsViewModel(
@@ -201,7 +201,7 @@ fun AppsContent(
         }
     }
     SettingsGroup(title = stringResource(R.string.in_apps_watch_group)) {
-        val garmin = AuraStatus.of(ui.aura, now)
+        val garmin = GarminStatus.of(ui.aura, now)
         NavigationRow(
             stringResource(R.string.in_garmin_title),
             actions.openGarmin,

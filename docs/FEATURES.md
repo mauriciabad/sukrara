@@ -2814,9 +2814,9 @@ ages by itself from its own time with the phone away.
   alert runtime's pill, the sensor with its life's start and end from the sensor screen's dates (the sensor rail), the
   card's last treatment with when it ends and what it gives way to, today's time in range, the person's unit and
   limits), with absolute times so the watch keeps every age and countdown right between messages (`:integrations`
-  `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 4, the face's profile `aura`; tests
-  `AuraPayloadFixtureTest`).
-- **Two ways, nothing to set up** (`garmin/AuraLink`, on by default whenever Garmin Connect is installed; schema
+  `garmin/WatchPayload`; format and fixtures `contracts/watchface/payload`, version 4, the face's profile `aura`; tests
+  `WatchPayloadFixtureTest`).
+- **Two ways, nothing to set up** (`garmin/GarminLink`, on by default whenever Garmin Connect is installed; schema
   `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face, the app and the data field):
   **pushed** through Garmin Connect's Connect IQ service to each Sukrara app on every connected watch (each its own
   profile and app id, a beta's id too; retries and the stuck rule per app) on
@@ -2833,7 +2833,7 @@ ages by itself from its own time with the phone away.
   Sukrara talks to Garmin Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free
   software). One message per change: a reading that changes the payload in steps (the hub, then today's readings) is
   sent once it settles (3 s). Each watch remembers the time of the reading its last delivered message carried. Tests:
-  `AuraLinkTest`, `GarminStatusTest`.
+  `GarminLinkTest`, `GarminStatusTest`.
 - **The face reports back** with every fetch: its last 10 deliveries (push or fetch, the watch's time, which payload,
   which reading; `s` when the face picked it up from storage because Garmin didn't hand it over: every background run
   also leaves its result there, read at each draw, #244) and the reading it draws since when. While one watch has the
@@ -2845,7 +2845,7 @@ ages by itself from its own time with the phone away.
   "the watch face can't read this phone's messages · update Sukrara Aura" and the row "Sukrara Aura on Descent needs an
   update" (error colour), never the delivered reading; the app's and the field's rows say "can't read this phone's
   messages · update it in the Connect IQ app" by the same rule from their own reports; logcat
-  `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer, a failure with Garmin's
+  `Sukrara.Garmin` has each push (when it was built, for which reading, Garmin Connect's answer, a failure with Garmin's
   status: `Failed FAILURE_DURING_TRANSFER`) and each report, times
   only. So an agent or the person can see what the watch got without looking at it.
 - Settings › Share with apps › *Watches* › **Garmin** (Garmin Connect's icon; settings search "watch", "watch face",
@@ -2932,7 +2932,7 @@ Beside Sukrara Aura, two more Connect IQ apps get what this phone shows (docs/47
 their own rounds): **Sukrara** (a watch app with a glance and complications) and the **Sukrara data field**. Each gets
 its own payload from THE glucose state, with only what it draws (`contracts/watchface/payload`, version 4: profile
 `app` and `field`; the registry of every app id and beta id, `apps.json`, `GarminAppsTest`).
-- **The app's payload** (`garmin/AuraPayload`, `GarminDisplay`; `AuraPayloadFixtureTest`): 24 h of readings at 5 min
+- **The app's payload** (`garmin/WatchPayload`, `GarminDisplay`; `WatchPayloadFixtureTest`): 24 h of readings at 5 min
   (the app zooms 3 / 6 / 12 / 24 h itself), the day's treatments (with their ids), time in range per band over a day
   and a week, the card's metrics as the person set them (`graph.slots`, the fallback, the ring order), the Numbers
   page for 1 / 7 / 14 / 30 days with which of the report card's goals each meets (`ok`, `Goal.met`: the watch keeps no

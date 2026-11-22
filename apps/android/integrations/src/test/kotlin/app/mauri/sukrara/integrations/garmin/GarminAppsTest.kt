@@ -29,7 +29,7 @@ class GarminAppsTest {
             assertEquals(app.path, s("fetch"))
             assertEquals(app.logs, a.getValue("logs").jsonPrimitive.boolean)
         }
-        assertEquals(AuraLink.PORT, file.getValue("port").jsonPrimitive.int)
+        assertEquals(GarminLink.PORT, file.getValue("port").jsonPrimitive.int)
         assertEquals(GarminApp.ENTRIES, file.getValue("entries").jsonPrimitive.content)
         assertEquals(WatchWrites.MUTE, file.getValue("mute").jsonPrimitive.content)
         assertEquals(WatchWrites.UNDO, file.getValue("undo").jsonPrimitive.content)

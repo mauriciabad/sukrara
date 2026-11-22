@@ -1145,7 +1145,7 @@ watch; the watch shows the real value: check it against the phone, never photogr
       status, race predictions) or `--` where the watch has none; a value changes on the face within a minute or two
       of the watch's own.
 - [ ] On the watch, raise the wrist a few times with Do Not Disturb off: the full face at the panel's brightness,
-      never the always-on look. After the next fetch, `adb logcat -s Sukrara.Aura` shows each `X@<t>` followed by
+      never the always-on look. After the next fetch, `adb logcat -s Sukrara.Garmin` shows each `X@<t>` followed by
       `Dw@<t>` within a second (docs/43 "The screen").
 
 ## Q31 Garmin data field

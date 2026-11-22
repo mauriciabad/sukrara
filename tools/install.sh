@@ -58,10 +58,10 @@ if [ -f "$RECORD" ]; then
 fi
 tools/check/run.sh --range origin/main..HEAD || die "tools/check/run.sh failed (see above)."
 
-# 1b. Phone and watch speak the same Garmin payload version (the phone's AuraPayload.VERSION, the watch's Link.VERSION).
+# 1b. Phone and watch speak the same Garmin payload version (the phone's WatchPayload.VERSION, the watch's Link.VERSION).
 payload_version() { # $1 = commit, $2 = phone | watch
   case $2 in
-    phone) git grep -h "const val VERSION = " "$1" -- 'apps/android/**/AuraPayload.kt' 2>/dev/null ;;
+    phone) git grep -h "const val VERSION = " "$1" -- 'apps/android/**/garmin/*Payload.kt' 2>/dev/null ;;
     watch) git grep -h "const VERSION = " "$1" -- 'apps/garmin/**/*.mc' 2>/dev/null ;;
   esac | head -1 | sed 's/[^0-9]//g'
 }

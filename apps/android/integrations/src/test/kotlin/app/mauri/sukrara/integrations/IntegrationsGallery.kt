@@ -38,13 +38,13 @@ import app.mauri.sukrara.integrations.export.ExportContent
 import app.mauri.sukrara.integrations.export.ExportData
 import app.mauri.sukrara.integrations.export.ExportPeriod
 import app.mauri.sukrara.integrations.export.ExportUi
-import app.mauri.sukrara.integrations.garmin.AuraLinkState
-import app.mauri.sukrara.integrations.garmin.AuraReport
-import app.mauri.sukrara.integrations.garmin.AuraWatch
 import app.mauri.sukrara.integrations.garmin.GarminActions
 import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminContent
+import app.mauri.sukrara.integrations.garmin.GarminLinkState
 import app.mauri.sukrara.integrations.garmin.GarminUi
+import app.mauri.sukrara.integrations.garmin.GarminWatch
+import app.mauri.sukrara.integrations.garmin.LinkReport
 import app.mauri.sukrara.integrations.healthconnect.HcActions
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HcUi
@@ -111,12 +111,12 @@ class IntegrationsGallery {
     private val gcm = ServerReader("com.garmin.android.apps.connectmobile", "Garmin Connect")
     private val ciq = ServerReader("com.garmin.connectiq", "Connect IQ")
     private val sent =
-        AuraLinkState(
+        GarminLinkState(
             garminConnect = true,
             answering = true,
             watches =
                 listOf(
-                    AuraWatch(
+                    GarminWatch(
                         1,
                         "Descent Mk3i 43mm",
                         true,
@@ -160,7 +160,7 @@ class IntegrationsGallery {
                         sent.copy(
                             watches =
                                 listOf(
-                                    AuraWatch(
+                                    GarminWatch(
                                         1,
                                         "Descent Mk3i 43mm",
                                         false,
@@ -169,7 +169,7 @@ class IntegrationsGallery {
                                         reading =
                                             now - Duration.ofMinutes(25),
                                     ),
-                                    AuraWatch(2, "Forerunner 265", true, false),
+                                    GarminWatch(2, "Forerunner 265", true, false),
                                 ),
                             fetched = null,
                         ),
@@ -187,7 +187,7 @@ class IntegrationsGallery {
                         sent.copy(
                             watches =
                                 listOf(
-                                    AuraWatch(
+                                    GarminWatch(
                                         1,
                                         "Descent Mk3i 43mm",
                                         true,
@@ -201,7 +201,7 @@ class IntegrationsGallery {
                             fetched = now - Duration.ofMinutes(2),
                             fetchedBy = mapOf(GarminApp.Aura to now - Duration.ofMinutes(2)),
                             report =
-                                AuraReport(
+                                LinkReport(
                                     now - Duration.ofMinutes(2),
                                     emptyList(),
                                     now - Duration.ofMinutes(2),
@@ -216,22 +216,22 @@ class IntegrationsGallery {
             "garmin-no-face" to {
                 GarminContent(
                     GarminUi(
-                        AuraLinkState(
+                        GarminLinkState(
                             garminConnect = true,
                             answering = true,
-                            watches = listOf(AuraWatch(1, "Descent Mk3i 43mm", true, false)),
+                            watches = listOf(GarminWatch(1, "Descent Mk3i 43mm", true, false)),
                         ),
                     ),
                     now,
                     GarminActions(),
                 )
             },
-            "garmin-no-watch" to { GarminContent(GarminUi(AuraLinkState(garminConnect = true, answering = true)), now, GarminActions()) },
+            "garmin-no-watch" to { GarminContent(GarminUi(GarminLinkState(garminConnect = true, answering = true)), now, GarminActions()) },
             "garmin-not-answering" to {
-                GarminContent(GarminUi(AuraLinkState(garminConnect = true, answering = false)), now, GarminActions())
+                GarminContent(GarminUi(GarminLinkState(garminConnect = true, answering = false)), now, GarminActions())
             },
-            "garmin-no-gcm" to { GarminContent(GarminUi(AuraLinkState(garminConnect = false)), now, GarminActions()) },
-            "garmin-off" to { GarminContent(GarminUi(AuraLinkState(on = false, garminConnect = true)), now, GarminActions()) },
+            "garmin-no-gcm" to { GarminContent(GarminUi(GarminLinkState(garminConnect = false)), now, GarminActions()) },
+            "garmin-off" to { GarminContent(GarminUi(GarminLinkState(on = false, garminConnect = true)), now, GarminActions()) },
             "xdrip-off" to { XdripContent(XdripUi(false, XdripState.Off), now, {}) },
             "xdrip-on" to { XdripContent(XdripUi(true, XdripState.Listening(now - Duration.ofMinutes(2)), listOf(gcm, ciq)), now, {}) },
             "xdrip-busy" to { XdripContent(XdripUi(true, XdripState.PortBusy, listOf(gcm)), now, {}) },

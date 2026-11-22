@@ -16,32 +16,32 @@ import java.time.Instant
 class GarminStatusTest {
     private val now = Instant.parse("2026-11-16T10:09:36Z")
     private val ago = { m: Long -> now - Duration.ofMinutes(m) }
-    private val base = AuraLinkState(on = true, garminConnect = true, answering = true)
-    private val watch = AuraWatch(7, "Descent", connected = true, installed = true)
+    private val base = GarminLinkState(on = true, garminConnect = true, answering = true)
+    private val watch = GarminWatch(7, "Descent", connected = true, installed = true)
 
-    private fun of(s: AuraLinkState) = AuraStatus.of(s, now)
+    private fun of(s: GarminLinkState) = GarminStatus.of(s, now)
 
     private fun line(
-        w: AuraWatch,
-        s: AuraLinkState = base.copy(watches = listOf(w)),
+        w: GarminWatch,
+        s: GarminLinkState = base.copy(watches = listOf(w)),
     ) = WatchLine.of(w, s, now)
 
     @Test
     fun theOrder() {
-        assertEquals(AuraStatus.Off, of(base.copy(on = false)))
-        assertEquals(AuraStatus.NoGarminConnect, of(base.copy(garminConnect = false)))
-        assertEquals(AuraStatus.NotAnswering, of(base.copy(answering = false)))
-        assertEquals(AuraStatus.NoWatch, of(base))
-        assertEquals(AuraStatus.NotInstalled, of(base.copy(watches = listOf(watch.copy(installed = false)))))
-        assertEquals(AuraStatus.Waiting, of(base.copy(watches = listOf(watch))))
+        assertEquals(GarminStatus.Off, of(base.copy(on = false)))
+        assertEquals(GarminStatus.NoGarminConnect, of(base.copy(garminConnect = false)))
+        assertEquals(GarminStatus.NotAnswering, of(base.copy(answering = false)))
+        assertEquals(GarminStatus.NoWatch, of(base))
+        assertEquals(GarminStatus.NotInstalled, of(base.copy(watches = listOf(watch.copy(installed = false)))))
+        assertEquals(GarminStatus.Waiting, of(base.copy(watches = listOf(watch))))
         val sent = watch.copy(delivered = ago(1), reading = ago(1))
-        assertEquals(AuraStatus.Sent("Descent", ago(1)), of(base.copy(watches = listOf(sent))))
+        assertEquals(GarminStatus.Sent("Descent", ago(1)), of(base.copy(watches = listOf(sent))))
     }
 
     @Test
     fun away() {
         val w = watch.copy(connected = false, delivered = ago(30), reading = ago(30))
-        assertEquals(AuraStatus.Away("Descent"), of(base.copy(watches = listOf(w))))
+        assertEquals(GarminStatus.Away("Descent"), of(base.copy(watches = listOf(w))))
         // the watch's line keeps the reading it has, as a clock time
         assertEquals(WatchLine(false, ago(30), null), line(w))
         assertEquals(WatchLine(false, null, null), line(watch.copy(connected = false)))
@@ -51,29 +51,29 @@ class GarminStatusTest {
     fun lostMessages() {
         val lost = watch.copy(failed = ago(1), noAnswer = true)
         // the face keeps up by fetching every 5 min
-        assertEquals(AuraStatus.Fetching(ago(3)), of(base.copy(watches = listOf(lost), fetched = ago(3))))
+        assertEquals(GarminStatus.Fetching(ago(3)), of(base.copy(watches = listOf(lost), fetched = ago(3))))
         assertEquals(WatchLine.Problem.Slow, line(lost, base.copy(watches = listOf(lost), fetched = ago(3))).problem)
         // nothing fetched lately either
-        assertEquals(AuraStatus.Failing("Descent"), of(base.copy(watches = listOf(lost), fetched = ago(30))))
+        assertEquals(GarminStatus.Failing("Descent"), of(base.copy(watches = listOf(lost), fetched = ago(30))))
         assertEquals(WatchLine.Problem.NoAnswer, line(lost, base.copy(watches = listOf(lost), fetched = ago(30))).problem)
         assertEquals(WatchLine.Problem.Failed, line(watch.copy(failed = ago(1))).problem)
         // a delivery after the failure wins
         val back = lost.copy(delivered = now, reading = ago(1))
-        assertEquals(AuraStatus.Sent("Descent", ago(1)), of(base.copy(watches = listOf(back))))
+        assertEquals(GarminStatus.Sent("Descent", ago(1)), of(base.copy(watches = listOf(back))))
         assertEquals(WatchLine(true, ago(1), null), line(back))
         // Garmin Connect's service down but the face fetches: not "not answering"
-        assertEquals(AuraStatus.Fetching(ago(2)), of(base.copy(answering = false, watches = listOf(lost), fetched = ago(2))))
+        assertEquals(GarminStatus.Fetching(ago(2)), of(base.copy(answering = false, watches = listOf(lost), fetched = ago(2))))
     }
 
     @Test
     fun theFaceDidntTakeWhatTheWatchGot() {
         // #244: Garmin Connect delivered the reading of a minute ago, but the face's report since still has one of 6 min
         val w = watch.copy(delivered = ago(1), reading = ago(1))
-        val report = AuraReport(now, emptyList(), drawn = ago(6), drawnSince = ago(3))
+        val report = LinkReport(now, emptyList(), drawn = ago(6), drawnSince = ago(3))
         val s = base.copy(watches = listOf(w), report = report)
         assertEquals(WatchLine(true, ago(6), WatchLine.Problem.NotTaking), line(w, s))
         // the row says what the face has, not what was delivered
-        assertEquals(AuraStatus.Sent("Descent", ago(6)), of(s))
+        assertEquals(GarminStatus.Sent("Descent", ago(6)), of(s))
         // a report right after the delivery may not count it yet; a face one reading behind is fine
         assertEquals(WatchLine(true, ago(1), null), line(w, s.copy(report = report.copy(at = ago(1) + Duration.ofSeconds(10)))))
         assertEquals(null, line(w, s.copy(report = report.copy(drawn = ago(2) + Duration.ofSeconds(1)))).problem)
@@ -86,7 +86,7 @@ class GarminStatusTest {
 
     @Test
     fun stuckMessages() {
-        val fetching = { w: AuraWatch -> base.copy(watches = listOf(w), fetched = ago(3)) }
+        val fetching = { w: GarminWatch -> base.copy(watches = listOf(w), fetched = ago(3)) }
         // Garmin Connect ends its own stalls within minutes: still "loses messages"
         val failing = watch.copy(failed = ago(1), noAnswer = true, failingSince = ago(14))
         assertEquals(WatchLine.Problem.Slow, line(failing, fetching(failing)).problem)
@@ -102,12 +102,12 @@ class GarminStatusTest {
     @Test
     fun aWatchWithUnknownInstallStillCounts() {
         val w = watch.copy(installed = null, delivered = ago(2), reading = ago(2))
-        assertEquals(AuraStatus.Sent("Descent", ago(2)), of(base.copy(watches = listOf(w))))
+        assertEquals(GarminStatus.Sent("Descent", ago(2)), of(base.copy(watches = listOf(w))))
     }
 
     @Test
     fun theFacesReportCountsOnlyWhileOneWatchHasTheFace() {
-        val report = AuraReport(ago(1), emptyList(), drawn = ago(1), drawnSince = ago(4))
+        val report = LinkReport(ago(1), emptyList(), drawn = ago(1), drawnSince = ago(4))
         val w = watch.copy(delivered = ago(6), reading = ago(6))
         assertEquals(ago(1), line(w, base.copy(watches = listOf(w), report = report)).reading)
         // two watches with the face: the fetch doesn't say which one asked
@@ -129,7 +129,7 @@ class GarminStatusTest {
                 GarminApp.Field.id to AppLink(installed = false),
                 GarminApp.Field.beta to AppLink(installed = false),
             )
-        val w = AuraWatch.of(7, "Descent", true, links)
+        val w = GarminWatch.of(7, "Descent", true, links)
         // the watch line counts any Sukrara app
         assertEquals(true, w.installed)
         assertEquals(ago(1), w.delivered)
@@ -139,12 +139,12 @@ class GarminStatusTest {
         assertEquals(AppLine.NotInstalled, AppLine.of(GarminApp.Field, s, now))
         assertEquals(AppLine.Idle, AppLine.of(GarminApp.App, s.copy(fetchedBy = emptyMap()), now))
         // the field's beta alone is the field
-        val beta = AuraWatch.of(7, "Descent", true, links + (GarminApp.Field.beta to AppLink(installed = true)))
+        val beta = GarminWatch.of(7, "Descent", true, links + (GarminApp.Field.beta to AppLink(installed = true)))
         assertEquals(true, beta.has(GarminApp.Field))
         assertEquals(AppLine.Idle, AppLine.of(GarminApp.Field, base.copy(watches = listOf(beta)), now))
         // no app gets messages for a while: the watch is stuck
         val stuck =
-            AuraWatch.of(
+            GarminWatch.of(
                 7,
                 "Descent",
                 true,
@@ -195,8 +195,8 @@ class GarminStatusTest {
     @Test
     fun eachWatchHasItsOwnRows() {
         fun links(app: AppLink) = mapOf(GarminApp.App.id to app, GarminApp.Aura.id to AppLink(installed = true, delivered = ago(4)))
-        val descent = AuraWatch.of(7, "Descent", true, links(AppLink(installed = true, delivered = ago(1))))
-        val venu = AuraWatch.of(8, "Venu 3", true, links(AppLink(installed = false)) + (GarminApp.App.beta to AppLink(installed = false)))
+        val descent = GarminWatch.of(7, "Descent", true, links(AppLink(installed = true, delivered = ago(1))))
+        val venu = GarminWatch.of(8, "Venu 3", true, links(AppLink(installed = false)) + (GarminApp.App.beta to AppLink(installed = false)))
         val s = base.copy(watches = listOf(descent, venu), fetchedBy = mapOf(GarminApp.App to ago(2), GarminApp.Aura to ago(3)))
         // the watch app only on the Descent: its fetch is the Descent's; none lately: what reached it
         assertEquals(AppLine.InUse(ago(2)), AppLine.on(GarminApp.App, descent, s, now))
@@ -235,12 +235,12 @@ class GarminStatusTest {
                 reading = ago(0),
                 deliveries = (6 downTo 0).map { Delivery(ago(it.toLong()), ago(it.toLong())) },
             )
-        val w = AuraWatch.of(7, "Descent", true, mapOf(GarminApp.Aura.id to face))
+        val w = GarminWatch.of(7, "Descent", true, mapOf(GarminApp.Aura.id to face))
         // the report of 1 min ago still has the reading of 8 min: the delivery of 2 min ago (before it) carried a newer one
-        val report = AuraReport(ago(1), emptyList(), drawn = ago(8), drawnSince = ago(3))
+        val report = LinkReport(ago(1), emptyList(), drawn = ago(8), drawnSince = ago(3))
         val s = base.copy(watches = listOf(w), report = report)
         assertEquals(WatchLine(true, ago(8), WatchLine.Problem.NotTaking), line(w, s))
-        assertEquals(AuraStatus.Sent("Descent", ago(8)), of(s))
+        assertEquals(GarminStatus.Sent("Descent", ago(8)), of(s))
         // the face has what was delivered before its report: fine
         assertEquals(null, line(w, s.copy(report = report.copy(drawn = ago(2)))).problem)
     }
@@ -248,19 +248,19 @@ class GarminStatusTest {
     @Test
     fun anAppThatRejectsEveryMessageNeedsUpdating() {
         // a face of another payload version keeps the older payload for every push and fetch (px / fx): say so
-        val runs = listOf(AuraRun("px", 1, 0, 0), AuraRun("fx", 2, 0, 0), AuraRun("S", 3, 1, 0), AuraRun("px", 4, 0, 0))
+        val runs = listOf(LinkRun("px", 1, 0, 0), LinkRun("fx", 2, 0, 0), LinkRun("S", 3, 1, 0), LinkRun("px", 4, 0, 0))
         val w = watch.copy(delivered = ago(1), reading = ago(1))
-        val s = base.copy(watches = listOf(w), report = AuraReport(now, runs, drawn = null, drawnSince = null))
+        val s = base.copy(watches = listOf(w), report = LinkReport(now, runs, drawn = null, drawnSince = null))
         assertTrue(s.report!!.rejected)
         assertEquals(WatchLine(true, null, WatchLine.Problem.Outdated), line(w, s))
-        assertEquals(AuraStatus.Outdated("Descent"), of(s))
+        assertEquals(GarminStatus.Outdated("Descent"), of(s))
         assertTrue(of(s).isProblem())
         // one message it took: not all rejects
-        val took = s.copy(report = s.report!!.copy(runs = runs + AuraRun("p", 5, 5, ago(1).epochSecond)))
+        val took = s.copy(report = s.report!!.copy(runs = runs + LinkRun("p", 5, 5, ago(1).epochSecond)))
         assertEquals(null, line(w, took).problem)
         // the same rule for the app and the field (their own reports)
-        val app = AuraWatch.of(7, "Descent", true, mapOf(GarminApp.App.id to AppLink(installed = true, delivered = ago(1))))
-        val r = AuraReport(now, runs, drawn = null, drawnSince = null)
+        val app = GarminWatch.of(7, "Descent", true, mapOf(GarminApp.App.id to AppLink(installed = true, delivered = ago(1))))
+        val r = LinkReport(now, runs, drawn = null, drawnSince = null)
         assertEquals(
             AppLine.Outdated,
             AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app), reports = mapOf(GarminApp.App to r)), now),

@@ -15,7 +15,7 @@ and the glucose notification decide it (SPEC ground rule 1). Why it travels the 
 | `mutes.json` | mutes from the watch: request → the phone's answer → the alert runtime's action |
 | `schema.json` | the payload's JSON Schema, one branch per profile |
 
-Run by `AuraPayloadFixtureTest` (Android `:integrations`: phone → payload for every profile, through the wire format
+Run by `WatchPayloadFixtureTest` (Android `:integrations`: phone → payload for every profile, through the wire format
 and back, Garmin's bytes), `GarminAppsTest` (the registry against the phone's `GarminApp`), `WatchWritesTest` (the
 entries, undo and mute endpoints) and `WatchEntryTest` (`:feature:treatments`: the phone's entry and delete paths), and `LinkTest` (the watch's
 shared link, `apps/garmin/tools/link-test.sh <app>`: payload → the face's inputs, each app its own profile; the cases
@@ -58,13 +58,13 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the ap
    **never with `key`**. The port is open only while a watch is known to have any Sukrara app (Garmin Connect says it
    is installed, or a push reached it), loopback only, and the main switch closes it.
 
-The fetch carries the app's own report back as its query (`apps/garmin/shared/link/Link.mc` `saveReport`, Android `AuraReport.parse`):
+The fetch carries the app's own report back as its query (`apps/garmin/shared/link/Link.mc` `saveReport`, Android `LinkReport.parse`):
 `r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `p<n>` a push that took n older waiting messages with it, `f` a fetch,
 `e<code>` a failed fetch, `s` appended when it picked it up from storage (Garmin didn't hand it over), `x` appended when it kept the older payload; `at` the watch clock; the last 10, oldest
 first) and `d` the reading it draws (its time on the watch clock) and since when. Times only, never a value. The
 app adds `&w=<w>`, the watch's id from its last push: the phone answers with that watch's own display settings (a
 fetch without `w`, before any push arrived: the one watch with the app, else the phone app's own values). The
-phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with each push's app, `sent` and result).
+phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Garmin`, with each push's app, `sent` and result).
 
 ## Profiles
 
