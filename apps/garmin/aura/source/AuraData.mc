@@ -65,38 +65,32 @@ module AuraData {
             return _cache;
         }
         var skew = Link.skew;
-        var x = Link.inputs(now) as Dictionary;
+        var x = Link.inputs(now) as SukraraFace.Reading;
         var r = new AuraReading();
-        var g = p.get("g");
-        if (g instanceof Dictionary) {
-            r.mgdl = g.get("v") as Number;
-            r.readAt = (g.get("t") as Number) - skew;
-            var rate = g.get("rate");
-            r.rate = rate != null ? (rate as Numeric).toFloat() : null;
-            r.doubled = x.get("double") as Boolean;
-            var h = p.get("hist");
-            r.history = h instanceof Array && h.size() > 0 ? h : null;
+        var g = x.mgdl;
+        if (g != null) {
+            r.mgdl = g;
+            r.readAt = x.readAt;
+            r.rate = x.rate;
+            r.doubled = x.doubled;
+            r.history = x.history.size() > 0 ? x.history : null;
         }
-        r.status = x.get("status") as String;
-        var st = p.get("st");
-        var left = x.get("left");
-        r.statusUntil = left instanceof Number ? ((st as Dictionary).get("until") as Number) - skew : null;
-        var last = Link.treatment(p, now + skew);
-        if (last != null) {
-            var items = last.get("items") as Array;
+        r.status = x.status;
+        r.statusUntil = x.left != null ? now + (x.left as Number) : null;
+        var items = x.last;
+        if (items != null) {
             var out = [] as Array;
             for (var i = 0; i < items.size(); i++) {
                 var it = items[i] as Dictionary;
                 out.add([it.get("k"), (it.get("a") as Numeric).toFloat()]);
             }
             r.lastItems = out;
-            r.lastAt = (last.get("t") as Number) - skew;
+            r.lastAt = x.lastAt;
         }
-        var sensor = x.get("sensor") as String;
-        var age = x.get("age");
-        if (sensor.equals("ended") && age != null && (age as Float) <= 5.0) {
+        var sensor = x.sensor;
+        if (sensor.equals("ended") && g != null && x.ageS <= SukraraFace.STRUCK_S) {
             sensor = "endedSending"; // Sukrara: ended with a fresh or late reading keeps the value, "Ended" beside it
-        } else if (sensor.equals("ok") && !(g instanceof Dictionary)) {
+        } else if (sensor.equals("ok") && g == null) {
             sensor = "none"; // monitoring, but no reading ever: "No readings"
         }
         r.sensor = sensor;
@@ -111,16 +105,13 @@ module AuraData {
             r.warmFrom = (s.get("start") as Number) - skew;
             r.warmUntil = (s.get("ready") as Number) - skew;
         }
-        r.unit = p.get("unit") as String;
-        var bands = p.get("bands");
-        if (bands instanceof Array && bands.size() == 6) {
-            r.limits = bands;
-        }
-        r.tir = x.get("tir") as Number?;
+        r.unit = x.unit;
+        r.limits = x.bands;
+        r.tir = x.tir;
         _cache = r;
         _cacheAt = now;
         _cacheOf = p;
-        if (g instanceof Dictionary) {
+        if (g != null) {
             Link.drawn(r.readAt, now);
         }
         return r;

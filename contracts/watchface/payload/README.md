@@ -13,14 +13,17 @@ and the glucose notification decide it (SPEC ground rule 1). Why it travels the 
 | `entries.json` | entries from the watch: request → the phone's answer → what it stores |
 | `undos.json` | *Undo* of an entry the watch logged: request → the phone's answer → the entry its delete removes |
 | `mutes.json` | mutes from the watch: request → the phone's answer → the alert runtime's action |
-| `schema.json` | the payload's JSON Schema, one branch per profile |
+| `schema.json` | the payload's JSON Schema (2020-12), one branch per profile; published at its `$id`, [sukrara.mauri.app/schemas/watch-payload.json](https://sukrara.mauri.app/schemas/watch-payload.json) (the website mounts this file) |
 
 Run by `WatchPayloadFixtureTest` (Android `:integrations`: phone → payload for every profile, through the wire format
-and back, Garmin's bytes), `GarminAppsTest` (the registry against the phone's `GarminApp`), `WatchWritesTest` (the
+and back, Garmin's bytes; every payload the phone builds and every case's against `schema.json`, and none of
+`versions.ignored`), `GarminLinkTest` (every push and every fetch's answer against `schema.json`), `GarminAppsTest` (the registry against the phone's `GarminApp`), `WatchWritesTest` (the
 entries, undo and mute endpoints) and `WatchEntryTest` (`:feature:treatments`: the phone's entry and delete paths), and `LinkTest` (the watch's
-shared link, `apps/garmin/tools/link-test.sh <app>`: payload → the face's inputs, each app its own profile; the cases
-reach Monkey C through `apps/garmin/tools/link_cases.py`, whose `--check` also holds every manifest's id and type and
-every fetch path to `apps.json`; `apps/garmin/build.sh` takes the beta ids from it). Parity group
+shared link, `apps/garmin/tools/link-test.sh <app>`: payload → the face's inputs, each app its own profile), the
+SukraraFace barrel's tests (`apps/garmin/tools/link-test.sh sdk`: the same cases the way another face reads them;
+`apps/garmin/sdk`, the one implementation of *On the watch* that Sukrara's apps compile too). The cases reach Monkey C
+through `apps/garmin/tools/link_cases.py`, whose `--check` also validates them against `schema.json` and holds every
+manifest's id and type and every fetch path to `apps.json`; `apps/garmin/build.sh` takes the beta ids from it. Parity group
 `watchface-link`.
 
 ## The apps
@@ -137,7 +140,9 @@ The app only:
 ## On the watch
 
 Each app keeps its newest payload (by `sent`) in storage, so a restart shows it at once, aging. Every draw it works out
-its inputs from the payload and the watch clock `now` (`cases.json` `watch` checks the face's):
+its inputs from the payload and the watch clock `now` (`cases.json` `watch` checks the face's). One implementation,
+the SukraraFace barrel's `SukraraFace.Reading` (`apps/garmin/sdk/source/read`), which every Sukrara app compiles and
+other faces use as the barrel:
 
 - **Clock skew**: on receipt, `skew = max(0, sent − now)` (the watch clock behind the phone's; kept with the payload).
   `age = max(0, now + skew − g.t)`. A watch clock ahead only makes readings older, never younger.
@@ -270,7 +275,8 @@ The face profile is open: **any Connect IQ watch face can read it** with the sam
 `GET http://127.0.0.1:17582/sukrara/face` from its background every 5 minutes (`Communications.makeWebRequest`,
 `HTTP_RESPONSE_CONTENT_TYPE_JSON`; Garmin Connect makes the request on the phone, plain http only to loopback). The
 answer is the face profile above as JSON, `sent` = now; the face reads it as *On the watch* says (the clock skew, the
-freshness steps, never an old value as current, `LO` / `HI`, the countdowns). The query is optional: `r` and `d` are
+freshness steps, never an old value as current, `LO` / `HI`, the countdowns): the SukraraFace barrel (`apps/garmin/sdk`,
+0BSD) does all of that for it. The query is optional: `r` and `d` are
 Sukrara's own report, and a face that sends none is simply not shown on the phone. Developer page:
 [sukrara.mauri.app/developers/garmin-faces/](https://sukrara.mauri.app/developers/garmin-faces/).
 
@@ -293,4 +299,5 @@ an older app would misread it (CLAUDE.md: the wire formats are versioned; every 
 an older app ignores needs no raise. Version 4 (#199): the profiles and `p`, the app's and the data field's keys, the
 entries, undo and mute endpoints; the face's keys as in version 3. Version 5 (#199): the face profile is `face` (was
 `aura`) at `GET /sukrara/face` (was `/sukrara/aura`), the one profile of every watch face, Sukrara's or another's;
-its keys as in version 4. Another face reads `v` too: a raise is said on the developer page.
+its keys as in version 4. Another face reads `v` too: a raise is said on the developer page, and the SukraraFace
+barrel's major version (`apps/garmin/sdk/manifest.xml`, `SukraraFace.VERSION`) is the new `v`.

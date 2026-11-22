@@ -11,7 +11,7 @@ S.dfSlot, S.dfAlert), a regression test.
         (app.js drawing that same input). Writes OUTDIR/sim, ref, diff, pairs (simulator | reference) and report.txt.
         Fails (exit 1) when a case differs in more pixels than its budget (contracts/watchface/field/expect.json), when
         its input differs from the one the reference was drawn from, or when a case is missing; the build (cases.py) stops
-        when a state's payload version isn't the apps' VERSION (shared/link/Link.mc).
+        when a state's payload version isn't the apps' VERSION (SukraraFace.VERSION, sdk/source/read/SukraraFace.mc).
         --update: draws the references from this run's inputs (headless Chrome; set CHROME to its binary), copies them
         to docs/img/field/ref/<device>/ with the inputs, and sets each budget to the run's count + 25 % + 40 px. Look
         at the pairs before committing them.

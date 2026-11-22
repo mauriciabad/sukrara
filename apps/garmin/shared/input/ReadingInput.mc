@@ -42,7 +42,7 @@ module Readings {
         if (b instanceof Array && b.size() == 6) {
             r.bands = b;
         }
-        r.status = x.get("status") as String;
+        r.status = x.status;
         var ring = p.get("ring");
         if (ring instanceof Array) {
             r.ring = ring;
@@ -54,7 +54,7 @@ module Readings {
             r.ageS = now > r.readAt ? now - r.readAt : 0;
             var deg = g.get("deg");
             r.deg = deg != null ? (deg as Numeric).toFloat() : null;
-            r.doubled = x.get("double") as Boolean;
+            r.doubled = x.doubled;
             var h = p.get("hist");
             if (h instanceof Array) {
                 r.history = h;

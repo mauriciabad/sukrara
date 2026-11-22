@@ -4,7 +4,7 @@
 <!-- SPDX-License-Identifier: 0BSD -->
 <!-- The sample watch face that reads Sukrara (sukrara.mauri.app/developers/garmin-faces/). Your face has its own id
      (the Connect IQ SDK's New Project makes one) and its own watches: Sukrara answers any face. Background and
-     Communications are what the fetch needs. -->
+     Communications are what the fetch needs; SukraraFace is the barrel that makes it (../sdk). -->
 <iq:manifest version="3" xmlns:iq="http://www.garmin.com/xml/connectiq">
     <iq:application id="164ee485-2583-4e21-9472-fdc18412c0c3" type="watchface" name="@Strings.AppName" entry="SampleApp" launcherIcon="@Drawables.LauncherIcon" minApiLevel="3.2.0" version="1.0.0">
         <iq:products>
@@ -17,6 +17,8 @@
         <iq:languages>
             <iq:language>eng</iq:language>
         </iq:languages>
-        <iq:barrels/>
+        <iq:barrels>
+            <iq:depends name="SukraraFace" version="5.0.0"/>
+        </iq:barrels>
     </iq:application>
 </iq:manifest>

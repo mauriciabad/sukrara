@@ -1,0 +1,9 @@
+# SukraraFace — https://sukrara.mauri.app/developers/garmin-faces/
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: 0BSD
+# SukraraFace, the Monkey Barrel that reads Sukrara for a watch face (apps/garmin/build.sh sdk → bin/SukraraFace.barrel),
+# strictly type-checked so a face with any type-check level can use it.
+# Sukrara's own apps compile source/read themselves (apps/garmin/README.md › Shared).
+project.manifest = manifest.xml
+project.typecheck = 3
+base.sourcePath = source

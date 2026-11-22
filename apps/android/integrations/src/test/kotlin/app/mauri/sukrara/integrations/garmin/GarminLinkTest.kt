@@ -38,6 +38,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -300,6 +301,12 @@ class GarminLinkTest {
             assertTrue(link.answer(HttpRequest("GET", "sukrara/field", emptyMap(), emptyMap())).body.contains("\"p\":\"field\""))
             // every watch face, Sukrara's or another's, fetches the one face profile
             assertTrue(link.answer(HttpRequest("GET", "sukrara/face", emptyMap(), emptyMap())).body.contains("\"p\":\"face\""))
+            // every push and every fetch's answer as schema.json describes it
+            port.sent.forEach { PayloadSchema.assertValid("the push of ${it["p"]}", GarminLink.json(it)) }
+            for (path in listOf("sukrara/face", "sukrara/app", "sukrara/field")) {
+                val body = link.answer(HttpRequest("GET", path, emptyMap(), emptyMap())).body
+                PayloadSchema.assertValid("the fetch of $path", Json.parseToJsonElement(body))
+            }
             assertEquals(HttpAnswer.NOT_FOUND, link.answer(HttpRequest("GET", "sukrara/aura", emptyMap(), emptyMap())))
             assertEquals(HttpAnswer.NOT_FOUND, link.answer(HttpRequest("GET", "sukrara/other", emptyMap(), emptyMap())))
             link.stop()

@@ -207,9 +207,9 @@ class AppCasesView extends WatchUi.View {
             AppMute.done(g, "bellOff", AppMath.pal("note"), AppMute.title(side), AppMute.doneLine(min, now), left);
             xs = {"title" => AppMute.title(side), "line" => AppMute.doneLine(min, now)};
         } else if (scr.equals("muted")) {
-            var x = Link.inputs(now) as Dictionary;
-            var s = x["side"] instanceof String ? x["side"] as String : "all";
-            var line = AppMute.leftLine(x["left"], now);
+            var x = Link.inputs(now) as SukraraFace.Reading;
+            var s = x.side != null ? x.side as String : "all";
+            var line = AppMute.leftLine(x.left, now);
             AppMute.muted(g, s, line, sel);
             xs = {"title" => AppMute.title(s), "line" => line, "sel" => sel, "foot" => s.equals("all")};
         } else {

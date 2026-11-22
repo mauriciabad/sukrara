@@ -6,46 +6,9 @@ import Toybox.Lang;
 import Toybox.Test;
 
 // contracts/watchface/payload on the watch, in the shared link (apps/garmin/shared/link): every case's payload,
-// received at a watch time, gives the inputs the case expects at each later watch time (Link.inputs); the order rule,
-// the hand-over, the push queue. Built into an app's test build (its link-test.jungle): apps/garmin/tools/link-test.sh.
-(:test)
-module LinkTest {
-    function close(a, b) as Boolean {
-        if (a == null || b == null) {
-            return a == null && b == null;
-        }
-        if (a instanceof String || b instanceof String || a instanceof Boolean || b instanceof Boolean) {
-            return a.equals(b);
-        }
-        if (a instanceof Array) {
-            if (!(b instanceof Array) || a.size() != b.size()) {
-                return false;
-            }
-            for (var i = 0; i < a.size(); i++) {
-                if (!close(a[i], b[i])) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        // [a] the expectation: a dictionary checks the keys it names (a `last` item's own t and m: README "Payload")
-        if (a instanceof Dictionary) {
-            if (!(b instanceof Dictionary)) {
-                return false;
-            }
-            var keys = a.keys();
-            for (var i = 0; i < keys.size(); i++) {
-                if (!close(a.get(keys[i]), b.get(keys[i]))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        var d = (a as Numeric).toDouble() - (b as Numeric).toDouble();
-        return d < 0.01 && d > -0.01;
-    }
-}
-
+// received at a watch time, gives the inputs the case expects at each later watch time (Link.inputs, the SukraraFace
+// barrel's Reading, compared by its tests' SukraraFaceExpect); the order rule, the hand-over, the push queue. Built into
+// an app's test build (its link-test.jungle): apps/garmin/tools/link-test.sh.
 // the face's cases: what it makes of each payload at each watch time (the app and the field: linkOwnProfile)
 (:test)
 function linkEveryCase(logger as Logger) as Boolean {
@@ -53,26 +16,18 @@ function linkEveryCase(logger as Logger) as Boolean {
         return true;
     }
     var ok = true;
-    var cases = LinkCases.cases();
+    var cases = SukraraFaceCases.cases();
     for (var c = 0; c < cases.size(); c++) {
         var k = cases[c] as Dictionary;
         var checks = k.get("watch") as Array;
         for (var w = 0; w < checks.size(); w++) {
             var check = checks[w] as Dictionary;
             var received = check.get("received");
-            var at = LinkCases.NOW + (check.get("at") as Number);
+            var at = SukraraFaceCases.NOW + (check.get("at") as Number);
             Link.reset();
-            Link.accept(k.get("payload"), LinkCases.NOW + (received == null ? 0 : received as Number));
-            var x = Link.inputs(at) as Dictionary;
-            var expect = check.get("expect") as Dictionary;
-            var keys = expect.keys();
-            for (var i = 0; i < keys.size(); i++) {
-                var got = x.get(keys[i]);
-                if (!LinkTest.close(expect.get(keys[i]), got)) {
-                    logger.error(k.get("name") + " @" + check.get("at") + " " + keys[i] + ": expected " + expect.get(keys[i]) + ", got " + got);
-                    ok = false;
-                }
-            }
+            Link.accept(k.get("payload"), SukraraFaceCases.NOW + (received == null ? 0 : received as Number));
+            var x = SukraraFaceExpect.inputs(Link.inputs(at) as SukraraFace.Reading, Link.skew);
+            ok = SukraraFaceExpect.check(k.get("name") + " @" + check.get("at"), check.get("expect") as Dictionary, x, logger) && ok;
         }
     }
     return ok;
@@ -81,13 +36,13 @@ function linkEveryCase(logger as Logger) as Boolean {
 (:test)
 function linkKeepsTheNewest(logger as Logger) as Boolean {
     var ok = true;
-    var older = LinkCases.older();
+    var older = SukraraFaceCases.older();
     for (var i = 0; i < older.size(); i++) {
         var o = older[i] as Dictionary;
         Link.reset();
         var stored = o.get("stored") as Number;
-        Link.accept({"v" => Link.VERSION, "p" => Link.PROFILE, "sent" => stored}, stored);
-        Link.accept({"v" => Link.VERSION, "p" => Link.PROFILE, "sent" => o.get("incoming")}, o.get("watch") as Number);
+        Link.accept({"v" => SukraraFace.VERSION, "p" => Link.PROFILE, "sent" => stored}, stored);
+        Link.accept({"v" => SukraraFace.VERSION, "p" => Link.PROFILE, "sent" => o.get("incoming")}, o.get("watch") as Number);
         var want = "stored".equals(o.get("keep")) ? stored : o.get("incoming");
         var got = (Link.payload() as Dictionary).get("sent");
         if (got != want) {
@@ -96,14 +51,14 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
         }
     }
     // the list is the face's: another app skips what is its own profile there (it reads it, linkOwnProfile)
-    var ignored = LinkCases.ignored();
+    var ignored = SukraraFaceCases.ignored();
     for (var i = 0; i < ignored.size(); i++) {
         var x = ignored[i];
         if (x instanceof Dictionary && Link.PROFILE.equals(x.get("p")) && !Link.PROFILE.equals("face")) {
             continue;
         }
         Link.reset();
-        if (Link.accept(ignored[i], LinkCases.NOW)) {
+        if (Link.accept(ignored[i], SukraraFaceCases.NOW)) {
             logger.error("accepted " + ignored[i]);
             ok = false;
         }
@@ -115,18 +70,18 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
 // draw), and the pickup brings what Garmin didn't hand over (#244).
 (:test)
 function linkHandOverCountsOnce(logger as Logger) as Boolean {
-    var now = LinkCases.NOW;
+    var now = SukraraFaceCases.NOW;
     Link.reset();
     // the report's runs from an earlier run of the tests (the simulator keeps the app's storage)
     Application.Storage.deleteValue(Link.REPORT + "Runs");
-    var a = {"k" => "push", "d" => {"v" => Link.VERSION, "p" => Link.PROFILE, "sent" => now}, "n" => 0, "id" => "a"};
+    var a = {"k" => "push", "d" => {"v" => SukraraFace.VERSION, "p" => Link.PROFILE, "sent" => now}, "n" => 0, "id" => "a"};
     Application.Storage.setValue(LinkBackground.HANDOFF, a);
     Test.assertMessage(Link.take(a, now, false), "Garmin's hand-over");
     Link.pickUp(now + 20);
     var runs = Link.stored("Runs");
     Test.assertEqualMessage(runs.size(), 1, "the same run from storage doesn't count again");
     // Garmin doesn't hand over the next run: the next draw picks it up from storage, once
-    var b = {"k" => "push", "d" => {"v" => Link.VERSION, "p" => Link.PROFILE, "sent" => now + 60}, "n" => 0, "id" => "b"};
+    var b = {"k" => "push", "d" => {"v" => SukraraFace.VERSION, "p" => Link.PROFILE, "sent" => now + 60}, "n" => 0, "id" => "b"};
     Application.Storage.setValue(LinkBackground.HANDOFF, b);
     Link.pickUp(now + 65);
     Test.assertEqualMessage((Link.payload() as Dictionary).get("sent"), now + 60, "picked up");
@@ -155,7 +110,7 @@ function linkNewestOfTheQueue(logger as Logger) as Boolean {
 (:test)
 function linkOwnProfile(logger as Logger) as Boolean {
     var ok = true;
-    var all = {"face" => LinkCases.cases(), "app" => LinkCases.app(), "field" => LinkCases.field()};
+    var all = {"face" => SukraraFaceCases.cases(), "app" => SukraraFaceCases.app(), "field" => SukraraFaceCases.field()};
     var profiles = all.keys();
     for (var p = 0; p < profiles.size(); p++) {
         var list = all.get(profiles[p]) as Array;

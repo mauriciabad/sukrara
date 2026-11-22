@@ -25,7 +25,7 @@ function inputValueAndFreshness(logger as Logger) as Boolean {
 
 (:test)
 function inputFromOwnProfile(logger as Logger) as Boolean {
-    var list = (Link.PROFILE.equals("app") ? LinkCases.app() : LinkCases.field()) as Array;
+    var list = (Link.PROFILE.equals("app") ? SukraraFaceCases.app() : SukraraFaceCases.field()) as Array;
     for (var i = 0; i < list.size(); i++) {
         var p = (list[i] as Dictionary).get("payload") as Dictionary;
         var sent = p.get("sent") as Number;
@@ -47,7 +47,7 @@ function inputFromOwnProfile(logger as Logger) as Boolean {
         }
     }
     Link.reset();
-    var none = Readings.input(LinkCases.NOW);
+    var none = Readings.input(SukraraFaceCases.NOW);
     Test.assert(!none.payload);
     var m = new PlainModel();
     PlainLayout.fill(m, none, "none", "wait");

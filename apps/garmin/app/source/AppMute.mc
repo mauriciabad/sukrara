@@ -333,7 +333,7 @@ class MuteView extends WatchUi.View {
             AppMute.lengths(g, side, sel);
         } else if (state.equals("muted")) {
             var x = Link.inputs(now);
-            AppMute.muted(g, side, AppMute.leftLine(x != null ? x.get("left") : null, now), sel);
+            AppMute.muted(g, side, AppMute.leftLine(x != null ? x.left : null, now), sel);
         } else if (state.equals("sending")) {
             var col = act.equals("mute") || act.equals("unmute") ? AppMath.pal("note") : AppMath.pal(side);
             AppLog.sendingAs(g, col, AppMute.sendTitle(act, side, min), _spin);

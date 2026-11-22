@@ -72,6 +72,9 @@ class WatchPayloadFixtureTest {
                 val payload = build(c.getValue("phone").jsonObject, app)
                 val expected = c.getValue("payload")
                 assertSame(name, expected, payload)
+                // what the phone sends, and the case, match the schema developers read
+                PayloadSchema.assertValid(name, GarminLink.json(payload))
+                PayloadSchema.assertValid("$name (the case)", expected)
                 // through the wire format and back, as the watch reads it
                 assertSame("$name (encoded)", expected, MonkeyCDecode.decode(MonkeyC.encode(payload)))
             }
@@ -108,9 +111,32 @@ class WatchPayloadFixtureTest {
                             )
                     ),
             )
-        val p = build(heavy, WatchProfile.App) + ("key" to "0".repeat(64))
+        val p = build(heavy, WatchProfile.App) + ("key" to "0".repeat(64)) + ("w" to "3216549870")
+        // the push's own keys too
+        PayloadSchema.assertValid("a heavy day, pushed", GarminLink.json(p))
         val size = MonkeyC.encode(p).size
         assertTrue("$size bytes", size < 6 * 1024)
+    }
+
+    @Test
+    fun theSchemaRejectsWhatTheWatchIgnores() {
+        // cases.json's versions.ignored: every app ignores these, and the schema says none is a payload
+        for (x in file
+            .getValue("versions")
+            .jsonObject
+            .getValue("ignored")
+            .jsonArray) {
+            assertTrue("$x is valid", PayloadSchema.errors(x).isNotEmpty())
+        }
+        // the face and the field never carry the key (the fetch never does)
+        val face =
+            file
+                .getValue("cases")
+                .jsonArray[0]
+                .jsonObject
+                .getValue("payload")
+                .jsonObject
+        assertTrue(PayloadSchema.errors(JsonObject(face + ("key" to JsonPrimitive("0".repeat(64))))).isNotEmpty())
     }
 
     @Test

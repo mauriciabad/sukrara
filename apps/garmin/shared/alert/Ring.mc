@@ -16,7 +16,7 @@ module Ring {
             return out;
         }
         var g = p.get("g");
-        var fresh = g instanceof Dictionary && now + skew - (g.get("t") as Number) <= Glucose.STRUCK_S;
+        var fresh = g instanceof Dictionary && now + skew - (g.get("t") as Number) <= SukraraFace.STRUCK_S;
         var items = p.get("ring") as Array;
         for (var i = 0; i < items.size(); i++) {
             var it = items[i];

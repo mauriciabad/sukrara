@@ -35,6 +35,8 @@ libxposed = "102.0.0"
 zxingCpp = "3.1.1"
 junit = "4.13.2"
 robolectric = "4.17"
+# tests: payloads against contracts/watchface/payload/schema.json (JSON Schema 2020-12)
+jsonSchemaValidator = "3.0.9"
 roborazzi = "1.77.0"
 androidxTestCore = "1.7.0"
 spotless = "8.10.4"
@@ -96,6 +98,7 @@ zxing-core = { module = "com.google.zxing:core", version.ref = "zxing" }
 zxing-cpp = { module = "io.github.zxing-cpp:android", version.ref = "zxingCpp" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+json-schema-validator = { module = "com.networknt:json-schema-validator", version.ref = "jsonSchemaValidator" }
 roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = "roborazzi" }
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 compose-rules-ktlint = { module = "io.nlopez.compose.rules:ktlint", version.ref = "composeRules" }

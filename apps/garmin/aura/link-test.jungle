@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # The phone link's tests in the face (contracts/watchface/payload): the shared link's (../shared/test/link) and the
 # face's seam (test/). apps/garmin/tools/link-test.sh aura.
-base.sourcePath = source;../shared/link;../shared/test/link;test
+base.sourcePath = source;../shared/link;../sdk/source/read;../shared/test/link;../sdk/test/cases;../sdk/test/inputs;test

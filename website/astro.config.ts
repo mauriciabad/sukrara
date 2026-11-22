@@ -94,9 +94,11 @@ export default defineConfig({
 				]),
 			],
 		}),
-		// Files that stay where the repository keeps them: the reports' images and the brand's web icons.
+		// Files that stay where the repository keeps them: the reports' images, the brand's web icons and the Garmin watch
+		// payload's JSON Schema (its $id; docs/GARMIN-FACES.md).
 		mount({
 			'/img/': '../docs/img/',
+			'/schemas/watch-payload.json': '../contracts/watchface/payload/schema.json',
 			'/favicon.svg': '../assets/brand/sukrara/web/favicon.svg',
 			'/favicon-32.png': '../assets/brand/sukrara/web/favicon-32.png',
 			'/apple-touch-icon.png': '../assets/brand/sukrara/web/apple-touch-icon.png',

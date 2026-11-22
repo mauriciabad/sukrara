@@ -51,7 +51,7 @@ module Slots {
             return "---";
         }
         var x = Link.inputs(now);
-        var s = x != null ? x.get("sensor") : null;
+        var s = x != null ? x.sensor : null;
         if ("warmup".equals(s) || "almost".equals(s)) {
             return "---";
         }
@@ -132,7 +132,7 @@ module Slots {
         if (p == null) {
             return null;
         }
-        var step = Link.treatment(p, now + Link.skew);
+        var step = SukraraFace.treatment(p, now + Link.skew);
         var items = step != null ? step.get("items") : null;
         return items instanceof Array && items.size() > 0 ? items[0] as Dictionary : null;
     }

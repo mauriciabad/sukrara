@@ -9,21 +9,11 @@ import Toybox.Math;
 // - value: in the person's unit (contracts/watchface/payload "unit": mg/dL ÷ 18.0182, one decimal; < 40 = LO, > 400 = HI)
 // - the freshness steps (contracts/graph/freshness): until 90 s the value alone; then its age; from 5 min struck
 //   through and grey without the trend; from 20 min "No readings"; from 3 h no chart.
+// Both are the SukraraFace barrel's (apps/garmin/sdk/source/read), the one implementation every watch face shares.
 (:background :glance)
 module Glucose {
-    const LATE_S = 90;
-    const STRUCK_S = 300;
-    const GONE_S = 1200;
-    const NO_CHART_S = 10800;
-
     function value(mgdl as Number, unit as String) as String {
-        if (mgdl < 40) {
-            return "LO";
-        }
-        if (mgdl > 400) {
-            return "HI";
-        }
-        return unit.equals("mmol") ? (mgdl / 18.0182).format("%.1f") : mgdl.toString();
+        return SukraraFace.text(mgdl, unit);
     }
 
     // mg/dL [v] in the person's unit as a number (mmol/L to one decimal): complications, the activity's file
@@ -33,21 +23,21 @@ module Glucose {
 
     // the value is drawn at [ageS] (s since the reading); false = "No readings"
     function shown(ageS as Number) as Boolean {
-        return ageS <= GONE_S;
+        return ageS <= SukraraFace.GONE_S;
     }
 
     // struck through and grey, no trend
     function struck(ageS as Number) as Boolean {
-        return ageS > STRUCK_S;
+        return ageS > SukraraFace.STRUCK_S;
     }
 
     // the reading's age is shown
     function aged(ageS as Number) as Boolean {
-        return ageS > LATE_S;
+        return ageS > SukraraFace.LATE_S;
     }
 
     function chart(ageS as Number) as Boolean {
-        return ageS <= NO_CHART_S;
+        return ageS <= SukraraFace.NO_CHART_S;
     }
 
     // the age as the person reads it: whole minutes, "<1 min" under one

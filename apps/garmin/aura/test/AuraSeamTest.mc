@@ -4,11 +4,11 @@
 import Toybox.Lang;
 import Toybox.Test;
 
-// THE SEAM: what AuraData.current() hands the face, from the shared link's payload (LinkCases).
+// THE SEAM: what AuraData.current() hands the face, from the shared link's payload (SukraraFaceCases).
 (:test)
 function linkSeamReading(logger as Logger) as Boolean {
-    var cases = LinkCases.cases();
-    var now = LinkCases.NOW;
+    var cases = SukraraFaceCases.cases();
+    var now = SukraraFaceCases.NOW;
     Link.reset();
     AuraData._cache = null;
     Test.assert(AuraData.reading(now) == null);

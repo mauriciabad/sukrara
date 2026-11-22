@@ -468,10 +468,10 @@ def check_debug(ch, rep):
         elif GARMIN_JUNGLE.search(p):
             text = ch.blob(p) or ""
             if re.search(r"source-cases|build/cases|test", text) or \
-                    not re.search(r"(?m)^base\.sourcePath = source(;\.\./shared/[a-z]+)*$", text):
+                    not re.search(r"(?m)^base\.sourcePath = source(;\.\./shared/[a-z]+|;\.\./sdk/source/read)*$", text):
                 rep.add("FAIL", "debug", "%s must build source/ and shared folders only ('base.sourcePath = source;\n"
-                        "../shared/<folder>…': the default takes every folder, the debug case loader's source-cases/, the\n"
-                        "tests and build/ too)." % p)
+                        "../shared/<folder>…', and the SukraraFace barrel's ../sdk/source/read: the default takes every\n"
+                        "folder, the debug case loader's source-cases/, the tests and build/ too)." % p)
 
 
 # The docs that name debug commands (#111: they listed `cmd sensorEnd`, `--es stage`, … long after the code dropped them).

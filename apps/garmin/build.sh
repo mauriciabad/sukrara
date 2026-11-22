@@ -6,7 +6,8 @@
 # of the app's manifest.xml products (export builds every one; the others one, CIQ_DEVICE) and a JDK 17+.
 #   apps/garmin/build.sh <app> [<mode>]   <app>: aura (Sukrara Aura, the face), app (Sukrara, the watch app), field
 #                                         (Sukrara data field), sample (the sample face that reads Sukrara, for other
-#                                         developers: release and debug only); every output in apps/garmin/bin/<Name>…
+#                                         developers: release and debug only), sdk (SukraraFace, the barrel that reads
+#                                         Sukrara for a face: release and test only); every output in apps/garmin/bin/<Name>…
 #   release (default)  the release .prg (debug code compiled out)   → bin/<Name>.prg
 #   debug              the app with debug code                     → bin/<Name>-debug.prg
 #   export             the store package (monkeyc -e -r)            → bin/<Name>.iq
@@ -15,7 +16,11 @@
 #   cases | test       the debug case loader (every case of its cases.json in turn, printing its layout or input): the
 #                      picture diffs' build → bin/<Name>-cases.prg (aura/tools/garmin_test.py run, app/tools/app_test.py
 #                      run, field/tools/field_test.py run build and run it)
-# <Name>: SukraraAura, Sukrara, SukraraField, SukraraSample. Environment: CIQ_SDK (default: the SDK Manager's current SDK), CIQ_KEY
+#   sdk release        the barrel (barrelbuild, every product of sdk/manifest.xml, strictly type-checked)
+#                                                                   → bin/SukraraFace.barrel
+#   sdk test           the barrel's tests (barreltest: its source and sdk/test) → bin/SukraraFace-test.prg
+#                      (apps/garmin/tools/link-test.sh sdk runs it)
+# <Name>: SukraraAura, Sukrara, SukraraField, SukraraSample, SukraraFace. Environment: CIQ_SDK (default: the SDK Manager's current SDK), CIQ_KEY
 # (default ~/.connectiq/sukrara-developer-key.der), JAVA_HOME (default: Homebrew's openjdk@17 when present), CIQ_DEVICE
 # (default descentmk343mm).
 set -eu
@@ -30,7 +35,10 @@ case "$APP" in
   sample)
     NAME=SukraraSample
     case "$MODE" in release | debug) ;; *) echo "build.sh: the sample builds release or debug" >&2; exit 2 ;; esac ;;
-  *) echo "usage: build.sh <aura|app|field|sample> [release|debug|export|export-beta|cases|test]" >&2; exit 2 ;;
+  sdk)
+    NAME=SukraraFace
+    case "$MODE" in release | test) ;; *) echo "build.sh: the barrel builds release or test" >&2; exit 2 ;; esac ;;
+  *) echo "usage: build.sh <aura|app|field|sample|sdk> [release|debug|export|export-beta|cases|test]" >&2; exit 2 ;;
 esac
 DEVICE=${CIQ_DEVICE:-descentmk343mm}
 KEY=${CIQ_KEY:-$HOME/.connectiq/sukrara-developer-key.der}
@@ -47,6 +55,20 @@ fi
 [ -f "$KEY" ] || { echo "build.sh: no developer key at $KEY (docs/DEVELOPMENT.md › Garmin)" >&2; exit 2; }
 mkdir -p "$HERE/bin"
 cd "$HERE"
+if [ "$APP" = sdk ]; then
+  if [ "$MODE" = test ]; then
+    # the tests at the gradual level (the barrel's own source is strict: release)
+    "$CIQ_SDK/bin/barreltest" -o "bin/$NAME-test.prg" -f "sdk/monkey.jungle;sdk/test.jungle" -d "$DEVICE" -y "$KEY" -l 1 -w
+    echo "$HERE/bin/$NAME-test.prg"
+    exit 0
+  fi
+  # the SDK's barrelbuild (9.3.0) reads no device files unless their folder is named
+  DEVICES="$HOME/Library/Application Support/Garmin/ConnectIQ/Devices"
+  [ -d "$DEVICES" ] || DEVICES="$HOME/.Garmin/ConnectIQ/Devices" # Linux
+  "$CIQ_SDK/bin/barrelbuild" -o "bin/$NAME.barrel" -f sdk/monkey.jungle -w --override-devices-json "$DEVICES"
+  echo "$HERE/bin/$NAME.barrel"
+  exit 0
+fi
 JUNGLE=$APP/monkey.jungle
 case "$MODE" in
   release) OUT=bin/$NAME.prg; FLAGS="-r" ;;

@@ -4,4 +4,4 @@
 # The watch app's tests in the simulator: the phone link and the input (contracts/watchface/payload, contracts/graph/
 # freshness), the ring, and its own (test/: the outbox against entries.json / mutes.json, the complications, the expiry,
 # the alerts): apps/garmin/tools/link-test.sh app.
-base.sourcePath = source;../shared/link;../shared/input;../shared/format;../shared/plain;../shared/alert;../shared/test/link;../shared/test/input;../shared/test/alert;test
+base.sourcePath = source;../shared/link;../sdk/source/read;../shared/input;../shared/format;../shared/plain;../shared/alert;../shared/test/link;../sdk/test/cases;../sdk/test/inputs;../shared/test/input;../shared/test/alert;test

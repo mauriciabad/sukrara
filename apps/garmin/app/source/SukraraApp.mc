@@ -303,7 +303,7 @@ module AppNav {
     // Done, the flow goes back to page 1 (the pill says it).
     function mute(muted as Boolean) as Void {
         var x = Link.inputs(Time.now().value());
-        var s = x != null ? x.get("side") : null;
+        var s = x != null ? x.side : null;
         var v = new MuteView(muted && s instanceof String ? s : "all", muted ? "muted" : "lengths", "mute", 2);
         WatchUi.pushView(v, new MuteDelegate(v), WatchUi.SLIDE_LEFT);
     }

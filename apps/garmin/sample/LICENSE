@@ -14,4 +14,4 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 The rest of Sukrara is GPL-3.0-or-later (../../../LICENSE): only this folder,
-and the copy of SampleFace.mc on docs/GARMIN-FACES.md, are 0BSD.
+the SukraraFace barrel (../sdk) and their copies on docs/GARMIN-FACES.md are 0BSD.

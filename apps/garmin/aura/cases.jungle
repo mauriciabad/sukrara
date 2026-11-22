@@ -4,7 +4,7 @@
 # The debug case loader (build.sh aura cases): the face plus source-cases/ and the generated cases (tools/cases.py). Never a
 # release build: build.sh builds it without -r, and the release jungle (monkey.jungle) has none of these paths.
 project.manifest = manifest-cases.xml
-base.sourcePath = source;../shared/link;source-cases;build/cases/source
+base.sourcePath = source;../shared/link;../sdk/source/read;source-cases;build/cases/source
 base.resourcePath = resources;build/cases/resources
 project.typecheck = 1
 base.lang.spa = resources-spa

@@ -17,7 +17,7 @@ module SlotCases {
         for (var i = 0; i < 288; i++) {
             hist.add(i == 287 ? 110 : (i == 286 ? null : 100));
         }
-        return {"v" => Link.VERSION, "p" => "app", "sent" => T, "unit" => unit, "bands" => [55, 70, 140, 180, 250, 300],
+        return {"v" => SukraraFace.VERSION, "p" => "app", "sent" => T, "unit" => unit, "bands" => [55, 70, 140, 180, 250, 300],
             "g" => {"t" => T - ago, "v" => v, "rate" => 1.0, "band" => 1, "deg" => -45}, "hist" => hist, "st" => null,
             "sensor" => {"s" => "active"}, "ring" => [], "last" => null};
     }

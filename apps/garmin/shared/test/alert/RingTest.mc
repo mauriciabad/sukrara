@@ -13,8 +13,8 @@ function ringOnlyWhileFresh(logger as Logger) as Boolean {
     var nodata = {"k" => "no_data", "side" => "none", "relaxed" => false, "less" => false};
     var p = {"g" => {"t" => t, "v" => 62}, "ring" => [low, nodata]};
     Test.assertEqual((Ring.kinds(Ring.now(p, t + 60, 0))).toString(), (["low", "no_data"]).toString());
-    Test.assertEqualMessage((Ring.kinds(Ring.now(p, t + Glucose.STRUCK_S, 0))).toString(), (["low", "no_data"]).toString(), "5 min: still fresh");
-    Test.assertEqualMessage((Ring.kinds(Ring.now(p, t + Glucose.STRUCK_S + 1, 0))).toString(), (["no_data"]).toString(), "aged: only no data");
+    Test.assertEqualMessage((Ring.kinds(Ring.now(p, t + SukraraFace.STRUCK_S, 0))).toString(), (["low", "no_data"]).toString(), "5 min: still fresh");
+    Test.assertEqualMessage((Ring.kinds(Ring.now(p, t + SukraraFace.STRUCK_S + 1, 0))).toString(), (["no_data"]).toString(), "aged: only no data");
     Test.assertEqualMessage((Ring.kinds(Ring.now(p, t + 200, 120))).toString(), (["no_data"]).toString(), "the phone's clock ahead: older");
     Test.assertEqualMessage(Ring.now({"g" => null, "ring" => [nodata]}, t, 0).size(), 1, "no reading: no data rings");
     Test.assertEqualMessage(Ring.now({"g" => null, "ring" => [low]}, t, 0).size(), 0, "no reading: nothing else");

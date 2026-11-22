@@ -3,4 +3,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # The data field's own tests (test/), the phone link's and the input's (contracts/watchface/payload, contracts/graph/freshness):
 # apps/garmin/tools/link-test.sh field.
-base.sourcePath = source;test;../shared/link;../shared/input;../shared/format;../shared/plain;../shared/alert;../shared/test/link;../shared/test/input;../shared/test/alert
+base.sourcePath = source;test;../shared/link;../sdk/source/read;../shared/input;../shared/format;../shared/plain;../shared/alert;../shared/test/link;../sdk/test/cases;../sdk/test/inputs;../shared/test/input;../shared/test/alert

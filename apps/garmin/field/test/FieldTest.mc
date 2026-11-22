@@ -23,8 +23,8 @@ function fieldPlaceFromObscurity(logger as Logger) as Boolean {
 function fieldRecordsOnlyFresh(logger as Logger) as Boolean {
     var p = {"g" => {"t" => 1000, "v" => 175}};
     Test.assertEqual(FieldRecord.value(p, 1030, false), 175);
-    Test.assertEqual(FieldRecord.value(p, 1000 + Glucose.STRUCK_S, false), 175);
-    Test.assert(FieldRecord.value(p, 1001 + Glucose.STRUCK_S, false) == null);
+    Test.assertEqual(FieldRecord.value(p, 1000 + SukraraFace.STRUCK_S, false), 175);
+    Test.assert(FieldRecord.value(p, 1001 + SukraraFace.STRUCK_S, false) == null);
     Test.assertEqual(FieldRecord.value(p, 1030, true), 9.7);
     Test.assert(FieldRecord.value({"g" => null}, 1030, false) == null);
     Test.assert(FieldRecord.value(null, 1030, false) == null);

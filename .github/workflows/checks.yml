@@ -280,6 +280,10 @@ jobs:
       - name: The face's words are words.json's
         if: hashFiles('apps/garmin/aura/tools/garmin_test.py') != ''
         run: python3 apps/garmin/aura/tools/garmin_test.py words
+      # The link's generated cases and the apps' ids and fetch paths (cases.json against schema.json: the android job,
+      # WatchPayloadFixtureTest; here without jsonschema)
+      - name: The link's cases and the apps against apps.json
+        run: python3 apps/garmin/tools/link_cases.py --check
       - name: Release build (debug code compiled out)
         if: steps.sdk.outputs.ready == 'true'
         run: apps/garmin/build.sh aura release
@@ -300,6 +304,13 @@ jobs:
       - name: The sample face that reads Sukrara
         if: steps.sdk.outputs.ready == 'true'
         run: apps/garmin/build.sh sample release
+      # SukraraFace, the barrel other faces read Sukrara with (and whose source Sukrara's apps compile): the .barrel for
+      # every watch of its manifest, strictly type-checked, and its tests over cases.json in the simulator
+      - name: The SukraraFace barrel and its tests
+        if: steps.sdk.outputs.ready == 'true'
+        run: |
+          apps/garmin/build.sh sdk
+          xvfb-run -a -s "-screen 0 1280x1024x24" apps/garmin/tools/link-test.sh sdk
       # SPEC.md §10 on a fixed set of cases, so the gate stays inside its timeout (the full set takes 1–2 h: garmin-all):
       # the safety states, one case per dial, always-on, private, Spanish. Their numbers against expect.json (fails the
       # job), the battery label against every row, a screenshot of each diffed with docs/img/aura/ref (the artifact).

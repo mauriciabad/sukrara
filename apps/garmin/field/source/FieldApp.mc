@@ -175,7 +175,7 @@ module FieldRecord {
     // null
     function value(p as Dictionary?, t as Number, mmol as Boolean) as Numeric? {
         var g = p != null ? p.get("g") : null;
-        if (!(g instanceof Dictionary) || t - (g.get("t") as Number) > Glucose.STRUCK_S) {
+        if (!(g instanceof Dictionary) || t - (g.get("t") as Number) > SukraraFace.STRUCK_S) {
             return null;
         }
         var v = g.get("v") as Number;

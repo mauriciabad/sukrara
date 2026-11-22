@@ -10,7 +10,8 @@ Setup, keys, simulator and sideloading: [docs/DEVELOPMENT.md › Garmin](../../d
 | [`aura/`](aura/README.md) | **Sukrara Aura**, the watch face (`watchface`, the round 390 × 390 AMOLED watches) |
 | `app/` | **Sukrara**, the watch app (`watch-app`): the glance, the two pages, the one list, logging, mute, its own alert, the background, the four complications. The design's port ([`contracts/watchface/app/SPEC.md`](../../contracts/watchface/app/SPEC.md)), the 390 class so far |
 | `field/` | **Sukrara data field** (`datafield`): the value with Aura's sparkline or its arrow in any data-field slot, its own alert, glucose in the activity's file, its own background (the design's port: `contracts/watchface/app/SPEC.md` §9, §14) |
-| `sample/` | A sample watch face that reads Sukrara, for other developers: the example of [docs/GARMIN-FACES.md](../../docs/GARMIN-FACES.md) (the website's check holds the two equal; CI builds it). Not one of Sukrara's apps: not in `apps.json`, never released. 0BSD, so other faces can copy it (its LICENSE) |
+| `sample/` | A sample watch face that reads Sukrara with the SukraraFace barrel, for other developers: the example of [docs/GARMIN-FACES.md](../../docs/GARMIN-FACES.md) (the website's check holds the two equal; CI builds it). Not one of Sukrara's apps: not in `apps.json`, never released. 0BSD, so other faces can copy it (its LICENSE) |
+| `sdk/` | **SukraraFace**, the Monkey Barrel any watch face reads Sukrara with ([docs/GARMIN-FACES.md](../../docs/GARMIN-FACES.md)): `source/read` (the payload's rules: version, order, clock lead, `SukraraFace.Reading` at every draw; Sukrara's own apps compile it, below), `source/face` (a face's fetch, storage and reading), `test/` (the cases of `cases.json`, generated, and the barrel's tests). Version = the payload's `v` major; strictly type-checked; 0BSD (its LICENSE) |
 | `shared/` | What more than one app needs, compiled into each app that names it (below) |
 | `tools/` | The tools every app uses: `link-test.sh`, `link_cases.py`, `icons.py`, `launcher_icons.py`, `verify_prg.sh`, `sideload.py`, `simshot.py`, `fake_phone.py` |
 | `fonts/` | Atkinson Hyperlegible Next (OFL), the source of the face's atlases (`aura/tools/fonts.py`) |
@@ -22,19 +23,23 @@ size, the Venu Sq 2 and Venu X1), not yet the Instinct 3 Solar / Instinct E (1-b
 ## Shared
 
 `shared/` is one source tree, split by what an app uses, and each app's `monkey.jungle` names the folders it needs
-(`base.sourcePath = source;../shared/link;…`): no barrel (docs/47 §2). A folder an app doesn't name never lands in its
+(`base.sourcePath = source;../shared/link;…`): no barrel (docs/47 §2). The payload's rules are the SukraraFace
+barrel's own source, `sdk/source/read`, which every app names the same way (its `sdk/source/face` part is for other
+faces only, so no app carries it): one implementation for Sukrara's apps and everyone else's faces (+0.2 KB for the
+face against its own copy, 2026-11-22). A folder an app doesn't name never lands in its
 build (the face's 128 KB are nearly full, #217: it takes `link` only). Where the apps differ inside a shared file (the
 fetch URL, the payload profile), the code carries an annotation per payload profile (`(:face)` for every watch face, `(:app)`, `(:field)`) and
 each jungle excludes the others' (`base.excludeAnnotations`), so no app carries another's.
 
 | Folder | What | Used by |
 |---|---|---|
-| `shared/link/` | **The phone link** (docs/43, `contracts/watchface/payload`): `LinkService` / `LinkBackground` (the background: Sukrara's push to the app's id through Garmin Connect, the 5-minute fetch of the app's path from `127.0.0.1:17582`, the storage hand-off) and `Link` (the newest payload of the app's own profile in storage, the order rule, the phone's clock lead, the run report the fetch carries, the inputs at every draw) | all |
+| `shared/link/` | **The phone link** (docs/43, `contracts/watchface/payload`): `LinkService` / `LinkBackground` (the background: Sukrara's push to the app's id through Garmin Connect, the 5-minute fetch of the app's path from `127.0.0.1:17582`, the storage hand-off) and `Link` (the newest payload of the app's own profile in storage, the phone's clock lead, the run report the fetch carries, `Link.inputs(now)`: the barrel's `SukraraFace.Reading`) | all |
+| `sdk/source/read/` | **The payload's rules** (the SukraraFace barrel's): `SukraraFace.valid`, `replaces` (the order rule), `skewOf`, `text` (LO / HI, mmol/L), `freshness`, `treatment`, and `Reading`, everything a payload says at a watch time | all |
 | `shared/input/` | **The input model** of the app's surfaces and the field: `ReadingInput`, filled by `Readings.input(now)` from the stored payload and the watch clock | field (and the app's link tests) |
 | `shared/alert/` | `Ring`: what the phone rings, and which kinds are new | app, field |
-| `shared/format/` | `Glucose`: the value in the person's unit (LO / HI, mmol/L one decimal) and the freshness steps (`contracts/graph/freshness`: the age from 90 s, struck from 5 min, *No readings* from 20 min, no chart from 3 h) | app, field |
+| `shared/format/` | `Glucose`: the value in the person's unit and the freshness steps (`contracts/graph/freshness`: the age from 90 s, struck from 5 min, *No readings* from 20 min, no chart from 3 h), on the barrel's `SukraraFace.text` and steps | app, field |
 | `shared/plain/` | **The placeholder look**: `PlainModel` (what a surface's layout fills), `PlainLayout.fill` / `line`, `PlainDraw.draw` | the field's and the app's tests (InputTest); not the app itself (the glance's 64 KB load every line of its code) |
-| `shared/test/` | The tests (`link/`: `LinkTest`, `LinkCases` generated by `tools/link_cases.py`; `input/`: `InputTest`), built into an app by its `link-test.jungle` | |
+| `shared/test/` | The tests (`link/`: `LinkTest`, on the barrel's `sdk/test/cases` (`SukraraFaceCases`, generated by `tools/link_cases.py`) and `sdk/test/inputs`; `input/`: `InputTest`), built into an app by its `link-test.jungle` | |
 
 ## One seam
 
@@ -71,14 +76,16 @@ font resources drawn with drawText. The field's stack is small: keep its call ch
 apps/garmin/build.sh <app> [release]   # <app>: aura, app, field → apps/garmin/bin/{SukraraAura,Sukrara,SukraraField}.prg
 apps/garmin/build.sh <app> debug       # with debug code → bin/<Name>-debug.prg
 apps/garmin/build.sh sample            # the sample face for other developers → bin/SukraraSample.prg
+apps/garmin/build.sh sdk               # the SukraraFace barrel → bin/SukraraFace.barrel (test: its tests' build)
 apps/garmin/build.sh <app> export      # the store package (every product) → bin/<Name>.iq; export-beta: the beta id (apps.json)
 apps/garmin/build.sh aura cases        # the face's debug case loader (app, field: theirs; CIQ_DEVICE picks the watch)
 uv run apps/garmin/field/tools/fonts.py   # the field's fonts per screen class (--check: up to date)
 uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/field/tools/field_test.py run DIR   # the field's screens against app.js
 uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/app/tools/app_test.py run OUT
                                        # the app's screens in the simulator against the reference (app/tools/app_test.py)
-apps/garmin/tools/link-test.sh <app>   # the link's (and the input's) tests in the simulator (build: build only)
-python3 apps/garmin/tools/link_cases.py   # regenerate shared/test/link/LinkCases.mc after cases.json changes
+apps/garmin/tools/link-test.sh <app>   # the link's (and the input's) tests in the simulator (build: build only; sdk: the barrel's)
+python3 apps/garmin/tools/link_cases.py   # regenerate sdk/test/cases/SukraraFaceCases.mc after cases.json changes
+uv run apps/garmin/tools/link_cases.py --check   # …up to date, cases.json against schema.json, the ids and paths
 uv run apps/garmin/tools/launcher_icons.py   # the three apps' launcher icons, one per watch size (--check)
 python3 apps/garmin/tools/fake_phone.py   # answers the simulator's fetches with a case of cases.json (--app-case N, …)
 tools/install.sh watch                 # every app onto the owner's watch (USB)

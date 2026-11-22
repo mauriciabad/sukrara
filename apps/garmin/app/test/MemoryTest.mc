@@ -22,7 +22,7 @@ module MemCases {
     const BG_EXTRA = 2048;
 
     function heavy(sent as Number) as Dictionary {
-        var p = (LinkCases.app()[0] as Dictionary).get("payload") as Dictionary;
+        var p = (SukraraFaceCases.app()[0] as Dictionary).get("payload") as Dictionary;
         p.put("sent", sent);
         var t = [] as Array;
         var k = [] as Array;
@@ -152,7 +152,7 @@ function memGlanceReadsItsCopyOnly(logger as Logger) as Boolean {
 // the glance draws the same from its copy as from the full payload (every app case)
 (:test)
 function memGlanceCopyDrawsTheSame(logger as Logger) as Boolean {
-    var cases = LinkCases.app();
+    var cases = SukraraFaceCases.app();
     for (var i = 0; i < cases.size(); i++) {
         var p = (cases[i] as Dictionary).get("payload") as Dictionary;
         var T = p.get("sent") as Number;
@@ -239,7 +239,7 @@ function memBackgroundRun(logger as Logger) as Boolean {
 // copy again (GlanceCopy.heal), and the glance then draws what the payload says.
 (:test)
 function memGlanceCopyHeals(logger as Logger) as Boolean {
-    var p = (LinkCases.app()[0] as Dictionary).get("payload") as Dictionary;
+    var p = (SukraraFaceCases.app()[0] as Dictionary).get("payload") as Dictionary;
     var T = p.get("sent") as Number;
     Link.reset();
     MemCases.run(p);
@@ -266,7 +266,7 @@ function memGlanceCopyHeals(logger as Logger) as Boolean {
     GlanceCopy.heal(Link.payload(), Link.skew);
     Test.assertMessage(s instanceof Array, "the copy in this build's form");
     // the copy of an older payload: written again from the newer one
-    var q = (LinkCases.app()[1] as Dictionary).get("payload") as Dictionary;
+    var q = (SukraraFaceCases.app()[1] as Dictionary).get("payload") as Dictionary;
     q.put("sent", T + 60);
     MemCases.run(q);
     GlanceCopy.save(p, 0);

@@ -1,0 +1,6 @@
+# SukraraFace — https://sukrara.mauri.app/developers/garmin-faces/
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: 0BSD
+# The barrel with its tests (test/: the cases from contracts/watchface/payload/cases.json), strictly type-checked so
+# a face with any type-check level can use it: apps/garmin/tools/sdk-test.sh.
+base.sourcePath = source;test

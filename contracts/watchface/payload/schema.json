@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://sukrara.mauri.app/contracts/watchface/payload/schema.json",
+  "$id": "https://sukrara.mauri.app/schemas/watch-payload.json",
   "title": "Sukrara's watch payload, version 5",
   "description": "What the phone sends Sukrara's Connect IQ apps, one branch per profile (README.md): face (every watch face), app, field. Times are absolute epoch seconds.",
   "$defs": {
@@ -1307,14 +1307,14 @@
         },
         "hist": {
           "type": "array",
-          "description": "empty without g, else 12 slots (1 h) oldest first",
+          "description": "empty without g, else 36 slots (3 h) oldest first",
           "oneOf": [
             {
               "maxItems": 0
             },
             {
-              "minItems": 12,
-              "maxItems": 12
+              "minItems": 36,
+              "maxItems": 36
             }
           ],
           "items": {

@@ -47,9 +47,9 @@ module AppLists {
         }
         // Muted (all) or Lows / Highs muted (a side), with the time left: Unmute / Change time
         var x = Link.inputs(d.now);
-        if (x != null && "muted".equals(x.get("status"))) {
-            var lf = x.get("left");
-            var s = x.get("side");
+        if (x != null && "muted".equals(x.status)) {
+            var lf = x.left;
+            var s = x.side;
             out.add(["muted", s instanceof String ? AppMute.title(s) : AppWords.muted(), "bellOff", AppMath.pal("note"),
                 lf instanceof Number ? Durations.short(lf, " ") : null, AppMath.pal("note")]);
         } else {

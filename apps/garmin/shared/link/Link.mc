@@ -9,13 +9,14 @@ import Toybox.Time;
 
 // What an app knows from Sukrara (every Sukrara Garmin app, apps/garmin/README.md): the newest payload
 // (contracts/watchface/payload, version 5, the app's own profile), kept in storage so a restart shows it at once, the
-// order rule, the phone's clock lead, the run report the fetch carries back, and the inputs (SPEC §3 names) worked out
-// from the payload and the watch clock at every draw (README "On the watch"). Sukrara decides; this only counts time.
+// phone's clock lead, the run report the fetch carries back, and the payload at every draw (README "On the watch").
+// The rules (the version, the order, the clock lead, what the payload says at a watch time) are the SukraraFace
+// barrel's own code (apps/garmin/sdk/source/read), the one implementation every face shares. Sukrara decides; this
+// only counts time.
 // (:glance): the app's glance reads it too; (:background): the app's background keeps the newest payload itself (its
 // complications and alerts, AppService).
 (:background :glance)
 module Link {
-    const VERSION = 5;
     // the app's profile (contracts/watchface/payload/apps.json): its jungle excludes the other profiles' annotations;
     // every watch face is (:face)
     (:face)
@@ -28,9 +29,6 @@ module Link {
     const SENT = "linkSent"; // the stored payload's sent (the order rule reads only this)
     // the watch's id on the phone (the app profile's push only, README `w`): its fetch says it (&w=)
     const WATCH = "linkW";
-    // a stored payload this far ahead of the watch clock gives way to any new one (the phone's clock was wrong)
-    const AHEAD_S = 300;
-
     var _payload as Dictionary? = null;
     var skew as Number = 0; // how far the phone's clock is ahead of the watch's, s
     var _fetchedAt as Number? = null;
@@ -192,12 +190,12 @@ module Link {
         // the new one held two (64 KB, #217)
         var sent = (p as Dictionary).get("sent") as Number;
         var stored = _loaded && _payload != null ? _payload.get("sent") : Application.Storage.getValue(SENT);
-        if (stored instanceof Number && sent < stored && stored - now <= AHEAD_S) {
+        if (!SukraraFace.replaces(stored instanceof Number ? stored : null, p as Dictionary, now)) {
             return false;
         }
         _payload = p as Dictionary;
         _loaded = true;
-        skew = sent > now ? sent - now : 0;
+        skew = SukraraFace.skewOf(sent, now);
         var w = (p as Dictionary).get("w");
         if (w instanceof String) {
             Application.Storage.setValue(WATCH, w);
@@ -226,8 +224,7 @@ module Link {
     }
 
     function valid(p) as Boolean {
-        return p instanceof Dictionary && p.get("v") == VERSION && PROFILE.equals(p.get("p"))
-            && p.get("sent") instanceof Number;
+        return SukraraFace.valid(p, PROFILE);
     }
 
     // When the app last fetched from the phone (watch clock), null = not since it started.
@@ -259,131 +256,9 @@ module Link {
         }
     }
 
-    // The app's inputs (SPEC §3 names) at the watch time [now] (epoch s); null without any payload.
-    function inputs(now as Number) as Dictionary? {
+    // What the payload says at the watch time [now] (epoch s); null without any payload.
+    function inputs(now as Number) as SukraraFace.Reading? {
         load();
-        var p = _payload;
-        if (p == null) {
-            return null;
-        }
-        var t = now + skew;
-        var out = {
-            "unit" => p.get("unit"),
-            "bands" => p.get("bands"),
-            "sent" => p.get("sent")
-        } as Dictionary;
-        var g = p.get("g");
-        if (g instanceof Dictionary) {
-            var v = g.get("v") as Number;
-            var age = t - (g.get("t") as Number);
-            out.put("glucose", v < 40 ? "LO" : (v > 400 ? "HI" : v));
-            out.put("readingTime", g.get("t"));
-            out.put("age", (age < 0 ? 0 : age) / 60.0);
-            var rate = g.get("rate");
-            out.put("rate", rate);
-            out.put("trend", rate != null);
-            var band = g.get("band");
-            out.put("double", band instanceof Number && (band == 3 || band == -3));
-            out.put("deg", g.get("deg"));
-            out.put("history", p.get("hist"));
-        } else {
-            out.put("glucose", null);
-            out.put("trend", false);
-            out.put("history", []);
-        }
-        status(p.get("st"), t, out);
-        var last = treatment(p as Dictionary, t);
-        if (last != null) {
-            out.put("last", last.get("items"));
-            out.put("lastAgo", (t - (last.get("t") as Number)) / 60);
-        } else {
-            out.put("last", null);
-        }
-        sensor(p.get("sensor"), g, t, out);
-        var tir = p.get("tir");
-        out.put("tir", tir instanceof Dictionary && t < (tir.get("until") as Number) ? tir.get("pct") : null);
-        return out;
-    }
-
-    // The treatment field at the phone's time [t]: the first of last, last.next, … whose until is still ahead (−1 =
-    // never); null = none (Sukrara's card shows no last treatment then).
-    function treatment(p as Dictionary, t as Number) as Dictionary? {
-        var s = p.get("last");
-        while (s instanceof Dictionary) {
-            var until = s.get("until");
-            if (!(until instanceof Number && until != -1 && t >= until)) {
-                return s as Dictionary;
-            }
-            s = s.get("next");
-        }
-        return null;
-    }
-
-    // needed → auto, taken → quiet, paused / muted → muted; a countdown that ran out shows nothing.
-    function status(st, t as Number, out as Dictionary) as Void {
-        out.put("status", "none");
-        out.put("side", null);
-        out.put("left", null);
-        if (!(st instanceof Dictionary)) {
-            return;
-        }
-        var k = st.get("k");
-        var until = st.get("until");
-        var left = null;
-        if (until instanceof Number) {
-            if (until == -1) {
-                left = "never";
-            } else if (until - t > 0) {
-                left = until - t;
-            } else {
-                return;
-            }
-        }
-        out.put("side", st.get("side"));
-        out.put("left", left);
-        if ("needed".equals(k)) {
-            out.put("status", "auto");
-        } else if ("taken".equals(k)) {
-            out.put("status", "quiet");
-        } else if ("paused".equals(k) || "muted".equals(k)) {
-            out.put("status", "muted");
-        }
-    }
-
-    function sensor(s, g, t as Number, out as Dictionary) as Void {
-        var state = s instanceof Dictionary ? s.get("s") : null;
-        var name = "ok";
-        if ("none".equals(state)) {
-            name = "none";
-        } else if ("ended".equals(state)) {
-            name = "ended";
-        } else if ("warmup".equals(state)) {
-            var start = s.get("start") as Number;
-            var ready = s.get("ready") as Number;
-            var since = g instanceof Dictionary && (g.get("t") as Number) >= start;
-            if (t < (s.get("hold") as Number) && !since) {
-                name = t >= ready ? "almost" : "warmup";
-                var span = ready - start;
-                var warm = span > 0 ? (t - start).toFloat() / span : 1.0;
-                out.put("warm", warm < 0.0 ? 0.0 : (warm > 1.0 ? 1.0 : warm));
-                out.put("ready", ready);
-            }
-        } else if ("active".equals(state)) {
-            var end = s.get("end");
-            var warn = s.get("warn");
-            var start = s.get("start");
-            // the sensor's life (the sensor rail): its days and the hours left, whenever the phone knows the dates
-            if (end instanceof Number && start instanceof Number && end > start) {
-                out.put("sensorLife", (end - start) / 86400.0);
-                out.put("sensorLeft", (end - t > 0 ? end - t : 0) / 3600.0);
-            }
-            if (end instanceof Number && t >= end) {
-                name = "ended";
-            } else if (end instanceof Number && warn instanceof Number && t >= warn) {
-                name = "ending";
-                out.put("sensorLeft", (end - t) / 3600.0);
-            }
-        }
-        out.put("sensor", name);
+        return _payload != null ? new SukraraFace.Reading(_payload as Dictionary, skew, now) : null;
     }
 }

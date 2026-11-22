@@ -5,7 +5,7 @@
 # › Shared); the other apps' annotated code is left out.
 project.manifest = manifest.xml
 project.typecheck = 1
-base.sourcePath = source;../shared/link;../shared/input;../shared/format;../shared/alert
+base.sourcePath = source;../shared/link;../sdk/source/read;../shared/input;../shared/format;../shared/alert
 base.resourcePath = resources
 base.lang.spa = resources-spa
 base.excludeAnnotations = face;app

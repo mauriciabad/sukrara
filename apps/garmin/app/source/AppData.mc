@@ -86,14 +86,10 @@ module AppInput {
         d.clock = (c.hour as Number) + ":" + (c.min as Number).format("%02d");
         d.clockH = (c.hour as Number) + (c.min as Number) / 60.0 + (c.sec as Number) / 3600.0;
         var p = Link.payload();
-        if (p == null) {
+        var x = Link.inputs(now);
+        if (p == null || x == null) {
             return d;
         }
-        // of the link's inputs (Link.inputs) only the status and the sensor's, not its whole dictionary (1.3 KB: the
-        // glance's 64 KB, #217)
-        var x = {} as Dictionary;
-        Link.status(p.get("st"), now + Link.skew, x);
-        Link.sensor(p.get("sensor"), p.get("g"), now + Link.skew, x);
         d.sent = true;
         var t = now + Link.skew;
         var u = p.get("unit");
@@ -110,9 +106,7 @@ module AppInput {
             d.rate = r != null && (d.g as Number) >= 40 && (d.g as Number) <= 400 ? (r as Numeric).toFloat() : null;
             var deg = g.get("deg");
             d.deg = deg != null ? (deg as Numeric).toFloat() : 0.0;
-            // doubled at the steepest bands, as Link.inputs' double
-            var band = g.get("band");
-            d.doubled = band instanceof Number && (band == 3 || band == -3);
+            d.doubled = x.doubled;
             d.age = ((t - gt) < 0 ? 0 : (t - gt)) / 60.0;
             d.readAt = hm(gt - Link.skew);
             var h = hist ? p.get("hist") : null;
@@ -138,17 +132,14 @@ module AppInput {
             }
         }
         pill(d, x);
-        var s = x.get("sensor");
-        d.sensorState = s instanceof String ? s : "none";
-        var left = x.get("sensorLeft");
-        if (left instanceof Float) {
+        d.sensorState = x.sensor;
+        var left = x.sensorLeft;
+        if (left != null) {
             d.sensorDays = (left / 24.0 + 0.5).toNumber();
         }
-        var warm = x.get("warm");
-        d.warm = warm instanceof Float ? warm : 0.0;
-        var ready = x.get("ready");
-        if (ready instanceof Number) {
-            d.readyAt = hm(ready - Link.skew);
+        d.warm = x.warm != null ? x.warm as Float : 0.0;
+        if (x.readyAt != null) {
+            d.readyAt = hm(x.readyAt as Number);
         }
         var ds = p.get("ds");
         if (ds instanceof Dictionary) {
@@ -169,15 +160,15 @@ module AppInput {
     }
 
     // the pill (Aura's): Sukrara's need while out of range, or what holds it (quiet, muted) with the time left
-    function pill(d as AppData, x as Dictionary) as Void {
+    function pill(d as AppData, x as SukraraFace.Reading) as Void {
         if (d.g == null || d.age >= 5) {
             return;
         }
         var bk = d.band(d.g as Number);
         var out = !bk.equals("tight") && !bk.equals("target");
         var low = bk.equals("veryLow") || bk.equals("low");
-        var st = x.get("status");
-        var lf = x.get("left");
+        var st = x.status;
+        var lf = x.left;
         var left = lf instanceof Number ? Durations.short(lf, " ") : AppWords.muted();
         if ("auto".equals(st) && out) {
             d.pill = low ? ["carbs", AppWords.carbs(), true, "carbs"] : ["rapid", AppWords.insulin(), true, "rapid"];
@@ -196,7 +187,7 @@ module AppInput {
         if (list.size() > 0) {
             d.slots.add(["ring", list[0]]);
         }
-        var step = Link.treatment(p, t);
+        var step = SukraraFace.treatment(p, t);
         var items = step != null ? step.get("items") : null;
         if (items instanceof Array && items.size() > 0) {
             var it = items[0] as Dictionary;

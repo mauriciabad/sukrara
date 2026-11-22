@@ -13,7 +13,8 @@
  *     slash out;
  *   - docs/GARMIN-FACES.md's sample face differing from apps/garmin/sample's source (which CI compiles);
  *   - the files other systems read: App Links (assetlinks.json with Sukrara's release key, tools/release/android-cert.sha256),
- *     universal links (apple-app-site-association for /join), the Mac update feed (appcast.xml), the sitemap, the 404;
+ *     universal links (apple-app-site-association for /join), the Mac update feed (appcast.xml), the Garmin watch
+ *     payload's JSON Schema at its $id (schemas/watch-payload.json), the sitemap, the 404;
  *   - a link to another site, in the page's language, that this site has in that language: a Spanish page links the
  *     Spanish store pages and Spanish Homebrew, an English page the English ones (LOCALIZED below; add a site there
  *     when a page links one that has pages per language).
@@ -160,6 +161,11 @@ const joins = aasa?.applinks?.details?.some((d) => d.components?.some((c) => c['
 if (aasa && !joins) fail('.well-known/apple-app-site-association: /join isn’t a universal link');
 const appcast = existsSync(join(DIST, 'appcast.xml')) ? readFileSync(join(DIST, 'appcast.xml'), 'utf8') : '';
 if (!/<rss[\s\S]*<item>[\s\S]*<\/rss>\s*$/.test(appcast)) fail('appcast.xml: missing or without a release');
+// The Garmin watch payload's schema, at the URL its $id names (developers validate against it).
+const schema = json('schemas/watch-payload.json');
+if (schema && schema.$id !== `${SITE}/schemas/watch-payload.json`) {
+	fail(`schemas/watch-payload.json: its $id is ${schema.$id}, not the URL it is served at`);
+}
 for (const file of ['404.html', 'sitemap-index.xml', 'robots.txt', 'favicon.svg']) {
 	if (!existsSync(join(DIST, file))) fail(`${file} is missing`);
 }
