@@ -21,11 +21,11 @@ set -eu
 HERE=$(cd "$(dirname "$0")" && pwd)
 APP=${1:-}
 MODE=${2:-release}
-# each app: its folder, its output name and its beta app id (fixed, so every beta upload updates the same beta app)
+# each app: its folder (apps/garmin/<app>) and its output name
 case "$APP" in
-  aura) NAME=SukraraAura; BETA_ID=635140ec-f724-44fb-bc08-976fa9111250 ;;
-  app) NAME=Sukrara; BETA_ID=${SUKRARA_APP_BETA_ID:-} ;;
-  field) NAME=SukraraField; BETA_ID=${SUKRARA_FIELD_BETA_ID:-} ;;
+  aura) NAME=SukraraAura ;;
+  app) NAME=Sukrara ;;
+  field) NAME=SukraraField ;;
   *) echo "usage: build.sh <aura|app|field> [release|debug|export|export-beta|cases|test]" >&2; exit 2 ;;
 esac
 DEVICE=${CIQ_DEVICE:-descentmk343mm}
@@ -52,7 +52,9 @@ case "$MODE" in
     JUNGLE=aura/cases.jungle; OUT=bin/SukraraAura-cases.prg; FLAGS=""; python3 aura/tools/cases.py ;;
   export) OUT=bin/$NAME.iq; FLAGS="-e -r" ;;
   export-beta)
-    [ -n "$BETA_ID" ] || { echo "build.sh: $APP has no beta app id yet" >&2; exit 2; }
+    # the app's beta id from the registry (fixed, so every beta upload updates the same beta app)
+    BETA_ID=$(python3 -c 'import json,sys; print(next(a["beta"] for a in json.load(open(sys.argv[1]))["apps"] if a["app"] == sys.argv[2]))' \
+      "$HERE/../../contracts/watchface/payload/apps.json" "$APP")
     # the app's jungle naming a copy of its manifest with the beta's id (bin/beta/<app>/manifest.xml). A second jungle
     # can't reset project.manifest, and a jungle's paths are relative to it: so a copy beside the app's own jungle,
     # removed when the build ends

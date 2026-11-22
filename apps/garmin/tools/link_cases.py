@@ -1,23 +1,26 @@
 # Sukrara — https://github.com/mauriciabad/sukrara
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""contracts/watchface/payload/cases.json as Monkey C, for the shared link's test (shared/test/link/LinkTest.mc).
+"""contracts/watchface/payload/cases.json as Monkey C, for the shared link's test (shared/test/link/LinkTest.mc), and
+the apps against the registry (contracts/watchface/payload/apps.json).
 
   python3 apps/garmin/tools/link_cases.py           writes apps/garmin/shared/test/link/LinkCases.mc
-  python3 apps/garmin/tools/link_cases.py --check   fails if the committed file differs from a fresh one, or an app id
-                                                    (manifest, build.sh's beta) differs from apps.json
+  python3 apps/garmin/tools/link_cases.py --check   fails if the committed file differs from a fresh one, or if an
+                                                    app's manifest (where apps.json says) has another id or type, or
+                                                    its jungle another fetch path's profile
 
-apps/garmin/tools/link-test.sh runs it (with --check) before every run of the test.
+apps/garmin/tools/link-test.sh runs it (with --check) before every run of the test; build.sh reads the beta ids from
+apps.json itself.
 """
 import json
-import re
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 CASES = ROOT / "contracts/watchface/payload/cases.json"
-OUT = ROOT / "apps/garmin/shared/test/link/LinkCases.mc"
 APPS = ROOT / "contracts/watchface/payload/apps.json"
+OUT = ROOT / "apps/garmin/shared/test/link/LinkCases.mc"
 
 
 def mc(v):
@@ -63,28 +66,32 @@ def render():
     lines += ["            %s," % mc(x) for x in c["older"]["cases"]]
     lines += ["        ];", "    }", "", "    function ignored() as Array {", "        return ["]
     lines += ["            %s," % mc(x) for x in c["versions"]["ignored"]]
+    for profile in ("app", "field"):
+        lines += ["        ];", "    }", "", "    function %s() as Array {" % profile, "        return ["]
+        lines += ["            %s," % mc({"name": x["name"], "payload": x["payload"]}) for x in c[profile]]
     lines += ["        ];", "    }", "}", ""]
     return "\n".join(lines)
 
 
 def registry():
-    """Every built app's manifest id and build.sh's beta id are contracts/watchface/payload/apps.json's (the phone pushes
-    to those ids); an app whose manifest doesn't exist yet is skipped. Returns the problems."""
+    """What doesn't match apps.json: each app's manifest (its id and type) and the fetch path its code asks for."""
+    bad = []
     reg = json.loads(APPS.read_text())
-    problems = []
-    build = (ROOT / "apps/garmin/build.sh").read_text()
+    service = (ROOT / "apps/garmin/shared/link/LinkService.mc").read_text()
     for a in reg["apps"]:
-        manifest = ROOT / a["manifest"]
-        if not manifest.exists():
+        m = ROOT / a["manifest"]
+        if not m.exists():
+            print("link_cases.py: pending: %s (%s)" % (a["manifest"], a["name"]))
             continue
-        m = re.search(r'<iq:application id="([^"]+)"', manifest.read_text())
-        if not m or m.group(1) != a["id"]:
-            problems.append("%s: app id %s, apps.json says %s" % (a["manifest"], m and m.group(1), a["id"]))
-        if a["app"] == "aura":
-            b = re.search(r"BETA_ID=([0-9a-f-]+)", build)
-            if not b or b.group(1) != a["beta"]:
-                problems.append("apps/garmin/build.sh: beta id %s, apps.json says %s" % (b and b.group(1), a["beta"]))
-    return problems
+        app = re.search(r"<iq:application\b[^>]*>", m.read_text()).group(0)
+        if 'id="%s"' % a["id"] not in app:
+            bad.append("%s: the id isn't apps.json's %s" % (a["manifest"], a["id"]))
+        if 'type="%s"' % a["type"] not in app:
+            bad.append("%s: the type isn't apps.json's %s" % (a["manifest"], a["type"]))
+        want = '(:%s)\n    const FETCH_URL = "http://127.0.0.1:%d/%s";' % (a["app"], reg["port"], a["fetch"])
+        if want not in service:
+            bad.append("apps/garmin/shared/link/LinkService.mc: no %s" % want.replace("\n    ", " "))
+    return bad
 
 
 def main():
@@ -92,9 +99,9 @@ def main():
     if "--check" in sys.argv:
         if not OUT.exists() or OUT.read_text() != text:
             sys.exit("link_cases.py: %s is out of date with cases.json: run python3 apps/garmin/tools/link_cases.py" % OUT)
-        problems = registry()
-        if problems:
-            sys.exit("link_cases.py: the app ids differ from contracts/watchface/payload/apps.json:\n  " + "\n  ".join(problems))
+        bad = registry()
+        if bad:
+            sys.exit("link_cases.py: the apps don't match contracts/watchface/payload/apps.json:\n  " + "\n  ".join(bad))
         return
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(text)

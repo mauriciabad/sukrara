@@ -8,12 +8,18 @@ import Toybox.Math;
 import Toybox.Time;
 
 // What an app knows from Sukrara (every Sukrara Garmin app, apps/garmin/README.md): the newest payload
-// (contracts/watchface/payload, version 4, the face's profile), kept in storage so a restart shows it at once, the order rule, the phone's
+// (contracts/watchface/payload, version 4, the app's own profile), kept in storage so a restart shows it at once, the order rule, the phone's
 // clock lead, the run report the fetch carries back, and the inputs (SPEC §3 names) worked out from the payload and the
 // watch clock at every draw (README "On the watch"). Sukrara decides; this only counts time.
 module Link {
     const VERSION = 4;
+    // the app's profile (contracts/watchface/payload/apps.json): its jungle excludes the other apps' annotations
+    (:aura)
     const PROFILE = "aura";
+    (:app)
+    const PROFILE = "app";
+    (:field)
+    const PROFILE = "field";
     const STORE = "auraLink";
     // a stored payload this far ahead of the watch clock gives way to any new one (the phone's clock was wrong)
     const AHEAD_S = 300;
@@ -160,7 +166,7 @@ module Link {
         Application.Storage.setValue(REPORT, "r=" + r + "&d=" + _drawn);
     }
 
-    // Keeps [p] when it is a version-1 payload no older than the stored one (README "Order").
+    // Keeps [p] when it is a payload of this version and the app's profile, no older than the stored one (README "Order").
     function accept(p, now as Number) as Boolean {
         load();
         if (!valid(p)) {
@@ -196,7 +202,8 @@ module Link {
     }
 
     function valid(p) as Boolean {
-        return p instanceof Dictionary && p.get("v") == VERSION && PROFILE.equals(p.get("p")) && p.get("sent") instanceof Number;
+        return p instanceof Dictionary && p.get("v") == VERSION && PROFILE.equals(p.get("p"))
+            && p.get("sent") instanceof Number;
     }
 
     // When the app last fetched from the phone (watch clock), null = not since it started.

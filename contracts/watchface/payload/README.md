@@ -16,9 +16,10 @@ and the glucose notification decide it (SPEC ground rule 1). Why it travels the 
 
 Run by `AuraPayloadFixtureTest` (Android `:integrations`: phone → payload for every profile, through the wire format
 and back, Garmin's bytes), `GarminAppsTest` (the registry against the phone's `GarminApp`), `WatchWritesTest` (the
-entries and mute endpoints) and `WatchEntryTest` (`:feature:treatments`: the phone's entry path), and `LinkTest` (the shared link `apps/garmin/shared/link`,
-`apps/garmin/tools/link-test.sh`: payload → the face's inputs; the cases reach Monkey C through
-`apps/garmin/tools/link_cases.py`, whose `--check` also holds every manifest and beta id to `apps.json`). Parity group
+entries and mute endpoints) and `WatchEntryTest` (`:feature:treatments`: the phone's entry path), and `LinkTest` (the watch's
+shared link, `apps/garmin/tools/link-test.sh <app>`: payload → the face's inputs, each app its own profile; the cases
+reach Monkey C through `apps/garmin/tools/link_cases.py`, whose `--check` also holds every manifest's id and type and
+every fetch path to `apps.json`; `apps/garmin/build.sh` takes the beta ids from it). Parity group
 `watchface-link`.
 
 ## The apps
@@ -56,7 +57,7 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the ap
    **never with `key`**. The port is open only while a watch is known to have any Sukrara app (Garmin Connect says it
    is installed, or a push reached it), loopback only, and the main switch closes it.
 
-The fetch carries the app's own report back as its query (`Link.mc` `saveReport`, Android `AuraReport.parse`):
+The fetch carries the app's own report back as its query (`apps/garmin/shared/link/Link.mc` `saveReport`, Android `AuraReport.parse`):
 `r=<run>_<run>…&d=<readingAt>.<since>`, a run being `<kind>.<at>.<sent>.<readingAt>` (kind `p` a push, `p<n>` a push that took n older waiting messages with it, `f` a fetch,
 `e<code>` a failed fetch, `s` appended when it picked it up from storage (Garmin didn't hand it over), `x` appended when it kept the older payload; `at` the watch clock; the last 10, oldest
 first) and `d` the reading it draws (its time on the watch clock) and since when. Times only, never a value. The

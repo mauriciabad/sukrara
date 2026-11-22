@@ -45,8 +45,12 @@ module LinkTest {
     }
 }
 
+// the face's cases: what it makes of each payload at each watch time (the app and the field: linkOwnProfile)
 (:test)
 function linkEveryCase(logger as Logger) as Boolean {
+    if (!Link.PROFILE.equals("aura")) {
+        return true;
+    }
     var ok = true;
     var cases = LinkCases.cases();
     for (var c = 0; c < cases.size(); c++) {
@@ -90,8 +94,13 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
             ok = false;
         }
     }
+    // the list is the face's: another app skips what is its own profile there (it reads it, linkOwnProfile)
     var ignored = LinkCases.ignored();
     for (var i = 0; i < ignored.size(); i++) {
+        var x = ignored[i];
+        if (x instanceof Dictionary && Link.PROFILE.equals(x.get("p")) && !Link.PROFILE.equals("aura")) {
+            continue;
+        }
         Link.reset();
         if (Link.accept(ignored[i], LinkCases.NOW)) {
             logger.error("accepted " + ignored[i]);
@@ -107,6 +116,8 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
 function linkHandOverCountsOnce(logger as Logger) as Boolean {
     var now = LinkCases.NOW;
     Link.reset();
+    // the report's runs from an earlier run of the tests (the simulator keeps the app's storage)
+    Application.Storage.deleteValue(Link.REPORT + "Runs");
     var a = {"k" => "push", "d" => {"v" => Link.VERSION, "p" => Link.PROFILE, "sent" => now}, "n" => 0, "id" => "a"};
     Application.Storage.setValue(LinkBackground.HANDOFF, a);
     Test.assertMessage(Link.take(a, now, false), "Garmin's hand-over");
@@ -137,4 +148,30 @@ function linkNewestOfTheQueue(logger as Logger) as Boolean {
     Test.assert(LinkBackground.newer(a, "junk") == a);
     Test.assert(LinkBackground.newer(null, a) == a);
     return true;
+}
+
+// Each app keeps the payloads of its own profile and ignores the others' (contracts/watchface/payload "Profiles").
+(:test)
+function linkOwnProfile(logger as Logger) as Boolean {
+    var ok = true;
+    var all = {"aura" => LinkCases.cases(), "app" => LinkCases.app(), "field" => LinkCases.field()};
+    var profiles = all.keys();
+    for (var p = 0; p < profiles.size(); p++) {
+        var list = all.get(profiles[p]) as Array;
+        var own = Link.PROFILE.equals(profiles[p]);
+        for (var i = 0; i < list.size(); i++) {
+            var k = list[i] as Dictionary;
+            Link.reset();
+            var payload = k.get("payload") as Dictionary;
+            if (Link.accept(payload, payload.get("sent") as Number) != own) {
+                logger.error(Link.PROFILE + ": " + (own ? "ignored " : "kept ") + profiles[p] + " case " + k.get("name"));
+                ok = false;
+            } else if (own && Link.inputs(payload.get("sent") as Number) == null) {
+                logger.error(Link.PROFILE + ": no inputs from " + k.get("name"));
+                ok = false;
+            }
+        }
+    }
+    Link.reset();
+    return ok;
 }
