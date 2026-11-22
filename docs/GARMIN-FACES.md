@@ -93,7 +93,8 @@ Sukrara's glucose keeps them too:
 
 [`apps/garmin/sample`](../apps/garmin/sample/) is the smallest face that keeps these rules: the time, the value in
 its unit and band, late, struck through, then gone. CI builds it (`apps/garmin/build.sh sample`), so this example
-compiles with the current SDK. Its `manifest.xml` has the two permissions; give your face its own app id.
+compiles with the current SDK. Its `manifest.xml` has the two permissions; give your face its own app id. The sample is
+**0BSD** (no conditions: copy it into any face, open or closed); the rest of Sukrara is GPL-3.0.
 
 ```monkeyc
 import Toybox.Application;

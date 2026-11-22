@@ -1,6 +1,6 @@
 // Sukrara — https://github.com/mauriciabad/sukrara
 // Copyright (C) 2026 Maurici Abad
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: 0BSD
 import Toybox.Application;
 import Toybox.Background;
 import Toybox.Communications;

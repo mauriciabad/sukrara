@@ -19,7 +19,8 @@
     "*.gradle.kts",
     "*/gradlew",
     "assets/brand/*",
-    "*/lint-baseline.xml"
+    "*/lint-baseline.xml",
+    "apps/garmin/sample/*"
   ],
   "vendored": [
     {
