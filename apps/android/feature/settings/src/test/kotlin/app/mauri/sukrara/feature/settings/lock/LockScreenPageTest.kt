@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -143,7 +144,8 @@ class LockScreenPageTest {
             // the widget off: the row stays, greyed, saying why; the setting keeps its value for when it's back
             compose.onNodeWithText(text(R.string.st_lock_widget)).performClick()
             compose.waitForIdle()
-            compose.onNodeWithText(text(R.string.st_lock_hide)).assertIsNotEnabled()
+            // greyed with the stored choice still on, like every greyed switch in Settings (not drawn off)
+            compose.onNodeWithText(text(R.string.st_lock_hide)).assertIsNotEnabled().assertIsOn()
             compose.onAllNodesWithText(text(R.string.st_lock_unavailable)).assertCountEquals(3)
             assertEquals(true, settings.flow(SurfaceSettings.LockHideNotification).first())
         }

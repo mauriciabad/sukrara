@@ -222,7 +222,8 @@ fun LockScreenContent(
             )
             SwitchRow(
                 stringResource(R.string.st_lock_hide),
-                widget.on && widget.hide,
+                // the stored choice, greyed while the widget is off (like every greyed switch in Settings)
+                widget.hide,
                 actions.setHide,
                 summary = stringResource(lockHideSummary(widget)),
                 // hidden, not muted (notifications_off is the app's Mute)

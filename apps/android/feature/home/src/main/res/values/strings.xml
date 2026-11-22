@@ -214,7 +214,6 @@
     <string name="home_pill_replace_sensor">Pair new sensor</string>
     <string name="home_pill_alert_options">Alert options</string>
     <!-- %1$s the side's name ("Low", "Falling fast") -->
-    <string name="home_quiet_side">%1$s alerts</string>
     <string name="home_mute_alerts">Mute alerts</string>
     <string name="home_night_change">Change</string>
     <string name="home_dnd_held_all">Do Not Disturb is on: alerts make no sound</string>

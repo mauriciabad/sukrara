@@ -1669,7 +1669,8 @@ widgets count it (each window once per reading, `MetricsCache`). The pill under 
 *Take insulin* open Add treatment with Carbs / Rapid focused; a side's quiet (`45m left`, *Muted*) and Mute all's pill
 open the quiet sheet; *Replace sensor* opens the new-sensor flow (wearer). Under the card, one chip per quiet state the
 pill doesn't show (the other side, a fast-change alert, *Low reminders every 30 min*), counting down; a chip opens its
-side's sheet. The **quiet sheet** lists Mute all's state (*Unmute*, *Change time*) while it is on, then each quiet state
+side's sheet. The **quiet sheet**, titled with the side's name (*Highs*, es *Altas*, as Settings › Alerts heads its
+groups; *All alerts* for Mute all's pill), lists Mute all's state (*Unmute*, *Change time*) while it is on, then each quiet state
 of the side with its line counting down and its ways out (*Unmute* / *Alert me anyway*, *Remind as usual*, and for a
 mute **Change to** THE length chips *15m* *30m* *1h* *2h* (#181; Spanish *15 min*, TalkBack *15 minutes*)), and *Alert settings*; it closes once its last state is left. While a pen
 dose waits to be named, the pen's question card (the wearer's phone with pens, [Insulin pens](#insulin-pens-docs29)). Then at
@@ -2619,7 +2620,7 @@ icon, above the shortcuts) shows the glucose card: the value and its arrow left 
   notification* (a switch; *While the widget shows. Alerts and anything that needs you still show* / *It shows under the
   widget too*; es *Ocultar la notificación de glucosa*), *Background* and
   *Appearance* (SPA list dialogs with a line under each choice; *Unavailable while the widget is off* while off, the
-  hide switch too, keeping its value), a
+  hide switch too, greyed with its stored value, like every greyed switch in Settings), a
   footer on what it needs and who can add treatments; then *Add treatment over the lock screen* › *Time to save*
   (`lock.treatmentTime`). The overview's *Lock screen* row reads *Widget around the
   fingerprint, time to save a treatment*. Search finds the four rows.

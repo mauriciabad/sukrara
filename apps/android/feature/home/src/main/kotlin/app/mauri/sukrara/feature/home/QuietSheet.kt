@@ -117,7 +117,9 @@ internal fun QuietSheet(
     val title =
         when (val side = target.side) {
             null -> stringResource(R.string.home_quiet_all)
-            else -> stringResource(R.string.home_quiet_side, MuteText.sideName(side, words))
+
+            // the side's own name, as Settings › Alerts heads its group (*Highs*, es *Altas*): never "Highs alerts"
+            else -> MuteText.sideName(side, words)
         }
     val text =
         when {
