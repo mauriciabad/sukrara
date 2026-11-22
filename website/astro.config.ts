@@ -56,7 +56,11 @@ export default defineConfig({
 						icon: 'heart',
 						items: [
 							'features',
-							{ label: 'Apps', translations: { es: 'Apps' }, items: ['android', 'mac', 'garmin'] },
+							{
+								label: 'Apps',
+								translations: { es: 'Apps' },
+								items: ['android', 'mac', { label: 'Garmin', translations: { es: 'Garmin' }, items: ['garmin', 'garmin/aura'] }],
+							},
 							{
 								label: 'More',
 								translations: { es: 'Más' },

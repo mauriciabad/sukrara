@@ -1362,8 +1362,8 @@ The steps, as they were:
 
 ## Garmin
 
-Sukrara's three Connect IQ apps (Sukrara Aura, the face; Sukrara, the watch app; Sukrara data field; docs/47) go to
-the **Connect IQ Store**, each its own listing:
+Sukrara's Connect IQ apps (its watch faces, Sukrara Aura so far; Sukrara, the watch app; Sukrara data field; docs/47)
+go to the **Connect IQ Store**, each its own listing:
 
 - Garmin developer account (18+, accurate registration info), **no fee** for free apps; paid apps go through the
   Merchant Service with an annual fee [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html).
@@ -1487,10 +1487,10 @@ from the reference renderer with synthetic data (cases.json): `node assets/brand
 again once the face's final look is approved (the digit spacing, defaults and sparkline were still changing on
 2026-11-16).
 
-**Description, en** (3119 characters):
+**Description, en** (3117 characters):
 
 ```text
-Sukrara Aura shows your glucose on your watch face, next to the time: the value in its range colour, the last hours as a line or the trend arrow, and how long ago it was read. It is the watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+Sukrara Aura shows your glucose on your watch face, next to the time: the value in its range colour, the last hours as a line or the trend arrow, and how long ago it was read. It is a watch face of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
 
 What you need
 • The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends every reading to the watch face through Garmin Connect.
@@ -1528,10 +1528,10 @@ Sukrara Aura is not a medical device and does not diagnose, treat, cure or preve
 Sukrara is not affiliated with Garmin or with any sensor maker.
 ```
 
-**Description, es** (3307 characters):
+**Description, es** (3308 characters):
 
 ```text
-Sukrara Aura muestra tu glucosa en la esfera del reloj, junto a la hora: el valor en el color de su rango, las últimas horas como una línea o la flecha de tendencia, y hace cuánto se leyó. Es la esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+Sukrara Aura muestra tu glucosa en la esfera del reloj, junto a la hora: el valor en el color de su rango, las últimas horas como una línea o la flecha de tendencia, y hace cuánto se leyó. Es una esfera de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
 
 Qué necesitas
 • La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura a la esfera a través de Garmin Connect.

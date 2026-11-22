@@ -1,21 +1,20 @@
 ---
 title: Sukrara para Garmin
-description: Tu glucosa en un reloj Garmin, desde Sukrara para Android en segundos. Una esfera cuyo fondo es el aura de tu glucosa, una app de reloj con vistazo, complicaciones, registro y alertas en la muñeca, y un campo de datos para tus entrenamientos. Gratis.
+description: Tu glucosa en un reloj Garmin, desde Sukrara para Android en segundos. Esferas (de momento, Sukrara Aura), una app de reloj con vistazo, complicaciones, registro y alertas en la muñeca, y un campo de datos para tus entrenamientos. Gratis.
 ---
 
 import { Steps } from '@astrojs/starlight/components';
 import ConnectIqBadge from '../../../components/ConnectIqBadge.astro';
 import FaceGallery from '../../../components/face-playground/FaceGallery.astro';
-import FaceTour from '../../../components/face-playground/FaceTour.astro';
 
-Tres apps gratuitas llevan Sukrara a tu reloj, cada una alimentada por [Sukrara para Android](/es/android/) en
+Sukrara lleva tu glucosa a tu reloj de tres maneras, cada una alimentada por [Sukrara para Android](/es/android/) en
 segundos. Usa una, dos o las tres:
 
-- **Sukrara Aura**, una esfera cuyo fondo es el aura de tu glucosa.
-- **Sukrara**, una app de reloj: tu glucosa en la lista de vistazos y en cualquier esfera que admita complicaciones,
-  insulina e hidratos registrados desde la muñeca, alertas que puedes atender ahí.
-- **Sukrara campo de datos**, tu glucosa en la pantalla de una carrera, una salida en bici o una ruta, y en la
-  actividad una vez guardada.
+- **[Esferas](#esferas)**: Sukrara Aura, cuyo fondo es el aura de tu glucosa.
+- **[Aplicaciones](#aplicaciones)**: Sukrara, la app del reloj. Tu glucosa en la lista de vistazos y en cualquier
+  esfera que admita complicaciones, insulina e hidratos registrados desde la muñeca, alertas que puedes atender ahí.
+- **[Campos de datos](#campos-de-datos)**: Sukrara campo de datos, tu glucosa en la pantalla de una carrera, una
+  salida en bici o una ruta, y en la actividad una vez guardada.
 
 ## Descarga
 
@@ -24,73 +23,42 @@ segundos. Usa una, dos o las tres:
 <Steps>
 
 1. Instala [Sukrara para Android](/es/android/) y Garmin Connect en tu móvil.
-2. Desde la tienda Connect IQ (muy pronto): pon Sukrara Aura como esfera, añade Sukrara a tus vistazos y pon Sukrara
+2. Desde la tienda Connect IQ (muy pronto): elige una esfera de Sukrara, añade Sukrara a tus vistazos y pon Sukrara
    campo de datos en la pantalla de datos de una actividad.
 3. Listo: Sukrara envía cada lectura a cada una por sí sola.
 
 </Steps>
 
-## Sukrara Aura, la esfera
+## Esferas
 
-El fondo se concentra en tu nivel y se extiende cuanto más fuera de rango estás.
+Tu glucosa, la hora y lo que Sukrara te pide, en la esfera que miras todo el día.
 
-Aquí abajo, la esfera vive un día inventado, 600 veces más rápido: una baja de noche, comidas, una alta y su corrección,
-un sensor que se acaba y uno nuevo calentando, el móvil olvidado, un silencio. Señala una parte para ver qué es y elige
-un fondo. O [pruébala tú](/es/watch-face/): elige cualquier estado, cambia la lectura o acelera el tiempo.
+### Sukrara Aura
 
-<FaceTour />
+El fondo se concentra en tu nivel y se extiende cuanto más fuera de rango estás. Siete fondos, las últimas horas junto
+al valor, qué hacer ahora, la vida del sensor, tus propios campos, siempre activa, noche y privado.
 
-Cada imagen de aquí es la propia esfera, dibujada por su código a partir de lecturas inventadas. Las marcadas con *se
-mueve* van con un reloj, para que veas un estado llegar e irse.
+<FaceGallery group="glucose" lead={false} />
 
-### Tu glucosa, de un vistazo
+[Todo lo que muestra Sukrara Aura](/es/garmin/aura/), viviendo un día inventado · [Pruébala tú](/es/watch-face/)
 
-<FaceGallery group="glucose" />
+Otros desarrolladores también pueden hacer esferas que lean tu glucosa de Sukrara: [cómo](/developers/garmin-faces/)
+(en inglés).
 
-### Las últimas horas
+## Aplicaciones
 
-<FaceGallery group="trend" />
+### Sukrara
 
-### Qué hacer ahora
-
-<FaceGallery group="act" />
-
-### Silenciadas
-
-<FaceGallery group="muted" />
-
-### Nunca un valor antiguo como actual
-
-<FaceGallery group="age" />
-
-### Sensor, móvil y batería
-
-<FaceGallery group="sensor" />
-
-### Siempre activa, noche y privado
-
-<FaceGallery group="screen" />
-
-### Tus campos y ajustes
-
-<FaceGallery group="fields" />
-
-### El fondo te sigue
-
-<FaceGallery group="dial" />
-
-## Sukrara, la app del reloj
-
-Para cuando la esfera no está: otra esfera que te gusta, un vistazo mientras pasas pantallas, una comida que apuntas
+La app del reloj, para cuando no llevas una esfera de Sukrara: otra esfera que te gusta, un vistazo mientras pasas pantallas, una comida que apuntas
 sin sacar el móvil.
 
-### De un vistazo
+#### De un vistazo
 
 En la lista de vistazos del reloj: el valor y su flecha, tu anillo principal (tiempo en rango, o lo que elegiste en el
 móvil) y tu último tratamiento o el segundo anillo. Su hora aparece cuando la lectura llega tarde, la píldora de
 Sukrara cuando hay algo que hacer. Selecciónalo para abrir la app.
 
-### Dos páginas
+#### Dos páginas
 
 - **La tarjeta**: el valor en grande, tus anillos y el último tratamiento al lado, una gráfica de las últimas horas
   con tus rangos y las marcas de tratamientos y, si quieres, la parte de lecturas por encima, dentro y por debajo del
@@ -100,14 +68,14 @@ Sukrara cuando hay algo que hacer. Selecciónalo para abrir la app.
 
 Desliza o pulsa UP / DOWN para pasar de una a otra.
 
-### En cualquier esfera
+#### En cualquier esfera
 
 Las complicaciones de Sukrara van en las esferas que admiten las de otras apps (el editor de esferas del propio reloj
 en los relojes nuevos, Face It, las esferas hechas para CGM+): tu glucosa, con su tendencia y las últimas 24 horas para
 las esferas que las dibujan, y **Registrar**, el tiempo desde tu último tratamiento, que abre el registro al
 tocarla en un reloj táctil. Una lectura antigua aparece como `---`, nunca como actual.
 
-### Registra desde la muñeca
+#### Registra desde la muñeca
 
 START y luego insulina rápida, insulina lenta o hidratos, ya en el orden que elegiría Sukrara (hidratos primero si tienes
 una baja). Elige la cantidad con los botones o una de tus tres cantidades habituales y mantén START hasta que se llene el
@@ -117,13 +85,13 @@ dice primero.
 
 ¿El móvil fuera de alcance? El reloj guarda la entrada con su propia hora y la envía cuando el móvil vuelve.
 
-### Silenciar o recordar menos
+#### Silenciar o recordar menos
 
 Desde la misma lista, **Silenciar alertas** de 15 minutos a 2 horas o hasta que las reactives: las del móvil y las del
 reloj, con **Deshacer**. Mientras están silenciadas, el tiempo que queda se ve en todas partes, con **Reactivar** y
 **Cambiar tiempo**.
 
-### Alertas en la muñeca
+#### Alertas en la muñeca
 
 Cuando la alerta de Sukrara suena en el móvil, el reloj también la muestra: *Baja 62 · Bajando*, con las tres acciones
 del móvil. **Tratamiento** abre el registro en hidratos si es una baja y en insulina rápida si es una alta; **Recordar
@@ -132,14 +100,16 @@ menos** espacia los avisos, con Deshacer; **Silenciar** calla ese tipo de alerta
 Garmin Connect también reenvía la notificación del móvil, así que puedes notar dos vibraciones por una alerta. Si te pasa, desactiva
 Sukrara en los ajustes de notificaciones de Garmin Connect: la alerta de la app del reloj se queda.
 
-### Sus ajustes
+#### Sus ajustes
 
 Se ve como tu móvil: anillos, horas de la gráfica, marcas de tratamientos, periodo del informe. Cada reloj puede
 tener los suyos: **Ajustes › Compartir con apps › Garmin**, y **Sukrara** debajo del reloj, donde cada ajuste dice
 *Igual que la app* hasta que lo cambias. En la app Connect IQ, dos propios: la minigráfica en las alertas y lo que muestra la complicación Registrar (tiempo desde, la cantidad o
 ambos).
 
-## Sukrara campo de datos
+## Campos de datos
+
+### Sukrara campo de datos
 
 Añádelo a la pantalla de datos de una actividad y tu glucosa sigue a la vista mientras te mueves: el valor y su línea
 reciente en una pantalla entera o media, el valor y la flecha en un hueco pequeño. Una baja pinta el hueco de su color;
@@ -157,8 +127,9 @@ una lectura antigua aparece tachada.
 - *Descent Mk3i tiene la lectura de las 10:09*, o *esperando una lectura*.
 - *Descent Mk3i no está conectado* cuando el reloj está lejos, y *Ninguna app de Sukrara en tu reloj* hasta que
   instalas una.
-- **Sukrara en tu reloj** lista la esfera, la app y el campo de datos, y cuándo pidió cada una algo a este móvil por
-  última vez (con dos relojes, cada uno su lista). **Sukrara** abre los ajustes de ese reloj.
+- **Sukrara en tu reloj** lista la app y el campo de datos, y **Esferas** cada esfera de Sukrara, con cuándo pidió
+  cada una algo a este móvil por última vez (con dos relojes, cada uno sus listas). **Sukrara** abre los ajustes de
+  ese reloj.
 - *Necesita Garmin Connect en este móvil* o *Garmin Connect no responde · ábrelo*, con el botón que lo arregla.
 - *Se actualiza cada 5 minutos · Garmin Connect pierde mensajes* cuando Garmin Connect los pierde: cada app se lo pide
   al móvil.
@@ -166,8 +137,8 @@ una lectura antigua aparece tachada.
   siguen pidiéndoselo al móvil.
 - *La esfera no recibe las lecturas nuevas · reinicia el reloj* cuando el reloj las recibe pero la esfera no las
   muestra.
-- *La esfera no puede leer los mensajes de este móvil · actualiza Sukrara Aura* cuando la esfera es más antigua que
-  el móvil: actualízala en la app Connect IQ.
+- *La esfera no puede leer los mensajes de este móvil · actualízala en la app Connect IQ* cuando la esfera es más
+  antigua que el móvil.
 - **Enviar ahora** envía la lectura actual al momento.
 
 ## En tu idioma
@@ -176,7 +147,7 @@ Español e inglés, según el idioma de tu reloj: *Hidratos* y *Carbs*, *Sin lec
 
 ## Requisitos
 
-- **Sukrara Aura**: un reloj Garmin con pantalla AMOLED redonda de 390 × 390: Descent Mk3 / Mk3i 43 mm, Venu 3S,
+- **Esferas**: Sukrara Aura necesita una pantalla AMOLED redonda de 390 × 390: Descent Mk3 / Mk3i 43 mm, Venu 3S,
   Venu 4 41 mm, vívoactive 6, Forerunner 570 42 mm, epix Pro (Gen 2) 42 mm, MARQ (Gen 2) y MARQ Aviator, Approach S70
   42 mm. Llegarán más relojes.
 - **Sukrara y Sukrara campo de datos**: cualquier reloj Garmin con Connect IQ 5 o más nuevo: fēnix 7, 8, 9 y E, epix
@@ -224,8 +195,10 @@ activadas las alertas del móvil.
 <details>
 <summary>Uso otra esfera o campo de datos de Garmin. ¿Puede mostrar la glucosa de Sukrara?</summary>
 
-Una esfera que admite complicaciones puede mostrar las de Sukrara, con la app del reloj instalada. Las esferas y campos de datos hechos para xDrip+ pueden leer el servidor xDrip+ de Sukrara: **Ajustes › Compartir con
-apps › Garmin › Servidor xDrip+**.
+Una esfera que admite complicaciones puede mostrar las de Sukrara, con la app del reloj instalada. Una esfera hecha
+para leer Sukrara le pide tu glucosa al móvil ella misma ([para desarrolladores](/developers/garmin-faces/), en
+inglés). Las esferas y campos de datos hechos para xDrip+ pueden leer el servidor xDrip+ de Sukrara: **Ajustes ›
+Compartir con apps › Garmin › Servidor xDrip+**.
 
 </details>
 
