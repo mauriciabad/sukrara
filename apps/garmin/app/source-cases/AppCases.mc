@@ -46,6 +46,7 @@ class AppCasesView extends WatchUi.View {
     var id as String = "";
     var layoutMs as Number = 0;
     var cfg as Dictionary = {};
+    var ga as Array = [0, 0, 0, 0]; // the glance's content area (the device file's: x, y, w, h)
     var xs as Dictionary = {}; // the screen's own words, for the reference (app.js's hooks)
 
     function initialize() {
@@ -98,6 +99,7 @@ class AppCasesView extends WatchUi.View {
             GlanceCopy.save(p, Link.skew);
         }
         cfg = c["cfg"] as Dictionary;
+        ga = c["ga"] as Array;
         xs = {};
         // the outbox as the case says (the glance's sending line)
         var ob = cfg["outbox"];
@@ -138,7 +140,6 @@ class AppCasesView extends WatchUi.View {
         if (scr.equals("glance")) {
             // the glance's own area where the watch's glance list puts it (the device file's content area, cases.py;
             // app.js glanceBox), vertically centred
-            var ga = c["ga"] as Array;
             AppGlance.glanceArea(ga[2] as Number, ga[3] as Number);
             AppDraw.ox += ga[0] as Number;
             AppDraw.glance = true;
