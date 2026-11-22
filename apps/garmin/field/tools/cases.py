@@ -21,6 +21,7 @@ GARMIN = os.path.dirname(FIELD)
 ROOT = os.path.dirname(os.path.dirname(GARMIN))
 CASES = os.path.join(ROOT, "contracts", "watchface", "field", "cases.json")
 APPJS = os.path.join(ROOT, "tools", "watchface", "app.js")
+LINK = os.path.join(GARMIN, "shared", "link", "Link.mc")
 OUT = os.path.join(FIELD, "build", "cases")
 CASES_ID = "5e0c8a3b-7d41-4c2f-9a6e-2b8d1f4c7a90"
 DEVICES = os.path.expanduser(os.environ.get("CIQ_DEVICES", "~/Library/Application Support/Garmin/ConnectIQ/Devices"))
@@ -42,9 +43,25 @@ def layouts(cls):
     return json.loads(subprocess.run(["node", "-e", js], check=True, capture_output=True, text=True).stdout)
 
 
+def version():
+    """The payload version the apps read (shared/link/Link.mc VERSION)."""
+    return int(re.search(r"const VERSION = (\d+);", open(LINK, encoding="utf-8").read()).group(1))
+
+
+def check_versions(data):
+    """Every state is a payload of the version the apps read: one of another version would draw "no data" in every
+    case (Link ignores it), so the cases would never test the field."""
+    v = version()
+    bad = ["%s (v %s)" % (k, p.get("v")) for k, p in data["states"].items() if p is not None and p.get("v") != v]
+    if bad:
+        raise SystemExit("%s: states of another payload version than the apps' VERSION %d (%s): %s"
+                         % (os.path.relpath(CASES, ROOT), v, os.path.relpath(LINK, ROOT), ", ".join(bad)))
+
+
 def cases(device):
     """cases.json's cases (FIELD_CASES=id,id…: only those), each with its payload and its slots on [device]."""
     data = json.load(open(CASES, encoding="utf-8"))
+    check_versions(data)
     cls, w, h = device_class(device)
     dfs = layouts(cls)
     only = [s for s in os.environ.get("FIELD_CASES", "").split(",") if s]
