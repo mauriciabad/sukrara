@@ -1,0 +1,9 @@
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Sukrara's words, Spanish. -->
+<strings>
+    <string id="AppName">Sukrara</string>
+    <string id="NoReadings" scope="glance">Sin lecturas</string>
+    <string id="Waiting" scope="glance">Abre Sukrara en el móvil</string>
+</strings>

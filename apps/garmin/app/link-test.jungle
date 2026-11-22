@@ -1,0 +1,6 @@
+# Sukrara — https://github.com/mauriciabad/sukrara
+# Copyright (C) 2026 Maurici Abad
+# SPDX-License-Identifier: GPL-3.0-or-later
+# The phone link's and the input's tests in the watch app (contracts/watchface/payload, contracts/graph/freshness):
+# apps/garmin/tools/link-test.sh app.
+base.sourcePath = source;../shared/link;../shared/input;../shared/format;../shared/plain;../shared/test/link;../shared/test/input

@@ -357,7 +357,11 @@ LibreView keeps them, `dtid`, `lvother`, `lvexpire` and `lvmerge` to reach every
 The watch face is `apps/garmin/aura` (Monkey C, Connect IQ; how the code is laid out and the data seam:
 [apps/garmin/aura/README.md](../apps/garmin/aura/README.md); the design: `contracts/watchface/aura/SPEC.md`). It shares
 `apps/garmin/shared` (the phone link) and the build with Sukrara's other Garmin apps:
-[apps/garmin/README.md](../apps/garmin/README.md).
+[apps/garmin/README.md](../apps/garmin/README.md). Those are **Sukrara** (`apps/garmin/app`, a watch app with a glance)
+and **Sukrara data field** (`apps/garmin/field`), with a placeholder look until the design (docs/47); everything below
+works for them with `app` / `field` in place of `aura` (`build.sh app`, `link-test.sh field`, …), except the face's
+case loader and pictures. `apps/garmin/tools/fake_phone.py` answers the simulator's fetches with a case of
+`contracts/watchface/payload/cases.json`.
 
 **Setup.** `brew install --cask connectiq-sdk-manager`; in the SDK Manager sign in with a Garmin account, install the
 newest SDK (9.3.0 when written) and the *Descent Mk3 43mm / Mk3i 43mm* device (`descentmk343mm`): everything lands in
@@ -380,7 +384,7 @@ face signed with the same key, and the store app is tied to it. `CIQ_KEY` points
 | References without the dial, halo, sweep | `node apps/garmin/aura/tools/core_refs.mjs <dir>` (Chrome, like `tools/watchface/build.mjs`) |
 | Fonts and icons | `uv run apps/garmin/aura/tools/fonts.py` (`--check`) |
 | One screenshot of the simulator | `uv run apps/garmin/tools/simshot.py out.png` |
-| Onto the owner's watch | `tools/install.sh watch` (then the owner picks the face) |
+| Onto the owner's watch | `tools/install.sh watch` (every app; then the owner picks the face, adds the glance and the field) |
 
 **Simulator.** `"$SDK/bin/connectiq"` opens it, `"$SDK/bin/monkeydo" <prg> descentmk343mm` runs a build in it (the
 simulator must be running). It is one app for every session: don't quit one you didn't start; agents take turns.
@@ -408,8 +412,8 @@ is not supported" on the others, and they crash at the first `setFill`), and a g
 runs out at the first draw). `build.sh aura export` builds every product,
 `CIQ_DEVICE=<product> build.sh aura` one; the SDK Manager installs a watch's device files.
 
-**On the watch.** `tools/install.sh watch` builds the release, verifies it and copies it over MTP to
-`GARMIN/Apps/SUKAURA.PRG` (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only that file is written; an older copy of it is
+**On the watch.** `tools/install.sh watch` builds every app's release, verifies each and copies them over MTP to
+`GARMIN/Apps/SUKAURA.PRG`, `SUKRARA.PRG` (the app), `SUKFIELD.PRG` (the field) (`apps/garmin/tools/sideload.py`, libmtp with the storage set: `mtp-sendfile` fails on this watch; only those files are written; an older copy of each is
 replaced; close Garmin Express / OpenMTP first). The watch installs it when unplugged; select it on the watch (hold
 MENU › Watch face). A sideloaded face has no settings page in the Connect IQ phone app (that needs the store package):
 use the watch's Customize menu.

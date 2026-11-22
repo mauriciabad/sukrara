@@ -557,7 +557,7 @@
     ]
   },
   "garmin": {
-    "about": "The Garmin watch faces: their own renderers (Monkey C), drawn from the spec and reference in contracts/watchface, not from GlucoseCard. A face takes Sukrara's decisions (bands, trend, pill, sensor state) from the phone and applies the freshness steps itself (contracts/graph/freshness), so it is registered like every surface that shows the value. tools/check card-surface: every registered file and test exists, and only the registered files lay out or draw the face (AuraModel / AuraDraw).",
+    "about": "The Garmin apps (apps/garmin: the face, the watch app's glance and view, the data field): their own renderers (Monkey C), drawn from the spec and reference in contracts/watchface, not from GlucoseCard. A face takes Sukrara's decisions (bands, trend, pill, sensor state) from the phone and applies the freshness steps itself (contracts/graph/freshness), so it is registered like every surface that shows the value. tools/check card-surface: every registered file and test exists, and only the registered files lay out or draw the face (AuraModel / AuraDraw).",
     "surfaces": [
       {
         "id": "garmin-aura",
@@ -582,6 +582,67 @@
         "tests": [
           "apps/garmin/aura/tools/garmin_test.py",
           "apps/garmin/aura/source-cases/AuraCases.mc"
+        ]
+      },
+      {
+        "id": "garmin-app-glance",
+        "kind": "glance",
+        "entry": "PlainDraw.draw",
+        "parts": [
+          "value",
+          "arrow",
+          "age"
+        ],
+        "size": "the watch's glance slot (placeholder look until the design: contracts/watchface/payload README 'The apps')",
+        "spec": "docs/47-garmin-apps.md (the design comes as contracts/watchface/app/SPEC.md)",
+        "files": [
+          "apps/garmin/app/source/AppGlance.mc",
+          "apps/garmin/shared/plain/Plain.mc"
+        ],
+        "tests": [
+          "apps/garmin/shared/test/input/InputTest.mc",
+          "apps/garmin/shared/test/link/LinkTest.mc"
+        ]
+      },
+      {
+        "id": "garmin-app",
+        "kind": "app",
+        "entry": "PlainDraw.draw",
+        "parts": [
+          "value",
+          "arrow",
+          "age",
+          "chart"
+        ],
+        "size": "the watch's screen (every API 5+ watch of apps/garmin/app/manifest.xml)",
+        "spec": "docs/47-garmin-apps.md (the design comes as contracts/watchface/app/SPEC.md)",
+        "files": [
+          "apps/garmin/app/source/AppView.mc",
+          "apps/garmin/shared/plain/Plain.mc"
+        ],
+        "tests": [
+          "apps/garmin/shared/test/input/InputTest.mc",
+          "apps/garmin/shared/test/link/LinkTest.mc"
+        ]
+      },
+      {
+        "id": "garmin-field",
+        "kind": "field",
+        "entry": "PlainDraw.draw",
+        "parts": [
+          "value",
+          "arrow",
+          "age"
+        ],
+        "size": "any data-field slot of an activity screen (every API 5+ watch of apps/garmin/field/manifest.xml)",
+        "spec": "docs/47-garmin-apps.md §8",
+        "files": [
+          "apps/garmin/field/source/FieldApp.mc",
+          "apps/garmin/shared/plain/Plain.mc"
+        ],
+        "tests": [
+          "apps/garmin/shared/test/input/InputTest.mc",
+          "apps/garmin/shared/test/link/LinkTest.mc"
         ]
       }
     ]

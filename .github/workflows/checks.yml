@@ -287,6 +287,15 @@ jobs:
       - name: Store package (every watch)
         if: steps.sdk.outputs.ready == 'true'
         run: apps/garmin/build.sh aura export
+      # The watch app and the data field (placeholder look, docs/47): a release build on the Descent, and the store
+      # package, which compiles every product of their manifests (73 watches, every screen class)
+      - name: Sukrara (watch app) and Sukrara data field, release and store package (every watch)
+        if: steps.sdk.outputs.ready == 'true'
+        run: |
+          for app in app field; do
+            apps/garmin/build.sh "$app" release
+            apps/garmin/build.sh "$app" export
+          done
       # SPEC.md §10 on a fixed set of cases, so the gate stays inside its timeout (the full set takes 1–2 h: garmin-all):
       # the safety states, one case per dial, always-on, private, Spanish. Their numbers against expect.json (fails the
       # job), the battery label against every row, a screenshot of each diffed with docs/img/aura/ref (the artifact).

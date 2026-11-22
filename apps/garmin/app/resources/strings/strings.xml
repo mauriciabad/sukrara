@@ -1,0 +1,9 @@
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Sukrara's words, English (resources-spa: Spanish); the placeholder look's (shared/plain) until the design. -->
+<strings>
+    <string id="AppName">Sukrara</string>
+    <string id="NoReadings" scope="glance">No readings</string>
+    <string id="Waiting" scope="glance">Open Sukrara on the phone</string>
+</strings>

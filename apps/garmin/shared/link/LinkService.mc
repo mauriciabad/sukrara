@@ -14,7 +14,7 @@ import Toybox.Time;
 // LinkBackground.FETCH_URL on http://127.0.0.1:17582, Garmin Connect's web proxy). Either way the payload goes to the app's
 // foreground as it came (Background.exit); the foreground checks and keeps it (Link.receive).
 // contracts/watchface/payload. The storage keys are the face's first names: storage is per app, so each app has its own.
-(:background)
+(:background :glance)
 module LinkBackground {
     // each app's own fetch: its jungle excludes the other apps' annotations (a module per app would cost the face
     // 44 bytes, #217)
