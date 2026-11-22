@@ -1416,7 +1416,9 @@ var WL = (function () {
       g.r(x, cyy, cw, 32, 16, { fill: on ? PAL.card2 : 'none', stroke: on ? PAL.soft : PAL.faint, sw: 1.5 });
       g.t(x + cw / 2, cyy + 22, p, { fs: 17, fw: on ? 700 : 500, fill: on ? PAL.ink : PAL.soft });
     });
-    var Rr = { above: 14, inR: 85, good: 64, below: 0.1, split: [0, 0.1, 64, 21, 14, 0.8, 0] };
+    // the report of the period (d.rep, as S.appNums)
+    var Rr = d.rep || { above: '14 %', inR: '85 %', good: '64 %', below: '0.1 %', split: [0, 0.1, 64, 21, 14, 0.8, 0], met: [true, true, true],
+      nums: [['136', 'Average', true], ['6.6 %', 'GMI', true], ['27 %', 'CV', true]] };
     var top = cyy + 52, bot = hh - 86, bxx = -hw + 14, tot = 0, keys = ['veryLow', 'low', 'tight', 'target', 'high', 'veryHigh', 'extremelyHigh'];
     Rr.split.forEach(function (v) { tot += v; });
     var y = bot;
@@ -1427,35 +1429,38 @@ var WL = (function () {
       y -= h;
     });
     var lx = bxx + 26, rx = hw - 12, step = (bot - top) / 3;
-    function goal(x, yy, text) {
-      var w = 26 + tw(text, 14);
-      g.r(x, yy - 15, w, 22, 11, { fill: '#173A27' });
-      g.p('M' + r1(x + 8) + ' ' + r1(yy - 4.5) + 'l3.5 3.5l6 -7', { stroke: PAL.tight, sw: 2 });
-      g.t(x + 21, yy + 1, text, { fs: 14, fw: 600, fill: PAL.tight, anchor: 'start' });
+    function goal(x, yy, text, met) {
+      var w = 26 + tw(text, 14), col = met ? PAL.tight : PAL.high;
+      g.r(x, yy - 15, w, 22, 11, { fill: met ? '#173A27' : '#3D2A10' });
+      if (met) g.p('M' + r1(x + 8) + ' ' + r1(yy - 4.5) + 'l3.5 3.5l6 -7', { stroke: col, sw: 2 });
+      else g.p('M' + r1(x + 9) + ' ' + r1(yy - 9) + 'l7 7M' + r1(x + 16) + ' ' + r1(yy - 9) + 'l-7 7', { stroke: col, sw: 2 });
+      g.t(x + 21, yy + 1, text, { fs: 14, fw: 600, fill: col, anchor: 'start' });
       return w;
     }
-    [['Above range', Rr.above + ' %', '< 25%'], ['In range', Rr.inR + ' %', '> 70%', 'very good ' + Rr.good + ' %'], ['Below range', Rr.below + ' %', '< 4%']].forEach(function (r, i) {
+    [['Above range', Rr.above, '< 25%'], ['In range', Rr.inR, '> 70%', 'very good ' + Rr.good], ['Below range', Rr.below, '< 4%']].forEach(function (r, i) {
       var yy = top + 22 + i * step, big = i === 1;
       g.t(lx, yy, r[0], { fs: big ? 22 : 19, fw: big ? 700 : 600, fill: PAL.ink, anchor: 'start' });
       g.t(rx, yy + (big ? 4 : 0), r[1], { fs: big ? 32 : 22, fw: 700, fill: PAL.ink, anchor: 'end' });
-      var w = goal(lx, yy + 24, r[2]);
+      var w = goal(lx, yy + 24, r[2], Rr.met[i] !== false);
       if (r[3]) g.t(lx + w + 10, yy + 25, r[3], { fs: 15, fw: 500, fill: PAL.soft, anchor: 'start' });
     });
     g.p('M' + r1(-hw + 12) + ' ' + r1(bot + 14) + 'H' + r1(hw - 12), { stroke: PAL.grid, sw: 1.5 });
-    [['136', 'Average', false], ['6.6 %', 'GMI', true], ['27 %', 'CV', true]].forEach(function (m, i) {
+    Rr.nums.forEach(function (m, i) {
       var x = (i - 1) * (2 * hw - 40) / 3;
       g.t(x, bot + 48, m[0], { fs: 24, fw: 700, fill: PAL.ink });
       var lw = tw(m[1], 15) + 18;
-      g.p('M' + r1(x - lw / 2) + ' ' + r1(bot + 65) + 'l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
+      if (m[2]) g.p('M' + r1(x - lw / 2) + ' ' + r1(bot + 65) + 'l3.2 3.2l5.5 -6.5', { stroke: PAL.tight, sw: 2 });
+      else g.p('M' + r1(x - lw / 2 + 1) + ' ' + r1(bot + 61.6) + 'l6 6M' + r1(x - lw / 2 + 7) + ' ' + r1(bot + 61.6) + 'l-6 6', { stroke: PAL.high, sw: 2 });
       g.t(x - lw / 2 + 14, bot + 71, m[1], { fs: 15, fw: 600, fill: PAL.soft, anchor: 'start' });
     });
     if (c.dots !== false) pageDots(g, 2, 1);
   };
   R.actions = function (g, d, c) {
     var hw = KC.hw, hh = KC.hh;
-    var last = { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' }, name = { rapid: 'Rapid', carbs: 'Carbs', long: 'Long' };
+    var last = d.lastBy || { rapid: '4.5u · 1h', carbs: '50g · 1h', long: '14u · 12h' }, name = { rapid: 'Rapid', carbs: 'Carbs', long: 'Long' };
     var items = d.order.map(function (k) { return { label: name[k], icon: k, col: PAL[k], sub: last[k] }; });
-    items.push(c.muted ? { label: 'Muted', icon: 'bellOff', col: PAL.note, sub: '1h 20m', subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
+    var mr = c.mutedRow || ['Muted', '1h 20m'];
+    items.push(c.muted ? { label: mr[0], icon: 'bellOff', col: PAL.note, sub: mr[1], subCol: PAL.note } : { label: 'Mute alerts', icon: 'bellOff', col: PAL.soft });
     g.t(-hw + 18, -hh + 34, 'Sukrara', { fs: 20, fw: 600, fill: PAL.soft, anchor: 'start' });
     var y0 = -hh + 86, step = (2 * hh - 86 - 40) / 4 + 2;
     items.forEach(function (it, i) {
@@ -1482,7 +1487,7 @@ var WL = (function () {
       g.r(-hw + 40, cy - 20, 2 * hw - 80, 40, 20, { fill: PAL.card2 });
       g.p('M-16 ' + r1(cy - 6 * dir) + 'L0 ' + r1(cy + 6 * dir) + 'L16 ' + r1(cy - 6 * dir), { stroke: PAL.soft, sw: 4 });
     });
-    var chips = k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6'];
+    var chips = c.usual || (k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6']);
     var cw = 72, gap = 12, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2, cy0 = hh - 92;
     chips.forEach(function (ch, i) {
       var on = ch === s, x = cx0 + i * (cw + gap);
