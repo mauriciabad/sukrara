@@ -11,11 +11,13 @@ regression test of every case of contracts/watchface/app/cases.json.
         OUTDIR/sim, ref, diff, pairs (simulator | reference) and report.txt. Exit 1 when a case fails:
           - its input differs from contracts/watchface/app/expect.json's (numbers ±0.01, everything else exact): the
             watch made something else of the same payload;
-          - its screenshot differs from its reference docs/img/app/cases/<id>.png in more pixels (over 15 %) than
+          - its screenshot differs from its reference docs/img/app/cases/<watch>/<id>.png in more pixels (over 15 %) than
             expect.json's budget for it: the drawing changed.
         A reference app.js now draws differently from the committed one is reported, not failed (the design changed:
-        look at the pairs, then update). CIQ_DEVICE=<product> runs another watch (no expectations: a report only);
-        APP_CASES=id,id… only those cases.
+        look at the pairs, then update). CIQ_DEVICE=<product> runs another watch (default descentmk343mm): its screen
+        class's reference (app.js cfg.cls; two-button rounds cfg.buttons 'two'), its own expectations
+        (expect.json[<product>]) and references (docs/img/app/cases/<product>/); one watch per class family has them
+        (DEVICES below, QA Q32), another gets a report only. APP_CASES=id,id… only those cases.
   … app_test.py update OUTDIR
         the same run, then writes expect.json (each case's input, and its budget: the pixels it differs by now, + 15 %
         and 150) and the references. Look at OUTDIR/pairs first: the update accepts what the watch draws.
@@ -38,10 +40,11 @@ APP = os.path.dirname(HERE)
 GARMIN = os.path.dirname(APP)
 ROOT = os.path.dirname(os.path.dirname(GARMIN))
 DEVICE = os.environ.get("CIQ_DEVICE", "descentmk343mm")
+DEVICES_DIR = os.path.expanduser(os.environ.get("CIQ_DEVICES", "~/Library/Application Support/Garmin/ConnectIQ/Devices"))
+# the watches with expectations: one per screen class family (SPEC §14)
+DEVICES = ("descentmk343mm", "fr265s", "fenix843mm", "fenix847mm", "fenix9pro51mm", "fr255s", "fenix7", "venusq2", "venux1")
 CHROME = os.environ.get("CHROME", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 RENDER = os.path.join(ROOT, "tools", "watchface", "app-render.html")
-# the glance's band of the screen (app.js S.glance: the area y −51.5 … 51.5 and its neighbours' rules at ±84)
-GLANCE_BOX = (0, 105, 390, 285)
 EXPECT = os.path.join(ROOT, "contracts", "watchface", "app", "expect.json")
 REFS = os.path.join(ROOT, "docs", "img", "app", "cases")
 
@@ -56,6 +59,26 @@ def load(name, path):
 GT = load("garmin_test", os.path.join(GARMIN, "aura", "tools", "garmin_test.py"))
 sys.path.insert(0, os.path.join(GARMIN, "tools"))
 import simshot  # noqa: E402
+
+
+def device():
+    """the watch's screen class (app.js CLS), screen, glance content area and whether it has UP / DOWN"""
+    c = json.load(open(os.path.join(DEVICES_DIR, DEVICE, "compiler.json"), encoding="utf-8"))
+    sim = json.load(open(os.path.join(DEVICES_DIR, DEVICE, "simulator.json"), encoding="utf-8"))
+    fonts = load("app_fonts_cls", os.path.join(HERE, "fonts.py"))
+    keys = [k.get("id") for k in sim.get("keys", [])]
+    return {"cls": fonts.FAMILY[c["deviceFamily"]], "w": c["resolution"]["width"], "h": c["resolution"]["height"],
+            "ga": sim["glance"]["contentArea"], "two": "up" not in keys}
+
+
+DEV = None
+
+
+def dev():
+    global DEV
+    if DEV is None:
+        DEV = device()
+    return DEV
 
 
 def lines(log, prefix):
@@ -84,7 +107,8 @@ def simulate(outdir):
                     time.sleep(0.8)
                     for k in range(8):
                         try:
-                            offset = simshot.calibrate(DEVICE)
+                            offset = simshot.calibrate(DEVICE, [(dev()["w"] * a // 390, dev()["w"] * b // 390)
+                                                           for a, b in ((100, 100), (288, 100), (100, 288), (288, 288))])
                             break
                         except SystemExit:
                             if k == 7:
@@ -136,9 +160,13 @@ def reference(x, path):
         return None
     if x["screen"] == "logPen":
         return None  # the phone's pen question: not in app.js
-    url = "file://" + urllib.parse.quote(RENDER) + "#cfg=" + urllib.parse.quote(json.dumps({"watch": x}))
+    k = dev()
+    extra = {"cls": k["cls"]}
+    if k["two"]:
+        extra["buttons"] = "two"
+    url = "file://" + urllib.parse.quote(RENDER) + "#cfg=" + urllib.parse.quote(json.dumps({"watch": x, "extra": extra}))
     a = [CHROME, "--headless=new", "--hide-scrollbars", "--force-device-scale-factor=1", "--allow-file-access-from-files",
-         "--window-size=390,390", "--virtual-time-budget=4000", "--screenshot=" + path, url]
+         "--window-size=%d,%d" % (k["w"], k["h"]), "--virtual-time-budget=4000", "--screenshot=" + path, url]
     subprocess.run(a, check=True, timeout=60, capture_output=True)
     return path
 
@@ -149,7 +177,11 @@ def pair(sim, ref, out, glance):
     a = GT.srgb(sim)
     b = Image.open(ref).convert("RGB") if ref else Image.new("RGB", a.size, (40, 0, 0))
     if glance:
-        a, b = a.crop(GLANCE_BOX), b.crop(GLANCE_BOX)
+        # the glance's band of the screen (its content area, centred, and a margin)
+        k = dev()
+        m = k["ga"]["height"] // 2 + 30
+        box = (0, max(0, k["h"] // 2 - m), k["w"], min(k["h"], k["h"] // 2 + m))
+        a, b = a.crop(box), b.crop(box)
     w, h = a.width, a.height
     im = Image.new("RGB", (2 * w + 12, h + 22), (24, 24, 26))
     im.paste(a, (0, 22))
@@ -184,9 +216,10 @@ def run(outdir, update=False):
     for sub in ("sim", "ref", "diff", "pairs"):
         os.makedirs(os.path.join(outdir, sub), exist_ok=True)
     shots, inputs, perf = simulate(outdir)
-    check = DEVICE == "descentmk343mm"
-    expect = json.load(open(EXPECT, encoding="utf-8")) if os.path.exists(EXPECT) else {"cases": {}}
-    cases = expect["cases"]
+    check = DEVICE in DEVICES
+    expect = json.load(open(EXPECT, encoding="utf-8")) if os.path.exists(EXPECT) else {}
+    cases = expect.setdefault(DEVICE, {})
+    refs = os.path.join(REFS, DEVICE)
     fails, notes, copies = [], [], []
     report = ["pictures: pixels over 15 % different inside the screen (the glance: its band), simulator against app.js"
               " (now | budget)"]
@@ -203,14 +236,14 @@ def run(outdir, update=False):
         if update and check:
             cases[cid] = {"input": x, "budget": None if n is None else int(n * 1.15) + 150}
             if ref:
-                copies.append((ref, os.path.join(REFS, cid + ".png")))
+                copies.append((ref, os.path.join(refs, cid + ".png")))
         elif check and want is None:
             fails.append("%s: not in expect.json (update)" % cid)
         elif check:
             bad = same(want["input"], x)
             if bad:
                 fails.append("%s: the input differs at %s" % (cid, ", ".join(bad[:6])))
-            committed = os.path.join(REFS, cid + ".png")
+            committed = os.path.join(refs, cid + ".png")
             if ref and os.path.exists(committed):
                 m = GT.diff(shots[cid], committed, os.path.join(outdir, "diff", cid + ".committed.png"))
                 if want["budget"] is not None and m > want["budget"]:
@@ -223,22 +256,26 @@ def run(outdir, update=False):
         _, cid, lay, drw, used, total, n = l.split("|")
         report.append("  %-28s %4s %5s  %7s / %s  %s" % (cid, lay, drw, used, total, n))
     ids = [c["id"] for c in json.load(open(os.path.join(APP, "build", "cases", "ids.json"), encoding="utf-8"))]
+    # a size the class's fonts lack (AppDraw.missing: tools/fonts.py)
+    for key in sorted(set(l.split("|")[2] for l in lines(os.path.join(outdir, "cases.log"), "FONT|missing|"))):
+        fails.append("the font %s is not in the class's fonts (tools/fonts.py)" % key)
     missing = [i for i in ids if i not in inputs or i not in shots]
     if missing:
         fails.append("no input or screenshot for %s (the simulator wedged? quit and start it again)" % ", ".join(missing))
     if update and check and missing:
         report.append("not updated: a run with every case first")
     elif update and check:
-        os.makedirs(REFS, exist_ok=True)
+        os.makedirs(refs, exist_ok=True)
         for src, dst in copies:
             shutil.copyfile(src, dst)
-        expect["about"] = ("Each case of cases.json as the watch app takes it (its input: the AppData it draws from) and"
-                           " its picture budget against docs/img/app/cases/<id>.png (pixels over 15 % different):"
-                           " apps/garmin/app/tools/app_test.py run checks both, update writes them.")
+        expect["about"] = ("Per watch (one per screen class family), each case of cases.json as the watch app takes it (its"
+                           " input: the AppData it draws from) and its picture budget against"
+                           " docs/img/app/cases/<watch>/<id>.png (pixels over 15 % different):"
+                           " apps/garmin/app/tools/app_test.py run checks both, update writes them (CIQ_DEVICE=<watch>).")
         with open(EXPECT, "w", encoding="utf-8") as f:
             json.dump(expect, f, indent=1, ensure_ascii=False, sort_keys=True)
             f.write("\n")
-        report += ["", "updated %s and %s" % (EXPECT, REFS)]
+        report += ["", "updated %s and %s" % (EXPECT, refs)]
     report += [""] + ["FAIL " + f for f in fails] + ["NOTE " + m for m in notes]
     text = "\n".join(report) + "\n"
     open(os.path.join(outdir, "report.txt"), "w").write(text)

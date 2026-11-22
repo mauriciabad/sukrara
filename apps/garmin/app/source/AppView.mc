@@ -122,7 +122,7 @@ class AppView extends WatchUi.View {
         AppDraw.table = new Lang.Method(AppFontTable, :atlas);
         AppDraw.iconAt = new Lang.Method(AppFontTable, :icon);
         AppDraw.sheetAt = new Lang.Method(AppFontTable, :sheet);
-        AppDraw.s = w / 390.0;
+        AppDraw.scale(GlanceFontTable.S);
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
     }
@@ -217,11 +217,14 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
         if (view.page != 1) {
             return false;
         }
-        if (y < -160 || y > -114) {
+        var L = AppScreens.numsAt();
+        var cw = L[0] as Numeric;
+        var x0 = -(4 * cw + 18) / 2.0;
+        if (y < (L[1] as Numeric) - 8 || y > (L[1] as Numeric) + (L[2] as Numeric) + 8) {
             return false;
         }
-        var i = ((x + 109) / 56).toNumber();
-        if (x < -109 || i > 3) {
+        var i = ((x - x0 + 3) / (cw + 6)).toNumber();
+        if (x < x0 - 3 || i > 3) {
             return false;
         }
         view.days = [1, 7, 14, 30][i] as Number;

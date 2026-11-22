@@ -54,7 +54,7 @@ case "$MODE" in
   cases | test)
     case "$APP" in
       aura) JUNGLE=aura/cases.jungle; python3 aura/tools/cases.py ;;
-      app) JUNGLE=app/build/cases/cases.jungle; python3 app/tools/cases.py ;;
+      app) JUNGLE=app/build/cases/cases.jungle; CIQ_DEVICE=$DEVICE python3 app/tools/cases.py ;;
       field) JUNGLE=field/build/cases/cases.jungle; CIQ_DEVICE=$DEVICE python3 field/tools/cases.py ;;
     esac
     OUT=bin/$NAME-cases.prg; FLAGS="" ;;

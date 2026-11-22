@@ -58,27 +58,49 @@ module AppLists {
         return out;
     }
 
+    // the rows' y (4), and the list's geometry: [title x, title y, title anchor, selected row x, its width, its
+    // corner, icon x, label x, the last entry's x, the others' icon size]; round (app.js S.actions) or the rectangles'
+    // full-width rows (R.actions)
+    function ys() as Array {
+        if (!GlanceFontTable.RECT) {
+            return [-74, -12, 44, 100];
+        }
+        var h = AppScreens.hh();
+        var st = (2 * h - 86 - 40) / 4 + 2;
+        return [-h + 86, -h + 86 + st, -h + 86 + 2 * st, -h + 86 + 3 * st];
+    }
+
+    function at() as Array {
+        if (!GlanceFontTable.RECT) {
+            return [0, -138, 0, -166, 332, 32, -128, -104, 150, 22];
+        }
+        var w = AppScreens.hw();
+        var h = AppScreens.hh();
+        return [-w + 18, -h + 34, -1, -w + 8, 2 * w - 16, 20, -w + 38, -w + 62, w - 20, 21];
+    }
+
     function actions(g as AppG, d as AppData, sel as Number) as Void {
         var items = rows(d);
-        g.t(0, -138, AppWords.s(Rez.Strings.AppName), 20, 600, AppMath.SOFT, 0);
+        var L = at();
+        g.t(L[0], L[1], AppWords.s(Rez.Strings.AppName), 20, 600, AppMath.SOFT, L[2]);
+        var ys = ys();
         if (items.size() == 1) {
-            g.t(0, -96, AppWords.s(Rez.Strings.LogOff), 17, 500, AppMath.DIM, 0);
+            g.t(0, (ys[1] as Numeric) - 84, AppWords.s(Rez.Strings.LogOff), 17, 500, AppMath.DIM, 0);
         }
-        var ys = [-74, -12, 44, 100];
         var y0 = items.size() == 1 ? 3 : 0;
         for (var i = 0; i < items.size() && i < 4; i++) {
             var it = items[i];
-            var y = ys[i + y0];
+            var y = ys[i + y0] as Numeric;
             var on = i == sel;
             var fs = on ? 30 : 23;
             if (on) {
-                g.r(-166, y - 32, 332, 64, 32, AppMath.CARD2, 1.0, 0);
+                g.r(L[3], y - 32, L[4], 64, L[5], AppMath.CARD2, 1.0, 0);
             }
-            g.icon(it[2] as String, -128, y, on ? 26 : 22, it[3] as Number);
-            g.t(-104, y + fs * 0.35, it[1] as String, fs, on ? 700 : 600, on ? AppMath.INK : AppMath.SOFT, -1);
+            g.icon(it[2] as String, L[6], y, on ? 26 : L[9], it[3] as Number);
+            g.t(L[7], y + fs * 0.35, it[1] as String, fs, on ? 700 : 600, on ? AppMath.INK : AppMath.SOFT, -1);
             if (it[4] != null) {
                 var sc = it[5] != null ? it[5] as Number : on ? AppMath.SOFT : AppMath.DIM;
-                g.t(150, y + 7, it[4] as String, on ? 18 : 16, 600, sc, 1);
+                g.t(L[8], y + 7, it[4] as String, on ? 18 : 16, 600, sc, 1);
             }
         }
         AppScreens.btnHint(g, 60, AppMath.INK);
@@ -133,7 +155,8 @@ class ListDelegate extends WatchUi.BehaviorDelegate {
     function onTap(e as WatchUi.ClickEvent) as Boolean {
         var y = (e.getCoordinates()[1] - AppDraw.oy) / AppDraw.s;
         var n = AppLists.rows(AppInput.build(Time.now().value(), false)).size();
-        var ys = n == 1 ? [100] : [-74, -12, 44, 100];
+        var all = AppLists.ys();
+        var ys = n == 1 ? [all[3]] : all;
         for (var i = 0; i < ys.size() && i < n; i++) {
             if (y > ys[i] - 30 && y < ys[i] + 28) {
                 view.sel = i;

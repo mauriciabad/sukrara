@@ -69,36 +69,48 @@ module AppAlert {
         var col = colour(k, d);
         var v = very(k);
         if (v) {
-            g.r(-197, -197, 394, 394, 0, col, 1.0, 0);
+            AppScreens.full(g, col);
         } else {
-            g.a(0, 0, 189, 0, 360, col, 1.0, 10, false);
+            AppScreens.rim(g, col, 10, 1.0);
         }
-        var ink = v ? AppMath.INK : col;
+        // on the block: white (MIP: white or black, whichever reads better on the 64-colour block)
+        var w0 = AppScreens.inkOn(col);
+        var ink = v ? w0 : col;
         var w = word(k);
         g.icon("bell", -AppMath.tw(w, 20) / 2 - 16, -140, 20, ink);
         g.ts(12, -133, w, 20, 700, ink, MIDDLE, 1.5);
-        var vc = v ? AppMath.INK : null;
+        var vc = v ? w0 : null;
         if (d.noValue()) {
             AppScreens.noValue(g, d, -66);
         } else if (spark && d.hv.size() > 1) {
-            // value + sparkline inside the rim: the sparkline gives way (132 → 96)
+            // value + sparkline inside the rim: the sparkline gives way first (132 → 96), then the value (84 → 68)
             var str = AppMath.fmtG(d.g as Number, d.unit);
-            var vw = AppMath.bw(str, 84);
+            var vfs = 84;
+            var vw = AppMath.bw(str, vfs);
             var sw = 132;
-            var r = 195 - (v ? 2 : 13);
+            var m = (v ? 0 : 11) + 2 / GlanceFontTable.S;
             var x0 = -(vw + 12 + sw) / 2.0;
-            while (sw > 96 && x0 * x0 + 113 * 113 > r * r) {
-                sw -= 4;
+            var yt = -54 - AppDraw.fe(vfs) * 0.7;
+            while ((sw > 96 || vfs > 68) && !inside(x0, yt, m)) {
+                if (sw > 96) {
+                    sw -= 4;
+                } else {
+                    vfs -= 4;
+                    vw = AppMath.bw(str, vfs);
+                    yt = -54 - AppDraw.fe(vfs) * 0.7;
+                }
                 x0 = -(vw + 12 + sw) / 2.0;
             }
-            AppParts.value(g, d, x0, -54, 84, START, false, vc);
+            AppParts.value(g, d, x0, -54, vfs, START, false, vc);
             AppSpark.draw(g, d, [x0 + vw + 12, x0 + vw + 12 + sw, -112, -56], 0.8, v ? col : null);
         } else {
             AppParts.value(g, d, 0, -44, 100, MIDDLE, true, vc);
         }
         var tk = Ring.treatment(it.get("side"));
         var codes = rows(it);
+        // the others: dark (on the block: black at 28 %; MIP black, or an outline in the ink when the ink is black)
         var sec = v ? AppMath.BLACK : AppMath.CARD2;
+        var wide = GlanceFontTable.RECT ? 2 * AppScreens.hw() - 36 : 0;
         for (var i = 0; i < codes.size(); i++) {
             var c = codes[i];
             var on = i == sel;
@@ -106,12 +118,22 @@ module AppAlert {
                 : c.equals("usual") ? Rez.Strings.RemindUsual : Rez.Strings.Mute);
             var icon = c.equals("treat") ? tk : c.equals("mute") ? "bellOff" : null;
             // the selected answer filled (Treatment in its kind's colour, white on the block), the others dark
-            var fill = !on ? sec : c.equals("treat") && !v ? AppMath.pal(tk) : AppMath.INK;
-            var fg = on ? AppMath.ON : AppMath.INK;
-            var ic = on ? AppMath.ON : c.equals("treat") && !v ? AppMath.pal(tk) : AppMath.INK;
+            var fill = !on ? sec : c.equals("treat") && !v ? AppMath.pal(tk) : w0;
+            var dark = v && w0 == AppMath.BLACK;
+            var fg = on ? (dark ? AppMath.INK : AppMath.ON) : v ? w0 : AppMath.INK;
+            var ic = on ? fg : c.equals("treat") && !v ? AppMath.pal(tk) : v ? w0 : AppMath.INK;
             var y = YS[i] as Number;
-            var bw = WS[i] as Number;
-            g.r(-bw / 2, y - 23, bw, 46, 23, fill, on || !v ? 1.0 : 0.28, 0);
+            var bw = wide > 0 ? wide : WS[i] as Number;
+            if (!on && v && GlanceFontTable.MIP) {
+                // MIP has no 28 %: black, or (the ink black) the block with an outline in the ink
+                if (dark) {
+                    g.r(-bw / 2 + 1, y - 22, bw - 2, 44, 22, w0, 1.0, 2);
+                } else {
+                    g.r(-bw / 2, y - 23, bw, 46, 23, AppMath.BLACK, 1.0, 0);
+                }
+            } else {
+                g.r(-bw / 2, y - 23, bw, 46, 23, fill, on || !v ? 1.0 : 0.28, 0);
+            }
             var tw0 = AppMath.tw(label, 20) + (icon != null ? 26 : 0);
             var tx = -tw0 / 2;
             if (icon != null) {
@@ -119,7 +141,17 @@ module AppAlert {
             }
             g.t(tx + (icon != null ? 26 : 0), y + 7, label, 20, 700, fg, START);
         }
-        AppScreens.btnHint(g, 60, v ? AppMath.INK : tk != null ? AppMath.pal(tk) : AppMath.INK);
+        AppScreens.btnHint(g, 60, v ? w0 : tk != null ? AppMath.pal(tk) : AppMath.INK);
+    }
+
+    // is the box from [x0, yt] to its mirror (−x0, the value's baseline −54) inside the screen, [m] units clear of
+    // its edge (app.js inside())
+    function inside(x0 as Float, yt as Float, m as Float) as Boolean {
+        if (GlanceFontTable.RECT) {
+            return -x0 <= AppScreens.hw() - m && -yt <= AppScreens.hh() - m;
+        }
+        var r = 195 - m;
+        return x0 * x0 + yt * yt <= r * r;
     }
 }
 
@@ -130,6 +162,7 @@ module AppAlert {
 module AppSpark {
     function draw(g as AppG, d as AppData, bx as Array, sc as Float, bg as Number?) as Void {
         var white = bg != null;
+        var wi = white ? AppScreens.inkOn(bg as Number) : AppMath.INK;
         var bx0 = bx[0] as Float;
         var bx1 = bx[1] as Float;
         var by0 = (bx[2] as Number).toFloat();
@@ -161,13 +194,15 @@ module AppSpark {
         var x0 = X(xNow, k, spanMin);
         var yH = Y(p, hi);
         var yL = Y(p, lo);
-        g.r(x0, yH < yL ? yH : yL, xNow - x0, AppMath.abs(yL - yH), 0, white ? AppMath.INK : AppMath.pal("tight"), white ? 0.07 : 0.09, 0);
+        if (wi != AppMath.BLACK) {
+            g.r(x0, yH < yL ? yH : yL, xNow - x0, AppMath.abs(yL - yH), 0, white ? wi : AppMath.pal("tight"), white ? 0.07 : 0.09, 0);
+        }
         var dash = [1.5 * sc, 4.5 * sc];
         g.l([x0, yH, xNow, yH], 0x5C5C62, OP(p, hi), 1.4 * sc, dash);
         g.l([x0, yL, xNow, yL], 0x5C5C62, OP(p, lo), 1.4 * sc, dash);
         var old = d.age >= 5;
         // white at 0.85 over the block, mixed here: a translucent line would show its joints
-        var lcol = white ? mix(AppMath.INK, bg as Number, 0.85) : old ? AppMath.DIM : AppMath.SOFT;
+        var lcol = white ? (wi == AppMath.BLACK ? wi : mix(AppMath.INK, bg as Number, 0.85)) : old ? AppMath.DIM : AppMath.SOFT;
         var pm = -1.0; // the previous point (minutes, mg/dL); -1 none
         var pv = 0;
         for (var i = 0; i < d.hm.size(); i++) {
@@ -192,11 +227,11 @@ module AppSpark {
             var ang = d.deg * Math.PI / 180;
             var len = 22 * sc;
             var bc = d.band(d.g as Number);
-            var rc = white ? AppMath.INK : bc.equals("veryLow") ? AppMath.pal("veryLow") : d.valColour();
+            var rc = white ? wi : bc.equals("veryLow") ? AppMath.pal("veryLow") : d.valColour();
             g.l([ex, ey, ex + len * Math.cos(ang), ey + len * Math.sin(ang)], rc, 1.0, 3.4 * sc, [4.5 * sc, 4.5 * sc]);
         }
         if (!old) {
-            g.c(ex, ey, 7.5 * sc, white ? AppMath.INK : AppMath.pal(d.band(d.g as Number)), 1.0, 0);
+            g.c(ex, ey, 7.5 * sc, white ? wi : AppMath.pal(d.band(d.g as Number)), 1.0, 0);
         } else {
             // old: a hollow end (on the block, in the line's colour)
             g.c(ex, ey, 7.5 * sc, white ? bg as Number : AppMath.BLACK, 1.0, 0);

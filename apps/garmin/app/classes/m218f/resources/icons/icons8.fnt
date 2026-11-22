@@ -1,0 +1,15 @@
+info face="SukraraIcons" size=12 bold=0 italic=0 charset="" unicode=1 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=1,1
+common lineHeight=12 base=12 scaleW=143 scaleH=13 pages=1 packed=0
+page id=0 file="icons8.png"
+chars count=11
+char id=65 x=0 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=66 x=13 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=67 x=26 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=68 x=39 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=69 x=52 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=70 x=65 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=71 x=78 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=72 x=91 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=73 x=104 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=74 x=117 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15
+char id=75 x=130 y=0 width=12 height=12 xoffset=0 yoffset=0 xadvance=12 page=0 chnl=15

@@ -3074,7 +3074,7 @@ again resumes them. TalkBack reads each row as a plain row with its text.
 ## Sukrara on Garmin watches: the app and the data field (the watch)
 
 The watch side of the two apps above (`apps/garmin/app`, `apps/garmin/field`; design `contracts/watchface/app/SPEC.md`,
-the app drawn plainly until its port; the data field ported). Every watch with API 5 or newer except the 1-bit Instinct 3 Solar / Instinct E.
+both drawn from `app.js` on every screen class, SPEC §14). Every watch with API 5 or newer except the 1-bit Instinct 3 Solar / Instinct E.
 - **Complications** (`Slots`, SPEC §10; any face, Face It): four, published by the app's background on every push and
   fetch, so faces update with the app closed. *CGM-GB-value* (Face It "Sukrara glucose", the glance folder's preview):
   "175", "9.7", "LO", "HI", or "---" from 5 min old, with no reading or while the sensor warms up; *CGM-GB-data*: the
@@ -3120,7 +3120,10 @@ the app drawn plainly until its port; the data field ported). Every watch with A
   *Remind as usual* once relaxed, *Mute lows / highs 30m*. The data field shows its own alert page (on per activity:
   its Alerts › Connect IQ; `S.dfAlert`): the whole page in the alert's colour (a rate alert: the value's band; no data:
   grey), the bell and the word, the value and its arrow, *Sukrara · now* / *3 min ago*; and vibrates.
-- **The app** (Descent Mk3 43 class first; the other screen classes are designed, SPEC §14, and ported next): the
+- **The app** (every screen class, SPEC §14: round AMOLED 360 – 466 the 390 scaled, the round 64-colour MIP 218 – 280
+  with their palette, outlines and dithers and page 1's drops on the small ones, the Venu Sq 2 and Venu X1 with their
+  own page 1, page 2, list and amount; the texts at the class's atlas sizes; the button hints at each class's buttons,
+  none for UP / DOWN on the two-button watches, which page and change the amount by swipe and tap): the
   glance (the value, the main metric's ring and the last treatment or second metric, the value shrinking to keep both;
   the reading's time when late, the pill, then the outbox's line: *Waiting for the phone*, *Sent*, *The phone has a
   question* in the high colour), page 1 (the widget: clock, value between its two places, 12 h chart with the %
@@ -3132,7 +3135,8 @@ the app drawn plainly until its port; the data field ported). Every watch with A
   *Undo* for 10 s (and the quiet line), or *Saved on the watch* while the phone is away; the phone's pen question.
 - **Waiting for your phone** (SPEC §4.3): until the phone's first message reaches the app (a fresh install, Sukrara
   for Android missing, its Garmin switch off), the glance says *Waiting for your phone* and the app shows one page:
-  Sukrara's mark, *Waiting for your phone*, *Sukrara for Android sends your glucose here* and **Open on phone** (Garmin
+  Sukrara for Android's own icon (the app that needs to be open), *Waiting for your phone*, *Sukrara for Android sends
+  your glucose here* and **Open on phone** (Garmin
   Connect opens sukrara.mauri.app/garmin/setup/ on the phone, /es/ for a watch in Spanish: Sukrara for Android takes
   it as an App Link, else the website says how to get it), then *Look at your phone* for 5 s. Opening the page and the
   press also ask the phone at once; the first message (push or fetch) replaces the page with page 1. START never opens

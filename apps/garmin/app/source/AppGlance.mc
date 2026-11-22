@@ -36,6 +36,16 @@ class AppGlance extends WatchUi.GlanceView {
         WatchUi.requestUpdate();
     }
 
+    // the glance's area: the 390's glance (248 × 103 units) scaled to the tighter of the content's height and width
+    // (app.js glanceBox), its width in units the rest (a wider area's value and places have the room)
+    static function glanceArea(w as Number, h as Number) as Void {
+        var sh = h / 103.0;
+        var sw = w / 248.0;
+        AppDraw.scale(sh < sw ? sh : sw);
+        AppDraw.gw = w / AppDraw.s;
+        AppDraw.ox = 83 * AppDraw.s - 0.5;
+    }
+
     // One thing at a time (the glance has 61 KB, its code and data take 47 before it draws): the copy, then the input
     // built from it, then the display list, then each text's atlas; nothing kept after the draw (#217)
     function onUpdate(dc as Graphics.Dc) as Void {
@@ -45,8 +55,7 @@ class AppGlance extends WatchUi.GlanceView {
         var d = AppInput.glance(now);
         AppDraw.glance = true;
         AppDraw.once = true;
-        AppDraw.s = dc.getHeight() / 103.0;
-        AppDraw.ox = 83 * AppDraw.s - 0.5;
+        glanceArea(dc.getWidth(), dc.getHeight());
         AppDraw.oy = dc.getHeight() / 2.0 - 0.5;
         var g = new AppG();
         AppParts.glance(g, d);

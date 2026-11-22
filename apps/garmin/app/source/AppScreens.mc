@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Toybox.Lang;
 import Toybox.Math;
+import Toybox.System;
 import Toybox.WatchUi;
 
 // The app's screens, ported from app.js function by function (S.appA, chart(), pctColumn(), chipRow() …): each one
@@ -14,9 +15,123 @@ module AppScreens {
     const LO = 40;
     const HI = 300;
 
+    // ---- the screen class (SPEC §14, app.js CLS) ---------------------------------------------------------------
+    // the screen's half width and height in layout units (round: 195; the Venu Sq 2 160 × 180, the X1 187 × 203)
+    function hw() as Float {
+        return System.getDeviceSettings().screenWidth / 2.0 / GlanceFontTable.S;
+    }
+
+    function hh() as Float {
+        return System.getDeviceSettings().screenHeight / 2.0 / GlanceFontTable.S;
+    }
+
+    // no UP / DOWN (the Venu, vívoactive, Approach S50 / S72 and D2 Air X10 rounds, the rectangles): pages and amounts
+    // by swipe and tap, no + / − hints (SPEC §14.2)
+    function two() as Boolean {
+        var ds = System.getDeviceSettings();
+        if (GlanceFontTable.RECT) {
+            return true;
+        }
+        return ds has :inputButtons && (ds.inputButtons & System.BUTTON_INPUT_UP) == 0;
+    }
+
+    // what a small round screen leaves out of page 1 (app.js drops()): the sensor's days (MIP ≤ 260), the % column
+    // and the chart's 70 / 180 labels (≤ 240), the clock (218); [sensor, dist, yLabels, clock]
+    function drops() as Array<Boolean> {
+        var w = System.getDeviceSettings().screenWidth;
+        var r = !GlanceFontTable.RECT;
+        return [r && GlanceFontTable.MIP && w <= 260, r && w <= 240, r && w <= 240, r && w <= 218];
+    }
+
+    // the ink on a colour block: white; MIP white or black, whichever has the higher contrast (app.js inkOn)
+    function inkOn(c as Number) as Number {
+        if (!GlanceFontTable.MIP) {
+            return AppMath.INK;
+        }
+        var m = AppDraw.col(c, 1.0, 1)[0] as Number;
+        var l = lum(m);
+        return (1.05 / (l + 0.05)) >= ((l + 0.05) / 0.05) ? AppMath.INK : AppMath.BLACK;
+    }
+
+    function lum(c as Number) as Float {
+        var v = 0.0;
+        var wts = [0.2126, 0.7152, 0.0722];
+        for (var i = 0; i < 3; i++) {
+            var x = ((c >> (16 - 8 * i)) & 255) / 255.0;
+            x = x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+            v += wts[i] * x;
+        }
+        return v.toFloat();
+    }
+
+    // the whole screen in one colour (the very-low block)
+    function full(g as AppG, c as Number) as Void {
+        g.r(-hw() - 2, -hh() - 2, 2 * hw() + 4, 2 * hh() + 4, 0, c, 1.0, 0);
+    }
+
+    // the screen's edge (app.js rim()): a ring on round screens, on rectangles a rounded rectangle 6 units in; [p] < 1
+    // draws that share of it clockwise from START (hold to log fills from the button that is held)
+    function rim(g as AppG, col as Number, sw as Numeric, p as Float) as Void {
+        var a0 = GlanceFontTable.KEYS[0] as Number;
+        if (!GlanceFontTable.RECT) {
+            if (p >= 1) {
+                g.a(0, 0, 189, 0, 360, col, 1.0, sw, false);
+            } else if (p > 0) {
+                g.a(0, 0, 189, a0, a0 + 359.9 * p, col, 1.0, sw, true);
+            }
+            return;
+        }
+        var x1 = hw() - 6;
+        var y1 = hh() - 6;
+        var rc = 22;
+        if (p >= 1) {
+            g.r(-x1, -y1, 2 * x1, 2 * y1, rc, col, 1.0, sw);
+            return;
+        }
+        // the outline from START (on the right edge) clockwise, as a polyline, [p] of its length
+        var ys = a0 / GlanceFontTable.S - hh();
+        var pts = [x1, ys];
+        var corners = [[x1 - rc, y1 - rc, 0], [-x1 + rc, y1 - rc, 90], [-x1 + rc, -y1 + rc, 180], [x1 - rc, -y1 + rc, 270]];
+        for (var c = 0; c < 4; c++) {
+            var k = corners[c] as Array;
+            for (var j = 0; j <= 6; j++) {
+                var t = ((k[2] as Number) + j * 15) * Math.PI / 180.0;
+                pts.add((k[0] as Numeric) + rc * Math.cos(t));
+                pts.add((k[1] as Numeric) + rc * Math.sin(t));
+            }
+        }
+        pts.add(x1);
+        pts.add(ys);
+        var len = 0.0;
+        for (var j = 2; j < pts.size(); j += 2) {
+            len += Math.sqrt(Math.pow(pts[j] - pts[j - 2], 2) + Math.pow(pts[j + 1] - pts[j - 1], 2));
+        }
+        var left = len * p;
+        var out = [pts[0], pts[1]];
+        for (var j = 2; j < pts.size() && left > 0; j += 2) {
+            var dx = pts[j] - pts[j - 2];
+            var dy = pts[j + 1] - pts[j - 1];
+            var l = Math.sqrt(dx * dx + dy * dy);
+            var f = l > left ? left / l : 1.0;
+            out.add(pts[j - 2] + dx * f);
+            out.add(pts[j - 1] + dy * f);
+            left -= l;
+        }
+        if (out.size() >= 4) {
+            g.l(out, col, 1.0, sw, null);
+        }
+    }
+
     // ---- page 1: the widget (S.appA) ---------------------------------------------------------------------------
     function appA(g as AppG, d as AppData) as Void {
-        g.t(0, -150, d.clock, 22, 600, AppMath.SOFT, MIDDLE);
+        if (GlanceFontTable.RECT) {
+            rectA(g, d);
+            return;
+        }
+        var dr = drops();
+        if (!dr[3]) {
+            g.t(0, -150, d.clock, 22, 600, AppMath.SOFT, MIDDLE);
+        }
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
             g.t(0, -60, AppWords.s(Rez.Strings.NoReadings), 22, 600, AppMath.SOFT, MIDDLE);
             pageDots(g, 2, 0);
@@ -33,13 +148,50 @@ module AppScreens {
         if (d.slots.size() > 0) {
             AppParts.drawSlot(g, d, d.slots[0] as Array, 142, -82, 25, 6, 22);
         }
-        var bx = [-134, 146, -22, 88];
-        chart(g, d, bx, d.hours, 14, 10);
+        // without the % column and the 70 / 180 labels the plot takes their room
+        var bx = [dr[1] ? -150 : -134, dr[2] ? 158 : 146, -22, 88];
+        chart(g, d, bx, d.hours, 14, 10, !dr[2]);
+        if (d.side && !dr[1]) {
+            pctColumn(g, d, bx, d.hours, 14);
+        }
+        if (!chipRow(g, d, 146, 19) && !dr[0]) {
+            sensorTag(g, d, 0, 152, 17);
+        }
+        pageDots(g, 2, 0);
+    }
+
+    // the rectangles' page 1 (app.js R.appA): the two places in the top corners beside the clock, the value the whole
+    // width, the chart edge to edge with its % column, the pill or the sensor at the bottom
+    function rectA(g as AppG, d as AppData) as Void {
+        var w = hw();
+        var h = hh();
+        g.t(0, -h + 34, d.clock, 22, 600, AppMath.SOFT, MIDDLE);
+        if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
+            g.t(0, -h + 116, AppWords.s(Rez.Strings.NoReadings), 22, 600, AppMath.SOFT, MIDDLE);
+            pageDots(g, 2, 0);
+            return;
+        }
+        var rr = 24;
+        var sw = 6;
+        if (d.slots.size() > 1) {
+            AppParts.drawSlot(g, d, d.slots[1] as Array, -w + 14 + rr + sw / 2, -h + 34, rr, sw, 22);
+        }
+        if (d.slots.size() > 0) {
+            AppParts.drawSlot(g, d, d.slots[0] as Array, w - 14 - rr - sw / 2, -h + 34, rr, sw, 22);
+        }
+        var vy = -h + 150;
+        if (d.noValue()) {
+            noValue(g, d, vy - 34);
+        } else {
+            AppParts.value(g, d, 0, vy, 96, MIDDLE, true, null);
+        }
+        var bx = [-w + 44, w - 34, vy + 26, h - 64];
+        chart(g, d, bx, d.hours, 14, 10, true);
         if (d.side) {
             pctColumn(g, d, bx, d.hours, 14);
         }
-        if (!chipRow(g, d, 146, 19)) {
-            sensorTag(g, d, 0, 152, 17);
+        if (!chipRow(g, d, h - 22, 19)) {
+            sensorTag(g, d, 0, h - 16, 17);
         }
         pageDots(g, 2, 0);
     }
@@ -136,7 +288,7 @@ module AppScreens {
     }
 
     // the chart: bands, limits, the line in its bands' colours, the bead, the treatment marks, the hours (app.js chart())
-    function chart(g as AppG, d as AppData, bx as Array, hours as Number, lfs as Number, ms as Number) as Void {
+    function chart(g as AppG, d as AppData, bx as Array, hours as Number, lfs as Number, ms as Number, ylab as Boolean) as Void {
         var b = d.bands;
         var w = bx[1] - bx[0];
         g.r(bx[0], Y(bx, b[2]), w, Y(bx, b[1]) - Y(bx, b[2]), 0, AppMath.pal("tight"), 0.13, 0);
@@ -145,8 +297,10 @@ module AppScreens {
         for (var i = 0; i < 2; i++) {
             var y = Y(bx, lims[i]);
             g.l([bx[0], y, bx[1], y], AppMath.FAINT, 1.0, 1, [3, 4]);
-            var lab = d.unit.equals("mmol") ? ((lims[i] as Number) / 18.0182).format("%.1f") : lims[i].toString();
-            g.t(bx[1] + 5, y + 5, lab, lfs, 500, AppMath.DIM, START);
+            if (ylab) {
+                var lab = d.unit.equals("mmol") ? ((lims[i] as Number) / 18.0182).format("%.1f") : lims[i].toString();
+                g.t(bx[1] + 5, y + 5, lab, lfs, 500, AppMath.DIM, START);
+            }
         }
         // the line: one polyline per run of one colour; a gap breaks it. Up to 288 readings in the callback that lays
         // the page out (the watchdog counts it, #217): the scale from a table of whole mg/dL, each segment's band (of
@@ -596,7 +750,14 @@ module AppScreens {
 
     function pageDots(g as AppG, n as Number, i as Number) as Void {
         for (var k = 0; k < n; k++) {
-            g.c((k - (n - 1) / 2.0) * 13, 180, k == i ? 4 : 3, k == i ? AppMath.INK : AppMath.DIM, 1.0, 0);
+            var o = (k - (n - 1) / 2.0) * 13;
+            var r = k == i ? 4 : 3;
+            var c = k == i ? AppMath.INK : AppMath.DIM;
+            if (GlanceFontTable.RECT) {
+                g.c(-hw() + 24 + o, hh() - 9, r, c, 1.0, 0);
+            } else {
+                g.c(o, 180, r, c, 1.0, 0);
+            }
         }
     }
 
@@ -605,19 +766,41 @@ module AppScreens {
         return (pm > 0 && pm < 10 ? (pm / 10.0).format("%.1f") : ((pm + 5) / 10).toString()) + " %";
     }
 
+    // the numbers' geometry (units): round (app.js S.appNums) or the rectangles' own (R.appNums: chips across the
+    // top, the bar down the left edge, the three shares, then average / GMI / CV across the bottom):
+    // [chip w, chips' top, chip h, bar x, bar top, bar bottom, label x, value x, the rows' y (3), the goal's dy,
+    //  the rule's y, its half width, the metrics' y, their spacing]
+    function numsAt() as Array {
+        if (!GlanceFontTable.RECT) {
+            return [50, -152, 30, -142, -112, 64, -116, 152, [-96, -30, 38], 22, 80, 140, 114, 92];
+        }
+        var w = hw();
+        var h = hh();
+        var cw = (2 * w - 50) / 4;
+        cw = cw < 64 ? cw : 64;
+        var top = -h + 16 + 52;
+        var bot = h - 86;
+        var st = (bot - top) / 3;
+        return [cw, -h + 16, 32, -w + 14, top, bot, -w + 40, w - 12, [top + 22, top + 22 + st, top + 22 + 2 * st], 24,
+            bot + 14, w - 12, bot + 48, (2 * w - 40) / 3];
+    }
+
     function appNums(g as AppG, d as AppData, days as Number) as Void {
+        var L = numsAt();
         var pers = [1, 7, 14, 30];
-        var cw = 50;
+        var cw = L[0] as Numeric;
+        var cy = L[1] as Numeric;
+        var ch = L[2] as Numeric;
         var gp = 6;
         var x0 = -(pers.size() * cw + (pers.size() - 1) * gp) / 2;
         for (var i = 0; i < pers.size(); i++) {
             var on = pers[i] == days;
             var x = x0 + i * (cw + gp);
             if (on) {
-                g.r(x, -152, cw, 30, 15, AppMath.CARD2, 1.0, 0);
+                g.r(x, cy, cw, ch, ch / 2, AppMath.CARD2, 1.0, 0);
             }
-            g.r(x, -152, cw, 30, 15, on ? AppMath.SOFT : AppMath.FAINT, 1.0, 1.5);
-            g.t(x + cw / 2, -131, pers[i] + "d", 17, on ? 700 : 500, on ? AppMath.INK : AppMath.SOFT, MIDDLE);
+            g.r(x, cy, cw, ch, ch / 2, on ? AppMath.SOFT : AppMath.FAINT, 1.0, 1.5);
+            g.t(x + cw / 2, cy + ch * 0.7, pers[i] + "d", 17, on ? 700 : 500, on ? AppMath.INK : AppMath.SOFT, MIDDLE);
         }
         var rep = report(days);
         if (rep == null) {
@@ -631,15 +814,16 @@ module AppScreens {
         for (var i = 0; i < 6; i++) {
             tot += b[i] as Number;
         }
-        var y = 64.0;
+        var y = (L[5] as Numeric).toFloat();
+        var span = (L[5] as Numeric) - (L[4] as Numeric);
         for (var i = 0; tot > 0 && i < 6; i++) {
             var v = b[i] as Number;
             if (v == 0) {
                 continue;
             }
-            var h = v * 176.0 / tot;
-            var hh = h - (h > 3 ? 2 : 0);
-            g.r(-142, y - h + (h > 3 ? 1 : 0), 12, hh > 1.5 ? hh : 1.5, 2, AppMath.pal(AppParts.BANDS[i]), 1.0, 0);
+            var h = v * span.toFloat() / tot;
+            var hh0 = h - (h > 3 ? 2 : 0);
+            g.r(L[3], y - h + (h > 3 ? 1 : 0), 12, hh0 > 1.5 ? hh0 : 1.5, 2, AppMath.pal(AppParts.BANDS[i]), 1.0, 0);
             y -= h;
         }
         var above = (b[4] as Number) + (b[5] as Number);
@@ -647,11 +831,12 @@ module AppScreens {
         var below = (b[0] as Number) + (b[1] as Number);
         // the goals met, as the phone's report card decides them (rep ok: one bit per Goal)
         var ok = rep.get("ok") instanceof Number ? rep.get("ok") as Number : 0;
-        row(g, -96, AppWords.s(Rez.Strings.RepAbove), pctText(above), "< 25%", (ok & 2) != 0, false, null);
-        row(g, -30, AppWords.s(Rez.Strings.RepIn), pctText(inR), "> 70%", (ok & 4) != 0, true,
+        var ys = L[8] as Array;
+        row(g, L, ys[0], AppWords.s(Rez.Strings.RepAbove), pctText(above), "< 25%", (ok & 2) != 0, false, null);
+        row(g, L, ys[1], AppWords.s(Rez.Strings.RepIn), pctText(inR), "> 70%", (ok & 4) != 0, true,
             Lang.format(AppWords.s(Rez.Strings.RepVeryGood), [pctText(b[2] as Number)]));
-        row(g, 38, AppWords.s(Rez.Strings.RepBelow), pctText(below), "< 4%", (ok & 8) != 0, false, null);
-        g.line(-140, 80, 140, 80, AppMath.GRID, 1.5);
+        row(g, L, ys[2], AppWords.s(Rez.Strings.RepBelow), pctText(below), "< 4%", (ok & 8) != 0, false, null);
+        g.line(-(L[11] as Numeric), L[10], L[11], L[10], AppMath.GRID, 1.5);
         var avg = rep.get("avg");
         var gmi = rep.get("gmi");
         var cv = rep.get("cv");
@@ -660,12 +845,13 @@ module AppScreens {
             [gmi != null ? (gmi as Numeric).toFloat().format("%.1f") + " %" : "--", AppWords.s(Rez.Strings.RepGmi), (ok & 64) != 0],
             [cv != null ? (cv as Numeric).toFloat().format("%.0f") + " %" : "--", AppWords.s(Rez.Strings.RepCv), (ok & 128) != 0]
         ];
+        var my = L[12] as Numeric;
         for (var i = 0; i < 3; i++) {
-            var x = -92 + i * 92;
-            g.t(x, 114, ms[i][0] as String, 24, 700, AppMath.INK, MIDDLE);
+            var x = (i - 1) * (L[13] as Numeric);
+            g.t(x, my, ms[i][0] as String, 24, 700, AppMath.INK, MIDDLE);
             var lw = AppMath.tw(ms[i][1] as String, 15) + 18;
-            mark(g, x - lw / 2, 131, ms[i][2] as Boolean, 0.85);
-            g.t(x - lw / 2 + 14, 137, ms[i][1] as String, 15, 600, AppMath.SOFT, START);
+            mark(g, x - lw / 2, my + 17, ms[i][2] as Boolean, 0.85);
+            g.t(x - lw / 2 + 14, my + 23, ms[i][1] as String, 15, 600, AppMath.SOFT, START);
         }
         pageDots(g, 2, 1);
     }
@@ -703,19 +889,23 @@ module AppScreens {
         g.t(x + 21, yy + 1, text, 14, 600, AppMath.pal(met ? "tight" : "high"), START);
     }
 
-    function row(g as AppG, yy as Numeric, label as String, pct as String, gtext as String, met as Boolean, big as Boolean, sub as String?) as Void {
-        g.t(-116, yy, label, big ? 22 : 19, big ? 700 : 600, AppMath.INK, START);
-        g.t(152, yy + (big ? 4 : 0), pct, big ? 32 : 22, 700, AppMath.INK, END);
-        goal(g, -116, yy + 22, gtext, met);
+    function row(g as AppG, L as Array, yy as Numeric, label as String, pct as String, gtext as String, met as Boolean, big as Boolean, sub as String?) as Void {
+        var lx = L[6] as Numeric;
+        var gy = yy + (L[9] as Numeric);
+        g.t(lx, yy, label, big ? 22 : 19, big ? 700 : 600, AppMath.INK, START);
+        g.t(L[7], yy + (big ? 4 : 0), pct, big ? 32 : 22, 700, AppMath.INK, END);
+        goal(g, lx, gy, gtext, met);
         if (sub != null) {
-            g.t(-116 + 26 + AppMath.tw(gtext, 14) + 10, yy + 23, sub, 15, 500, AppMath.SOFT, START);
+            g.t(lx + 26 + AppMath.tw(gtext, 14) + 10, gy + 1, sub, 15, 500, AppMath.SOFT, START);
         }
     }
 
     // ---- waiting for the phone (S.setup, SPEC §4.3): Sukrara's mark, what it waits for, Open on phone; after the
     // press ([opened]) Look at your phone. Never a phone screen or setting: those change, the watch app doesn't
     function setup(g as AppG, opened as Boolean) as Void {
-        g.bmp(Rez.Drawables.LauncherIcon, 0, -92, 60);
+        // Sukrara for Android's own icon (the disc, the cube, the dot: the phone app that needs to be open), not the
+        // watch's launcher icon (the owner, 2026-11-22); its bitmap made at the class's size (tools/fonts.py)
+        g.bmp(Rez.Drawables.PhoneIcon, 0, -92, 60);
         g.t(0, -26, AppWords.s(Rez.Strings.SetupTitle), 26, 700, AppMath.INK, MIDDLE);
         g.t(0, 8, AppWords.s(Rez.Strings.SetupLine1), 18, 500, AppMath.SOFT, MIDDLE);
         g.t(0, 33, AppWords.s(Rez.Strings.SetupLine2), 18, 500, AppMath.SOFT, MIDDLE);
@@ -735,8 +925,22 @@ module AppScreens {
         btnHint(g, 60, AppMath.INK);
     }
 
-    // a hint at a button: a short arc on the rim at its angle (START 60°, BACK 120°, DOWN 240°, UP 270°)
-    function btnHint(g as AppG, ang as Numeric, col as Number) as Void {
-        g.a(0, 0, 190, ang - 9, ang + 9, col, 0.9, 5, true);
+    // a hint at a button (app.js btnHint), named by the 390's angle (START 60°, BACK 120°, UP 270°, DOWN 240°): round, a
+    // short arc on the rim at the class's angle; rectangles, a bar on the right edge at the button's height; no UP / DOWN
+    // hint where there are none. Returns where it is ([x, y], units), null when not drawn
+    function btnHint(g as AppG, ang as Numeric, col as Number) as Array? {
+        var i = [60, 120, 270, 240].indexOf(ang);
+        if (i >= 2 && two()) {
+            return null;
+        }
+        var k = GlanceFontTable.KEYS[i] as Number;
+        if (GlanceFontTable.RECT) {
+            var y = k / GlanceFontTable.S - hh();
+            var x = hw() - 3;
+            g.l([x, y - 20, x, y + 20], col, 0.9, 5, null);
+            return [x, y];
+        }
+        g.a(0, 0, 190, k - 9, k + 9, col, 0.9, 5, true);
+        return AppMath.P(190, k);
     }
 }

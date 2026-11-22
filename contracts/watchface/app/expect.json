@@ -1,6 +1,6 @@
 {
- "about": "Each case of cases.json as the watch app takes it (its input: the AppData it draws from) and its picture budget against docs/img/app/cases/<id>.png (pixels over 15 % different): apps/garmin/app/tools/app_test.py run checks both, update writes them.",
- "cases": {
+ "about": "Per watch (one per screen class family), each case of cases.json as the watch app takes it (its input: the AppData it draws from) and its picture budget against docs/img/app/cases/<watch>/<id>.png (pixels over 15 % different): apps/garmin/app/tools/app_test.py run checks both, update writes them (CIQ_DEVICE=<watch>).",
+ "descentmk343mm": {
   "alert-falling-fast": {
    "budget": 3031,
    "input": {

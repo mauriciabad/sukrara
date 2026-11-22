@@ -67,7 +67,7 @@ module AppMath {
         return ((v.substring(3 * k, 3 * k + 3) as String).toNumber() as Number) / 1000.0;
     }
 
-    // a label's width at [fs] (app.js tw)
+    // a label's width at [fs], measured at the size the class draws it (app.js tw)
     function tw(s as String, fs as Numeric) as Float {
         var t = 0.0;
         var cs = s.toCharArray();
@@ -75,7 +75,7 @@ module AppMath {
             var k = WK.find(cs[i].toString());
             t += k != null ? adv(WV, k) : 0.6;
         }
-        return (t * fs * 1.03).toFloat();
+        return (t * AppDraw.fe(fs) * 1.03).toFloat();
     }
 
     // a big number's width at [fs] (app.js bw)
@@ -86,7 +86,7 @@ module AppMath {
             var k = BK.find(cs[i].toString());
             t += k != null ? adv(BV, k) : 0.6;
         }
-        return (t * fs).toFloat();
+        return (t * AppDraw.fe(fs)).toFloat();
     }
 
     // the band of [v] mg/dL with the person's limits [b] = [veryLow, low, tight, high, veryHigh, extremelyHigh]

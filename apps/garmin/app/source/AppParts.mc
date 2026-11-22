@@ -139,6 +139,10 @@ module AppParts {
         var col = AppMath.pal(p[0] as String);
         var filled = p[2] as Boolean;
         g.r(x0, y - h / 2, w, h, h / 2, col, filled ? 1.0 : 0.24, 0);
+        if (GlanceFontTable.MIP && !filled) {
+            // MIP: the tonal pill's tint is a dither; its edge an outline in the kind's colour
+            g.r(x0, y - h / 2, w, h, h / 2, col, 1.0, 2);
+        }
         var fg = filled ? AppMath.ON : col;
         g.icon(p[3] as String, x0 + padL + iw / 2, y, iw, fg);
         g.t(x0 + padL + iw + fs * 0.3, y + fs * 0.35, text, fs, 600, fg, START);
@@ -168,7 +172,7 @@ module AppParts {
     // ---- the glance (S.glance): its own area right of Sukrara's icon, x −83 … 165, y −51.5 … 51.5 -------------
     function glance(g as AppG, d as AppData) as Void {
         var x0 = -83;
-        var x1 = 165;
+        var x1 = x0 + AppDraw.gw;
         // waiting for the phone (SPEC §4.3): it never sent anything; selecting it opens the app's waiting page
         if (!d.sent || d.g == null && !d.sensorState.equals("warmup")) {
             g.t(x0, 8, AppWords.s(d.sent ? Rez.Strings.NoReadings : Rez.Strings.SetupTitle), 18, 600, AppMath.SOFT, START);

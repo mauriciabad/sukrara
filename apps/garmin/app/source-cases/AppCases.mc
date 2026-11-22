@@ -112,7 +112,7 @@ class AppCasesView extends WatchUi.View {
         sel = cfg["sel"] instanceof Number ? cfg["sel"] as Number : 0;
         var w = System.getDeviceSettings().screenWidth;
         var h = System.getDeviceSettings().screenHeight;
-        AppDraw.s = w / 390.0;
+        AppDraw.scale(GlanceFontTable.S);
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
         // nothing painted until it is laid out (the last case's list would paint with this one's tables)
@@ -136,7 +136,11 @@ class AppCasesView extends WatchUi.View {
         d = AppInput.build(now, scr.equals("appA") || scr.equals("alert"));
         var gg = new AppG();
         if (scr.equals("glance")) {
-            // the glance's own area at the reference's place on the screen (app.js S.glance: x −83 … 165)
+            // the glance's own area where the watch's glance list puts it (the device file's content area, cases.py;
+            // app.js glanceBox), vertically centred
+            var ga = c["ga"] as Array;
+            AppGlance.glanceArea(ga[2] as Number, ga[3] as Number);
+            AppDraw.ox += ga[0] as Number;
             AppDraw.glance = true;
             AppDraw.table = null;
             AppParts.glance(gg, d as AppData);
@@ -249,11 +253,15 @@ class AppCasesView extends WatchUi.View {
         dc.clear();
         if (built < 0) {
             // the calibration frame: four 2 x 2 white squares at known pixels (tools/simshot.py finds the screen with them)
+            // (the 390's at 100 and 288, scaled by the screen's width)
             dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.fillRectangle(100, 100, 2, 2);
-            dc.fillRectangle(288, 100, 2, 2);
-            dc.fillRectangle(100, 288, 2, 2);
-            dc.fillRectangle(288, 288, 2, 2);
+            var w = dc.getWidth();
+            var a = w * 100 / 390;
+            var b = w * 288 / 390;
+            dc.fillRectangle(a, a, 2, 2);
+            dc.fillRectangle(b, a, 2, 2);
+            dc.fillRectangle(a, b, 2, 2);
+            dc.fillRectangle(b, b, 2, 2);
             if (painted != -2) {
                 painted = -2;
                 System.println("CAL");

@@ -65,16 +65,31 @@ module AppLog {
 
     // a hint at a button: a short arc on the rim at its angle, and a label beside it (app.js btnHint)
     function hint(g as AppG, ang as Numeric, label as String?, col as Number) as Void {
-        AppScreens.btnHint(g, ang, col);
-        if (label != null) {
-            var r = ang == 270 ? 170 : 166;
-            var p = AppMath.P(r, ang);
+        var at = AppScreens.btnHint(g, ang, col);
+        if (label != null && at != null) {
+            var i = [60, 120, 270, 240].indexOf(ang);
+            var p = AppMath.P(ang == 270 ? 170 : 166, GlanceFontTable.KEYS[i] as Number);
             g.t(p[0] - 4, p[1] + 26 * 0.35, label, 26, 600, col, START);
         }
     }
 
     // ---- the amount (S.logAmount) ------------------------------------------------------------------------------
+    // the amount's geometry (units): round (app.js S.logAmount) or the rectangles' own (R.logAmount: no UP / DOWN, the
+    // chevrons full-width buttons above and below the number): [the label's y, number's baseline, its size, the
+    // unit's size, the up chevron's y, the down one's, the chips' top, chip w, gap, chip h, the time's y]
+    function amountAt() as Array {
+        if (!GlanceFontTable.RECT) {
+            return [-122, 22, 128, 50, -83, 49, 76, 64, 10, 36, 146];
+        }
+        var h = AppScreens.hh();
+        return [-h + 40, -h + 194, 120, 48, -h + 82, -h + 228, h - 92, 72, 12, 38, h - 22];
+    }
+
     function amount(g as AppG, k as String, a as Float, usual as Array, ago as Number) as Void {
+        if (GlanceFontTable.RECT) {
+            rectAmount(g, k, a, usual, ago);
+            return;
+        }
         var col = AppMath.pal(k);
         var label = kindName(k);
         var lw = AppMath.tw(label, 22) + 30;
@@ -105,6 +120,42 @@ module AppLog {
         hint(g, 240, "−", AppMath.INK);
     }
 
+    // the rectangles' amount (app.js R.logAmount)
+    function rectAmount(g as AppG, k as String, a as Float, usual as Array, ago as Number) as Void {
+        var L = amountAt();
+        var w0 = AppScreens.hw();
+        var col = AppMath.pal(k);
+        var label = kindName(k);
+        var lw = AppMath.tw(label, 22) + 30;
+        g.icon(k, -lw / 2 + 10, (L[0] as Numeric) - 7, 18, col);
+        g.t(-lw / 2 + 26, L[0], label, 22, 600, col, START);
+        var s = num(k, a);
+        var unit = k.equals("carbs") ? "g" : "u";
+        var w = AppMath.bw(s, L[2] as Numeric);
+        var uw = AppMath.tw(unit, L[3] as Numeric);
+        var x0 = -(w + 8 + uw) / 2;
+        g.n(x0, L[1], s, L[2] as Numeric, AppMath.INK, START);
+        g.t(x0 + w + 8, L[1], unit, L[3] as Numeric, 600, AppMath.SOFT, START);
+        for (var i = 0; i < 2; i++) {
+            var cy = (L[4 + i] as Numeric);
+            var dir = i == 0 ? -1 : 1;
+            g.r(-w0 + 40, cy - 20, 2 * w0 - 80, 40, 20, AppMath.CARD2, 1.0, 0);
+            g.l([-16, cy - 6 * dir, 0, cy + 6 * dir, 16, cy - 6 * dir], AppMath.SOFT, 1.0, 4, null);
+        }
+        var cw = L[7] as Numeric;
+        var gap = L[8] as Numeric;
+        var cx0 = -(usual.size() * cw + (usual.size() - 1) * gap) / 2;
+        for (var i = 0; i < usual.size(); i++) {
+            var ch = num(k, (usual[i] as Numeric).toFloat());
+            var on = ch.equals(s);
+            var x = cx0 + i * (cw + gap);
+            g.r(x, L[6], cw, L[9], (L[9] as Numeric) / 2, on ? col : AppMath.CARD2, 1.0, 0);
+            g.t(x + cw / 2, (L[6] as Numeric) + 26, ch, 20, 700, on ? AppMath.ON : AppMath.SOFT, MIDDLE);
+        }
+        g.t(0, L[10], when(ago, false), 20, 600, AppMath.SOFT, MIDDLE);
+        hint(g, 60, null, AppMath.INK);
+    }
+
     // ---- hold to log (S.logConfirm): [dup] the same kind's entry of the last 15 min ("4.5u 3 min ago"), or null --
     function confirm(g as AppG, k as String, a as Float, ago as Number, dup as String?, p as Float, q as String?) as Void {
         var col = AppMath.pal(k);
@@ -127,10 +178,8 @@ module AppLog {
             g.t(0, 62, q, 18, 500, AppMath.SOFT, MIDDLE);
         }
         // the rim fills from START while it's held
-        g.a(0, 0, 189, 0, 360, AppMath.GRID, 1.0, 8, false);
-        if (p > 0) {
-            g.a(0, 0, 189, 60, 60 + 359.9 * p, col, 1.0, 8, true);
-        }
+        AppScreens.rim(g, AppMath.GRID, 8, 1.0);
+        AppScreens.rim(g, col, 8, p);
         g.r(-92, 102, 184, 44, 22, AppMath.CARD2, 1.0, 0);
         g.t(0, 131, AppWords.s(Rez.Strings.HoldTouch), 20, 700, AppMath.INK, MIDDLE);
         hint(g, 60, null, col);
@@ -143,7 +192,7 @@ module AppLog {
 
     // any write on its way to the phone (an entry, a mute, Remind less): [col] its colour, [title] what it is
     function sendingAs(g as AppG, col as Number, title as String, spin as Number) as Void {
-        g.a(0, 0, 189, 0, 360, col, 1.0, 8, false);
+        AppScreens.rim(g, col, 8, 1.0);
         g.c(0, -36, 46, AppMath.GRID, 1.0, 6);
         g.a(0, -36, 46, 20 + spin, 130 + spin, col, 1.0, 6, false);
         g.icon("phone", 0, -36, 30, AppMath.SOFT);
@@ -604,18 +653,23 @@ class LogDelegate extends WatchUi.BehaviorDelegate {
         var y = (c[1] - AppDraw.oy) / AppDraw.s;
         var st = view.state;
         if (st.equals("amount")) {
-            if (y < -60) {
+            // the chevrons (+ above, − below), the usual amounts' chips, the time under them
+            var L = AppLog.amountAt();
+            var cy = L[6] as Numeric;
+            var cw = L[7] as Numeric;
+            var gap = L[8] as Numeric;
+            if (y < (L[4] as Numeric) + 24) {
                 view.change(1);
-            } else if (y >= 30 && y < 70) {
+            } else if (y >= (L[5] as Numeric) - 22 && y < cy - 4) {
                 view.change(-1);
-            } else if (y >= 70 && y < 118 && view.usual.size() > 0) {
+            } else if (y >= cy - 4 && y < cy + (L[9] as Numeric) + 6 && view.usual.size() > 0) {
                 var n = view.usual.size();
-                var i = ((x + (n * 64 + (n - 1) * 10) / 2.0) / 74).toNumber();
+                var i = ((x + (n * cw + (n - 1) * gap) / 2.0) / (cw + gap)).toNumber();
                 if (i >= 0 && i < n) {
                     view.a = (view.usual[i] as Numeric).toFloat();
                     WatchUi.requestUpdate();
                 }
-            } else if (y >= 118) {
+            } else if (y >= cy + (L[9] as Numeric) + 6) {
                 view.earlier();
             } else {
                 view.toConfirm();

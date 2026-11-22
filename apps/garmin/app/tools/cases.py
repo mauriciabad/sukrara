@@ -21,6 +21,7 @@ CASES = os.path.join(ROOT, "contracts", "watchface", "app", "cases.json")
 PAYLOADS = os.path.join(ROOT, "contracts", "watchface", "payload", "cases.json")
 OUT = os.path.join(APP, "build", "cases")
 CASES_ID = "0c6b1f3e-5d2a-4f7e-9b8c-1a2b3c4d5e6f"
+DEVICES = os.path.expanduser(os.environ.get("CIQ_DEVICES", "~/Library/Application Support/Garmin/ConnectIQ/Devices"))
 HEAD = ("Sukrara — https://github.com/mauriciabad/sukrara", "Copyright (C) 2026 Maurici Abad",
         "SPDX-License-Identifier: GPL-3.0-or-later")
 
@@ -30,6 +31,10 @@ def cases():
     every = json.load(open(CASES, encoding="utf-8"))["cases"]
     states = json.load(open(PAYLOADS, encoding="utf-8"))["app"]
     only = [s for s in os.environ.get("APP_CASES", "").split(",") if s]
+    # the glance's content area on the watch the loader is built for (its device file): [x, y, w, h]
+    dev = os.environ.get("CIQ_DEVICE", "descentmk343mm")
+    a = json.load(open(os.path.join(DEVICES, dev, "simulator.json"), encoding="utf-8"))["glance"]["contentArea"]
+    ga = [a["x"], a["y"], a["width"], a["height"]]
     out = []
     for c in every:
         if only and c["id"] not in only:
@@ -37,7 +42,8 @@ def cases():
         # state null: nothing from the phone yet (a fresh install, SPEC §4.3): only the watch's clock
         p = dict(states[c["state"]]["payload"]) if c["state"] is not None else {"none": True, "sent": states[0]["payload"]["sent"]}
         p.update(c.get("set", {}))  # a watch state the phone's cases don't have (a high, a mute): those keys replaced
-        out.append({"id": c["id"], "screen": c["screen"], "at": c.get("at", 0), "cfg": c.get("cfg", {}), "payload": p})
+        out.append({"id": c["id"], "screen": c["screen"], "at": c.get("at", 0), "cfg": c.get("cfg", {}), "payload": p,
+                    "ga": ga})
     return out
 
 

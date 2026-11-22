@@ -1176,10 +1176,13 @@ watch; the watch shows the real value: check it against the phone, never photogr
 ## Q32 Garmin watch app (Sukrara)
 
 - [ ] `uv run --with pillow --with pyobjc-framework-Quartz apps/garmin/app/tools/app_test.py run <dir>` (simulator,
-      ~3 min): no FAIL (every case's input as `contracts/watchface/app/expect.json` says, every picture within its
-      budget). Open `pairs/` for the cases you changed: simulator | app.js, the same elements in the same places and
-      colours (fonts edge differently; the % column is app.js's approximation, SPEC §4.1). A NOTE means app.js draws
-      differently now: look, then `app_test.py update <dir>`.
+      ~5 min a watch) with `CIQ_DEVICE=` each watch of its `DEVICES` (one per screen class family: descentmk343mm,
+      fr265s, fenix843mm, fenix847mm, fenix9pro51mm, fr255s, fenix7, venusq2, venux1): no FAIL (every case's input as
+      `contracts/watchface/app/expect.json[<watch>]` says, every picture within its budget against
+      `docs/img/app/cases/<watch>/`). Open `pairs/` for the cases you changed: simulator | app.js on that class, the same
+      elements in the same places and colours (fonts edge differently; MIP: the 64 colours and the dithers; the %
+      column is app.js's approximation, SPEC §4.1). A NOTE means app.js draws differently now: look, then
+      `app_test.py update <dir>`. A build with a size the class lacks prints `FONT|missing|<key>` in the log.
 - [ ] Each screen against SPEC §12 in the simulator (`monkeydo apps/garmin/bin/Sukrara-debug.prg descentmk343mm`, the
       phone faked by `apps/garmin/tools/fake_phone.py`): glance → page 1 ↔ page 2; START → the list → a kind → amount →
       hold to log (let go: back) → Logged with Undo; Mute alerts → a length → Alerts muted with Undo → page 1 with the
