@@ -396,12 +396,17 @@ def table_src(folder, k, module, annotation, entries, icons, what):
 
 def jungle_block(ks):
     lines = ["# BEGIN screen classes (apps/garmin/app/tools/fonts.py)",
-             "# each watch builds its screen class's fonts, icons and tables (classes/<class>)"]
+             "# each watch builds its screen class's fonts, icons and tables (classes/<class>), and the MIP code or not"]
     ids = re.findall(r'<iq:product id="([^"]+)"', open(MANIFEST, encoding="utf-8").read())
     where = {w: f for f, k in ks.items() for w in k["watches"]}
     for i in ids:
         lines.append("%s.sourcePath = $(%s.sourcePath);classes/%s/source" % (i, i, where[i]))
         lines.append("%s.resourcePath = $(%s.resourcePath);classes/%s/resources" % (i, i, where[i]))
+        # the MIP code (AppDraw's 64 colours and dithers) only where the screen has 64 colours
+        # and the texts' and icons' code for atlases or font resources (the watches without tinted bitmaps)
+        k = ks[where[i]]
+        lines.append("%s.excludeAnnotations = $(%s.excludeAnnotations);%s;%s" % (
+            i, i, "amoled" if k["mip"] else "mip", "atlas" if k["plain"] else "plain"))
     lines.append("# END screen classes")
     return "\n".join(lines)
 

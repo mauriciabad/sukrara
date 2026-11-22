@@ -196,11 +196,15 @@ module AppDraw {
     }
 
     // ---- colour (SPEC §14.3) -------------------------------------------------------------------------------------
+    // the MIP code is built only for the MIP watches (:mip; the AMOLEDs build the :amoled stubs: monkey.jungle's
+    // screen classes), so it costs the AMOLED glances nothing
+    (:mip)
     var _mip as Dictionary? = null;
     const CARD = -2; // card2 on MIP: black, outlined AAAAAA
     const GRID_MIP = -3; // grid on MIP: 555555 dithered 50 %
 
     // an AMOLED token as its MIP token (app.js PAL_MIP); anything else: the nearest of the 64
+    (:mip)
     function mipToken(c as Number) as Number {
         if (_mip == null) {
             _mip = {
@@ -216,10 +220,13 @@ module AppDraw {
     }
 
     // [colour, dither %] as the class paints [c] at opacity [op]; [role] 0 a stroke, 1 a fill, 2 a text (app.js G.col)
+    (:amoled)
     function col(c as Number, op as Float, role as Number) as Array {
-        if (!GlanceFontTable.MIP) {
-            return [c, 0];
-        }
+        return [c, 0];
+    }
+
+    (:mip)
+    function col(c as Number, op as Float, role as Number) as Array {
         c = mipToken(c);
         if (c < 0 || c == 0) {
             return c == GRID_MIP ? [0x555555, 50] : [c, 0];
@@ -247,6 +254,7 @@ module AppDraw {
     }
 
     // the nearest of the 64 (each channel to 00 / 55 / AA / FF)
+    (:mip)
     function near64(r as Numeric, g as Numeric, b as Numeric) as Number {
         var q = [r, g, b];
         var v = 0;
@@ -409,6 +417,10 @@ module AppDraw {
     // an ordered dither in the screen's pixels (app.js G.dither): 50 % a checkerboard (its pixels on every other
     // anti-diagonal, drawn as lines), 25 % one pixel in four; in the box [x, y, w, h], or the circle of radius [r] ≥ 0
     // filling it
+    (:amoled)
+    function dither(dc as Dc, x as Float, y as Float, w as Float, h as Float, r as Float, c as Number, pct as Number) as Void {}
+
+    (:mip)
     function dither(dc as Dc, x as Float, y as Float, w as Float, h as Float, r as Float, c as Number, pct as Number) as Void {
         var x0 = Math.round(x + 0.5).toNumber();
         var y0 = Math.round(y + 0.5).toNumber();
@@ -533,40 +545,44 @@ module AppDraw {
         }
     }
 
-    // a text with its baseline at y, anchored by its drawn width
+    // a text with its baseline at y, anchored by its drawn width: atlas glyphs, or a font resource on the watches
+    // without tinted bitmaps (:plain; each watch builds one of the two, monkey.jungle's screen classes)
     function text(dc as Dc, e as Array) as Void {
-        var s0 = e[3] as String;
         var a = loadFont(e[4] as String);
         if (a.size() == 0) {
             missing(e[4] as String);
             return;
         }
         var tc = (col(e[5] as Number, 1.0, 2)[0] as Number) & 0xFFFFFF;
-        var anchor = e[6] as Number;
-        var x = X(e[1]) + 0.5;
-        var base = Y(e[2]) + 0.5;
         var ls = e.size() > 7 ? (e[7] as Numeric) * s : 0;
-        if (a.size() == 2) {
-            // a font resource (the watches without tinted bitmaps); the system draws bitmap fonts 1 px under the line
-            var fr = a[0];
-            dc.setColor(tc, Graphics.COLOR_TRANSPARENT);
-            var cs = s0.toCharArray();
-            if (anchor >= 0) {
-                var w = dc.getTextWidthInPixels(s0, fr) + ls * cs.size();
-                x -= anchor == 0 ? w / 2.0 : w;
-            }
-            var top = base - (a[1] as Number) - 1;
-            if (ls == 0) {
-                dc.drawText(Math.floor(x + 0.5), top, fr, s0, Graphics.TEXT_JUSTIFY_LEFT);
-                return;
-            }
-            for (var i = 0; i < cs.size(); i++) {
-                var ch = cs[i].toString();
-                dc.drawText(Math.floor(x + 0.5), top, fr, ch, Graphics.TEXT_JUSTIFY_LEFT);
-                x += dc.getTextWidthInPixels(ch, fr) + ls;
-            }
+        glyphs(dc, e[3] as String, a, tc, X(e[1]) + 0.5, Y(e[2]) + 0.5, e[6] as Number, ls);
+    }
+
+    // a font resource; the system draws bitmap fonts 1 px under the line
+    (:plain)
+    function glyphs(dc as Dc, s0 as String, a as Array, tc as Number, x as Float, base as Float, anchor as Number, ls as Numeric) as Void {
+        var fr = a[0];
+        dc.setColor(tc, Graphics.COLOR_TRANSPARENT);
+        var cs = s0.toCharArray();
+        if (anchor >= 0) {
+            var w = dc.getTextWidthInPixels(s0, fr) + ls * cs.size();
+            x -= anchor == 0 ? w / 2.0 : w;
+        }
+        var top = base - (a[1] as Number) - 1;
+        if (ls == 0) {
+            dc.drawText(Math.floor(x + 0.5), top, fr, s0, Graphics.TEXT_JUSTIFY_LEFT);
             return;
         }
+        for (var i = 0; i < cs.size(); i++) {
+            var ch = cs[i].toString();
+            dc.drawText(Math.floor(x + 0.5), top, fr, ch, Graphics.TEXT_JUSTIFY_LEFT);
+            x += dc.getTextWidthInPixels(ch, fr) + ls;
+        }
+    }
+
+    // atlas glyphs, tinted
+    (:atlas)
+    function glyphs(dc as Dc, s0 as String, a as Array, tc as Number, x as Float, base as Float, anchor as Number, ls as Numeric) as Void {
         var chars = a[1] as String;
         var m = a[2] as Array<Number>;
         if (anchor >= 0) {
@@ -599,6 +615,7 @@ module AppDraw {
         }
     }
 
+    (:atlas)
     function width(a as Array, s0 as String) as Float {
         var chars = a[1] as String;
         var m = a[2] as Array<Number>;
@@ -642,15 +659,22 @@ module AppDraw {
             sheet = WatchUi.loadResource(glance ? GlanceFontTable.sheet(si) : (sheetAt as Method).invoke(si) as ResourceId);
             sheets[si] = sheet;
         }
-        var c = (col(e[5] as Number, 1.0, 1)[0] as Number) & 0xFFFFFF;
+        tile(dc, e, b, sheet, (col(e[5] as Number, 1.0, 1)[0] as Number) & 0xFFFFFF, size);
+    }
+
+    // an icon font: glyph "A" + index, its tile drawn from its top left (1 px under, as every bitmap font)
+    (:plain)
+    function tile(dc as Dc, e as Array, b as Array, sheet, c as Number, size as Number) as Void {
         var box = b[2] as Number;
-        if (GlanceFontTable.PLAIN) {
-            // an icon font: glyph "A" + index, its tile drawn from its top left (1 px under, as every bitmap font)
-            dc.setColor(c, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(Math.round(X(e[2]) + 0.5 - box / 2.0), Math.round(Y(e[3]) + 0.5 - box / 2.0) - 1, sheet,
-                ((65 + (b[0] as Number)) as Number).toChar().toString(), Graphics.TEXT_JUSTIFY_LEFT);
-            return;
-        }
+        dc.setColor(c, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(Math.round(X(e[2]) + 0.5 - box / 2.0), Math.round(Y(e[3]) + 0.5 - box / 2.0) - 1, sheet,
+            ((65 + (b[0] as Number)) as Number).toChar().toString(), Graphics.TEXT_JUSTIFY_LEFT);
+    }
+
+    // an icon sheet's tile, tinted and scaled to [size]
+    (:atlas)
+    function tile(dc as Dc, e as Array, b as Array, sheet, c as Number, size as Number) as Void {
+        var box = b[2] as Number;
         var bs = size.toFloat() / (box - 4);
         var t = new Graphics.AffineTransform();
         t.scale(bs, bs);
