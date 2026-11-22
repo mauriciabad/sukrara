@@ -29,6 +29,7 @@ every draw); never an old value as current; never colour alone; Aura's palette, 
 | Alerts: Garmin's notification, the app's alert, remind less | same | `S.wake`, `S.alert`, `S.remindDone` | Alerts |
 | Data field: whole / half / band / quarter / cap, its own alert | a separate data-field app | `S.df1` … `S.df4small` (any class: `S.dfSlot`, §14.4), `S.dfAlert` | Data field |
 | Complications as other faces draw them | the watch app publishes 4 | `S.faceCx` | Complications |
+| Not set up (no message from the phone yet): app, glance, data field | both | `S.setup`, `S.glanceSetup`, `S.dfSetup` | Not set up |
 
 ## 2. The input (what the payload must give each screen)
 
@@ -49,7 +50,7 @@ docs/47). No input: selecting it opens the app.
   there is one, else the second metric (dimmed). Rings carry **no period label** and a bigger number (23).
 - **Under the value**, only when needed: the reading's time when late (≥ 90 s), then Sukrara's pill (font 15).
 - **States**: old (≥ 5 min) struck grey with a hollow ring for the arrow; no reading for 20 min → "No reading since" +
-  the time; warming up → the pie + "Warming up" + "Ready at …".
+  the time; warming up → the pie + "Warming up" + "Ready at …"; not set up → "Set up on your phone" (§4.3).
 
 ## 4. The app
 
@@ -77,6 +78,23 @@ tapping one switches it here without saving; buttons: the list's Period), the st
 *In range* (with *very good*), *Below range* with their consensus goals as chips (✓ met in green, ✕ not in orange),
 then average, GMI, CV, each with the goal check the phone's report gives it (✓ met / ✕ not: the phone sends whether
 each goal is met, so the watch holds no threshold of its own). Very high / very low rows and the coverage note stay on the phone.
+
+### 4.3 Not set up (`S.setup`)
+
+Until the phone's first message reaches this app (no `key` yet: a fresh install, Sukrara for Android missing, or Garmin
+off on the phone), every surface says so instead of drawing empty values. The watch can't tell those causes apart, so
+it gives the one path that covers them all.
+- **The app**: one page, no dots: Sukrara's mark; *Set up on your phone*; soft, two lines: *Sukrara for Android ›
+  Settings › Share with apps › Garmin*; a button **Open on phone** (START or a tap) →
+  `Communications.openWebPage` with the setup link (`https://sukrara.mauri.app/garmin/setup/`, `/es/garmin/setup/`
+  when the watch's language is Spanish). Garmin Connect shows it on the phone. Sukrara for Android claims the link as
+  an App Link and opens its Garmin page; without Sukrara the website's page says how to get it. After the press:
+  *Look at your phone* for 5 s, then the button again. START never opens the list here (nothing can be signed yet).
+  The first message replaces the page with page 1 by itself; BACK leaves the app.
+- **The glance**: *Set up on your phone* (soft) where the value goes; selecting it opens this page.
+- **Complications**: as with no data ("---", *Log*); selecting one opens this page.
+- **The data field** (`S.dfSetup`): *GLUCOSE* and *Set up on phone* (soft, two lines where narrow); no alert, nothing
+  written to the activity.
 
 ## 5. The one list (`S.actions`)
 
@@ -145,7 +163,7 @@ Its own store app; the phone sends it its own data (≤ 3 h). No input. Label *G
 
 ## 10. Complications (the watch app publishes four, for any face)
 
-| # | Long label | Short | Value (String, Latin letters and digits only) | Unit | Ranges | Icon | Hold opens |
+| # | Long label | Short | Value (String, Latin letters and digits only) | Unit | Ranges | Icon | Selecting it opens |
 |---|---|---|---|---|---|---|---|
 | 0 | CGM-GB-value (Face It: "Sukrara glucose"; the glance folder's preview) | CGM | "175", "9.7", "LO", "HI"; "---" when old (≥ 5 min), no data, warming up | null | null | a drop | the app |
 | 1 | CGM-GB-data | D-DATA | the same | null | [unit, trend 0–9, low, high, very low, very high, reading time, +300 s, +1200 s] | a drop | the app |
@@ -168,7 +186,8 @@ The phone tells the watches apart by the payload's `w` (push only), which the ap
 
 ## 12. States and exits (for FEATURES.md)
 
-Glance → select → the app. App page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind →
+Not set up (§4.3) → *Open on phone* (*Look at your phone*, 5 s) / BACK; it leaves by itself on the phone's first
+message. Glance → select → the app. App page 1 ↔ page 2 (UP / DOWN, swipe); BACK leaves the app. START → the one list → a kind →
 amount → hold to log (let go: back to the amount; BACK: the list) → logged (*Undo* 10 s) or OPEN (phone away). The list's
 *Mute alerts* → a length → muted (*Undo* 10 s); *Muted* → *Unmute* / *Change time* / BACK. Garmin's notification →
 Treatment (the amount) / Remind less / Mute (toast, close) / dismiss. The app's alert → Treatment / Remind less ↔ Remind as
