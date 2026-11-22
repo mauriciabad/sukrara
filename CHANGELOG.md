@@ -11,6 +11,12 @@ Sukrara's releases. 0.x versions are previews.
   watch gets no glucose* with *Turn on*. The Garmin page links to the store listings too, as soon as they exist; About
   has one *Sukrara for Garmin* row, the website's Garmin page. The phone names each app with its kind (*watch face*,
   *watch app*, *data field*) and shows Connect IQ's own icon for it.
+- **Garmin alerts only while your phone is locked** (#248): the Sukrara watch app and data field now alert only when
+  the phone is locked and showing that alert's notification. With the phone in your hand, it alone alerts and the
+  watch stays quiet (no double alert); unlock it and an alert screen open on the watch closes, lock it again with the
+  alert still up and the watch alerts within seconds. Swiping the alert away on the phone, muting it or treating it
+  takes it off the watch too. Followers' watches follow their own phone. The watch keeps showing your glucose, its
+  colour and the pill.
 - **Sukrara on Garmin watches, the watch side** (#199, not released yet): the Sukrara app publishes four complications
   for any face (glucose, CGM+ GB's data and graph, and the last treatment as *Log*), turning to "---" on time when the
   reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and

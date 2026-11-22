@@ -172,6 +172,11 @@ sealed interface SourceStatus {
  */
 data class AlertUiState(
     val firingKinds: Set<String> = emptySet(),
+    /**
+     * The [firingKinds] whose own notification is up on this phone (posted, or its stand-in; not swiped or tapped away,
+     * #195): what this phone's watches may say on the wrist, while the phone is locked ([wrist]).
+     */
+    val shownKinds: Set<String> = emptySet(),
     val status: CardStatus = CardStatus.None,
     val treatmentQuiet: TreatmentQuiet = TreatmentQuiet(),
     val mutedUntil: Instant? = null,
@@ -189,6 +194,13 @@ data class AlertUiState(
     val lately: List<AlertNote> = emptyList(),
 ) {
     val mutedUntilTurnedOff: Boolean get() = mutedUntil == UNTIL_TURNED_OFF
+
+    /**
+     * The alerts this phone's watches say on the wrist (contracts/alerts/SPEC.md §1 "On the wrist", #248): the ones whose
+     * notification is up ([shownKinds]), and only while the phone is [locked] (screen off or the lock screen up); with
+     * the phone in the person's hand, the phone alone says it (no double alert, no alarm fatigue).
+     */
+    fun wrist(locked: Boolean): Set<String> = if (locked) shownKinds intersect firingKinds else emptySet()
 
     companion object {
         /** *Mute all* with no end. */

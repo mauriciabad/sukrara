@@ -197,10 +197,16 @@ class WatchPayloadFixtureTest {
                 ?.map { it.jsonPrimitive.content }
                 ?.toSet()
                 .orEmpty()
+        // the alerts whose notification is up (default: every one that rings) and the phone's lock (default: locked)
+        val shown =
+            p["shown"]
+                ?.jsonArray
+                ?.map { it.jsonPrimitive.content }
+                ?.toSet() ?: firing
         return WatchPayload.of(
             profile,
             PayloadInputs(
-                state.copy(alerts = state.alerts.copy(firingKinds = firing, quiet = sides(p))),
+                state.copy(alerts = state.alerts.copy(firingKinds = firing, shownKinds = shown, quiet = sides(p))),
                 treatments,
                 Instant.ofEpochSecond(now),
                 GlucoseUnit.entries.first { it.key == (p["unit"]?.jsonPrimitive?.content ?: "mgdl") },
@@ -220,6 +226,7 @@ class WatchPayloadFixtureTest {
                 quiet =
                     p["addQuiet"]?.jsonObject?.let { q -> WatchQuiet(q["rapid"]?.jsonPrimitive?.int, q["carbs"]?.jsonPrimitive?.int) }
                         ?: WatchQuiet.NONE,
+                phoneLocked = p["locked"]?.jsonPrimitive?.booleanOrNull ?: true,
             ),
         )
     }

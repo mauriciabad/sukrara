@@ -30,6 +30,7 @@ import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.integrations.localserver.HttpAnswer
 import app.mauri.sukrara.integrations.localserver.HttpRequest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -114,6 +115,7 @@ class GarminLinkTest {
         treatments: InMemoryTreatmentsRepository = InMemoryTreatmentsRepository(),
         key: WatchKey? = null,
         own: Map<Long, WatchDisplay> = emptyMap(),
+        locked: Flow<Boolean> = flowOf(false),
     ): GarminLink {
         val d = StandardTestDispatcher(testScheduler)
         return GarminLink(
@@ -128,7 +130,57 @@ class GarminLinkTest {
             fetchPort = 0,
             key = key,
             watchDisplays = flowOf(own),
+            phoneLocked = locked,
         ).also { it.start(backgroundScope) }
+    }
+
+    /** What the app's newest push says rings. */
+    private fun FakePort.appRing() = (sent.last { it["p"] == GarminApp.App.key }["ring"] as List<*>).map { (it as Map<*, *>)["k"] }
+
+    @Test
+    fun aLockOrAnUnlockWhileAnAlertRingsIsPushedAtOnce() =
+        runTest {
+            // #248: the wrist says the phone's alert only while the phone is locked; each change reaches the watch
+            val port = FakePort().apply { apps = mutableSetOf(GarminApp.App.id, GarminApp.Field.id) }
+            val locked = MutableStateFlow(false)
+            val ringing = AlertUiState(firingKinds = setOf("low"), shownKinds = setOf("low"))
+            link(port, MutableStateFlow(state(-30L to 62).copy(alerts = ringing)), locked = locked)
+            settle()
+            assertEquals("unlocked: the phone alone says it", emptyList<Any?>(), port.appRing())
+            val before = port.sent.size
+            locked.value = true
+            settle()
+            assertEquals("locked: the app and the field get it", before + 2, port.sent.size)
+            assertEquals(listOf("low"), port.appRing())
+            assertEquals(
+                listOf("low"),
+                (port.sent.last { it["p"] == GarminApp.Field.key }["ring"] as List<*>).map { (it as Map<*, *>)["k"] },
+            )
+            locked.value = false
+            settle()
+            assertEquals("unlocked again: quiet on the wrist", emptyList<Any?>(), port.appRing())
+        }
+
+    @Test
+    fun aLockWithNothingRingingSendsNothing() =
+        runTest {
+            val port = FakePort().apply { apps = mutableSetOf(GarminApp.App.id) }
+            val locked = MutableStateFlow(false)
+            link(port, MutableStateFlow(state(-30L to 112)), locked = locked)
+            settle()
+            val before = port.sent.size
+            locked.value = true
+            settle()
+            locked.value = false
+            settle()
+            assertEquals("the payload is the same: no message", before, port.sent.size)
+        }
+
+    @Test
+    fun theLockRuleIsLockedUnlessTheScreenIsOnWithoutTheLockScreen() {
+        assertTrue("screen off", PhoneLock.locked(interactive = false, keyguard = false))
+        assertTrue("the lock screen up", PhoneLock.locked(interactive = true, keyguard = true))
+        assertFalse("in the person's hand", PhoneLock.locked(interactive = true, keyguard = false))
     }
 
     @Test

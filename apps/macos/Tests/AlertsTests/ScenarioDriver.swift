@@ -27,6 +27,8 @@ struct Scenario: CustomTestStringConvertible, Sendable {
     var shows = false
     /// `at HH:MM`: the wearer's local time (UTC) at minute 0, in minutes after midnight; nil = 08:54.
     var at: Int? = nil
+    /// `wrist`: also compare what each phone's watches say (`wrist <kinds>` / `wrist none`, SPEC §1 "On the wrist").
+    var wrist = false
 
     var testDescription: String { "\(file): \(title)" }
 
@@ -57,12 +59,13 @@ struct Scenario: CustomTestStringConvertible, Sendable {
         var mirror = false
         var shows = false
         var at: Int?
+        var wrist = false
         func flush() {
             guard let t = title else { return }
             out.append(
                 Scenario(
                     file: file, title: t, settings: settings, lines: lines, end: end ?? lines.map(\.minute).max() ?? 0,
-                    mirror: mirror, shows: shows, at: at))
+                    mirror: mirror, shows: shows, at: at, wrist: wrist))
             title = nil
             settings = []
             lines = []
@@ -70,6 +73,7 @@ struct Scenario: CustomTestStringConvertible, Sendable {
             mirror = false
             shows = false
             at = nil
+            wrist = false
         }
         for raw in text.components(separatedBy: "\n") {
             let l = trim(raw.split(separator: "#", maxSplits: 1, omittingEmptySubsequences: false).first ?? "")
@@ -85,6 +89,8 @@ struct Scenario: CustomTestStringConvertible, Sendable {
                 mirror = true
             } else if l == "shows" {
                 shows = true
+            } else if l == "wrist" {
+                wrist = true
             } else if l.hasPrefix("at ") {
                 at = clockMinutes(String(l.dropFirst(3)))
             } else {
@@ -101,6 +107,29 @@ struct Scenario: CustomTestStringConvertible, Sendable {
         flush()
         return out
     }
+}
+
+/// SPEC §1 "On the wrist", for one phone: the alerts up on it (by group), the ones swiped away until their next ring,
+/// whether it is locked (it starts so: in a pocket) and what its watches were last told. The Mac has no watch link of its
+/// own; the timelines hold the rule every phone's watches follow.
+final class WristShade {
+    var up: [AlertGroup: AlertKind] = [:]
+    var swiped: Set<AlertGroup> = []
+    var locked = true
+    var said: Set<AlertKind> = []
+
+    func rang(_ k: AlertKind) {
+        swiped.remove(k.group)
+        up[k.group] = k
+    }
+    func shown(_ k: AlertKind) { if !swiped.contains(k.group) { up[k.group] = k } }
+    func gone(_ k: AlertKind) { up[k.group] = nil }
+    func gone(side: AlertSide) { up = up.filter { $0.value.side != side } }
+    func swipe(_ k: AlertKind) {
+        swiped.insert(k.group)
+        up[k.group] = nil
+    }
+    var now: Set<AlertKind> { locked ? Set(up.values) : [] }
 }
 
 enum ScenarioError: Error, CustomStringConvertible {
@@ -220,14 +249,36 @@ func runScenario(_ sc: Scenario) throws -> [String] {
     func cleared(_ f: AlertFiring, _ prefix: String) {
         if sc.shows || !silent.contains(prefix + f.id) { record(prefix + "clear \(f.kind.rawValue)") }
     }
+    let wristOf = ["": WristShade(), "follower ": WristShade()]
+    let wearerWrist = wristOf[""]!
+    let followerWrist = wristOf["follower "]!
+    func tellWrist() {
+        guard sc.wrist else { return }
+        for prefix in ["", "follower "] where prefix.isEmpty || sc.mirror {
+            let w = wristOf[prefix]!
+            let now = w.now
+            if now == w.said { continue }
+            w.said = now
+            let kinds = AlertKind.allCases.filter { now.contains($0) }.map(\.rawValue).joined(separator: "+")
+            record(prefix + "wrist " + (kinds.isEmpty ? "none" : kinds))
+        }
+    }
     func wearerEffects(_ effects: [AlertEffect]) {
         for e in effects {
             switch e {
-            case .fire(let f): record(label(f))
-            case .show(let f): shown(f, "")
-            case .clear(let f): cleared(f, "")
+            case .fire(let f):
+                wearerWrist.rang(f.kind)
+                record(label(f))
+            case .show(let f):
+                wearerWrist.shown(f.kind)
+                shown(f, "")
+            case .clear(let f):
+                wearerWrist.gone(f.kind)
+                cleared(f, "")
             case .back(let side): record("back \(side.rawValue)")
-            case .resume(let f): if sc.shows || !silent.contains(f.id) { record("resume \(f.kind.rawValue)") }
+            case .resume(let f):
+                wearerWrist.shown(f.kind)
+                if sc.shows || !silent.contains(f.id) { record("resume \(f.kind.rawValue)") }
             case .schedule: break
             }
         }
@@ -241,15 +292,25 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                 published[f.id] = f
                 let escalated = esc != nil && s.escalation.follow
                 if follower.fire(f.kind, id: f.id, at: f.at, escalated: escalated) {
+                    followerWrist.rang(f.kind)
                     record("follower \(label(f))" + (escalated ? " · no response" : ""))
                 }
             case .show(let f):
                 published[f.id] = f
-                if follower.show(f.kind, id: f.id, at: f.at) { shown(f, "follower ") }
+                if follower.show(f.kind, id: f.id, at: f.at) {
+                    followerWrist.shown(f.kind)
+                    shown(f, "follower ")
+                }
             case .clear(let f):
-                if follower.clear(f.kind, id: f.id) { cleared(f, "follower ") }
+                if follower.clear(f.kind, id: f.id) {
+                    followerWrist.gone(f.kind)
+                    cleared(f, "follower ")
+                }
             case .answered(let kind, _):
-                if follower.answered(kind) != nil { record("follower answered \(kind.rawValue)") }
+                if follower.answered(kind) != nil {
+                    followerWrist.shown(kind)
+                    record("follower answered \(kind.rawValue)")
+                }
             }
         }
     }
@@ -282,7 +343,12 @@ func runScenario(_ sc: Scenario) throws -> [String] {
         guard sc.mirror else { return }
         for side in follower.reading(r, s, at: real) { record("follower back \(side.rawValue)") }
     }
-    func followerShow(_ id: String?) { if let id, let f = published[id] { record("follower \(label(f))") } }
+    func followerShow(_ id: String?) {
+        if let id, let f = published[id] {
+            followerWrist.rang(f.kind)
+            record("follower \(label(f))")
+        }
+    }
     /// The follower's Mute all ran out (its timer, or the input that came first).
     func followerExpire() {
         guard sc.mirror else { return }
@@ -392,18 +458,31 @@ func runScenario(_ sc: Scenario) throws -> [String] {
                     wearerDo(.unmute(try side(w[1])), answer: try side(w[1]) == .low)
                 }
             case "unrelax": wearerDo(.remindAsUsual(try side(w[1])), answer: try side(w[1]) == .low)
+            // the wearer's phone locks or unlocks; the person swipes its alert away (SPEC §1 "On the wrist")
+            case "lock", "unlock": wearerWrist.locked = w[0] == "lock"
+            case "swipe":
+                guard w.count > 1, let k = AlertKind(rawValue: w[1]) else {
+                    throw ScenarioError.bad("unknown event: \(ev)")
+                }
+                wearerWrist.swipe(k)
             // the wearer taps, swipes or opens the alert: an answer on the wearer's phone (#39)
             case "ack": share([], answer: try side(w[1]) == .low)
             case "follower":
                 switch (w[1], w.count > 2 ? w[2] : "") {
+                case ("lock", _), ("unlock", _): followerWrist.locked = w[1] == "lock"
+                case ("swipe", let k):
+                    guard let kind = AlertKind(rawValue: k) else { throw ScenarioError.bad("unknown event: \(ev)") }
+                    followerWrist.swipe(kind)
                 case ("mute", "all"):
                     for g in follower.muteAll(until: try allEnd(w, 3, from: real)) {
+                        followerWrist.up[g] = nil
                         record("follower clear \(newestKind(g)?.rawValue ?? g.rawValue)")
                     }
                 case ("mute", let k):
                     let sd = try side(k)
                     let m = try minutes(w, 3) ?? s.notificationActions.muteMin
                     if follower.mute(sd, until: real.addingTimeInterval(TimeInterval(m * 60))) {
+                        followerWrist.gone(side: sd)
                         record("follower clear \(k)")
                     }
                 case ("relax", let k): follower.remindLess(try side(k), relaxMin: s.notificationActions.relaxMin)
@@ -449,6 +528,7 @@ func runScenario(_ sc: Scenario) throws -> [String] {
             followerReading(wearer.context.latest)
         }
         followerExpire()
+        tellWrist()
         func onScenarioTime(_ d: Date?) -> Int? { d.map { Int(($0.timeIntervalSince1970 - offset).rounded(.up)) } }
         timer = onScenarioTime(
             [

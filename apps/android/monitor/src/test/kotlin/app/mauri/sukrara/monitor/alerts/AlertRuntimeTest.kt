@@ -5,6 +5,7 @@ package app.mauri.sukrara.monitor.alerts
 
 import app.mauri.sukrara.alerts.AlertEffect
 import app.mauri.sukrara.alerts.AlertInput
+import app.mauri.sukrara.alerts.AlertKind
 import app.mauri.sukrara.alerts.AlertScenarios
 import app.mauri.sukrara.alerts.AlertSettings
 import app.mauri.sukrara.alerts.Doses
@@ -58,6 +59,20 @@ class AlertRuntimeTest(private val name: String, private val sc: AlertScenarios.
                 // a process death: a new runtime over the same stores (settings, treatments, saved record)
                 runtime = rig.runtime()
                 runtime.start()
+            }
+
+        // the runtime's own account of what its notifications show, through the one rule the watches get (#248)
+        override fun wrist(locked: Boolean): Set<String> = rig.published.wrist(locked)
+
+        override fun swiped(kind: AlertKind) =
+            runBlocking {
+                // the notification's delete intent names the firing it showed
+                val id =
+                    rig.presenter.posts
+                        .last { it.kind.group == kind.group }
+                        .id
+                rig.presenter.gone += kind.group
+                runtime.dismissed(kind.wire, id)
             }
     }
 

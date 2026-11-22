@@ -1,5 +1,5 @@
 {
-  "about": "The watch payload, version 5 (README.md), one list per profile: 'cases' (the face profile, every watch face's), 'app' (Sukrara, the watch app) and 'field' (Sukrara data field). Each case is a phone state ('phone', times in seconds relative to 'now'; the app's 'metrics' = the report numbers per window, as GlucoseMetrics gives them, 'slots' / 'lastElse' / 'ringRange' / 'lastPlace' = the person's metric settings, 'alerts' = the kinds Sukrara's alert runtime rings, 'open' = whether this phone takes entries now, 'addQuiet' = the minutes its Add treatment's quiet line says (rapid: highs, carbs: lows; absent = off), 'kinds' = what THE kinds' order is decided from, in contracts/treatments/kind-order.json's shape) → the exact payload the phone sends ('payload', absolute epoch seconds; the app's push adds 'key', README) → for the face, what it makes of it at a watch time ('watch': 'at' = the watch clock relative to 'now', 'received' = the watch clock when the message arrived, default 'now'; 'expect' = the face's inputs, README 'On the watch'). Run by WatchPayloadFixtureTest (Android: phone → payload for every profile, and the payload through MonkeyC and back) and the face's link test (Garmin: 'cases' → watch; the app's and the data field's watch side comes with their builds). 'bytes' is a payload as Garmin's own serializer (ciq-companion-app-sdk 2.4.0) wrote it, kept from version 1 (the serialization doesn't change with the payload's version): every reader must decode it to 'bytes.payload'.",
+  "about": "The watch payload, version 5 (README.md), one list per profile: 'cases' (the face profile, every watch face's), 'app' (Sukrara, the watch app) and 'field' (Sukrara data field). Each case is a phone state ('phone', times in seconds relative to 'now'; the app's 'metrics' = the report numbers per window, as GlucoseMetrics gives them, 'slots' / 'lastElse' / 'ringRange' / 'lastPlace' = the person's metric settings, 'alerts' = the kinds Sukrara's alert runtime rings, 'shown' = the ones whose notification is up on the phone (default: every one in 'alerts'), 'locked' = the phone is locked (default true; `ring` carries only what is shown while it is locked, #248), 'open' = whether this phone takes entries now, 'addQuiet' = the minutes its Add treatment's quiet line says (rapid: highs, carbs: lows; absent = off), 'kinds' = what THE kinds' order is decided from, in contracts/treatments/kind-order.json's shape) → the exact payload the phone sends ('payload', absolute epoch seconds; the app's push adds 'key', README) → for the face, what it makes of it at a watch time ('watch': 'at' = the watch clock relative to 'now', 'received' = the watch clock when the message arrived, default 'now'; 'expect' = the face's inputs, README 'On the watch'). Run by WatchPayloadFixtureTest (Android: phone → payload for every profile, and the payload through MonkeyC and back) and the face's link test (Garmin: 'cases' → watch; the app's and the data field's watch side comes with their builds). 'bytes' is a payload as Garmin's own serializer (ciq-companion-app-sdk 2.4.0) wrote it, kept from version 1 (the serialization doesn't change with the payload's version): every reader must decode it to 'bytes.payload'.",
   "now": 1794823776,
   "cases": [
     {
@@ -561,6 +561,134 @@
       }
     },
     {
+      "name": "the same very low, the phone unlocked (in the person's hand): the phone alone says it, nothing rings on the wrist; the value, its colour and the pill stay (#248)",
+      "phone": {
+        "locked": false,
+        "readings": [
+          {"t": -30, "mgdl": 52, "rate": -2.3, "band": -2}, {"t": -330, "mgdl": 59}, {"t": -630, "mgdl": 59}, {"t": -930, "mgdl": 58},
+          {"t": -1230, "mgdl": 57}, {"t": -1530, "mgdl": 57}, {"t": -1830, "mgdl": 56}, {"t": -2130, "mgdl": 56},
+          {"t": -2430, "mgdl": 55}, {"t": -2730, "mgdl": 55}, {"t": -3030, "mgdl": 54}, {"t": -3330, "mgdl": 54},
+          {"t": -3630, "mgdl": 53}
+        ],
+        "status": {"k": "needed", "low": true},
+        "alerts": ["falling_fast", "very_low"],
+        "sensor": {"state": "active", "start": -864000, "end": 432000},
+        "metrics": {"86400": {"tir": [0.005, 0.065, 0.39, 0.3, 0.215, 0.025], "coverage": 0.98, "mean": 150.0, "sd": 60.0}},
+        "slots": [{"k": "tir", "w": 86400, "dim": false}, {"k": "avg", "w": 1209600, "dim": true}],
+        "lastElse": null,
+        "ringRange": "tight",
+        "open": true, "addQuiet": {"carbs": 15},
+        "kinds": {"reading": 52, "lowBelow": 70, "ringing": ["falling_fast", "very_low"], "pen": null},
+        "graphHours": 6,
+        "marks": {"rapid": ["point", "amount"], "long": [], "carbs": ["point", "line", "amount", "time"], "note": ["point"]},
+        "side": false,
+        "crown": false,
+        "sides": [{"kind": "very_low", "relaxMin": 0, "canLess": true}]
+      },
+      "payload": {
+        "v": 5,
+        "p": "app",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 52, "rate": -2.3, "band": -2, "deg": 69.0},
+        "hist": [
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, 53, 54, 54, 55, 55, 56, 56, 57, 57, 58, 59, 59
+        ],
+        "st": {"k": "needed", "side": "low"},
+        "ring": [],
+        "last": null,
+        "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
+        "tx": {"t": [], "k": [], "a": [], "i": []},
+        "ranges": [{"w": 86400, "pct": 69, "b": [5, 65, 390, 300, 215, 25]}, null],
+        "m": [
+          {"k": "tir", "w": 86400, "v": 39, "dim": false, "r": "tight", "b": [5, 65, 390, 300, 215, 25], "mark": "none"},
+          {"k": "avg", "w": 1209600, "v": null, "dim": true}
+        ],
+        "else": null,
+        "ro": [2, 3, 1, 0, 4, 5],
+        "log": {"order": ["carbs", "rapid", "long"], "rapid": {"last": null, "usual": [], "q": null}, "long": {"last": null, "usual": [], "q": null}, "carbs": {"last": null, "usual": [], "q": {"side": "low", "min": 15}}},
+        "ds": {"hours": 6, "marks": {"rapid": ["point", "amount"], "long": [], "carbs": ["point", "line", "amount", "time"], "note": ["point"]}, "side": false, "crown": false},
+        "rep": [{"d": 1, "cov": 980, "b": [5, 65, 390, 300, 215, 25], "avg": 150, "gmi": 6.9, "cv": 40.0, "ok": 115}, null, null, null],
+        "repD": 14
+      }
+    },
+    {
+      "name": "the same very low, the phone locked, the very low's notification swiped away: the wrist says only the falling-fast alert still up on the phone (#248)",
+      "phone": {
+        "shown": ["falling_fast"],
+        "readings": [
+          {"t": -30, "mgdl": 52, "rate": -2.3, "band": -2}, {"t": -330, "mgdl": 59}, {"t": -630, "mgdl": 59}, {"t": -930, "mgdl": 58},
+          {"t": -1230, "mgdl": 57}, {"t": -1530, "mgdl": 57}, {"t": -1830, "mgdl": 56}, {"t": -2130, "mgdl": 56},
+          {"t": -2430, "mgdl": 55}, {"t": -2730, "mgdl": 55}, {"t": -3030, "mgdl": 54}, {"t": -3330, "mgdl": 54},
+          {"t": -3630, "mgdl": 53}
+        ],
+        "status": {"k": "needed", "low": true},
+        "alerts": ["falling_fast", "very_low"],
+        "sensor": {"state": "active", "start": -864000, "end": 432000},
+        "metrics": {"86400": {"tir": [0.005, 0.065, 0.39, 0.3, 0.215, 0.025], "coverage": 0.98, "mean": 150.0, "sd": 60.0}},
+        "slots": [{"k": "tir", "w": 86400, "dim": false}, {"k": "avg", "w": 1209600, "dim": true}],
+        "lastElse": null,
+        "ringRange": "tight",
+        "open": true, "addQuiet": {"carbs": 15},
+        "kinds": {"reading": 52, "lowBelow": 70, "ringing": ["falling_fast", "very_low"], "pen": null},
+        "graphHours": 6,
+        "marks": {"rapid": ["point", "amount"], "long": [], "carbs": ["point", "line", "amount", "time"], "note": ["point"]},
+        "side": false,
+        "crown": false,
+        "sides": [{"kind": "very_low", "relaxMin": 0, "canLess": true}]
+      },
+      "payload": {
+        "v": 5,
+        "p": "app",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 52, "rate": -2.3, "band": -2, "deg": 69.0},
+        "hist": [
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, 53, 54, 54, 55, 55, 56, 56, 57, 57, 58, 59, 59
+        ],
+        "st": {"k": "needed", "side": "low"},
+        "ring": [{"k": "falling_fast", "side": "low", "relaxed": false, "less": false}],
+        "last": null,
+        "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
+        "tx": {"t": [], "k": [], "a": [], "i": []},
+        "ranges": [{"w": 86400, "pct": 69, "b": [5, 65, 390, 300, 215, 25]}, null],
+        "m": [
+          {"k": "tir", "w": 86400, "v": 39, "dim": false, "r": "tight", "b": [5, 65, 390, 300, 215, 25], "mark": "none"},
+          {"k": "avg", "w": 1209600, "v": null, "dim": true}
+        ],
+        "else": null,
+        "ro": [2, 3, 1, 0, 4, 5],
+        "log": {"order": ["carbs", "rapid", "long"], "rapid": {"last": null, "usual": [], "q": null}, "long": {"last": null, "usual": [], "q": null}, "carbs": {"last": null, "usual": [], "q": {"side": "low", "min": 15}}},
+        "ds": {"hours": 6, "marks": {"rapid": ["point", "amount"], "long": [], "carbs": ["point", "line", "amount", "time"], "note": ["point"]}, "side": false, "crown": false},
+        "rep": [{"d": 1, "cov": 980, "b": [5, 65, 390, 300, 215, 25], "avg": 150, "gmi": 6.9, "cv": 40.0, "ok": 115}, null, null, null],
+        "repD": 14
+      }
+    },
+    {
       "name": "a follower the wearer doesn't let add entries, no data for 25 min: no data rings, no logging, the last-treatment place off (no last, though a rapid insulin runs)",
       "phone": {
         "readings": [
@@ -713,6 +841,33 @@
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 270, 270, 269, 269, 268, 268, 267, 266, 265, 264, 264, 263],
         "st": {"k": "taken", "side": "high", "until": 1794826476},
         "ring": [{"k": "very_high", "side": "high", "relaxed": true, "less": false}, {"k": "rising_fast", "side": "high", "relaxed": false, "less": true}]
+      }
+    },
+    {
+      "name": "the same very high, the phone unlocked: the field says nothing (#248)",
+      "phone": {
+        "locked": false,
+        "readings": [
+          {"t": -30, "mgdl": 268, "rate": 2.1, "band": 2}, {"t": -330, "mgdl": 263}, {"t": -630, "mgdl": 264}, {"t": -930, "mgdl": 264},
+          {"t": -1230, "mgdl": 265}, {"t": -1530, "mgdl": 266}, {"t": -1830, "mgdl": 267}, {"t": -2130, "mgdl": 268},
+          {"t": -2430, "mgdl": 268}, {"t": -2730, "mgdl": 269}, {"t": -3030, "mgdl": 269}, {"t": -3330, "mgdl": 270},
+          {"t": -3630, "mgdl": 270}
+        ],
+        "status": {"k": "taken", "kind": "rapid", "at": -900, "until": 2700},
+        "alerts": ["rising_fast", "very_high"],
+        "sensor": {"state": "active", "start": -864000, "end": 432000},
+        "sides": [{"kind": "very_high", "relaxMin": 30, "canLess": false}, {"kind": "rising_fast", "relaxMin": 0, "canLess": true}]
+      },
+      "payload": {
+        "v": 5,
+        "p": "field",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 268, "rate": 2.1, "band": 2, "deg": -63.0},
+        "hist": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 270, 270, 269, 269, 268, 268, 267, 266, 265, 264, 264, 263],
+        "st": {"k": "taken", "side": "high", "until": 1794826476},
+        "ring": []
       }
     },
     {

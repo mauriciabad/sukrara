@@ -50,7 +50,8 @@ botón.
 
 <WatchScreens ids={['list', 'amount', 'hold', 'logged']} />
 
-**Alertas y silencio.** Cuando suena la alerta de Sukrara en el móvil, el reloj la muestra con sus acciones.
+**Alertas y silencio.** Cuando suena la alerta de Sukrara con el móvil bloqueado, el reloj la muestra con sus acciones.
+Con el móvil en la mano, solo avisa el móvil: nada de alertas dobles.
 
 <WatchScreens ids={['alertLow', 'alertVeryLow', 'muteLengths', 'muted']} />
 
@@ -114,7 +115,9 @@ en el reloj. Al volver, la lectura actual llega en menos de un minuto.
 <details>
 <summary>¿Las alertas del reloj sustituyen a las del móvil?</summary>
 
-No. El móvil decide y hace sonar cada alerta; el reloj también la muestra. Deja activadas las alertas del móvil. En la
+No. El móvil decide y hace sonar cada alerta; el reloj también la muestra mientras el móvil está bloqueado y su
+notificación sigue ahí (desbloqueado, descartada o silenciada: el reloj no dice nada). Deja activadas las alertas del
+móvil. En la
 familia Venu 2, Venu Sq 2 y D2 Air X10 la app no muestra alertas propias: lo hace la notificación del móvil, que
 reenvía Garmin Connect.
 

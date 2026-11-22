@@ -23,6 +23,15 @@ interface ScenarioDevice {
     fun handle(input: AlertInput, t: Long, elapsed: Long): List<AlertEffect>
 
     fun restart(settings: AlertSettings, doses: Doses, sensor: SensorWindow?, t: Long, elapsed: Long): List<AlertEffect>
+
+    /**
+     * What the device's watches say while the phone is [locked] or not (SPEC §1 "On the wrist"): the kinds, from the
+     * device's own state; null = the driver works it out from the effects (the bare machine has no notifications).
+     */
+    fun wrist(locked: Boolean): Set<String>? = null
+
+    /** The person swiped the alert of [kind] away on the phone (#195): it stays away until the next ring. */
+    fun swiped(kind: AlertKind) {}
 }
 
 /** The machine alone; a restart goes through the saved state's JSON like the runtime's store. */
@@ -61,6 +70,8 @@ object AlertScenarios {
         val shows: Boolean = false,
         /** `at HH:MM`: the wearer's local time (UTC) at minute 0, in minutes after midnight; null = [T0]. */
         val at: Int? = null,
+        /** `wrist`: also compare what each phone's watches say (`wrist <kinds>` / `wrist none`, SPEC §1 "On the wrist"). */
+        val wrist: Boolean = false,
     )
 
     /** A whole minute. */
@@ -92,10 +103,11 @@ object AlertScenarios {
         var mirror = false
         var shows = false
         var at: Int? = null
+        var wrist = false
 
         fun flush() {
             val t = title ?: return
-            out += Scenario(file, t, settings, lines, end ?: lines.maxOf { it.minute }, mirror, shows, at)
+            out += Scenario(file, t, settings, lines, end ?: lines.maxOf { it.minute }, mirror, shows, at, wrist)
             title = null
             settings = emptyList()
             lines = mutableListOf()
@@ -103,6 +115,7 @@ object AlertScenarios {
             mirror = false
             shows = false
             at = null
+            wrist = false
         }
         for (raw in text.lines()) {
             val l = raw.substringBefore('#').trim()
@@ -127,6 +140,10 @@ object AlertScenarios {
 
                 l == "shows" -> {
                     shows = true
+                }
+
+                l == "wrist" -> {
+                    wrist = true
                 }
 
                 l.startsWith("at ") -> {
@@ -302,6 +319,48 @@ object AlertScenarios {
 
         val wearer = device(s, t0)
 
+        // SPEC §1 "On the wrist", per device: the alerts up on its phone (by group), the ones swiped away until their next
+        // ring, whether the phone is locked (it starts so: in a pocket) and what its watches were last told
+        class Wrist {
+            val up = LinkedHashMap<AlertGroup, AlertKind>()
+            val swiped = HashSet<AlertGroup>()
+            var locked = true
+            var said = emptySet<String>()
+
+            fun rang(f: Firing) {
+                swiped -= f.kind.group
+                up[f.kind.group] = f.kind
+            }
+
+            fun shown(f: Firing) {
+                if (f.kind.group !in swiped) up[f.kind.group] = f.kind
+            }
+
+            fun gone(kind: AlertKind) {
+                up.remove(kind.group)
+            }
+
+            fun swipe(kind: AlertKind) {
+                swiped += kind.group
+                up.remove(kind.group)
+            }
+
+            fun now(): Set<String> = if (locked) up.values.map { it.wire }.toSet() else emptySet()
+        }
+        val wristOf = mapOf("" to Wrist(), "follower " to Wrist())
+
+        fun tellWrist() {
+            if (!sc.wrist) return
+            for ((prefix, w) in wristOf) {
+                if (prefix.isNotEmpty() && !sc.mirror) continue
+                val now = (if (prefix.isEmpty()) wearer.wrist(w.locked) else null) ?: w.now()
+                if (now == w.said) continue
+                w.said = now
+                val kinds = AlertKind.entries.filter { it.wire in now }.joinToString("+") { it.wire }
+                note(prefix + "wrist " + kinds.ifEmpty { "none" })
+            }
+        }
+
         // the follower's own no_data isn't run (SPEC §7)
         fun followerSettings() = s.withRule(AlertKind.NO_DATA, s.rule(AlertKind.NO_DATA).copy(on = false))
         val follower =
@@ -321,14 +380,41 @@ object AlertScenarios {
         fun followerSaw(effects: List<AlertEffect>) =
             effects.forEach { e ->
                 when (e) {
-                    is AlertEffect.Fire -> note("follower ${Headlines.english(e.firing.kind, e.firing.treated, e.firing.escalated)}")
-                    is AlertEffect.Show -> shown(e.firing, "follower ")
-                    is AlertEffect.Answered -> note("follower answered ${e.firing.kind.wire}")
-                    is AlertEffect.Escalated -> error("a follower never escalates")
-                    is AlertEffect.Clear -> cleared(e.kind, e.id, "follower ")
-                    is AlertEffect.Back -> note("follower back ${e.side.wire}")
-                    is AlertEffect.Mirror -> error("a follower never publishes")
-                    is AlertEffect.Schedule -> followerTimer = e.at
+                    is AlertEffect.Fire -> {
+                        wristOf.getValue("follower ").rang(e.firing)
+                        note("follower ${Headlines.english(e.firing.kind, e.firing.treated, e.firing.escalated)}")
+                    }
+
+                    is AlertEffect.Show -> {
+                        wristOf.getValue("follower ").shown(e.firing)
+                        shown(e.firing, "follower ")
+                    }
+
+                    is AlertEffect.Answered -> {
+                        wristOf.getValue("follower ").shown(e.firing)
+                        note("follower answered ${e.firing.kind.wire}")
+                    }
+
+                    is AlertEffect.Escalated -> {
+                        error("a follower never escalates")
+                    }
+
+                    is AlertEffect.Clear -> {
+                        wristOf.getValue("follower ").gone(e.kind)
+                        cleared(e.kind, e.id, "follower ")
+                    }
+
+                    is AlertEffect.Back -> {
+                        note("follower back ${e.side.wire}")
+                    }
+
+                    is AlertEffect.Mirror -> {
+                        error("a follower never publishes")
+                    }
+
+                    is AlertEffect.Schedule -> {
+                        followerTimer = e.at
+                    }
                 }
             }
 
@@ -343,6 +429,7 @@ object AlertScenarios {
             effects.forEach { e ->
                 when (e) {
                     is AlertEffect.Fire -> {
+                        if (e.silent) wristOf.getValue("").shown(e.firing) else wristOf.getValue("").rang(e.firing)
                         when {
                             !e.silent -> note(Headlines.english(e.firing.kind, e.firing.treated))
                             sc.shows || e.firing.id !in silent -> note("resume ${e.firing.kind.wire}")
@@ -350,10 +437,12 @@ object AlertScenarios {
                     }
 
                     is AlertEffect.Show -> {
+                        wristOf.getValue("").shown(e.firing)
                         shown(e.firing, "")
                     }
 
                     is AlertEffect.Clear -> {
+                        wristOf.getValue("").gone(e.kind)
                         cleared(e.kind, e.id, "")
                     }
 
@@ -502,6 +591,16 @@ object AlertScenarios {
                         wearerDid(wearer(AlertInput.RemindAsUsual(kind(w[1]))))
                     }
 
+                    // the wearer's phone locks or unlocks; the person swipes its alert away (SPEC §1 "On the wrist")
+                    "lock", "unlock" -> {
+                        wristOf.getValue("").locked = w[0] == "lock"
+                    }
+
+                    "swipe" -> {
+                        wristOf.getValue("").swipe(kind(w[1]))
+                        wearer.swiped(kind(w[1]))
+                    }
+
                     // the wearer taps, swipes or opens the alert: an answer on the wearer's phone (#39)
                     "ack" -> {
                         wearerDid(wearer(AlertInput.Acknowledge(kind(w[1]))))
@@ -509,6 +608,17 @@ object AlertScenarios {
 
                     "follower" -> {
                         require(sc.mirror) { "follower event without mirror: $ev" }
+                        when (w[1]) {
+                            "lock", "unlock" -> {
+                                wristOf.getValue("follower ").locked = w[1] == "lock"
+                                return@forEach
+                            }
+
+                            "swipe" -> {
+                                wristOf.getValue("follower ").swipe(kind(w[2]))
+                                return@forEach
+                            }
+                        }
                         follow(
                             when (w[1]) {
                                 "mute" -> {
@@ -573,6 +683,7 @@ object AlertScenarios {
             } else if (sc.mirror && followerTimer.let { it != null && it <= t }) {
                 follow(AlertInput.Tick)
             }
+            tellWrist()
             t =
                 listOfNotNull(
                     byTime.keys.filter { it > t }.minOrNull(),

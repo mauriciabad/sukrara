@@ -1,0 +1,69 @@
+# What a phone's watches say (#248; SPEC §1 "On the wrist"): an alert whose notification is up on that phone, and only
+# while the phone is locked. `wrist` compares it (`wrist <kinds>` / `wrist none` when it changes); every phone starts
+# locked, `lock` / `unlock` / `swipe <kind>` (and `follower …`) change it. Format: SPEC §7.
+
+scenario Locked with the alert's notification up: the wrist says it, and stops when it ends
+wrist
+ 0  glucose 65   => Low glucose; wrist low
+ 3  glucose 75   => clear low; wrist none
+ 4
+
+scenario With the phone in the hand the phone alone says it: nothing on the wrist, its repeats neither
+wrist
+ 0  unlock, glucose 65   => Low glucose
+ 5                       => Low glucose
+ 6
+
+scenario A lock or an unlock mid-alert reaches the wrist at once
+wrist
+ 0  unlock, glucose 65   => Low glucose
+ 2  lock                 => wrist low       # the phone back in the pocket, the alert still up
+ 4  unlock               => wrist none
+ 5                       => Low glucose     # the repeat on the phone in the hand: the wrist stays quiet
+ 7  lock                 => wrist low
+ 8
+
+scenario Locked, but the alert swiped away: off the wrist until its next ring
+wrist
+ 0  glucose 65   => Low glucose; wrist low
+ 1  swipe low    => wrist none
+ 5               => Low glucose; wrist low  # the repeat rings it back on the phone and on the wrist
+ 6
+
+scenario Two alerts up, one swiped away: the wrist keeps the other
+wrist
+settings falling_fast=on trend=sensor
+ 0  glucose 65 rate -2.5   => Low glucose; Falling fast; wrist low+falling_fast
+ 1  swipe low              => wrist falling_fast
+ 2
+
+scenario A restart keeps a swiped alert off the wrist
+wrist
+ 0  glucose 65   => Low glucose; wrist low
+ 1  swipe low    => wrist none
+ 2  restart      => resume low              # back on the phone's record, still swiped: not on screen, not on the wrist
+ 5               => Low glucose; wrist low
+ 6
+
+scenario Mute takes the alert off the wrist with the phone's notification
+wrist
+ 0  glucose 65   => Low glucose; wrist low
+ 2  mute low     => clear low; wrist none
+ 6
+
+scenario Mute all takes every alert off the wrist; back on, the next ring is there again
+wrist
+ 0  glucose 65       => Low glucose; wrist low
+ 2  mute all 10      => clear low; wrist none
+12                   => Low glucose; wrist low   # Mute all ends: the alert still up rings
+13
+
+scenario A follower's watch follows the follower's phone: its own lock, its own notification
+wrist
+mirror
+ 0  follower unlock, glucose 65   => Low glucose; follower Low glucose; wrist low
+ 2  follower lock                 => follower wrist low
+ 3  follower swipe low            => follower wrist none
+ 4  unlock                        => wrist none
+ 5                                => Low glucose; follower Low glucose; follower wrist low
+ 6

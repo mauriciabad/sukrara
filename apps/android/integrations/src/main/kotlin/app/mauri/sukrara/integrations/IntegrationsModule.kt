@@ -45,6 +45,7 @@ import app.mauri.sukrara.integrations.garmin.ConnectIqStore
 import app.mauri.sukrara.integrations.garmin.GarminLink
 import app.mauri.sukrara.integrations.garmin.GarminViewModel
 import app.mauri.sukrara.integrations.garmin.GarminWatches
+import app.mauri.sukrara.integrations.garmin.PhoneLock
 import app.mauri.sukrara.integrations.garmin.WatchEntries
 import app.mauri.sukrara.integrations.garmin.WatchKey
 import app.mauri.sukrara.integrations.garmin.WatchSettingsStore
@@ -337,6 +338,7 @@ class IntegrationsModule(
             key = WatchKey(secure),
             alerts = alertControls,
             watchDisplays = watchSettings?.displays ?: flowOf(emptyMap()),
+            phoneLocked = PhoneLock(context).locked,
         )
 
     val broadcasts = Broadcaster(settings, broadcastState, libreLive, sensor, role, installedApps, clock, dispatchers.io, log)

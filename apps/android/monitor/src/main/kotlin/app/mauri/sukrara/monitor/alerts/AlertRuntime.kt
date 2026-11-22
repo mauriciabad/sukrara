@@ -735,6 +735,8 @@ class AlertRuntime(
             if (firingId == null || firing[group]?.id != firingId) return
             dismissed += group
             attempt(Step.Save) { save() }
+            // the watches stop saying it at once (#248: the wrist says only what the phone shows)
+            attempt(Step.Publish) { publishUi(now()) }
         }
     }
 
@@ -773,6 +775,13 @@ class AlertRuntime(
         publish(
             AlertUiState(
                 firingKinds = firing.values.map { it.kind.wire }.toSet(),
+                // what the wrist may say (#248): an alert whose notification is up, its own or a stand-in that rang
+                shownKinds =
+                    firing
+                        .filter { (g, _) -> g !in dismissed && unposted[g] != false }
+                        .values
+                        .map { it.kind.wire }
+                        .toSet(),
                 status = m?.status(now)?.let(::cardStatusOf) ?: CardStatus.None,
                 treatmentQuiet = m?.let { treatmentQuietOf(it.settings, ui) } ?: TreatmentQuiet(),
                 mutedUntil = instantOf(ui.muteAllUntil),
