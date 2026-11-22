@@ -2930,8 +2930,8 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   page for 1 / 7 / 14 / 30 days with which of the report card's goals each meets (`ok`, `Goal.met`: the watch keeps no
   threshold), the display settings it follows (`graph.hours`, `graph.marks`, `graph.side`, `graph.columnCrown`, the
   metrics, ring order and report period: each watch's own values, schema `apps.garmin.watch`, over the app's in one
-  place, `GarminDisplay.resolve`; the push says which watch it is, `w`, and the fetch sends it back, `&w=`), the last treatment (each item with its mute's end, for the card's double ring) and sensor as the
-  face has them, what the alert runtime rings now, and for logging THE kinds' order (`log.order`, the same `KindOrder` over the same
+  place, `GarminDisplay.resolve`; the push says which watch it is, `w`, and the fetch sends it back, `&w=`), the last treatment (each item with its mute's end, for the card's double ring; none while that watch's
+  *Last treatment* is off, its own or the app's) and sensor as the face has them, what the alert runtime rings now, and for logging THE kinds' order (`log.order`, the same `KindOrder` over the same
   facts as the phone's Add treatment: Carbs first while low…) and each kind's last amount and three usual ones; under
   6 KB with a full day. Its push carries the key its writes are signed with (`WatchKey`: 32 random bytes made once,
   kept in the secure store, never in the fetch nor a log line). **The data field's**: the last hour, the pill and

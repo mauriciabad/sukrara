@@ -21,6 +21,7 @@ import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.graph.LastTreatment
 import app.mauri.sukrara.graph.RingSpec
 import app.mauri.sukrara.graph.WatchDisplay
@@ -38,6 +39,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -156,6 +158,47 @@ class AuraLinkTest {
             // without w and two watches with the app: the app's own values
             assertTrue(fetch(null).contains("\"repD\":14"))
             link.stop()
+        }
+
+    /** Watch 7's own *Last treatment* [own7] over the app's [app]; watch 8 the same as the app: what each one's app and face get. */
+    private suspend fun TestScope.lastByWatch(
+        app: Boolean,
+        own7: Boolean,
+    ): FakePort {
+        val port =
+            FakePort().apply {
+                watches = listOf(IqDevice(7, "Descent Mk3i 43mm", true), IqDevice(8, "Venu 3", true))
+                apps = mutableSetOf(GarminApp.App.id, GarminApp.Aura.id)
+            }
+        val settings = InMemorySettingsRepository()
+        settings.set(GraphSettings.Last, app)
+        val treatments = InMemoryTreatmentsRepository()
+        treatments.upsertIfNewer(TreatmentRecord(treatment("r1", TreatmentKind.RapidInsulin, 3.0, 600)))
+        link(port, MutableStateFlow(state(-30L to 180)), settings, treatments, own = mapOf(7L to WatchDisplay(lastOn = own7)))
+        return port
+    }
+
+    private fun FakePort.appLast(w: String) = sent.last { it["p"] == GarminApp.App.key && it["w"] == w }["last"]
+
+    @Test
+    fun theAppsLastTreatmentFollowsTheWatchsOwnSwitch() =
+        runTest {
+            // watch 7 has its own Last treatment off, the app's is on: no last on 7, the app's rule on 8
+            val off = lastByWatch(app = true, own7 = false)
+            settle()
+            assertNull(off.appLast("7"))
+            assertEquals(listOf("rapid"), ((off.appLast("8") as Map<*, *>)["items"] as List<*>).map { (it as Map<*, *>)["k"] })
+            // the face's treatment field is its own: it travels whatever the card's switch says
+            assertTrue(off.sent.filter { it["p"] == GarminApp.Aura.key }.all { it["last"] != null })
+        }
+
+    @Test
+    fun aWatchsOwnLastTreatmentOnShowsItWhileTheAppsIsOff() =
+        runTest {
+            val on = lastByWatch(app = false, own7 = true)
+            settle()
+            assertNotNull(on.appLast("7"))
+            assertNull(on.appLast("8"))
         }
 
     @Test

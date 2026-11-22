@@ -561,7 +561,7 @@
       }
     },
     {
-      "name": "a follower the wearer doesn't let add entries, no data for 25 min: no data rings, no logging, the last-treatment place off",
+      "name": "a follower the wearer doesn't let add entries, no data for 25 min: no data rings, no logging, the last-treatment place off (no last, though a rapid insulin runs)",
       "phone": {
         "readings": [
           {"t": -1500, "mgdl": 141}
@@ -600,7 +600,7 @@
         ],
         "st": null,
         "ring": [{"k": "no_data", "side": "none", "relaxed": false, "less": false}],
-        "last": {"t": 1794821676, "items": [{"k": "rapid", "a": 4.5, "t": 1794821676, "m": -1}], "until": 1794836076, "next": null},
+        "last": null,
         "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
         "tx": {"t": [1794821676], "k": ["rapid"], "a": [4.5], "i": ["a26f1c2b"]},
         "ranges": [null, null],

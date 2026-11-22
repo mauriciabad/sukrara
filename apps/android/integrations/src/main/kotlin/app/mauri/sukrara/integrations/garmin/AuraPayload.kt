@@ -137,15 +137,18 @@ object AuraPayload {
             )
         if (app != GarminApp.Aura) p["ring"] = if (monitoring) ring(state.alerts.firingKinds, state.alerts.quiet) else emptyList<Any?>()
         if (app == GarminApp.Field) return p
-        p["last"] = last(state, i.treatments, nowS).takeIf { monitoring }
-        p["sensor"] = sensor(state, i.countdownHours, i.sensor)
         if (app == GarminApp.Aura) {
+            // the face's treatment field is its own: always the card's rule, whatever the card's place says
+            p["last"] = last(state, i.treatments, nowS).takeIf { monitoring }
+            p["sensor"] = sensor(state, i.countdownHours, i.sensor)
             p["tir"] = i.tir?.takeIf { monitoring }?.let { linkedMapOf("pct" to percent(it), "until" to i.dayEnd.epochSecond.toInt()) }
             return p
         }
         val metrics = if (monitoring) i.metrics else emptyMap()
-        // the display settings as this watch shows them, resolved in one place
+        // the display settings as this watch shows them, resolved in one place: the last treatment follows them too
         val d = GarminDisplay.resolve(i.graph, i.watch)
+        p["last"] = last(state, i.treatments, nowS).takeIf { monitoring && d.graph.lastPlace != LastPlace.OFF }
+        p["sensor"] = sensor(state, i.countdownHours, i.sensor)
         p["tx"] = tx(if (monitoring) i.treatments else emptyList(), nowS)
         p["ranges"] = RANGES.map { w -> metrics[w]?.takeIf { it.tir.coverage >= METRIC_COVERAGE }?.let { range(w, it) } }
         p["m"] = d.graph.rings().map { metric(it, metrics[it.windowS]) }
