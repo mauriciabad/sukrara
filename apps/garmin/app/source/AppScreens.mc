@@ -748,21 +748,46 @@ module AppScreens {
         g.t(x0 + fs + 4, y, s, fs, 600, AppMath.SOFT, START);
     }
 
-    // a centred text kept inside the screen (SPEC §14.1): the first of [sizes] (units, largest first; sizes the class's
-    // fonts carry) at which it fits between the rims at its line. The font-resource watches (no tinted bitmaps) draw
-    // their glyphs about 12 % wider than the atlases' widths (AppMath.tw)
+    // a centred text kept inside the screen (SPEC §14.1) on the font-resource watches (no tinted bitmaps: their glyphs
+    // draw about 12 % wider than the atlases' widths, AppMath.tw): the first of [sizes] (units, largest first; sizes the
+    // class's fonts carry) at which it fits inside the rim's hints at its line, else two lines at the last. The atlas
+    // watches draw it at the first, as designed
     function fitT(g as AppG, y as Numeric, s as String, sizes as Array<Number>, fw as Number, col as Number) as Void {
         var fs = sizes[0];
-        for (var i = 0; i < sizes.size(); i++) {
-            fs = sizes[i];
-            var top = y - fs * 0.75;
-            var e = AppMath.abs(top) > AppMath.abs(y) ? top : y;
-            var half = AppFontTable.RECT ? hw() - 8 : Math.sqrt(186 * 186 - e * e);
-            if (AppMath.tw(s, fs) * (AppFontTable.PLAIN ? 1.12 : 1.0) <= 2 * half) {
-                break;
+        if (AppFontTable.PLAIN) {
+            for (var i = 0; i < sizes.size(); i++) {
+                fs = sizes[i];
+                if (AppMath.tw(s, fs) * 1.12 <= 2 * room(y, fs)) {
+                    g.t(0, y, s, fs, fw, col, MIDDLE);
+                    return;
+                }
+            }
+            // two lines, broken at the space nearest the middle
+            var cut = -1;
+            var mid = s.length() / 2;
+            for (var k = 0; k < s.length(); k++) {
+                if (s.substring(k, k + 1).equals(" ") && (cut < 0 || (k - mid).abs() < (cut - mid).abs())) {
+                    cut = k;
+                }
+            }
+            if (cut > 0) {
+                g.t(0, y - fs * 0.6, s.substring(0, cut) as String, fs, fw, col, MIDDLE);
+                g.t(0, y + fs * 0.6, s.substring(cut + 1, s.length()) as String, fs, fw, col, MIDDLE);
+                return;
             }
         }
         g.t(0, y, s, fs, fw, col, MIDDLE);
+    }
+
+    // the half width a line of [fs] at baseline [y] has inside the screen and clear of the rim's hints (units)
+    function room(y as Numeric, fs as Numeric) as Float {
+        if (AppFontTable.RECT) {
+            return hw() - 8;
+        }
+        var top = y - fs * 0.75;
+        var e = AppMath.abs(top) > AppMath.abs(y) ? top : y;
+        var q = 176 * 176 - e * e;
+        return q > 0 ? Math.sqrt(q).toFloat() : 0.0;
     }
 
     function pageDots(g as AppG, n as Number, i as Number) as Void {
