@@ -30,6 +30,12 @@ var WL = (function () {
     veryHigh: '#FF5500', extremelyHigh: '#FF55FF', now: '#AAFF00', rapid: '#55AAFF', long: '#AAAAFF', carbs: '#FFAA55',
     note: '#AAAAAA', on: '#000000', card: '#000000', card2: 'CARD'
   };
+  // a colour the watch's input names by its AMOLED value (the alert's ring: the watch's own token) as the class's palette
+  // draws that token (the MIP's 64 colours); any other colour as it is
+  function tokOf(h) {
+    for (var k in PAL_AMOLED) if (PAL_AMOLED[k].toUpperCase() === String(h).toUpperCase()) return PAL[k];
+    return h;
+  }
   // ---- screen classes (SPEC §14) ------------------------------------------------------------------------------------
   // One reference watch per class, from its device files (SDK 9.3 compiler.json / simulator.json / personality.mss):
   // the screen, the panel, touch, the glance's icon and content areas (px, in the glance row), the data-field slots
@@ -1045,7 +1051,7 @@ var WL = (function () {
   // ---- alerts -------------------------------------------------------------------------------------------------------
   S.alert = function (g, d, c) {
     var b = bandOf(d.g), low = b === 'low' || b === 'veryLow', very = c.very !== undefined ? c.very : b === 'veryLow' || b === 'extremelyHigh';
-    var col = c.ring || PAL[b], word = c.word || { veryLow: 'VERY LOW', low: 'LOW', high: 'HIGH', veryHigh: 'VERY HIGH', extremelyHigh: 'EXTREMELY HIGH', tight: 'FALLING FAST', target: 'RISING FAST' }[b];
+    var col = c.ring ? tokOf(c.ring) : PAL[b], word = c.word || { veryLow: 'VERY LOW', low: 'LOW', high: 'HIGH', veryHigh: 'VERY HIGH', extremelyHigh: 'EXTREMELY HIGH', tight: 'FALLING FAST', target: 'RISING FAST' }[b];
     if (very) full(g, col);
     else rim(g, col, 10, 1);
     // on the block: white (MIP: white or black, whichever reads better on the 64-colour block, inkOn)

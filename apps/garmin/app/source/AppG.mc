@@ -444,6 +444,12 @@ module AppDraw {
         var r = (e[3] as Numeric) * s;
         var stroke = (e[6] as Numeric) > 0;
         var m = col(e[4] as Number, e[5] as Float, stroke ? 0 : 1);
+        if (stroke && (m[1] as Number) > 0) {
+            // a dithered stroke (an unlit ring track: grid, G.col): the dither in the stroke's band only
+            var hw = px(e[6] as Numeric) / 2.0;
+            dither(dc, cx - r - hw, cy - r - hw, 2 * (r + hw), 2 * (r + hw), r + hw, r - hw, m[0] as Number, m[1] as Number);
+            return;
+        }
         if (mipFill(dc, m, cx - r, cy - r, 2 * r, 2 * r, 0.0, r)) {
             return;
         }
@@ -478,72 +484,54 @@ module AppDraw {
             return true;
         }
         if ((m[1] as Number) > 0) {
-            dither(dc, x, y, w, h, r, c, m[1] as Number);
+            dither(dc, x, y, w, h, r, -1.0, c, m[1] as Number);
             return true;
         }
         return false;
     }
 
-    // an ordered dither in the screen's pixels (app.js G.dither): 50 % a checkerboard (its pixels on every other
-    // anti-diagonal, drawn as lines), 25 % one pixel in four; in the box [x, y, w, h], or the circle of radius [r] ≥ 0
-    // filling it
+    // an ordered dither in the screen's pixels (app.js G.dither): 50 % a checkerboard (lit where x + y is even), 25 % one
+    // pixel in four (x and y even); in the box [x, y, w, h], or the circle of radius [r] ≥ 0 filling it, less the circle
+    // of radius [ri] when ≥ 0 (a ring's band). Point by point: a 1 px line at 45° lights the checkerboard's gaps too
     (:mip)
-    function dither(dc as Dc, x as Float, y as Float, w as Float, h as Float, r as Float, c as Number, pct as Number) as Void {
+    function dither(dc as Dc, x as Float, y as Float, w as Float, h as Float, r as Float, ri as Float, c as Number, pct as Number) as Void {
         var x0 = Math.round(x + 0.5).toNumber();
         var y0 = Math.round(y + 0.5).toNumber();
         var x1 = Math.round(x + w + 0.5).toNumber();
         var y1 = Math.round(y + h + 0.5).toNumber();
-        if (x1 <= x0 || y1 <= y0) {
-            return;
-        }
         if (dc has :setAntiAlias) {
             dc.setAntiAlias(false);
         }
         dc.setColor(c, Graphics.COLOR_TRANSPARENT);
-        dc.setPenWidth(1);
-        dc.setClip(x0, y0, x1 - x0, y1 - y0);
         var cx = x + w / 2.0;
         var cy = y + h / 2.0;
-        if (pct >= 50) {
-            for (var k = ((x0 + y0) / 2) * 2; k <= x1 + y1; k += 2) {
-                var ya = y0.toFloat();
-                var yb = y1.toFloat();
-                if (r >= 0) {
-                    // the anti-diagonal x + y = k inside the circle: u = y − cy solves 2u² − 2au + a² − r² ≤ 0
-                    var a = k - cx - cy;
-                    var q = 2 * r * r - a * a;
-                    if (q < 0) {
-                        continue;
-                    }
-                    var sq = Math.sqrt(q);
-                    ya = cy + (a - sq) / 2.0;
-                    yb = cy + (a + sq) / 2.0;
+        var half = pct >= 50;
+        for (var yy = half ? y0 : y0 + (y0 & 1); yy < y1; yy += half ? 1 : 2) {
+            var xa = x0;
+            var xb = x1;
+            var xc = x1;
+            var xd = x1;
+            var d2 = (yy - cy) * (yy - cy);
+            if (r >= 0) {
+                if (d2 > r * r) {
+                    continue;
                 }
-                var ys = Math.ceil(ya).toNumber();
-                var ye = Math.floor(yb).toNumber();
-                if (ye >= ys) {
-                    dc.drawLine(k - ys, ys, k - ye - 1, ye + 1);
+                var hw = Math.sqrt(r * r - d2);
+                xa = Math.ceil(cx - hw).toNumber();
+                xb = Math.floor(cx + hw).toNumber() + 1;
+                // less the inner circle's span
+                if (ri >= 0 && d2 < ri * ri) {
+                    var hi = Math.sqrt(ri * ri - d2);
+                    xc = Math.ceil(cx - hi).toNumber();
+                    xd = Math.floor(cx + hi).toNumber() + 1;
                 }
             }
-        } else {
-            for (var yy = y0 + (y0 & 1); yy < y1; yy += 2) {
-                var xa = x0;
-                var xb = x1;
-                if (r >= 0) {
-                    var dy = yy - cy;
-                    if (dy * dy > r * r) {
-                        continue;
-                    }
-                    var hw = Math.sqrt(r * r - dy * dy);
-                    xa = Math.ceil(cx - hw).toNumber();
-                    xb = Math.floor(cx + hw).toNumber() + 1;
-                }
-                for (var xx = xa + (xa & 1); xx < xb; xx += 2) {
+            for (var xx = xa + (half ? (xa + yy) & 1 : xa & 1); xx < xb; xx += 2) {
+                if (xx < xc || xx >= xd) {
                     dc.drawPoint(xx, yy);
                 }
             }
         }
-        dc.clearClip();
         if (dc has :setAntiAlias) {
             dc.setAntiAlias(true);
         }
