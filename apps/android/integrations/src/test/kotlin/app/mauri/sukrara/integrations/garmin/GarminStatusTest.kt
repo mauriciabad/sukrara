@@ -224,4 +224,47 @@ class GarminStatusTest {
         assertEquals(AppLine.Unknown, AppLine.on(GarminApp.Field, descent, one, now))
         assertEquals(AppLine.PortBusy, AppLine.on(GarminApp.App, descent, one.copy(portBusy = true), now))
     }
+
+    @Test
+    fun aReportIsJudgedAgainstTheDeliveryBeforeIt() {
+        // pushes every minute, reports every 5: the newest delivery is usually after the report, the one before counts
+        val face =
+            AppLink(
+                installed = true,
+                delivered = ago(0),
+                reading = ago(0),
+                deliveries = (6 downTo 0).map { Delivery(ago(it.toLong()), ago(it.toLong())) },
+            )
+        val w = AuraWatch.of(7, "Descent", true, mapOf(GarminApp.Aura.id to face))
+        // the report of 1 min ago still has the reading of 8 min: the delivery of 2 min ago (before it) carried a newer one
+        val report = AuraReport(ago(1), emptyList(), drawn = ago(8), drawnSince = ago(3))
+        val s = base.copy(watches = listOf(w), report = report)
+        assertEquals(WatchLine(true, ago(8), WatchLine.Problem.NotTaking), line(w, s))
+        assertEquals(AuraStatus.Sent("Descent", ago(8)), of(s))
+        // the face has what was delivered before its report: fine
+        assertEquals(null, line(w, s.copy(report = report.copy(drawn = ago(2)))).problem)
+    }
+
+    @Test
+    fun anAppThatRejectsEveryMessageNeedsUpdating() {
+        // a face of another payload version keeps the older payload for every push and fetch (px / fx): say so
+        val runs = listOf(AuraRun("px", 1, 0, 0), AuraRun("fx", 2, 0, 0), AuraRun("S", 3, 1, 0), AuraRun("px", 4, 0, 0))
+        val w = watch.copy(delivered = ago(1), reading = ago(1))
+        val s = base.copy(watches = listOf(w), report = AuraReport(now, runs, drawn = null, drawnSince = null))
+        assertTrue(s.report!!.rejected)
+        assertEquals(WatchLine(true, null, WatchLine.Problem.Outdated), line(w, s))
+        assertEquals(AuraStatus.Outdated("Descent"), of(s))
+        assertTrue(of(s).isProblem())
+        // one message it took: not all rejects
+        val took = s.copy(report = s.report!!.copy(runs = runs + AuraRun("p", 5, 5, ago(1).epochSecond)))
+        assertEquals(null, line(w, took).problem)
+        // the same rule for the app and the field (their own reports)
+        val app = AuraWatch.of(7, "Descent", true, mapOf(GarminApp.App.id to AppLink(installed = true, delivered = ago(1))))
+        val r = AuraReport(now, runs, drawn = null, drawnSince = null)
+        assertEquals(
+            AppLine.Outdated,
+            AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app), reports = mapOf(GarminApp.App to r)), now),
+        )
+        assertEquals(AppLine.Got(ago(1)), AppLine.on(GarminApp.App, app, base.copy(watches = listOf(app)), now))
+    }
 }

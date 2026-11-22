@@ -2838,8 +2838,13 @@ ages by itself from its own time with the phone away.
   which reading; `s` when the face picked it up from storage because Garmin didn't hand it over: every background run
   also leaves its result there, read at each draw, #244) and the reading it draws since when. While one watch has the
   face, its line says the newer of the reading Garmin Connect delivered and the one the face says it keeps (the fetch
-  doesn't say which watch asked), and only the face's when its report, sent well after a delivery, is still 2 min or
-  more behind it ("the watch face isn't taking new readings · restart the watch"); logcat
+  doesn't say which watch asked), and only the face's when its report is still 2 min or more behind the delivery made
+  at least 30 s before it (each app link keeps its last 8 deliveries: pushes go every minute, reports every 5, so the
+  newest delivery is usually after the report) ("the watch face isn't taking new readings · restart the watch"); when
+  every message in its report was kept back (`px` / `fx`: it can't read this phone's payload version) and none taken,
+  "the watch face can't read this phone's messages · update Sukrara Aura" and the row "Sukrara Aura on Descent needs an
+  update" (error colour), never the delivered reading; the app's and the field's rows say "can't read this phone's
+  messages · update it in the Connect IQ app" by the same rule from their own reports; logcat
   `Sukrara.Aura` has each push (when it was built, for which reading, Garmin Connect's answer, a failure with Garmin's
   status: `Failed FAILURE_DURING_TRANSFER`) and each report, times
   only. So an agent or the person can see what the watch got without looking at it.
@@ -2910,7 +2915,10 @@ after 15 min without one, *stuck*: the watch's line "… · messages stopped get
 that arrives); *the face not taking readings* (the watch takes them, the face's report stays 2 min or
 more behind, #244: "… · the watch face isn't taking new readings · restart the watch", es "… · la esfera no recibe las
 lecturas nuevas · reinicia el reloj"; the line's reading is the face's; out: restart the watch, or it ends by itself
-at the face's next report with the new reading);
+at the face's next report with the new reading); *the face can't read the phone's messages* (its report has only kept-back
+messages: "… · the watch face can't read this phone's messages · update Sukrara Aura", es "… · la esfera no puede leer
+los mensajes de este móvil · actualiza Sukrara Aura"; out: update it from Connect IQ, it ends at the next report with
+a message taken);
 *messages lost, nothing fetched* ("Messages don't reach Descent Mk3i 43mm · open Garmin Connect", error colour; out:
 those, *Send now*); *waiting* ("Waiting for the next reading"). The face's own states are on its row: *in use*, *not in
 use* (out: pick it as the watch face on the watch), *not installed*, *port taken* (out: stop the other app). Back

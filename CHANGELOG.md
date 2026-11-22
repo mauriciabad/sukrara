@@ -15,6 +15,10 @@ Sukrara's releases. 0.x versions are previews.
   the period its Numbers page opens on. Each says *Same as the app* until you change it, and goes back the same way.
   With two watches, each has its own rows on the Garmin page. Feeling two buzzes for one alert? The page says how to
   switch Garmin Connect's off.
+- **The Garmin page no longer says the face has the latest reading when it can't read the phone's messages** (#199):
+  a face older than the phone kept every message back for hours while the page showed the reading delivered. Now it
+  says "the watch face can't read this phone's messages · update Sukrara Aura" (the watch app and the data field the
+  same), and a face behind is judged against the message sent before its report, not the newest.
 - **Sukrara Aura: two fields on top, and every field your watch has** (#240): a second top field sits beside the first
   (one alone stays centred). Every field slot now offers everything Garmin gives a watch face (calories, stress, pulse
   ox, sleep score, weather and the next three days' forecast, sunrise, pressure, your next event, training status, race

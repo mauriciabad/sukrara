@@ -66,7 +66,7 @@ internal fun shows(
     w: AuraWatch,
     s: AuraLinkState,
 ): Instant? {
-    if (missed(w, s)) return s.report?.has
+    if (missed(w, s) || rejected(w, s)) return s.report?.has
     return listOfNotNull(w.reading, s.report?.has?.takeIf { only(w, s) }).maxOrNull()
 }
 
@@ -77,6 +77,12 @@ private fun only(
 
 /** The face's own link on [this] (a watch known only by its line: that line). */
 private fun AuraWatch.face(): AppLink = link(GarminApp.Aura) ?: AppLink(installed, delivered, failed, noAnswer, reading, failingSince)
+
+/** The face on [w] keeps every message it gets and takes none: it can't read this phone's (it needs updating). */
+internal fun rejected(
+    w: AuraWatch,
+    s: AuraLinkState,
+) = only(w, s) && s.report?.rejected == true
 
 /** A report this long after a delivery has had time to count it. */
 private val REPORT_AFTER: Duration = Duration.ofSeconds(30)
@@ -94,9 +100,15 @@ internal fun missed(
     s: AuraLinkState,
 ): Boolean {
     val r = s.report ?: return false
-    val delivered = w.face().delivered ?: return false
-    val reading = w.face().reading ?: return false
-    return only(w, s) && r.at >= delivered + REPORT_AFTER && (r.has ?: Instant.EPOCH) <= reading - BEHIND
+    // the delivery made before the report (pushes go every minute, reports every 5: the newest is usually after it)
+    val before =
+        w
+            .face()
+            .recent
+            .filter { it.at + REPORT_AFTER <= r.at }
+            .maxByOrNull { it.at } ?: return false
+    val reading = before.reading ?: return false
+    return only(w, s) && (r.has ?: Instant.EPOCH) <= reading - BEHIND
 }
 
 /**
@@ -138,6 +150,11 @@ sealed interface AuraStatus {
 
     data object Waiting : AuraStatus
 
+    /** The face on [watch] can't read this phone's messages: it needs updating. */
+    data class Outdated(
+        val watch: String,
+    ) : AuraStatus
+
     companion object {
         fun of(
             s: AuraLinkState,
@@ -173,7 +190,9 @@ sealed interface AuraStatus {
 
                 else -> {
                     val sent = near.filter { it.delivered() }.maxByOrNull { it.delivered!! }
+                    val outdated = near.firstOrNull { rejected(it, s) }
                     when {
+                        outdated != null -> Outdated(outdated.name)
                         sent != null -> Sent(sent.name, shows(sent, s))
                         fetched != null -> Fetching(fetched)
                         near.any { it.failed != null } -> Failing(near.first().name)
@@ -197,6 +216,9 @@ data class WatchLine(
     enum class Problem {
         /** Sukrara Aura isn't installed on it. */
         NoFace,
+
+        /** The face keeps every message it gets and takes none: it can't read this phone's, it needs updating. */
+        Outdated,
 
         /** The watch takes the messages but the face doesn't ([missed]): restart the watch (#244). */
         NotTaking,
@@ -228,6 +250,7 @@ data class WatchLine(
                 when {
                     w.installed == false -> Problem.NoFace
                     !w.connected -> null
+                    rejected(w, s) -> Problem.Outdated
                     missed(w, s) -> Problem.NotTaking
                     w.delivered() -> null
                     w.stuck(now) -> Problem.Stuck
@@ -249,6 +272,9 @@ data class WatchLine(
 sealed interface AppLine {
     /** No watch Garmin Connect knows has it. */
     data object NotInstalled : AppLine
+
+    /** It keeps every message it gets and takes none: it can't read this phone's, it needs updating. */
+    data object Outdated : AppLine
 
     /** Another app holds the port: only Garmin Connect's messages reach it. */
     data object PortBusy : AppLine
@@ -310,6 +336,7 @@ sealed interface AppLine {
             val got = w.link(app)?.delivered?.takeIf { w.has(app) != false }
             return when {
                 w.has(app) == false && asked == null -> NotInstalled
+                only && s.reports[app]?.rejected == true -> Outdated
                 s.portBusy -> PortBusy
                 asked != null -> InUse(asked)
                 got != null -> Got(got)
@@ -559,6 +586,10 @@ internal fun watchText(
             parts += stringResource(R.string.in_garmin_watch_not_taking)
         }
 
+        WatchLine.Problem.Outdated -> {
+            parts += stringResource(R.string.in_garmin_watch_outdated)
+        }
+
         WatchLine.Problem.Stuck -> {
             parts += stringResource(R.string.in_garmin_watch_stuck)
         }
@@ -619,6 +650,10 @@ private fun appText(
 
             AppLine.PortBusy -> {
                 stringResource(R.string.in_garmin_face_port_busy)
+            }
+
+            AppLine.Outdated -> {
+                stringResource(R.string.in_garmin_app_outdated)
             }
 
             is AppLine.InUse -> {
@@ -708,8 +743,12 @@ fun garminStatusText(
         AuraStatus.Waiting -> {
             stringResource(R.string.in_garmin_waiting)
         }
+
+        is AuraStatus.Outdated -> {
+            stringResource(R.string.in_garmin_outdated, status.watch)
+        }
     }
 
 /** Whether the Garmin row's line is a problem the person fixes outside the app (drawn in the error colour). */
 fun AuraStatus.isProblem() =
-    this is AuraStatus.NotAnswering || this is AuraStatus.Failing || this == AuraStatus.NotInstalled
+    this is AuraStatus.NotAnswering || this is AuraStatus.Failing || this == AuraStatus.NotInstalled || this is AuraStatus.Outdated

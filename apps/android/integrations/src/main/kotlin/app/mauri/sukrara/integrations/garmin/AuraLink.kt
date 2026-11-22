@@ -70,10 +70,26 @@ data class AppLink(
     val reading: Instant? = null,
     /** The first message that didn't arrive since the last one that did. */
     val failingSince: Instant? = null,
+    /** The last few deliveries, oldest first: a report is judged against the one made before it. */
+    val deliveries: List<Delivery> = emptyList(),
 ) {
     /** No message has arrived for [AuraLink.STUCK] (#242). */
     fun stuck(now: Instant) = failingSince != null && now >= failingSince + AuraLink.STUCK
+
+    /** [deliveries], or the last delivery alone when only it is known. */
+    val recent: List<Delivery> get() = deliveries.ifEmpty { listOfNotNull(delivered?.let { Delivery(it, reading) }) }
+
+    companion object {
+        /** Deliveries kept: more than a report's 5 min at one push a minute. */
+        const val KEPT = 8
+    }
 }
+
+/** A message Garmin Connect said reached the app [at], carrying the reading of [reading] (null = none). */
+data class Delivery(
+    val at: Instant,
+    val reading: Instant?,
+)
 
 /**
  * One watch as the link sees it: its Sukrara apps ([links], by Connect IQ app id) and, for the page's watch line, what
@@ -185,6 +201,16 @@ data class AuraReport(
      * The newest reading the face kept (its time): what it shows at the next wrist raise. [drawn] only moves while the
      * screen draws, so a dark screen leaves it behind.
      */
+    /**
+     * Every message the app got in [runs] it kept the older payload for (`px` / `fx`: it can't read this phone's, a
+     * payload version it doesn't know), and none it took: the app needs updating, not a restart.
+     */
+    val rejected: Boolean
+        get() {
+            val got = runs.filter { it.kind == "p" || it.kind == "f" || it.kind == "px" || it.kind == "fx" }
+            return got.isNotEmpty() && got.all { it.kind.endsWith("x") }
+        }
+
     val has: Instant?
         get() =
             runs
@@ -231,6 +257,8 @@ data class AuraLinkState(
     val fetchOpen: Boolean = false,
     /** What the face said it got and draws, with its last fetch. */
     val report: AuraReport? = null,
+    /** Each app's own account with its last fetch (the face's is also [report]). */
+    val reports: Map<GarminApp, AuraReport> = emptyMap(),
     val fetchedBy: Map<GarminApp, Instant> = emptyMap(),
     /** When the watch app on each watch last fetched (by the `w` its fetch sends back). */
     val appFetchedOn: Map<Long, Instant> = emptyMap(),
@@ -329,6 +357,7 @@ class AuraLink(
                                     ?.takeIf { app == GarminApp.App }
                                     ?.let { w -> it.appFetchedOn + (w to at) } ?: it.appFetchedOn,
                             report = if (app == GarminApp.Aura) report ?: it.report else it.report,
+                            reports = report?.let { r -> it.reports + (app to r) } ?: it.reports,
                         )
                     }
                     // times only (never a value): what the app got and when, for adb logcat -s Sukrara.Aura
@@ -545,13 +574,15 @@ class AuraLink(
                                     when (result) {
                                         IqSend.Delivered -> {
                                             done += d.id to id
+                                            val reading = (readingAt as? Int)?.let { Instant.ofEpochSecond(it.toLong()) }
                                             l.copy(
                                                 delivered = at,
                                                 failed = null,
                                                 noAnswer = false,
                                                 installed = true,
-                                                reading = (readingAt as? Int)?.let { Instant.ofEpochSecond(it.toLong()) },
+                                                reading = reading,
                                                 failingSince = null,
+                                                deliveries = (l.deliveries + Delivery(at, reading)).takeLast(AppLink.KEPT),
                                             )
                                         }
 
