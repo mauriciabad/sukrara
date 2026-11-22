@@ -39,6 +39,7 @@ class AppCasesView extends WatchUi.View {
     var sel as Number = 0;
     var id as String = "";
     var layoutMs as Number = 0;
+    var cfg as Dictionary = {};
 
     function initialize() {
         View.initialize();
@@ -56,7 +57,7 @@ class AppCasesView extends WatchUi.View {
         } else if (painted == built && built >= 0 && dumped != built) {
             dumped = built;
             System.print("IN|" + id + "|");
-            AppCaseDump.input(d as AppData, scr, days, sel);
+            AppCaseDump.input(d as AppData, scr, days, sel, cfg);
             System.println("");
         }
         WatchUi.requestUpdate();
@@ -69,7 +70,7 @@ class AppCasesView extends WatchUi.View {
         var p = c["payload"] as Dictionary;
         var now = (p["sent"] as Number) + (c["at"] as Number);
         Link.accept(p, now);
-        var cfg = c["cfg"] as Dictionary;
+        cfg = c["cfg"] as Dictionary;
         id = c["id"] as String;
         scr = c["screen"] as String;
         days = cfg["days"] instanceof Number ? cfg["days"] as Number : p["repD"] instanceof Number ? p["repD"] as Number : 14;
@@ -80,7 +81,7 @@ class AppCasesView extends WatchUi.View {
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
         var t0 = System.getTimer();
-        d = AppInput.build(now);
+        d = AppInput.build(now, scr.equals("appA"));
         var gg = new AppG();
         if (scr.equals("glance")) {
             // the glance's own area at the reference's place on the screen (app.js S.glance: x −83 … 165)
@@ -91,8 +92,10 @@ class AppCasesView extends WatchUi.View {
             AppDraw.glance = false;
             AppDraw.table = new Lang.Method(AppFontTable, :atlas);
             AppDraw.iconAt = new Lang.Method(AppFontTable, :icon);
-            AppDraw.sheetId = AppFontTable.sheet();
-            if (scr.equals("actions")) {
+            AppDraw.sheetAt = new Lang.Method(AppFontTable, :sheet);
+            if (scr.substring(0, 3).equals("log")) {
+                logScreen(gg, scr, cfg, p);
+            } else if (scr.equals("actions")) {
                 AppLists.actions(gg, d as AppData, sel);
             } else if (scr.equals("appNums")) {
                 AppScreens.appNums(gg, d as AppData, days);
@@ -103,6 +106,30 @@ class AppCasesView extends WatchUi.View {
         layoutMs = System.getTimer() - t0;
         g = gg;
         built = i;
+    }
+
+    // a logging screen (AppLog) from the case's cfg: kind, amount (default the kind's last), progress, dup, left, pen
+    function logScreen(g as AppG, scr as String, cfg as Dictionary, p as Dictionary) as Void {
+        var k = cfg["kind"] instanceof String ? cfg["kind"] as String : "rapid";
+        var log = p["log"];
+        var kd = log instanceof Dictionary ? log[k] : null;
+        var usual = kd instanceof Dictionary && kd["usual"] instanceof Array ? kd["usual"] as Array : [] as Array;
+        var a = cfg["amount"] != null ? (cfg["amount"] as Numeric).toFloat()
+            : kd instanceof Dictionary && kd["last"] != null ? (kd["last"] as Numeric).toFloat() : 2.0;
+        if (scr.equals("logAmount")) {
+            AppLog.amount(g, k, a, usual, 0);
+        } else if (scr.equals("logConfirm")) {
+            var dup = cfg["dup"] == true ? Lang.format(AppWords.s(Rez.Strings.SameKind), [AppMath.amt(k, a), "3 min"]) : null;
+            AppLog.confirm(g, k, a, 0, dup, cfg["progress"] != null ? (cfg["progress"] as Numeric).toFloat() : 0.45);
+        } else if (scr.equals("logSending")) {
+            AppLog.sending(g, k, a, 0);
+        } else if (scr.equals("logDone")) {
+            AppLog.done(g, k, a, cfg["left"] != null ? (cfg["left"] as Numeric).toFloat() : 0.611);
+        } else if (scr.equals("logQueued")) {
+            AppLog.queued(g, k, a, (d as AppData).clock);
+        } else if (scr.equals("logPen")) {
+            AppLog.pen(g, k, Lang.format(AppWords.s(Rez.Strings.PenAt), [AppMath.amt(k, a), "20:31"]), 0);
+        }
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
@@ -189,7 +216,7 @@ module AppCaseDump {
         }
     }
 
-    function input(d as AppData, scr as String, days as Number, sel as Number) as Void {
+    function input(d as AppData, scr as String, days as Number, sel as Number, cfg as Dictionary) as Void {
         var rows = [];
         if (scr.equals("actions")) {
             var rs = AppLists.rows(d);
@@ -204,7 +231,7 @@ module AppCaseDump {
             "pill" => d.pill, "clock" => d.clock, "clockH" => d.clockH, "sensorState" => d.sensorState,
             "sensorDays" => d.sensorDays, "readyAt" => d.readyAt, "warm" => d.warm, "slots" => d.slots,
             "hours" => d.hours, "side" => d.side, "ro" => d.ro, "order" => d.order, "rows" => rows,
-            "rep" => scr.equals("appNums") ? AppScreens.report(days) : null,
+            "rep" => scr.equals("appNums") ? AppScreens.report(days) : null, "cfg" => cfg,
         });
     }
 }

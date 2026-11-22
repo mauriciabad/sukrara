@@ -109,17 +109,18 @@ module AppNav {
         WatchUi.pushView(v, new ListDelegate(v), how);
     }
 
-    // an alert's Treatment: the one list with that kind selected (the amount screen comes next, SPEC §6)
+    // an alert's Treatment: the amount on that side's kind (SPEC §7), over the pages; without one, the one list
     function treat(kind as String?) as Void {
-        var v = new AppView("list");
-        if (kind != null) {
-            var p = Link.payload();
-            var log = p != null ? p.get("log") : null;
-            var order = log instanceof Dictionary && log.get("order") instanceof Array ? log.get("order") as Array : ["rapid", "long", "carbs"];
-            var i = order.indexOf(kind);
-            v.sel = i < 0 ? 0 : i;
+        if (kind == null) {
+            list(WatchUi.SLIDE_IMMEDIATE);
+            return;
         }
-        WatchUi.pushView(v, new ListDelegate(v), WatchUi.SLIDE_IMMEDIATE);
+        var v = new LogView(kind, 1);
+        WatchUi.pushView(v, new LogDelegate(v), WatchUi.SLIDE_IMMEDIATE);
+    }
+
+    // the list's Mute alerts (the lengths) or Muted (Unmute / Change time): SPEC §7
+    function mute(muted as Boolean) as Void {
     }
 
     // a notification's Remind less / as usual / Mute: into the outbox, sent at once, said, and the app closes once the

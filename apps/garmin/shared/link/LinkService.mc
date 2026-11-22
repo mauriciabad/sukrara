@@ -106,13 +106,20 @@ class LinkService extends System.ServiceDelegate {
     function onTemporalEvent() as Void {
         // the app's report of what it got and draws (Link.saveReport), so the phone can show and log it
         var report = null;
+        var w = null;
         try {
             report = Application.Storage.getValue("auraReport");
+            w = Application.Storage.getValue(Link.WATCH);
         } catch (e) {
             report = null;
         }
+        // and which watch asks (the app's last push's w): the phone answers with that watch's settings
+        var q = report instanceof String ? report : "";
+        if (w instanceof String) {
+            q += (q.length() > 0 ? "&" : "") + "w=" + w;
+        }
         Communications.makeWebRequest(
-            LinkBackground.FETCH_URL + (report instanceof String ? "?" + report : ""),
+            LinkBackground.FETCH_URL + (q.length() > 0 ? "?" + q : ""),
             null,
             {
                 :method => Communications.HTTP_REQUEST_METHOD_GET,

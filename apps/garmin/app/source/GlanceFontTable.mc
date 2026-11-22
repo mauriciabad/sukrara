@@ -21,24 +21,25 @@ module GlanceFontTable {
         return [[][i], [][i]];
     }
 
-    function sheet() as ResourceId {
-        return Rez.Drawables.gicons;
+    // the icon sheet [i]: one per size, so a screen loads only the sizes it draws (the graphics pool)
+    function sheet(i as Number) as ResourceId {
+        return [Rez.Drawables.gicons][i] as ResourceId;
     }
 
-    // the icon sheet's tiles (white with alpha, 2 px margin): [x, y, box], the nearest size up
+    // the icon sheets' tiles (white with alpha, 2 px margin): [x, y, box, sheet], the nearest size up
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (true) { return [0, 0, 16]; }
+            if (true) { return [0, 0, 16, 0]; }
         } else if (name.equals("long")) {
-            if (true) { return [17, 0, 16]; }
+            if (true) { return [17, 0, 16, 0]; }
         } else if (name.equals("carbs")) {
-            if (true) { return [34, 0, 16]; }
+            if (true) { return [34, 0, 16, 0]; }
         } else if (name.equals("bellPause")) {
-            if (true) { return [51, 0, 16]; }
+            if (true) { return [51, 0, 16, 0]; }
         } else if (name.equals("bellOff")) {
-            if (true) { return [68, 0, 16]; }
+            if (true) { return [68, 0, 16, 0]; }
         } else if (name.equals("note")) {
-            if (true) { return [85, 0, 16]; }
+            if (true) { return [85, 0, 16, 0]; }
         }
         return null;
     }

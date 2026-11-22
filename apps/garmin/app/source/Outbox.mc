@@ -21,6 +21,7 @@ module Outbox {
     const NOTE = "sukNote"; // what the person should hear about at the next look: {r, k, at}
     const ENTRIES = "http://127.0.0.1:17582/sukrara/entries";
     const MUTE = "http://127.0.0.1:17582/sukrara/mute";
+    const UNDO = "http://127.0.0.1:17582/sukrara/undo";
     const MAX = 24;
     const SENT_SHOWN_S = 600;
     // THE LATE RULE (SPEC §13.1, open with the owner): true = an entry or mute waits for the phone however long it is
@@ -105,6 +106,11 @@ module Outbox {
             "c" => Time.now().value()};
     }
 
+    // Undo of the entry [id] the watch logged (README "Undo from the watch"): sent only once the entry left the outbox
+    function undo(id as String) as Dictionary {
+        return {"w" => "u", "id" => id, "st" => "new", "c" => Time.now().value()};
+    }
+
     function add(item as Dictionary) as Void {
         var list = items();
         list.add(item);
@@ -140,8 +146,12 @@ module Outbox {
         save(list);
     }
 
-    // What the HMAC covers: id|k|a|t|s|f (an entry) or id|do|side|min|s (a mute), the strings exactly as sent.
+    // What the HMAC covers: id|k|a|t|s|f (an entry), id|do|side|min|s (a mute) or id|s (an undo), the strings exactly
+    // as sent.
     function signed(it as Dictionary, s as String) as String {
+        if ("u".equals(it.get("w"))) {
+            return it.get("id") + "|" + s;
+        }
         if ("m".equals(it.get("w"))) {
             return it.get("id") + "|" + it.get("do") + "|" + it.get("side") + "|" + it.get("min") + "|" + s;
         }
@@ -151,7 +161,8 @@ module Outbox {
     // The request's fields, every value a string, signed with [keyHex] at the phone's time [s].
     function params(it as Dictionary, s as Number, keyHex as String) as Dictionary {
         var out = {"id" => it.get("id"), "s" => s.toString()} as Dictionary;
-        var fields = "m".equals(it.get("w")) ? ["do", "side", "min"] : ["k", "a", "t", "f"];
+        var w = it.get("w");
+        var fields = "m".equals(w) ? ["do", "side", "min"] : "u".equals(w) ? [] : ["k", "a", "t", "f"];
         for (var i = 0; i < fields.size(); i++) {
             out.put(fields[i], it.get(fields[i]));
         }
@@ -205,11 +216,21 @@ module Outbox {
                 tell("late", it, now);
                 return next(now);
             }
-            if ("new".equals(it.get("st"))) {
+            if ("new".equals(it.get("st")) && !("u".equals(it.get("w")) && waiting(list, it.get("id")))) {
                 return it;
             }
         }
         return null;
+    }
+
+    // an undo waits while its entry is still in the outbox (it goes after the entry's stored / known)
+    function waiting(list as Array<Dictionary>, id) as Boolean {
+        for (var i = 0; i < list.size(); i++) {
+            if ("e".equals(list[i].get("w")) && list[i].get("id").equals(id)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // Sends the outbox one item at a time; [done] (no arguments) once nothing more goes now. Without a key nothing is
@@ -229,7 +250,8 @@ module Outbox {
         }
         _sending = it.get("id") as String;
         var s = Time.now().value() + lead();
-        Communications.makeWebRequest("m".equals(it.get("w")) ? MUTE : ENTRIES, params(it, s, k), {
+        var w = it.get("w");
+        Communications.makeWebRequest("m".equals(w) ? MUTE : "u".equals(w) ? UNDO : ENTRIES, params(it, s, k), {
             :method => Communications.HTTP_REQUEST_METHOD_POST,
             :headers => {"Content-Type" => Communications.REQUEST_CONTENT_TYPE_JSON},
             :responseType => Communications.HTTP_RESPONSE_CONTENT_TYPE_JSON
@@ -255,7 +277,8 @@ module Outbox {
     }
 
     // THE ANSWER RULE: the phone's answer [data] (HTTP [code]) for the item [id] at the watch time [now]; true = go on
-    // with the next item. README's table: stored / known / done leave the outbox; sig waits for a key; clock takes the
+    // with the next item. README's tables: stored / known / done (an undo's gone too)
+    // leave the outbox; an undo's unknown / foreign drop it; sig waits for a key; clock takes the
     // phone's now and goes again (twice at most per flush); pen waits for the person; id / kind / amount / when / off /
     // action / bad drop it (when and off tell the person); anything else (no phone, a timeout, an old phone) keeps it.
     function answer(id, code as Number, data, now as Number) as Boolean {
@@ -291,15 +314,17 @@ module Outbox {
         if ("stored".equals(r)) {
             Application.Storage.setValue(SENT, now);
             tell("stored", it, now);
-        } else if ("done".equals(r) || "when".equals(r) || "off".equals(r)) {
+        } else if ("gone".equals(r) && "u".equals(it.get("w"))) {
+            tell("done", it, now); // deleted already: as done
+        } else if ("known".equals(r) || "done".equals(r) || "when".equals(r) || "off".equals(r)) {
             tell(r as String, it, now);
         }
         return true;
     }
 
     function tell(r as String, it as Dictionary, now as Number) as Void {
-        Application.Storage.setValue(NOTE, {"r" => r, "k" => it.get("k"), "do" => it.get("do"), "id" => it.get("id"),
-            "at" => now});
+        Application.Storage.setValue(NOTE, {"r" => r, "w" => it.get("w"), "k" => it.get("k"), "do" => it.get("do"),
+            "id" => it.get("id"), "at" => now});
     }
 
     // Forgets everything (the tests).

@@ -96,12 +96,12 @@ module AppDraw {
     var oy as Float = 194.5;
     var s as Float = 1.0;
     var fonts as Dictionary = {};
-    var sheet as Graphics.BitmapReference or Graphics.BitmapType or Null = null;
+    var sheets as Dictionary = {}; // the icon sheets loaded, by index
     var glance as Boolean = false;
     // the foreground's tables (AppFontTable): set by the app's view, so the glance's code never names them
     var table as Method? = null;
     var iconAt as Method? = null;
-    var sheetId as ResourceId? = null;
+    var sheetAt as Method? = null;
 
     // a font key: a text "a<px><m|s|b>", a big number "n<px>"
     function font(fs as Numeric, fw as Number, big as Boolean) as String {
@@ -123,7 +123,7 @@ module AppDraw {
 
     function release() as Void {
         fonts = {};
-        sheet = null;
+        sheets = {};
     }
 
     function loadFont(key as String) as Array {
@@ -383,8 +383,11 @@ module AppDraw {
         if (b == null) {
             return;
         }
+        var si = b[3] as Number;
+        var sheet = sheets[si];
         if (sheet == null) {
-            sheet = WatchUi.loadResource(glance ? GlanceFontTable.sheet() : sheetId as ResourceId);
+            sheet = WatchUi.loadResource(glance ? GlanceFontTable.sheet(si) : (sheetAt as Method).invoke(si) as ResourceId);
+            sheets[si] = sheet;
         }
         var box = b[2] as Number;
         var bs = size.toFloat() / (box - 4);

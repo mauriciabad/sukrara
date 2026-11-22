@@ -44,7 +44,7 @@ class AppGlance extends WatchUi.GlanceView {
         AppDraw.ox = 83 * AppDraw.s - 0.5;
         AppDraw.oy = dc.getHeight() / 2.0 - 0.5;
         var g = new AppG();
-        AppParts.glance(g, AppInput.build(now));
+        AppParts.glance(g, AppInput.build(now, false));
         AppDraw.paint(dc, g);
     }
 }

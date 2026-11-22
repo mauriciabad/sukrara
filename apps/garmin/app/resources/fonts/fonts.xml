@@ -65,6 +65,8 @@
     <jsonData id="a48s_m" filename="a48s.json"/>
     <bitmap id="a50s" filename="a50s.png" dithering="none" packingFormat="png"/>
     <jsonData id="a50s_m" filename="a50s.json"/>
+    <bitmap id="a96b" filename="a96b.png" dithering="none" packingFormat="png"/>
+    <jsonData id="a96b_m" filename="a96b.json"/>
     <bitmap id="n54" filename="n54.png" dithering="none" packingFormat="png" scope="glance"/>
     <jsonData id="n54_m" filename="n54.json" scope="glance"/>
     <bitmap id="n58" filename="n58.png" dithering="none" packingFormat="png" scope="glance"/>

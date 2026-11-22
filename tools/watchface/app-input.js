@@ -43,13 +43,13 @@ var AppInput = (function () {
       var b = x.rep.b, above = b[4] + b[5], inR = b[2] + b[3], below = b[0] + b[1];
       d.rep = {
         above: pct(above), inR: pct(inR), good: pct(b[2]), below: pct(below), split: b.concat([0]),
-        met: [above < 250, inR > 700, below < 40],
-        nums: [[x.rep.avg !== null ? fmtG(x.rep.avg, x.unit) : '--', 'Average', x.rep.avg !== null && x.rep.avg < 154],
-          [x.rep.gmi !== null ? Number(x.rep.gmi).toFixed(1) + ' %' : '--', 'GMI', x.rep.gmi !== null && x.rep.gmi < 7],
-          [x.rep.cv !== null ? Number(x.rep.cv).toFixed(0) + ' %' : '--', 'CV', x.rep.cv !== null && x.rep.cv <= 36]]
+        met: [(x.rep.ok & 2) !== 0, (x.rep.ok & 4) !== 0, (x.rep.ok & 8) !== 0],
+        nums: [[x.rep.avg !== null ? fmtG(x.rep.avg, x.unit) : '--', 'Average', (x.rep.ok & 32) !== 0],
+          [x.rep.gmi !== null ? Number(x.rep.gmi).toFixed(1) + ' %' : '--', 'GMI', (x.rep.ok & 64) !== 0],
+          [x.rep.cv !== null ? Number(x.rep.cv).toFixed(0) + ' %' : '--', 'CV', (x.rep.ok & 128) !== 0]]
       };
     }
-    var cfg = { screen: x.screen, hours: x.hours, dist: x.side, period: x.days + 'd' };
+    var cfg = Object.assign({ screen: x.screen, hours: x.hours, dist: x.side, period: x.days + 'd' }, x.cfg || {});
     d.lastBy = {};
     (x.rows || []).forEach(function (r) {
       if (r[0] === 'mute') { if (r[2] !== null) cfg.muted = true; } else d.lastBy[r[0]] = r[2] || '';

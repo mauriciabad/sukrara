@@ -105,4 +105,17 @@
     <string id="Done">Hecho</string>
     <string id="LowsMuted30">Bajas silenciadas 30 min</string>
     <string id="HighsMuted30">Altas silenciadas 30 min</string>
+    <string id="Log">Registrar</string>
+    <string id="SendingPhone">Enviando al móvil</string>
+    <string id="SavedWatch">Guardado en el reloj</string>
+    <string id="GoesPhone">Irá a tu móvil</string>
+    <string id="WhenNear">cuando esté cerca</string>
+    <string id="NotUndone">No deshecho</string>
+    <string id="LRapid">insulina rápida</string>
+    <string id="LLong">insulina lenta</string>
+    <string id="LCarbs">hidratos</string>
+    <string id="SRapid">rápida</string>
+    <string id="SLong">lenta</string>
+    <string id="SCarbs">hidratos</string>
+    <string id="AmountWhen">$1$ · $2$</string>
 </strings>

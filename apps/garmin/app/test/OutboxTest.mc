@@ -12,6 +12,9 @@ import Toybox.Test;
 module OutboxCases {
     // the outbox item a case's request was made from
     function item(body as Dictionary, mute as Boolean) as Dictionary {
+        if (!body.hasKey("k") && !body.hasKey("do")) {
+            return {"w" => "u", "id" => body.get("id"), "st" => "new", "c" => WriteCases.NOW}; // an undo
+        }
         var it = {"w" => mute ? "m" : "e", "id" => body.get("id"), "st" => "new", "c" => WriteCases.NOW};
         var fields = mute ? ["do", "side", "min"] : ["k", "a", "t", "f"];
         for (var i = 0; i < fields.size(); i++) {
@@ -29,6 +32,10 @@ module OutboxCases {
         var m = WriteCases.mutes();
         for (var i = 0; i < m.size(); i++) {
             out.add([m[i], true]);
+        }
+        var u = WriteCases.undos();
+        for (var i = 0; i < u.size(); i++) {
+            out.add([u[i], false]);
         }
         return out;
     }
@@ -231,6 +238,47 @@ function outboxIds(logger as Logger) as Boolean {
     var e = Outbox.entry("carbs", 45.0, 900);
     Test.assertEqual(e.get("t"), "990");
     Test.assertEqual(e.get("a"), "45");
+    Outbox.reset();
+    return true;
+}
+
+// Undo (undos.json): what every answer does to the undo, and an undo waits for its entry's stored / known
+(:test)
+function outboxUndo(logger as Logger) as Boolean {
+    var now = WriteCases.NOW;
+    var u = WriteCases.undos();
+    // done / gone: Undone; off: Not undone; unknown / foreign: dropped silently
+    var said = {"done" => "done", "gone" => "done", "off" => "off", "unknown" => null, "foreign" => null};
+    var rs = said.keys();
+    for (var i = 0; i < rs.size(); i++) {
+        var c = OutboxCases.answered(u, rs[i] as String);
+        var it = OutboxCases.item(c.get("body") as Dictionary, false);
+        OutboxCases.start(it);
+        Application.Storage.deleteValue(Outbox.NOTE);
+        Test.assertMessage(Outbox.answer(it.get("id"), 200, c.get("answer"), now), rs[i] + ": goes on");
+        Test.assertEqualMessage(Outbox.items().size(), 0, rs[i] + ": leaves the outbox");
+        var note = Application.Storage.getValue(Outbox.NOTE);
+        var r = note instanceof Dictionary ? note.get("r") : null;
+        Test.assertMessage(said.get(rs[i]) == null ? r == null : (said.get(rs[i]) as String).equals(r), rs[i] + ": told " + r);
+    }
+    // sig: kept until a key
+    var c = OutboxCases.answered(u, "sig");
+    var it = OutboxCases.item(c.get("body") as Dictionary, false);
+    OutboxCases.start(it);
+    Outbox.answer(it.get("id"), 200, c.get("answer"), now);
+    Test.assertEqualMessage(Outbox.items().size(), 1, "undo sig: kept");
+    // the undo waits while its entry is in the outbox, and goes once the entry left it
+    var e = OutboxCases.answered(WriteCases.entries(), "stored");
+    var entry = OutboxCases.item(e.get("body") as Dictionary, false);
+    OutboxCases.start(entry);
+    Outbox.add(Outbox.undo(entry.get("id") as String));
+    Test.assertEqualMessage((Outbox.next(now) as Dictionary).get("w"), "e", "the entry first");
+    Outbox.answer(entry.get("id"), 200, e.get("answer"), now);
+    var next = Outbox.next(now) as Dictionary;
+    Test.assertEqualMessage(next.get("w"), "u", "then its undo");
+    Test.assertEqualMessage(next.get("id"), entry.get("id"), "by the entry's id");
+    var sent = Outbox.params(next, now, WriteCases.KEY);
+    Test.assertEqualMessage(sent.size(), 3, "id, s, mac");
     Outbox.reset();
     return true;
 }

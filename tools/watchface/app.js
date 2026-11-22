@@ -744,7 +744,7 @@ var WL = (function () {
     g.p('M-16 -76L0 -90L16 -76', { stroke: PAL.dim, sw: 4 });
     g.p('M-16 42L0 56L16 42', { stroke: PAL.dim, sw: 4 });
     // the usual amounts
-    var chips = k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6'];
+    var chips = c.usual || (k === 'carbs' ? ['15', '30', '50'] : k === 'long' ? ['12', '14', '16'] : ['4', '4.5', '6']);
     var cw = 64, gap = 10, cx0 = -(chips.length * cw + (chips.length - 1) * gap) / 2;
     chips.forEach(function (ch, i) {
       var on = ch === s, x = cx0 + i * (cw + gap);
@@ -776,20 +776,25 @@ var WL = (function () {
     g.t(0, 131, 'Hold to log', { fs: 20, fw: 700, fill: PAL.ink });
     btnHint(g, 60, '', { col: col });
   };
+  // what was logged, as the done screens say it: "4.5u rapid"
+  function what(c) {
+    var k = c.kind || 'rapid', a = c.amount !== undefined ? c.amount : (k === 'carbs' ? 50 : k === 'long' ? 14 : 4.5);
+    return amt({ k: k, a: a }) + ' ' + { rapid: 'rapid', long: 'long-acting', carbs: 'carbs' }[k];
+  }
   S.logSending = function (g, d, c) {
     var k = c.kind || 'rapid', col = PAL[k];
     g.p(arc(189, 0, 359.9), { stroke: col, sw: 8 });
     g.c(0, -36, 46, { stroke: PAL.grid, sw: 6 });
     g.p(arc(46, 20, 130, 0, -36), { stroke: col, sw: 6 });
     g.icon('phone', 0, -36, 30, PAL.soft);
-    g.t(0, 46, '4.5u rapid', { fs: 30, fw: 700, fill: PAL.ink });
+    g.t(0, 46, what(c), { fs: 30, fw: 700, fill: PAL.ink });
     g.t(0, 80, 'Sending to your phone', { fs: 20, fw: 500, fill: PAL.soft });
   };
   S.logDone = function (g, d, c) {
     var k = c.kind || 'rapid', col = PAL[k];
     g.c(0, -46, 50, { fill: col });
     g.p('M-22 -46l14 14l30 -30', { stroke: PAL.on, sw: 8 });
-    g.t(0, 40, 'Logged 4.5u rapid', { fs: 28, fw: 700, fill: PAL.ink });
+    g.t(0, 40, 'Logged ' + what(c), { fs: 28, fw: 700, fill: PAL.ink });
     g.t(0, 72, 'Highs quiet for 1 h', { fs: 20, fw: 500, fill: PAL.soft });
     g.r(-64, 98, 128, 42, 21, { fill: PAL.card2 });
     g.t(-8, 126, 'Undo', { fs: 20, fw: 700, fill: PAL.ink });
@@ -801,7 +806,7 @@ var WL = (function () {
     g.icon('phone', 0, -60, 46, PAL.high);
     g.p('M-24 -84L24 -36', { stroke: PAL.high, sw: 4 });
     g.t(0, 10, 'Saved on the watch', { fs: 26, fw: 700, fill: PAL.ink });
-    g.t(0, 42, '4.5u rapid · 20:41', { fs: 20, fw: 600, fill: PAL.rapid });
+    g.t(0, 42, what(c) + ' · ' + d.clock, { fs: 20, fw: 600, fill: PAL[c.kind || 'rapid'] });
     g.t(0, 76, 'Goes to your phone', { fs: 18, fw: 500, fill: PAL.soft });
     g.t(0, 100, 'when it’s near', { fs: 18, fw: 500, fill: PAL.soft });
   };

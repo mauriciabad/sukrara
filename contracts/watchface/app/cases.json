@@ -1,5 +1,5 @@
 {
- "about": "The watch app's screens (SPEC.md), each drawn from a phone state of contracts/watchface/payload/cases.json's 'app' list ('state': its index) at a watch time ('at': s after its 'now'), with the screen's own inputs ('cfg': 'days' the numbers' period, 'sel' the list's selection). apps/garmin/app's case loader (cases.jungle) shows them in turn; tools/watchface/app.js draws the reference from the same input.",
+ "about": "The watch app's screens (SPEC.md), each drawn from a phone state of contracts/watchface/payload/cases.json's 'app' list ('state': its index) at a watch time ('at': s after its 'now'), with the screen's own inputs ('cfg': 'days' the numbers' period, 'sel' the list's selection; the logging screens' 'kind', 'amount', 'progress' of the hold, 'dup' the same kind just logged, 'left' the share of Undo's 10 s). apps/garmin/app's case loader (cases.jungle) shows them in turn; tools/watchface/app.js draws the reference from the same input.",
  "cases": [
   {
    "id": "day-glance",
@@ -80,6 +80,80 @@
    "id": "unpaired-actions",
    "state": 3,
    "screen": "actions"
+  },
+  {
+   "id": "log-amount-rapid",
+   "state": 0,
+   "screen": "logAmount",
+   "cfg": {
+    "kind": "rapid"
+   }
+  },
+  {
+   "id": "log-amount-carbs",
+   "state": 0,
+   "screen": "logAmount",
+   "cfg": {
+    "kind": "carbs"
+   }
+  },
+  {
+   "id": "log-confirm",
+   "state": 0,
+   "screen": "logConfirm",
+   "cfg": {
+    "kind": "rapid",
+    "amount": 4.5,
+    "progress": 0.45
+   }
+  },
+  {
+   "id": "log-confirm-same",
+   "state": 0,
+   "screen": "logConfirm",
+   "cfg": {
+    "kind": "rapid",
+    "amount": 4.5,
+    "progress": 0,
+    "dup": true
+   }
+  },
+  {
+   "id": "log-sending",
+   "state": 0,
+   "screen": "logSending",
+   "cfg": {
+    "kind": "rapid",
+    "amount": 4.5
+   }
+  },
+  {
+   "id": "log-done",
+   "state": 0,
+   "screen": "logDone",
+   "cfg": {
+    "kind": "rapid",
+    "amount": 4.5,
+    "left": 0.611
+   }
+  },
+  {
+   "id": "log-queued",
+   "state": 0,
+   "screen": "logQueued",
+   "cfg": {
+    "kind": "rapid",
+    "amount": 4.5
+   }
+  },
+  {
+   "id": "log-pen",
+   "state": 0,
+   "screen": "logPen",
+   "cfg": {
+    "kind": "rapid",
+    "amount": 4.5
+   }
   }
  ]
 }

@@ -102,19 +102,42 @@ class ListDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function move(by as Number) as Boolean {
-        var n = AppLists.rows(AppInput.build(Time.now().value())).size();
+        var n = AppLists.rows(AppInput.build(Time.now().value(), false)).size();
         view.sel = (view.sel + by + n) % n;
         view.refresh();
         return true;
     }
 
+    // START: a kind → its amount (SPEC §6); Mute alerts → the lengths, Muted → Unmute / Change time (§7)
+    function onSelect() as Boolean {
+        open(view.sel);
+        return true;
+    }
+
+    function open(i as Number) as Void {
+        var rows = AppLists.rows(AppInput.build(Time.now().value(), false));
+        if (i < 0 || i >= rows.size()) {
+            return;
+        }
+        var k = rows[i][0] as String;
+        if (!k.equals("mute")) {
+            var v = new LogView(k, 2);
+            WatchUi.pushView(v, new LogDelegate(v), WatchUi.SLIDE_LEFT);
+        } else {
+            AppNav.mute(rows[i][4] != null);
+        }
+    }
+
+    // a tap on a row opens it
     function onTap(e as WatchUi.ClickEvent) as Boolean {
         var y = (e.getCoordinates()[1] - AppDraw.oy) / AppDraw.s;
-        var ys = [-74, -12, 44, 100];
-        for (var i = 0; i < 4; i++) {
+        var n = AppLists.rows(AppInput.build(Time.now().value(), false)).size();
+        var ys = n == 1 ? [100] : [-74, -12, 44, 100];
+        for (var i = 0; i < ys.size() && i < n; i++) {
             if (y > ys[i] - 30 && y < ys[i] + 28) {
                 view.sel = i;
                 view.refresh();
+                open(i);
                 return true;
             }
         }

@@ -506,18 +506,20 @@ module AppScreens {
         var above = (b[4] as Number) + (b[5] as Number);
         var inR = (b[2] as Number) + (b[3] as Number);
         var below = (b[0] as Number) + (b[1] as Number);
-        row(g, -96, AppWords.s(Rez.Strings.RepAbove), pctText(above), "< 25%", above < 250, false, null);
-        row(g, -30, AppWords.s(Rez.Strings.RepIn), pctText(inR), "> 70%", inR > 700, true,
+        // the goals met, as the phone's report card decides them (rep ok: one bit per Goal)
+        var ok = rep.get("ok") instanceof Number ? rep.get("ok") as Number : 0;
+        row(g, -96, AppWords.s(Rez.Strings.RepAbove), pctText(above), "< 25%", (ok & 2) != 0, false, null);
+        row(g, -30, AppWords.s(Rez.Strings.RepIn), pctText(inR), "> 70%", (ok & 4) != 0, true,
             Lang.format(AppWords.s(Rez.Strings.RepVeryGood), [pctText(b[2] as Number)]));
-        row(g, 38, AppWords.s(Rez.Strings.RepBelow), pctText(below), "< 4%", below < 40, false, null);
+        row(g, 38, AppWords.s(Rez.Strings.RepBelow), pctText(below), "< 4%", (ok & 8) != 0, false, null);
         g.line(-140, 80, 140, 80, AppMath.GRID, 1.5);
         var avg = rep.get("avg");
         var gmi = rep.get("gmi");
         var cv = rep.get("cv");
         var ms = [
-            [avg != null ? AppMath.fmtG(avg as Numeric, d.unit) : "--", AppWords.s(Rez.Strings.RepAverage), avg != null && (avg as Numeric) < 154],
-            [gmi != null ? (gmi as Numeric).toFloat().format("%.1f") + " %" : "--", AppWords.s(Rez.Strings.RepGmi), gmi != null && (gmi as Numeric) < 7],
-            [cv != null ? (cv as Numeric).toFloat().format("%.0f") + " %" : "--", AppWords.s(Rez.Strings.RepCv), cv != null && (cv as Numeric) <= 36]
+            [avg != null ? AppMath.fmtG(avg as Numeric, d.unit) : "--", AppWords.s(Rez.Strings.RepAverage), (ok & 32) != 0],
+            [gmi != null ? (gmi as Numeric).toFloat().format("%.1f") + " %" : "--", AppWords.s(Rez.Strings.RepGmi), (ok & 64) != 0],
+            [cv != null ? (cv as Numeric).toFloat().format("%.0f") + " %" : "--", AppWords.s(Rez.Strings.RepCv), (ok & 128) != 0]
         ];
         for (var i = 0; i < 3; i++) {
             var x = -92 + i * 92;

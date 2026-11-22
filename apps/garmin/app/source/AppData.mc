@@ -62,7 +62,9 @@ module AppInput {
         return (c.hour as Number) + ":" + (c.min as Number).format("%02d");
     }
 
-    function build(now as Number) as AppData {
+    // [hist]: with the history (the widget page's chart and % column; the glance and the lists leave it out: the
+    // glance has 64 KB)
+    function build(now as Number, hist as Boolean) as AppData {
         var d = new AppData();
         d.now = now;
         var c = Gregorian.info(new Time.Moment(now), Time.FORMAT_SHORT);
@@ -92,7 +94,7 @@ module AppInput {
             d.doubled = x.get("double") == true;
             d.age = ((t - gt) < 0 ? 0 : (t - gt)) / 60.0;
             d.readAt = hm(gt - Link.skew);
-            var h = p.get("hist");
+            var h = hist ? p.get("hist") : null;
             if (h instanceof Array) {
                 var n = h.size();
                 for (var i = 0; i < n; i++) {

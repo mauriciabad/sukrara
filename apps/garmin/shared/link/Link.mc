@@ -24,6 +24,8 @@ module Link {
     (:field)
     const PROFILE = "field";
     const STORE = "auraLink";
+    // the watch's id on the phone (the app profile's push only, README `w`): its fetch says it (&w=)
+    const WATCH = "linkW";
     // a stored payload this far ahead of the watch clock gives way to any new one (the phone's clock was wrong)
     const AHEAD_S = 300;
 
@@ -184,6 +186,10 @@ module Link {
         }
         _payload = p as Dictionary;
         skew = sent > now ? sent - now : 0;
+        var w = (p as Dictionary).get("w");
+        if (w instanceof String) {
+            Application.Storage.setValue(WATCH, w);
+        }
         Application.Storage.setValue(STORE, {"p" => _payload, "skew" => skew});
         return true;
     }
@@ -202,6 +208,7 @@ module Link {
         Application.Storage.deleteValue(STORE);
         Application.Storage.deleteValue(TAKEN);
         Application.Storage.deleteValue(LinkBackground.HANDOFF);
+        Application.Storage.deleteValue(WATCH);
     }
 
     function valid(p) as Boolean {

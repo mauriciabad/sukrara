@@ -116,6 +116,8 @@ def reference(x, path):
         return None
     if x["screen"] == "appNums" and not x.get("rep"):
         return None
+    if x["screen"] == "logPen":
+        return None  # the phone's pen question: not in app.js
     url = "file://" + urllib.parse.quote(RENDER) + "#cfg=" + urllib.parse.quote(json.dumps({"watch": x}))
     a = [CHROME, "--headless=new", "--hide-scrollbars", "--force-device-scale-factor=1", "--allow-file-access-from-files",
          "--window-size=390,390", "--virtual-time-budget=4000", "--screenshot=" + path, url]

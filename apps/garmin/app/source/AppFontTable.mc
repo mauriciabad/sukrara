@@ -9,100 +9,101 @@ module AppFontTable {
     // key → [atlas bitmap, glyph table (jsonData: [glyphs, metrics in base64, baseline])], or [font resource,
     // baseline px from the line's top]; [] = not here
     function atlas(key as String) as Array {
-        var i = ["a14m", "a14s", "a15m", "a15b", "a16m", "a17s", "a17b", "a19m", "a19s", "a20m", "a20s", "a22s", "a22b", "a23s", "a26s", "a26b", "a28b", "a30b", "a32b", "a48s", "a50s", "n84", "n88", "n96", "n100", "n116", "n128"].indexOf(key);
+        var i = ["a14m", "a14s", "a15m", "a15b", "a16m", "a17s", "a17b", "a19m", "a19s", "a20m", "a20s", "a22s", "a22b", "a23s", "a26s", "a26b", "a28b", "a30b", "a32b", "a48s", "a50s", "a96b", "n84", "n88", "n96", "n100", "n116", "n128"].indexOf(key);
         if (i < 0) {
             return [];
         }
-        if (i < 27) {
-            return [[Rez.Drawables.a14m, Rez.Drawables.a14s, Rez.Drawables.a15m, Rez.Drawables.a15b, Rez.Drawables.a16m, Rez.Drawables.a17s, Rez.Drawables.a17b, Rez.Drawables.a19m, Rez.Drawables.a19s, Rez.Drawables.a20m, Rez.Drawables.a20s, Rez.Drawables.a22s, Rez.Drawables.a22b, Rez.Drawables.a23s, Rez.Drawables.a26s, Rez.Drawables.a26b, Rez.Drawables.a28b, Rez.Drawables.a30b, Rez.Drawables.a32b, Rez.Drawables.a48s, Rez.Drawables.a50s, Rez.Drawables.n84, Rez.Drawables.n88, Rez.Drawables.n96, Rez.Drawables.n100, Rez.Drawables.n116, Rez.Drawables.n128][i], [Rez.JsonData.a14m_m, Rez.JsonData.a14s_m, Rez.JsonData.a15m_m, Rez.JsonData.a15b_m, Rez.JsonData.a16m_m, Rez.JsonData.a17s_m, Rez.JsonData.a17b_m, Rez.JsonData.a19m_m, Rez.JsonData.a19s_m, Rez.JsonData.a20m_m, Rez.JsonData.a20s_m, Rez.JsonData.a22s_m, Rez.JsonData.a22b_m, Rez.JsonData.a23s_m, Rez.JsonData.a26s_m, Rez.JsonData.a26b_m, Rez.JsonData.a28b_m, Rez.JsonData.a30b_m, Rez.JsonData.a32b_m, Rez.JsonData.a48s_m, Rez.JsonData.a50s_m, Rez.JsonData.n84_m, Rez.JsonData.n88_m, Rez.JsonData.n96_m, Rez.JsonData.n100_m, Rez.JsonData.n116_m, Rez.JsonData.n128_m][i]];
+        if (i < 28) {
+            return [[Rez.Drawables.a14m, Rez.Drawables.a14s, Rez.Drawables.a15m, Rez.Drawables.a15b, Rez.Drawables.a16m, Rez.Drawables.a17s, Rez.Drawables.a17b, Rez.Drawables.a19m, Rez.Drawables.a19s, Rez.Drawables.a20m, Rez.Drawables.a20s, Rez.Drawables.a22s, Rez.Drawables.a22b, Rez.Drawables.a23s, Rez.Drawables.a26s, Rez.Drawables.a26b, Rez.Drawables.a28b, Rez.Drawables.a30b, Rez.Drawables.a32b, Rez.Drawables.a48s, Rez.Drawables.a50s, Rez.Drawables.a96b, Rez.Drawables.n84, Rez.Drawables.n88, Rez.Drawables.n96, Rez.Drawables.n100, Rez.Drawables.n116, Rez.Drawables.n128][i], [Rez.JsonData.a14m_m, Rez.JsonData.a14s_m, Rez.JsonData.a15m_m, Rez.JsonData.a15b_m, Rez.JsonData.a16m_m, Rez.JsonData.a17s_m, Rez.JsonData.a17b_m, Rez.JsonData.a19m_m, Rez.JsonData.a19s_m, Rez.JsonData.a20m_m, Rez.JsonData.a20s_m, Rez.JsonData.a22s_m, Rez.JsonData.a22b_m, Rez.JsonData.a23s_m, Rez.JsonData.a26s_m, Rez.JsonData.a26b_m, Rez.JsonData.a28b_m, Rez.JsonData.a30b_m, Rez.JsonData.a32b_m, Rez.JsonData.a48s_m, Rez.JsonData.a50s_m, Rez.JsonData.a96b_m, Rez.JsonData.n84_m, Rez.JsonData.n88_m, Rez.JsonData.n96_m, Rez.JsonData.n100_m, Rez.JsonData.n116_m, Rez.JsonData.n128_m][i]];
         }
-        i -= 27;
+        i -= 28;
         return [[][i], [][i]];
     }
 
-    function sheet() as ResourceId {
-        return Rez.Drawables.icons;
+    // the icon sheet [i]: one per size, so a screen loads only the sizes it draws (the graphics pool)
+    function sheet(i as Number) as ResourceId {
+        return [Rez.Drawables.icons15, Rez.Drawables.icons18, Rez.Drawables.icons22, Rez.Drawables.icons26, Rez.Drawables.icons30, Rez.Drawables.icons44][i] as ResourceId;
     }
 
-    // the icon sheet's tiles (white with alpha, 2 px margin): [x, y, box], the nearest size up
+    // the icon sheets' tiles (white with alpha, 2 px margin): [x, y, box, sheet], the nearest size up
     function icon(name as String, size as Number) as Array? {
         if (name.equals("rapid")) {
-            if (size <= 15) { return [0, 0, 19]; }
-            else if (size <= 18) { return [20, 0, 22]; }
-            else if (size <= 22) { return [43, 0, 26]; }
-            else if (size <= 26) { return [70, 0, 30]; }
-            else if (size <= 30) { return [101, 0, 34]; }
-            else if (true) { return [136, 0, 48]; }
+            if (size <= 15) { return [0, 0, 19, 0]; }
+            else if (size <= 18) { return [0, 0, 22, 1]; }
+            else if (size <= 22) { return [0, 0, 26, 2]; }
+            else if (size <= 26) { return [0, 0, 30, 3]; }
+            else if (size <= 30) { return [0, 0, 34, 4]; }
+            else if (true) { return [0, 0, 48, 5]; }
         } else if (name.equals("long")) {
-            if (size <= 15) { return [185, 0, 19]; }
-            else if (size <= 18) { return [205, 0, 22]; }
-            else if (size <= 22) { return [228, 0, 26]; }
-            else if (size <= 26) { return [0, 49, 30]; }
-            else if (size <= 30) { return [31, 49, 34]; }
-            else if (true) { return [66, 49, 48]; }
+            if (size <= 15) { return [20, 0, 19, 0]; }
+            else if (size <= 18) { return [23, 0, 22, 1]; }
+            else if (size <= 22) { return [27, 0, 26, 2]; }
+            else if (size <= 26) { return [31, 0, 30, 3]; }
+            else if (size <= 30) { return [35, 0, 34, 4]; }
+            else if (true) { return [49, 0, 48, 5]; }
         } else if (name.equals("carbs")) {
-            if (size <= 15) { return [115, 49, 19]; }
-            else if (size <= 18) { return [135, 49, 22]; }
-            else if (size <= 22) { return [158, 49, 26]; }
-            else if (size <= 26) { return [185, 49, 30]; }
-            else if (size <= 30) { return [216, 49, 34]; }
-            else if (true) { return [0, 98, 48]; }
+            if (size <= 15) { return [40, 0, 19, 0]; }
+            else if (size <= 18) { return [46, 0, 22, 1]; }
+            else if (size <= 22) { return [54, 0, 26, 2]; }
+            else if (size <= 26) { return [62, 0, 30, 3]; }
+            else if (size <= 30) { return [70, 0, 34, 4]; }
+            else if (true) { return [98, 0, 48, 5]; }
         } else if (name.equals("sensor")) {
-            if (size <= 15) { return [49, 98, 19]; }
-            else if (size <= 18) { return [69, 98, 22]; }
-            else if (size <= 22) { return [92, 98, 26]; }
-            else if (size <= 26) { return [119, 98, 30]; }
-            else if (size <= 30) { return [150, 98, 34]; }
-            else if (true) { return [185, 98, 48]; }
+            if (size <= 15) { return [60, 0, 19, 0]; }
+            else if (size <= 18) { return [69, 0, 22, 1]; }
+            else if (size <= 22) { return [81, 0, 26, 2]; }
+            else if (size <= 26) { return [93, 0, 30, 3]; }
+            else if (size <= 30) { return [105, 0, 34, 4]; }
+            else if (true) { return [147, 0, 48, 5]; }
         } else if (name.equals("bell")) {
-            if (size <= 15) { return [234, 98, 19]; }
-            else if (size <= 18) { return [0, 147, 22]; }
-            else if (size <= 22) { return [23, 147, 26]; }
-            else if (size <= 26) { return [50, 147, 30]; }
-            else if (size <= 30) { return [81, 147, 34]; }
-            else if (true) { return [116, 147, 48]; }
+            if (size <= 15) { return [80, 0, 19, 0]; }
+            else if (size <= 18) { return [92, 0, 22, 1]; }
+            else if (size <= 22) { return [108, 0, 26, 2]; }
+            else if (size <= 26) { return [124, 0, 30, 3]; }
+            else if (size <= 30) { return [140, 0, 34, 4]; }
+            else if (true) { return [196, 0, 48, 5]; }
         } else if (name.equals("bellOff")) {
-            if (size <= 15) { return [165, 147, 19]; }
-            else if (size <= 18) { return [185, 147, 22]; }
-            else if (size <= 22) { return [208, 147, 26]; }
-            else if (size <= 26) { return [0, 196, 30]; }
-            else if (size <= 30) { return [31, 196, 34]; }
-            else if (true) { return [66, 196, 48]; }
+            if (size <= 15) { return [100, 0, 19, 0]; }
+            else if (size <= 18) { return [115, 0, 22, 1]; }
+            else if (size <= 22) { return [135, 0, 26, 2]; }
+            else if (size <= 26) { return [155, 0, 30, 3]; }
+            else if (size <= 30) { return [175, 0, 34, 4]; }
+            else if (true) { return [0, 49, 48, 5]; }
         } else if (name.equals("bellPause")) {
-            if (size <= 15) { return [115, 196, 19]; }
-            else if (size <= 18) { return [135, 196, 22]; }
-            else if (size <= 22) { return [158, 196, 26]; }
-            else if (size <= 26) { return [185, 196, 30]; }
-            else if (size <= 30) { return [216, 196, 34]; }
-            else if (true) { return [0, 245, 48]; }
+            if (size <= 15) { return [120, 0, 19, 0]; }
+            else if (size <= 18) { return [138, 0, 22, 1]; }
+            else if (size <= 22) { return [162, 0, 26, 2]; }
+            else if (size <= 26) { return [186, 0, 30, 3]; }
+            else if (size <= 30) { return [210, 0, 34, 4]; }
+            else if (true) { return [49, 49, 48, 5]; }
         } else if (name.equals("note")) {
-            if (size <= 15) { return [49, 245, 19]; }
-            else if (size <= 18) { return [69, 245, 22]; }
-            else if (size <= 22) { return [92, 245, 26]; }
-            else if (size <= 26) { return [119, 245, 30]; }
-            else if (size <= 30) { return [150, 245, 34]; }
-            else if (true) { return [185, 245, 48]; }
+            if (size <= 15) { return [140, 0, 19, 0]; }
+            else if (size <= 18) { return [161, 0, 22, 1]; }
+            else if (size <= 22) { return [189, 0, 26, 2]; }
+            else if (size <= 26) { return [217, 0, 30, 3]; }
+            else if (size <= 30) { return [0, 35, 34, 4]; }
+            else if (true) { return [98, 49, 48, 5]; }
         } else if (name.equals("warn")) {
-            if (size <= 15) { return [234, 245, 19]; }
-            else if (size <= 18) { return [0, 294, 22]; }
-            else if (size <= 22) { return [23, 294, 26]; }
-            else if (size <= 26) { return [50, 294, 30]; }
-            else if (size <= 30) { return [81, 294, 34]; }
-            else if (true) { return [116, 294, 48]; }
+            if (size <= 15) { return [160, 0, 19, 0]; }
+            else if (size <= 18) { return [184, 0, 22, 1]; }
+            else if (size <= 22) { return [216, 0, 26, 2]; }
+            else if (size <= 26) { return [0, 31, 30, 3]; }
+            else if (size <= 30) { return [35, 35, 34, 4]; }
+            else if (true) { return [147, 49, 48, 5]; }
         } else if (name.equals("phone")) {
-            if (size <= 15) { return [165, 294, 19]; }
-            else if (size <= 18) { return [185, 294, 22]; }
-            else if (size <= 22) { return [208, 294, 26]; }
-            else if (size <= 26) { return [0, 343, 30]; }
-            else if (size <= 30) { return [31, 343, 34]; }
-            else if (true) { return [66, 343, 48]; }
+            if (size <= 15) { return [180, 0, 19, 0]; }
+            else if (size <= 18) { return [207, 0, 22, 1]; }
+            else if (size <= 22) { return [0, 27, 26, 2]; }
+            else if (size <= 26) { return [31, 31, 30, 3]; }
+            else if (size <= 30) { return [70, 35, 34, 4]; }
+            else if (true) { return [196, 49, 48, 5]; }
         } else if (name.equals("pen")) {
-            if (size <= 15) { return [115, 343, 19]; }
-            else if (size <= 18) { return [135, 343, 22]; }
-            else if (size <= 22) { return [158, 343, 26]; }
-            else if (size <= 26) { return [185, 343, 30]; }
-            else if (size <= 30) { return [216, 343, 34]; }
-            else if (true) { return [0, 392, 48]; }
+            if (size <= 15) { return [200, 0, 19, 0]; }
+            else if (size <= 18) { return [230, 0, 22, 1]; }
+            else if (size <= 22) { return [27, 27, 26, 2]; }
+            else if (size <= 26) { return [62, 31, 30, 3]; }
+            else if (size <= 30) { return [105, 35, 34, 4]; }
+            else if (true) { return [0, 98, 48, 5]; }
         }
         return null;
     }

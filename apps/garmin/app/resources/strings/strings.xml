@@ -112,4 +112,17 @@
     <string id="Done">Done</string>
     <string id="LowsMuted30">Lows muted for 30 min</string>
     <string id="HighsMuted30">Highs muted for 30 min</string>
+    <string id="Log">Log</string>
+    <string id="SendingPhone">Sending to your phone</string>
+    <string id="SavedWatch">Saved on the watch</string>
+    <string id="GoesPhone">Goes to your phone</string>
+    <string id="WhenNear">when it’s near</string>
+    <string id="NotUndone">Not undone</string>
+    <string id="LRapid">rapid insulin</string>
+    <string id="LLong">long-acting insulin</string>
+    <string id="LCarbs">carbs</string>
+    <string id="SRapid">rapid</string>
+    <string id="SLong">long-acting</string>
+    <string id="SCarbs">carbs</string>
+    <string id="AmountWhen">$1$ · $2$</string>
 </strings>

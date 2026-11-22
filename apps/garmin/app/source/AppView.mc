@@ -57,16 +57,21 @@ class AppView extends WatchUi.View {
     function build() as Void {
         var now = Time.now().value();
         Link.pickUp(now);
+        AppView.setup();
+        _g = layout(AppInput.build(now, kind.equals("pages") && page == 0));
+    }
+
+    // the app's drawing: its own font and icon tables, the screen's scale and centre
+    static function setup() as Void {
         var w = System.getDeviceSettings().screenWidth;
         var h = System.getDeviceSettings().screenHeight;
         AppDraw.glance = false;
         AppDraw.table = new Lang.Method(AppFontTable, :atlas);
         AppDraw.iconAt = new Lang.Method(AppFontTable, :icon);
-        AppDraw.sheetId = AppFontTable.sheet();
+        AppDraw.sheetAt = new Lang.Method(AppFontTable, :sheet);
         AppDraw.s = w / 390.0;
         AppDraw.ox = w / 2.0 - 0.5;
         AppDraw.oy = h / 2.0 - 0.5;
-        _g = layout(AppInput.build(now));
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
@@ -111,6 +116,7 @@ class AppDelegate extends WatchUi.BehaviorDelegate {
 
     function turn() as Boolean {
         view.page = 1 - view.page;
+        AppDraw.release(); // one page's fonts and icons in the graphics pool at a time
         view.refresh();
         return true;
     }
