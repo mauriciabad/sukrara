@@ -1,5 +1,5 @@
 {
-  "about": "Sukrara Aura's payload, version 3 (README.md): each case is a phone state ('phone', times in seconds relative to 'now') → the exact payload the phone sends ('payload', absolute epoch seconds) → what the watch makes of it at a watch time ('watch': 'at' = the watch clock relative to 'now', 'received' = the watch clock when the message arrived, default 'now'; 'expect' = the face's inputs, README 'On the watch'). Run by AuraPayloadFixtureTest (Android: phone → payload, and the payload through MonkeyC and back) and the face's link test (Garmin: payload → watch). 'bytes' is a payload as Garmin's own serializer (ciq-companion-app-sdk 2.4.0) wrote it, kept from version 1 (the serialization doesn't change with the payload's version): every reader must decode it to 'bytes.payload'.",
+  "about": "The watch payload, version 4 (README.md), one list per profile: 'cases' (Sukrara Aura), 'app' (Sukrara, the watch app) and 'field' (Sukrara data field). Each case is a phone state ('phone', times in seconds relative to 'now'; the app's 'metrics' = the report numbers per window, as GlucoseMetrics gives them, 'slots' / 'lastElse' / 'ringRange' / 'lastPlace' = the person's metric settings, 'alerts' = the kinds Sukrara's alert runtime rings, 'open' = whether this phone takes entries now) → the exact payload the phone sends ('payload', absolute epoch seconds; the app's push adds 'key', README) → for the face, what it makes of it at a watch time ('watch': 'at' = the watch clock relative to 'now', 'received' = the watch clock when the message arrived, default 'now'; 'expect' = the face's inputs, README 'On the watch'). Run by AuraPayloadFixtureTest (Android: phone → payload for every profile, and the payload through MonkeyC and back) and the face's link test (Garmin: 'cases' → watch; the app's and the data field's watch side comes with their builds). 'bytes' is a payload as Garmin's own serializer (ciq-companion-app-sdk 2.4.0) wrote it, kept from version 1 (the serialization doesn't change with the payload's version): every reader must decode it to 'bytes.payload'.",
   "now": 1794823776,
   "cases": [
     {
@@ -25,7 +25,7 @@
         "dayEnd": 49824
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 112, "rate": 0.4, "band": 0, "deg": -12.0},
         "hist": [94, 96, 100, 106, 114, 123, 132, 140, 146, 150, 151, 149,
           145, 139, 132, 124, 117, 111, 106, 102, 99, 97, 95, 95,
@@ -49,7 +49,7 @@
       "name": "LO: no number and no trend",
       "phone": {"readings": [{"t": -60, "mgdl": 39}], "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823716, "v": 39, "rate": null, "band": null, "deg": null},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -64,7 +64,7 @@
       "name": "HI: a rate the sensor sent is dropped (LO / HI have no trend)",
       "phone": {"readings": [{"t": -60, "mgdl": 401, "rate": 2.0, "band": 2}], "status": {"k": "needed", "low": false}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823716, "v": 401, "rate": null, "band": null, "deg": null},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -79,7 +79,7 @@
       "name": "low and falling, nothing logged: eat carbs",
       "phone": {"readings": [{"t": -20, "mgdl": 65, "rate": -1.2, "band": -1}], "status": {"k": "needed", "low": true}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823756, "v": 65, "rate": -1.2, "band": -1, "deg": 36.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -100,7 +100,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823736, "v": 236, "rate": 0.9, "band": 0, "deg": -27.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -120,7 +120,7 @@
       "name": "Mute all until turned off, in range",
       "phone": {"readings": [{"t": -30, "mgdl": 128, "rate": 0.2, "band": 0}], "status": {"k": "muted", "until": "never"}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 128, "rate": 0.2, "band": 0, "deg": -6.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -135,7 +135,7 @@
       "name": "low muted from the notification, 10 min left, flat",
       "phone": {"readings": [{"t": -30, "mgdl": 65, "rate": 0.0, "band": 0}], "status": {"k": "paused", "low": true, "until": 600}, "sensor": {"state": "active", "start": -864000, "end": 432000}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 65, "rate": 0.0, "band": 0, "deg": 0.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -155,7 +155,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -184,7 +184,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -204,7 +204,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -230,7 +230,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -255,7 +255,7 @@
       "name": "warming up, 18 min in: no reading yet",
       "phone": {"readings": [], "sensor": {"state": "warmup", "start": -1080, "ready": 2520, "lifeEnd": 1294920}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": null, "hist": [], "st": null, "last": null,
         "sensor": {"s": "warmup", "start": 1794822696, "ready": 1794826296, "hold": 1794827196, "end": 1796118696},
         "tir": null
@@ -270,7 +270,7 @@
       "name": "the warm-up is over, no reading yet: almost ready",
       "phone": {"readings": [], "sensor": {"state": "warmup", "start": -3660, "ready": -60, "lifeEnd": 1292340}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": null, "hist": [], "st": null, "last": null,
         "sensor": {"s": "warmup", "start": 1794820116, "ready": 1794823716, "hold": 1794824616, "end": 1796116116},
         "tir": null
@@ -281,7 +281,7 @@
       "name": "sensor ended but still sending",
       "phone": {"readings": [{"t": -30, "mgdl": 104, "rate": -0.1, "band": 0}], "sensor": {"state": "ended"}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 104, "rate": -0.1, "band": 0, "deg": 3.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -294,7 +294,7 @@
       "name": "sensor ending: its last 8 h (the countdown setting), 5 h left",
       "phone": {"readings": [{"t": -30, "mgdl": 118, "rate": -0.2, "band": 0}], "sensor": {"state": "active", "start": -1278000, "end": 18000}},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823746, "v": 118, "rate": -0.2, "band": 0, "deg": 6.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -313,7 +313,7 @@
       "name": "nothing paired (not monitoring): no value, nothing else from Sukrara",
       "phone": {"monitoring": false, "readings": [], "treatments": [{"id": "r3", "k": "rapid", "a": 2, "t": -600}], "sensor": {"state": "none"}, "tir": 0.9, "dayEnd": 49824},
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": null, "hist": [], "st": null, "last": null, "sensor": {"s": "none"}, "tir": null
       },
       "watch": [{"at": 0, "expect": {"glucose": null, "sensor": "none", "last": null, "tir": null}}]
@@ -326,7 +326,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mmol", "bands": [60, 75, 150, 200, 260, 320],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mmol", "bands": [60, 75, 150, 200, 260, 320],
         "g": {"t": 1794823731, "v": 160, "rate": 3.2, "band": 3, "deg": -90.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -347,7 +347,7 @@
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
-        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "v": 4, "p": "aura", "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
         "g": {"t": 1794823056, "v": 150, "rate": 0.5, "band": 0, "deg": -15.0},
         "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null,
@@ -357,6 +357,375 @@
         "tir": null
       },
       "watch": [{"at": 0, "expect": {"glucose": 150, "age": 12.0, "history": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, 138, null, 140, null, 146, 148]}}]
+    }
+  ],
+  "app": [
+    {
+      "name": "a full day: 24 h of history, a meal 35 min ago, the week's entries for the usual amounts, today's and the week's time in range, GMI as the third metric",
+      "phone": {
+        "readings": [
+          {"t": -30, "mgdl": 120, "rate": 0.4, "band": 0}, {"t": -330, "mgdl": 123}, {"t": -630, "mgdl": 127}, {"t": -930, "mgdl": 130},
+          {"t": -1230, "mgdl": 133}, {"t": -1530, "mgdl": 136}, {"t": -1830, "mgdl": 139}, {"t": -2130, "mgdl": 142},
+          {"t": -2430, "mgdl": 145}, {"t": -2730, "mgdl": 147}, {"t": -3030, "mgdl": 150}, {"t": -3330, "mgdl": 152},
+          {"t": -3630, "mgdl": 154}, {"t": -3930, "mgdl": 155}, {"t": -4230, "mgdl": 157}, {"t": -4530, "mgdl": 158},
+          {"t": -4830, "mgdl": 159}, {"t": -5130, "mgdl": 160}, {"t": -5430, "mgdl": 160}, {"t": -5730, "mgdl": 160},
+          {"t": -6030, "mgdl": 160}, {"t": -6330, "mgdl": 159}, {"t": -6630, "mgdl": 159}, {"t": -6930, "mgdl": 158},
+          {"t": -7230, "mgdl": 156}, {"t": -7530, "mgdl": 155}, {"t": -7830, "mgdl": 153}, {"t": -8130, "mgdl": 151},
+          {"t": -8430, "mgdl": 149}, {"t": -8730, "mgdl": 147}, {"t": -9030, "mgdl": 144}, {"t": -9330, "mgdl": 141},
+          {"t": -9630, "mgdl": 138}, {"t": -9930, "mgdl": 135}, {"t": -10230, "mgdl": 132}, {"t": -10530, "mgdl": 129},
+          {"t": -10830, "mgdl": 126}, {"t": -11130, "mgdl": 122}, {"t": -11430, "mgdl": 119}, {"t": -11730, "mgdl": 116},
+          {"t": -12030, "mgdl": 112}, {"t": -12330, "mgdl": 109}, {"t": -12630, "mgdl": 106}, {"t": -12930, "mgdl": 103},
+          {"t": -13230, "mgdl": 100}, {"t": -13530, "mgdl": 97}, {"t": -13830, "mgdl": 94}, {"t": -14130, "mgdl": 92},
+          {"t": -14430, "mgdl": 90}, {"t": -14730, "mgdl": 88}, {"t": -15030, "mgdl": 86}, {"t": -15330, "mgdl": 84},
+          {"t": -15630, "mgdl": 83}, {"t": -15930, "mgdl": 82}, {"t": -16230, "mgdl": 81}, {"t": -16530, "mgdl": 80},
+          {"t": -16830, "mgdl": 80}, {"t": -17130, "mgdl": 80}, {"t": -17430, "mgdl": 80}, {"t": -17730, "mgdl": 81},
+          {"t": -18030, "mgdl": 82}, {"t": -18330, "mgdl": 83}, {"t": -18630, "mgdl": 84}, {"t": -18930, "mgdl": 86},
+          {"t": -19230, "mgdl": 87}, {"t": -19530, "mgdl": 90}, {"t": -19830, "mgdl": 92}, {"t": -20130, "mgdl": 94},
+          {"t": -20430, "mgdl": 97}, {"t": -20730, "mgdl": 100}, {"t": -21030, "mgdl": 103}, {"t": -21330, "mgdl": 106},
+          {"t": -21630, "mgdl": 109}, {"t": -21930, "mgdl": 112}, {"t": -22230, "mgdl": 115}, {"t": -22530, "mgdl": 119},
+          {"t": -22830, "mgdl": 122}, {"t": -23130, "mgdl": 125}, {"t": -23430, "mgdl": 129}, {"t": -23730, "mgdl": 132},
+          {"t": -24030, "mgdl": 135}, {"t": -24330, "mgdl": 138}, {"t": -24630, "mgdl": 141}, {"t": -24930, "mgdl": 144},
+          {"t": -25230, "mgdl": 146}, {"t": -25530, "mgdl": 149}, {"t": -25830, "mgdl": 151}, {"t": -26130, "mgdl": 153},
+          {"t": -26430, "mgdl": 155}, {"t": -26730, "mgdl": 156}, {"t": -27030, "mgdl": 158}, {"t": -27330, "mgdl": 159},
+          {"t": -27630, "mgdl": 159}, {"t": -27930, "mgdl": 160}, {"t": -28230, "mgdl": 160}, {"t": -28530, "mgdl": 160},
+          {"t": -28830, "mgdl": 160}, {"t": -29130, "mgdl": 159}, {"t": -29430, "mgdl": 158}, {"t": -29730, "mgdl": 157},
+          {"t": -30030, "mgdl": 155}, {"t": -30330, "mgdl": 154}, {"t": -30630, "mgdl": 152}, {"t": -30930, "mgdl": 150},
+          {"t": -31230, "mgdl": 148}, {"t": -31530, "mgdl": 145}, {"t": -31830, "mgdl": 142}, {"t": -32130, "mgdl": 139},
+          {"t": -32430, "mgdl": 136}, {"t": -32730, "mgdl": 133}, {"t": -33030, "mgdl": 130}, {"t": -33330, "mgdl": 127},
+          {"t": -33630, "mgdl": 124}, {"t": -33930, "mgdl": 120}, {"t": -34230, "mgdl": 117}, {"t": -34530, "mgdl": 114},
+          {"t": -34830, "mgdl": 110}, {"t": -35130, "mgdl": 107}, {"t": -35430, "mgdl": 104}, {"t": -35730, "mgdl": 101},
+          {"t": -36030, "mgdl": 98}, {"t": -36330, "mgdl": 96}, {"t": -36630, "mgdl": 93}, {"t": -36930, "mgdl": 91},
+          {"t": -37230, "mgdl": 88}, {"t": -37530, "mgdl": 87}, {"t": -37830, "mgdl": 85}, {"t": -38130, "mgdl": 83},
+          {"t": -38430, "mgdl": 82}, {"t": -38730, "mgdl": 81}, {"t": -39030, "mgdl": 81}, {"t": -39330, "mgdl": 80},
+          {"t": -39630, "mgdl": 80}, {"t": -39930, "mgdl": 80}, {"t": -40230, "mgdl": 81}, {"t": -40530, "mgdl": 81},
+          {"t": -40830, "mgdl": 82}, {"t": -41130, "mgdl": 83}, {"t": -41430, "mgdl": 85}, {"t": -41730, "mgdl": 87},
+          {"t": -42030, "mgdl": 89}, {"t": -42330, "mgdl": 91}, {"t": -42630, "mgdl": 93}, {"t": -42930, "mgdl": 96},
+          {"t": -43230, "mgdl": 99}, {"t": -43530, "mgdl": 101}, {"t": -43830, "mgdl": 104}, {"t": -44130, "mgdl": 108},
+          {"t": -44430, "mgdl": 111}, {"t": -44730, "mgdl": 114}, {"t": -45030, "mgdl": 117}, {"t": -45330, "mgdl": 121},
+          {"t": -45630, "mgdl": 124}, {"t": -45930, "mgdl": 127}, {"t": -46230, "mgdl": 131}, {"t": -46530, "mgdl": 134},
+          {"t": -46830, "mgdl": 137}, {"t": -47130, "mgdl": 140}, {"t": -47430, "mgdl": 143}, {"t": -47730, "mgdl": 145},
+          {"t": -48030, "mgdl": 148}, {"t": -48330, "mgdl": 150}, {"t": -48630, "mgdl": 152}, {"t": -48930, "mgdl": 154},
+          {"t": -49230, "mgdl": 156}, {"t": -49530, "mgdl": 157}, {"t": -49830, "mgdl": 158}, {"t": -50130, "mgdl": 159},
+          {"t": -50430, "mgdl": 160}, {"t": -50730, "mgdl": 160}, {"t": -51030, "mgdl": 160}, {"t": -51330, "mgdl": 160},
+          {"t": -51630, "mgdl": 159}, {"t": -51930, "mgdl": 158}, {"t": -52230, "mgdl": 157}, {"t": -52530, "mgdl": 156},
+          {"t": -52830, "mgdl": 155}, {"t": -53130, "mgdl": 153}, {"t": -53430, "mgdl": 151}, {"t": -53730, "mgdl": 148},
+          {"t": -54030, "mgdl": 146}, {"t": -54330, "mgdl": 143}, {"t": -54630, "mgdl": 141}, {"t": -54930, "mgdl": 138},
+          {"t": -55230, "mgdl": 135}, {"t": -55530, "mgdl": 131}, {"t": -55830, "mgdl": 128}, {"t": -56130, "mgdl": 125},
+          {"t": -56430, "mgdl": 122}, {"t": -56730, "mgdl": 118}, {"t": -57030, "mgdl": 115}, {"t": -57330, "mgdl": 112},
+          {"t": -57630, "mgdl": 108}, {"t": -57930, "mgdl": 105}, {"t": -58230, "mgdl": 102}, {"t": -58530, "mgdl": 99},
+          {"t": -58830, "mgdl": 97}, {"t": -59130, "mgdl": 94}, {"t": -59430, "mgdl": 92}, {"t": -59730, "mgdl": 89},
+          {"t": -60030, "mgdl": 87}, {"t": -60330, "mgdl": 85}, {"t": -60630, "mgdl": 84}, {"t": -60930, "mgdl": 83},
+          {"t": -61230, "mgdl": 82}, {"t": -61530, "mgdl": 81}, {"t": -61830, "mgdl": 80}, {"t": -62130, "mgdl": 80},
+          {"t": -62430, "mgdl": 80}, {"t": -62730, "mgdl": 80}, {"t": -63030, "mgdl": 81}, {"t": -63330, "mgdl": 82},
+          {"t": -63630, "mgdl": 83}, {"t": -63930, "mgdl": 84}, {"t": -64230, "mgdl": 86}, {"t": -64530, "mgdl": 88},
+          {"t": -64830, "mgdl": 90}, {"t": -65130, "mgdl": 92}, {"t": -65430, "mgdl": 95}, {"t": -65730, "mgdl": 97},
+          {"t": -66030, "mgdl": 100}, {"t": -66330, "mgdl": 103}, {"t": -66630, "mgdl": 106}, {"t": -66930, "mgdl": 109},
+          {"t": -67230, "mgdl": 113}, {"t": -67530, "mgdl": 116}, {"t": -67830, "mgdl": 119}, {"t": -68130, "mgdl": 123},
+          {"t": -68430, "mgdl": 126}, {"t": -68730, "mgdl": 129}, {"t": -69030, "mgdl": 132}, {"t": -69330, "mgdl": 136},
+          {"t": -69630, "mgdl": 139}, {"t": -69930, "mgdl": 141}, {"t": -70230, "mgdl": 144}, {"t": -70530, "mgdl": 147},
+          {"t": -70830, "mgdl": 149}, {"t": -71130, "mgdl": 151}, {"t": -71430, "mgdl": 153}, {"t": -71730, "mgdl": 155},
+          {"t": -72030, "mgdl": 157}, {"t": -72330, "mgdl": 158}, {"t": -72630, "mgdl": 159}, {"t": -72930, "mgdl": 159},
+          {"t": -73230, "mgdl": 160}, {"t": -73530, "mgdl": 160}, {"t": -73830, "mgdl": 160}, {"t": -74130, "mgdl": 159},
+          {"t": -74430, "mgdl": 159}, {"t": -74730, "mgdl": 158}, {"t": -75030, "mgdl": 157}, {"t": -75330, "mgdl": 155},
+          {"t": -75630, "mgdl": 153}, {"t": -75930, "mgdl": 152}, {"t": -76230, "mgdl": 149}, {"t": -76530, "mgdl": 147},
+          {"t": -76830, "mgdl": 144}, {"t": -77130, "mgdl": 142}, {"t": -77430, "mgdl": 139}, {"t": -77730, "mgdl": 136},
+          {"t": -78030, "mgdl": 133}, {"t": -78330, "mgdl": 130}, {"t": -78630, "mgdl": 126}, {"t": -78930, "mgdl": 123},
+          {"t": -79230, "mgdl": 120}, {"t": -79530, "mgdl": 116}, {"t": -79830, "mgdl": 113}, {"t": -80130, "mgdl": 110},
+          {"t": -80430, "mgdl": 107}, {"t": -80730, "mgdl": 103}, {"t": -81030, "mgdl": 101}, {"t": -81330, "mgdl": 98},
+          {"t": -81630, "mgdl": 95}, {"t": -81930, "mgdl": 92}, {"t": -82230, "mgdl": 90}, {"t": -82530, "mgdl": 88},
+          {"t": -82830, "mgdl": 86}, {"t": -83130, "mgdl": 84}, {"t": -83430, "mgdl": 83}, {"t": -83730, "mgdl": 82},
+          {"t": -84030, "mgdl": 81}, {"t": -84330, "mgdl": 80}, {"t": -84630, "mgdl": 80}, {"t": -84930, "mgdl": 80},
+          {"t": -85230, "mgdl": 80}, {"t": -85530, "mgdl": 81}, {"t": -85830, "mgdl": 81}, {"t": -86130, "mgdl": 82},
+          {"t": -86430, "mgdl": 84}
+        ],
+        "quiet": {"rapidS": 3600, "carbsS": 900},
+        "treatments": [
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a1", "k": "carbs", "a": 45, "t": -2100},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a2", "k": "rapid", "a": 4.5, "t": -2100},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a3", "k": "note", "a": 0, "t": -60},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a4", "k": "rapid", "a": 10, "t": -100, "del": true},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a5", "k": "rapid", "a": 2, "t": -20000},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a6", "k": "long", "a": 14, "t": -50000},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a7", "k": "carbs", "a": 30, "t": -90000},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a8", "k": "long", "a": 14, "t": -129600},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a9", "k": "carbs", "a": 45, "t": -172800},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789b1", "k": "rapid", "a": 4.5, "t": -259200},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789b2", "k": "carbs", "a": 30, "t": -259300},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789b3", "k": "rapid", "a": 4.5, "t": -432000},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789b4", "k": "rapid", "a": 3, "t": -518400},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789b5", "k": "rapid", "a": 6, "t": -691200},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789b6", "k": "long", "a": 12, "t": -3456000}
+        ],
+        "sensor": {"state": "active", "start": -864000, "end": 432000},
+        "metrics": {"86400": {"tir": [0.0, 0.021, 0.512, 0.31, 0.142, 0.015], "coverage": 0.98, "mean": 132.4, "sd": 38.0}, "604800": {"tir": [0.004, 0.03, 0.48, 0.3, 0.16, 0.026], "coverage": 0.91, "mean": 138.9, "sd": 44.1}, "1209600": {"tir": [0.005, 0.03, 0.47, 0.3, 0.165, 0.03], "coverage": 0.88, "mean": 141.2, "sd": 46.0}, "2592000": {"tir": [0.006, 0.032, 0.46, 0.3, 0.17, 0.032], "coverage": 0.6, "mean": 143.0, "sd": 47.0}},
+        "slots": [{"k": "tir", "w": 86400, "dim": true}, {"k": "tir", "w": 604800, "dim": true}, {"k": "gmi", "w": 1209600, "dim": true}],
+        "lastElse": {"k": "tir", "w": 2592000, "dim": true},
+        "open": true
+      },
+      "payload": {
+        "v": 4,
+        "p": "app",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 120, "rate": 0.4, "band": 0, "deg": -12.0},
+        "hist": [
+          84, 82, 81, 81, 80, 80, 80, 80, 81, 82, 83, 84, 86, 88, 90, 92, 95, 98, 101, 103, 107, 110, 113, 116,
+          120, 123, 126, 130, 133, 136, 139, 142, 144, 147, 149, 152, 153, 155, 157, 158, 159, 159, 160, 160, 160, 159, 159, 158,
+          157, 155, 153, 151, 149, 147, 144, 141, 139, 136, 132, 129, 126, 123, 119, 116, 113, 109, 106, 103, 100, 97, 95, 92,
+          90, 88, 86, 84, 83, 82, 81, 80, 80, 80, 80, 81, 82, 83, 84, 85, 87, 89, 92, 94, 97, 99, 102, 105,
+          108, 112, 115, 118, 122, 125, 128, 131, 135, 138, 141, 143, 146, 148, 151, 153, 155, 156, 157, 158, 159, 160, 160, 160,
+          160, 159, 158, 157, 156, 154, 152, 150, 148, 145, 143, 140, 137, 134, 131, 127, 124, 121, 117, 114, 111, 108, 104, 101,
+          99, 96, 93, 91, 89, 87, 85, 83, 82, 81, 81, 80, 80, 80, 81, 81, 82, 83, 85, 87, 88, 91, 93, 96,
+          98, 101, 104, 107, 110, 114, 117, 120, 124, 127, 130, 133, 136, 139, 142, 145, 148, 150, 152, 154, 155, 157, 158, 159,
+          160, 160, 160, 160, 159, 159, 158, 156, 155, 153, 151, 149, 146, 144, 141, 138, 135, 132, 129, 125, 122, 119, 115, 112,
+          109, 106, 103, 100, 97, 94, 92, 90, 87, 86, 84, 83, 82, 81, 80, 80, 80, 80, 81, 82, 83, 84, 86, 88,
+          90, 92, 94, 97, 100, 103, 106, 109, 112, 116, 119, 122, 126, 129, 132, 135, 138, 141, 144, 147, 149, 151, 153, 155,
+          156, 158, 159, 159, 160, 160, 160, 160, 159, 158, 157, 155, 154, 152, 150, 147, 145, 142, 139, 136, 133, 130, 127, 123
+        ],
+        "st": null,
+        "ring": [],
+        "last": {"t": 1794821676, "items": [{"k": "rapid", "a": 4.5}, {"k": "carbs", "a": 45.0}], "until": 1794825276, "next": {"t": 1794821676, "items": [{"k": "rapid", "a": 4.5}], "until": 1794836076, "next": null}},
+        "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
+        "tx": [
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a6", "t": 1794773776, "k": "long", "a": 14.0},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a5", "t": 1794803776, "k": "rapid", "a": 2.0},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a1", "t": 1794821676, "k": "carbs", "a": 45.0},
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a2", "t": 1794821676, "k": "rapid", "a": 4.5}
+        ],
+        "ranges": [{"w": 86400, "pct": 82, "b": [0, 21, 512, 310, 142, 15]}, {"w": 604800, "pct": 78, "b": [4, 30, 480, 300, 160, 26]}],
+        "m": [
+          {"k": "tir", "w": 86400, "v": 82, "dim": true, "r": "in", "b": [0, 21, 512, 310, 142, 15], "mark": "none"},
+          {"k": "tir", "w": 604800, "v": 78, "dim": true, "r": "in", "b": [4, 30, 480, 300, 160, 26], "mark": "none"},
+          {"k": "gmi", "w": 1209600, "v": 6.7, "dim": true}
+        ],
+        "else": {"k": "tir", "w": 2592000, "v": 76, "dim": true, "r": "in", "b": [6, 32, 460, 300, 170, 32], "mark": "none"},
+        "ro": [2, 3, 1, 0, 4, 5],
+        "log": {"rapid": {"last": 4.5, "usual": [2.0, 3.0, 4.5]}, "long": {"last": 14.0, "usual": [14.0]}, "carbs": {"last": 45.0, "usual": [30.0, 45.0]}}
+      }
+    },
+    {
+      "name": "very low and falling fast: both ring, eat carbs, nothing logged yet (no last amounts), the very good range on the ring, a 14-day average without enough data",
+      "phone": {
+        "readings": [
+          {"t": -30, "mgdl": 52, "rate": -2.3, "band": -2}, {"t": -330, "mgdl": 59}, {"t": -630, "mgdl": 59}, {"t": -930, "mgdl": 58},
+          {"t": -1230, "mgdl": 57}, {"t": -1530, "mgdl": 57}, {"t": -1830, "mgdl": 56}, {"t": -2130, "mgdl": 56},
+          {"t": -2430, "mgdl": 55}, {"t": -2730, "mgdl": 55}, {"t": -3030, "mgdl": 54}, {"t": -3330, "mgdl": 54},
+          {"t": -3630, "mgdl": 53}
+        ],
+        "status": {"k": "needed", "low": true},
+        "alerts": ["falling_fast", "very_low"],
+        "sensor": {"state": "active", "start": -864000, "end": 432000},
+        "metrics": {"86400": {"tir": [0.0, 0.021, 0.512, 0.31, 0.142, 0.015], "coverage": 0.98, "mean": 132.4, "sd": 38.0}},
+        "slots": [{"k": "tir", "w": 86400, "dim": false}, {"k": "avg", "w": 1209600, "dim": true}],
+        "lastElse": null,
+        "ringRange": "tight",
+        "open": true
+      },
+      "payload": {
+        "v": 4,
+        "p": "app",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 52, "rate": -2.3, "band": -2, "deg": 69.0},
+        "hist": [
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, 53, 54, 54, 55, 55, 56, 56, 57, 57, 58, 59, 59
+        ],
+        "st": {"k": "needed", "side": "low"},
+        "ring": [{"k": "very_low", "side": "low"}, {"k": "falling_fast", "side": "low"}],
+        "last": null,
+        "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
+        "tx": [],
+        "ranges": [{"w": 86400, "pct": 82, "b": [0, 21, 512, 310, 142, 15]}, null],
+        "m": [
+          {"k": "tir", "w": 86400, "v": 51, "dim": false, "r": "tight", "b": [0, 21, 512, 310, 142, 15], "mark": "none"},
+          {"k": "avg", "w": 1209600, "v": null, "dim": true}
+        ],
+        "else": null,
+        "ro": [2, 3, 1, 0, 4, 5],
+        "log": {"rapid": {"last": null, "usual": []}, "long": {"last": null, "usual": []}, "carbs": {"last": null, "usual": []}}
+      }
+    },
+    {
+      "name": "a follower the wearer doesn't let add entries, no data for 25 min: no data rings, no logging, the last-treatment place off",
+      "phone": {
+        "readings": [
+          {"t": -1500, "mgdl": 141}
+        ],
+        "alerts": ["no_data"],
+        "sensor": {"state": "active", "start": -864000, "end": 432000},
+        "metrics": {},
+        "slots": [{"k": "tir", "w": 86400, "dim": true}, {"k": "tir", "w": 604800, "dim": true}, {"k": "gmi", "w": 1209600, "dim": true}],
+        "lastElse": {"k": "tir", "w": 2592000, "dim": true},
+        "lastPlace": "off",
+        "open": false,
+        "treatments": [
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a2", "k": "rapid", "a": 4.5, "t": -2100}
+        ]
+      },
+      "payload": {
+        "v": 4,
+        "p": "app",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794822276, "v": 141, "rate": null, "band": null, "deg": null},
+        "hist": [
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+        ],
+        "st": null,
+        "ring": [{"k": "no_data", "side": "none"}],
+        "last": {"t": 1794821676, "items": [{"k": "rapid", "a": 4.5}], "until": 1794836076, "next": null},
+        "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
+        "tx": [
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a2", "t": 1794821676, "k": "rapid", "a": 4.5}
+        ],
+        "ranges": [null, null],
+        "m": [
+          {"k": "tir", "w": 86400, "v": null, "dim": true, "r": "in", "b": null, "mark": "none"},
+          {"k": "tir", "w": 604800, "v": null, "dim": true, "r": "in", "b": null, "mark": "none"},
+          {"k": "gmi", "w": 1209600, "v": null, "dim": true}
+        ],
+        "else": null,
+        "ro": [2, 3, 1, 0, 4, 5],
+        "log": null
+      }
+    },
+    {
+      "name": "nothing paired (not monitoring): no value, no entries, no metrics, no logging",
+      "phone": {
+        "monitoring": false,
+        "treatments": [
+          {"id": "6f1c2b9a-0d3e-4c5f-8a7b-0123456789a2", "k": "rapid", "a": 4.5, "t": -2100}
+        ],
+        "sensor": {"state": "none"},
+        "metrics": {"86400": {"tir": [0.0, 0.021, 0.512, 0.31, 0.142, 0.015], "coverage": 0.98, "mean": 132.4, "sd": 38.0}, "604800": {"tir": [0.004, 0.03, 0.48, 0.3, 0.16, 0.026], "coverage": 0.91, "mean": 138.9, "sd": 44.1}, "1209600": {"tir": [0.005, 0.03, 0.47, 0.3, 0.165, 0.03], "coverage": 0.88, "mean": 141.2, "sd": 46.0}, "2592000": {"tir": [0.006, 0.032, 0.46, 0.3, 0.17, 0.032], "coverage": 0.6, "mean": 143.0, "sd": 47.0}},
+        "slots": [{"k": "tir", "w": 86400, "dim": true}, {"k": "tir", "w": 604800, "dim": true}, {"k": "gmi", "w": 1209600, "dim": true}],
+        "lastElse": {"k": "tir", "w": 2592000, "dim": true},
+        "alerts": ["no_data"],
+        "open": true
+      },
+      "payload": {
+        "v": 4,
+        "p": "app",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": null,
+        "hist": [],
+        "st": null,
+        "ring": [],
+        "last": null,
+        "sensor": {"s": "none"},
+        "tx": [],
+        "ranges": [null, null],
+        "m": [
+          {"k": "tir", "w": 86400, "v": null, "dim": true, "r": "in", "b": null, "mark": "none"},
+          {"k": "tir", "w": 604800, "v": null, "dim": true, "r": "in", "b": null, "mark": "none"},
+          {"k": "gmi", "w": 1209600, "v": null, "dim": true}
+        ],
+        "else": {"k": "tir", "w": 2592000, "v": null, "dim": true, "r": "in", "b": null, "mark": "none"},
+        "ro": [2, 3, 1, 0, 4, 5],
+        "log": null
+      }
+    }
+  ],
+  "field": [
+    {
+      "name": "in range and rising: the last hour, nothing rings",
+      "phone": {
+        "readings": [
+          {"t": -30, "mgdl": 112, "rate": 0.4, "band": 0}, {"t": -330, "mgdl": 110}, {"t": -630, "mgdl": 108}, {"t": -930, "mgdl": 107},
+          {"t": -1230, "mgdl": 105}, {"t": -1530, "mgdl": 104}, {"t": -1830, "mgdl": 103}, {"t": -2130, "mgdl": 101},
+          {"t": -2430, "mgdl": 100}, {"t": -2730, "mgdl": 99}, {"t": -3030, "mgdl": 98}, {"t": -3330, "mgdl": 97},
+          {"t": -3630, "mgdl": 96}, {"t": -3930, "mgdl": 95}, {"t": -4230, "mgdl": 95}, {"t": -4530, "mgdl": 97},
+          {"t": -4830, "mgdl": 99}, {"t": -5130, "mgdl": 102}, {"t": -5430, "mgdl": 106}, {"t": -5730, "mgdl": 111},
+          {"t": -6030, "mgdl": 117}, {"t": -6330, "mgdl": 124}, {"t": -6630, "mgdl": 132}, {"t": -6930, "mgdl": 139},
+          {"t": -7230, "mgdl": 145}, {"t": -7530, "mgdl": 149}, {"t": -7830, "mgdl": 151}, {"t": -8130, "mgdl": 150},
+          {"t": -8430, "mgdl": 146}, {"t": -8730, "mgdl": 140}, {"t": -9030, "mgdl": 132}, {"t": -9330, "mgdl": 123},
+          {"t": -9630, "mgdl": 114}, {"t": -9930, "mgdl": 106}, {"t": -10230, "mgdl": 100}, {"t": -10530, "mgdl": 96},
+          {"t": -10830, "mgdl": 94}
+        ],
+        "sensor": {"state": "active", "start": -864000, "end": 432000}
+      },
+      "payload": {
+        "v": 4,
+        "p": "field",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 112, "rate": 0.4, "band": 0, "deg": -12.0},
+        "hist": [96, 97, 98, 99, 100, 101, 103, 104, 105, 107, 108, 110],
+        "st": null,
+        "ring": []
+      }
+    },
+    {
+      "name": "very high and rising fast, insulin 15 min ago: both ring, quiet for 45 more minutes",
+      "phone": {
+        "readings": [
+          {"t": -30, "mgdl": 268, "rate": 2.1, "band": 2}, {"t": -330, "mgdl": 263}, {"t": -630, "mgdl": 264}, {"t": -930, "mgdl": 264},
+          {"t": -1230, "mgdl": 265}, {"t": -1530, "mgdl": 266}, {"t": -1830, "mgdl": 267}, {"t": -2130, "mgdl": 268},
+          {"t": -2430, "mgdl": 268}, {"t": -2730, "mgdl": 269}, {"t": -3030, "mgdl": 269}, {"t": -3330, "mgdl": 270},
+          {"t": -3630, "mgdl": 270}
+        ],
+        "status": {"k": "taken", "kind": "rapid", "at": -900, "until": 2700},
+        "alerts": ["rising_fast", "very_high"],
+        "sensor": {"state": "active", "start": -864000, "end": 432000}
+      },
+      "payload": {
+        "v": 4,
+        "p": "field",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 268, "rate": 2.1, "band": 2, "deg": -63.0},
+        "hist": [270, 270, 269, 269, 268, 268, 267, 266, 265, 264, 264, 263],
+        "st": {"k": "taken", "side": "high", "until": 1794826476},
+        "ring": [{"k": "very_high", "side": "high"}, {"k": "rising_fast", "side": "high"}]
+      }
+    },
+    {
+      "name": "nothing paired (not monitoring): nothing",
+      "phone": {
+        "monitoring": false,
+        "sensor": {"state": "none"},
+        "alerts": ["no_data"]
+      },
+      "payload": {
+        "v": 4,
+        "p": "field",
+        "sent": 1794823776,
+        "unit": "mgdl",
+        "bands": [55, 70, 140, 180, 250, 300],
+        "g": null,
+        "hist": [],
+        "st": null,
+        "ring": []
+      }
     }
   ],
   "older": {
@@ -369,8 +738,8 @@
     ]
   },
   "versions": {
-    "about": "A payload whose 'v' isn't 3 is ignored (the stored one stays and ages); one that isn't a dictionary or lacks 'v' / 'sent' too.",
-    "ignored": [{"v": 1, "sent": 1794823776}, {"v": 2, "sent": 1794823776}, {"sent": 1794823776}, {"v": 3}, "hello", [1, 2]]
+    "about": "A payload whose 'v' isn't 4 or whose 'p' isn't the app's own profile is ignored (the stored one stays and ages); one that isn't a dictionary or lacks 'v' / 'p' / 'sent' too. The list is the face's ('aura'); each app reads it with its own profile.",
+    "ignored": [{"v": 3, "p": "aura", "sent": 1794823776}, {"v": 4, "sent": 1794823776}, {"v": 4, "p": "app", "sent": 1794823776}, {"p": "aura", "sent": 1794823776}, {"v": 4, "p": "aura"}, "hello", [1, 2]]
   },
   "bytes": {"payload": {"v": 1, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300], "g": {"t": 1794823746, "v": 112, "rate": 0.4, "band": 0, "deg": -12.0}, "hist": [96, 97, 98, 99, 100, 101, 103, 104, 105, 107, 108, 110], "st": null, "last": {"t": 1794818976, "items": [{"k": "rapid", "a": 2.0}]}, "sensor": {"s": "active", "end": 1795255776, "warn": 1795226976}, "tir": {"pct": 82, "until": 1794873600}}, "by": "Garmin's Serializer.serialize, ciq-companion-app-sdk 2.4.0 (maps come out in hash order, strings depth first: a reader follows the offsets, not an order)",
     "hex": "abcdabcd0000009f000573656e740000056c6173740000066974656d730000026b0000067261706964000002610000027400000276000002670000046465670000057261746500000562616e64000005756e69740000056d67646c00000773656e736f72000002730000076163746976650000057761726e000004656e6400000662616e6473000004746972000004706374000006756e74696c00000373740000056869737400da7ada7a000001500b0000000a0300000000016afad66003000000070b00000002030000002a0100000001030000002e0b000000050300000046030000004d03000000540b0000000303000000770500000006030000007f0b000000020300000093000300000098050000000c030000000e05000000010300000026016afac3a00300000026016afad642030000003202c1400000030000002a01000000700300000038023ecccccd030000003f0100000000030000005d0300000061030000006a016b00fd600300000071016b016de001000000370100000046010000008c01000000b401000000fa010000012c03000000850100000052030000008b016afb9900010000006001000000610100000062010000006301000000640100000065010000006701000000680100000069010000006b010000006c010000006e0b000000020300000016030000001a03000000220240000000"}

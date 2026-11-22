@@ -1,0 +1,190 @@
+{
+  "about": "Writes from the watch (README 'Entries from the watch'): each case is a POST to /sukrara/entries ('body', every value a string; 'encoding' json = an application/json body, form = application/x-www-form-urlencoded) at the phone's clock 'now', with the signing key 'key' (hex) on the phone and 'stored' already in its log; 'phone' says what else the phone has (a pen entry near it, whether it takes entries: default yes, no pen). 'signed' = the exact text the HMAC-SHA256 covers; 'answer' = the JSON the phone answers (HTTP 200); 'stores' = the one entry it adds to the log, or null (nothing). Run by WatchEntriesTest (Android :integrations, the endpoint) and WatchEntryTest (:feature:treatments, the phone's entry path).",
+  "now": 1794823776,
+  "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "stored": [
+    {"id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "k": "rapid", "a": 3.0, "t": 1794823476},
+    {"id": "1c7d2a6f-9b2e-4a3f-8d4c-6e8f9a0b1c2d", "k": "carbs", "a": 20.0, "t": 1794823176, "del": true}
+  ],
+  "cases": [
+    {
+      "name": "rapid insulin a minute ago: stored, answered with its id",
+      "encoding": "json",
+      "body": {"id": "4f8a2c1e-7b3d-4e5f-9a1b-2c3d4e5f6a7b", "k": "rapid", "a": "4.5", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "e2990ca55e37237eaf41ef478490117a4b42408e49ecb1e4efe4e42135bbd59a"},
+      "signed": "4f8a2c1e-7b3d-4e5f-9a1b-2c3d4e5f6a7b|rapid|4.5|1794823716|1794823776|0",
+      "answer": {"id": "4f8a2c1e-7b3d-4e5f-9a1b-2c3d4e5f6a7b", "r": "stored", "e": {"t": 1794823716, "k": "rapid", "a": 4.5}},
+      "stores": {"id": "4f8a2c1e-7b3d-4e5f-9a1b-2c3d4e5f6a7b", "k": "rapid", "a": 4.5, "t": 1794823716}
+    },
+    {
+      "name": "carbs 15 min ago as a form body (makeWebRequest's default): stored",
+      "encoding": "form",
+      "body": {"id": "5a9b3d2f-8c4e-4f60-8b2c-3d4e5f6a7b8c", "k": "carbs", "a": "30", "t": "1794822876", "s": "1794823776", "f": "0", "mac": "5a62fcb3fe75562d6e640bd170b033c78e3ad65d0171561837d30fd1372e09e0"},
+      "signed": "5a9b3d2f-8c4e-4f60-8b2c-3d4e5f6a7b8c|carbs|30|1794822876|1794823776|0",
+      "answer": {"id": "5a9b3d2f-8c4e-4f60-8b2c-3d4e5f6a7b8c", "r": "stored", "e": {"t": 1794822876, "k": "carbs", "a": 30.0}},
+      "stores": {"id": "5a9b3d2f-8c4e-4f60-8b2c-3d4e5f6a7b8c", "k": "carbs", "a": 30.0, "t": 1794822876}
+    },
+    {
+      "name": "long-acting now, written with one decimal: stored",
+      "encoding": "json",
+      "body": {"id": "6b0c4e3a-9d5f-4a71-9c3d-4e5f6a7b8c9d", "k": "long", "a": "14.0", "t": "1794823776", "s": "1794823776", "f": "0", "mac": "a6ace0a943652857fb55dbe2161bf2182c725ca0f010706e0ed5abea7c25535e"},
+      "signed": "6b0c4e3a-9d5f-4a71-9c3d-4e5f6a7b8c9d|long|14.0|1794823776|1794823776|0",
+      "answer": {"id": "6b0c4e3a-9d5f-4a71-9c3d-4e5f6a7b8c9d", "r": "stored", "e": {"t": 1794823776, "k": "long", "a": 14.0}},
+      "stores": {"id": "6b0c4e3a-9d5f-4a71-9c3d-4e5f6a7b8c9d", "k": "long", "a": 14.0, "t": 1794823776}
+    },
+    {
+      "name": "a bad signature (another app on the phone, or an old key): nothing stored, the watch waits for the next push's key",
+      "encoding": "json",
+      "body": {"id": "7c1d5f4b-0e6a-4b82-8d4e-5f6a7b8c9d0e", "k": "rapid", "a": "4.5", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "a10840be704f0b0a33da0567782ffbf9ac42fb27a3dbed38d0a95fdf1483c200"},
+      "signed": "7c1d5f4b-0e6a-4b82-8d4e-5f6a7b8c9d0e|rapid|4.5|1794823716|1794823776|0",
+      "answer": {"id": "7c1d5f4b-0e6a-4b82-8d4e-5f6a7b8c9d0e", "r": "sig"},
+      "stores": null
+    },
+    {
+      "name": "a replay of an entry already stored (the answer was lost, the watch sent it again): the stored one, never a second",
+      "encoding": "json",
+      "body": {"id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "k": "rapid", "a": "3.0", "t": "1794823476", "s": "1794823756", "f": "0", "mac": "5e22bca7b540c6b2510c2b04d2ab3de9496b23575977714ca3db9e6081644080"},
+      "signed": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c|rapid|3.0|1794823476|1794823756|0",
+      "answer": {"id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "r": "known", "e": {"t": 1794823476, "k": "rapid", "a": 3.0}},
+      "stores": null
+    },
+    {
+      "name": "a duplicate id with another amount: the stored entry stands, nothing changes",
+      "encoding": "json",
+      "body": {"id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "k": "rapid", "a": "8.0", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "d72881cd8d31a852d630b22c7250dd136c0ded11d84dc7e48b22e4d62bb3a5ec"},
+      "signed": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c|rapid|8.0|1794823716|1794823776|0",
+      "answer": {"id": "0b6c1f5e-8a1d-4f2e-9c3b-5d7e8f9a0b1c", "r": "known", "e": {"t": 1794823476, "k": "rapid", "a": 3.0}},
+      "stores": null
+    },
+    {
+      "name": "the id of an entry deleted on the phone: known, never brought back",
+      "encoding": "json",
+      "body": {"id": "1c7d2a6f-9b2e-4a3f-8d4c-6e8f9a0b1c2d", "k": "carbs", "a": "20", "t": "1794823176", "s": "1794823776", "f": "0", "mac": "f80ad8c4e7bf72709702e8a3a33bc3da658d80053db987daed2dc664f27b54cb"},
+      "signed": "1c7d2a6f-9b2e-4a3f-8d4c-6e8f9a0b1c2d|carbs|20|1794823176|1794823776|0",
+      "answer": {"id": "1c7d2a6f-9b2e-4a3f-8d4c-6e8f9a0b1c2d", "r": "known", "e": null},
+      "stores": null
+    },
+    {
+      "name": "an old send time (sent 15 min ago, or the watch clock 15 min behind): not stored, the answer has the phone's clock",
+      "encoding": "json",
+      "body": {"id": "8d2e6a5c-1f7b-4c93-9e5f-6a7b8c9d0e1f", "k": "rapid", "a": "4.5", "t": "1794823716", "s": "1794822876", "f": "0", "mac": "60d30202338f16eda9d651ee8979dac652ff79e47377ef33321d9e49bc6e9b5a"},
+      "signed": "8d2e6a5c-1f7b-4c93-9e5f-6a7b8c9d0e1f|rapid|4.5|1794823716|1794822876|0",
+      "answer": {"id": "8d2e6a5c-1f7b-4c93-9e5f-6a7b8c9d0e1f", "r": "clock", "now": 1794823776},
+      "stores": null
+    },
+    {
+      "name": "a send time 400 s ahead of the phone: clock",
+      "encoding": "json",
+      "body": {"id": "9e3f7b6d-2a8c-4da4-8f6a-7b8c9d0e1f2a", "k": "rapid", "a": "4.5", "t": "1794823776", "s": "1794824176", "f": "0", "mac": "396562bca28920d893a46e74d87617c04271434d15176cfc3e373eb1d7e04e22"},
+      "signed": "9e3f7b6d-2a8c-4da4-8f6a-7b8c9d0e1f2a|rapid|4.5|1794823776|1794824176|0",
+      "answer": {"id": "9e3f7b6d-2a8c-4da4-8f6a-7b8c9d0e1f2a", "r": "clock", "now": 1794823776},
+      "stores": null
+    },
+    {
+      "name": "an entry time over 1439 min ago (kept in the outbox for a day): dropped",
+      "encoding": "json",
+      "body": {"id": "0f4a8c7e-3b9d-4eb5-9a7b-8c9d0e1f2a3b", "k": "carbs", "a": "20", "t": "1794737376", "s": "1794823776", "f": "0", "mac": "5847a4098dbbaf1c8ebfe47574ff39eaff72d95f6b8c0f1b8ce39d1582f41db1"},
+      "signed": "0f4a8c7e-3b9d-4eb5-9a7b-8c9d0e1f2a3b|carbs|20|1794737376|1794823776|0",
+      "answer": {"id": "0f4a8c7e-3b9d-4eb5-9a7b-8c9d0e1f2a3b", "r": "when"},
+      "stores": null
+    },
+    {
+      "name": "an entry time over 5 min ahead of the phone: dropped",
+      "encoding": "json",
+      "body": {"id": "1a5b9d8f-4cae-4fc6-8b8c-9d0e1f2a3b4c", "k": "carbs", "a": "20", "t": "1794824176", "s": "1794823776", "f": "0", "mac": "f785eef61352e2343c124a01916dbea15ca0fed51995e6084bf10d03edff6b7c"},
+      "signed": "1a5b9d8f-4cae-4fc6-8b8c-9d0e1f2a3b4c|carbs|20|1794824176|1794823776|0",
+      "answer": {"id": "1a5b9d8f-4cae-4fc6-8b8c-9d0e1f2a3b4c", "r": "when"},
+      "stores": null
+    },
+    {
+      "name": "an entry time 2 min ahead (the watch's clock estimate): stored at the phone's now",
+      "encoding": "json",
+      "body": {"id": "2b6cae9a-5dbf-4ad7-9c9d-0e1f2a3b4c5d", "k": "rapid", "a": "2.0", "t": "1794823896", "s": "1794823776", "f": "0", "mac": "79fa304abfe90819e6c0dd32409bbb8c247613fdc6d5fa1d77dddd4126b1f111"},
+      "signed": "2b6cae9a-5dbf-4ad7-9c9d-0e1f2a3b4c5d|rapid|2.0|1794823896|1794823776|0",
+      "answer": {"id": "2b6cae9a-5dbf-4ad7-9c9d-0e1f2a3b4c5d", "r": "stored", "e": {"t": 1794823776, "k": "rapid", "a": 2.0}},
+      "stores": {"id": "2b6cae9a-5dbf-4ad7-9c9d-0e1f2a3b4c5d", "k": "rapid", "a": 2.0, "t": 1794823776}
+    },
+    {
+      "name": "an unknown kind (notes are the phone's): dropped",
+      "encoding": "json",
+      "body": {"id": "3c7dbfab-6ec0-4be8-8dae-1f2a3b4c5d6e", "k": "note", "a": "0", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "1a15226f554f2279bd258b9cceefd848cc98b15b0452b2b79276d392918db08e"},
+      "signed": "3c7dbfab-6ec0-4be8-8dae-1f2a3b4c5d6e|note|0|1794823716|1794823776|0",
+      "answer": {"id": "3c7dbfab-6ec0-4be8-8dae-1f2a3b4c5d6e", "r": "kind"},
+      "stores": null
+    },
+    {
+      "name": "rapid insulin over 100 u: amount",
+      "encoding": "json",
+      "body": {"id": "4d8ec0bc-7fd1-4cf9-9ebf-2a3b4c5d6e7f", "k": "rapid", "a": "120", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "8d6c7356dc7484bd612e8bea1a24898480c3004823c753cabf5dea6fedd69a55"},
+      "signed": "4d8ec0bc-7fd1-4cf9-9ebf-2a3b4c5d6e7f|rapid|120|1794823716|1794823776|0",
+      "answer": {"id": "4d8ec0bc-7fd1-4cf9-9ebf-2a3b4c5d6e7f", "r": "amount"},
+      "stores": null
+    },
+    {
+      "name": "zero grams: amount",
+      "encoding": "json",
+      "body": {"id": "5e9fd1cd-80e2-4d0a-8fc0-3b4c5d6e7f80", "k": "carbs", "a": "0", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "02095093ebf854b99597c0f544f3bfdf1cc235f8be766a8e9e709c9577460278"},
+      "signed": "5e9fd1cd-80e2-4d0a-8fc0-3b4c5d6e7f80|carbs|0|1794823716|1794823776|0",
+      "answer": {"id": "5e9fd1cd-80e2-4d0a-8fc0-3b4c5d6e7f80", "r": "amount"},
+      "stores": null
+    },
+    {
+      "name": "insulin with two decimals (the phone stores 0.1 u): amount, never rounded behind the person's back",
+      "encoding": "json",
+      "body": {"id": "6fa0e2de-91f3-4e1b-90d1-4c5d6e7f8091", "k": "rapid", "a": "4.55", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "a84c4d22635c1195e31434546ed5509727e016ee3c8975491523f8cb83ca4050"},
+      "signed": "6fa0e2de-91f3-4e1b-90d1-4c5d6e7f8091|rapid|4.55|1794823716|1794823776|0",
+      "answer": {"id": "6fa0e2de-91f3-4e1b-90d1-4c5d6e7f8091", "r": "amount"},
+      "stores": null
+    },
+    {
+      "name": "carbs with a decimal (whole grams): amount",
+      "encoding": "json",
+      "body": {"id": "70b1f3ef-a204-4f2c-81e2-5d6e7f8091a2", "k": "carbs", "a": "12.5", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "7b2732bb9299cd174451a056ca26bb8c972ccd254da3c6d165c95d1d0f9d7e9e"},
+      "signed": "70b1f3ef-a204-4f2c-81e2-5d6e7f8091a2|carbs|12.5|1794823716|1794823776|0",
+      "answer": {"id": "70b1f3ef-a204-4f2c-81e2-5d6e7f8091a2", "r": "amount"},
+      "stores": null
+    },
+    {
+      "name": "not a number: amount",
+      "encoding": "json",
+      "body": {"id": "81c204f0-b315-4a3d-92f3-6e7f8091a2b3", "k": "rapid", "a": "x", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "c95664dd02e8266b7d93f04e10fae3319f30f6e0d7a6e55682e19c6079d2c95e"},
+      "signed": "81c204f0-b315-4a3d-92f3-6e7f8091a2b3|rapid|x|1794823716|1794823776|0",
+      "answer": {"id": "81c204f0-b315-4a3d-92f3-6e7f8091a2b3", "r": "amount"},
+      "stores": null
+    },
+    {
+      "name": "an id that isn't a lowercase UUID v4: dropped",
+      "encoding": "json",
+      "body": {"id": "NOT-A-UUID", "k": "rapid", "a": "4.5", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "b797b0f5a401de190e75362a8a09e8eac19d1b888fbbcdf59734e3848a8f311b"},
+      "signed": "NOT-A-UUID|rapid|4.5|1794823716|1794823776|0",
+      "answer": {"id": "NOT-A-UUID", "r": "id"},
+      "stores": null
+    },
+    {
+      "name": "rapid insulin the pen already logged 4 min ago: not stored, the watch asks Already logged by your pen?",
+      "encoding": "json",
+      "body": {"id": "92d31501-c426-4b4e-83a4-7f8091a2b3c4", "k": "rapid", "a": "4.0", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "205a58f605d965e0ff21af4fef28d85f4cdcbf68475ebc3f1c56cb087293800e"},
+      "signed": "92d31501-c426-4b4e-83a4-7f8091a2b3c4|rapid|4.0|1794823716|1794823776|0",
+      "answer": {"id": "92d31501-c426-4b4e-83a4-7f8091a2b3c4", "r": "pen", "pen": {"t": 1794823536, "a": 4.0}},
+      "stores": null,
+      "phone": {"pen": {"t": 1794823536, "a": 4.0}}
+    },
+    {
+      "name": "the same entry with f = 1 (Log anyway): stored",
+      "encoding": "json",
+      "body": {"id": "92d31501-c426-4b4e-83a4-7f8091a2b3c4", "k": "rapid", "a": "4.0", "t": "1794823716", "s": "1794823776", "f": "1", "mac": "27540e103e70c0721b45f2e206a943f949f0fc7dfbdd7cd1e8a2f3c041481e28"},
+      "signed": "92d31501-c426-4b4e-83a4-7f8091a2b3c4|rapid|4.0|1794823716|1794823776|1",
+      "answer": {"id": "92d31501-c426-4b4e-83a4-7f8091a2b3c4", "r": "stored", "e": {"t": 1794823716, "k": "rapid", "a": 4.0}},
+      "stores": {"id": "92d31501-c426-4b4e-83a4-7f8091a2b3c4", "k": "rapid", "a": 4.0, "t": 1794823716},
+      "phone": {"pen": {"t": 1794823536, "a": 4.0}}
+    },
+    {
+      "name": "this phone takes no entries now (a follower the wearer doesn't let add them): dropped",
+      "encoding": "json",
+      "body": {"id": "a3e42612-d537-4c5f-94b5-8091a2b3c4d5", "k": "carbs", "a": "15", "t": "1794823716", "s": "1794823776", "f": "0", "mac": "96af67f23387dc1b30130758a3ba9b23e9f7082ab2d2fc23ea590907d1d60580"},
+      "signed": "a3e42612-d537-4c5f-94b5-8091a2b3c4d5|carbs|15|1794823716|1794823776|0",
+      "answer": {"id": "a3e42612-d537-4c5f-94b5-8091a2b3c4d5", "r": "off"},
+      "stores": null,
+      "phone": {"open": false}
+    }
+  ]
+}

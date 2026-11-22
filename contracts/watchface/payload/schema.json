@@ -1,88 +1,1109 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sukrara.mauri.app/contracts/watchface/payload/schema.json",
-  "title": "Sukrara Aura payload, version 3",
-  "description": "What the phone sends the Garmin face (README.md). Times are absolute epoch seconds.",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["v", "sent", "unit", "bands", "g", "hist", "st", "last", "sensor", "tir"],
+  "title": "Sukrara's watch payload, version 4",
+  "description": "What the phone sends Sukrara's Connect IQ apps, one branch per profile (README.md). Times are absolute epoch seconds.",
   "$defs": {
-    "time": {"type": "integer", "minimum": 0, "maximum": 2147483647},
-    "until": {"type": "integer", "minimum": -1, "maximum": 2147483647, "description": "-1 = no end"},
-    "mgdl": {"type": "integer", "minimum": 39, "maximum": 401, "description": "39 = LO, 401 = HI"},
-    "side": {"enum": ["low", "high"]},
+    "time": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 2147483647
+    },
+    "until": {
+      "type": "integer",
+      "minimum": -1,
+      "maximum": 2147483647,
+      "description": "-1 = no end"
+    },
+    "mgdl": {
+      "type": "integer",
+      "minimum": 39,
+      "maximum": 401,
+      "description": "39 = LO, 401 = HI"
+    },
+    "side": {
+      "enum": [
+        "low",
+        "high"
+      ]
+    },
     "last": {
       "description": "the card's last treatment from sent on: this answer until 'until' (-1 = no end), then 'next' (null = none)",
       "oneOf": [
-        {"type": "null"},
+        {
+          "type": "null"
+        },
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["t", "items", "until", "next"],
+          "required": [
+            "t",
+            "items",
+            "until",
+            "next"
+          ],
           "properties": {
-            "t": {"$ref": "#/$defs/time"},
+            "t": {
+              "$ref": "#/$defs/time"
+            },
             "items": {
               "type": "array",
               "minItems": 1,
               "maxItems": 2,
-              "items": {"type": "object", "additionalProperties": false, "required": ["k", "a"], "properties": {"k": {"enum": ["rapid", "carbs"]}, "a": {"type": "number", "minimum": 0}}}
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "k",
+                  "a"
+                ],
+                "properties": {
+                  "k": {
+                    "enum": [
+                      "rapid",
+                      "carbs"
+                    ]
+                  },
+                  "a": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
             },
-            "until": {"$ref": "#/$defs/until"},
-            "next": {"$ref": "#/$defs/last"}
+            "until": {
+              "$ref": "#/$defs/until"
+            },
+            "next": {
+              "$ref": "#/$defs/last"
+            }
           }
         }
       ]
-    }
-  },
-  "properties": {
-    "v": {"const": 3},
-    "sent": {"$ref": "#/$defs/time"},
-    "unit": {"enum": ["mgdl", "mmol"]},
-    "bands": {"type": "array", "items": {"type": "integer"}, "minItems": 6, "maxItems": 6},
-    "g": {
+    },
+    "permille": {
       "oneOf": [
-        {"type": "null"},
+        {
+          "type": "null"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "minItems": 6,
+          "maxItems": 6
+        }
+      ]
+    },
+    "ring": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "k",
+          "side"
+        ],
+        "properties": {
+          "k": {
+            "enum": [
+              "very_low",
+              "low",
+              "high",
+              "very_high",
+              "extremely_high",
+              "falling_fast",
+              "rising_fast",
+              "no_data"
+            ]
+          },
+          "side": {
+            "enum": [
+              "low",
+              "high",
+              "none"
+            ]
+          }
+        }
+      }
+    },
+    "metric": {
+      "oneOf": [
         {
           "type": "object",
           "additionalProperties": false,
-          "required": ["t", "v", "rate", "band", "deg"],
+          "required": [
+            "k",
+            "w",
+            "v",
+            "dim",
+            "r",
+            "b",
+            "mark"
+          ],
           "properties": {
-            "t": {"$ref": "#/$defs/time"},
-            "v": {"$ref": "#/$defs/mgdl"},
-            "rate": {"type": ["number", "null"]},
-            "band": {"oneOf": [{"type": "null"}, {"type": "integer", "minimum": -3, "maximum": 3}]},
-            "deg": {"oneOf": [{"type": "null"}, {"type": "number", "minimum": -90, "maximum": 90}]}
+            "k": {
+              "const": "tir"
+            },
+            "w": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "v": {
+              "oneOf": [
+                {
+                  "type": "null"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              ]
+            },
+            "dim": {
+              "type": "boolean"
+            },
+            "r": {
+              "enum": [
+                "in",
+                "tight"
+              ]
+            },
+            "b": {
+              "$ref": "#/$defs/permille"
+            },
+            "mark": {
+              "enum": [
+                "none",
+                "laurel",
+                "flowers",
+                "crown"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "k",
+            "w",
+            "v",
+            "dim"
+          ],
+          "properties": {
+            "k": {
+              "enum": [
+                "gmi",
+                "avg",
+                "cv"
+              ]
+            },
+            "w": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "v": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "dim": {
+              "type": "boolean"
+            }
           }
         }
       ]
     },
-    "hist": {
-      "type": "array",
-      "description": "empty without g, else 36 slots (3 h) oldest first",
-      "oneOf": [{"maxItems": 0}, {"minItems": 36, "maxItems": 36}],
-      "items": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/mgdl"}]}
-    },
-    "st": {
-      "oneOf": [
-        {"type": "null"},
-        {"type": "object", "additionalProperties": false, "required": ["k", "side"], "properties": {"k": {"const": "needed"}, "side": {"$ref": "#/$defs/side"}}},
-        {"type": "object", "additionalProperties": false, "required": ["k", "side", "until"], "properties": {"k": {"enum": ["taken", "paused"]}, "side": {"$ref": "#/$defs/side"}, "until": {"$ref": "#/$defs/until"}}},
-        {"type": "object", "additionalProperties": false, "required": ["k", "until"], "properties": {"k": {"const": "muted"}, "until": {"$ref": "#/$defs/until"}}}
-      ]
-    },
-    "last": {"$ref": "#/$defs/last"},
-    "sensor": {
-      "oneOf": [
-        {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"enum": ["none", "ended"]}}},
-        {"type": "object", "additionalProperties": false, "required": ["s", "start", "ready", "hold"], "properties": {"s": {"const": "warmup"}, "start": {"$ref": "#/$defs/time"}, "ready": {"$ref": "#/$defs/time"}, "hold": {"$ref": "#/$defs/time"}, "end": {"$ref": "#/$defs/time"}}},
-        {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"const": "active"}, "start": {"$ref": "#/$defs/time"}, "end": {"$ref": "#/$defs/time"}, "warn": {"$ref": "#/$defs/time"}}}
-      ]
-    },
-    "tir": {
-      "oneOf": [
-        {"type": "null"},
-        {"type": "object", "additionalProperties": false, "required": ["pct", "until"], "properties": {"pct": {"type": "integer", "minimum": 0, "maximum": 100}, "until": {"$ref": "#/$defs/time"}}}
-      ]
+    "usual": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "last",
+        "usual"
+      ],
+      "properties": {
+        "last": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          ]
+        },
+        "usual": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        }
+      }
     }
-  }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "p",
+        "sent",
+        "unit",
+        "bands",
+        "g",
+        "hist",
+        "st",
+        "last",
+        "sensor",
+        "tir"
+      ],
+      "properties": {
+        "v": {
+          "const": 4
+        },
+        "p": {
+          "const": "aura"
+        },
+        "sent": {
+          "$ref": "#/$defs/time"
+        },
+        "unit": {
+          "enum": [
+            "mgdl",
+            "mmol"
+          ]
+        },
+        "bands": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "g": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "t",
+                "v",
+                "rate",
+                "band",
+                "deg"
+              ],
+              "properties": {
+                "t": {
+                  "$ref": "#/$defs/time"
+                },
+                "v": {
+                  "$ref": "#/$defs/mgdl"
+                },
+                "rate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "band": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": -3,
+                      "maximum": 3
+                    }
+                  ]
+                },
+                "deg": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number",
+                      "minimum": -90,
+                      "maximum": 90
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "st": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "side"
+              ],
+              "properties": {
+                "k": {
+                  "const": "needed"
+                },
+                "side": {
+                  "$ref": "#/$defs/side"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "side",
+                "until"
+              ],
+              "properties": {
+                "k": {
+                  "enum": [
+                    "taken",
+                    "paused"
+                  ]
+                },
+                "side": {
+                  "$ref": "#/$defs/side"
+                },
+                "until": {
+                  "$ref": "#/$defs/until"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "until"
+              ],
+              "properties": {
+                "k": {
+                  "const": "muted"
+                },
+                "until": {
+                  "$ref": "#/$defs/until"
+                }
+              }
+            }
+          ]
+        },
+        "hist": {
+          "type": "array",
+          "description": "empty without g, else 36 slots (3 h) oldest first",
+          "oneOf": [
+            {
+              "maxItems": 0
+            },
+            {
+              "minItems": 36,
+              "maxItems": 36
+            }
+          ],
+          "items": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/mgdl"
+              }
+            ]
+          }
+        },
+        "last": {
+          "$ref": "#/$defs/last"
+        },
+        "sensor": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "s"
+              ],
+              "properties": {
+                "s": {
+                  "enum": [
+                    "none",
+                    "ended"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "s",
+                "start",
+                "ready",
+                "hold"
+              ],
+              "properties": {
+                "s": {
+                  "const": "warmup"
+                },
+                "start": {
+                  "$ref": "#/$defs/time"
+                },
+                "ready": {
+                  "$ref": "#/$defs/time"
+                },
+                "hold": {
+                  "$ref": "#/$defs/time"
+                },
+                "end": {
+                  "$ref": "#/$defs/time"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "s"
+              ],
+              "properties": {
+                "s": {
+                  "const": "active"
+                },
+                "start": {
+                  "$ref": "#/$defs/time"
+                },
+                "end": {
+                  "$ref": "#/$defs/time"
+                },
+                "warn": {
+                  "$ref": "#/$defs/time"
+                }
+              }
+            }
+          ]
+        },
+        "tir": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "pct",
+                "until"
+              ],
+              "properties": {
+                "pct": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "until": {
+                  "$ref": "#/$defs/time"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "p",
+        "sent",
+        "unit",
+        "bands",
+        "g",
+        "hist",
+        "st",
+        "ring",
+        "last",
+        "sensor",
+        "tx",
+        "ranges",
+        "m",
+        "else",
+        "ro",
+        "log"
+      ],
+      "properties": {
+        "v": {
+          "const": 4
+        },
+        "p": {
+          "const": "app"
+        },
+        "sent": {
+          "$ref": "#/$defs/time"
+        },
+        "unit": {
+          "enum": [
+            "mgdl",
+            "mmol"
+          ]
+        },
+        "bands": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "g": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "t",
+                "v",
+                "rate",
+                "band",
+                "deg"
+              ],
+              "properties": {
+                "t": {
+                  "$ref": "#/$defs/time"
+                },
+                "v": {
+                  "$ref": "#/$defs/mgdl"
+                },
+                "rate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "band": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": -3,
+                      "maximum": 3
+                    }
+                  ]
+                },
+                "deg": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number",
+                      "minimum": -90,
+                      "maximum": 90
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "st": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "side"
+              ],
+              "properties": {
+                "k": {
+                  "const": "needed"
+                },
+                "side": {
+                  "$ref": "#/$defs/side"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "side",
+                "until"
+              ],
+              "properties": {
+                "k": {
+                  "enum": [
+                    "taken",
+                    "paused"
+                  ]
+                },
+                "side": {
+                  "$ref": "#/$defs/side"
+                },
+                "until": {
+                  "$ref": "#/$defs/until"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "until"
+              ],
+              "properties": {
+                "k": {
+                  "const": "muted"
+                },
+                "until": {
+                  "$ref": "#/$defs/until"
+                }
+              }
+            }
+          ]
+        },
+        "hist": {
+          "type": "array",
+          "description": "empty without g, else 288 slots (24 h) oldest first",
+          "oneOf": [
+            {
+              "maxItems": 0
+            },
+            {
+              "minItems": 288,
+              "maxItems": 288
+            }
+          ],
+          "items": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/mgdl"
+              }
+            ]
+          }
+        },
+        "ring": {
+          "$ref": "#/$defs/ring"
+        },
+        "last": {
+          "$ref": "#/$defs/last"
+        },
+        "sensor": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "s"
+              ],
+              "properties": {
+                "s": {
+                  "enum": [
+                    "none",
+                    "ended"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "s",
+                "start",
+                "ready",
+                "hold"
+              ],
+              "properties": {
+                "s": {
+                  "const": "warmup"
+                },
+                "start": {
+                  "$ref": "#/$defs/time"
+                },
+                "ready": {
+                  "$ref": "#/$defs/time"
+                },
+                "hold": {
+                  "$ref": "#/$defs/time"
+                },
+                "end": {
+                  "$ref": "#/$defs/time"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "s"
+              ],
+              "properties": {
+                "s": {
+                  "const": "active"
+                },
+                "start": {
+                  "$ref": "#/$defs/time"
+                },
+                "end": {
+                  "$ref": "#/$defs/time"
+                },
+                "warn": {
+                  "$ref": "#/$defs/time"
+                }
+              }
+            }
+          ]
+        },
+        "tx": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "t",
+              "k",
+              "a"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "t": {
+                "$ref": "#/$defs/time"
+              },
+              "k": {
+                "enum": [
+                  "rapid",
+                  "long",
+                  "carbs"
+                ]
+              },
+              "a": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        },
+        "ranges": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "w",
+                  "pct",
+                  "b"
+                ],
+                "properties": {
+                  "w": {
+                    "enum": [
+                      86400,
+                      604800
+                    ]
+                  },
+                  "pct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "b": {
+                    "$ref": "#/$defs/permille"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "m": {
+          "type": "array",
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/metric"
+          }
+        },
+        "else": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "$ref": "#/$defs/metric"
+            }
+          ]
+        },
+        "ro": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "log": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "rapid",
+                "long",
+                "carbs"
+              ],
+              "properties": {
+                "rapid": {
+                  "$ref": "#/$defs/usual"
+                },
+                "long": {
+                  "$ref": "#/$defs/usual"
+                },
+                "carbs": {
+                  "$ref": "#/$defs/usual"
+                }
+              }
+            }
+          ]
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "push only, never the fetch"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "v",
+        "p",
+        "sent",
+        "unit",
+        "bands",
+        "g",
+        "hist",
+        "st",
+        "ring"
+      ],
+      "properties": {
+        "v": {
+          "const": 4
+        },
+        "p": {
+          "const": "field"
+        },
+        "sent": {
+          "$ref": "#/$defs/time"
+        },
+        "unit": {
+          "enum": [
+            "mgdl",
+            "mmol"
+          ]
+        },
+        "bands": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 6,
+          "maxItems": 6
+        },
+        "g": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "t",
+                "v",
+                "rate",
+                "band",
+                "deg"
+              ],
+              "properties": {
+                "t": {
+                  "$ref": "#/$defs/time"
+                },
+                "v": {
+                  "$ref": "#/$defs/mgdl"
+                },
+                "rate": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "band": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "integer",
+                      "minimum": -3,
+                      "maximum": 3
+                    }
+                  ]
+                },
+                "deg": {
+                  "oneOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "type": "number",
+                      "minimum": -90,
+                      "maximum": 90
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "st": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "side"
+              ],
+              "properties": {
+                "k": {
+                  "const": "needed"
+                },
+                "side": {
+                  "$ref": "#/$defs/side"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "side",
+                "until"
+              ],
+              "properties": {
+                "k": {
+                  "enum": [
+                    "taken",
+                    "paused"
+                  ]
+                },
+                "side": {
+                  "$ref": "#/$defs/side"
+                },
+                "until": {
+                  "$ref": "#/$defs/until"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "k",
+                "until"
+              ],
+              "properties": {
+                "k": {
+                  "const": "muted"
+                },
+                "until": {
+                  "$ref": "#/$defs/until"
+                }
+              }
+            }
+          ]
+        },
+        "hist": {
+          "type": "array",
+          "description": "empty without g, else 12 slots (1 h) oldest first",
+          "oneOf": [
+            {
+              "maxItems": 0
+            },
+            {
+              "minItems": 12,
+              "maxItems": 12
+            }
+          ],
+          "items": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/$defs/mgdl"
+              }
+            ]
+          }
+        },
+        "ring": {
+          "$ref": "#/$defs/ring"
+        }
+      }
+    }
+  ]
 }

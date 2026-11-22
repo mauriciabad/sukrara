@@ -1,0 +1,40 @@
+{
+  "about": "Sukrara's Connect IQ apps, the one registry the phone (Android :integrations GarminApp, GarminAppsTest) and the watch builds (apps/garmin manifests and build.sh's beta ids, checked by apps/garmin/tools/link_cases.py --check) are tested against. Each app has its own Connect IQ app id (storage and phone messages are per app id, README 'Profiles'), a beta id (a Connect IQ beta app needs its own id; docs/20-publishing.md), the payload profile it gets and the path of its 5-minute fetch on 127.0.0.1:<port>. The phone pushes to the public and the beta id alike, whichever Garmin Connect says is installed. 'logs' = it writes entries (POST <entries>). 'manifest' = where its manifest lives (an app not built yet is a pending file).",
+  "port": 17582,
+  "entries": "sukrara/entries",
+  "apps": [
+    {
+      "app": "aura",
+      "name": "Sukrara Aura",
+      "type": "watchface",
+      "id": "9ace188f-9a3a-42d6-9f7d-1afd4ce93293",
+      "beta": "635140ec-f724-44fb-bc08-976fa9111250",
+      "profile": "aura",
+      "fetch": "sukrara/aura",
+      "logs": false,
+      "manifest": "apps/garmin/manifest.xml"
+    },
+    {
+      "app": "app",
+      "name": "Sukrara",
+      "type": "watch-app",
+      "id": "87023f2f-8e48-4253-b9c3-8e37eb2b5fee",
+      "beta": "300d563a-89b2-4a60-8ac3-35baff189a2f",
+      "profile": "app",
+      "fetch": "sukrara/app",
+      "logs": true,
+      "manifest": "apps/garmin/app/manifest.xml"
+    },
+    {
+      "app": "field",
+      "name": "Sukrara data field",
+      "type": "datafield",
+      "id": "2adf061b-0ed1-4215-bdec-2468c537e8ec",
+      "beta": "ba2f02c6-d6f1-4db4-a9a9-d147f77ac41f",
+      "profile": "field",
+      "fetch": "sukrara/field",
+      "logs": false,
+      "manifest": "apps/garmin/field/manifest.xml"
+    }
+  ]
+}
