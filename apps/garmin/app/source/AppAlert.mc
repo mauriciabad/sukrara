@@ -131,6 +131,9 @@ module AppAlert {
                 } else {
                     g.r(-bw / 2, y - 23, bw, 46, 23, AppMath.BLACK, 1.0, 0);
                 }
+            } else if (!on && v && AppFontTable.PLAIN) {
+                // no blending (no enhanced graphics): black at 28 % over the block, worked out
+                g.r(-bw / 2, y - 23, bw, 46, 23, AppSpark.mix(AppMath.BLACK, col, 0.28), 1.0, 0);
             } else {
                 g.r(-bw / 2, y - 23, bw, 46, 23, fill, on || !v ? 1.0 : 0.28, 0);
             }
@@ -195,7 +198,12 @@ module AppSpark {
         var yH = Y(p, hi);
         var yL = Y(p, lo);
         if (wi != AppMath.BLACK) {
-            g.r(x0, yH < yL ? yH : yL, xNow - x0, AppMath.abs(yL - yH), 0, white ? wi : AppMath.pal("tight"), white ? 0.07 : 0.09, 0);
+            if (white && AppFontTable.PLAIN && !GlanceFontTable.MIP) {
+                // no blending: the ink at 7 % over the block, worked out
+                g.r(x0, yH < yL ? yH : yL, xNow - x0, AppMath.abs(yL - yH), 0, mix(wi, bg as Number, 0.07), 1.0, 0);
+            } else {
+                g.r(x0, yH < yL ? yH : yL, xNow - x0, AppMath.abs(yL - yH), 0, white ? wi : AppMath.pal("tight"), white ? 0.07 : 0.09, 0);
+            }
         }
         var dash = [1.5 * sc, 4.5 * sc];
         g.l([x0, yH, xNow, yH], 0x5C5C62, OP(p, hi), 1.4 * sc, dash);
