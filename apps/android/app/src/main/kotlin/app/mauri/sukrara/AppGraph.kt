@@ -79,6 +79,7 @@ import app.mauri.sukrara.integrations.garmin.GarminWatches
 import app.mauri.sukrara.integrations.garmin.WatchEntries
 import app.mauri.sukrara.integrations.garmin.WatchEntry
 import app.mauri.sukrara.integrations.garmin.WatchLogged
+import app.mauri.sukrara.integrations.garmin.WatchQuiet
 import app.mauri.sukrara.integrations.garmin.WatchUndone
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.librelinkup.LluSourceConfig
@@ -824,6 +825,12 @@ class AppGraph(
 
                     // THE kinds' order from the same facts as the phone's Add treatment (the watch's log list)
                     override suspend fun facts() = treatments.kindFacts()
+
+                    // the Add treatment's quiet line, from the same rules (the watch's hold and Logged screens)
+                    override suspend fun quiet() =
+                        treatments.hints.quiet
+                            .first()
+                            .let { WatchQuiet(it.afterInsulinMin, it.afterCarbsMin) }
                 },
             // and mutes through the alert runtime's own actions, the ones `st` reports
             alertControls =

@@ -435,7 +435,8 @@ class AuraLink(
         ) { (g, t, life), (u, b, h), day, d ->
             // THE kinds' order from the phone's own facts at this moment (a reading, a ring, a pen read's entry rebuild it)
             val kinds = if (d.open) runCatching { this.entries.facts() }.getOrDefault(KindFacts.NONE) else KindFacts.NONE
-            build(g, t, u, b, h, day.map { it.toPoint() }, life, d, kinds)
+            val quiet = if (d.open) runCatching { this.entries.quiet() }.getOrDefault(WatchQuiet.NONE) else WatchQuiet.NONE
+            build(g, t, u, b, h, day.map { it.toPoint() }, life, d, kinds, quiet)
         }.distinctUntilChanged(::same)
     }
 
@@ -476,13 +477,14 @@ class AuraLink(
         life: CurrentSensor?,
         d: Display,
         kinds: KindFacts,
+        quiet: WatchQuiet,
     ): Payloads {
         val now = clock.now()
         val from = startOfDay(now)
         val end = from.atZone(clock.zone).plusDays(1).toInstant()
         val tir = GlucoseMetrics.of(day, from.epochSecond, now.epochSecond, bands.sane()).tir
         val share = tir.inRange.takeIf { tir.coverage >= TIR_COVERAGE }
-        val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, d.graph, d.metrics, d.open, kinds)
+        val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, d.graph, d.metrics, d.open, kinds, quiet = quiet)
         return Payloads(
             GarminApp.entries.associateWith { AuraPayload.of(it, i) },
             d.own.mapValues { (_, own) -> AuraPayload.of(GarminApp.App, i.copy(watch = own)) },

@@ -2932,7 +2932,8 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   metrics, ring order and report period: each watch's own values, schema `apps.garmin.watch`, over the app's in one
   place, `GarminDisplay.resolve`; the push says which watch it is, `w`, and the fetch sends it back, `&w=`), the last treatment (each item with its mute's end, for the card's double ring; none while that watch's
   *Last treatment* is off, its own or the app's) and sensor as the face has them, what the alert runtime rings now, and for logging THE kinds' order (`log.order`, the same `KindOrder` over the same
-  facts as the phone's Add treatment: Carbs first while low…) and each kind's last amount and three usual ones; under
+  facts as the phone's Add treatment: Carbs first while low…), each kind's last amount and three usual ones, and what
+  an entry logged now quiets (`q`, the Add treatment's quiet line: *Highs quiet for 1 h*, from the same rules); under
   6 KB with a full day. Its push carries the key its writes are signed with (`WatchKey`: 32 random bytes made once,
   kept in the secure store, never in the fetch nor a log line). **The data field's**: the last 3 h, the pill and
   what rings.

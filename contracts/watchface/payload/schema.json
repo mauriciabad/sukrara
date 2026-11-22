@@ -243,9 +243,38 @@
       "additionalProperties": false,
       "required": [
         "last",
-        "usual"
+        "usual",
+        "q"
       ],
       "properties": {
+        "q": {
+          "description": "what an entry of this kind logged now quiets (the phone's Add treatment's quiet line); null = nothing",
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "side",
+                "min"
+              ],
+              "properties": {
+                "side": {
+                  "enum": [
+                    "high",
+                    "low"
+                  ]
+                },
+                "min": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          ]
+        },
         "last": {
           "oneOf": [
             {

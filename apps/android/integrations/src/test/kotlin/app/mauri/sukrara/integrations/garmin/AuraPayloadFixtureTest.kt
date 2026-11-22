@@ -217,6 +217,9 @@ class AuraPayloadFixtureTest {
                     .toMap(),
                 p["open"]?.jsonPrimitive?.booleanOrNull ?: false,
                 kinds(p["kinds"]?.takeIf { it !is JsonNull }?.jsonObject),
+                quiet =
+                    p["addQuiet"]?.jsonObject?.let { q -> WatchQuiet(q["rapid"]?.jsonPrimitive?.int, q["carbs"]?.jsonPrimitive?.int) }
+                        ?: WatchQuiet.NONE,
             ),
         )
     }

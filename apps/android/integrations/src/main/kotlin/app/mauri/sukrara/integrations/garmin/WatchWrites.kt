@@ -93,6 +93,9 @@ interface WatchEntries {
     /** What THE kinds' order is decided from now, as the phone's Add treatment decides it (the payload's `log.order`). */
     suspend fun facts(): KindFacts
 
+    /** How long an entry logged now quiets this phone's alerts, as the phone's Add treatment says it (`log.<kind>.q`). */
+    suspend fun quiet(): WatchQuiet = WatchQuiet.NONE
+
     companion object {
         /** No entry path (tests, a build without treatments): nothing is taken. */
         val None =
@@ -105,6 +108,20 @@ interface WatchEntries {
 
                 override suspend fun facts() = KindFacts.NONE
             }
+    }
+}
+
+/**
+ * Minutes a treatment logged now quiets the alerts it answers, the phone's Add treatment's quiet line ("Highs quiet for
+ * 1 h"): after rapid insulin the highs, after carbs the lows; null = that rule is off, alerts are off, or this phone
+ * mirrors the wearer's alerts (the dialog says nothing then either).
+ */
+data class WatchQuiet(
+    val afterInsulinMin: Int?,
+    val afterCarbsMin: Int?,
+) {
+    companion object {
+        val NONE = WatchQuiet(null, null)
     }
 }
 

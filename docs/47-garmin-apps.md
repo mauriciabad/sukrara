@@ -287,6 +287,9 @@ Changed from "Choice" / §6, and why:
   two-buzz line (SPEC §13 decided 2) is a question ("Two buzzes for one alert?"), never a plain "switch it off": 5.0
   watches can't ring on their own and some 5.x ones ring without vibrating.
 - **The data field gets 3 h** (SPEC §9: its sparkline goes up to 3 h as the slot allows), 36 readings as the face.
+- **`log.<kind>.q`**: what an entry logged now quiets (side and minutes), from the rules the phone's Add treatment
+  says its quiet line from (`AlertHints.quiet`: nothing on a follower mirroring the wearer's alerts), so the watch's
+  hold and *Logged* screens say *Highs quiet for 1 h* as the phone does (SPEC §5).
 - **`rep.ok`**: the report card's goals met per period, one bit per `Goal`, so the watch holds no thresholds.
 - **Undo from the watch** (`POST /sukrara/undo`, SPEC §6's *Undo*): by the entry's id, signed over `id|s` with the
   same key and send-time window; the phone runs its own delete (`TreatmentLog.delete`, home's), so sync, the Nightscout

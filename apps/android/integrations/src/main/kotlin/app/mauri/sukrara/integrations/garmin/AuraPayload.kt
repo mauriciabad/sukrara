@@ -62,6 +62,8 @@ data class PayloadInputs(
     val kinds: KindFacts = KindFacts.NONE,
     /** The watch's own values for the app (the app profile only; nothing own = the app's). */
     val watch: WatchDisplay = WatchDisplay(),
+    /** How long an entry logged now quiets the alerts (the phone's Add treatment's quiet line). */
+    val quiet: WatchQuiet = WatchQuiet.NONE,
 )
 
 /**
@@ -158,7 +160,7 @@ object AuraPayload {
                 ?.takeIf { d.graph.lastPlace != LastPlace.OFF }
                 ?.let { metric(it, metrics[it.windowS]) }
         p["ro"] = d.graph.ringOrder.map { it.ordinal }
-        p["log"] = if (monitoring && i.logOpen) log(i.treatments, i.kinds, nowS) else null
+        p["log"] = if (monitoring && i.logOpen) log(i.treatments, i.kinds, nowS, i.quiet) else null
         p["ds"] = display(d)
         p["rep"] = REPORT_DAYS.map { d -> metrics[d * 86_400L]?.takeIf { !it.empty }?.let { report(d, it) } }
         p["repD"] = d.reportDays
@@ -299,12 +301,14 @@ object AuraPayload {
     /**
      * What logging offers: `order` = THE kinds' order at [nowS] ([KindOrder] over [kinds], as the phone's Add treatment
      * focuses), and per kind the newest amount of the last [LOG_DAYS] days and up to three amounts logged most often
-     * then (ties: the most recently logged), smallest first.
+     * then (ties: the most recently logged), smallest first; `q` = the side an entry of it logged now quiets and for how
+     * long ([quiet], the Add treatment's quiet line), null for long-acting or a rule that's off.
      */
     internal fun log(
         treatments: List<Treatment>,
         kinds: KindFacts,
         nowS: Long,
+        quiet: WatchQuiet = WatchQuiet.NONE,
     ): Map<String, Any?> {
         val recent = live(treatments, nowS).filter { nowS - it.at.epochSecond <= LOG_DAYS * 86_400L }
         val out = linkedMapOf<String, Any?>("order" to KindOrder.of(kinds, nowS).map { it.id })
@@ -321,7 +325,18 @@ object AuraPayload {
                     ).take(3)
                     .map { it.key }
                     .sorted()
-            kind.id to linkedMapOf("last" to mine.maxByOrNull { it.at }?.let { round2(it.amount) }, "usual" to usual)
+            val q =
+                when (kind) {
+                    TreatmentKind.RapidInsulin -> quiet.afterInsulinMin?.let { side(low = false) to it }
+                    TreatmentKind.Carbs -> quiet.afterCarbsMin?.let { side(low = true) to it }
+                    else -> null
+                }?.takeIf { it.second > 0 }
+            kind.id to
+                linkedMapOf(
+                    "last" to mine.maxByOrNull { it.at }?.let { round2(it.amount) },
+                    "usual" to usual,
+                    "q" to q?.let { (s, min) -> linkedMapOf("side" to s, "min" to min) },
+                )
         }
     }
 
