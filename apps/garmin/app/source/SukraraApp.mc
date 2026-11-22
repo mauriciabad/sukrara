@@ -24,6 +24,7 @@ class SukraraApp extends Application.AppBase {
     }
 
     function onStart(state as Dictionary?) as Void {
+        Trace.log("onStart " + state);
         var c = state != null ? state.get(:launchedFromComplication) : null;
         _from = c instanceof Number ? c : null;
     }
@@ -32,6 +33,16 @@ class SukraraApp extends Application.AppBase {
     // other complications → page 1; not set up (nothing from the phone yet) → the setup page (§4.3). A notification's action arrives through onNote.
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
         start();
+        // the phone's messages while the app is open, and those left waiting for it (pushes Garmin didn't hand the
+        // background, #217): each taken as the background's push would be; and the phone asked at once when what's kept
+        // is older than a reading (the setup page asks by itself)
+        if (Communications has :registerForPhoneAppMessages) {
+            Communications.registerForPhoneAppMessages(new Lang.Method(AppNav, :pushed));
+        }
+        var at = Slots.readAt(Link.payload());
+        if (at != null && Time.now().value() - at >= Slots.OLD_S) {
+            AppNav.fetch();
+        }
         Outbox.flush(null);
         if (Toybox has :Notifications && Notifications has :registerForNotificationMessages) {
             Notifications.registerForNotificationMessages(method(:onNote));
@@ -72,28 +83,34 @@ class SukraraApp extends Application.AppBase {
         }
     }
 
-    // the app's own start (the view or the glance): the link registered, the next run at the reading's expiry
-    (:glance)
+    // the app's own start: the link registered, the next run at the reading's expiry (whatever stood before)
     function start() as Void {
+        Trace.reg("app start");
         LinkBackground.register();
-        Expiry.schedule(Time.now().value());
+        Expiry.schedule(Time.now().value(), Slots.readAt(Link.payload()));
+        Trace.reg("app start registered");
     }
 
     // the glance list (most people see the app here first): registers the background too, so the link runs without
-    // the app ever being opened
+    // the app ever being opened, and again when its next run is missing or was missed (LinkBackground.stale); the
+    // background's own run moves it to the reading's expiry
     (:glance)
     function getGlanceView() as [WatchUi.GlanceView] or [WatchUi.GlanceView, WatchUi.GlanceViewDelegate] or Null {
+        Trace.reg("glance start");
         LinkBackground.register();
+        Trace.reg("glance registered");
         return [new AppGlance()];
     }
 
     function onStop(state as Dictionary?) as Void {
+        Trace.log("onStop app " + _fg);
         if (_fg) {
             AppNav.end();
         }
     }
 
     function getServiceDelegate() as [System.ServiceDelegate] {
+        Trace.reg("background start");
         return [new AppService()];
     }
 
@@ -102,6 +119,7 @@ class SukraraApp extends Application.AppBase {
     // whichever comes first. The glance redraws from its copy; the app's views from the payload.
     function onBackgroundData(data as Application.PersistableType) as Void {
         var now = Time.now().value();
+        Trace.log("onBackgroundData app " + _fg + " " + data);
         if (Link.take(data, now, false)) {
             if (!_fg) {
                 WatchUi.requestUpdate();
@@ -218,12 +236,37 @@ module AppNav {
     }
 
     function fetched(code as Number, data as Dictionary or String or Null) as Void {
+        Trace.log("app fetched " + code);
+        if (code == 200) {
+            got({"k" => "fetch", "c" => code, "d" => data});
+        }
+    }
+
+    // a phone message while the app is open, or one left waiting (getInitialView): Garmin calls this once per message
+    function pushed(msg as Communications.PhoneAppMessage) as Void {
+        Trace.log("app push");
+        got({"k" => "push", "d" => msg.data});
+    }
+
+    // what the app got itself, taken as the background's run would be (AppService.hand): kept (an older one isn't),
+    // the glance's copy, the lead and key, the next run at its expiry, the complications, then the views
+    function got(data as Dictionary) as Void {
         var now = Time.now().value();
-        if (code == 200 && Link.take({"k" => "fetch", "c" => code, "d" => data}, now, false)) {
-            GlanceCopy.save(data as Dictionary, Link.skew);
-            Outbox.received(data as Dictionary, now);
+        var p = data.get("d");
+        if (Link.take(data, now, false)) {
+            GlanceCopy.save(p as Dictionary, Link.skew);
+            Outbox.received(p as Dictionary, now);
+            Expiry.schedule(now, Slots.readAt(Link.payload()));
+            Slots.publish(now);
+            // still starting (the messages left waiting): the first view shows it, and what rings (opened)
+            if (_beat == null) {
+                return;
+            }
             if (current != null) {
                 (current as AppView).refresh();
+            }
+            if (alert != null) {
+                (alert as AlertView).refresh();
             }
             check(true);
         }

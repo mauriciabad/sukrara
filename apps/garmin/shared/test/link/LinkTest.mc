@@ -176,3 +176,16 @@ function linkOwnProfile(logger as Logger) as Boolean {
     Link.reset();
     return ok;
 }
+
+// the background's health (#217): a start registers the background again when nothing is registered or a one-shot
+// Moment should have run and didn't; a standing Duration or a Moment still ahead is left alone
+(:test)
+function linkBackgroundStale(logger as Logger) as Boolean {
+    var now = 100000;
+    Test.assertEqualMessage(LinkBackground.stale(null, now), true, "nothing registered");
+    Test.assertEqualMessage(LinkBackground.stale(-1, now), false, "the 5-minute Duration");
+    Test.assertEqualMessage(LinkBackground.stale(now + 240, now), false, "a Moment ahead");
+    Test.assertEqualMessage(LinkBackground.stale(now - 30, now), false, "a Moment running now");
+    Test.assertEqualMessage(LinkBackground.stale(now - 600, now), true, "a Moment that never ran");
+    return true;
+}

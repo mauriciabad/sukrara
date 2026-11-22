@@ -403,3 +403,26 @@ apps' own names), and shows Connect IQ's own symbols for watch faces, device app
 icons (`ds_ic_watch_face`, `ds_ic_device_app`, `ds_ic_data_field`) instead of Material's watch, grid and stopwatch.
 Discarded: About's three Connect IQ store rows (*Sukrara for Garmin* is enough there; the Garmin page and setup keep
 the store links).
+**The app's background on the owner's watch** (2026-11-22, #217). The phone's diag log showed the app's fetch missing
+for hours after the crash fix's install while Aura's and the field's came every 5 min. Most of it was the watch on the
+Mac's USB for installs and log reads (no app runs then): the fetches came back every 5 min once it was unplugged
+(22:24Z). What was really wrong, from the app's own report in its fetch: background runs whose fetch never reached the
+phone (21:21Z `-300` timeout, 22:13Z `-104` Bluetooth unavailable) while the face's got through; the phone's pushes
+never handled by the app's background (every run in its report a fetch, unread messages in
+`GARMIN/Apps/MAIL?/SUKRARA.MBX`, none for Aura or the field); and once `FAILURE_MESSAGE_TOO_LARGE`. The app's push is
+the full day, ~3.8 KB serialized (2.8 KB JSON) against the face's 0.6 KB. Watch side, changed:
+- **The background keeps itself registered**: a one-shot Moment (the reading's expiry) left nothing registered when
+  the watch refused it (the old `catch`) or a run was missed. Now every run and every app start registers again what's
+  missing: the phone's messages, and the next run with `Expiry.plan` (the expiry; refused, 5 min from now, which no
+  past run is within; last the 5-minute Duration, which repeats by itself). The glance registers the Duration when
+  nothing is registered or a Moment was missed (`LinkBackground.stale`). `slotsExpiryPlan`, `linkBackgroundStale`.
+- **The phone's waiting messages are taken**: the open app registers for the phone's messages (those waiting come at
+  once), each taken as a push; a temporal run lets the waiting ones go before its fetch (one at a time: the fetch
+  brings the newest). A fetch Bluetooth couldn't send (`-1` … `-104`, not `-102`) is asked again at once; the app asks
+  the phone when it opens with a reading older than 5 min.
+- **One payload at a time in a run**: the stored payload is let go before the fetch (`Link.unload`): 41 KB at a run's
+  peak in the simulator, was 48.5 KB, of 61 248 B.
+- **The app's own log**: every entry point and registration (`Trace`, also in the release: `System.println`, written
+  to `GARMIN/Apps/LOGS/SUKRARA.TXT` only where that file exists, a sideloaded watch).
+Open: whether the watch hands the app's background its messages at all (the log will tell); the push's size, for which
+the phone would push only what changes each minute and leave the full day to the fetch (a payload contract change).

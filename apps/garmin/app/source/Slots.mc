@@ -179,13 +179,36 @@ module Expiry {
         return at > floor ? at : floor;
     }
 
-    function schedule(now as Number) as Void {
+    // THE REGISTRATION: what a background run or the app's start registers, given what's registered [reg]
+    // (LinkBackground.registered: null, -1 the Duration, a Moment's epoch), the last temporal run, the reading's time
+    // and now. The tries in order, each a Moment's epoch or -1 for the 5-minute Duration; none = the right Moment
+    // stands. A Moment runs once, so the background is never left without one: the expiry; when the watch refuses it
+    // (within 5 min of its own last run, which it doesn't always tell: null once the app started) 5 min from now, which
+    // no past run is within; last the Duration, which repeats on its own (#217).
+    function plan(reg as Number?, lastRun as Number?, readAt as Number?, now as Number) as Array<Number> {
+        var at = next(lastRun, readAt, now);
+        if (reg != null && reg == at) {
+            return [] as Array<Number>;
+        }
+        return (at == now + Slots.OLD_S ? [at, -1] : [at, now + Slots.OLD_S, -1]) as Array<Number>;
+    }
+
+    // [readAt]: the kept reading's time on the watch clock (Slots.readAt)
+    function schedule(now as Number, readAt as Number?) as Void {
         var last = Background.getLastTemporalEventTime();
-        var at = next(last != null ? last.value() : null, Slots.readAt(Link.payload()), now);
-        try {
-            Background.registerForTemporalEvent(new Time.Moment(at));
-        } catch (e) {
-            // too soon after the last run on this watch's clock: the registered event stands
+        var tries = plan(LinkBackground.registered(), last != null ? last.value() : null, readAt, now);
+        Trace.log("expiry: last run " + (last != null ? last.value() : "none") + ", registers " + tries);
+        for (var i = 0; i < tries.size(); i++) {
+            var t = tries[i];
+            try {
+                Background.registerForTemporalEvent(t == -1 ? new Time.Duration(Slots.OLD_S) : new Time.Moment(t));
+            } catch (e) {
+                // refused: the next try
+                Trace.log("expiry: " + t + " refused, " + e.getErrorMessage());
+            }
+            if (!LinkBackground.stale(LinkBackground.registered(), now)) {
+                return;
+            }
         }
     }
 }

@@ -3076,7 +3076,13 @@ the app drawn plainly until its port; the data field ported). Every watch with A
   without one. The glucose ones keep CGM+ GB's names so its faces find them too. Latin letters and digits only (the
   watches' fonts draw no arrows). **Never old as current**: the next background run is set at the reading's time +
   5 min (never sooner than Garmin's 5 min after the last run, never later than 5 min after this one), so "---"
-  appears on time with the phone away.
+  appears on time with the phone away. **The background keeps itself running** (#217): every run and every start of
+  the app registers again what's missing (the phone's messages; the next run, falling back to 5 min from now and then
+  to Garmin's 5-minute repeat when the watch refuses a time); the glance registers it again when nothing is
+  registered or a run was missed. A fetch Bluetooth couldn't send is asked again at once. The open app takes the
+  phone's messages itself (and those left waiting on the watch) and asks the phone at once when what it keeps is
+  older than a reading. The app logs each run and registration to `GARMIN/Apps/LOGS/SUKRARA.TXT` on a sideloaded
+  watch where that file exists.
 - **The data field** (`apps/garmin/field`, SPEC §9, §14.4; drawn from `app.js` `S.dfSlot` on every screen class): in
   any slot of an activity's data screen, *GLUCOSE* and the value in its band's colour with **Aura's sparkline** (up to
   the last 3 h as the width allows, the trend ray, the end dot) where a 260 × 100 box fits in the slot inside the
@@ -3143,7 +3149,8 @@ the app drawn plainly until its port; the data field ported). Every watch with A
 - Watch settings (`contracts/settings/settings.json`, `only` garmin; the Connect IQ app): the app's *Sparkline on
   alerts* (on) and *Log complication shows* (time since), the field's *Record glucose* (on).
 - Tests in the simulator (`apps/garmin/tools/link-test.sh app | field`): the outbox against `entries.json` /
-  `mutes.json` (every signature, every answer), the complications per state, the expiry, the ring decision; the
+  `mutes.json` (every signature, every answer), the complications per state, the expiry and what each run registers
+  (`slotsExpiryPlan`, `linkBackgroundStale`), the ring decision; the
   field's place from its obscured sides, what it records, its form by slot room. The field's screens against the
   reference (`apps/garmin/field/tools/field_test.py`: every form and state of `contracts/watchface/field/cases.json`
   per watch, pictures in `docs/img/field/ref/<watch>/`, budgets in `expect.json`).

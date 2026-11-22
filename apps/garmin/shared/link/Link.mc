@@ -240,6 +240,13 @@ module Link {
         return _payload;
     }
 
+    // Lets the kept payload go (read again from storage when next needed): a background run before its fetch holds
+    // one payload at a time
+    function unload() as Void {
+        _payload = null;
+        _loaded = false;
+    }
+
     // The app's glance: its small copy of the payload (GlanceCopy) in place of the stored one, never loaded there
     (:app)
     function use(c) as Void {

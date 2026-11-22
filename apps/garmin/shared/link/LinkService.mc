@@ -43,6 +43,9 @@ module LinkBackground {
         return sb > sa ? b : a;
     }
 
+    // a one-shot Moment this long past that hasn't run never will: the background must be registered again
+    const MISSED_S = 60;
+
     // Called by the app on every start: a fresh registration each time (a sideload or an update can drop it, and a
     // plain register sometimes does nothing).
     function register() as Void {
@@ -51,9 +54,24 @@ module LinkBackground {
             Background.registerForPhoneAppMessageEvent();
         }
         // every 5 min (Garmin's floor); a registration that stands is left alone so the rhythm doesn't restart
-        if (Background.getTemporalEventRegisteredTime() == null) {
+        if (stale(registered(), Time.now().value())) {
             Background.registerForTemporalEvent(new Time.Duration(FETCH_EVERY_S));
         }
+    }
+
+    // The temporal registration: null = none, -1 = a Duration (every 5 min), else the one-shot Moment's epoch s.
+    function registered() as Number? {
+        var t = Background.getTemporalEventRegisteredTime();
+        if (t == null) {
+            return null;
+        }
+        return t instanceof Time.Moment ? (t as Time.Moment).value() : -1;
+    }
+
+    // THE BACKGROUND'S HEALTH: whether the registration [reg] (registered()) at [now] leaves the background without a
+    // next run: none, or a Moment that should have run and didn't (one missed run ends a chain of Moments, #217)
+    function stale(reg as Number?, now as Number) as Boolean {
+        return reg == null || (reg != -1 && reg < now - MISSED_S);
     }
 }
 

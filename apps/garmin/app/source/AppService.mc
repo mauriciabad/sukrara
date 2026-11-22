@@ -12,21 +12,64 @@ import Toybox.WatchUi;
 
 // The app's background: the shared link's (LinkService: the push, the fetch, the hand-off), and on every run the app's
 // own work, so it happens with the app closed (docs/47 §3): the payload kept (Link), the lead and key (Outbox), the
-// complications (Slots), the next run at the reading's expiry (Expiry), a new alert as Garmin's notification (Alerts),
-// then the outbox sent before the run ends.
+// complications (Slots), the next run at the reading's expiry and the phone's messages registered again (ensure), a new
+// alert as Garmin's notification (Alerts), then the outbox sent before the run ends. Each step is in the app's log
+// (Trace).
 (:background)
 class AppService extends LinkService {
     var _data as Dictionary? = null;
+    var _dropped as Number = 0;
+    var _retried as Boolean = false;
 
     function initialize() {
         LinkService.initialize();
     }
 
+    function onPhoneAppMessage(msg as Communications.PhoneAppMessage) as Void {
+        Trace.reg("background push");
+        LinkService.onPhoneAppMessage(msg);
+    }
+
     function onTemporalEvent() as Void {
-        Expiry.schedule(Time.now().value());
-        // the payload kept, read for the expiry: the glance's copy of it, when it lacks one (GlanceCopy.heal)
+        Trace.reg("background temporal");
+        ensure(Time.now().value());
+        // the payload kept, read for the expiry: the glance's copy of it, when it lacks one (GlanceCopy.heal); then let
+        // go, so the run holds one payload at a time (the fetch's answer is the next)
         GlanceCopy.heal(Link.payload(), Link.skew);
+        Link.unload();
+        // the phone's messages left waiting (pushes Garmin didn't hand this background, #217): let go one at a time,
+        // the fetch brings the newest
+        if (Communications has :registerForPhoneAppMessages) {
+            Communications.registerForPhoneAppMessages(method(:onDropped));
+        }
+        Trace.log("background fetch, " + _dropped + " waiting dropped");
         LinkService.onTemporalEvent();
+    }
+
+    function onDropped(msg as Communications.PhoneAppMessage) as Void {
+        _dropped += 1;
+    }
+
+    // A fetch that couldn't reach the phone at all (Bluetooth: Garmin Connect's link busy or down, -1 … -104; not -102,
+    // too large) is asked again once at once: the next temporal run is 5 min away (Garmin's floor), and the -104 runs
+    // on the owner's watch came while the face's fetches got through (2026-11-22, #217).
+    function onFetched(code as Number, data as Dictionary or String or Null) as Void {
+        Trace.log("background fetched " + code);
+        if (!_retried && code < 0 && code >= -104 && code != -102) {
+            _retried = true;
+            LinkService.onTemporalEvent();
+            return;
+        }
+        LinkService.onFetched(code, data);
+    }
+
+    // Every run registers again whatever is missing (#217): the phone's messages, and the next run at the reading's
+    // expiry (Expiry). The background is never left waiting for the app to be opened.
+    function ensure(now as Number) as Void {
+        if (Background has :getPhoneAppMessageEventRegistered && !Background.getPhoneAppMessageEventRegistered()) {
+            Background.registerForPhoneAppMessageEvent();
+        }
+        Expiry.schedule(now, Slots.readAt(Link.payload()));
     }
 
     // every run's result: kept here (AppRun.keep), worked on, then the outbox, then Background.exit (which ends the run)
@@ -34,10 +77,11 @@ class AppService extends LinkService {
         var now = Time.now().value();
         var p = data.get("d");
         var out = AppRun.keep(data, now);
+        Trace.log("background " + data.get("k") + " " + data.get("c") + " waiting " + data.get("n") + " kept " + out.get("kept"));
         keep(out);
+        ensure(now);
         if (out.get("kept") == true) {
             Outbox.received(p as Dictionary, now);
-            Expiry.schedule(now);
             Alerts.notify(now);
         }
         Slots.publish(now);
@@ -46,6 +90,7 @@ class AppService extends LinkService {
     }
 
     function sent() as Void {
+        Trace.reg("background exit");
         Background.exit(_data);
     }
 }

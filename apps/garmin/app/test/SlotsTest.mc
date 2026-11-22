@@ -126,6 +126,27 @@ function slotsExpiry(logger as Logger) as Boolean {
     return true;
 }
 
+// what a run or the app's start registers (#217): the expiry, then 5 min from now, then the Duration, so a refused
+// Moment never leaves the background without a next run; nothing when the right Moment stands
+(:test)
+function slotsExpiryPlan(logger as Logger) as Boolean {
+    var now = 100000;
+    var d = -1;
+    Test.assertEqualMessage(Expiry.plan(null, now, now - 60, now).toString(), [now + 300, d].toString(),
+        "a temporal run, nothing registered (its Moment ran): 5 min after it, else the Duration");
+    Test.assertEqualMessage(Expiry.plan(null, null, now - 60, now).toString(), [now + 240, now + 300, d].toString(),
+        "the app's start (the watch tells no last run): the expiry, else 5 min from now, else the Duration");
+    Test.assertEqualMessage(Expiry.plan(d, now - 120, now - 30, now).toString(), [now + 270, now + 300, d].toString(),
+        "a push while the Duration stands: the expiry replaces it");
+    Test.assertEqualMessage(Expiry.plan(now + 270, now - 120, now - 30, now).size(), 0,
+        "the expiry already registered: left alone");
+    Test.assertEqualMessage(Expiry.plan(now + 200, now - 120, now - 30, now).toString(), [now + 270, now + 300, d].toString(),
+        "a newer reading: its own expiry");
+    Test.assertEqualMessage(Expiry.plan(now - 3600, null, null, now).toString(), [now + 300, d].toString(),
+        "a Moment that never ran: 5 min from now");
+    return true;
+}
+
 // what Garmin's notification offers for each ring item
 (:test)
 function slotsAlertChoices(logger as Logger) as Boolean {
