@@ -136,7 +136,12 @@ fun WatchSettingsContent(
             )
         }
         SettingsGroup(title = stringResource(R.string.st_tir_title)) {
-            ValueRow(stringResource(R.string.st_tir_number), own.ringRange?.let { tirName(it) } ?: same, { dialog = WatchDialog.Range })
+            ValueRow(
+                stringResource(R.string.st_tir_number),
+                own.ringRange?.let { tirName(it) } ?: same,
+                { dialog = WatchDialog.Range },
+                icon = DsR.drawable.ds_ic_donut_large,
+            )
             ValueRow(stringResource(R.string.st_tir_rewards), own.ringMarks?.let { onOffText(it) } ?: same, {
                 dialog = WatchDialog.Rewards
             }, icon = DsR.drawable.ds_ic_crown)
@@ -154,13 +159,26 @@ fun WatchSettingsContent(
                 { dialog = WatchDialog.Hours },
                 icon = DsR.drawable.ds_ic_schedule,
             )
-            ValueRow(stringResource(R.string.st_marks_title), own.marks?.let { marksSummary(it) } ?: same, { open(WatchPage.Marks) })
-            ValueRow(stringResource(R.string.st_graph_side), own.side?.let { onOffText(it) } ?: same, { dialog = WatchDialog.Side })
+            ValueRow(
+                stringResource(R.string.st_marks_title),
+                own.marks?.let { marksSummary(it) } ?: same,
+                { open(WatchPage.Marks) },
+                icon = DsR.drawable.ds_ic_edit_note,
+            )
+            ValueRow(
+                stringResource(R.string.st_graph_side),
+                own.side?.let { onOffText(it) } ?: same,
+                { dialog = WatchDialog.Side },
+                icon = DsR.drawable.ds_ic_align_horizontal_left,
+            )
         }
         SettingsGroup(title = stringResource(R.string.st_watch_numbers)) {
-            ValueRow(stringResource(R.string.st_watch_report), own.reportDays?.let { period(days(it)) } ?: same, {
-                dialog = WatchDialog.Report
-            })
+            ValueRow(
+                stringResource(R.string.st_watch_report),
+                own.reportDays?.let { period(days(it)) } ?: same,
+                { dialog = WatchDialog.Report },
+                icon = DsR.drawable.ds_ic_calendar_month,
+            )
         }
         // every value back to the app's at once; for a watch Garmin Connect no longer knows, that lets it go
         if (!own.same) {
