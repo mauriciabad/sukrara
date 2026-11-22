@@ -227,7 +227,7 @@ class AuraLinkTest {
             assertNull(port.sent[0]["key"])
             assertNull(port.sent[2]["key"])
             assertEquals(288, (port.sent[1]["hist"] as List<*>).size)
-            assertEquals(12, (port.sent[2]["hist"] as List<*>).size)
+            assertEquals(36, (port.sent[2]["hist"] as List<*>).size)
             val w =
                 link.state.value.watches
                     .single()

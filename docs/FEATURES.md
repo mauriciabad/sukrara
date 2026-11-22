@@ -2934,7 +2934,7 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   *Last treatment* is off, its own or the app's) and sensor as the face has them, what the alert runtime rings now, and for logging THE kinds' order (`log.order`, the same `KindOrder` over the same
   facts as the phone's Add treatment: Carbs first while low…) and each kind's last amount and three usual ones; under
   6 KB with a full day. Its push carries the key its writes are signed with (`WatchKey`: 32 random bytes made once,
-  kept in the secure store, never in the fetch nor a log line). **The data field's**: the last hour, the pill and
+  kept in the secure store, never in the fetch nor a log line). **The data field's**: the last 3 h, the pill and
   what rings.
 - **Each app fetches** its own every 5 min (`/sukrara/app`, `/sukrara/field`) on the same loopback port, open while a
   watch has any Sukrara app.

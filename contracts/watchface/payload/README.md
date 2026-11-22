@@ -71,7 +71,7 @@ phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with 
 | Key | `aura` | `app` | `field` |
 |---|---|---|---|
 | `v`, `p`, `sent`, `unit`, `bands`, `g`, `st` | ✓ | ✓ | ✓ |
-| `hist` | 36 (3 h) | 288 (24 h: the app zooms 3 / 6 / 12 / 24 h itself, 12 h by default) | 12 (1 h) |
+| `hist` | 36 (3 h) | 288 (24 h: the app zooms 3 / 6 / 12 / 24 h itself, 12 h by default) | 36 (3 h: its sparkline, up to 3 h as the slot's width allows) |
 | `ring` | — (a face can't vibrate) | ✓ | ✓ |
 | `last`, `sensor` | ✓ | ✓ | — |
 | `tir` (today) | ✓ | — | — |

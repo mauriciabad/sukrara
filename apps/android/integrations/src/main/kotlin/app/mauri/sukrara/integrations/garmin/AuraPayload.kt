@@ -76,12 +76,12 @@ object AuraPayload {
     /** The format's version (`v`); an app ignores a message of another version or another profile (`p`). */
     const val VERSION = 4
 
-    /** History slots before the newest reading, per profile: the face 3 h (its sparkline), the app 24 h, the field 1 h. */
+    /** History slots before the newest reading, per profile: the face and the field 3 h (their sparklines), the app 24 h. */
     fun history(app: GarminApp) =
         when (app) {
             GarminApp.Aura -> 36
             GarminApp.App -> 288
-            GarminApp.Field -> 12
+            GarminApp.Field -> 36
         }
 
     /** History step and the tolerance a reading may be off its slot (s). */
