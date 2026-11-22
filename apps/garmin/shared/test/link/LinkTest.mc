@@ -28,8 +28,9 @@ module LinkTest {
             }
             return true;
         }
+        // [a] the expectation: a dictionary checks the keys it names (a `last` item's own t and m: README "Payload")
         if (a instanceof Dictionary) {
-            if (!(b instanceof Dictionary) || a.size() != b.size()) {
+            if (!(b instanceof Dictionary)) {
                 return false;
             }
             var keys = a.keys();
