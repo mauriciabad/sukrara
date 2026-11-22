@@ -1362,7 +1362,8 @@ The steps, as they were:
 
 ## Garmin
 
-The planned own watch app (watch face / data field / app, investigation 08) goes to the **Connect IQ Store**:
+Sukrara's three Connect IQ apps (Sukrara Aura, the face; Sukrara, the watch app; Sukrara data field; docs/47) go to
+the **Connect IQ Store**, each its own listing:
 
 - Garmin developer account (18+, accurate registration info), **no fee** for free apps; paid apps go through the
   Merchant Service with an annual fee [[C1]](https://developer.garmin.com/downloads/connect-iq/sdks/agreement.html).
@@ -1570,6 +1571,204 @@ Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
 
 Before pasting, check the texts against the approved face: the setting names (`apps/garmin/aura/resources*/strings`), the
 watch's Customize path and the devices in the manifest. A new device or setting changes both texts.
+
+### Connect IQ store: Sukrara and Sukrara data field (drafts, en + es)
+
+Two more listings beside Sukrara Aura (docs/47 "Choice": a data field is its own app), each its own upload, beta id
+first (`contracts/watchface/payload/apps.json`). The rules of
+[what it asks and checks](#connect-iq-store-what-it-asks-and-checks-research-2026-11-16-sukrara-aura) and what
+followed for Aura hold for both; the new parts of these two:
+
+- **Alerts** (§1b, no false sense of security): the texts say the watch *shows the alerts Sukrara on the phone rings
+  and doesn't replace them*, that one can be late or not arrive, and which watches show none (API 5.0).
+- **Logging**: "log", "record", "entry"; "it records what you enter; it gives no dosing advice". The app's own
+  button *Treatment* is described as "log a treatment".
+- **Permissions**, each explained in the description: the app asks for Background, Communications,
+  ComplicationPublisher and Notifications; the data field for Background, Communications, FitContributor and
+  DataFieldAlert. Communications shows as the internet on the store page; both reach only Sukrara on the same phone.
+- **The activity file**: the data field's glucose goes to the person's Garmin account with the activity; the privacy
+  policy says so (Share with apps › Garmin row, 2026-11-22).
+- **Complications** are described by what they show, never by another app's name.
+
+| Field | Sukrara (watch app) | Sukrara data field |
+|---|---|---|
+| Title | `Sukrara` (en and es, the manifest's `AppName`) | `Sukrara data field` / es `Sukrara campo de datos` (the manifest's `AppName`) |
+| Store icon | 500 × 500 from Sukrara's launcher icon on a solid background, no text, no Garmin marks (to make, `assets/brand/sukrara/connectiq/`) | the same icon |
+| Hero | 1440 × 720 per language: the glance and the card; *Your glucose on your wrist* / *Log from your wrist* (es *Tu glucosa en la muñeca* / *Registra desde la muñeca*) | the field on a run's data screen; *Your glucose during your workout* (es *Tu glucosa mientras entrenas*) |
+| Screenshots, in order | From the simulator (or `tools/watchface/app.js`) with synthetic data only (the link cases), no bezel, ≤ 150 KB each, at each screen class's size once its layout is designed: the glance; the card; your numbers; the log list; the amount; hold to log; logged with Undo; an alert; muted; a face with the complications | whole page; half page; a quarter; a low; its alert |
+| Category | The closest the form offers to Health & Fitness (check what it lists) | the same |
+| Privacy policy | en https://sukrara.mauri.app/privacy, es https://sukrara.mauri.app/es/privacy | the same |
+| Support | https://sukrara.mauri.app/garmin (es `/es/garmin`) | the same |
+| Price | Free | Free |
+
+Before pasting, check against the builds: the setting names (`apps/garmin/{app,field}/resources*/strings`), the
+watches without alerts of their own (API 5.0 in the manifests; the store lists the devices itself), and the screens'
+words. A new device, setting or screen changes all four texts.
+
+**Sukrara, en** (3587 characters):
+
+```text
+Sukrara shows your glucose on your Garmin watch, in the glance list and on watch faces, and lets you log insulin and carbs from the wrist. It is the watch app of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+
+What you need
+• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone. Sukrara sends every reading to the watch through Garmin Connect.
+• iPhone is not supported.
+• Without Sukrara on your phone the app shows "Open Sukrara on the phone".
+
+Glance
+• The value, its trend arrow, your main ring (time in range, or what you chose in Sukrara) and your last treatment.
+
+App
+• The card: the value, your rings, a chart of the last hours with your ranges and treatment marks.
+• Your numbers: time in ranges, average, GMI and variability over 1, 7, 14 or 30 days, as Sukrara's glucose report shows them.
+• An old value never looks current: its time appears when it is late, then it is struck through, then "No reading since" and the time.
+
+Log from the wrist
+• Rapid insulin, long-acting insulin or carbs: pick the amount with the buttons or one of your usual amounts, hold START to log, Undo for 10 seconds. The entry goes to Sukrara's log on your phone.
+• It tells you first when you logged the same kind in the last 15 minutes.
+• With the phone out of reach the watch keeps the entry and sends it, with its own time, when the phone is back.
+• It records what you enter; it gives no dosing advice.
+
+Alerts and mute
+• When Sukrara's alert rings on your phone, the watch shows it with the phone's actions: log a treatment, remind less, mute. It shows the phone's alerts and does not replace them: keep the phone's alerts on. Needs Connect IQ 5.1 (not on the Venu 2 family, Venu Sq 2 and D2 Air X10).
+• Mute Sukrara's alerts for 15 minutes to 2 hours, or until you unmute, with Undo.
+
+Complications
+• For watch faces that take other apps' complications: glucose, glucose with its trend and limits, the last 24 hours, and Log (the time since your last treatment; hold it on a touch screen to log).
+
+Settings
+In the Connect IQ app: Sparkline on alerts, and what the Log complication shows. Everything else follows Sukrara on your phone.
+
+Watches
+Every watch with Connect IQ 5 or newer: the store lists them on this page.
+
+Privacy
+The app only talks to Sukrara on your phone: readings arrive through Garmin Connect, every 5 minutes it asks Sukrara on the same phone for the latest one, and what you log or mute goes to Sukrara on the same phone, signed with a key only Sukrara gives the watch (that is the Communications permission; nothing goes to the internet). Background keeps the glance and complications current while the app is closed, Notifications shows the alerts, ComplicationPublisher offers the complications. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
+
+Free and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
+In English and Spanish. Help and feedback: https://sukrara.mauri.app/garmin
+
+Important
+Sukrara is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and an alert on the watch can be late or not arrive. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
+
+Sukrara is not affiliated with Garmin or with any sensor maker.
+```
+
+**Sukrara, es** (3831 characters):
+
+```text
+Sukrara muestra tu glucosa en tu reloj Garmin, en la lista de vistazos y en las esferas, y te deja registrar insulina e hidratos desde la muñeca. Es la app de reloj de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+
+Qué necesitas
+• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil. Sukrara envía cada lectura al reloj a través de Garmin Connect.
+• No funciona con iPhone.
+• Sin Sukrara en el móvil, la app muestra «Abre Sukrara en el móvil».
+
+Vistazo
+• El valor, su flecha de tendencia, tu anillo principal (tiempo en rango, o lo que elegiste en Sukrara) y tu último tratamiento.
+
+App
+• La tarjeta: el valor, tus anillos y una gráfica de las últimas horas con tus rangos y las marcas de tratamientos.
+• Tus números: tiempo en rangos, media, GMI y variabilidad en 1, 7, 14 o 30 días, como los muestra el informe de glucosa de Sukrara.
+• Un valor antiguo nunca parece actual: cuando llega tarde aparece su hora, luego se tacha, y luego «Sin lecturas desde» y la hora.
+
+Registra desde la muñeca
+• Insulina rápida, insulina lenta o hidratos: elige la cantidad con los botones o una de tus cantidades habituales, mantén START para registrar, Deshacer durante 10 segundos. La entrada va al registro de Sukrara en tu móvil.
+• Si ya registraste el mismo tipo en los últimos 15 minutos, te lo dice primero.
+• Con el móvil fuera de alcance, el reloj guarda la entrada y la envía, con su propia hora, cuando el móvil vuelve.
+• Registra lo que introduces; no da consejos de dosis.
+
+Alertas y silencio
+• Cuando la alerta de Sukrara suena en tu móvil, el reloj la muestra con las acciones del móvil: registrar un tratamiento, recordar menos, silenciar. Muestra las alertas del móvil y no las sustituye: deja activadas las alertas del móvil. Necesita Connect IQ 5.1 (no en la familia Venu 2, Venu Sq 2 ni D2 Air X10).
+• Silencia las alertas de Sukrara de 15 minutos a 2 horas, o hasta que las reactives, con Deshacer.
+
+Complicaciones
+• Para las esferas que admiten complicaciones de otras apps: glucosa, glucosa con su tendencia y límites, las últimas 24 horas y Registrar (el tiempo desde tu último tratamiento; mantenla pulsada en una pantalla táctil para registrar).
+
+Ajustes
+En la app Connect IQ: la minigráfica en las alertas y lo que muestra la complicación Registrar. Todo lo demás sigue a Sukrara en tu móvil.
+
+Relojes
+Cualquier reloj con Connect IQ 5 o más nuevo: la tienda los lista en esta página.
+
+Privacidad
+La app solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, cada 5 minutos pide la última a Sukrara en el mismo móvil, y lo que registras o silencias va a Sukrara en el mismo móvil, firmado con una clave que solo Sukrara da al reloj (ese es el permiso de Comunicaciones; nada sale a internet). Segundo plano mantiene al día el vistazo y las complicaciones con la app cerrada, Notificaciones muestra las alertas y el permiso de complicaciones las ofrece. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/es/privacy
+
+Libre y gratuita (GPL-3.0): https://github.com/mauriciabad/sukrara
+En inglés y español. Ayuda y comentarios: https://sukrara.mauri.app/es/garmin
+
+Importante
+Sukrara no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativa. Los valores pueden ser erróneos, llegar tarde o faltar, y una alerta en el reloj puede llegar tarde o no llegar. No tomes decisiones de tratamiento basándote en ella: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsala bajo tu propia responsabilidad.
+
+Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
+```
+
+**Sukrara data field, en** (2399 characters):
+
+```text
+Sukrara data field shows your glucose during an activity: the value, its recent line and trend, on any data screen. It is part of Sukrara, a free and open-source Android app for people with diabetes who wear a continuous glucose monitor (CGM).
+
+What you need
+• The Sukrara app on an Android phone, reading your glucose sensor, and Garmin Connect on the same phone, with you during the activity. Sukrara sends every reading to the field through Garmin Connect.
+• iPhone is not supported.
+
+During the activity
+• A whole or half screen: the value over or beside its recent line, your limits marked. A small slot: the value and its arrow.
+• A low turns the field its colour. A late reading shows its time; an old one is struck through, never shown as current.
+• An optional alert: when Sukrara's alert rings on your phone, the field shows a full-page alert. Turn it on in the activity's settings › Alerts › Connect IQ. It shows the phone's alerts and does not replace them: keep the phone's alerts on.
+
+In the activity
+• Your glucose is saved with the activity, so Garmin Connect charts it beside your other data. A setting of the field turns it off.
+
+Watches
+Every watch with Connect IQ 5 or newer: the store lists them on this page.
+
+Privacy
+The field only talks to Sukrara on your phone: readings arrive through Garmin Connect, and every 5 minutes it asks Sukrara on the same phone for the latest one (that is the Communications permission, with Background; nothing goes to the internet). FitContributor saves your glucose in the activity, which your watch syncs to your Garmin account with the rest of the activity; DataFieldAlert shows the alert. No account, no analytics, no ads. Privacy policy: https://sukrara.mauri.app/privacy
+
+Free and open source (GPL-3.0): https://github.com/mauriciabad/sukrara
+In English and Spanish. Help and feedback: https://sukrara.mauri.app/garmin
+
+Important
+Sukrara data field is not a medical device and does not diagnose, treat, cure or prevent any condition; it is for information only. Values can be wrong, late or missing, and an alert can be late or not arrive. Don't base treatment decisions on it: check your sensor's own app or a blood glucose meter, and ask your doctor or diabetes care team for medical advice. I made Sukrara for myself and share it with everybody; use it at your own risk.
+
+Sukrara is not affiliated with Garmin or with any sensor maker.
+```
+
+**Sukrara campo de datos, es** (2566 characters):
+
+```text
+Sukrara campo de datos muestra tu glucosa durante una actividad: el valor, su línea reciente y su tendencia, en cualquier pantalla de datos. Es parte de Sukrara, una app Android libre y gratuita para personas con diabetes que llevan un monitor continuo de glucosa (MCG).
+
+Qué necesitas
+• La app Sukrara en un móvil Android, leyendo tu sensor de glucosa, y Garmin Connect en el mismo móvil, contigo durante la actividad. Sukrara envía cada lectura al campo a través de Garmin Connect.
+• No funciona con iPhone.
+
+Durante la actividad
+• Pantalla entera o media: el valor sobre su línea reciente o junto a ella, con tus límites marcados. Un hueco pequeño: el valor y su flecha.
+• Una baja pinta el campo de su color. Una lectura que llega tarde muestra su hora; una antigua aparece tachada, nunca como actual.
+• Una alerta opcional: cuando la alerta de Sukrara suena en tu móvil, el campo muestra una alerta a pantalla completa. Actívala en los ajustes de la actividad › Alertas › Connect IQ. Muestra las alertas del móvil y no las sustituye: deja activadas las alertas del móvil.
+
+En la actividad
+• Tu glucosa se guarda con la actividad, así que Garmin Connect la dibuja junto a tus otros datos. Un ajuste del campo lo desactiva.
+
+Relojes
+Cualquier reloj con Connect IQ 5 o más nuevo: la tienda los lista en esta página.
+
+Privacidad
+El campo solo habla con Sukrara en tu móvil: las lecturas llegan a través de Garmin Connect, y cada 5 minutos pide la última a Sukrara en el mismo móvil (ese es el permiso de Comunicaciones, con Segundo plano; nada sale a internet). El permiso de datos de actividad guarda tu glucosa en la actividad, que tu reloj sincroniza con tu cuenta de Garmin junto con el resto de la actividad; el de alertas muestra la alerta. Sin cuenta, sin analíticas, sin anuncios. Política de privacidad: https://sukrara.mauri.app/es/privacy
+
+Libre y gratuita (GPL-3.0): https://github.com/mauriciabad/sukrara
+En inglés y español. Ayuda y comentarios: https://sukrara.mauri.app/es/garmin
+
+Importante
+Sukrara campo de datos no es un producto sanitario y no diagnostica, trata, cura ni previene ninguna enfermedad; es solo informativo. Los valores pueden ser erróneos, llegar tarde o faltar, y una alerta puede llegar tarde o no llegar. No tomes decisiones de tratamiento basándote en él: comprueba la app de tu sensor o un glucómetro, y pide consejo médico a tu médico o a tu equipo de diabetes. Hice Sukrara para mí y la comparto con todo el mundo; úsalo bajo tu propia responsabilidad.
+
+Sukrara no está afiliada a Garmin ni a ningún fabricante de sensores.
+```
+
+The build and the owner's steps are Aura's (below), per app: `tools/release/garmin-release.sh app|field --beta`, then
+the public upload, each its own **Upload an App**.
 
 ### Connect IQ store: the build
 
