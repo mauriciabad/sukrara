@@ -189,6 +189,11 @@ class AppCasesView extends WatchUi.View {
             : kd instanceof Dictionary && kd["last"] != null ? (kd["last"] as Numeric).toFloat() : 2.0;
         if (scr.equals("logAmount")) {
             AppLog.amount(g, k, a, usual, 0);
+            var chips = [];
+            for (var j = 0; j < usual.size(); j++) {
+                chips.add(AppLog.num(k, (usual[j] as Numeric).toFloat()));
+            }
+            xs = {"amount" => AppLog.num(k, a), "usual" => chips};
         } else if (scr.equals("logConfirm")) {
             var dup = cfg["dup"] == true ? Lang.format(AppWords.s(Rez.Strings.SameKind), [AppMath.amt(k, a), "3 min"]) : null;
             AppLog.confirm(g, k, a, 0, dup, cfg["progress"] != null ? (cfg["progress"] as Numeric).toFloat() : 0.45, AppLog.quiet(k, 0));

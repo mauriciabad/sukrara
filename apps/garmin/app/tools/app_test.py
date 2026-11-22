@@ -108,6 +108,10 @@ def simulate(outdir):
                 os.remove(path)
                 continue
             shots[cid] = path
+        # the last case's input is printed after its shot: wait for the loader's end
+        end = time.time() + 30
+        while time.time() < end and proc.poll() is None and not lines(log, "DONE"):
+            time.sleep(0.5)
     finally:
         try:
             os.killpg(proc.pid, signal.SIGKILL)
@@ -183,7 +187,7 @@ def run(outdir, update=False):
     check = DEVICE == "descentmk343mm"
     expect = json.load(open(EXPECT, encoding="utf-8")) if os.path.exists(EXPECT) else {"cases": {}}
     cases = expect["cases"]
-    fails, notes = [], []
+    fails, notes, copies = [], [], []
     report = ["pictures: pixels over 15 % different inside the screen (the glance: its band), simulator against app.js"
               " (now | budget)"]
     for cid in sorted(inputs):
@@ -199,8 +203,7 @@ def run(outdir, update=False):
         if update and check:
             cases[cid] = {"input": x, "budget": None if n is None else int(n * 1.15) + 150}
             if ref:
-                os.makedirs(REFS, exist_ok=True)
-                shutil.copyfile(ref, os.path.join(REFS, cid + ".png"))
+                copies.append((ref, os.path.join(REFS, cid + ".png")))
         elif check and want is None:
             fails.append("%s: not in expect.json (update)" % cid)
         elif check:
@@ -219,7 +222,16 @@ def run(outdir, update=False):
     for l in perf:
         _, cid, lay, drw, used, total, n = l.split("|")
         report.append("  %-28s %4s %5s  %7s / %s  %s" % (cid, lay, drw, used, total, n))
-    if update and check:
+    ids = [c["id"] for c in json.load(open(os.path.join(APP, "build", "cases", "ids.json"), encoding="utf-8"))]
+    missing = [i for i in ids if i not in inputs or i not in shots]
+    if missing:
+        fails.append("no input or screenshot for %s (the simulator wedged? quit and start it again)" % ", ".join(missing))
+    if update and check and missing:
+        report.append("not updated: a run with every case first")
+    elif update and check:
+        os.makedirs(REFS, exist_ok=True)
+        for src, dst in copies:
+            shutil.copyfile(src, dst)
         expect["about"] = ("Each case of cases.json as the watch app takes it (its input: the AppData it draws from) and"
                            " its picture budget against docs/img/app/cases/<id>.png (pixels over 15 % different):"
                            " apps/garmin/app/tools/app_test.py run checks both, update writes them.")
