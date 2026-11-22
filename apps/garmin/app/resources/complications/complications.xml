@@ -1,0 +1,20 @@
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- The four complications (contracts/watchface/app/SPEC.md §10; the slot table is source/Slots.mc): ids stable across
+     versions; the glucose ones keep CGM+ GB's long labels so its faces find them; icons per watch size
+     (resources-icon<N>, apps/garmin/tools/icons.py). -->
+<complications>
+    <complication id="0" access="public" longLabel="@Strings.CxValue" shortLabel="@Strings.CxValueShort" icon="@Drawables.DropIcon" glancePreview="true">
+        <faceIt defaultText="@Strings.CxValueFaceIt"/>
+    </complication>
+    <complication id="1" access="public" longLabel="@Strings.CxData" shortLabel="@Strings.CxDataShort" icon="@Drawables.DropIcon">
+        <faceIt defaultText="@Strings.CxDataFaceIt"/>
+    </complication>
+    <complication id="2" access="public" longLabel="@Strings.CxGraph" shortLabel="@Strings.CxGraphShort" icon="@Drawables.DropIcon">
+        <faceIt defaultText="@Strings.CxGraphFaceIt"/>
+    </complication>
+    <complication id="3" access="public" longLabel="@Strings.CxLog" shortLabel="@Strings.CxLogShort" icon="@Drawables.LogIcon">
+        <faceIt defaultText="@Strings.CxLog"/>
+    </complication>
+</complications>

@@ -1,9 +1,87 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara -->
 <!-- Copyright (C) 2026 Maurici Abad -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Sukrara's words, Spanish. -->
+<!-- Sukrara's words, Spanish (the phone's own words where it has them). -->
 <strings>
-    <string id="AppName">Sukrara</string>
+    <string id="AppName" scope="background">Sukrara</string>
     <string id="NoReadings" scope="glance">Sin lecturas</string>
     <string id="Waiting" scope="glance">Abre Sukrara en el móvil</string>
+
+    <string id="SendWait" scope="glance">Esperando al móvil</string>
+    <string id="SendSent" scope="glance">Enviado</string>
+    <string id="SendAsk" scope="glance">El móvil tiene una pregunta</string>
+
+    <string id="CxValue">CGM-GB-value</string>
+    <string id="CxValueShort">CGM</string>
+    <string id="CxValueFaceIt">Glucosa Sukrara</string>
+    <string id="CxData">CGM-GB-data</string>
+    <string id="CxDataShort">D-DATA</string>
+    <string id="CxDataFaceIt">Datos de glucosa Sukrara</string>
+    <string id="CxGraph">CGM-GB-graph</string>
+    <string id="CxGraphShort">D-GRAPH</string>
+    <string id="CxGraphFaceIt">Gráfica de glucosa Sukrara</string>
+    <string id="CxLog">Registro Sukrara</string>
+    <string id="CxLogShort">LOG</string>
+
+    <string id="KindRapid" scope="background">Insulina rápida</string>
+    <string id="KindLong" scope="background">Insulina lenta</string>
+    <string id="KindCarbs" scope="background">Hidratos</string>
+    <string id="UnitU">u</string>
+    <string id="UnitG">g</string>
+
+    <string id="Now">Ahora</string>
+    <string id="MinAgo">hace %1$ min</string>
+    <string id="HoldToLog">Mantén START para registrar</string>
+    <string id="HoldTouch">Mantén para registrar</string>
+    <string id="SameKind">%1$ hace %2$</string>
+    <string id="Sending">Enviando</string>
+    <string id="Logged">Registrado %1$</string>
+    <string id="Undo">Deshacer</string>
+    <string id="Undone">Deshecho</string>
+    <string id="NotLoggedOld">No registrado: demasiado antiguo</string>
+    <string id="NotLoggedOff">No registrado: el móvil no acepta registros ahora</string>
+    <string id="NotSent">No enviado, nada guardado</string>
+    <string id="PenAsk">¿Ya registrada por tu pluma?</string>
+    <string id="PenAt">%1$ a las %2$</string>
+    <string id="LogAnyway">Registrar igualmente</string>
+    <string id="Cancel">Cancelar</string>
+    <string id="LogOff">El móvil no acepta registros ahora</string>
+
+    <string id="MuteAlerts">Silenciar alertas</string>
+    <string id="Muted">Silenciadas %1$</string>
+    <string id="MutedUntilOff">Silenciadas hasta que las reactives</string>
+    <string id="Unmute">Reactivar</string>
+    <string id="ChangeTime">Cambiar tiempo</string>
+    <string id="Min15">15 min</string>
+    <string id="Min30">30 min</string>
+    <string id="Min60">1 h</string>
+    <string id="Min120">2 h</string>
+    <string id="UntilOff">Hasta que las reactive</string>
+    <string id="AlertsMuted">Alertas silenciadas</string>
+    <string id="Until">hasta las %1$</string>
+    <string id="Unmuted">Alertas activadas de nuevo</string>
+    <string id="Treatment" scope="background">Tratamiento</string>
+    <string id="RemindLess" scope="background">Recordar menos</string>
+    <string id="RemindUsual" scope="background">Recordar como siempre</string>
+    <string id="MuteLows30" scope="background">Silenciar bajas 30m</string>
+    <string id="MuteHighs30" scope="background">Silenciar altas 30m</string>
+    <string id="Mute">Silenciar</string>
+    <string id="LowsLess">Bajas: recordar menos</string>
+    <string id="HighsLess">Altas: recordar menos</string>
+    <string id="LowsUsual">Bajas: recordar como siempre</string>
+    <string id="HighsUsual">Altas: recordar como siempre</string>
+    <string id="AlertVeryLow" scope="background">Muy baja</string>
+    <string id="AlertLow" scope="background">Baja</string>
+    <string id="AlertHigh" scope="background">Alta</string>
+    <string id="AlertVeryHigh" scope="background">Muy alta</string>
+    <string id="AlertExtremelyHigh" scope="background">Extremadamente alta</string>
+    <string id="AlertFallingFast" scope="background">Bajada rápida</string>
+    <string id="AlertRisingFast" scope="background">Subida rápida</string>
+    <string id="AlertNoData" scope="background">Sin datos</string>
+
+    <string id="set_alertSpark">Minigráfica en las alertas</string>
+    <string id="set_logSlot">La complicación Registrar muestra</string>
+    <string id="opt_since">Tiempo desde</string>
+    <string id="opt_amount">Cantidad</string>
+    <string id="opt_both">Ambos</string>
 </strings>

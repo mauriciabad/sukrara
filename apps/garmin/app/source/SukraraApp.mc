@@ -17,8 +17,17 @@ class SukraraApp extends Application.AppBase {
     }
 
     function getInitialView() as [WatchUi.Views] or [WatchUi.Views, WatchUi.InputDelegates] {
-        LinkBackground.register();
+        start();
         return [new AppView(), new WatchUi.BehaviorDelegate()];
+    }
+
+    // the app's own start (the view or the glance): the link registered, the next run at the reading's expiry, the
+    // complications from what the app has (guarded: docs/47 §3), the outbox sent at once
+    (:glance)
+    function start() as Void {
+        LinkBackground.register();
+        var now = Time.now().value();
+        Expiry.schedule(now);
     }
 
     // the glance list (most people see the app here first): registers the background too, so the link runs without

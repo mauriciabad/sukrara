@@ -6,4 +6,18 @@
     <string id="AppName">Sukrara campo de datos</string>
     <string id="NoReadings">Sin lecturas</string>
     <string id="Waiting">Abre Sukrara en el móvil</string>
+    <string id="Glucose">GLUCOSA</string>
+    <string id="Now">Sukrara · ahora</string>
+    <string id="AlertVeryLow">Muy baja</string>
+    <string id="AlertLow">Baja</string>
+    <string id="AlertHigh">Alta</string>
+    <string id="AlertVeryHigh">Muy alta</string>
+    <string id="AlertExtremelyHigh">Extremadamente alta</string>
+    <string id="AlertFallingFast">Bajada rápida</string>
+    <string id="AlertRisingFast">Subida rápida</string>
+    <string id="AlertNoData">Sin datos</string>
+    <string id="set_record">Registrar la glucosa</string>
+    <string id="FitGlucose">Glucosa</string>
+    <string id="FitMgdl">mg/dL</string>
+    <string id="FitMmol">mmol/L</string>
 </strings>

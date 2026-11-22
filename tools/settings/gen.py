@@ -24,9 +24,18 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 SCHEMA = os.path.join(ROOT, "contracts/settings/settings.json")
 KT = os.path.join(ROOT, "apps/android/core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt")
 SWIFT = os.path.join(ROOT, "apps/macos/Sources/SukraraCore/Settings/SettingsSpec.swift")
-MC = os.path.join(ROOT, "apps/garmin/aura/source/SettingsSpec.mc")
-PROPS = os.path.join(ROOT, "apps/garmin/aura/resources/settings/properties.xml")
-SETTINGS_XML = os.path.join(ROOT, "apps/garmin/aura/resources/settings/settings.xml")
+# each Garmin app's own (a row's garmin "app", default the face): apps/garmin/<app>/source/SettingsSpec.mc and its
+# resources/settings/properties.xml, settings.xml
+GARMIN_APPS = ("aura", "app", "field")
+
+
+def garmin_paths(app):
+    d = os.path.join(ROOT, "apps/garmin", app)
+    return (os.path.join(d, "source/SettingsSpec.mc"), os.path.join(d, "resources/settings/properties.xml"),
+            os.path.join(d, "resources/settings/settings.xml"))
+
+
+MC, PROPS, SETTINGS_XML = garmin_paths("aura")
 UNITS = os.path.join(ROOT, "contracts/settings/units.json")
 with open(UNITS, encoding="utf-8") as _f:
     MGDL_PER_MMOL = json.load(_f)["factor"]
@@ -142,19 +151,23 @@ def apps(schema):
     return dict(schema, settings=[s for s in schema["settings"] if s.get("android") or s.get("mac")])
 
 
-def garmin_rows(schema):
-    return [s for s in schema["settings"] if s.get("garmin")]
+def garmin_rows(schema, app="aura"):
+    return [s for s in schema["settings"] if s.get("garmin") and s["garmin"].get("app", "aura") == app]
 
 
 def const_mc(key):
     return const_kt(key)
 
 
-def monkeyc(schema):
-    """SettingsSpec.mc: each Garmin setting as [stored key, option values (null for a bool), default]."""
+def monkeyc(schema, app="aura"):
+    """SettingsSpec.mc: each Garmin setting of [app] as [stored key, option values (null for a bool), default]. The
+    watch app's is read by its background and glance too."""
     L = ["// " + l for l in HEADER.splitlines()]
-    L += ["// " + NOTE, "import Toybox.Lang;", "", "module SettingsSpec {"]
-    rows = garmin_rows(schema)
+    L += ["// " + NOTE, "import Toybox.Lang;", ""]
+    if app == "app":
+        L.append("(:background :glance)")
+    L.append("module SettingsSpec {")
+    rows = garmin_rows(schema, app)
     for s in rows:
         g = s["garmin"]
         vals = "null" if s["type"] == "bool" else "[%s]" % ", ".join(sstr(v) for v in s["values"])
@@ -184,7 +197,8 @@ def monkeyc(schema):
     for i, v in enumerate(seen):
         L.append("        %sif (value.equals(%s)) {" % ("" if i == 0 else "} else ", sstr(v)))
         L.append("            return Rez.Strings.opt_%s;" % v)
-    L.append("        }")
+    if seen:
+        L.append("        }")
     L.append("        return Rez.Strings.AppName;")
     L.append("    }")
     L.append("}")
@@ -195,9 +209,9 @@ def xml_head():
     return ["<!-- " + l + " -->" for l in HEADER.splitlines()] + ["<!-- " + NOTE + " -->"]
 
 
-def properties_xml(schema):
+def properties_xml(schema, app="aura"):
     L = xml_head() + ["<properties>"]
-    for s in garmin_rows(schema):
+    for s in garmin_rows(schema, app):
         k = s["garmin"]["key"]
         if s["type"] == "bool":
             L.append('    <property id="%s" type="boolean">%s</property>' % (k, "true" if s["default"] else "false"))
@@ -207,9 +221,9 @@ def properties_xml(schema):
     return "\n".join(L) + "\n"
 
 
-def settings_xml(schema):
+def settings_xml(schema, app="aura"):
     L = xml_head() + ["<settings>"]
-    for s in garmin_rows(schema):
+    for s in garmin_rows(schema, app):
         k = s["garmin"]["key"]
         L.append('    <setting propertyKey="@Properties.%s" title="@Strings.set_%s">' % (k, k))
         if s["type"] == "bool":
@@ -450,9 +464,21 @@ def swift(schema):
     return "\n".join(L) + "\n"
 
 
+def garmin_outputs(s):
+    """Every Garmin app with settings: path → text."""
+    out = {}
+    for app in GARMIN_APPS:
+        if garmin_rows(s, app):
+            mc, props, xml = garmin_paths(app)
+            out.update({mc: monkeyc(s, app), props: properties_xml(s, app), xml: settings_xml(s, app)})
+    return out
+
+
 def outputs():
     s = load()
-    return {KT: kotlin(s), SWIFT: swift(s), MC: monkeyc(s), PROPS: properties_xml(s), SETTINGS_XML: settings_xml(s)}
+    out = {KT: kotlin(s), SWIFT: swift(s)}
+    out.update(garmin_outputs(s))
+    return out
 
 
 def stale():

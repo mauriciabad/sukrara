@@ -1,9 +1,94 @@
 <!-- Sukrara — https://github.com/mauriciabad/sukrara -->
 <!-- Copyright (C) 2026 Maurici Abad -->
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
-<!-- Sukrara's words, English (resources-spa: Spanish); the placeholder look's (shared/plain) until the design. -->
+<!-- Sukrara's words, English (resources-spa: Spanish); the phone's own words where it has them (alert kinds, kinds,
+     mute). Copy says what is happening, never promises more (Garmin's store rule; SPEC §7). -->
 <strings>
-    <string id="AppName">Sukrara</string>
+    <string id="AppName" scope="background">Sukrara</string>
     <string id="NoReadings" scope="glance">No readings</string>
     <string id="Waiting" scope="glance">Open Sukrara on the phone</string>
+
+    <!-- the outbox (glance and app) -->
+    <string id="SendWait" scope="glance">Waiting for the phone</string>
+    <string id="SendSent" scope="glance">Sent</string>
+    <string id="SendAsk" scope="glance">The phone has a question</string>
+
+    <!-- complications (the CGM-GB long labels are CGM+ GB's names: never translated) -->
+    <string id="CxValue">CGM-GB-value</string>
+    <string id="CxValueShort">CGM</string>
+    <string id="CxValueFaceIt">Sukrara glucose</string>
+    <string id="CxData">CGM-GB-data</string>
+    <string id="CxDataShort">D-DATA</string>
+    <string id="CxDataFaceIt">Sukrara glucose data</string>
+    <string id="CxGraph">CGM-GB-graph</string>
+    <string id="CxGraphShort">D-GRAPH</string>
+    <string id="CxGraphFaceIt">Sukrara glucose graph</string>
+    <string id="CxLog">Sukrara log</string>
+    <string id="CxLogShort">LOG</string>
+
+    <!-- the kinds -->
+    <string id="KindRapid" scope="background">Rapid insulin</string>
+    <string id="KindLong" scope="background">Long-acting insulin</string>
+    <string id="KindCarbs" scope="background">Carbs</string>
+    <string id="UnitU">u</string>
+    <string id="UnitG">g</string>
+
+    <!-- logging -->
+    <string id="Now">Now</string>
+    <string id="MinAgo">%1$ min ago</string>
+    <string id="HoldToLog">Hold START to log</string>
+    <string id="HoldTouch">Hold to log</string>
+    <string id="SameKind">%1$ %2$ ago</string>
+    <string id="Sending">Sending</string>
+    <string id="Logged">Logged %1$</string>
+    <string id="Undo">Undo</string>
+    <string id="Undone">Undone</string>
+    <string id="NotLoggedOld">Not logged: too old</string>
+    <string id="NotLoggedOff">Not logged: the phone takes no entries now</string>
+    <string id="NotSent">Not sent, nothing saved</string>
+    <string id="PenAsk">Already logged by your pen?</string>
+    <string id="PenAt">%1$ at %2$</string>
+    <string id="LogAnyway">Log anyway</string>
+    <string id="Cancel">Cancel</string>
+    <string id="LogOff">The phone takes no entries now</string>
+
+    <!-- mute and alerts -->
+    <string id="MuteAlerts">Mute alerts</string>
+    <string id="Muted">Muted %1$</string>
+    <string id="MutedUntilOff">Muted until you unmute</string>
+    <string id="Unmute">Unmute</string>
+    <string id="ChangeTime">Change time</string>
+    <string id="Min15">15 min</string>
+    <string id="Min30">30 min</string>
+    <string id="Min60">1 h</string>
+    <string id="Min120">2 h</string>
+    <string id="UntilOff">Until I unmute</string>
+    <string id="AlertsMuted">Alerts muted</string>
+    <string id="Until">until %1$</string>
+    <string id="Unmuted">Alerts unmuted</string>
+    <string id="Treatment" scope="background">Treatment</string>
+    <string id="RemindLess" scope="background">Remind less</string>
+    <string id="RemindUsual" scope="background">Remind as usual</string>
+    <string id="MuteLows30" scope="background">Mute lows 30m</string>
+    <string id="MuteHighs30" scope="background">Mute highs 30m</string>
+    <string id="Mute">Mute</string>
+    <string id="LowsLess">Lows: remind less</string>
+    <string id="HighsLess">Highs: remind less</string>
+    <string id="LowsUsual">Lows: remind as usual</string>
+    <string id="HighsUsual">Highs: remind as usual</string>
+    <string id="AlertVeryLow" scope="background">Very low</string>
+    <string id="AlertLow" scope="background">Low</string>
+    <string id="AlertHigh" scope="background">High</string>
+    <string id="AlertVeryHigh" scope="background">Very high</string>
+    <string id="AlertExtremelyHigh" scope="background">Extremely high</string>
+    <string id="AlertFallingFast" scope="background">Falling fast</string>
+    <string id="AlertRisingFast" scope="background">Rising fast</string>
+    <string id="AlertNoData" scope="background">No data</string>
+
+    <!-- the watch settings (tools/settings/gen.py: set_<key>, opt_<value>) -->
+    <string id="set_alertSpark">Sparkline on alerts</string>
+    <string id="set_logSlot">Log complication shows</string>
+    <string id="opt_since">Time since</string>
+    <string id="opt_amount">Amount</string>
+    <string id="opt_both">Both</string>
 </strings>

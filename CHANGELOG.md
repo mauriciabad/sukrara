@@ -4,6 +4,11 @@ Sukrara's releases. 0.x versions are previews.
 
 ## Unreleased
 
+- **Sukrara on Garmin watches, the watch side** (#199, not released yet): the Sukrara app publishes four complications
+  for any face (glucose, CGM+ GB's data and graph, and the last treatment as *Log*), turning to "---" on time when the
+  reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and
+  *Mute 30m*; the data field shows its own alert and records glucose into the activity. Entries and mutes from the
+  watch wait until the phone has them.
 - **Sukrara Aura, when Garmin Connect stops passing messages** (#242): after 15 minutes without one, the watch's line
   on Settings › Share with apps › Garmin says "messages stopped getting through · restart the watch". Meanwhile the
   phone tries every 5 minutes instead of every reading, and the face keeps asking the phone every 5 minutes.

@@ -998,9 +998,6 @@ SETTINGS_SCHEMA = CONTRACTS + "settings/settings.json"
 SETTINGS_KT = ANDROID + "core/model/src/main/kotlin/app/mauri/sukrara/settings/SettingsSpec.kt"
 SETTINGS_SWIFT = MAC_SOURCES + "SukraraCore/Settings/SettingsSpec.swift"
 GARMIN = "apps/garmin/"
-SETTINGS_MC = GARMIN + "aura/source/SettingsSpec.mc"
-SETTINGS_PROPS = GARMIN + "aura/resources/settings/properties.xml"
-SETTINGS_XML = GARMIN + "aura/resources/settings/settings.xml"
 ALERT_SPEC = CONTRACTS + "alerts/SPEC.md"
 KEY_NAME = re.compile(r"^[a-z][A-Za-z0-9]*$")
 # a stored key written by hand (keys come from SettingsSpec.Keys)
@@ -1068,8 +1065,9 @@ def check_settings(ch, rep):
         return rep.add("FAIL", "settings", "%s is not valid JSON: %s" % (SETTINGS_SCHEMA, e))
     sys.path.insert(0, os.path.join(HERE, "..", "settings"))
     import gen  # noqa: E402  (tools/settings/gen.py, stdlib only)
-    for path, want in ((SETTINGS_KT, gen.kotlin(schema)), (SETTINGS_SWIFT, gen.swift(schema)), (SETTINGS_MC, gen.monkeyc(schema)),
-                       (SETTINGS_PROPS, gen.properties_xml(schema)), (SETTINGS_XML, gen.settings_xml(schema))):
+    generated = [(SETTINGS_KT, gen.kotlin(schema)), (SETTINGS_SWIFT, gen.swift(schema))]
+    generated += [(os.path.relpath(p, gen.ROOT), text) for p, text in gen.garmin_outputs(schema).items()]
+    for path, want in generated:
         if ch.blob(path) != want:
             rep.add("FAIL", "settings", "%s is stale or edited by hand: run python3 tools/settings/gen.py and commit it." % path)
     numbers = schema.get("numbers", {})

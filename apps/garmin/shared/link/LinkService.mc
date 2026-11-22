@@ -83,13 +83,18 @@ class LinkService extends System.ServiceDelegate {
     // Hands [data] to the face both ways: in its storage ([LinkBackground.HANDOFF], read at every draw) and through
     // Garmin (Background.exit → onBackgroundData, at once). [id] tells the face it is the same run when both arrive.
     function hand(data as Dictionary) as Void {
+        keep(data);
+        Background.exit(data);
+    }
+
+    // [data] with its run id, in the app's storage
+    function keep(data as Dictionary) as Void {
         data.put("id", Time.now().value().toString() + "." + System.getTimer().toString());
         try {
             Application.Storage.setValue(LinkBackground.HANDOFF, data);
         } catch (e) {
             // a watch whose background can't write storage: Garmin's hand-over only
         }
-        Background.exit(data);
     }
 
     function onWaiting(msg as Communications.PhoneAppMessage) as Void {

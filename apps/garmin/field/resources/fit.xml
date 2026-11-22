@@ -1,0 +1,13 @@
+<!-- Sukrara — https://github.com/mauriciabad/sukrara -->
+<!-- Copyright (C) 2026 Maurici Abad -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Glucose in the activity's file (Record glucose, on by default): one field in the person's unit, so Garmin Connect
+     charts it; ids stable (source/FieldApp.mc). -->
+<resources>
+    <fitContributions>
+        <fitField id="0" displayInChart="true" sortOrder="0" precision="0" chartTitle="@Strings.FitGlucose"
+            dataLabel="@Strings.FitGlucose" unitLabel="@Strings.FitMgdl" fillColor="#2EB872"/>
+        <fitField id="1" displayInChart="true" sortOrder="1" precision="1" chartTitle="@Strings.FitGlucose"
+            dataLabel="@Strings.FitGlucose" unitLabel="@Strings.FitMmol" fillColor="#2EB872"/>
+    </fitContributions>
+</resources>

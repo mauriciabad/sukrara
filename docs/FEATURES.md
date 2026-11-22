@@ -2946,6 +2946,50 @@ retry. A mute from the watch is the phone's mute: its pill, *Unmute* and *Mute a
 the watch does. Turning the main switch off stops pushes, fetches, entries and mutes at once (the port closes); on
 again resumes them. TalkBack reads each row as a plain row with its text.
 
+## Sukrara on Garmin watches: the app and the data field (the watch)
+
+The watch side of the two apps above (`apps/garmin/app`, `apps/garmin/field`; design `contracts/watchface/app/SPEC.md`,
+drawn plainly until its port). Every watch with API 5 or newer except the 1-bit Instinct 3 Solar / Instinct E.
+- **Complications** (`Slots`, SPEC §10; any face, Face It): four, published by the app's background on every push and
+  fetch, so faces update with the app closed. *CGM-GB-value* (Face It "Sukrara glucose", the glance folder's preview):
+  "175", "9.7", "LO", "HI", or "---" from 5 min old, with no reading or while the sensor warms up; *CGM-GB-data*: the
+  same and CGM+ GB's numbers (unit, the trend as 0–9 from THE trend's band, the limits, the reading's time, when it is
+  old and too old); *CGM-GB-graph*: 24 h every 5 min, newest first; *Sukrara log* (the insulin pen): the watch's last
+  treatment as *Log complication shows* says (the time since "1h 5m", the amount "4.5u", or both "4.5u 1h5m"), "Log"
+  without one. The glucose ones keep CGM+ GB's names so its faces find them too. Latin letters and digits only (the
+  watches' fonts draw no arrows). **Never old as current**: the next background run is set at the reading's time +
+  5 min (never sooner than Garmin's 5 min after the last run, never later than 5 min after this one), so "---"
+  appears on time with the phone away.
+- **The watch's last treatment** is the card's: the first step of the phone's `last` chain still ahead, its first
+  item (kind and time; long-acting never, as on the card).
+- **Logging and mutes wait in an outbox** (`Outbox`, contracts/watchface/payload "Entries from the watch"): each with
+  the watch's own id, signed with the key only the phone's push carries, sent at once and again by the background on
+  every run until the phone answers for it. *Logged* / known: gone (*Sent* for 10 min); a mismatched signature waits
+  for a push with a new key; a clock answer takes the phone's time and goes again; *Already logged by your pen?* waits
+  for the person (*Log anyway* sends it with the override, *Cancel* drops it); too old / the phone takes no entries:
+  dropped and said; no phone: kept (*Waiting for the phone*). An entry the next push lists by id leaves the outbox
+  even if its answer was lost. Kept while the phone is away and sent when it is back (the owner's call; one switch in
+  code, `Outbox.SEND_LATE`).
+- **A new alert from the phone, on the wrist** (`Ring`, `Alerts`): the phone's alert runtime says what rings; while
+  the reading is fresh (or for no data), a kind that appears is announced once. The app's background shows Garmin's
+  notification (API 5.1+; 5.0 watches keep Garmin Connect's forwarded one): the alert's word and value, the reading's
+  time, *Treatment* (the side's kind: carbs for lows, rapid insulin for highs), *Remind less* when it would slow it or
+  *Remind as usual* once relaxed, *Mute lows / highs 30m*. The data field shows its own alert page (on per activity:
+  its Alerts › Connect IQ) and vibrates.
+- **The data field records glucose** into the activity's file (*Record glucose*, on by default; one field in the
+  person's unit, charted by Garmin Connect), each new reading once while it is fresh.
+- Watch settings (`contracts/settings/settings.json`, `only` garmin; the Connect IQ app): the app's *Sparkline on
+  alerts* (on) and *Log complication shows* (time since), the field's *Record glucose* (on).
+- Tests in the simulator (`apps/garmin/tools/link-test.sh app | field`): the outbox against `entries.json` /
+  `mutes.json` (every signature, every answer), the complications per state, the expiry, the ring decision.
+
+**States and exits**: a complication is placed and removed in the face's own editor; holding one opens the app. Garmin's
+notification: an action opens the app with it, or dismiss it (Garmin's button); a new kind notifies again, the same one
+not. The field's alert dismisses as Garmin's alerts do; it is off until turned on in the activity's Alerts › Connect IQ;
+the field's *Record glucose* is switched in the Connect IQ app. An outbox entry leaves on the phone's answer; one the
+phone asks about stays until the person answers *Log anyway* or *Cancel*. Every setting is changed back in the Connect
+IQ app. TalkBack / VoiceOver: the watch's own screen reader isn't offered by Garmin for Connect IQ apps.
+
 ## Sensor reminders and countdowns
 
 Wearer only (`sensorend/`; rules in `SensorEndPlan`, tests `SensorEndPlanTest`); followers get none of these. Settings → **Sensor end**.

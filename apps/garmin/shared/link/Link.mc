@@ -11,8 +11,9 @@ import Toybox.Time;
 // (contracts/watchface/payload, version 4, the app's own profile), kept in storage so a restart shows it at once, the
 // order rule, the phone's clock lead, the run report the fetch carries back, and the inputs (SPEC §3 names) worked out
 // from the payload and the watch clock at every draw (README "On the watch"). Sukrara decides; this only counts time.
-// (:glance): the app's glance reads it too.
-(:glance)
+// (:glance): the app's glance reads it too; (:background): the app's background keeps the newest payload itself (its
+// complications and alerts, AppService).
+(:background :glance)
 module Link {
     const VERSION = 4;
     // the app's profile (contracts/watchface/payload/apps.json): its jungle excludes the other apps' annotations

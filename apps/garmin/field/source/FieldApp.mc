@@ -3,6 +3,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 import Toybox.Activity;
 import Toybox.Application;
+import Toybox.Attention;
+import Toybox.FitContributor;
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.System;
@@ -35,14 +37,70 @@ class FieldApp extends Application.AppBase {
     }
 }
 
-// The field: redrawn every second by the activity; on the one seam layout(input) → model, draw(model).
+// The field: redrawn every second by the activity; on the one seam layout(input) → model, draw(model). Every second it
+// also says a new alert from the phone again (its own alert, SPEC §9) and, with Record glucose on, writes the fresh
+// value into the activity's file.
 class FieldView extends WatchUi.DataField {
+    var _seen as Array = [] as Array; // the kinds this field has announced
+    var _fit as FitContributor.Field? = null;
+    var _fitMmol as Boolean = false;
+    var _fitAt as Number = 0;
+
     function initialize() {
         DataField.initialize();
+        if (FieldRecord.on()) {
+            var p = Link.payload();
+            _fitMmol = p != null && "mmol".equals(p.get("unit"));
+            // one field in the person's unit at the activity's start (ids stable: resources fitContributions)
+            _fit = createField(_fitMmol ? "glucose_mmol" : "glucose", _fitMmol ? 1 : 0,
+                _fitMmol ? FitContributor.DATA_TYPE_FLOAT : FitContributor.DATA_TYPE_UINT16,
+                {:mesgType => FitContributor.MESG_TYPE_RECORD, :units => _fitMmol ? "mmol/L" : "mg/dL"});
+        }
     }
 
     function compute(info as Activity.Info) as Numeric or Duration or String or Null {
+        var now = Time.now().value();
+        Link.pickUp(now);
+        var p = Link.payload();
+        var items = Ring.now(p, now, Link.skew);
+        var fresh = Ring.fresh(items, _seen);
+        _seen = Ring.kinds(items);
+        if (fresh.size() > 0) {
+            alert(fresh[0], p as Dictionary, now);
+        }
+        record(p, now);
         return null;
+    }
+
+    // a new alert: the field's own full page (on per activity: its Alerts › Connect IQ) and a vibration; it says again
+    // what Sukrara rings on the phone
+    function alert(it as Dictionary, p as Dictionary, now as Number) as Void {
+        if (WatchUi.DataField has :showAlert) {
+            try {
+                showAlert(new FieldAlert(it, p, now));
+            } catch (e) {
+                // an alert already shown: the vibration says it
+            }
+        }
+        if (Attention has :vibrate) {
+            Attention.vibrate([new Attention.VibeProfile(100, 400), new Attention.VibeProfile(0, 200),
+                new Attention.VibeProfile(100, 400)] as Array<Attention.VibeProfile>);
+        }
+    }
+
+    // the value into the activity's file once per new reading while it is fresh (never an old value as current)
+    function record(p as Dictionary?, now as Number) as Void {
+        var g = p != null ? p.get("g") : null;
+        if (_fit == null || !(g instanceof Dictionary)) {
+            return;
+        }
+        var t = g.get("t") as Number;
+        if (t == _fitAt || now + Link.skew - t > Glucose.STRUCK_S) {
+            return;
+        }
+        _fitAt = t;
+        var v = g.get("v") as Number;
+        (_fit as FitContributor.Field).setData(_fitMmol ? Glucose.inUnit(v, "mmol") : v);
     }
 
     function onUpdate(dc as Graphics.Dc) as Void {
@@ -84,5 +142,52 @@ module FieldLayout {
         }
         m.arrowSize = Graphics.getFontHeight(font) / 3;
         return m;
+    }
+}
+
+// Record glucose (the field's setting, SettingsSpec): on by default
+module FieldRecord {
+    function on() as Boolean {
+        var v = null;
+        try {
+            v = Application.Properties.getValue(SettingsSpec.RECORD[0] as String);
+        } catch (e) {
+            v = null;
+        }
+        return v instanceof Boolean ? v : SettingsSpec.RECORD[2] as Boolean;
+    }
+}
+
+// The field's own alert (SPEC §9, DataField.showAlert): the whole page in the band's colour, the alert's word, the value
+// white, "Sukrara · now". Placeholder look until the design's port.
+class FieldAlert extends WatchUi.DataFieldAlert {
+    var _word as String;
+    var _value as String;
+    var _colour as Number;
+
+    function initialize(it as Dictionary, p as Dictionary, now as Number) {
+        DataFieldAlert.initialize();
+        var words = {"very_low" => Rez.Strings.AlertVeryLow, "low" => Rez.Strings.AlertLow, "high" => Rez.Strings.AlertHigh,
+            "very_high" => Rez.Strings.AlertVeryHigh, "extremely_high" => Rez.Strings.AlertExtremelyHigh,
+            "falling_fast" => Rez.Strings.AlertFallingFast, "rising_fast" => Rez.Strings.AlertRisingFast};
+        var w = words.get(it.get("k"));
+        _word = WatchUi.loadResource(w != null ? w as ResourceId : Rez.Strings.AlertNoData) as String;
+        var g = p.get("g");
+        var unit = p.get("unit");
+        _value = g instanceof Dictionary ? Glucose.value(g.get("v") as Number, unit instanceof String ? unit : "mgdl") : "";
+        var side = it.get("side");
+        _colour = "low".equals(side) ? Graphics.COLOR_DK_RED : ("high".equals(side) ? Graphics.COLOR_ORANGE
+            : Graphics.COLOR_DK_GRAY);
+    }
+
+    function onUpdate(dc as Graphics.Dc) as Void {
+        var w = dc.getWidth();
+        var h = dc.getHeight();
+        dc.setColor(Graphics.COLOR_WHITE, _colour);
+        dc.clear();
+        dc.drawText(w / 2, h / 4, Graphics.FONT_MEDIUM, _word, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(w / 2, h / 2, Graphics.FONT_NUMBER_HOT, _value, Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
+        dc.drawText(w / 2, h * 3 / 4, Graphics.FONT_XTINY, WatchUi.loadResource(Rez.Strings.Now) as String,
+            Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 }
