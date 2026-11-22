@@ -3,10 +3,10 @@
      Copyright (C) 2026 Maurici Abad
      SPDX-License-Identifier: GPL-3.0-or-later -->
 <!-- Connect IQ's "Data Fields" symbol, redrawn (24 dp, 2 dp strokes like Material Symbols): a watch screen split into
-     fields, a band across the middle whose lower half is split in two. Sukrara's data field wherever the phone lists it;
+     fields, a band across the middle split in two by a line from its top edge to its bottom one. Sukrara's data field wherever the phone lists it;
      tinted by Compose Icon -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp"
     android:viewportWidth="24" android:viewportHeight="24" android:autoMirrored="false">
     <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:pathData="M12,3a9,9 0 1,1 0,18a9,9 0 1,1 0,-18Z"/>
-    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:pathData="M3.71,8.5H20.29M3.71,15.5H20.29M12,12V15.5"/>
+    <path android:strokeColor="@android:color/white" android:strokeWidth="2" android:pathData="M3.71,8.5H20.29M3.71,15.5H20.29M12,8.5V15.5"/>
 </vector>

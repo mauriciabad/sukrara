@@ -683,7 +683,6 @@
     <string name="sh_setup_garmin_get">Get</string>
     <string name="sh_setup_garmin_get_description">Get %1$s on the Connect IQ store</string>
     <string name="sh_setup_garmin_on_watch">On your watch</string>
-    <string name="sh_setup_garmin_soon">Coming soon to the Connect IQ store.</string>
     <string name="sh_setup_garmin_later">Settings › Share with apps › Garmin keeps all of this.</string>
     <string name="sh_setup_ready_title_pending">Some essentials are left for later</string>
     <string name="sh_setup_ready_pending">Still to do: %1$s. Home\'s Finish setup banner brings you back to them.</string>

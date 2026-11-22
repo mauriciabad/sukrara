@@ -35,7 +35,7 @@ enum class GarminApp(
     val logs: Boolean,
     /**
      * Its Connect IQ store listing's id (apps.json `store`): Garmin gives it when the listing is published, and it isn't
-     * [id]. Null until then: no link to the listing shows anywhere ([ConnectIqStore]). TODO(#247): fill them in, in
+     * [id]. Null until then: the phone opens the store's search for Sukrara instead ([ConnectIqStore]). TODO(#247): fill them in, in
      * apps.json first (GarminAppsTest holds these to it), once the listings are public.
      */
     val store: String?,
@@ -60,19 +60,20 @@ enum class GarminApp(
 }
 
 /**
- * The Connect IQ store listings of Sukrara's apps ([GarminApp.store], or a debug build's stand-ins): an app without an
- * id has no link, so no broken link ever shows (#247). [url] is the listing in the phone's language (Garmin's store has
- * a Spanish one).
+ * The Connect IQ store pages of Sukrara's apps ([GarminApp.store], or a debug build's stand-ins), in the phone's
+ * language (Garmin's store has a Spanish one): an app's listing once it has an id, the store's search for Sukrara until
+ * then, so every app opens a page that has it.
  */
 class ConnectIqStore(
     val ids: Map<GarminApp, String> = GarminApp.entries.mapNotNull { a -> a.store?.let { a to it } }.toMap(),
 ) {
-    /** The apps that have a listing, in the registry's order. */
-    val apps: List<GarminApp> get() = GarminApp.entries.filter { it in ids }
-
-    /** [app]'s listing for [language] (`es`: Garmin's Spanish store), or null while it has none. */
+    /** [app]'s store page for [language] (`es`: Garmin's Spanish store): its listing, or the search while it has no id. */
     fun url(
         app: GarminApp,
         language: String,
-    ): String? = ids[app]?.let { "https://apps.garmin.com/${if (language == "es") "es-ES" else "en-US"}/apps/$it" }
+    ): String {
+        val locale = if (language == "es") "es-ES" else "en-US"
+        // TODO(#247): the search stands in while the listings' ids are null (apps.json `store`); drop it once all are in
+        return ids[app]?.let { "https://apps.garmin.com/$locale/apps/$it" } ?: "https://apps.garmin.com/$locale/search?keyword=Sukrara"
+    }
 }

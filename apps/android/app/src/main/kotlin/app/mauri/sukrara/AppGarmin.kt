@@ -32,7 +32,7 @@ internal object AppGarmin {
     /** Setup's Garmin step is offered: Garmin Connect is on this phone, or a watch has one of Sukrara's apps. */
     fun offered(s: GarminLinkState): Boolean = s.garminConnect || s.found.isNotEmpty()
 
-    /** Setup's Garmin step's apps: each with what it gives, its store listing (if published) and whether a watch has it. */
+    /** Setup's Garmin step's apps: each with what it gives, its Connect IQ store page and whether a watch has it. */
     fun apps(
         s: GarminLinkState,
         store: ConnectIqStore,
@@ -43,7 +43,7 @@ internal object AppGarmin {
                 app.nameRes,
                 app.whatRes,
                 app.iconRes,
-                url = if (app in store.ids) ({ language -> store.url(app, language).orEmpty() }) else null,
+                url = { language -> store.url(app, language) },
                 onWatch = app in s.found,
             )
         }

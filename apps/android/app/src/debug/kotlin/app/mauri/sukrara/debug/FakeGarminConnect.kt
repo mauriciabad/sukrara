@@ -15,8 +15,8 @@ import app.mauri.sukrara.integrations.garmin.IqSend
  * Debug builds: a made-up Garmin Connect for the emulator (#199: home's Garmin tip, setup's Garmin step, the Garmin
  * page), with one connected watch, "Forerunner 265", that has the Sukrara apps [apps] (registry keys; empty = none).
  * Every message "arrives" and goes nowhere. `GARMIN_FAKE --es apps aura,app,field|none|off` (off = the real Garmin
- * Connect again) and `--ez store true` (stand-in Connect IQ store ids, so the store links show before the real
- * listings exist: they lead nowhere). Saved, then the app process ends: open the app. Never in a release build (this
+ * Connect again) and `--ez store true` (stand-in Connect IQ store ids, so the store links open listing URLs
+ * instead of the store's search before the real listings exist: they lead nowhere). Saved, then the app process ends: open the app. Never in a release build (this
  * source set).
  */
 class FakeGarminConnect(

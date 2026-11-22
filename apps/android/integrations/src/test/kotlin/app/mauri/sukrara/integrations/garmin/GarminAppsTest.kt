@@ -12,7 +12,6 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 /** contracts/watchface/payload/apps.json, the registry of Sukrara's Connect IQ apps, is the phone's [GarminApp]. */
@@ -45,16 +44,22 @@ class GarminAppsTest {
     }
 
     @Test
-    fun aListingLinksOnlyOnceItHasAnId() {
-        val none = ConnectIqStore(emptyMap())
-        assertEquals(emptyList<GarminApp>(), none.apps)
-        assertNull(none.url(GarminApp.Aura, "en"))
+    fun anAppOpensItsListingOnceItHasAnIdTheStoresSearchUntilThen() {
         val one = ConnectIqStore(mapOf(GarminApp.Field to "abc-123"))
-        assertEquals(listOf(GarminApp.Field), one.apps)
-        assertNull(one.url(GarminApp.Aura, "en"))
+        // an id: its listing, in the phone's language (any other language: the English store)
         assertEquals("https://apps.garmin.com/en-US/apps/abc-123", one.url(GarminApp.Field, "en"))
         assertEquals("https://apps.garmin.com/es-ES/apps/abc-123", one.url(GarminApp.Field, "es"))
-        // the registry's own: only the apps with a store id
-        assertEquals(GarminApp.entries.filter { it.store != null }, ConnectIqStore().apps)
+        assertEquals("https://apps.garmin.com/en-US/apps/abc-123", one.url(GarminApp.Field, "ca"))
+        // no id (#247): the store's search for Sukrara
+        assertEquals("https://apps.garmin.com/en-US/search?keyword=Sukrara", one.url(GarminApp.Aura, "en"))
+        assertEquals("https://apps.garmin.com/es-ES/search?keyword=Sukrara", one.url(GarminApp.Aura, "es"))
+        // the registry's own: its ids, the search for the rest
+        for (app in GarminApp.entries) {
+            val url = ConnectIqStore().url(app, "en")
+            assertEquals(
+                app.store?.let { "https://apps.garmin.com/en-US/apps/$it" } ?: "https://apps.garmin.com/en-US/search?keyword=Sukrara",
+                url,
+            )
+        }
     }
 }

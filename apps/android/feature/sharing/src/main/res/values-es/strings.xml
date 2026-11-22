@@ -538,7 +538,6 @@
     <string name="sh_setup_garmin_get">Obtener</string>
     <string name="sh_setup_garmin_get_description">Obtener %1$s en la tienda Connect IQ</string>
     <string name="sh_setup_garmin_on_watch">En tu reloj</string>
-    <string name="sh_setup_garmin_soon">Pronto en la tienda Connect IQ.</string>
     <string name="sh_setup_garmin_later">Todo esto sigue en Ajustes › Compartir con apps › Garmin.</string>
     <string name="sh_setup_ready_title_pending">Quedan cosas esenciales para más tarde</string>
     <string name="sh_setup_ready_pending">Falta: %1$s. El aviso Termina la configuración de la pantalla principal te lleva a ellas.</string>

@@ -403,6 +403,11 @@ apps' own names), and shows Connect IQ's own symbols for watch faces, device app
 icons (`ds_ic_watch_face`, `ds_ic_device_app`, `ds_ic_data_field`) instead of Material's watch, grid and stopwatch.
 Discarded: About's three Connect IQ store rows (*Sukrara for Garmin* is enough there; the Garmin page and setup keep
 the store links).
+After the owner's next review (2026-11-23): an app on no watch is a *Connect IQ store* row of its own on the Garmin
+page, gone from the watch's groups (no app twice); it and setup's *Get* open the store's search for Sukrara
+(`apps.garmin.com/<en-US|es-ES>/search?keyword=Sukrara`) while the listing's id is null, so *Coming soon* is gone
+(#247 swaps in the listings). The watch-face icon's hands show 10:10, the data-field icon's middle line spans the band,
+and About's *Sukrara for Mac* has an Apple logo (`ds_ic_apple`).
 **The app's background on the owner's watch** (2026-11-22, #217). The phone's diag log showed the app's fetch missing
 for hours after the crash fix's install while Aura's and the field's came every 5 min. Most of it was the watch on the
 Mac's USB for installs and log reads (no app runs then): the fetches came back every 5 min once it was unplugged

@@ -42,8 +42,8 @@ import app.mauri.sukrara.core.designsystem.R as DsR
 /**
  * *Your Garmin watch* (optional; only while Garmin Connect is on this phone or a watch has one of Sukrara's apps,
  * #199): *Send to Sukrara on your watch* (on by default; the same switch as Settings › Share with apps › Garmin, stored
- * as it turns), then each of Sukrara's watch apps in one line with *Get* (its Connect IQ store listing, once published:
- * never a link before, #247) or *On your watch*. *Continue* keeps the switch as set; *Skip* leaves it as it is. Both
+ * as it turns), then each of Sukrara's watch apps in one line with *Get* (its Connect IQ store page: its listing, or
+ * the store's search until it has an id, #247) or *On your watch*. *Continue* keeps the switch as set; *Skip* leaves it as it is. Both
  * are final: the Garmin page keeps all of it.
  */
 @Composable
@@ -77,9 +77,11 @@ internal fun ColumnScope.GarminStep(
         }
     }
     for (app in u.garminApps) WatchAppRow(app)
-    // no listing is published yet: say where they will be, never a link that goes nowhere
-    val note = if (u.garminApps.none { it.url != null }) R.string.sh_setup_garmin_soon else R.string.sh_setup_garmin_later
-    Text(stringResource(note), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        stringResource(R.string.sh_setup_garmin_later),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     StepButtons(
         stringResource(R.string.sh_setup_continue),
         actions.completeGarmin,
@@ -113,7 +115,7 @@ private fun WatchAppRow(app: SetupWatchApp) {
                 )
             }
             // a watch reporting it in a moment swaps Get for the check
-            AnimatedContent(app.onWatch to app.url, label = "watch-app") { (onWatch, url) ->
+            AnimatedContent(app.onWatch, label = "watch-app") { onWatch ->
                 when {
                     onWatch -> {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -131,15 +133,13 @@ private fun WatchAppRow(app: SetupWatchApp) {
                         }
                     }
 
-                    url != null -> {
+                    else -> {
                         val description = stringResource(R.string.sh_setup_garmin_get_description, name)
                         OutlinedButton(
-                            onClick = { context.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse(url(language)))) },
+                            onClick = { context.startSafely(Intent(Intent.ACTION_VIEW, Uri.parse(app.url(language)))) },
                             modifier = Modifier.heightIn(min = 48.dp).semantics { contentDescription = description },
                         ) { Text(stringResource(R.string.sh_setup_garmin_get)) }
                     }
-
-                    else -> {}
                 }
             }
         }

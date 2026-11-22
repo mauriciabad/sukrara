@@ -92,7 +92,7 @@ data class OtherDevice(
  */
 val OTHER_DEVICES =
     listOf(
-        OtherDevice(R.string.st_device_mac, R.string.st_device_mac_summary, DsR.drawable.ds_ic_open_in_new, "$SITE_URL/mac/"),
+        OtherDevice(R.string.st_device_mac, R.string.st_device_mac_summary, DsR.drawable.ds_ic_apple, "$SITE_URL/mac/"),
         OtherDevice(R.string.st_device_garmin, R.string.st_device_garmin_summary, DsR.drawable.ds_ic_watch, "$SITE_URL/garmin/"),
     )
 

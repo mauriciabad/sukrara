@@ -6,11 +6,11 @@ Sukrara's releases. 0.x versions are previews.
 
 - **Getting Sukrara onto your Garmin watch** (#199, not released yet): setup has a new optional step, *Your Garmin
   watch*, when Garmin Connect is on the phone or a watch already has one of Sukrara's apps: sending on or off, and
-  what the Sukrara Aura watch face, the Sukrara watch app and the Sukrara data field each give, with a link to each on
-  the Connect IQ store once it is published there. If a watch has one of them while sending is off, home says *Your
-  watch gets no glucose* with *Turn on*. The Garmin page links to the store listings too, as soon as they exist; About
-  has one *Sukrara for Garmin* row, the website's Garmin page. The phone names each app with its kind (*watch face*,
-  *watch app*, *data field*) and shows Connect IQ's own icon for it.
+  what the Sukrara Aura watch face, the Sukrara watch app and the Sukrara data field each give, with *Get* opening each
+  on the Connect IQ store. If a watch has one of them while sending is off, home says *Your watch gets no glucose*
+  with *Turn on*. On the Garmin page each app your watch doesn't have is a row that opens it on the store; About has
+  one *Sukrara for Garmin* row, the website's Garmin page, and its *Sukrara for Mac* row shows the Apple logo. The
+  phone names each app with its kind (*watch face*, *watch app*, *data field*) and shows Connect IQ's own icon for it.
 - **Garmin alerts only while your phone is locked** (#248): the Sukrara watch app and data field now alert only when
   the phone is locked and showing that alert's notification. With the phone in your hand, it alone alerts and the
   watch stays quiet (no double alert); unlock it and an alert screen open on the watch closes, lock it again with the

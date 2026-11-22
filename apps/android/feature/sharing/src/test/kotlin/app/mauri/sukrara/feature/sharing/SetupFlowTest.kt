@@ -44,6 +44,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import app.mauri.sukrara.core.designsystem.R as DsR
 
@@ -293,7 +294,7 @@ class SetupFlowTest {
     }
 
     @Test
-    fun `the Garmin step - shown with Garmin Connect, its switch is the Garmin one, no store link before a listing, Skip goes on`() {
+    fun `the Garmin step - shown with Garmin Connect, its switch is the Garmin one, Get opens an app's store page, Skip goes on`() {
         val offered = MutableStateFlow(true)
         val on = MutableStateFlow(true)
         val apps =
@@ -305,7 +306,7 @@ class SetupFlowTest {
                         R.string.sh_setup_pens_title,
                         R.string.sh_setup_pens_on,
                         DsR.drawable.ds_ic_watch_face,
-                        null,
+                        { "https://apps.garmin.com/$it/search" },
                         onWatch = true,
                     ),
                     SetupWatchApp(
@@ -313,7 +314,7 @@ class SetupFlowTest {
                         R.string.sh_setup_root_yes,
                         R.string.sh_setup_root_no,
                         DsR.drawable.ds_ic_data_field,
-                        null,
+                        { "https://apps.garmin.com/$it/search" },
                         onWatch = false,
                     ),
                 ),
@@ -327,10 +328,12 @@ class SetupFlowTest {
         tap("It isn't rooted")
         tap("Continue")
         shows("Sukrara can show your glucose on a Garmin watch", substring = true)
-        // what is on a watch says so; no listing published: no Get, where they will be instead
+        // what is on a watch says so; the rest has Get, which opens its store page in the phone's language
         shows("On your watch")
-        compose.onNodeWithText("Get").assertDoesNotExist()
-        shows("Coming soon to the Connect IQ store.")
+        tap("Get")
+        val opened = shadowOf(compose.activity).nextStartedActivity
+        assertEquals("https://apps.garmin.com/en/search", opened.dataString)
+        compose.onNodeWithText("Coming soon", substring = true).assertDoesNotExist()
         // the switch is THE Garmin switch, stored at once
         tap("Send to Sukrara on your watch")
         compose.waitUntil(2_000) { !on.value }

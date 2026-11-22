@@ -8,6 +8,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -23,8 +24,8 @@ import org.robolectric.annotation.Config
 import java.time.Instant
 
 /**
- * #199: the Garmin page links each of Sukrara's apps to its Connect IQ store listing, whatever the switch says, and
- * only once the listing is published (#247): never a link that goes nowhere.
+ * #199: on the Garmin page each of Sukrara's apps on no watch is a *Connect IQ store* row that opens its store page,
+ * whatever the switch says; one on a watch is listed under it instead, never both.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [36], qualifiers = "w411dp-h2400dp")
@@ -32,37 +33,56 @@ class GarminStoreLinksTest {
     @get:Rule val compose = createComposeRule()
 
     private val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+    private val now = Instant.parse("2026-11-22T10:00:00Z")
+
+    private fun watch(vararg apps: GarminApp) =
+        GarminWatch.of(
+            265L,
+            "Forerunner 265",
+            true,
+            GarminApp.entries.flatMap { it.ids }.associateWith { id -> AppLink(installed = apps.any { it.id == id }) },
+        )
 
     private fun show(
-        store: ConnectIqStore,
-        on: Boolean,
+        s: GarminLinkState,
         opened: MutableList<GarminApp> = ArrayList(),
     ) = compose.setContent {
         SukraraTheme(dark = false, dynamic = false) {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                GarminContent(
-                    GarminUi(GarminLinkState(on = on, garminConnect = true), store = store),
-                    Instant.parse("2026-11-22T10:00:00Z"),
-                    GarminActions(openStore = { opened += it }),
-                )
+                GarminContent(GarminUi(s), now, GarminActions(openStore = { opened += it }))
             }
         }
     }
 
+    private fun once(name: GarminApp) = compose.onAllNodesWithText(app.getString(name.nameRes)).fetchSemanticsNodes().size
+
     @Test
-    fun noListingNoLink() {
-        show(ConnectIqStore(emptyMap()), on = true)
-        compose.onNodeWithText(app.getString(R.string.in_garmin_store_group)).assertDoesNotExist()
-        compose.onNodeWithText(app.getString(R.string.in_garmin_aura_what)).assertDoesNotExist()
+    fun withTheSwitchOffEveryAppIsAStoreRowThatOpensItsPage() {
+        val opened = ArrayList<GarminApp>()
+        show(GarminLinkState(on = false, garminConnect = true), opened)
+        compose.onNodeWithText(app.getString(R.string.in_garmin_store_group)).performScrollTo()
+        GarminApp.entries.forEach { assertEquals(1, once(it)) }
+        compose.onNodeWithText(app.getString(R.string.in_garmin_field_what)).performScrollTo().performClick()
+        assertEquals(listOf(GarminApp.Field), opened)
     }
 
     @Test
-    fun aPublishedListingOpensFromItsRowWithTheSwitchOffToo() {
+    fun anAppOnTheWatchIsListedUnderItTheRestInTheStore() {
         val opened = ArrayList<GarminApp>()
-        show(ConnectIqStore(mapOf(GarminApp.Field to "f1")), on = false, opened)
-        compose.onNodeWithText(app.getString(R.string.in_garmin_store_group)).performScrollTo()
+        show(GarminLinkState(garminConnect = true, answering = true, watches = listOf(watch(GarminApp.Aura))), opened)
+        // the face under the watch, not in the store; the watch app and the field only in the store
+        compose.onNodeWithText(app.getString(R.string.in_garmin_faces_group)).performScrollTo()
         compose.onNodeWithText(app.getString(R.string.in_garmin_aura_what)).assertDoesNotExist()
-        compose.onNodeWithText(app.getString(R.string.in_garmin_field_what)).performScrollTo().performClick()
-        assertEquals(listOf(GarminApp.Field), opened)
+        compose.onNodeWithText(app.getString(R.string.in_garmin_sukrara_group)).assertDoesNotExist()
+        GarminApp.entries.forEach { assertEquals(1, once(it)) }
+        compose.onNodeWithText(app.getString(R.string.in_garmin_app_what)).performScrollTo().performClick()
+        assertEquals(listOf(GarminApp.App), opened)
+    }
+
+    @Test
+    fun withEveryAppOnTheWatchThereIsNoStoreGroup() {
+        show(GarminLinkState(garminConnect = true, answering = true, watches = listOf(watch(*GarminApp.entries.toTypedArray()))))
+        compose.onNodeWithText(app.getString(R.string.in_garmin_store_group)).assertDoesNotExist()
+        GarminApp.entries.forEach { assertEquals(1, once(it)) }
     }
 }

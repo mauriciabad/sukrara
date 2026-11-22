@@ -55,15 +55,15 @@ class AppGarminTest {
     }
 
     @Test
-    fun theStepsAppsLinkOnlyToPublishedListings() {
+    fun theStepsAppsOpenTheirListingOrTheStoresSearch() {
         val s = GarminLinkState(garminConnect = true, watches = listOf(watch("Venu 3", GarminApp.App)))
         val none = AppGarmin.apps(s, ConnectIqStore(emptyMap()))
         assertEquals(GarminApp.entries.map { it.key }, none.map { it.key })
-        assertTrue(none.all { it.url == null })
+        assertTrue(none.all { it.url("en") == "https://apps.garmin.com/en-US/search?keyword=Sukrara" })
         assertEquals(listOf("app"), none.filter { it.onWatch }.map { it.key })
         val one = AppGarmin.apps(s, ConnectIqStore(mapOf(GarminApp.Aura to "a1")))
-        assertEquals("https://apps.garmin.com/es-ES/apps/a1", one.first { it.key == "aura" }.url!!("es"))
-        assertNull(one.first { it.key == "field" }.url)
+        assertEquals("https://apps.garmin.com/es-ES/apps/a1", one.first { it.key == "aura" }.url("es"))
+        assertEquals("https://apps.garmin.com/es-ES/search?keyword=Sukrara", one.first { it.key == "field" }.url("es"))
         // each with its kind's Connect IQ icon
         assertEquals(
             listOf(DsR.drawable.ds_ic_watch_face, DsR.drawable.ds_ic_device_app, DsR.drawable.ds_ic_data_field),
