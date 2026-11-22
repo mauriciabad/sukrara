@@ -38,7 +38,7 @@ export type Live = {
 	sensor: { state: 'ok'; leftH?: number } | { state: 'warmup'; done: number } | { state: 'almost' } | { state: 'ended' };
 	/** Alerts held: waiting after a treatment, or muted, with the minutes left; null = Sukrara decides as usual. */
 	hold: { kind: 'quiet' | 'muted'; leftMin: number } | null;
-	/** The last treatment, if any in the last 24 h. */
+	/** The last treatment, when the card's slot beside the value shows one. */
 	treatment: { items: { kind: 'rapid' | 'long' | 'carbs'; amount: number }[]; agoMin: number } | null;
 	/** Do Not Disturb (the watch's sleep). */
 	dnd: boolean;

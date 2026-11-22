@@ -2727,7 +2727,10 @@ ages by itself from its own time with the phone away.
   sensor rail is on a side (it already counts down, in amber); the phone out of reach with "No phone" (which wins in
   the countdown too). Too
   long for the arc: the least important field goes. A value the watch doesn't have shows `--` (time in range before a
-  quarter of the day, or after the phone's midnight); no treatment in 24 h leaves that field out.
+  quarter of the day, or after the phone's midnight). The last treatment is exactly the card's slot beside the value
+  (#239, the one rule `LastTreatment`: rapid insulin for 4 h, carbs 3 min per gram from 30 min to 3 h, insulin whose
+  quiet runs with its carbs, the treatment covering the alert; never long-acting or a note), and it moves on and ends
+  on the watch's clock with the phone out of reach too; with none, that field is left out.
 - **Modes**: *always-on* (the watch's display setting): outlined time, value, pill and messages in a dimmer palette,
   no fields and no side element (no glucose rail, battery or sensor rail; in private, the time and what private shows:
   the pill, a message, the value when a needed pill unmasks it); very low's red block dimmed so no state lights more than
@@ -2759,8 +2762,8 @@ ages by itself from its own time with the phone away.
 - Sukrara Aura (the Garmin watch face, `contracts/watchface/aura`) shows what this phone's card and glucose
   notification show: the phone builds one payload from THE glucose state (the hub: THE trend with its doubling, the
   alert runtime's pill, the sensor with its life's start and end from the sensor screen's dates (the sensor rail), the
-  last treatment, today's time in range, the person's unit and limits), with
-  absolute times so the watch keeps every age and countdown right between messages (`:integrations`
+  card's last treatment with when it ends and what it gives way to, today's time in range, the person's unit and
+  limits), with absolute times so the watch keeps every age and countdown right between messages (`:integrations`
   `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 3; tests `AuraPayloadFixtureTest`).
 - **Two ways, nothing to set up** (`garmin/AuraLink`, on by default whenever Garmin Connect is installed; schema
   `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face now, its data field and app when they come):
@@ -2816,8 +2819,8 @@ ages by itself from its own time with the phone away.
   keeps the newest payload (by when the phone built it; a burst of queued ones never puts an older one back) in
   storage, so after a restart it shows the last reading at once, aging. Every draw works the inputs out from the
   payload and the watch clock: with the phone out of reach the reading ages from its own time (late → struck → *No
-  reading since*), a quiet or mute that ran out shows no pill, the warm-up and the sensor's end count down by
-  themselves; a watch clock behind the phone's never makes a reading look younger. Garmin's own *No phone* field says
+  reading since*), a quiet or mute that ran out shows no pill, the last treatment moves on and goes when the card's
+  slot would, the warm-up and the sensor's end count down by themselves; a watch clock behind the phone's never makes a reading look younger. Garmin's own *No phone* field says
   the phone is away (`contracts/watchface/aura/SPEC.md` §6.10). Tests: `LinkTest` (`apps/garmin/tools/link-test.sh`).
 - Debug builds: `GARMIN_SIM --ez on true` sends to the Connect IQ simulator instead of Garmin Connect (adb forward
   tcp:7381, simulator › Connection › Start; the fetch through adb forward tcp:17582).
@@ -2825,7 +2828,9 @@ ages by itself from its own time with the phone away.
 **States and exits**: on the watch: *value* (fresh → late → old → no reading since → long gap) → leaves by itself
 with the next reading; nothing to do on the watch. *Warm-up* / *Sensor ended* / *No readings* (nothing paired) → leave when Sukrara's
 sensor state changes on the phone. *Pill* → counts down and leaves at the quiet's or mute's end; mute and unmute are on
-the phone (Alerts › States and exits). *No phone* field → leaves when the phone is back in reach. *Side elements* → Customize › Left side / Right side
+the phone (Alerts › States and exits). *Last treatment* field → leaves by itself when the card's slot does (its keep
+or quiet ends), with the phone away too; editing or deleting the treatment on the phone changes it with the next
+message. *No phone* field → leaves when the phone is back in reach. *Side elements* → Customize › Left side / Right side
 (battery, sensor days, glucose rail, nothing); the sensor rail's states (days left → countdown → ended; warm-up as a
 progress bar; `--` without dates) follow the sensor on the phone, and the automatic *sensor ending* field leaves when a
 sensor rail is chosen (and comes back when it isn't). *Private* → on and

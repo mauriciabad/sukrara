@@ -111,6 +111,12 @@ test('waits count down and treatments age', () => {
 	assert.equal(liveAt(s, 80).hold, null);
 	assert.equal(liveAt(s, 100).treatment!.agoMin, 85);
 	assert.equal(liveAt(s, 10).treatment, null);
+	// the card's slot beside the value: the carbs ride along while the insulin's quiet runs, then the insulin alone
+	assert.deepEqual(liveAt(s, 20).treatment!.items.map((i) => i.kind), ['rapid', 'carbs']);
+	assert.deepEqual(liveAt(s, 80).treatment!.items.map((i) => i.kind), ['rapid']);
+	// 15 g of carbs stay 45 min (3 min per gram)
+	assert.ok(liveAt(scenario('night-low'), 136).treatment);
+	assert.equal(liveAt(scenario('night-low'), 137).treatment, null);
 });
 
 test('the clock and the history follow the scenario', () => {
@@ -302,6 +308,10 @@ test('the made-up day shows a bit of everything', () => {
 	assert.ok(some((v) => Number(v.battery) < 2), 'the watch battery runs low');
 	const kinds = new Set(dayData.treatments.flatMap((t) => t.items.map((i) => i.kind)));
 	assert.deepEqual([...kinds].sort(), ['carbs', 'long', 'rapid']);
+	// the treatment field is the card's slot: long-acting never, and nothing once the last dose's 4 h are up
+	const last = (v: Record<string, unknown>) => (v.last as { items: { k: string }[] }).items;
+	assert.ok(!some((v) => last(v).some((i) => i.k === 'long')), 'long-acting never shows');
+	assert.ok(some((v) => last(v).length === 0) && some((v) => last(v).length > 0), 'a last treatment, then none');
 	// the sensor counts down faster than real life, but never backwards while it runs
 	let prev = Infinity;
 	for (let t = dayData.sensor.ready; t < dayData.sensor.ready + 1440; t += 5) {

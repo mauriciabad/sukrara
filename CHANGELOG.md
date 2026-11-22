@@ -10,6 +10,9 @@ Sukrara's releases. 0.x versions are previews.
 - **Sukrara Aura keeps up when Garmin doesn't hand a reading to the face** (#244): after a watch restart, the watch
   got every reading but the face showed none for 16 minutes. The face now also picks them up itself at every draw, and
   the Garmin page says what the face really has, or "the watch face isn't taking new readings · restart the watch".
+- **Sukrara Aura shows the last treatment only while the card beside your value does** (#239): rapid insulin for 4 h,
+  carbs 3 min per gram (30 min to 3 h), never long-acting insulin. It goes on time with the phone out of reach too. It
+  used to keep the newest treatment of the last 24 hours.
 
 ## 0.16.0 — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 

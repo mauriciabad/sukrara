@@ -174,6 +174,12 @@ function linkSeamReading(logger as Logger) as Boolean {
             Test.assertEqualMessage(r.statusUntil, now + 2700, name);
             // the quiet ran out: no pill until the phone says what follows
             Test.assertEqualMessage((AuraLink.reading(now + 2700) as AuraReading).status, "none", name);
+        } else if (name.find("a meal") != null) {
+            Test.assertEqualMessage((r.lastItems as Array).size(), 2, name);
+            Test.assertEqualMessage(r.lastAt, now - 2100, name);
+            // the insulin's quiet ends with the phone away: the carbs no longer ride along; 4 h on, nothing
+            Test.assertEqualMessage(((AuraLink.reading(now + 1500) as AuraReading).lastItems as Array).size(), 1, name);
+            Test.assertMessage((AuraLink.reading(now + 12300) as AuraReading).lastItems == null, name);
         } else if (name.find("warming up") != null) {
             Test.assertEqualMessage(r.sensor, "warmup", name);
             Test.assertEqualMessage(r.warmUntil, now + 2520, name);

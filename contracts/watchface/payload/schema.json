@@ -10,7 +10,29 @@
     "time": {"type": "integer", "minimum": 0, "maximum": 2147483647},
     "until": {"type": "integer", "minimum": -1, "maximum": 2147483647, "description": "-1 = no end"},
     "mgdl": {"type": "integer", "minimum": 39, "maximum": 401, "description": "39 = LO, 401 = HI"},
-    "side": {"enum": ["low", "high"]}
+    "side": {"enum": ["low", "high"]},
+    "last": {
+      "description": "the card's last treatment from sent on: this answer until 'until' (-1 = no end), then 'next' (null = none)",
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["t", "items", "until", "next"],
+          "properties": {
+            "t": {"$ref": "#/$defs/time"},
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 2,
+              "items": {"type": "object", "additionalProperties": false, "required": ["k", "a"], "properties": {"k": {"enum": ["rapid", "carbs"]}, "a": {"type": "number", "minimum": 0}}}
+            },
+            "until": {"$ref": "#/$defs/until"},
+            "next": {"$ref": "#/$defs/last"}
+          }
+        }
+      ]
+    }
   },
   "properties": {
     "v": {"const": 3},
@@ -48,24 +70,7 @@
         {"type": "object", "additionalProperties": false, "required": ["k", "until"], "properties": {"k": {"const": "muted"}, "until": {"$ref": "#/$defs/until"}}}
       ]
     },
-    "last": {
-      "oneOf": [
-        {"type": "null"},
-        {
-          "type": "object",
-          "additionalProperties": false,
-          "required": ["t", "items"],
-          "properties": {
-            "t": {"$ref": "#/$defs/time"},
-            "items": {
-              "type": "array",
-              "minItems": 1,
-              "items": {"type": "object", "additionalProperties": false, "required": ["k", "a"], "properties": {"k": {"enum": ["rapid", "long", "carbs"]}, "a": {"type": "number", "minimum": 0}}}
-            }
-          }
-        }
-      ]
-    },
+    "last": {"$ref": "#/$defs/last"},
     "sensor": {
       "oneOf": [
         {"type": "object", "additionalProperties": false, "required": ["s"], "properties": {"s": {"enum": ["none", "ended"]}}},

@@ -40,9 +40,6 @@ object AuraPayload {
     const val STEP_S = 300L
     private const val SLACK_S = 150L
 
-    /** Treatments older than this never show as the last one (s). */
-    const val LAST_MAX_S = 24 * 3600L
-
     /** `until` for a mute with no end. */
     const val NEVER = -1
 
@@ -139,33 +136,50 @@ object AuraPayload {
     private fun until(s: Long): Int = if (s >= CardStatus.NEVER) NEVER else s.toInt()
 
     /**
-     * The face's treatment field: the card's last treatment (LastTreatment: running insulin with the carbs riding
-     * along, or the one covering the alert, or the newest rapid / carbs it keeps); else the newest treatment of the last
-     * 24 h with every other one logged in the same minute (a meal, a long-acting dose). Notes never show.
+     * The face's treatment field: the card's slot beside the value (THE rule, [LastTreatment.of], as the widget and the
+     * card draw it) at [nowS], `{t, items, until, next}`: `until` = when that answer ends with nothing new logged (−1
+     * never), `next` = the answer from then on (the same shape; null = nothing), so the face moves on by itself with
+     * the phone out of reach. The answer can only change where one of the rule's windows ends (an entry's keep, its
+     * quiet, the alert's Taken); there [LastTreatment.of] is asked again over the same entries (one dated later than
+     * [nowS] waits for the next message, as on the card), the Taken status counted as over from its end.
      */
     internal fun last(
         state: GlucoseState,
         treatments: List<Treatment>,
         nowS: Long,
     ): Map<String, Any?>? {
-        val live = treatments.filter { !it.deleted && it.kind != TreatmentKind.Note && it.at.epochSecond <= nowS }
-        val card = LastTreatment.of(live, muteRuleOf(state.alerts), state.alerts.status, nowS)
-        val items: List<Treatment> =
-            if (card != null) {
-                listOfNotNull(card.tr, card.carbs?.tr)
-            } else {
-                val newest = live.filter { nowS - it.at.epochSecond <= LAST_MAX_S }.maxByOrNull { it.at } ?: return null
-                val minute = newest.at.epochSecond / 60
-                live.filter { it.at.epochSecond / 60 == minute }.sortedBy { ORDER.indexOf(it.kind) }
-            }
-        if (items.isEmpty()) return null
-        return linkedMapOf(
-            "t" to items.maxOf { it.at.epochSecond }.toInt(),
-            "items" to items.map { linkedMapOf("k" to it.kind.id, "a" to round2(it.amount)) },
-        )
-    }
+        val rule = muteRuleOf(state.alerts)
+        val status = state.alerts.status
+        val taken = status as? CardStatus.Taken
+        val logged = treatments.filter { !it.deleted && it.at.epochSecond <= nowS }
 
-    private val ORDER = listOf(TreatmentKind.RapidInsulin, TreatmentKind.LongInsulin, TreatmentKind.Carbs)
+        fun at(s: Long): Map<String, Any?>? {
+            val st = if (taken != null && s >= taken.until) CardStatus.None else status
+            val info = LastTreatment.of(logged, rule, st, s) ?: return null
+            val items = listOfNotNull(info.tr, info.carbs?.tr)
+            return linkedMapOf(
+                "t" to items.maxOf { it.at.epochSecond }.toInt(),
+                "items" to items.map { linkedMapOf("k" to it.kind.id, "a" to round2(it.amount)) },
+            )
+        }
+        val ends =
+            logged
+                .flatMap { listOfNotNull(LastTreatment.keepS(it)?.let { k -> it.at.epochSecond + k }, rule?.muteUntil(it)) }
+                .plus(listOfNotNull(taken?.until?.takeIf { it < CardStatus.NEVER }))
+                .filter { it > nowS }
+                .distinct()
+                .sorted()
+        val steps = ArrayList<MutableMap<String, Any?>>()
+        var open = at(nowS)?.toMutableMap() ?: return null
+        for (end in ends) {
+            val then = at(end)
+            if (then == open) continue
+            steps += open.apply { put("until", end.toInt()) }
+            open = then?.toMutableMap() ?: break
+        }
+        if (steps.lastOrNull() !== open) steps += open.apply { put("until", NEVER) }
+        return steps.foldRight(null as Map<String, Any?>?) { step, next -> step.apply { put("next", next) } }
+    }
 
     /**
      * The sensor as the card decides it ([cardInfo]), with absolute times: `warmup` from `start` (ready at `ready`, the

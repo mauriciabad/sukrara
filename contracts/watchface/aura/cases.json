@@ -841,8 +841,8 @@
   {
    "id": "fields-no-treatment",
    "group": "fields",
-   "title": "No treatment today",
-   "expect": "Nothing logged in the last 24 h: the treatment field goes and time in range sits alone, centred on the arc.",
+   "title": "No last treatment",
+   "expect": "No last treatment (the card's slot shows none): the treatment field goes and time in range sits alone, centred on the arc.",
    "cfg": {
     "last": {
      "items": []
@@ -892,10 +892,10 @@
    }
   },
   {
-   "id": "fields-long-acting",
+   "id": "fields-heart-rate",
    "group": "fields",
-   "title": "Long-acting",
-   "expect": "Heart rate on top; the last basal, ▽ 18u in its own colour, 10h ago.",
+   "title": "Heart rate",
+   "expect": "Heart rate on top; steps and the last treatment, ▼ 2u 1h 20m, along the bottom.",
    "cfg": {
     "glucose": 118,
     "rate": 0.3,
@@ -903,16 +903,7 @@
     "fields": [
      "steps",
      "treatment"
-    ],
-    "last": {
-     "items": [
-      {
-       "k": "long",
-       "a": "18"
-      }
-     ],
-     "ago": 600
-    }
+    ]
    }
   },
   {

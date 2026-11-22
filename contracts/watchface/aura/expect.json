@@ -39483,7 +39483,7 @@
    }
   },
   {
-   "id": "fields-long-acting",
+   "id": "fields-heart-rate",
    "values": {
     "v": {
      "size": 390,
@@ -39499,7 +39499,7 @@
      "bottom": "M-135.5 105.9A172 172 0 0 0 135.5 105.9",
      "halo": {
       "path": "8 subpaths",
-      "chars": 843
+      "chars": 860
      }
     },
     "info": {
@@ -39936,19 +39936,19 @@
        "path": "4 subpaths",
        "chars": 201
       },
-      "tf": "translate(-96.6 132.5) rotate(36.1) scale(0.833) translate(-12 -12)",
+      "tf": "translate(-107.6 123.7) rotate(41) scale(0.833) translate(-12 -12)",
       "fill": "#A3A3A8",
       "stroke": "none",
       "sw": 2,
       "disp": "inline"
      },
      "i1": {
-      "key": "long",
-      "d": "M3.5 5.4H20.5L12 19.6Z",
-      "tf": "translate(16.2 163.2) rotate(-5.7) scale(0.833) translate(-12 -12)",
-      "fill": "none",
-      "stroke": "#C9B0FF",
-      "sw": 2.8,
+      "key": "rapid",
+      "d": "M2 4.2H22L12 20.9Z",
+      "tf": "translate(2.1 164) rotate(-0.7) scale(0.833) translate(-12 -12)",
+      "fill": "#8AB4FF",
+      "stroke": "none",
+      "sw": 2,
       "disp": "inline"
      },
      "i2": {
@@ -39976,22 +39976,22 @@
       "disp": "none"
      },
      "t0": {
-      "off": 62.8,
+      "off": 48,
       "s": "6,420",
       "col": "#FFFFFF",
       "w": 500,
       "disp": "inline"
      },
      "t1": {
-      "off": 187.1,
-      "s": "18u",
-      "col": "#C9B0FF",
+      "off": 172.3,
+      "s": "2u",
+      "col": "#8AB4FF",
       "w": 600,
       "disp": "inline"
      },
      "t2": {
-      "off": 234.7,
-      "s": "10h",
+      "off": 208.2,
+      "s": "1h 20m",
       "col": "#A3A3A8",
       "w": 500,
       "disp": "inline"

@@ -194,7 +194,7 @@ const GROUPS: Group[] = [
 		examples: [
 			{ case: 'fields-default', title: L('As it comes', 'Tal como viene'), note: L('Steps on top; time in range and the last treatment below.', 'Pasos arriba; tiempo en rango y el último tratamiento abajo.') },
 			{ case: 'fields-meal', title: L('After a meal', 'Después de comer'), note: L('Sunset, energy, and insulin and carbs with the time since.', 'Puesta de sol, energía, e insulina e hidratos con el tiempo desde entonces.') },
-			{ case: 'fields-long-acting', title: L('Long-acting insulin', 'Insulina lenta'), note: L('Heart rate on top; the last basal in its own colour.', 'Pulso arriba; la última basal en su propio color.') },
+			{ case: 'fields-heart-rate', title: L('Heart rate', 'Pulso'), note: L('Heart rate on top; steps and your last treatment below.', 'Pulso arriba; pasos y tu último tratamiento abajo.') },
 			{ case: 'fields-hiking', title: L('Hiking', 'De excursión'), note: L('A second time zone, altitude and floors.', 'Otra zona horaria, altitud y pisos.') },
 			{ case: 'fields-sukrara', title: L('Time in range on top', 'Tiempo en rango arriba'), note: L('Steps and notifications below.', 'Pasos y notificaciones abajo.') },
 			{ case: 'fields-tir-unknown', title: L('Too early to tell', 'Aún es pronto'), note: L('Time in range shows -- under a quarter of the day.', 'El tiempo en rango muestra -- antes de un cuarto del día.') },

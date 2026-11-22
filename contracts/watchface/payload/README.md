@@ -47,7 +47,7 @@ watch keeps every age and countdown right between messages. Decimals are floats;
 | `g` | the newest reading, or null (none, or not monitoring): `t` its time, `v` mg/dL (39 = LO, 401 = HI), `rate` mg/dL/min, `band` THE trend's band −3…3 (±3 = the doubled arrow), `deg` the arrow's rotation (negative = up); `rate` / `band` / `deg` null without a trend (and always for LO / HI) |
 | `hist` | the 36 readings before `g` (3 hours: the sparkline's longest reach, `../aura/SPEC.md` §6.5), oldest first: slot i is the reading nearest `g.t − 300 s × (36 − i)` within 150 s, else null; `[]` without `g` |
 | `st` | the pill's status (Sukrara's alert runtime), null = none: `{k: needed, side}`, `{k: taken, side, until}` (quiet after a treatment), `{k: paused, side, until}` (a side muted), `{k: muted, until}` (Mute all); `side` `low` / `high`; `until` −1 = no end |
-| `last` | the treatment field, null = none: `{t, items: [{k: rapid / long / carbs, a}]}`: the card's last treatment (running insulin with the carbs riding along, the one covering the alert, or the newest rapid / carbs), else the newest of the last 24 h with whatever was logged in the same minute; notes never |
+| `last` | the treatment field, null = none: `{t, items: [{k: rapid / carbs, a}], until, next}`, exactly the card's slot beside the value (Sukrara's one rule, `LastTreatment`: running insulin with the carbs riding along, the one covering the alert, or the newest rapid insulin (4 h) / carbs (3 min per gram, 30 min to 3 h); never long-acting or notes) at `sent`; `t` = its newest item's time; `until` = when that answer ends with nothing new logged (−1 = no end), `next` = the answer from then on, the same shape (null = none), so the face moves on by itself with the phone out of reach |
 | `sensor` | `{s: none}` (not monitoring: nothing paired) · `{s: warmup, start, ready, hold, end?}` · `{s: active, start?, end?, warn?}` (`warn` = the start of the person's countdown, *Sensor countdown*, default the last 8 h) · `{s: ended}`. `start` (active) and `end` (warm-up) are the sensor's life as the phone's sensor screen has it (the wearer's paired sensor; not on a follower): the face's sensor rail (`../aura/SPEC.md` §6.9b) |
 | `tir` | today's time in range on the phone, `{pct, until}` (whole percent, 100 only when every reading was in range; `until` = the end of the phone's day), or null (not enough data: under a quarter of the day so far) |
 
@@ -69,11 +69,14 @@ its inputs from the payload and the watch clock `now` (`cases.json` `watch` chec
   `(end − now)` hours), else `ok`; `ended`. "Ended but still sending" is `ended` with a fresh or late value. An
   active sensor with `start` and `end` also gives `sensorLife` = `(end − start)` in days and `sensorLeft` =
   `(end − now)` hours (never below 0) in every state: the sensor rail; without them the rail says `--`.
-- `lastAgo` = `(now − last.t)` minutes; `tir` until `tir.until`, then none.
+- `last`: the first of `last`, `last.next`, … whose `until` is still ahead of `now + skew` (−1 = never), else none;
+  `lastAgo` = `(now + skew − its t)` minutes. `tir` until `tir.until`, then none.
 - **Order**: keep the stored payload when an incoming one has an older `sent`, unless the stored one is more than
   5 minutes ahead of the watch clock (the phone's clock was wrong, then fixed).
 
 ## Changing it
 
 A change lands with the phone and the face in the same change (parity group `watchface-link`), with `v` raised when
-an older face would misread it (CLAUDE.md: the wire formats are versioned; every app speaks the same version).
+an older face would misread it (CLAUDE.md: the wire formats are versioned; every app speaks the same version). A key
+an older face ignores needs no raise: `last.until` / `last.next` (#239) came in version 3, and an older face reads
+`last` as the answer at `sent` until the next message.

@@ -31,7 +31,7 @@ then says "No readings" and hides the level rail). It runs at every draw (1 Hz w
 the payload when it arrives, keep the `AuraReading`, return it here, and call `AuraData.changed()` so the face redraws.
 
 Every time in `AuraReading` is absolute (epoch seconds, UTC): the face computes the age, the quiet / mute time left,
-the time since the last treatment, the warm-up and the sensor's hours itself at every draw, so it stays right between
+the time since the last treatment (and when it gives way), the warm-up and the sensor's hours itself at every draw, so it stays right between
 messages and with the phone out of reach (late → old → no readings, from the reading's own time). The fields (see
 `AuraData.mc` for each one's meaning) are Sukrara's decisions (ground rule 1): `rate` and `doubled` (the trend),
 `status` / `statusUntil` (the pill: `auto` shows the need, `quiet` after a treatment, `muted`), `sensor`, `limits` (the

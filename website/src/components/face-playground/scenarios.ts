@@ -144,10 +144,22 @@ export function liveAt(s: Scenario, t: number): Live {
 		: quiet
 			? { kind: 'quiet' as const, leftMin: Math.ceil(quiet[1] - t) }
 			: null;
-	// the last treatment: the latest so far, or in a loop yesterday's latest
-	const ts = s.treatments ?? [];
-	const done = ts.filter((x) => x.at <= t).at(-1) ?? (s.loop ? ts.at(-1) : undefined);
-	const ago = done ? (done.at <= t ? t - done.at : t + s.minutes - done.at) : 0;
+	// the last treatment as the card's slot beside the value shows it (Sukrara's one rule): rapid insulin whose quiet
+	// still runs, with the newest kept carbs riding along; else carbs whose quiet runs; else the newest kept rapid
+	// insulin (4 h) or carbs (3 min per gram, 30 min to 3 h), insulin first at the same minute; never long-acting. In a
+	// loop, yesterday's count too.
+	const days = s.loop ? [0, s.minutes] : [0];
+	const logged = days.flatMap((d) => (s.treatments ?? []).flatMap((x) => x.items.map((i) => ({ ...i, at: x.at - d })))).filter((x) => x.at <= t);
+	const keep = (x: Treatment) => (x.kind === 'rapid' ? 240 : x.kind === 'carbs' ? Math.min(180, Math.max(30, 3 * x.amount)) : 0);
+	const kept = logged.filter((x) => t - x.at < keep(x));
+	const quiets = days.flatMap((d) => (s.quiet ?? []).map(([a, b]) => [a - d, b - d]));
+	const quietRuns = (x: { at: number }) => quiets.some(([a, b]) => a === x.at && t < b);
+	const newest = <T extends { at: number; kind: string }>(l: T[]) =>
+		l.reduce<T | undefined>((n, x) => (!n || x.at > n.at || (x.at === n.at && x.kind === 'rapid') ? x : n), undefined);
+	const insulin = newest(logged.filter((x) => x.kind === 'rapid' && quietRuns(x)));
+	const one = insulin ?? newest(logged.filter((x) => x.kind === 'carbs' && quietRuns(x))) ?? newest(kept);
+	const riding = insulin && newest(kept.filter((x) => x.kind === 'carbs'));
+	const shown = !one ? [] : riding ? [one, riding] : [one];
 	const live: Live = {
 		now,
 		reading,
@@ -155,7 +167,9 @@ export function liveAt(s: Scenario, t: number): Live {
 		phone: reaches(Math.floor(t)),
 		sensor: s.sensor?.(t) ?? { state: 'ok' },
 		hold,
-		treatment: done ? { items: done.items, agoMin: Math.floor(ago) } : null,
+		treatment: shown.length
+			? { items: shown.map(({ kind, amount }) => ({ kind, amount })), agoMin: Math.floor(t - Math.max(...shown.map((x) => x.at))) }
+			: null,
 		dnd: typeof s.dnd === 'function' ? s.dnd(t) : !!s.dnd,
 	};
 	if (s.watch) live.watch = s.watch(t);

@@ -31,13 +31,15 @@
           145, 139, 132, 124, 117, 111, 106, 102, 99, 97, 95, 95,
           96, 97, 98, 99, 100, 101, 103, 104, 105, 107, 108, 110],
         "st": null,
-        "last": {"t": 1794818976, "items": [{"k": "rapid", "a": 2.0}]},
+        "last": {"t": 1794818976, "items": [{"k": "rapid", "a": 2.0}], "until": 1794833376, "next": null},
         "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
         "tir": {"pct": 82, "until": 1794873600}
       },
       "watch": [
         {"at": 0, "expect": {"glucose": 112, "age": 0.5, "rate": 0.4, "trend": true, "double": false, "deg": -12.0, "status": "none", "sensor": "ok", "lastAgo": 80, "tir": 82, "sensorLife": 15.0, "sensorLeft": 120.0}},
         {"at": 600, "expect": {"glucose": 112, "age": 10.5, "status": "none", "sensor": "ok", "lastAgo": 90}},
+        {"name": "the phone out of reach: the dose 3 h 59 min old still shows (rapid insulin stays 4 h, as on the card)", "at": 9540, "expect": {"last": [{"k": "rapid", "a": 2.0}], "lastAgo": 239}},
+        {"name": "the phone out of reach: at 4 h the field goes by itself", "at": 9600, "expect": {"last": null}},
         {"at": 49824, "expect": {"age": 830.9, "tir": null}},
         {"name": "the watch clock 2 min behind the phone: the phone's clock wins, so the age is never too young", "received": -120, "at": -90, "expect": {"age": 1.0}},
         {"name": "the watch clock 5 min ahead: the watch's own (older) age stands", "received": 300, "at": 300, "expect": {"age": 5.5}}
@@ -104,14 +106,14 @@
           null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null],
         "st": {"k": "taken", "side": "high", "until": 1794826476},
-        "last": {"t": 1794822876, "items": [{"k": "rapid", "a": 3.0}]},
+        "last": {"t": 1794822876, "items": [{"k": "rapid", "a": 3.0}], "until": 1794837276, "next": null},
         "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
         "tir": null
       },
       "watch": [
         {"at": 0, "expect": {"status": "quiet", "side": "high", "left": 2700, "lastAgo": 15}},
         {"at": 60, "expect": {"status": "quiet", "left": 2640, "lastAgo": 16}},
-        {"name": "the quiet ran out with no new message: no pill (the phone's next message says what follows)", "at": 2700, "expect": {"status": "none", "left": null}}
+        {"name": "the quiet ran out with no new message: no pill (the phone's next message says what follows)", "at": 2700, "expect": {"status": "none", "left": null, "last": [{"k": "rapid", "a": 3.0}], "lastAgo": 60}}
       ]
     },
     {
@@ -159,18 +161,46 @@
           null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null],
         "st": null,
-        "last": {"t": 1794821676, "items": [{"k": "rapid", "a": 4.5}, {"k": "carbs", "a": 45.0}]},
+        "last": {
+          "t": 1794821676, "items": [{"k": "rapid", "a": 4.5}, {"k": "carbs", "a": 45.0}], "until": 1794825276,
+          "next": {"t": 1794821676, "items": [{"k": "rapid", "a": 4.5}], "until": 1794836076, "next": null}
+        },
         "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
         "tir": null
       },
-      "watch": [{"at": 0, "expect": {"last": [{"k": "rapid", "a": 4.5}, {"k": "carbs", "a": 45.0}], "lastAgo": 35}}]
+      "watch": [
+        {"at": 0, "expect": {"last": [{"k": "rapid", "a": 4.5}, {"k": "carbs", "a": 45.0}], "lastAgo": 35}},
+        {"name": "the phone out of reach: the insulin's quiet ends, so the carbs no longer ride along (the card's slot)", "at": 1500, "expect": {"last": [{"k": "rapid", "a": 4.5}], "lastAgo": 60}},
+        {"at": 12299, "expect": {"last": [{"k": "rapid", "a": 4.5}]}},
+        {"name": "the phone out of reach: the insulin's 4 h are up", "at": 12300, "expect": {"last": null}}
+      ]
     },
     {
-      "name": "long-acting 10 h ago is the last thing logged",
+      "name": "long-acting 5 min ago and rapid insulin exactly 4 h ago: no treatment (the card's slot never shows long-acting; rapid stays 4 h)",
       "phone": {
         "readings": [{"t": -30, "mgdl": 118, "rate": 0.3, "band": 0}],
         "quiet": {"rapidS": 3600, "carbsS": 900},
-        "treatments": [{"id": "l1", "k": "long", "a": 18, "t": -36000}, {"id": "r0", "k": "rapid", "a": 5, "t": -90000}],
+        "treatments": [{"id": "l1", "k": "long", "a": 18, "t": -300}, {"id": "r0", "k": "rapid", "a": 5, "t": -14400}],
+        "sensor": {"state": "active", "start": -864000, "end": 432000}
+      },
+      "payload": {
+        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
+        "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null],
+        "st": null, "last": null,
+        "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
+        "tir": null
+      },
+      "watch": [{"at": 0, "expect": {"last": null}}]
+    },
+    {
+      "name": "rapid insulin 3 h 59 min ago: one more minute (its 4 h on the card)",
+      "phone": {
+        "readings": [{"t": -30, "mgdl": 118, "rate": 0.3, "band": 0}],
+        "quiet": {"rapidS": 3600, "carbsS": 900},
+        "treatments": [{"id": "r4", "k": "rapid", "a": 5, "t": -14340}],
         "sensor": {"state": "active", "start": -864000, "end": 432000}
       },
       "payload": {
@@ -180,11 +210,46 @@
           null, null, null, null, null, null, null, null, null, null, null, null,
           null, null, null, null, null, null, null, null, null, null, null, null],
         "st": null,
-        "last": {"t": 1794787776, "items": [{"k": "long", "a": 18.0}]},
+        "last": {"t": 1794809436, "items": [{"k": "rapid", "a": 5.0}], "until": 1794823836, "next": null},
         "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
         "tir": null
       },
-      "watch": [{"at": 0, "expect": {"last": [{"k": "long", "a": 18.0}], "lastAgo": 600}}]
+      "watch": [
+        {"at": 0, "expect": {"last": [{"k": "rapid", "a": 5.0}], "lastAgo": 239}},
+        {"at": 59, "expect": {"last": [{"k": "rapid", "a": 5.0}]}},
+        {"name": "4 h after the dose, no new message: gone", "at": 60, "expect": {"last": null}},
+        {"name": "the watch clock 2 min behind the phone: the 4 h end on the phone's clock", "received": -120, "at": -60, "expect": {"last": null}}
+      ]
+    },
+    {
+      "name": "carbs stay 3 min per gram, between 30 min and 3 h: 5 g 10 min ago, then 80 g from 2 h ago",
+      "phone": {
+        "readings": [{"t": -30, "mgdl": 118, "rate": 0.3, "band": 0}],
+        "quiet": {"rapidS": 3600, "carbsS": 900},
+        "treatments": [{"id": "c1", "k": "carbs", "a": 80, "t": -7200}, {"id": "c2", "k": "carbs", "a": 5, "t": -600}],
+        "sensor": {"state": "active", "start": -864000, "end": 432000}
+      },
+      "payload": {
+        "v": 3, "sent": 1794823776, "unit": "mgdl", "bands": [55, 70, 140, 180, 250, 300],
+        "g": {"t": 1794823746, "v": 118, "rate": 0.3, "band": 0, "deg": -9.0},
+        "hist": [null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null,
+          null, null, null, null, null, null, null, null, null, null, null, null],
+        "st": null,
+        "last": {
+          "t": 1794823176, "items": [{"k": "carbs", "a": 5.0}], "until": 1794824976,
+          "next": {"t": 1794816576, "items": [{"k": "carbs", "a": 80.0}], "until": 1794827376, "next": null}
+        },
+        "sensor": {"s": "active", "start": 1793959776, "end": 1795255776, "warn": 1795226976},
+        "tir": null
+      },
+      "watch": [
+        {"at": 0, "expect": {"last": [{"k": "carbs", "a": 5.0}], "lastAgo": 10}},
+        {"name": "the snack's quiet ends: nothing changes", "at": 300, "expect": {"last": [{"k": "carbs", "a": 5.0}], "lastAgo": 15}},
+        {"name": "the phone out of reach: 5 g keep the floor of 30 min, then the 80 g show (3 h at most)", "at": 1200, "expect": {"last": [{"k": "carbs", "a": 80.0}], "lastAgo": 140}},
+        {"at": 3599, "expect": {"last": [{"k": "carbs", "a": 80.0}]}},
+        {"at": 3600, "expect": {"last": null}}
+      ]
     },
     {
       "name": "warming up, 18 min in: no reading yet",

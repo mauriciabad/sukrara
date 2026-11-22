@@ -7,7 +7,7 @@ import Toybox.Lang;
 import Toybox.Math;
 import Toybox.Time;
 
-// What the face knows from Sukrara: the newest payload (contracts/watchface/payload, version 2), kept in storage so a
+// What the face knows from Sukrara: the newest payload (contracts/watchface/payload, version 3), kept in storage so a
 // restart shows it at once, and the face's inputs worked out from it and the watch clock at every draw (README "On
 // the watch"). Sukrara decides; this only counts time.
 module AuraLink {
@@ -240,8 +240,8 @@ module AuraLink {
         var st = p.get("st");
         var left = x.get("left");
         r.statusUntil = left instanceof Number ? ((st as Dictionary).get("until") as Number) - _skew : null;
-        var last = p.get("last");
-        if (last instanceof Dictionary) {
+        var last = treatment(p, now + _skew);
+        if (last != null) {
             var items = last.get("items") as Array;
             var out = [] as Array;
             for (var i = 0; i < items.size(); i++) {
@@ -318,8 +318,8 @@ module AuraLink {
             out.put("history", []);
         }
         status(p.get("st"), t, out);
-        var last = p.get("last");
-        if (last instanceof Dictionary) {
+        var last = treatment(p as Dictionary, t);
+        if (last != null) {
             out.put("last", last.get("items"));
             out.put("lastAgo", (t - (last.get("t") as Number)) / 60);
         } else {
@@ -329,6 +329,20 @@ module AuraLink {
         var tir = p.get("tir");
         out.put("tir", tir instanceof Dictionary && t < (tir.get("until") as Number) ? tir.get("pct") : null);
         return out;
+    }
+
+    // The treatment field at the phone's time [t]: the first of last, last.next, … whose until is still ahead (−1 =
+    // never); null = none (Sukrara's card shows no last treatment then).
+    function treatment(p as Dictionary, t as Number) as Dictionary? {
+        var s = p.get("last");
+        while (s instanceof Dictionary) {
+            var until = s.get("until");
+            if (!(until instanceof Number && until != -1 && t >= until)) {
+                return s as Dictionary;
+            }
+            s = s.get("next");
+        }
+        return null;
     }
 
     // needed → auto, taken → quiet, paused / muted → muted; a countdown that ran out shows nothing.

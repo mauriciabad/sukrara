@@ -11,10 +11,18 @@ import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SourceId
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.SourceStatus
+import app.mauri.sukrara.core.model.Treatment
+import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.core.model.TreatmentOrigin
+import app.mauri.sukrara.core.model.TreatmentQuiet
+import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
+import app.mauri.sukrara.graph.LastTreatment
+import app.mauri.sukrara.graph.id
+import app.mauri.sukrara.graph.muteRuleOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -83,10 +91,37 @@ class AuraLinkTest {
         port: FakePort,
         glucose: MutableStateFlow<GlucoseState>,
         settings: InMemorySettingsRepository = InMemorySettingsRepository(),
+        treatments: InMemoryTreatmentsRepository = InMemoryTreatmentsRepository(),
     ): AuraLink {
         val d = StandardTestDispatcher(testScheduler)
-        return AuraLink(settings, glucose, InMemoryTreatmentsRepository(), InMemoryReadingsRepository(), port, clock, d, {}, fetchPort = 0)
+        return AuraLink(settings, glucose, treatments, InMemoryReadingsRepository(), port, clock, d, {}, fetchPort = 0)
             .also { it.start(backgroundScope) }
+    }
+
+    private fun treatment(
+        id: String,
+        kind: TreatmentKind,
+        amount: Double,
+        agoS: Long,
+    ): Treatment {
+        val at = clock.now().minusSeconds(agoS)
+        return Treatment(id, kind, amount, at, modifiedAt = at, origin = TreatmentOrigin.Phone)
+    }
+
+    /** What the face shows at [s] (phone time) from a payload's `last`: README "On the watch". */
+    private fun shown(
+        last: Map<*, *>?,
+        s: Long,
+    ): List<Pair<Any?, Double>>? {
+        var step = last
+        while (step != null) {
+            val until = step["until"] as Int
+            if (until == AuraPayload.NEVER || s < until) {
+                return (step["items"] as List<*>).map { (it as Map<*, *>)["k"] to (it["a"] as Float).toDouble() }
+            }
+            step = step["next"] as Map<*, *>?
+        }
+        return null
     }
 
     /** Past the link's settle time: a changed payload is sent. */
@@ -133,6 +168,70 @@ class AuraLinkTest {
             assertEquals(2, port.sent.size)
             assertEquals(115, (port.sent[1]["g"] as Map<*, *>)["v"])
         }
+
+    @Test
+    fun aLoggedDoseGoesToTheWatchWithItsEnd() =
+        runTest {
+            val port = FakePort()
+            val treatments = InMemoryTreatmentsRepository()
+            treatments.upsertIfNewer(TreatmentRecord(treatment("r1", TreatmentKind.RapidInsulin, 3.0, 600)))
+            val quiet = AlertUiState(treatmentQuiet = TreatmentQuiet(rapidS = 3600, carbsS = 900))
+            link(port, MutableStateFlow(state(-30L to 180).copy(alerts = quiet)), treatments = treatments)
+            settle()
+            val last = port.sent.single()["last"] as Map<*, *>
+            assertEquals(listOf(mapOf("k" to "rapid", "a" to 3.0f)), last["items"])
+            // the card keeps rapid insulin 4 h: the watch lets it go then by itself
+            assertEquals((clock.now().epochSecond - 600 + 4 * 3600).toInt(), last["until"])
+            assertNull(last["next"])
+        }
+
+    @Test
+    fun theFacesTreatmentIsTheCardsSlotAtEveryMoment() {
+        val now = clock.now().epochSecond
+        val quiet = TreatmentQuiet(rapidS = 3600, carbsS = 900)
+        val rapid = TreatmentKind.RapidInsulin
+        val carbs = TreatmentKind.Carbs
+        val cases =
+            listOf(
+                // a meal: insulin and carbs together
+                Triple(quiet, CardStatus.None, listOf(treatment("r", rapid, 4.5, 600), treatment("c", carbs, 45.0, 600))),
+                // a correction, then snacks: the carbs ride along while the insulin's quiet runs, then the newest kept
+                Triple(
+                    quiet,
+                    CardStatus.None,
+                    listOf(treatment("r", rapid, 2.0, 1800), treatment("c1", carbs, 60.0, 3000), treatment("c2", carbs, 20.0, 600)),
+                ),
+                // carbs covering a low past their own keep
+                Triple(quiet, CardStatus.Taken(carbs, now - 300, now + 2400), listOf(treatment("c", carbs, 5.0, 300))),
+                // no quiet rules: only the keeps; long-acting and notes never
+                Triple(
+                    TreatmentQuiet(),
+                    CardStatus.None,
+                    listOf(
+                        treatment("l", TreatmentKind.LongInsulin, 18.0, 60),
+                        treatment("n", TreatmentKind.Note, 0.0, 30),
+                        treatment("r", rapid, 1.0, 9000),
+                        treatment("c", carbs, 80.0, 3600),
+                    ),
+                ),
+                Triple(quiet, CardStatus.None, listOf(treatment("l", TreatmentKind.LongInsulin, 18.0, 60))),
+            )
+        for ((q, status, trs) in cases) {
+            val state = state(-30L to 120).copy(alerts = AlertUiState(status = status, treatmentQuiet = q))
+            val last = AuraPayload.last(state, trs, now)
+            val ends =
+                generateSequence<Map<*, *>>(
+                    last,
+                ) { it["next"] as Map<*, *>? }.map { (it["until"] as Int).toLong() }.filter { it > 0 }
+            val moments = (0..8 * 60).map { now + it * 60L } + ends.flatMap { sequenceOf(it - 1, it) }
+            for (s in moments) {
+                // the alert runtime's status as the watch counts it: a quiet after a treatment ends at its end
+                val st = if (status is CardStatus.Taken && s >= status.until) CardStatus.None else status
+                val card = LastTreatment.of(trs, muteRuleOf(state.alerts), st, s)?.let { i -> listOfNotNull(i.tr, i.carbs?.tr) }
+                assertEquals("${trs.map { it.id }} at +${s - now} s", card?.map { it.kind.id to it.amount }, shown(last, s))
+            }
+        }
+    }
 
     @Test
     fun theSameStateIsNotSentTwice() =
