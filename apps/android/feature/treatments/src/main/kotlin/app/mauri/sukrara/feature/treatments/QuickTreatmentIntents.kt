@@ -20,25 +20,18 @@ enum class QuickSource { Notification, Widget, Tile, Home, Draft }
 object QuickTreatmentIntents {
     const val EXTRA_SOURCE = "app.mauri.sukrara.extra.QUICK_SOURCE"
 
-    /** [focusCarbs] = open with Carbs focused (a low is going on); otherwise the dialog decides from the state. */
+    /** The dialog from [source]; its focused field is THE kinds' order's first, decided as it opens. */
     fun open(
         context: Context,
         source: QuickSource,
-        focusCarbs: Boolean = false,
     ): Intent =
         Intent(NavTargets.ACTION_QUICK_TREATMENT)
             .setClassName(context.packageName, QuickTreatmentActivity::class.java.name)
             .putExtra(EXTRA_SOURCE, source.name)
-            .putExtra(NavTargets.EXTRA_FOCUS_CARBS, focusCarbs)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-    internal fun focusCarbs(intent: Intent?): Boolean = intent?.getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, false) == true
-
-    /** The alert whose *Log carbs* opened the dialog (its kind's wire name), else null. */
+    /** The alert whose *Treatment* opened the dialog (its kind's wire name), else null. */
     internal fun alertKind(intent: Intent?): String? = intent?.getStringExtra(NavTargets.EXTRA_ALERT_KIND)
-
-    /** Long-acting focused: *Add treatment* after a rapid pen's read (the other insulin). */
-    internal fun focusLong(intent: Intent?): Boolean = intent?.getBooleanExtra(NavTargets.EXTRA_FOCUS_LONG, false) == true
 
     /** Opened from inside the app (home's button, its *Eat carbs* badge): the app is already there behind it. */
     internal fun fromApp(intent: Intent?): Boolean = intent?.getBooleanExtra(NavTargets.EXTRA_FROM_APP, false) == true

@@ -8,15 +8,14 @@ import app.mauri.sukrara.core.model.TreatmentKind
 
 /**
  * What a tap on the card's pill does: the pill looks like an action, so every pill that shows does something.
- *  - *Eat carbs* / *Take insulin* → Add treatment with that field focused, where this phone may add entries.
+ *  - *Eat carbs* / *Take insulin* → Add treatment, where this phone may add entries (THE kinds' order focuses the field
+ *    the alert asks for: Carbs for the alerts carbs answer, else Rapid).
  *  - a side quiet after a treatment (*45m left*) or muted (*Muted*) → that side's ways out ([Quiet]).
  *  - *Muted · 1h* (Mute all) → its ways out ([MuteAll]).
  *  - *Replace sensor* / *Ended · Replace sensor* (the sensor ended, the wearer) → pair the new sensor.
  */
 sealed interface PillAction {
-    data class Treat(
-        val carbs: Boolean,
-    ) : PillAction
+    data object Treat : PillAction
 
     /** The quiet of one side: [lowSide] = lows; [taken] = a treatment quiets it (else the person muted it). */
     data class Quiet(
@@ -45,7 +44,7 @@ sealed interface PillAction {
         ): PillAction =
             when {
                 ended -> ReplaceSensor
-                status is CardStatus.Needed -> if (canAdd) Treat(carbs = status.lowSide) else None
+                status is CardStatus.Needed -> if (canAdd) Treat else None
                 status is CardStatus.Taken && status.until > nowS -> Quiet(lowSide = status.treatment == TreatmentKind.Carbs, taken = true)
                 status is CardStatus.Paused && status.until > nowS && muteAll -> MuteAll
                 status is CardStatus.Paused && status.until > nowS -> Quiet(lowSide = status.lowSide, taken = false)

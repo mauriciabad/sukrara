@@ -9,6 +9,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import app.mauri.sukrara.core.model.KindOrder
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.pen.engine.Ledger
 import app.mauri.sukrara.pen.engine.PenEntry
@@ -85,7 +86,8 @@ class PenNotices(
             base(ports.readsChannel)
                 .setContentTitle(card.title)
                 .setContentText(card.lines.joinToString(" · "))
-                .setTimeoutAfter(2 * 3600_000L)
+                // its *Add treatment* has the other insulin first as long as it is up
+                .setTimeoutAfter(KindOrder.PEN_S * 1000)
                 .setAutoCancel(true)
                 // no amounts on the lock screen: the public version only says a pen was read
                 .setVisibility(Notification.VISIBILITY_PRIVATE)
@@ -194,7 +196,8 @@ class PenNotices(
     companion object {
         /**
          * The quick Add treatment dialog over the current app; after a read, at the time of its newest injection
-         * [after] with the other insulin focused (a rapid dose read: Long-acting; a long one: Rapid).
+         * [after]. THE kinds' order focuses the other insulin while the read is new ([KindOrder.PEN_S]: as long as
+         * this notification lasts): Long-acting after a rapid pen, Rapid after a long one.
          */
         fun addTreatment(
             ctx: Context,
@@ -204,10 +207,7 @@ class PenNotices(
                 .setPackage(ctx.packageName)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 .apply {
-                    if (after != null) {
-                        putExtra(NavTargets.EXTRA_AT, after.t * 1000)
-                        putExtra(NavTargets.EXTRA_FOCUS_LONG, after.k != "long")
-                    }
+                    if (after != null) putExtra(NavTargets.EXTRA_AT, after.t * 1000)
                 }
 
         /** Sukrara's home (a question chosen on its card). */

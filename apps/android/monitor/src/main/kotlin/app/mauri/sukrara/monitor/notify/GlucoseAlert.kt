@@ -41,8 +41,8 @@ data class GlucoseAlert(
 
 /** A button of [GlucoseAlert] (the Android action is built where it is posted: a Live Update can't take a direct reply). */
 sealed interface AlertButton {
-    /** Opens Add treatment: Carbs focused on the low side, Rapid on the high side; an answer to the alert (#39). */
-    data class Treatment(val carbs: Boolean) : AlertButton
+    /** Opens Add treatment as an answer to the alert (#39); THE kinds' order (the alert counted as ringing) focuses its field. */
+    data object Treatment : AlertButton
 
     data object RemindLess : AlertButton
 

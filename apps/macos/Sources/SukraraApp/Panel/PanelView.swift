@@ -304,7 +304,8 @@ struct PanelCard: View {
     }
 
     /// The card's pill as a control over the spot the renderer drew it: Eat carbs / Take insulin opens Add Treatment
-    /// with that field focused, a mute pill opens its ways out (the same as the blocks below).
+    /// (THE kinds' order focuses the field the alert asks for), a mute pill opens its ways out (the same as the blocks
+    /// below).
     @ViewBuilder private func pill(_ data: CardData, at rect: CGRect?) -> some View {
         let canAdd = AddTreatmentAvailability(model) == .available && links != nil
         let action = PillAction.of(
@@ -315,7 +316,7 @@ struct PanelCard: View {
                 switch action {
                 case .treat(let kind):
                     Button {
-                        links?.openAddTreatment(kind)
+                        links?.openAddTreatment()
                     } label: {
                         spot
                     }
@@ -394,8 +395,8 @@ struct PanelLinks {
     let treatments: TreatmentsModel
     let openSetup: () -> Void
     let openFollow: () -> Void
-    /// Add Treatment with a field focused (nil: the one the latest reading suggests).
-    let openAddTreatment: (Treatment.Kind?) -> Void
+    /// Add Treatment, its field THE kinds' order's first.
+    let openAddTreatment: () -> Void
     let openTreatments: () -> Void
     let openReport: () -> Void
     let openSettings: () -> Void
@@ -488,8 +489,8 @@ enum AddTreatmentAvailability: Equatable {
     }
 }
 
-/// What pressing the card's pill does: Eat carbs / Take insulin → Add Treatment with that field focused (where this
-/// Mac may log); a side's mute → its ways out; Mute all's → Unmute / Change Time.
+/// What pressing the card's pill does: Eat carbs / Take insulin → Add Treatment (where this Mac may log; the kind names
+/// the pill for VoiceOver); a side's mute → its ways out; Mute all's → Unmute / Change Time.
 enum PillAction: Equatable {
     case treat(Treatment.Kind)
     case quiet(AlertSide)
@@ -519,7 +520,7 @@ private struct ActionRows: View {
         VStack(alignment: .leading, spacing: 2) {
             Divider().padding(.bottom, 4)
             Button {
-                links.openAddTreatment(nil)
+                links.openAddTreatment()
             } label: {
                 PanelRowLabel(
                     title: L10n.t("Add Treatment…"), symbol: "plus.circle", shortcut: add == .available ? "↩" : nil)

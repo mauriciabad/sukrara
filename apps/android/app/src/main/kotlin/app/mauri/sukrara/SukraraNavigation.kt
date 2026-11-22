@@ -1014,15 +1014,6 @@ private fun route(
             )
         }
 
-        is HomeAction.Treat -> {
-            open(
-                context,
-                Intent(NavTargets.ACTION_QUICK_TREATMENT)
-                    .putExtra(NavTargets.EXTRA_FOCUS_CARBS, action.carbs)
-                    .putExtra(NavTargets.EXTRA_FROM_APP, true),
-            )
-        }
-
         HomeAction.OpenNightAlerts -> {
             backStack.push(SettingsKey.of(SettingsRoute.NightAlerts))
         }

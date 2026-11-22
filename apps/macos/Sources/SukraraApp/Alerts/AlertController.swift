@@ -18,9 +18,9 @@ enum AlertAction: Equatable {
     /// A *Mute* reply that isn't a length: nothing changes, the side's notification comes back
     /// silently (macOS removed it when the action was used).
     case reshow(AlertSide)
-    /// *Treatment* (any side but no data): Add Treatment opens focused on carbs for the low side, rapid insulin for the
-    /// high side, and the side's notification comes back silently (macOS removed it); the entry, once saved, quiets the
-    /// side like any entry (`muteAfterCarbs` / `muteAfterRapid`).
+    /// *Treatment* (any side but no data): Add Treatment opens as an answer to the side's alert (THE kinds' order counts
+    /// it as ringing: carbs focused for the alerts carbs answer), and the side's notification comes back silently (macOS
+    /// removed it); the entry, once saved, quiets the side like any entry (`muteAfterCarbs` / `muteAfterRapid`).
     case treatment(AlertSide)
 }
 
@@ -48,8 +48,8 @@ final class AlertController {
     /// Whether this Mac can add treatments now (following with *Can add treatments*): the notifications then offer *Treatment*
     /// (elsewhere Add Treatment couldn't open; the click already opens the panel).
     @ObservationIgnored var canLog: () -> Bool = { false }
-    /// *Treatment* was chosen: Add Treatment focused on what answers the side (`AppDelegate`).
-    @ObservationIgnored var openAddTreatment: ((SukraraAlerts.TreatmentKind) -> Void)?
+    /// *Treatment* was chosen on the side's alert: Add Treatment answering it (`AppDelegate`).
+    @ObservationIgnored var openAddTreatment: ((AlertSide) -> Void)?
 
     @ObservationIgnored private var engine: AlertEngine
     @ObservationIgnored private var mirror = AlertMirror()
@@ -227,7 +227,7 @@ final class AlertController {
             reshow(side)
         case .treatment(let side):
             reshow(side)
-            openAddTreatment?(side.mainKind.treatment ?? .carbs)
+            openAddTreatment?(side)
         }
     }
 

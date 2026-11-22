@@ -256,9 +256,9 @@ data class DraftLine(
  * each filled field becomes its own entry at the chosen time (default now). The PoC's dialog (#181: the owner's
  * reference): an M3 basic dialog (28 dp corners, surface-container-high, 24 dp padding, confirming action last) with
  * the title and the *When* chip on one line, each field's label marked with its kind's chart marker, and the start
- * action (*Open Sukrara* / *Unlock*) apart from *Cancel* and *Save*. The first field is focused so the number pad is up
- * at once — Carbs instead when [focusCarbs] (a low is going on), Long-acting when [focusLong] (a rapid pen's dose was
- * just read). Next walks the fields, Done saves.
+ * action (*Open Sukrara* / *Unlock*) apart from *Cancel* and *Save*. [focus] (THE kinds' order's first,
+ * [app.mauri.sukrara.core.model.KindOrder]) has the focus so the number pad is up at once, as soon as it is known (null:
+ * not yet). Next walks the fields, Done saves.
  *
  * [onOpenApp] adds *Open Sukrara* (the quick dialog, where a tap no longer opens the app); [lock] shows the
  * lock-screen countdown (the ring on *Cancel*) with *Unlock* in *Open Sukrara*'s place; [draft] says the form holds
@@ -274,7 +274,7 @@ data class DraftLine(
 @Composable
 fun TreatmentDialogContent(
     form: TreatmentFormState,
-    focusCarbs: Boolean,
+    focus: TreatmentKind?,
     zone: ZoneId,
     now: () -> Instant,
     onSave: (List<NewEntry>, Instant?) -> Unit,
@@ -284,7 +284,6 @@ fun TreatmentDialogContent(
     lock: LockInfo? = null,
     quiet: QuietRules = QuietRules.NONE,
     draft: DraftLine? = null,
-    focusLong: Boolean = false,
     penLine: (@Composable () -> Unit)? = null,
     sheet: Boolean = false,
     onDelete: (() -> Unit)? = null,
@@ -308,15 +307,17 @@ fun TreatmentDialogContent(
         }
     }
     val entrance by rememberUpdatedState(awaitEntrance)
-    LaunchedEffect(Unit) {
+    LaunchedEffect(focus) {
+        // editing: that kind's field (or the note); adding: [focus], once known
+        val kind = form.editing ?: focus ?: return@LaunchedEffect
         // in the sheet: once it starts rising, so the keyboard comes up with it
         entrance()
         runCatching {
-            when {
-                form.editing == TreatmentKind.Note -> noteFocus
-                form.editing == TreatmentKind.Carbs || (form.editing == null && focusCarbs) -> carbsFocus
-                form.editing == TreatmentKind.LongInsulin || (form.editing == null && focusLong) -> longFocus
-                else -> first
+            when (kind) {
+                TreatmentKind.Note -> noteFocus
+                TreatmentKind.Carbs -> carbsFocus
+                TreatmentKind.LongInsulin -> longFocus
+                TreatmentKind.RapidInsulin -> first
             }.requestFocus()
         }
     }

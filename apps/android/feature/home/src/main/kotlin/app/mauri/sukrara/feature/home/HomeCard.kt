@@ -488,7 +488,7 @@ private fun panelMotion(
 private fun pillLabel(action: PillAction): String =
     stringResource(
         when (action) {
-            is PillAction.Treat -> R.string.home_add_treatment
+            PillAction.Treat -> R.string.home_add_treatment
             PillAction.ReplaceSensor -> R.string.home_pill_replace_sensor
             else -> R.string.home_pill_alert_options
         },

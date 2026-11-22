@@ -1,0 +1,29 @@
+{
+ "about": "THE order of the treatment kinds wherever Sukrara offers to log one (Android KindOrder in :core:model + KindOrderTest; Mac KindOrder in SukraraCore + KindOrderTests): the focused kind first, then the others in the usual order. Every Add treatment focuses the first (its fields stay Rapid · Long · Carbs); the watch app's log list takes the whole order from the phone (contracts/watchface/payload `log.order`). Each case: the facts at now → the order. reading = the newest reading in mg/dL while fresh (the alerts' 15 min; null = none, or older), lowBelow = the low alert's threshold in force now (its Low below, whether or not the alert is on), ringing = the alert kinds ringing (wire names; an Add treatment opened from an alert's Treatment counts that alert too), pen = the newest pen read on this device (k = its pen's insulin, ago_s = how long before now it was read; null = none, and always on a device that reads no pens). The rule: carbs first while low (reading under lowBelow, or one of carbs_alerts rings: the alerts carbs answer); else long-acting first for pen_s after a rapid pen was read (the other insulin; the read's notification lasts as long); else rapid first.",
+ "usual": ["rapid", "long", "carbs"],
+ "carbs_alerts": ["very_low", "low", "falling_fast"],
+ "pen_s": 7200,
+ "cases": [
+  {"name": "in range, nothing ringing: the usual order", "reading": 120, "lowBelow": 70, "ringing": [], "pen": null, "order": ["rapid", "long", "carbs"]},
+  {"name": "no fresh reading: the usual order", "reading": null, "lowBelow": 70, "ringing": [], "pen": null, "order": ["rapid", "long", "carbs"]},
+  {"name": "under the low alert's threshold: carbs first", "reading": 69, "lowBelow": 70, "ringing": [], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "at the threshold is in range", "reading": 70, "lowBelow": 70, "ringing": [], "pen": null, "order": ["rapid", "long", "carbs"]},
+  {"name": "the person's own threshold", "reading": 75, "lowBelow": 80, "ringing": [], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "LO (under 40)", "reading": 39, "lowBelow": 70, "ringing": [], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "very low rings", "reading": 52, "lowBelow": 70, "ringing": ["very_low"], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "a low still rings on a reading that just rose to the threshold", "reading": 70, "lowBelow": 70, "ringing": ["low"], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "falling fast rings in range: carbs first (eating before the low is the point)", "reading": 130, "lowBelow": 70, "ringing": ["falling_fast"], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "a low rings with no fresh reading", "reading": null, "lowBelow": 70, "ringing": ["low", "no_data"], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "a high rings: rapid first", "reading": 260, "lowBelow": 70, "ringing": ["high"], "pen": null, "order": ["rapid", "long", "carbs"]},
+  {"name": "rising fast while still low: carbs first", "reading": 64, "lowBelow": 70, "ringing": ["rising_fast"], "pen": null, "order": ["carbs", "rapid", "long"]},
+  {"name": "no data rings: the usual order", "reading": null, "lowBelow": 70, "ringing": ["no_data"], "pen": null, "order": ["rapid", "long", "carbs"]},
+  {"name": "a rapid pen read just now: long-acting first", "reading": 140, "lowBelow": 70, "ringing": [], "pen": {"k": "rapid", "ago_s": 20}, "order": ["long", "rapid", "carbs"]},
+  {"name": "a rapid pen read this second", "reading": 140, "lowBelow": 70, "ringing": [], "pen": {"k": "rapid", "ago_s": 0}, "order": ["long", "rapid", "carbs"]},
+  {"name": "a rapid pen read 1 h 59 min ago, its notification still up", "reading": 140, "lowBelow": 70, "ringing": [], "pen": {"k": "rapid", "ago_s": 7199}, "order": ["long", "rapid", "carbs"]},
+  {"name": "2 h after the read: the usual order", "reading": 140, "lowBelow": 70, "ringing": [], "pen": {"k": "rapid", "ago_s": 7200}, "order": ["rapid", "long", "carbs"]},
+  {"name": "a long-acting pen read: rapid first", "reading": 140, "lowBelow": 70, "ringing": [], "pen": {"k": "long", "ago_s": 20}, "order": ["rapid", "long", "carbs"]},
+  {"name": "a read dated after now (a clock moved back) doesn't count", "reading": 140, "lowBelow": 70, "ringing": [], "pen": {"k": "rapid", "ago_s": -60}, "order": ["rapid", "long", "carbs"]},
+  {"name": "low beats the pen read", "reading": 62, "lowBelow": 70, "ringing": ["low"], "pen": {"k": "rapid", "ago_s": 20}, "order": ["carbs", "rapid", "long"]},
+  {"name": "a high with a rapid pen read: long-acting first (the rapid is in)", "reading": 230, "lowBelow": 70, "ringing": ["high"], "pen": {"k": "rapid", "ago_s": 60}, "order": ["long", "rapid", "carbs"]}
+ ]
+}

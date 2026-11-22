@@ -963,8 +963,16 @@ public final class AppModel {
         }
     }
 
-    /// A low alert is up (Add treatment then puts the focus on Carbs).
-    var isLow: Bool { alerts?.ui.active[.level]?.kind.isLowSide == true }
+    /// What THE kinds' order is decided from now (`KindOrder`, Add Treatment's focused field): the newest reading while
+    /// fresh (the alerts' 15 min), the low alert's threshold in force (the night one inside its window; the defaults
+    /// before the alerts exist), whether or not that alert is on, and the alerts ringing (up, not quiet). A Mac reads
+    /// no pens: no pen read.
+    var kindFacts: KindFacts {
+        let fresh = readings.last.flatMap { now.timeIntervalSince($0.t) <= AlertEngine.freshness ? $0.mgdl : nil }
+        let rules = (alerts?.settings ?? AlertSettings()).at(now, in: .current)
+        let ringing = alerts?.ui.active.values.filter { $0.quiet == nil }.map(\.kind.rawValue) ?? []
+        return KindFacts(reading: fresh, lowBelow: rules[.low].threshold, ringing: Set(ringing))
+    }
 
     var look: GlucoseLook { GlucoseCard.face(cardData, unit: unit, surface: .menubarTitle) }
 

@@ -143,7 +143,7 @@
                 if case .following(_, true) = link { treatments.canWrite = true }
                 let links = PanelLinks(
                     setup: setupModel, treatments: treatments, openSetup: {}, openFollow: {},
-                    openAddTreatment: { _ in },
+                    openAddTreatment: {},
                     openTreatments: {}, openReport: {}, openSettings: {}, openSettingsPane: { _ in })
                 return Scene(
                     view: AnyView(

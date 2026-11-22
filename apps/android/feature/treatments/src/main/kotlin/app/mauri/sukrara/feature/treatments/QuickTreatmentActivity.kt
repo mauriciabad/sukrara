@@ -122,6 +122,9 @@ class QuickTreatmentActivity : ComponentActivity() {
     private var editing by mutableStateOf<Treatment?>(null)
     private val editId by lazy { intent.getStringExtra(NavTargets.EXTRA_TREATMENT_ID) }
 
+    /** Adding: the field focused, THE kinds' order's first ([TreatmentsModule.order]); null until known. */
+    private var focus by mutableStateOf<TreatmentKind?>(null)
+
     /** The form holds the kept draft (when it was kept), with *Discard*; null = an ordinary form. */
     private var draftAt by mutableStateOf<Instant?>(null)
 
@@ -168,8 +171,8 @@ class QuickTreatmentActivity : ComponentActivity() {
             RECEIVER_NOT_EXPORTED,
         )
         enableEdgeToEdge()
-        val focusCarbs = QuickTreatmentIntents.focusCarbs(intent) || module.lowNow()
-        val focusLong = !focusCarbs && QuickTreatmentIntents.focusLong(intent)
+        // adding: the field THE kinds' order puts first (the alert this answers counts as ringing), once known (a moment)
+        if (editId == null) lifecycleScope.launch { focus = module.order(QuickTreatmentIntents.alertKind(intent)).first() }
         // *Add treatment* after a pen read: at that injection's time (within the current minute it is simply now)
         val startAt = QuickTreatmentIntents.at(intent)?.takeIf { Duration.between(it, module.clock.now()) >= Duration.ofMinutes(1) }
         carriedMs = savedInstanceState?.getLong(KEY_LEFT, -1L)?.takeIf { it >= 0 }
@@ -189,7 +192,7 @@ class QuickTreatmentActivity : ComponentActivity() {
                 if (c != null) {
                     ConfirmationLayer(c)
                 } else {
-                    FormLayer(focusCarbs, focusLong)
+                    FormLayer()
                 }
             }
         }
@@ -210,10 +213,7 @@ class QuickTreatmentActivity : ComponentActivity() {
     }
 
     @Composable
-    private fun FormLayer(
-        focusCarbs: Boolean,
-        focusLong: Boolean,
-    ) {
+    private fun FormLayer() {
         val cd = countdown
         val quiet by module.hints.quiet.collectAsState(QuietRules.NONE)
         val reduced = LocalReducedMotion.current
@@ -236,7 +236,7 @@ class QuickTreatmentActivity : ComponentActivity() {
         }
         // opened from the app (home's Add treatment, a list's row): the app's bottom sheet (#207 round 2)
         if (cd == null && (editId != null || QuickTreatmentIntents.fromApp(intent))) {
-            SheetForm(focusCarbs, focusLong, quiet)
+            SheetForm(quiet)
             return
         }
         // M3 dialog scrim; a tap on it dismisses, like outside a dialog
@@ -258,7 +258,7 @@ class QuickTreatmentActivity : ComponentActivity() {
             ) {
                 TreatmentDialogContent(
                     form = form,
-                    focusCarbs = focusCarbs,
+                    focus = focus,
                     zone = module.clock.zone,
                     now = module.clock::now,
                     onSave = ::save,
@@ -269,7 +269,6 @@ class QuickTreatmentActivity : ComponentActivity() {
                     lock = cd?.let { lockInfo(it) },
                     quiet = quiet,
                     draft = draftAt?.let { DraftLine(it, ::discardDraft) },
-                    focusLong = focusLong,
                     penLine =
                         penLine?.let { line ->
                             { PenFillLine(line, onUndo = ::undoPen) }
@@ -289,22 +288,17 @@ class QuickTreatmentActivity : ComponentActivity() {
      * away and the snackbar follows.
      */
     @Composable
-    private fun SheetForm(
-        focusCarbs: Boolean,
-        focusLong: Boolean,
-        quiet: QuietRules,
-    ) {
+    private fun SheetForm(quiet: QuietRules) {
         SukraraSheet(onDismiss = { if (!leaving) finish() }, leaving = leaving) {
             TreatmentDialogContent(
                 form = form,
-                focusCarbs = focusCarbs,
+                focus = focus,
                 zone = module.clock.zone,
                 now = module.clock::now,
                 onSave = ::save,
                 onCancel = ::finish,
                 quiet = quiet,
                 draft = draftAt?.let { DraftLine(it, ::discardDraft) },
-                focusLong = focusLong,
                 penLine =
                     penLine?.let { line ->
                         { PenFillLine(line, onUndo = ::undoPen) }

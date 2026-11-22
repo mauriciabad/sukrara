@@ -4,6 +4,7 @@
 package app.mauri.sukrara.integrations.garmin
 
 import app.mauri.sukrara.core.model.AlertControls
+import app.mauri.sukrara.core.model.KindFacts
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.TreatmentOrigin
@@ -61,6 +62,8 @@ class WatchWritesTest {
             got += e
             return outcome
         }
+
+        override suspend fun facts() = KindFacts.NONE
     }
 
     private fun request(

@@ -21,7 +21,7 @@ public enum AlertNotificationIDs {
     public static let remindLessAction = "app.mauri.sukrara.alert.remindLess"
     public static let remindAsUsualAction = "app.mauri.sukrara.alert.remindAsUsual"
     public static let unmuteAction = "app.mauri.sukrara.alert.unmute"
-    /// *Treatment*: opens Add Treatment focused on what answers the side (carbs on the low side, rapid insulin on the high).
+    /// *Treatment*: opens Add Treatment as an answer to the side's alert (THE kinds' order then focuses its field).
     public static let treatmentAction = "app.mauri.sukrara.alert.treatment"
     /// A category whose first action is *Treatment*.
     public static let treatmentSuffix = ".treatment"

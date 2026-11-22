@@ -215,12 +215,12 @@ final class RecordingWake: WakeScheduling {
         #expect(notifier.calls == [.muted(.low)])
     }
 
-    /// #194: *Treatment* on a low opens Add Treatment on carbs and the low comes back silently (macOS removed it);
-    /// nothing else changes.
+    /// #194: *Treatment* on a low opens Add Treatment answering the low (THE kinds' order: carbs first) and the low comes
+    /// back silently (macOS removed it); nothing else changes.
     @Test func treatmentOpensAddTreatmentAndShowsTheAlertAgainSilently() throws {
         let c = controller()
         c.canLog = { true }
-        var opened: [SukraraAlerts.TreatmentKind] = []
+        var opened: [AlertSide] = []
         c.openAddTreatment = { opened.append($0) }
         c.reading(reading(60, rate: -0.5))
         guard case .post(.low, let id, true, let category)? = notifier.posts.first else {
@@ -232,20 +232,24 @@ final class RecordingWake: WakeScheduling {
         notifier.calls = []
         let side = try #require(Notifier.treatment(actionID: AlertNotificationIDs.treatmentAction, side: "low"))
         c.perform(.treatment(side))
-        #expect(opened == [.carbs])
+        #expect(opened == [.low])
         #expect(notifier.calls == [.post(.low, id: id, sound: false, category: category)])
         #expect(store.state == before && c.ui.isAlerting)
         #expect(AlertController.logLine(.treatment(.low), settings: c.settings, now: clock.now) == nil)
     }
 
-    /// *Treatment* on a high opens Add Treatment on rapid insulin (the owner's review, 2026-11-14).
+    /// *Treatment* on a high answers the high: rapid insulin first unless glucose is low (the owner's review,
+    /// 2026-11-14; THE kinds' order).
     @Test func treatmentOnAHighOpensRapidInsulin() {
         let c = controller()
-        var opened: [SukraraAlerts.TreatmentKind] = []
+        var opened: [AlertSide] = []
         c.openAddTreatment = { opened.append($0) }
         c.perform(.treatment(.high))
         c.perform(.treatment(.risingFast))
-        #expect(opened == [.rapidInsulin, .rapidInsulin])
+        #expect(opened == [.high, .risingFast])
+        let facts = { (s: AlertSide) in KindFacts(reading: 190, lowBelow: 70, ringing: [s.mainKind.rawValue]) }
+        #expect(opened.map { KindOrder.focus(facts($0), now: 0) } == [.rapid, .rapid])
+        #expect(KindOrder.focus(facts(.fallingFast), now: 0) == .carbs)
     }
 
     /// The muted note keeps *Treatment* first on a Mac that can add entries; without it, the plain categories.

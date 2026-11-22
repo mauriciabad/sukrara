@@ -5,6 +5,7 @@ package app.mauri.sukrara.feature.treatments
 
 import android.app.Application
 import android.content.Intent
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
@@ -17,14 +18,18 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.KindFacts
 import app.mauri.sukrara.core.model.NavTargets
+import app.mauri.sukrara.core.model.PenReadAt
 import app.mauri.sukrara.core.model.SourceSpec
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -44,10 +49,15 @@ class TestTreatmentsApp :
     Application(),
     TreatmentsHost {
     val glucose = MutableStateFlow(GlucoseState.Initial)
-    var low = false
+
+    /** The alerts' facts of THE kinds' order (the reading, the low threshold, what rings). */
+    var facts = KindFacts.NONE
+
+    /** The newest pen read the pens would report. */
+    var penRead: PenReadAt? = null
     val hints =
         object : AlertHints {
-            override fun lowNow() = low
+            override fun kindFacts() = facts
 
             override val quiet = kotlinx.coroutines.flow.flowOf(QuietRules(afterInsulinMin = 60, afterCarbsMin = 15))
 
@@ -56,7 +66,7 @@ class TestTreatmentsApp :
             }
         }
 
-    /** The alerts whose *Log carbs* opened the dialog (an answer to each). */
+    /** The alerts whose *Treatment* opened the dialog (an answer to each). */
     val answers = mutableListOf<String>()
 
     /** The pen entry *Already logged by your pen?* names (null = no pen entry near the typed dose). */
@@ -80,6 +90,7 @@ class TestTreatmentsApp :
             penDuplicates =
                 app.mauri.sukrara.core.model
                     .PenDuplicates { kind, _ -> penNear?.takeIf { kind == penNearKind } },
+            newestPenRead = { penRead },
         )
     }
 }
@@ -136,10 +147,9 @@ class QuickTreatmentTest {
 
     @Test fun widgetAndNotificationIntentsResolveToTheQuickDialog() {
         for (source in QuickSource.entries) {
-            val intent = QuickTreatmentIntents.open(app, source, focusCarbs = true)
+            val intent = QuickTreatmentIntents.open(app, source)
             val resolved = app.packageManager.resolveActivity(intent, 0)
             assertEquals(QuickTreatmentActivity::class.java.name, resolved?.activityInfo?.name)
-            assertTrue(QuickTreatmentIntents.focusCarbs(intent))
         }
         // the monitor's notification posts the action with the package only
         val notification = Intent(NavTargets.ACTION_QUICK_TREATMENT).setPackage(app.packageName)
@@ -164,7 +174,7 @@ class QuickTreatmentTest {
         assertFalse(activity.isFinishing)
     }
 
-    /** #194: an alert's *Log carbs* opens the dialog on Carbs and answers that alert on this phone, once (#39). */
+    /** #194: an alert's *Treatment* opens the dialog on Carbs and answers that alert on this phone, once (#39). */
     @Test fun anAlertsLogCarbsAnswersTheAlertOnce() {
         app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
         app.answers.clear()
@@ -172,7 +182,6 @@ class QuickTreatmentTest {
         val fromAlert =
             Intent(NavTargets.ACTION_QUICK_TREATMENT)
                 .setPackage(app.packageName)
-                .putExtra(NavTargets.EXTRA_FOCUS_CARBS, true)
                 .putExtra(NavTargets.EXTRA_ALERT_KIND, "very_low")
         assertEquals(
             QuickTreatmentActivity::class.java.name,
@@ -188,7 +197,9 @@ class QuickTreatmentTest {
                     fromAlert.setClass(app, QuickTreatmentActivity::class.java),
                 ).setup()
         assertFalse(controller.get().isFinishing)
-        assertTrue(QuickTreatmentIntents.focusCarbs(controller.get().intent))
+        // the alert it answers counts as ringing (THE kinds' order: carbs first), whatever the reading says
+        val answering = QuickTreatmentIntents.alertKind(controller.get().intent)
+        assertEquals(TreatmentKind.Carbs, runBlocking { app.treatments.order(answering) }.first())
         assertEquals(listOf("very_low"), app.answers)
         // a rotation doesn't answer again
         controller.recreate()
@@ -256,11 +267,58 @@ class QuickTreatmentTest {
         return f
     }
 
-    @Test fun carbsFirstWhileTheLatestReadingIsLow() {
-        app.low = true
-        assertTrue(app.treatments.lowNow())
-        app.low = false
-        assertFalse(app.treatments.lowNow())
-        assertFalse(QuickTreatmentIntents.focusCarbs(Intent()))
+    /** THE kinds' order over the module's facts: the alerts' and the newest pen read, at the module's clock. */
+    @Test fun theOrderComesFromTheAlertsFactsAndThePens() {
+        val usual = listOf(TreatmentKind.RapidInsulin, TreatmentKind.LongInsulin, TreatmentKind.Carbs)
+        val now =
+            app.treatments.clock
+                .now()
+                .epochSecond
+        try {
+            app.facts = KindFacts(120, 70.0, emptySet())
+            assertEquals(usual, runBlocking { app.treatments.order() })
+            app.facts = KindFacts(62, 70.0, emptySet())
+            assertEquals(TreatmentKind.Carbs, runBlocking { app.treatments.order() }.first())
+            app.facts = KindFacts(120, 70.0, emptySet())
+            assertEquals(TreatmentKind.Carbs, runBlocking { app.treatments.order("falling_fast") }.first())
+            assertEquals(usual, runBlocking { app.treatments.order("high") })
+            app.penRead = PenReadAt(TreatmentKind.RapidInsulin, now - 60)
+            assertEquals(TreatmentKind.LongInsulin, runBlocking { app.treatments.order() }.first())
+            assertEquals(app.penRead, runBlocking { app.treatments.kindFacts() }.pen)
+        } finally {
+            app.facts = KindFacts.NONE
+            app.penRead = null
+        }
+    }
+
+    /** The dialog focuses THE order's first field as it opens: Carbs while low, Long-acting after a rapid pen read. */
+    @Test
+    @Config(qualifiers = "w411dp-h891dp-xxhdpi")
+    fun theDialogFocusesTheOrdersFirst() {
+        app.glucose.value = GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)
+        try {
+            app.facts = KindFacts(58, 70.0, setOf("low"))
+            ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Widget)).use {
+                compose.waitUntil(5_000) { compose.onAllNodesWithTag("treatment-carbs").fetchSemanticsNodes().isNotEmpty() }
+                compose.waitForIdle()
+                compose.onNodeWithTag("treatment-carbs").assertIsFocused()
+            }
+            app.facts = KindFacts(140, 70.0, emptySet())
+            app.penRead =
+                PenReadAt(
+                    TreatmentKind.RapidInsulin,
+                    app.treatments.clock
+                        .now()
+                        .epochSecond - 120,
+                )
+            ActivityScenario.launch<QuickTreatmentActivity>(QuickTreatmentIntents.open(app, QuickSource.Tile)).use {
+                compose.waitUntil(5_000) { compose.onAllNodesWithTag("treatment-long").fetchSemanticsNodes().isNotEmpty() }
+                compose.waitForIdle()
+                compose.onNodeWithTag("treatment-long").assertIsFocused()
+            }
+        } finally {
+            app.facts = KindFacts.NONE
+            app.penRead = null
+        }
     }
 }

@@ -140,7 +140,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             setup: windows.setup, treatments: windows.treatments,
             openSetup: { [weak self] in self?.fromPanel { $0.openSetup() } },
             openFollow: { [weak self] in self?.fromPanel { $0.openFollow() } },
-            openAddTreatment: { [weak self] focus in self?.fromPanel { $0.openAddTreatment(focus: focus) } },
+            openAddTreatment: { [weak self] in self?.fromPanel { $0.openAddTreatment() } },
             openTreatments: { [weak self] in self?.fromPanel { $0.openTreatments() } },
             openReport: { [weak self] in self?.fromPanel { $0.openReport() } },
             openSettings: { [weak self] in self?.fromPanel { $0.openSettings() } },
@@ -165,10 +165,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         contextMenu.updates = model.updates
         services.openPanel = { [weak statusItem] in statusItem?.showPanel() }
         windows.openPanel = { [weak statusItem] in statusItem?.showPanel() }
-        // a notification's Treatment: only where Add Treatment can open; carbs focused on the low side, rapid on the high
+        // a notification's Treatment: only where Add Treatment can open, an answer to that side's alert (THE kinds' order
+        // counts it as ringing: carbs focused for the alerts carbs answer)
         model.alerts?.canLog = { [weak model] in model.map { AddTreatmentAvailability($0) == .available } ?? false }
-        model.alerts?.openAddTreatment = { [weak self] answer in
-            self?.fromPanel { $0.openAddTreatment(focus: answer == .carbs ? .carbs : .rapid) }
+        model.alerts?.openAddTreatment = { [weak self] side in
+            self?.fromPanel { $0.openAddTreatment(answering: side.mainKind) }
         }
         services.permissionChanged = { [weak self] in self?.refreshNotificationPermission() }
         observeSystemTime()

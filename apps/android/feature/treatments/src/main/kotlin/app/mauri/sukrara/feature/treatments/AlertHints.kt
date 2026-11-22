@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package app.mauri.sukrara.feature.treatments
 
+import app.mauri.sukrara.core.model.KindFacts
 import kotlinx.coroutines.flow.Flow
 import java.time.Duration
 import java.time.Instant
@@ -12,8 +13,11 @@ import java.time.Instant
  * the glucose state; the dialog never reads the alert engine).
  */
 interface AlertHints {
-    /** The latest reading is fresh and on the low side of the enabled alert rules: eating is what's needed. */
-    fun lowNow(): Boolean
+    /**
+     * The alerts' part of THE kinds' order ([app.mauri.sukrara.core.model.KindOrder]) now: the newest fresh reading, the
+     * low alert's threshold in force and the alerts ringing ([KindFacts.pen] stays null: the pens add it).
+     */
+    fun kindFacts(): KindFacts
 
     /** How long a treatment quiets this phone's alerts, as the settings change ([QuietRules.NONE] until known). */
     val quiet: Flow<QuietRules>

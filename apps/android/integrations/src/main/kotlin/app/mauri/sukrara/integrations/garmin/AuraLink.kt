@@ -8,6 +8,7 @@ import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.KindFacts
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.storage.ReadingsRepository
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -407,7 +408,9 @@ class AuraLink(
             today,
             combine(graph, metrics, this.entries.open) { g, m, o -> Triple(g, m, o) },
         ) { (g, t, life), (u, b, h), day, (gc, m, o) ->
-            build(g, t, u, b, h, day.map { it.toPoint() }, life, gc, m, o)
+            // THE kinds' order from the phone's own facts at this moment (a reading, a ring, a pen read's entry rebuild it)
+            val kinds = if (o) runCatching { this.entries.facts() }.getOrDefault(KindFacts.NONE) else KindFacts.NONE
+            build(g, t, u, b, h, day.map { it.toPoint() }, life, gc, m, o, kinds)
         }.distinctUntilChanged(::same)
     }
 
@@ -440,13 +443,14 @@ class AuraLink(
         graph: GraphConfig,
         metrics: Map<Long, GlucoseMetrics>,
         open: Boolean,
+        kinds: KindFacts,
     ): Payloads {
         val now = clock.now()
         val from = startOfDay(now)
         val end = from.atZone(clock.zone).plusDays(1).toInstant()
         val tir = GlucoseMetrics.of(day, from.epochSecond, now.epochSecond, bands.sane()).tir
         val share = tir.inRange.takeIf { tir.coverage >= TIR_COVERAGE }
-        val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, graph, metrics, open)
+        val i = PayloadInputs(g, t, now, unit, bands, hours, share, end, life, graph, metrics, open, kinds)
         return GarminApp.entries.associateWith { AuraPayload.of(it, i) }
     }
 

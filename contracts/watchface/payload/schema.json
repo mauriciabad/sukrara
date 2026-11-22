@@ -930,11 +930,26 @@
               "type": "object",
               "additionalProperties": false,
               "required": [
+                "order",
                 "rapid",
                 "long",
                 "carbs"
               ],
               "properties": {
+                "order": {
+                  "description": "THE kinds' order (contracts/treatments/kind-order.json): the log list's, the first focused",
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3,
+                  "uniqueItems": true,
+                  "items": {
+                    "enum": [
+                      "rapid",
+                      "long",
+                      "carbs"
+                    ]
+                  }
+                },
                 "rapid": {
                   "$ref": "#/$defs/usual"
                 },

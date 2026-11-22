@@ -8,6 +8,8 @@ import app.mauri.sukrara.core.model.AlertUiState
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.KindFacts
+import app.mauri.sukrara.core.model.PenReadAt
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.ReadingTrend
 import app.mauri.sukrara.core.model.SensorState
@@ -214,7 +216,27 @@ class AuraPayloadFixtureTest {
                     .map { (w, m) -> w.toLong() to metrics(m.jsonObject) }
                     .toMap(),
                 p["open"]?.jsonPrimitive?.booleanOrNull ?: false,
+                kinds(p["kinds"]?.takeIf { it !is JsonNull }?.jsonObject),
             ),
+        )
+    }
+
+    /** THE kinds' order's facts as the phone's Add treatment has them (contracts/treatments/kind-order.json's shape). */
+    private fun kinds(k: JsonObject?): KindFacts {
+        k ?: return KindFacts.NONE
+        return KindFacts(
+            reading = k["reading"]?.jsonPrimitive?.intOrNull,
+            lowBelow = k.getValue("lowBelow").jsonPrimitive.double,
+            ringing =
+                k
+                    .getValue("ringing")
+                    .jsonArray
+                    .map { it.jsonPrimitive.content }
+                    .toSet(),
+            pen =
+                k["pen"]?.takeIf { it !is JsonNull }?.jsonObject?.let {
+                    PenReadAt(KINDS.getValue(it.getValue("k").jsonPrimitive.content), now - it.getValue("ago_s").jsonPrimitive.long)
+                },
         )
     }
 

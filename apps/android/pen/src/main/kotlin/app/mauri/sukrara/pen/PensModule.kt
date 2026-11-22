@@ -17,7 +17,9 @@ import app.mauri.sukrara.core.data.nfc.TagIntents
 import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.PenQuestionInfo
+import app.mauri.sukrara.core.model.PenReadAt
 import app.mauri.sukrara.core.model.SourceSpec
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
 import app.mauri.sukrara.core.model.storage.UploadHold
@@ -271,6 +273,21 @@ class PensModule(
                     ?.let { it.serial to it.lastScan }
             }
         }.distinctUntilChanged()
+    }
+
+    /**
+     * THE kinds' order's pen fact ([app.mauri.sukrara.core.model.KindOrder]): the newest read on this phone with
+     * reading On, its pen's insulin and when (the ledger's last scan: kept across restarts, as the read's notification
+     * is); null otherwise.
+     */
+    suspend fun newestRead(): PenReadAt? {
+        if (!availableNow() || reading() != PenReading.On) return null
+        return pens
+            .load()
+            .pens.values
+            .filter { it.lastScan > 0 }
+            .maxByOrNull { it.lastScan }
+            ?.let { PenReadAt(if (it.kind == "long") TreatmentKind.LongInsulin else TreatmentKind.RapidInsulin, it.lastScan) }
     }
 
     /**

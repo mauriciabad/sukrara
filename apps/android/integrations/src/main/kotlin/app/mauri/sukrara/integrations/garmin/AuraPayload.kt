@@ -7,6 +7,8 @@ import app.mauri.sukrara.core.model.AlertQuietSide
 import app.mauri.sukrara.core.model.CardStatus
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.KindFacts
+import app.mauri.sukrara.core.model.KindOrder
 import app.mauri.sukrara.core.model.Reading
 import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SensorTiming
@@ -39,7 +41,8 @@ import kotlin.math.floor
  * time in range (share 0…1, null = not enough data) and [dayEnd] = when today ends on this phone (the face drops [tir]
  * then); [sensor] = the wearer's sensor with its life (the sensor screen's: its start and end, null on a follower or
  * before one is paired). The app's: [graph] = the person's metric settings, [metrics] = the report numbers per window
- * (s) as `GlucoseMetrics.of` gives them, [logOpen] = this phone takes entries now (its Add treatment is offered).
+ * (s) as `GlucoseMetrics.of` gives them, [logOpen] = this phone takes entries now (its Add treatment is offered),
+ * [kinds] = what THE kinds' order is decided from now (the phone's Add treatment's facts: `log.order`).
  */
 data class PayloadInputs(
     val state: GlucoseState,
@@ -54,6 +57,7 @@ data class PayloadInputs(
     val graph: GraphConfig = GraphConfig(),
     val metrics: Map<Long, GlucoseMetrics> = emptyMap(),
     val logOpen: Boolean = false,
+    val kinds: KindFacts = KindFacts.NONE,
 )
 
 /**
@@ -142,7 +146,7 @@ object AuraPayload {
                 ?.takeIf { i.graph.lastPlace != LastPlace.OFF }
                 ?.let { metric(it, metrics[it.windowS]) }
         p["ro"] = i.graph.ringOrder.map { it.ordinal }
-        p["log"] = if (monitoring && i.logOpen) log(i.treatments, nowS) else null
+        p["log"] = if (monitoring && i.logOpen) log(i.treatments, i.kinds, nowS) else null
         p["ds"] = display(GarminDisplay.resolve(i.graph))
         p["rep"] = REPORT_DAYS.map { d -> metrics[d * 86_400L]?.takeIf { !it.empty }?.let { report(d, it) } }
         p["repD"] = REPORT_START
@@ -280,15 +284,18 @@ object AuraPayload {
     }
 
     /**
-     * What logging offers: per kind the newest amount of the last [LOG_DAYS] days and up to three amounts logged most
-     * often then (ties: the most recently logged), smallest first.
+     * What logging offers: `order` = THE kinds' order at [nowS] ([KindOrder] over [kinds], as the phone's Add treatment
+     * focuses), and per kind the newest amount of the last [LOG_DAYS] days and up to three amounts logged most often
+     * then (ties: the most recently logged), smallest first.
      */
     internal fun log(
         treatments: List<Treatment>,
+        kinds: KindFacts,
         nowS: Long,
     ): Map<String, Any?> {
         val recent = live(treatments, nowS).filter { nowS - it.at.epochSecond <= LOG_DAYS * 86_400L }
-        return LOG_ORDER.associateTo(linkedMapOf()) { kind ->
+        val out = linkedMapOf<String, Any?>("order" to KindOrder.of(kinds, nowS).map { it.id })
+        return LOG_ORDER.associateTo(out) { kind ->
             val mine = recent.filter { it.kind == kind }
             val usual =
                 mine

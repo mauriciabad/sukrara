@@ -20,7 +20,6 @@ import android.text.style.StrikethroughSpan
 import android.util.Log
 import android.widget.RemoteViews
 import androidx.annotation.RequiresApi
-import app.mauri.sukrara.alerts.Side
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
 import app.mauri.sukrara.core.model.NavTargets
@@ -441,14 +440,14 @@ class LiveNotification(
         }
     }
 
-    /** With an alert up, the tap opens Add treatment as an answer to it (#39): Carbs on the low side. */
+    /** With an alert up, the tap opens Add treatment as an answer to it (#39). */
     private fun tapOf(
         content: LiveNotificationContent,
         alert: GlucoseAlert?,
     ): Target =
         when {
             alert == null || content.tap !is Target.QuickTreatment -> content.tap
-            else -> Target.QuickTreatment(focusCarbs = alert.kind.side == Side.LOW, alertKind = alert.kind.wire)
+            else -> Target.QuickTreatment(alertKind = alert.kind.wire)
         }
 
     /**
@@ -795,12 +794,11 @@ class LiveNotification(
                 val quick =
                     Intent(NavTargets.ACTION_QUICK_TREATMENT)
                         .setPackage(context.packageName)
-                        .putExtra(NavTargets.EXTRA_FOCUS_CARBS, target.focusCarbs)
                         .apply { target.alertKind?.let { putExtra(NavTargets.EXTRA_ALERT_KIND, it) } }
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 // until the quick treatment dialog is in this build, the tap opens the app
                 val intent = if (hasQuickTreatment) quick else launchIntent()
-                val code = REQUEST_QUICK + (if (target.focusCarbs) 1 else 0) + if (target.alertKind != null) 2 else 0
+                val code = REQUEST_QUICK + if (target.alertKind != null) 1 else 0
                 PendingIntent.getActivity(context, code, intent, IMMUTABLE)
             }
 

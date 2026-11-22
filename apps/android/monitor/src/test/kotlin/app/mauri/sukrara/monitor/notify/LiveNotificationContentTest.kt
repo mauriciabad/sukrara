@@ -204,11 +204,9 @@ class LiveNotificationContentTest {
     }
 
     @Test
-    fun `the tap opens quick add treatment, carbs focused while a low fires`() {
-        assertEquals(Target.QuickTreatment(focusCarbs = false), content(state()).tap)
-        assertEquals(Target.QuickTreatment(focusCarbs = true), content(state(firing = setOf("low"))).tap)
-        assertEquals(Target.QuickTreatment(focusCarbs = true), content(state(firing = setOf("very_low"))).tap)
-        assertEquals(Target.QuickTreatment(focusCarbs = true), content(state(firing = setOf("falling_fast"))).tap)
+    fun `the tap opens quick add treatment, whose focus THE kinds' order decides as it opens`() {
+        assertEquals(Target.QuickTreatment(), content(state()).tap)
+        assertEquals(Target.QuickTreatment(), content(state(firing = setOf("low"))).tap)
         assertTrue("no Open Sukrara: the tap already opens", content(state()).actions.isEmpty())
     }
 

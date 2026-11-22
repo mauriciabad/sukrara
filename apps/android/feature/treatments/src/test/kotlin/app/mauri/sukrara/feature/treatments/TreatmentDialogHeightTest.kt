@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -63,7 +64,7 @@ class TreatmentDialogHeightTest {
                     Box(Modifier.width(width)) {
                         TreatmentDialogContent(
                             form = TreatmentFormState(),
-                            focusCarbs = false,
+                            focus = TreatmentKind.RapidInsulin,
                             zone = ZoneOffset.UTC,
                             now = { Instant.parse("2026-06-15T12:30:00Z") },
                             onSave = { _, _ -> },

@@ -46,8 +46,8 @@ struct AmountField: View {
 
 /// Add Treatment: Rapid, Long and Carbs side by side, a Note with its byte counter, and *When?* (a chip that opens a
 /// clock time / minutes-ago picker); the line under them says which alerts the entries will quiet. Return saves,
-/// Escape cancels. The focused field is the one the latest reading (or the card's pill) suggests.
-/// A field the open Add Treatment window should move the focus to (a card pill picked while it is open).
+/// Escape cancels. The focused field is THE kinds' order's first (`KindOrder`).
+/// A field the open Add Treatment window should move the focus to (Add Treatment asked for again while it is open).
 @Observable
 public final class AddTreatmentFocus {
     public private(set) var field: Treatment.Kind?

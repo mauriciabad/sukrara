@@ -5,6 +5,7 @@ package app.mauri.sukrara.integrations.garmin
 
 import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.Clock
+import app.mauri.sukrara.core.model.KindFacts
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.SecureStore
@@ -75,6 +76,9 @@ interface WatchEntries {
 
     suspend fun add(e: WatchEntry): WatchLogged
 
+    /** What THE kinds' order is decided from now, as the phone's Add treatment decides it (the payload's `log.order`). */
+    suspend fun facts(): KindFacts
+
     companion object {
         /** No entry path (tests, a build without treatments): nothing is taken. */
         val None =
@@ -82,6 +86,8 @@ interface WatchEntries {
                 override val open: Flow<Boolean> = flowOf(false)
 
                 override suspend fun add(e: WatchEntry) = WatchLogged.Off
+
+                override suspend fun facts() = KindFacts.NONE
             }
     }
 }

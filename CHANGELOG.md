@@ -18,6 +18,13 @@ Sukrara's releases. 0.x versions are previews.
   takes entries and mutes from the watch through its own Add treatment and alert actions, each signed and never logged
   twice, and Settings › Share with apps › Garmin lists the app and the data field. The watch apps themselves come next.
   Sukrara Aura needs this version of the phone.
+- **Add treatment puts the field you most likely need first, by one rule everywhere** (#199): Carbs while your glucose
+  is under your low alert's threshold or an alert carbs answer is ringing (very low, low, falling fast), Long-acting
+  for 2 hours after your rapid pen was read, else Rapid. Every way in opens the same field: the glucose notification,
+  an alert's *Treatment*, a widget, the tile, home's button and pill, the pen's *Add treatment*, the Mac's panel,
+  pill and notifications. Before, each decided on its own and some disagreed (the phone's *Treatment* on a
+  falling-fast alert opened on Rapid; the widgets and the Mac went by the range's low limit, not the low alert's).
+  Sukrara's watch app will list the kinds in the same order.
 
 ## 0.16.0 — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 

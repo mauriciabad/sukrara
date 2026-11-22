@@ -16,8 +16,8 @@ class PillActionTest {
         val cases =
             listOf(
                 CardStatus.None to PillAction.None,
-                CardStatus.Needed(lowSide = true) to PillAction.Treat(carbs = true),
-                CardStatus.Needed(lowSide = false) to PillAction.Treat(carbs = false),
+                CardStatus.Needed(lowSide = true) to PillAction.Treat,
+                CardStatus.Needed(lowSide = false) to PillAction.Treat,
                 CardStatus.Taken(TreatmentKind.Carbs, now - 60, now + 600) to PillAction.Quiet(lowSide = true, taken = true),
                 CardStatus.Taken(TreatmentKind.RapidInsulin, now - 60, now + 600) to PillAction.Quiet(lowSide = false, taken = true),
                 CardStatus.Paused(lowSide = true, until = now + 600) to PillAction.Quiet(lowSide = true, taken = false),

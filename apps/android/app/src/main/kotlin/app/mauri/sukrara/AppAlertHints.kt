@@ -10,6 +10,7 @@ import app.mauri.sukrara.alerts.AlertSource
 import app.mauri.sukrara.alerts.Rules
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.KindFacts
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.treatments.AlertHints
 import app.mauri.sukrara.feature.treatments.QuietRules
@@ -19,9 +20,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
- * The treatment dialog's view of the alert rules: the latest reading against the low threshold, and the
- * after-treatment quiet. [settings] = the stored alert settings, null until they're read (no quiet line is claimed).
- * [answer] = the alert runtime's answer on this phone (an alert's *Log carbs* opened the dialog).
+ * The treatment dialog's view of the alert rules: the alerts' facts of THE kinds' order (the newest fresh reading, the
+ * low threshold, what rings), and the after-treatment quiet. [settings] = the stored alert settings, null until they're
+ * read (no quiet line is claimed). [answer] = the alert runtime's answer on this phone (an alert's *Treatment* opened
+ * the dialog).
  */
 class AppAlertHints(
     private val settings: StateFlow<AlertSettings?>,
@@ -32,15 +34,19 @@ class AppAlertHints(
     override fun answered(kind: String) = answer(kind)
 
     /**
-     * The latest fresh reading is under the low threshold (70 is in range), whether or not the low alert is on (eating is what a low
-     * needs either way); before the settings are read, the default threshold.
+     * The newest reading while fresh (the alerts' rule), the low alert's threshold in force now (the night one inside its
+     * window), whether or not the low alert is on (eating is what a low needs either way; before the settings are read,
+     * the default), and the alerts ringing.
      */
-    override fun lowNow(): Boolean {
-        val latest = glucose.value.latest ?: return false
-        val reading = AlertReading(latest.t.epochSecond, latest.mgdl, latest.rate, latest.trend?.held, latest.trend?.band)
-        if (!Rules.fresh(reading, clock.now().epochSecond)) return false
-        val s = settings.value ?: AlertSettings()
-        return AlertKind.LOW.reaches(latest.mgdl.toDouble(), s.rule(AlertKind.LOW).threshold)
+    override fun kindFacts(): KindFacts {
+        val now = clock.now().epochSecond
+        val g = glucose.value
+        val fresh =
+            g.latest?.takeIf { r ->
+                Rules.fresh(AlertReading(r.t.epochSecond, r.mgdl, r.rate, r.trend?.held, r.trend?.band), now)
+            }
+        val s = (settings.value ?: AlertSettings()).at(now, clock.zone)
+        return KindFacts(fresh?.mgdl, s.rule(AlertKind.LOW).threshold, g.alerts.firingKinds)
     }
 
     override val quiet: Flow<QuietRules> =

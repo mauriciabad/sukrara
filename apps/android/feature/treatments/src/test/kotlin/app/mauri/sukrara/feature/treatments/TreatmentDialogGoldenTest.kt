@@ -75,7 +75,7 @@ class TreatmentDialogGoldenTest {
                 Box(Modifier.width(411.dp)) {
                     TreatmentDialogContent(
                         form = form,
-                        focusCarbs = false,
+                        focus = TreatmentKind.RapidInsulin,
                         zone = ZoneOffset.UTC,
                         now = { now },
                         onSave = { _, _ -> },
@@ -123,7 +123,7 @@ class TreatmentDialogGoldenTest {
                 ) {
                     TreatmentDialogContent(
                         form = TreatmentFormState(rapid = "5.5"),
-                        focusCarbs = false,
+                        focus = TreatmentKind.RapidInsulin,
                         zone = ZoneOffset.UTC,
                         now = { now },
                         onSave = { _, _ -> },
@@ -156,7 +156,7 @@ class TreatmentDialogGoldenTest {
                     SukraraSheet(onDismiss = {}) {
                         TreatmentDialogContent(
                             form = TreatmentFormState.editing(t, java.util.Locale.US),
-                            focusCarbs = false,
+                            focus = TreatmentKind.RapidInsulin,
                             zone = ZoneOffset.UTC,
                             now = { now },
                             onSave = { _, _ -> },

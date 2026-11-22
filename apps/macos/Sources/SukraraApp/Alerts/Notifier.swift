@@ -340,8 +340,8 @@ final class Notifier: AlertNotifying {
         return silentAlert ? [.list] : [.banner, .sound, .list]
     }
 
-    /// The side whose *Treatment* was chosen (it opens Add Treatment focused on carbs for the low side, rapid insulin
-    /// for the high side), or nil for any other answer.
+    /// The side whose *Treatment* was chosen (it opens Add Treatment as an answer to the side's alert), or nil for any
+    /// other answer.
     static func treatment(actionID: String, side rawSide: String?) -> AlertSide? {
         guard actionID == AlertNotificationIDs.treatmentAction, let rawSide else { return nil }
         return AlertSide(rawValue: rawSide)

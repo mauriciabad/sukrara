@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.treatments
 
 import android.os.Bundle
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -16,6 +17,7 @@ import androidx.test.core.app.ApplicationProvider
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.NavTargets
 import app.mauri.sukrara.core.model.PenFill
+import app.mauri.sukrara.core.model.PenReadAt
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.TreatmentKind
 import kotlinx.coroutines.runBlocking
@@ -107,15 +109,26 @@ class PenFillTest {
             QuickTreatmentIntents
                 .open(app, QuickSource.Notification)
                 .putExtra(NavTargets.EXTRA_AT, injected * 1000)
-                .putExtra(NavTargets.EXTRA_FOCUS_LONG, true)
         assertEquals(Instant.ofEpochSecond(injected), QuickTreatmentIntents.at(i))
-        assertTrue(QuickTreatmentIntents.focusLong(i))
-        ActivityScenario.launch<QuickTreatmentActivity>(i).use {
-            compose.waitForIdle()
-            compose.onNodeWithText(app.getString(R.string.treatment_long)).performTextReplacement("10")
-            compose.onNodeWithTag("treatment-save").performScrollTo().performClick()
-            compose.waitForIdle()
-            assertEquals(injected, saved().single().at.epochSecond)
+        // the rapid pen's read just now: THE kinds' order puts the other insulin first
+        app.penRead =
+            PenReadAt(
+                TreatmentKind.RapidInsulin,
+                app.treatments.clock
+                    .now()
+                    .epochSecond - 30,
+            )
+        try {
+            ActivityScenario.launch<QuickTreatmentActivity>(i).use {
+                compose.waitForIdle()
+                compose.onNodeWithTag("treatment-long").assertIsFocused()
+                compose.onNodeWithText(app.getString(R.string.treatment_long)).performTextReplacement("10")
+                compose.onNodeWithTag("treatment-save").performScrollTo().performClick()
+                compose.waitForIdle()
+                assertEquals(injected, saved().single().at.epochSecond)
+            }
+        } finally {
+            app.penRead = null
         }
     }
 }

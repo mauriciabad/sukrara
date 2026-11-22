@@ -199,13 +199,7 @@ fun widgetTap(
     frame: WidgetFrame,
 ): WidgetTap {
     val model = widgetModel(context, frame)
-    return WidgetTap.of(
-        spec = frame.glucose.spec,
-        look = widgetLook(model, frame.config.unit),
-        mgdl = model.latest?.sgv,
-        bands = frame.config.bands,
-        firingKinds = frame.glucose.alerts.firingKinds,
-    )
+    return WidgetTap.of(spec = frame.glucose.spec, look = widgetLook(model, frame.config.unit))
 }
 
 /** One widget kind as a Glance widget: composes the updater's frame at the placement's size. */

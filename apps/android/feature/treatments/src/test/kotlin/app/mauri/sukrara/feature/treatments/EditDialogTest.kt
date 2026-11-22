@@ -50,7 +50,7 @@ class EditDialogTest {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = form,
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { e, at -> saved += e to at },
@@ -74,7 +74,7 @@ class EditDialogTest {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = TreatmentFormState.editing(t, java.util.Locale.US),
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { _, _ -> },
@@ -110,7 +110,7 @@ class EditDialogTest {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = TreatmentFormState.editing(t, java.util.Locale.US),
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { _, _ -> },
@@ -131,7 +131,7 @@ class EditDialogTest {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = TreatmentFormState.editing(t, java.util.Locale.US),
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { _, _ -> },

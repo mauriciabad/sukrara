@@ -15,6 +15,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -51,7 +52,7 @@ class TreatmentDialogLayoutTest {
                 Box(Modifier.width(width)) {
                     TreatmentDialogContent(
                         form = form,
-                        focusCarbs = false,
+                        focus = TreatmentKind.RapidInsulin,
                         zone = ZoneOffset.UTC,
                         now = { now },
                         onSave = { _, _ -> },

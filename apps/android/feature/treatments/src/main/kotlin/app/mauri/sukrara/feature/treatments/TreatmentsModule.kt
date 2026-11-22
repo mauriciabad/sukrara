@@ -8,8 +8,11 @@ import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.GlucoseState
 import app.mauri.sukrara.core.model.GlucoseUnit
+import app.mauri.sukrara.core.model.KindFacts
+import app.mauri.sukrara.core.model.KindOrder
 import app.mauri.sukrara.core.model.PenDuplicates
 import app.mauri.sukrara.core.model.PenNearEntry
+import app.mauri.sukrara.core.model.PenReadAt
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.SettingsRepository
@@ -33,8 +36,8 @@ import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 
 /**
- * The treatments area (`AppGraph` composes it with one line): the log, whether this phone may add entries, the
- * glucose state that decides the focused field, and the lock-screen countdown setting.
+ * The treatments area (`AppGraph` composes it with one line): the log, whether this phone may add entries, THE kinds'
+ * order (the focused field), and the lock-screen countdown setting.
  */
 class TreatmentsModule(
     private val repository: TreatmentsRepository,
@@ -43,7 +46,7 @@ class TreatmentsModule(
     val glucose: StateFlow<GlucoseState>,
     settings: SettingsRepository,
     private val scope: CoroutineScope,
-    /** This phone's alert rules as the dialog needs them (the focused field, the quiet line). */
+    /** This phone's alert rules as the dialog needs them (the kinds' order, the quiet line). */
     val hints: AlertHints,
     /** A pen entry near a typed insulin dose (*Already logged by your pen?*); none without pens. */
     private val penDuplicates: PenDuplicates = PenDuplicates { _, _ -> null },
@@ -53,6 +56,8 @@ class TreatmentsModule(
     private val draftNotice: DraftNotice = DraftNotice.None,
     /** Reading a pen into the open dialog (the wearer's phone with pens); a function: pens are built later. */
     val pen: () -> DialogPen? = { null },
+    /** The newest pen read on this phone (the kinds' order), null without pens or reads; a function: pens are built later. */
+    private val newestPenRead: suspend () -> PenReadAt? = { null },
 ) {
     val log = TreatmentLog(repository, sync, clock)
 
@@ -202,8 +207,17 @@ class TreatmentsModule(
             FromWatch.Stored(stored.single())
         }
 
-    /** Carbs first while the latest fresh reading is low (eating is what's needed), whether or not an alert fired. */
-    fun lowNow(): Boolean = hints.lowNow()
+    /** What THE kinds' order is decided from now: the alerts' facts and the newest pen read (a failed read: none). */
+    suspend fun kindFacts(): KindFacts = hints.kindFacts().copy(pen = runCatching { newestPenRead() }.getOrNull())
+
+    /**
+     * THE kinds' order now ([KindOrder]); [answering] = the alert whose *Treatment* opened the dialog (its wire name),
+     * counted as ringing: the dialog answers it.
+     */
+    suspend fun order(answering: String? = null): List<TreatmentKind> {
+        val f = kindFacts()
+        return KindOrder.of(answering?.let { f.copy(ringing = f.ringing + it) } ?: f, clock.now().epochSecond)
+    }
 
     companion object {
         val LockTreatmentTime = SchemaSettings.number("lock.treatmentTime")

@@ -130,11 +130,10 @@ data class LiveNotificationContent(
 
     sealed interface Target {
         /**
-         * The quick "Add treatment" dialog; Carbs focused while a low is going on. [alertKind]: the alert the glucose
-         * notification carries, so opening it answers that alert (#39).
+         * The quick "Add treatment" dialog (its focused field is THE kinds' order's first, decided as it opens).
+         * [alertKind]: the alert the glucose notification carries, so opening it answers that alert (#39).
          */
         data class QuickTreatment(
-            val focusCarbs: Boolean,
             val alertKind: String? = null,
         ) : Target
 
@@ -146,7 +145,6 @@ data class LiveNotificationContent(
     data class Action(val label: UiText, val target: Target)
 
     companion object {
-        private val LOW_KINDS = setOf("low", "very_low", "falling_fast")
         private val REPLACE_SENSOR = Action(UiText(R.string.monitor_action_replace_sensor), Target.SensorSetup)
 
         /**
@@ -210,7 +208,7 @@ data class LiveNotificationContent(
                     if (state.notMonitoring != null) {
                         notMonitoring(state)
                     } else {
-                        plain(UiText(R.string.monitor_notif_waiting), detail, Icon.APP, quickTreatment(state))
+                        plain(UiText(R.string.monitor_notif_waiting), detail, Icon.APP, Target.QuickTreatment())
                     }
                 }
 
@@ -223,7 +221,7 @@ data class LiveNotificationContent(
                         chip = null,
                         icon = Icon.NO_READINGS,
                         readingAt = at,
-                        tap = quickTreatment(state),
+                        tap = Target.QuickTreatment(),
                         actions = emptyList(),
                         hideUnderWidget = true,
                     )
@@ -301,7 +299,7 @@ data class LiveNotificationContent(
                 trendRate = look.rate.takeIf { look.trend == TrendMark.ARROW },
                 trendBand = look.band.takeIf { look.trend == TrendMark.ARROW },
                 readingAt = if (look.fresh.showTime) reading.t else null,
-                tap = quickTreatment(state),
+                tap = Target.QuickTreatment(),
                 actions = if (look.ended && state.spec?.owner == true) listOf(REPLACE_SENSOR) else emptyList(),
                 layout = if (live) Layout.LIVE_UPDATE else Layout.CARD,
                 look = look,
@@ -340,10 +338,5 @@ data class LiveNotificationContent(
                 SensorState.CoreMissing -> UiText(R.string.monitor_notif_core_missing)
                 else -> null
             }
-
-        private fun quickTreatment(state: GlucoseState) =
-            Target.QuickTreatment(
-                focusCarbs = state.alerts.firingKinds.any { it in LOW_KINDS },
-            )
     }
 }

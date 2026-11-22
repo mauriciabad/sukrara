@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performSemanticsAction
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -40,7 +41,7 @@ class AddTreatmentQuietFormTest {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = form,
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { _, _ -> },
@@ -124,7 +125,7 @@ class AddTreatmentQuietFormSpanishTest {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = TreatmentFormState(ago = 5),
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { Instant.parse("2026-06-15T12:30:00Z") },
                     onSave = { _, _ -> },

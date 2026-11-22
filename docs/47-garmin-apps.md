@@ -263,6 +263,11 @@ Changed from "Choice" / §6, and why:
   only then); its value is `g` (the alert is about the newest reading).
 - **`last` items carry their own time and mute end** (round 2): the watch draws the card's double ring
   (`LastTreatment.Info.left`) at every draw without the phone.
+- **`log.order`** (round 2, the owner: "the order of the kinds must be dynamic, with ONE source of truth so phone and
+  watch never drift"): the log list's order is THE kinds' order (`contracts/treatments/kind-order.json`, `KindOrder`
+  on Android and the Mac), from the same facts the phone's Add treatment focuses from, so every dialog and the watch
+  agree; the scattered focus decisions (the notification, the alert's button, the widgets, the pill, the pen notice,
+  the Mac's own) are gone.
 - **Mute from the watch** (the owner's addition): the alert runtime's own actions, with *Remind less* / *Remind as usual* (round 2). *Until turned off* is Mute all's
   only: a side's mute always ends on the phone (contracts/alerts SPEC, 1–720 min), so the watch doesn't offer it.
 - **Display settings in `ds`, the Numbers page in `rep`** (the design's addition): resolved on the phone in one place

@@ -4,6 +4,7 @@
 package app.mauri.sukrara.feature.treatments
 
 import app.mauri.sukrara.core.model.GlucoseState
+import app.mauri.sukrara.core.model.KindFacts
 import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.testing.FakeClock
@@ -45,7 +46,7 @@ class QuickSaveTest {
         }
     private val hints =
         object : AlertHints {
-            override fun lowNow() = false
+            override fun kindFacts() = KindFacts.NONE
 
             override val quiet = flowOf(QuietRules.NONE)
         }

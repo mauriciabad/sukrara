@@ -42,8 +42,8 @@ internal class AlertActions(
         promoted: Boolean,
     ): Notification.Action =
         when (button) {
-            is AlertButton.Treatment -> {
-                treatment(kind, button.carbs)
+            AlertButton.Treatment -> {
+                treatment(kind)
             }
 
             AlertButton.RemindLess -> {
@@ -137,18 +137,14 @@ internal class AlertActions(
     }
 
     /**
-     * *Treatment*, first: the quick treatment dialog with Carbs focused on the low side ([carbs]), the first field
-     * (Rapid) on the high side, straight from the button (Android lets only an activity's own PendingIntent start it
-     * from a notification action, and asks for the unlock first). The dialog takes the alert's kind as an answer (#39).
+     * *Treatment*, first: the quick treatment dialog straight from the button (Android lets only an activity's own
+     * PendingIntent start it from a notification action, and asks for the unlock first). The dialog takes the alert's
+     * kind as an answer (#39), and THE kinds' order counts it as ringing: Carbs focused for the alerts carbs answer.
      */
-    private fun treatment(
-        kind: AlertKind,
-        carbs: Boolean,
-    ): Notification.Action {
+    private fun treatment(kind: AlertKind): Notification.Action {
         val dialog =
             Intent(NavTargets.ACTION_QUICK_TREATMENT)
                 .setPackage(ctx.packageName)
-                .putExtra(NavTargets.EXTRA_FOCUS_CARBS, carbs)
                 .putExtra(NavTargets.EXTRA_ALERT_KIND, kind.wire)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val pi =

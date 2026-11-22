@@ -806,6 +806,9 @@ class AppGraph(
                             FromWatch.When -> WatchLogged.When
                             FromWatch.Off -> WatchLogged.Off
                         }
+
+                    // THE kinds' order from the same facts as the phone's Add treatment (the watch's log list)
+                    override suspend fun facts() = treatments.kindFacts()
                 },
             // and mutes through the alert runtime's own actions, the ones `st` reports
             alertControls =
@@ -1394,6 +1397,8 @@ class AppGraph(
                 ),
             // a pen held to the phone while the dialog is open (the wearer's phone with pens)
             pen = { pens.takeIf { it.available() }?.let(::DialogPenOf) },
+            // THE kinds' order: the other insulin after a pen read
+            newestPenRead = { pens.newestRead() },
         )
     }
 

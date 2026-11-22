@@ -183,7 +183,7 @@ class AlertNotifier(
     /** *Treatment* on [kind]'s alert where this phone can add entries (no data has none: nothing logged answers it). */
     private fun treatment(kind: AlertKind): AlertButton? {
         if (kind == AlertKind.NO_DATA || !runCatching(canLog).getOrDefault(false)) return null
-        return AlertButton.Treatment(carbs = kind.side == Side.LOW)
+        return AlertButton.Treatment
     }
 
     /** A ring went out on [channel]: info sounds wait (one sound per second), Sukrara's own unlocked sound starts. */

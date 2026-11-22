@@ -666,8 +666,8 @@ private fun GlucoseSection(
                     pillWords = pillWords(state, resources),
                     onPill = { action ->
                         when (action) {
-                            is PillAction.Treat -> {
-                                callbacks.onAction(HomeAction.Treat(carbs = action.carbs))
+                            PillAction.Treat -> {
+                                callbacks.onAction(HomeAction.AddTreatment)
                             }
 
                             // a new sensor paired here, or started in the source's app: Settings › Source says how

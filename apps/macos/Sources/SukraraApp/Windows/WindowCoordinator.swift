@@ -2,6 +2,7 @@
 // Copyright (C) 2026 Maurici Abad
 // SPDX-License-Identifier: GPL-3.0-or-later
 import AppKit
+import SukraraAlerts
 import SukraraCore
 import SukraraGraph
 import SukraraShare
@@ -207,16 +208,15 @@ final class WindowCoordinator {
     var statusItemFrame: () -> NSRect? = { nil }
     private let addFocus = AddTreatmentFocus()
 
-    /// Add treatment: the Carbs field has the focus while the latest reading is below the range (or a low alert is up),
-    /// else Rapid; the card's pill names the field itself (`focus`). It opens under the status item (from the panel)
-    /// or, `atPointer`, centred on the pointer (a click elsewhere: a desktop widget, the Treatments window's +).
-    func openAddTreatment(focus: Treatment.Kind? = nil, atPointer: Bool = false) {
-        let low =
-            model.isLow
-            || (model.look.state == .value && GlucoseCard.rangeSide(model.cardData, config: model.graph) == .below)
-        let field = focus ?? (low ? .carbs : .rapid)
-        // already open: a pill's field choice moves the focus there (nothing typed is lost)
-        if let focus, windows.isOpen(.addTreatment) { addFocus.request(focus) }
+    /// Add treatment: the field THE kinds' order puts first has the focus (`KindOrder` over `AppModel.kindFacts`;
+    /// `answering` = the alert whose *Treatment* opened it, counted as ringing). It opens under the status item (from
+    /// the panel) or, `atPointer`, centred on the pointer (a click elsewhere: a desktop widget, the Treatments window's +).
+    func openAddTreatment(answering: AlertKind? = nil, atPointer: Bool = false) {
+        var facts = model.kindFacts
+        if let answering { facts.ringing.insert(answering.rawValue) }
+        let field = KindOrder.focus(facts, now: Int64(model.now.timeIntervalSince1970))
+        // already open: the focus moves to that field (nothing typed is lost)
+        if windows.isOpen(.addTreatment) { addFocus.request(field) }
         let placement: AppWindows.Placement =
             atPointer ? .atPointer(NSEvent.mouseLocation) : .underMenuBar(anchor: statusItemFrame())
         windows.show(.addTreatment, title: L10n.t("Add Treatment"), placement: placement) {

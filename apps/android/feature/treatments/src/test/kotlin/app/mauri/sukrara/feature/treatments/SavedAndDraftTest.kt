@@ -74,7 +74,7 @@ class SavedAndDraftTest {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = form,
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { _, _ -> },

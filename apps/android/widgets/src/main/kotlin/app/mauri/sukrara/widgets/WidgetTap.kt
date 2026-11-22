@@ -10,11 +10,10 @@ import app.mauri.sukrara.core.model.SourceSpec
 import app.mauri.sukrara.feature.treatments.QuickSource
 import app.mauri.sukrara.feature.treatments.QuickTreatmentIntents
 import app.mauri.sukrara.graph.GlucoseLook
-import app.mauri.sukrara.graph.stats.Bands
 
 /**
  * What a tap on a widget does ("The pill is an action", FEATURES.md): with a value on screen, quick Add treatment
- * (Carbs first while a low is going on); the wearer's ended sensor: the new-sensor flow; without a value otherwise (no
+ * (its focused field THE kinds' order's first, decided as it opens); the wearer's ended sensor: the new-sensor flow; without a value otherwise (no
  * reading yet, nothing for 20 min, sensor warming up, a follower's wearer's sensor ended, setup not done) the app, where
  * the reason and its fix are.
  */
@@ -24,30 +23,21 @@ sealed interface WidgetTap {
     /** The wearer's sensor has ended: straight to pairing the next one. */
     data object NewSensor : WidgetTap
 
-    data class QuickTreatment(
-        val focusCarbs: Boolean,
-    ) : WidgetTap
+    data object QuickTreatment : WidgetTap
 
     companion object {
-        private val LOW_KINDS = setOf("low", "very_low")
-
         /**
-         * [look] = the renderer's decision about the value on the widget; [firingKinds] = the alert kinds firing;
-         * [mgdl] the shown value, [bands] the user's ranges (low = at or below the low limit, [Bands.of]). A follower logs
-         * on the wearer's behalf as in the app.
+         * [look] = the renderer's decision about the value on the widget. A follower logs on the wearer's behalf as in
+         * the app.
          */
         fun of(
             spec: SourceSpec?,
             look: GlucoseLook,
-            mgdl: Int?,
-            bands: Bands,
-            firingKinds: Set<String>,
         ): WidgetTap {
             // the card says *Sensor ended* also when the source sent no dates (cardSensor)
             if (spec?.owner == true && look.state == GlucoseLook.State.ENDED) return NewSensor
             if (spec == null || look.state != GlucoseLook.State.VALUE) return OpenApp
-            val low = firingKinds.any { it in LOW_KINDS } || (mgdl != null && bands.sane().of(mgdl).group < 0)
-            return QuickTreatment(focusCarbs = low)
+            return QuickTreatment
         }
 
         /** The activity intent for [tap]: quick Add treatment over the home screen, or the app. */
@@ -56,8 +46,8 @@ sealed interface WidgetTap {
             tap: WidgetTap,
         ): Intent =
             when (tap) {
-                is QuickTreatment -> {
-                    QuickTreatmentIntents.open(context, QuickSource.Widget, tap.focusCarbs)
+                QuickTreatment -> {
+                    QuickTreatmentIntents.open(context, QuickSource.Widget)
                 }
 
                 OpenApp -> {

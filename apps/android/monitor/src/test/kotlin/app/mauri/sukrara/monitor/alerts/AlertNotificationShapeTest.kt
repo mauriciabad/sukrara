@@ -196,14 +196,14 @@ class AlertNotificationShapeTest {
         assertEquals(listOf(log, label(R.string.alert_action_remind_less), label(R.string.alert_action_mute)), low.titles())
         assertTrue("never an ellipsis in an action (the owner, 2026-11-14)", low.titles().none { it.contains('…') || it.contains("...") })
 
-        // straight to the quick treatment dialog (an activity: no trampoline), immutable, Carbs focused, the alert named
+        // straight to the quick treatment dialog (an activity: no trampoline), immutable, the alert named (THE kinds' order
+        // counts it as ringing: Carbs focused, KindOrderTest), no focus of its own
         val pi = shadowOf(low.action(log).actionIntent)
         assertTrue("opens the dialog itself", pi.isActivity)
         assertTrue(pi.flags and PendingIntent.FLAG_IMMUTABLE != 0)
         val intent = pi.savedIntent
         assertEquals(NavTargets.ACTION_QUICK_TREATMENT, intent.action)
         assertEquals(ctx.packageName, intent.`package`)
-        assertTrue(intent.getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, false))
         assertEquals("an answer to this alert (#39)", "low", intent.getStringExtra(NavTargets.EXTRA_ALERT_KIND))
 
         // very low and falling fast too (carbs answer them), first as well
@@ -214,14 +214,11 @@ class AlertNotificationShapeTest {
         assertEquals(log, falling.titles().first())
         assertEquals("falling_fast", shadowOf(falling.action(log).actionIntent).savedIntent.getStringExtra(NavTargets.EXTRA_ALERT_KIND))
 
-        // the highs too, on Rapid (the dialog's first field); no data never: nothing logged answers it
+        // the highs too; no data never: nothing logged answers it
         notifier.show(fire(AlertKind.HIGH, 220), settings, silent = false, who = null, relaxedMin = 0)
         val high = posted(AlertGroup.LEVEL)
         assertEquals(log, high.titles().first())
-        assertFalse(
-            "Rapid, not Carbs",
-            shadowOf(high.action(log).actionIntent).savedIntent.getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, true),
-        )
+        assertEquals("high", shadowOf(high.action(log).actionIntent).savedIntent.getStringExtra(NavTargets.EXTRA_ALERT_KIND))
         notifier.show(fire(AlertKind.NO_DATA, 0), settings, silent = false, who = null, relaxedMin = 0)
         assertFalse(log in posted(AlertGroup.NO_DATA).titles())
 

@@ -55,13 +55,12 @@ class WidgetTapTest {
     }
 
     @Test
-    fun `a value on screen opens quick Add treatment, Carbs first while low`() {
-        assertEquals(WidgetTap.QuickTreatment(focusCarbs = false), widgetTap(context, frame(120)))
-        assertEquals(WidgetTap.QuickTreatment(focusCarbs = true), widgetTap(context, frame(62)))
-        assertEquals(WidgetTap.QuickTreatment(focusCarbs = true), widgetTap(context, frame(75, firing = setOf("low"))))
+    fun `a value on screen opens quick Add treatment`() {
+        assertEquals(WidgetTap.QuickTreatment, widgetTap(context, frame(120)))
+        assertEquals(WidgetTap.QuickTreatment, widgetTap(context, frame(62, firing = setOf("low"))))
         assertEquals(
             "struck through at 5 min is still a value",
-            WidgetTap.QuickTreatment(false),
+            WidgetTap.QuickTreatment,
             widgetTap(context, frame(120, Duration.ofMinutes(8))),
         )
     }
@@ -82,7 +81,7 @@ class WidgetTapTest {
         )
         // past its end but still sending (#3): a value, so the tap logs a treatment as with any value
         assertEquals(
-            WidgetTap.QuickTreatment(false),
+            WidgetTap.QuickTreatment,
             widgetTap(context, frame(120, sensor = SensorState.Active(now.minus(Duration.ofHours(1))))),
         )
         assertEquals(
@@ -113,13 +112,11 @@ class WidgetTapTest {
     }
 
     @Test
-    fun `a tap with a value opens the quick Add treatment dialog, Carbs focused while low`() {
-        val quick = WidgetTap.intent(context, WidgetTap.QuickTreatment(focusCarbs = true))
+    fun `a tap with a value opens the quick Add treatment dialog`() {
+        val quick = WidgetTap.intent(context, WidgetTap.QuickTreatment)
         assertEquals(NavTargets.ACTION_QUICK_TREATMENT, quick.action)
         assertEquals(ComponentName(context.packageName, QuickTreatmentActivity::class.java.name), quick.component)
         assertEquals(QuickSource.Widget.name, quick.getStringExtra(QuickTreatmentIntents.EXTRA_SOURCE))
-        assertTrue(quick.getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, false))
-        assertFalse(WidgetTap.intent(context, WidgetTap.QuickTreatment(false)).getBooleanExtra(NavTargets.EXTRA_FOCUS_CARBS, true))
         assertFalse(WidgetTap.intent(context, WidgetTap.OpenApp).action == NavTargets.ACTION_QUICK_TREATMENT)
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.designsystem.theme.SukraraTheme
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Rule
@@ -75,7 +76,7 @@ class TreatmentGallery {
                     ) {
                         TreatmentDialogContent(
                             form = current.second,
-                            focusCarbs = false,
+                            focus = TreatmentKind.RapidInsulin,
                             zone = ZoneOffset.UTC,
                             now = { now },
                             onSave = { _, _ -> },
@@ -109,7 +110,7 @@ class TreatmentGallery {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = form,
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { _, _ -> },
@@ -138,7 +139,7 @@ class TreatmentGallery {
             SukraraTheme(dark = false, dynamic = false) {
                 TreatmentDialogContent(
                     form = form,
-                    focusCarbs = false,
+                    focus = TreatmentKind.RapidInsulin,
                     zone = ZoneOffset.UTC,
                     now = { now },
                     onSave = { _, _ -> },
