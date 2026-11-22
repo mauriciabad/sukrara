@@ -4,17 +4,20 @@
 """contracts/watchface/payload/cases.json as Monkey C, for the face's link test (test/link/LinkTest.mc).
 
   python3 apps/garmin/tools/link_cases.py           writes apps/garmin/test/link/LinkCases.mc
-  python3 apps/garmin/tools/link_cases.py --check   fails if the committed file differs from a fresh one
+  python3 apps/garmin/tools/link_cases.py --check   fails if the committed file differs from a fresh one, or an app id
+                                                    (manifest, build.sh's beta) differs from apps.json
 
 apps/garmin/tools/link-test.sh runs it (with --check) before every run of the test.
 """
 import json
+import re
 import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
 CASES = ROOT / "contracts/watchface/payload/cases.json"
 OUT = ROOT / "apps/garmin/test/link/LinkCases.mc"
+APPS = ROOT / "contracts/watchface/payload/apps.json"
 
 
 def mc(v):
@@ -64,11 +67,34 @@ def render():
     return "\n".join(lines)
 
 
+def registry():
+    """Every built app's manifest id and build.sh's beta id are contracts/watchface/payload/apps.json's (the phone pushes
+    to those ids); an app whose manifest doesn't exist yet is skipped. Returns the problems."""
+    reg = json.loads(APPS.read_text())
+    problems = []
+    build = (ROOT / "apps/garmin/build.sh").read_text()
+    for a in reg["apps"]:
+        manifest = ROOT / a["manifest"]
+        if not manifest.exists():
+            continue
+        m = re.search(r'<iq:application id="([^"]+)"', manifest.read_text())
+        if not m or m.group(1) != a["id"]:
+            problems.append("%s: app id %s, apps.json says %s" % (a["manifest"], m and m.group(1), a["id"]))
+        if a["app"] == "aura":
+            b = re.search(r"BETA_ID=([0-9a-f-]+)", build)
+            if not b or b.group(1) != a["beta"]:
+                problems.append("apps/garmin/build.sh: beta id %s, apps.json says %s" % (b and b.group(1), a["beta"]))
+    return problems
+
+
 def main():
     text = render()
     if "--check" in sys.argv:
         if not OUT.exists() or OUT.read_text() != text:
             sys.exit("link_cases.py: %s is out of date with cases.json: run python3 apps/garmin/tools/link_cases.py" % OUT)
+        problems = registry()
+        if problems:
+            sys.exit("link_cases.py: the app ids differ from contracts/watchface/payload/apps.json:\n  " + "\n  ".join(problems))
         return
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(text)

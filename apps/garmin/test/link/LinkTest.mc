@@ -81,8 +81,8 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
         var o = older[i] as Dictionary;
         AuraLink.reset();
         var stored = o.get("stored") as Number;
-        AuraLink.accept({"v" => AuraLink.VERSION, "sent" => stored}, stored);
-        AuraLink.accept({"v" => AuraLink.VERSION, "sent" => o.get("incoming")}, o.get("watch") as Number);
+        AuraLink.accept({"v" => AuraLink.VERSION, "p" => AuraLink.PROFILE, "sent" => stored}, stored);
+        AuraLink.accept({"v" => AuraLink.VERSION, "p" => AuraLink.PROFILE, "sent" => o.get("incoming")}, o.get("watch") as Number);
         var want = "stored".equals(o.get("keep")) ? stored : o.get("incoming");
         var got = (AuraLink.payload() as Dictionary).get("sent");
         if (got != want) {
@@ -107,14 +107,14 @@ function linkKeepsTheNewest(logger as Logger) as Boolean {
 function linkHandOverCountsOnce(logger as Logger) as Boolean {
     var now = LinkCases.NOW;
     AuraLink.reset();
-    var a = {"k" => "push", "d" => {"v" => AuraLink.VERSION, "sent" => now}, "n" => 0, "id" => "a"};
+    var a = {"k" => "push", "d" => {"v" => AuraLink.VERSION, "p" => AuraLink.PROFILE, "sent" => now}, "n" => 0, "id" => "a"};
     Application.Storage.setValue(AuraLinkBackground.HANDOFF, a);
     Test.assertMessage(AuraLink.take(a, now, false), "Garmin's hand-over");
     AuraLink.pickUp(now + 20);
     var runs = AuraLink.stored("Runs");
     Test.assertEqualMessage(runs.size(), 1, "the same run from storage doesn't count again");
     // Garmin doesn't hand over the next run: the next draw picks it up from storage, once
-    var b = {"k" => "push", "d" => {"v" => AuraLink.VERSION, "sent" => now + 60}, "n" => 0, "id" => "b"};
+    var b = {"k" => "push", "d" => {"v" => AuraLink.VERSION, "p" => AuraLink.PROFILE, "sent" => now + 60}, "n" => 0, "id" => "b"};
     Application.Storage.setValue(AuraLinkBackground.HANDOFF, b);
     AuraLink.pickUp(now + 65);
     Test.assertEqualMessage((AuraLink.payload() as Dictionary).get("sent"), now + 60, "picked up");

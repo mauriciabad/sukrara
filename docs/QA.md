@@ -1106,6 +1106,10 @@ watch; the watch shows the real value: check it against the phone, never photogr
       nothing clipped.
 - [ ] A low with the pill, a mute, a treatment: the face's pill and treatment field change within seconds of the
       phone's card.
+- [ ] *Sukrara on your watch* has three rows (Sukrara Aura, Sukrara, Sukrara data field), each "not installed" until
+      its app is on a watch; with an app on the watch (once built), its row says "asked this phone at <time>" after its
+      fetch, and an entry or a mute it sends shows on the phone's home (the entry in the list, editable and deletable;
+      the pill) as one the phone made. An entry sent twice is in the list once.
 - [ ] TalkBack: the row and every page row read their text; each action button reads as a button with its label; the
       main switch reads as a switch with its note.
 ## Q28 Garmin watch face (Sukrara Aura)

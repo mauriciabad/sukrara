@@ -101,6 +101,31 @@ class LocalHttpServerTest {
     }
 
     @Test
+    fun `a POST reaches only its paths, with a bounded body`() {
+        val posts =
+            LocalHttpServer(0, { HttpAnswer("200 OK", "${it.method} ${it.path} ${it.body}") }, posts = setOf("sukrara/entries"))
+        try {
+            posts.bind()
+
+            fun send(raw: String) =
+                Socket(InetAddress.getLoopbackAddress(), posts.boundPort).use { s ->
+                    s.soTimeout = 10_000
+                    s.getOutputStream().write(raw.toByteArray())
+                    s.getInputStream().readBytes().decodeToString()
+                }
+            val ok = send("POST /sukrara/entries HTTP/1.1\r\nHost: 127.0.0.1:17582\r\nContent-Length: 7\r\n\r\n{\"a\":1}")
+            assertTrue(ok, ok.startsWith("HTTP/1.1 200"))
+            assertEquals("POST sukrara/entries {\"a\":1}", body(ok))
+            assertTrue(send("POST /sukrara/aura HTTP/1.1\r\nContent-Length: 2\r\n\r\n{}").startsWith("HTTP/1.1 405"))
+            assertTrue(send("POST /sukrara/entries HTTP/1.1\r\n\r\n").startsWith("HTTP/1.1 411"))
+            val big = LocalHttpServer.MAX_BODY + 1
+            assertTrue(send("POST /sukrara/entries HTTP/1.1\r\nContent-Length: $big\r\n\r\n" + "a".repeat(big)).startsWith("HTTP/1.1 413"))
+        } finally {
+            posts.stop()
+        }
+    }
+
+    @Test
     fun `unknown paths, other methods and oversized requests are refused`() {
         server.bind()
         assertTrue(get("GET /nope HTTP/1.1\r\n\r\n").startsWith("HTTP/1.1 404"))

@@ -18,11 +18,14 @@ import app.mauri.sukrara.core.model.TreatmentQuiet
 import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.testing.FakeClock
 import app.mauri.sukrara.core.testing.InMemoryReadingsRepository
+import app.mauri.sukrara.core.testing.InMemorySecureStore
 import app.mauri.sukrara.core.testing.InMemorySettingsRepository
 import app.mauri.sukrara.core.testing.InMemoryTreatmentsRepository
 import app.mauri.sukrara.graph.LastTreatment
 import app.mauri.sukrara.graph.id
 import app.mauri.sukrara.graph.muteRuleOf
+import app.mauri.sukrara.integrations.localserver.HttpAnswer
+import app.mauri.sukrara.integrations.localserver.HttpRequest
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -47,12 +50,17 @@ class AuraLinkTest {
         var gcm = true
         var watches: List<IqDevice>? = listOf(IqDevice(7, "Descent Mk3i 43mm", true))
         var face = true
+
+        /** The Connect IQ app ids on the watch ([face] off = none). */
+        var apps = mutableSetOf(GarminApp.Aura.id)
         var version: Int? = 3
         var answers = ArrayDeque<IqSend>()
 
-        /** What a send ends in once [answers] runs out. */
+        /** What a send ends in once [answers] runs out; per app id in [answersFor] first. */
         var otherwise: IqSend = IqSend.Delivered
+        val answersFor = HashMap<String, ArrayDeque<IqSend>>()
         val sent = ArrayList<Map<*, *>>()
+        val sentTo = ArrayList<String>()
 
         override fun installed() = gcm
 
@@ -61,7 +69,7 @@ class AuraLinkTest {
         override suspend fun appVersion(
             device: IqDevice,
             app: String,
-        ): Int? = if (face) version else null
+        ): Int? = if (face && app in apps) version else null
 
         override suspend fun send(
             device: IqDevice,
@@ -69,7 +77,8 @@ class AuraLinkTest {
             message: ByteArray,
         ): IqSend {
             sent += MonkeyCDecode.decode(message) as Map<*, *>
-            return answers.removeFirstOrNull() ?: otherwise
+            sentTo += app
+            return answersFor[app]?.removeFirstOrNull() ?: answers.removeFirstOrNull() ?: otherwise
         }
     }
 
@@ -92,11 +101,86 @@ class AuraLinkTest {
         glucose: MutableStateFlow<GlucoseState>,
         settings: InMemorySettingsRepository = InMemorySettingsRepository(),
         treatments: InMemoryTreatmentsRepository = InMemoryTreatmentsRepository(),
+        key: WatchKey? = null,
     ): AuraLink {
         val d = StandardTestDispatcher(testScheduler)
-        return AuraLink(settings, glucose, treatments, InMemoryReadingsRepository(), port, clock, d, {}, fetchPort = 0)
+        return AuraLink(settings, glucose, treatments, InMemoryReadingsRepository(), port, clock, d, {}, fetchPort = 0, key = key)
             .also { it.start(backgroundScope) }
     }
+
+    @Test
+    fun eachSukraraAppGetsItsOwnProfileAndOnlyTheAppTheKey() =
+        runTest {
+            val port = FakePort().apply { apps = mutableSetOf(GarminApp.Aura.id, GarminApp.App.id, GarminApp.Field.beta) }
+            val key = WatchKey(InMemorySecureStore())
+            val link = link(port, MutableStateFlow(state(-30L to 112)), key = key)
+            settle()
+            // the field's beta id is the one on the watch: it is pushed to, its public id isn't
+            assertEquals(listOf(GarminApp.Aura.id, GarminApp.App.id, GarminApp.Field.beta), port.sentTo)
+            assertEquals(listOf("aura", "app", "field"), port.sent.map { it["p"] })
+            assertTrue(port.sent.all { it["v"] == AuraPayload.VERSION })
+            assertEquals(WatchKey.hex(key.get()!!), port.sent[1]["key"])
+            assertNull(port.sent[0]["key"])
+            assertNull(port.sent[2]["key"])
+            assertEquals(288, (port.sent[1]["hist"] as List<*>).size)
+            assertEquals(12, (port.sent[2]["hist"] as List<*>).size)
+            val w =
+                link.state.value.watches
+                    .single()
+            assertEquals(true, w.has(GarminApp.App))
+            assertEquals(true, w.has(GarminApp.Field))
+            assertTrue(link.state.value.fetchOpen)
+            // the fetch: each app's own profile, never the key
+            val app = link.answer(HttpRequest("GET", "sukrara/app", emptyMap(), emptyMap()))
+            assertTrue(app.status.startsWith("200"))
+            assertTrue(app.body.contains("\"p\":\"app\""))
+            assertFalse(app.body.contains("\"key\""))
+            assertTrue(link.answer(HttpRequest("GET", "sukrara/field", emptyMap(), emptyMap())).body.contains("\"p\":\"field\""))
+            assertEquals(HttpAnswer.NOT_FOUND, link.answer(HttpRequest("GET", "sukrara/other", emptyMap(), emptyMap())))
+            link.stop()
+        }
+
+    @Test
+    fun aFailedAppIsRetriedAloneAndTheOthersAreNotSentAgain() =
+        runTest {
+            val port =
+                FakePort().apply {
+                    apps = mutableSetOf(GarminApp.Aura.id, GarminApp.App.id)
+                    answersFor[GarminApp.App.id] = ArrayDeque(listOf(IqSend.Failed(IqSend.DURING_TRANSFER)))
+                }
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            settle()
+            assertEquals(listOf(GarminApp.Aura.id, GarminApp.App.id), port.sentTo)
+            val w = {
+                link.state.value.watches
+                    .single()
+            }
+            assertTrue(w().link(GarminApp.App)!!.failed != null)
+            assertTrue(w().link(GarminApp.Aura)!!.delivered != null)
+            // the watch line: a delivery to one app is a delivery
+            assertNull(w().failingSince)
+            advanceTimeBy(15_001)
+            assertEquals(listOf(GarminApp.Aura.id, GarminApp.App.id, GarminApp.App.id), port.sentTo)
+            assertTrue(w().link(GarminApp.App)!!.delivered != null)
+            link.stop()
+        }
+
+    @Test
+    fun aWatchWithOnlyTheDataFieldOpensThePort() =
+        runTest {
+            val port = FakePort().apply { apps = mutableSetOf(GarminApp.Field.id) }
+            val link = link(port, MutableStateFlow(state(-30L to 112)))
+            settle()
+            assertEquals(listOf(GarminApp.Field.id), port.sentTo)
+            assertTrue(link.state.value.fetchOpen)
+            assertEquals(
+                false,
+                link.state.value.watches
+                    .single()
+                    .has(GarminApp.Aura),
+            )
+            link.stop()
+        }
 
     private fun treatment(
         id: String,

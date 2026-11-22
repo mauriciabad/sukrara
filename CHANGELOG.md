@@ -13,6 +13,11 @@ Sukrara's releases. 0.x versions are previews.
 - **Sukrara Aura shows the last treatment only while the card beside your value does** (#239): rapid insulin for 4 h,
   carbs 3 min per gram (30 min to 3 h), never long-acting insulin. It goes on time with the phone out of reach too. It
   used to keep the newest treatment of the last 24 hours.
+- **The phone is ready for Sukrara's own Garmin app and data field** (#199): it sends each Sukrara app on your watch
+  only what it shows (the app a whole day, its numbers and what to log; the data field the last hour and what rings),
+  takes entries and mutes from the watch through its own Add treatment and alert actions, each signed and never logged
+  twice, and Settings › Share with apps › Garmin lists the app and the data field. The watch apps themselves come next.
+  Sukrara Aura needs this version of the phone.
 
 ## 0.16.0 — glucose from LibreLinkUp and Nightscout, the Mac on its own, a follow that ends cleanly
 

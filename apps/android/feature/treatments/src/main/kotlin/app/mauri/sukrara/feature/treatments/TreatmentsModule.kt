@@ -19,12 +19,17 @@ import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.graph.stats.Bands
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 
 /**
@@ -160,11 +165,51 @@ class TreatmentsModule(
     /** Whether this phone offers Add treatment right now ([WriterScope]). */
     fun canAdd(): Boolean = WriterScope.canAdd(glucose.value.spec, sync.writer.value)
 
+    /** [canAdd] as it changes (Sukrara on the watch offers logging only then). */
+    val canAddFlow: Flow<Boolean> =
+        combine(glucose, sync.writer) { g, w -> WriterScope.canAdd(g.spec, w) }.distinctUntilChanged()
+
+    private val watchLock = Mutex()
+
+    /**
+     * An entry from Sukrara on the watch (its own [id], a UUID v4 it made), through exactly what Save in the treatment
+     * dialog runs: never a second time for a known id, the form's amount rules ([TreatmentForm.parse], only an exact
+     * amount: the watch's value is never rounded behind the person's back), a time the dialog could pick (up to
+     * [TreatmentForm.MAX_AGO_MIN] back; up to [aheadS] ahead, the watch's clock estimate, stored as now), whether this
+     * phone may add ([canAdd]), *Already logged by your pen?* (unless [force]), then the log ([TreatmentLog.add]: sync,
+     * uploads, and the alert runtime's quiet rules from the stored entry).
+     */
+    suspend fun fromWatch(
+        id: String,
+        kind: TreatmentKind,
+        amount: String,
+        at: Instant,
+        force: Boolean,
+        aheadS: Long = WATCH_AHEAD_S,
+    ): FromWatch =
+        watchLock.withLock {
+            repository.get(id)?.let { return@withLock FromWatch.Known(it.treatment.takeUnless { t -> t.deleted }) }
+            val grams = kind == TreatmentKind.Carbs
+            val value = (TreatmentForm.parse(amount, grams) as? TreatmentForm.Amount.Valid)?.value
+            if (kind == TreatmentKind.Note || value == null || !TreatmentForm.exact(amount, grams)) return@withLock FromWatch.Amount
+            val now = clock.now()
+            if (at < now.minusSeconds(TreatmentForm.MAX_AGO_MIN * 60L) || at > now.plusSeconds(aheadS)) return@withLock FromWatch.When
+            if (!canAdd()) return@withLock FromWatch.Off
+            val entry = NewEntry(kind, value)
+            val t = minOf(at, now)
+            if (!force) penDuplicate(listOf(entry), t)?.let { return@withLock FromWatch.Pen(it.second) }
+            val stored = runCatching { log.add(listOf(entry), t, id) }.getOrNull() ?: return@withLock FromWatch.Off
+            FromWatch.Stored(stored.single())
+        }
+
     /** Carbs first while the latest fresh reading is low (eating is what's needed), whether or not an alert fired. */
     fun lowNow(): Boolean = hints.lowNow()
 
     companion object {
         val LockTreatmentTime = SchemaSettings.number("lock.treatmentTime")
+
+        /** How far ahead of this phone a watch entry's time may be (s; the watch's clock estimate, the contract's). */
+        const val WATCH_AHEAD_S = 300L
     }
 }
 

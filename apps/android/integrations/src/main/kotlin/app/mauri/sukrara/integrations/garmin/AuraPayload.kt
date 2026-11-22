@@ -11,30 +11,69 @@ import app.mauri.sukrara.core.model.SensorState
 import app.mauri.sukrara.core.model.SensorTiming
 import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
+import app.mauri.sukrara.graph.GraphConfig
+import app.mauri.sukrara.graph.LastPlace
 import app.mauri.sukrara.graph.LastTreatment
+import app.mauri.sukrara.graph.MarkShow
+import app.mauri.sukrara.graph.RingSpec
+import app.mauri.sukrara.graph.SlotKind
+import app.mauri.sukrara.graph.TirMark
 import app.mauri.sukrara.graph.TrendAngle
 import app.mauri.sukrara.graph.cardInfo
 import app.mauri.sukrara.graph.id
 import app.mauri.sukrara.graph.muteRuleOf
 import app.mauri.sukrara.graph.stats.Bands
+import app.mauri.sukrara.graph.stats.GlucoseMetrics
+import app.mauri.sukrara.graph.stats.TimeInRange
+import app.mauri.sukrara.graph.stats.TirRange
 import app.mauri.sukrara.integrations.CurrentSensor
+import app.mauri.sukrara.settings.SettingsSpec
 import java.time.Instant
 import kotlin.math.abs
 import kotlin.math.floor
 
 /**
- * What Sukrara Aura (the Garmin face) gets from the phone, contracts/watchface/payload (version [VERSION]): the same
- * decisions the card and the glucose notification draw (the hub's [GlucoseState]: THE trend, the alert runtime's
- * status, the sensor), with absolute times so the watch keeps every age and countdown right between messages. Pure:
- * [of] builds the Monkey C value tree (maps with string keys, lists, Int, Float, Boolean, String, null) that
- * [MonkeyC.encode] writes.
+ * Everything a payload is built from, one snapshot for every profile. [treatments] = the stored entries of the last
+ * [AuraPayload.LOG_DAYS] days (any order); [unit], [bands] and [countdownHours] = the person's settings; [tir] = today's
+ * time in range (share 0…1, null = not enough data) and [dayEnd] = when today ends on this phone (the face drops [tir]
+ * then); [sensor] = the wearer's sensor with its life (the sensor screen's: its start and end, null on a follower or
+ * before one is paired). The app's: [graph] = the person's metric settings, [metrics] = the report numbers per window
+ * (s) as `GlucoseMetrics.of` gives them, [logOpen] = this phone takes entries now (its Add treatment is offered).
+ */
+data class PayloadInputs(
+    val state: GlucoseState,
+    val treatments: List<Treatment>,
+    val now: Instant,
+    val unit: GlucoseUnit,
+    val bands: Bands,
+    val countdownHours: Int,
+    val tir: Double?,
+    val dayEnd: Instant,
+    val sensor: CurrentSensor? = null,
+    val graph: GraphConfig = GraphConfig(),
+    val metrics: Map<Long, GlucoseMetrics> = emptyMap(),
+    val logOpen: Boolean = false,
+)
+
+/**
+ * What Sukrara's Connect IQ apps get from the phone, contracts/watchface/payload (version [VERSION]), one profile per
+ * app ([GarminApp]): the same decisions the card and the glucose notification draw (the hub's [GlucoseState]: THE
+ * trend, the alert runtime's status and what it rings, the sensor, the card's last treatment and metrics), with
+ * absolute times so the watch keeps every age and countdown right between messages, and only what that app draws (the
+ * face is nearly full; the app's background has 64 KB). Pure: [of] builds the Monkey C value tree (maps with string
+ * keys, lists, Int, Float, Boolean, String, null) that [MonkeyC.encode] writes.
  */
 object AuraPayload {
-    /** The format's version (`v`); a face ignores a message of another version. */
-    const val VERSION = 3
+    /** The format's version (`v`); an app ignores a message of another version or another profile (`p`). */
+    const val VERSION = 4
 
-    /** History slots before the newest reading (3 hours at 5 min: the sparkline's longest reach, SPEC.md §6.5). */
-    const val HISTORY = 36
+    /** History slots before the newest reading, per profile: the face 3 h (its sparkline), the app 24 h, the field 1 h. */
+    fun history(app: GarminApp) =
+        when (app) {
+            GarminApp.Aura -> 36
+            GarminApp.App -> 288
+            GarminApp.Field -> 12
+        }
 
     /** History step and the tolerance a reading may be off its slot (s). */
     const val STEP_S = 300L
@@ -43,40 +82,222 @@ object AuraPayload {
     /** `until` for a mute with no end. */
     const val NEVER = -1
 
-    /**
-     * The payload for [state] at [now]. [treatments] = the stored entries (newest or oldest first); [unit], [bands] and
-     * [countdownHours] = the person's settings; [tir] = today's time in range (share 0…1, null = not enough data) and
-     * [dayEnd] = when today ends on this phone (the watch drops [tir] then); [sensor] = the wearer's sensor with its life
-     * (the sensor screen's: its start and end, null on a follower or before one is paired), for the face's sensor rail.
-     */
+    /** The app's `tx`: the treatments of this many seconds before `sent`, at most [TX_MAX]. */
+    const val TX_S = 86_400L
+    const val TX_MAX = 64
+
+    /** `log`'s last and usual amounts look back this many days. */
+    const val LOG_DAYS = 30L
+
+    /** `ranges`: time in range over the last day and the last week (rolling, as the card's rings). */
+    val RANGES = listOf(86_400L, 7 * 86_400L)
+
+    /** A metric shows a number with this much of its window covered (the card's `GlucoseCard.MIN_COVERAGE`). */
+    const val METRIC_COVERAGE = 0.25
+
+    /** The windows the app's metrics need, for [settings]' slots. */
+    fun windows(settings: GraphConfig): Set<Long> =
+        (
+            RANGES + settings.rings().map { it.windowS } + listOfNotNull(settings.lastElseRing()?.windowS) +
+                REPORT_DAYS.map { it * 86_400L }
+        ).toSet()
+
+    /** The payload [app] gets from [i] at [PayloadInputs.now] (the app's push adds `key`: [AuraLink]). */
     fun of(
-        state: GlucoseState,
-        treatments: List<Treatment>,
-        now: Instant,
-        unit: GlucoseUnit,
-        bands: Bands,
-        countdownHours: Int,
-        tir: Double?,
-        dayEnd: Instant,
-        sensor: CurrentSensor? = null,
+        app: GarminApp,
+        i: PayloadInputs,
     ): Map<String, Any?> {
-        val nowS = now.epochSecond
+        val state = i.state
+        val nowS = i.now.epochSecond
         val monitoring = state.notMonitoring == null
         val latest = state.latest.takeIf { monitoring }
-        val b = bands.sane()
+        val b = i.bands.sane()
+        val p =
+            linkedMapOf(
+                "v" to VERSION,
+                "p" to app.key,
+                "sent" to nowS.toInt(),
+                "unit" to i.unit.key,
+                "bands" to listOf(b.veryLow, b.low, b.tight, b.high, b.veryHigh, b.extremelyHigh),
+                "g" to latest?.let(::glucose),
+                "hist" to (latest?.let { history(it, state.recent, history(app)) } ?: emptyList<Int?>()),
+                "st" to status(state.alerts.status).takeIf { monitoring },
+            )
+        if (app != GarminApp.Aura) p["ring"] = if (monitoring) ring(state.alerts.firingKinds) else emptyList<Any?>()
+        if (app == GarminApp.Field) return p
+        p["last"] = last(state, i.treatments, nowS).takeIf { monitoring }
+        p["sensor"] = sensor(state, i.countdownHours, i.sensor)
+        if (app == GarminApp.Aura) {
+            p["tir"] = i.tir?.takeIf { monitoring }?.let { linkedMapOf("pct" to percent(it), "until" to i.dayEnd.epochSecond.toInt()) }
+            return p
+        }
+        val metrics = if (monitoring) i.metrics else emptyMap()
+        p["tx"] = tx(if (monitoring) i.treatments else emptyList(), nowS)
+        p["ranges"] = RANGES.map { w -> metrics[w]?.takeIf { it.tir.coverage >= METRIC_COVERAGE }?.let { range(w, it) } }
+        p["m"] = i.graph.rings().map { metric(it, metrics[it.windowS]) }
+        p["else"] =
+            i.graph
+                .lastElseRing()
+                ?.takeIf { i.graph.lastPlace != LastPlace.OFF }
+                ?.let { metric(it, metrics[it.windowS]) }
+        p["ro"] = i.graph.ringOrder.map { it.ordinal }
+        p["log"] = if (monitoring && i.logOpen) log(i.treatments, nowS) else null
+        p["ds"] = display(GarminDisplay.resolve(i.graph))
+        p["rep"] = REPORT_DAYS.map { d -> metrics[d * 86_400L]?.takeIf { !it.empty }?.let { report(d, it) } }
+        p["repD"] = REPORT_START
+        return p
+    }
+
+    /** The Numbers page's periods (days) and the one it opens on (Android's report card: 1 / 7 / 14 / 30, from 14). */
+    val REPORT_DAYS: List<Long> = SettingsSpec.OPTIONS.getValue("reportPeriod").map(String::toLong)
+    const val REPORT_START = 14
+
+    private fun display(d: GarminDisplay): Map<String, Any?> =
+        linkedMapOf(
+            "hours" to d.hours,
+            "marks" to MarkShow.KINDS.associateWith { k -> MarkShow.parts(k).filter { d.marks.has(k, it) } },
+            "side" to d.side,
+            "crown" to d.crown,
+        )
+
+    private fun report(
+        days: Long,
+        m: GlucoseMetrics,
+    ): Map<String, Any?> =
+        linkedMapOf(
+            "d" to days.toInt(),
+            "cov" to Math.round(m.tir.coverage.coerceIn(0.0, 1.0) * 1000).toInt(),
+            "b" to perMille(m.tir),
+            "avg" to Math.round(m.mean).toInt(),
+            "gmi" to (Math.round(m.gmi * 10) / 10.0).toFloat(),
+            "cv" to (Math.round(m.cv * 10) / 10.0).toFloat(),
+        )
+
+    /** What the alert runtime rings, in the kinds' order, each with its side. */
+    internal fun ring(firing: Set<String>): List<Map<String, Any?>> =
+        RING_KINDS.filter { it.first in firing }.map { (k, side) -> linkedMapOf("k" to k, "side" to side) }
+
+    private val RING_KINDS =
+        listOf(
+            "very_low" to "low",
+            "low" to "low",
+            "high" to "high",
+            "very_high" to "high",
+            "extremely_high" to "high",
+            "falling_fast" to "low",
+            "rising_fast" to "high",
+            "no_data" to "none",
+        )
+
+    private val LOGGED = setOf(TreatmentKind.RapidInsulin, TreatmentKind.LongInsulin, TreatmentKind.Carbs)
+
+    private fun live(
+        treatments: List<Treatment>,
+        nowS: Long,
+    ) = treatments.filter { !it.deleted && it.kind in LOGGED && it.at.epochSecond <= nowS }
+
+    /**
+     * The treatments of the [TX_S] before [nowS], oldest first, the newest [TX_MAX], as four lists side by side (`t`,
+     * `k`, `a`, and `i` = the first [ID_CHARS] characters of the id, which the watch finds its own entries by): a
+     * dictionary per entry would be twice the bytes, and the app's background decodes it in 64 KB.
+     */
+    internal fun tx(
+        treatments: List<Treatment>,
+        nowS: Long,
+    ): Map<String, Any?> {
+        val day =
+            live(treatments, nowS)
+                .filter { nowS - it.at.epochSecond < TX_S }
+                .sortedWith(compareBy<Treatment> { it.at }.thenBy { it.id })
+                .takeLast(TX_MAX)
         return linkedMapOf(
-            "v" to VERSION,
-            "sent" to nowS.toInt(),
-            "unit" to unit.key,
-            "bands" to listOf(b.veryLow, b.low, b.tight, b.high, b.veryHigh, b.extremelyHigh),
-            "g" to latest?.let(::glucose),
-            "hist" to (latest?.let { history(it, state.recent) } ?: emptyList<Int?>()),
-            "st" to status(state.alerts.status).takeIf { monitoring },
-            "last" to last(state, treatments, nowS).takeIf { monitoring },
-            "sensor" to sensor(state, countdownHours, sensor),
-            "tir" to tir?.takeIf { monitoring }?.let { linkedMapOf("pct" to percent(it), "until" to dayEnd.epochSecond.toInt()) },
+            "t" to day.map { it.at.epochSecond.toInt() },
+            "k" to day.map { it.kind.id },
+            "a" to day.map { round2(it.amount) },
+            "i" to day.map { it.id.take(ID_CHARS) },
         )
     }
+
+    /** How much of an entry's id `tx` carries. */
+    const val ID_CHARS = 8
+
+    private fun range(
+        w: Long,
+        m: GlucoseMetrics,
+    ): Map<String, Any?> = linkedMapOf("w" to w.toInt(), "pct" to percent(m.tir.inRange), "b" to perMille(m.tir))
+
+    private fun perMille(t: TimeInRange) =
+        listOf(
+            t.veryLow,
+            t.low,
+            t.tight,
+            t.target,
+            t.high,
+            t.veryHigh,
+        ).map { Math.round(it * 1000).toInt() }
+
+    /** One of the card's metrics: its number (null under [METRIC_COVERAGE]), and a ring's range, shares and reward. */
+    internal fun metric(
+        spec: RingSpec,
+        m: GlucoseMetrics?,
+    ): Map<String, Any?> {
+        val ok = m?.takeIf { it.tir.coverage >= METRIC_COVERAGE }
+        val out =
+            linkedMapOf<String, Any?>(
+                "k" to
+                    when (spec.kind) {
+                        SlotKind.TIR -> "tir"
+                        SlotKind.GMI -> "gmi"
+                        SlotKind.AVERAGE -> "avg"
+                        SlotKind.CV -> "cv"
+                    },
+                "w" to spec.windowS.toInt(),
+                "v" to
+                    ok?.let {
+                        when (spec.kind) {
+                            SlotKind.TIR -> percent(it.tir.of(spec.range))
+                            SlotKind.GMI -> (Math.round(it.gmi * 10) / 10.0).toFloat()
+                            SlotKind.AVERAGE -> Math.round(it.mean).toInt()
+                            SlotKind.CV -> Math.round(it.cv).toInt()
+                        }
+                    },
+                "dim" to spec.faded,
+            )
+        if (spec.kind == SlotKind.TIR) {
+            out["r"] = if (spec.range == TirRange.TIGHT) "tight" else "in"
+            out["b"] = ok?.let { perMille(it.tir) }
+            out["mark"] = (ok?.takeIf { spec.marks }?.let { TirMark.of(it.tir, spec.range) } ?: TirMark.NONE).name.lowercase()
+        }
+        return out
+    }
+
+    /**
+     * What logging offers: per kind the newest amount of the last [LOG_DAYS] days and up to three amounts logged most
+     * often then (ties: the most recently logged), smallest first.
+     */
+    internal fun log(
+        treatments: List<Treatment>,
+        nowS: Long,
+    ): Map<String, Any?> {
+        val recent = live(treatments, nowS).filter { nowS - it.at.epochSecond <= LOG_DAYS * 86_400L }
+        return LOG_ORDER.associateTo(linkedMapOf()) { kind ->
+            val mine = recent.filter { it.kind == kind }
+            val usual =
+                mine
+                    .groupBy { round2(it.amount) }
+                    .entries
+                    .sortedWith(
+                        compareByDescending<Map.Entry<Float, List<Treatment>>> { it.value.size }.thenByDescending { e ->
+                            e.value.maxOf { it.at }
+                        },
+                    ).take(3)
+                    .map { it.key }
+                    .sorted()
+            kind.id to linkedMapOf("last" to mine.maxByOrNull { it.at }?.let { round2(it.amount) }, "usual" to usual)
+        }
+    }
+
+    private val LOG_ORDER = listOf(TreatmentKind.RapidInsulin, TreatmentKind.LongInsulin, TreatmentKind.Carbs)
 
     private fun glucose(r: Reading): Map<String, Any?> {
         val rate = r.rate?.takeIf { !r.isLo && !r.isHi }
@@ -90,15 +311,16 @@ object AuraPayload {
     }
 
     /**
-     * Slot i (oldest first) holds the reading nearest to `latest − 300 s · (HISTORY − i)` within 150 s; a gap is null.
+     * Slot i of [slots] (oldest first) holds the reading nearest to `latest − 300 s · (slots − i)` within 150 s; a gap is null.
      * LO / HI travel as 39 / 401, as everywhere.
      */
     internal fun history(
         latest: Reading,
         recent: List<Reading>,
+        slots: Int,
     ): List<Int?> {
         val t0 = latest.t.epochSecond
-        return (HISTORY downTo 1).map { k ->
+        return (slots downTo 1).map { k ->
             val at = t0 - STEP_S * k
             recent
                 .filter { abs(it.t.epochSecond - at) <= SLACK_S }

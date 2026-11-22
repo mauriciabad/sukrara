@@ -4,6 +4,7 @@
 package app.mauri.sukrara.integrations.garmin
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Duration
 import java.time.Instant
@@ -118,13 +119,76 @@ class GarminStatusTest {
     }
 
     @Test
+    fun eachSukraraAppHasItsOwnRow() {
+        val links =
+            mapOf(
+                GarminApp.Aura.id to AppLink(installed = false),
+                GarminApp.Aura.beta to AppLink(installed = false),
+                GarminApp.App.id to AppLink(installed = true, delivered = ago(1)),
+                GarminApp.App.beta to AppLink(installed = false),
+                GarminApp.Field.id to AppLink(installed = false),
+                GarminApp.Field.beta to AppLink(installed = false),
+            )
+        val w = AuraWatch.of(7, "Descent", true, links)
+        // the watch line counts any Sukrara app
+        assertEquals(true, w.installed)
+        assertEquals(ago(1), w.delivered)
+        val s = base.copy(watches = listOf(w), fetchedBy = mapOf(GarminApp.App to ago(2)))
+        assertEquals(AppLine.NotInstalled, AppLine.of(GarminApp.Aura, s, now))
+        assertEquals(AppLine.InUse(ago(2)), AppLine.of(GarminApp.App, s, now))
+        assertEquals(AppLine.NotInstalled, AppLine.of(GarminApp.Field, s, now))
+        assertEquals(AppLine.Idle, AppLine.of(GarminApp.App, s.copy(fetchedBy = emptyMap()), now))
+        // the field's beta alone is the field
+        val beta = AuraWatch.of(7, "Descent", true, links + (GarminApp.Field.beta to AppLink(installed = true)))
+        assertEquals(true, beta.has(GarminApp.Field))
+        assertEquals(AppLine.Idle, AppLine.of(GarminApp.Field, base.copy(watches = listOf(beta)), now))
+        // no app gets messages for a while: the watch is stuck
+        val stuck =
+            AuraWatch.of(
+                7,
+                "Descent",
+                true,
+                mapOf(
+                    GarminApp.Aura.id to AppLink(installed = true, failed = ago(1), failingSince = ago(20)),
+                    GarminApp.App.id to AppLink(installed = true, failed = ago(1), failingSince = ago(16)),
+                ),
+            )
+        assertTrue(stuck.stuck(now))
+        assertEquals(WatchLine.Problem.Stuck, WatchLine.of(stuck, base.copy(watches = listOf(stuck)), now).problem)
+    }
+
+    @Test
     fun theFace() {
         val w = listOf(watch)
-        assertEquals(FaceLine.Unknown, FaceLine.of(base, now))
-        assertEquals(FaceLine.NotInstalled, FaceLine.of(base.copy(watches = listOf(watch.copy(installed = false))), now))
-        assertEquals(FaceLine.InUse(ago(3)), FaceLine.of(base.copy(watches = w, fetched = ago(3)), now))
-        assertEquals(FaceLine.Idle, FaceLine.of(base.copy(watches = w, fetched = ago(30)), now))
-        assertEquals(FaceLine.Unknown, FaceLine.of(base.copy(watches = listOf(watch.copy(installed = null))), now))
-        assertEquals(FaceLine.PortBusy, FaceLine.of(base.copy(watches = w, portBusy = true), now))
+        assertEquals(AppLine.Unknown, AppLine.of(GarminApp.Aura, base, now))
+        assertEquals(AppLine.NotInstalled, AppLine.of(GarminApp.Aura, base.copy(watches = listOf(watch.copy(installed = false))), now))
+        assertEquals(
+            AppLine.InUse(ago(3)),
+            AppLine.of(
+                GarminApp.Aura,
+                base.copy(
+                    watches = w,
+                    fetched = ago(3),
+                    fetchedBy =
+                        mapOf(GarminApp.Aura to ago(3)),
+                ),
+                now,
+            ),
+        )
+        assertEquals(
+            AppLine.Idle,
+            AppLine.of(
+                GarminApp.Aura,
+                base.copy(
+                    watches = w,
+                    fetched = ago(30),
+                    fetchedBy =
+                        mapOf(GarminApp.Aura to ago(30)),
+                ),
+                now,
+            ),
+        )
+        assertEquals(AppLine.Unknown, AppLine.of(GarminApp.Aura, base.copy(watches = listOf(watch.copy(installed = null))), now))
+        assertEquals(AppLine.PortBusy, AppLine.of(GarminApp.Aura, base.copy(watches = w, portBusy = true), now))
     }
 }

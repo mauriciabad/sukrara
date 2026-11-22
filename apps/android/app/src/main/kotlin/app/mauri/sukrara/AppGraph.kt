@@ -17,6 +17,7 @@ import app.mauri.sukrara.core.data.settings.SchemaSettings
 import app.mauri.sukrara.core.data.settings.SettingsFrom
 import app.mauri.sukrara.core.data.settings.SurfaceSettings
 import app.mauri.sukrara.core.data.userUnlocked
+import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.AppUpdates
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DefaultDispatchers
@@ -62,6 +63,7 @@ import app.mauri.sukrara.feature.sharing.setup.summary
 import app.mauri.sukrara.feature.treatments.AndroidDraftNotice
 import app.mauri.sukrara.feature.treatments.DialogPen
 import app.mauri.sukrara.feature.treatments.DraftNotificationPorts
+import app.mauri.sukrara.feature.treatments.FromWatch
 import app.mauri.sukrara.feature.treatments.TreatmentDraft
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
 import app.mauri.sukrara.graph.ClockText
@@ -72,6 +74,9 @@ import app.mauri.sukrara.integrations.IntegrationsModule
 import app.mauri.sukrara.integrations.broadcasts.BcState
 import app.mauri.sukrara.integrations.broadcasts.LiveReading
 import app.mauri.sukrara.integrations.garmin.ConnectIq
+import app.mauri.sukrara.integrations.garmin.WatchEntries
+import app.mauri.sukrara.integrations.garmin.WatchEntry
+import app.mauri.sukrara.integrations.garmin.WatchLogged
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.librelinkup.LluSourceConfig
 import app.mauri.sukrara.integrations.librelinkup.LluSourceSettings
@@ -787,6 +792,39 @@ class AppGraph(
             libreLinkUpServer = BuildVariant.libreLinkUpServer(app),
             // the one heads-up an hour before LibreView's maintenance stops LibreLinkUp (docs/45)
             maintenanceAhead = { w -> MaintenanceNotice.post(app, w.start, w.end) },
+            // Sukrara on the watch logs through the phone's own Add treatment (the treatments module is built later)
+            watchEntries =
+                object : WatchEntries {
+                    override val open: Flow<Boolean> = flow { emitAll(treatments.canAddFlow) }
+
+                    override suspend fun add(e: WatchEntry): WatchLogged =
+                        when (val r = treatments.fromWatch(e.id, e.kind, e.amount, e.at, e.force)) {
+                            is FromWatch.Stored -> WatchLogged.Stored(r.treatment)
+                            is FromWatch.Known -> WatchLogged.Known(r.treatment)
+                            is FromWatch.Pen -> WatchLogged.Pen(r.entry.t, r.entry.units)
+                            FromWatch.Amount -> WatchLogged.Amount
+                            FromWatch.When -> WatchLogged.When
+                            FromWatch.Off -> WatchLogged.Off
+                        }
+                },
+            // and mutes through the alert runtime's own actions, the ones `st` reports
+            alertControls =
+                object : AlertControls {
+                    override suspend fun mute(
+                        kind: String,
+                        minutes: Int,
+                    ) = alerts.controls.mute(kind, minutes)
+
+                    override suspend fun unmute(kind: String) = alerts.controls.unmute(kind)
+
+                    override suspend fun remindLess(kind: String) = alerts.controls.remindLess(kind)
+
+                    override suspend fun remindAsUsual(kind: String) = alerts.controls.remindAsUsual(kind)
+
+                    override suspend fun muteAll(minutes: Int?) = alerts.controls.muteAll(minutes)
+
+                    override suspend fun unmuteAll() = alerts.controls.unmuteAll()
+                },
         )
     }
 

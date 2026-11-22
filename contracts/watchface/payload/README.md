@@ -10,12 +10,13 @@ and the glucose notification decide it (SPEC ground rule 1). Why it travels the 
 |---|---|
 | `apps.json` | **the registry**: every Sukrara Connect IQ app, its app id and beta id, its profile, its fetch path; the port and the entries path |
 | `cases.json` | phone state → exact payload, per profile (`cases` the face, `app`, `field`); for the face also what it makes of it at a given watch time, the message order rule, versions it ignores; a payload as Garmin's own serializer writes it |
-| `entries.json` | writes from the watch: request → the phone's answer → what it stores |
+| `entries.json` | entries from the watch: request → the phone's answer → what it stores |
+| `mutes.json` | mutes from the watch: request → the phone's answer → the alert runtime's action |
 | `schema.json` | the payload's JSON Schema, one branch per profile |
 
 Run by `AuraPayloadFixtureTest` (Android `:integrations`: phone → payload for every profile, through the wire format
-and back, Garmin's bytes), `GarminAppsTest` (the registry against the phone's `GarminApp`), `WatchEntriesTest` (the
-entries endpoint) and `WatchEntryTest` (`:feature:treatments`: the phone's entry path), and `LinkTest` (the face,
+and back, Garmin's bytes), `GarminAppsTest` (the registry against the phone's `GarminApp`), `WatchWritesTest` (the
+entries and mute endpoints) and `WatchEntryTest` (`:feature:treatments`: the phone's entry path), and `LinkTest` (the face,
 `apps/garmin/tools/link-test.sh`: payload → the face's inputs; the cases reach Monkey C through
 `apps/garmin/tools/link_cases.py`, whose `--check` also holds every manifest and beta id to `apps.json`). Parity group
 `watchface-link`.
@@ -25,7 +26,7 @@ entries endpoint) and `WatchEntryTest` (`:feature:treatments`: the phone's entry
 | App | Connect IQ type | Profile | Fetch | Writes |
 |---|---|---|---|---|
 | **Sukrara Aura** | watch face (128 KB, background 64 KB) | `aura` | `GET /sukrara/aura` | no |
-| **Sukrara** | watch app: glance, app, background, complications (app 768 KB, glance and background 64 KB) | `app` | `GET /sukrara/app` | `POST /sukrara/entries` |
+| **Sukrara** | watch app: glance, app, background, complications (app 768 KB, glance and background 64 KB) | `app` | `GET /sukrara/app` | `POST /sukrara/entries`, `POST /sukrara/mute` |
 | **Sukrara data field** | data field (128–256 KB) | `field` | `GET /sukrara/field` | no (a data field has no input) |
 
 Each app is its own Connect IQ app id, so each has its own storage and its own phone messages; a data field can't read
@@ -45,7 +46,7 @@ The same dictionary, two ways (both carry it whole, so either alone keeps the ap
    treatment, a setting, a ring), to each installed Sukrara app id on each connected watch, each with its own profile.
    Wire format: Garmin's Monkey C serialization (string block `0xABCDABCD`, data block `0xDA7ADA7A`, big-endian;
    Android writes it itself, `MonkeyC`). The app's background wakes on it (`registerForPhoneAppMessageEvent`) and
-   hands it on (`Background.exit`, under its ~8 KB; the app profile is about 4 KB with a full day). Every background run
+   hands it on (`Background.exit`, under its ~8 KB; the app profile stays under 6 KB with a full day and 64 entries, `theAppsDayFitsItsBackground`). Every background run
    (push or fetch) also leaves its result in the app's storage (the face's `auraHandoff`, with a run id), picked up at
    the next draw when Garmin doesn't call `onBackgroundData` (#244); the id makes a run count once. Retries and the
    stuck rule (docs/43) hold **per app on each watch**: one app's failed message is sent again without sending the
@@ -70,7 +71,7 @@ phone shows it (*On the watch*) and logs it (`adb logcat -s Sukrara.Aura`, with 
 | `ring` | — (a face can't vibrate) | ✓ | ✓ |
 | `last`, `sensor` | ✓ | ✓ | — |
 | `tir` (today) | ✓ | — | — |
-| `tx`, `ranges`, `m`, `else`, `ro`, `log` | — | ✓ | — |
+| `tx`, `ranges`, `m`, `else`, `ro`, `log`, `ds`, `rep`, `repD` | — | ✓ | — |
 | `key` | — | **push only** | — |
 
 ## The payload
@@ -114,13 +115,16 @@ The app only:
 
 | Key | Value |
 |---|---|
-| `tx` | the treatments of the 24 h before `sent`, oldest first, at most the newest 64: `{id, t, k: rapid / long / carbs, a}` (`id` the log's own, so an entry from the watch shows with the watch's id); notes and deleted entries never |
+| `tx` | the treatments of the 24 h before `sent`, oldest first, at most the newest 64, as four lists side by side (a dictionary per entry would be twice the bytes): `{t: [times], k: [rapid / long / carbs], a: [amounts], i: [ids]}`, `i` = the first 8 characters of the entry's id in the log (an entry from the watch has the watch's id: its outbox finds it by them); notes and deleted entries never |
 | `ranges` | time in range over the last day and the last 7 days (rolling, as the card's rings count them), `[day, week]`, each `{w, pct, b}` or null with under a quarter of the window covered: `w` the window (s), `pct` the in-range share as a whole percent (100 only when every reading was in range), `b` the share per band in per mille, `[veryLow, low, tight, target, high, veryHigh]` (Sukrara's six time-in-range bands; `extremelyHigh` colours the line only and has no time-in-range share) |
 | `m` | the card's metrics beside the value as the person set them (`graph.slots`, the ones that are on, the main one first), each `{k, w, v, dim}`: `k` `tir` / `gmi` / `avg` / `cv`, `w` its window (s), `dim` = drawn dimmed where it isn't the main one, `v` its number or null under a quarter of the window covered (`tir` the share of its range as a whole percent, `gmi` % with one decimal, `avg` mg/dL (the watch converts), `cv` whole %); a `tir` one also has `r` (`in` = in range, `tight` = the very good range: the person's *ring range*), `b` (per mille per band as in `ranges`, null without data) and `mark` (`none` / `laurel` / `flowers` / `crown`: the card's reward, with 70 % of the window covered) |
 | `else` | what the last-treatment place shows while `last` is none (`graph.lastElse`), the shape of an `m` item; null when off or when the card has no last-treatment place |
 | `ro` | the rings' band order clockwise from 12 o'clock, as band indexes into `b` (`graph.ringOrder`; default `[2, 3, 1, 0, 4, 5]`: very good, in range, low, very low, high, very high) |
 | `log` | what logging offers, or null when this phone takes no entries now (not monitoring, setup not done, a follower the wearer doesn't let add entries): `{rapid, long, carbs}`, each `{last, usual}`: `last` = that kind's newest amount of the last 30 days (null = none), `usual` = up to three amounts logged most often in the last 30 days (ties: the most recently logged), smallest first |
-| `key` | **push only**: the phone's signing key for entries, 64 hex characters (32 bytes). The fetch never carries it |
+| `ds` | the display settings the app follows, each the phone's own value resolved for the watch (one place, `GarminDisplay.resolve`: a watch's own values, docs/38's place overrides, will resolve there and travel the same way): `hours` the chart's window (`graph.hours`; the app's own zoom starts there), `marks` per kind (`rapid`, `long`, `carbs`, `note`) the parts shown (`point`, `line` the mute line, `amount`, `time`; `graph.marks`), `side` the distribution and % column beside the chart (`graph.side`), `crown` its crown at 100 % (`graph.columnCrown`). No green-in-range setting on the phone: the value and line always take the band's colour there (the face's *green in range* is a watch setting, `garmin.aura.rangeColour`) |
+| `rep` | the Numbers page for every period the phone's report offers (`reportPeriod`: 1, 7, 14, 30 days, rolling), so the watch switches period without the phone: each `{d, cov, b, avg, gmi, cv}` or null without a reading in it: `cov` the share of the period with data in per mille (under 700 the report says so), `b` per mille per band as in `ranges`, `avg` mg/dL, `gmi` % with one decimal (mmol/mol = (gmi − 2.152) × 10.929), `cv` % with one decimal |
+| `repD` | the period the Numbers page opens on: 14 (the phone's report card starts there; the Mac's remembers its own, `report.days`) |
+| `key` | **push only**: the phone's signing key for entries and mutes, 64 hex characters (32 bytes). The fetch never carries it |
 
 ## On the watch
 
@@ -189,7 +193,7 @@ A request that isn't one (another path: 404; another method: 405; over 1 KB: 413
 missing: 400 with `{r: bad}`) stores nothing.
 
 **The outbox** (the watch): an entry goes into storage when the person confirms it, with its id; it leaves only on
-`stored` / `known` or a drop above, **or when a payload's `tx` has its id** (an answer lost after the phone stored it).
+`stored` / `known` or a drop above, **or when a payload's `tx.i` has its id's first 8 characters** (an answer lost after the phone stored it).
 The watch sends from the foreground at once and from the background every 5 minutes (callbacks there aren't
 guaranteed: the outbox, not the callback, is the truth), and shows *Waiting for the phone* while it's there. `lead` =
 the phone's clock minus the watch's, from the last payload's `sent` at receipt (signed: a watch clock ahead gives a
@@ -198,9 +202,30 @@ negative one), or from a `clock` answer's `now`.
 **What follows**: the next payload (pushed at once: the entry changes it) has the entry in `tx` with its id, in `last`
 when the card's rule picks it, in `log` (`last`, `usual`), and the alert runtime's quiet in `st` / `ring`.
 
+## Mute from the watch
+
+The app mutes and unmutes with `POST http://127.0.0.1:17582/sukrara/mute`, the same channel as entries (the same key,
+body encodings, send-time window and answer shape; `mutes.json`). It runs **the alert runtime's own actions**, the ones
+the alert notification and home offer (`AlertControls`), never a rule of its own; `st` in the next push shows the result.
+
+| Field | Value |
+|---|---|
+| `id` | a lowercase UUID v4 per action (a retry of the same action keeps it) |
+| `do` | `mute` / `unmute` |
+| `side` | `all` (*Mute all*), `low` or `high` (that side's alerts) |
+| `min` | for `mute`: `15`, `30`, `60`, `120`, or `0` = until turned off (`all` only: a side's mute always ends, contracts/alerts SPEC); for `unmute`: `0` |
+| `s` | when this try is sent, epoch s on the phone's clock |
+| `mac` | HMAC-SHA256 with the key over `id|do|side|min|s`, lowercase hex |
+
+Answers (HTTP 200, `{id, r, …}`), checked in this order: `sig`, `clock` (with `now`), `id` as for entries; `action` = not
+one of the combinations above (nothing changes; the watch drops it); `known` = this action id was done in the last 10
+minutes (a retry, a replay: done once); `done` = the runtime ran it: *Mute all* for `min` minutes or until turned off,
+the side's mute for `min` minutes, *Unmute* of the side (it also ends a quiet after a treatment, as the phone's button
+does), or the end of *Mute all*.
+
 ## Changing it
 
 A change lands with the phone and every app in the same change (parity group `watchface-link`), with `v` raised when
 an older app would misread it (CLAUDE.md: the wire formats are versioned; every app speaks the same version). A key
 an older app ignores needs no raise. Version 4 (#199): the profiles and `p`, the app's and the data field's keys, the
-entries endpoint; the face's keys as in version 3.
+entries and mute endpoints; the face's keys as in version 3.

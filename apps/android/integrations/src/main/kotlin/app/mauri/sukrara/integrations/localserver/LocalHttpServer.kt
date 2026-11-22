@@ -26,6 +26,8 @@ data class HttpRequest(
     val query: Map<String, String>,
     val headers: Map<String, String>,
     val caller: String? = null,
+    /** A POST's body (UTF-8), at most [LocalHttpServer.MAX_BODY] bytes; empty for GET / HEAD. */
+    val body: String = "",
 )
 
 /** One answer: a status line (`200 OK`), the body and its content type. */
@@ -50,7 +52,8 @@ data class HttpAnswer(
  * - one accept thread and a fixed pool of [POOL] workers with a queue of [QUEUE]: a connection beyond that is closed at
  *   once, never a new thread;
  * - every connection has a total deadline ([DEADLINE_MS], also per read), a request head of at most [MAX_HEAD] bytes,
- *   GET / HEAD only, no body read; `Connection: close` after one answer;
+ *   GET / HEAD, and POST only to the paths in [posts] with a `Content-Length` body of at most [MAX_BODY] bytes (the
+ *   watch's entries); `Connection: close` after one answer;
  * - nothing a request does can crash the app: every connection catches everything.
  *
  * [bind] fails (returns false) when the port is taken: the caller shows "port in use" and never retries in a loop.
@@ -62,6 +65,8 @@ class LocalHttpServer(
     private val bindAddress: InetAddress = InetAddress.getByName(LOOPBACK),
     private val allowCaller: (InetAddress) -> Boolean = { true },
     private val hostOk: (String?) -> Boolean = ::localHost,
+    /** The paths (without the leading `/`) that take a POST. */
+    private val posts: Set<String> = emptySet(),
 ) {
     @Volatile private var socket: ServerSocket? = null
     private var pool: ThreadPoolExecutor? = null
@@ -152,7 +157,8 @@ class LocalHttpServer(
             c.use {
                 it.soTimeout = DEADLINE_MS.toInt()
                 val deadline = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(DEADLINE_MS)
-                val head = readHead(BufferedInputStream(it.getInputStream()), deadline)
+                val input = BufferedInputStream(it.getInputStream())
+                val head = readHead(input, deadline)
                 val answer =
                     when {
                         head == null -> {
@@ -164,6 +170,7 @@ class LocalHttpServer(
                                 when {
                                     !hostOk(req.headers["host"]) -> FORBIDDEN
                                     req.method == "GET" || req.method == "HEAD" -> route(req)
+                                    req.method == "POST" && req.path in posts -> post(req, input, deadline)
                                     else -> METHOD
                                 }
                             } ?: BAD
@@ -182,6 +189,26 @@ class LocalHttpServer(
         val answer = runCatching { handler(req) }.getOrElse { HttpAnswer("500 Internal Server Error", "", "text/plain") }
         runCatching { onRequest(req, answer) }
         return answer
+    }
+
+    /** A POST: its `Content-Length` body (at most [MAX_BODY] bytes, read within the deadline), then the handler. */
+    private fun post(
+        req: HttpRequest,
+        input: InputStream,
+        deadline: Long,
+    ): HttpAnswer {
+        val n = req.headers["content-length"]?.trim()?.toIntOrNull() ?: return LENGTH
+        if (n < 0) return BAD
+        if (n > MAX_BODY) return TOO_LARGE
+        val bytes = ByteArray(n)
+        var got = 0
+        while (got < n) {
+            if (System.nanoTime() > deadline) return BAD
+            val r = input.read(bytes, got, n - got)
+            if (r < 0) return BAD
+            got += r
+        }
+        return route(req.copy(body = bytes.decodeToString()))
     }
 
     /** The request line and headers up to the blank line, or null when longer than [MAX_HEAD] or past the deadline. */
@@ -228,6 +255,11 @@ class LocalHttpServer(
         private val METHOD = HttpAnswer("405 Method Not Allowed", "", "text/plain")
         private val BAD = HttpAnswer("400 Bad Request", "", "text/plain")
         private val FORBIDDEN = HttpAnswer("403 Forbidden", "", "text/plain")
+
+        /** A POST body's most bytes (the watch's entries are under 300). */
+        const val MAX_BODY = 1024
+        private val LENGTH = HttpAnswer("411 Length Required", "", "text/plain")
+        private val TOO_LARGE = HttpAnswer("413 Content Too Large", "", "text/plain")
         private val WATCHDOG =
             ScheduledThreadPoolExecutor(1) { r -> Thread(r, "sukrara-local-watchdog").apply { isDaemon = true } }.apply {
                 removeOnCancelPolicy = true

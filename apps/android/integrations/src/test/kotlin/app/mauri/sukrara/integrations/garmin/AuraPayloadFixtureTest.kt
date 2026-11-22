@@ -19,7 +19,14 @@ import app.mauri.sukrara.core.model.TreatmentQuiet
 import app.mauri.sukrara.core.model.TrendFrom
 import app.mauri.sukrara.core.model.TrendRate
 import app.mauri.sukrara.core.testing.Contracts
+import app.mauri.sukrara.graph.GraphConfig
+import app.mauri.sukrara.graph.MarkShow
+import app.mauri.sukrara.graph.RingSpec
+import app.mauri.sukrara.graph.SlotKind
 import app.mauri.sukrara.graph.stats.Bands
+import app.mauri.sukrara.graph.stats.GlucoseMetrics
+import app.mauri.sukrara.graph.stats.TimeInRange
+import app.mauri.sukrara.graph.stats.TirRange
 import app.mauri.sukrara.integrations.CurrentSensor
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -53,16 +60,54 @@ class AuraPayloadFixtureTest {
 
     @Test
     fun everyCase() {
-        val cases = file.getValue("cases").jsonArray
-        assertTrue(cases.size >= 10)
-        for (c in cases.map { it.jsonObject }) {
-            val name = c.getValue("name").jsonPrimitive.content
-            val payload = build(c.getValue("phone").jsonObject)
-            val expected = c.getValue("payload")
-            assertSame(name, expected, payload)
-            // through the wire format and back, as the watch reads it
-            assertSame("$name (encoded)", expected, MonkeyCDecode.decode(MonkeyC.encode(payload)))
+        val profiles = mapOf("cases" to GarminApp.Aura, "app" to GarminApp.App, "field" to GarminApp.Field)
+        for ((list, app) in profiles) {
+            val cases = file.getValue(list).jsonArray
+            assertTrue(cases.size >= if (app == GarminApp.Aura) 10 else 3)
+            for (c in cases.map { it.jsonObject }) {
+                val name = "$list: " + c.getValue("name").jsonPrimitive.content
+                val payload = build(c.getValue("phone").jsonObject, app)
+                val expected = c.getValue("payload")
+                assertSame(name, expected, payload)
+                // through the wire format and back, as the watch reads it
+                assertSame("$name (encoded)", expected, MonkeyCDecode.decode(MonkeyC.encode(payload)))
+            }
         }
+    }
+
+    @Test
+    fun theAppsDayFitsItsBackground() {
+        // the app's full day (288 slots, the day's entries, every metric) with a heavy day of 64 entries and the key: well
+        // under Background.exit's ~8 KB, for a background of 64 KB
+        val phone =
+            file
+                .getValue("app")
+                .jsonArray[0]
+                .jsonObject
+                .getValue("phone")
+                .jsonObject
+        val heavy =
+            JsonObject(
+                phone +
+                    (
+                        "treatments" to
+                            JsonArray(
+                                (1..64).map { k ->
+                                    JsonObject(
+                                        mapOf(
+                                            "id" to JsonPrimitive("6f1c2b9a-0d3e-4c5f-8a7b-%012d".format(k)),
+                                            "k" to JsonPrimitive(listOf("rapid", "carbs", "long")[k % 3]),
+                                            "a" to JsonPrimitive(4.5 + k),
+                                            "t" to JsonPrimitive(-1200L * k),
+                                        ),
+                                    )
+                                },
+                            )
+                    ),
+            )
+        val p = build(heavy, GarminApp.App) + ("key" to "0".repeat(64))
+        val size = MonkeyC.encode(p).size
+        assertTrue("$size bytes", size < 6 * 1024)
     }
 
     @Test
@@ -85,11 +130,15 @@ class AuraPayloadFixtureTest {
                     .jsonObject
                     .getValue("phone")
                     .jsonObject,
+                GarminApp.Aura,
             )
         assertTrue(MonkeyC.encode(full).size < 1024)
     }
 
-    private fun build(p: JsonObject): Map<String, Any?> {
+    private fun build(
+        p: JsonObject,
+        profile: GarminApp,
+    ): Map<String, Any?> {
         fun at(e: JsonElement?) = Instant.ofEpochSecond(now + e!!.jsonPrimitive.long)
         val readings =
             p["readings"]?.jsonArray.orEmpty().map { it.jsonObject }.map { r ->
@@ -134,20 +183,78 @@ class AuraPayloadFixtureTest {
                     at = at(t["t"]),
                     modifiedAt = at(t["t"]),
                     origin = TreatmentOrigin.Phone,
+                    deleted = t["del"]?.jsonPrimitive?.booleanOrNull ?: false,
                 )
             }
         val bands =
             p["bands"]?.jsonArray?.map { it.jsonPrimitive.int }?.let { Bands(it[0], it[1], it[2], it[3], it[4], it[5]) } ?: Bands()
+        val firing =
+            p["alerts"]
+                ?.jsonArray
+                ?.map { it.jsonPrimitive.content }
+                ?.toSet()
+                .orEmpty()
         return AuraPayload.of(
-            state,
-            treatments,
-            Instant.ofEpochSecond(now),
-            GlucoseUnit.entries.first { it.key == (p["unit"]?.jsonPrimitive?.content ?: "mgdl") },
-            bands,
-            p["countdownHours"]?.jsonPrimitive?.int ?: 8,
-            p["tir"]?.jsonPrimitive?.doubleOrNull,
-            Instant.ofEpochSecond(now + (p["dayEnd"]?.jsonPrimitive?.long ?: 86_400)),
-            life(p.getValue("sensor").jsonObject),
+            profile,
+            PayloadInputs(
+                state.copy(alerts = state.alerts.copy(firingKinds = firing)),
+                treatments,
+                Instant.ofEpochSecond(now),
+                GlucoseUnit.entries.first { it.key == (p["unit"]?.jsonPrimitive?.content ?: "mgdl") },
+                bands,
+                p["countdownHours"]?.jsonPrimitive?.int ?: 8,
+                p["tir"]?.jsonPrimitive?.doubleOrNull,
+                Instant.ofEpochSecond(now + (p["dayEnd"]?.jsonPrimitive?.long ?: 86_400)),
+                life(p.getValue("sensor").jsonObject),
+                graph(p, bands),
+                p["metrics"]
+                    ?.jsonObject
+                    .orEmpty()
+                    .map { (w, m) -> w.toLong() to metrics(m.jsonObject) }
+                    .toMap(),
+                p["open"]?.jsonPrimitive?.booleanOrNull ?: false,
+            ),
+        )
+    }
+
+    /** The person's metric and chart settings as the case gives them (README "The app only"). */
+    private fun graph(
+        p: JsonObject,
+        bands: Bands,
+    ): GraphConfig {
+        fun spec(s: JsonObject) =
+            RingSpec(
+                s.getValue("w").jsonPrimitive.long,
+                kind = SLOTS.getValue(s.getValue("k").jsonPrimitive.content),
+                faded = s.getValue("dim").jsonPrimitive.booleanOrNull!!,
+            )
+        val lastElse = p["lastElse"]?.takeIf { it !is JsonNull }?.jsonObject?.let(::spec)
+        val marks =
+            p["marks"]?.jsonObject?.let { m ->
+                MarkShow.parse(m.entries.joinToString(",") { (k, v) -> "$k:" + v.jsonArray.joinToString("+") { it.jsonPrimitive.content } })
+            } ?: MarkShow.DEFAULT
+        return GraphConfig(
+            bands = bands,
+            appHours = p["graphHours"]?.jsonPrimitive?.int ?: 12,
+            slots = p["slots"]?.jsonArray?.map { spec(it.jsonObject) } ?: GraphConfig.DEFAULT_SLOTS,
+            ringRange = if (p["ringRange"]?.jsonPrimitive?.content == "tight") TirRange.TIGHT else TirRange.IN_RANGE,
+            side = p["side"]?.jsonPrimitive?.booleanOrNull ?: true,
+            columnCrown = p["crown"]?.jsonPrimitive?.booleanOrNull ?: true,
+            lastOn = p["lastPlace"]?.jsonPrimitive?.content != "off",
+            lastElse = lastElse ?: GraphConfig.DEFAULT_LAST_ELSE.copy(on = false),
+            marks = marks,
+        )
+    }
+
+    /** A window's report numbers: shares per band, coverage, mean and SD (one reading stands for "has data"). */
+    private fun metrics(m: JsonObject): GlucoseMetrics {
+        val b = m.getValue("tir").jsonArray.map { it.jsonPrimitive.double }
+        val cov = m.getValue("coverage").jsonPrimitive.double
+        return GlucoseMetrics(
+            TimeInRange(b[0], b[1], b[2], b[3], b[4], b[5], cov),
+            m.getValue("mean").jsonPrimitive.double,
+            m.getValue("sd").jsonPrimitive.double,
+            if (cov > 0) 1 else 0,
         )
     }
 
@@ -249,6 +356,8 @@ class AuraPayloadFixtureTest {
     }
 
     private companion object {
+        val SLOTS = mapOf("tir" to SlotKind.TIR, "gmi" to SlotKind.GMI, "avg" to SlotKind.AVERAGE, "cv" to SlotKind.CV)
+
         val KINDS =
             mapOf(
                 "rapid" to TreatmentKind.RapidInsulin,

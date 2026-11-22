@@ -14,6 +14,7 @@ import app.mauri.sukrara.core.data.libreview.LibreLinkUp
 import app.mauri.sukrara.core.data.libreview.LibreViewLogin
 import app.mauri.sukrara.core.data.libreview.LibreViewStatus
 import app.mauri.sukrara.core.data.libreview.email
+import app.mauri.sukrara.core.model.AlertControls
 import app.mauri.sukrara.core.model.Clock
 import app.mauri.sukrara.core.model.DispatcherProvider
 import app.mauri.sukrara.core.model.GlucoseState
@@ -42,6 +43,8 @@ import app.mauri.sukrara.integrations.garmin.AuraLink
 import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.ConnectIqPort
 import app.mauri.sukrara.integrations.garmin.GarminViewModel
+import app.mauri.sukrara.integrations.garmin.WatchEntries
+import app.mauri.sukrara.integrations.garmin.WatchKey
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.healthconnect.HcStatus
 import app.mauri.sukrara.integrations.healthconnect.HealthConnectSync
@@ -160,6 +163,10 @@ class IntegrationsModule(
     libreLinkUpServer: Pair<String, String>? = null,
     /** A LibreView maintenance window of the LibreLinkUp account's region begins in an hour: the app's heads-up. */
     maintenanceAhead: (MaintenanceWindow) -> Unit = {},
+    /** The phone's own treatment entry, for entries from Sukrara on the watch (the treatments module's). */
+    watchEntries: WatchEntries = WatchEntries.None,
+    /** The alert runtime's actions, for mutes from Sukrara on the watch. */
+    alertControls: AlertControls? = null,
 ) {
     /** Your glucose read first-hand here: what uploads and outputs may send (docs/44 keying). */
     val wearer: Flow<Boolean> = role.map { it?.owner == true }
@@ -299,8 +306,22 @@ class IntegrationsModule(
 
     private val installedApps = PlatformApps(context)
 
-    /** Sukrara Aura, the Garmin face: readings pushed through Garmin Connect and fetched by the face (docs/43). */
-    val aura = AuraLink(settings, glucose, treatments, readings, connectIq, clock, dispatchers.io, log, sensor = sensor)
+    /** Sukrara on Garmin watches (the face, the app, the data field): pushed through Garmin Connect, fetched and written on loopback (docs/43, docs/47). */
+    val aura =
+        AuraLink(
+            settings,
+            glucose,
+            treatments,
+            readings,
+            connectIq,
+            clock,
+            dispatchers.io,
+            log,
+            sensor = sensor,
+            entries = watchEntries,
+            key = WatchKey(secure),
+            alerts = alertControls,
+        )
 
     val broadcasts = Broadcaster(settings, broadcastState, libreLive, sensor, role, installedApps, clock, dispatchers.io, log)
 

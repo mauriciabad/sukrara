@@ -550,7 +550,10 @@
         "m",
         "else",
         "ro",
-        "log"
+        "log",
+        "ds",
+        "rep",
+        "repD"
       ],
       "properties": {
         "v": {
@@ -791,34 +794,48 @@
           ]
         },
         "tx": {
-          "type": "array",
-          "maxItems": 64,
-          "items": {
-            "type": "object",
-            "additionalProperties": false,
-            "required": [
-              "id",
-              "t",
-              "k",
-              "a"
-            ],
-            "properties": {
-              "id": {
-                "type": "string"
-              },
-              "t": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "t",
+            "k",
+            "a",
+            "i"
+          ],
+          "description": "the day's treatments as four lists side by side, oldest first",
+          "properties": {
+            "t": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
                 "$ref": "#/$defs/time"
-              },
-              "k": {
+              }
+            },
+            "k": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
                 "enum": [
                   "rapid",
                   "long",
                   "carbs"
                 ]
-              },
-              "a": {
+              }
+            },
+            "a": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
                 "type": "number",
                 "exclusiveMinimum": 0
+              }
+            },
+            "i": {
+              "type": "array",
+              "maxItems": 64,
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f-]{8}$"
               }
             }
           }
@@ -918,6 +935,144 @@
           "type": "string",
           "pattern": "^[0-9a-f]{64}$",
           "description": "push only, never the fetch"
+        },
+        "ds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "hours",
+            "marks",
+            "side",
+            "crown"
+          ],
+          "properties": {
+            "hours": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 48
+            },
+            "marks": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "rapid",
+                "long",
+                "carbs",
+                "note"
+              ],
+              "properties": {
+                "rapid": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "point",
+                      "line",
+                      "amount",
+                      "time"
+                    ]
+                  }
+                },
+                "long": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "point",
+                      "line",
+                      "amount",
+                      "time"
+                    ]
+                  }
+                },
+                "carbs": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "point",
+                      "line",
+                      "amount",
+                      "time"
+                    ]
+                  }
+                },
+                "note": {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "point",
+                      "line",
+                      "amount",
+                      "time"
+                    ]
+                  }
+                }
+              }
+            },
+            "side": {
+              "type": "boolean"
+            },
+            "crown": {
+              "type": "boolean"
+            }
+          }
+        },
+        "rep": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "d",
+                  "cov",
+                  "b",
+                  "avg",
+                  "gmi",
+                  "cv"
+                ],
+                "properties": {
+                  "d": {
+                    "enum": [
+                      1,
+                      7,
+                      14,
+                      30
+                    ]
+                  },
+                  "cov": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "b": {
+                    "$ref": "#/$defs/permille"
+                  },
+                  "avg": {
+                    "type": "integer"
+                  },
+                  "gmi": {
+                    "type": "number"
+                  },
+                  "cv": {
+                    "type": "number"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "repD": {
+          "enum": [
+            1,
+            7,
+            14,
+            30
+          ]
         }
       }
     },

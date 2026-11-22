@@ -42,6 +42,7 @@ import app.mauri.sukrara.integrations.garmin.AuraLinkState
 import app.mauri.sukrara.integrations.garmin.AuraReport
 import app.mauri.sukrara.integrations.garmin.AuraWatch
 import app.mauri.sukrara.integrations.garmin.GarminActions
+import app.mauri.sukrara.integrations.garmin.GarminApp
 import app.mauri.sukrara.integrations.garmin.GarminContent
 import app.mauri.sukrara.integrations.garmin.GarminUi
 import app.mauri.sukrara.integrations.healthconnect.HcActions
@@ -126,6 +127,7 @@ class IntegrationsGallery {
                     ),
                 ),
             fetched = now - Duration.ofMinutes(3),
+            fetchedBy = mapOf(GarminApp.Aura to now - Duration.ofMinutes(3)),
             fetchOpen = true,
         )
 
@@ -197,6 +199,7 @@ class IntegrationsGallery {
                                     ),
                                 ),
                             fetched = now - Duration.ofMinutes(2),
+                            fetchedBy = mapOf(GarminApp.Aura to now - Duration.ofMinutes(2)),
                             report =
                                 AuraReport(
                                     now - Duration.ofMinutes(2),

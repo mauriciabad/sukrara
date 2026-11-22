@@ -29,17 +29,22 @@ class TreatmentLog(
     /** Thrown when this phone may not write (see [WriterScope]); the UI only offers writing when it may. */
     class NotAllowed : IllegalStateException("this phone can't add treatments")
 
-    /** Stores [entries] at [at] (null = now) as new treatments; returns them. */
+    /**
+     * Stores [entries] at [at] (null = now) as new treatments; returns them. [id]: the one entry's id when another
+     * device made it (Sukrara on the watch: contracts/treatments, the creating device makes the id), else new ones.
+     */
     suspend fun add(
         entries: List<NewEntry>,
         at: Instant?,
+        id: String? = null,
     ): List<Treatment> {
         val writer = sync.writer.value ?: throw NotAllowed()
+        require(id == null || entries.size == 1) { "one id for one entry" }
         val now = clock.now()
         return entries.map { entry ->
             val treatment =
                 Treatment(
-                    id = newId(),
+                    id = id ?: newId(),
                     kind = entry.kind,
                     amount = entry.amount,
                     at = at ?: now,

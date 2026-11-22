@@ -2805,10 +2805,12 @@ ages by itself from its own time with the phone away.
   alert runtime's pill, the sensor with its life's start and end from the sensor screen's dates (the sensor rail), the
   card's last treatment with when it ends and what it gives way to, today's time in range, the person's unit and
   limits), with absolute times so the watch keeps every age and countdown right between messages (`:integrations`
-  `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 3; tests `AuraPayloadFixtureTest`).
+  `garmin/AuraPayload`; format and fixtures `contracts/watchface/payload`, version 4, the face's profile `aura`; tests
+  `AuraPayloadFixtureTest`).
 - **Two ways, nothing to set up** (`garmin/AuraLink`, on by default whenever Garmin Connect is installed; schema
-  `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face now, its data field and app when they come):
-  **pushed** through Garmin Connect's Connect IQ service to every connected watch with the face on
+  `apps.garmin`, the one switch for Sukrara's own Garmin apps: the face, the app and the data field):
+  **pushed** through Garmin Connect's Connect IQ service to each Sukrara app on every connected watch (each its own
+  profile and app id, a beta's id too; retries and the stuck rule per app) on
   each change (a new reading, a status, a treatment, a setting), within seconds; a message Garmin Connect fails or
   never confirms is sent again after 15 s, 30 s, 60 s, then every 2 min until a newer one replaces it. Once none has got
   through for 15 min (**stuck**: Garmin Connect's link to the watch can stay so for a day, until the watch reconnects,
@@ -2816,7 +2818,7 @@ ages by itself from its own time with the phone away.
   at once (checked every minute), stuck or not, as does *Send now*. The face also **fetches** the same payload every
   5 min from `http://127.0.0.1:17582/sukrara/aura` (Garmin Connect's web proxy; the bounded `LocalHttpServer`,
   loopback only), so a lost message or Garmin Connect's messaging bug costs at most 5 min. **The fetch port opens only
-  while a watch is known to have the face** (Garmin Connect says Sukrara Aura is installed on it, or a push reached it;
+  while a watch is known to have a Sukrara app** (Garmin Connect says one is installed on it, or a push reached it;
   checked when the watch connects and every 30 min) and closes when the switch goes off, Garmin Connect goes or the face
   is gone: on a phone without the face nothing listens. A watch Garmin Connect doesn't answer about still gets pushes.
   Sukrara talks to Garmin Connect itself (`garmin/ConnectIq`, `MonkeyC`: no Garmin library, so the APK stays free
@@ -2843,7 +2845,7 @@ ages by itself from its own time with the phone away.
     haptic) and *Open Garmin Connect*; without Garmin Connect, *Get Garmin Connect* (its store page);
   - *Watches*: every watch Garmin Connect knows, by its own name, one line each, one time on it, a clock time to
     compare with the phone's: "Connected · has the 14:21 reading", "Not connected · has the 13:52 reading",
-    "Connected · Sukrara Aura isn't on it", "… · the watch face isn't taking new readings · restart the watch",
+    "Connected · no Sukrara app on it", "… · the watch face isn't taking new readings · restart the watch",
     "… · messages stopped getting through · restart the watch" (stuck),
     "… · Garmin Connect loses messages, so it updates every 5 minutes",
     "… · Garmin Connect doesn't confirm messages, trying again", "… · the last message didn't arrive, trying again",
@@ -2851,11 +2853,13 @@ ages by itself from its own time with the phone away.
     things of one kind: no icons;
   - *Sukrara on your watch*: *Sukrara Aura* "Watch face · in use, asked this phone at 14:23" (its fetch within 11 min:
     it is the face in use), "… · not in use (it asks this phone every 5 minutes while it's the watch face)", "… · not
-    installed", "… · another app uses port 17582, so only Garmin Connect's messages reach it". Sukrara's data field
-    and app join this group;
+    installed", "… · another app uses port 17582, so only Garmin Connect's messages reach it"; *Sukrara* "Watch app,
+    glance and complications · asked this phone at 14:23" / "… · hasn't asked this phone lately (it asks every 5
+    minutes)" / "… · not installed"; *Sukrara data field* "Data field · …" the same, idle "(it asks during an
+    activity)";
   - *Other watch faces and data fields*: the *xDrip+ server* row (its own page, below);
-  - a footer: Garmin Connect must run in the background; while a watch has the face any app on this phone can read
-    what the face reads.
+  - a footer: Garmin Connect must run in the background; while a watch has a Sukrara app any app on this phone can
+    read what it reads (up to the last 24 hours); only Sukrara on the watch can log or mute here (signed).
 - On the watch (`apps/garmin/source/link`): the face's background wakes on each push and fetches every 5 min; the face
   keeps the newest payload (by when the phone built it; a burst of queued ones never puts an older one back) in
   storage, so after a restart it shows the last reading at once, aging. Every draw works the inputs out from the
@@ -2884,9 +2888,9 @@ On the phone: the Garmin row's line on Share with apps, in priority order (en / 
 note "Your watch gets no readings from this phone"; out: the main switch); *no Garmin Connect* ("Needs Garmin Connect
 on this phone"; out: *Get Garmin Connect*, or the switch); *Garmin Connect not answering* ("… isn't answering · open
 it", error colour; out: *Open Garmin Connect*; the watch groups hide until it answers); *no watch* ("No watch in Garmin
-Connect"; the page's "No watch · Pair your watch in Garmin Connect"; out: *Open Garmin Connect*); *the face on no
-watch* ("Sukrara Aura isn't on your watch", error colour; each watch's line says so and the face's row says "not
-installed"; out: install the face, or the switch); *watch away* ("Descent Mk3i 43mm isn't connected"; its line "Not
+Connect"; the page's "No watch · Pair your watch in Garmin Connect"; out: *Open Garmin Connect*); *no Sukrara app
+on any watch* ("No Sukrara app on your watch", error colour; each watch's line says so and each app's row says "not
+installed"; out: install one, or the switch); *watch away* ("Descent Mk3i 43mm isn't connected"; its line "Not
 connected · has the 13:52 reading"; out: bring it near, Bluetooth, *Open Garmin Connect*; it resumes by itself on
 reconnect); *sent* ("Descent Mk3i 43mm has the 14:21 reading"); *messages lost, the face fetching* ("Updates every 5
 minutes · Garmin Connect loses messages"; out: *Open Garmin Connect*, restart the watch; it keeps working meanwhile;
@@ -2902,6 +2906,43 @@ use* (out: pick it as the watch face on the watch), *not installed*, *port taken
 leaves the page. On the watch the face never shows an old value as current: every state there ages by itself and
 Garmin's *No phone* shows the link is down. Every row is a plain TalkBack row with its text; each action button reads
 as a button named by its label.
+
+## Sukrara on Garmin watches: the app and the data field (the phone's side)
+
+Beside Sukrara Aura, two more Connect IQ apps get what this phone shows (docs/47; their watch side and look come in
+their own rounds): **Sukrara** (a watch app with a glance and complications) and the **Sukrara data field**. Each gets
+its own payload from THE glucose state, with only what it draws (`contracts/watchface/payload`, version 4: profile
+`app` and `field`; the registry of every app id and beta id, `apps.json`, `GarminAppsTest`).
+- **The app's payload** (`garmin/AuraPayload`, `GarminDisplay`; `AuraPayloadFixtureTest`): 24 h of readings at 5 min
+  (the app zooms 3 / 6 / 12 / 24 h itself), the day's treatments (with their ids), time in range per band over a day
+  and a week, the card's metrics as the person set them (`graph.slots`, the fallback, the ring order), the Numbers
+  page for 1 / 7 / 14 / 30 days, the display settings it follows (`graph.hours`, `graph.marks`, `graph.side`,
+  `graph.columnCrown`, resolved in one place for a watch's own values later), the last treatment and sensor as the
+  face has them, what the alert runtime rings now, and for logging each kind's last amount and three usual ones; under
+  6 KB with a full day. Its push carries the key its writes are signed with (`WatchKey`: 32 random bytes made once,
+  kept in the secure store, never in the fetch nor a log line). **The data field's**: the last hour, the pill and
+  what rings.
+- **Each app fetches** its own every 5 min (`/sukrara/app`, `/sukrara/field`) on the same loopback port, open while a
+  watch has any Sukrara app.
+- **Logging from the watch** (`garmin/WatchWrites`, `POST /sukrara/entries`; `WatchWritesTest`): rapid, long-acting,
+  carbs, each signed (HMAC-SHA256) and with the watch's own id, which becomes the entry's id: a retry or replay is
+  answered with the stored entry, never stored twice. It goes through the phone's own Add treatment
+  (`TreatmentsModule.fromWatch`, `WatchEntryTest`): who may add, the dialog's limits (100 u, 500 g, one decimal /
+  whole grams, never rounded), a time the dialog could pick, *Already logged by your pen?* (the watch asks, then *Log
+  anyway*), then the log, sync, uploads and the alert runtime's quiet rules like any entry. The next push shows it.
+- **Mute from the watch** (`POST /sukrara/mute`, the same key): Mute all for 15 / 30 / 60 / 120 min or until turned
+  off, a side for 15 / 30 / 60 / 120 min, unmute either, through the alert runtime's own actions (`AlertControls`);
+  the next push's pill shows it.
+- The Garmin page lists both under *Sukrara on your watch* (above).
+
+**States and exits**: on the phone, each app's row under *Sukrara on your watch*: *not installed* (out: install it
+from Connect IQ), *asked this phone at 14:23* (it runs), *hasn't asked lately* (out: open the app, or start an
+activity with the field), *port taken* (out: stop the other app); every watch state of the link is the face's above
+(off, no Garmin Connect, not answering, away, stuck…, with the same exits). An entry logged on the watch is in the
+phone's log like any other: edit, delete and undo it there (home's list); a deleted one is never brought back by a
+retry. A mute from the watch is the phone's mute: its pill, *Unmute* and *Mute all*'s switch on the phone end it, as
+the watch does. Turning the main switch off stops pushes, fetches, entries and mutes at once (the port closes); on
+again resumes them. TalkBack reads each row as a plain row with its text.
 
 ## Sensor reminders and countdowns
 

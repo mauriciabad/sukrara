@@ -7,11 +7,12 @@ import Toybox.Lang;
 import Toybox.Math;
 import Toybox.Time;
 
-// What the face knows from Sukrara: the newest payload (contracts/watchface/payload, version 3), kept in storage so a
+// What the face knows from Sukrara: the newest payload (contracts/watchface/payload, version 4, its profile "aura"), kept in storage so a
 // restart shows it at once, and the face's inputs worked out from it and the watch clock at every draw (README "On
 // the watch"). Sukrara decides; this only counts time.
 module AuraLink {
-    const VERSION = 3;
+    const VERSION = 4;
+    const PROFILE = "aura";
     const STORE = "auraLink";
     // a stored payload this far ahead of the watch clock gives way to any new one (the phone's clock was wrong)
     const AHEAD_S = 300;
@@ -195,7 +196,7 @@ module AuraLink {
     }
 
     function valid(p) as Boolean {
-        return p instanceof Dictionary && p.get("v") == VERSION && p.get("sent") instanceof Number;
+        return p instanceof Dictionary && p.get("v") == VERSION && PROFILE.equals(p.get("p")) && p.get("sent") instanceof Number;
     }
 
     // When the face last fetched from the phone (watch clock), null = not since it started.

@@ -1582,10 +1582,10 @@ watch's Customize path and the devices in the manifest. A new device or setting 
   every manifest device, its `dev_key.pub` is the store key's public key, and each device's `.prg` passes
   `verify_prg.sh` (the id, no debug code). Tried 2026-11-16 on the release Mac: both packages verified (418 KB, one
   device). Nothing was uploaded.
-- **The beta gets no pushes.** Sukrara on the phone pushes to the face's real id (`AuraLink.APP_ID`) and opens the
-  5-minute fetch only while a watch is known to have that face. The beta face therefore shows readings only while the
-  sideloaded face (same real id) is also on the watch, and only from the fetch (up to 5 minutes late). Enough to try
-  the store install, the Connect IQ app's settings page and the listing's look; the push is tried with the public app.
+- **The beta gets pushes like the public app** (#199): the phone pushes to every Sukrara app id Garmin Connect says is
+  installed, the beta ids included (`contracts/watchface/payload/apps.json`, `GarminApp`), and opens the 5-minute
+  fetch while a watch has any of them. The beta of Sukrara Aura, the app and the data field each have their own fixed
+  id there.
 - **The pin.** `tools/release/garmin-key.sha256` (the store key's public SHA-256,
   `1e34106fdcd521d2f6676bf5b0f3d92691a8535cbe667f44064b886e7cdf111f` on 2026-11-16) is the switch that puts the face
   in `release.py`. Commit it in the change that makes the first public upload, so that release writes the version into

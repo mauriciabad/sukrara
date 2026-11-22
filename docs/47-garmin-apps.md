@@ -227,3 +227,48 @@ question of docs/43 stands for the new apps.
 ## In Sukrara
 
 Comes with each step of the plan.
+
+**Steps 2 and 4: the contract and the phone** (2026-11-22). Added:
+- `contracts/watchface/payload`, version 4: `apps.json`, the one registry of the three apps (app id, a fixed beta id
+  each, profile, fetch path), held to the phone (`GarminAppsTest`) and to the watch builds (`link_cases.py --check`:
+  every existing manifest's id and `build.sh`'s beta id); the profiles (`aura` = version 3's keys; `app`; `field`) with
+  `p` in every payload; `entries.json` and `mutes.json` for the writes.
+- Android `:integrations` `garmin/`: `GarminApp`; `AuraPayload.of(app, inputs)` per profile; `AuraLink` pushes each
+  installed app id (public or beta) on each watch its profile, with the retry and stuck rule per app (`AppLink`) and
+  the watch line adding them up; the fetch per path; the port open while a watch has any Sukrara app; `WatchWrites`
+  (`POST /sukrara/entries`, `POST /sukrara/mute`; `LocalHttpServer` takes a bounded POST body on listed paths);
+  `WatchKey`; `GarminDisplay` (the display settings' one resolver); the Garmin page's three rows (en / es).
+- `:feature:treatments` `TreatmentsModule.fromWatch` (the dialog's Save path with the watch's id, `TreatmentLog.add`'s
+  `id`); `AppGraph` wires it and the alert runtime's `AlertControls` into the link.
+- The face accepts version 4 with its profile (`AuraLink.mc`).
+
+Changed from "Choice" / §6, and why:
+- **The endpoint is `/sukrara/entries`** (§6 said `/garmin/entries` once): the fetch paths' prefix.
+- **Every answer about a write is HTTP 200** with `{id, r}`: Garmin Connect turns other statuses into error codes and
+  may drop the body (§4), so a refusal's reason (`clock` with the phone's time, `pen`) would be lost.
+- **The watch's id is a UUID v4 and becomes the treatment's id**: contracts/treatments says the creating device makes
+  the id, so the log itself is the dedupe (no second store of ids), and a deleted entry's id stays known.
+- **One key per phone, not per watch**: only Garmin Connect delivers to the app's id, and with no per-watch revoke on
+  the page a per-watch key buys nothing; the phone tries one key instead of each.
+- **Every field a string, signed as sent** (`id|k|a|t|s|f`): a JSON number may come back from Garmin Connect's
+  proxy written differently; strings sign the same on both sides.
+- **The send time `s` is signed and new per try**, the entry time `t` separate: a replay is refused outside 5 min of
+  the phone's clock (answer `clock` with `now`, so a watch clock that is off corrects itself), while an entry kept in
+  the outbox for hours still logs at its own time (up to the dialog's 1439 minutes back).
+- **`tx` as four lists and an 8-character id prefix**: a dictionary per entry with the full id put a heavy day (64
+  entries) at 8.9 KB, over `Background.exit`'s ~8 KB; now under 6 KB (`theAppsDayFitsItsBackground`).
+- **Time in range has six bands, not seven**: the phone's time in range has no extremely-high share (that limit only
+  colours the line and the number, `Bands`); the watch gets the phone's six.
+- **`ring` carries kind and side**; its value is `g` (the alert is about the newest reading).
+- **Mute from the watch** (the owner's addition): the alert runtime's own actions. *Until turned off* is Mute all's
+  only: a side's mute always ends on the phone (contracts/alerts SPEC, 1–720 min), so the watch doesn't offer it.
+- **Display settings in `ds`, the Numbers page in `rep`** (the design's addition): resolved on the phone in one place
+  for a watch's own values later (docs/38 places). There is no green-in-range setting on the phone (the face's is a
+  watch setting), so none is sent. `rep` has every period the report offers (1 / 7 / 14 / 30 d): about 250 bytes.
+
+Discarded, and why:
+- `registerApp` and watch → phone messages: the broken transmit path (CIQQA-4631) and no end-to-end answer (§6).
+- Keeping version 3 beside 4: no backwards compatibility (CLAUDE.md); the face reads 4.
+- A secret for the fetch: docs/43's reason stands (it must work while push is broken); the writes carry the key.
+- Renaming `AuraLink` / `AuraPayload` to app-neutral names: a rename across the module and docs with no behaviour
+  change; left for when the watch apps land.
