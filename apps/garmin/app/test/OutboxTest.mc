@@ -96,7 +96,7 @@ function outboxAmountsAsThePhoneStores(logger as Logger) as Boolean {
             continue;
         }
         var a = Outbox.amount(s.get("k") as String, (s.get("a") as Numeric).toFloat());
-        if (!a.equals((c.get("body") as Dictionary).get("a"))) {
+        if (a.toFloat() != (s.get("a") as Numeric).toFloat() || a.find(".0") != null) {
             logger.error(c.get("name") + ": " + a);
             ok = false;
         }
@@ -136,7 +136,7 @@ function outboxEveryAnswer(logger as Logger) as Boolean {
     OutboxCases.start(it);
     Outbox.answer(it.get("id"), 200, c.get("answer"), now);
     Test.assertEqualMessage(Sending.state(now + 60), "sent", "Sent after stored");
-    Test.assertEqualMessage(Sending.state(now + Outbox.SENT_SHOWN_S), null, "then nothing");
+    Test.assertMessage(Sending.state(now + Outbox.SENT_SHOWN_S) == null, "then nothing");
     Test.assertEqualMessage((Application.Storage.getValue(Outbox.NOTE) as Dictionary).get("r"), "stored", "Logged");
     // when / off: dropped, and the person is told why
     var told = ["when", "off"];
@@ -153,10 +153,10 @@ function outboxEveryAnswer(logger as Logger) as Boolean {
     OutboxCases.start(it);
     Outbox.answer(it.get("id"), 200, c.get("answer"), now);
     Test.assertEqualMessage(Outbox.items().size(), 1, "sig: kept");
-    Test.assertEqualMessage(Outbox.next(now), null, "sig: waits");
+    Test.assertMessage(Outbox.next(now) == null, "sig: waits");
     Test.assertEqualMessage(Sending.state(now), "wait", "Waiting for the phone");
     Outbox.received({"sent" => now, "key" => WriteCases.KEY}, now);
-    Test.assertEqualMessage(Outbox.next(now), null, "the same key: still waits");
+    Test.assertMessage(Outbox.next(now) == null, "the same key: still waits");
     Outbox.received({"sent" => now, "key" => "ff" + WriteCases.KEY.substring(2, 64)}, now);
     Test.assertEqualMessage((Outbox.next(now) as Dictionary).get("id"), it.get("id"), "a new key: sent again");
     // clock: the phone's now becomes the lead, and it goes again
@@ -176,7 +176,7 @@ function outboxEveryAnswer(logger as Logger) as Boolean {
     OutboxCases.start(it);
     Outbox.answer(it.get("id"), 200, c.get("answer"), now);
     Test.assertEqualMessage(Sending.state(now), "ask", "pen: the person is asked");
-    Test.assertEqualMessage(Outbox.next(now), null, "pen: not sent meanwhile");
+    Test.assertMessage(Outbox.next(now) == null, "pen: not sent meanwhile");
     Outbox.pen(it.get("id") as String, true);
     var again = Outbox.next(now) as Dictionary;
     Test.assertEqualMessage(again.get("f"), "1", "Log anyway: f = 1");

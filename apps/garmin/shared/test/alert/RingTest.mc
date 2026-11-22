@@ -33,6 +33,6 @@ function ringNewKinds(logger as Logger) as Boolean {
     Test.assertEqualMessage((Ring.kinds(Ring.fresh([low], ["very_low"]))).toString(), (["low"]).toString(), "very low went, low came: new");
     Test.assertEqual(Ring.treatment("low"), "carbs");
     Test.assertEqual(Ring.treatment("high"), "rapid");
-    Test.assertEqual(Ring.treatment("none"), null);
+    Test.assertMessage(Ring.treatment("none") == null, "no data: none");
     return true;
 }

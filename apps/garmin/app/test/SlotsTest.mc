@@ -65,8 +65,9 @@ function slotsDataAndGraph(logger as Logger) as Boolean {
     Test.assertEqualMessage(d[1], 3.0, "band 1: forty-five up");
     Test.assertEqualMessage(([d[2], d[3], d[4], d[5]]).toString(), ([70.0, 180.0, 55.0, 250.0]).toString(), "low, high, very low, very high");
     Test.assertEqualMessage(d[6], (T - 60).toFloat(), "the reading's time");
-    Test.assertEqualMessage(d[7] - d[6], 300.0, "old");
-    Test.assertEqualMessage(d[8] - d[6], 1200.0, "too old");
+    // Floats, as CGM+ GB's ranges are: an epoch second is exact only to 128 s there
+    Test.assertMessage((d[7] - d[6] - 300.0).abs() <= 128, "old");
+    Test.assertMessage((d[8] - d[6] - 1200.0).abs() <= 128, "too old");
     var g = Slots.graph(Link.payload());
     Test.assertEqual(g.size(), 288);
     Test.assertEqualMessage(([g[0], g[1], g[2], g[3]]).toString(), ([175.0, 110.0, 0.0, 100.0]).toString(), "newest first, a gap is 0");
