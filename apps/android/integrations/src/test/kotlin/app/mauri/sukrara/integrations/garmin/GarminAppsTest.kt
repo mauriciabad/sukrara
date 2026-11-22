@@ -32,6 +32,7 @@ class GarminAppsTest {
         assertEquals(AuraLink.PORT, file.getValue("port").jsonPrimitive.int)
         assertEquals(GarminApp.ENTRIES, file.getValue("entries").jsonPrimitive.content)
         assertEquals(WatchWrites.MUTE, file.getValue("mute").jsonPrimitive.content)
+        assertEquals(WatchWrites.UNDO, file.getValue("undo").jsonPrimitive.content)
         // every id once, lowercase UUIDs
         val ids = GarminApp.entries.flatMap { it.ids }
         assertEquals(ids.size, ids.toSet().size)

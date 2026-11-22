@@ -184,12 +184,21 @@ data class TreatmentRecord(
      */
     val fromLink: Boolean get() = via == FROM_LINK
 
+    /**
+     * Logged from Sukrara on the watch (`POST /sukrara/entries`): the watch's *Undo* may take only these back
+     * (contracts/watchface/payload README "Undo from the watch"). A version from another device makes it that device's.
+     */
+    val fromWatch: Boolean get() = via == FROM_WATCH
+
     companion object {
         /** [via] of an entry the Nightscout source took from its site. */
         const val FROM_NIGHTSCOUT = "nightscout"
 
         /** [via] of an entry kept from a Sukrara link this phone left ([fromLink]). */
         const val FROM_LINK = "link"
+
+        /** [via] of an entry this phone stored from Sukrara on the watch ([fromWatch]). */
+        const val FROM_WATCH = "watch"
     }
 }
 

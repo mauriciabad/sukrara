@@ -314,7 +314,7 @@ class AuraLink(
                     }
                 }
             },
-            posts = setOf(WatchWrites.ENTRIES, WatchWrites.MUTE),
+            posts = setOf(WatchWrites.ENTRIES, WatchWrites.UNDO, WatchWrites.MUTE),
         )
 
     /** Runs the link for as long as [scope] lives. */

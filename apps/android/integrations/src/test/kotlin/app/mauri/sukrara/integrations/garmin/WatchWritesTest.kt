@@ -42,6 +42,7 @@ import java.time.Instant
 class WatchWritesTest {
     private val entries = Json.parseToJsonElement(Contracts.file("watchface/payload/entries.json").readText()).jsonObject
     private val mutes = Json.parseToJsonElement(Contracts.file("watchface/payload/mutes.json").readText()).jsonObject
+    private val undos = Json.parseToJsonElement(Contracts.file("watchface/payload/undos.json").readText()).jsonObject
     private val now = entries.getValue("now").jsonPrimitive.long
     private val clock = FakeClock(Instant.ofEpochSecond(now))
     private val key =
@@ -61,6 +62,14 @@ class WatchWritesTest {
         override suspend fun add(e: WatchEntry): WatchLogged {
             got += e
             return outcome
+        }
+
+        var undone: WatchUndone = WatchUndone.Off
+        val undos = ArrayList<String>()
+
+        override suspend fun undo(id: String): WatchUndone {
+            undos += id
+            return undone
         }
 
         override suspend fun facts() = KindFacts.NONE
@@ -156,6 +165,31 @@ class WatchWritesTest {
                 assertEquals(name, body.getValue("t").jsonPrimitive.long, e.at.epochSecond)
                 assertEquals(name, body.getValue("f").jsonPrimitive.content == "1", e.force)
             }
+        }
+    }
+
+    @Test
+    fun everyUndoCase() {
+        assertEquals(now, undos.getValue("now").jsonPrimitive.long)
+        for (c in undos.getValue("cases").jsonArray.map { it.jsonObject }) {
+            val name = c.getValue("name").jsonPrimitive.content
+            val answer = c.getValue("answer").jsonObject
+            val r = answer.getValue("r").jsonPrimitive.content
+            val body = c.getValue("body").jsonObject
+            val id = body.getValue("id").jsonPrimitive.content
+            val signed = listOf("id", "s").joinToString("|") { body.getValue(it).jsonPrimitive.content }
+            assertEquals(name, c.getValue("signed").jsonPrimitive.content, signed)
+            val port = Port()
+            WatchUndone.entries.firstOrNull { it.r == r }?.let { port.undone = it }
+            val a = WatchWrites({ key }, port, null, clock).answer(request(WatchWrites.UNDO, c))
+            assertEquals(name, "200 OK", a.status)
+            assertJson(name, answer, Json.parseToJsonElement(a.body))
+            if (r in setOf("sig", "clock", "id")) {
+                assertTrue("$name: never reaches the phone's delete", port.undos.isEmpty())
+            } else {
+                assertEquals(name, listOf(id), port.undos)
+            }
+            assertTrue("$name: nothing logged", port.got.isEmpty())
         }
     }
 

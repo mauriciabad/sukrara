@@ -65,6 +65,17 @@ sealed interface WatchLogged {
     data object Off : WatchLogged
 }
 
+/** What the phone's delete did with the watch's *Undo* of an entry (the answer's `r`). */
+enum class WatchUndone(
+    val r: String,
+) {
+    Done("done"),
+    Gone("gone"),
+    Unknown("unknown"),
+    Foreign("foreign"),
+    Off("off"),
+}
+
 /**
  * The phone's own treatment entry, for entries from the watch (AppGraph: the treatments module's, so a watch entry goes
  * through exactly what the phone's Add treatment runs: who may add, the form's limits, *Already logged by your pen?*,
@@ -76,6 +87,9 @@ interface WatchEntries {
 
     suspend fun add(e: WatchEntry): WatchLogged
 
+    /** The watch's *Undo* of entry [id]: only an entry it logged, through the phone's own delete. */
+    suspend fun undo(id: String): WatchUndone
+
     /** What THE kinds' order is decided from now, as the phone's Add treatment decides it (the payload's `log.order`). */
     suspend fun facts(): KindFacts
 
@@ -86,6 +100,8 @@ interface WatchEntries {
                 override val open: Flow<Boolean> = flowOf(false)
 
                 override suspend fun add(e: WatchEntry) = WatchLogged.Off
+
+                override suspend fun undo(id: String) = WatchUndone.Off
 
                 override suspend fun facts() = KindFacts.NONE
             }
@@ -125,8 +141,8 @@ class WatchKey(
 }
 
 /**
- * `POST /sukrara/entries` and `POST /sukrara/mute` (contracts/watchface/payload README "Entries from the watch",
- * "Mute from the watch"): the watch's writes through Garmin Connect's loopback proxy. Each is checked in the contract's
+ * `POST /sukrara/entries`, `POST /sukrara/undo` and `POST /sukrara/mute` (contracts/watchface/payload README "Entries
+ * from the watch", "Undo from the watch", "Mute from the watch"): the watch's writes through Garmin Connect's loopback proxy. Each is checked in the contract's
  * order (the key's signature, the send time, the id, the fields) and handed to the phone's own path ([entries], the
  * alert runtime's [alerts]); every answer about a write is a 200 with `{id, r, …}`.
  */
@@ -147,6 +163,7 @@ class WatchWrites(
             withTimeoutOrNull(TIMEOUT_MS) {
                 when (req.path) {
                     ENTRIES -> entry(req)
+                    UNDO -> undo(req)
                     MUTE -> mute(req)
                     else -> HttpAnswer.NOT_FOUND
                 }
@@ -177,6 +194,18 @@ class WatchWrites(
             WatchLogged.When -> ok(id, "when")
             WatchLogged.Off -> ok(id, "off")
         }
+    }
+
+    private suspend fun undo(req: HttpRequest): HttpAnswer {
+        val f = fields(req) ?: return BAD
+        val id = f["id"] ?: return BAD
+        val s = f["s"] ?: return BAD
+        val mac = f["mac"] ?: return BAD
+        checked(id, listOf(id, s), s, mac)?.let { return it }
+        if (!UUID_V4.matches(id)) return ok(id, "id")
+        val done = lock.withLock { entries.undo(id) }
+        log("watch undo $id: ${done.r}")
+        return ok(id, done.r)
     }
 
     private suspend fun mute(req: HttpRequest): HttpAnswer {
@@ -257,6 +286,7 @@ class WatchWrites(
     companion object {
         const val ENTRIES = GarminApp.ENTRIES
         const val MUTE = "sukrara/mute"
+        const val UNDO = "sukrara/undo"
 
         /** The send time may be this far from the phone's clock (s). */
         const val CLOCK_S = 300L

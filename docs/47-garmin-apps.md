@@ -268,6 +268,12 @@ Changed from "Choice" / §6, and why:
   on Android and the Mac), from the same facts the phone's Add treatment focuses from, so every dialog and the watch
   agree; the scattered focus decisions (the notification, the alert's button, the widgets, the pill, the pen notice,
   the Mac's own) are gone.
+- **Undo from the watch** (`POST /sukrara/undo`, SPEC §6's *Undo*): by the entry's id, signed over `id|s` with the
+  same key and send-time window; the phone runs its own delete (`TreatmentLog.delete`, home's), so sync, the Nightscout
+  delete, LibreView / Tidepool retraction and the quiet rules follow without a path of their own. Only an entry stored
+  from the watch: the record keeps `via = watch` (`TreatmentRecord.fromWatch`, an existing column, no migration);
+  phone and watch ids are both UUID v4, so the id alone can't tell. Answers `done`, `gone` (already deleted: done),
+  `unknown`, `foreign` (refused), `off`, plus `sig` / `clock` / `id` as for entries.
 - **Mute from the watch** (the owner's addition): the alert runtime's own actions, with *Remind less* / *Remind as usual* (round 2). *Until turned off* is Mute all's
   only: a side's mute always ends on the phone (contracts/alerts SPEC, 1–720 min), so the watch doesn't offer it.
 - **Display settings in `ds`, the Numbers page in `rep`** (the design's addition): resolved on the phone in one place

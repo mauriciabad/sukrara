@@ -8,7 +8,8 @@ Sukrara's releases. 0.x versions are previews.
   for any face (glucose, CGM+ GB's data and graph, and the last treatment as *Log*), turning to "---" on time when the
   reading gets old; a new alert from the phone shows as Garmin's notification with *Treatment*, *Remind less* and
   *Mute 30m*; the data field shows its own alert and records glucose into the activity. Entries and mutes from the
-  watch wait until the phone has them.
+  watch wait until the phone has them. *Undo* after *Logged* on the watch deletes that entry on the phone, as a
+  delete on the phone does (LibreView, Nightscout and Tidepool too).
 - **Sukrara Aura: two fields on top, and every field your watch has** (#240): a second top field sits beside the first
   (one alone stays centred). Every field slot now offers everything Garmin gives a watch face (calories, stress, pulse
   ox, sleep score, weather and the next three days' forecast, sunrise, pressure, your next event, training status, race

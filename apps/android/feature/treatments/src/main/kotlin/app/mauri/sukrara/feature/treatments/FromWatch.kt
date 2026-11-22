@@ -34,3 +34,24 @@ sealed interface FromWatch {
     /** This phone takes no entries now (its Add treatment isn't offered). */
     data object Off : FromWatch
 }
+
+/**
+ * What [TreatmentsModule.undoFromWatch] did with the watch's *Undo* (contracts/watchface/payload README "Undo from the
+ * watch": `done`, `gone`, `unknown`, `foreign`, `off`).
+ */
+enum class UndoFromWatch {
+    /** Deleted through the phone's own delete. */
+    Done,
+
+    /** Deleted already (on the phone, or a retry whose answer was lost). */
+    Gone,
+
+    /** No entry with this id in the log. */
+    Unknown,
+
+    /** Not logged from the watch: the watch takes back only its own. */
+    Foreign,
+
+    /** This phone may not change it now. */
+    Off,
+}

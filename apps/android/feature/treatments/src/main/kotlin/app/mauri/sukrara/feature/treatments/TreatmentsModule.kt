@@ -17,6 +17,7 @@ import app.mauri.sukrara.core.model.Treatment
 import app.mauri.sukrara.core.model.TreatmentKind
 import app.mauri.sukrara.core.model.storage.SettingsRepository
 import app.mauri.sukrara.core.model.storage.StateStore
+import app.mauri.sukrara.core.model.storage.TreatmentRecord
 import app.mauri.sukrara.core.model.storage.TreatmentsRepository
 import app.mauri.sukrara.graph.GraphSettings
 import app.mauri.sukrara.graph.stats.Bands
@@ -203,8 +204,24 @@ class TreatmentsModule(
             val entry = NewEntry(kind, value)
             val t = minOf(at, now)
             if (!force) penDuplicate(listOf(entry), t)?.let { return@withLock FromWatch.Pen(it.second) }
-            val stored = runCatching { log.add(listOf(entry), t, id) }.getOrNull() ?: return@withLock FromWatch.Off
+            val stored =
+                runCatching { log.add(listOf(entry), t, id, TreatmentRecord.FROM_WATCH) }.getOrNull() ?: return@withLock FromWatch.Off
             FromWatch.Stored(stored.single())
+        }
+
+    /**
+     * The watch's *Undo* of entry [id] (contracts/watchface/payload README "Undo from the watch"): only an entry stored
+     * from the watch ([TreatmentRecord.fromWatch]), deleted through the phone's own delete ([TreatmentLog.delete], as
+     * home's: synced, deleted from Nightscout, retracted from LibreView / Tidepool by their uploads, no longer counted by
+     * the quiet rules).
+     */
+    suspend fun undoFromWatch(id: String): UndoFromWatch =
+        watchLock.withLock {
+            val stored = repository.get(id) ?: return@withLock UndoFromWatch.Unknown
+            if (!stored.fromWatch) return@withLock UndoFromWatch.Foreign
+            if (stored.treatment.deleted) return@withLock UndoFromWatch.Gone
+            runCatching { log.delete(id) }.getOrNull() ?: return@withLock UndoFromWatch.Off
+            UndoFromWatch.Done
         }
 
     /** What THE kinds' order is decided from now: the alerts' facts and the newest pen read (a failed read: none). */

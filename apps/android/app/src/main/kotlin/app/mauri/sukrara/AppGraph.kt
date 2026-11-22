@@ -66,6 +66,7 @@ import app.mauri.sukrara.feature.treatments.DraftNotificationPorts
 import app.mauri.sukrara.feature.treatments.FromWatch
 import app.mauri.sukrara.feature.treatments.TreatmentDraft
 import app.mauri.sukrara.feature.treatments.TreatmentsModule
+import app.mauri.sukrara.feature.treatments.UndoFromWatch
 import app.mauri.sukrara.graph.ClockText
 import app.mauri.sukrara.graph.GraphConfig
 import app.mauri.sukrara.graph.GraphSettings
@@ -77,6 +78,7 @@ import app.mauri.sukrara.integrations.garmin.ConnectIq
 import app.mauri.sukrara.integrations.garmin.WatchEntries
 import app.mauri.sukrara.integrations.garmin.WatchEntry
 import app.mauri.sukrara.integrations.garmin.WatchLogged
+import app.mauri.sukrara.integrations.garmin.WatchUndone
 import app.mauri.sukrara.integrations.healthconnect.HcState
 import app.mauri.sukrara.integrations.librelinkup.LluSourceConfig
 import app.mauri.sukrara.integrations.librelinkup.LluSourceSettings
@@ -805,6 +807,16 @@ class AppGraph(
                             FromWatch.Amount -> WatchLogged.Amount
                             FromWatch.When -> WatchLogged.When
                             FromWatch.Off -> WatchLogged.Off
+                        }
+
+                    // the watch's Undo: the phone's own delete, only for an entry the watch logged
+                    override suspend fun undo(id: String): WatchUndone =
+                        when (treatments.undoFromWatch(id)) {
+                            UndoFromWatch.Done -> WatchUndone.Done
+                            UndoFromWatch.Gone -> WatchUndone.Gone
+                            UndoFromWatch.Unknown -> WatchUndone.Unknown
+                            UndoFromWatch.Foreign -> WatchUndone.Foreign
+                            UndoFromWatch.Off -> WatchUndone.Off
                         }
 
                     // THE kinds' order from the same facts as the phone's Add treatment (the watch's log list)

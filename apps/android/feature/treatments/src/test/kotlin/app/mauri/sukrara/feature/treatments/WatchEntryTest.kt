@@ -179,4 +179,97 @@ class WatchEntryTest {
             }
             assertTrue(ran >= 15)
         }
+
+    /**
+     * contracts/watchface/payload/undos.json through the phone's own delete ([TreatmentsModule.undoFromWatch]): only an
+     * entry stored from the watch, deleted as home deletes (a newer deleted version, synced); nothing else changes.
+     */
+    @Test
+    fun everyUndoCaseThePhonesDeleteDecides() =
+        runTest {
+            val undos = Json.parseToJsonElement(Contracts.file("watchface/payload/undos.json").readText()).jsonObject
+            var ran = 0
+            for (c in undos.getValue("cases").jsonArray.map { it.jsonObject }) {
+                val r =
+                    c
+                        .getValue("answer")
+                        .jsonObject
+                        .getValue("r")
+                        .jsonPrimitive.content
+                if (r in setOf("sig", "clock", "id")) continue
+                ran++
+                val name = c.getValue("name").jsonPrimitive.content
+                val open =
+                    c["phone"]
+                        ?.jsonObject
+                        ?.get("open")
+                        ?.jsonPrimitive
+                        ?.booleanOrNull ?: true
+                val repo = InMemoryTreatmentsRepository()
+                for (s in undos.getValue("stored").jsonArray.map { it.jsonObject }) {
+                    val at = Instant.ofEpochSecond(s.getValue("t").jsonPrimitive.long)
+                    val t =
+                        Treatment(
+                            s.getValue("id").jsonPrimitive.content,
+                            kind(s.getValue("k").jsonPrimitive.content),
+                            s.getValue("a").jsonPrimitive.double,
+                            at,
+                            modifiedAt = at,
+                            origin = TreatmentOrigin.Phone,
+                            deleted = s["del"]?.jsonPrimitive?.booleanOrNull ?: false,
+                        )
+                    val w = s.getValue("w").jsonPrimitive.booleanOrNull == true
+                    repo.upsertIfNewer(TreatmentRecord(t, via = if (w) TreatmentRecord.FROM_WATCH else null))
+                }
+                val sync = Sync(if (open) TreatmentWriter(key = null, throughOutbox = false) else null)
+                val m =
+                    TreatmentsModule(
+                        repo,
+                        sync,
+                        FakeClock(now),
+                        MutableStateFlow(GlucoseState.Initial.copy(spec = SourceSpec.YourSensor)),
+                        InMemorySettingsRepository(),
+                        CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+                        hints,
+                    )
+                val before = repo.between(Instant.EPOCH, now.plusSeconds(86_400)).first().map { it.id }
+                val id =
+                    c
+                        .getValue("body")
+                        .jsonObject
+                        .getValue("id")
+                        .jsonPrimitive.content
+                val got = m.undoFromWatch(id)
+                assertEquals(name, r, got.name.lowercase())
+                val after = repo.between(Instant.EPOCH, now.plusSeconds(86_400)).first().map { it.id }
+                val deletes = c["deletes"]?.takeIf { it !is JsonNull }?.jsonPrimitive?.content
+                if (deletes == null) {
+                    assertEquals("$name: nothing changes", before, after)
+                    assertTrue(name, sync.published.isEmpty())
+                } else {
+                    assertEquals(name, id, deletes)
+                    assertEquals("$name: that one leaves", before - deletes, after)
+                    val t = repo.get(id)!!
+                    assertTrue(name, t.treatment.deleted)
+                    // synced like home's delete
+                    assertEquals(name, listOf(id), sync.published.map { it.treatment.id })
+                    assertTrue("$name: still the watch's", t.fromWatch)
+                }
+            }
+            assertTrue(ran >= 6)
+        }
+
+    @Test
+    fun anEntryFromTheWatchIsKeptAsTheWatchs() =
+        runTest {
+            val repo = InMemoryTreatmentsRepository()
+            val m = module(repo, Sync(TreatmentWriter(key = null, throughOutbox = false)), null)
+            val id = "4f8a2c1e-7b3d-4e5f-9a1b-2c3d4e5f6a7b"
+            m.fromWatch(id, TreatmentKind.Carbs, "30", now, false)
+            assertTrue(repo.get(id)!!.fromWatch)
+            assertEquals(UndoFromWatch.Done, m.undoFromWatch(id))
+            assertEquals(UndoFromWatch.Gone, m.undoFromWatch(id))
+            // and the same entry sent again is known, never logged twice
+            assertEquals(FromWatch.Known(null), m.fromWatch(id, TreatmentKind.Carbs, "30", now, false))
+        }
 }

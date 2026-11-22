@@ -32,11 +32,13 @@ class TreatmentLog(
     /**
      * Stores [entries] at [at] (null = now) as new treatments; returns them. [id]: the one entry's id when another
      * device made it (Sukrara on the watch: contracts/treatments, the creating device makes the id), else new ones.
+     * [via]: where it came from, kept with the record ([TreatmentRecord.FROM_WATCH]).
      */
     suspend fun add(
         entries: List<NewEntry>,
         at: Instant?,
         id: String? = null,
+        via: String? = null,
     ): List<Treatment> {
         val writer = sync.writer.value ?: throw NotAllowed()
         require(id == null || entries.size == 1) { "one id for one entry" }
@@ -52,7 +54,7 @@ class TreatmentLog(
                     modifiedAt = now,
                     origin = TreatmentOrigin.Phone,
                 )
-            write(TreatmentRecord(treatment, creator = writer.key, author = writer.key, delivery = writer.delivery))
+            write(TreatmentRecord(treatment, creator = writer.key, author = writer.key, via = via, delivery = writer.delivery))
             treatment
         }
     }

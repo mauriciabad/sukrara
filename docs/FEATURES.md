@@ -2942,6 +2942,11 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
   (`TreatmentsModule.fromWatch`, `WatchEntryTest`): who may add, the dialog's limits (100 u, 500 g, one decimal /
   whole grams, never rounded), a time the dialog could pick, *Already logged by your pen?* (the watch asks, then *Log
   anyway*), then the log, sync, uploads and the alert runtime's quiet rules like any entry. The next push shows it.
+- **Undo from the watch** (`POST /sukrara/undo`, the same key; `undos.json`): the watch's *Undo* after *Logged*
+  deletes that entry through the phone's own delete (`TreatmentsModule.undoFromWatch` → `TreatmentLog.delete`, as
+  home's: synced, deleted from Nightscout, retracted from LibreView / Tidepool, no longer quieting an alert). Only an
+  entry the phone stored from the watch (`TreatmentRecord.fromWatch`); any other id is refused, a deleted one is
+  *gone* (done), an unknown one changes nothing.
 - **Mute from the watch** (`POST /sukrara/mute`, the same key): Mute all for 15 / 30 / 60 / 120 min or until turned
   off, a side for 15 / 30 / 60 / 120 min, unmute either, *Remind less* / *Remind as usual* on a side, through the
   alert runtime's own actions (`AlertControls`); the next push's pill shows it, and what rings says per side whether
@@ -2952,7 +2957,8 @@ its own payload from THE glucose state, with only what it draws (`contracts/watc
 from Connect IQ), *asked this phone at 14:23* (it runs), *hasn't asked lately* (out: open the app, or start an
 activity with the field), *port taken* (out: stop the other app); every watch state of the link is the face's above
 (off, no Garmin Connect, not answering, away, stuck…, with the same exits). An entry logged on the watch is in the
-phone's log like any other: edit, delete and undo it there (home's list); a deleted one is never brought back by a
+phone's log like any other: edit, delete and undo it there (home's list), or *Undo* it on the watch for 10 s after
+*Logged* (the phone's delete; to have it back, log it again); a deleted one is never brought back by a
 retry. A mute from the watch is the phone's mute: its pill, *Unmute* and *Mute all*'s switch on the phone end it, as
 the watch does. Turning the main switch off stops pushes, fetches, entries and mutes at once (the port closes); on
 again resumes them. TalkBack reads each row as a plain row with its text.
