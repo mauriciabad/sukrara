@@ -71,11 +71,13 @@ commit SHA with its release tag in a comment (`actions/checkout@<sha> # v7.0.1`)
 ## Install (one build line)
 
 Every install must contain all merged work, or features silently vanish from the owner's devices:
-`tools/install.sh phone|mac [--dry-run]`. It refuses a dirty tree, a HEAD without `origin/main`, the branches in
+`tools/install.sh phone|mac|watch [--dry-run]`. It refuses a dirty tree, a HEAD without `origin/main`, the branches in
 `tools/check/integration.txt` or the commit installed last time, and failing checks; then it builds the release variant
 as a development build (signed like a release; About says *Development build · …*, see [Development and release
 builds](#development-and-release-builds)), verifies it (`tools/release/verify-apk.sh` / `verify-app.sh`), installs in place and records the commit in
-`<git common dir>/sukrara-installed-<target>`.
+`<git common dir>/sukrara-installed-<target>`. Phone and watch must speak the same Garmin payload version: `phone` /
+`watch` refuses a build whose version the other device's last install doesn't speak (the face would show nothing),
+unless `--watch-later` / `--phone-later` says the other follows right after.
 
 On the Mac it replaces the installed copy wherever it is: `/Applications/Sukrara.app` (the notarized release from the
 dmg or the cask) when it's there, else `~/Applications/Sukrara.app`. It refuses, before anything changes, when a

@@ -3,23 +3,33 @@
 # Copyright (C) 2026 Maurici Abad
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Put Sukrara on the owner's phone or Mac without losing anyone's merged work (docs/DEVELOPMENT.md "Install").
-#   tools/install.sh phone [--dry-run]   apps/android release APK → verify-apk.sh → adb install -r (keeps data)
+#   tools/install.sh phone [--dry-run] [--watch-later]   apps/android release APK → verify-apk.sh → adb install -r (keeps data)
 #   tools/install.sh mac   [--dry-run]   apps/macos bundle.sh → verify-app.sh → over the installed Sukrara.app
 #                                        (/Applications, else ~/Applications; one copy stays; quit and reopened)
-#   tools/install.sh watch [--dry-run]   every apps/garmin app (Aura, Sukrara, the data field): release .prg (developer
+#   tools/install.sh watch [--dry-run] [--phone-later]   every apps/garmin app (Aura, Sukrara, the data field): release .prg (developer
 #                                        key) → verify_prg.sh → onto the Garmin on USB (MTP, GARMIN/Apps; the watch
 #                                        installs them when unplugged; the owner picks the face, adds the glance / field)
 # Refuses unless: the tree is clean, HEAD contains origin/main and every branch in tools/check/integration.txt,
 # HEAD contains the commit installed last time (else features vanish from the device), and tools/check/run.sh passes.
 # Records what it installed in <git common dir>/sukrara-installed-<target> (shared by all worktrees).
 # --dry-run runs every check but only prints the build / install commands.
+# Phone and watch speak one Garmin payload version (contracts/watchface/payload): installing one of them with a version
+# the other's last install doesn't speak is refused (the face shows nothing until both match), unless --watch-later /
+# --phone-later says the other one follows right after.
 # What it installs is a development build, never a release (tools/release/build-info.sh): About and Settings say
 # "Development build · <version> + <n> commits · <commit> · <date>"; verify-apk.sh / verify-app.sh check it. The
 # updaters treat it as its base version: they offer only a newer release (docs/DEVELOPMENT.md › Development and release
 # builds).
 set -eu
-TARGET=${1:-}; DRY=0
-[ "${2:-}" = "--dry-run" ] && DRY=1
+TARGET=${1:-}; DRY=0; LATER=0
+[ $# -gt 0 ] && shift
+for o in "$@"; do
+  case "$TARGET:$o" in
+    *:--dry-run) DRY=1 ;;
+    phone:--watch-later | watch:--phone-later) LATER=1 ;;
+    *) echo "usage: tools/install.sh phone|mac|watch [--dry-run] [--watch-later (phone) | --phone-later (watch)]" >&2; exit 2 ;;
+  esac
+done
 case "$TARGET" in phone|mac|watch) ;; *) echo "usage: tools/install.sh phone|mac|watch [--dry-run]" >&2; exit 2 ;; esac
 ROOT=$(git rev-parse --show-toplevel); cd "$ROOT"
 unset SUKRARA_RELEASE_BUILD # only the release scripts build a release
@@ -47,6 +57,25 @@ if [ -f "$RECORD" ]; then
   else echo "note: last installed commit $LAST is unknown here (not fetched?)"; fi
 fi
 tools/check/run.sh --range origin/main..HEAD || die "tools/check/run.sh failed (see above)."
+
+# 1b. Phone and watch speak the same Garmin payload version (the phone's AuraPayload.VERSION, the watch's Link.VERSION).
+payload_version() { # $1 = commit, $2 = phone | watch
+  case $2 in
+    phone) git grep -h "const val VERSION = " "$1" -- 'apps/android/**/AuraPayload.kt' 2>/dev/null ;;
+    watch) git grep -h "const VERSION = " "$1" -- 'apps/garmin/**/*.mc' 2>/dev/null ;;
+  esac | head -1 | sed 's/[^0-9]//g'
+}
+case $TARGET in phone) OTHER=watch FLAG=--watch-later ;; watch) OTHER=phone FLAG=--phone-later ;; *) OTHER= ;; esac
+OTHER_RECORD="$(cd "$(git rev-parse --git-common-dir)" && pwd)/sukrara-installed-$OTHER"
+if [ -n "$OTHER" ] && [ -f "$OTHER_RECORD" ]; then
+  OC=$(cut -d' ' -f1 "$OTHER_RECORD")
+  MINE=$(payload_version HEAD "$TARGET"); THEIRS=$(payload_version "$OC" "$OTHER")
+  if [ -n "$MINE" ] && [ -n "$THEIRS" ] && [ "$MINE" != "$THEIRS" ]; then
+    MSG="this $TARGET build speaks Garmin payload v$MINE, the $OTHER (installed from ${OC%"${OC#?????????}"}) speaks v$THEIRS: the face
+  shows nothing until both match. Install the $OTHER too (tools/install.sh $OTHER), or pass $FLAG to install this one now."
+    if [ $LATER = 1 ]; then echo "note: $MSG"; else die "$MSG"; fi
+  fi
+fi
 
 VI=$(version_info) || die "VERSION is not a valid MAJOR.MINOR.PATCH (see above)."
 set -- $VI
