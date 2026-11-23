@@ -107,10 +107,115 @@ Until 1.0.0:
   field stays where it is in every format, the one thing never changed, so any version can read it; the smaller
   number is the app to update. E.g. the watch: *Update Sukrara on your phone* / *Update this app*; the phone's Garmin
   page: *Update Sukrara Aura on your watch* with the store's *Get*; a follower: *Update Sukrara to keep following
-  Ana*. The screens, words and exits are designed in their feature round (CLAUDE.md "Complete flows").
+  Ana*. The screens, words and exits: § When versions differ.
 
 From 1.0.0 (not now): read the previous version too for a window, the way other projects bridge store delays
 (sources below).
+
+## When versions differ
+
+*Product / UX round for #262 (2026-11-23). Words are **proposals**, en / es.*
+
+### The person's side
+
+When it happens: a format change ships to every speaker at once, but the stores don't land at once (Play and App Store
+review in hours, Connect IQ in days), Connect IQ auto-update can be off or put an old version back (forum reports
+below), the GitHub version waits for the person's OK, and a follower may be a parent who never opens the app. So the
+usual case is **the morning after a release**: the phone updated itself overnight, the watch face didn't, and the
+person on the way out sees a watch with no number. Or a follower whose phone is still on the old version stops getting
+readings, and finds out only when the *No data* alarm rings.
+
+What it must take off their mind: *is my glucose wrong or just missing?* (never a stale value as current, never a blank
+with no reason) and *what do I tap?* (one button that opens the right update for that copy of the app). What others
+do, judged:
+
+- **Juggluco, AndroidAPS, xDrip+**: "use the same version on phone and watch", told in release notes and docs; the
+  watch just stops (Juggluco, AAPS) or a toast nags with no working way out (xDrip+ on Wear OS 4+). Bad: the person
+  learns from a missing number; nothing says which side to update.
+- **Signal**: an expired build says so on the device in use and links the download; a linked device whose primary is
+  out of date says *which* device to update and how it clears. Good: the device you look at names the other one.
+- **Wear OS**: each side detects the other (capabilities) and opens the store on the other device
+  (`RemoteActivityHelper`). Good: one tap from the device you hold to the update on the other.
+- **Connect IQ**: updates sit in the Connect IQ app (*Device › Updates › Update All*), installed at the next sync; a
+  face or data field can't open anything on the phone, a watch app and (API 5+) a data field can ask Garmin Connect to
+  show a phone notification that opens a URL (`openWebPage`).
+
+Decisions:
+
+1. **The device you look at names the app to update**, the smaller version: *Update Sukrara on your phone* or
+   *Update this app*, never "versions differ".
+2. **Nothing new is shown as current**: what was last read stays and ages by the freshness rules (late, struck, gone
+   at 20 min); the update line comes at once, not after 20 min. Nothing guesses at a payload it can't read (the
+   owner's rule; question 1 below).
+3. **One button to the right update** for that copy: Android GitHub version → the updater's *Check now* (its *Install*
+   follows); Google Play → Sukrara's Play listing; Mac GitHub → Sparkle's *Check for Updates…*; Mac App Store → the App
+   Store page; a Garmin app → its Connect IQ listing (`apps.json` `store`, the link the Garmin page's *Get* already
+   opens) with the hint *Updates › Update All, then sync the watch*.
+4. **The newer side waits for the older one's store**: a release that changes a format makes the new versions
+   public in order: the Connect IQ apps first (Connect IQ publishes on approval), then Play and the App Store
+   (managed publishing / manual release) and the GitHub releases. So when a device says *update*, the update exists.
+5. **No new notification.** The watch says it on the wrist; the wearer's phone puts it on home's one banner place;
+   a follower's *No data* alarm, which already rings when readings stop, names the reason and the button. A new alarm
+   would ring for something the person can't act on at night.
+6. **Updating clears it by itself**, at the first message that side can read; the history fills in as today (the
+   watch's 3 h / 24 h `hist`, a follower's hour chunks).
+
+### States and exits, per surface
+
+| Surface | What it shows | Can do | Meanwhile | Ends |
+|---|---|---|---|---|
+| **Sukrara Aura** (and any face on the barrel) | the line where *No reading since* goes: *Update Sukrara on phone* / *Actualiza Sukrara en el móvil*, or *Update face in Connect IQ* / *Actualiza la esfera en Connect IQ* | nothing on the watch (a face can't open anything); the phone's banner has the button | the last reading it read, ageing; after the face itself updated, none (its stored payload is the old version): the line alone | the first payload it reads |
+| **Watch app** | a screen in place of the value: the same line and **Open on phone** (`openWebPage`: Garmin Connect shows a notification that opens the Connect IQ listing, or the website's Android page `/android/#versions`); the glance: the line alone | *Open on phone*, Back | the last value, ageing; logging still works: entries wait in the outbox (*Waiting: update Sukrara* / *En espera: actualiza Sukrara*), sent once the phone reads them | the first payload it reads; the outbox empties |
+| **Data field**, in an activity | its value place: `--` and *UPDATE PHONE* / *UPDATE FIELD* (es *ACTUALIZA MÓVIL* / *ACTUALIZA CAMPO*), the slot's size | nothing during the activity (a data field has no input); after it, the phone's banner | `--`; never a number it can't read | the first payload it reads |
+| Complications | `---`, as with no reading (Latin letters only) | — | — | the same |
+| **Phone, Garmin page and setup** | the watch's line: *Sukrara Aura on Descent needs an update* / *Sukrara Aura en Descent necesita actualizarse* + **Update** (Connect IQ listing), or *Sukrara Aura on Descent is newer than this phone's Sukrara* / *…es más nueva que Sukrara en este móvil* + **Update Sukrara** (decision 3); the app's row the same; error colour | the button; Back | the delivered reading is never named as shown | the next report with the same version |
+| **Phone, home** | the one banner place (beside *Garmin sending off*): *Update Sukrara Aura on Descent* / *Actualiza Sukrara Aura en Descent* · "It can't read this phone's readings." + **Update** | the button; no close (it ends by itself), the Garmin page from the banner | the card as usual | as above |
+| **Follower, Android and Mac** | the no-data reason (`NoDataReason` / `NoDataText`): *Can't read Ana's new readings · update Sukrara* / *No se pueden leer las lecturas nuevas de Ana · actualiza Sukrara* + **Update**; or, the wearer older: *Ana's Sukrara needs an update to share with you* / *Sukrara de Ana necesita actualizarse para compartir contigo* (nothing to tap: Ana updates) | the button; Following settings as today | the stored readings, ageing, the card under the reason as with any no-data reason; alerts on the last data | the first event it reads |
+| Follower's *No data* alarm | its text names the reason: *No readings from Ana: update Sukrara* + **Update** action | the action, the alarm's usual mutes | — | readings again |
+| **Wearer, Share** | a follower's row, from a message of another version: *Mom's Sukrara needs an update* / *Sukrara de Mamá necesita actualizarse*, or *Mom's Sukrara is newer: update Sukrara* + **Update** | the button | sharing goes on for everyone else | that follower's next readable message |
+| **Joining** (invite link, nearby pairing) | the invite of another version: *This invite needs a newer Sukrara* + **Update**, or *Ana needs to update Sukrara first*; nearby, both phones name the older one | the button, Cancel | nothing saved or sent | update and open the link again |
+
+TalkBack / VoiceOver read each line as text and each button by its label; the follower's reason and the phone's
+watch line are live regions, as today. Watch screens are plain text.
+
+### What each side must know
+
+| Link | Knows today | Adds |
+|---|---|---|
+| Phone → watch payload | the watch drops another `v` silently and reports `x` (the phone shows *needs an update*, wrong when the phone is the older one) | the watch keeps the `v` it last refused and draws the line from it; its fetch adds `&v=<its version>`, so the phone knows the direction |
+| Watch → phone writes | nothing: an entry carries no version | every write carries `v`; the phone answers another `v` with `r: "v"` and its own `v`; the watch keeps the entry |
+| Sharing (relays, Bluetooth) | both apps throw *unsupported v* away silently (`Payload.kt`, `Payloads.swift`) | the `v` of a refused event goes to the no-data reason / the follower's row; Bluetooth's hello the same |
+| Identity (invite, profile) | an unknown invite `v` is "not a Sukrara invite" | an invite with a `v` says which side to update |
+
+**These land in the current versions (payload 5, protocol 2, invite 3), before any format change**, so the first
+change already finds both sides able to say it: the old side must carry the detection.
+
+**Never moves**, so any version reads it (`formats.json` names it per format, tests hold it):
+
+- **Watch payload**: the top-level `v` (a whole number) beside `p` and `sent` in the dictionary; the port and fetch
+  paths; the fetch's `v=` query; a write's `v` and the answer's `r` / `v`.
+- **Sharing**: the envelope (event kinds, the `gk` tag, NIP-44 under the group key, the gift-wrap kinds) and `v` at the
+  top of the decrypted content; Bluetooth's frames and the hello's `v`.
+- **Identity**: the invite link's shape (`/join#` + 63 characters) and the invite's `v`.
+
+A change that must move one of these is a new format beside the old one, not a version.
+
+### Open (owner)
+
+1. A watch that can't read the payload shows no number (decision 2). Freezing `g` (`t`, `v`) as well would let it show
+   the value with the update line, a second frozen field. Keep the rule, or freeze `g`?
+2. Decision 4 delays the phone's update by Connect IQ's review (usually 1–3 days) whenever the watch payload changes.
+   Hold it, or ship the phone first and let the watch say *update* until Connect IQ approves?
+
+### Draft: States and exits (for FEATURES.md when built)
+
+**States and exits**: *versions match* → nothing shown. *A device can't read the other's format* → the device in view
+says which app to update (the smaller version) and, where it can, one button to that copy's update (watch app: *Open on
+phone*; phone: the Connect IQ listing or Sukrara's own updater / store; Mac: Sparkle or the App Store); the last reading
+it read stays and ages (never shown as current), a watch app's entries wait in its outbox. Out: updating, which clears
+it at the first message read (no tap needed); Back / Cancel leave each screen; nothing to mute or close because it ends
+by itself. Reachable without a notification: the watch, the phone's Garmin page and home banner, a follower's card,
+the wearer's Share rows; a follower's *No data* alarm names it. TalkBack / VoiceOver read the lines and buttons.
 
 ## Plan
 
@@ -133,3 +238,5 @@ From 1.0.0 (not now): read the previous version too for a window, the way other 
 | Release blocked unless compatible with what's live | Pact `can-i-deploy` ([docs](https://docs.pact.io/pact_broker/can_i_deploy)) |
 | Version lock done badly | Juggluco: "update Juggluco on watch and phone to the same version" ([FAQ](https://www.juggluco.nl/Juggluco/faq.html)) |
 | Windows after 1.0.0 | Bitwarden ±2 majors ([support](https://bitwarden.com/help/bitwarden-software-release-support/)); Loop's 90-day countdown ([LoopDocs](https://loopkit.github.io/loopdocs/browser/automatic/)) |
+| Telling people to update a paired app (§ When versions differ) | Juggluco "update on watch and phone to the same version" ([changelog](https://www.juggluco.nl/Juggluco/changes.html), [#500](https://github.com/j-kaltes/Juggluco/issues/500)); xDrip+ wear update toast that loops ([#580](https://github.com/NightscoutFoundation/xDrip/issues/580), [#4383](https://github.com/NightscoutFoundation/xDrip/discussions/4383), [#4069](https://github.com/NightscoutFoundation/xDrip/discussions/4069)); AAPS "same version on phone and watch" ([docs](https://androidaps.readthedocs.io/en/latest/WearOS/BuildingAapsWearOS.html)); Signal expiry and linked devices ([support](https://support.signal.org/hc/en-us/articles/8997185514138-Re-connect-your-primary-device-to-continue-using-Signal-Desktop), [#5252](https://github.com/signalapp/Signal-Desktop/issues/5252)); Wear OS capabilities, prompt the other device ([docs](https://developer.android.com/training/wearables/apps/standalone-apps)) |
+| Connect IQ updates and what a watch app can open | Updates via *Device › Updates*, installed at sync ([Garmin support](https://support.garmin.com/en-US/?faq=z1Jiv0P4Yg4DZX5LIif5L8)); auto-update toggle and versions put back ([forum](https://forums.garmin.com/apps-software/mobile-apps-web/f/connect-iq-store-android/290335/can-you-disable-automatic-watch-face-updates), [bug](https://forums.garmin.com/developer/connect-iq/i/bug-reports/version-bug-connect-iq-iphone-app-reverts-device-to-prior-watch-face-version)); `openWebPage` for apps and (API 5) data fields, not faces ([Communications](https://developer.garmin.com/connect-iq/api-docs/Toybox/Communications.html), [app types](https://developer.garmin.com/connect-iq/articles/connect-iq-basics/App_Types.html)) |
