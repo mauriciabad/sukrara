@@ -39,7 +39,10 @@ class AuraModel {
     var topRow as Boolean = true;
     var topOn as Boolean = true;
     var msgKind as String? = null; // warm, ended, none, gap
-    var chipKind as String? = null; // pill, age
+    var chipKind as String? = null; // pill, age, update
+    var upd as String? = null; // which app to update (SPEC.md §6.6b): phone, face; null = none
+    var updT1 as String = "";
+    var updT2 as String = "";
     var spark as Boolean = false;
 
     // the rows (SPEC.md §4)
@@ -274,17 +277,22 @@ class AuraModel {
         if (s.equals("ended")) {
             pill = ["note", AuraWords.replace(lang), false, "sensor"];
         }
+        // a payload of another version: its glucose alone, the update line in the chip row's place (SPEC.md §6.6b)
+        upd = "phone".equals(inp.update) || "face".equals(inp.update) ? inp.update : null;
+        if (upd != null) {
+            pill = null;
+        }
         needed = pill != null && !(pill[2] as Boolean) && (pill[0].equals("carbs") || pill[0].equals("rapid"));
         var priv = inp.privacy.equals("private");
         var revealed = inp.privacy.equals("revealed");
         valueOn = hasValue && (!priv || needed || revealed);
         // the reading's time isn't the number: it shows in private too
-        timeOn = hasValue && (fr.equals("late") || fr.equals("stale"));
+        timeOn = upd == null && hasValue && (fr.equals("late") || fr.equals("stale"));
         pillOn = pill != null && (hasValue || s.equals("ended"));
         topRow = !inp.topField.equals("none") || !inp.topField2.equals("none");
         topOn = !aod && topRow;
         msgKind = s.equals("warmup") || s.equals("almost") ? "warm" : s.equals("ended") ? "ended" : s.equals("none") ? "none" : !hasValue ? "gap" : null;
-        chipKind = pillOn ? "pill" : timeOn || "warm".equals(msgKind) ? "age" : null;
+        chipKind = upd != null ? "update" : pillOn ? "pill" : timeOn || "warm".equals(msgKind) ? "age" : null;
         spark = inp.trendStyle.equals("spark");
         revealD = revealed && hasValue;
     }
@@ -382,7 +390,7 @@ class AuraModel {
     // lay the rows out with the first size set that fits
     hidden function fitRows() as Void {
         // the time grows by its string: the larger time sizes first, up to ~1.27 x the value's cap (SPEC.md §4)
-        var sets = "pill".equals(chipKind)
+        var sets = "pill".equals(chipKind) || "update".equals(chipKind)
             ? [[68, 54, 24], [66, 54, 24], [64, 54, 24], [62, 54, 24]]
             : "age".equals(chipKind)
                 ? [[70, 56, 24], [68, 56, 24], [66, 56, 24], [64, 56, 24], [62, 54, 24]]
@@ -397,7 +405,7 @@ class AuraModel {
             var vb = "gap".equals(msgKind)
                 ? 16.7 + 12 + cap2
                 : "warm".equals(msgKind) ? 34 : "ended".equals(msgKind) ? 32 : "none".equals(msgKind) ? 20 : V;
-            chipH = "pill".equals(chipKind) ? 38 : "age".equals(chipKind) ? 17 : 0;
+            chipH = "pill".equals(chipKind) ? 38 : "age".equals(chipKind) ? 17 : "update".equals(chipKind) ? 44 : 0;
             var tfc = topRow ? TF * 0.668 : 0.0;
             var H = (topRow ? tfc + 20 : 0) + T + 22 + vb + (chipH > 0 ? 18 + chipH : 0);
             var y = -7 - H / 2.0;
@@ -726,6 +734,9 @@ class AuraModel {
             pillFill = pal[pill[0]] != null ? c(pill[0] as String) : c("note");
             pillFg = pillTonal ? pillFill : 0x1C1C1E;
         }
+        // the update line (SPEC.md §6.6b): the app to update, then where; centred lines at chipC - 5 and chipC + 22
+        updT1 = "face".equals(upd) ? AuraWords.updFace(lang) : AuraWords.updSukrara(lang);
+        updT2 = "face".equals(upd) ? AuraWords.inConnectIq(lang) : AuraWords.onPhone(lang);
     }
 
     // --- a message instead of a value: never a figure that could pass for glucose (SPEC.md §6.7) ---
@@ -737,7 +748,7 @@ class AuraModel {
             msgX = -(34 + 12 + AuraMath.tw(msgT1, 32)) / 2;
             var readyMin = inp.readyMin != null ? inp.readyMin : (1 - warmFrac) * 60;
             var ready = AuraMath.info(inp.now + (readyMin * 60).toNumber(), inp.utc);
-            msgT2 = almost ? AuraWords.almost(lang) : AuraWords.readyAt(lang, AuraMath.clock(ready, inp.is24));
+            msgT2 = upd != null ? "" : almost ? AuraWords.almost(lang) : AuraWords.readyAt(lang, AuraMath.clock(ready, inp.is24));
         } else if ("ended".equals(msgKind)) {
             msgT1 = AuraWords.ended(lang);
             msgX = -(26 + 12 + AuraMath.tw(msgT1, 32)) / 2;

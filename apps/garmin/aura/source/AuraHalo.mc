@@ -36,7 +36,13 @@ class AuraHalo {
         }
         var chip = m.timeOn || m.pillOn;
         var gapA = m.timeOn && m.pillOn ? 14 : 0;
-        c = [AuraMath.r1(m.rx0 - 8), AuraMath.r1(m.chipC - 23), chip ? AuraMath.r1(m.ageW + gapA + m.pillW + 16) : 0, chip ? 46 : 0];
+        if (m.upd != null) {
+            // the update line's two lines: one box from the first's ascender to the second's descender
+            var w = AuraMath.max(AuraMath.tw(m.updT1, 24), AuraMath.tw(m.updT2, 24));
+            c = [AuraMath.r1(-w / 2 - 8), AuraMath.r1(m.chipC - 27), AuraMath.r1(w + 16), 54];
+        } else {
+            c = [AuraMath.r1(m.rx0 - 8), AuraMath.r1(m.chipC - 23), chip ? AuraMath.r1(m.ageW + gapA + m.pillW + 16) : 0, chip ? 46 : 0];
+        }
         f = [AuraMath.r1(-m.topWidth() / 2 - 8), AuraMath.r1(m.tfBase - m.TF * 0.668 - 8), m.topOn ? AuraMath.r1(m.topW + 16) : 0,
             m.topOn ? AuraMath.r1(m.TF * 0.668 + 16) : 0];
         // the sparkline's box grown 8 px, not its fade bands: what runs into them is cut by its own shape (sparkCut)

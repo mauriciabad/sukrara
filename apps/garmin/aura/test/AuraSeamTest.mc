@@ -52,6 +52,21 @@ function linkSeamReading(logger as Logger) as Boolean {
             Test.assertEqualMessage(r.warmUntil, now + 2520, name);
         }
     }
+    // a payload of a newer version (THE VERSION RULE): its glucose alone, no sensor, the face is the app to update
+    Link.reset();
+    AuraData._cache = null;
+    var newer = {} as Dictionary<String, Object?>;
+    var ks = first.keys();
+    for (var i = 0; i < ks.size(); i++) {
+        newer.put(ks[i] as String, first.get(ks[i]));
+    }
+    newer.put("v", SukraraFace.VERSION + 1);
+    Link.accept(Link.readable(newer), now);
+    r = AuraData.reading(now) as AuraReading;
+    Test.assertEqualMessage(r.mgdl, 112, "the newer payload's glucose");
+    Test.assertEqualMessage(r.status, "none", "no pill from a newer payload");
+    Test.assertMessage(r.history == null && r.lastItems == null && r.tir == null && r.sensorEnds == null, "its glucose alone");
+    Test.assertEqualMessage(Link.update(), SukraraFace.UPDATE_APP, "the face is the app to update");
     Link.reset();
     AuraData._cache = null;
     logger.debug("seam ok");

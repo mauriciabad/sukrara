@@ -94,16 +94,19 @@ module AuraData {
             sensor = "none"; // monitoring, but no reading ever: "No readings"
         }
         r.sensor = sensor;
-        var s = p.get("sensor") as Dictionary;
-        if (s.get("end") instanceof Number) {
-            r.sensorEnds = (s.get("end") as Number) - skew;
-        }
-        if (s.get("start") instanceof Number) {
-            r.sensorStarts = (s.get("start") as Number) - skew;
-        }
-        if (s.get("start") instanceof Number && s.get("ready") instanceof Number) {
-            r.warmFrom = (s.get("start") as Number) - skew;
-            r.warmUntil = (s.get("ready") as Number) - skew;
+        // (a payload of another version is its glucose alone: no sensor)
+        var s = p.get("sensor");
+        if (s instanceof Dictionary) {
+            if (s.get("end") instanceof Number) {
+                r.sensorEnds = (s.get("end") as Number) - skew;
+            }
+            if (s.get("start") instanceof Number) {
+                r.sensorStarts = (s.get("start") as Number) - skew;
+            }
+            if (s.get("start") instanceof Number && s.get("ready") instanceof Number) {
+                r.warmFrom = (s.get("start") as Number) - skew;
+                r.warmUntil = (s.get("ready") as Number) - skew;
+            }
         }
         r.unit = x.unit;
         r.limits = x.bands;

@@ -3112,8 +3112,12 @@ each reads only the current version, but every mismatch is detected and **the de
   app's row say the same, and Share with apps' Garmin row in the error colour. Writes from the watch (entries, undo,
   mute) carry `v`; the phone answers another version `r: v` and reads nothing else; the watch keeps them and sends them
   after the first payload it can read.
-- Still to come (#262): the update line on the watch (Aura, the watch app and glance, the data field), home's banner,
-  followers, the wearer's Share rows, invites (docs/48's table).
+- **On the watch**: **Sukrara Aura** puts the update line in the chip row's place (SPEC §6.6b): *Update Sukrara* /
+  *on phone*, or *Update face* / *in Connect IQ* (es *Actualiza Sukrara* / *en el móvil*, *Actualiza la esfera* /
+  *en Connect IQ*), under the current value (its band's colour, struck from 5 min, "No reading since" from 20 min; no
+  trend, pill, treatment or time in range); in private and always-on too.
+- Still to come (#262): the watch app and its glance, the data field, home's banner, followers, the wearer's Share
+  rows, invites (docs/48's table).
 
 **States and exits**: *versions match* → nothing shown. *The watch reads another version* → the Garmin page's notice,
 the watch's line and the app's row name the app to update, with one button to that update; the watch keeps showing the

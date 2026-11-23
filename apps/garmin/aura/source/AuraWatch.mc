@@ -132,6 +132,9 @@ module AuraWatch {
     // THE SEAM: Sukrara's reading, aged by the watch clock
     function reading(i as AuraInput, now as Number) as Void {
         var r = AuraData.current();
+        // a payload of another version: which app to update (SPEC.md §6.6b); the reading is its glucose alone
+        var u = Link.update();
+        i.update = u == null ? "none" : u.equals(SukraraFace.UPDATE_PHONE) ? "phone" : "face";
         if (r == null) {
             i.sensor = "none";
             i.lastItems = [];

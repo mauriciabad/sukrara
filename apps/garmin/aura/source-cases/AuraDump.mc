@@ -465,6 +465,11 @@ module AuraDump {
         out("chip.x", AuraMath.r1(m.rx0));
         out("chip.y", AuraMath.r1(m.chipC + 8));
         out("chip.t", m.readTxt);
+        out("upd.disp", disp(m.upd != null));
+        out("upd.y1", AuraMath.r1(m.chipC - 5));
+        out("upd.y2", AuraMath.r1(m.chipC + 22));
+        out("upd.t1", m.updT1);
+        out("upd.t2", m.updT2);
         out("pill.disp", disp(m.pillOn));
         if (m.pillOn) {
             var px = m.pillX;

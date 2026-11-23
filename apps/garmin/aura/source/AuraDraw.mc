@@ -574,6 +574,11 @@ module AuraDraw {
     }
 
     function chipRow(dc as Dc, m as AuraModel) as Void {
+        if (m.upd != null) {
+            // the update line (SPEC.md §6.6b): the app to update, then where
+            text(dc, "l24s", 0, AuraMath.r1(m.chipC - 5), m.updT1, m.c("ink"), Graphics.TEXT_JUSTIFY_CENTER);
+            text(dc, "l24m", 0, AuraMath.r1(m.chipC + 22), m.updT2, m.c("soft"), Graphics.TEXT_JUSTIFY_CENTER);
+        }
         if (m.timeOn) {
             text(dc, "l24m", AuraMath.r1(m.rx0), AuraMath.r1(m.chipC + 8), m.readTxt, m.c("soft"), Graphics.TEXT_JUSTIFY_LEFT);
         }

@@ -2767,6 +2767,125 @@
     "trendStyle": "arrow",
     "status": "none"
    }
+  },
+  {
+   "id": "update-phone",
+   "group": "update",
+   "title": "Update: Sukrara on the phone",
+   "expect": "A payload of a newer version than the phone’s Sukrara: the current glucose stays, no trend, no pill, no treatment; the chip row says “Update Sukrara” / “on phone”.",
+   "cfg": {
+    "trend": false,
+    "status": "none",
+    "last": {
+     "items": []
+    },
+    "tir": null,
+    "update": "phone",
+    "glucose": 112,
+    "age": 0.5,
+    "spark": [
+     112
+    ]
+   }
+  },
+  {
+   "id": "update-face-es",
+   "group": "update",
+   "title": "Update: this face, Spanish",
+   "expect": "A payload of a newer version than the face: the value in its band’s colour without a pill; “Actualiza la esfera” / “en Connect IQ”.",
+   "cfg": {
+    "trend": false,
+    "status": "none",
+    "last": {
+     "items": []
+    },
+    "tir": null,
+    "update": "face",
+    "lang": "es",
+    "glucose": 196,
+    "age": 3,
+    "spark": [
+     196
+    ]
+   }
+  },
+  {
+   "id": "update-old",
+   "group": "update",
+   "title": "Update: an old reading",
+   "expect": "The frozen glucose ages by itself: struck and grey from 5 min, the update line in place of the reading’s time.",
+   "cfg": {
+    "trend": false,
+    "status": "none",
+    "last": {
+     "items": []
+    },
+    "tir": null,
+    "update": "phone",
+    "glucose": 104,
+    "age": 9,
+    "spark": [
+     104
+    ]
+   }
+  },
+  {
+   "id": "update-no-readings",
+   "group": "update",
+   "title": "Update: no readings",
+   "expect": "From 20 min the value goes: “No reading since” and its time, the update line under it.",
+   "cfg": {
+    "trend": false,
+    "status": "none",
+    "last": {
+     "items": []
+    },
+    "tir": null,
+    "update": "face",
+    "age": 34
+   }
+  },
+  {
+   "id": "update-aod",
+   "group": "update",
+   "title": "Update: always-on",
+   "expect": "Always-on keeps the update line in the always-on ink.",
+   "cfg": {
+    "trend": false,
+    "status": "none",
+    "last": {
+     "items": []
+    },
+    "tir": null,
+    "update": "phone",
+    "mode": "aod",
+    "glucose": 132,
+    "age": 1,
+    "spark": [
+     132
+    ]
+   }
+  },
+  {
+   "id": "update-private",
+   "group": "update",
+   "title": "Update: private",
+   "expect": "Private hides the value as always; the update line still shows.",
+   "cfg": {
+    "trend": false,
+    "status": "none",
+    "last": {
+     "items": []
+    },
+    "tir": null,
+    "update": "phone",
+    "privacy": "private",
+    "glucose": 150,
+    "age": 1,
+    "spark": [
+     150
+    ]
+   }
   }
  ],
  "store": [

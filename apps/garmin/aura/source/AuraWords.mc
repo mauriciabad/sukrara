@@ -45,6 +45,10 @@ module AuraWords {
     function noSince(lang as String) as String { return es(lang) ? "Sin lecturas desde" : "No reading since"; } // card_no_reading_since
     function noYet(lang as String) as String { return es(lang) ? "Sin lecturas" : "No readings"; } // card_no_readings_short
     function noPhone(lang as String) as String { return es(lang) ? "Sin móvil" : "No phone"; } // face_no_phone
+    function updSukrara(lang as String) as String { return es(lang) ? "Actualiza Sukrara" : "Update Sukrara"; } // face_update_sukrara
+    function onPhone(lang as String) as String { return es(lang) ? "en el móvil" : "on phone"; } // face_on_phone
+    function updFace(lang as String) as String { return es(lang) ? "Actualiza la esfera" : "Update face"; } // face_update_face
+    function inConnectIq(lang as String) as String { return es(lang) ? "en Connect IQ" : "in Connect IQ"; } // face_in_connect_iq
     function now(lang as String) as String { return es(lang) ? "ahora" : "now"; } // duration_now
 
     // card_ready_at

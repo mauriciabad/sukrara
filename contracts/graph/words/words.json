@@ -48,6 +48,10 @@
   "faces": {
     "_about": "Words only the watch faces draw (Sukrara Aura, contracts/watchface/aura/SPEC.md §5), with the card words above: the phone's and the Mac's cards don't draw these. apps/garmin/aura/tools/garmin_test.py words checks the face's words (AuraWords.mc) against 'words' and 'faces'.",
     "card_no_readings_short": {"en": "No readings", "es": "Sin lecturas"},
-    "face_no_phone": {"en": "No phone", "es": "Sin móvil"}
+    "face_no_phone": {"en": "No phone", "es": "Sin móvil"},
+    "face_update_sukrara": {"en": "Update Sukrara", "es": "Actualiza Sukrara"},
+    "face_on_phone": {"en": "on phone", "es": "en el móvil"},
+    "face_update_face": {"en": "Update face", "es": "Actualiza la esfera"},
+    "face_in_connect_iq": {"en": "in Connect IQ", "es": "en Connect IQ"}
   }
 }

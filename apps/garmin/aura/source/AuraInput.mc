@@ -41,6 +41,7 @@ class AuraInput {
     var privacy as String = "open"; // open, private, revealed (held)
     var reveal as Float = 0.6; // revealed: the fraction of the 5 s left
     var phone as Boolean = true; // the phone in reach
+    var update as String = "none"; // which app to update (the payload's version rule, SPEC.md §6.6b): none, phone, face
     // the fields' values by field key (SPEC.md §6.10, aura.js fieldData()), the shown fields' only; a key missing or
     // null = the watch hasn't it (the field says --). In the watch's unit: the weather {"t", "sky"}, a day's high and
     // low {"hi", "lo", "sky"}, times of day in minutes after midnight, durations in minutes, race times and paces in

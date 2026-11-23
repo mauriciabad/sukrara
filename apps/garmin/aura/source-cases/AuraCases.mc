@@ -46,6 +46,7 @@ module AuraCases {
         if (cfg.hasKey("left")) { inp.left = cfg["left"] instanceof String ? null : num(cfg["left"]); }
         inp.mode = str(cfg, "mode", inp.mode);
         inp.privacy = str(cfg, "privacy", inp.privacy);
+        inp.update = str(cfg, "update", inp.update);
         if (cfg.hasKey("reveal")) { inp.reveal = num(cfg["reveal"]); }
         inp.unit = str(cfg, "unit", inp.unit);
         inp.lang = str(cfg, "lang", inp.lang);

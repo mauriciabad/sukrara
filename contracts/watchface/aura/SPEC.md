@@ -218,6 +218,7 @@ default is the reference's (every case starts from it):
 | mode | `mode`: `awake`, `aod`, `night` | awake | watch: wrist, power mode, Do Not Disturb (its Sleep Mode) |
 | privacy | `privacy`: `open`, `private`, `revealed` (held); `reveal`: the fraction of the 5 s left | open, 0.6 | the setting + touch-and-hold (§8) |
 | phone connected | `phone`: true/false | true | watch |
+| app to update | `update`: `none`, `phone` (Sukrara on the phone is older), `face` (this face is older) | none | the shared link (`Link.update()`): a payload of another version ([`payload/README.md`](../payload/README.md) "Versions"); the reading is then its glucose alone (no trend, history, status, treatment, sensor or time in range) · §6.6b |
 | colour check | `filter`: `none`, `redshift`, `grey` | none | reference only (§8) |
 | field data | `steps`; `tir`: today's time in range (%), `null` = not known (under a quarter of the day so far, or the phone's day is over); `vals`: `{field: value}` for any other field of §6.10 (`null` = the watch hasn't it), over the reference's fixed values (`fieldData()`: 14° sun, 17:42, 62, 1,240 m, 64, 3, NYC 4:09, 8, …); `statute`: the watch's units are statute (ft, mi; the values come in the watch's unit); `tz2Label`: the second zone's city | 6420, 82, none, false, NYC | watch (its complications, §6.10) / Sukrara (time in range, until the end of the phone's day) |
 | settings | §11 | | |
@@ -232,14 +233,15 @@ the row under the value is empty, everything re-centres and grows; when it holds
 **Rows** (top to bottom): top fields (if either top field is chosen) · time · value (or a message) · chip row (if any).
 Gaps: top field → time 20, time → value 22, value → chip row 18.
 
-**Chip row kind**: `pill` when a pill shows (§6.6) · `age` when only the reading's time shows (late / old), or the
-"Ready at" line of a warm-up · none.
+**Chip row kind**: `update` when a payload of another version came (§6.6b: it takes the row, no pill, no reading
+time) · `pill` when a pill shows (§6.6) · `age` when only the reading's time shows (late / old), or the "Ready at" line
+of a warm-up · none.
 
 **Size sets** (time cap T, value cap V, top-field font TF), tried in order, first that fits wins (else the last):
 
 | Chip row | Sets |
 |---|---|
-| pill | (68, 54, 24), (66, 54, 24), (64, 54, 24), (62, 54, 24) |
+| pill, update | (68, 54, 24), (66, 54, 24), (64, 54, 24), (62, 54, 24) |
 | age | (70, 56, 24), (68, 56, 24), (66, 56, 24), (64, 56, 24), (62, 54, 24) |
 | none | (76, 60, 26), (74, 60, 26), (72, 60, 26), (70, 60, 26), (68, 60, 26), (66, 58, 26), (64, 56, 25), (62, 54, 24) |
 
@@ -249,7 +251,7 @@ as big as it fits would reach 84–90 over 58–60 and take over). In practice e
 the ceiling holds the time at 72–76 (none), 68–70 (age), 66–68 (pill).
 
 **Heights**: value row vb = V; or a message (§6.7): no readings 16.7 + 12 + c₂ (c₂ = 40 when the chip row is empty,
-else 36), warm-up 34, sensor ended 32, not monitoring 20. Chip row height: pill 38, age 17.
+else 36), warm-up 34, sensor ended 32, not monitoring 20. Chip row height: pill 38, age 17, update 44.
 `H = (top row ? TF·0.668 + 20 : 0) + T + 22 + vb + (chip ? 18 + chipH : 0)`; first row starts at `y₀ = −7 − H/2`.
 Then: top-field baseline `tfBase = y₀ + TF·0.668`; time top `tTop` and baseline `tBase = tTop + T`; value top
 `vTop = tBase + 22`, value baseline `vBase = vTop + vb`; chip row centre `chipC = vBase + 18 + chipH/2`.
@@ -317,6 +319,8 @@ languages, when the face lands):
 | No readings | No reading since | Sin lecturas desde | `card_no_reading_since` |
 | Nothing paired | No readings | Sin lecturas | **new** (`card_no_readings_short`; the card's long form is `card_no_readings_yet`) |
 | Phone out of reach (field) | No phone | Sin móvil | the face's own string (a watch field, not a card word) |
+| Update line (§6.6b), Sukrara older | Update Sukrara · on phone | Actualiza Sukrara · en el móvil | the face's own (`face_update_sukrara`, `face_on_phone`) |
+| Update line, the face older | Update face · in Connect IQ | Actualiza la esfera · en Connect IQ | the face's own (`face_update_face`, `face_in_connect_iq`) |
 | Durations | now · 7m · 2h · 1h 20m · 6h · 2d | ahora · 7 min · 2 h · 1 h 20 min · 6 h · 2 d | `duration_*`: Sukrara's compact format ([`contracts/settings/durations.json`](../../settings/durations.json) `compact`): from 6 h whole hours only, from 48 h whole days; under a minute "now" (`alerts-muted-long`) |
 | Weekdays (date, upper case) | SUN MON TUE WED THU FRI SAT | DOM LUN MAR MIÉ JUE VIE SÁB | — |
 | Months | JAN … DEC | ENE FEB MAR ABR MAY JUN JUL AGO SEP OCT NOV DIC | — |
@@ -452,6 +456,20 @@ Centred group on chipC: the reading's time (only when late or old) then the pill
 Status pills show only with a current value (not when old). A quiet or mute whose time has run out shows no pill until
 the phone says what follows (status `none`, `alerts-quiet-ended`). In private, the pill shows; a *needed* pill also
 unmasks the value (§8).
+
+### 6.6b Update line (a payload of another version)
+When the phone sends a payload of another version (docs/48 § When versions differ), the face keeps its glucose alone
+and names the app to update, the smaller version: Sukrara on the phone, or this face. Nothing on the watch can open the
+update (a face has no input); the phone's Garmin page and home banner carry the button. It ends at the first payload
+of the face's version.
+- The chip row is the update line (kind `update`, height 44): two lines centred on x = 0, font 24; the app (600, ink)
+  at baseline chipC − 5, where (500, soft) at chipC + 22: *Update Sukrara* / *on phone*, or *Update face* / *in
+  Connect IQ*. No pill and no reading time (the value's look says how old it is: struck from 5 min, the "No reading
+  since" message from 20 min).
+- The value is the current glucose with its band's colour, ageing like any reading; no trend (hollow ring / end dot),
+  no history (the sparkline is the one point), no treatment, no time in range (their fields say `--`).
+- It shows in private and always-on too (it isn't the number). Halo: one box from the first line's ascender to the
+  second's descender, `−w/2 − 8, chipC − 27, w + 16, 54`, w the wider line at 24.
 
 ### 6.7 Messages (no value)
 - **Warm-up / almost ready**: a disc (circle r 17, stroke 2.5 soft) with a pie r 12.5 (soft) filling clockwise from 12
@@ -728,6 +746,7 @@ must match [`expect.json`](expect.json) (§10) and its picture `docs/img/aura/re
 | sides | mirrored, battery-sensor, sensor-battery-high, battery-low-sensor-ending, battery-both-right, level-sensor-warmup, none-level, none-none, battery-twice, level-twice, level-twice-high, level-twice-contours, level-twice-glow, level-left-contours, level-left-lasers, level-left-glow, level-twice-aod-very-low, level-left-aod, level-left-night-low, private-no-rail, private-no-rail-needed, private-no-rail-quiet, mmol-widest-right, lo-es, ended-es, labels-above-pill | the side elements on either side, both, none; marks; the dial's focus; private, always-on and night with them |
 | dial | {grain, contours, waterline, lasers, glow} × {ideal, heading-up, high-rising, high-falling, very-high, low-falling, low-recovering, old}; {black, map} × {ideal, high-rising} | the aura's two axes |
 | halo | outline, box, none | the halo |
+| update | phone, face-es, old, no-readings, aod, private | a payload of another version: the glucose alone and the update line (§6.6b) |
 
 <img src="../../../docs/img/aura/ref/glucose-in-range.png" width="160"> <img src="../../../docs/img/aura/ref/alerts-very-low.png" width="160"> <img src="../../../docs/img/aura/ref/glucose-old.png" width="160"> <img src="../../../docs/img/aura/ref/glucose-no-readings.png" width="160"> <img src="../../../docs/img/aura/ref/sensor-warmup.png" width="160"> <img src="../../../docs/img/aura/ref/modes-aod.png" width="160">
 
